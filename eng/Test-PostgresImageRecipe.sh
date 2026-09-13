@@ -18,6 +18,7 @@ fi
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 base_image='postgres:18.6@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280'
 grep -Fqx "FROM $base_image" "$repo_root/db/Dockerfile.postgres-patched"
+base_child="$(bash "$repo_root/eng/Resolve-PostgresBaseChild.sh" "$platform")"
 
 tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/claimcore-pg-image.XXXXXXXX")"
 nonce="${tmp_dir##*.}"
@@ -47,7 +48,7 @@ if [[ "$image_arch" != "${platform#linux/}" ]]; then
   exit 1
 fi
 
-docker run --rm --platform "$platform" --entrypoint dpkg-query "$base_image" \
+docker run --rm --platform "$platform" --entrypoint dpkg-query "$base_child" \
   -W '-f=${Package}\t${Version}\n' | LC_ALL=C sort > "$tmp_dir/base-packages"
 docker run --rm --platform "$platform" --entrypoint dpkg-query "$image" \
   -W '-f=${Package}\t${Version}\n' | LC_ALL=C sort > "$tmp_dir/patched-packages"
@@ -92,7 +93,7 @@ if [[ "$postgres_version" != 'postgres (PostgreSQL) 18.6' &&
 fi
 
 for source in debian.sources pgdg.list; do
-  docker run --rm --platform "$platform" --entrypoint cat "$base_image" \
+  docker run --rm --platform "$platform" --entrypoint cat "$base_child" \
     "/etc/apt/sources.list.d/$source" > "$tmp_dir/base-$source"
   docker run --rm --platform "$platform" --entrypoint cat "$image" \
     "/etc/apt/sources.list.d/$source" > "$tmp_dir/patched-$source"
