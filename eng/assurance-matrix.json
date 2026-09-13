@@ -2011,7 +2011,7 @@
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.exact retained identity.[CC-REC-001] exact Prepare retry after acceptance returns an observed receipt",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.exact retained identity.[CC-REC-001] exact retained Prepare retry after another commit directs Recovery",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.generated semantic field contract.semantic command metadata.command descriptors are the only ordered input inventory",
-        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.generated semantic field contract.semantic field schema.semantic contract renders exactly thirteen ordered field descriptors",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.generated semantic field contract.semantic field schema.[CC-DOM-001] semantic contract renders exactly thirteen ordered field descriptors",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.generated semantic field contract.semantic field schema.semantic scalar metadata originates from Domain descriptors",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.draft validation.form binding does not trim, uppercase or round business input",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.draft validation.missing extra and duplicate form values are refused",

@@ -4,17 +4,18 @@
     {
       "contractId": "CC-DOM-001",
       "reviewerKind": "agent",
-      "reviewer": "Codex convergence documentation review",
-      "reviewedOn": "2026-09-12",
+      "reviewer": "Codex release evidence review",
+      "reviewedOn": "2026-09-13",
       "conclusion": "approved",
-      "reviewSubjectHash": "e4f7a2e859bb4c91f1926e4c95ec73d8ac9eaa7b5b880267cf1d1b8b54738368",
+      "reviewSubjectHash": "8432604f5953a518ea2b43002b5c7ba7132a3672a7c47b5cbc76e3b5bb6a8001",
       "wholeFiles": [
         "src/ClaimCore.Domain/Contracts.fs",
         "src/ClaimCore.Domain/Descriptors.fs",
         "src/ClaimCore.Domain/FieldDefinitions.fs",
         "src/ClaimCore.Domain/Claim.fs",
         "tests/ClaimCore.Tests/DomainDescriptorTests.fs",
-        "tests/ClaimCore.Tests/DomainValidationTests.fs"
+        "tests/ClaimCore.Tests/DomainValidationTests.fs",
+        "tests/ClaimCore.Tests/FieldSchemaTests.fs"
       ],
       "markedSpans": []
     },

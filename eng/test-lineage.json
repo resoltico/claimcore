@@ -1152,7 +1152,7 @@
       "baselineId": "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.authoritative application core.presentation is not authority.native core exposes the same thirteen labels and no extra business field",
       "status": "replaced",
       "replacementIds": [
-        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.generated semantic field contract.semantic field schema.semantic contract renders exactly thirteen ordered field descriptors",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.generated semantic field contract.semantic field schema.[CC-DOM-001] semantic contract renders exactly thirteen ordered field descriptors",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.field projection.field projection is exactly the thirteen native fields with absence preserved"
       ],
       "reason": "The semantic contract test checks the exact thirteen field descriptors, while the native projection test checks the thirteen business fields remain distinct from metadata."
@@ -1707,7 +1707,7 @@
       "baselineId": "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.exact business-field schema.case output projection.all output states render only thirteen fields with metadata outside",
       "status": "replaced",
       "replacementIds": [
-        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.generated semantic field contract.semantic field schema.semantic contract renders exactly thirteen ordered field descriptors",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.generated semantic field contract.semantic field schema.[CC-DOM-001] semantic contract renders exactly thirteen ordered field descriptors",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.field projection.field projection is exactly the thirteen native fields with absence preserved"
       ],
       "reason": "The native field projection and semantic-contract tests require the thirteen business fields to remain closed and metadata to stay outside CaseFields."
@@ -1716,7 +1716,7 @@
       "baselineId": "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.exact business-field schema.case schema shape.[CC-DOM-001] schema has exactly thirteen required keys, with unknown keys forbidden",
       "status": "replaced",
       "replacementIds": [
-        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.generated semantic field contract.semantic field schema.semantic contract renders exactly thirteen ordered field descriptors",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.generated semantic field contract.semantic field schema.[CC-DOM-001] semantic contract renders exactly thirteen ordered field descriptors",
         "frontend:vitest::generated contract corpora > accepts generated Web host values and rejects every malformed or cross-endpoint value"
       ],
       "reason": "The semantic field test checks all thirteen ordered descriptors; generated Web host corpus tests enforce exact response schemas with closed case objects and malformed-value rejection."
@@ -1743,7 +1743,7 @@
       "status": "replaced",
       "replacementIds": [
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Contracts foundation.canonical renderers.renders deterministic strict UTF-8 semantic and wire contracts",
-        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.generated semantic field contract.semantic field schema.semantic contract renders exactly thirteen ordered field descriptors"
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.generated semantic field contract.semantic field schema.[CC-DOM-001] semantic contract renders exactly thirteen ordered field descriptors"
       ],
       "reason": "The old embedded command/case schema coupling was removed; the single semantic descriptor set is projected deterministically into separate strict CLI and Web schemas from one Contracts AST."
     },
@@ -1751,7 +1751,7 @@
       "baselineId": "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.exact business-field schema.native and encoded field metadata.native CaseFields and schema agree exactly",
       "status": "replaced",
       "replacementIds": [
-        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.generated semantic field contract.semantic field schema.semantic contract renders exactly thirteen ordered field descriptors",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.generated semantic field contract.semantic field schema.[CC-DOM-001] semantic contract renders exactly thirteen ordered field descriptors",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.field projection.field projection is exactly the thirteen native fields with absence preserved"
       ],
       "reason": "The native projection and generated semantic descriptor tests independently enumerate the same exact thirteen business fields, including absent optional values."
@@ -2204,7 +2204,7 @@
       "baselineId": "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web projection.definition retains native thirteen-field scope",
       "status": "replaced",
       "replacementIds": [
-        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.generated semantic field contract.semantic field schema.semantic contract renders exactly thirteen ordered field descriptors",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.generated semantic field contract.semantic field schema.[CC-DOM-001] semantic contract renders exactly thirteen ordered field descriptors",
         "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 wire projection.[CC-WEB-001] exposes independently fingerprinted semantic and Web contracts"
       ],
       "reason": "The Web definition test proves it embeds the semantic contract, while the semantic descriptor test requires exactly thirteen ordered business fields."

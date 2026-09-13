@@ -4,6 +4,7 @@ open System.Text.Json
 open Expecto
 open ClaimCore.Contracts
 open ClaimCore.Domain
+open ClaimCore.Tests.Fixtures
 
 let private expectedFields =
     [
@@ -22,6 +23,23 @@ let private expectedFields =
         "status"
     ]
 
+let private expectedNativeFields =
+    [
+        "IncidentDate"
+        "IncidentNotificationDate"
+        "IncidentCountry"
+        "ClaimantName"
+        "InsurerName"
+        "ClaimedAmount"
+        "ClaimedCurrency"
+        "CaseReference"
+        "PaymentDecisionDate"
+        "PayableAmount"
+        "PayableCurrency"
+        "PaymentDate"
+        "Status"
+    ]
+
 let private semanticDocument () =
     ContractProjection.current ()
     |> ContractRenderers.semantic
@@ -38,10 +56,30 @@ let private semanticFieldTests =
         "semantic field schema"
         [
             testCase
-                "semantic contract renders exactly thirteen ordered field descriptors"
+                "[CC-DOM-001] semantic contract renders exactly thirteen ordered field descriptors"
                 (fun () ->
                     use document = semanticDocument ()
-                    Expect.equal (fieldNames document) expectedFields "Closed business record")
+                    Expect.equal (fieldNames document) expectedFields "Closed business record"
+
+                    let nativeNames =
+                        typeof<CaseFields>.GetProperties() |> Array.map _.Name |> Set.ofArray
+
+                    Expect.equal
+                        nativeNames
+                        (expectedNativeFields |> Set.ofList)
+                        "Native CaseFields has no technical or extra business property"
+
+                    let values = FieldDefinitions.values (Claim.view (opened ())).Fields
+
+                    Expect.equal
+                        (values |> List.map fst)
+                        expectedFields
+                        "Complete ordered projection"
+
+                    Expect.equal
+                        (values |> List.skip 8 |> List.map snd)
+                        [ None; None; None; None; Some "OPENED" ]
+                        "Opening has absent decision/payment and core-derived status")
             testCase "semantic scalar metadata originates from Domain descriptors" (fun () ->
                 use document = semanticDocument ()
                 let fields = document.RootElement.GetProperty("fields")
