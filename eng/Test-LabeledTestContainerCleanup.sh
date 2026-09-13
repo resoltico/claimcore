@@ -127,7 +127,7 @@ expect_mock() {
     exit 1
   fi
   if [[ "$removals" == 1 ]] &&
-    ! rg --quiet --fixed-strings \
+    ! grep -Fq -- \
       "container rm --force --volumes $match_id" "$calls"; then
     printf 'Scoped Docker cleanup mock %s did not use exact-ID anonymous-volume removal.\n' "$mode" >&2
     exit 1
