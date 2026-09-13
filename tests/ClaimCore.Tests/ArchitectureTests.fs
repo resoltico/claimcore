@@ -7,6 +7,7 @@ open ClaimCore.Application
 open ClaimCore.Contracts
 open ClaimCore.Domain
 open ClaimCore.Hosting
+open ClaimCore.TestSupport
 
 let private references (assembly: Reflection.Assembly) =
     assembly.GetReferencedAssemblies()
@@ -89,7 +90,7 @@ let private postgresRecoverySeamIsSingular () =
         Expect.isFalse (Set.contains removed postgresTypes) ("Superseded recovery seam: " + removed)
 
 let private transportCodecsAreSingular () =
-    let root = Path.GetFullPath(Path.Combine(__SOURCE_DIRECTORY__, "../.."))
+    let root = RepositoryRoot.find ()
     let cli = Path.Combine(root, "src/ClaimCore.Cli")
     let web = Path.Combine(root, "src/ClaimCore.Web")
 

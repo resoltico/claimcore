@@ -53,7 +53,6 @@ jobs:
           $seed = & eng/Select-PropertySeed.ps1 -EventName $env:EVENT_NAME `
             -RequestedSeed $env:REQUESTED_SEED -Repository $env:REPOSITORY `
             -Workflow $env:WORKFLOW -RunId $env:RUN_ID -RunAttempt $env:RUN_ATTEMPT
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Add-Content -LiteralPath $env:GITHUB_ENV -Value "CLAIMCORE_PROPERTY_BASE_SEED=$seed"
       - name: Restore and build the locked unit project
         run: |

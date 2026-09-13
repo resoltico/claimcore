@@ -4,8 +4,9 @@ open System
 open System.IO
 open System.Text.Json
 open Expecto
+open ClaimCore.TestSupport
 
-let private root = Path.GetFullPath(Path.Combine(__SOURCE_DIRECTORY__, "../.."))
+let private root = RepositoryRoot.find ()
 
 let private baselineImage () =
     use document =
@@ -27,6 +28,21 @@ let tests =
         "configuration projections"
         [
             testCase "Compose uses the canonical digest-pinned PostgreSQL image" (fun () ->
+                let decoy =
+                    Path.Combine(
+                        Path.GetTempPath(),
+                        "claimcore-source-link-decoy-" + Guid.NewGuid().ToString("N")
+                    )
+
+                Expect.isNone
+                    (RepositoryRoot.tryFindFrom decoy)
+                    "A source-path-like location without repository markers is not a root"
+
+                Expect.equal
+                    (RepositoryRoot.tryFindFrom AppContext.BaseDirectory)
+                    (Some root)
+                    "The test binary locates the checkout without embedded source paths"
+
                 Expect.equal
                     (composeImage ())
                     (baselineImage ())

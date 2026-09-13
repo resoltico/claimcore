@@ -2,6 +2,7 @@ module ClaimCore.AcceptanceTests.Configuration
 
 open System
 open System.IO
+open ClaimCore.TestSupport
 
 [<NoEquality; NoComparison>]
 type Inputs =
@@ -48,8 +49,7 @@ let private regularFile (name: string) (raw: string) =
 
     path
 
-let private repositoryRoot =
-    Path.GetFullPath(Path.Combine(__SOURCE_DIRECTORY__, "../.."))
+let private repositoryRoot = RepositoryRoot.find ()
 
 let load () =
     let cliDirectory =

@@ -58,9 +58,11 @@ jobs:
         run: |
           Set-StrictMode -Version Latest
           $docs = Join-Path $PWD "artifacts/bin/ClaimCore.Docs/release/ClaimCore.Docs.dll"
-          & dotnet $docs verify-publish-manifest publish-cli $env:CLAIMCORE_ACCEPTANCE_CLI_DIR $env:CLAIMCORE_ACCEPTANCE_CLI_MANIFEST
+          & dotnet $docs verify-publish-manifest publish-cli `
+            artifacts/publish-input/cli artifacts/publish-input/manifests/publish-cli.json
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          & dotnet $docs verify-publish-manifest publish-database $env:CLAIMCORE_ACCEPTANCE_DATABASE_DIR $env:CLAIMCORE_ACCEPTANCE_DATABASE_MANIFEST
+          & dotnet $docs verify-publish-manifest publish-database `
+            artifacts/publish-input/database artifacts/publish-input/manifests/publish-database.json
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $results = Join-Path $PWD "artifacts/test-results/acceptance-linux"
           if (Test-Path -LiteralPath $results) { throw "The test result directory must start absent." }

@@ -6,6 +6,7 @@ open ClaimCore.Application
 open ClaimCore.Cli
 open ClaimCore.Domain
 open ClaimCore.RecordFormat
+open ClaimCore.TestSupport
 open ClaimCore.Tests.Fixtures
 
 let private names =
@@ -18,8 +19,7 @@ let private names =
         "06-correct-payment-record.json"
     ]
 
-let private exampleDirectory =
-    Path.GetFullPath(Path.Combine(__SOURCE_DIRECTORY__, "../../examples"))
+let private exampleDirectory = Path.Combine(RepositoryRoot.find (), "examples")
 
 let private request filename =
     let bytes = File.ReadAllBytes(Path.Combine(exampleDirectory, filename))

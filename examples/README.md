@@ -72,7 +72,7 @@ an insurance coverage rule.
 ## CC-CLI-001 — Published synthetic walkthrough
 
 The published CLI must accept this exact six-invocation CLI-v3 sequence through `call` against an
-isolated database migrated through 004. The resulting current view is version 6 and `OPENED`, retains
+isolated database migrated through 005. The resulting current view is version 6 and `OPENED`, retains
 the decision, clears the payment date, exposes exactly the thirteen documented business fields, and
 has exactly six ordered accepted-history entries. Exact replay of the final invocation returns its
 retained receipt and creates no seventh entry.

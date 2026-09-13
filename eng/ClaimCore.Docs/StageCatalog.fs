@@ -66,6 +66,10 @@ module StageCatalog =
             gate "coverage-floor-negative-controls" [ "pwsh"; "Test-MergedCoveragePolicy.ps1" ]
             gate "property-seed-negative-controls" [ "pwsh"; "Test-PropertySeedPolicy.ps1" ]
             gate "test-diagnostic-negative-controls" [ "pwsh"; "Test-TestDiagnosticPrivacy.ps1" ]
+            gate "convergence-assurance" [ "pwsh"; "Check-ConvergenceAssurance.ps1" ]
+            gate
+                "convergence-assurance-negative-controls"
+                [ "pwsh"; "Test-ConvergenceAssurancePolicy.ps1" ]
         ]
 
     let private dependencies =

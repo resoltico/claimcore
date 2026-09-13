@@ -6,6 +6,7 @@
     <EnableExpectoTestingPlatformIntegration>true</EnableExpectoTestingPlatformIntegration>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../RepositoryRoot.fs" Link="RepositoryRoot.fs" />
     <Compile Include="Configuration.fs" />
     <Compile Include="PublishManifest.fs" />
     <Compile Include="ProcessRunner.fs" />
@@ -14,6 +15,7 @@
     <Compile Include="BoundaryTests.fs" />
     <Compile Include="EndpointModeParityTests.fs" />
     <Compile Include="PrivateFileTests.fs" />
+    <Compile Include="PublishedExampleWalkthrough.fs" />
     <Compile Include="LifecycleTests.fs" />
     <Compile Include="Suite.fs" />
   </ItemGroup>

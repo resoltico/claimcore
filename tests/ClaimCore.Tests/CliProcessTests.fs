@@ -6,6 +6,7 @@ open System.IO
 open System.Text.Json
 open Expecto
 open ClaimCore.Application
+open ClaimCore.TestSupport
 
 type ProcessResult =
     {
@@ -14,7 +15,7 @@ type ProcessResult =
         StandardError: string
     }
 
-let private root = Path.GetFullPath(Path.Combine(__SOURCE_DIRECTORY__, "../.."))
+let private root = RepositoryRoot.find ()
 
 let private removeCoverageEnvironment (startInfo: ProcessStartInfo) =
     startInfo.Environment.Keys

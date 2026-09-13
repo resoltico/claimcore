@@ -6,6 +6,7 @@
     <EnableExpectoTestingPlatformIntegration>true</EnableExpectoTestingPlatformIntegration>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../RepositoryRoot.fs" Link="RepositoryRoot.fs" />
     <Compile Include="PropertyHarness.fs" />
     <Compile Include="PropertyHarnessTests.fs" />
     <Compile Include="Fixtures.fs" />

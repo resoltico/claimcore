@@ -9,10 +9,10 @@ open System.Xml.Linq
 open Expecto
 open ClaimCore.Application
 open ClaimCore.Cli
+open ClaimCore.TestSupport
 
 let private sourceProperty name =
-    let file =
-        Path.GetFullPath(Path.Combine(__SOURCE_DIRECTORY__, "../../Directory.Build.props"))
+    let file = Path.Combine(RepositoryRoot.find (), "Directory.Build.props")
 
     XDocument.Load(file).Descendants(XName.Get(name))
     |> Seq.exactlyOne
@@ -69,9 +69,6 @@ let private consumerIdentityTests =
                     BuildIdentity.requireCompatibleAssembly (Assembly.GetExecutingAssembly()))
         ]
 
-let private repositoryRoot () =
-    Path.GetFullPath(Path.Combine(__SOURCE_DIRECTORY__, "../.."))
-
 let private productProjectFiles repository =
     let extensions = set [ ".fsproj"; ".props"; ".targets" ]
     let generated = set [ "bin"; "obj" ]
@@ -127,7 +124,7 @@ let private versionOwnershipTests =
         "version ownership"
         [
             testCase "only Directory.Build.props authors product version properties" (fun () ->
-                let repository = repositoryRoot ()
+                let repository = RepositoryRoot.find ()
                 let declarations = versionDeclarations repository
                 Expect.isNonEmpty declarations "Version properties must exist"
 

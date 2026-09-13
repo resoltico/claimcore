@@ -8,7 +8,7 @@ open Expecto
 open Npgsql
 
 let private reference = "CC-ACCEPT-001"
-let private commandId number = $"10000000-0000-4000-8000-{number:D12}"
+let private commandId number = $"30000000-0000-4000-8000-{number:D12}"
 let private preparationId number = $"20000000-0000-4000-8000-{number:D12}"
 
 let private registration country claimant insurer amount =
@@ -229,6 +229,7 @@ let private lifecycle () =
     let record = privateRecord context envelope
     importArtifacts context envelope record
     Expect.equal (counts context) (1L, 10L) "CLI-v3 replay and recovery preserve history count"
+    PublishedExampleWalkthrough.run context
 
 let private rejectedRequestPreservesBusinessState () =
     let context = DatabaseFixture.current ()

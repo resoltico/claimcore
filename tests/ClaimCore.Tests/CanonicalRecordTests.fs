@@ -7,12 +7,11 @@ open Expecto
 open ClaimCore.Application
 open ClaimCore.Domain
 open ClaimCore.RecordFormat
+open ClaimCore.TestSupport
 open ClaimCore.Tests.Fixtures
 
 let private vectorPath =
-    Path.GetFullPath(
-        Path.Combine(__SOURCE_DIRECTORY__, "../fixtures/canonical-record-vectors.json")
-    )
+    Path.Combine(RepositoryRoot.find (), "tests/fixtures/canonical-record-vectors.json")
 
 let private text (value: JsonElement) (name: string) =
     value.GetProperty(name).GetString()

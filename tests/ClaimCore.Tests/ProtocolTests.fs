@@ -7,15 +7,14 @@ open System.Text.Json
 open Expecto
 open ClaimCore.Cli
 open ClaimCore.Contracts
+open ClaimCore.TestSupport
 
 let private bytes value = Encoding.UTF8.GetBytes(value: string)
 
 let private rawCorpusPath =
-    Path.GetFullPath(
-        Path.Combine(
-            __SOURCE_DIRECTORY__,
-            "../../web/src/generated/convergence/cli-v3.raw-decoder-corpus.json"
-        )
+    Path.Combine(
+        RepositoryRoot.find (),
+        "web/src/generated/convergence/cli-v3.raw-decoder-corpus.json"
     )
 
 let private parse text =

@@ -72,10 +72,10 @@
     {
       "contractId": "CC-CLI-001",
       "reviewerKind": "agent",
-      "reviewer": "Codex convergence documentation review",
-      "reviewedOn": "2026-09-12",
+      "reviewer": "Codex published CLI contract review",
+      "reviewedOn": "2026-09-13",
       "conclusion": "approved",
-      "reviewSubjectHash": "3862b530d5c2cbe824c3055505bb81b599e0643ec3fc70fdfa5d3b42d37fd125",
+      "reviewSubjectHash": "35d0dbb695564e9d8885869e7c1c838fc309b5c3ccd5fc3da716b75cdbfb6191",
       "wholeFiles": [
         "examples/01-open.json",
         "examples/02-decide.json",
@@ -86,6 +86,7 @@
         "src/ClaimCore.Cli/InvocationDecoder.fs",
         "src/ClaimCore.Cli/EndpointDispatch.fs",
         "tests/ClaimCore.AcceptanceTests/LifecycleTests.fs",
+        "tests/ClaimCore.AcceptanceTests/PublishedExampleWalkthrough.fs",
         "tests/ClaimCore.AcceptanceTests/EndpointModeParityTests.fs",
         "tests/ClaimCore.Tests/ExampleContractTests.fs"
       ],

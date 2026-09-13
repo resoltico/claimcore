@@ -4,15 +4,13 @@ open System
 open System.IO
 open System.Text.RegularExpressions
 open Expecto
+open ClaimCore.TestSupport
 
 let private assemblyDirectory () =
     CliProcessTests.runDotnet
         [
             "msbuild"
-            Path.Combine(
-                Path.GetFullPath(Path.Combine(__SOURCE_DIRECTORY__, "../..")),
-                "src/ClaimCore.Cli/ClaimCore.Cli.fsproj"
-            )
+            Path.Combine(RepositoryRoot.find (), "src/ClaimCore.Cli/ClaimCore.Cli.fsproj")
             "-nologo"
             "-verbosity:quiet"
             "-property:Configuration=Release"

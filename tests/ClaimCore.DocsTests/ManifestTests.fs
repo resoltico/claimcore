@@ -121,6 +121,8 @@ let private stageRegistryTests =
                 [
                     "restore-dotnet"
                     "fsharplint"
+                    "convergence-assurance"
+                    "convergence-assurance-negative-controls"
                     "npm-audit"
                     "docs-write-idempotence"
                     "migration-upgrade-qualification"
@@ -129,6 +131,17 @@ let private stageRegistryTests =
                     "browser-webkit"
                 ]
                 |> List.iter (fun id -> Expect.contains ids id "Conjunctive stage")
+
+                Expect.equal
+                    (Stages.tryFind "convergence-assurance" |> Option.get).Procedure
+                    [ "pwsh"; "Check-ConvergenceAssurance.ps1" ]
+                    "Convergence assurance procedure"
+
+                Expect.equal
+                    (Stages.tryFind "convergence-assurance-negative-controls" |> Option.get)
+                        .Procedure
+                    [ "pwsh"; "Test-ConvergenceAssurancePolicy.ps1" ]
+                    "Convergence negative-control procedure"
 
             testCase "portable publication records still require Linux CI evidence"
             <| fun _ ->
