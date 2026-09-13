@@ -73,7 +73,8 @@ privacy-safe issue routing are in [SUPPORT.md](SUPPORT.md).
 ## Contributing and license
 
 Contributor rules are in [CONTRIBUTING.md](CONTRIBUTING.md). ClaimCore is open-source software under
-the [Apache License 2.0](LICENSE); copyright is held by the respective ClaimCore contributors.
+the [Apache License 2.0](LICENSE). The original work is copyright © 2026 Ervins Strauhmanis;
+contributors retain copyright in their own contributions.
 
 CI-qualified publish trees for CLI, Database, and Web contain the project license, a .NET CycloneDX
 SBOM, and full-text third-party notices. The qualified Web tree also carries its manifest-bound locked

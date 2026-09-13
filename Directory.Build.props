@@ -1,8 +1,8 @@
 <Project>
   <PropertyGroup>
     <Product>ClaimCore</Product>
-    <Authors>ClaimCore contributors</Authors>
-    <Copyright>Copyright © 2026 ClaimCore contributors</Copyright>
+    <Authors>Ervins Strauhmanis</Authors>
+    <Copyright>Copyright © 2026 Ervins Strauhmanis</Copyright>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <Version>0.1.0</Version>
     <VersionPrefix>$([System.Text.RegularExpressions.Regex]::Match('$(Version)', '^[0-9]+\.[0-9]+\.[0-9]+').Value)</VersionPrefix>
