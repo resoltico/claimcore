@@ -28,14 +28,6 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Prepare isolated Docker credentials storage
-        shell: bash
-        run: |
-          set -euo pipefail
-          config="$RUNNER_TEMP/claimcore-postgres-docker-config"
-          mkdir --mode=0700 "$config"
-          echo "DOCKER_CONFIG=$config" >> "$GITHUB_ENV"
-
       - name: Register pinned arm64 emulation
         uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
         with:
@@ -105,6 +97,23 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Require default GHCR credentials before publication
+        shell: bash
+        run: |
+          set -euo pipefail
+          config="$HOME/.docker/config.json"
+          if [[ -f "$config" ]] && jq --exit-status '
+            .auths["ghcr.io"] |
+            if type == "object" then
+              ((.auth // .identitytoken // .registrytoken // "") | type == "string" and length > 0)
+            else false end
+          ' "$config" >/dev/null 2>&1; then
+            echo 'GHCR Docker credentials present: yes'
+          else
+            echo 'GHCR Docker credentials present: no' >&2
+            exit 1
+          fi
 
       - name: Require unused run-specific tags
         shell: bash
