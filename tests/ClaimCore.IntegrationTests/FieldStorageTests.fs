@@ -151,7 +151,7 @@ let private baselineTests =
 
                 Expect.equal
                     Baseline.containerImage
-                    "ghcr.io/resoltico/claimcore-postgres:18.6-trixie-p1-r34736053760-1@sha256:a5463882776f1b73df280242af9d8cc133d7111408c7dfaeb302df7a1acf933c"
+                    "ghcr.io/resoltico/claimcore-postgres:18.6-trixie-p2-r34736975281-1@sha256:ae84d4fd380ade930b6246340a39e2448786f5bcaad258ee1f2e62807a5f8c45"
                     "Digest-pinned multi-platform image")
             testCase "actual server is on the required baseline" (fun () ->
                 use connection = new NpgsqlConnection(appConnection ())
