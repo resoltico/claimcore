@@ -1,0 +1,48 @@
+# syntax=docker/dockerfile:1@sha256:ecfaec9ed6d810b56388c508f4121597bfbba70d41a6dfeee4d8cad5f295fc32
+# Debian package-only security patch over the exact official PostgreSQL 18.6 image.
+# Build with an empty context; no repository content or secret is needed.
+FROM postgres:18.6@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+
+RUN <<'PATCH_PACKAGES'
+set -eu
+
+# Temporarily replace the official mutable APT sources for this one install.
+# Restore both files byte-for-byte so later runtime updates remain possible.
+mv /etc/apt/sources.list.d/pgdg.list /etc/apt/sources.list.d/pgdg.list.disabled
+mv /etc/apt/sources.list.d/debian.sources /tmp/claimcore-debian.sources.original
+
+# APT verifies the snapshot Release signatures with Debian's shipped keyring.
+# The official runtime image has no CA certificates for HTTPS here, so HTTP
+# carries the archive bytes without weakening APT's Release authentication;
+# package integrity still follows the signed Release and its hashed indexes.
+# Check-Valid-Until is disabled only for the intentionally historical snapshots.
+cat > /etc/apt/sources.list.d/debian.sources <<'DEBIAN_SNAPSHOT'
+Types: deb
+URIs: http://snapshot.debian.org/archive/debian/20260913T022727Z/
+Suites: trixie trixie-updates
+Components: main
+Signed-By: /usr/share/keyrings/debian-archive-keyring.pgp
+Check-Valid-Until: no
+
+Types: deb
+URIs: http://snapshot.debian.org/archive/debian-security/20260913T022727Z/
+Suites: trixie-security
+Components: main
+Signed-By: /usr/share/keyrings/debian-archive-keyring.pgp
+Check-Valid-Until: no
+DEBIAN_SNAPSHOT
+
+apt-get -o APT::Update::Error-Mode=any update
+apt-get install -y --no-install-recommends --only-upgrade \
+  gzip=1.13-1+deb13u1 \
+  libpcre2-8-0=10.46-1~deb13u2 \
+  libperl5.40=5.40.1-6+deb13u1 \
+  perl=5.40.1-6+deb13u1 \
+  perl-base=5.40.1-6+deb13u1 \
+  perl-modules-5.40=5.40.1-6+deb13u1 \
+  libsqlite3-0=3.46.1-7+deb13u2
+
+mv /etc/apt/sources.list.d/pgdg.list.disabled /etc/apt/sources.list.d/pgdg.list
+mv /tmp/claimcore-debian.sources.original /etc/apt/sources.list.d/debian.sources
+rm -rf /var/lib/apt/lists/*
+PATCH_PACKAGES

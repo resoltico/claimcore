@@ -1,0 +1,285 @@
+name: Publish maintained PostgreSQL image
+
+on:
+  workflow_dispatch:
+
+# This is a manual maintainer publisher, not a PR or reusable workflow. A rerun gets a
+# new tag; consumers must pin the reported index digest in db/postgresql-baseline.json.
+concurrency:
+  group: claimcore-postgres-publisher
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: ${{ github.event_name == 'workflow_dispatch' && github.repository == 'resoltico/claimcore' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    env:
+      IMAGE: ghcr.io/resoltico/claimcore-postgres
+      TRIVY: aquasec/trivy:0.74.0@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969
+    steps:
+      - name: Check out the guarded main revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Prepare isolated Docker credentials storage
+        shell: bash
+        run: |
+          set -euo pipefail
+          config="$RUNNER_TEMP/claimcore-postgres-docker-config"
+          mkdir --mode=0700 "$config"
+          echo "DOCKER_CONFIG=$config" >> "$GITHUB_ENV"
+
+      - name: Register pinned arm64 emulation
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
+        with:
+          image: tonistiigi/binfmt:qemu-v10.2.3-68@sha256:400a4873b838d1b89194d982c45e5fb3cda4593fbfd7e08a02e76b03b21166f0
+          platforms: arm64
+          cache-image: false
+
+      - name: Start pinned BuildKit
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+        with:
+          version: v0.34.0
+          driver: docker-container
+          driver-opts: |
+            image=moby/buildkit:buildx-stable-1@sha256:28a898719c18a33f4e8000685287fa36fd0dd9560c6440227d3a732d79bb41d8
+          cache-binary: false
+
+      - name: Build both architectures exactly once into the local daemon
+        shell: bash
+        run: |
+          set -euo pipefail
+          context="$RUNNER_TEMP/claimcore-postgres-empty-context"
+          mkdir --mode=0700 "$context"
+          test -z "$(find "$context" -mindepth 1 -print -quit)"
+          for arch in amd64 arm64; do
+            docker buildx build \
+              --platform "linux/$arch" \
+              --file "$GITHUB_WORKSPACE/db/Dockerfile.postgres-patched" \
+              --tag "claimcore-postgres-local:$arch" \
+              --label org.opencontainers.image.source=https://github.com/resoltico/claimcore \
+              --pull --no-cache --provenance=false --sbom=false --load \
+              "$context"
+            test "$(docker image inspect --format '{{.Os}}/{{.Architecture}}' "claimcore-postgres-local:$arch")" = "linux/$arch"
+          done
+
+      - name: Validate both local images and generate per-arch SBOMs before any push
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir --mode=0700 "$RUNNER_TEMP/claimcore-postgres-trivy-cache"
+          for arch in amd64 arm64; do
+            local_image="claimcore-postgres-local:$arch"
+            bash eng/Test-PostgresImageRecipe.sh "$local_image" "linux/$arch"
+            bash eng/Test-PostgresImageVolumeUpgrade.sh "$local_image" "linux/$arch"
+            docker run --rm \
+              --volume /var/run/docker.sock:/var/run/docker.sock \
+              --volume "$RUNNER_TEMP/claimcore-postgres-trivy-cache:/root/.cache/trivy" \
+              --volume "$RUNNER_TEMP:/output" \
+              "$TRIVY" image --image-src docker --format cyclonedx \
+              --output "/output/claimcore-postgres-$arch.cdx.json" \
+              --no-progress "$local_image"
+            docker run --rm \
+              --volume /var/run/docker.sock:/var/run/docker.sock \
+              --volume "$RUNNER_TEMP/claimcore-postgres-trivy-cache:/root/.cache/trivy" \
+              --volume "$GITHUB_WORKSPACE/container-vulnerability-exceptions.yaml:/claimcore-exceptions.yaml:ro" \
+              "$TRIVY" image --image-src docker --scanners vuln \
+              --severity HIGH,CRITICAL --ignore-unfixed \
+              --ignorefile /claimcore-exceptions.yaml --show-suppressed \
+              --exit-code 1 --no-progress "$local_image"
+            test -s "$RUNNER_TEMP/claimcore-postgres-$arch.cdx.json"
+          done
+
+      # Do not expose a package-write credential while a verifier or local Trivy
+      # container has access to the Docker socket.
+      - name: Log in to GHCR
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Require unused run-specific tags
+        shell: bash
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_RUN_ID" =~ ^[0-9]+$ && "$GITHUB_RUN_ATTEMPT" =~ ^[0-9]+$ ]]
+          version="18.6-trixie-p1-r${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          registry_token="$(curl --fail --silent --show-error --get \
+            --netrc-file <(printf 'machine ghcr.io login %s password %s\n' "$GITHUB_ACTOR" "$GHCR_TOKEN") \
+            --data-urlencode 'service=ghcr.io' \
+            --data-urlencode 'scope=repository:resoltico/claimcore-postgres:pull,push' \
+            https://ghcr.io/token | jq --exit-status --raw-output '.token | select(type == "string" and length > 0)')"
+          for tag in "$version" "${version}-amd64" "${version}-arm64"; do
+            status="$(curl --silent --show-error --head --output /dev/null \
+              --write-out '%{http_code}' \
+              --config <(printf 'header = "Authorization: Bearer %s"\n' "$registry_token") \
+              --header 'Accept: application/vnd.oci.image.index.v1+json, application/vnd.oci.image.manifest.v1+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.docker.distribution.manifest.v2+json' \
+              "https://ghcr.io/v2/resoltico/claimcore-postgres/manifests/${tag}")"
+            case "$status" in
+              404) ;;
+              200) echo "Refusing to reuse an existing image tag: $tag" >&2; exit 1 ;;
+              *) echo "GHCR tag admission failed with HTTP $status." >&2; exit 1 ;;
+            esac
+          done
+          echo "version=$version" >> "$GITHUB_ENV"
+
+      # Only the run-specific child tags can become visible here. Both local images have
+      # already passed the recipe/startup gate and the exact CI Trivy vulnerability gate.
+      - name: Push the verified child images and scan the remote digests
+        id: children
+        shell: bash
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          scan_config=''
+          trap 'if [[ -n "$scan_config" ]]; then rm -f -- "$scan_config"; fi' EXIT
+          for arch in amd64 arm64; do
+            local_image="claimcore-postgres-local:$arch"
+            child_tag="$IMAGE:$version-$arch"
+            docker image tag "$local_image" "$child_tag"
+            docker image push "$child_tag" >/dev/null
+            manifest="$(docker buildx imagetools inspect --raw "$child_tag")"
+            jq --exit-status --arg config "$(docker image inspect --format '{{.Id}}' "$local_image")" \
+              '.schemaVersion == 2 and (has("manifests") | not) and .config.digest == $config' \
+              <<< "$manifest" >/dev/null
+            digest="$(docker buildx imagetools inspect "$child_tag" --format '{{.Manifest.Digest}}')"
+            [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+            config="$(docker buildx imagetools inspect "$IMAGE@$digest" --format '{{json .Image}}')"
+            jq --exit-status --arg arch "$arch" '.os == "linux" and .architecture == $arch' \
+              <<< "$config" >/dev/null
+            # GHCR packages are private on first publish. Give the remote scanner
+            # only a short-lived token requested for this repository's pull scope.
+            pull_token="$(curl --fail --silent --show-error --get \
+              --netrc-file <(printf 'machine ghcr.io login %s password %s\n' "$GITHUB_ACTOR" "$GHCR_TOKEN") \
+              --data-urlencode 'service=ghcr.io' \
+              --data-urlencode 'scope=repository:resoltico/claimcore-postgres:pull' \
+              https://ghcr.io/token | jq --exit-status --raw-output '.token | select(type == "string" and length > 0)')"
+            scan_config="$(mktemp "$RUNNER_TEMP/claimcore-postgres-trivy-pull.XXXXXXXX.json")"
+            printf '%s' "$pull_token" | jq --raw-input --slurp '{registry: {token: .}}' > "$scan_config"
+            unset pull_token
+            docker run --rm \
+              --volume "$scan_config:/claimcore-trivy-pull.json:ro" \
+              --volume "$RUNNER_TEMP/claimcore-postgres-trivy-cache:/root/.cache/trivy" \
+              --volume "$GITHUB_WORKSPACE/container-vulnerability-exceptions.yaml:/claimcore-exceptions.yaml:ro" \
+              "$TRIVY" image --config /claimcore-trivy-pull.json \
+              --image-src remote --skip-db-update --scanners vuln \
+              --severity HIGH,CRITICAL --ignore-unfixed \
+              --ignorefile /claimcore-exceptions.yaml --show-suppressed \
+              --exit-code 1 --no-progress "$IMAGE@$digest"
+            rm -- "$scan_config"
+            scan_config=''
+            echo "${arch}_digest=$digest" >> "$GITHUB_OUTPUT"
+          done
+
+      - name: Create and verify the two-platform index from scanned child digests
+        id: index
+        shell: bash
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AMD64_DIGEST: ${{ steps.children.outputs.amd64_digest }}
+          ARM64_DIGEST: ${{ steps.children.outputs.arm64_digest }}
+        run: |
+          set -euo pipefail
+          [[ "$AMD64_DIGEST" =~ ^sha256:[0-9a-f]{64}$ && "$ARM64_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          test "$AMD64_DIGEST" != "$ARM64_DIGEST"
+          registry_token="$(curl --fail --silent --show-error --get \
+            --netrc-file <(printf 'machine ghcr.io login %s password %s\n' "$GITHUB_ACTOR" "$GHCR_TOKEN") \
+            --data-urlencode 'service=ghcr.io' \
+            --data-urlencode 'scope=repository:resoltico/claimcore-postgres:pull,push' \
+            https://ghcr.io/token | jq --exit-status --raw-output '.token | select(type == "string" and length > 0)')"
+          status="$(curl --silent --show-error --head --output /dev/null \
+            --write-out '%{http_code}' \
+            --config <(printf 'header = "Authorization: Bearer %s"\n' "$registry_token") \
+            --header 'Accept: application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.list.v2+json' \
+            "https://ghcr.io/v2/resoltico/claimcore-postgres/manifests/${version}")"
+          test "$status" = 404 || { echo "Refusing to create an index on a non-absent tag (HTTP $status)." >&2; exit 1; }
+          docker buildx imagetools create \
+            --tag "$IMAGE:$version" \
+            "$IMAGE@$AMD64_DIGEST" "$IMAGE@$ARM64_DIGEST"
+          index_digest="$(docker buildx imagetools inspect "$IMAGE:$version" --format '{{.Manifest.Digest}}')"
+          [[ "$index_digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+          index="$(docker buildx imagetools inspect --raw "$IMAGE@$index_digest")"
+          jq --exit-status --arg amd64 "$AMD64_DIGEST" --arg arm64 "$ARM64_DIGEST" '
+            .schemaVersion == 2 and (.manifests | length == 2) and
+            ([.manifests[] | select(.platform.os == "linux" and .platform.architecture == "amd64" and .digest == $amd64)] | length == 1) and
+            ([.manifests[] | select(.platform.os == "linux" and .platform.architecture == "arm64" and .digest == $arm64)] | length == 1)
+          ' <<< "$index" >/dev/null
+          test "$(docker buildx imagetools inspect "$IMAGE:$version" --format '{{.Manifest.Digest}}')" = "$index_digest"
+          echo "digest=$index_digest" >> "$GITHUB_OUTPUT"
+
+      - name: Attest the amd64 SBOM to its exact child digest
+        uses: actions/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d # v4.2.1
+        with:
+          subject-name: ghcr.io/resoltico/claimcore-postgres
+          subject-digest: ${{ steps.children.outputs.amd64_digest }}
+          sbom-path: ${{ runner.temp }}/claimcore-postgres-amd64.cdx.json
+          push-to-registry: true
+          create-storage-record: false
+          show-summary: false
+
+      - name: Attest the arm64 SBOM to its exact child digest
+        uses: actions/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d # v4.2.1
+        with:
+          subject-name: ghcr.io/resoltico/claimcore-postgres
+          subject-digest: ${{ steps.children.outputs.arm64_digest }}
+          sbom-path: ${{ runner.temp }}/claimcore-postgres-arm64.cdx.json
+          push-to-registry: true
+          create-storage-record: false
+          show-summary: false
+
+      - name: Attest provenance to the final index digest
+        uses: actions/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d # v4.2.1
+        with:
+          subject-name: ghcr.io/resoltico/claimcore-postgres
+          subject-digest: ${{ steps.index.outputs.digest }}
+          push-to-registry: true
+          create-storage-record: false
+          show-summary: false
+
+      - name: Report digest-only publication evidence
+        shell: bash
+        env:
+          INDEX_DIGEST: ${{ steps.index.outputs.digest }}
+          AMD64_DIGEST: ${{ steps.children.outputs.amd64_digest }}
+          ARM64_DIGEST: ${{ steps.children.outputs.arm64_digest }}
+        run: |
+          set -euo pipefail
+          for digest in "$INDEX_DIGEST" "$AMD64_DIGEST" "$ARM64_DIGEST"; do
+            [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+          done
+          test "$(docker buildx imagetools inspect "$IMAGE:$version" --format '{{.Manifest.Digest}}')" = "$INDEX_DIGEST"
+          [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          base_image='postgres:18.6@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280'
+          snapshot='20260913T022727Z'
+          test "$(sed -n 's/^FROM //p' db/Dockerfile.postgres-patched)" = "$base_image"
+          test "$(grep -Fc "http://snapshot.debian.org/archive/debian/$snapshot/" db/Dockerfile.postgres-patched)" -eq 1
+          test "$(grep -Fc "http://snapshot.debian.org/archive/debian-security/$snapshot/" db/Dockerfile.postgres-patched)" -eq 1
+          recipe_sha="$(sha256sum db/Dockerfile.postgres-patched | cut -d ' ' -f 1)"
+          exceptions_sha="$(sha256sum container-vulnerability-exceptions.yaml | cut -d ' ' -f 1)"
+          {
+            echo '### Maintained PostgreSQL image'
+            echo
+            echo "Final index: \`$IMAGE:$version@$INDEX_DIGEST\`"
+            echo "linux/amd64 child: \`$IMAGE@$AMD64_DIGEST\`"
+            echo "linux/arm64 child: \`$IMAGE@$ARM64_DIGEST\`"
+            echo
+            echo "Source: \`$GITHUB_REPOSITORY@$GITHUB_SHA\`"
+            echo "Base: \`$base_image\`"
+            echo "Signed Debian snapshot: \`$snapshot\` (main and security)"
+            echo "Dockerfile SHA-256: \`$recipe_sha\`"
+            echo "Vulnerability exceptions SHA-256: \`$exceptions_sha\`"
+            echo
+            echo 'The children passed local recipe/startup, same-volume upgrade, and Trivy checks before push, then remote digest scans. The index has exactly these two runnable platforms. Per-arch SBOMs and index provenance were attested in GHCR.'
+          } >> "$GITHUB_STEP_SUMMARY"
