@@ -19,10 +19,14 @@ export default class SanitizedVitestReporter {
   onTestCaseResult(testCase) {
     const result = testCase.result();
     const state = result.state;
+    const duration = testCase.diagnostic()?.duration ?? 0;
+    if (!Number.isFinite(duration) || duration < 0 || duration > 2_147_483_647) {
+      throw new Error("Vitest reported an invalid test duration.");
+    }
     this.tests.push({
       id: testCase.fullName,
       outcome: state,
-      durationMs: testCase.diagnostic()?.duration ?? 0,
+      durationMs: Math.ceil(duration),
     });
     if (state === "passed") this.totals.passed += 1;
     else if (state === "failed") this.totals.failed += 1;

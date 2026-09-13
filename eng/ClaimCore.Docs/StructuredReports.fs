@@ -89,26 +89,25 @@ module StructuredReports =
                         | _, _, Error message -> Error message))
                 |> Seq.toList
 
-            match parsed |> List.tryPick Result.toOption with
-            | Some _ ->
-                let failures =
-                    parsed
-                    |> List.choose (function
-                        | Error error -> Some error
-                        | _ -> None)
+            let failures =
+                parsed
+                |> List.choose (function
+                    | Error error -> Some error
+                    | _ -> None)
 
-                if failures.IsEmpty then
-                    let ids = parsed |> List.choose Result.toOption
+            if not failures.IsEmpty then
+                Error(List.head failures)
+            else
+                let ids = parsed |> List.choose Result.toOption
 
-                    if ids.Length <> (ids |> Set.ofList |> Set.count) then
-                        Error "Structured report test identities are duplicated."
-                    elif Set.ofList ids <> expected then
-                        Error "Structured report test identities differ from the compiled registry."
-                    else
-                        Ok()
+                if ids.IsEmpty then
+                    Error "Structured report contains no passing tests."
+                elif ids.Length <> (ids |> Set.ofList |> Set.count) then
+                    Error "Structured report test identities are duplicated."
+                elif Set.ofList ids <> expected then
+                    Error "Structured report test identities differ from the compiled registry."
                 else
-                    Error(List.head failures)
-            | None -> Error "Structured report contains no passing tests."
+                    Ok()
 
     let private totals expectedPassed (failureNames: string list) (element: JsonElement) =
         exactProperties (Set.ofList ("passed" :: failureNames)) element

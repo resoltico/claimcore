@@ -1,6 +1,7 @@
 module ClaimCore.DocsTests.FrontendReportInventoryTests
 
 open System.Text.Json
+open System.Text
 open Expecto
 open ClaimCore.Docs
 
@@ -67,7 +68,16 @@ let private vitestInventory =
             (StructuredReports.validateVitestBytes (
                 vitestBytes actual (names |> Set.remove (Set.minElement names))
             ))
-            "A missing live identity cannot pass")
+            "A missing live identity cannot pass"
+
+        let report = vitestBytes actual names |> Encoding.UTF8.GetString
+        let fractional = report.Replace("\"durationMs\":0", "\"durationMs\":0.5")
+        Expect.notEqual fractional report "The malformed-duration fixture must change the report"
+
+        Expect.equal
+            (StructuredReports.validateVitestBytes (Encoding.UTF8.GetBytes fractional))
+            (Error "Structured report counter 'durationMs' is invalid.")
+            "Fractional duration reports must fail with their actual reason")
 
 let private browserInventory =
     testCase "Playwright report requires the exact current catalog count and identities" (fun () ->
