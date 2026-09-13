@@ -77,8 +77,11 @@ jobs:
             version="$(dotnet msbuild "$project" -nologo -verbosity:quiet -property:Configuration=Release -getProperty:Version)"
             test -n "$version" || return 1
             started="$(date -u +%Y-%m-%dT%H:%M:%S.0000000+00:00)"
-            dotnet publish "$project" --configuration Release --no-restore --output "$output" -p:UseAppHost=false
-            status=$?
+            if dotnet publish "$project" --configuration Release --no-restore --output "$output" -p:UseAppHost=false; then
+              status=0
+            else
+              status=$?
+            fi
             if [[ "$status" -eq 0 ]]; then
               dotnet tool run dotnet-CycloneDX -- "$project" --exclude-dev --disable-package-restore \
                 --configuration Release --output "$output" --filename "$product.cdx.json" \
@@ -98,8 +101,11 @@ jobs:
             if [[ ! -d "$output" ]]; then mkdir -p "$output"; fi
             outcome=failure
             if [[ "$status" -eq 0 ]]; then outcome=success; fi
-            dotnet "$docs" stage-manifest "$stage" "${{ github.run_id }}" "${{ github.run_attempt }}" "$outcome" "$started" "$finished" "$output"
-            manifest_status=$?
+            if dotnet "$docs" stage-manifest "$stage" "${{ github.run_id }}" "${{ github.run_attempt }}" "$outcome" "$started" "$finished" "$output"; then
+              manifest_status=0
+            else
+              manifest_status=$?
+            fi
             if [[ "$status" -ne 0 || "$manifest_status" -ne 0 ]]; then overall=1; fi
           }
           publish_stage publish-cli src/ClaimCore.Cli/ClaimCore.Cli.fsproj artifacts/publish/cli ClaimCore.Cli

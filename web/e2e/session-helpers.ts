@@ -122,8 +122,14 @@ export const login = async (page: Page): Promise<void> => {
 };
 
 export const logout = async (page: Page): Promise<void> => {
+  const responseEvent = page.waitForResponse(
+    (response) => new URL(response.url()).pathname === "/api/v2/session/logout",
+  );
   await page.getByRole("button", { name: "Sign out" }).click();
+  const response = await responseEvent;
+  expect(response.status()).toBe(200);
   await expect(page.getByRole("heading", { name: "ClaimCore" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
   const reply = await browserRequest(page, "/api/v2/session");
   if (!isWebV2Response("session", reply.payload)) throw new Error("Invalid logout response.");
   expect(reply.payload.outcome.data.authenticated).toBe(false);

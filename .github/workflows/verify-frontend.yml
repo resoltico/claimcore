@@ -55,14 +55,20 @@ jobs:
             mkdir -p "$output"
             log="$RUNNER_TEMP/claimcore-$stage.log"
             started="$(date -u +%Y-%m-%dT%H:%M:%S.0000000+00:00)"
-            "$@" >"$log" 2>&1
-            status=$?
+            if "$@" >"$log" 2>&1; then
+              status=0
+            else
+              status=$?
+            fi
             finished="$(date -u +%Y-%m-%dT%H:%M:%S.0000000+00:00)"
             outcome=failure
             if [[ "$status" -eq 0 ]]; then outcome=success; fi
             printf 'Stage %s: %s.\n' "$stage" "$outcome"
-            dotnet "$docs" stage-manifest "$stage" "${{ github.run_id }}" "${{ github.run_attempt }}" "$outcome" "$started" "$finished" "$output"
-            manifest_status=$?
+            if dotnet "$docs" stage-manifest "$stage" "${{ github.run_id }}" "${{ github.run_attempt }}" "$outcome" "$started" "$finished" "$output"; then
+              manifest_status=0
+            else
+              manifest_status=$?
+            fi
             if [[ "$status" -ne 0 || "$manifest_status" -ne 0 ]]; then overall=1; fi
           }
           run_stage restore-frontend artifacts/stages/restore-frontend npm --prefix web ci
