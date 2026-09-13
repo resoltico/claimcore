@@ -73,9 +73,14 @@ jobs:
           dotnet tool run coverlet -- artifacts/publish-input/web \
             --target bash \
             --targetargs "eng/Run-PublishedWebE2E.sh artifacts/publish-input/web artifacts/publish-input/database $ENGINE" \
-            --include '[ClaimCore.Web]*' --format cobertura \
+            --include '[ClaimCore.Web]*' --exclude-assemblies-without-sources None --format cobertura \
             --output "artifacts/browser/$ENGINE.coverage.cobertura.e2e.xml" --verbosity minimal
           status=$?
+          if [[ "$status" -eq 0 ]]; then
+            pwsh -NoProfile -Command "Import-Module ./eng/CoverageInputPolicy.psm1; Assert-ClaimCoreBrowserCoverage 'artifacts/browser/$ENGINE.coverage.cobertura.e2e.xml'"
+            coverage_status=$?
+            if [[ "$coverage_status" -ne 0 ]]; then status=$coverage_status; fi
+          fi
           dotnet artifacts/bin/ClaimCore.Docs/release/ClaimCore.Docs.dll verify-publish-manifest \
             publish-web artifacts/publish-input/web \
             artifacts/publish-input/manifests/publish-web.json

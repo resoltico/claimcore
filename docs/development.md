@@ -257,6 +257,8 @@ Frontend unit tests enforce their configured coverage floors. The CI unit, integ
 jobs emit independent .NET Cobertura inputs; the coverage job first validates that exact input set,
 then merges it and enforces repository and Web-specific line and branch floors. It cannot be replaced
 by rerunning one convenient test family after the fact.
+Each published-browser input must contain measured `ClaimCore.Web` production branches; a successful
+browser lifecycle with an empty instrumentation report is not coverage evidence.
 
 The same merge/floor procedure runs locally and in CI after all six independent Cobertura inputs are
 available. Choose a new ignored output directory; the script refuses to overwrite an existing one:
