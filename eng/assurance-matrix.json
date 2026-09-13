@@ -4,6 +4,84 @@
   "baselineSha256": "30b14fab0c28bdb6c3a3a1d231e8d55ab89fd2a475fc8c4fd2a3d6776c6311c5",
   "entries": [
     {
+      "dimensions": [
+        "core",
+        "webHost"
+      ],
+      "id": "assurance-architecture:fsharp-inspection",
+      "subject": "Positive and deliberately violating F# Debug fixtures qualify dependency and member-call inspection, while absent, duplicate and empty required inputs fail closed.",
+      "tests": [
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Async accepts pure counterpart",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Async detects forbidden dependency",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Clock detects platform effect",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Clock permits value-only use",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Closure accepts pure counterpart",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Closure detects forbidden dependency",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Function accepts pure counterpart",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Function detects forbidden dependency",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Generic accepts pure counterpart",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Generic detects forbidden dependency",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Interface accepts pure counterpart",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Interface detects forbidden dependency",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Io detects platform effect",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Io permits value-only use",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Nested accepts pure counterpart",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Nested detects forbidden dependency",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Sequence accepts pure counterpart",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Sequence detects forbidden dependency",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Signature accepts pure counterpart",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Signature detects forbidden dependency",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Task accepts pure counterpart",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Task detects forbidden dependency",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Union accepts pure counterpart",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Union detects forbidden dependency",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.duplicate inputs are refused",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.empty input set is refused",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.empty required selector is refused",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.member rule detects only forbidden method",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.member rule permits other method on same type",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.missing input fails before loading"
+      ]
+    },
+    {
+      "dimensions": [
+        "documentation"
+      ],
+      "id": "assurance-architecture:historical-registration",
+      "subject": "Adding an explicitly registered live test producer preserves every immutable historical source identity; missing or changed historical producers remain rejected.",
+      "tests": [
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.immutable source registrations.historical kind and inventory identity cannot change",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.immutable source registrations.new live producer does not rewrite historical registration",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.immutable source registrations.new producer cannot replace a missing historical producer"
+      ]
+    },
+    {
+      "dimensions": [
+        "core",
+        "webHost"
+      ],
+      "id": "assurance-architecture:product-ownership",
+      "subject": "Selection-qualified compiled rules cover all current product assemblies, preserve the explicitly transitional native CLI graph, and restrict ambient effects, runtime composition and domain-decision ownership.",
+      "tests": [
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.Application respects owned component dependencies",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.Cli respects owned component dependencies",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.Contracts does not consult ambient clock or host IO",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.Contracts respects owned component dependencies",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.Database respects owned component dependencies",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.Domain does not consult ambient clock or host IO",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.Domain respects owned component dependencies",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.HostSecurity respects owned component dependencies",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.Postgres respects owned component dependencies",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.RecordFormat does not consult ambient clock or host IO",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.RecordFormat respects owned component dependencies",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.Web respects owned component dependencies",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.all production roots are classified",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.endpoint helpers cannot reach runtime composition",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.persistence cannot call the domain decision directly",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.production assemblies do not depend on test tooling"
+      ]
+    },
+    {
       "id": "assurance-browser:accessibility",
       "dimensions": [
         "webGui",

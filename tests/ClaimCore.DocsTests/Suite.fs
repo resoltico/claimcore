@@ -13,4 +13,5 @@ let tests =
             EvidenceTests.tests
             FrontendReportInventoryTests.tests
             ReviewTests.tests
+            ConvergenceRegistrationTests.tests
         ]

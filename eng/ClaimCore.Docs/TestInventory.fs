@@ -15,6 +15,7 @@ module TestInventory =
         set
             [
                 "ClaimCore.AcceptanceTests"
+                "ClaimCore.ArchitectureTests"
                 "ClaimCore.ConcurrencyQualificationTests"
                 "ClaimCore.DocsTests"
                 "ClaimCore.IntegrationTests"

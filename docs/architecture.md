@@ -4,6 +4,58 @@ ClaimCore is one local product, not a distributed system. An F#/.NET core, local
 React/TypeScript browser client, and PostgreSQL form the runtime. Repository engineering programs
 and tests qualify that runtime; they are not product services.
 
+## Adopted foundation and migration boundary
+
+The target is one modular service authority. Both the agent CLI and the React client will use the
+same versioned service operations; neither client may run the native domain or open PostgreSQL.
+This does not introduce microservices, remote exposure, additional business fields, or a payment
+engine. The separate Database executable remains privileged operational plumbing, not another
+case-work interface.
+
+The current native CLI path described below remains the supported implementation until the service
+migration is delivered. Its presence is not evidence of target-client isolation. The foundation
+work is divided into five bounded packages:
+
+| Package | Boundary and completion evidence |
+|---|---|
+| F01 | Qualify F# compiled inspection, classify every product root, and retain the existing compiler/behavioral checks. |
+| F02 | Extract generated implementation-free .NET protocol bindings beside the TypeScript bindings; client graphs exclude server implementation. |
+| F03 | Converge the actual CLI and React paths on the service; trusted admission and runtime composition stay server-owned. |
+| F04 | Resolve accepted replay independently of retained-preparation housekeeping; verify pruning, conflict, concurrency and commit-loss scenarios. |
+| F05 | Preserve historical encodings and enforce a separately controlled history boundary through a qualified recovery procedure. |
+
+Existing Contracts is a server-side semantic projection and may depend on Application. It is not a
+client-safe distribution contract. Extract the generated protocol surface without reversing that
+dependency or duplicating authored operation definitions. Durable record formats, public wire
+contracts and private domain representations have different compatibility obligations.
+
+Accepted receipts must remain recoverable independently of whether optional technical preparations
+are retained. A restored installation identity does not by itself establish data-history continuity.
+History fencing is a server-side mutation precondition, not a new business field or a browser session
+counter. Adopted data and historical readers may not be discarded as part of this transformation.
+
+### Compiled architecture enforcement
+
+The dedicated `ClaimCore.ArchitectureTests` project uses ArchUnitNET only as a test dependency. Its
+F# fixtures establish that the selected rules detect module functions, generic/nested types,
+closures, tasks, async workflows, sequences, records, unions, interfaces and selected platform calls.
+Positive counterparts prove that permitted code is not rejected indiscriminately. Missing assembly
+inputs and empty required selections fail rather than being interpreted as absence of violations.
+
+The suite inspects Debug implementation assemblies with optimisation disabled, retaining generated
+types. It classifies all discovered product projects and enforces component dependency direction,
+selected ambient-effect restrictions, endpoint/composition separation, and persistence/decision
+ownership. The explicit native-CLI allowance describes the transitional graph; replace it with
+client isolation as F02/F03 deliver the supported path. Do not freeze current accidental edges as the
+permanent architecture or add skipped target tests and call them enforcement.
+
+These checks complement curated signatures, ordinary-consumer compile tests, protocol tests and
+real PostgreSQL/browser qualifications. They do not prove transaction correctness, authorization,
+complete effect freedom, runtime reflection behavior, or TypeScript dependencies. New rule selectors
+and expected results require owner review; a candidate cannot authorize weaker policy merely by
+making its own tests green. Commands and exact evidence registration are owned by
+[Development](development.md#architecture-inspection).
+
 ## Runtime responsibilities
 
 - **Domain** owns accepted values, field metadata, validation, available transitions, and case state.

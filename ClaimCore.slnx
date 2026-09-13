@@ -18,4 +18,6 @@
   <Project Path="tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj" />
   <Project Path="tests/ClaimCore.DocsTests/ClaimCore.DocsTests.fsproj" />
   <Project Path="tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj" />
+  <Project Path="tests/ClaimCore.ArchitectureFixtures/ClaimCore.ArchitectureFixtures.fsproj" />
+  <Project Path="tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj" />
 </Solution>

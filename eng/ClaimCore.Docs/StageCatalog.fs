@@ -200,6 +200,15 @@ module StageCatalog =
                 [ OutputRequirement.Suffix "ClaimCore.Tests.trx" ]
         ]
 
+    let private architectureTests =
+        [ "linux"; "macos"; "windows" ]
+        |> List.map (fun platform ->
+            stage
+                ("architecture-" + platform)
+                platform
+                [ "dotnet"; "test"; "ClaimCore.ArchitectureTests"; "Debug" ]
+                [ OutputRequirement.Suffix "ClaimCore.ArchitectureTests.trx" ])
+
     let private webTests =
         [
             stage
@@ -269,6 +278,7 @@ module StageCatalog =
         @ behavior
         @ publications
         @ unitTests
+        @ architectureTests
         @ webTests
         @ docsTests
         @ persistenceTests
