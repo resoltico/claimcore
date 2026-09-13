@@ -8,10 +8,23 @@ workspace="$(mktemp -d "$repo_root/artifacts/acceptance-local.XXXXXX")"
 workspace="$(realpath "$workspace")"
 run_id="$(basename "$workspace")"
 attempt=1
+test_run_label="claimcore-acceptance-$run_id"
+export CLAIMCORE_TEST_RUN_LABEL="$test_run_label"
 cli_dir="$workspace/cli"
 database_dir="$workspace/database"
 results="$workspace/results"
 docs="$repo_root/artifacts/bin/ClaimCore.Docs/release/ClaimCore.Docs.dll"
+
+cleanup_test_containers() {
+  local status=$?
+  trap - EXIT
+  if ! bash "$repo_root/eng/Remove-LabeledTestContainers.sh" "$test_run_label"; then
+    echo "Exact-label published CLI container cleanup failed." >&2
+    status=1
+  fi
+  exit "$status"
+}
+trap cleanup_test_containers EXIT
 
 dotnet restore ClaimCore.slnx --locked-mode
 dotnet tool restore

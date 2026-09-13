@@ -47,6 +47,7 @@ module StageCatalog =
             gate "shellcheck" [ "shellcheck" ]
             gate "compose-config" [ "docker"; "compose"; "config" ]
             gate "compose-health" [ "docker"; "compose"; "up"; "--wait" ]
+            gate "docker-cleanup-assurance" [ "bash"; "eng/Test-LabeledTestContainerCleanup.sh" ]
             gate
                 "secret-scan-source"
                 [

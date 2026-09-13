@@ -31,6 +31,33 @@ Committed NuGet and npm lock files make both dependency graphs reproducible. A m
 is a repository defect, not a reason for CI to manufacture a new baseline. An ordinary .NET build
 does not produce or consume browser assets.
 
+## Local Docker disk hygiene
+
+Check usage before considering cleanup:
+
+```text
+docker system df
+docker buildx ls
+docker buildx du
+```
+
+[`docker system df`](https://docs.docker.com/reference/cli/docker/system/df/) summarizes daemon
+storage; [`docker buildx du`](https://docs.docker.com/reference/cli/docker/buildx/du/) reports cache
+for the selected builder. These commands are read-only. A volume marked *reclaimable* is merely
+unused by a current container, not known to be disposable: this Docker daemon may also hold other
+projects' data. ClaimCore's Compose `postgres-data` volume is persistent. Normal
+`docker compose down` retains it; do not use `docker compose down --volumes` for an adopted database.
+
+Fallback test-container cleanup is limited to containers with the exact current ClaimCore test-run
+label and their anonymous volumes. It never targets the named Compose volume. Do not schedule
+host-wide `docker system prune` or `docker volume prune`, or infer ownership from a volume's name or
+reclaimable status.
+If build cache itself needs attention, identify a builder you own with `docker buildx ls`, then
+*explicitly* run `docker buildx prune --builder BUILDER_NAME --filter 'until=168h'` after replacing
+`BUILDER_NAME`. [Buildx prune](https://docs.docker.com/reference/cli/docker/buildx/prune/) affects
+that builder's eligible cache records, not just ClaimCore's, and prompts before removal without
+`--force`; do not use it on a shared builder without coordinating with its other users.
+
 ## Complete verification
 
 A complete result is conjunctive: locked restore, compiler build, repository policy, every required
@@ -162,6 +189,7 @@ pwsh -NoProfile -File eng/Check-DependencyCurrency.ps1
 bash eng/Check-FSharpLint.sh
 actionlint -color .github/workflows/*.yml
 shellcheck eng/*.sh db/*.sh
+bash eng/Test-LabeledTestContainerCleanup.sh
 bash eng/Test-ComposePolicy.sh
 pwsh -NoProfile -File eng/Check-GitIgnorePolicy.ps1
 pwsh -NoProfile -File eng/Test-SourceSecretScanPolicy.ps1

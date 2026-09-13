@@ -187,6 +187,7 @@ jobs:
           run_stage shellcheck shellcheck "${scripts[@]}"
           run_stage compose-config env CLAIMCORE_COMPOSE_PROJECT=claimcore-config-${{ github.run_id }} POSTGRES_PASSWORD=owner-policy-value CLAIMCORE_APP_PASSWORD=runtime-policy-value CLAIMCORE_POSTGRES_PORT=0 docker compose --file compose.yaml config --quiet
           run_stage compose-health bash eng/Test-ComposePolicy.sh
+          run_stage docker-cleanup-assurance bash eng/Test-LabeledTestContainerCleanup.sh
           run_stage container-image-assurance-negative-controls bash eng/Test-PostgresImageAssurancePolicy.sh
           run_stage container-sbom bash eng/Check-PostgresImageAssurance.sh sbom "$PWD/artifacts/stages/container-sbom"
           run_stage container-vulnerability-scan bash eng/Check-PostgresImageAssurance.sh scan "$PWD/artifacts/stages/container-vulnerability-scan"

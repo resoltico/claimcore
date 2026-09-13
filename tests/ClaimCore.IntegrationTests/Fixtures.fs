@@ -66,7 +66,7 @@ let private cleanup (database: TestDatabase) =
 let private testRunLabel () =
     match Environment.GetEnvironmentVariable("CLAIMCORE_TEST_RUN_LABEL") with
     | null
-    | "" -> $"local-{Environment.ProcessId}-{Guid.NewGuid():N}"
+    | "" -> $"claimcore-integration-local-{Environment.ProcessId}-{Guid.NewGuid():N}"
     | value when Regex.IsMatch(value, "^[A-Za-z0-9][A-Za-z0-9_.-]{0,99}$") -> value
     | _ -> invalidOp "CLAIMCORE_TEST_RUN_LABEL must be a bounded portable Docker label value."
 

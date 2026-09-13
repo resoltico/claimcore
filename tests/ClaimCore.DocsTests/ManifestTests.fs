@@ -148,6 +148,7 @@ let private stageRegistryTests =
                     "docs-write-idempotence"
                     "migration-upgrade-qualification"
                     "container-image-assurance-negative-controls"
+                    "docker-cleanup-assurance"
                     "secret-scan-artifacts"
                     "publish-cli"
                     "browser-webkit"
@@ -164,6 +165,11 @@ let private stageRegistryTests =
                         .Procedure
                     [ "pwsh"; "Test-ConvergenceAssurancePolicy.ps1" ]
                     "Convergence negative-control procedure"
+
+                Expect.equal
+                    (Stages.tryFind "docker-cleanup-assurance" |> Option.get).Procedure
+                    [ "bash"; "eng/Test-LabeledTestContainerCleanup.sh" ]
+                    "Exact-label Docker cleanup must run its live and negative controls"
 
                 containerImageRequirements ()
 

@@ -6,8 +6,11 @@ or a language-specific source directory.
 
 The scripts enforce formatting, analysis, dependency, privacy, coverage-input, property-seed,
 Compose, Git-ignore, source-secret, artifact-upload, and published-application policies. The
-Git-ignore gate uses an
-isolated temporary Git database to prove that private/generated probes stay out while release inputs
+`Remove-LabeledTestContainers.sh` helper checks the exact current test-run label before removing
+disposable containers and their anonymous volumes; `Test-LabeledTestContainerCleanup.sh` exercises
+its ownership and failure boundaries. Neither script prunes the shared Docker daemon or removes
+ClaimCore's persistent named Compose volume. The Git-ignore gate uses an isolated temporary Git
+database to prove that private/generated probes stay out while release inputs
 remain visible. The source-secret gate builds a private Git-semantic snapshot so ignored local state
 is not mistaken for committed source while force-tracked files remain in scope. CI scans each
 artifact family before upload with `Scan-ArtifactSecrets.ps1`; `Check-ArtifactUploadPolicy.ps1`

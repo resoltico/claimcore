@@ -5,6 +5,10 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 publish_dir="${1:?Pass the published Web directory.}"
 database_dir="${2:?Pass the published Database directory.}"
 engine_scope="${3:-all}"
+if [[ "$engine_scope" == all && -n "${CLAIMCORE_TEST_RUN_LABEL:-}" ]]; then
+  echo "All-engine qualification requires separate generated browser test-run labels." >&2
+  exit 64
+fi
 web_dll="$publish_dir/ClaimCore.Web.dll"
 database_dll="$database_dir/ClaimCore.Database.dll"
 expected_node="$(tr -d '\r\n' <"$repo_root/.node-version")"
@@ -34,6 +38,12 @@ fi
 run_engine() (
 engine="$1"
 web_port="$2"
+test_run_label="${CLAIMCORE_TEST_RUN_LABEL:-claimcore-browser-${engine}-$$-$RANDOM}"
+if [[ ! "$test_run_label" =~ ^claimcore-browser-[A-Za-z0-9][A-Za-z0-9_.-]*$ ]] ||
+  [[ "${#test_run_label}" -gt 100 ]]; then
+  echo "CLAIMCORE_TEST_RUN_LABEL must be a bounded claimcore-browser label." >&2
+  exit 64
+fi
 created_state_dir="$(mktemp -d "${TMPDIR:-/tmp}/claimcore-web-e2e-${engine}.XXXXXX")"
 if ! state_dir="$(cd -P "$created_state_dir" && pwd -P)"; then
   rmdir "$created_state_dir" 2>/dev/null || true
@@ -41,31 +51,12 @@ if ! state_dir="$(cd -P "$created_state_dir" && pwd -P)"; then
   exit 64
 fi
 container_name="claimcore-web-e2e-${engine}-$RANDOM-$RANDOM"
-test_run_label="${CLAIMCORE_TEST_RUN_LABEL:-claimcore-browser-${engine}-$$-$RANDOM}"
 host_pid=""
 credential_file=""
 browser_artifacts="$repo_root/artifacts/browser"
 owner_secret_file="$state_dir/owner.secret"
 app_secret_file="$state_dir/application.secret"
 claimant_canary_file="$state_dir/claimant.canary"
-
-if [[ ! "$test_run_label" =~ ^[A-Za-z0-9][A-Za-z0-9_.-]{0,99}$ ]]; then
-  echo "CLAIMCORE_TEST_RUN_LABEL must be a bounded portable Docker label value." >&2
-  exit 64
-fi
-
-remove_labeled_containers() {
-  local container label
-  while IFS= read -r container; do
-    if ! label="$(docker container inspect \
-      --format '{{ index .Config.Labels "org.claimcore.test-run" }}' "$container" 2>/dev/null)"; then
-      continue
-    fi
-    if [[ "$label" == "$test_run_label" ]]; then
-      docker container rm --force "$container" >/dev/null 2>&1 || true
-    fi
-  done < <(docker container ls --all --quiet 2>/dev/null)
-}
 
 scan_sensitive_output() {
   local bootstrap_file secret_file
@@ -97,8 +88,14 @@ cleanup() {
     echo "Sensitive-output scanning rejected the browser diagnostics." >&2
     status=1
   fi
-  remove_labeled_containers
-  rm -rf "$state_dir"
+  if ! bash "$repo_root/eng/Remove-LabeledTestContainers.sh" "$test_run_label"; then
+    echo "Exact-label browser container cleanup failed." >&2
+    status=1
+  fi
+  if ! rm -rf -- "$state_dir"; then
+    echo "Private browser state cleanup failed." >&2
+    status=1
+  fi
   exit "$status"
 }
 trap cleanup EXIT
