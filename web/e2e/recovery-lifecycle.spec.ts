@@ -47,7 +47,11 @@ const inspect = async (page: Page, identity: PreparedIdentity): Promise<void> =>
 
 const navigateRecovery = async (page: Page): Promise<void> => {
   await progress("recovery-navigation");
-  await page.getByRole("button", { name: "Recovery", exact: true }).click();
+  await expect(page.locator("main.app-shell header small")).toBeVisible();
+  const navigation = page.getByRole("button", { name: "Recovery", exact: true });
+  await expect(navigation).toBeEnabled();
+  await navigation.click();
+  await expect(navigation).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("heading", { name: "Recovery", exact: true })).toBeVisible();
   await expectAccessible(page);
 };
