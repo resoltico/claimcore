@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Validate one locally built architecture image. Build the image from an empty
-# context first; this script never starts Compose or adopts an existing volume.
+# Validate one locally built architecture image. Build it with only the pinned
+# upstream MIT notices as context; never start Compose or adopt an existing volume.
 if [[ "$#" -ne 2 ]]; then
   printf 'Usage: %s <local-image-ref> <linux/amd64|linux/arm64>\n' "$0" >&2
   exit 2
@@ -16,6 +16,7 @@ if [[ -z "$image" || ( "$platform" != linux/amd64 && "$platform" != linux/arm64 
 fi
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+bash "$repo_root/eng/Check-PostgresImageNotice.sh"
 base_image='postgres:18.6@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280'
 grep -Fqx "FROM $base_image" "$repo_root/db/Dockerfile.postgres-patched"
 base_child="$(bash "$repo_root/eng/Resolve-PostgresBaseChild.sh" "$platform")"
@@ -47,6 +48,16 @@ if [[ "$image_arch" != "${platform#linux/}" ]]; then
   printf 'Image architecture %s does not match %s.\n' "$image_arch" "$platform" >&2
   exit 1
 fi
+
+for item in LICENSE AUTHORS; do
+  installed_sha="$(docker run --rm --platform "$platform" --entrypoint sha256sum "$image" \
+    "/usr/share/doc/docker-library-postgres/$item" | cut -d ' ' -f 1)"
+  source_sha="$(shasum -a 256 "$repo_root/db/postgres-upstream/$item" | cut -d ' ' -f 1)"
+  if [[ "$installed_sha" != "$source_sha" ]]; then
+    printf 'The installed PostgreSQL upstream %s notice differs from the pinned source.\n' "$item" >&2
+    exit 1
+  fi
+done
 
 docker run --rm --platform "$platform" --entrypoint dpkg-query "$base_child" \
   -W '-f=${Package}\t${Version}\n' | LC_ALL=C sort > "$tmp_dir/base-packages"
@@ -151,4 +162,4 @@ if [[ "$server_version" != 18.6 ]]; then
   exit 1
 fi
 
-printf 'PostgreSQL image recipe passed for %s: seven pinned package changes and isolated 18.6 startup.\n' "$platform"
+printf 'PostgreSQL image recipe passed for %s: seven pinned package changes, upstream MIT notice and isolated 18.6 startup.\n' "$platform"
