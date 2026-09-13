@@ -67,7 +67,11 @@ try {
 
     [IO.File]::Copy((Join-Path $repoRoot "eng/test-lineage.json"), $lineageProbePath, $true)
     $matrix = Get-Content -Raw -LiteralPath $matrixProbePath | ConvertFrom-Json
-    $matrix.entries[0].tests = @($matrix.entries[0].tests + "not-a-live-test" | Sort-Object)
+    # Preserve the contract's ordinal order so this probe fails on its missing identity,
+    # not on culture-sensitive ordering of otherwise valid architecture test names.
+    [string[]] $testIds = @($matrix.entries[0].tests) + @("not-a-live-test")
+    [Array]::Sort($testIds, [StringComparer]::Ordinal)
+    $matrix.entries[0].tests = $testIds
     Write-Json $matrixProbePath $matrix
     Invoke-Probe "matrix references a test absent"
 
