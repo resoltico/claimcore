@@ -1,0 +1,2282 @@
+{
+  "schemaVersion": 1,
+  "purpose": "CC-CONVERGE-001 assurance mapping",
+  "baselineSha256": "30b14fab0c28bdb6c3a3a1d231e8d55ab89fd2a475fc8c4fd2a3d6776c6311c5",
+  "entries": [
+    {
+      "id": "assurance-browser:accessibility",
+      "dimensions": [
+        "webGui",
+        "webHost"
+      ],
+      "subject": "Published browser checks exercise accessible narrow/zoomed login-to-history views, named-field core rejection focus, and modal keyboard containment and focus return.",
+      "tests": [
+        "frontend:playwright::contains keyboard focus and returns it after safely dismissing a prepared review",
+        "frontend:playwright::focuses and describes the named field after a published core rejection",
+        "frontend:playwright::keeps published login, editor, review, receipt and history accessible at narrow and zoomed viewports"
+      ]
+    },
+    {
+      "id": "assurance-browser:admission",
+      "dimensions": [
+        "protocol",
+        "webHost"
+      ],
+      "subject": "Published browser admission checks exercise anonymous and authenticated v2 boundaries, malformed and retired routes, and the real fixed-window login limiter without retries.",
+      "tests": [
+        "frontend:playwright::bounds repeated published login admission and recovers after its window",
+        "frontend:playwright::rejects retired routes and malformed published Web v2 admission before mutation",
+        "frontend:playwright::uses the published v2 login boundary and accessible case workspace"
+      ]
+    },
+    {
+      "id": "assurance-browser:delivery",
+      "dimensions": [
+        "recovery",
+        "webGui"
+      ],
+      "subject": "Published dropped-submit and dropped-prepare response checks preserve exact operation identity and use observed recovery rather than relabeling delivery loss as failure.",
+      "tests": [
+        "frontend:playwright::preserves operation identity after a dropped published submit response",
+        "frontend:playwright::recovers an exact preparation after its published response is dropped"
+      ]
+    },
+    {
+      "id": "assurance-browser:recovery",
+      "dimensions": [
+        "recovery",
+        "webGui"
+      ],
+      "subject": "Published recovery checks export and retain both exact artifact formats and resolve or dismiss distinct retained preparations using observed server state.",
+      "tests": [
+        "frontend:playwright::exports and retains both exact recovery artifact formats through published Web",
+        "frontend:playwright::resolves and dismisses exact preparations with observed server state"
+      ]
+    },
+    {
+      "id": "assurance-browser:register",
+      "dimensions": [
+        "core",
+        "webGui"
+      ],
+      "subject": "Published browser flows prefill descriptor inputs, perform all eight thirteen-field register transitions, show exact history and misses, and rotate a retained OPEN identity on target edit.",
+      "tests": [
+        "frontend:playwright::prefills metadata fields and confirms dirty command changes before review",
+        "frontend:playwright::publishes open, amendment, decision, withdrawal, full history and operation lookup",
+        "frontend:playwright::publishes payment, correction, close and reopen with current-case parity",
+        "frontend:playwright::rotates a retained OPEN identity when only its target reference changes",
+        "frontend:playwright::shows exact case and operation misses without implying a failed mutation"
+      ]
+    },
+    {
+      "id": "assurance-cancellation:execute-before-admission",
+      "dimensions": [
+        "cancellation",
+        "core"
+      ],
+      "subject": "Caller cancellation before Execute admission carries the original operation ID and leaves the case absent.",
+      "tests": [
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core execution.typed execution.caller cancellation before admission proves no execution"
+      ]
+    },
+    {
+      "id": "assurance-cancellation:query-before-read",
+      "dimensions": [
+        "cancellation",
+        "core"
+      ],
+      "subject": "A caller-cancelled typed case query returns Cancelled without entering its storage read or manufacturing a business result.",
+      "tests": [
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core facade.queries.query cancellation never enters a storage read"
+      ]
+    },
+    {
+      "id": "assurance-cancellation:resolve-after-attempt",
+      "dimensions": [
+        "cancellation",
+        "recovery"
+      ],
+      "subject": "Cancellation after confirmed attempt admission cannot erase a definite accepted receipt or suppress settlement.",
+      "tests": [
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.recovery uncertainty boundaries.[CC-REC-001] cancellation after admitted attempt preserves definite acceptance"
+      ]
+    },
+    {
+      "id": "assurance-cancellation:resolve-before-attempt",
+      "dimensions": [
+        "cancellation",
+        "recovery"
+      ],
+      "subject": "Cancellation after retained inspection but before Start admits no attempt, no claim transaction, and no settlement.",
+      "tests": [
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.recovery uncertainty boundaries.[CC-REC-001] cancellation before attempt admission leaves the claim untouched"
+      ]
+    },
+    {
+      "id": "assurance-cancellation:technical-attempt-before-commit",
+      "dimensions": [
+        "cancellation",
+        "recovery"
+      ],
+      "subject": "An attempt admission canceled before its technical COMMIT creates no lifecycle marker or attempt and never starts a claim transaction.",
+      "tests": [
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL recovery cancellation.[CC-REC-001] cancelled attempt admission creates no marker or attempt",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] definite attempt cancellation prevents claim execution"
+      ]
+    },
+    {
+      "id": "assurance-cancellation:technical-dismiss-before-commit",
+      "dimensions": [
+        "cancellation",
+        "recovery"
+      ],
+      "subject": "A dismissal canceled before technical COMMIT leaves the preparation actionable; a failure after COMMIT starts remains explicitly state-unknown.",
+      "tests": [
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL recovery cancellation.[CC-REC-001] cancelled dismissal leaves preparation actionable",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] commit-start dismissal failure remains state unknown",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] definite dismiss cancellation remains actionable"
+      ]
+    },
+    {
+      "id": "assurance-cancellation:technical-import-before-commit",
+      "dimensions": [
+        "cancellation",
+        "recovery"
+      ],
+      "subject": "A canceled import retain does not submit a claim, whereas commit-start loss preserves source digest and operation identity as unknown.",
+      "tests": [
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] commit-start import retention failure remains state unknown",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] definite import retention cancellation does not submit"
+      ]
+    },
+    {
+      "id": "assurance-cancellation:technical-prepare-before-commit",
+      "dimensions": [
+        "cancellation",
+        "recovery"
+      ],
+      "subject": "A canceled preparation retain proves no durable row before commit, while an uncertain technical commit is not relabeled cancelled.",
+      "tests": [
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL recovery cancellation.[CC-REC-001] cancelled retain has no durable preparation",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL recovery cancellation.[CC-REC-001] technical commit-start failure remains uncertain",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] definite retain cancellation becomes cancelled before admission"
+      ]
+    },
+    {
+      "id": "assurance-cancellation:technical-read",
+      "dimensions": [
+        "cancellation",
+        "recovery"
+      ],
+      "subject": "Cancellation during receipt, recovery inspect, or PostgreSQL evidence reads returns Cancelled without exposing a stale receipt or claimant data.",
+      "tests": [
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL recovery cancellation.[CC-REC-001] cancelled recovery reads return cancellation without disclosure",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] cancellation during receipt observation returns cancelled read",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] cancellation during recovery inspect hides receipt result"
+      ]
+    },
+    {
+      "id": "assurance-cancellation:technical-settlement-before-commit",
+      "dimensions": [
+        "cancellation",
+        "recovery"
+      ],
+      "subject": "Settlement cancellation leaves an admitted attempt unsettled but preserves any definite accepted business receipt as Unconfirmed.",
+      "tests": [
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL recovery cancellation.[CC-REC-001] cancelled settlement leaves admitted attempt unsettled",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] settlement cancellation preserves accepted execution"
+      ]
+    },
+    {
+      "id": "assurance-cancellation:technical-start-boundary",
+      "dimensions": [
+        "cancellation",
+        "recovery"
+      ],
+      "subject": "Cancellation immediately before COMMIT rolls back a technical insertion; after COMMIT begins it cannot turn lost confirmation into non-commit.",
+      "tests": [
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL recovery cancellation.[CC-REC-001] caller cancellation after commit start cannot relabel outcome",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL recovery cancellation.[CC-REC-001] cancellation immediately before technical commit rolls back insertion"
+      ]
+    },
+    {
+      "id": "assurance-core:business-rejection",
+      "dimensions": [
+        "core"
+      ],
+      "subject": "A rejected command is definite, leaves case and accepted history unchanged, and does not enter recovery attempt admission.",
+      "tests": [
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.rejected transactions.[CC-APP-001] rejected command changes neither case nor history",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core execution.typed execution.idempotency and concurrency rejections.stale command is rejected before recovery attempt admission"
+      ]
+    },
+    {
+      "id": "assurance-core:exact-replay",
+      "dimensions": [
+        "core",
+        "recovery"
+      ],
+      "subject": "An accepted operation replay returns its original receipt under a changed business clock and never advances the case twice.",
+      "tests": [
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL transactions.persistence and replay.[CC-APP-002] exact replay returns original receipt, not current state",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core execution.typed execution.exact retry observes the original receipt without another commit"
+      ]
+    },
+    {
+      "id": "assurance-core:missing-history",
+      "dimensions": [
+        "core"
+      ],
+      "subject": "IClaimsCore.History distinguishes a nonexistent case from a found case with no later entries, without making the adapter infer absence.",
+      "tests": [
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core facade.queries.missing history is a successful explicit lookup absence",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core queries.typed lookup outcomes.empty history is explicit only after the case exists"
+      ]
+    },
+    {
+      "id": "assurance-core:typed-public-api",
+      "dimensions": [
+        "core"
+      ],
+      "subject": "Reflection and compiler checks allow only the typed IClaimsCore endpoint facade and prevent ordinary callers from obtaining storage or callback internals.",
+      "tests": [
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.compiler-enforced core boundary.ordinary caller cannot see the store port",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.core ownership and typed interfaces.typed core public surface.IClaimsCore exposes only typed endpoint methods and recovery workflow"
+      ]
+    },
+    {
+      "id": "assurance-database:owner-file-admission",
+      "dimensions": [
+        "migration",
+        "protocol"
+      ],
+      "subject": "The Database process rejects unsafe schema-owner credential mode, linked paths, invalid UTF-8, and oversize before connecting, without echoing private bytes or path.",
+      "tests": [
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Database admin private-file boundary.[CC-DB-002] schema-owner credential rejects unsafe mode, links, UTF-8, and size before database access"
+      ]
+    },
+    {
+      "id": "assurance-documentation:declared-leaf-tags",
+      "dimensions": [
+        "documentation"
+      ],
+      "subject": "Documentation evidence rejects an undeclared Web leaf token even when another passing leaf already covers the declared contract.",
+      "tests": [
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Execution evidence.contract execution mapping.rejects an unknown Web leaf token despite valid declared evidence"
+      ]
+    },
+    {
+      "id": "assurance-documentation:native-publish-artifact",
+      "dimensions": [
+        "documentation",
+        "protocol"
+      ],
+      "subject": "CLI, Database, and Web publish stages require the exact native private-file library on macOS or Linux and reject a foreign native artifact on Windows.",
+      "tests": [
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Evidence manifests.stage registry and manifests.stage registry.native private-file library is required in each supported publish tree"
+      ]
+    },
+    {
+      "id": "assurance-gui:case-list-detail-history",
+      "dimensions": [
+        "webGui"
+      ],
+      "subject": "Typed browser reads page case summaries and show full current fields, server actions, and expandable accepted history without stale-case invention.",
+      "tests": [
+        "frontend:vitest::lists, reloads, pages, selects and opens cases through typed list outcomes",
+        "frontend:vitest::shows current fields, server command labels, full expandable history and retryable history pages"
+      ]
+    },
+    {
+      "id": "assurance-gui:duplicate-load",
+      "dimensions": [
+        "webGui"
+      ],
+      "subject": "Two loads of the same pending case-list cursor coalesce into one request before the page result is appended.",
+      "tests": [
+        "frontend:vitest::coalesces duplicate page loads for one in-flight cursor"
+      ]
+    },
+    {
+      "id": "assurance-gui:duplicate-prepare",
+      "dimensions": [
+        "webGui"
+      ],
+      "subject": "Two rapid Prepare activations against one pending retained command dispatch one exact browser mutation.",
+      "tests": [
+        "frontend:vitest::coalesces duplicate preparation activation while retention is pending"
+      ]
+    },
+    {
+      "id": "assurance-gui:export-disposition",
+      "dimensions": [
+        "protocol",
+        "webGui"
+      ],
+      "subject": "A recovery download admits one exact attachment filename and a matching UTF-8 parameter, refusing duplicate, suffix-spoofed, or inline dispositions.",
+      "tests": [
+        "frontend:vitest::requires one exact attachment filename and matching UTF-8 filename parameter"
+      ]
+    },
+    {
+      "id": "assurance-gui:inspected-actions",
+      "dimensions": [
+        "recovery",
+        "webGui"
+      ],
+      "subject": "A fresh accepted recovery inspection removes stale resolve and dismiss actions inherited from an earlier list summary.",
+      "tests": [
+        "frontend:vitest::uses inspected accepted evidence to remove stale list mutation actions"
+      ]
+    },
+    {
+      "id": "assurance-gui:metadata-command-draft",
+      "dimensions": [
+        "webGui"
+      ],
+      "subject": "The browser derives command inputs and prefill from admitted semantic descriptors and builds an exact draft without a duplicate command registry.",
+      "tests": [
+        "frontend:vitest::metadata-driven drafts > derives command fields, prefill and a canonical draft without a browser command registry"
+      ]
+    },
+    {
+      "id": "assurance-gui:named-field-rejection",
+      "dimensions": [
+        "webGui"
+      ],
+      "subject": "A core rejection naming an authored field focuses that control and associates its accessible error instead of losing field context.",
+      "tests": [
+        "frontend:vitest::operation editor transport outcomes > focuses and describes a named authored field after core rejection"
+      ]
+    },
+    {
+      "id": "assurance-gui:operation-reference-identity",
+      "dimensions": [
+        "webGui"
+      ],
+      "subject": "An existing case reference remains immutable, while changing only an OPEN target rotates a retained operation ID before reviewed commit.",
+      "tests": [
+        "frontend:vitest::keeps existing references immutable and delegates a reviewed commit",
+        "frontend:vitest::rotates the retained operation ID when only an OPEN reference is changed"
+      ]
+    },
+    {
+      "id": "assurance-gui:prepare-retry",
+      "dimensions": [
+        "recovery",
+        "webGui"
+      ],
+      "subject": "A lost Prepare response permits one explicit byte-identical retry, accepted replay shows the authoritative receipt, and stale retained work directs Recovery without opening review.",
+      "tests": [
+        "frontend:vitest::keeps a non-reviewable retained Prepare exact and directs Recovery",
+        "frontend:vitest::offers one explicit exact-ID Prepare retry after lost response",
+        "frontend:vitest::renders an exact accepted Prepare replay as a definite receipt"
+      ]
+    },
+    {
+      "id": "assurance-gui:read-misses",
+      "dimensions": [
+        "webGui"
+      ],
+      "subject": "Typed missing history becomes an empty read and absent operation observations stay request-local rather than a failed mutation.",
+      "tests": [
+        "frontend:vitest::reports absent and malformed operation observations without leaving stale receipts",
+        "frontend:vitest::treats a typed missing history as an empty read rather than a transport error"
+      ]
+    },
+    {
+      "id": "assurance-gui:recovery-import-export",
+      "dimensions": [
+        "recovery",
+        "webGui"
+      ],
+      "subject": "The browser confirms an exact envelope export and previews/retains envelope and canonical-record imports without submitting them.",
+      "tests": [
+        "frontend:vitest::v2 Recovery import and export > exports the validated filename then retains previewed envelope material without submission",
+        "frontend:vitest::v2 Recovery import and export > retains canonical-record previews and reports rejected recovery pages"
+      ]
+    },
+    {
+      "id": "assurance-gui:recovery-list-inspect",
+      "dimensions": [
+        "recovery",
+        "webGui"
+      ],
+      "subject": "The browser pages bounded recovery summaries and inspects retained detail before enabling server-advertised actions.",
+      "tests": [
+        "frontend:vitest::renders observed recovery details and leaves only permitted server actions enabled",
+        "frontend:vitest::renders recovery list state, invokes inspection, and pages through a cursor"
+      ]
+    },
+    {
+      "id": "assurance-gui:reviewed-operation",
+      "dimensions": [
+        "webGui"
+      ],
+      "subject": "The editor prepares the exact metadata-derived command, requires a review/confirmation, and displays the accepted typed receipt.",
+      "tests": [
+        "frontend:vitest::metadata-driven operation acceptance > prepares, reviews, and accepts an operation with React Aria modal semantics"
+      ]
+    },
+    {
+      "id": "assurance-gui:session-login-logout",
+      "dimensions": [
+        "webGui"
+      ],
+      "subject": "The browser hydrates an anonymous local session, signs in through v2, admits definition, and signs out to a fresh anonymous snapshot.",
+      "tests": [
+        "frontend:vitest::v2 session lifecycle > hydrates, signs in, renders v2 definition, and signs out through the anonymous snapshot"
+      ]
+    },
+    {
+      "id": "assurance-gui:unknown-submit-delivery",
+      "dimensions": [
+        "recovery",
+        "webGui"
+      ],
+      "subject": "A lost submit response preserves the prepared identity and directs the operator to exact Recovery instead of claiming a failed or accepted mutation.",
+      "tests": [
+        "frontend:vitest::operation editor transport outcomes > preserves only recovery direction after an uncertain submit delivery"
+      ]
+    },
+    {
+      "id": "assurance-hostsecurity:descriptor-relative-creation",
+      "dimensions": [
+        "cli",
+        "protocol"
+      ],
+      "subject": "After an ancestor is swapped for a link, fixed-ABI descriptor-relative create and lock stay inside the pinned private parent and place no bytes in the redirect.",
+      "tests": [
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native private-file ancestor race.[CC-CLI-002] descriptor-relative create and lock remain in pinned parent after ancestor swap"
+      ]
+    },
+    {
+      "id": "assurance-migration:frozen-applied-bytes",
+      "dimensions": [
+        "migration"
+      ],
+      "subject": "The current manifest assertion pins the exact applied 001–005 migration names and SHA-256 digests, so an accidental source edit changes the expected identity.",
+      "tests": [
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 005.manifest validation.[CC-DB-001] applied migration identities remain frozen"
+      ]
+    },
+    {
+      "id": "assurance-migration:rollback",
+      "dimensions": [
+        "migration"
+      ],
+      "subject": "A failed ordered migration rolls back attempted DDL and the migration journal row atomically.",
+      "tests": [
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 005.atomicity.[CC-DB-001] failed migration rolls back its objects and journal row"
+      ]
+    },
+    {
+      "id": "assurance-migration:upgrade-002-to-005",
+      "dimensions": [
+        "migration",
+        "recovery"
+      ],
+      "subject": "A seeded migration-002 installation upgrades through 005 with exact old canonical bytes and a new pre-003 uncertainty marker, without inventing attempts.",
+      "tests": [
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.migration 005 recovery evidence.[CC-DB-001] migration 002 state upgrades to 005 with exact legacy evidence"
+      ]
+    },
+    {
+      "id": "assurance-migration:upgrade-003-to-005",
+      "dimensions": [
+        "migration",
+        "recovery"
+      ],
+      "subject": "A seeded migration-003 installation upgrades through 005 with its legacy uncertainty marker and request bytes unchanged.",
+      "tests": [
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.migration 005 recovery evidence.[CC-DB-001] migration 003 state upgrades to 005 with exact legacy evidence"
+      ]
+    },
+    {
+      "id": "assurance-migration:upgrade-004-to-005",
+      "dimensions": [
+        "migration",
+        "recovery"
+      ],
+      "subject": "A seeded migration-004 installation upgrades through the SELECT-only 005 grant while retaining old attempt and settlement rows byte-for-byte.",
+      "tests": [
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.migration 005 recovery evidence.[CC-DB-001] migration 004 state upgrades to 005 without rewriting attempts"
+      ]
+    },
+    {
+      "id": "assurance-migration:upgrade-through-005",
+      "dimensions": [
+        "migration",
+        "recovery"
+      ],
+      "subject": "An installation beginning at migration 001 upgrades through 005 without changing an accepted case or historical receipt and admits the current thirteen-field read.",
+      "tests": [
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 005.retained data.[CC-DB-001] upgrade preserves cases and history and installs recovery storage"
+      ]
+    },
+    {
+      "id": "assurance-recovery:accepted-blocks-dismiss",
+      "dimensions": [
+        "recovery"
+      ],
+      "subject": "An observed accepted receipt prevents a later technical dismissal even when no lifecycle marker was retained.",
+      "tests": [
+        "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.typed retained-request recovery.[CC-REC-001] accepted receipt blocks dismissal without a lifecycle marker"
+      ]
+    },
+    {
+      "id": "assurance-recovery:atomic-retain-classification",
+      "dimensions": [
+        "core",
+        "recovery"
+      ],
+      "subject": "Concurrent identical canonical imports and PostgreSQL same-ID retains identify exactly one creator and one existing replay without overwriting the first retained bytes.",
+      "tests": [
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL preparation boundary.[CC-REC-001] concurrent same-ID retain reports one creator and one existing replay",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.exact retained identity.[CC-REC-001] concurrent canonical imports classify creator and existing replay"
+      ]
+    },
+    {
+      "id": "assurance-recovery:canonical-byte-identity",
+      "dimensions": [
+        "core",
+        "recovery"
+      ],
+      "subject": "A same-operation, same-digest retained row with different canonical bytes is refused before claim transaction or recovery attempt admission.",
+      "tests": [
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.exact retained identity.[CC-REC-001] Execute rejects a same-ID same-digest record with different canonical bytes"
+      ]
+    },
+    {
+      "id": "assurance-recovery:capacity-and-identity",
+      "dimensions": [
+        "recovery"
+      ],
+      "subject": "One retained row fills the configured capacity, a second distinct operation is refused without erasing it, and an exact first-operation replay remains available.",
+      "tests": [
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL preparation boundary.capacity refusal preserves retained material and permits exact replay"
+      ]
+    },
+    {
+      "id": "assurance-recovery:dual-resolve-race",
+      "dimensions": [
+        "recovery"
+      ],
+      "subject": "Two simultaneous exact resolves of one retained operation produce one accepted revision and one durable receipt.",
+      "tests": [
+        "dotnet:ClaimCore.ConcurrencyQualificationTests::ClaimCore concurrency qualification.PostgreSQL recovery races.[CC-REC-001] simultaneous exact resolves retain one accepted revision"
+      ]
+    },
+    {
+      "id": "assurance-recovery:evidence-attempt-settlement",
+      "dimensions": [
+        "recovery"
+      ],
+      "subject": "Detailed PostgreSQL inspection projects actual append-only attempt IDs, start times, and definite settlement outcomes rather than synthetic empty arrays.",
+      "tests": [
+        "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.PostgreSQL recovery evidence.[CC-REC-001] inspect preserves an earlier unsettled attempt",
+        "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.PostgreSQL recovery evidence.[CC-REC-001] inspect projects the accepted attempt and settlement"
+      ]
+    },
+    {
+      "id": "assurance-recovery:exact-prepare-retry",
+      "dimensions": [
+        "core",
+        "recovery"
+      ],
+      "subject": "An exact accepted Prepare retry returns the first retained details and observed replay receipt, while an exact retained but stale draft directs Recovery without inventing a review.",
+      "tests": [
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.exact retained identity.[CC-REC-001] exact Prepare retry after acceptance returns an observed receipt",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.exact retained identity.[CC-REC-001] exact retained Prepare retry after another commit directs Recovery"
+      ]
+    },
+    {
+      "id": "assurance-recovery:identity-conflict",
+      "dimensions": [
+        "recovery"
+      ],
+      "subject": "An accepted receipt under the retained operation ID but different canonical request bytes cannot masquerade as an exact replay or admit another attempt.",
+      "tests": [
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core facade.recovery.[CC-REC-001] existing receipt with different bytes cannot masquerade as replay"
+      ]
+    },
+    {
+      "id": "assurance-recovery:legacy-marker-independent",
+      "dimensions": [
+        "recovery"
+      ],
+      "subject": "Pre-003 uncertainty is read as an independent marker even when semantic producer provenance is current and no attempt ID exists.",
+      "tests": [
+        "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.PostgreSQL recovery evidence.[CC-REC-001] inspect reads pre-003 uncertainty marker independently of provenance"
+      ]
+    },
+    {
+      "id": "assurance-recovery:provenance-first-writer",
+      "dimensions": [
+        "recovery"
+      ],
+      "subject": "Exact canonical-byte replay preserves the first producer's application version, fingerprint, provenance kind, preparation timestamp, and bytes.",
+      "tests": [
+        "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.PostgreSQL recovery evidence.[CC-REC-001] exact replay preserves first producer provenance"
+      ]
+    },
+    {
+      "id": "assurance-recovery:resolve-dismiss-race",
+      "dimensions": [
+        "recovery"
+      ],
+      "subject": "A concurrent resolve and dismiss of one retained preparation have one lifecycle winner without dual mutation.",
+      "tests": [
+        "dotnet:ClaimCore.ConcurrencyQualificationTests::ClaimCore concurrency qualification.PostgreSQL recovery races.[CC-REC-001] simultaneous resolve and dismiss have one lifecycle winner"
+      ]
+    },
+    {
+      "id": "assurance-recovery:started-uncertainty",
+      "dimensions": [
+        "recovery"
+      ],
+      "subject": "Unknown attempt admission never executes the claim, while an admitted but thrown or commit-unknown execution remains unsettled and recoverable.",
+      "tests": [
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.recovery uncertainty boundaries.[CC-REC-001] commit-unknown execution is never settled",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.recovery uncertainty boundaries.[CC-REC-001] thrown execution after admission remains unresolved",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.recovery uncertainty boundaries.[CC-REC-001] unknown attempt admission never executes the claim"
+      ]
+    },
+    {
+      "id": "assurance-recovery:state-table",
+      "dimensions": [
+        "recovery"
+      ],
+      "subject": "PostgreSQL state-table tests distinguish missing, accepted, and dismissed preparations across inspect, resolve, dismiss, replay, and export.",
+      "tests": [
+        "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.PostgreSQL recovery state table.[CC-REC-001] accepted receipt permits replay and export but never dismissal",
+        "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.PostgreSQL recovery state table.[CC-REC-001] dismissed preparation is idempotent and export-only",
+        "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.PostgreSQL recovery state table.[CC-REC-001] missing preparation has explicit read and action outcomes"
+      ]
+    },
+    {
+      "id": "assurance-recovery:unconfirmed-settlement",
+      "dimensions": [
+        "recovery"
+      ],
+      "subject": "A definite accepted receipt survives both a failed and thrown technical settlement as Unconfirmed rather than becoming commit-unknown.",
+      "tests": [
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.recovery uncertainty boundaries.[CC-REC-001] settlement error preserves definite acceptance",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.recovery uncertainty boundaries.[CC-REC-001] thrown settlement preserves definite acceptance"
+      ]
+    },
+    {
+      "id": "assurance-runtime:admitted-outcomes",
+      "dimensions": [
+        "cancellation",
+        "core"
+      ],
+      "subject": "A PostgreSQL query and accepted mutation already admitted before runtime disposal retain their original typed outcomes while new admission closes.",
+      "tests": [
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.runtime lifecycle under PostgreSQL.[CC-RUN-001] admitted mutation remains accepted while runtime drains",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.runtime lifecycle under PostgreSQL.[CC-RUN-001] admitted query keeps its typed outcome while runtime drains"
+      ]
+    },
+    {
+      "id": "assurance-runtime:disposal-drain",
+      "dimensions": [
+        "core",
+        "recovery"
+      ],
+      "subject": "Disposal closes all normal and retained Recovery facade admission, waits for admitted leases, and defers source cleanup until the final lease after a bounded timeout.",
+      "tests": [
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.production core boundary.runtime lifecycle.[CC-RUN-001] bounded disposal defers source cleanup until the final lease",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.production core boundary.runtime lifecycle.[CC-RUN-001] disposal closes admission and drains a held operation",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.production core boundary.runtime lifecycle.[CC-RUN-001] disposed runtime refuses retained normal and recovery facades"
+      ]
+    },
+    {
+      "id": "assurance-runtime:open-cancellation-and-cleanup",
+      "dimensions": [
+        "cancellation",
+        "core"
+      ],
+      "subject": "Pre- and mid-open caller cancellation return a safe typed fault; an unexpected opener exception closes its source and does not disclose provider detail.",
+      "tests": [
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.production core boundary.runtime lifecycle.[CC-RUN-001] cancelled opening returns a safe typed fault",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.runtime lifecycle under PostgreSQL.[CC-RUN-001] mid-open cancellation interrupts schema inspection",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.runtime lifecycle under PostgreSQL.[CC-RUN-001] thrown opening closes its owned source"
+      ]
+    },
+    {
+      "id": "assurance-web:origin-and-body",
+      "dimensions": [
+        "protocol",
+        "webHost"
+      ],
+      "subject": "Web admission distinguishes absent or remote peers, exact browser origin and fetch metadata, and declared media/body-size boundaries before a core call.",
+      "tests": [
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web v2 admission.[CC-WEB-001] distinguishes media and exact declared body-size boundaries",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web v2 admission.[CC-WEB-001] rejects absent and remote peers or wrong host authority",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web v2 admission.[CC-WEB-001] requires one exact browser origin and same-origin metadata"
+      ]
+    },
+    {
+      "id": "assurance-web:process-discovery",
+      "dimensions": [
+        "webHost"
+      ],
+      "subject": "The Web process exposes configuration-free help and version forms while unsupported startup arguments exit with usage refusal before private runtime configuration.",
+      "tests": [
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web process entry.[CC-WEB-001] startup accepts only configuration-free introspection verbs"
+      ]
+    },
+    {
+      "id": "assurance-web:scalar-boundaries",
+      "dimensions": [
+        "protocol",
+        "webHost"
+      ],
+      "subject": "The Web decoder refuses malformed case/page, operation/digest, Boolean confirmation, and Domain command input shapes before dispatch.",
+      "tests": [
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 input.[CC-WEB-001] distinguishes Boolean recovery confirmation and Domain command inputs",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 input.[CC-WEB-001] rejects malformed case-target and page scalar shapes",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 input.[CC-WEB-001] validates canonical operation and source-digest scalars"
+      ]
+    },
+    {
+      "id": "assurance-web:session-refusals",
+      "dimensions": [
+        "protocol",
+        "webHost"
+      ],
+      "subject": "Real TestServer login and logout routes reject malformed, over-limit, missing-session, bad bootstrap, and invalid antiforgery requests without granting or revoking a valid session.",
+      "tests": [
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web session refusals through TestServer.[CC-WEB-001] login refuses malformed and over-limit bodies before admission",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web session refusals through TestServer.[CC-WEB-001] login rejects invalid bootstrap and antiforgery credentials",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web session refusals through TestServer.[CC-WEB-001] logout rejects absent session and malformed or unverified bodies"
+      ]
+    },
+    {
+      "id": "branch-cli:decimal-revision",
+      "dimensions": [
+        "cli",
+        "protocol"
+      ],
+      "subject": "CLI-v3 framing accepts canonical text revisions and rejects numeric or out-of-range revisions before endpoint execution.",
+      "tests": [
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI v3 protocol.CLI v3 framing.accepts a typed command draft with string revision and exact values",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI v3 protocol.CLI v3 framing.protocol and revision rejection.rejects a numeric revision rather than risking JavaScript precision loss"
+      ]
+    },
+    {
+      "id": "branch-cli:duplicate-properties",
+      "dimensions": [
+        "cli",
+        "protocol"
+      ],
+      "subject": "Published CLI-v3 framing refuses duplicate object keys before dispatch, including a duplicate protocolVersion.",
+      "tests": [
+        "dotnet:ClaimCore.AcceptanceTests::published CLI-v3 acceptance.invalid UTF-8, escaped Unicode, oversized input, duplicate keys, and trailing documents fail at published CLI framing",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI v3 protocol.CLI v3 framing.timeout and strict parser rejection.strict parser rejects duplicate frame keys and invalid UTF-8"
+      ]
+    },
+    {
+      "id": "branch-cli:hard-break",
+      "dimensions": [
+        "cli",
+        "protocol"
+      ],
+      "subject": "The CLI process rejects removed protocol-v2 positional verbs with the unsupported-invocation exit and v3 grammar.",
+      "tests": [
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI v3 child-process contract.CLI v3 call and session.CLI v3 session and hard break.removed protocol-v2 verbs are unsupported process invocations"
+      ]
+    },
+    {
+      "id": "branch-cli:invalid-recovery-identity",
+      "dimensions": [
+        "cli",
+        "protocol",
+        "recovery"
+      ],
+      "subject": "Published CLI-v3 calls reject malformed operation IDs and request digests before a recovery attempt.",
+      "tests": [
+        "dotnet:ClaimCore.AcceptanceTests::published CLI-v3 acceptance.invalid case and recovery cursors, operation IDs, and digests remain typed CLI-v3 failures"
+      ]
+    },
+    {
+      "id": "branch-cli:invalid-unicode",
+      "dimensions": [
+        "cli",
+        "protocol"
+      ],
+      "subject": "Published CLI-v3 call rejects unpaired escaped Unicode values and property names as bounded protocol failures.",
+      "tests": [
+        "dotnet:ClaimCore.AcceptanceTests::published CLI-v3 acceptance.invalid UTF-8, escaped Unicode, oversized input, duplicate keys, and trailing documents fail at published CLI framing",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core boundary parity.unpaired escaped Unicode cannot alias a valid claimant request"
+      ]
+    },
+    {
+      "id": "branch-cli:invalid-utf8",
+      "dimensions": [
+        "cli",
+        "protocol"
+      ],
+      "subject": "Published CLI-v3 call rejects malformed UTF-8 bytes with an exact safe protocol code before runtime admission.",
+      "tests": [
+        "dotnet:ClaimCore.AcceptanceTests::published CLI-v3 acceptance.invalid UTF-8, escaped Unicode, oversized input, duplicate keys, and trailing documents fail at published CLI framing"
+      ]
+    },
+    {
+      "id": "branch-cli:oversized-input",
+      "dimensions": [
+        "cli",
+        "protocol"
+      ],
+      "subject": "Published CLI-v3 call bounds its standard-input frame and emits INPUT_TOO_LARGE for 131073 bytes.",
+      "tests": [
+        "dotnet:ClaimCore.AcceptanceTests::published CLI-v3 acceptance.invalid UTF-8, escaped Unicode, oversized input, duplicate keys, and trailing documents fail at published CLI framing"
+      ]
+    },
+    {
+      "id": "branch-cli:private-artifacts",
+      "dimensions": [
+        "cli",
+        "protocol",
+        "recovery"
+      ],
+      "subject": "Private recovery imports refuse permissive modes, extended ACLs, link and pathname swaps, non-files, invalid UTF-8, and oversized bytes; exports are exclusive owner-only files that cannot overwrite or follow links, with bounded diagnostics.",
+      "tests": [
+        "dotnet:ClaimCore.AcceptanceTests::published CLI-v3 acceptance.published CLI private files.[CC-CLI-002] published export is owner-only, exclusive, and refuses links without disclosure",
+        "dotnet:ClaimCore.AcceptanceTests::published CLI-v3 acceptance.published CLI private files.[CC-CLI-002] published import refuses broad mode, invalid UTF-8, and oversize without disclosure",
+        "dotnet:ClaimCore.AcceptanceTests::published CLI-v3 acceptance.published CLI private files.[CC-CLI-002] published import refuses leaf and ancestor symlinks without disclosure",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI private-file security.[CC-CLI-002] concurrent source replacement yields one complete inode or a safe refusal",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI private-file security.[CC-CLI-002] private export is exclusive, owner-only, and removes its failed partial file",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI private-file security.[CC-CLI-002] private export rejects leaf and ancestor links without changing targets",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI private-file security.[CC-CLI-002] private source enforces exact size, mode, ACL, and strict UTF-8",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI private-file security.[CC-CLI-002] private source rejects symlinks, ancestor links, directories, and relative paths",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native private-file ancestor race.[CC-CLI-002] descriptor-relative create and lock remain in pinned parent after ancestor swap"
+      ]
+    },
+    {
+      "id": "branch-cli:session-blank-eof",
+      "dimensions": [
+        "cli",
+        "protocol"
+      ],
+      "subject": "The CLI-v3 session process emits one local BLANK_FRAME response and exits cleanly at EOF.",
+      "tests": [
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI v3 child-process contract.CLI v3 call and session.CLI v3 session and hard break.session emits a local protocol frame for a blank line and exits cleanly"
+      ]
+    },
+    {
+      "id": "branch-cli:trailing-document",
+      "dimensions": [
+        "cli",
+        "protocol"
+      ],
+      "subject": "Published CLI-v3 call rejects two concatenated JSON documents as one invalid input frame.",
+      "tests": [
+        "dotnet:ClaimCore.AcceptanceTests::published CLI-v3 acceptance.invalid UTF-8, escaped Unicode, oversized input, duplicate keys, and trailing documents fail at published CLI framing"
+      ]
+    },
+    {
+      "id": "branch-cli:unknown-property-privacy",
+      "dimensions": [
+        "cli",
+        "protocol"
+      ],
+      "subject": "CLI-v3 decoder reports a registered parent path for unknown authored keys and never echoes synthetic private key names.",
+      "tests": [
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI v3 protocol.CLI v3 framing.timeout and strict parser rejection.unknown and duplicate property paths never echo authored key names"
+      ]
+    },
+    {
+      "id": "branch-web:codec-bytes",
+      "dimensions": [
+        "protocol",
+        "webHost"
+      ],
+      "subject": "Host JSON wrappers return byte-for-byte Contracts-owned Web codec bodies for typed query, command, and recovery examples.",
+      "tests": [
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 wire projection.[CC-WEB-001] all JSON host wrappers deliver Contracts-owned codec bytes"
+      ]
+    },
+    {
+      "id": "branch-web:host-failure-phase",
+      "dimensions": [
+        "protocol",
+        "webHost"
+      ],
+      "subject": "Real TestServer host failures retain exact generated status, safe code, no-store header, and NOT_STARTED phase before dispatch.",
+      "tests": [
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] HTTP failure statuses and execution phases use exact generated host bodies"
+      ]
+    },
+    {
+      "id": "branch-web:private-files",
+      "dimensions": [
+        "protocol",
+        "webHost"
+      ],
+      "subject": "Web state directories, lock files, and rotating bootstrap credentials reject unsafe existing modes and links without chmod or redirected creation, removing only validated private generated files.",
+      "tests": [
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web host private-file security.[CC-WEB-001] bootstrap rotation removes only validated private generated files",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web host private-file security.[CC-WEB-001] existing state mode and links fail without chmod or redirected creation",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web host private-file security.[CC-WEB-001] state lock rejects linked or broad existing files without rewriting them"
+      ]
+    },
+    {
+      "id": "branch-web:raw-import-bounds",
+      "dimensions": [
+        "protocol",
+        "webHost"
+      ],
+      "subject": "Real production TestServer requests enforce each raw recovery import media type, byte limit, and required source digest.",
+      "tests": [
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] raw import routes enforce exact media, body bounds, and source digest"
+      ]
+    },
+    {
+      "id": "branch-web:retired-routes",
+      "dimensions": [
+        "protocol",
+        "webHost"
+      ],
+      "subject": "Production TestServer rejects retired and unknown API paths as typed private 404 responses rather than SPA documents.",
+      "tests": [
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] retired and unknown API routes return typed no-store 404"
+      ]
+    },
+    {
+      "id": "branch-web:session-admission",
+      "dimensions": [
+        "protocol",
+        "webHost"
+      ],
+      "subject": "Real cookies and antiforgery tokens govern login/logout, and every authenticated route refuses missing session, origin, or CSRF.",
+      "tests": [
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] every authenticated route rejects absent session, origin, and antiforgery before core dispatch",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] session login and logout revoke admission through real cookies and antiforgery"
+      ]
+    },
+    {
+      "id": "endpoint-cli:case.get",
+      "outcomeTags": [
+        "cancelled",
+        "failed",
+        "found",
+        "notFound",
+        "rejected"
+      ],
+      "dimensions": [
+        "cli",
+        "protocol"
+      ],
+      "subject": "The published CLI-v3 process exercises endpoint case.get through its generated invocation and result framing; the catalog test checks that this identifier has one Contracts owner.",
+      "tests": [
+        "dotnet:ClaimCore.AcceptanceTests::published CLI-v3 acceptance.[CC-CLI-001] published call and session qualify commands, queries, and recovery",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI v3 protocol.CLI v3 generated contract.endpoint implementation inventory is exactly the generated CLI catalog",
+        "frontend:vitest::generated contract corpora > accepts every production CLI branch and rejects malformed or cross-endpoint values"
+      ]
+    },
+    {
+      "id": "endpoint-cli:case.history",
+      "outcomeTags": [
+        "cancelled",
+        "failed",
+        "found",
+        "notFound",
+        "rejected"
+      ],
+      "dimensions": [
+        "cli",
+        "protocol"
+      ],
+      "subject": "The published CLI-v3 process exercises endpoint case.history through its generated invocation and result framing; the catalog test checks that this identifier has one Contracts owner.",
+      "tests": [
+        "dotnet:ClaimCore.AcceptanceTests::published CLI-v3 acceptance.[CC-CLI-001] published call and session qualify commands, queries, and recovery",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI v3 protocol.CLI v3 generated contract.endpoint implementation inventory is exactly the generated CLI catalog",
+        "frontend:vitest::generated contract corpora > accepts every production CLI branch and rejects malformed or cross-endpoint values"
+      ]
+    },
+    {
+      "id": "endpoint-cli:case.list",
+      "outcomeTags": [
+        "cancelled",
+        "failed",
+        "rejected",
+        "succeeded"
+      ],
+      "dimensions": [
+        "cli",
+        "protocol"
+      ],
+      "subject": "The published CLI-v3 process exercises endpoint case.list through its generated invocation and result framing; the catalog test checks that this identifier has one Contracts owner.",
+      "tests": [
+        "dotnet:ClaimCore.AcceptanceTests::published CLI-v3 acceptance.[CC-CLI-001] published call and session qualify commands, queries, and recovery",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI v3 protocol.CLI v3 generated contract.endpoint implementation inventory is exactly the generated CLI catalog",
+        "frontend:vitest::generated contract corpora > accepts every production CLI branch and rejects malformed or cross-endpoint values"
+      ]
+    },
+    {
+      "id": "endpoint-cli:command.execute",
+      "outcomeTags": [
+        "attemptAdmissionUnknown",
+        "attemptUnresolved",
+        "cancelledBeforeAdmission",
+        "cancelledBeforeAttempt",
+        "completed",
+        "failedBeforeAttempt",
+        "observedAccepted",
+        "preparationStateUnknown",
+        "rejectedBeforeAttempt"
+      ],
+      "dimensions": [
+        "cli",
+        "protocol"
+      ],
+      "subject": "The published CLI-v3 process exercises endpoint command.execute through its generated invocation and result framing; the catalog test checks that this identifier has one Contracts owner.",
+      "tests": [
+        "dotnet:ClaimCore.AcceptanceTests::published CLI-v3 acceptance.[CC-CLI-001] published call and session qualify commands, queries, and recovery",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI v3 protocol.CLI v3 generated contract.endpoint implementation inventory is exactly the generated CLI catalog",
+        "frontend:vitest::generated contract corpora > accepts every production CLI branch and rejects malformed or cross-endpoint values"
+      ]
+    },
+    {
+      "id": "endpoint-cli:command.prepare",
+      "outcomeTags": [
+        "cancelledBeforeAdmission",
+        "failed",
+        "observedAccepted",
+        "preparationStateUnknown",
+        "prepared",
+        "rejected",
+        "retainedForRecovery"
+      ],
+      "dimensions": [
+        "cli",
+        "protocol"
+      ],
+      "subject": "The published CLI-v3 process exercises endpoint command.prepare through its generated invocation and result framing; the catalog test checks that this identifier has one Contracts owner.",
+      "tests": [
+        "dotnet:ClaimCore.AcceptanceTests::published CLI-v3 acceptance.[CC-CLI-001] published call and session qualify commands, queries, and recovery",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI v3 protocol.CLI v3 generated contract.endpoint implementation inventory is exactly the generated CLI catalog",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI-v3 exit contract.[CC-REC-001] exact prepare replay wires observed acceptance and retained recovery distinctly",
+        "frontend:vitest::generated contract corpora > accepts every production CLI branch and rejects malformed or cross-endpoint values"
+      ]
+    },
+    {
+      "id": "endpoint-cli:operation.observe",
+      "outcomeTags": [
+        "cancelled",
+        "failed",
+        "found",
+        "notFound",
+        "rejected"
+      ],
+      "dimensions": [
+        "cli",
+        "protocol"
+      ],
+      "subject": "The published CLI-v3 process exercises endpoint operation.observe through its generated invocation and result framing; the catalog test checks that this identifier has one Contracts owner.",
+      "tests": [
+        "dotnet:ClaimCore.AcceptanceTests::published CLI-v3 acceptance.[CC-CLI-001] published call and session qualify commands, queries, and recovery",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI v3 protocol.CLI v3 generated contract.endpoint implementation inventory is exactly the generated CLI catalog",
+        "frontend:vitest::generated contract corpora > accepts every production CLI branch and rejects malformed or cross-endpoint values"
+      ]
+    },
+    {
+      "id": "endpoint-cli:recovery.dismiss",
+      "outcomeTags": [
+        "alreadyDismissed",
+        "cancelledBeforeAdmission",
+        "dismissStateUnknown",
+        "dismissed",
+        "failed",
+        "notFound",
+        "refused"
+      ],
+      "dimensions": [
+        "cli",
+        "protocol"
+      ],
+      "subject": "The published CLI-v3 process exercises endpoint recovery.dismiss through its generated invocation and result framing; the catalog test checks that this identifier has one Contracts owner.",
+      "tests": [
+        "dotnet:ClaimCore.AcceptanceTests::published CLI-v3 acceptance.[CC-CLI-001] published call and session qualify commands, queries, and recovery",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI v3 protocol.CLI v3 generated contract.endpoint implementation inventory is exactly the generated CLI catalog",
+        "frontend:vitest::generated contract corpora > accepts every production CLI branch and rejects malformed or cross-endpoint values"
+      ]
+    },
+    {
+      "id": "endpoint-cli:recovery.export",
+      "outcomeTags": [
+        "cancelled",
+        "exported",
+        "failed",
+        "notFound",
+        "rejected"
+      ],
+      "dimensions": [
+        "cli",
+        "protocol"
+      ],
+      "subject": "The published CLI-v3 process exercises endpoint recovery.export through its generated invocation and result framing; the catalog test checks that this identifier has one Contracts owner.",
+      "tests": [
+        "dotnet:ClaimCore.AcceptanceTests::published CLI-v3 acceptance.[CC-CLI-001] published call and session qualify commands, queries, and recovery",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI v3 protocol.CLI v3 generated contract.endpoint implementation inventory is exactly the generated CLI catalog",
+        "frontend:vitest::generated contract corpora > accepts every production CLI branch and rejects malformed or cross-endpoint values"
+      ]
+    },
+    {
+      "id": "endpoint-cli:recovery.importEnvelopePreview",
+      "outcomeTags": [
+        "cancelled",
+        "failed",
+        "previewed",
+        "rejected"
+      ],
+      "dimensions": [
+        "cli",
+        "protocol"
+      ],
+      "subject": "The published CLI-v3 process exercises endpoint recovery.importEnvelopePreview through its generated invocation and result framing; the catalog test checks that this identifier has one Contracts owner.",
+      "tests": [
+        "dotnet:ClaimCore.AcceptanceTests::published CLI-v3 acceptance.[CC-CLI-001] published call and session qualify commands, queries, and recovery",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI v3 protocol.CLI v3 generated contract.endpoint implementation inventory is exactly the generated CLI catalog",
+        "frontend:vitest::generated contract corpora > accepts every production CLI branch and rejects malformed or cross-endpoint values"
+      ]
+    },
+    {
+      "id": "endpoint-cli:recovery.importEnvelopeRetain",
+      "outcomeTags": [
+        "cancelledBeforeAdmission",
+        "existing",
+        "failed",
+        "rejected",
+        "retainStateUnknown",
+        "retained"
+      ],
+      "dimensions": [
+        "cli",
+        "protocol"
+      ],
+      "subject": "The published CLI-v3 process exercises endpoint recovery.importEnvelopeRetain through its generated invocation and result framing; the catalog test checks that this identifier has one Contracts owner.",
+      "tests": [
+        "dotnet:ClaimCore.AcceptanceTests::published CLI-v3 acceptance.[CC-CLI-001] published call and session qualify commands, queries, and recovery",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI v3 protocol.CLI v3 generated contract.endpoint implementation inventory is exactly the generated CLI catalog",
+        "frontend:vitest::generated contract corpora > accepts every production CLI branch and rejects malformed or cross-endpoint values"
+      ]
+    },
+    {
+      "id": "endpoint-cli:recovery.importRecordPreview",
+      "outcomeTags": [
+        "cancelled",
+        "failed",
+        "previewed",
+        "rejected"
+      ],
+      "dimensions": [
+        "cli",
+        "protocol"
+      ],
+      "subject": "The published CLI-v3 process exercises endpoint recovery.importRecordPreview through its generated invocation and result framing; the catalog test checks that this identifier has one Contracts owner.",
+      "tests": [
+        "dotnet:ClaimCore.AcceptanceTests::published CLI-v3 acceptance.[CC-CLI-001] published call and session qualify commands, queries, and recovery",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI v3 protocol.CLI v3 generated contract.endpoint implementation inventory is exactly the generated CLI catalog",
+        "frontend:vitest::generated contract corpora > accepts every production CLI branch and rejects malformed or cross-endpoint values"
+      ]
+    },
+    {
+      "id": "endpoint-cli:recovery.importRecordRetain",
+      "outcomeTags": [
+        "cancelledBeforeAdmission",
+        "existing",
+        "failed",
+        "rejected",
+        "retainStateUnknown",
+        "retained"
+      ],
+      "dimensions": [
+        "cli",
+        "protocol"
+      ],
+      "subject": "The published CLI-v3 process exercises endpoint recovery.importRecordRetain through its generated invocation and result framing; the catalog test checks that this identifier has one Contracts owner.",
+      "tests": [
+        "dotnet:ClaimCore.AcceptanceTests::published CLI-v3 acceptance.[CC-CLI-001] published call and session qualify commands, queries, and recovery",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI v3 protocol.CLI v3 generated contract.endpoint implementation inventory is exactly the generated CLI catalog",
+        "frontend:vitest::generated contract corpora > accepts every production CLI branch and rejects malformed or cross-endpoint values"
+      ]
+    },
+    {
+      "id": "endpoint-cli:recovery.inspect",
+      "outcomeTags": [
+        "cancelled",
+        "failed",
+        "found",
+        "notFound",
+        "rejected"
+      ],
+      "dimensions": [
+        "cli",
+        "protocol"
+      ],
+      "subject": "The published CLI-v3 process exercises endpoint recovery.inspect through its generated invocation and result framing; the catalog test checks that this identifier has one Contracts owner.",
+      "tests": [
+        "dotnet:ClaimCore.AcceptanceTests::published CLI-v3 acceptance.[CC-CLI-001] published call and session qualify commands, queries, and recovery",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI v3 protocol.CLI v3 generated contract.endpoint implementation inventory is exactly the generated CLI catalog",
+        "frontend:vitest::generated contract corpora > accepts every production CLI branch and rejects malformed or cross-endpoint values"
+      ]
+    },
+    {
+      "id": "endpoint-cli:recovery.list",
+      "outcomeTags": [
+        "cancelled",
+        "failed",
+        "rejected",
+        "succeeded"
+      ],
+      "dimensions": [
+        "cli",
+        "protocol"
+      ],
+      "subject": "The published CLI-v3 process exercises endpoint recovery.list through its generated invocation and result framing; the catalog test checks that this identifier has one Contracts owner.",
+      "tests": [
+        "dotnet:ClaimCore.AcceptanceTests::published CLI-v3 acceptance.[CC-CLI-001] published call and session qualify commands, queries, and recovery",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI v3 protocol.CLI v3 generated contract.endpoint implementation inventory is exactly the generated CLI catalog",
+        "frontend:vitest::generated contract corpora > accepts every production CLI branch and rejects malformed or cross-endpoint values"
+      ]
+    },
+    {
+      "id": "endpoint-cli:recovery.resolve",
+      "outcomeTags": [
+        "attemptAdmissionUnknown",
+        "attemptUnresolved",
+        "cancelledBeforeAdmission",
+        "cancelledBeforeAttempt",
+        "completed",
+        "failedBeforeAttempt",
+        "observedAccepted",
+        "refusedBeforeAttempt"
+      ],
+      "dimensions": [
+        "cli",
+        "protocol"
+      ],
+      "subject": "The published CLI-v3 process exercises endpoint recovery.resolve through its generated invocation and result framing; the catalog test checks that this identifier has one Contracts owner.",
+      "tests": [
+        "dotnet:ClaimCore.AcceptanceTests::published CLI-v3 acceptance.[CC-CLI-001] published call and session qualify commands, queries, and recovery",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI v3 protocol.CLI v3 generated contract.endpoint implementation inventory is exactly the generated CLI catalog",
+        "frontend:vitest::generated contract corpora > accepts every production CLI branch and rejects malformed or cross-endpoint values"
+      ]
+    },
+    {
+      "id": "endpoint-web:case.get",
+      "outcomeTags": [
+        "CANCELLED",
+        "FAILED",
+        "REJECTED",
+        "SUCCEEDED"
+      ],
+      "dimensions": [
+        "protocol",
+        "webHost"
+      ],
+      "subject": "The production TestServer dispatches POST /api/v2/cases/get as the generated Web-v2 endpoint case.get and applies its relevant session, origin, and media admission.",
+      "tests": [
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] case and operation routes preserve found, absent, rejected, failed, and cancelled core outcomes",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] every authenticated route rejects absent session, origin, and antiforgery before core dispatch",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] production route map dispatches all nineteen v2 endpoints",
+        "frontend:vitest::generated contract corpora > accepts generated Web host values and rejects every malformed or cross-endpoint value"
+      ]
+    },
+    {
+      "id": "endpoint-web:case.history",
+      "outcomeTags": [
+        "CANCELLED",
+        "FAILED",
+        "REJECTED",
+        "SUCCEEDED"
+      ],
+      "dimensions": [
+        "protocol",
+        "webHost"
+      ],
+      "subject": "The production TestServer dispatches POST /api/v2/cases/history as the generated Web-v2 endpoint case.history and applies its relevant session, origin, and media admission.",
+      "tests": [
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] case and operation routes preserve found, absent, rejected, failed, and cancelled core outcomes",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] every authenticated route rejects absent session, origin, and antiforgery before core dispatch",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] production route map dispatches all nineteen v2 endpoints",
+        "frontend:vitest::generated contract corpora > accepts generated Web host values and rejects every malformed or cross-endpoint value"
+      ]
+    },
+    {
+      "id": "endpoint-web:case.list",
+      "outcomeTags": [
+        "CANCELLED",
+        "FAILED",
+        "REJECTED",
+        "SUCCEEDED"
+      ],
+      "dimensions": [
+        "protocol",
+        "webHost"
+      ],
+      "subject": "The production TestServer dispatches POST /api/v2/cases/list as the generated Web-v2 endpoint case.list and applies its relevant session, origin, and media admission.",
+      "tests": [
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] case and operation routes preserve found, absent, rejected, failed, and cancelled core outcomes",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] every authenticated route rejects absent session, origin, and antiforgery before core dispatch",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] production route map dispatches all nineteen v2 endpoints",
+        "frontend:vitest::generated contract corpora > accepts generated Web host values and rejects every malformed or cross-endpoint value"
+      ]
+    },
+    {
+      "id": "endpoint-web:command.execute",
+      "outcomeTags": [
+        "ATTEMPT_ADMISSION_UNKNOWN",
+        "ATTEMPT_UNRESOLVED",
+        "CANCELLED_BEFORE_ADMISSION",
+        "CANCELLED_BEFORE_ATTEMPT",
+        "COMPLETED",
+        "FAILED_BEFORE_ATTEMPT",
+        "OBSERVED_ACCEPTED",
+        "REFUSED_BEFORE_ATTEMPT"
+      ],
+      "dimensions": [
+        "protocol",
+        "webHost"
+      ],
+      "subject": "The production TestServer dispatches POST /api/v2/operations/submit as the generated Web-v2 endpoint command.execute and applies its relevant session, origin, and media admission.",
+      "tests": [
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] every authenticated route rejects absent session, origin, and antiforgery before core dispatch",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] preparation and submission routes preserve definite, unknown, and exact-digest outcomes",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] production route map dispatches all nineteen v2 endpoints",
+        "frontend:vitest::generated contract corpora > accepts generated Web host values and rejects every malformed or cross-endpoint value"
+      ]
+    },
+    {
+      "id": "endpoint-web:command.prepare",
+      "outcomeTags": [
+        "CANCELLED_BEFORE_ADMISSION",
+        "FAILED",
+        "OBSERVED_ACCEPTED",
+        "PREPARATION_STATE_UNKNOWN",
+        "PREPARED",
+        "REJECTED",
+        "RETAINED_FOR_RECOVERY"
+      ],
+      "dimensions": [
+        "protocol",
+        "webHost"
+      ],
+      "subject": "The production TestServer dispatches POST /api/v2/operations/prepare as the generated Web-v2 endpoint command.prepare and applies its relevant session, origin, and media admission.",
+      "tests": [
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] every authenticated route rejects absent session, origin, and antiforgery before core dispatch",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] preparation and submission routes preserve definite, unknown, and exact-digest outcomes",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] production route map dispatches all nineteen v2 endpoints",
+        "frontend:vitest::generated contract corpora > accepts generated Web host values and rejects every malformed or cross-endpoint value"
+      ]
+    },
+    {
+      "id": "endpoint-web:definition",
+      "outcomeTags": [
+        "DESCRIBED"
+      ],
+      "dimensions": [
+        "protocol",
+        "webHost"
+      ],
+      "subject": "The production TestServer dispatches GET /api/v2/definition as the generated Web-v2 endpoint definition and applies its relevant session, origin, and media admission.",
+      "tests": [
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] production route map dispatches all nineteen v2 endpoints",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] session login and logout revoke admission through real cookies and antiforgery",
+        "frontend:vitest::generated contract corpora > accepts generated Web host values and rejects every malformed or cross-endpoint value"
+      ]
+    },
+    {
+      "id": "endpoint-web:operation.observe",
+      "outcomeTags": [
+        "CANCELLED",
+        "FAILED",
+        "REJECTED",
+        "SUCCEEDED"
+      ],
+      "dimensions": [
+        "protocol",
+        "webHost"
+      ],
+      "subject": "The production TestServer dispatches POST /api/v2/operations/observe as the generated Web-v2 endpoint operation.observe and applies its relevant session, origin, and media admission.",
+      "tests": [
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] case and operation routes preserve found, absent, rejected, failed, and cancelled core outcomes",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] every authenticated route rejects absent session, origin, and antiforgery before core dispatch",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] production route map dispatches all nineteen v2 endpoints",
+        "frontend:vitest::generated contract corpora > accepts generated Web host values and rejects every malformed or cross-endpoint value"
+      ]
+    },
+    {
+      "id": "endpoint-web:recovery.dismiss",
+      "outcomeTags": [
+        "ALREADY_DISMISSED",
+        "CANCELLED_BEFORE_ADMISSION",
+        "DISMISSED",
+        "DISMISS_STATE_UNKNOWN",
+        "FAILED",
+        "NOT_FOUND",
+        "REFUSED"
+      ],
+      "dimensions": [
+        "protocol",
+        "webHost"
+      ],
+      "subject": "The production TestServer dispatches POST /api/v2/recovery/dismiss as the generated Web-v2 endpoint recovery.dismiss and applies its relevant session, origin, and media admission.",
+      "tests": [
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] every authenticated route rejects absent session, origin, and antiforgery before core dispatch",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] production route map dispatches all nineteen v2 endpoints",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] recovery list, inspect, resolve, dismiss, and export preserve typed lifecycle outcomes",
+        "frontend:vitest::generated contract corpora > accepts generated Web host values and rejects every malformed or cross-endpoint value"
+      ]
+    },
+    {
+      "id": "endpoint-web:recovery.export",
+      "outcomeTags": [
+        "CANCELLED",
+        "FAILED",
+        "NOT_FOUND",
+        "REJECTED"
+      ],
+      "dimensions": [
+        "protocol",
+        "webHost"
+      ],
+      "subject": "The production TestServer dispatches POST /api/v2/recovery/export as the generated Web-v2 endpoint recovery.export and applies its relevant session, origin, and media admission.",
+      "tests": [
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] every authenticated route rejects absent session, origin, and antiforgery before core dispatch",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] production route map dispatches all nineteen v2 endpoints",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] recovery list, inspect, resolve, dismiss, and export preserve typed lifecycle outcomes",
+        "frontend:vitest::generated contract corpora > accepts generated Web host values and rejects every malformed or cross-endpoint value"
+      ]
+    },
+    {
+      "id": "endpoint-web:recovery.importEnvelopePreview",
+      "outcomeTags": [
+        "CANCELLED",
+        "FAILED",
+        "REJECTED",
+        "SUCCEEDED"
+      ],
+      "dimensions": [
+        "protocol",
+        "webHost"
+      ],
+      "subject": "The production TestServer dispatches POST /api/v2/recovery/import-envelope/preview as the generated Web-v2 endpoint recovery.importEnvelopePreview and applies its relevant session, origin, and media admission.",
+      "tests": [
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] every authenticated route rejects absent session, origin, and antiforgery before core dispatch",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] production route map dispatches all nineteen v2 endpoints",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] raw import routes enforce exact media, body bounds, and source digest",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] recovery preview and retain routes preserve source digest, refusal, and uncertainty outcomes",
+        "frontend:vitest::generated contract corpora > accepts generated Web host values and rejects every malformed or cross-endpoint value"
+      ]
+    },
+    {
+      "id": "endpoint-web:recovery.importEnvelopeRetain",
+      "outcomeTags": [
+        "CANCELLED_BEFORE_ADMISSION",
+        "EXISTING",
+        "FAILED",
+        "REJECTED",
+        "RETAINED",
+        "RETAIN_STATE_UNKNOWN"
+      ],
+      "dimensions": [
+        "protocol",
+        "webHost"
+      ],
+      "subject": "The production TestServer dispatches POST /api/v2/recovery/import-envelope/retain as the generated Web-v2 endpoint recovery.importEnvelopeRetain and applies its relevant session, origin, and media admission.",
+      "tests": [
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] every authenticated route rejects absent session, origin, and antiforgery before core dispatch",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] production route map dispatches all nineteen v2 endpoints",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] raw import routes enforce exact media, body bounds, and source digest",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] recovery preview and retain routes preserve source digest, refusal, and uncertainty outcomes",
+        "frontend:vitest::generated contract corpora > accepts generated Web host values and rejects every malformed or cross-endpoint value"
+      ]
+    },
+    {
+      "id": "endpoint-web:recovery.importRecordPreview",
+      "outcomeTags": [
+        "CANCELLED",
+        "FAILED",
+        "REJECTED",
+        "SUCCEEDED"
+      ],
+      "dimensions": [
+        "protocol",
+        "webHost"
+      ],
+      "subject": "The production TestServer dispatches POST /api/v2/recovery/import-record/preview as the generated Web-v2 endpoint recovery.importRecordPreview and applies its relevant session, origin, and media admission.",
+      "tests": [
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] every authenticated route rejects absent session, origin, and antiforgery before core dispatch",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] production route map dispatches all nineteen v2 endpoints",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] raw import routes enforce exact media, body bounds, and source digest",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] recovery preview and retain routes preserve source digest, refusal, and uncertainty outcomes",
+        "frontend:vitest::generated contract corpora > accepts generated Web host values and rejects every malformed or cross-endpoint value"
+      ]
+    },
+    {
+      "id": "endpoint-web:recovery.importRecordRetain",
+      "outcomeTags": [
+        "CANCELLED_BEFORE_ADMISSION",
+        "EXISTING",
+        "FAILED",
+        "REJECTED",
+        "RETAINED",
+        "RETAIN_STATE_UNKNOWN"
+      ],
+      "dimensions": [
+        "protocol",
+        "webHost"
+      ],
+      "subject": "The production TestServer dispatches POST /api/v2/recovery/import-record/retain as the generated Web-v2 endpoint recovery.importRecordRetain and applies its relevant session, origin, and media admission.",
+      "tests": [
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] every authenticated route rejects absent session, origin, and antiforgery before core dispatch",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] production route map dispatches all nineteen v2 endpoints",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] raw import routes enforce exact media, body bounds, and source digest",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] recovery preview and retain routes preserve source digest, refusal, and uncertainty outcomes",
+        "frontend:vitest::generated contract corpora > accepts generated Web host values and rejects every malformed or cross-endpoint value"
+      ]
+    },
+    {
+      "id": "endpoint-web:recovery.inspect",
+      "outcomeTags": [
+        "CANCELLED",
+        "FAILED",
+        "REJECTED",
+        "SUCCEEDED"
+      ],
+      "dimensions": [
+        "protocol",
+        "webHost"
+      ],
+      "subject": "The production TestServer dispatches POST /api/v2/recovery/inspect as the generated Web-v2 endpoint recovery.inspect and applies its relevant session, origin, and media admission.",
+      "tests": [
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] every authenticated route rejects absent session, origin, and antiforgery before core dispatch",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] production route map dispatches all nineteen v2 endpoints",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] recovery list, inspect, resolve, dismiss, and export preserve typed lifecycle outcomes",
+        "frontend:vitest::generated contract corpora > accepts generated Web host values and rejects every malformed or cross-endpoint value"
+      ]
+    },
+    {
+      "id": "endpoint-web:recovery.list",
+      "outcomeTags": [
+        "CANCELLED",
+        "FAILED",
+        "REJECTED",
+        "SUCCEEDED"
+      ],
+      "dimensions": [
+        "protocol",
+        "webHost"
+      ],
+      "subject": "The production TestServer dispatches POST /api/v2/recovery/list as the generated Web-v2 endpoint recovery.list and applies its relevant session, origin, and media admission.",
+      "tests": [
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] every authenticated route rejects absent session, origin, and antiforgery before core dispatch",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] production route map dispatches all nineteen v2 endpoints",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] recovery list, inspect, resolve, dismiss, and export preserve typed lifecycle outcomes",
+        "frontend:vitest::generated contract corpora > accepts generated Web host values and rejects every malformed or cross-endpoint value"
+      ]
+    },
+    {
+      "id": "endpoint-web:recovery.resolve",
+      "outcomeTags": [
+        "ATTEMPT_ADMISSION_UNKNOWN",
+        "ATTEMPT_UNRESOLVED",
+        "CANCELLED_BEFORE_ADMISSION",
+        "CANCELLED_BEFORE_ATTEMPT",
+        "COMPLETED",
+        "FAILED_BEFORE_ATTEMPT",
+        "OBSERVED_ACCEPTED",
+        "REFUSED_BEFORE_ATTEMPT"
+      ],
+      "dimensions": [
+        "protocol",
+        "webHost"
+      ],
+      "subject": "The production TestServer dispatches POST /api/v2/recovery/resolve as the generated Web-v2 endpoint recovery.resolve and applies its relevant session, origin, and media admission.",
+      "tests": [
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] every authenticated route rejects absent session, origin, and antiforgery before core dispatch",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] production route map dispatches all nineteen v2 endpoints",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] recovery list, inspect, resolve, dismiss, and export preserve typed lifecycle outcomes",
+        "frontend:vitest::generated contract corpora > accepts generated Web host values and rejects every malformed or cross-endpoint value"
+      ]
+    },
+    {
+      "id": "endpoint-web:session",
+      "outcomeTags": [
+        "SNAPSHOT"
+      ],
+      "dimensions": [
+        "protocol",
+        "webHost"
+      ],
+      "subject": "The production TestServer dispatches GET /api/v2/session as the generated Web-v2 endpoint session and applies its relevant session, origin, and media admission.",
+      "tests": [
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] production route map dispatches all nineteen v2 endpoints",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] session login and logout revoke admission through real cookies and antiforgery",
+        "frontend:vitest::generated contract corpora > accepts generated Web host values and rejects every malformed or cross-endpoint value"
+      ]
+    },
+    {
+      "id": "endpoint-web:session.login",
+      "outcomeTags": [
+        "SNAPSHOT"
+      ],
+      "dimensions": [
+        "protocol",
+        "webHost"
+      ],
+      "subject": "The production TestServer dispatches POST /api/v2/session/login as the generated Web-v2 endpoint session.login and applies its relevant session, origin, and media admission.",
+      "tests": [
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] production route map dispatches all nineteen v2 endpoints",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] session login and logout revoke admission through real cookies and antiforgery",
+        "frontend:vitest::generated contract corpora > accepts generated Web host values and rejects every malformed or cross-endpoint value"
+      ]
+    },
+    {
+      "id": "endpoint-web:session.logout",
+      "outcomeTags": [
+        "SNAPSHOT"
+      ],
+      "dimensions": [
+        "protocol",
+        "webHost"
+      ],
+      "subject": "The production TestServer dispatches POST /api/v2/session/logout as the generated Web-v2 endpoint session.logout and applies its relevant session, origin, and media admission.",
+      "tests": [
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] production route map dispatches all nineteen v2 endpoints",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] session login and logout revoke admission through real cookies and antiforgery",
+        "frontend:vitest::generated contract corpora > accepts generated Web host values and rejects every malformed or cross-endpoint value"
+      ]
+    },
+    {
+      "id": "live-dotnet-ClaimCore.AcceptanceTests",
+      "dimensions": [
+        "cli",
+        "protocol"
+      ],
+      "subject": "Every current dotnet:ClaimCore.AcceptanceTests identity is mapped to its surviving convergence assurance surface after the typed core and transport cutover.",
+      "tests": [
+        "dotnet:ClaimCore.AcceptanceTests::published CLI-v3 acceptance.[CC-APP-001] rejected published CLI-v3 command preserves PostgreSQL business state",
+        "dotnet:ClaimCore.AcceptanceTests::published CLI-v3 acceptance.[CC-CLI-001] published call and session qualify commands, queries, and recovery",
+        "dotnet:ClaimCore.AcceptanceTests::published CLI-v3 acceptance.invalid UTF-8, escaped Unicode, oversized input, duplicate keys, and trailing documents fail at published CLI framing",
+        "dotnet:ClaimCore.AcceptanceTests::published CLI-v3 acceptance.invalid case and recovery cursors, operation IDs, and digests remain typed CLI-v3 failures",
+        "dotnet:ClaimCore.AcceptanceTests::published CLI-v3 acceptance.malformed recovery envelope preview cannot retain preparation bytes",
+        "dotnet:ClaimCore.AcceptanceTests::published CLI-v3 acceptance.published CLI private files.[CC-CLI-002] published export is owner-only, exclusive, and refuses links without disclosure",
+        "dotnet:ClaimCore.AcceptanceTests::published CLI-v3 acceptance.published CLI private files.[CC-CLI-002] published import refuses broad mode, invalid UTF-8, and oversize without disclosure",
+        "dotnet:ClaimCore.AcceptanceTests::published CLI-v3 acceptance.published CLI private files.[CC-CLI-002] published import refuses leaf and ancestor symlinks without disclosure",
+        "dotnet:ClaimCore.AcceptanceTests::published CLI-v3 acceptance.published CLI-v3 mode parity.all fifteen endpoints preserve typed outcomes through call and session"
+      ]
+    },
+    {
+      "id": "live-dotnet-ClaimCore.ConcurrencyQualificationTests",
+      "dimensions": [
+        "core",
+        "recovery"
+      ],
+      "subject": "Every current dotnet:ClaimCore.ConcurrencyQualificationTests identity is mapped to its surviving convergence assurance surface after the typed core and transport cutover.",
+      "tests": [
+        "dotnet:ClaimCore.ConcurrencyQualificationTests::ClaimCore concurrency qualification.PostgreSQL recovery races.[CC-REC-001] simultaneous exact resolves retain one accepted revision",
+        "dotnet:ClaimCore.ConcurrencyQualificationTests::ClaimCore concurrency qualification.PostgreSQL recovery races.[CC-REC-001] simultaneous resolve and dismiss have one lifecycle winner",
+        "dotnet:ClaimCore.ConcurrencyQualificationTests::ClaimCore concurrency qualification.concurrency qualification.absent case concurrency.concurrent distinct opens of one absent reference accept exactly one revision",
+        "dotnet:ClaimCore.ConcurrencyQualificationTests::ClaimCore concurrency qualification.concurrency qualification.revision concurrency.concurrent different commands against same revision cannot lose an update",
+        "dotnet:ClaimCore.ConcurrencyQualificationTests::ClaimCore concurrency qualification.concurrency qualification.same operation concurrency.concurrent same-ID attempts produce one accepted change"
+      ]
+    },
+    {
+      "id": "live-dotnet-ClaimCore.DocsTests",
+      "dimensions": [
+        "documentation"
+      ],
+      "subject": "Every current dotnet:ClaimCore.DocsTests identity is mapped to its surviving convergence assurance surface after the typed core and transport cutover.",
+      "tests": [
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Evidence manifests.publish tree manifests.detects output mutation after manifest creation",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Evidence manifests.publish tree manifests.rejects symlinks in output trees",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Evidence manifests.publish tree manifests.rejects unsafe paths and duplicate JSON properties",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Evidence manifests.publish tree manifests.round-trips a sorted deterministic tree manifest",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Evidence manifests.stage registry and manifests.stage manifests.atomic report writer refuses tracked destinations",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Evidence manifests.stage registry and manifests.stage manifests.stage format rejects a changed registered procedure",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Evidence manifests.stage registry and manifests.stage registry.native private-file library is required in each supported publish tree",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Evidence manifests.stage registry and manifests.stage registry.portable publication records still require Linux CI evidence",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Evidence manifests.stage registry and manifests.stage registry.registers each required stage exactly once without aggregate quality",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Execution evidence.contract execution mapping.maps exact leading tags to every declaration",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Execution evidence.contract execution mapping.rejects an unknown Web leaf token despite valid declared evidence",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Execution evidence.contract execution mapping.rejects missing unknown and malformed contract evidence",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Execution evidence.failure evidence.the evidence command writes an honest report before failing",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Execution evidence.failure evidence.wrong structured JSON kinds return a bounded validation error",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Execution evidence.strict TRX reconciliation.accepted TRX evidence.accepts one fully reconciled passing execution",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Execution evidence.strict TRX reconciliation.accepted TRX evidence.rejects nonzero skipped counters even with a pass",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Execution evidence.strict TRX reconciliation.rejected TRX evidence.rejects an unresolved result ID",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Execution evidence.strict TRX reconciliation.rejected TRX evidence.rejects failed outcomes and wrong assembly identity",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Execution evidence.strict TRX reconciliation.rejected TRX evidence.rejects missing or mismatched execution-entry identities",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Execution evidence.strict TRX reconciliation.rejected TRX evidence.rejects wrong namespace and exact-count drift",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Frontend report inventory.Playwright report requires the exact current catalog count and identities",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Frontend report inventory.Vitest report requires the exact current catalog count and identities",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Markdown assurance.contract declarations.extracts an anchored contract heading",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Markdown assurance.contract declarations.rejects a missing anchor and duplicate contract ID",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Markdown assurance.generated Markdown blocks.recognizes one exact block and ignores fenced marker examples",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Markdown assurance.generated Markdown blocks.rejects nested marker pairs",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Markdown assurance.generated Markdown blocks.rejects orphaned and malformed marker syntax",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Markdown assurance.generated Markdown blocks.replaces only the registered body span",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Markdown assurance.trusted block generators.trusted block failures.fails closed when the trusted producer writes stderr",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Markdown assurance.trusted block generators.trusted block failures.requires registration in both directions",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Markdown assurance.trusted block generators.trusted block output.normalizes only CLI CRLF and emits one final LF",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Path and link safety.local links and anchors.accepts checked local external and explicit-anchor links",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Path and link safety.local links and anchors.rejects duplicate explicit anchors",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Path and link safety.local links and anchors.rejects missing targets fragments and traversal escapes",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Path and link safety.local links and anchors.rejects wrong case malformed encoding and unsafe schemes",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Path and link safety.repository path confinement.detects exact path casing on every host",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Path and link safety.repository path confinement.rejects a symlink in an existing path",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Path and link safety.repository path confinement.rejects rooted dot parent and backslash registered paths",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Path and link safety.repository path confinement.source provenance is closed, private-aware, and Git-worktree-safe",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.semantic review subjects.marked spans ignore unrelated bytes but detect reviewed changes",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.semantic review subjects.normative contract-body changes invalidate the review subject",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.semantic review subjects.review registry cannot include itself or an empty subject",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.semantic review subjects.strict verification rejects a vacuous review registry",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.semantic review subjects.whole-file changes invalidate the review subject"
+      ]
+    },
+    {
+      "id": "live-dotnet-ClaimCore.IntegrationTests",
+      "dimensions": [
+        "core",
+        "migration",
+        "recovery"
+      ],
+      "subject": "Every current dotnet:ClaimCore.IntegrationTests identity is mapped to its surviving convergence assurance surface after the typed core and transport cutover.",
+      "tests": [
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL migration upgrade qualification.migration 001 through 005.atomicity.[CC-DB-001] failed migration rolls back its objects and journal row",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL migration upgrade qualification.migration 001 through 005.manifest validation.[CC-DB-001] applied migration identities remain frozen",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL migration upgrade qualification.migration 001 through 005.manifest validation.[CC-DB-001] migrator refuses a newer manifest entry",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL migration upgrade qualification.migration 001 through 005.retained data.[CC-DB-001] upgrade preserves cases and history and installs recovery storage",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL preparation boundary.[CC-REC-001] concurrent same-ID retain reports one creator and one existing replay",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL preparation boundary.capacity refusal preserves retained material and permits exact replay",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL preparation boundary.installation lineage remains stable and non-empty",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL preparation boundary.lifecycle markers are append-only and mutually exclusive",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL preparation boundary.runtime cannot inspect the owner-only preparation prune audit",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL preparation boundary.runtime startup rejects an added preparation-object grant",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL recovery cancellation.[CC-REC-001] caller cancellation after commit start cannot relabel outcome",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL recovery cancellation.[CC-REC-001] cancellation immediately before technical commit rolls back insertion",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL recovery cancellation.[CC-REC-001] cancelled attempt admission creates no marker or attempt",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL recovery cancellation.[CC-REC-001] cancelled dismissal leaves preparation actionable",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL recovery cancellation.[CC-REC-001] cancelled recovery reads return cancellation without disclosure",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL recovery cancellation.[CC-REC-001] cancelled retain has no durable preparation",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL recovery cancellation.[CC-REC-001] cancelled settlement leaves admitted attempt unsettled",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL recovery cancellation.[CC-REC-001] technical commit-start failure remains uncertain",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL recovery evidence.[CC-REC-001] exact replay preserves first producer provenance",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL recovery evidence.[CC-REC-001] inspect preserves an earlier unsettled attempt",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL recovery evidence.[CC-REC-001] inspect projects the accepted attempt and settlement",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL recovery evidence.[CC-REC-001] inspect reads pre-003 uncertainty marker independently of provenance",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL recovery races.[CC-REC-001] simultaneous exact resolves retain one accepted revision",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL recovery races.[CC-REC-001] simultaneous resolve and dismiss have one lifecycle winner",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL recovery state table.[CC-REC-001] accepted receipt permits replay and export but never dismissal",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL recovery state table.[CC-REC-001] dismissed preparation is idempotent and export-only",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL recovery state table.[CC-REC-001] missing preparation has explicit read and action outcomes",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL schema and failure boundary.atomic persistence.failure after case update rolls back case and audit together",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL schema and failure boundary.migration and constraints.database rejects excessive precision instead of rounding it",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL schema and failure boundary.migration and constraints.database rejects partial decision tuple",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL schema and failure boundary.migration and constraints.database rejects payment without decision",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL schema and failure boundary.migration and constraints.migration is repeatable only with identical source checksum",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL schema and failure boundary.runtime privileges and formats.accepted receipts retain explicit request and snapshot format revisions",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL schema and failure boundary.runtime privileges and formats.runtime role cannot delete cases",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL schema and failure boundary.runtime privileges and formats.runtime role cannot mutate the migration journal",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL schema and failure boundary.runtime privileges and formats.runtime role cannot rewrite audit history",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL transactions.concurrency qualification.absent case concurrency.concurrent distinct opens of one absent reference accept exactly one revision",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL transactions.concurrency qualification.revision concurrency.concurrent different commands against same revision cannot lose an update",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL transactions.concurrency qualification.same operation concurrency.concurrent same-ID attempts produce one accepted change",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL transactions.lifecycle transactions.full lifecycle and payment correction retain all versions",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL transactions.operation lookup.operation lookup identifies exact accepted result",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL transactions.persistence and replay.[CC-APP-002] exact replay returns original receipt, not current state",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL transactions.persistence and replay.[CC-APP-002] same ID with different content fails",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL transactions.persistence and replay.reopen connection and read all stored fields",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL typed recovery.public typed preparations.corrupt retained identity fails through the public recovery workflow",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL typed recovery.public typed preparations.dismissal is durable and blocks later public resolution",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL typed recovery.public typed preparations.prepare retains exact identity and replay keeps the original technical record",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL typed recovery.runtime recovery boundary.runtime admits the exact preparation schema and ACL",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL typed recovery.runtime recovery boundary.runtime cannot alter lineage or recovery lifecycle tables",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.Storage boundary qualification.database environment.DateStyle cannot change date persistence",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.Storage boundary qualification.database environment.async commit and read-only sessions are refused",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.Storage boundary qualification.database environment.migration refuses startup-option overrides",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.Storage boundary qualification.finite date storage.maximum supported date is not positive infinity",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.Storage boundary qualification.finite date storage.minimum supported date is not negative infinity",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.Storage boundary qualification.storage scalars and fixture target.date day encoding has exact limits",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.Storage boundary qualification.storage scalars and fixture target.excess precision is rejected without readback rounding",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.Storage boundary qualification.storage scalars and fixture target.integration setup refuses different test endpoints",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.Storage boundary qualification.storage scalars and fixture target.non-finite stored money is refused",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.Storage boundary qualification.storage scalars and fixture target.out of decimal range is rejected without conversion overflow",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.Storage boundary qualification.transaction and migration integrity.core transaction does not join caller ambient scope",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.Storage boundary qualification.transaction and migration integrity.runtime rejects installed script hash mismatch",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.basic schema and PostgreSQL 18.6 baseline.baseline and current schema.actual server is on the required baseline",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.basic schema and PostgreSQL 18.6 baseline.baseline and current schema.baseline rejects older releases and unqualified next major",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.basic schema and PostgreSQL 18.6 baseline.baseline and current schema.live current-state row keeps exactly thirteen business columns plus revision metadata",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.basic schema and PostgreSQL 18.6 baseline.field persistence and migration journal.all fields survive decision, payment and closure without currency coercion",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.basic schema and PostgreSQL 18.6 baseline.field persistence and migration journal.migration journal exactly matches the ordered embedded manifest",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.case pagination has an exact fifty-item boundary and lossless continuation",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.migration 005 recovery evidence.[CC-DB-001] migration 002 state upgrades to 005 with exact legacy evidence",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.migration 005 recovery evidence.[CC-DB-001] migration 003 state upgrades to 005 with exact legacy evidence",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.migration 005 recovery evidence.[CC-DB-001] migration 004 state upgrades to 005 without rewriting attempts",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.production core boundary.composed runtime.host exposes the same core API used by a native renderer",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.production core boundary.connection admission.an elevated session cannot impersonate the runtime role",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.production core boundary.connection admission.dangerous runtime connection switches are refused before database access",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.production core boundary.connection admission.direct store call cannot bypass runtime role verification by omitting CheckSchema",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.production core boundary.connection admission.host rejects elevated connection rather than handing a renderer a store",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.production core boundary.exact runtime ACL.MAINTAIN is outside the cases-table envelope",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.production core boundary.exact runtime ACL.PUBLIC column grants are rejected",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.production core boundary.exact runtime ACL.column UPDATE is rejected even without table UPDATE",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.production core boundary.exact runtime ACL.database TEMPORARY is outside the runtime envelope",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.production core boundary.exact runtime ACL.grant options are rejected on otherwise required privileges",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.production core boundary.runtime lifecycle.[CC-RUN-001] bounded disposal defers source cleanup until the final lease",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.production core boundary.runtime lifecycle.[CC-RUN-001] cancelled opening returns a safe typed fault",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.production core boundary.runtime lifecycle.[CC-RUN-001] disposal closes admission and drains a held operation",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.production core boundary.runtime lifecycle.[CC-RUN-001] disposed runtime refuses retained normal and recovery facades",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.rejected transactions.[CC-APP-001] rejected command changes neither case nor history",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.runtime lifecycle under PostgreSQL.[CC-RUN-001] admitted mutation remains accepted while runtime drains",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.runtime lifecycle under PostgreSQL.[CC-RUN-001] admitted query keeps its typed outcome while runtime drains",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.runtime lifecycle under PostgreSQL.[CC-RUN-001] mid-open cancellation interrupts schema inspection",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.runtime lifecycle under PostgreSQL.[CC-RUN-001] thrown opening closes its owned source",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.typed retained-request recovery.[CC-REC-001] accepted receipt blocks dismissal without a lifecycle marker",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.typed retained-request recovery.[CC-REC-001] export and resolve preserve the exact retained request",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.typed retained-request recovery.[CC-REC-001] foreign installation lineage is rejected before submission",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.typed retained-request recovery.[CC-REC-001] incompatible request fingerprint is rejected before submission"
+      ]
+    },
+    {
+      "id": "live-dotnet-ClaimCore.MigrationQualificationTests",
+      "dimensions": [
+        "migration"
+      ],
+      "subject": "Every current dotnet:ClaimCore.MigrationQualificationTests identity is mapped to its surviving convergence assurance surface after the typed core and transport cutover.",
+      "tests": [
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 005.atomicity.[CC-DB-001] failed migration rolls back its objects and journal row",
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 005.manifest validation.[CC-DB-001] applied migration identities remain frozen",
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 005.manifest validation.[CC-DB-001] migrator refuses a newer manifest entry",
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 005.retained data.[CC-DB-001] upgrade preserves cases and history and installs recovery storage",
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.migration 005 recovery evidence.[CC-DB-001] migration 002 state upgrades to 005 with exact legacy evidence",
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.migration 005 recovery evidence.[CC-DB-001] migration 003 state upgrades to 005 with exact legacy evidence",
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.migration 005 recovery evidence.[CC-DB-001] migration 004 state upgrades to 005 without rewriting attempts"
+      ]
+    },
+    {
+      "id": "live-dotnet-ClaimCore.RecoveryQualificationTests",
+      "dimensions": [
+        "recovery"
+      ],
+      "subject": "Every current dotnet:ClaimCore.RecoveryQualificationTests identity is mapped to its surviving convergence assurance surface after the typed core and transport cutover.",
+      "tests": [
+        "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.PostgreSQL recovery cancellation.[CC-REC-001] caller cancellation after commit start cannot relabel outcome",
+        "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.PostgreSQL recovery cancellation.[CC-REC-001] cancellation immediately before technical commit rolls back insertion",
+        "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.PostgreSQL recovery cancellation.[CC-REC-001] cancelled attempt admission creates no marker or attempt",
+        "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.PostgreSQL recovery cancellation.[CC-REC-001] cancelled dismissal leaves preparation actionable",
+        "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.PostgreSQL recovery cancellation.[CC-REC-001] cancelled recovery reads return cancellation without disclosure",
+        "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.PostgreSQL recovery cancellation.[CC-REC-001] cancelled retain has no durable preparation",
+        "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.PostgreSQL recovery cancellation.[CC-REC-001] cancelled settlement leaves admitted attempt unsettled",
+        "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.PostgreSQL recovery cancellation.[CC-REC-001] technical commit-start failure remains uncertain",
+        "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.PostgreSQL recovery evidence.[CC-REC-001] exact replay preserves first producer provenance",
+        "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.PostgreSQL recovery evidence.[CC-REC-001] inspect preserves an earlier unsettled attempt",
+        "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.PostgreSQL recovery evidence.[CC-REC-001] inspect projects the accepted attempt and settlement",
+        "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.PostgreSQL recovery evidence.[CC-REC-001] inspect reads pre-003 uncertainty marker independently of provenance",
+        "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.PostgreSQL recovery state table.[CC-REC-001] accepted receipt permits replay and export but never dismissal",
+        "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.PostgreSQL recovery state table.[CC-REC-001] dismissed preparation is idempotent and export-only",
+        "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.PostgreSQL recovery state table.[CC-REC-001] missing preparation has explicit read and action outcomes",
+        "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.typed retained-request recovery.[CC-REC-001] accepted receipt blocks dismissal without a lifecycle marker",
+        "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.typed retained-request recovery.[CC-REC-001] export and resolve preserve the exact retained request",
+        "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.typed retained-request recovery.[CC-REC-001] foreign installation lineage is rejected before submission",
+        "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.typed retained-request recovery.[CC-REC-001] incompatible request fingerprint is rejected before submission"
+      ]
+    },
+    {
+      "id": "live-dotnet-ClaimCore.Tests",
+      "dimensions": [
+        "cli",
+        "core",
+        "protocol",
+        "recovery"
+      ],
+      "subject": "Every current dotnet:ClaimCore.Tests identity is mapped to its surviving convergence assurance surface after the typed core and transport cutover.",
+      "tests": [
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI private-file security.[CC-CLI-002] concurrent source replacement yields one complete inode or a safe refusal",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI private-file security.[CC-CLI-002] private export is exclusive, owner-only, and removes its failed partial file",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI private-file security.[CC-CLI-002] private export rejects leaf and ancestor links without changing targets",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI private-file security.[CC-CLI-002] private source enforces exact size, mode, ACL, and strict UTF-8",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI private-file security.[CC-CLI-002] private source rejects symlinks, ancestor links, directories, and relative paths",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI v3 child-process contract.CLI v3 call and session.CLI v3 call.call reports strict frame errors as one protocol JSON response",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI v3 child-process contract.CLI v3 call and session.CLI v3 call.call retains a valid runtime request as typed configuration failure",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI v3 child-process contract.CLI v3 call and session.CLI v3 session and hard break.removed protocol-v2 verbs are unsupported process invocations",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI v3 child-process contract.CLI v3 call and session.CLI v3 session and hard break.session emits a local protocol frame for a blank line and exits cleanly",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI v3 child-process contract.CLI v3 discovery processes.all structured discovery variants use the generated contract",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI v3 child-process contract.CLI v3 discovery processes.help and plain version are configuration-free human text",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI v3 child-process contract.CLI v3 discovery processes.structured discovery is configuration-free and contract-backed",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI v3 protocol.CLI v3 framing.accepts a typed command draft with string revision and exact values",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI v3 protocol.CLI v3 framing.protocol and revision rejection.rejects a numeric revision rather than risking JavaScript precision loss",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI v3 protocol.CLI v3 framing.protocol and revision rejection.rejects protocol v2 before endpoint execution",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI v3 protocol.CLI v3 framing.timeout and strict parser rejection.forbids caller timeouts for mutation endpoints",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI v3 protocol.CLI v3 framing.timeout and strict parser rejection.generated raw corpus exercises every endpoint and strict rejection class",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI v3 protocol.CLI v3 framing.timeout and strict parser rejection.missing required endpoint input is rejected before runtime access",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI v3 protocol.CLI v3 framing.timeout and strict parser rejection.strict parser rejects duplicate frame keys and invalid UTF-8",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI v3 protocol.CLI v3 framing.timeout and strict parser rejection.unknown and duplicate property paths never echo authored key names",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI v3 protocol.CLI v3 generated contract.endpoint implementation inventory is exactly the generated CLI catalog",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI v3 protocol.CLI v3 generated contract.generated schemas are strict JSON documents with the v3 declaration",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI-v3 exit contract.[CC-REC-001] exact prepare replay wires observed acceptance and retained recovery distinctly",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI-v3 exit contract.recovery lookup absence exits two while an empty recovery page succeeds",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Contracts foundation.canonical renderers.keeps CLI and Web wire fingerprints distinct and lowercase SHA-256",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Contracts foundation.canonical renderers.renders deterministic strict UTF-8 semantic and wire contracts",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Contracts foundation.canonical renderers.uses Application's semantic fingerprint authority",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Contracts foundation.endpoint inventories.models Web imports as raw media and keeps browser export free of CLI paths",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Contracts foundation.endpoint inventories.projects every CLI v3 endpoint in its stable order",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Contracts foundation.endpoint inventories.projects every HTTP v2 endpoint in its stable order",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Contracts foundation.semantic projection.derives field, command, status, and rule inventories from the semantic core",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Database admin private-file boundary.[CC-DB-002] schema-owner credential rejects unsafe mode, links, UTF-8, and size before database access",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Domain semantic descriptors.numeric and status scalar descriptors.amount and currency descriptors own the existing exact grammars",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Domain semantic descriptors.numeric and status scalar descriptors.status descriptor is the closed Domain status vocabulary",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Domain semantic descriptors.ordered command inputs and prefill metadata.all eight command definitions are the sole command inventory",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Domain semantic descriptors.ordered command inputs and prefill metadata.case reference and derived status are never command inputs",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Domain semantic descriptors.ordered command inputs and prefill metadata.command inputs have exact ordered prefill sources",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Domain semantic descriptors.scalar metadata ownership.field definitions expose scalar rules without a duplicate kind",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Domain semantic descriptors.stable executable-rule inventory.cross-field and transition rules have unique stable identifiers",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Domain semantic descriptors.text and date scalar descriptors.date descriptors define exact Gregorian input range",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Domain semantic descriptors.text and date scalar descriptors.text descriptors own every text validation constraint",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Hedgehog canonical records.all command shapes retain external meaning",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Hedgehog canonical records.layout is insignificant but semantic changes affect identity",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Hedgehog scalar boundaries.Gregorian date grammar and range",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Hedgehog scalar boundaries.Unicode text and length boundaries",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Hedgehog scalar boundaries.amount precision and magnitude",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Hedgehog scalar boundaries.uppercase ASCII currency grammar",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Hedgehog state invariants.accepted and rejected sequences preserve revision invariants",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Hedgehog state invariants.reachable states match the independent availability matrix",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.compiler-enforced core boundary.ordinary caller can use IClaimsCore",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.compiler-enforced core boundary.ordinary caller cannot create the core callback",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.compiler-enforced core boundary.ordinary caller cannot forge a prepared operation",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.compiler-enforced core boundary.ordinary caller cannot instantiate PostgreSQL storage",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.compiler-enforced core boundary.ordinary caller cannot see the store port",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.configuration projections.Compose uses the canonical digest-pinned PostgreSQL image",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.core ownership and typed interfaces.dependency direction.Application has no transport, contract, or PostgreSQL dependency",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.core ownership and typed interfaces.dependency direction.Contracts projects semantic values without adapter dependencies",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.core ownership and typed interfaces.dependency direction.Domain has no adapter or infrastructure dependency",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.core ownership and typed interfaces.typed core public surface.IClaimsCore exposes only typed endpoint methods and recovery workflow",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.core ownership and typed interfaces.typed core public surface.storage ports and preparation records are not public application types",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.core ownership and typed interfaces.typed core public surface.transport codecs have one Contracts owner and no anonymous adapter projection",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain validation.chronology.decision before notification is rejected",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain validation.chronology.future payment is rejected",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain validation.chronology.payment before decision is rejected",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain validation.currency grammar.invalid currency case 01",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain validation.currency grammar.invalid currency case 02",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain validation.currency grammar.invalid currency case 03",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain validation.currency grammar.invalid currency case 04",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain validation.currency grammar.invalid currency case 05",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain validation.currency grammar.invalid currency case 06",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain validation.date grammar.invalid date case 01",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain validation.date grammar.invalid date case 02",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain validation.date grammar.invalid date case 03",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain validation.date grammar.invalid date case 04",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain validation.decimal grammar.invalid decimal case 01",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain validation.decimal grammar.invalid decimal case 02",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain validation.decimal grammar.invalid decimal case 03",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain validation.decimal grammar.invalid decimal case 04",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain validation.decimal grammar.invalid decimal case 05",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain validation.decimal grammar.invalid decimal case 06",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain validation.decimal grammar.invalid decimal case 07",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain validation.decimal grammar.invalid decimal case 08",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain validation.decimal grammar.invalid decimal case 09",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain validation.decimal grammar.invalid decimal case 10",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain validation.decimal grammar.invalid decimal case 11",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain validation.decimal grammar.invalid decimal case 12",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain validation.precision and round trips.all supported state views rehydrate",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain validation.precision and round trips.maximum amount stays exact",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain validation.restoration integrity.all six incomplete decision tuples are rejected on restoration",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain validation.restoration integrity.restore cannot invent a decision for payment",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain validation.restoration integrity.revision ceiling rejects terminal snapshots and prevents overflow",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain.correction state.clear payment requires no extra claims-entry data",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain.correction state.clear payment without a recorded date is rejected",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain.correction state.closed cases must reopen before edits",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain.decision editing.paid decision cannot be edited",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain.decision editing.registration amendment requires withdrawal of an existing decision",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain.decision editing.unpaid decision can be replaced",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain.identity and revisions.close and reopen preserve all business fields",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain.identity and revisions.missing case rejected",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain.identity and revisions.stale version cannot overwrite a case",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain.lifecycle meaning.decision is a tuple but is not a payment",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain.lifecycle meaning.payment is not closure",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain.lifecycle meaning.unpaid and undecided case can close",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain.payment guards.payable can exceed claim and have a different currency",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain.payment guards.payment requires decision",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain.payment guards.second full payment rejected",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain.payment guards.zero decision allowed but no fictitious zero transfer",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain.registration facts.future incident and notification are rejected",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain.registration facts.notification before incident is rejected",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain.registration facts.registration preserves the requested meanings, without invented later facts",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.exact retained identity.[CC-REC-001] Execute rejects a same-ID same-digest record with different canonical bytes",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.exact retained identity.[CC-REC-001] concurrent canonical imports classify creator and existing replay",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.exact retained identity.[CC-REC-001] exact Prepare retry after acceptance returns an observed receipt",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.exact retained identity.[CC-REC-001] exact retained Prepare retry after another commit directs Recovery",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.generated semantic field contract.semantic command metadata.command descriptors are the only ordered input inventory",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.generated semantic field contract.semantic field schema.semantic contract renders exactly thirteen ordered field descriptors",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.generated semantic field contract.semantic field schema.semantic scalar metadata originates from Domain descriptors",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.draft validation.form binding does not trim, uppercase or round business input",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.draft validation.missing extra and duplicate form values are refused",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.field projection.field projection is exactly the thirteen native fields with absence preserved",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.form binding.each form binds the intended command without a renderer-specific recipe",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.form definitions.all eight forms cover the canonical commands, in canonical order",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native private-file ancestor race.[CC-CLI-002] descriptor-relative create and lock remain in pinned parent after ancestor swap",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.property harness policy.failure diagnostic privacy.property failures omit generated payload and control canaries",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.property harness policy.failure diagnostic privacy.structural assertion failures omit compared claimant values",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.property harness policy.property configuration.partial and additional recheck inputs fail closed",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.property harness policy.property configuration.required and extended profiles are explicit",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.published example contract.every shipped command example decodes and completes its sequential Domain transition",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.recovery uncertainty boundaries.[CC-REC-001] cancellation after admitted attempt preserves definite acceptance",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.recovery uncertainty boundaries.[CC-REC-001] cancellation before attempt admission leaves the claim untouched",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.recovery uncertainty boundaries.[CC-REC-001] commit-unknown execution is never settled",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.recovery uncertainty boundaries.[CC-REC-001] definite pre-commit failure is settled as a failure",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.recovery uncertainty boundaries.[CC-REC-001] definite stale rejection is settled without another receipt",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.recovery uncertainty boundaries.[CC-REC-001] receipt between observation and attempt returns exact replay",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.recovery uncertainty boundaries.[CC-REC-001] settlement error preserves definite acceptance",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.recovery uncertainty boundaries.[CC-REC-001] thrown execution after admission remains unresolved",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.recovery uncertainty boundaries.[CC-REC-001] thrown settlement preserves definite acceptance",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.recovery uncertainty boundaries.[CC-REC-001] unknown attempt admission never executes the claim",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.single-owner compiled release identity.compiled source identity.CLI v3 discovery renders compiled release identity",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.single-owner compiled release identity.compiled source identity.native core identity comes from the SDK attributes, matching the sole source",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.single-owner compiled release identity.identity consumers and compatibility.a non-product assembly cannot be accepted as a compatible first-party component",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.single-owner compiled release identity.identity consumers and compatibility.current test and application assemblies have matching release identity",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.single-owner compiled release identity.version ownership.only Directory.Build.props authors product version properties",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.stable identity and historical encoding.all eight command encodings and identities match fixed protocol-2 vectors",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.stable identity and historical encoding.snapshot-2 encoding stays independent of advisory rendering metadata",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.state guard and advertised actions.[CC-DOM-002] each state advertises and enforces the specified command set",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.state guard and advertised actions.availability edge conditions.availability does not substitute for payload validation",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.state guard and advertised actions.availability edge conditions.no action is advertised at the exhausted revision",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core boundary parity.forged advisory review cannot affect accepted state",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core boundary parity.typed and CLI-v3 decoded drafts receive the same core decision",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core boundary parity.typed recovery storage failure and CLI wire response omit authored values",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core boundary parity.unpaired escaped Unicode cannot alias a valid claimant request",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core execution.typed discovery.description separates static contract from runtime context",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core execution.typed execution.caller cancellation before admission proves no execution",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core execution.typed execution.exact retry observes the original receipt without another commit",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core execution.typed execution.execute commits an open case and get exposes derived actions",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core execution.typed execution.execute retains identity when preparation state is unknown",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core execution.typed execution.idempotency and concurrency rejections.operation-ID content conflict is an explicit typed rejection",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core execution.typed execution.idempotency and concurrency rejections.stale command is rejected before recovery attempt admission",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core facade.preparation.prepare derives all review values from domain state",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core facade.queries.missing history is a successful explicit lookup absence",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core facade.queries.query cancellation never enters a storage read",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core facade.recovery.[CC-REC-001] existing receipt with different bytes cannot masquerade as replay",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core facade.recovery.dismissed recovery is refused before an attempt starts",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core facade.recovery.recovery export requires the exact retained digest",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core facade.recovery.recovery resolve executes an exact retained preparation once",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core queries.query validation and cancellation.history rejects malformed opaque cursors",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core queries.query validation and cancellation.query cancellation returns no synthetic success or failure",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core queries.typed lookup outcomes.empty history is explicit only after the case exists",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core queries.typed lookup outcomes.get distinguishes a missing reference from a rejected request",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core queries.typed lookup outcomes.operation observation distinguishes a missing operation from a store fault",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed pagination boundaries.case listing returns request-bounded stable pages without loss or overlap",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed pagination boundaries.history cursors preserve detail mode and continue from the last returned revision",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] cancellation during receipt observation returns cancelled read",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] cancellation during recovery inspect hides receipt result",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] cancellation during resolve observation prevents attempt",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] commit-start dismissal failure remains state unknown",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] commit-start import retention failure remains state unknown",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] definite attempt cancellation prevents claim execution",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] definite dismiss cancellation remains actionable",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] definite import retention cancellation does not submit",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] definite retain cancellation becomes cancelled before admission",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] settlement cancellation preserves accepted execution"
+      ]
+    },
+    {
+      "id": "live-dotnet-ClaimCore.WebTests",
+      "dimensions": [
+        "protocol",
+        "webHost"
+      ],
+      "subject": "Every current dotnet:ClaimCore.WebTests identity is mapped to its surviving convergence assurance surface after the typed core and transport cutover.",
+      "tests": [
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] HTTP failure statuses and execution phases use exact generated host bodies",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] case and operation routes preserve found, absent, rejected, failed, and cancelled core outcomes",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] every authenticated route rejects absent session, origin, and antiforgery before core dispatch",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] exact command draft transport accepts all eight semantic command variants",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] invalid UTF-8 is refused before query decoding and core dispatch",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] preparation and submission routes preserve definite, unknown, and exact-digest outcomes",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] production route map dispatches all nineteen v2 endpoints",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] raw import routes enforce exact media, body bounds, and source digest",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] recovery list cursor round-trips opaquely and malformed cursors are typed refusals",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] recovery list, inspect, resolve, dismiss, and export preserve typed lifecycle outcomes",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] recovery preview and retain routes preserve source digest, refusal, and uncertainty outcomes",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] retired and unknown API routes return typed no-store 404",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] session login and logout revoke admission through real cookies and antiforgery",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] session registry enforces idle and absolute expiry with deterministic time",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 input.[CC-WEB-001] decodes one semantic command-draft shape",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 input.[CC-WEB-001] distinguishes Boolean recovery confirmation and Domain command inputs",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 input.[CC-WEB-001] enforces streaming byte limits before decoding",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 input.[CC-WEB-001] gives session mutations closed body schemas",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 input.[CC-WEB-001] keeps endpoint request bodies exact and typed",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 input.[CC-WEB-001] rejects malformed case-target and page scalar shapes",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 input.[CC-WEB-001] validates canonical operation and source-digest scalars",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 wire projection.[CC-WEB-001] all JSON host wrappers deliver Contracts-owned codec bytes",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 wire projection.[CC-WEB-001] consumes HTTP routes and raw constraints from ClaimCore.Contracts",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 wire projection.[CC-WEB-001] exposes independently fingerprinted semantic and Web contracts",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 wire projection.[CC-WEB-001] keeps host admission errors outside application outcomes",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 wire projection.[CC-WEB-001] preserves command endpoint identities in typed outcome bodies",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 wire projection.[CC-WEB-001] serializes logout as an anonymous session snapshot",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web configuration boundaries.[CC-WEB-001] accepts only one exact local HTTPS origin",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web configuration boundaries.[CC-WEB-001] enforces session lifetime ordering",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web configuration boundaries.[CC-WEB-001] loads defaults and rejects every out-of-range admission limit",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web configuration boundaries.[CC-WEB-001] rejects linked credentials and certificates without private keys",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web host private-file security.[CC-WEB-001] bootstrap rotation removes only validated private generated files",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web host private-file security.[CC-WEB-001] existing state mode and links fail without chmod or redirected creation",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web host private-file security.[CC-WEB-001] state lock rejects linked or broad existing files without rewriting them",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web process entry.[CC-WEB-001] startup accepts only configuration-free introspection verbs",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web security boundaries.[CC-WEB-001] emits privacy headers and no-store",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web security boundaries.[CC-WEB-001] limits requests to exact loopback browser admission",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web security boundaries.[CC-WEB-001] maintains a private rotating bootstrap credential",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web security boundaries.[CC-WEB-001] makes session validity a server-side registry concern",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web session refusals through TestServer.[CC-WEB-001] login refuses malformed and over-limit bodies before admission",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web session refusals through TestServer.[CC-WEB-001] login rejects invalid bootstrap and antiforgery credentials",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web session refusals through TestServer.[CC-WEB-001] logout rejects absent session and malformed or unverified bodies",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web session route boundaries.[CC-WEB-001] applies exact login body-limit classifications",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web session route boundaries.[CC-WEB-001] requires matching CSRF and bootstrap credentials before session issue",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web typed core routes.[CC-WEB-001] delegates case lookup to the endpoint-specific typed core method",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web typed core routes.[CC-WEB-001] delegates recovery resolution only through IClaimsCore.Recovery",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web typed core routes.[CC-WEB-001] refuses raw retention without its exact source digest header",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web typed core routes.[CC-WEB-001] rejects malformed transport before core invocation",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web v2 admission.[CC-WEB-001] admits only the exact local JSON shape",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web v2 admission.[CC-WEB-001] distinguishes media and exact declared body-size boundaries",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web v2 admission.[CC-WEB-001] gives raw recovery artifacts independent exact media bounds",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web v2 admission.[CC-WEB-001] keeps the mutable browser session registry server-side",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web v2 admission.[CC-WEB-001] rejects absent and remote peers or wrong host authority",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web v2 admission.[CC-WEB-001] requires one exact browser origin and same-origin metadata",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web v2 admission.[CC-WEB-001] returns typed CSRF admission refusal"
+      ]
+    },
+    {
+      "id": "live-frontend-playwright",
+      "dimensions": [
+        "webGui",
+        "webHost"
+      ],
+      "subject": "Every current frontend:playwright identity is mapped to its surviving convergence assurance surface after the typed core and transport cutover.",
+      "tests": [
+        "frontend:playwright::bounds repeated published login admission and recovers after its window",
+        "frontend:playwright::contains keyboard focus and returns it after safely dismissing a prepared review",
+        "frontend:playwright::exports and retains both exact recovery artifact formats through published Web",
+        "frontend:playwright::focuses and describes the named field after a published core rejection",
+        "frontend:playwright::keeps published login, editor, review, receipt and history accessible at narrow and zoomed viewports",
+        "frontend:playwright::prefills metadata fields and confirms dirty command changes before review",
+        "frontend:playwright::preserves operation identity after a dropped published submit response",
+        "frontend:playwright::publishes open, amendment, decision, withdrawal, full history and operation lookup",
+        "frontend:playwright::publishes payment, correction, close and reopen with current-case parity",
+        "frontend:playwright::recovers an exact preparation after its published response is dropped",
+        "frontend:playwright::rejects retired routes and malformed published Web v2 admission before mutation",
+        "frontend:playwright::resolves and dismisses exact preparations with observed server state",
+        "frontend:playwright::rotates a retained OPEN identity when only its target reference changes",
+        "frontend:playwright::shows exact case and operation misses without implying a failed mutation",
+        "frontend:playwright::uses the published v2 login boundary and accessible case workspace"
+      ]
+    },
+    {
+      "id": "live-frontend-vitest",
+      "dimensions": [
+        "protocol",
+        "webGui"
+      ],
+      "subject": "Every current frontend:vitest identity is mapped to its surviving convergence assurance surface after the typed core and transport cutover.",
+      "tests": [
+        "frontend:vitest::aborts a stale page load before appending a newer cursor page",
+        "frontend:vitest::accepts the matching generated definition fingerprint",
+        "frontend:vitest::associates optional field errors and supports password text input",
+        "frontend:vitest::clears claimant definition state when the server rejects or mismatches assets",
+        "frontend:vitest::closes recovery detail, confirm, and import dialogs without dispatching mutations",
+        "frontend:vitest::coalesces duplicate page loads for one in-flight cursor",
+        "frontend:vitest::coalesces duplicate preparation activation while retention is pending",
+        "frontend:vitest::coalesces duplicate recovery retention for the same previewed bytes",
+        "frontend:vitest::copies safe values and provides an accessible fallback when clipboard access is unavailable",
+        "frontend:vitest::discards an aborted definition response when session epoch changes",
+        "frontend:vitest::discards an aborted keyed read instead of replacing its newer response",
+        "frontend:vitest::fails a malformed authenticated session and leaves invalid mutation calls inert",
+        "frontend:vitest::fails closed on malformed delivery and validates recovery export",
+        "frontend:vitest::fails closed when the server definition is rejected or has a different Web fingerprint",
+        "frontend:vitest::fails immediately when the embedding document omits the application root",
+        "frontend:vitest::generated contract corpora > accepts every production CLI branch and rejects malformed or cross-endpoint values",
+        "frontend:vitest::generated contract corpora > accepts generated Web host values and rejects every malformed or cross-endpoint value",
+        "frontend:vitest::gives simultaneous current and historical case fields distinct heading IDs",
+        "frontend:vitest::keeps a failed history page request-local without erasing current case data",
+        "frontend:vitest::keeps a non-reviewable retained Prepare exact and directs Recovery",
+        "frontend:vitest::keeps an unknown recovery result explicit and directs inspection",
+        "frontend:vitest::keeps existing references immutable and delegates a reviewed commit",
+        "frontend:vitest::keeps generated endpoint inventory callable and presents suspicious Unicode defensively",
+        "frontend:vitest::keeps invalid reducer transitions inert and records a completed receipt",
+        "frontend:vitest::keeps missing case lookup and non-full history entries out of case presentation",
+        "frontend:vitest::keeps recovery confirm dialog accessible before dispatch",
+        "frontend:vitest::keeps recovery import dialog accessible before retention",
+        "frontend:vitest::keeps the anonymous token after a rejected credential so login can be retried",
+        "frontend:vitest::lists, reloads, pages, selects and opens cases through typed list outcomes",
+        "frontend:vitest::locks navigation and logout while a prepared mutation is dispatched",
+        "frontend:vitest::maps every JSON endpoint to v2 and preserves nullable cursors and mutation identity",
+        "frontend:vitest::metadata-driven descriptor rendering > renders descriptor labels and all supplied field values without client-side normalization",
+        "frontend:vitest::metadata-driven dirty command behavior > keeps a prepared operation in recovery and asks before discarding a dirty command switch",
+        "frontend:vitest::metadata-driven drafts > derives command fields, prefill and a canonical draft without a browser command registry",
+        "frontend:vitest::metadata-driven drafts > uses descriptor-only presentation hints",
+        "frontend:vitest::metadata-driven operation acceptance > prepares, reviews, and accepts an operation with React Aria modal semantics",
+        "frontend:vitest::models definite rejection and unknown outcomes without allowing a dispatched mutation to regress",
+        "frontend:vitest::mounts the Web v2 browser root",
+        "frontend:vitest::names idempotent recovery outcomes and leaves downloads without outcome messages",
+        "frontend:vitest::navigates dashboard case, operation and recovery surfaces without hidden business dispatch",
+        "frontend:vitest::offers one explicit exact-ID Prepare retry after lost response",
+        "frontend:vitest::opens a metadata-derived command from Dashboard's current-case transition",
+        "frontend:vitest::operation editor dialogs and render branches > changes a dirty command only after the discard confirmation",
+        "frontend:vitest::operation editor dialogs and render branches > closes the discard dialog through its accessible cancel action",
+        "frontend:vitest::operation editor dialogs and render branches > keeps a dirty command when the discard dialog is cancelled",
+        "frontend:vitest::operation editor dialogs and render branches > keeps a prepared command for recovery through the review action",
+        "frontend:vitest::operation editor dialogs and render branches > keeps the editor when the review dialog is cancelled",
+        "frontend:vitest::operation editor dialogs and render branches > renders the OPEN reference input and delegates an unprepared close",
+        "frontend:vitest::operation editor support decoding > classifies every delivery lock state",
+        "frontend:vitest::operation editor support decoding > selects only prepared and accepted typed outcome variants",
+        "frontend:vitest::operation editor transport outcomes > focuses and describes a named authored field after core rejection",
+        "frontend:vitest::operation editor transport outcomes > keeps review open when a malformed prepared result omits its exact digest",
+        "frontend:vitest::operation editor transport outcomes > locks the editor and directs recovery after an uncertain prepare delivery",
+        "frontend:vitest::operation editor transport outcomes > makes the review modal non-dismissable while submission is dispatched",
+        "frontend:vitest::operation editor transport outcomes > preserves only recovery direction after an uncertain submit delivery",
+        "frontend:vitest::operation editor transport outcomes > renders an accepted receipt and delegates its return action",
+        "frontend:vitest::operation editor transport outcomes > shows a definite prepare rejection without creating recovery uncertainty",
+        "frontend:vitest::operation editor transport outcomes > shows a definite submit rejection after preserving the prepared identity",
+        "frontend:vitest::rejects JSON-prefix spoofing and accepts an exact JSON media type with parameters",
+        "frontend:vitest::renders a login form with disabled submission until anonymous antiforgery is available",
+        "frontend:vitest::renders a neutral shell while definition admission is pending",
+        "frontend:vitest::renders a recoverable session failure and invokes its refresh action",
+        "frontend:vitest::renders absent and suspicious accepted values without changing the recorded text",
+        "frontend:vitest::renders an exact accepted Prepare replay as a definite receipt",
+        "frontend:vitest::renders anonymous login and authenticated dashboard paths",
+        "frontend:vitest::renders direct observed-accepted recovery receipts",
+        "frontend:vitest::renders loading and refreshable session failures",
+        "frontend:vitest::renders observed recovery details and leaves only permitted server actions enabled",
+        "frontend:vitest::renders recovery import controls and lets the page reload without mutation",
+        "frontend:vitest::renders recovery list state, invokes inspection, and pages through a cursor",
+        "frontend:vitest::renders the loading shell before local session discovery completes",
+        "frontend:vitest::reports a failed list as a request-local error without manufacturing rows",
+        "frontend:vitest::reports a found observation without a receipt as a protocol failure",
+        "frontend:vitest::reports absent and malformed operation observations without leaving stale receipts",
+        "frontend:vitest::reports malformed pages, malformed inspections, rejected imports, and invalid exports",
+        "frontend:vitest::requires fresh inspection before retrying a submission-started preparation",
+        "frontend:vitest::requires one exact attachment filename and matching UTF-8 filename parameter",
+        "frontend:vitest::retains an exact id until a retained preparation is edited, then starts a new id",
+        "frontend:vitest::returns an accepted open operation to Dashboard through its committed transition",
+        "frontend:vitest::returns from a selected case through Dashboard's detail-back transition",
+        "frontend:vitest::rotates the retained operation ID when only an OPEN reference is changed",
+        "frontend:vitest::routes dashboard list selections and the new-case command into the typed editor",
+        "frontend:vitest::sends bounded raw imports with generated media type and digest header",
+        "frontend:vitest::shows current fields, server command labels, full expandable history and retryable history pages",
+        "frontend:vitest::shows logout transport failure as retriable and clears it after a session refresh",
+        "frontend:vitest::submits a retained operation ID and digest only once under duplicate confirmation",
+        "frontend:vitest::surfaces invalid snapshots after login and logout responses",
+        "frontend:vitest::treats a typed missing history as an empty read rather than a transport error",
+        "frontend:vitest::uses an exact operation lookup result and clears absent lookup presentation",
+        "frontend:vitest::uses generated v2 paths and typed endpoint outcomes",
+        "frontend:vitest::uses inspected accepted evidence to remove stale list mutation actions",
+        "frontend:vitest::v2 Recovery import and export > exports the validated filename then retains previewed envelope material without submission",
+        "frontend:vitest::v2 Recovery import and export > retains canonical-record previews and reports rejected recovery pages",
+        "frontend:vitest::v2 Recovery view > inspects and dismisses only a server-advertised unsubmitted preparation",
+        "frontend:vitest::v2 Recovery view > keeps a completed non-acceptance out of the accepted receipt path",
+        "frontend:vitest::v2 Recovery view > renders a definite resolve receipt instead of treating it as transport uncertainty",
+        "frontend:vitest::v2 session lifecycle > hydrates, signs in, renders v2 definition, and signs out through the anonymous snapshot"
+      ]
+    }
+  ]
+}

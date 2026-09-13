@@ -1,0 +1,66 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsTestProject>true</IsTestProject>
+    <GenerateProgramFile>false</GenerateProgramFile>
+    <EnableExpectoTestingPlatformIntegration>true</EnableExpectoTestingPlatformIntegration>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="PropertyHarness.fs" />
+    <Compile Include="PropertyHarnessTests.fs" />
+    <Compile Include="Fixtures.fs" />
+    <Compile Include="ScalarPropertyTests.fs" />
+    <Compile Include="RecordPropertyTests.fs" />
+    <Compile Include="TransitionPropertyTests.fs" />
+    <Compile Include="CoreStore.fs" />
+    <Compile Include="CoreRecoveryStore.fs" />
+    <Compile Include="DomainTests.fs" />
+    <Compile Include="DomainValidationTests.fs" />
+    <Compile Include="AvailabilityTests.fs" />
+    <Compile Include="PaginationTests.fs" />
+    <Compile Include="CoreTests.fs" />
+    <Compile Include="TypedCoreTests.fs" />
+    <Compile Include="ExactReplayTests.fs" />
+    <Compile Include="RecoveryOutcomeTests.fs" />
+    <Compile Include="RecoveryCancellationOutcomeTests.fs" />
+    <Compile Include="CoreQueryTests.fs" />
+    <Compile Include="CoreBoundaryParityTests.fs" />
+    <Compile Include="ExampleContractTests.fs" />
+    <Compile Include="ProtocolTests.fs" />
+    <Compile Include="CliExitContractTests.fs" />
+    <Compile Include="CanonicalRecordTests.fs" />
+    <Compile Include="DraftTests.fs" />
+    <Compile Include="BuildIdentityTests.fs" />
+    <Compile Include="ArchitectureTests.fs" />
+    <Compile Include="FieldSchemaTests.fs" />
+    <Compile Include="DomainDescriptorTests.fs" />
+    <Compile Include="ContractsTests.fs" />
+    <Compile Include="ConfigurationTests.fs" />
+    <Compile Include="CliProcessTests.fs" />
+    <Compile Include="PrivateFileSecurityTests.fs" />
+    <Compile Include="NativePrivateFileRaceTests.fs" />
+    <Compile Include="DatabasePrivateFileTests.fs" />
+    <Compile Include="CompilerBoundaryTests.fs" />
+    <Compile Include="Suite.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="../../eng/claimcore.testconfig.json" Link="testconfig.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Application/ClaimCore.Application.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Contracts/ClaimCore.Contracts.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Cli/ClaimCore.Cli.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Database/ClaimCore.Database.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="coverlet.MTP" PrivateAssets="all" />
+    <PackageReference Include="Expecto" />
+    <PackageReference Include="Hedgehog" />
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" PrivateAssets="all" />
+    <PackageReference Include="YoloDev.Expecto.TestSdk" PrivateAssets="all" />
+  </ItemGroup>
+  <Import Project="../../src/ClaimCore.HostSecurity/HostSecurity.Native.targets" />
+</Project>

@@ -1,0 +1,17 @@
+{
+  "protocolVersion": 3,
+  "endpoint": "command.execute",
+  "input": {
+    "operationId": "10000000-0000-4000-8000-000000000002",
+    "caseReference": "DEMO-0001",
+    "expectedRevision": "1",
+    "command": {
+      "kind": "DECIDE",
+      "values": {
+        "paymentDecisionDate": "2026-08-15",
+        "payableAmount": "750.00",
+        "payableCurrency": "EUR"
+      }
+    }
+  }
+}

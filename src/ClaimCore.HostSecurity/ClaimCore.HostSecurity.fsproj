@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="PosixPrivateNative.fs" />
+    <Compile Include="PosixPrivateFiles.fs" />
+    <Compile Include="PrivateFileService.fs" />
+  </ItemGroup>
+</Project>

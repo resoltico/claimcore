@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <Compile Include="Contracts.fs" />
+    <Compile Include="Vocabulary.fs" />
+    <Compile Include="Descriptors.fs" />
+    <Compile Include="FieldDefinitions.fs" />
+    <Compile Include="CommandDefinitions.fs" />
+    <Compile Include="Validation.fs" />
+    <Compile Include="Eligibility.fs" />
+    <Compile Include="Claim.fsi" />
+    <Compile Include="Claim.fs" />
+  </ItemGroup>
+</Project>

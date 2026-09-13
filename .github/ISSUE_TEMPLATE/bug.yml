@@ -1,0 +1,82 @@
+name: Bug report
+description: Report a reproducible, non-sensitive defect using synthetic data
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This is a public report. Do not include credentials, connection strings, request or recovery
+        files, claimant information, database extracts, private captures, or unredacted logs. Use
+        only synthetic, redacted facts. Security concerns belong in the private process described by
+        SECURITY.md.
+  - type: checkboxes
+    id: safe-report
+    attributes:
+      label: Public-report safety
+      options:
+        - label: >-
+            I have used only synthetic, redacted information and have not included any secret or
+            claimant payload.
+          required: true
+        - label: >-
+            I believe this is a non-security defect; otherwise I will use the private
+            vulnerability-reporting process in SECURITY.md.
+          required: true
+  - type: input
+    id: revision
+    attributes:
+      label: ClaimCore version or source revision
+      description: Identify the current version or commit without pasting an environment dump.
+      placeholder: 0.1.0 or a commit identifier
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Affected surface
+      options:
+        - Web application
+        - CLI
+        - Database administration
+        - Domain or application library
+        - Build, test, or documentation tooling
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Platform
+      description: Give only the relevant operating system, architecture, and runtime versions.
+      placeholder: macOS arm64; .NET 10.0.401; Node 26.8.2
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal synthetic reproduction
+      description: >-
+        Describe the smallest ordered steps. Paraphrase diagnostics; do not attach files or paste
+        raw logs.
+      placeholder: Use fictional values and omit all private paths and configuration contents.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: State the bounded result or error category using synthetic, redacted language.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional sanitized context
+      description: >-
+        Optional. Do not paste raw logs, environment variables, request bodies, database rows, or
+        credentials.

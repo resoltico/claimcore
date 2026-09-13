@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "migrations": [
+    {
+      "version": 1,
+      "name": "001_initial",
+      "sha256": "9b815a08f2a0a6b9d697a7eb48054aa57e5518b244b4216d0824b9e8d2a33f1d"
+    },
+    {
+      "version": 2,
+      "name": "002_request_preparations",
+      "sha256": "b80387adbc060f3a2a53e29b474c6893fc086d891b60cfdf8bbd9342fc7dc2cc"
+    },
+    {
+      "version": 3,
+      "name": "003_submission_attempts",
+      "sha256": "d864d67ef6cba3272d575fdec8d2daf7d19df13ea938758364e261cd43ba8ad2"
+    },
+    {
+      "version": 4,
+      "name": "004_generalize_preparation_provenance",
+      "sha256": "2133e8da7d7df9f53a99bfa132dcde780af9e71ffdc15d35d9c0949cb3e3aa8c"
+    },
+    {
+      "version": 5,
+      "name": "005_recovery_evidence_read_acl",
+      "sha256": "48652349e683df4f94e4dc2fcf27f40c2a35d69ba0ee7007871f616b79ce783b"
+    }
+  ]
+}

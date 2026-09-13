@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <Expecto>
+    <fail-on-focused-tests>true</fail-on-focused-tests>
+    <colours>0</colours>
+    <join-with>.</join-with>
+  </Expecto>
+</RunSettings>

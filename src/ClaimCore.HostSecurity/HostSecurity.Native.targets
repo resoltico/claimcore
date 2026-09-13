@@ -1,0 +1,30 @@
+<Project>
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('OSX'))">
+    <HostSecurityNativeExtension>.dylib</HostSecurityNativeExtension>
+    <HostSecurityNativeLinkFlag>-dynamiclib</HostSecurityNativeLinkFlag>
+  </PropertyGroup>
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Linux'))">
+    <HostSecurityNativeExtension>.so</HostSecurityNativeExtension>
+    <HostSecurityNativeLinkFlag>-shared</HostSecurityNativeLinkFlag>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(HostSecurityNativeExtension)' != ''">
+    <HostSecurityNativeSource>$(MSBuildThisFileDirectory)native/claimcore_private_openat.c</HostSecurityNativeSource>
+    <HostSecurityNativeOutputDirectory>$(MSBuildThisFileDirectory)../../artifacts/native/$(MSBuildProjectName)/$(Configuration)</HostSecurityNativeOutputDirectory>
+    <HostSecurityNativeFile>$(HostSecurityNativeOutputDirectory)/libclaimcore_hostsecurity_native$(HostSecurityNativeExtension)</HostSecurityNativeFile>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(HostSecurityNativeExtension)' != ''">
+    <None Include="$(HostSecurityNativeFile)" Link="libclaimcore_hostsecurity_native$(HostSecurityNativeExtension)"
+          CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+  <Target Name="BuildHostSecurityNative" BeforeTargets="GetCopyToOutputDirectoryItems;ComputeFilesToPublish"
+          Inputs="$(HostSecurityNativeSource);$(MSBuildThisFileFullPath)" Outputs="$(HostSecurityNativeFile)"
+          Condition="'$(HostSecurityNativeExtension)' != ''">
+    <MakeDir Directories="$(HostSecurityNativeOutputDirectory)" />
+    <Exec Command="cc -std=c11 -O2 -fPIC -Wall -Wextra -Werror $(HostSecurityNativeLinkFlag) &quot;$(HostSecurityNativeSource)&quot; -o &quot;$(HostSecurityNativeFile)&quot;" />
+    <Error Condition="!Exists('$(HostSecurityNativeFile)')" Text="The fixed-ABI private-file native shim was not produced." />
+  </Target>
+  <Target Name="VerifyHostSecurityNativeForPublish" BeforeTargets="ComputeFilesToPublish"
+          DependsOnTargets="BuildHostSecurityNative" Condition="'$(HostSecurityNativeExtension)' != ''">
+    <Error Condition="!Exists('$(HostSecurityNativeFile)')" Text="The private-file native shim is required for publish." />
+  </Target>
+</Project>

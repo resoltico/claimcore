@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="CliCorpusValues.fs" />
+    <Compile Include="CliQueryCorpusSamples.fs" />
+    <Compile Include="CliPrepareCorpusSamples.fs" />
+    <Compile Include="CliMutationCorpusSamples.fs" />
+    <Compile Include="CliRecoveryCorpusSamples.fs" />
+    <Compile Include="CorpusJson.fs" />
+    <Compile Include="ScalarCorpus.fs" />
+    <Compile Include="CliResponseCorpus.fs" />
+    <Compile Include="CliRawCorpus.fs" />
+    <Compile Include="WebCorpusSamples.fs" />
+    <Compile Include="WebQueryCorpusSamples.fs" />
+    <Compile Include="WebRecoveryQueryCorpusSamples.fs" />
+    <Compile Include="WebMutationCorpusSamples.fs" />
+    <Compile Include="WebImportRetainCorpusSamples.fs" />
+    <Compile Include="WebHostCorpusSamples.fs" />
+    <Compile Include="WebParsedCorpus.fs" />
+    <Compile Include="Artifacts.fs" />
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/ClaimCore.Contracts/ClaimCore.Contracts.fsproj" />
+  </ItemGroup>
+</Project>

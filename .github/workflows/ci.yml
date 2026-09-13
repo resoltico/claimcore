@@ -1,0 +1,103 @@
+name: ClaimCore verification
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  merge_group:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Source, dependency, and infrastructure quality
+    uses: ./.github/workflows/verify-quality.yml
+
+  frontend:
+    name: Frontend producer
+    uses: ./.github/workflows/verify-frontend.yml
+
+  unit:
+    name: Cross-platform unit and Web tests
+    uses: ./.github/workflows/verify-unit.yml
+
+  integration:
+    name: PostgreSQL integration
+    uses: ./.github/workflows/verify-integration.yml
+
+  documentation:
+    name: Documentation assurance
+    uses: ./.github/workflows/verify-documentation.yml
+
+  publish:
+    name: Immutable published applications
+    needs: [frontend]
+    uses: ./.github/workflows/verify-publish.yml
+
+  acceptance:
+    name: Published CLI acceptance
+    needs: [publish]
+    uses: ./.github/workflows/verify-acceptance.yml
+
+  browser:
+    name: Published browser lifecycle
+    needs: [publish]
+    uses: ./.github/workflows/verify-browser.yml
+
+  coverage:
+    name: Merged .NET coverage
+    needs: [unit, integration, browser]
+    uses: ./.github/workflows/verify-coverage.yml
+
+  evidence:
+    name: Conjunctive evidence reconciliation
+    if: always()
+    needs:
+      - quality
+      - frontend
+      - unit
+      - integration
+      - documentation
+      - publish
+      - acceptance
+      - browser
+      - coverage
+    uses: ./.github/workflows/verify-evidence.yml
+
+  gate:
+    name: Gate
+    if: always()
+    needs:
+      - quality
+      - frontend
+      - unit
+      - integration
+      - documentation
+      - publish
+      - acceptance
+      - browser
+      - coverage
+      - evidence
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every verification family
+        env:
+          RESULTS: >-
+            ${{ needs.quality.result }}
+            ${{ needs.frontend.result }}
+            ${{ needs.unit.result }}
+            ${{ needs.integration.result }}
+            ${{ needs.documentation.result }}
+            ${{ needs.publish.result }}
+            ${{ needs.acceptance.result }}
+            ${{ needs.browser.result }}
+            ${{ needs.coverage.result }}
+            ${{ needs.evidence.result }}
+        run: test "$RESULTS" = "success success success success success success success success success success"

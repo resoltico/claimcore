@@ -1,0 +1,14 @@
+{
+  "$schema": "https://schemas.microsoft.com/dotnet/testconfig/v1/schema.json",
+  "platformOptions": {
+    "Coverlet": {
+      "include": "[ClaimCore.*]*",
+      "format": "cobertura",
+      "useSourceLink": false,
+      "includeTestAssembly": false,
+      "skipAutoProps": false,
+      "deterministicReport": true,
+      "excludeAssembliesWithoutSources": "MissingAll"
+    }
+  }
+}

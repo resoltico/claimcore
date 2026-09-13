@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsTestProject>true</IsTestProject>
+    <GenerateProgramFile>false</GenerateProgramFile>
+    <EnableExpectoTestingPlatformIntegration>true</EnableExpectoTestingPlatformIntegration>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Fixtures.fs" />
+    <Compile Include="TransactionPaginationTests.fs" />
+    <Compile Include="TransactionRejectionTests.fs" />
+    <Compile Include="TransactionTests.fs" />
+    <Compile Include="SchemaTests.fs" />
+    <Compile Include="FieldStorageTests.fs" />
+    <Compile Include="CoreBoundaryTests.fs" />
+    <Compile Include="RuntimeLifecycleTests.fs" />
+    <Compile Include="StorageDateTests.fs" />
+    <Compile Include="StorageBoundaryTests.fs" />
+    <Compile Include="PreparationTests.fs" />
+    <Compile Include="PreparationBoundaryTests.fs" />
+    <Compile Include="MigrationUpgradeSupport.fs" />
+    <Compile Include="MigrationUpgradeTests.fs" />
+    <Compile Include="MigrationEvidenceUpgradeTests.fs" />
+    <Compile Include="RecoveryProcessTests.fs" />
+    <Compile Include="RecoveryRaceTests.fs" />
+    <Compile Include="RecoveryEvidenceTests.fs" />
+    <Compile Include="RecoveryStateTests.fs" />
+    <Compile Include="RecoveryCancellationTests.fs" />
+    <Compile Include="Suite.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="../../eng/claimcore.testconfig.json" Link="testconfig.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Application/ClaimCore.Application.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Cli/ClaimCore.Cli.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Postgres/ClaimCore.Postgres.fsproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="coverlet.MTP" PrivateAssets="all" />
+    <PackageReference Include="Expecto" />
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" PrivateAssets="all" />
+    <PackageReference Include="Npgsql" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="YoloDev.Expecto.TestSdk" PrivateAssets="all" />
+  </ItemGroup>
+</Project>

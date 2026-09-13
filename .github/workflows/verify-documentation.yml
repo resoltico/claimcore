@@ -1,0 +1,184 @@
+name: ClaimCore documentation verification
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+env:
+  CI: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_NOLOGO: 1
+  NO_COLOR: 1
+  TESTINGPLATFORM_TELEMETRY_OPTOUT: 1
+
+jobs:
+  docs-tests:
+    name: Documentation tool tests (${{ matrix.platform }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            stage: docs-linux
+          - os: macos-latest
+            platform: macos
+            stage: docs-macos
+          - os: windows-latest
+            platform: windows
+            stage: docs-windows
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: "**/packages.lock.json"
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Restore and build the documentation tool
+        run: |
+          dotnet restore ClaimCore.slnx --locked-mode
+          dotnet build ClaimCore.slnx --configuration Release --no-restore
+      - name: Run 44 registered documentation-tool tests
+        shell: pwsh
+        env:
+          STAGE_ID: ${{ matrix.stage }}
+        run: |
+          Set-StrictMode -Version Latest
+          $results = Join-Path $PWD "artifacts/test-results/$env:STAGE_ID"
+          if (Test-Path -LiteralPath $results) { throw "The test result directory must start absent." }
+          $started = (Get-Date).ToUniversalTime().ToString("O")
+          $arguments = @(
+            "test", "--project", "tests/ClaimCore.DocsTests/ClaimCore.DocsTests.fsproj",
+            "--configuration", "Release", "--no-build", "--no-restore",
+            "--max-parallel-test-modules", "1", "--results-directory=$results",
+            "--minimum-expected-tests=44", "--zero-tests-policy=strict", "--timeout=20m",
+            "--", "--settings=$PWD/eng/expecto.runsettings", "--report-trx",
+            "--report-trx-filename=ClaimCore.DocsTests.trx"
+          )
+          & dotnet @arguments
+          $testExit = $LASTEXITCODE
+          $finished = (Get-Date).ToUniversalTime().ToString("O")
+          if (!(Test-Path -LiteralPath $results)) { New-Item -ItemType Directory -Path $results | Out-Null }
+          $outcome = if ($testExit -eq 0) { "success" } else { "failure" }
+          $docs = Join-Path $PWD "artifacts/bin/ClaimCore.Docs/release/ClaimCore.Docs.dll"
+          & dotnet $docs stage-manifest $env:STAGE_ID "${{ github.run_id }}" "${{ github.run_attempt }}" $outcome $started $finished $results
+          $manifestExit = $LASTEXITCODE
+          if ($testExit -ne 0) { exit $testExit }
+          if ($manifestExit -ne 0) { exit $manifestExit }
+      - name: Scan artifacts before upload
+        id: artifact_scan
+        if: always()
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -File eng/Scan-ArtifactSecrets.ps1 `
+            "artifacts/test-results/${{ matrix.stage }}/" `
+            "artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/${{ matrix.stage }}.json"
+      - name: Upload required test results
+        if: ${{ always() && steps.artifact_scan.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: claimcore-test-${{ matrix.stage }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/test-results/${{ matrix.stage }}/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload stage evidence
+        if: ${{ always() && steps.artifact_scan.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: claimcore-stage-${{ matrix.stage }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/${{ matrix.stage }}.json
+          if-no-files-found: error
+          retention-days: 14
+
+  docs-content:
+    name: Generated documentation and links
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: "**/packages.lock.json"
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Restore and build documentation inputs
+        run: |
+          dotnet restore ClaimCore.slnx --locked-mode
+          dotnet build ClaimCore.slnx --configuration Release --no-restore
+      - name: Check generated blocks, Markdown, links, and contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          output=artifacts/stages/docs-check
+          test ! -e "$output"
+          mkdir -p "$output"
+          started="$(date -u +%Y-%m-%dT%H:%M:%S.0000000+00:00)"
+          set +e
+          dotnet artifacts/bin/ClaimCore.Docs/release/ClaimCore.Docs.dll check
+          status=$?
+          set -e
+          finished="$(date -u +%Y-%m-%dT%H:%M:%S.0000000+00:00)"
+          outcome=failure
+          if [[ "$status" -eq 0 ]]; then outcome=success; fi
+          dotnet artifacts/bin/ClaimCore.Docs/release/ClaimCore.Docs.dll stage-manifest \
+            docs-check "${{ github.run_id }}" "${{ github.run_attempt }}" "$outcome" "$started" "$finished" "$output"
+          exit "$status"
+      - name: Prove write is byte-idempotent and leaves no diff
+        shell: bash
+        run: |
+          set -euo pipefail
+          output=artifacts/stages/docs-write-idempotence
+          test ! -e "$output"
+          mkdir -p "$output"
+          started="$(date -u +%Y-%m-%dT%H:%M:%S.0000000+00:00)"
+          set +e
+          dotnet artifacts/bin/ClaimCore.Docs/release/ClaimCore.Docs.dll write
+          first=$?
+          dotnet artifacts/bin/ClaimCore.Docs/release/ClaimCore.Docs.dll write
+          second=$?
+          git diff --exit-code
+          clean=$?
+          set -e
+          status=$((first | second | clean))
+          finished="$(date -u +%Y-%m-%dT%H:%M:%S.0000000+00:00)"
+          outcome=failure
+          if [[ "$status" -eq 0 ]]; then outcome=success; fi
+          dotnet artifacts/bin/ClaimCore.Docs/release/ClaimCore.Docs.dll stage-manifest \
+            docs-write-idempotence "${{ github.run_id }}" "${{ github.run_attempt }}" "$outcome" "$started" "$finished" "$output"
+          exit "$status"
+      - name: Scan artifacts before upload
+        id: artifact_scan
+        if: always()
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -File eng/Scan-ArtifactSecrets.ps1 `
+            "artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/docs-check.json" `
+            "artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/docs-write-idempotence.json"
+      - name: Upload documentation stage evidence
+        if: ${{ always() && steps.artifact_scan.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: claimcore-stage-documentation-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/docs-check.json
+            artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/docs-write-idempotence.json
+          if-no-files-found: error
+          retention-days: 14

@@ -1,0 +1,21 @@
+<Solution>
+  <Project Path="src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
+  <Project Path="src/ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj" />
+  <Project Path="src/ClaimCore.Application/ClaimCore.Application.fsproj" />
+  <Project Path="src/ClaimCore.Contracts/ClaimCore.Contracts.fsproj" />
+  <Project Path="src/ClaimCore.Postgres/ClaimCore.Postgres.fsproj" />
+  <Project Path="src/ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />
+  <Project Path="src/ClaimCore.Cli/ClaimCore.Cli.fsproj" />
+  <Project Path="src/ClaimCore.Database/ClaimCore.Database.fsproj" />
+  <Project Path="src/ClaimCore.Web/ClaimCore.Web.fsproj" />
+  <Project Path="eng/ClaimCore.Docs/ClaimCore.Docs.fsproj" />
+  <Project Path="eng/ClaimCore.ContractGenerator/ClaimCore.ContractGenerator.fsproj" />
+  <Project Path="tests/ClaimCore.Tests/ClaimCore.Tests.fsproj" />
+  <Project Path="tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj" />
+  <Project Path="tests/ClaimCore.RecoveryQualificationTests/ClaimCore.RecoveryQualificationTests.fsproj" />
+  <Project Path="tests/ClaimCore.ConcurrencyQualificationTests/ClaimCore.ConcurrencyQualificationTests.fsproj" />
+  <Project Path="tests/ClaimCore.MigrationQualificationTests/ClaimCore.MigrationQualificationTests.fsproj" />
+  <Project Path="tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj" />
+  <Project Path="tests/ClaimCore.DocsTests/ClaimCore.DocsTests.fsproj" />
+  <Project Path="tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj" />
+</Solution>

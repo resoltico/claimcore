@@ -1,0 +1,13 @@
+{
+  "protocolVersion": 3,
+  "endpoint": "command.execute",
+  "input": {
+    "operationId": "10000000-0000-4000-8000-000000000006",
+    "caseReference": "DEMO-0001",
+    "expectedRevision": "5",
+    "command": {
+      "kind": "CLEAR_PAYMENT",
+      "values": {}
+    }
+  }
+}

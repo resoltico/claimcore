@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "assembly": "ClaimCore.AcceptanceTests",
+  "tests": [
+    "published CLI-v3 acceptance.[CC-APP-001] rejected published CLI-v3 command preserves PostgreSQL business state",
+    "published CLI-v3 acceptance.[CC-CLI-001] published call and session qualify commands, queries, and recovery",
+    "published CLI-v3 acceptance.invalid UTF-8, escaped Unicode, oversized input, duplicate keys, and trailing documents fail at published CLI framing",
+    "published CLI-v3 acceptance.invalid case and recovery cursors, operation IDs, and digests remain typed CLI-v3 failures",
+    "published CLI-v3 acceptance.malformed recovery envelope preview cannot retain preparation bytes",
+    "published CLI-v3 acceptance.published CLI private files.[CC-CLI-002] published export is owner-only, exclusive, and refuses links without disclosure",
+    "published CLI-v3 acceptance.published CLI private files.[CC-CLI-002] published import refuses broad mode, invalid UTF-8, and oversize without disclosure",
+    "published CLI-v3 acceptance.published CLI private files.[CC-CLI-002] published import refuses leaf and ancestor symlinks without disclosure",
+    "published CLI-v3 acceptance.published CLI-v3 mode parity.all fifteen endpoints preserve typed outcomes through call and session"
+  ]
+}

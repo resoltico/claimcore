@@ -1,0 +1,137 @@
+import type {
+  AdvisoryReview,
+  CaseFields,
+  PreparationDetails,
+  SemanticDefinition,
+} from "../src/api/v2";
+
+export const caseFields: CaseFields = {
+  incidentDate: "2026-09-01",
+  incidentNotificationDate: "2026-09-02",
+  incidentCountry: "Latvia",
+  claimantName: "Synthetic claimant",
+  insurerName: "Synthetic insurer",
+  claimedAmount: "12.34",
+  claimedCurrency: "EUR",
+  caseReference: "CASE-1",
+  paymentDecisionDate: null,
+  payableAmount: null,
+  payableCurrency: null,
+  paymentDate: null,
+  status: "OPENED",
+};
+
+export const definition: SemanticDefinition = {
+  contractKind: "SEMANTIC_CORE_V1",
+  application: "ClaimCore",
+  scope: "trusted-local-operator-claims-register",
+  canonicalCommandFormat: 2,
+  requestFingerprintVersion: 1,
+  recoveryEnvelopeFormat: 1,
+  defaultPageSize: 50,
+  maximumPageSize: 50,
+  requestByteLimit: 65_536,
+  fields: [
+    {
+      name: "caseReference",
+      nativeName: "CaseReference",
+      label: "Case reference",
+      meaning: "Synthetic reference",
+      allowsAbsence: false,
+      scalar: {
+        kind: "TEXT",
+        minimumCharacters: 1,
+        maximumCharacters: 80,
+        requiresNonBlank: true,
+        rejectsSurroundingWhitespace: true,
+        rejectsControlCharacters: true,
+        requiresWellFormedUnicode: true,
+      },
+    },
+    {
+      name: "paymentDate",
+      nativeName: "PaymentDate",
+      label: "Payment date",
+      meaning: "Synthetic date",
+      allowsAbsence: true,
+      scalar: {
+        kind: "CALENDAR_DATE",
+        exactFormat: "yyyy-MM-dd",
+        minimum: "0001-01-01",
+        maximum: "9999-12-31",
+      },
+    },
+    {
+      name: "claimedAmount",
+      nativeName: "ClaimedAmount",
+      label: "Claimed amount",
+      meaning: "Synthetic amount",
+      allowsAbsence: false,
+      scalar: {
+        kind: "AMOUNT",
+        grammar: "[0-9]+",
+        maximumIntegerDigits: 18,
+        maximumFractionalDigits: 4,
+      },
+    },
+    {
+      name: "claimedCurrency",
+      nativeName: "ClaimedCurrency",
+      label: "Claimed currency",
+      meaning: "Synthetic currency",
+      allowsAbsence: false,
+      scalar: { kind: "CURRENCY", grammar: "[A-Z]{3}", exactCharacters: 3 },
+    },
+    {
+      name: "status",
+      nativeName: "Status",
+      label: "Status",
+      meaning: "Synthetic status",
+      allowsAbsence: false,
+      scalar: { kind: "CASE_STATUS", allowedValues: ["OPENED", "CLOSED"] },
+    },
+  ],
+  commands: [
+    {
+      kind: "OPEN",
+      label: "Open",
+      meaning: "Open a record",
+      inputs: [{ fieldName: "caseReference", prefill: "BLANK" }],
+    },
+    {
+      kind: "AMEND_REGISTRATION",
+      label: "Amend",
+      meaning: "Amend a record",
+      inputs: [{ fieldName: "paymentDate", prefill: "CURRENT_FIELD", currentField: "paymentDate" }],
+    },
+  ],
+  statuses: ["OPENED", "CLOSED"],
+  rules: [],
+};
+
+export const preparation: PreparationDetails = {
+  summary: {
+    operationId: "id-1",
+    caseReference: "CASE-1",
+    command: "OPEN",
+    preparedAt: "2026-09-09T00:00:00.0000000+00:00",
+    state: "UNSUBMITTED",
+    requestSha256: "a".repeat(64),
+    availableActions: ["RESOLVE"],
+  },
+  expectedRevision: "0",
+  authoredValues: [],
+  canonicalCommandFormat: 2,
+  preparingApplicationVersion: "0.1.0",
+  preparingContractFingerprint: "b".repeat(64),
+  preparingContractKind: "SEMANTIC_CORE_V1",
+  attempts: [],
+  legacyUncertainty: false,
+};
+export const review: AdvisoryReview = {
+  before: null,
+  proposed: { revision: "1", fields: caseFields },
+  changes: [],
+  context: { productVersion: "0.1.0", effectiveBusinessDate: "2026-09-09", timeZoneId: "UTC" },
+  advisory: true,
+};

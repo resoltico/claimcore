@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="Types.fs" />
+    <Compile Include="RepositoryPathPolicy.fs" />
+    <Compile Include="Repository.fs" />
+    <Compile Include="RepositoryInventory.fs" />
+    <Compile Include="MarkdownTypes.fs" />
+    <Compile Include="MarkdownPipeline.fs" />
+    <Compile Include="MarkdownModel.fs" />
+    <Compile Include="Links.fs" />
+    <Compile Include="Contracts.fs" />
+    <Compile Include="Generators.fs" />
+    <Compile Include="Provenance.fs" />
+    <Compile Include="PublishManifest.fs" />
+    <Compile Include="PublishManifestWriter.fs" />
+    <Compile Include="TestInventory.fs" />
+    <Compile Include="ConvergenceJson.fs" />
+    <Compile Include="StageCatalog.fs" />
+    <Compile Include="Stages.fs" />
+    <Compile Include="ReviewRegistry.fs" />
+    <Compile Include="Reviews.fs" />
+    <Compile Include="Report.fs" />
+    <Compile Include="TrxStructure.fs" />
+    <Compile Include="Evidence.fs" />
+    <Compile Include="EvidenceReconciliation.fs" />
+    <Compile Include="DocumentationReport.fs" />
+    <Compile Include="DocumentationCommands.fs" />
+    <Compile Include="EvidenceReport.fs" />
+    <Compile Include="StageCommands.fs" />
+    <Compile Include="FrontendTestCatalog.fs" />
+    <Compile Include="ConvergenceInventory.fs" />
+    <Compile Include="ConvergenceTypes.fs" />
+    <Compile Include="ConvergenceBaseline.fs" />
+    <Compile Include="ConvergenceLineage.fs" />
+    <Compile Include="ConvergenceEndpointCatalog.fs" />
+    <Compile Include="ConvergenceOutcomeCatalog.fs" />
+    <Compile Include="ConvergenceMatrix.fs" />
+    <Compile Include="ConvergenceAssurance.fs" />
+    <Compile Include="StructuredReports.fs" />
+    <Compile Include="EvidenceCommands.fs" />
+    <Compile Include="Commands.fs" />
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Markdig" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="test-inventory/*.json" LogicalName="ClaimCore.TestInventory.%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

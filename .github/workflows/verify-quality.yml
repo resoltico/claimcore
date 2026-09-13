@@ -1,0 +1,226 @@
+name: ClaimCore quality verification
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+env:
+  CI: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_NOLOGO: 1
+  NO_COLOR: 1
+  TESTINGPLATFORM_TELEMETRY_OPTOUT: 1
+
+jobs:
+  quality:
+    name: Source, dependency, and infrastructure quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: |
+            **/packages.lock.json
+            .config/dotnet-tools.json
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Require the exact Node and npm toolchain
+        shell: bash
+        run: |
+          test "$(node --version)" = "v$(tr -d '\r\n' < .node-version)"
+          test "$(npm --version)" = "$(node -p "require('./web/package.json').engines.npm")"
+      - name: Install checksum-verified source analyzers
+        shell: bash
+        run: |
+          set -euo pipefail
+          tools="$RUNNER_TEMP/claimcore-quality-tools"
+          mkdir -p "$tools"
+          curl --fail --silent --show-error --location \
+            https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz \
+            --output "$tools/actionlint.tar.gz"
+          echo "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  $tools/actionlint.tar.gz" | sha256sum --check
+          tar --extract --gzip --file "$tools/actionlint.tar.gz" --directory "$tools" actionlint
+          curl --fail --silent --show-error --location \
+            https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz \
+            --output "$tools/gitleaks.tar.gz"
+          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  $tools/gitleaks.tar.gz" | sha256sum --check
+          tar --extract --gzip --file "$tools/gitleaks.tar.gz" --directory "$tools" gitleaks
+          echo "$tools" >> "$GITHUB_PATH"
+      - name: Scan source before generating outputs
+        id: source_secrets
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          started="$(date -u +%Y-%m-%dT%H:%M:%S.0000000+00:00)"
+          set +e
+          pwsh -NoProfile -File eng/Check-GitIgnorePolicy.ps1
+          status=$?
+          if [[ "$status" -eq 0 ]]; then
+            pwsh -NoProfile -File eng/Test-SourceSecretScanPolicy.ps1 \
+              -GitleaksPath "$RUNNER_TEMP/claimcore-quality-tools/gitleaks"
+            status=$?
+          fi
+          if [[ "$status" -eq 0 ]]; then
+            pwsh -NoProfile -File eng/Scan-SourceSecrets.ps1 \
+              -GitleaksPath "$RUNNER_TEMP/claimcore-quality-tools/gitleaks"
+            status=$?
+          fi
+          if [[ "$status" -eq 0 ]]; then
+            pwsh -NoProfile -File eng/Check-ArtifactUploadPolicy.ps1
+            status=$?
+          fi
+          if [[ "$status" -eq 0 ]]; then
+            pwsh -NoProfile -File eng/Test-ArtifactUploadPolicy.ps1
+            status=$?
+          fi
+          if [[ "$status" -eq 0 ]]; then
+            pwsh -NoProfile -File eng/Test-ArtifactSecretScanPolicy.ps1 \
+              -GitleaksArchivePath "$RUNNER_TEMP/claimcore-quality-tools/gitleaks.tar.gz"
+            status=$?
+          fi
+          set -e
+          echo "started=$started" >> "$GITHUB_OUTPUT"
+          echo "finished=$(date -u +%Y-%m-%dT%H:%M:%S.0000000+00:00)" >> "$GITHUB_OUTPUT"
+          exit "$status"
+      - name: Install the locked npm graph for dependency inspection
+        run: npm --prefix web ci --ignore-scripts
+      - name: Restore locked dependencies
+        id: restore_dotnet
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "started=$(date -u +%Y-%m-%dT%H:%M:%S.0000000+00:00)" >> "$GITHUB_OUTPUT"
+          dotnet restore ClaimCore.slnx --locked-mode
+          echo "finished=$(date -u +%Y-%m-%dT%H:%M:%S.0000000+00:00)" >> "$GITHUB_OUTPUT"
+      - name: Restore pinned local tools
+        id: restore_tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "started=$(date -u +%Y-%m-%dT%H:%M:%S.0000000+00:00)" >> "$GITHUB_OUTPUT"
+          dotnet tool restore
+          echo "finished=$(date -u +%Y-%m-%dT%H:%M:%S.0000000+00:00)" >> "$GITHUB_OUTPUT"
+      - name: Build with strict compiler policy
+        id: build_release
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "started=$(date -u +%Y-%m-%dT%H:%M:%S.0000000+00:00)" >> "$GITHUB_OUTPUT"
+          dotnet build ClaimCore.slnx --configuration Release --no-restore
+          echo "finished=$(date -u +%Y-%m-%dT%H:%M:%S.0000000+00:00)" >> "$GITHUB_OUTPUT"
+      - name: Record bootstrap and source-scan evidence
+        shell: bash
+        env:
+          SOURCE_SCAN_OUTCOME: ${{ steps.source_secrets.outcome }}
+          SOURCE_SCAN_STARTED: ${{ steps.source_secrets.outputs.started }}
+          SOURCE_SCAN_FINISHED: ${{ steps.source_secrets.outputs.finished }}
+          RESTORE_STARTED: ${{ steps.restore_dotnet.outputs.started }}
+          RESTORE_FINISHED: ${{ steps.restore_dotnet.outputs.finished }}
+          TOOLS_STARTED: ${{ steps.restore_tools.outputs.started }}
+          TOOLS_FINISHED: ${{ steps.restore_tools.outputs.finished }}
+          BUILD_STARTED: ${{ steps.build_release.outputs.started }}
+          BUILD_FINISHED: ${{ steps.build_release.outputs.finished }}
+        run: |
+          set -euo pipefail
+          docs=artifacts/bin/ClaimCore.Docs/release/ClaimCore.Docs.dll
+          mkdir -p artifacts/stages/restore-dotnet artifacts/stages/restore-tools artifacts/stages/nuget-audit artifacts/stages/secret-scan-source
+          dotnet "$docs" stage-manifest restore-dotnet "${{ github.run_id }}" "${{ github.run_attempt }}" success "$RESTORE_STARTED" "$RESTORE_FINISHED" artifacts/stages/restore-dotnet
+          dotnet "$docs" stage-manifest nuget-audit "${{ github.run_id }}" "${{ github.run_attempt }}" success "$RESTORE_STARTED" "$RESTORE_FINISHED" artifacts/stages/nuget-audit
+          dotnet "$docs" stage-manifest restore-tools "${{ github.run_id }}" "${{ github.run_attempt }}" success "$TOOLS_STARTED" "$TOOLS_FINISHED" artifacts/stages/restore-tools
+          dotnet "$docs" stage-manifest build-release "${{ github.run_id }}" "${{ github.run_attempt }}" success "$BUILD_STARTED" "$BUILD_FINISHED" artifacts/bin
+          dotnet "$docs" stage-manifest secret-scan-source "${{ github.run_id }}" "${{ github.run_attempt }}" "$SOURCE_SCAN_OUTCOME" "$SOURCE_SCAN_STARTED" "$SOURCE_SCAN_FINISHED" artifacts/stages/secret-scan-source
+      - name: Run all registered source and infrastructure gates
+        shell: bash
+        run: |
+          set -u
+          docs=artifacts/bin/ClaimCore.Docs/release/ClaimCore.Docs.dll
+          overall=0
+          run_stage() {
+            stage="$1"
+            shift
+            output="artifacts/stages/$stage"
+            test ! -e "$output" || return 1
+            mkdir -p "$output"
+            log="$RUNNER_TEMP/claimcore-$stage.log"
+            started="$(date -u +%Y-%m-%dT%H:%M:%S.0000000+00:00)"
+            "$@" >"$log" 2>&1
+            status=$?
+            finished="$(date -u +%Y-%m-%dT%H:%M:%S.0000000+00:00)"
+            outcome=failure
+            if [[ "$status" -eq 0 ]]; then outcome=success; fi
+            printf 'Stage %s: %s.\n' "$stage" "$outcome"
+            dotnet "$docs" stage-manifest "$stage" "${{ github.run_id }}" "${{ github.run_attempt }}" "$outcome" "$started" "$finished" "$output"
+            manifest_status=$?
+            if [[ "$status" -ne 0 || "$manifest_status" -ne 0 ]]; then overall=1; fi
+          }
+          run_stage analyzer-suppressions pwsh -File eng/Check-AnalyzerSuppressions.ps1
+          run_stage analyzer-suppression-negative-controls pwsh -File eng/Test-AnalyzerSuppressionPolicy.ps1
+          run_stage sensitive-output-negative-controls pwsh -File eng/Test-SensitiveOutputPolicy.ps1
+          run_stage coverage-input-negative-controls pwsh -File eng/Test-CoverageInputPolicy.ps1
+          run_stage coverage-floor-negative-controls pwsh -File eng/Test-MergedCoveragePolicy.ps1
+          run_stage property-seed-negative-controls pwsh -File eng/Test-PropertySeedPolicy.ps1
+          run_stage test-diagnostic-negative-controls pwsh -File eng/Test-TestDiagnosticPrivacy.ps1
+          run_stage convergence-assurance pwsh -File eng/Check-ConvergenceAssurance.ps1
+          run_stage convergence-assurance-negative-controls pwsh -File eng/Test-ConvergenceAssurancePolicy.ps1
+          run_stage dependency-currency pwsh -File eng/Check-DependencyCurrency.ps1
+          run_stage fantomas bash eng/Check-Fantomas.sh
+          run_stage fsharplint bash eng/Check-FSharpLint.sh
+          run_stage actionlint actionlint -color
+          mapfile -d "" scripts < <(find eng db -type f -name "*.sh" -print0)
+          run_stage shellcheck shellcheck "${scripts[@]}"
+          run_stage compose-config env CLAIMCORE_COMPOSE_PROJECT=claimcore-config-${{ github.run_id }} POSTGRES_PASSWORD=owner-policy-value CLAIMCORE_APP_PASSWORD=runtime-policy-value CLAIMCORE_POSTGRES_PORT=0 docker compose --file compose.yaml config --quiet
+          run_stage compose-health bash eng/Test-ComposePolicy.sh
+          image="$(jq --raw-output .containerImage db/postgresql-baseline.json)"
+          run_stage container-sbom docker run --rm \
+            --volume /var/run/docker.sock:/var/run/docker.sock \
+            --volume "$PWD/artifacts/stages/container-sbom:/output" \
+            aquasec/trivy:0.74.0@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969 \
+            image --format cyclonedx --output /output/postgresql.cdx.json --no-progress "$image"
+          run_stage container-vulnerability-scan docker run --rm \
+            --volume /var/run/docker.sock:/var/run/docker.sock \
+            --volume "$PWD/container-vulnerability-exceptions.yaml:/claimcore-exceptions.yaml:ro" \
+            aquasec/trivy:0.74.0@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969 \
+            image --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed \
+            --ignorefile /claimcore-exceptions.yaml --show-suppressed --exit-code 1 \
+            --no-progress "$image"
+          exit "$overall"
+      - name: Require the pre-generation source scan
+        if: always()
+        env:
+          SOURCE_SCAN_OUTCOME: ${{ steps.source_secrets.outcome }}
+        run: test "$SOURCE_SCAN_OUTCOME" = success
+      - name: Scan artifacts before upload
+        id: artifact_scan
+        if: always()
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -File eng/Scan-ArtifactSecrets.ps1 `
+            "artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/" `
+            artifacts/stages/container-sbom/
+      - name: Upload quality stage evidence
+        if: ${{ always() && steps.artifact_scan.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: claimcore-stage-quality-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/*.json
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload the retained PostgreSQL container SBOM
+        if: ${{ always() && steps.artifact_scan.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: claimcore-container-sbom-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/stages/container-sbom/
+          if-no-files-found: error
+          retention-days: 30

@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="BuildIdentity.fsi" />
+    <Compile Include="BuildIdentity.fs" />
+    <Compile Include="SemanticTypes.fs" />
+    <Compile Include="SemanticContract.fs" />
+    <Compile Include="RecoveryTypes.fs" />
+    <Compile Include="RecoveryStorePort.fs" />
+    <Compile Include="Operation.fs" />
+    <Compile Include="Ports.fs" />
+    <Compile Include="CoreConversions.fs" />
+    <Compile Include="Drafts.fs" />
+    <Compile Include="Service.fs" />
+    <Compile Include="HistoryCursor.fs" />
+    <Compile Include="RecoveryCursorCodec.fs" />
+    <Compile Include="TypedProjection.fs" />
+    <Compile Include="RetainedResolution.fs" />
+    <Compile Include="ObservedReceiptVerification.fs" />
+    <Compile Include="TypedPreparation.fs" />
+    <Compile Include="TypedResolution.fs" />
+    <Compile Include="TypedSubmission.fs" />
+    <Compile Include="TypedQueries.fs" />
+    <Compile Include="RecoverySupport.fs" />
+    <Compile Include="RecoveryImports.fs" />
+    <Compile Include="RecoveryDismissOperations.fs" />
+    <Compile Include="RecoveryReadOperations.fs" />
+    <Compile Include="TypedWorkflow.fs" />
+    <Compile Include="RecoveryCoordinator.fs" />
+    <Compile Include="Core.fsi" />
+    <Compile Include="Core.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../ClaimCore.Domain/ClaimCore.Domain.fsproj" />
+    <ProjectReference Include="../ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj" />
+  </ItemGroup>
+</Project>

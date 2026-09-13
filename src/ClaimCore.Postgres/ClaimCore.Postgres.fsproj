@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="Baseline.fs" />
+    <Compile Include="SchemaDefinition.fs" />
+    <Compile Include="Preparations.fs" />
+    <Compile Include="PreparationIntegrity.fs" />
+    <Compile Include="RuntimeAccessPolicy.fs" />
+    <Compile Include="RuntimeAcl.fs" />
+    <Compile Include="RuntimeSchema.fs" />
+    <Compile Include="DatabaseEnvironment.fs" />
+    <Compile Include="RuntimeDatabase.fs" />
+    <Compile Include="ScalarEncoding.fs" />
+    <Compile Include="Sql.fs" />
+    <Compile Include="PreparationEvidence.fs" />
+    <Compile Include="PreparationData.fs" />
+    <Compile Include="RecoveryStoreQueries.fs" />
+    <Compile Include="PreparationPageStore.fs" />
+    <Compile Include="PreparationLifecycleStore.fs" />
+    <Compile Include="SubmissionAttemptStore.fs" />
+    <Compile Include="RecoveryStore.fs" />
+    <Compile Include="Rows.fs" />
+    <Compile Include="StoreData.fs" />
+    <Compile Include="StoreTransaction.fs" />
+    <Compile Include="Store.fs" />
+    <Compile Include="Migrations.fs" />
+    <Compile Include="PreparationPruning.fs" />
+    <Compile Include="Hosting/RuntimeAdmission.fs" />
+    <Compile Include="Hosting/RuntimeCoreFacade.fs" />
+    <Compile Include="Hosting/RuntimeSourceOwnership.fs" />
+    <Compile Include="Hosting/Runtime.fsi" />
+    <Compile Include="Hosting/Runtime.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../ClaimCore.Domain/ClaimCore.Domain.fsproj" />
+    <ProjectReference Include="../ClaimCore.Application/ClaimCore.Application.fsproj" />
+    <ProjectReference Include="../ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Npgsql" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="../../db/001_initial.sql" LogicalName="ClaimCore.Migrations.001_initial.sql" />
+    <EmbeddedResource Include="../../db/002_request_preparations.sql" LogicalName="ClaimCore.Migrations.002_request_preparations.sql" />
+    <EmbeddedResource Include="../../db/003_submission_attempts.sql" LogicalName="ClaimCore.Migrations.003_submission_attempts.sql" />
+    <EmbeddedResource Include="../../db/004_generalize_preparation_provenance.sql" LogicalName="ClaimCore.Migrations.004_generalize_preparation_provenance.sql" />
+    <EmbeddedResource Include="../../db/005_recovery_evidence_read_acl.sql" LogicalName="ClaimCore.Migrations.005_recovery_evidence_read_acl.sql" />
+    <EmbeddedResource Include="../../db/migration-manifest.json" LogicalName="ClaimCore.Migrations.manifest.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="../../db/postgresql-baseline.json" LogicalName="ClaimCore.PostgresBaseline.json" />
+  </ItemGroup>
+</Project>

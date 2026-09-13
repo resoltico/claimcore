@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "holds": [
+    {
+      "ecosystem": "nuget",
+      "package": "Microsoft.ApplicationInsights",
+      "current": "2.23.0",
+      "latest": "3.1.2",
+      "owner": "project maintainers",
+      "rationale": "Microsoft.Testing.Extensions.Telemetry 2.4.0 selects this major; independently overriding its telemetry implementation is outside the supported MTP graph.",
+      "reviewOn": "2026-12-08"
+    },
+    {
+      "ecosystem": "nuget",
+      "package": "TypeShape",
+      "current": "9.0.0",
+      "latest": "10.0.0",
+      "owner": "project maintainers",
+      "rationale": "Hedgehog 2.0.4 selects TypeShape 9; forcing an untested transitive major beneath the current property-test library is not a safe upgrade.",
+      "reviewOn": "2026-12-08"
+    }
+  ]
+}

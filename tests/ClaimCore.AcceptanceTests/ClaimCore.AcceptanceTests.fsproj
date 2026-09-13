@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsTestProject>true</IsTestProject>
+    <GenerateProgramFile>false</GenerateProgramFile>
+    <EnableExpectoTestingPlatformIntegration>true</EnableExpectoTestingPlatformIntegration>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Configuration.fs" />
+    <Compile Include="PublishManifest.fs" />
+    <Compile Include="ProcessRunner.fs" />
+    <Compile Include="DatabaseFixture.fs" />
+    <Compile Include="CliV3Fixtures.fs" />
+    <Compile Include="BoundaryTests.fs" />
+    <Compile Include="EndpointModeParityTests.fs" />
+    <Compile Include="PrivateFileTests.fs" />
+    <Compile Include="LifecycleTests.fs" />
+    <Compile Include="Suite.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="../../eng/claimcore.testconfig.json" Link="testconfig.json" CopyToOutputDirectory="PreserveNewest" />
+    <PackageReference Include="coverlet.MTP" PrivateAssets="all" />
+    <PackageReference Include="Expecto" />
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" PrivateAssets="all" />
+    <PackageReference Include="Npgsql" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="YoloDev.Expecto.TestSdk" PrivateAssets="all" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,15 @@
+{
+  "protocolVersion": 3,
+  "endpoint": "command.execute",
+  "input": {
+    "operationId": "10000000-0000-4000-8000-000000000003",
+    "caseReference": "DEMO-0001",
+    "expectedRevision": "2",
+    "command": {
+      "kind": "RECORD_PAYMENT",
+      "values": {
+        "paymentDate": "2026-08-20"
+      }
+    }
+  }
+}

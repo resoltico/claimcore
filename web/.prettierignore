@@ -1,0 +1,4 @@
+# rationale: ClaimCore.Contracts emits canonical minified JSON whose exact bytes feed wire fingerprints; suppression-registry: web/.prettierignore|prettier-ignore-file|line:2
+src/generated/convergence/*.json
+# rationale: AJV/Rolldown emits deterministic minified standalone code whose one-megabyte ceiling is enforced by contract:check; suppression-registry: web/.prettierignore|prettier-ignore-file|line:4
+src/generated/convergence/web-v2.validators.mjs

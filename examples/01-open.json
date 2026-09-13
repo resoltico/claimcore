@@ -1,0 +1,21 @@
+{
+  "protocolVersion": 3,
+  "endpoint": "command.execute",
+  "input": {
+    "operationId": "10000000-0000-4000-8000-000000000001",
+    "caseReference": "DEMO-0001",
+    "expectedRevision": "0",
+    "command": {
+      "kind": "OPEN",
+      "values": {
+        "incidentDate": "2026-08-01",
+        "incidentNotificationDate": "2026-08-03",
+        "incidentCountry": "Lithuania",
+        "claimantName": "Example Translation Services Ltd",
+        "insurerName": "Example Alleged Insurer",
+        "claimedAmount": "1000.00",
+        "claimedCurrency": "EUR"
+      }
+    }
+  }
+}

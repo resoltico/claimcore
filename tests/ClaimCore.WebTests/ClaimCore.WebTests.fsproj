@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsTestProject>true</IsTestProject>
+    <GenerateProgramFile>false</GenerateProgramFile>
+    <EnableExpectoTestingPlatformIntegration>true</EnableExpectoTestingPlatformIntegration>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="RouteFixtures.fs" />
+    <Compile Include="TestServerServices.fs" />
+    <Compile Include="TestServerFixture.fs" />
+    <Compile Include="TestServerOutcomeValues.fs" />
+    <Compile Include="PrivateTestPaths.fs" />
+    <Compile Include="ConfigurationTests.fs" />
+    <Compile Include="AdmissionEdgeTests.fs" />
+    <Compile Include="HttpInputTests.fs" />
+    <Compile Include="ProgramEntryTests.fs" />
+    <Compile Include="WireTests.fs" />
+    <Compile Include="HostRouteTests.fs" />
+    <Compile Include="RouteTests.fs" />
+    <Compile Include="SecurityTests.fs" />
+    <Compile Include="WebHostSecurityTests.fs" />
+    <Compile Include="TestServerRouteTests.fs" />
+    <Compile Include="TestServerAdmissionTests.fs" />
+    <Compile Include="TestServerSessionFailureTests.fs" />
+    <Compile Include="TestServerCoreOutcomeTests.fs" />
+    <Compile Include="TestServerRecoveryOutcomeTests.fs" />
+    <Compile Include="TestServerBoundaryTests.fs" />
+    <Compile Include="Suite.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="../../eng/claimcore.testconfig.json" Link="testconfig.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/ClaimCore.Web/ClaimCore.Web.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Application/ClaimCore.Application.fsproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="coverlet.MTP" PrivateAssets="all" />
+    <PackageReference Include="Expecto" />
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" />
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" PrivateAssets="all" />
+    <PackageReference Include="YoloDev.Expecto.TestSdk" PrivateAssets="all" />
+  </ItemGroup>
+  <Import Project="../../src/ClaimCore.HostSecurity/HostSecurity.Native.targets" />
+</Project>

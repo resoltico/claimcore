@@ -1,0 +1,98 @@
+name: ClaimCore coverage verification
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+env:
+  CI: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_NOLOGO: 1
+  NO_COLOR: 1
+  TESTINGPLATFORM_TELEMETRY_OPTOUT: 1
+
+jobs:
+  coverage:
+    name: Merged production coverage policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: |
+            **/packages.lock.json
+            .config/dotnet-tools.json
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Require the exact Node and npm toolchain
+        shell: bash
+        run: |
+          test "$(node --version)" = "v$(tr -d '\r\n' < .node-version)"
+          test "$(npm --version)" = "$(node -p "require('./web/package.json').engines.npm")"
+      - name: Download Linux unit coverage
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: claimcore-test-unit-linux-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/coverage-input/unit
+      - name: Download Linux Web coverage
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: claimcore-test-web-linux-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/coverage-input/web
+      - name: Download PostgreSQL integration coverage
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: claimcore-test-integration-linux-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/coverage-input/integration
+      - name: Download published browser host coverage
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: claimcore-browser-*-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/coverage-input/browser
+          merge-multiple: true
+      - name: Restore the pinned report tool and evidence executable
+        run: |
+          dotnet restore ClaimCore.slnx --locked-mode
+          dotnet tool restore
+          dotnet build eng/ClaimCore.Docs/ClaimCore.Docs.fsproj --configuration Release --no-restore
+      - name: Merge and enforce repository coverage floors
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -File eng/Invoke-MergedCoverage.ps1 `
+            -InputRoot artifacts/coverage-input -OutputRoot artifacts/coverage-report `
+            -RunId "${{ github.run_id }}" -Attempt "${{ github.run_attempt }}" `
+            -SummaryPath $env:GITHUB_STEP_SUMMARY
+      - name: Scan artifacts before upload
+        id: artifact_scan
+        if: always()
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -File eng/Scan-ArtifactSecrets.ps1 `
+            artifacts/coverage-report/ `
+            "artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/coverage.json"
+      - name: Upload required merged coverage
+        if: ${{ always() && steps.artifact_scan.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: claimcore-coverage-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/coverage-report/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload coverage stage evidence
+        if: ${{ always() && steps.artifact_scan.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: claimcore-stage-coverage-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/coverage.json
+          if-no-files-found: error
+          retention-days: 14

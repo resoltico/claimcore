@@ -1,0 +1,47 @@
+<Project>
+  <PropertyGroup>
+    <Product>ClaimCore</Product>
+    <Authors>ClaimCore contributors</Authors>
+    <Copyright>Copyright © 2026 ClaimCore contributors</Copyright>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <Version>0.1.0</Version>
+    <VersionPrefix>$([System.Text.RegularExpressions.Regex]::Match('$(Version)', '^[0-9]+\.[0-9]+\.[0-9]+').Value)</VersionPrefix>
+    <AssemblyVersion>$(VersionPrefix).0</AssemblyVersion>
+    <FileVersion>$(AssemblyVersion)</FileVersion>
+    <InformationalVersion>$(Version)</InformationalVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>10.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsAsErrors>$(WarningsAsErrors);NU1901;NU1902;NU1903;NU1904</WarningsAsErrors>
+    <WarningLevel>5</WarningLevel>
+    <WarnOn>$(WarnOn);1182;3218</WarnOn>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true' Or '$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+    <UseArtifactsOutput>true</UseArtifactsOutput>
+    <ArtifactsPath>$(MSBuildThisFileDirectory)artifacts</ArtifactsPath>
+
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <RestoreLockedMode Condition="'$(CI)' == 'true'">true</RestoreLockedMode>
+    <NuGetAudit>true</NuGetAudit>
+    <NuGetAuditMode>all</NuGetAuditMode>
+    <NuGetAuditLevel>low</NuGetAuditLevel>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.fsproj'">
+    <PackageReference Include="FSharp.Core" />
+  </ItemGroup>
+  <ItemGroup
+    Condition="'$(MSBuildProjectName)' == 'ClaimCore.Cli' Or
+               '$(MSBuildProjectName)' == 'ClaimCore.Database' Or
+               '$(MSBuildProjectName)' == 'ClaimCore.Web'">
+    <None
+      Include="$(MSBuildThisFileDirectory)LICENSE"
+      Link="LICENSE"
+      CopyToOutputDirectory="PreserveNewest"
+      CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

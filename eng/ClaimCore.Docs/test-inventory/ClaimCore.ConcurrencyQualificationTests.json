@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "assembly": "ClaimCore.ConcurrencyQualificationTests",
+  "tests": [
+    "ClaimCore concurrency qualification.PostgreSQL recovery races.[CC-REC-001] simultaneous exact resolves retain one accepted revision",
+    "ClaimCore concurrency qualification.PostgreSQL recovery races.[CC-REC-001] simultaneous resolve and dismiss have one lifecycle winner",
+    "ClaimCore concurrency qualification.concurrency qualification.absent case concurrency.concurrent distinct opens of one absent reference accept exactly one revision",
+    "ClaimCore concurrency qualification.concurrency qualification.revision concurrency.concurrent different commands against same revision cannot lose an update",
+    "ClaimCore concurrency qualification.concurrency qualification.same operation concurrency.concurrent same-ID attempts produce one accepted change"
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "purpose": "Independent ASCII protocol-2 and snapshot-2 encoding vectors. These are expectations, not recorded F# test results. Canonical scalar spelling is retained for requests.",
+  "requests": [
+    {
+      "command": "OPEN",
+      "canonicalUtf8": "{\"protocolVersion\":2,\"operationId\":\"20000000-0000-4000-8000-000000000001\",\"caseReference\":\"UNIT-001\",\"expectedVersion\":0,\"command\":{\"type\":\"OPEN\",\"registration\":{\"incidentDate\":\"2026-08-01\",\"incidentNotificationDate\":\"2026-08-03\",\"incidentCountry\":\"Lithuania\",\"claimantName\":\"Example Claimant Ltd\",\"insurerName\":\"Example Alleged Insurer\",\"claimedAmount\":\"1000.00\",\"claimedCurrency\":\"EUR\"}}}",
+      "sha256": "06697cb47ed88f55be4f931b802ba9552947ff661ff294ebdfa1240266eff4ed"
+    },
+    {
+      "command": "AMEND_REGISTRATION",
+      "canonicalUtf8": "{\"protocolVersion\":2,\"operationId\":\"20000000-0000-4000-8000-000000000002\",\"caseReference\":\"UNIT-001\",\"expectedVersion\":1,\"command\":{\"type\":\"AMEND_REGISTRATION\",\"registration\":{\"incidentDate\":\"2026-08-01\",\"incidentNotificationDate\":\"2026-08-03\",\"incidentCountry\":\"Lithuania\",\"claimantName\":\"Example Claimant Ltd\",\"insurerName\":\"Example Alleged Insurer\",\"claimedAmount\":\"1000.00\",\"claimedCurrency\":\"EUR\"}}}",
+      "sha256": "72ecd8a5bdcdb7f8a2debf2f85f7caff5649839c7e3389d9ebbbea6e23403534"
+    },
+    {
+      "command": "DECIDE",
+      "canonicalUtf8": "{\"protocolVersion\":2,\"operationId\":\"20000000-0000-4000-8000-000000000003\",\"caseReference\":\"UNIT-001\",\"expectedVersion\":1,\"command\":{\"type\":\"DECIDE\",\"decision\":{\"paymentDecisionDate\":\"2026-08-15\",\"payableAmount\":\"750.00\",\"payableCurrency\":\"EUR\"}}}",
+      "sha256": "088a718595e217a09e5b9685fc36e13077b87297fb1022fc3bde730a1a9bfae7"
+    },
+    {
+      "command": "WITHDRAW_DECISION",
+      "canonicalUtf8": "{\"protocolVersion\":2,\"operationId\":\"20000000-0000-4000-8000-000000000004\",\"caseReference\":\"UNIT-001\",\"expectedVersion\":1,\"command\":{\"type\":\"WITHDRAW_DECISION\"}}",
+      "sha256": "a95c679554fdf3b782f5d3c6e11685b3825cbc277752cb205cad5080819ef83d"
+    },
+    {
+      "command": "RECORD_PAYMENT",
+      "canonicalUtf8": "{\"protocolVersion\":2,\"operationId\":\"20000000-0000-4000-8000-000000000005\",\"caseReference\":\"UNIT-001\",\"expectedVersion\":1,\"command\":{\"type\":\"RECORD_PAYMENT\",\"paymentDate\":\"2026-08-20\"}}",
+      "sha256": "d6a9001d9df559c9a8cfb43607b7d9cddb88082cffd9731981fddb424ef3b18e"
+    },
+    {
+      "command": "CLEAR_PAYMENT",
+      "canonicalUtf8": "{\"protocolVersion\":2,\"operationId\":\"20000000-0000-4000-8000-000000000006\",\"caseReference\":\"UNIT-001\",\"expectedVersion\":1,\"command\":{\"type\":\"CLEAR_PAYMENT\"}}",
+      "sha256": "ae7ae3092ecde818c0ec203dda69629a37a3b7709f3276e2bd4dc752b7300a01"
+    },
+    {
+      "command": "CLOSE",
+      "canonicalUtf8": "{\"protocolVersion\":2,\"operationId\":\"20000000-0000-4000-8000-000000000007\",\"caseReference\":\"UNIT-001\",\"expectedVersion\":1,\"command\":{\"type\":\"CLOSE\"}}",
+      "sha256": "06d2cc30edc7775a3146f074f218af7db9f4ca6924661986297dff7975b1165d"
+    },
+    {
+      "command": "REOPEN",
+      "canonicalUtf8": "{\"protocolVersion\":2,\"operationId\":\"20000000-0000-4000-8000-000000000008\",\"caseReference\":\"UNIT-001\",\"expectedVersion\":1,\"command\":{\"type\":\"REOPEN\"}}",
+      "sha256": "318e8e6b679637fc1e27cbfe61ca0e6d845143db01af7a0c8f7c11c66c8ce82f"
+    }
+  ],
+  "snapshot": "{\"fields\":{\"incidentDate\":\"2026-08-01\",\"incidentNotificationDate\":\"2026-08-03\",\"incidentCountry\":\"Lithuania\",\"claimantName\":\"Example Claimant Ltd\",\"insurerName\":\"Example Alleged Insurer\",\"claimedAmount\":\"1000\",\"claimedCurrency\":\"EUR\",\"caseReference\":\"UNIT-001\",\"paymentDecisionDate\":null,\"payableAmount\":null,\"payableCurrency\":null,\"paymentDate\":null,\"status\":\"OPENED\"},\"version\":1}"
+}

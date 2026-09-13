@@ -1,0 +1,34 @@
+import { useEffect, useState } from "react";
+import { resultMessage, type DefinitionPayload, v2 } from "../api/v2";
+import { webV2WireContractFingerprint } from "../generated/convergence/web-v2.endpoint-catalog";
+
+export const useDefinition = (sessionEpoch: number) => {
+  const [definition, setDefinition] = useState<DefinitionPayload | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void v2.definition(controller.signal).then((result) => {
+      if (controller.signal.aborted) return;
+      const payload =
+        result.kind === "outcome" && result.value.outcome.tag === "DESCRIBED"
+          ? result.value.outcome.data
+          : null;
+      if (payload === null) {
+        setDefinition(null);
+        setMessage(resultMessage(result));
+      } else if (payload.webFingerprint !== webV2WireContractFingerprint) {
+        setDefinition(null);
+        setMessage(
+          "The installed Web contract does not match these browser assets. Reload after publishing matching assets.",
+        );
+      } else {
+        setDefinition(payload);
+        setMessage(null);
+      }
+    });
+    return () => controller.abort();
+  }, [sessionEpoch]);
+
+  return { definition, message };
+};

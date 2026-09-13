@@ -1,0 +1,86 @@
+name: ClaimCore extended property exploration
+
+on:
+  schedule:
+    - cron: "17 3 * * 0"
+  workflow_dispatch:
+    inputs:
+      base_seed:
+        description: Canonical unsigned 64-bit Hedgehog base seed
+        required: true
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  CI: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_NOLOGO: 1
+  NO_COLOR: 1
+  TESTINGPLATFORM_TELEMETRY_OPTOUT: 1
+  CLAIMCORE_PROPERTY_PROFILE: extended
+
+jobs:
+  properties:
+    name: Eight properties at 5,000 cases
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: "**/packages.lock.json"
+      - name: Select and validate the public exploration seed
+        shell: pwsh
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REPOSITORY: ${{ github.repository }}
+          REQUESTED_SEED: ${{ inputs.base_seed }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          RUN_ID: ${{ github.run_id }}
+          WORKFLOW: ${{ github.workflow }}
+        run: |
+          Set-StrictMode -Version Latest
+          $seed = & eng/Select-PropertySeed.ps1 -EventName $env:EVENT_NAME `
+            -RequestedSeed $env:REQUESTED_SEED -Repository $env:REPOSITORY `
+            -Workflow $env:WORKFLOW -RunId $env:RUN_ID -RunAttempt $env:RUN_ATTEMPT
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Add-Content -LiteralPath $env:GITHUB_ENV -Value "CLAIMCORE_PROPERTY_BASE_SEED=$seed"
+      - name: Restore and build the locked unit project
+        run: |
+          dotnet restore ClaimCore.slnx --locked-mode
+          dotnet build tests/ClaimCore.Tests/ClaimCore.Tests.fsproj --configuration Release --no-restore
+      - name: Run the complete extended profile
+        shell: bash
+        run: |
+          set -euo pipefail
+          results=artifacts/test-results/properties-extended
+          test ! -e "$results"
+          dotnet test --project tests/ClaimCore.Tests/ClaimCore.Tests.fsproj \
+            --configuration Release --no-build --no-restore --max-parallel-test-modules 1 \
+            --results-directory="$results" \
+            --minimum-expected-tests=183 --zero-tests-policy=strict --timeout=30m \
+            -- --settings="$PWD/eng/expecto.runsettings" --report-trx \
+            --report-trx-filename=ClaimCore.Tests.extended.trx
+      - name: Scan artifacts before upload
+        id: artifact_scan
+        if: always()
+        shell: pwsh
+        run: pwsh -NoProfile -File eng/Scan-ArtifactSecrets.ps1 artifacts/test-results/properties-extended/
+      - name: Upload required extended-profile evidence
+        if: ${{ always() && steps.artifact_scan.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: claimcore-properties-extended-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/test-results/properties-extended/
+          if-no-files-found: error
+          retention-days: 30

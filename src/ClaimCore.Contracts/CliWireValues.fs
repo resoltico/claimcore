@@ -1,0 +1,143 @@
+namespace ClaimCore.Contracts
+
+open System
+open System.Globalization
+open System.Text.Json
+open ClaimCore.Application
+open ClaimCore.Domain
+
+module internal CliWireValues =
+    let private revision (value: int64) =
+        value.ToString(CultureInfo.InvariantCulture)
+
+    let command = WireTokens.command
+    let action = WireTokens.action
+    let rejectionCode = WireTokens.rejectionCode
+    let faultCode = WireTokens.faultCode
+    let recoveryRejectionCode = WireTokens.recoveryRejectionCode
+
+    let private optional (writer: Utf8JsonWriter) (name: string) (value: string option) =
+        match value with
+        | Some value -> writer.WriteString(name, value)
+        | None -> writer.WriteNull(name)
+
+    let rejection (writer: Utf8JsonWriter) (value: Rejection) =
+        writer.WriteStartObject()
+        writer.WriteString("code", rejectionCode value.Code)
+        writer.WriteString("message", value.Message)
+        optional writer "field" value.Field
+        optional writer "actualRevision" (value.ActualVersion |> Option.map revision)
+        writer.WriteString("recommendedAction", action value.Action)
+        writer.WriteEndObject()
+
+    let fault (writer: Utf8JsonWriter) (value: CoreFault) =
+        writer.WriteStartObject()
+        writer.WriteString("code", faultCode value.Code)
+        writer.WriteString("message", value.Message)
+        writer.WriteString("recommendedAction", action value.Action)
+        writer.WriteEndObject()
+
+    let recoveryRejection (writer: Utf8JsonWriter) (value: RecoveryRejection) =
+        writer.WriteStartObject()
+        writer.WriteString("code", recoveryRejectionCode value.Code)
+        writer.WriteString("message", value.Message)
+        writer.WriteString("recommendedAction", action value.Action)
+        writer.WriteEndObject()
+
+    let caseView (writer: Utf8JsonWriter) (value: CaseView) =
+        writer.WriteStartObject()
+        writer.WritePropertyName("fields")
+        writer.WriteStartObject()
+
+        FieldDefinitions.values value.Fields
+        |> List.iter (fun (name, field) -> optional writer name field)
+
+        writer.WriteEndObject()
+        writer.WriteString("revision", revision value.Version)
+        writer.WriteEndObject()
+
+    let currentCase (writer: Utf8JsonWriter) (value: CurrentCase) =
+        writer.WriteStartObject()
+        writer.WritePropertyName("case")
+        caseView writer value.Record
+        writer.WritePropertyName("availableCommands")
+        writer.WriteStartArray()
+        value.AvailableCommands |> List.iter (command >> writer.WriteStringValue)
+        writer.WriteEndArray()
+        writer.WriteEndObject()
+
+    let receipt includeSnapshot (writer: Utf8JsonWriter) (value: OperationReceipt) =
+        writer.WriteStartObject()
+        writer.WriteString("operationId", value.OperationId)
+        writer.WriteString("caseReference", value.Snapshot.Fields.CaseReference)
+        writer.WriteString("revision", revision value.Snapshot.Version)
+        writer.WriteString("command", command value.Command)
+        writer.WriteString("recordedAt", value.RecordedAt.ToUniversalTime().ToString("O"))
+        writer.WriteString("recordedBy", value.RecordedBy)
+        writer.WriteBoolean("replayed", value.Replayed)
+
+        if includeSnapshot then
+            writer.WritePropertyName("snapshot")
+            caseView writer value.Snapshot
+
+        writer.WriteEndObject()
+
+    let summary (writer: Utf8JsonWriter) (value: CaseSummary) =
+        writer.WriteStartObject()
+        writer.WriteString("caseReference", value.CaseReference)
+        writer.WriteString("revision", revision value.Revision)
+        writer.WriteString("status", CaseStatuses.token value.Status)
+        writer.WriteEndObject()
+
+    let preparationSummary (writer: Utf8JsonWriter) (value: PreparationSummary) =
+        writer.WriteStartObject()
+        writer.WriteString("operationId", value.OperationId)
+        writer.WriteString("caseReference", value.CaseReference)
+        writer.WriteString("command", command value.Command)
+        writer.WriteString("preparedAt", value.PreparedAt.ToUniversalTime().ToString("O"))
+        writer.WriteString("state", WireTokens.preparationState value.State)
+        optional writer "requestSha256" value.RequestSha256
+        writer.WritePropertyName("availableActions")
+        writer.WriteStartArray()
+
+        value.AvailableActions
+        |> List.iter (WireTokens.recoveryAction >> writer.WriteStringValue)
+
+        writer.WriteEndArray()
+        writer.WriteEndObject()
+
+    let private attempt (writer: Utf8JsonWriter) (value: PreparationAttempt) =
+        writer.WriteStartObject()
+        writer.WriteString("attemptId", value.AttemptId)
+        writer.WriteString("startedAt", value.StartedAt.ToUniversalTime().ToString("O"))
+        optional writer "settlement" value.Settlement
+
+        optional
+            writer
+            "settledAt"
+            (value.SettledAt |> Option.map (fun item -> item.ToUniversalTime().ToString("O")))
+
+        writer.WriteEndObject()
+
+    let preparationDetails (writer: Utf8JsonWriter) (value: PreparationDetails) =
+        writer.WriteStartObject()
+        writer.WritePropertyName("summary")
+        preparationSummary writer value.Summary
+        writer.WriteString("expectedRevision", revision value.ExpectedVersion)
+        writer.WritePropertyName("authoredValues")
+        writer.WriteStartObject()
+
+        value.AuthoredValues
+        |> List.iter (fun (name, text) -> writer.WriteString(name, text))
+
+        writer.WriteEndObject()
+        writer.WriteNumber("canonicalCommandFormat", value.CanonicalCommandFormat)
+        writer.WriteString("preparingApplicationVersion", value.PreparingApplicationVersion)
+        writer.WriteString("preparingContractFingerprint", value.PreparingContractFingerprint)
+        writer.WriteString("preparingContractKind", value.PreparingContractKind)
+        writer.WritePropertyName("attempts")
+        writer.WriteStartArray()
+        value.Attempts |> List.iter (attempt writer)
+        writer.WriteEndArray()
+        writer.WriteBoolean("legacyUncertainty", value.LegacyUncertainty)
+        writer.WriteEndObject()

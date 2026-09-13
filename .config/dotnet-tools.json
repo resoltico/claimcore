@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "isRoot": true,
+  "tools": {
+    "fantomas": {
+      "version": "7.0.6",
+      "commands": [
+        "fantomas"
+      ],
+      "rollForward": true
+    },
+    "dotnet-fsharplint": {
+      "version": "0.27.0",
+      "commands": [
+        "dotnet-fsharplint"
+      ],
+      "rollForward": false
+    },
+    "dotnet-reportgenerator-globaltool": {
+      "version": "5.5.11",
+      "commands": [
+        "reportgenerator"
+      ],
+      "rollForward": false
+    },
+    "coverlet.console": {
+      "version": "10.0.1",
+      "commands": [
+        "coverlet"
+      ],
+      "rollForward": false
+    },
+    "cyclonedx": {
+      "version": "6.2.0",
+      "commands": [
+        "dotnet-CycloneDX"
+      ],
+      "rollForward": false
+    }
+  }
+}

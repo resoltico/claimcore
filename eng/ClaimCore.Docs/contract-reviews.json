@@ -1,0 +1,252 @@
+{
+  "schemaVersion": 1,
+  "reviews": [
+    {
+      "contractId": "CC-DOM-001",
+      "reviewerKind": "agent",
+      "reviewer": "Codex convergence documentation review",
+      "reviewedOn": "2026-09-12",
+      "conclusion": "approved",
+      "reviewSubjectHash": "e4f7a2e859bb4c91f1926e4c95ec73d8ac9eaa7b5b880267cf1d1b8b54738368",
+      "wholeFiles": [
+        "src/ClaimCore.Domain/Contracts.fs",
+        "src/ClaimCore.Domain/Descriptors.fs",
+        "src/ClaimCore.Domain/FieldDefinitions.fs",
+        "src/ClaimCore.Domain/Claim.fs",
+        "tests/ClaimCore.Tests/DomainDescriptorTests.fs",
+        "tests/ClaimCore.Tests/DomainValidationTests.fs"
+      ],
+      "markedSpans": []
+    },
+    {
+      "contractId": "CC-DOM-002",
+      "reviewerKind": "agent",
+      "reviewer": "Codex convergence documentation review",
+      "reviewedOn": "2026-09-12",
+      "conclusion": "approved",
+      "reviewSubjectHash": "c8f8a6172cf38520aff1041858bff89ea9e1062201eb7597686b207da28126b0",
+      "wholeFiles": [
+        "src/ClaimCore.Domain/Contracts.fs",
+        "src/ClaimCore.Domain/Descriptors.fs",
+        "src/ClaimCore.Domain/Eligibility.fs",
+        "src/ClaimCore.Domain/Claim.fs",
+        "tests/ClaimCore.Tests/TransitionPropertyTests.fs",
+        "tests/ClaimCore.Tests/AvailabilityTests.fs",
+        "tests/ClaimCore.Tests/DomainValidationTests.fs"
+      ],
+      "markedSpans": []
+    },
+    {
+      "contractId": "CC-APP-001",
+      "reviewerKind": "agent",
+      "reviewer": "Codex convergence documentation review",
+      "reviewedOn": "2026-09-12",
+      "conclusion": "approved",
+      "reviewSubjectHash": "11c9dd9ff86da12d9570532d379263293211fa04e31fdc37615a5511736b7433",
+      "wholeFiles": [
+        "src/ClaimCore.Application/TypedQueries.fs",
+        "src/ClaimCore.Application/TypedPreparation.fs",
+        "src/ClaimCore.Application/TypedSubmission.fs",
+        "tests/ClaimCore.IntegrationTests/TransactionRejectionTests.fs"
+      ],
+      "markedSpans": []
+    },
+    {
+      "contractId": "CC-APP-002",
+      "reviewerKind": "agent",
+      "reviewer": "Codex convergence documentation review",
+      "reviewedOn": "2026-09-12",
+      "conclusion": "approved",
+      "reviewSubjectHash": "9bcc1d11c16f8e4a14e816e2bbdfc1932646c27440f814e3abc65aa249b3d7e4",
+      "wholeFiles": [
+        "src/ClaimCore.Application/TypedResolution.fs",
+        "src/ClaimCore.Application/TypedSubmission.fs",
+        "src/ClaimCore.Application/TypedPreparation.fs",
+        "src/ClaimCore.Postgres/StoreTransaction.fs",
+        "src/ClaimCore.Postgres/RecoveryStore.fs",
+        "tests/ClaimCore.IntegrationTests/TransactionTests.fs",
+        "tests/ClaimCore.Tests/ExactReplayTests.fs"
+      ],
+      "markedSpans": []
+    },
+    {
+      "contractId": "CC-CLI-001",
+      "reviewerKind": "agent",
+      "reviewer": "Codex convergence documentation review",
+      "reviewedOn": "2026-09-12",
+      "conclusion": "approved",
+      "reviewSubjectHash": "3862b530d5c2cbe824c3055505bb81b599e0643ec3fc70fdfa5d3b42d37fd125",
+      "wholeFiles": [
+        "examples/01-open.json",
+        "examples/02-decide.json",
+        "examples/03-record-payment.json",
+        "examples/04-close.json",
+        "examples/05-reopen.json",
+        "examples/06-correct-payment-record.json",
+        "src/ClaimCore.Cli/InvocationDecoder.fs",
+        "src/ClaimCore.Cli/EndpointDispatch.fs",
+        "tests/ClaimCore.AcceptanceTests/LifecycleTests.fs",
+        "tests/ClaimCore.AcceptanceTests/EndpointModeParityTests.fs",
+        "tests/ClaimCore.Tests/ExampleContractTests.fs"
+      ],
+      "markedSpans": []
+    },
+    {
+      "contractId": "CC-CLI-002",
+      "reviewerKind": "agent",
+      "reviewer": "Codex private-file boundary review",
+      "reviewedOn": "2026-09-12",
+      "conclusion": "approved",
+      "reviewSubjectHash": "c6efec878eb96e91691a0442d9f2007475ccbcf7b1d0a0ce79c96d0f21319088",
+      "wholeFiles": [
+        "src/ClaimCore.HostSecurity/PrivateFileService.fs",
+        "src/ClaimCore.HostSecurity/PosixPrivateFiles.fs",
+        "src/ClaimCore.HostSecurity/PosixPrivateNative.fs",
+        "src/ClaimCore.HostSecurity/HostSecurity.Native.targets",
+        "src/ClaimCore.HostSecurity/native/claimcore_private_openat.c",
+        "src/ClaimCore.Cli/PrivateFiles.fs",
+        "tests/ClaimCore.Tests/PrivateFileSecurityTests.fs",
+        "tests/ClaimCore.Tests/NativePrivateFileRaceTests.fs",
+        "tests/ClaimCore.AcceptanceTests/PrivateFileTests.fs",
+        "eng/Run-PublishedCliAcceptance.sh"
+      ],
+      "markedSpans": []
+    },
+    {
+      "contractId": "CC-REC-001",
+      "reviewerKind": "agent",
+      "reviewer": "Codex convergence documentation review",
+      "reviewedOn": "2026-09-12",
+      "conclusion": "approved",
+      "reviewSubjectHash": "b3b452b46a19d5a18c98913c0d1cc6a8158a6afadcd01b6b3facbfa447da78de",
+      "wholeFiles": [
+        "src/ClaimCore.Application/RecoveryCoordinator.fs",
+        "src/ClaimCore.Application/RecoveryReadOperations.fs",
+        "src/ClaimCore.Application/RecoveryImports.fs",
+        "src/ClaimCore.Application/RecoveryStorePort.fs",
+        "src/ClaimCore.Application/TypedPreparation.fs",
+        "src/ClaimCore.Application/TypedResolution.fs",
+        "src/ClaimCore.Cli/EndpointDispatch.fs",
+        "src/ClaimCore.Postgres/RecoveryStore.fs",
+        "src/ClaimCore.Postgres/RecoveryStoreQueries.fs",
+        "tests/ClaimCore.IntegrationTests/RecoveryProcessTests.fs",
+        "tests/ClaimCore.IntegrationTests/RecoveryCancellationTests.fs",
+        "tests/ClaimCore.IntegrationTests/RecoveryEvidenceTests.fs",
+        "tests/ClaimCore.IntegrationTests/RecoveryRaceTests.fs",
+        "tests/ClaimCore.IntegrationTests/RecoveryStateTests.fs",
+        "tests/ClaimCore.Tests/CliExitContractTests.fs",
+        "tests/ClaimCore.Tests/ExactReplayTests.fs",
+        "tests/ClaimCore.Tests/RecoveryCancellationOutcomeTests.fs",
+        "tests/ClaimCore.Tests/RecoveryOutcomeTests.fs",
+        "tests/ClaimCore.RecoveryQualificationTests/Suite.fs"
+      ],
+      "markedSpans": []
+    },
+    {
+      "contractId": "CC-RUN-001",
+      "reviewerKind": "agent",
+      "reviewer": "Codex runtime lifetime review",
+      "reviewedOn": "2026-09-12",
+      "conclusion": "approved",
+      "reviewSubjectHash": "7aaf7a006ac943c44e34c4f9642f1a720129e4f57f372dbf067242855182a482",
+      "wholeFiles": [
+        "src/ClaimCore.Postgres/Hosting/Runtime.fsi",
+        "src/ClaimCore.Postgres/Hosting/Runtime.fs",
+        "src/ClaimCore.Postgres/Hosting/RuntimeAdmission.fs",
+        "src/ClaimCore.Postgres/Hosting/RuntimeCoreFacade.fs",
+        "src/ClaimCore.Postgres/Hosting/RuntimeSourceOwnership.fs",
+        "tests/ClaimCore.IntegrationTests/CoreBoundaryTests.fs",
+        "tests/ClaimCore.IntegrationTests/RuntimeLifecycleTests.fs"
+      ],
+      "markedSpans": []
+    },
+    {
+      "contractId": "CC-DB-001",
+      "reviewerKind": "agent",
+      "reviewer": "Codex convergence documentation review",
+      "reviewedOn": "2026-09-12",
+      "conclusion": "approved",
+      "reviewSubjectHash": "36976731b966c09083f7962da169d7219b012517e84ec79e829008f7bed6bf3a",
+      "wholeFiles": [
+        "db/001_initial.sql",
+        "db/002_request_preparations.sql",
+        "db/003_submission_attempts.sql",
+        "db/004_generalize_preparation_provenance.sql",
+        "db/005_recovery_evidence_read_acl.sql",
+        "db/migration-manifest.json",
+        "src/ClaimCore.Postgres/Hosting/Runtime.fs",
+        "src/ClaimCore.Postgres/Migrations.fs",
+        "src/ClaimCore.Postgres/SchemaDefinition.fs",
+        "tests/ClaimCore.IntegrationTests/MigrationUpgradeTests.fs",
+        "tests/ClaimCore.IntegrationTests/MigrationEvidenceUpgradeTests.fs"
+      ],
+      "markedSpans": []
+    },
+    {
+      "contractId": "CC-DB-002",
+      "reviewerKind": "agent",
+      "reviewer": "Codex private-file boundary review",
+      "reviewedOn": "2026-09-12",
+      "conclusion": "approved",
+      "reviewSubjectHash": "d10f6b4ec236781830bf487be2abb0496be19d19f6be552e22a0e25d1b1813d7",
+      "wholeFiles": [
+        "src/ClaimCore.HostSecurity/PrivateFileService.fs",
+        "src/ClaimCore.HostSecurity/PosixPrivateFiles.fs",
+        "src/ClaimCore.HostSecurity/PosixPrivateNative.fs",
+        "src/ClaimCore.HostSecurity/HostSecurity.Native.targets",
+        "src/ClaimCore.HostSecurity/native/claimcore_private_openat.c",
+        "src/ClaimCore.Database/Program.fs",
+        "tests/ClaimCore.Tests/DatabasePrivateFileTests.fs"
+      ],
+      "markedSpans": []
+    },
+    {
+      "contractId": "CC-WEB-001",
+      "reviewerKind": "agent",
+      "reviewer": "Codex convergence documentation review",
+      "reviewedOn": "2026-09-12",
+      "conclusion": "approved",
+      "reviewSubjectHash": "f1dd9913b3d103afbe648b71890887f7cfa842f098cd85a24701e592c3d73dce",
+      "wholeFiles": [
+        "src/ClaimCore.Contracts/WebEndpointCatalog.fs",
+        "src/ClaimCore.Contracts/WebResponseSchemas.fs",
+        "src/ClaimCore.Contracts/WebWireMutations.fs",
+        "eng/ClaimCore.ContractGenerator/Artifacts.fs",
+        "eng/ClaimCore.ContractGenerator/WebMutationCorpusSamples.fs",
+        "src/ClaimCore.HostSecurity/HostSecurity.Native.targets",
+        "src/ClaimCore.HostSecurity/native/claimcore_private_openat.c",
+        "src/ClaimCore.HostSecurity/PrivateFileService.fs",
+        "src/ClaimCore.HostSecurity/PosixPrivateFiles.fs",
+        "src/ClaimCore.HostSecurity/PosixPrivateNative.fs",
+        "src/ClaimCore.Web/WebContract.fs",
+        "src/ClaimCore.Web/Program.fs",
+        "src/ClaimCore.Web/HostRoutes.fs",
+        "src/ClaimCore.Web/Admission.fs",
+        "src/ClaimCore.Web/HttpInput.fs",
+        "src/ClaimCore.Web/ApiRoutes.fs",
+        "src/ClaimCore.Web/Routes.fs",
+        "src/ClaimCore.Web/Configuration.fs",
+        "src/ClaimCore.Web/Security.fs",
+        "src/ClaimCore.Web/WireOutcomes.fs",
+        "src/ClaimCore.Web/WireRecoveryOutcomes.fs",
+        "tests/ClaimCore.WebTests/WireTests.fs",
+        "tests/ClaimCore.WebTests/RouteTests.fs",
+        "tests/ClaimCore.WebTests/ConfigurationTests.fs",
+        "tests/ClaimCore.WebTests/AdmissionEdgeTests.fs",
+        "tests/ClaimCore.WebTests/HttpInputTests.fs",
+        "tests/ClaimCore.WebTests/ProgramEntryTests.fs",
+        "tests/ClaimCore.WebTests/TestServerSessionFailureTests.fs",
+        "tests/ClaimCore.WebTests/WebHostSecurityTests.fs",
+        "tests/ClaimCore.WebTests/TestServerRouteTests.fs",
+        "tests/ClaimCore.WebTests/TestServerAdmissionTests.fs",
+        "tests/ClaimCore.WebTests/TestServerCoreOutcomeTests.fs",
+        "tests/ClaimCore.WebTests/TestServerRecoveryOutcomeTests.fs",
+        "tests/ClaimCore.WebTests/TestServerBoundaryTests.fs",
+        "web/src/api/v2.ts",
+        "web/src/generated/convergence/web-v2.endpoint-catalog.ts",
+        "web/tests/generated-contract-corpora.test.ts"
+      ],
+      "markedSpans": []
+    }
+  ]
+}

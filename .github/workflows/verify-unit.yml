@@ -1,0 +1,152 @@
+name: ClaimCore cross-platform test verification
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+env:
+  CI: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_NOLOGO: 1
+  NO_COLOR: 1
+  TESTINGPLATFORM_TELEMETRY_OPTOUT: 1
+
+jobs:
+  tests:
+    name: ${{ matrix.label }} (${{ matrix.platform }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            label: Unit and process tests
+            stage: unit-linux
+            assembly: ClaimCore.Tests
+            project: tests/ClaimCore.Tests/ClaimCore.Tests.fsproj
+            expected: 183
+            prefix: unit
+          - os: macos-latest
+            platform: macos
+            label: Unit and process tests
+            stage: unit-macos
+            assembly: ClaimCore.Tests
+            project: tests/ClaimCore.Tests/ClaimCore.Tests.fsproj
+            expected: 183
+            prefix: unit
+          - os: windows-latest
+            platform: windows
+            label: Unit and process tests
+            stage: unit-windows
+            assembly: ClaimCore.Tests
+            project: tests/ClaimCore.Tests/ClaimCore.Tests.fsproj
+            expected: 183
+            prefix: unit
+          - os: ubuntu-latest
+            platform: linux
+            label: Web host and security tests
+            stage: web-linux
+            assembly: ClaimCore.WebTests
+            project: tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj
+            expected: 55
+            prefix: web
+          - os: macos-latest
+            platform: macos
+            label: Web host and security tests
+            stage: web-macos
+            assembly: ClaimCore.WebTests
+            project: tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj
+            expected: 55
+            prefix: web
+          - os: windows-latest
+            platform: windows
+            label: Web host and security tests
+            stage: web-windows
+            assembly: ClaimCore.WebTests
+            project: tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj
+            expected: 55
+            prefix: web
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: "**/packages.lock.json"
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Require the exact Node and npm toolchain
+        shell: bash
+        run: |
+          test "$(node --version)" = "v$(tr -d '\r\n' < .node-version)"
+          test "$(npm --version)" = "$(node -p "require('./web/package.json').engines.npm")"
+      - name: Restore and build the locked source tree
+        run: |
+          dotnet restore ClaimCore.slnx --locked-mode
+          dotnet build ClaimCore.slnx --configuration Release --no-restore
+      - name: Run the registered native-MTP project
+        shell: pwsh
+        env:
+          PROJECT: ${{ matrix.project }}
+          STAGE_ID: ${{ matrix.stage }}
+          ASSEMBLY: ${{ matrix.assembly }}
+          EXPECTED_TESTS: ${{ matrix.expected }}
+          COVERAGE_PREFIX: ${{ matrix.prefix }}
+        run: |
+          Set-StrictMode -Version Latest
+          $results = Join-Path $PWD "artifacts/test-results/$env:STAGE_ID"
+          if (Test-Path -LiteralPath $results) { throw "The test result directory must start absent." }
+          $started = (Get-Date).ToUniversalTime().ToString("O")
+          $arguments = @(
+            "test", "--project", $env:PROJECT, "--configuration", "Release",
+            "--no-build", "--no-restore", "--max-parallel-test-modules", "1",
+            "--results-directory=$results",
+            "--minimum-expected-tests=$env:EXPECTED_TESTS", "--zero-tests-policy=strict",
+            "--timeout=25m", "--", "--settings=$PWD/eng/expecto.runsettings",
+            "--report-trx", "--report-trx-filename=$($env:ASSEMBLY).trx",
+            "--coverlet", "--coverlet-file-prefix=$env:COVERAGE_PREFIX",
+            "--coverlet-output-format=cobertura"
+          )
+          & dotnet @arguments
+          $testExit = $LASTEXITCODE
+          $finished = (Get-Date).ToUniversalTime().ToString("O")
+          if (!(Test-Path -LiteralPath $results)) { New-Item -ItemType Directory -Path $results | Out-Null }
+          $outcome = if ($testExit -eq 0) { "success" } else { "failure" }
+          $docs = Join-Path $PWD "artifacts/bin/ClaimCore.Docs/release/ClaimCore.Docs.dll"
+          & dotnet $docs stage-manifest $env:STAGE_ID "${{ github.run_id }}" "${{ github.run_attempt }}" $outcome $started $finished $results
+          $manifestExit = $LASTEXITCODE
+          if ($testExit -ne 0) { exit $testExit }
+          if ($manifestExit -ne 0) { exit $manifestExit }
+      - name: Scan artifacts before upload
+        id: artifact_scan
+        if: always()
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -File eng/Scan-ArtifactSecrets.ps1 `
+            "artifacts/test-results/${{ matrix.stage }}/" `
+            "artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/${{ matrix.stage }}.json"
+      - name: Upload required test results
+        if: ${{ always() && steps.artifact_scan.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: claimcore-test-${{ matrix.stage }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/test-results/${{ matrix.stage }}/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload stage evidence
+        if: ${{ always() && steps.artifact_scan.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: claimcore-stage-${{ matrix.stage }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/${{ matrix.stage }}.json
+          if-no-files-found: error
+          retention-days: 14

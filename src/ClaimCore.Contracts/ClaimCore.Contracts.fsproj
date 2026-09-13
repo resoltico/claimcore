@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <Compile Include="SchemaAst.fs" />
+    <Compile Include="SchemaRendering.fs" />
+    <Compile Include="ContractModel.fs" />
+    <Compile Include="WireTokens.fs" />
+    <Compile Include="ScalarSchemas.fs" />
+    <Compile Include="Projection.fs" />
+    <Compile Include="EndpointInputs.fs" />
+    <Compile Include="CoreValueSchemas.fs" />
+    <Compile Include="RecoveryValueSchemas.fs" />
+    <Compile Include="CliResponseSchemaCommon.fs" />
+    <Compile Include="CliResponseQuerySchemas.fs" />
+    <Compile Include="CliResponseMutationSchemas.fs" />
+    <Compile Include="CliResponseRecoverySchemas.fs" />
+    <Compile Include="CliResponseSchemas.fs" />
+    <Compile Include="WebSchemaDefinitions.fs" />
+    <Compile Include="WebResponseSchemas.fs" />
+    <Compile Include="CliWireTypes.fs" />
+    <Compile Include="CliWireValues.fs" />
+    <Compile Include="CliWireQueries.fs" />
+    <Compile Include="CliWirePreparation.fs" />
+    <Compile Include="CliWireMutations.fs" />
+    <Compile Include="CliWireImports.fs" />
+    <Compile Include="CliWireCodec.fs" />
+    <Compile Include="CliEndpointCatalog.fs" />
+    <Compile Include="WebEndpointCatalog.fs" />
+    <Compile Include="WebSchemas.fs" />
+    <Compile Include="WebTypeScriptResponses.fs" />
+    <Compile Include="WebTypeScript.fs" />
+    <Compile Include="ContractFactory.fs" />
+    <Compile Include="Renderers.fs" />
+    <Compile Include="ContractRenderers.fs" />
+    <Compile Include="BuildIdentityCodec.fs" />
+    <Compile Include="WebWireValues.fs" />
+    <Compile Include="WebWireQueries.fs" />
+    <Compile Include="WebWireMutations.fs" />
+    <Compile Include="WebWireCodec.fs" />
+    <Compile Include="CliSchemas.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../ClaimCore.Domain/ClaimCore.Domain.fsproj" />
+    <ProjectReference Include="../ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj" />
+    <ProjectReference Include="../ClaimCore.Application/ClaimCore.Application.fsproj" />
+  </ItemGroup>
+</Project>

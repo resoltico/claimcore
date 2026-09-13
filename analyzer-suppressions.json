@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "generatedExclusions": [
+    {
+      "path": "artifacts/obj/",
+      "generator": "the .NET SDK compiler",
+      "rationale": "Excludes only SDK-generated compiler inputs from the centralized intermediate-output directory.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "path": "src/ClaimCore.Web/wwwroot/",
+      "generator": "the verified frontend publish target",
+      "rationale": "Excludes only the generated Web asset copy consumed by the .NET publish output.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "path": "web/artifacts/",
+      "generator": "the frontend test and build tools",
+      "rationale": "Excludes only frontend-local generated reports when a tool is invoked from the Web directory.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "path": "web/coverage/",
+      "generator": "the Vitest coverage reporter",
+      "rationale": "Excludes only generated HTML and JSON coverage output, never hand-authored test source.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "path": "web/dist/",
+      "generator": "the Vite production builder",
+      "rationale": "Excludes only manifest-bound production assets generated from the linted frontend sources.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "path": "web/node_modules/",
+      "generator": "the locked npm installer",
+      "rationale": "Excludes only third-party package contents materialized from the reviewed npm lock file.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "path": "web/playwright-report/",
+      "generator": "the Playwright reporter",
+      "rationale": "Excludes only generated browser-report output and does not exclude the browser specifications.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "path": "web/test-results/",
+      "generator": "the Playwright test runner",
+      "rationale": "Excludes only generated browser-run results and does not exclude the browser specifications.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    }
+  ],
+  "suppressions": [
+    {
+      "file": "web/eslint.config.mjs",
+      "rule": "eslint-config-ignore",
+      "scope": "line:39",
+      "owner": "project maintainers",
+      "rationale": "Excludes only the deterministic, generated AJV standalone module from human-source lint rules; contract generation enforces its exact schema inventory, runtime exports, deterministic bytes, and one-megabyte ceiling.",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "file": "web/.prettierignore",
+      "rule": "prettier-ignore-file",
+      "scope": "line:2",
+      "owner": "project maintainers",
+      "rationale": "ClaimCore.Contracts emits canonical minified JSON whose exact bytes feed the generated CLI-v3 and Web-v2 wire-contract fingerprints.",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "file": "web/.prettierignore",
+      "rule": "prettier-ignore-file",
+      "scope": "line:4",
+      "owner": "project maintainers",
+      "rationale": "The AJV and Rolldown pipeline emits deterministic minified standalone validator code; contract generation enforces an exact one-megabyte ceiling and browser code imports only its typed wrapper.",
+      "reviewOn": "2027-03-01"
+    }
+  ]
+}

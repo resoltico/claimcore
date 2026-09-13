@@ -1,0 +1,13 @@
+coverage/
+artifacts/
+dist/
+node_modules/
+.local/
+playwright-report/
+test-results/
+blob-report/
+playwright/.auth/
+playwright/.cache/
+.eslintcache
+.stylelintcache
+*.tsbuildinfo

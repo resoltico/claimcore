@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />
+    <ProjectReference Include="../ClaimCore.Postgres/ClaimCore.Postgres.fsproj" />
+  </ItemGroup>
+  <Import Project="../ClaimCore.HostSecurity/HostSecurity.Native.targets" />
+</Project>
