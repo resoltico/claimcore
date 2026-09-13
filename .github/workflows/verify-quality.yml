@@ -187,19 +187,9 @@ jobs:
           run_stage shellcheck shellcheck "${scripts[@]}"
           run_stage compose-config env CLAIMCORE_COMPOSE_PROJECT=claimcore-config-${{ github.run_id }} POSTGRES_PASSWORD=owner-policy-value CLAIMCORE_APP_PASSWORD=runtime-policy-value CLAIMCORE_POSTGRES_PORT=0 docker compose --file compose.yaml config --quiet
           run_stage compose-health bash eng/Test-ComposePolicy.sh
-          image="$(jq --raw-output .containerImage db/postgresql-baseline.json)"
-          run_stage container-sbom docker run --rm \
-            --volume /var/run/docker.sock:/var/run/docker.sock \
-            --volume "$PWD/artifacts/stages/container-sbom:/output" \
-            aquasec/trivy:0.74.0@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969 \
-            image --format cyclonedx --output /output/postgresql.cdx.json --no-progress "$image"
-          run_stage container-vulnerability-scan docker run --rm \
-            --volume /var/run/docker.sock:/var/run/docker.sock \
-            --volume "$PWD/container-vulnerability-exceptions.yaml:/claimcore-exceptions.yaml:ro" \
-            aquasec/trivy:0.74.0@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969 \
-            image --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed \
-            --ignorefile /claimcore-exceptions.yaml --show-suppressed --exit-code 1 \
-            --no-progress "$image"
+          run_stage container-image-assurance-negative-controls bash eng/Test-PostgresImageAssurancePolicy.sh
+          run_stage container-sbom bash eng/Check-PostgresImageAssurance.sh sbom "$PWD/artifacts/stages/container-sbom"
+          run_stage container-vulnerability-scan bash eng/Check-PostgresImageAssurance.sh scan "$PWD/artifacts/stages/container-vulnerability-scan"
           exit "$overall"
       - name: Require the pre-generation source scan
         if: always()

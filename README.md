@@ -45,9 +45,10 @@ The [domain contract](docs/domain.md) is authoritative for field and transition 
 
 ## Start here
 
-There is no public packaged release yet. The supported first-run path builds the current version from
-a source checkout, creates a dedicated persistent local PostgreSQL database, and launches the
-published Web host. Follow [Getting started](docs/getting-started.md); it uses only synthetic data.
+Version 0.1.0 is a source-preview release with no downloadable application binaries. The supported
+first-run path builds from a source checkout, creates a dedicated persistent local PostgreSQL
+database, and launches the published Web host. Follow [Getting started](docs/getting-started.md);
+it uses only synthetic data.
 
 The CLI's database-free `help`, `version`, `describe`, and `schema` commands are described in
 [CLI and protocol](docs/cli.md). Contributor builds, tests, and full verification live in one place:

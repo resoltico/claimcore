@@ -32,7 +32,10 @@ Shared test configuration, license inputs, and exact test-identity inventories a
 `Check-ConvergenceAssurance.ps1` and its negative controls. The matrix binds each generated CLI/Web
 endpoint to its current response outcome tags and names separate runtime, protocol, recovery,
 cancellation, migration, and GUI assertions; schema conformance is not a runtime-outcome claim.
-Generated reports and manifests belong under ignored `artifacts/`, never in this directory.
+The pinned PostgreSQL image recipe and same-volume synthetic validators live beside the
+multi-architecture index/SBOM/Trivy policy. The manual publisher is separate from ordinary CI;
+normal CI consumes only the reviewed index digest in `db/postgresql-baseline.json`. Generated reports
+and manifests belong under ignored `artifacts/`, never in this directory.
 
 [Development](../docs/development.md) is the sole owner of contributor commands;
 [Contributing](../CONTRIBUTING.md) owns contribution policy. This directory map owns neither.

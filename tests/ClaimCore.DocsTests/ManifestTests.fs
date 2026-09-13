@@ -108,6 +108,27 @@ let private nativeLibraryRequirements () =
     Expect.isTrue (Stages.satisfies "windows" [] native) "Windows has no native shim"
     Expect.isFalse (Stages.satisfies "windows" linux native) "Windows rejects stale shim"
 
+let private containerImageRequirements () =
+    let containerSbom = Stages.tryFind "container-sbom" |> Option.get
+
+    Expect.equal
+        containerSbom.Procedure
+        [ "bash"; "eng/Check-PostgresImageAssurance.sh"; "sbom" ]
+        "Container SBOM procedure selects each child of the pinned index"
+
+    Expect.equal
+        containerSbom.RequiredOutputs
+        [
+            OutputRequirement.Exact "postgresql-linux-amd64.cdx.json"
+            OutputRequirement.Exact "postgresql-linux-arm64.cdx.json"
+        ]
+        "Both architecture SBOMs are required"
+
+    Expect.equal
+        (Stages.tryFind "container-vulnerability-scan" |> Option.get).Procedure
+        [ "bash"; "eng/Check-PostgresImageAssurance.sh"; "scan" ]
+        "The vulnerability gate scans each child of the pinned index"
+
 let private stageRegistryTests =
     testList
         "stage registry"
@@ -126,6 +147,7 @@ let private stageRegistryTests =
                     "npm-audit"
                     "docs-write-idempotence"
                     "migration-upgrade-qualification"
+                    "container-image-assurance-negative-controls"
                     "secret-scan-artifacts"
                     "publish-cli"
                     "browser-webkit"
@@ -142,6 +164,8 @@ let private stageRegistryTests =
                         .Procedure
                     [ "pwsh"; "Test-ConvergenceAssurancePolicy.ps1" ]
                     "Convergence negative-control procedure"
+
+                containerImageRequirements ()
 
             testCase "portable publication records still require Linux CI evidence"
             <| fun _ ->

@@ -1,8 +1,8 @@
 # Getting started from source
 
-ClaimCore has no public packaged release yet. This guide builds the current version from a source
-checkout, creates a local PostgreSQL installation for synthetic data, applies its schema, and opens
-the published Web application.
+ClaimCore 0.1.0 is a source-preview release with no downloadable application binaries. This guide
+builds from a source checkout, creates a local PostgreSQL installation for synthetic data, applies
+its schema, and opens the published Web application.
 
 The runtime steps in this guide are supported on macOS and Linux, whose private files can be
 verified through the shared handle-first service. Windows remains a source build/test host, but

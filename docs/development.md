@@ -201,10 +201,17 @@ must list the exact outcome tags parsed from its generated response schema; dele
 branch, outcome tag, or registered assurance subject fails policy. Test counts alone are not
 evidence of coverage, and a codec corpus does not prove a runtime branch was exercised.
 
-CI additionally creates a CycloneDX SBOM for the digest-pinned PostgreSQL image and scans that exact
-image for fixed high and critical vulnerabilities. Its immutable Trivy invocation and temporary
-exception policy live in [`verify-quality.yml`](../.github/workflows/verify-quality.yml) and
-[`container-vulnerability-exceptions.yaml`](../container-vulnerability-exceptions.yaml).
+CI resolves the exact linux/amd64 and linux/arm64 children of the digest-pinned PostgreSQL image
+index, creates a separate CycloneDX SBOM for each, and scans both for fixed high and critical
+vulnerabilities. Its immutable Trivy invocation, image-index policy, and temporary exception policy
+live in [`verify-quality.yml`](../.github/workflows/verify-quality.yml),
+[`Check-PostgresImageAssurance.sh`](../eng/Check-PostgresImageAssurance.sh), and
+[`container-vulnerability-exceptions.yaml`](../container-vulnerability-exceptions.yaml). The
+manually dispatched [`publisher`](../.github/workflows/publish-postgres-image.yml) builds the
+maintained PostgreSQL 18.6/Trixie derivative from a pinned official base and signed Debian snapshot;
+it qualifies each architecture before pushing, then verifies the published child and index digests.
+The application baseline changes only after that publication is qualified. Do not point an adopted
+volume at a newly selected image without the operator's backup and planned downtime.
 
 ### Documentation assurance
 

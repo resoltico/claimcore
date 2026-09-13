@@ -80,11 +80,19 @@ module StageCatalog =
             gate "npm-signatures" [ "npm"; "audit"; "signatures" ]
             gate "dependency-licenses" [ "npm"; "run"; "licenses:check" ]
             linux "sbom" [ "npm"; "run"; "sbom" ] [ OutputRequirement.Suffix ".cdx.json" ]
+            gate
+                "container-image-assurance-negative-controls"
+                [ "bash"; "eng/Test-PostgresImageAssurancePolicy.sh" ]
             linux
                 "container-sbom"
-                [ "trivy"; "image"; "cyclonedx" ]
-                [ OutputRequirement.Suffix ".cdx.json" ]
-            gate "container-vulnerability-scan" [ "trivy"; "image" ]
+                [ "bash"; "eng/Check-PostgresImageAssurance.sh"; "sbom" ]
+                [
+                    OutputRequirement.Exact "postgresql-linux-amd64.cdx.json"
+                    OutputRequirement.Exact "postgresql-linux-arm64.cdx.json"
+                ]
+            gate
+                "container-vulnerability-scan"
+                [ "bash"; "eng/Check-PostgresImageAssurance.sh"; "scan" ]
         ]
 
     let private frontend =

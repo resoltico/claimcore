@@ -35,21 +35,15 @@ module Baseline =
             if major < 10 || minor < 0 || minor > 9999 then
                 raise (InvalidDataException("The PostgreSQL baseline is invalid."))
 
-            let expectedPrefix = $"postgres:{major}.{minor}@sha256:"
+            let selectedRelease = Regex.Escape($"{major}.{minor}")
 
-            if
-                not (image.StartsWith(expectedPrefix, System.StringComparison.Ordinal))
-                || not (
-                    Regex.IsMatch(
-                        image.Substring(expectedPrefix.Length),
-                        "^[0-9a-f]{64}$",
-                        RegexOptions.CultureInvariant
-                    )
-                )
-            then
+            let imagePattern =
+                $"^ghcr[.]io/resoltico/claimcore-postgres:{selectedRelease}-trixie-p[1-9][0-9]*-r[1-9][0-9]*-[1-9][0-9]*@sha256:[0-9a-f]{{64}}$"
+
+            if not (Regex.IsMatch(image, imagePattern, RegexOptions.CultureInvariant)) then
                 raise (
                     InvalidDataException(
-                        "The PostgreSQL image must pin the selected release to a multi-platform SHA-256 digest."
+                        "The PostgreSQL image must pin a qualified ClaimCore PostgreSQL release to a multi-platform SHA-256 digest."
                     )
                 )
 
