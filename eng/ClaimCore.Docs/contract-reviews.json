@@ -96,10 +96,10 @@
     {
       "contractId": "CC-CLI-002",
       "reviewerKind": "agent",
-      "reviewer": "Codex private-file boundary review",
-      "reviewedOn": "2026-09-12",
+      "reviewer": "Codex scoped Docker cleanup and private-file boundary review",
+      "reviewedOn": "2026-09-13",
       "conclusion": "approved",
-      "reviewSubjectHash": "c6efec878eb96e91691a0442d9f2007475ccbcf7b1d0a0ce79c96d0f21319088",
+      "reviewSubjectHash": "03da489c07fb4a5e80ad7615c0b9283b78320d3431d0f71cfc0ea7d872b725d2",
       "wholeFiles": [
         "src/ClaimCore.HostSecurity/PrivateFileService.fs",
         "src/ClaimCore.HostSecurity/PosixPrivateFiles.fs",

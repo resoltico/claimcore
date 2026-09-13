@@ -100,18 +100,7 @@ jobs:
         shell: bash
         env:
           CLAIMCORE_TEST_RUN_LABEL: claimcore-browser-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.engine }}
-        run: |
-          set -euo pipefail
-          mapfile -t containers < <(docker container ls --all --quiet)
-          for container in "${containers[@]}"; do
-            if ! label="$(docker container inspect \
-              --format '{{ index .Config.Labels "org.claimcore.test-run" }}' "$container" 2>/dev/null)"; then
-              continue
-            fi
-            if [[ "$label" == "$CLAIMCORE_TEST_RUN_LABEL" ]]; then
-              docker container rm --force "$container" >/dev/null
-            fi
-          done
+        run: bash eng/Remove-LabeledTestContainers.sh "$CLAIMCORE_TEST_RUN_LABEL"
       - name: Scan artifacts before upload
         id: artifact_scan
         if: always()
