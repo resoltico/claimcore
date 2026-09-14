@@ -45,10 +45,10 @@ The [domain contract](docs/domain.md) is authoritative for field and transition 
 
 ## Start here
 
-Version 0.1.0 is a source-preview release with no downloadable application binaries. The supported
-first-run path builds from a source checkout, creates a dedicated persistent local PostgreSQL
-database, and launches the published Web host. Follow [Getting started](docs/getting-started.md);
-it uses only synthetic data.
+The latest public release is 0.1.0, a source preview without downloadable application binaries.
+This checkout also contains [unreleased changes](CHANGELOG.md#unreleased). The supported first-run
+path builds from source, creates a dedicated persistent local PostgreSQL database, and launches the
+published Web host. Follow [Getting started](docs/getting-started.md); it uses only synthetic data.
 Pre-1.0 CLI and Web wire shapes may change without a compatibility shim; use the matching generated
 contract and exact fingerprint for a given source revision.
 
@@ -72,6 +72,7 @@ This repository is a local application, not a production deployment template. Be
 personal or operational data, read [Security and operations](docs/operations.md). Vulnerabilities and
 sensitive reports must follow [SECURITY.md](SECURITY.md), never a public issue. General help and
 privacy-safe issue routing are in [SUPPORT.md](SUPPORT.md).
+A restored backup can omit later accepted operations; see the [recovery guidance](docs/operations.md#data-and-recovery) before resuming case work after a restore.
 
 ## Contributing and license
 
