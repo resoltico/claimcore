@@ -45,10 +45,10 @@ The [domain contract](docs/domain.md) is authoritative for field and transition 
 
 ## Start here
 
-The latest public release is 0.1.0, a source preview without downloadable application binaries.
-This checkout also contains [unreleased changes](CHANGELOG.md#unreleased). The supported first-run
-path builds from source, creates a dedicated persistent local PostgreSQL database, and launches the
-published Web host. Follow [Getting started](docs/getting-started.md); it uses only synthetic data.
+The latest public release is 0.2.0, a source preview without downloadable application binaries. The
+supported first-run path builds from source, creates a dedicated persistent local PostgreSQL database,
+and launches the published Web host. Follow [Getting started](docs/getting-started.md); it uses only
+synthetic data.
 Pre-1.0 CLI and Web wire shapes may change without a compatibility shim; use the matching generated
 contract and exact fingerprint for a given source revision.
 

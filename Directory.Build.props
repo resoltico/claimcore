@@ -4,7 +4,7 @@
     <Authors>Ervins Strauhmanis</Authors>
     <Copyright>Copyright © 2026 Ervins Strauhmanis</Copyright>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <VersionPrefix>$([System.Text.RegularExpressions.Regex]::Match('$(Version)', '^[0-9]+\.[0-9]+\.[0-9]+').Value)</VersionPrefix>
     <AssemblyVersion>$(VersionPrefix).0</AssemblyVersion>
     <FileVersion>$(AssemblyVersion)</FileVersion>
