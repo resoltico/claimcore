@@ -99,7 +99,13 @@ try {
     $matrix = Get-Content -Raw -LiteralPath $matrixProbePath | ConvertFrom-Json
     $matrix.entries = @($matrix.entries | Where-Object { $_.id -ne "assurance-cancellation:resolve-after-attempt" })
     Write-Json $matrixProbePath $matrix
-    Invoke-Probe "Every registered core, recovery, cancellation, migration, and GUI assurance subject"
+    Invoke-Probe "Every registered architecture, core, recovery, cancellation, migration, and GUI assurance subject"
+
+    [IO.File]::Copy((Join-Path $repoRoot "eng/assurance-matrix.json"), $matrixProbePath, $true)
+    $matrix = Get-Content -Raw -LiteralPath $matrixProbePath | ConvertFrom-Json
+    $matrix.entries = @($matrix.entries | Where-Object { $_.id -ne "assurance-architecture:product-ownership" })
+    Write-Json $matrixProbePath $matrix
+    Invoke-Probe "Every registered architecture, core, recovery, cancellation, migration, and GUI assurance subject"
 
     [IO.File]::Copy((Join-Path $repoRoot "eng/assurance-matrix.json"), $matrixProbePath, $true)
     $matrix = Get-Content -Raw -LiteralPath $matrixProbePath | ConvertFrom-Json

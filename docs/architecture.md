@@ -15,23 +15,30 @@ or additional business field is introduced by this structure.
 ## Compiled architecture enforcement
 
 The dedicated `ClaimCore.ArchitectureTests` project uses ArchUnitNET only as a test dependency. Its
-F# fixtures establish that the selected rules detect module functions, generic/nested types,
-closures, tasks, async workflows, sequences, records, unions, interfaces and selected platform calls.
-Positive counterparts prove that permitted code is not rejected indiscriminately. Missing assembly
-inputs and empty required selections fail rather than being interpreted as absence of violations.
+F# fixtures qualify selected type dependencies and direct method calls through functions, closures,
+generic/nested types, tasks, async workflows, sequences, records, unions, and interfaces. Positive
+counterparts prove that permitted code is not rejected indiscriminately. Missing assemblies, empty
+selectors, and omitted reflected types fail rather than appearing to contain no violations.
 
-The suite inspects Debug implementation assemblies with optimisation disabled, retaining generated
-types. It classifies all discovered product projects and checks both declared project references and
-compiled type dependencies against the component policy. Selected ambient API, endpoint/composition,
-and direct persistence/decision-call checks cover specific high-risk edges; they are not a general
-effect or authorization proof. An in-memory forbidden-reference fixture proves that an unused
-`ProjectReference` is rejected.
+The suite inspects non-optimised Debug implementation assemblies, including F# generated types. It
+compares ArchUnitNET's loaded type set to reflection for every product assembly on that same run.
+Every product project is classified; raw project files and MSBuild-evaluated Debug/Release references
+and packages must fit the reviewed direct dependency policy. An imported conditional forbidden
+reference and an unused literal reference both fail their negative controls. CLI and Web runtime
+opening are confined to their composition points; selected ambient API and direct domain-decision
+calls are forbidden outside their owners.
+
+Each platform's passing suite emits a bounded, sorted report of the actual inspected assembly type
+counts and cross-component edges. Counts are observations, not thresholds. CI scans the report,
+requires it in the stage manifest, verifies the downloaded bytes and schema during final evidence,
+and shows a concise graph in its job summary. A rule violation fails its named test with an actionable
+source/target diagnostic; a report alone is not proof of correct behavior.
 
 These checks complement curated signatures, ordinary-consumer compile tests, protocol tests and
 real PostgreSQL/browser qualifications. They do not prove transaction correctness, complete effect
-freedom, runtime reflection behavior, or TypeScript dependencies. New rule selectors and expected
-results require owner review; a candidate cannot authorize weaker policy merely by making its own
-tests green. Commands and exact evidence registration are owned by
+freedom, every possible async-lambda call, runtime reflection behavior, or TypeScript dependencies.
+New rule selectors and expected results require owner review; a candidate cannot authorize weaker
+policy merely by making its own tests green. Commands and exact evidence registration are owned by
 [Development](development.md#architecture-inspection).
 
 ## Runtime responsibilities
@@ -44,7 +51,8 @@ tests green. Commands and exact evidence registration are owned by
 - **Contracts** projects Application's static semantic description into canonical CLI-v3 and Web-v2
   wire contracts, exact request/response schemas, pure deterministic JSON codecs, generated
   TypeScript DTO modules, conformance corpora, and browser validators. Application does not depend on
-  Contracts, JSON, ASP.NET, PostgreSQL, CLI, or Web.
+  Contracts, JSON, ASP.NET, PostgreSQL, CLI, or Web. CLI and Web input shapes project independently
+  from shared semantic definitions; neither transport catalog is the other's authority.
 - **Postgres** owns durable storage, ordered migrations, connection validation, transaction
   boundaries, and the private technical recovery store. One composed runtime owns one
   `NpgsqlDataSource`, shared by its private claim and recovery stores for its lifetime.

@@ -70,6 +70,42 @@ let build (assemblies: System.Reflection.Assembly array) =
 
     model
 
+let private typeName (name: string) = name.Replace("\\,", ",")
+
+let requireTypeNames assemblyName (reflectedNames: string seq) (inspectedNames: string seq) =
+    let reflected = reflectedNames |> Seq.map typeName |> Seq.toList
+    let inspected = inspectedNames |> Seq.map typeName |> Seq.toList
+    let reflectedSet = Set.ofList reflected
+    let inspectedSet = Set.ofList inspected
+
+    if reflected.Length <> reflectedSet.Count || inspected.Length <> inspectedSet.Count then
+        invalidOp ("Architecture inspection has duplicate type identities in " + assemblyName)
+
+    let missing = Set.difference reflectedSet inspectedSet
+    let extra = Set.difference inspectedSet reflectedSet
+
+    if not missing.IsEmpty || not extra.IsEmpty then
+        invalidOp (
+            $"Architecture inspection is incomplete in {assemblyName}: "
+            + $"{missing.Count} missing and {extra.Count} unexpected types."
+        )
+
+let requireCompleteTypes (architecture: Architecture) (assembly: System.Reflection.Assembly) =
+    let name = nonNull (assembly.GetName().Name)
+
+    let reflected =
+        try
+            assembly.GetTypes() |> Array.map (fun item -> nonNull item.FullName)
+        with :? ReflectionTypeLoadException ->
+            invalidOp ("Reflection could not enumerate required implementation types in " + name)
+
+    let inspected =
+        architecture.Types
+        |> Seq.filter (fun item -> item.Assembly.Name = name)
+        |> Seq.map _.FullName
+
+    requireTypeNames name reflected inspected
+
 let requireSelection (architecture: Architecture) (selection: IObjectProvider<'T>) =
     let found = selection.GetObjects(architecture) |> Seq.toList
 

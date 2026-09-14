@@ -153,7 +153,7 @@ let private atomicityTests =
                     Expect.isError result "Injected insert failure"
 
                     let current =
-                        Service.getAsync service request.CaseReference
+                        service.Get(request.CaseReference)
                         |> await
                         |> accepted
                         |> Option.map Claim.view
@@ -163,8 +163,7 @@ let private atomicityTests =
                         (Some(1L, CaseStatus.Opened))
                         "UPDATE rolled back"
 
-                    let history =
-                        Service.historyAsync service request.CaseReference 0L |> await |> accepted
+                    let history = service.History(request.CaseReference, 0L) |> await |> accepted
 
                     Expect.equal history.Items.Length 1 "No partial history"
                 finally

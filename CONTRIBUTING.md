@@ -29,6 +29,9 @@ tests are policy failures.
   synchronized with behavior.
 - Keep contract headings, `[CC-…]` evidence leaves, and review-subject hashes synchronized. A passing
   tagged test does not substitute for semantic review of its assertions.
+- Review architecture policy changes against the actual module boundaries, compiled inspection,
+  evaluated project graph, and required report evidence; do not widen permitted edges merely to
+  clear the gate.
 - Update each dependency in its owning manifest and commit reviewed lock-file changes.
 - Do not commit local connections, credentials, build output, test reports, container state, or real
   case data.

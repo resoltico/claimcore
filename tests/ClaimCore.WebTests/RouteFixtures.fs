@@ -203,8 +203,7 @@ type RuntimeStub(?invalidExportMetadata: bool) as this =
 
     member val RecordRetainOutcome: RecoveryImportRetainOutcome option = None with get, set
 
-    interface IWebRuntime with
-        member _.Core = core
+    member _.Core = core
 
 let context content =
     let value = DefaultHttpContext()

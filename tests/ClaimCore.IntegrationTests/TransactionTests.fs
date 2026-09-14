@@ -22,7 +22,7 @@ let private reopenPersistenceTest =
         use reopened = store ()
 
         let snapshot =
-            Service.getAsync (reopened :> IClaimStore) request.CaseReference
+            (reopened :> IClaimStore).Get(request.CaseReference)
             |> await
             |> accepted
             |> Option.map Claim.view
@@ -51,10 +51,7 @@ let private exactReplayTest =
         Expect.equal replay.RecordedAt original.RecordedAt "Original acceptance time"
 
         let current =
-            Service.getAsync service request.CaseReference
-            |> await
-            |> accepted
-            |> Option.map Claim.view
+            service.Get(request.CaseReference) |> await |> accepted |> Option.map Claim.view
 
         Expect.equal
             (current |> Option.map (fun value -> value.Version))
@@ -100,8 +97,7 @@ let private sameIdConcurrencyTests =
                     1
                     "Only one new commit"
 
-                let history =
-                    Service.historyAsync service request.CaseReference 0L |> await |> accepted
+                let history = service.History(request.CaseReference, 0L) |> await |> accepted
 
                 Expect.equal history.Items.Length 1 "One audit row")
         ]
@@ -140,8 +136,7 @@ let private absentCaseConcurrencyTests =
 
                     Expect.equal conflicts.Length 1 "The contender observes revision one"
 
-                    let history =
-                        Service.historyAsync service first.CaseReference 0L |> await |> accepted
+                    let history = service.History(first.CaseReference, 0L) |> await |> accepted
 
                     Expect.equal history.Items.Length 1 "One current row and one retained receipt")
         ]
@@ -221,13 +216,12 @@ let private lifecycleTests =
                     |> accepted
                     |> ignore
 
-                let history =
-                    Service.historyAsync service initial.CaseReference 0L |> await |> accepted
+                let history = service.History(initial.CaseReference, 0L) |> await |> accepted
 
                 Expect.equal history.Items.Length 6 "Every accepted version retained"
 
                 let current =
-                    Service.getAsync service initial.CaseReference
+                    service.Get(initial.CaseReference)
                     |> await
                     |> accepted
                     |> Option.map Claim.view
@@ -250,8 +244,7 @@ let private operationTests =
                 let request = newRequest ()
                 Service.executeAsync service clock request |> await |> accepted |> ignore
 
-                let result =
-                    Service.operationAsync service request.OperationId |> await |> accepted
+                let result = service.Operation(request.OperationId) |> await |> accepted
 
                 let reference =
                     result

@@ -27,7 +27,6 @@
     <Compile Include="RecoveryImports.fs" />
     <Compile Include="RecoveryDismissOperations.fs" />
     <Compile Include="RecoveryReadOperations.fs" />
-    <Compile Include="TypedWorkflow.fs" />
     <Compile Include="RecoveryCoordinator.fs" />
     <Compile Include="Core.fsi" />
     <Compile Include="Core.fs" />

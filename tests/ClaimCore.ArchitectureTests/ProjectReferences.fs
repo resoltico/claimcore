@@ -37,7 +37,7 @@ let violations
     includedPaths projectPath document
     |> List.choose (fun targetPath ->
         match Map.tryFind targetPath projectNames with
-        | None -> Some(source + " declares an unclassified project reference: " + targetPath)
+        | None -> Some(source + " declares an unclassified project reference")
         | Some target when not (List.contains target allowed) ->
             Some(source + " declares a forbidden project reference: " + target)
         | Some _ -> None)

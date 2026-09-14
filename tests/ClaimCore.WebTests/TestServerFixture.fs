@@ -211,7 +211,7 @@ type Host
                 Digest = credential |> Encoding.UTF8.GetBytes |> SHA256.HashData
             }
 
-        HostRoutes.map assets configuration bootstrap sessions (runtime :> IWebRuntime) application
+        HostRoutes.map assets configuration bootstrap sessions runtime.Core application
         application.StartAsync().GetAwaiter().GetResult()
         let client = application.GetTestClient()
         client.BaseAddress <- origin

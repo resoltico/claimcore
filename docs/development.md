@@ -89,7 +89,7 @@ dotnet test --project tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj \
   --settings="$PWD/eng/expecto.runsettings"
 dotnet test --project tests/ClaimCore.DocsTests/ClaimCore.DocsTests.fsproj \
   --configuration Release --no-build --no-restore \
-  --minimum-expected-tests=47 --zero-tests-policy=strict --timeout=10m -- \
+  --minimum-expected-tests=51 --zero-tests-policy=strict --timeout=10m -- \
   --settings="$PWD/eng/expecto.runsettings"
 dotnet test --project tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj \
   --configuration Release --no-build --no-restore \
@@ -143,9 +143,12 @@ second test framework. After the locked solution restore:
 ```sh
 dotnet build tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj \
   --configuration Debug --no-restore -p:Optimize=false
+claimcore_arch_results="artifacts/architecture-inspection/run-$(date -u +%Y%m%dT%H%M%SZ)"
+test ! -e "$claimcore_arch_results"
+CLAIMCORE_ARCHITECTURE_REPORT="$PWD/$claimcore_arch_results/architecture-report.json" \
 dotnet test --project tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj \
-  --configuration Debug --no-build --no-restore \
-  --minimum-expected-tests=48 --zero-tests-policy=strict --timeout=10m -- \
+  --configuration Debug --no-build --no-restore --results-directory="$claimcore_arch_results" \
+  --minimum-expected-tests=69 --zero-tests-policy=strict --timeout=10m -- \
   --settings="$PWD/eng/expecto.runsettings"
 ```
 
@@ -154,8 +157,14 @@ immutable; new explicitly registered producers extend the live inventory without
 baseline. Its named TRX results and stage manifests are required by the same final evidence
 reconciliation as the existing suites. No coverage collector rewrites these inspection inputs.
 Required assembly/selector preflight and positive/negative F# fixtures qualify the compiled
-inspection mechanism. Declared project-reference checks also reject unused forbidden edges; selected
-ambient-effect and direct-call rules are deliberately narrower than full effect or semantic proofs.
+inspection mechanism. Each architecture run requires `CLAIMCORE_ARCHITECTURE_REPORT` and writes a
+bounded observed type/edge report under its fresh ignored results directory; an unset/blank path,
+missing parent, or preexisting report fails the suite rather than silently omitting the observation.
+CI scans and binds all three reports to stage manifests, rechecks
+their schema and hashes at final evidence, and displays a compact graph in the job summary. Type
+counts are observations, not fixed thresholds. Raw and evaluated project-reference checks reject
+forbidden unused edges; selected ambient-effect and direct-call rules are deliberately narrower than
+full effect or semantic proofs.
 See [Architecture](architecture.md#compiled-architecture-enforcement).
 
 ### Frontend assurance

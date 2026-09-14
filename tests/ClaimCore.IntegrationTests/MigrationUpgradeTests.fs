@@ -177,7 +177,7 @@ let private retentionUpgradeTests =
                             "Upgraded runtime admits exact manifest"
 
                         let current =
-                            Service.getAsync (runtime :> IClaimStore) request.CaseReference
+                            (runtime :> IClaimStore).Get(request.CaseReference)
                             |> await
                             |> accepted
 

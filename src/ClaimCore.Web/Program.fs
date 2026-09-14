@@ -190,8 +190,6 @@ let private run () =
         | Ok value -> value
         | Error _ -> invalidOp "ClaimCore Web could not open the configured application runtime."
 
-    let webRuntime = WebRuntime.fromRuntime runtime
-
     let builder =
         WebApplication.CreateBuilder(WebApplicationOptions(WebRootPath = assets))
 
@@ -214,7 +212,7 @@ let private run () =
     application.UseAuthentication() |> ignore
     application.UseRateLimiter() |> ignore
     application.UseAuthorization() |> ignore
-    HostRoutes.map assets configuration bootstrap sessions webRuntime application
+    HostRoutes.map assets configuration bootstrap sessions runtime.Core application
 
     Console.WriteLine(
         "ClaimCore Web login URL: "

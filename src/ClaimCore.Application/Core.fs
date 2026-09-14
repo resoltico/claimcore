@@ -38,22 +38,22 @@ module internal CoreApi =
             member _.Describe() = TypedProjection.description clock
 
             member _.Prepare(draft, cancellationToken) =
-                TypedWorkflow.prepare store recovery clock draft cancellationToken
+                TypedPreparation.prepare store recovery clock draft cancellationToken
 
             member _.Execute(draft, cancellationToken) =
-                TypedWorkflow.execute store recovery clock draft cancellationToken
+                TypedSubmission.execute store recovery clock draft cancellationToken
 
             member _.Get(reference, cancellationToken) =
-                TypedWorkflow.get store reference cancellationToken
+                TypedQueries.get store reference cancellationToken
 
             member _.List(request, cancellationToken) =
-                TypedWorkflow.list store request cancellationToken
+                TypedQueries.list store request cancellationToken
 
             member _.History(request, cancellationToken) =
-                TypedWorkflow.history store request cancellationToken
+                TypedQueries.history store request cancellationToken
 
             member _.ObserveOperation(operationId, cancellationToken) =
-                TypedWorkflow.observe store operationId cancellationToken
+                TypedQueries.observe store operationId cancellationToken
 
             member _.Recovery = recoveryWorkflow
         }

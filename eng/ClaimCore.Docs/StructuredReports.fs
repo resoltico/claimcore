@@ -241,13 +241,25 @@ module StructuredReports =
         let find id =
             stages |> List.tryFind (fun stage -> stage.StageId = id)
 
+        let architecture =
+            [ "architecture-linux"; "architecture-macos"; "architecture-windows" ]
+            |> List.map (fun id ->
+                match find id with
+                | Some stage -> ArchitectureInspectionReport.validateDownloaded root stage
+                | None -> Error "Architecture report producer stage is missing.")
+            |> List.tryPick (function
+                | Error failure -> Some failure
+                | Ok() -> None)
+
         match
+            architecture,
             find "frontend-unit",
             find "browser-chromium",
             find "browser-firefox",
             find "browser-webkit"
         with
-        | Some frontend, Some chromium, Some firefox, Some webkit ->
+        | Some failure, _, _, _, _ -> Error failure
+        | None, Some frontend, Some chromium, Some firefox, Some webkit ->
             [
                 vitest root frontend
                 browser root "chromium" chromium

@@ -9,7 +9,8 @@ let private getDelegation () =
     let runtime = RuntimeStub()
     let request = context validGet
 
-    let output = Routes.get admit 65536 runtime request |> readResult |> execute request
+    let output =
+        Routes.get admit 65536 runtime.Core request |> readResult |> execute request
 
     use document = JsonDocument.Parse(output)
 
@@ -26,7 +27,7 @@ let private recoveryDelegation () =
     let request = context validResolve
 
     let output =
-        Routes.recoveryResolve admit 65536 runtime request
+        Routes.recoveryResolve admit 65536 runtime.Core request
         |> readResult
         |> execute request
 
@@ -43,7 +44,7 @@ let private recoveryDelegation () =
 let private refusalBeforeCore () =
     let runtime = RuntimeStub()
     let request = context "{}"
-    let result = Routes.get admit 65536 runtime request |> readResult
+    let result = Routes.get admit 65536 runtime.Core request |> readResult
     execute request result |> ignore
 
     Expect.equal
@@ -60,7 +61,7 @@ let private rawRetainHeader () =
     let _, _, maximumBytes, headers = WebContract.raw "recovery.importEnvelopeRetain"
 
     let result =
-        Routes.envelopeRetain admit maximumBytes (List.exactlyOne headers) runtime request
+        Routes.envelopeRetain admit maximumBytes (List.exactlyOne headers) runtime.Core request
         |> readResult
 
     execute request result |> ignore

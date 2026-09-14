@@ -7,6 +7,7 @@ open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Http
 open Microsoft.AspNetCore.RateLimiting
 open Microsoft.Extensions.DependencyInjection
+open ClaimCore.Application
 
 /// Route registration keeps JSON, envelope, and canonical-record admission limits independent.
 module ApiRoutes =
@@ -31,62 +32,62 @@ module ApiRoutes =
 
         Admission.admitAuthenticated configuration.Origin body limit sessions antiforgery context
 
-    let private caseEndpoints application json maximumBytes (runtime: IWebRuntime) =
+    let private caseEndpoints application json maximumBytes (core: IClaimsCore) =
         mapEndpoint
             application
             (WebContract.jsonPath "case.get")
-            (Routes.get json maximumBytes runtime)
+            (Routes.get json maximumBytes core)
 
         mapEndpoint
             application
             (WebContract.jsonPath "case.list")
-            (Routes.list json maximumBytes runtime)
+            (Routes.list json maximumBytes core)
 
         mapEndpoint
             application
             (WebContract.jsonPath "case.history")
-            (Routes.history json maximumBytes runtime)
+            (Routes.history json maximumBytes core)
 
         mapEndpoint
             application
             (WebContract.jsonPath "operation.observe")
-            (Routes.observe json maximumBytes runtime)
+            (Routes.observe json maximumBytes core)
 
         mapEndpoint
             application
             (WebContract.jsonPath "command.prepare")
-            (Routes.prepare json maximumBytes runtime)
+            (Routes.prepare json maximumBytes core)
 
         mapEndpoint
             application
             (WebContract.jsonPath "command.execute")
-            (Routes.submit json maximumBytes runtime)
+            (Routes.submit json maximumBytes core)
 
-    let private recoveryEndpoints application json maximumBytes (runtime: IWebRuntime) =
+    let private recoveryEndpoints application json maximumBytes (core: IClaimsCore) =
         mapEndpoint
             application
             (WebContract.jsonPath "recovery.list")
-            (Routes.recoveryList json maximumBytes runtime)
+            (Routes.recoveryList json maximumBytes core)
 
         mapEndpoint
             application
             (WebContract.jsonPath "recovery.inspect")
-            (Routes.recoveryInspect json maximumBytes runtime)
+            (Routes.recoveryInspect json maximumBytes core)
 
         mapEndpoint
             application
             (WebContract.jsonPath "recovery.resolve")
-            (Routes.recoveryResolve json maximumBytes runtime)
+            (Routes.recoveryResolve json maximumBytes core)
 
         mapEndpoint
             application
             (WebContract.jsonPath "recovery.dismiss")
-            (Routes.recoveryDismiss json maximumBytes runtime)
+            (Routes.recoveryDismiss json maximumBytes core)
 
         mapEndpoint
             application
             (WebContract.jsonPath "recovery.export")
-            (Routes.recoveryExport json maximumBytes runtime)
+            (Routes.recoveryExport json maximumBytes core)
 
     let private requiredHeader identifier =
         match WebContract.raw identifier with
@@ -99,7 +100,7 @@ module ApiRoutes =
         envelopeRetain
         recordPreview
         recordRetain
-        (runtime: IWebRuntime)
+        (core: IClaimsCore)
         =
         let envelopePreviewPath, _, envelopeMaximum, _ =
             WebContract.raw "recovery.importEnvelopePreview"
@@ -116,7 +117,7 @@ module ApiRoutes =
         mapEndpoint
             application
             envelopePreviewPath
-            (Routes.envelopePreview envelopePreview envelopeMaximum runtime)
+            (Routes.envelopePreview envelopePreview envelopeMaximum core)
 
         mapEndpoint
             application
@@ -125,12 +126,12 @@ module ApiRoutes =
                 envelopeRetain
                 envelopeRetainMaximum
                 (requiredHeader "recovery.importEnvelopeRetain")
-                runtime)
+                core)
 
         mapEndpoint
             application
             recordPreviewPath
-            (Routes.recordPreview recordPreview recordMaximum runtime)
+            (Routes.recordPreview recordPreview recordMaximum core)
 
         mapEndpoint
             application
@@ -139,12 +140,12 @@ module ApiRoutes =
                 recordRetain
                 recordRetainMaximum
                 (requiredHeader "recovery.importRecordRetain")
-                runtime)
+                core)
 
     let map
         (configuration: WebConfiguration)
         (sessions: SessionRegistry)
-        (runtime: IWebRuntime)
+        (core: IClaimsCore)
         (application: WebApplication)
         =
         let json =
@@ -159,8 +160,8 @@ module ApiRoutes =
 
             authenticated configuration sessions (RequestBody.Raw mediaType) maximumBytes
 
-        caseEndpoints application json configuration.Admission.MaximumJsonBytes runtime
-        recoveryEndpoints application json configuration.Admission.MaximumJsonBytes runtime
+        caseEndpoints application json configuration.Admission.MaximumJsonBytes core
+        recoveryEndpoints application json configuration.Admission.MaximumJsonBytes core
 
         importEndpoints
             application
@@ -168,4 +169,4 @@ module ApiRoutes =
             (rawAdmission "recovery.importEnvelopeRetain")
             (rawAdmission "recovery.importRecordPreview")
             (rawAdmission "recovery.importRecordRetain")
-            runtime
+            core

@@ -12,6 +12,7 @@ let tests =
             ManifestTests.tests
             EvidenceTests.tests
             FrontendReportInventoryTests.tests
+            ArchitectureReportTests.tests
             ReviewTests.tests
             ConvergenceRegistrationTests.tests
         ]

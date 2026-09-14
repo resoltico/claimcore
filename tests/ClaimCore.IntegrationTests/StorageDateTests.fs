@@ -50,7 +50,7 @@ let private persistDateExtrema (value: string) =
     |> ignore
 
     let fields =
-        Service.getAsync service request.CaseReference
+        service.Get(request.CaseReference)
         |> await
         |> accepted
         |> Option.defaultWith (fun () -> failtest "Expected the stored case.")
