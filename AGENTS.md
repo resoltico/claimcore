@@ -7,6 +7,8 @@ Read [README.md](README.md), [the domain contract](docs/domain.md),
   attribution, and available commands outside it.
 - Domain and Application own validation, transitions, asynchronous core outcomes, and failure meaning.
   Contracts owns exact CLI/Web schemas, pure wire codecs, generated DTOs, and conformance corpora;
+  Protocol contains only its generated client-safe .NET bindings and pure bounded codecs, never
+  native server implementations. F02 does not convert the current native CLI;
   HostSecurity owns shared handle-first private-file admission; CLI and Web handle process/HTTP
   presentation, Database handles schema-owner administration, and PostgreSQL owns durable storage,
   structural constraints, and technical preparation recovery.

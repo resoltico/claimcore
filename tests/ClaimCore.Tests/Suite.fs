@@ -32,6 +32,9 @@ let tests =
             FieldSchemaTests.tests
             DomainDescriptorTests.tests
             ContractsTests.tests
+            ClientProtocolTests.tests
+            ClientProtocolCorpusTests.tests
+            ClientProtocolBoundaryTests.tests
             ConfigurationTests.tests
             CliProcessTests.tests
             PrivateFileSecurityTests.tests

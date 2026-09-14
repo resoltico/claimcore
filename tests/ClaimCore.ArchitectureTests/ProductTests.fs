@@ -10,6 +10,7 @@ open ClaimCore.TestSupport
 let private permissions =
     [
         "Domain", []
+        "Protocol", []
         "RecordFormat", [ "Domain" ]
         "Application", [ "Domain"; "RecordFormat" ]
         "Contracts", [ "Domain"; "RecordFormat"; "Application" ]
@@ -170,4 +171,4 @@ let tests =
                  "persistence cannot call the domain decision directly"
                  persistenceDoesNotDecide
          ]
-         @ ([ "Domain"; "RecordFormat"; "Contracts" ] |> List.map deterministic))
+         @ ([ "Domain"; "RecordFormat"; "Contracts"; "Protocol" ] |> List.map deterministic))

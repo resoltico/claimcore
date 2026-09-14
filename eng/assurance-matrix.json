@@ -72,6 +72,8 @@
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.Domain respects owned component dependencies",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.HostSecurity respects owned component dependencies",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.Postgres respects owned component dependencies",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.Protocol does not consult ambient clock or host IO",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.Protocol respects owned component dependencies",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.RecordFormat does not consult ambient clock or host IO",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.RecordFormat respects owned component dependencies",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.Web respects owned component dependencies",
@@ -590,6 +592,35 @@
       "subject": "An installation beginning at migration 001 upgrades through 005 without changing an accepted case or historical receipt and admits the current thirteen-field read.",
       "tests": [
         "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 005.retained data.[CC-DB-001] upgrade preserves cases and history and installs recovery storage"
+      ]
+    },
+    {
+      "dimensions": [
+        "core",
+        "documentation"
+      ],
+      "id": "assurance-protocol:client-bindings",
+      "subject": "Generated client-safe .NET contracts preserve the existing service wire semantics, independently test exact scalars and original framing, exercise the shared response corpus, and publish an ordinary consumer without server implementations.",
+      "tests": [
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.client protocol generation and corpus.all published response alternatives agree with the shared corpus",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.client protocol generation and corpus.complete descriptors retain the service contract and no server dependency",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.client protocol generation and corpus.typed semantic metadata still obeys the exact published definition",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.client protocol generation and corpus.unsupported generation shapes fail closed",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.client protocol independent examples.Unicode scalar limits match the public text meaning",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.client protocol independent examples.encoder memory and tiny output budgets remain bounded",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.client protocol independent examples.encoders cannot change an authored alternative or replace malformed text",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.client protocol independent examples.exact byte budgets apply to decoding and encoding",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.client protocol independent examples.exact decimal text and large revisions survive typed round trip",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.client protocol independent examples.money input is exact and bounded",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.client protocol independent examples.numeric integer decoding cannot round fractional input",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.client protocol independent examples.omission differs from required null",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.client protocol independent examples.original JSON framing rejects ambiguity and malformed Unicode",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.client protocol independent examples.raw artifact headers and framing remain distinct from JSON payloads",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.client protocol independent examples.real calendar boundaries are enforced",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.client protocol independent examples.response endpoint and alternative identities are checked",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.client protocol independent examples.revision bounds do not lose precision",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.client protocol ordinary consumer.independent consumer runtime contains only client-safe assemblies",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.client protocol ordinary consumer.ordinary protocol callers cannot compile native server access"
       ]
     },
     {

@@ -5,6 +5,8 @@ import { homedir } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
 import { promisify } from "node:util";
 
+import { formatProtocolSources } from "./protocol-generation.mjs";
+
 import { generateWebValidators } from "./generate-web-validators.mjs";
 
 const execute = promisify(execFile);
@@ -42,7 +44,7 @@ const resolveDotnet = async () => {
   throw new Error("The exact .NET SDK selected by global.json is unavailable.");
 };
 
-export const generateConvergenceContracts = async (output) => {
+export const generateConvergenceContracts = async (output, protocolOutput) => {
   const dotnet = await resolveDotnet();
   await execute(
     dotnet,
@@ -56,8 +58,17 @@ export const generateConvergenceContracts = async (output) => {
       "--",
       "--output",
       output,
+      ...(protocolOutput === undefined ? [] : ["--protocol-output", protocolOutput]),
     ],
     { cwd: root },
   );
   await generateWebValidators(output);
+  if (protocolOutput !== undefined)
+    await formatProtocolSources(
+      protocolOutput,
+      async (directory) => {
+        await execute(dotnet, ["fantomas", directory], { cwd: root });
+      },
+      join(root, ".editorconfig"),
+    );
 };

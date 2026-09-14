@@ -41,6 +41,8 @@
     "ClaimCore architecture suite.product component policy.Domain respects owned component dependencies",
     "ClaimCore architecture suite.product component policy.HostSecurity respects owned component dependencies",
     "ClaimCore architecture suite.product component policy.Postgres respects owned component dependencies",
+    "ClaimCore architecture suite.product component policy.Protocol does not consult ambient clock or host IO",
+    "ClaimCore architecture suite.product component policy.Protocol respects owned component dependencies",
     "ClaimCore architecture suite.product component policy.RecordFormat does not consult ambient clock or host IO",
     "ClaimCore architecture suite.product component policy.RecordFormat respects owned component dependencies",
     "ClaimCore architecture suite.product component policy.Web respects owned component dependencies",

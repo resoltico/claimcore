@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.fs" />
+    <ProjectReference Include="../../src/ClaimCore.Protocol/ClaimCore.Protocol.fsproj" />
+  </ItemGroup>
+</Project>

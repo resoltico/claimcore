@@ -169,6 +169,12 @@
           "Npgsql": "[10.0.3, )"
         }
       },
+      "claimcore.protocol": {
+        "type": "Project",
+        "dependencies": {
+          "FSharp.Core": "[10.1.401, )"
+        }
+      },
       "claimcore.recordformat": {
         "type": "Project",
         "dependencies": {

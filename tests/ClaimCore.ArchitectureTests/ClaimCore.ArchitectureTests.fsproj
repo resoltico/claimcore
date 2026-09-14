@@ -16,6 +16,7 @@
   <ItemGroup>
     <None Include="../../eng/claimcore.testconfig.json" Link="testconfig.json" CopyToOutputDirectory="PreserveNewest" />
     <ProjectReference Include="../ClaimCore.ArchitectureFixtures/ClaimCore.ArchitectureFixtures.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Protocol/ClaimCore.Protocol.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Application/ClaimCore.Application.fsproj" />

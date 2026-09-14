@@ -50,9 +50,20 @@ const assertValidatorSize = async (directory) => {
   }
 };
 
+const protocol = resolve(root, "src/ClaimCore.Protocol/Generated");
+const protocolOutput = await mkdtemp(join(tmpdir(), "claimcore-protocol-"));
+
 const output = await mkdtemp(join(tmpdir(), "claimcore-convergence-contracts-"));
 try {
-  await generateConvergenceContracts(output);
+  await generateConvergenceContracts(output, protocolOutput);
+  const protocolFiles = await actualFiles(protocolOutput);
+  if (!sameInventory(await actualFiles(protocol), protocolFiles))
+    throw new Error("Generated .NET protocol file inventory is stale.");
+  for (const file of protocolFiles) {
+    const actual = await readFile(join(protocol, file));
+    const expected = await readFile(join(protocolOutput, file));
+    if (!actual.equals(expected)) throw new Error(`Generated .NET protocol is stale: ${file}.`);
+  }
   await assertValidatorSize(output);
   const expected = await manifestFiles(output);
   const generatedFiles = await actualFiles(generated);
@@ -67,4 +78,5 @@ try {
     throw new Error(`Generated convergence contract is stale: ${stale.join(", ")}.`);
 } finally {
   await rm(output, { force: true, recursive: true });
+  await rm(protocolOutput, { force: true, recursive: true });
 }

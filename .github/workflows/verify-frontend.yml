@@ -41,6 +41,8 @@ jobs:
         run: |
           dotnet restore ClaimCore.slnx --locked-mode
           dotnet build eng/ClaimCore.Docs/ClaimCore.Docs.fsproj --configuration Release --no-restore
+      - name: Restore the pinned formatter for generated .NET protocol sources
+        run: dotnet tool restore
       - name: Run every registered frontend and npm gate
         shell: bash
         run: |

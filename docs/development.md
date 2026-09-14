@@ -81,7 +81,7 @@ Run every project explicitly:
 ```sh
 dotnet test --project tests/ClaimCore.Tests/ClaimCore.Tests.fsproj \
   --configuration Release --no-build --no-restore \
-  --minimum-expected-tests=183 --zero-tests-policy=strict --timeout=10m -- \
+  --minimum-expected-tests=202 --zero-tests-policy=strict --timeout=10m -- \
   --settings="$PWD/eng/expecto.runsettings"
 dotnet test --project tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj \
   --configuration Release --no-build --no-restore \
@@ -127,7 +127,7 @@ The deterministic unit profile runs 200 cases per property. The scheduled extend
 CLAIMCORE_PROPERTY_PROFILE=extended CLAIMCORE_PROPERTY_BASE_SEED=<unsigned-seed> \
 dotnet test --project tests/ClaimCore.Tests/ClaimCore.Tests.fsproj \
   --configuration Release --no-build --no-restore \
-  --minimum-expected-tests=183 --zero-tests-policy=strict --timeout=20m -- \
+  --minimum-expected-tests=202 --zero-tests-policy=strict --timeout=20m -- \
   --settings="$PWD/eng/expecto.runsettings"
 ```
 
@@ -145,7 +145,7 @@ dotnet build tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fspro
   --configuration Debug --no-restore -p:Optimize=false
 dotnet test --project tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj \
   --configuration Debug --no-build --no-restore \
-  --minimum-expected-tests=46 --zero-tests-policy=strict --timeout=10m -- \
+  --minimum-expected-tests=48 --zero-tests-policy=strict --timeout=10m -- \
   --settings="$PWD/eng/expecto.runsettings"
 ```
 
@@ -181,11 +181,25 @@ requires the resulting manifest to match source, npm lock, generated semantic/CL
 Node/npm versions, notices, and asset bytes. See [`web/README.md`](../web/README.md) for frontend
 structure and the current compiler-API compatibility arrangement.
 
-Contract generation is two deterministic stages: the F# generator writes canonical schemas, pure
+Contract generation has two deterministic producer stages: the F# generator writes canonical schemas, pure
 codec corpora, and split DTO modules; the locked Node stage compiles the aggregate Web response graph
 to typed AJV standalone validators and finalizes the combined manifest. The generated minified
 validator module is the only source-analyzer exception for that output and is independently limited
 to one MiB; its exact exclusions remain registered in `analyzer-suppressions.json`.
+
+F02 adds an implementation-free .NET protocol output at
+`src/ClaimCore.Protocol/Generated`. Both outputs consume the same Contracts projection. The pinned
+Fantomas tool formats complete F# declarations, shared scalar codecs, and bindings before they are
+packed into bounded source files; no generated F# analyzer exclusion is used. Run `dotnet tool restore`
+first, then `npm --prefix web run contract:generate` when intentionally changing generated inputs.
+`npm --prefix web run contract:check` regenerates both output trees in temporary directories and
+compares the complete file inventories and bytes without rewriting checked-in outputs.
+
+The core test project includes independent scalar/framing examples, all existing Web response corpus
+cases through the generated .NET codecs, and a separately published ordinary consumer referencing
+only Protocol. These are client-contract and packaging checks, not an HTTP service migration or
+commitment-correlation qualification. The Debug architecture suite also inspects Protocol's actual
+compiled dependency and ambient-effect boundaries.
 
 Frontend corpus tests compare every generated CLI endpoint outcome kind and Web endpoint outcome tag
 against the exact response schemas, in addition to validating positive, malformed, and cross-endpoint

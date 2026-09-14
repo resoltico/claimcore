@@ -1,0 +1,32 @@
+<Project>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Types000.fs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Types001.fs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Types002.fs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Types003.fs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Types004.fs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Definition.fs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Scalar000.fs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Scalar001.fs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Scalar002.fs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Codec000.fs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Codec001.fs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Codec002.fs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Codec003.fs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Codec004.fs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Codec005.fs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Codec006.fs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Codec007.fs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Codec008.fs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Codec009.fs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Codec010.fs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Codec011.fs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Codec012.fs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Codec013.fs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Codec014.fs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Codec015.fs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Binding000.fs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Binding001.fs" />
+    <Compile Include="$(MSBuildThisFileDirectory)WebV2.fs" />
+  </ItemGroup>
+</Project>

@@ -36,18 +36,24 @@
     <Compile Include="FieldSchemaTests.fs" />
     <Compile Include="DomainDescriptorTests.fs" />
     <Compile Include="ContractsTests.fs" />
+    <Compile Include="ClientProtocolFixtures.fs" />
+    <Compile Include="ClientProtocolTests.fs" />
+    <Compile Include="ClientProtocolCorpusTests.fs" />
     <Compile Include="ConfigurationTests.fs" />
     <Compile Include="CliProcessTests.fs" />
     <Compile Include="PrivateFileSecurityTests.fs" />
     <Compile Include="NativePrivateFileRaceTests.fs" />
     <Compile Include="DatabasePrivateFileTests.fs" />
     <Compile Include="CompilerBoundaryTests.fs" />
+    <Compile Include="ClientProtocolBoundaryTests.fs" />
     <Compile Include="Suite.fs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="../../eng/claimcore.testconfig.json" Link="testconfig.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="../../src/ClaimCore.Protocol/ClaimCore.Protocol.fsproj" />
+    <ProjectReference Include="../ClaimCore.ProtocolConsumer/ClaimCore.ProtocolConsumer.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Application/ClaimCore.Application.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Contracts/ClaimCore.Contracts.fsproj" />

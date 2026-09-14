@@ -160,6 +160,19 @@
           "Npgsql": "[10.0.3, )"
         }
       },
+      "claimcore.protocol": {
+        "type": "Project",
+        "dependencies": {
+          "FSharp.Core": "[10.1.401, )"
+        }
+      },
+      "claimcore.protocolconsumer": {
+        "type": "Project",
+        "dependencies": {
+          "ClaimCore.Protocol": "[0.1.0, )",
+          "FSharp.Core": "[10.1.401, )"
+        }
+      },
       "claimcore.recordformat": {
         "type": "Project",
         "dependencies": {

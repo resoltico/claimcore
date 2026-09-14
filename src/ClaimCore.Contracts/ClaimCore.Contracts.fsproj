@@ -37,6 +37,11 @@
     <Compile Include="WebWireMutations.fs" />
     <Compile Include="WebWireCodec.fs" />
     <Compile Include="CliSchemas.fs" />
+    <Compile Include="DotNetModel.fs" />
+    <Compile Include="DotNetScalarExpressions.fs" />
+    <Compile Include="DotNetExpressions.fs" />
+    <Compile Include="DotNetNodes.fs" />
+    <Compile Include="DotNetProtocol.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../ClaimCore.Domain/ClaimCore.Domain.fsproj" />

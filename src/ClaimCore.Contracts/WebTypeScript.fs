@@ -167,15 +167,20 @@ module WebTypeScript =
     let private fromDefinitions names values =
         names |> List.map (fun name -> name, Map.find name values)
 
+    let internal semanticAliases projection =
+        [
+            "ScalarDescriptor", scalarDescriptor
+            "FieldDescriptor", fieldDescriptor
+            "CommandInputDescriptor", commandInputDescriptor
+            "CommandDescriptor", commandDescriptor
+            "SemanticDefinition", semanticDefinition projection.Semantic
+        ]
+
     let private semanticModule projection =
         moduleBytes
             []
-            [
-                "FieldDescriptor", fieldDescriptor
-                "CommandInputDescriptor", commandInputDescriptor
-                "CommandDescriptor", commandDescriptor
-                "SemanticDefinition", semanticDefinition projection.Semantic
-            ]
+            (semanticAliases projection
+             |> List.filter (fun (name, _) -> name <> "ScalarDescriptor"))
             []
 
     let private coreModule values =

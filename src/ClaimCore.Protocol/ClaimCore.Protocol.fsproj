@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <Compile Include="JsonInput.fs" />
+    <Compile Include="ScalarRead.fs" />
+    <Compile Include="JsonRead.fs" />
+    <Compile Include="JsonWrite.fs" />
+    <Compile Include="Bindings.fs" />
+  </ItemGroup>
+  <Import Project="Generated/Protocol.Generated.props" />
+</Project>

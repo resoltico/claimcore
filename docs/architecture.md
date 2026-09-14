@@ -24,10 +24,48 @@ work is divided into five bounded packages:
 | F04 | Resolve accepted replay independently of retained-preparation housekeeping; verify pruning, conflict, concurrency and commit-loss scenarios. |
 | F05 | Preserve historical encodings and enforce a separately controlled history boundary through a qualified recovery procedure. |
 
-Existing Contracts is a server-side semantic projection and may depend on Application. It is not a
-client-safe distribution contract. Extract the generated protocol surface without reversing that
-dependency or duplicating authored operation definitions. Durable record formats, public wire
-contracts and private domain representations have different compatibility obligations.
+Contracts remains a server-side semantic projection and may depend on Application. It is not a
+client-safe distribution contract. F02 supplies the separate generated Protocol surface described
+below, without reversing that dependency or duplicating authored operation definitions. Durable
+record formats, public wire contracts and private domain representations have different
+compatibility obligations.
+
+## Client-safe protocol library
+
+`ClaimCore.Protocol` contains generated immutable F# data shapes, pure JSON codecs and all current
+Web-v2 endpoint bindings. It references no other ClaimCore project, server runtime, database driver,
+or host framework. The Contracts producer reads the same authored schema/metadata graph that
+produces TypeScript; extraction neither opens PostgreSQL nor starts the service. Equivalent schema
+shapes share a generated type, while stable decimal/revision strings remain text. Existing browser/schema artifacts,
+semantic definitions and fingerprints remain byte-for-byte unchanged by this extraction.
+
+`WebV2.caseGet.Request.Encode(budget, { CaseReference = "EXAMPLE" })`, for example, produces a bounded
+request; `WebV2.caseGet.Response.Decode(budget, bytes)` returns a typed endpoint-specific result.
+`WebV2.endpoints` describes the same operation IDs, paths, methods and raw-body requirements as the
+browser catalog. Bindings contain no transport, credentials, automatic retries or native-core
+fallback. Raw imports expose typed required headers and a raw-byte limit; recovery export's binary
+success media type remains separate from its JSON outcomes. F03 must supply the real transport and
+caller context. The existing CLI has not been converted by F02.
+
+Public records are proposals/read values, not accepted domain state. Codecs reject malformed UTF-8,
+malformed Unicode, original duplicate decoded JSON names, unsupported object members and tagged
+alternatives, invalid scalar representations, missing required members and excess size/depth. A
+missing optional property is different from an explicit JSON null. Exact decimal and revision text
+is preserved rather than parsed into a JavaScript number or rounded; integer-valued JSON uses exact
+comparison before conversion. Callers explicitly supply a positive byte budget. The encoder bounds
+both emitted bytes and temporary escaping reservations. No schema default invents input values.
+
+Shared metadata records are useful typed lists, not positional tuples of today's specific fields.
+The exact supported definition is nevertheless checked against its generated semantic projection,
+so a changed required definition is not silently accepted as equivalent. Unknown-field and metadata
+compatibility behavior intentionally follows the current Web-v2 contract. Extending that policy is
+a public-contract change, not permission to relax a decoder locally.
+
+A successful codec result establishes only the supported wire shape. It does not authenticate a
+service, correlate a receipt with a pending request/history, authorize disclosure or prove a commit.
+Those responsibilities remain with the later qualified client transport and the authoritative
+service. An ordinary separately published consumer and negative compiler probes establish that
+using Protocol alone supplies no native-server execution surface.
 
 Accepted receipts must remain recoverable independently of whether optional technical preparations
 are retained. A restored installation identity does not by itself establish data-history continuity.
