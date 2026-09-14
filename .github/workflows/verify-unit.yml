@@ -28,6 +28,8 @@ jobs:
             project: tests/ClaimCore.Tests/ClaimCore.Tests.fsproj
             expected: 183
             prefix: unit
+            configuration: Release
+            coverage: true
           - os: macos-latest
             platform: macos
             label: Unit and process tests
@@ -36,6 +38,8 @@ jobs:
             project: tests/ClaimCore.Tests/ClaimCore.Tests.fsproj
             expected: 183
             prefix: unit
+            configuration: Release
+            coverage: true
           - os: windows-latest
             platform: windows
             label: Unit and process tests
@@ -44,6 +48,8 @@ jobs:
             project: tests/ClaimCore.Tests/ClaimCore.Tests.fsproj
             expected: 183
             prefix: unit
+            configuration: Release
+            coverage: true
           - os: ubuntu-latest
             platform: linux
             label: Web host and security tests
@@ -52,6 +58,8 @@ jobs:
             project: tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj
             expected: 55
             prefix: web
+            configuration: Release
+            coverage: true
           - os: macos-latest
             platform: macos
             label: Web host and security tests
@@ -60,6 +68,8 @@ jobs:
             project: tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj
             expected: 55
             prefix: web
+            configuration: Release
+            coverage: true
           - os: windows-latest
             platform: windows
             label: Web host and security tests
@@ -68,6 +78,38 @@ jobs:
             project: tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj
             expected: 55
             prefix: web
+            configuration: Release
+            coverage: true
+          - os: ubuntu-latest
+            platform: linux
+            label: Qualified architecture inspection
+            stage: architecture-linux
+            assembly: ClaimCore.ArchitectureTests
+            project: tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj
+            expected: 46
+            prefix: architecture
+            configuration: Debug
+            coverage: false
+          - os: macos-latest
+            platform: macos
+            label: Qualified architecture inspection
+            stage: architecture-macos
+            assembly: ClaimCore.ArchitectureTests
+            project: tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj
+            expected: 46
+            prefix: architecture
+            configuration: Debug
+            coverage: false
+          - os: windows-latest
+            platform: windows
+            label: Qualified architecture inspection
+            stage: architecture-windows
+            assembly: ClaimCore.ArchitectureTests
+            project: tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj
+            expected: 46
+            prefix: architecture
+            configuration: Debug
+            coverage: false
     runs-on: ${{ matrix.os }}
     timeout-minutes: 35
     steps:
@@ -93,10 +135,18 @@ jobs:
         run: |
           dotnet restore ClaimCore.slnx --locked-mode
           dotnet build ClaimCore.slnx --configuration Release --no-restore
+      - name: Build non-optimised Debug inspection inputs
+        if: matrix.configuration == 'Debug'
+        env:
+          INSPECTION_PROJECT: ${{ matrix.project }}
+        shell: bash
+        run: dotnet build "$INSPECTION_PROJECT" --configuration Debug --no-restore -p:Optimize=false
       - name: Run the registered native-MTP project
         shell: pwsh
         env:
           PROJECT: ${{ matrix.project }}
+          CONFIGURATION: ${{ matrix.configuration }}
+          COLLECT_COVERAGE: ${{ matrix.coverage }}
           STAGE_ID: ${{ matrix.stage }}
           ASSEMBLY: ${{ matrix.assembly }}
           EXPECTED_TESTS: ${{ matrix.expected }}
@@ -107,15 +157,16 @@ jobs:
           if (Test-Path -LiteralPath $results) { throw "The test result directory must start absent." }
           $started = (Get-Date).ToUniversalTime().ToString("O")
           $arguments = @(
-            "test", "--project", $env:PROJECT, "--configuration", "Release",
+            "test", "--project", $env:PROJECT, "--configuration", $env:CONFIGURATION,
             "--no-build", "--no-restore", "--max-parallel-test-modules", "1",
             "--results-directory=$results",
             "--minimum-expected-tests=$env:EXPECTED_TESTS", "--zero-tests-policy=strict",
             "--timeout=25m", "--", "--settings=$PWD/eng/expecto.runsettings",
-            "--report-trx", "--report-trx-filename=$($env:ASSEMBLY).trx",
-            "--coverlet", "--coverlet-file-prefix=$env:COVERAGE_PREFIX",
-            "--coverlet-output-format=cobertura"
+            "--report-trx", "--report-trx-filename=$($env:ASSEMBLY).trx"
           )
+          if ($env:COLLECT_COVERAGE -eq "true") {
+            $arguments += @("--coverlet", "--coverlet-file-prefix=$env:COVERAGE_PREFIX", "--coverlet-output-format=cobertura")
+          }
           & dotnet @arguments
           $testExit = $LASTEXITCODE
           $finished = (Get-Date).ToUniversalTime().ToString("O")

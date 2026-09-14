@@ -14,6 +14,7 @@
     <Compile Include="EvidenceTests.fs" />
     <Compile Include="FrontendReportInventoryTests.fs" />
     <Compile Include="ReviewTests.fs" />
+    <Compile Include="ConvergenceRegistrationTests.fs" />
     <Compile Include="Suite.fs" />
   </ItemGroup>
   <ItemGroup>

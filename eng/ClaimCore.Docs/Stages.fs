@@ -29,6 +29,10 @@ module Stages =
 
     let testReports =
         platformReports "unit" "ClaimCore.Tests" "ClaimCore.Tests.trx"
+        @ platformReports
+            "architecture"
+            "ClaimCore.ArchitectureTests"
+            "ClaimCore.ArchitectureTests.trx"
         @ platformReports "web" "ClaimCore.WebTests" "ClaimCore.WebTests.trx"
         @ platformReports "docs" "ClaimCore.DocsTests" "ClaimCore.DocsTests.trx"
         @ [

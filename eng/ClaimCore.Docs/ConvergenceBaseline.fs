@@ -57,6 +57,10 @@ module ConvergenceBaseline =
             | _, _, _, Error message, _
             | _, _, _, _, Error message -> Error message)
 
+    /// Historical registrations stay immutable; explicitly registered new producers may be added.
+    let internal registrationsPreserved historical current =
+        Set.isSubset (Set.ofList historical) (Set.ofList current)
+
     let private sources (items: JsonElement list) =
         let parsed = items |> List.map source
 
@@ -78,7 +82,7 @@ module ConvergenceBaseline =
 
                 let actual = sources |> List.map (fun item -> item.Id, item.Kind, item.Inventory)
 
-                if actual = expected then
+                if registrationsPreserved actual expected then
                     Ok sources
                 else
                     Error "Baseline source registrations differ from the live discovery inventory."
