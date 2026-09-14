@@ -25,6 +25,8 @@ let tests =
             RecoveryProcessTests.tests
             RecoveryRaceTests.tests
             RecoveryEvidenceTests.tests
+            RecoveryLifecycleAuthorityTests.tests
+            TerminalCapacityTests.tests
             RecoveryStateTests.tests
             RecoveryCancellationTests.tests
         ]

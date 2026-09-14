@@ -43,6 +43,25 @@ export const preparation: PreparationDetails = {
   },
 };
 
+export const recoveryPage = (
+  entries: unknown[] = [preparation.summary],
+  view: "PENDING" | "TERMINAL" = "PENDING",
+  nextCursor: string | null = null,
+) => ({
+  view,
+  items: entries.map((entry) =>
+    typeof entry === "object" && entry !== null && "operationId" in entry
+      ? { tag: "RETAINED", summary: entry }
+      : entry,
+  ),
+  nextCursor,
+  pendingPreparationCount: 1,
+  pendingCanonicalRequestBytes: 99,
+  maximumPendingPreparations: 1024,
+  maximumPendingCanonicalRequestBytes: 64 * 1024 * 1024,
+  nearCapacity: false,
+});
+
 export const response = (endpoint: string, tag: string, data: unknown, status = 200): Response =>
   new Response(JSON.stringify({ endpoint, outcome: { tag, data } }), {
     status,

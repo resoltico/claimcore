@@ -136,6 +136,7 @@ let private provision (admin: string) (databaseName: string) (appPassword: strin
 
     command.ExecuteNonQuery() |> ignore
     Migrations.apply admin
+    InstallationBusinessZone.set admin "Etc/UTC"
 
 let private runtimeConnection (admin: string) (appPassword: string) =
     let application = NpgsqlConnectionStringBuilder(admin)
@@ -202,9 +203,16 @@ let internal store () =
     value
 
 let internal clock =
-    { new IBusinessDate with
-        member _.Today() = DateOnly(2026, 9, 7)
+    { new IBusinessTime with
+        member _.Capture() =
+            {
+                ObservedUtcInstant = DateTimeOffset(2026, 9, 7, 12, 0, 0, TimeSpan.Zero)
+                EffectiveBusinessDate = DateOnly(2026, 9, 7)
+                TimeZoneId = "Etc/UTC"
+            }
     }
+
+let internal recoveryPageLimit = SemanticContract.current.MaximumPageSize
 
 let registration =
     {
@@ -217,10 +225,19 @@ let registration =
         ClaimedCurrency = "EUR"
     }
 
-let newRequest () =
+let newRequest () : CommandRequest =
     {
         OperationId = Guid.NewGuid()
         CaseReference = "TEST-" + Guid.NewGuid().ToString("N")
+        ExpectedVersion = 0L
+        Command = Command.Open registration
+    }
+
+/// Native tests cross the core boundary with a closed domain request, never an adapter draft.
+let openRequest operationId caseReference : CommandRequest =
+    {
+        OperationId = operationId
+        CaseReference = caseReference
         ExpectedVersion = 0L
         Command = Command.Open registration
     }

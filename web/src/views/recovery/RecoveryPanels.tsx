@@ -1,50 +1,93 @@
 import { Button } from "react-aria-components/Button";
-import { FileTrigger } from "react-aria-components/FileTrigger";
-import type { PreparationSummary, RecoveryImportPreview } from "../../api/v2";
-import { AccessibleModal } from "../../components/AccessibleModal";
 import type {
-  ConfirmState,
-  ImportKind,
-  ImportState,
-  Inspection,
-  RecoveryActions,
-} from "./RecoveryState";
+  PreparationDetails,
+  PreparationSummary,
+  RecoveryListItem,
+  RecoveryPage as RecoveryPageResult,
+  RevokedOperation,
+} from "../../api/v2";
+import { AccessibleModal } from "../../components/AccessibleModal";
+import type { ConfirmState, Inspection, RecoveryActions, RecoveryViewKind } from "./RecoveryState";
+
+export { RecoveryImportDialog, RecoveryImports } from "./RecoveryImportPanels";
 
 export type Listing = {
-  items: PreparationSummary[];
+  items: RecoveryListItem[];
   cursor: string | null;
   message: string | null;
   loading: boolean;
+  page: RecoveryPageResult | null;
+  view: RecoveryViewKind;
+  setView: (view: RecoveryViewKind) => void;
   load: (cursor: string | null) => Promise<void>;
 };
 
-const Summary = ({ item }: { item: PreparationSummary }) => (
+const Summary = ({ item }: { item: RecoveryListItem }) =>
+  item.tag === "RETAINED" ? (
+    <>
+      <bdi>{item.summary.command}</bdi> · <bdi>{item.summary.caseReference}</bdi> ·{" "}
+      {item.summary.authority} · <bdi>{item.summary.operationId}</bdi>
+    </>
+  ) : (
+    <>
+      REVOKED · <bdi>{item.revocation.operationId}</bdi> · {item.revocation.revokedAt}
+    </>
+  );
+
+const AttemptEvidence = ({
+  value,
+  actions,
+}: {
+  value: PreparationDetails;
+  actions: RecoveryActions;
+}) => (
   <>
-    <bdi>{item.command}</bdi> · <bdi>{item.caseReference}</bdi> · {item.state} ·{" "}
-    <bdi>{item.operationId}</bdi>
+    <p>
+      Attempt evidence: {value.attempts.items.length} shown
+      {value.attempts.legacyUncertainty ? "; legacy uncertainty remains" : "."}
+    </p>
+    <ul>
+      {value.attempts.items.map((attempt) => (
+        <li key={attempt.attemptId}>
+          <bdi>{attempt.attemptId}</bdi> · {attempt.startedAt} · {attempt.settlement ?? "PENDING"}
+        </li>
+      ))}
+    </ul>
+    {value.attempts.nextCursor === null ? null : (
+      <Button
+        className="secondary-button"
+        onPress={() => actions.loadAttempts(value.summary.operationId, value.attempts.nextCursor!)}
+      >
+        Load more attempts
+      </Button>
+    )}
   </>
 );
 
-const InspectDetails = ({ value }: { value: Inspection }) => (
+const RetainedDetails = ({
+  value,
+  actions,
+}: {
+  value: PreparationDetails;
+  actions: RecoveryActions;
+}) => (
   <>
     <p>
-      Operation <bdi>{value.preparation.summary.operationId}</bdi> · digest{" "}
-      <bdi>{value.preparation.summary.requestSha256 ?? "Unavailable"}</bdi>
+      Operation <bdi>{value.summary.operationId}</bdi> · authority {value.summary.authority} ·
+      digest <bdi>{value.summary.requestSha256 ?? "Unavailable"}</bdi>
     </p>
     <p>
-      Case <bdi>{value.preparation.summary.caseReference}</bdi> · command{" "}
-      <bdi>{value.preparation.summary.command}</bdi>
+      Case <bdi>{value.summary.caseReference}</bdi> · command <bdi>{value.summary.command}</bdi>
     </p>
     <p>
-      Expected revision {value.preparation.expectedRevision} · canonical format{" "}
-      {value.preparation.canonicalCommandFormat}
+      Expected revision {value.expectedRevision} · canonical format {value.canonicalCommandFormat}
     </p>
     <p>
-      Preparing provenance: <bdi>{value.preparation.preparingApplicationVersion}</bdi> ·{" "}
-      <bdi>{value.preparation.preparingContractKind}</bdi>
+      Preparing provenance: <bdi>{value.preparingApplicationVersion}</bdi> ·{" "}
+      <bdi>{value.preparingContractKind}</bdi>
     </p>
     <dl className="review-values">
-      {value.preparation.authoredValues.map((entry) => (
+      {value.authoredValues.map((entry) => (
         <div key={entry.name}>
           <dt>{entry.name}</dt>
           <dd>
@@ -53,68 +96,18 @@ const InspectDetails = ({ value }: { value: Inspection }) => (
         </div>
       ))}
     </dl>
-    <p>Observation: {value.observation.tag}</p>
-    {value.observation.tag !== "FOUND" ? null : (
-      <p>
-        Observed accepted operation <bdi>{value.observation.value.operationId}</bdi>.
-      </p>
-    )}
+    <AttemptEvidence value={value} actions={actions} />
   </>
 );
 
-const ImportPreview = ({ value }: { value: RecoveryImportPreview }) => (
+const RevocationDetails = ({ operationId, revokedAt, reason }: RevokedOperation) => (
   <>
     <p>
-      Artifact {value.artifactKind} · source digest <bdi>{value.sourceSha256}</bdi>
+      Operation <bdi>{operationId}</bdi> was revoked at {revokedAt}.
     </p>
-    <p>
-      Decoded target <bdi>{value.decodedEffect.caseReference}</bdi> · command{" "}
-      {value.decodedEffect.command} · expected revision {value.decodedEffect.expectedRevision}
-    </p>
-    <p>
-      The artifact is retained for explicit Recovery action; it is never submitted automatically.
-    </p>
+    <p>{reason}</p>
+    <p>This revoked authority is terminal. It cannot be resurrected or submitted.</p>
   </>
-);
-
-const ImportButton = ({
-  kind,
-  busy,
-  onFile,
-}: {
-  kind: ImportKind;
-  busy: boolean;
-  onFile: (kind: ImportKind, file: File) => void;
-}) => {
-  const envelope = kind === "ENVELOPE";
-  const mediaType = envelope
-    ? "application/vnd.claimcore.recovery+json"
-    : "application/vnd.claimcore.canonical-command+json";
-  const label = envelope ? "Import recovery envelope" : "Import canonical record";
-  return (
-    <FileTrigger
-      acceptedFileTypes={[mediaType]}
-      onSelect={(files) => {
-        const file = files?.item(0);
-        if (file !== null && file !== undefined) onFile(kind, file);
-      }}
-    >
-      <Button isDisabled={busy}>{label}</Button>
-    </FileTrigger>
-  );
-};
-
-export const RecoveryImports = ({
-  busy,
-  actions,
-}: {
-  busy: string | null;
-  actions: RecoveryActions;
-}) => (
-  <div className="actions">
-    <ImportButton kind="ENVELOPE" busy={busy === "import-ENVELOPE"} onFile={actions.preview} />
-    <ImportButton kind="RECORD" busy={busy === "import-RECORD"} onFile={actions.preview} />
-  </div>
 );
 
 export const RecoveryList = ({
@@ -133,14 +126,17 @@ export const RecoveryList = ({
       </p>
     )}
     <ul className="recovery-list">
-      {listing.items.map((item) => (
-        <li key={item.operationId}>
-          <Summary item={item} />
-          <Button onPress={() => actions.inspect(item)} isDisabled={busy === item.operationId}>
-            Inspect
-          </Button>
-        </li>
-      ))}
+      {listing.items.map((item) => {
+        const id = item.tag === "RETAINED" ? item.summary.operationId : item.revocation.operationId;
+        return (
+          <li key={id}>
+            <Summary item={item} />
+            <Button onPress={() => actions.inspect(item)} isDisabled={busy === id}>
+              {item.tag === "RETAINED" ? "Inspect" : "Inspect revocation"}
+            </Button>
+          </li>
+        );
+      })}
     </ul>
     {listing.cursor === null ? null : (
       <Button onPress={() => void listing.load(listing.cursor)} isDisabled={listing.loading}>
@@ -151,17 +147,15 @@ export const RecoveryList = ({
 );
 
 const ActionButtons = ({
-  selected,
   summary,
   actions,
 }: {
-  selected: Inspection;
   summary: PreparationSummary;
   actions: RecoveryActions;
 }) => {
   const digestAvailable = summary.requestSha256 !== null;
   const canResolve =
-    selected.observation.tag !== "FOUND" &&
+    summary.authority === "PENDING" &&
     summary.availableActions.includes("RESOLVE") &&
     digestAvailable;
   const canDismiss = summary.availableActions.includes("DISMISS") && digestAvailable;
@@ -199,17 +193,25 @@ export const RecoveryDetailsDialog = ({
 }) => (
   <AccessibleModal
     title="Recovery details"
-    description="The server supplied the current preparation, evidence, and observation state."
+    description="The server supplied the current authority, evidence, and observation state."
     isOpen={selected !== null}
     isDismissable
     onOpenChange={(open) => {
       if (!open) onClose();
     }}
   >
-    {selected === null || summary === null ? null : (
+    {selected === null ? null : selected.tag === "REVOKED" ? (
+      <RevocationDetails {...selected.revocation} />
+    ) : summary === null ? null : (
       <>
-        <InspectDetails value={selected} />
-        <ActionButtons selected={selected} summary={summary} actions={actions} />
+        <RetainedDetails value={selected.value.preparation} actions={actions} />
+        <p>Observation: {selected.value.observation.tag}</p>
+        {selected.value.observation.tag !== "FOUND" ? null : (
+          <p>
+            Observed accepted operation <bdi>{selected.value.observation.value.operationId}</bdi>.
+          </p>
+        )}
+        <ActionButtons summary={summary} actions={actions} />
       </>
     )}
   </AccessibleModal>
@@ -255,37 +257,6 @@ export const RecoveryConfirmDialog = ({
           {busy === confirm.item.operationId
             ? "Working…"
             : `Confirm ${confirm.action.toLowerCase()}`}
-        </Button>
-      </>
-    )}
-  </AccessibleModal>
-);
-
-export const RecoveryImportDialog = ({
-  importing,
-  busy,
-  onClose,
-  actions,
-}: {
-  importing: ImportState | null;
-  busy: string | null;
-  onClose: () => void;
-  actions: RecoveryActions;
-}) => (
-  <AccessibleModal
-    title="Retain imported recovery material?"
-    description="The preview is retained only after confirmation and is never submitted automatically."
-    isOpen={importing !== null}
-    isDismissable={busy === null}
-    onOpenChange={(open) => {
-      if (!open && busy === null) onClose();
-    }}
-  >
-    {importing === null ? null : (
-      <>
-        <ImportPreview value={importing.preview} />
-        <Button onPress={() => void actions.retain()} isDisabled={busy !== null}>
-          Retain for Recovery
         </Button>
       </>
     )}

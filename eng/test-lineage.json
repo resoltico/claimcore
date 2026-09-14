@@ -390,23 +390,23 @@
       "baselineId": "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL migration upgrade qualification.migration 001 to 002.atomicity.[CC-DB-001] failed migration rolls back its objects and journal row",
       "status": "replaced",
       "replacementIds": [
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL migration upgrade qualification.migration 001 through 005.atomicity.[CC-DB-001] failed migration rolls back its objects and journal row"
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL migration upgrade qualification.migration 001 through 006.atomicity.[CC-DB-001] failed migration rolls back its objects and journal row"
       ],
-      "reason": "The qualification starts from migration 003, deliberately conflicts with migration 004, and verifies that its transaction leaves no partial objects or journal row; the catalog otherwise extends through 005."
+      "reason": "The qualification starts from migration 003, deliberately conflicts with migration 004, and verifies that its transaction leaves no partial objects or journal row; the catalog otherwise extends through immutable migration 006."
     },
     {
       "baselineId": "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL migration upgrade qualification.migration 001 to 002.manifest validation.[CC-DB-001] applied migration identities remain frozen",
       "status": "replaced",
       "replacementIds": [
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL migration upgrade qualification.migration 001 through 005.manifest validation.[CC-DB-001] applied migration identities remain frozen"
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL migration upgrade qualification.migration 001 through 006.manifest validation.[CC-DB-001] applied migration identities remain frozen"
       ],
-      "reason": "The manifest assertion now pins all five ordered names and SHA-256 digests, including original migrations 001–003 and later 004–005, without editing applied bytes."
+      "reason": "The manifest assertion now pins all six ordered names and SHA-256 digests, including original migrations 001–003 and later 004–006, without editing applied bytes."
     },
     {
       "baselineId": "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL migration upgrade qualification.migration 001 to 002.manifest validation.[CC-DB-001] migrator refuses a newer manifest entry",
       "status": "replaced",
       "replacementIds": [
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL migration upgrade qualification.migration 001 through 005.manifest validation.[CC-DB-001] migrator refuses a newer manifest entry"
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL migration upgrade qualification.migration 001 through 006.manifest validation.[CC-DB-001] migrator refuses a newer manifest entry"
       ],
       "reason": "The manifest qualification still adds an unrecognized later migration entry and requires the migrator to refuse it before modifying installed schema."
     },
@@ -414,9 +414,9 @@
       "baselineId": "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL migration upgrade qualification.migration 001 to 002.retained data.[CC-DB-001] upgrade preserves cases and history and installs recovery storage",
       "status": "replaced",
       "replacementIds": [
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL migration upgrade qualification.migration 001 through 005.retained data.[CC-DB-001] upgrade preserves cases and history and installs recovery storage"
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL migration upgrade qualification.migration 001 through 006.retained data.[CC-DB-001] upgrade preserves cases and history and installs recovery storage"
       ],
-      "reason": "The migration-001 upgrade test still compares the accepted history projection before and after full upgrade through 005, verifies legacy uncertainty and current thirteen-field reads."
+      "reason": "The migration-001 upgrade test still compares the accepted history projection before and after full upgrade through 006, verifies legacy uncertainty and current thirteen-field reads."
     },
     {
       "baselineId": "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL preparation recovery.durable request preparations.immutable preparation data.[CC-REC-001] preparation retains exact bytes and immutable identity",
@@ -848,23 +848,23 @@
       "baselineId": "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 to 002.atomicity.[CC-DB-001] failed migration rolls back its objects and journal row",
       "status": "replaced",
       "replacementIds": [
-        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 005.atomicity.[CC-DB-001] failed migration rolls back its objects and journal row"
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 006.atomicity.[CC-DB-001] failed migration rolls back its objects and journal row"
       ],
-      "reason": "The qualification starts from migration 003, deliberately conflicts with migration 004, and verifies that its transaction leaves no partial objects or journal row; the catalog otherwise extends through 005."
+      "reason": "The qualification starts from migration 003, deliberately conflicts with migration 004, and verifies that its transaction leaves no partial objects or journal row; the catalog otherwise extends through immutable migration 006."
     },
     {
       "baselineId": "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 to 002.manifest validation.[CC-DB-001] applied migration identities remain frozen",
       "status": "replaced",
       "replacementIds": [
-        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 005.manifest validation.[CC-DB-001] applied migration identities remain frozen"
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 006.manifest validation.[CC-DB-001] applied migration identities remain frozen"
       ],
-      "reason": "The manifest assertion now pins all five ordered names and SHA-256 digests, including original migrations 001–003 and later 004–005, without editing applied bytes."
+      "reason": "The manifest assertion now pins all six ordered names and SHA-256 digests, including original migrations 001–003 and later 004–006, without editing applied bytes."
     },
     {
       "baselineId": "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 to 002.manifest validation.[CC-DB-001] migrator refuses a newer manifest entry",
       "status": "replaced",
       "replacementIds": [
-        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 005.manifest validation.[CC-DB-001] migrator refuses a newer manifest entry"
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 006.manifest validation.[CC-DB-001] migrator refuses a newer manifest entry"
       ],
       "reason": "The manifest qualification still adds an unrecognized later migration entry and requires the migrator to refuse it before modifying installed schema."
     },
@@ -872,9 +872,9 @@
       "baselineId": "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 to 002.retained data.[CC-DB-001] upgrade preserves cases and history and installs recovery storage",
       "status": "replaced",
       "replacementIds": [
-        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 005.retained data.[CC-DB-001] upgrade preserves cases and history and installs recovery storage"
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 006.retained data.[CC-DB-001] upgrade preserves cases and history and installs recovery storage"
       ],
-      "reason": "The migration-001 upgrade test still compares the accepted history projection before and after full upgrade through 005, verifies legacy uncertainty and current thirteen-field reads."
+      "reason": "The migration-001 upgrade test still compares the accepted history projection before and after full upgrade through 006, verifies legacy uncertainty and current thirteen-field reads."
     },
     {
       "baselineId": "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.CLI retained-request recovery.[CC-REC-001] export and apply preserve and submit the exact retained request",
@@ -1734,9 +1734,9 @@
       "status": "replaced",
       "replacementIds": [
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI v3 protocol.CLI v3 framing.protocol and revision rejection.rejects protocol v2 before endpoint execution",
-        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.draft validation.missing extra and duplicate form values are refused"
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.draft validation.flat forms reject missing extra and duplicate values"
       ],
-      "reason": "CLI-v3 framing explicitly rejects protocol 2, while native draft binding refuses extra command values instead of retaining an obsolete correction-reason field."
+      "reason": "CLI-v3 framing explicitly rejects protocol 2, while the closed flat-form binder refuses missing, extra, and duplicate values instead of accepting an obsolete correction-reason field."
     },
     {
       "baselineId": "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.exact business-field schema.embedded command schema.embedded command-schema definition is the same canonical case schema",
@@ -1766,19 +1766,19 @@
     },
     {
       "baselineId": "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.draft validation.form binding does not trim, uppercase or round business input",
-      "status": "retained",
+      "status": "replaced",
       "replacementIds": [
-        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.draft validation.form binding does not trim, uppercase or round business input"
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.draft validation.form binding does not trim uppercase or round business input"
       ],
-      "reason": "The current identity still directly verifies the same v0.1 behavior after the verified hard cutover."
+      "reason": "The renamed flat-form assertion retains the original no-normalization guarantee while separating it from the new tagged correction input shape and its independent validation."
     },
     {
       "baselineId": "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.draft validation.missing extra and duplicate form values are refused",
-      "status": "retained",
+      "status": "replaced",
       "replacementIds": [
-        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.draft validation.missing extra and duplicate form values are refused"
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.draft validation.flat forms reject missing extra and duplicate values"
       ],
-      "reason": "The current identity still directly verifies the same v0.1 behavior after the verified hard cutover."
+      "reason": "The closed flat-form assertion retains the missing, extra, and duplicate-value guarantee while explicit grouped correction validation covers the new non-flat command shape."
     },
     {
       "baselineId": "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.field projection.field projection is exactly the thirteen native fields with absence preserved",
@@ -1790,19 +1790,19 @@
     },
     {
       "baselineId": "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.form binding.each form binds the intended command without a renderer-specific recipe",
-      "status": "retained",
+      "status": "replaced",
       "replacementIds": [
-        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.form binding.each form binds the intended command without a renderer-specific recipe"
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.form binding.each declared form binds its closed command without a renderer recipe"
       ],
-      "reason": "The current identity still directly verifies the same v0.1 behavior after the verified hard cutover."
+      "reason": "The current assertion retains renderer-independent form binding and now verifies every declared closed command, including the tagged correction command without an adapter recipe."
     },
     {
       "baselineId": "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.form definitions.all eight forms cover the canonical commands, in canonical order",
-      "status": "retained",
+      "status": "replaced",
       "replacementIds": [
-        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.form definitions.all eight forms cover the canonical commands, in canonical order"
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.form definitions.all nine forms cover the canonical commands in canonical order"
       ],
-      "reason": "The current identity still directly verifies the same v0.1 behavior after the verified hard cutover."
+      "reason": "The expanded form inventory retains canonical ordering and now requires the ninth CORRECT_CASE definition, including its grouped metadata, to be renderer-independent."
     },
     {
       "baselineId": "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.pagination boundaries.case listing returns stable 50-item pages without loss or overlap",

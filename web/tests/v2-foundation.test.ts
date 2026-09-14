@@ -7,9 +7,8 @@ import {
   fieldHint,
   prefilledValues,
 } from "../src/domain/metadata";
-import { initialOperation, operationReducer } from "../src/domain/operationReducer";
 import { generatedResponse, generatedWebValue } from "./contract-corpus.fixtures";
-import { caseFields, definition, preparation, review } from "./v2-foundation.fixtures";
+import { caseFields, definition } from "./v2-foundation.fixtures";
 
 describe("metadata-driven drafts", () => {
   it("derives command fields, prefill and a canonical draft without a browser command registry", () => {
@@ -44,79 +43,6 @@ describe("metadata-driven drafts", () => {
   });
 });
 
-it("retains an exact id until a retained preparation is edited, then starts a new id", () => {
-  let state = initialOperation("id-1", "OPEN", {}, "");
-  state = operationReducer(state, {
-    type: "EDIT_REFERENCE",
-    value: "CASE-1",
-    nextOperationId: "id-2",
-  });
-  expect(state.operationId).toBe("id-1");
-  state = operationReducer(state, { type: "PREPARING" });
-  state = operationReducer(state, { type: "PREPARED", preparation, review });
-  state = operationReducer(state, { type: "KEEP_FOR_RECOVERY" });
-  state = operationReducer(state, {
-    type: "EDIT_REFERENCE",
-    value: "CASE-2",
-    nextOperationId: "id-2",
-  });
-  expect(state).toMatchObject({
-    operationId: "id-2",
-    delivery: "EDITING",
-    requiresNewOperationId: false,
-  });
-});
-
-it("models definite rejection and unknown outcomes without allowing a dispatched mutation to regress", () => {
-  let state = initialOperation("id-1", "OPEN", {}, "");
-  state = operationReducer(state, { type: "PREPARING" });
-  state = operationReducer(state, { type: "PREPARATION_UNKNOWN", message: "lost" });
-  expect(
-    operationReducer(state, { type: "EDIT", field: "x", value: "y", nextOperationId: "id-2" }),
-  ).toBe(state);
-  state = operationReducer(initialOperation("id-1", "OPEN", {}, ""), {
-    type: "DEFINITELY_REJECTED",
-    message: "bad",
-    field: null,
-  });
-  state = operationReducer(state, {
-    type: "CHANGE_COMMAND",
-    command: "AMEND_REGISTRATION",
-    values: { paymentDate: "" },
-    nextOperationId: "id-2",
-  });
-  expect(state).toMatchObject({
-    delivery: "EDITING",
-    operationId: "id-2",
-    command: "AMEND_REGISTRATION",
-  });
-  state = operationReducer(state, { type: "PREPARING" });
-  state = operationReducer(state, { type: "PREPARED", preparation, review });
-  state = operationReducer(state, { type: "SUBMITTING" });
-  state = operationReducer(state, { type: "OUTCOME_UNKNOWN", message: "uncertain" });
-  expect(state.delivery).toBe("OUTCOME_UNKNOWN");
-  expect(operationReducer(state, { type: "RESET_MESSAGE" }).message).toBeNull();
-});
-
-it("keeps invalid reducer transitions inert and records a completed receipt", () => {
-  const initial = initialOperation("id", "OPEN", {}, "");
-  expect(operationReducer(initial, { type: "SUBMITTING" })).toBe(initial);
-  const reviewing = operationReducer(initial, { type: "PREPARED", preparation, review });
-  expect(operationReducer(reviewing, { type: "PREPARING" })).toBe(reviewing);
-  const accepted = operationReducer(reviewing, {
-    type: "ACCEPTED",
-    receipt: {
-      operationId: "id",
-      snapshot: { fields: caseFields, revision: "1" },
-      recordedAt: "2026-09-09T00:00:00.0000000+00:00",
-      recordedBy: "test",
-      replayed: false,
-      command: "OPEN",
-    },
-  });
-  expect(accepted.delivery).toBe("ACCEPTED");
-});
-
 const json = (value: unknown, status = 200): Response =>
   new Response(JSON.stringify(value), { status, headers: { "content-type": "application/json" } });
 type EndpointId = Parameters<typeof generatedResponse>[0];
@@ -125,6 +51,15 @@ const outcome = (endpoint: EndpointId, tag = "SUCCEEDED", data: unknown = {}) =>
   outcome: { tag, data },
 });
 const operationId = "00000000-0000-4000-8000-000000000001";
+const openValues = {
+  incidentDate: "2026-09-01",
+  incidentNotificationDate: "2026-09-02",
+  incidentCountry: "Latvia",
+  claimantName: "Synthetic claimant",
+  insurerName: "Synthetic insurer",
+  claimedAmount: "12.34",
+  claimedCurrency: "EUR",
+};
 const recoveryDownload = (status: number): Response =>
   new Response("{}", {
     status,
@@ -146,7 +81,7 @@ const jsonCalls: [() => Promise<unknown>, string, EndpointId][] = [
           operationId,
           caseReference: "CASE-1",
           expectedRevision: "0",
-          command: { kind: "OPEN", values: {} },
+          command: { kind: "OPEN", values: openValues },
         },
         "token",
       ),
@@ -158,8 +93,12 @@ const jsonCalls: [() => Promise<unknown>, string, EndpointId][] = [
     "/api/v2/operations/submit",
     "command.execute",
   ],
-  [() => v2.recoveryList(null, 50, "token"), "/api/v2/recovery/list", "recovery.list"],
-  [() => v2.recoveryInspect(operationId, "token"), "/api/v2/recovery/inspect", "recovery.inspect"],
+  [() => v2.recoveryList("PENDING", null, 50, "token"), "/api/v2/recovery/list", "recovery.list"],
+  [
+    () => v2.recoveryInspect(operationId, null, 50, "token"),
+    "/api/v2/recovery/inspect",
+    "recovery.inspect",
+  ],
   [
     () => v2.recoveryResolve(operationId, "a".repeat(64), "token"),
     "/api/v2/recovery/resolve",
@@ -228,7 +167,7 @@ it("fails closed on malformed delivery and validates recovery export", async () 
       operationId: "id",
       caseReference: "CASE",
       expectedRevision: "0",
-      command: { kind: "OPEN", values: {} },
+      command: { kind: "OPEN", values: openValues },
     },
     "token",
   );

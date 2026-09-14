@@ -5,6 +5,8 @@
   <ItemGroup>
     <Compile Include="ProtocolTypes.fs" />
     <Compile Include="StrictJson.fs" />
+    <Compile Include="InvocationTypes.fs" />
+    <Compile Include="CliCommandInput.fs" />
     <Compile Include="PrivateFiles.fs" />
     <Compile Include="FrameReader.fs" />
     <Compile Include="Discovery.fs" />

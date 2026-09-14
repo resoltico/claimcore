@@ -93,6 +93,7 @@ module internal RuntimeAccessPolicy =
             readAppendAcl "request_submission_attempts"
             readAppendAcl "request_submission_settlements"
             readOnlyAcl "request_submission_legacy_uncertainty"
+            readAppendAcl "operation_revocations"
         ]
         |> String.concat ",\n        "
 
@@ -119,6 +120,7 @@ module internal RuntimeAccessPolicy =
                   WHEN 'request_submission_attempts' THEN p.privilege_type NOT IN ('SELECT', 'INSERT')
                   WHEN 'request_submission_settlements' THEN p.privilege_type NOT IN ('SELECT', 'INSERT')
                   WHEN 'request_submission_legacy_uncertainty' THEN p.privilege_type <> 'SELECT'
+                  WHEN 'operation_revocations' THEN p.privilege_type NOT IN ('SELECT', 'INSERT')
                   ELSE TRUE END)
         )
         """

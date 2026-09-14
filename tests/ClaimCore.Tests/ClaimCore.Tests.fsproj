@@ -14,8 +14,12 @@
     <Compile Include="RecordPropertyTests.fs" />
     <Compile Include="TransitionPropertyTests.fs" />
     <Compile Include="CoreStore.fs" />
+    <Compile Include="CoreRecoveryStoreState.fs" />
+    <Compile Include="CoreRecoveryStoreRead.fs" />
+    <Compile Include="CoreRecoveryStoreMutation.fs" />
     <Compile Include="CoreRecoveryStore.fs" />
     <Compile Include="DomainTests.fs" />
+    <Compile Include="CaseCorrectionTests.fs" />
     <Compile Include="DomainValidationTests.fs" />
     <Compile Include="AvailabilityTests.fs" />
     <Compile Include="PaginationTests.fs" />
@@ -25,6 +29,7 @@
     <Compile Include="ReceiptFirstTests.fs" />
     <Compile Include="RecoveryOutcomeTests.fs" />
     <Compile Include="RecoveryCancellationOutcomeTests.fs" />
+    <Compile Include="RecoveryAuthorityTests.fs" />
     <Compile Include="CoreQueryTests.fs" />
     <Compile Include="CoreBoundaryParityTests.fs" />
     <Compile Include="ExampleContractTests.fs" />

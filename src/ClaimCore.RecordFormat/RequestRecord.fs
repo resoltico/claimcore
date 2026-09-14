@@ -1,11 +1,106 @@
 namespace ClaimCore.RecordFormat
 
 open System
+open System.Text.Json
 open ClaimCore.Domain
 
 /// Version-2 canonical request bytes. Stable identity format, also emitted by the wire encoder.
 /// This codec supplies bytes only; Application owns hashing and replay admission.
 module RequestRecord =
+    let private correctionRegistration (value: JsonElement) =
+        let path = "$.command.registration"
+        let mode = Json.text path "mode" value
+
+        match mode with
+        | "KEEP" ->
+            Json.properties path [ "mode" ] value
+            RegistrationCorrection.Keep
+        | "REPLACE" ->
+            Json.properties path [ "mode"; "registration" ] value
+
+            RegistrationCorrection.Replace(
+                Json.registration path (Json.required path "registration" value)
+            )
+        | _ -> Json.reject (path + ".mode") "Use KEEP or REPLACE."
+
+    let private correctionDecision (value: JsonElement) =
+        let path = "$.command.decision"
+        let mode = Json.text path "mode" value
+
+        match mode with
+        | "KEEP" ->
+            Json.properties path [ "mode" ] value
+            DecisionCorrection.Keep
+        | "REPLACE" ->
+            Json.properties path [ "mode"; "decision" ] value
+
+            DecisionCorrection.Replace(Json.decision path (Json.required path "decision" value))
+        | "CLEAR" ->
+            Json.properties path [ "mode" ] value
+            DecisionCorrection.Clear
+        | _ -> Json.reject (path + ".mode") "Use KEEP, REPLACE, or CLEAR."
+
+    let private correctionPayment (value: JsonElement) =
+        let path = "$.command.payment"
+        let mode = Json.text path "mode" value
+
+        match mode with
+        | "KEEP" ->
+            Json.properties path [ "mode" ] value
+            PaymentCorrection.Keep
+        | "REPLACE" ->
+            Json.properties path [ "mode"; "paymentDate" ] value
+            PaymentCorrection.Replace(Json.text path "paymentDate" value)
+        | "CLEAR" ->
+            Json.properties path [ "mode" ] value
+            PaymentCorrection.Clear
+        | _ -> Json.reject (path + ".mode") "Use KEEP, REPLACE, or CLEAR."
+
+    let private correction (element: JsonElement) =
+        let path = "$.command"
+        Json.properties path [ "type"; "registration"; "decision"; "payment" ] element
+
+        {
+            Registration = correctionRegistration (Json.required path "registration" element)
+            Decision = correctionDecision (Json.required path "decision" element)
+            Payment = correctionPayment (Json.required path "payment" element)
+        }
+
+    let private writeRegistrationCorrection (writer: Utf8JsonWriter) correction =
+        writer.WriteStartObject("registration")
+
+        match correction with
+        | RegistrationCorrection.Keep -> writer.WriteString("mode", "KEEP")
+        | RegistrationCorrection.Replace registration ->
+            writer.WriteString("mode", "REPLACE")
+            Json.writeRegistration writer registration
+
+        writer.WriteEndObject()
+
+    let private writeDecisionCorrection (writer: Utf8JsonWriter) correction =
+        writer.WriteStartObject("decision")
+
+        match correction with
+        | DecisionCorrection.Keep -> writer.WriteString("mode", "KEEP")
+        | DecisionCorrection.Replace decision ->
+            writer.WriteString("mode", "REPLACE")
+            Json.writeDecision writer decision
+        | DecisionCorrection.Clear -> writer.WriteString("mode", "CLEAR")
+
+        writer.WriteEndObject()
+
+    let private writePaymentCorrection (writer: Utf8JsonWriter) correction =
+        writer.WriteStartObject("payment")
+
+        match correction with
+        | PaymentCorrection.Keep -> writer.WriteString("mode", "KEEP")
+        | PaymentCorrection.Replace paymentDate ->
+            writer.WriteString("mode", "REPLACE")
+            writer.WriteString("paymentDate", paymentDate)
+        | PaymentCorrection.Clear -> writer.WriteString("mode", "CLEAR")
+
+        writer.WriteEndObject()
+
     let private readCommand (element: Text.Json.JsonElement) =
         let path = "$.command"
         let kind = Json.text path "type" element
@@ -30,6 +125,7 @@ module RequestRecord =
                     (path + ".registration")
                     (Json.required path "registration" element)
             )
+        | "CORRECT_CASE" -> Command.CorrectCase(correction element)
         | "DECIDE" ->
             shape [ "decision" ]
 
@@ -117,6 +213,10 @@ module RequestRecord =
             match request.Command with
             | Command.Open registration
             | Command.AmendRegistration registration -> Json.writeRegistration writer registration
+            | Command.CorrectCase correction ->
+                writeRegistrationCorrection writer correction.Registration
+                writeDecisionCorrection writer correction.Decision
+                writePaymentCorrection writer correction.Payment
             | Command.Decide decision -> Json.writeDecision writer decision
             | Command.RecordPayment date -> writer.WriteString("paymentDate", date)
             | Command.ClearPayment

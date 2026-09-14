@@ -1,6 +1,6 @@
 ClaimCore Web v2 standalone-validator third-party notices
 
-Generated from the exact locked packages whose code is embedded in web-v2.validators.mjs.
+Generated from the exact locked packages whose code is embedded in the split Web-v2 validator modules.
 
 Package: ajv@8.20.0
 Declared license: MIT

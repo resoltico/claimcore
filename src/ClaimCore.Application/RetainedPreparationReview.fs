@@ -14,16 +14,19 @@ type internal PreviewResult =
 module internal RetainedPreparationReview =
     let preview
         (store: IClaimStore)
-        (clock: IBusinessDate)
+        (clock: IBusinessTime)
         (request: CommandRequest)
         : Task<PreviewResult> =
         task {
             match! store.Get request.CaseReference with
             | Error failure -> return PreviewFailed(TypedProjection.coreFault failure)
             | Ok current ->
-                match Claim.decide (clock.Today()) request current with
+                let context = clock.Capture()
+
+                match Claim.decide context.EffectiveBusinessDate request current with
                 | Error rejection -> return PreviewRejected(TypedProjection.rejection rejection)
-                | Ok proposed -> return Previewed(TypedProjection.review clock current proposed)
+                | Ok proposed ->
+                    return Previewed(AdvisoryReviewProjection.create context current proposed)
         }
 
     let private replayFault: CoreFault =
@@ -35,7 +38,7 @@ module internal RetainedPreparationReview =
 
     let private observedOutcome
         (store: IClaimStore)
-        (clock: IBusinessDate)
+        (clock: IBusinessTime)
         (request: CommandRequest)
         (retained: RetainedPreparation)
         (details: PreparationDetails)
@@ -61,7 +64,7 @@ module internal RetainedPreparationReview =
 
     let knownRetained
         (store: IClaimStore)
-        (clock: IBusinessDate)
+        (clock: IBusinessTime)
         (request: CommandRequest)
         (retained: RetainedPreparation)
         (cancellationToken: CancellationToken)

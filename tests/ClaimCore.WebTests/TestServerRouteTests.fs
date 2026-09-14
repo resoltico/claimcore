@@ -13,11 +13,11 @@ let private draft =
 let private input identifier =
     match identifier with
     | "case.get" -> """{"caseReference":"WEB-V2-001"}"""
-    | "case.list"
-    | "recovery.list" -> """{"limit":10}"""
+    | "case.list" -> """{"limit":10}"""
+    | "recovery.list" -> """{"view":"PENDING","limit":10}"""
     | "case.history" -> """{"caseReference":"WEB-V2-001","limit":10,"detail":"FULL"}"""
-    | "operation.observe"
-    | "recovery.inspect" -> $"""{{"operationId":"{operation}"}}"""
+    | "operation.observe" -> $"""{{"operationId":"{operation}"}}"""
+    | "recovery.inspect" -> $"""{{"operationId":"{operation}","attemptLimit":10}}"""
     | "command.prepare" -> draft
     | "command.execute"
     | "recovery.resolve" -> $"""{{"operationId":"{operation}","requestSha256":"{digest}"}}"""

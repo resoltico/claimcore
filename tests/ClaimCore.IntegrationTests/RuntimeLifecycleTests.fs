@@ -88,23 +88,8 @@ let private cancellationInterruptsSchemaInspection () =
 
     transaction.Commit()
 
-let private openingDraft () =
-    {
-        OperationId = Guid.NewGuid()
-        CaseReference = "RUNTIME-MUTATION-" + Guid.NewGuid().ToString("N")
-        ExpectedVersion = 0L
-        Kind = CommandKind.Open
-        Values =
-            [
-                "incidentDate", registration.IncidentDate
-                "incidentNotificationDate", registration.IncidentNotificationDate
-                "incidentCountry", registration.IncidentCountry
-                "claimantName", registration.ClaimantName
-                "insurerName", registration.InsurerName
-                "claimedAmount", registration.ClaimedAmount
-                "claimedCurrency", registration.ClaimedCurrency
-            ]
-    }
+let private openingRequest () =
+    openRequest (Guid.NewGuid()) ("RUNTIME-MUTATION-" + Guid.NewGuid().ToString("N"))
 
 let private admittedMutationSurvivesDispose () =
     use runtime =
@@ -116,7 +101,7 @@ let private admittedMutationSurvivesDispose () =
     let connection, lockedTransaction = exclusiveLock "request_preparations"
     use connection = connection
     use transaction = lockedTransaction
-    let pending = core.Execute(openingDraft (), CancellationToken.None)
+    let pending = core.Execute(openingRequest (), CancellationToken.None)
     Task.Delay(100).GetAwaiter().GetResult()
     Expect.isFalse pending.IsCompleted "The test lock keeps an admitted mutation in flight"
     let disposing = Task.Run(fun () -> (runtime :> IDisposable).Dispose())

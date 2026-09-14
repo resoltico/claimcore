@@ -40,6 +40,10 @@ module internal CliMutationCorpusSamples =
                 ))
                 SettlementConfirmation.Unconfirmed
             submissionCompleted
+                "command-execute-completed-revoked-before-execution"
+                (DefiniteExecution.ExecutionRevokedBeforeExecution CliCorpusValues.operationId)
+                SettlementConfirmation.Confirmed
+            submissionCompleted
                 "command-execute-completed-failed"
                 (DefiniteExecution.FailedBeforeCommit(
                     CliCorpusValues.operationId,
@@ -152,6 +156,10 @@ module internal CliMutationCorpusSamples =
                 ))
                 SettlementConfirmation.Unconfirmed
             resolveCompleted
+                "recovery-resolve-completed-revoked-before-execution"
+                (DefiniteExecution.ExecutionRevokedBeforeExecution CliCorpusValues.operationId)
+                SettlementConfirmation.Confirmed
+            resolveCompleted
                 "recovery-resolve-completed-failed"
                 (DefiniteExecution.FailedBeforeCommit(
                     CliCorpusValues.operationId,
@@ -212,9 +220,7 @@ module internal CliMutationCorpusSamples =
 
     let resolve = resolveCompletions @ resolveBoundaries
 
-    let dismiss =
-        let encode = CliWireCodec.dismiss "recovery.dismiss"
-
+    let private dismissTerminal encode =
         [
             sample
                 "recovery-dismiss-dismissed"
@@ -225,9 +231,24 @@ module internal CliMutationCorpusSamples =
                 "recovery.dismiss"
                 (encode (AlreadyDismissedPreparation CliCorpusValues.preparationDetails))
             sample
+                "recovery-dismiss-already-revoked"
+                "recovery.dismiss"
+                (encode (
+                    AlreadyRevoked
+                        {
+                            OperationId = CliCorpusValues.operationId
+                            RevokedAt = CliCorpusValues.timestamp
+                            Reason = "Synthetic operator revocation."
+                        }
+                ))
+            sample
                 "recovery-dismiss-not-found"
                 "recovery.dismiss"
                 (encode (DismissNotFound CliCorpusValues.operationId))
+        ]
+
+    let private dismissNonterminal encode =
+        [
             sample
                 "recovery-dismiss-refused-with-details"
                 "recovery.dismiss"
@@ -260,5 +281,9 @@ module internal CliMutationCorpusSamples =
                     )
                 ))
         ]
+
+    let dismiss =
+        let encode = CliWireCodec.dismiss "recovery.dismiss"
+        dismissTerminal encode @ dismissNonterminal encode
 
     let all = submission @ resolve @ dismiss

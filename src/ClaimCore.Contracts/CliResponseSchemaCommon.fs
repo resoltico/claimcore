@@ -46,6 +46,9 @@ module internal CliResponseSchemaCommon =
                         WireSchema.property "rejection" CoreValueSchemas.rejection
                     ]
                 WireSchema.kind
+                    "revokedBeforeExecution"
+                    [ WireSchema.property "operationId" WireSchema.uuid ]
+                WireSchema.kind
                     "failedBeforeCommit"
                     [
                         WireSchema.property "operationId" WireSchema.uuid

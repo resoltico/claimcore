@@ -27,7 +27,10 @@ let private reopenPersistenceTest =
             |> accepted
             |> Option.map Claim.view
 
-        let expected = Claim.decide (clock.Today()) request None |> accepted |> Claim.view
+        let expected =
+            Claim.decide (clock.Capture().EffectiveBusinessDate) request None
+            |> accepted
+            |> Claim.view
 
         Expect.isTrue
             (snapshot = Some expected)

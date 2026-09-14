@@ -43,12 +43,12 @@ module internal CliEndpointCatalog =
             }
             {
                 Identifier = "recovery.list"
-                Input = cursor
+                Input = EndpointInputs.recoveryList semantic.MaximumPageSize
                 Cancellable = true
             }
             {
                 Identifier = "recovery.inspect"
-                Input = EndpointInputs.operation
+                Input = EndpointInputs.recoveryInspect semantic.MaximumPageSize
                 Cancellable = true
             }
         ]

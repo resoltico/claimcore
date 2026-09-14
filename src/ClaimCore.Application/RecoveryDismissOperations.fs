@@ -14,6 +14,43 @@ module internal RecoveryDismissOperations =
             Action = RecommendedAction.StopAndInvestigate
         }
 
+    let private dismissalOutcome (operationId: Guid) (requestSha256: string) =
+        function
+        | Ok(RecoveryDismissal.Dismissed updated) ->
+            TypedProjection.details updated
+            |> Result.map RecoveryDismissOutcome.DismissedPreparation
+            |> Result.defaultWith RecoveryDismissOutcome.DismissFailed
+        | Ok(RecoveryDismissal.AlreadyDismissed updated) ->
+            TypedProjection.details updated
+            |> Result.map RecoveryDismissOutcome.AlreadyDismissedPreparation
+            |> Result.defaultWith RecoveryDismissOutcome.DismissFailed
+        | Ok(RecoveryDismissal.ObservedAccepted _) ->
+            RecoveryDismissOutcome.DismissRefused(None, RecoverySupport.accepted)
+        | Ok(RecoveryDismissal.RevokedTombstone value) ->
+            RecoveryDismissOutcome.AlreadyRevoked
+                {
+                    OperationId = value.OperationId
+                    RevokedAt = value.RevokedAt
+                    Reason = value.Reason
+                }
+        | Ok(RecoveryDismissal.SubmissionAlreadyStarted updated) ->
+            TypedProjection.details updated
+            |> Result.map (fun value ->
+                RecoveryDismissOutcome.DismissRefused(Some value, RecoverySupport.started))
+            |> Result.defaultWith RecoveryDismissOutcome.DismissFailed
+        | Error RecoveryStoreFailure.TechnicalMutationUnknown ->
+            RecoveryDismissOutcome.DismissStateUnknown(
+                operationId,
+                requestSha256,
+                TypedProjection.recoveryFault RecoveryStoreFailure.TechnicalMutationUnknown
+            )
+        | Error RecoveryStoreFailure.CancelledBeforeCommit ->
+            RecoveryDismissOutcome.DismissCancelledBeforeAdmission operationId
+        | Error RecoveryStoreFailure.IdempotencyConflict ->
+            RecoveryDismissOutcome.DismissRefused(None, RecoverySupport.conflict)
+        | Error failure ->
+            RecoveryDismissOutcome.DismissFailed(TypedProjection.recoveryFault failure)
+
     let private afterObservation
         (recovery: IRecoveryStore)
         (operationId: Guid)
@@ -24,39 +61,8 @@ module internal RecoveryDismissOperations =
             Task.FromResult(RecoveryDismissOutcome.DismissCancelledBeforeAdmission operationId)
         else
             task {
-                match! recovery.Dismiss(operationId, cancellationToken) with
-                | Ok(RecoveryDismissal.Dismissed updated) ->
-                    return
-                        TypedProjection.details updated
-                        |> Result.map RecoveryDismissOutcome.DismissedPreparation
-                        |> Result.defaultWith RecoveryDismissOutcome.DismissFailed
-                | Ok(RecoveryDismissal.AlreadyDismissed updated) ->
-                    return
-                        TypedProjection.details updated
-                        |> Result.map RecoveryDismissOutcome.AlreadyDismissedPreparation
-                        |> Result.defaultWith RecoveryDismissOutcome.DismissFailed
-                | Ok(RecoveryDismissal.SubmissionAlreadyStarted updated) ->
-                    return
-                        TypedProjection.details updated
-                        |> Result.map (fun value ->
-                            RecoveryDismissOutcome.DismissRefused(
-                                Some value,
-                                RecoverySupport.started
-                            ))
-                        |> Result.defaultWith RecoveryDismissOutcome.DismissFailed
-                | Error RecoveryStoreFailure.TechnicalMutationUnknown ->
-                    return
-                        RecoveryDismissOutcome.DismissStateUnknown(
-                            operationId,
-                            requestSha256,
-                            TypedProjection.recoveryFault
-                                RecoveryStoreFailure.TechnicalMutationUnknown
-                        )
-                | Error RecoveryStoreFailure.CancelledBeforeCommit ->
-                    return RecoveryDismissOutcome.DismissCancelledBeforeAdmission operationId
-                | Error failure ->
-                    return
-                        RecoveryDismissOutcome.DismissFailed(TypedProjection.recoveryFault failure)
+                let! result = recovery.Dismiss(operationId, requestSha256, cancellationToken)
+                return dismissalOutcome operationId requestSha256 result
             }
 
     let private dismissRetained
@@ -120,7 +126,9 @@ module internal RecoveryDismissOperations =
                 | Ok None -> return RecoveryDismissOutcome.DismissNotFound operationId
                 | Ok(Some _) when cancellationToken.IsCancellationRequested ->
                     return RecoveryDismissOutcome.DismissCancelledBeforeAdmission operationId
-                | Ok(Some retained) ->
+                | Ok(Some(RecoveryStoredOperation.RevokedTombstone _)) ->
+                    return! afterObservation recovery operationId requestSha256 cancellationToken
+                | Ok(Some(RecoveryStoredOperation.Retained(retained, _))) ->
                     return!
                         dismissRetained
                             store

@@ -7,6 +7,7 @@ open System.Text
 open System.Threading
 open System.Threading.Tasks
 open Expecto
+open ClaimCore.Application
 open ClaimCore.Domain
 open ClaimCore.Web
 
@@ -20,12 +21,15 @@ let private expectError result message =
 let private validDraft =
     """{"operationId":"40000000-0000-4000-8000-000000000001","caseReference":"WEB-V2-001","expectedRevision":"0","command":{"kind":"OPEN","values":{"incidentDate":"2026-09-01","incidentNotificationDate":"2026-09-02","incidentCountry":"Latvia","claimantName":"Synthetic claimant","insurerName":"Synthetic insurer","claimedAmount":"12.34","claimedCurrency":"EUR"}}}"""
 
-let private draftTests () =
+let private flatDraftTests () =
     match HttpInput.draft (bytes validDraft) with
     | Error message -> failtestf "Expected v2 draft acceptance: %s" message
     | Ok draft ->
-        Expect.equal draft.Kind CommandKind.Open "The typed command token is retained"
-        Expect.equal draft.Values.Length 7 "The semantic OPEN input set is retained"
+        match draft.Command with
+        | DraftCommand.Flat(CommandKind.Open, values) ->
+            Expect.equal values.Length 7 "The semantic OPEN input set is retained"
+        | _ -> failtest "The typed command token is retained"
+
         Expect.equal draft.ExpectedVersion 0L "Revision remains canonical text at the wire"
 
     let revision value =
@@ -51,6 +55,38 @@ let private draftTests () =
         """{"operationId":"40000000-0000-4000-8000-000000000001","caseReference":"WEB-V2-001","expectedRevision":"0","command":{"kind":"CLOSE","values":{}},"caseReference":"duplicate"}"""
     ]
     |> List.iter (fun value -> expectError (HttpInput.draft (bytes value)) "Invalid v2 draft")
+
+let private correctionDraftTests () =
+    let correction =
+        """{"operationId":"40000000-0000-4000-8000-000000000001","caseReference":"WEB-V2-001","expectedRevision":"2","command":{"kind":"CORRECT_CASE","groups":{"registration":{"mode":"KEEP"},"decision":{"mode":"REPLACE","values":{"paymentDecisionDate":"2026-09-03","payableAmount":"12.34","payableCurrency":"EUR"}},"payment":{"mode":"CLEAR"}}}}"""
+
+    match HttpInput.draft (bytes correction) with
+    | Ok {
+             Command = DraftCommand.Correction(keep, replace, clear)
+         } ->
+        Expect.equal keep CorrectionDraftAction.Keep "Correction keeps an explicit group"
+
+        match replace with
+        | CorrectionDraftAction.Replace values ->
+            Expect.equal values.Length 3 "Correction replacement keeps its semantic input tuple"
+        | _ -> failtest "Correction replacement remains explicit"
+
+        Expect.equal clear CorrectionDraftAction.Clear "Correction clearing remains explicit"
+    | Ok _ -> failtest "Correction groups remain a typed draft variant"
+    | Error message -> failtestf "Expected correction draft acceptance: %s" message
+
+    let unknownMode =
+        correction.Replace("\"KEEP\"", "\"UNKNOWN\"", StringComparison.Ordinal)
+
+    let forbiddenClear =
+        correction.Replace("\"KEEP\"", "\"CLEAR\"", StringComparison.Ordinal)
+
+    expectError (HttpInput.draft (bytes unknownMode)) "Correction mode must belong to its group"
+    expectError (HttpInput.draft (bytes forbiddenClear)) "Correction groups have closed action sets"
+
+let private draftTests () =
+    flatDraftTests ()
+    correctionDraftTests ()
 
 let private endpointInputTests () =
     match HttpInput.page 50 (bytes """{"limit":50}""") with

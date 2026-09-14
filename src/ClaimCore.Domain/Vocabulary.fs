@@ -6,6 +6,7 @@ module CommandKinds =
         [
             CommandKind.Open
             CommandKind.AmendRegistration
+            CommandKind.CorrectCase
             CommandKind.Decide
             CommandKind.WithdrawDecision
             CommandKind.RecordPayment
@@ -18,6 +19,7 @@ module CommandKinds =
         match kind with
         | CommandKind.Open -> "OPEN"
         | CommandKind.AmendRegistration -> "AMEND_REGISTRATION"
+        | CommandKind.CorrectCase -> "CORRECT_CASE"
         | CommandKind.Decide -> "DECIDE"
         | CommandKind.WithdrawDecision -> "WITHDRAW_DECISION"
         | CommandKind.RecordPayment -> "RECORD_PAYMENT"
@@ -30,6 +32,7 @@ module Commands =
         match command with
         | Command.Open _ -> CommandKind.Open
         | Command.AmendRegistration _ -> CommandKind.AmendRegistration
+        | Command.CorrectCase _ -> CommandKind.CorrectCase
         | Command.Decide _ -> CommandKind.Decide
         | Command.WithdrawDecision -> CommandKind.WithdrawDecision
         | Command.RecordPayment _ -> CommandKind.RecordPayment

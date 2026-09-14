@@ -30,8 +30,9 @@ const replaceText = (value: unknown, expected: string, replacement: string): unk
 
 const loneSurrogates = ["\ud800", "\udfff"] as const;
 
-const validHostFailure = (status: number, value: unknown): boolean =>
-  webV2HostFailureStatuses.some((candidate) => candidate === status) && isHostFailure(value);
+const validHostFailure = async (status: number, value: unknown): Promise<boolean> =>
+  webV2HostFailureStatuses.some((candidate) => candidate === status) &&
+  (await isHostFailure("session", value));
 
 const compiledCliValidators = cliValidators();
 const emittedHostCodes = [
@@ -124,7 +125,7 @@ const expectCliRevisionBounds = (): void => {
   }
 };
 
-const expectWebCases = (): void => {
+const expectWebCases = async (): Promise<void> => {
   const cases = webCases();
   expect(crossCount(cases)).toBe(endpointInventory.length * (endpointInventory.length - 1));
   expect(cases.filter((value) => value.id.startsWith("pattern-"))).toHaveLength(8);
@@ -137,19 +138,19 @@ const expectWebCases = (): void => {
   for (const item of cases) {
     const actual =
       item.endpoint === null
-        ? validHostFailure(item.status, item.value)
-        : isWebV2Response(requiredWebEndpoint(item.endpoint), item.value);
+        ? await validHostFailure(item.status, item.value)
+        : await isWebV2Response(requiredWebEndpoint(item.endpoint), item.value);
     expect(actual, item.id).toBe(item.valid);
   }
 };
 
-const expectWebLoneSurrogates = (): void => {
+const expectWebLoneSurrogates = async (): Promise<void> => {
   const source = webCases().find((value) => value.id === "valid-case-get-found");
   if (source === undefined) throw new Error("Web scalar source is required.");
   for (const value of loneSurrogates) {
     const malformed = replaceText(source.value, "SYNTHETIC-001", value);
     expect(
-      isWebV2Response("case.get", malformed),
+      await isWebV2Response("case.get", malformed),
       `Web lone surrogate ${value.charCodeAt(0)}`,
     ).toBe(false);
   }
@@ -163,8 +164,8 @@ describe("generated contract corpora", () => {
     expectCliRevisionBounds();
   });
 
-  it("accepts generated Web host values and rejects every malformed or cross-endpoint value", () => {
-    expectWebCases();
-    expectWebLoneSurrogates();
+  it("accepts generated Web host values and rejects every malformed or cross-endpoint value", async () => {
+    await expectWebCases();
+    await expectWebLoneSurrogates();
   });
 });

@@ -14,23 +14,7 @@ let private openRuntime () =
     |> Result.defaultWith (fun _ -> failtest "Synthetic recovery runtime must open.")
 
 let private prepare (core: IClaimsCore) operationId =
-    let command =
-        {
-            OperationId = operationId
-            CaseReference = "STATE-" + operationId.ToString("N")
-            ExpectedVersion = 0L
-            Kind = CommandKind.Open
-            Values =
-                [
-                    "incidentDate", registration.IncidentDate
-                    "incidentNotificationDate", registration.IncidentNotificationDate
-                    "incidentCountry", registration.IncidentCountry
-                    "claimantName", registration.ClaimantName
-                    "insurerName", registration.InsurerName
-                    "claimedAmount", registration.ClaimedAmount
-                    "claimedCurrency", registration.ClaimedCurrency
-                ]
-        }
+    let command = openRequest operationId ("STATE-" + operationId.ToString("N"))
 
     match core.Prepare(command, CancellationToken.None) |> await with
     | PrepareOutcome.Prepared(details, _) ->
@@ -44,7 +28,15 @@ let private missingState =
         let operationId = Guid.NewGuid()
         let digest = String.replicate 64 "a"
 
-        match runtime.Core.Recovery.Inspect(operationId, CancellationToken.None) |> await with
+        match
+            runtime.Core.Recovery.Inspect(
+                operationId,
+                None,
+                recoveryPageLimit,
+                CancellationToken.None
+            )
+            |> await
+        with
         | RecoveryQueryOutcome.RecoverySucceeded(Lookup.NotFound actual) ->
             Expect.equal actual operationId "Missing inspect identity"
         | _ -> failtest "Missing inspect must be explicit."
@@ -140,7 +132,7 @@ let private dismissedState =
             |> await
         with
         | ResolveOutcome.RefusedBeforeAttempt(_, refusal) ->
-            Expect.equal refusal.Code RecoveryRejectionCode.PreparationDismissed "No attempt"
+            Expect.equal refusal.Code RecoveryRejectionCode.OperationRevoked "No attempt"
         | _ -> failtest "Dismissed preparation cannot resolve."
 
         match

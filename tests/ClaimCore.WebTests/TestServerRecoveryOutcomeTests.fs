@@ -8,7 +8,8 @@ open ClaimCore.WebTests.RouteFixtures
 open ClaimCore.WebTests.TestServerFixture
 open ClaimCore.WebTests.TestServerOutcomeValues
 
-let private operationInput = $"""{{"operationId":"{operationId:D}"}}"""
+let private operationInput =
+    $"""{{"operationId":"{operationId:D}","attemptLimit":10}}"""
 
 let private resolutionInput =
     $"""{{"operationId":"{operationId:D}","requestSha256":"{digest}"}}"""
@@ -21,8 +22,14 @@ let private listOutcomes (host: Host) token =
         [
             RecoveryQueryOutcome.RecoverySucceeded
                 {
-                    Items = [ preparationSummary ]
+                    View = RecoveryListView.Pending
+                    Items = [ RetainedRecoveryItem preparationSummary ]
                     NextCursor = None
+                    PendingPreparationCount = 1
+                    PendingCanonicalRequestBytes = 128L
+                    MaximumPendingPreparations = 1024
+                    MaximumPendingCanonicalRequestBytes = 64L * 1024L * 1024L
+                    NearCapacity = false
                 },
             "SUCCEEDED"
             RecoveryQueryOutcome.RecoveryRejected recoveryRejection, "REJECTED"
@@ -44,7 +51,9 @@ let private listOutcomes (host: Host) token =
 let private inspectionOutcomes (host: Host) token =
     for value, expected, lookup in
         [
-            RecoveryQueryOutcome.RecoverySucceeded(Lookup.Found recoveryDetails),
+            RecoveryQueryOutcome.RecoverySucceeded(
+                Lookup.Found(RecoveryInspection.RetainedInspection recoveryDetails)
+            ),
             "SUCCEEDED",
             Some "FOUND"
             RecoveryQueryOutcome.RecoverySucceeded(Lookup.NotFound operationId),

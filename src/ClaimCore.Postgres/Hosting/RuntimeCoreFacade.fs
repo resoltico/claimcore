@@ -5,11 +5,11 @@ open ClaimCore.Application
 module internal RuntimeCoreFacade =
     let private recovery (admission: RuntimeAdmission) (inner: IRecoveryWorkflow) =
         { new IRecoveryWorkflow with
-            member _.List(after, limit, cancellationToken) =
-                admission.Run(fun () -> inner.List(after, limit, cancellationToken))
+            member _.List(view, after, limit, cancellationToken) =
+                admission.Run(fun () -> inner.List(view, after, limit, cancellationToken))
 
-            member _.Inspect(operationId, cancellationToken) =
-                admission.Run(fun () -> inner.Inspect(operationId, cancellationToken))
+            member _.Inspect(operationId, after, limit, cancellationToken) =
+                admission.Run(fun () -> inner.Inspect(operationId, after, limit, cancellationToken))
 
             member _.Resolve(operationId, digest, cancellationToken) =
                 admission.Run(fun () -> inner.Resolve(operationId, digest, cancellationToken))

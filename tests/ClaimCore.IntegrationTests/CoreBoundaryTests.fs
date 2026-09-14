@@ -56,22 +56,7 @@ let private runtimeTests =
                 use lifetime = runtime
 
                 let request =
-                    {
-                        OperationId = Guid.NewGuid()
-                        CaseReference = "RUNTIME-" + Guid.NewGuid().ToString("N")
-                        ExpectedVersion = 0L
-                        Kind = CommandKind.Open
-                        Values =
-                            [
-                                "incidentDate", registration.IncidentDate
-                                "incidentNotificationDate", registration.IncidentNotificationDate
-                                "incidentCountry", registration.IncidentCountry
-                                "claimantName", registration.ClaimantName
-                                "insurerName", registration.InsurerName
-                                "claimedAmount", registration.ClaimedAmount
-                                "claimedCurrency", registration.ClaimedCurrency
-                            ]
-                    }
+                    openRequest (Guid.NewGuid()) ("RUNTIME-" + Guid.NewGuid().ToString("N"))
 
                 let response = lifetime.Core.Execute(request, CancellationToken.None) |> await
 
@@ -172,7 +157,10 @@ let private disposedRuntimeRefusesRetainedFacades () =
         "Queries refuse a disposed runtime"
 
     Expect.throwsT<ObjectDisposedException>
-        (fun () -> recovery.List(None, 1, CancellationToken.None) |> await |> ignore)
+        (fun () ->
+            recovery.List(RecoveryListView.Pending, None, 1, CancellationToken.None)
+            |> await
+            |> ignore)
         "Retained recovery facade also refuses admission"
 
 let private cancelledOpeningReturnsTypedFault () =

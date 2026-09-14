@@ -296,10 +296,10 @@
         "cancellation",
         "recovery"
       ],
-      "subject": "Settlement cancellation leaves an admitted attempt unsettled but preserves any definite accepted business receipt as Unconfirmed.",
+      "subject": "Cancellation before a combined execution-and-settlement commit is definite, leaves no accepted business write, and preserves the admitted attempt for honest follow-up.",
       "tests": [
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL recovery cancellation.[CC-REC-001] cancelled settlement leaves admitted attempt unsettled",
-        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] settlement cancellation preserves accepted execution"
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] cancelled combined execution is definite before commit"
       ]
     },
     {
@@ -312,6 +312,28 @@
       "tests": [
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL recovery cancellation.[CC-REC-001] caller cancellation after commit start cannot relabel outcome",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL recovery cancellation.[CC-REC-001] cancellation immediately before technical commit rolls back insertion"
+      ]
+    },
+    {
+      "id": "assurance-core:atomic-correction",
+      "dimensions": [
+        "core",
+        "protocol"
+      ],
+      "subject": "CORRECT_CASE uses three explicit groups to atomically revise related accepted facts without adding a business field, silently reusing a paid value, changing status, or altering historical canonical vectors.",
+      "tests": [
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Domain semantic descriptors.ordered command inputs and prefill metadata.CORRECT_CASE describes required tagged groups and replacement fields",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.atomic case correction.closed correction.all-keep correction is refused without changing the accepted case",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.atomic case correction.closed correction.closed cases may correct facts while retaining CLOSED status",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.atomic case correction.closed correction.equivalent scalar spelling cannot create a correction-only revision",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.atomic case correction.correction validation.correction cannot add a decision to an undecided case",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.atomic case correction.correction validation.newly asserted correction dates cannot be future dates",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.atomic case correction.paid correction.clearing a paid decision requires clearing its payment record",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.atomic case correction.paid correction.paid corrections replace related facts in one complete revision",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.atomic case correction.paid correction.paid decision replacement requires explicit payment action",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.draft validation.grouped correction requires complete replacements and one actual action",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.form binding.grouped correction binding retains each replacement scalar exactly",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.stable identity and historical encoding.CORRECT_CASE uses explicit complete groups without changing historical format-2 vectors"
       ]
     },
     {
@@ -458,9 +480,13 @@
       "dimensions": [
         "webGui"
       ],
-      "subject": "The browser derives command inputs and prefill from admitted semantic descriptors and builds an exact draft without a duplicate command registry.",
+      "subject": "The browser derives flat and tagged correction inputs from admitted semantic descriptors, preserves every replacement value, and builds an exact request without a duplicate command registry.",
       "tests": [
-        "frontend:vitest::metadata-driven drafts > derives command fields, prefill and a canonical draft without a browser command registry"
+        "frontend:vitest::encodes every correction action explicitly and refuses an invalid registration clear",
+        "frontend:vitest::metadata-driven drafts > derives command fields, prefill and a canonical draft without a browser command registry",
+        "frontend:vitest::rejects impossible local draft shapes and keeps absent current correction values blank",
+        "frontend:vitest::retains authored replacement values for every grouped correction field",
+        "frontend:vitest::sends an explicit grouped correction and preserves all non-replaced groups"
       ]
     },
     {
@@ -478,9 +504,16 @@
       "dimensions": [
         "webGui"
       ],
-      "subject": "An existing case reference remains immutable, while changing only an OPEN target rotates a retained operation ID before reviewed commit.",
+      "subject": "An existing case reference remains immutable; every material post-exposure edit forks a new operation ID, while unchanged retry preserves the frozen request even if current context changes.",
       "tests": [
+        "frontend:vitest::allocates a new ID when editing a definitely refused prepared request",
+        "frontend:vitest::forks a new ID when an exposed request is edited after definite submit refusal",
+        "frontend:vitest::forks on a changed reference or command, but not on an unchanged field",
+        "frontend:vitest::freezes grouped correction identity while a later correction edit forks a new operation",
         "frontend:vitest::keeps existing references immutable and delegates a reviewed commit",
+        "frontend:vitest::retains the frozen exact request on unchanged retry after unknown preparation",
+        "frontend:vitest::retries an unchanged definite refusal with its original exact identity",
+        "frontend:vitest::retries the frozen request after delivery loss despite a changed current revision",
         "frontend:vitest::rotates the retained operation ID when only an OPEN reference is changed"
       ]
     },
@@ -515,8 +548,9 @@
         "recovery",
         "webGui"
       ],
-      "subject": "The browser confirms an exact envelope export and previews/retains envelope and canonical-record imports without submitting them.",
+      "subject": "The browser exports only an inspected preparation with an exact digest and previews or retains envelope and canonical-record imports without submitting them.",
       "tests": [
+        "frontend:vitest::refuses an export action when inspected recovery evidence has no exact digest",
         "frontend:vitest::v2 Recovery import and export > exports the validated filename then retains previewed envelope material without submission",
         "frontend:vitest::v2 Recovery import and export > retains canonical-record previews and reports rejected recovery pages"
       ]
@@ -527,10 +561,14 @@
         "recovery",
         "webGui"
       ],
-      "subject": "The browser pages bounded recovery summaries and inspects retained detail before enabling server-advertised actions.",
+      "subject": "The browser explicitly chooses pending or terminal recovery views, renders authority and capacity truthfully, follows only an inspected operation's bounded attempt cursor, and enables only server-advertised actions.",
       "tests": [
         "frontend:vitest::renders observed recovery details and leaves only permitted server actions enabled",
-        "frontend:vitest::renders recovery list state, invokes inspection, and pages through a cursor"
+        "frontend:vitest::renders recovery list state, invokes inspection, and pages through a cursor",
+        "frontend:vitest::renders terminal revocation authority and exposes no mutation action",
+        "frontend:vitest::requests the next server attempt page only from an inspected retained item",
+        "frontend:vitest::switches recovery views explicitly and leaves unavailable capacity unrendered",
+        "frontend:vitest::uses the supplied attempt cursor for the next inspected evidence page"
       ]
     },
     {
@@ -559,8 +597,9 @@
         "recovery",
         "webGui"
       ],
-      "subject": "A lost submit response preserves the prepared identity and directs the operator to exact Recovery instead of claiming a failed or accepted mutation.",
+      "subject": "A lost submit response preserves the prepared identity and directs the operator to exact Recovery instead of claiming a failed or accepted mutation; late responses from inactive operations cannot overwrite newer state.",
       "tests": [
+        "frontend:vitest::ignores late prepare and submit responses from inactive attempts",
         "frontend:vitest::operation editor transport outcomes > preserves only recovery direction after an uncertain submit delivery"
       ]
     },
@@ -580,9 +619,9 @@
       "dimensions": [
         "migration"
       ],
-      "subject": "The current manifest assertion pins the exact applied 001–005 migration names and SHA-256 digests, so an accidental source edit changes the expected identity.",
+      "subject": "The current manifest assertion pins the exact applied 001–006 migration names and SHA-256 digests, so an accidental source edit changes the expected identity.",
       "tests": [
-        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 005.manifest validation.[CC-DB-001] applied migration identities remain frozen"
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 006.manifest validation.[CC-DB-001] applied migration identities remain frozen"
       ]
     },
     {
@@ -592,51 +631,51 @@
       ],
       "subject": "A failed ordered migration rolls back attempted DDL and the migration journal row atomically.",
       "tests": [
-        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 005.atomicity.[CC-DB-001] failed migration rolls back its objects and journal row"
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 006.atomicity.[CC-DB-001] failed migration rolls back its objects and journal row"
       ]
     },
     {
-      "id": "assurance-migration:upgrade-002-to-005",
+      "id": "assurance-migration:upgrade-002-to-006",
       "dimensions": [
         "migration",
         "recovery"
       ],
-      "subject": "A seeded migration-002 installation upgrades through 005 with exact old canonical bytes and a new pre-003 uncertainty marker, without inventing attempts.",
+      "subject": "A seeded migration-002 installation upgrades through 006 with exact old canonical bytes, legacy uncertainty, durable authority, and installation business-time state preserved without inventing attempts.",
       "tests": [
-        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.migration 005 recovery evidence.[CC-DB-001] migration 002 state upgrades to 005 with exact legacy evidence"
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.migration 006 recovery and authority evidence.[CC-DB-001] migration 002 state upgrades to 006 with exact legacy evidence"
       ]
     },
     {
-      "id": "assurance-migration:upgrade-003-to-005",
+      "id": "assurance-migration:upgrade-003-to-006",
       "dimensions": [
         "migration",
         "recovery"
       ],
-      "subject": "A seeded migration-003 installation upgrades through 005 with its legacy uncertainty marker and request bytes unchanged.",
+      "subject": "A seeded migration-003 installation upgrades through 006 with its legacy uncertainty marker, retained request bytes, and new lifecycle authority structures unchanged or correctly added.",
       "tests": [
-        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.migration 005 recovery evidence.[CC-DB-001] migration 003 state upgrades to 005 with exact legacy evidence"
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.migration 006 recovery and authority evidence.[CC-DB-001] migration 003 state upgrades to 006 with exact legacy evidence"
       ]
     },
     {
-      "id": "assurance-migration:upgrade-004-to-005",
+      "id": "assurance-migration:upgrade-004-to-006",
       "dimensions": [
         "migration",
         "recovery"
       ],
-      "subject": "A seeded migration-004 installation upgrades through the SELECT-only 005 grant while retaining old attempt and settlement rows byte-for-byte.",
+      "subject": "A seeded migration-004 installation upgrades through 006 while retaining old attempts and settlements byte-for-byte and adding only the forward lifecycle authority and business-time state.",
       "tests": [
-        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.migration 005 recovery evidence.[CC-DB-001] migration 004 state upgrades to 005 without rewriting attempts"
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.migration 006 recovery and authority evidence.[CC-DB-001] migration 004 state upgrades to 006 without rewriting attempts"
       ]
     },
     {
-      "id": "assurance-migration:upgrade-through-005",
+      "id": "assurance-migration:upgrade-through-006",
       "dimensions": [
         "migration",
         "recovery"
       ],
-      "subject": "An installation beginning at migration 001 upgrades through 005 without changing an accepted case or historical receipt and admits the current thirteen-field read.",
+      "subject": "An installation beginning at migration 001 upgrades through 006 without changing an accepted case, historical receipt, or canonical request bytes and admits the current thirteen-field read.",
       "tests": [
-        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 005.retained data.[CC-DB-001] upgrade preserves cases and history and installs recovery storage"
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 006.retained data.[CC-DB-001] upgrade preserves cases and history and installs recovery storage"
       ]
     },
     {
@@ -669,7 +708,8 @@
       ],
       "subject": "A same-operation, same-digest retained row with different canonical bytes is refused before claim transaction or recovery attempt admission.",
       "tests": [
-        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.exact retained identity.[CC-REC-001] Execute rejects a same-ID same-digest record with different canonical bytes"
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.exact retained identity.[CC-REC-001] Execute rejects a same-ID same-digest record with different canonical bytes",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.stable identity and historical encoding.CORRECT_CASE uses explicit complete groups without changing historical format-2 vectors"
       ]
     },
     {
@@ -677,9 +717,11 @@
       "dimensions": [
         "recovery"
       ],
-      "subject": "One retained row fills the configured capacity, a second distinct operation is refused without erasing it, and an exact first-operation replay remains available.",
+      "subject": "Only pending work consumes configured capacity: a second pending operation is refused without erasing exact replay, while terminal history and attempt exhaustion preserve inspection, export, and durable closure.",
       "tests": [
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL preparation boundary.capacity refusal preserves retained material and permits exact replay"
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL operation authority lifecycle.[CC-REC-001] attempt 65 is refused while bounded evidence pages remain available",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL preparation boundary.capacity refusal preserves retained material and permits exact replay",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL terminal capacity.[CC-REC-001] 1,024 recent accepted operations leave capacity for a distinct fresh preparation"
       ]
     },
     {
@@ -699,6 +741,7 @@
       ],
       "subject": "Detailed PostgreSQL inspection projects actual append-only attempt IDs, start times, and definite settlement outcomes rather than synthetic empty arrays.",
       "tests": [
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL operation authority lifecycle.[CC-REC-001] attempt 65 is refused while bounded evidence pages remain available",
         "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.PostgreSQL recovery evidence.[CC-REC-001] inspect preserves an earlier unsettled attempt",
         "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.PostgreSQL recovery evidence.[CC-REC-001] inspect projects the accepted attempt and settlement"
       ]
@@ -738,6 +781,19 @@
       ]
     },
     {
+      "id": "assurance-recovery:operation-authority",
+      "dimensions": [
+        "core",
+        "recovery"
+      ],
+      "subject": "Operation authority is independent of retained preparation bytes: exact durable revocation closes future execution before and after pruning, preserves tombstone-only inspection, and scopes every list or attempt cursor to its authority context.",
+      "tests": [
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL operation authority lifecycle.[CC-REC-001] a started worker cannot execute after revocation or later preparation pruning",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.recovery authority closure.[CC-REC-001] durable revocation closes exact identity before and after preparation pruning",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.recovery authority closure.[CC-REC-001] recovery list and attempt cursors reject a different view or operation"
+      ]
+    },
+    {
       "id": "assurance-recovery:provenance-first-writer",
       "dimensions": [
         "recovery"
@@ -755,6 +811,17 @@
       "subject": "A concurrent resolve and dismiss of one retained preparation have one lifecycle winner without dual mutation.",
       "tests": [
         "dotnet:ClaimCore.ConcurrencyQualificationTests::ClaimCore concurrency qualification.PostgreSQL recovery races.[CC-REC-001] simultaneous resolve and dismiss have one lifecycle winner"
+      ]
+    },
+    {
+      "id": "assurance-recovery:settlement-co-commit",
+      "dimensions": [
+        "recovery"
+      ],
+      "subject": "A combined business-write and settlement commit never fabricates an accepted receipt when confirmation is lost or execution throws after admission; both outcomes remain explicitly unresolved.",
+      "tests": [
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.recovery uncertainty boundaries.[CC-REC-001] combined commit uncertainty never fabricates accepted settlement",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.recovery uncertainty boundaries.[CC-REC-001] thrown combined commit is unresolved"
       ]
     },
     {
@@ -779,17 +846,6 @@
         "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.PostgreSQL recovery state table.[CC-REC-001] accepted receipt permits replay and export but never dismissal",
         "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.PostgreSQL recovery state table.[CC-REC-001] dismissed preparation is idempotent and export-only",
         "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.PostgreSQL recovery state table.[CC-REC-001] missing preparation has explicit read and action outcomes"
-      ]
-    },
-    {
-      "id": "assurance-recovery:unconfirmed-settlement",
-      "dimensions": [
-        "recovery"
-      ],
-      "subject": "A definite accepted receipt survives both a failed and thrown technical settlement as Unconfirmed rather than becoming commit-unknown.",
-      "tests": [
-        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.recovery uncertainty boundaries.[CC-REC-001] settlement error preserves definite acceptance",
-        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.recovery uncertainty boundaries.[CC-REC-001] thrown settlement preserves definite acceptance"
       ]
     },
     {
@@ -1212,6 +1268,7 @@
       "id": "endpoint-cli:recovery.dismiss",
       "outcomeTags": [
         "alreadyDismissed",
+        "alreadyRevoked",
         "cancelledBeforeAdmission",
         "dismissStateUnknown",
         "dismissed",
@@ -1275,6 +1332,7 @@
         "cancelledBeforeAdmission",
         "existing",
         "failed",
+        "observedAccepted",
         "rejected",
         "retainStateUnknown",
         "retained"
@@ -1315,6 +1373,7 @@
         "cancelledBeforeAdmission",
         "existing",
         "failed",
+        "observedAccepted",
         "rejected",
         "retainStateUnknown",
         "retained"
@@ -1539,6 +1598,7 @@
       "id": "endpoint-web:recovery.dismiss",
       "outcomeTags": [
         "ALREADY_DISMISSED",
+        "ALREADY_REVOKED",
         "CANCELLED_BEFORE_ADMISSION",
         "DISMISSED",
         "DISMISS_STATE_UNKNOWN",
@@ -1605,6 +1665,7 @@
         "CANCELLED_BEFORE_ADMISSION",
         "EXISTING",
         "FAILED",
+        "OBSERVED_ACCEPTED",
         "REJECTED",
         "RETAINED",
         "RETAIN_STATE_UNKNOWN"
@@ -1649,6 +1710,7 @@
         "CANCELLED_BEFORE_ADMISSION",
         "EXISTING",
         "FAILED",
+        "OBSERVED_ACCEPTED",
         "REJECTED",
         "RETAINED",
         "RETAIN_STATE_UNKNOWN"
@@ -1873,11 +1935,17 @@
         "recovery"
       ],
       "subject": "Every current dotnet:ClaimCore.IntegrationTests identity is mapped to its surviving convergence assurance surface after the typed core and transport cutover.",
-      "tests": [
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL migration upgrade qualification.migration 001 through 005.atomicity.[CC-DB-001] failed migration rolls back its objects and journal row",
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL migration upgrade qualification.migration 001 through 005.manifest validation.[CC-DB-001] applied migration identities remain frozen",
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL migration upgrade qualification.migration 001 through 005.manifest validation.[CC-DB-001] migrator refuses a newer manifest entry",
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL migration upgrade qualification.migration 001 through 005.retained data.[CC-DB-001] upgrade preserves cases and history and installs recovery storage",
+"tests": [
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL accepted receipt identity.[CC-APP-002] PostgreSQL accepted history without preparation remains replayable",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL accepted receipt identity.[CC-APP-002] PostgreSQL accepted replay survives owner pruning of preparation",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL accepted receipt identity.[CC-APP-002] PostgreSQL concurrent pruned replay and conflicts keep one accepted revision",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL accepted receipt identity.[CC-APP-002] PostgreSQL rejects wrong digest before parsing accepted snapshot",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL migration upgrade qualification.migration 001 through 006.atomicity.[CC-DB-001] failed migration rolls back its objects and journal row",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL migration upgrade qualification.migration 001 through 006.manifest validation.[CC-DB-001] applied migration identities remain frozen",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL migration upgrade qualification.migration 001 through 006.manifest validation.[CC-DB-001] migrator refuses a newer manifest entry",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL migration upgrade qualification.migration 001 through 006.retained data.[CC-DB-001] upgrade preserves cases and history and installs recovery storage",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL operation authority lifecycle.[CC-REC-001] a started worker cannot execute after revocation or later preparation pruning",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL operation authority lifecycle.[CC-REC-001] attempt 65 is refused while bounded evidence pages remain available",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL preparation boundary.[CC-REC-001] concurrent same-ID retain reports one creator and one existing replay",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL preparation boundary.capacity refusal preserves retained material and permits exact replay",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL preparation boundary.installation lineage remains stable and non-empty",
@@ -1910,6 +1978,7 @@
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL schema and failure boundary.runtime privileges and formats.runtime role cannot delete cases",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL schema and failure boundary.runtime privileges and formats.runtime role cannot mutate the migration journal",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL schema and failure boundary.runtime privileges and formats.runtime role cannot rewrite audit history",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL terminal capacity.[CC-REC-001] 1,024 recent accepted operations leave capacity for a distinct fresh preparation",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL transactions.concurrency qualification.absent case concurrency.concurrent distinct opens of one absent reference accept exactly one revision",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL transactions.concurrency qualification.revision concurrency.concurrent different commands against same revision cannot lose an update",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL transactions.concurrency qualification.same operation concurrency.concurrent same-ID attempts produce one accepted change",
@@ -1941,9 +2010,9 @@
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.basic schema and PostgreSQL 18.6 baseline.field persistence and migration journal.all fields survive decision, payment and closure without currency coercion",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.basic schema and PostgreSQL 18.6 baseline.field persistence and migration journal.migration journal exactly matches the ordered embedded manifest",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.case pagination has an exact fifty-item boundary and lossless continuation",
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.migration 005 recovery evidence.[CC-DB-001] migration 002 state upgrades to 005 with exact legacy evidence",
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.migration 005 recovery evidence.[CC-DB-001] migration 003 state upgrades to 005 with exact legacy evidence",
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.migration 005 recovery evidence.[CC-DB-001] migration 004 state upgrades to 005 without rewriting attempts",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.migration 006 recovery and authority evidence.[CC-DB-001] migration 002 state upgrades to 006 with exact legacy evidence",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.migration 006 recovery and authority evidence.[CC-DB-001] migration 003 state upgrades to 006 with exact legacy evidence",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.migration 006 recovery and authority evidence.[CC-DB-001] migration 004 state upgrades to 006 without rewriting attempts",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.production core boundary.composed runtime.host exposes the same core API used by a native renderer",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.production core boundary.connection admission.an elevated session cannot impersonate the runtime role",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.production core boundary.connection admission.dangerous runtime connection switches are refused before database access",
@@ -1975,14 +2044,14 @@
         "migration"
       ],
       "subject": "Every current dotnet:ClaimCore.MigrationQualificationTests identity is mapped to its surviving convergence assurance surface after the typed core and transport cutover.",
-      "tests": [
-        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 005.atomicity.[CC-DB-001] failed migration rolls back its objects and journal row",
-        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 005.manifest validation.[CC-DB-001] applied migration identities remain frozen",
-        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 005.manifest validation.[CC-DB-001] migrator refuses a newer manifest entry",
-        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 005.retained data.[CC-DB-001] upgrade preserves cases and history and installs recovery storage",
-        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.migration 005 recovery evidence.[CC-DB-001] migration 002 state upgrades to 005 with exact legacy evidence",
-        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.migration 005 recovery evidence.[CC-DB-001] migration 003 state upgrades to 005 with exact legacy evidence",
-        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.migration 005 recovery evidence.[CC-DB-001] migration 004 state upgrades to 005 without rewriting attempts"
+"tests": [
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 006.atomicity.[CC-DB-001] failed migration rolls back its objects and journal row",
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 006.manifest validation.[CC-DB-001] applied migration identities remain frozen",
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 006.manifest validation.[CC-DB-001] migrator refuses a newer manifest entry",
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 006.retained data.[CC-DB-001] upgrade preserves cases and history and installs recovery storage",
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.migration 006 recovery and authority evidence.[CC-DB-001] migration 002 state upgrades to 006 with exact legacy evidence",
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.migration 006 recovery and authority evidence.[CC-DB-001] migration 003 state upgrades to 006 with exact legacy evidence",
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.migration 006 recovery and authority evidence.[CC-DB-001] migration 004 state upgrades to 006 without rewriting attempts"
       ]
     },
     {
@@ -2022,7 +2091,7 @@
         "recovery"
       ],
       "subject": "Every current dotnet:ClaimCore.Tests identity is mapped to its surviving convergence assurance surface after the typed core and transport cutover.",
-      "tests": [
+"tests": [
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI private-file security.[CC-CLI-002] concurrent source replacement yields one complete inode or a safe refusal",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI private-file security.[CC-CLI-002] private export is exclusive, owner-only, and removes its failed partial file",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI private-file security.[CC-CLI-002] private export rejects leaf and ancestor links without changing targets",
@@ -2057,7 +2126,8 @@
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Database admin private-file boundary.[CC-DB-002] schema-owner credential rejects unsafe mode, links, UTF-8, and size before database access",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Domain semantic descriptors.numeric and status scalar descriptors.amount and currency descriptors own the existing exact grammars",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Domain semantic descriptors.numeric and status scalar descriptors.status descriptor is the closed Domain status vocabulary",
-        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Domain semantic descriptors.ordered command inputs and prefill metadata.all eight command definitions are the sole command inventory",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Domain semantic descriptors.ordered command inputs and prefill metadata.CORRECT_CASE describes required tagged groups and replacement fields",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Domain semantic descriptors.ordered command inputs and prefill metadata.all nine command definitions are the sole command inventory",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Domain semantic descriptors.ordered command inputs and prefill metadata.case reference and derived status are never command inputs",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Domain semantic descriptors.ordered command inputs and prefill metadata.command inputs have exact ordered prefill sources",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Domain semantic descriptors.scalar metadata ownership.field definitions expose scalar rules without a duplicate kind",
@@ -2072,6 +2142,20 @@
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Hedgehog scalar boundaries.uppercase ASCII currency grammar",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Hedgehog state invariants.accepted and rejected sequences preserve revision invariants",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Hedgehog state invariants.reachable states match the independent availability matrix",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.accepted receipt first.[CC-APP-002] accepted identity conflict refuses without recovery disclosure",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.accepted receipt first.[CC-APP-002] accepted receipt wins after original commit confirmation is lost",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.accepted receipt first.[CC-APP-002] accepted replay needs no retained preparation or recovery read",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.accepted receipt first.[CC-APP-002] accepted-history read failure refuses before fresh preparation",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.accepted receipt first.[CC-APP-002] cancellation after accepted observation preserves definite receipt",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.accepted receipt first.[CC-REC-001] mismatched retained identity refuses without preparation metadata",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.atomic case correction.closed correction.all-keep correction is refused without changing the accepted case",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.atomic case correction.closed correction.closed cases may correct facts while retaining CLOSED status",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.atomic case correction.closed correction.equivalent scalar spelling cannot create a correction-only revision",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.atomic case correction.correction validation.correction cannot add a decision to an undecided case",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.atomic case correction.correction validation.newly asserted correction dates cannot be future dates",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.atomic case correction.paid correction.clearing a paid decision requires clearing its payment record",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.atomic case correction.paid correction.paid corrections replace related facts in one complete revision",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.atomic case correction.paid correction.paid decision replacement requires explicit payment action",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.compiler-enforced core boundary.ordinary caller can use IClaimsCore",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.compiler-enforced core boundary.ordinary caller cannot create the core callback",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.compiler-enforced core boundary.ordinary caller cannot forge a prepared operation",
@@ -2140,32 +2224,37 @@
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.generated semantic field contract.semantic command metadata.command descriptors are the only ordered input inventory",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.generated semantic field contract.semantic field schema.[CC-DOM-001] semantic contract renders exactly thirteen ordered field descriptors",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.generated semantic field contract.semantic field schema.semantic scalar metadata originates from Domain descriptors",
-        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.draft validation.form binding does not trim, uppercase or round business input",
-        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.draft validation.missing extra and duplicate form values are refused",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.draft validation.flat forms reject missing extra and duplicate values",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.draft validation.form binding does not trim uppercase or round business input",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.draft validation.grouped correction requires complete replacements and one actual action",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.field projection.field projection is exactly the thirteen native fields with absence preserved",
-        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.form binding.each form binds the intended command without a renderer-specific recipe",
-        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.form definitions.all eight forms cover the canonical commands, in canonical order",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.form binding.each declared form binds its closed command without a renderer recipe",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.form binding.grouped correction binding retains each replacement scalar exactly",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.form definitions.all nine forms cover the canonical commands in canonical order",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native private-file ancestor race.[CC-CLI-002] descriptor-relative create and lock remain in pinned parent after ancestor swap",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.property harness policy.failure diagnostic privacy.property failures omit generated payload and control canaries",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.property harness policy.failure diagnostic privacy.structural assertion failures omit compared claimant values",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.property harness policy.property configuration.partial and additional recheck inputs fail closed",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.property harness policy.property configuration.required and extended profiles are explicit",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.published example contract.every shipped command example decodes and completes its sequential Domain transition",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.recovery authority closure.[CC-REC-001] durable revocation closes exact identity before and after preparation pruning",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.recovery authority closure.[CC-REC-001] recovery list and attempt cursors reject a different view or operation",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.recovery uncertainty boundaries.[CC-REC-001] cancellation after admitted attempt preserves definite acceptance",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.recovery uncertainty boundaries.[CC-REC-001] cancellation before attempt admission leaves the claim untouched",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.recovery uncertainty boundaries.[CC-REC-001] combined commit uncertainty never fabricates accepted settlement",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.recovery uncertainty boundaries.[CC-REC-001] commit-unknown execution is never settled",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.recovery uncertainty boundaries.[CC-REC-001] definite pre-commit failure is settled as a failure",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.recovery uncertainty boundaries.[CC-REC-001] definite stale rejection is settled without another receipt",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.recovery uncertainty boundaries.[CC-REC-001] receipt between observation and attempt returns exact replay",
-        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.recovery uncertainty boundaries.[CC-REC-001] settlement error preserves definite acceptance",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.recovery uncertainty boundaries.[CC-REC-001] thrown combined commit is unresolved",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.recovery uncertainty boundaries.[CC-REC-001] thrown execution after admission remains unresolved",
-        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.recovery uncertainty boundaries.[CC-REC-001] thrown settlement preserves definite acceptance",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.recovery uncertainty boundaries.[CC-REC-001] unknown attempt admission never executes the claim",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.single-owner compiled release identity.compiled source identity.CLI v3 discovery renders compiled release identity",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.single-owner compiled release identity.compiled source identity.native core identity comes from the SDK attributes, matching the sole source",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.single-owner compiled release identity.identity consumers and compatibility.a non-product assembly cannot be accepted as a compatible first-party component",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.single-owner compiled release identity.identity consumers and compatibility.current test and application assemblies have matching release identity",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.single-owner compiled release identity.version ownership.only Directory.Build.props authors product version properties",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.stable identity and historical encoding.CORRECT_CASE uses explicit complete groups without changing historical format-2 vectors",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.stable identity and historical encoding.all eight command encodings and identities match fixed protocol-2 vectors",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.stable identity and historical encoding.snapshot-2 encoding stays independent of advisory rendering metadata",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.state guard and advertised actions.[CC-DOM-002] each state advertises and enforces the specified command set",
@@ -2199,13 +2288,13 @@
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] cancellation during receipt observation returns cancelled read",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] cancellation during recovery inspect hides receipt result",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] cancellation during resolve observation prevents attempt",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] cancelled combined execution is definite before commit",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] commit-start dismissal failure remains state unknown",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] commit-start import retention failure remains state unknown",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] definite attempt cancellation prevents claim execution",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] definite dismiss cancellation remains actionable",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] definite import retention cancellation does not submit",
-        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] definite retain cancellation becomes cancelled before admission",
-        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] settlement cancellation preserves accepted execution"
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] definite retain cancellation becomes cancelled before admission"
       ]
     },
     {
@@ -2305,9 +2394,10 @@
         "webGui"
       ],
       "subject": "Every current frontend:vitest identity is mapped to its surviving convergence assurance surface after the typed core and transport cutover.",
-      "tests": [
+"tests": [
         "frontend:vitest::aborts a stale page load before appending a newer cursor page",
         "frontend:vitest::accepts the matching generated definition fingerprint",
+        "frontend:vitest::allocates a new ID when editing a definitely refused prepared request",
         "frontend:vitest::associates optional field errors and supports password text input",
         "frontend:vitest::clears claimant definition state when the server rejects or mismatches assets",
         "frontend:vitest::closes recovery detail, confirm, and import dialogs without dispatching mutations",
@@ -2317,13 +2407,18 @@
         "frontend:vitest::copies safe values and provides an accessible fallback when clipboard access is unavailable",
         "frontend:vitest::discards an aborted definition response when session epoch changes",
         "frontend:vitest::discards an aborted keyed read instead of replacing its newer response",
+        "frontend:vitest::encodes every correction action explicitly and refuses an invalid registration clear",
         "frontend:vitest::fails a malformed authenticated session and leaves invalid mutation calls inert",
         "frontend:vitest::fails closed on malformed delivery and validates recovery export",
         "frontend:vitest::fails closed when the server definition is rejected or has a different Web fingerprint",
         "frontend:vitest::fails immediately when the embedding document omits the application root",
+        "frontend:vitest::forks a new ID when an exposed request is edited after definite submit refusal",
+        "frontend:vitest::forks on a changed reference or command, but not on an unchanged field",
+        "frontend:vitest::freezes grouped correction identity while a later correction edit forks a new operation",
         "frontend:vitest::generated contract corpora > accepts every production CLI branch and rejects malformed or cross-endpoint values",
         "frontend:vitest::generated contract corpora > accepts generated Web host values and rejects every malformed or cross-endpoint value",
         "frontend:vitest::gives simultaneous current and historical case fields distinct heading IDs",
+        "frontend:vitest::ignores late prepare and submit responses from inactive attempts",
         "frontend:vitest::keeps a failed history page request-local without erasing current case data",
         "frontend:vitest::keeps a non-reviewable retained Prepare exact and directs Recovery",
         "frontend:vitest::keeps an unknown recovery result explicit and directs inspection",
@@ -2364,7 +2459,10 @@
         "frontend:vitest::operation editor transport outcomes > renders an accepted receipt and delegates its return action",
         "frontend:vitest::operation editor transport outcomes > shows a definite prepare rejection without creating recovery uncertainty",
         "frontend:vitest::operation editor transport outcomes > shows a definite submit rejection after preserving the prepared identity",
+        "frontend:vitest::refuses an export action when inspected recovery evidence has no exact digest",
         "frontend:vitest::rejects JSON-prefix spoofing and accepts an exact JSON media type with parameters",
+        "frontend:vitest::rejects impossible local draft shapes and keeps absent current correction values blank",
+        "frontend:vitest::rejects technical preparation details on an accepted Prepare replay",
         "frontend:vitest::renders a login form with disabled submission until anonymous antiforgery is available",
         "frontend:vitest::renders a neutral shell while definition admission is pending",
         "frontend:vitest::renders a recoverable session failure and invokes its refresh action",
@@ -2376,27 +2474,36 @@
         "frontend:vitest::renders observed recovery details and leaves only permitted server actions enabled",
         "frontend:vitest::renders recovery import controls and lets the page reload without mutation",
         "frontend:vitest::renders recovery list state, invokes inspection, and pages through a cursor",
+        "frontend:vitest::renders terminal revocation authority and exposes no mutation action",
         "frontend:vitest::renders the loading shell before local session discovery completes",
         "frontend:vitest::reports a failed list as a request-local error without manufacturing rows",
         "frontend:vitest::reports a found observation without a receipt as a protocol failure",
         "frontend:vitest::reports absent and malformed operation observations without leaving stale receipts",
         "frontend:vitest::reports malformed pages, malformed inspections, rejected imports, and invalid exports",
+        "frontend:vitest::requests the next server attempt page only from an inspected retained item",
         "frontend:vitest::requires fresh inspection before retrying a submission-started preparation",
         "frontend:vitest::requires one exact attachment filename and matching UTF-8 filename parameter",
         "frontend:vitest::retains an exact id until a retained preparation is edited, then starts a new id",
+        "frontend:vitest::retains authored replacement values for every grouped correction field",
+        "frontend:vitest::retains the frozen exact request on unchanged retry after unknown preparation",
+        "frontend:vitest::retries an unchanged definite refusal with its original exact identity",
+        "frontend:vitest::retries the frozen request after delivery loss despite a changed current revision",
         "frontend:vitest::returns an accepted open operation to Dashboard through its committed transition",
         "frontend:vitest::returns from a selected case through Dashboard's detail-back transition",
         "frontend:vitest::rotates the retained operation ID when only an OPEN reference is changed",
         "frontend:vitest::routes dashboard list selections and the new-case command into the typed editor",
+        "frontend:vitest::sends an explicit grouped correction and preserves all non-replaced groups",
         "frontend:vitest::sends bounded raw imports with generated media type and digest header",
         "frontend:vitest::shows current fields, server command labels, full expandable history and retryable history pages",
         "frontend:vitest::shows logout transport failure as retriable and clears it after a session refresh",
         "frontend:vitest::submits a retained operation ID and digest only once under duplicate confirmation",
         "frontend:vitest::surfaces invalid snapshots after login and logout responses",
+        "frontend:vitest::switches recovery views explicitly and leaves unavailable capacity unrendered",
         "frontend:vitest::treats a typed missing history as an empty read rather than a transport error",
         "frontend:vitest::uses an exact operation lookup result and clears absent lookup presentation",
         "frontend:vitest::uses generated v2 paths and typed endpoint outcomes",
         "frontend:vitest::uses inspected accepted evidence to remove stale list mutation actions",
+        "frontend:vitest::uses the supplied attempt cursor for the next inspected evidence page",
         "frontend:vitest::v2 Recovery import and export > exports the validated filename then retains previewed envelope material without submission",
         "frontend:vitest::v2 Recovery import and export > retains canonical-record previews and reports rejected recovery pages",
         "frontend:vitest::v2 Recovery view > inspects and dismisses only a server-advertised unsubmitted preparation",

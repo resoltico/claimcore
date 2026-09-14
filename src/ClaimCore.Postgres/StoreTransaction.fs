@@ -18,14 +18,15 @@ module internal StoreTransaction =
             return Ok receipt
         }
 
-    let private persistDecision
+    /// Persist one Domain-approved transition while the caller already holds the case lock. The
+    /// caller owns the surrounding operation authority and commit protocol.
+    let persistUnderCaseLock
         (connection: NpgsqlConnection)
         (transaction: NpgsqlTransaction)
         request
         fingerprint
         current
         claim
-        commitStarted
         =
         task {
             let snapshot = Claim.view claim
@@ -46,6 +47,22 @@ module internal StoreTransaction =
                 )
 
             let! receipt = StoreData.persist connection transaction request claim fingerprint
+            return receipt
+        }
+
+    let private persistDecision
+        (connection: NpgsqlConnection)
+        (transaction: NpgsqlTransaction)
+        request
+        fingerprint
+        current
+        claim
+        commitStarted
+        =
+        task {
+            let! receipt =
+                persistUnderCaseLock connection transaction request fingerprint current claim
+
             return! commit transaction commitStarted receipt
         }
 

@@ -167,19 +167,50 @@ module internal WebWireQueries =
         | RecoveryQueryOutcome.RecoveryCancelled -> outcome writer "CANCELLED" writer.WriteNullValue
 
     let recoveryPage (writer: Utf8JsonWriter) (value: RecoveryQueryOutcome<RecoveryPage>) =
+        let item =
+            function
+            | RetainedRecoveryItem summary ->
+                writer.WriteStartObject()
+                writer.WriteString("tag", "RETAINED")
+                writer.WritePropertyName("summary")
+                CliWireValues.preparationSummary writer summary
+                writer.WriteEndObject()
+            | RevokedRecoveryItem revoked ->
+                writer.WriteStartObject()
+                writer.WriteString("tag", "REVOKED")
+                writer.WritePropertyName("revocation")
+                CliWireValues.revokedOperation writer revoked
+                writer.WriteEndObject()
+
         recoveryQuery
             writer
             (fun (page: RecoveryPage) ->
                 writer.WriteStartObject()
+                writer.WriteString("view", WireTokens.recoveryListView page.View)
                 writer.WritePropertyName("items")
                 writer.WriteStartArray()
-                page.Items |> List.iter (CliWireValues.preparationSummary writer)
+                page.Items |> List.iter item
                 writer.WriteEndArray()
 
                 match page.NextCursor with
                 | Some cursor -> writer.WriteString("nextCursor", cursor)
                 | None -> writer.WriteNull("nextCursor")
 
+                writer.WriteNumber("pendingPreparationCount", page.PendingPreparationCount)
+
+                writer.WriteNumber(
+                    "pendingCanonicalRequestBytes",
+                    page.PendingCanonicalRequestBytes
+                )
+
+                writer.WriteNumber("maximumPendingPreparations", page.MaximumPendingPreparations)
+
+                writer.WriteNumber(
+                    "maximumPendingCanonicalRequestBytes",
+                    page.MaximumPendingCanonicalRequestBytes
+                )
+
+                writer.WriteBoolean("nearCapacity", page.NearCapacity)
                 writer.WriteEndObject())
             value
 
@@ -194,15 +225,29 @@ module internal WebWireQueries =
 
     let recoveryDetails
         (writer: Utf8JsonWriter)
-        (value: RecoveryQueryOutcome<Lookup<RecoveryDetails, System.Guid>>)
+        (value: RecoveryQueryOutcome<Lookup<RecoveryInspection, System.Guid>>)
         =
-        let details (found: RecoveryDetails) =
+        let retained (found: RecoveryDetails) =
+            writer.WriteStartObject()
+            writer.WriteString("tag", "RETAINED")
+            writer.WritePropertyName("value")
             writer.WriteStartObject()
             writer.WritePropertyName("preparation")
             WebWireValues.preparationDetails writer found.Preparation
             writer.WritePropertyName("observation")
             observation writer found.Observation
             writer.WriteEndObject()
+            writer.WriteEndObject()
+
+        let inspection =
+            function
+            | RetainedInspection details -> retained details
+            | RevokedInspection revoked ->
+                writer.WriteStartObject()
+                writer.WriteString("tag", "REVOKED")
+                writer.WritePropertyName("revocation")
+                CliWireValues.revokedOperation writer revoked
+                writer.WriteEndObject()
 
         recoveryQuery
             writer
@@ -211,7 +256,7 @@ module internal WebWireQueries =
                 "identity"
                 (fun (identity: Guid) -> writer.WriteStringValue(identity))
                 "value"
-                details)
+                inspection)
             value
 
     let importPreview

@@ -19,6 +19,7 @@ module RecoveryValueSchemas =
             PreparationState.Unsubmitted
             PreparationState.SubmissionStarted
             PreparationState.Dismissed
+            PreparationState.Revoked
         ]
         |> List.map WireTokens.preparationState
         |> WireSchema.enumeration
@@ -26,6 +27,15 @@ module RecoveryValueSchemas =
     let private actions =
         [ RecoveryAction.Resolve; RecoveryAction.Dismiss; RecoveryAction.Export ]
         |> List.map WireTokens.recoveryAction
+        |> WireSchema.enumeration
+
+    let private authority =
+        [
+            RecoveryAuthority.PendingAuthority
+            RecoveryAuthority.AcceptedAuthority
+            RecoveryAuthority.RevokedAuthority
+        ]
+        |> List.map WireTokens.recoveryAuthority
         |> WireSchema.enumeration
 
     let summary =
@@ -36,8 +46,17 @@ module RecoveryValueSchemas =
                 WireSchema.property "command" CoreValueSchemas.command
                 WireSchema.property "preparedAt" WireSchema.timestamp
                 WireSchema.property "state" states
+                WireSchema.property "authority" authority
                 WireSchema.property "requestSha256" (Schema.nullable WireSchema.digest)
                 WireSchema.property "availableActions" (WireSchema.array actions)
+            ]
+
+    let revokedOperation =
+        WireSchema.objectOf
+            [
+                WireSchema.property "operationId" WireSchema.uuid
+                WireSchema.property "revokedAt" WireSchema.timestamp
+                WireSchema.property "reason" WireSchema.text
             ]
 
     let private authoredValue =
@@ -57,8 +76,19 @@ module RecoveryValueSchemas =
                 WireSchema.property "startedAt" WireSchema.timestamp
                 WireSchema.property
                     "settlement"
-                    (Schema.nullable (WireSchema.enumeration [ "ACCEPTED"; "REJECTED"; "ERROR" ]))
+                    (Schema.nullable (
+                        WireSchema.enumeration
+                            [ "ACCEPTED"; "REJECTED"; "ERROR"; "REVOKED_BEFORE_EXECUTION" ]
+                    ))
                 WireSchema.property "settledAt" (Schema.nullable WireSchema.timestamp)
+            ]
+
+    let private attemptPage =
+        WireSchema.objectOf
+            [
+                WireSchema.property "items" (WireSchema.array attempt)
+                WireSchema.property "nextCursor" WireSchema.nullableText
+                WireSchema.property "legacyUncertainty" Schema.boolean
             ]
 
     let details (semantic: SemanticCoreContract) authoredValues =
@@ -75,8 +105,7 @@ module RecoveryValueSchemas =
                 WireSchema.property
                     "preparingContractKind"
                     (WireSchema.enumeration [ "LEGACY_UNCLASSIFIED"; "SEMANTIC_CORE_V1" ])
-                WireSchema.property "attempts" (WireSchema.array attempt)
-                WireSchema.property "legacyUncertainty" Schema.boolean
+                WireSchema.property "attempts" attemptPage
             ]
 
     let detailsWeb semantic = details semantic authoredValuesWeb
@@ -137,6 +166,9 @@ module RecoveryValueSchemas =
                         WireSchema.property "operationId" WireSchema.uuid
                         WireSchema.property "rejection" CoreValueSchemas.rejection
                     ]
+                WireSchema.tagged
+                    "REVOKED_BEFORE_EXECUTION"
+                    [ WireSchema.property "operationId" WireSchema.uuid ]
                 WireSchema.tagged
                     "FAILED_BEFORE_COMMIT"
                     [

@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { Dispatch, SetStateAction } from "react";
 import { resultMessage, type ApiResult, type EndpointOutcome } from "../api/v2";
 
 type ReadState<T> = { value: T | null; message: string | null; loading: boolean };
+type Page<T> = { readonly items: ReadonlyArray<T>; readonly nextCursor: string | null };
 
 export const useV2Read = <R extends EndpointOutcome, T>(
   request: (signal: AbortSignal) => Promise<ApiResult<R>>,
@@ -26,25 +28,28 @@ export const useV2Read = <R extends EndpointOutcome, T>(
   return state;
 };
 
-export const useRetryablePage = <R extends EndpointOutcome, T>(
+const usePageLoader = <R extends EndpointOutcome, T, P extends Page<T>>(
   request: (cursor: string | null, signal: AbortSignal) => Promise<ApiResult<R>>,
-  select: (
-    response: R,
-  ) => { readonly items: ReadonlyArray<T>; readonly nextCursor: string | null } | null,
+  select: (response: R) => P | null,
+  setItems: Dispatch<SetStateAction<T[]>>,
+  setCursor: Dispatch<SetStateAction<string | null>>,
+  setMessage: Dispatch<SetStateAction<string | null>>,
+  setLoading: Dispatch<SetStateAction<boolean>>,
+  setPage: Dispatch<SetStateAction<P | null>>,
 ) => {
-  const [items, setItems] = useState<T[]>([]);
-  const [cursor, setCursor] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
   const controller = useRef<AbortController | null>(null);
   const pending = useRef<{ cursor: string | null; task: Promise<void> } | null>(null);
-
   const load = useCallback(
     (next: string | null): Promise<void> => {
       if (pending.current?.cursor === next) return pending.current.task;
       controller.current?.abort();
       const current = new AbortController();
       controller.current = current;
+      if (next === null) {
+        setItems([]);
+        setCursor(null);
+        setPage(null);
+      }
       setLoading(true);
       setMessage(null);
       const task = (async () => {
@@ -55,6 +60,7 @@ export const useRetryablePage = <R extends EndpointOutcome, T>(
         else {
           setItems((previous) => (next === null ? [...page.items] : [...previous, ...page.items]));
           setCursor(page.nextCursor);
+          setPage(page);
         }
         setLoading(false);
       })().finally(() => {
@@ -63,13 +69,35 @@ export const useRetryablePage = <R extends EndpointOutcome, T>(
       pending.current = { cursor: next, task };
       return task;
     },
-    [request, select],
+    [request, select, setCursor, setItems, setLoading, setMessage, setPage],
+  );
+  const abort = useCallback(() => controller.current?.abort(), []);
+  return { load, abort };
+};
+
+export const useRetryablePage = <R extends EndpointOutcome, T, P extends Page<T> = Page<T>>(
+  request: (cursor: string | null, signal: AbortSignal) => Promise<ApiResult<R>>,
+  select: (response: R) => P | null,
+) => {
+  const [items, setItems] = useState<T[]>([]);
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [currentPage, setPage] = useState<P | null>(null);
+  const { load, abort } = usePageLoader(
+    request,
+    select,
+    setItems,
+    setCursor,
+    setMessage,
+    setLoading,
+    setPage,
   );
 
   useEffect(() => {
     void Promise.resolve().then(() => load(null));
-    return () => controller.current?.abort();
-  }, [load]);
+    return abort;
+  }, [abort, load]);
 
-  return { items, cursor, message, loading, load };
+  return { items, cursor, message, loading, page: currentPage, load };
 };

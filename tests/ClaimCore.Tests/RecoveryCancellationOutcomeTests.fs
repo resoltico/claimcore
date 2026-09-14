@@ -9,35 +9,35 @@ open ClaimCore.Domain
 open ClaimCore.RecordFormat
 open ClaimCore.Tests.Fixtures
 
-let private clock =
-    { new IBusinessDate with
-        member _.Today() = today
-    }
+let private clock = businessTime today
 
-let private draft operationId =
+let private draft operationId : CommandDraft =
     {
         OperationId = operationId
         CaseReference = "CANCEL-" + operationId.ToString("N")
         ExpectedVersion = 0L
-        Kind = CommandKind.Open
-        Values =
-            [
-                "incidentDate", registration.IncidentDate
-                "incidentNotificationDate", registration.IncidentNotificationDate
-                "incidentCountry", registration.IncidentCountry
-                "claimantName", registration.ClaimantName
-                "insurerName", registration.InsurerName
-                "claimedAmount", registration.ClaimedAmount
-                "claimedCurrency", registration.ClaimedCurrency
-            ]
+        Command =
+            DraftCommand.Flat(
+                CommandKind.Open,
+                [
+                    "incidentDate", registration.IncidentDate
+                    "incidentNotificationDate", registration.IncidentNotificationDate
+                    "incidentCountry", registration.IncidentCountry
+                    "claimantName", registration.ClaimantName
+                    "insurerName", registration.InsurerName
+                    "claimedAmount", registration.ClaimedAmount
+                    "claimedCurrency", registration.ClaimedCurrency
+                ]
+            )
     }
 
 let private coreWith (recovery: CoreRecoveryStore.Store) =
     let claims = new CoreStore.Store()
+    recovery.AttachClaimStore(claims :> IClaimStore)
     CoreApi.create (claims :> IClaimStore) (recovery :> IRecoveryStore) clock, claims
 
 let private prepared (core: IClaimsCore) operationId =
-    match core.Prepare(draft operationId, CancellationToken.None).Result with
+    match core.Prepare(boundRequest (draft operationId), CancellationToken.None).Result with
     | PrepareOutcome.Prepared(details, _) ->
         details.Summary.RequestSha256
         |> Option.defaultWith (fun () -> failtest "Retained digest is required.")
@@ -55,7 +55,9 @@ let private cancelledPrepare =
             let core, claims = coreWith recovery
             let operationId = Guid.NewGuid()
 
-            match core.Execute(draft operationId, CancellationToken.None).Result with
+            match
+                core.Execute(boundRequest (draft operationId), CancellationToken.None).Result
+            with
             | SubmissionOutcome.CancelledBeforeAdmission actual ->
                 Expect.equal actual operationId "Exact cancelled operation"
             | _ -> failtest "Definite retain cancellation must not look uncertain."
@@ -95,8 +97,8 @@ let private cancelledDismissal =
             Expect.equal actual operationId "Exact cancelled dismissal"
         | _ -> failtest "Definite dismissal cancellation must not look uncertain."
 
-        match core.Recovery.Inspect(operationId, CancellationToken.None).Result with
-        | RecoveryQueryOutcome.RecoverySucceeded(Lookup.Found details) ->
+        match core.Recovery.Inspect(operationId, None, 50, CancellationToken.None).Result with
+        | RecoveryQueryOutcome.RecoverySucceeded(Lookup.Found(RecoveryInspection.RetainedInspection details)) ->
             Expect.equal details.Preparation.Summary.State PreparationState.Unsubmitted "No marker"
         | _ -> failtest "Cancelled preparation remains inspectable.")
 
@@ -125,8 +127,8 @@ let private cancelledImport =
 
         Expect.equal claims.TransactionCalls 0 "Import never executes a claim")
 
-let private cancelledSettlement =
-    testCase "[CC-REC-001] settlement cancellation preserves accepted execution" (fun () ->
+let private cancelledCombinedCommit =
+    testCase "[CC-REC-001] cancelled combined execution is definite before commit" (fun () ->
         let recovery =
             new CoreRecoveryStore.Store(settleFailure = RecoveryStoreFailure.CancelledBeforeCommit)
 
@@ -137,13 +139,14 @@ let private cancelledSettlement =
         match core.Recovery.Resolve(operationId, digest, CancellationToken.None).Result with
         | ResolveOutcome.ResolveCompleted(_,
                                           _,
-                                          DefiniteExecution.Accepted receipt,
-                                          SettlementConfirmation.Unconfirmed) ->
-            Expect.equal receipt.OperationId operationId "Definite accepted receipt"
-        | _ -> failtest "Unconfirmed settlement cannot erase definite acceptance."
+                                          DefiniteExecution.FailedBeforeCommit(actual, fault),
+                                          SettlementConfirmation.Confirmed) ->
+            Expect.equal actual operationId "Exact operation identity"
+            Expect.equal fault.Code FaultCode.StoreUnavailable "Definite pre-commit outcome"
+        | _ -> failtest "Cancellation before a combined commit must not claim acceptance."
 
-        Expect.equal claims.TransactionCalls 1 "One accepted claim transaction"
-        Expect.equal recovery.SettlementCalls 1 "Settlement was attempted")
+        Expect.equal claims.TransactionCalls 0 "No claim transaction reached the combined port"
+        Expect.equal recovery.SettlementCalls 1 "Definite pre-commit outcome is recorded")
 
 let private unknownDismissal =
     testCase "[CC-REC-001] commit-start dismissal failure remains state unknown" (fun () ->
@@ -225,7 +228,7 @@ let private cancelledInspectObservation =
         let operationId = Guid.NewGuid()
         prepared core operationId |> ignore
 
-        match core.Recovery.Inspect(operationId, cancellation.Token).Result with
+        match core.Recovery.Inspect(operationId, None, 50, cancellation.Token).Result with
         | RecoveryQueryOutcome.RecoveryCancelled -> ()
         | _ -> failtest "Inspect cancelled during receipt observation must not return details.")
 
@@ -234,6 +237,7 @@ let private cancelledResolveObservation =
         use cancellation = new CancellationTokenSource()
         let claims = new CoreStore.Store(onOperation = cancellation.Cancel)
         let recovery = new CoreRecoveryStore.Store()
+        recovery.AttachClaimStore(claims :> IClaimStore)
 
         let core = CoreApi.create (claims :> IClaimStore) (recovery :> IRecoveryStore) clock
 
@@ -256,7 +260,7 @@ let tests =
             cancelledAttempt
             cancelledDismissal
             cancelledImport
-            cancelledSettlement
+            cancelledCombinedCommit
             unknownDismissal
             unknownImport
             cancelledObservation

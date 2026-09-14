@@ -52,6 +52,33 @@ module internal EndpointInputs =
                     true
             ]
 
+    let recoveryList maximumPageSize =
+        Schema.objectOf
+            false
+            [
+                Schema.property "cursor" (Schema.string None None (Some 1) None) false
+                Schema.property
+                    "limit"
+                    (Schema.integer (Some 1L) (Some(int64 maximumPageSize)))
+                    true
+                Schema.property
+                    "view"
+                    (Schema.enumeration [ TextConstant "PENDING"; TextConstant "TERMINAL" ])
+                    false
+            ]
+
+    let recoveryInspect maximumPageSize =
+        Schema.objectOf
+            false
+            [
+                Schema.property "operationId" ScalarSchemas.uuid true
+                Schema.property "attemptCursor" (Schema.string None None (Some 1) None) false
+                Schema.property
+                    "attemptLimit"
+                    (Schema.integer (Some 1L) (Some(int64 maximumPageSize)))
+                    true
+            ]
+
     let recoveryResolution =
         Schema.objectOf
             false

@@ -79,6 +79,7 @@ let preparationSummary =
         Command = CommandKind.Open
         PreparedAt = timestamp
         State = PreparationState.Unsubmitted
+        Authority = RecoveryAuthority.PendingAuthority
         RequestSha256 = Some digest
         AvailableActions = [ RecoveryAction.Resolve; RecoveryAction.Dismiss; RecoveryAction.Export ]
     }
@@ -92,8 +93,12 @@ let preparationDetails =
         PreparingApplicationVersion = "0.1.0"
         PreparingContractFingerprint = digest
         PreparingContractKind = "SEMANTIC_CORE_V1"
-        Attempts = []
-        LegacyUncertainty = false
+        Attempts =
+            {
+                Items = []
+                NextCursor = None
+                LegacyUncertainty = false
+            }
     }
 
 let recoveryDetails =

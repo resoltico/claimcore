@@ -180,6 +180,11 @@ if ! CLAIMCORE_ADMIN_CONNECTION_FILE="$owner_connection" \
   echo "The published database migration failed." >&2
   exit 1
 fi
+if ! CLAIMCORE_ADMIN_CONNECTION_FILE="$owner_connection" \
+  dotnet "$database_dll" set-business-zone Etc/UTC >/dev/null 2>&1; then
+  echo "The published database business-time-zone configuration failed." >&2
+  exit 1
+fi
 certificate="$state_dir/web.pfx"
 certificate_key="$state_dir/web.key"
 certificate_pem="$state_dir/web.pem"

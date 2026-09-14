@@ -96,13 +96,18 @@ export const definition: SemanticDefinition = {
       kind: "OPEN",
       label: "Open",
       meaning: "Open a record",
-      inputs: [{ fieldName: "caseReference", prefill: "BLANK" }],
+      inputs: { kind: "FIELDS", fields: [{ fieldName: "caseReference", prefill: "BLANK" }] },
     },
     {
       kind: "AMEND_REGISTRATION",
       label: "Amend",
       meaning: "Amend a record",
-      inputs: [{ fieldName: "paymentDate", prefill: "CURRENT_FIELD", currentField: "paymentDate" }],
+      inputs: {
+        kind: "FIELDS",
+        fields: [
+          { fieldName: "paymentDate", prefill: "CURRENT_FIELD", currentField: "paymentDate" },
+        ],
+      },
     },
   ],
   statuses: ["OPENED", "CLOSED"],
@@ -116,6 +121,7 @@ export const preparation: PreparationDetails = {
     command: "OPEN",
     preparedAt: "2026-09-09T00:00:00.0000000+00:00",
     state: "UNSUBMITTED",
+    authority: "PENDING",
     requestSha256: "a".repeat(64),
     availableActions: ["RESOLVE"],
   },
@@ -125,8 +131,7 @@ export const preparation: PreparationDetails = {
   preparingApplicationVersion: "0.1.0",
   preparingContractFingerprint: "b".repeat(64),
   preparingContractKind: "SEMANTIC_CORE_V1",
-  attempts: [],
-  legacyUncertainty: false,
+  attempts: { items: [], nextCursor: null, legacyUncertainty: false },
 };
 export const review: AdvisoryReview = {
   before: null,

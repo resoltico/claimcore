@@ -63,6 +63,17 @@ module internal WebWireValues =
 
         writer.WriteEndObject()
 
+    let private attemptPage (writer: Utf8JsonWriter) (value: PreparationAttemptPage) =
+        writer.WriteStartObject()
+        writer.WritePropertyName("items")
+        writer.WriteStartArray()
+        value.Items |> List.iter (attempt writer)
+        writer.WriteEndArray()
+        writer.WritePropertyName("nextCursor")
+        optional writer value.NextCursor writer.WriteStringValue
+        writer.WriteBoolean("legacyUncertainty", value.LegacyUncertainty)
+        writer.WriteEndObject()
+
     let preparationDetails (writer: Utf8JsonWriter) (value: PreparationDetails) =
         writer.WriteStartObject()
         writer.WritePropertyName("summary")
@@ -77,10 +88,7 @@ module internal WebWireValues =
         writer.WriteString("preparingContractFingerprint", value.PreparingContractFingerprint)
         writer.WriteString("preparingContractKind", value.PreparingContractKind)
         writer.WritePropertyName("attempts")
-        writer.WriteStartArray()
-        value.Attempts |> List.iter (attempt writer)
-        writer.WriteEndArray()
-        writer.WriteBoolean("legacyUncertainty", value.LegacyUncertainty)
+        attemptPage writer value.Attempts
         writer.WriteEndObject()
 
     let private fieldDiff (writer: Utf8JsonWriter) (value: FieldDiff) =

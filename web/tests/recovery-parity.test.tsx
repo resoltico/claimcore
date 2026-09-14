@@ -9,15 +9,18 @@ import {
   type RecoveryUi,
 } from "../src/views/recovery/RecoveryState";
 import { generatedWebValue } from "./contract-corpus.fixtures";
-import { fields, operationId, preparation, response } from "./v2-ui.fixtures";
+import { fields, operationId, preparation, recoveryPage, response } from "./v2-ui.fixtures";
 
 const list = (items: unknown[] = [preparation.summary]) =>
-  response("recovery.list", "SUCCEEDED", { items, nextCursor: null });
+  response("recovery.list", "SUCCEEDED", recoveryPage(items));
 
 const inspection = (details: PreparationDetails = preparation) =>
   response("recovery.inspect", "SUCCEEDED", {
     tag: "FOUND",
-    value: { preparation: details, observation: { tag: "NOT_FOUND", identity: operationId } },
+    value: {
+      tag: "RETAINED",
+      value: { preparation: details, observation: { tag: "NOT_FOUND", identity: operationId } },
+    },
   });
 
 const recoveryUi = (changes: Partial<RecoveryUi>): RecoveryUi => ({
@@ -69,16 +72,19 @@ it("uses inspected accepted evidence to remove stale list mutation actions", asy
     response("recovery.inspect", "SUCCEEDED", {
       tag: "FOUND",
       value: {
-        preparation: { ...preparation, summary: acceptedSummary },
-        observation: {
-          tag: "FOUND",
-          value: {
-            operationId,
-            snapshot: { fields, revision: "1" },
-            recordedAt: "2026-09-09T00:00:00.0000000+00:00",
-            recordedBy: "synthetic",
-            replayed: false,
-            command: "CLOSE",
+        tag: "RETAINED",
+        value: {
+          preparation: { ...preparation, summary: acceptedSummary },
+          observation: {
+            tag: "FOUND",
+            value: {
+              operationId,
+              snapshot: { fields, revision: "1" },
+              recordedAt: "2026-09-09T00:00:00.0000000+00:00",
+              recordedBy: "synthetic",
+              replayed: false,
+              command: "CLOSE",
+            },
           },
         },
       },
@@ -150,4 +156,31 @@ it("keeps an unknown recovery result explicit and directs inspection", async () 
     await screen.findByText(/Inspect Recovery before retrying this exact preparation/u),
   ).toBeVisible();
   expect(screen.queryByText(/Accepted exact operation/u)).toBeNull();
+});
+
+it("refuses an export action when inspected recovery evidence has no exact digest", async () => {
+  const ui = recoveryUi({
+    confirm: {
+      action: "EXPORT",
+      item: { ...preparation.summary, requestSha256: null },
+    },
+  });
+  const actions = recoveryActions("token", { load: vi.fn(() => Promise.resolve()) }, ui);
+  await actions.act();
+  expect(globalThis.fetch).not.toHaveBeenCalled();
+  expect(ui.setMessage).toHaveBeenCalledWith(
+    "The exact recovery digest is unavailable; inspect the preparation.",
+  );
+});
+
+it("uses the supplied attempt cursor for the next inspected evidence page", async () => {
+  const fetch = vi.mocked(globalThis.fetch);
+  fetch.mockResolvedValueOnce(inspection());
+  const ui = recoveryUi({});
+  const actions = recoveryActions("token", { load: vi.fn(() => Promise.resolve()) }, ui);
+  actions.loadAttempts(operationId, "next-attempt");
+  await waitFor(() => expect(fetch).toHaveBeenCalledOnce());
+  expect(fetch.mock.calls[0]?.[1]?.body).toBe(
+    JSON.stringify({ operationId, attemptCursor: "next-attempt", attemptLimit: 50 }),
+  );
 });

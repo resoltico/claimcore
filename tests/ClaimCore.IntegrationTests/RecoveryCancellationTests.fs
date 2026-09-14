@@ -39,12 +39,27 @@ let private retained (recovery: IRecoveryStore) material =
     match recovery.Retain(material, CancellationToken.None) |> await with
     | Ok(RecoveryRetain.Created value)
     | Ok(RecoveryRetain.Existing value) -> value
+    | Ok _ -> failtest "Synthetic technical preparation must not observe terminal authority."
     | Error _ -> failtest "Synthetic technical preparation must be retained."
 
 let private read (recovery: IRecoveryStore) operationId =
     match recovery.Get(operationId, CancellationToken.None) |> await with
     | Ok value -> value
     | Error _ -> failtest "Synthetic preparation must be readable."
+
+let private inspect (recovery: IRecoveryStore) operationId =
+    match
+        recovery.Inspect(
+            operationId,
+            None,
+            PreparationLimits.defaults.MaximumPageSize,
+            CancellationToken.None
+        )
+        |> await
+    with
+    | Ok(Some(RecoveryStoreInspection.Retained(header, attempts, authority))) ->
+        header, attempts, authority
+    | _ -> failtest "Synthetic preparation evidence must be readable."
 
 let private retainCancellation =
     testCase "[CC-REC-001] cancelled retain has no durable preparation" (fun () ->
@@ -72,11 +87,10 @@ let private attemptCancellation =
         | Error RecoveryStoreFailure.CancelledBeforeCommit -> ()
         | _ -> failtest "Pre-commit attempt cancellation must be definite."
 
-        match read port material.OperationId with
-        | Some value ->
-            Expect.equal value.Lifecycle PreparationLifecycle.Unsubmitted "No start marker"
-            Expect.isEmpty value.Attempts "No attempt row"
-        | None -> failtest "Preparation remains retained.")
+        let header, attempts, authority = inspect port material.OperationId
+        Expect.equal header.Lifecycle PreparationLifecycle.Unsubmitted "No start marker"
+        Expect.equal authority RecoveryAuthority.PendingAuthority "Pending authority remains"
+        Expect.isEmpty attempts.Items "No attempt row")
 
 let private dismissalCancellation =
     testCase "[CC-REC-001] cancelled dismissal leaves preparation actionable" (fun () ->
@@ -86,14 +100,16 @@ let private dismissalCancellation =
         retained port material |> ignore
         use cancellation = cancelled ()
 
-        match port.Dismiss(material.OperationId, cancellation.Token) |> await with
+        match
+            port.Dismiss(material.OperationId, material.RequestSha256, cancellation.Token)
+            |> await
+        with
         | Error RecoveryStoreFailure.CancelledBeforeCommit -> ()
         | _ -> failtest "Pre-commit dismissal cancellation must be definite."
 
-        match read port material.OperationId with
-        | Some value ->
-            Expect.equal value.Lifecycle PreparationLifecycle.Unsubmitted "No dismissal marker"
-        | None -> failtest "Preparation remains retained.")
+        let header, _, authority = inspect port material.OperationId
+        Expect.equal header.Lifecycle PreparationLifecycle.Unsubmitted "No dismissal marker"
+        Expect.equal authority RecoveryAuthority.PendingAuthority "Pending authority remains")
 
 let private settlementCancellation =
     testCase "[CC-REC-001] cancelled settlement leaves admitted attempt unsettled" (fun () ->
@@ -113,14 +129,13 @@ let private settlementCancellation =
         | Error RecoveryStoreFailure.CancelledBeforeCommit -> ()
         | _ -> failtest "Pre-commit settlement cancellation must be definite."
 
-        match read port material.OperationId with
-        | Some value ->
-            match value.Attempts with
-            | [ attempt ] ->
-                Expect.equal attempt.AttemptId attemptId "Admitted attempt remains"
-                Expect.isNone attempt.Settlement "No synthetic settlement"
-            | _ -> failtest "Exactly one unsettled attempt remains."
-        | None -> failtest "Preparation remains retained.")
+        let _, attempts, _ = inspect port material.OperationId
+
+        match attempts.Items with
+        | [ attempt ] ->
+            Expect.equal attempt.AttemptId attemptId "Admitted attempt remains"
+            Expect.isNone attempt.Settlement "No synthetic settlement"
+        | _ -> failtest "Exactly one unsettled attempt remains.")
 
 let private cancellationAtCommitBoundary =
     testCase
@@ -166,7 +181,7 @@ let private cancelledReads =
             | Error RecoveryStoreFailure.ReadCancelled -> ()
             | _ -> failtest "Cancelled detail read must remain cancellation."
 
-            match port.List(None, 1, cancellation.Token) |> await with
+            match port.List(RecoveryListView.Pending, None, 1, cancellation.Token) |> await with
             | Error RecoveryStoreFailure.ReadCancelled -> ()
             | _ -> failtest "Cancelled page read must remain cancellation."
 

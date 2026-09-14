@@ -18,23 +18,7 @@ let private openRuntime () =
     |> Result.defaultWith (fun _ -> failtest "Synthetic recovery runtime must open.")
 
 let private prepare (core: IClaimsCore) operationId =
-    let command =
-        {
-            OperationId = operationId
-            CaseReference = "EVIDENCE-" + operationId.ToString("N")
-            ExpectedVersion = 0L
-            Kind = CommandKind.Open
-            Values =
-                [
-                    "incidentDate", registration.IncidentDate
-                    "incidentNotificationDate", registration.IncidentNotificationDate
-                    "incidentCountry", registration.IncidentCountry
-                    "claimantName", registration.ClaimantName
-                    "insurerName", registration.InsurerName
-                    "claimedAmount", registration.ClaimedAmount
-                    "claimedCurrency", registration.ClaimedCurrency
-                ]
-        }
+    let command = openRequest operationId ("EVIDENCE-" + operationId.ToString("N"))
 
     match core.Prepare(command, CancellationToken.None) |> await with
     | PrepareOutcome.Prepared(details, _) ->
@@ -42,9 +26,13 @@ let private prepare (core: IClaimsCore) operationId =
         |> Option.defaultWith (fun () -> failtest "Retained digest is required.")
     | _ -> failtest "Synthetic preparation must be retained."
 
-let private inspect (core: IClaimsCore) operationId =
-    match core.Recovery.Inspect(operationId, CancellationToken.None) |> await with
-    | RecoveryQueryOutcome.RecoverySucceeded(Lookup.Found details) -> details
+let private inspect (core: IClaimsCore) operationId afterCursor limit =
+    match
+        core.Recovery.Inspect(operationId, afterCursor, limit, CancellationToken.None)
+        |> await
+    with
+    | RecoveryQueryOutcome.RecoverySucceeded(Lookup.Found(RecoveryInspection.RetainedInspection details)) ->
+        details
     | _ -> failtest "Retained recovery evidence must be inspectable."
 
 let private resolve (core: IClaimsCore) operationId digest =
@@ -57,13 +45,17 @@ let private settledAttempt =
         use runtime = openRuntime ()
         let operationId = Guid.NewGuid()
         let digest = prepare runtime.Core operationId
-        let before = inspect runtime.Core operationId
-        Expect.isEmpty before.Preparation.Attempts "No attempt before submission"
-        Expect.isFalse before.Preparation.LegacyUncertainty "New preparation is not legacy"
-        resolve runtime.Core operationId digest
-        let after = inspect runtime.Core operationId
+        let before = inspect runtime.Core operationId None recoveryPageLimit
+        Expect.isEmpty before.Preparation.Attempts.Items "No attempt before submission"
 
-        match after.Preparation.Attempts with
+        Expect.isFalse
+            before.Preparation.Attempts.LegacyUncertainty
+            "New preparation is not legacy"
+
+        resolve runtime.Core operationId digest
+        let after = inspect runtime.Core operationId None recoveryPageLimit
+
+        match after.Preparation.Attempts.Items with
         | [ attempt ] ->
             Expect.notEqual attempt.AttemptId Guid.Empty "Durable attempt ID"
             Expect.equal attempt.Settlement (Some "ACCEPTED") "Accepted technical settlement"
@@ -89,9 +81,9 @@ let private unresolvedAttempt =
             | Ok(RecoveryStart.Started(attemptId, _)) -> attemptId
             | _ -> failtest "Technical attempt must be durably admitted."
 
-        let before = inspect runtime.Core operationId
+        let before = inspect runtime.Core operationId None recoveryPageLimit
 
-        match before.Preparation.Attempts with
+        match before.Preparation.Attempts.Items with
         | [ attempt ] ->
             Expect.equal attempt.AttemptId firstId "Unsettled attempt identity"
             Expect.isNone attempt.Settlement "No invented settlement"
@@ -99,16 +91,19 @@ let private unresolvedAttempt =
         | _ -> failtest "Unsettled attempt must appear in recovery details."
 
         resolve runtime.Core operationId digest
-        let after = inspect runtime.Core operationId
-        Expect.equal after.Preparation.Attempts.Length 2 "Distinct exact retry attempt"
+        let after = inspect runtime.Core operationId None recoveryPageLimit
+        Expect.equal after.Preparation.Attempts.Items.Length 2 "Distinct exact retry attempt"
 
         let earlier =
-            after.Preparation.Attempts |> List.find (fun item -> item.AttemptId = firstId)
+            after.Preparation.Attempts.Items
+            |> List.find (fun item -> item.AttemptId = firstId)
 
         Expect.isNone earlier.Settlement "Earlier uncertainty remains unresolved"
 
         Expect.equal
-            (after.Preparation.Attempts |> List.filter (fun item -> item.Settlement.IsSome)).Length
+            (after.Preparation.Attempts.Items
+             |> List.filter (fun item -> item.Settlement.IsSome))
+                .Length
             1
             "Only definite later attempt is settled")
 
@@ -137,7 +132,7 @@ let private legacyMarker =
                 2
                 "Synthetic pre-003 start and marker inserted"
 
-            let details = inspect runtime.Core operationId
+            let details = inspect runtime.Core operationId None recoveryPageLimit
 
             Expect.equal
                 details.Preparation.PreparingContractKind
@@ -145,7 +140,7 @@ let private legacyMarker =
                 "Producer provenance remains independent"
 
             Expect.isTrue
-                details.Preparation.LegacyUncertainty
+                details.Preparation.Attempts.LegacyUncertainty
                 "Legacy uncertainty marker surfaced"
 
             Expect.equal
@@ -153,7 +148,9 @@ let private legacyMarker =
                 PreparationState.SubmissionStarted
                 "Inherited start remains visible"
 
-            Expect.isEmpty details.Preparation.Attempts "Pre-003 start has no identified attempt")
+            Expect.isEmpty
+                details.Preparation.Attempts.Items
+                "Pre-003 start has no identified attempt")
 
 let private provenanceReplay =
     testCase "[CC-REC-001] exact replay preserves first producer provenance" (fun () ->

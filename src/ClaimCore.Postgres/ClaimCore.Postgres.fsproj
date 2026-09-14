@@ -15,15 +15,22 @@
     <Compile Include="PreparationEvidence.fs" />
     <Compile Include="PreparationData.fs" />
     <Compile Include="RecoveryStoreQueries.fs" />
+    <Compile Include="OperationAuthorityStore.fs" />
     <Compile Include="PreparationPageStore.fs" />
     <Compile Include="PreparationLifecycleStore.fs" />
     <Compile Include="SubmissionAttemptStore.fs" />
-    <Compile Include="RecoveryStore.fs" />
     <Compile Include="Rows.fs" />
     <Compile Include="StoreData.fs" />
     <Compile Include="StoreTransaction.fs" />
+    <Compile Include="RecoveryReadStore.fs" />
+    <Compile Include="RecoveryRetentionStore.fs" />
+    <Compile Include="RecoveryDismissalStore.fs" />
+    <Compile Include="RecoveryExecutionSupport.fs" />
+    <Compile Include="RecoveryExecutionStore.fs" />
+    <Compile Include="RecoveryStore.fs" />
     <Compile Include="Store.fs" />
     <Compile Include="Migrations.fs" />
+    <Compile Include="InstallationBusinessZone.fs" />
     <Compile Include="PreparationPruning.fs" />
     <Compile Include="Hosting/RuntimeAdmission.fs" />
     <Compile Include="Hosting/RuntimeCoreFacade.fs" />
@@ -45,6 +52,7 @@
     <EmbeddedResource Include="../../db/003_submission_attempts.sql" LogicalName="ClaimCore.Migrations.003_submission_attempts.sql" />
     <EmbeddedResource Include="../../db/004_generalize_preparation_provenance.sql" LogicalName="ClaimCore.Migrations.004_generalize_preparation_provenance.sql" />
     <EmbeddedResource Include="../../db/005_recovery_evidence_read_acl.sql" LogicalName="ClaimCore.Migrations.005_recovery_evidence_read_acl.sql" />
+    <EmbeddedResource Include="../../db/006_operation_authority_and_business_time.sql" LogicalName="ClaimCore.Migrations.006_operation_authority_and_business_time.sql" />
     <EmbeddedResource Include="../../db/migration-manifest.json" LogicalName="ClaimCore.Migrations.manifest.json" />
   </ItemGroup>
   <ItemGroup>

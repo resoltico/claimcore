@@ -6,15 +6,18 @@
     <Compile Include="SemanticTypes.fs" />
     <Compile Include="SemanticContract.fs" />
     <Compile Include="RecoveryTypes.fs" />
-    <Compile Include="RecoveryStorePort.fs" />
     <Compile Include="Operation.fs" />
     <Compile Include="Ports.fs" />
+    <Compile Include="RecoveryStorePort.fs" />
     <Compile Include="CoreConversions.fs" />
+    <Compile Include="OperationRejection.fs" />
     <Compile Include="Drafts.fs" />
     <Compile Include="Service.fs" />
     <Compile Include="HistoryCursor.fs" />
     <Compile Include="RecoveryCursorCodec.fs" />
+    <Compile Include="RecoveryAttemptCursorCodec.fs" />
     <Compile Include="TypedProjection.fs" />
+    <Compile Include="AdvisoryReviewProjection.fs" />
     <Compile Include="AcceptedObservation.fs" />
     <Compile Include="RetainedResolution.fs" />
     <Compile Include="ObservedReceiptVerification.fs" />
@@ -27,6 +30,7 @@
     <Compile Include="RecoveryImports.fs" />
     <Compile Include="RecoveryDismissOperations.fs" />
     <Compile Include="RecoveryReadOperations.fs" />
+    <Compile Include="RecoveryExports.fs" />
     <Compile Include="RecoveryCoordinator.fs" />
     <Compile Include="Core.fsi" />
     <Compile Include="Core.fs" />

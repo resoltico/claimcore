@@ -189,13 +189,9 @@ module Claim =
                 }
         | _ -> Validation.invalid "command" "The state guard and payment transition disagree."
 
-    /// State-only eligibility. Payload/date/version checks still run for every submitted command.
-    let private eligibility kind claim =
-        Eligibility.check kind claim.Status claim.Progress
-
     let private change today command claim =
         result {
-            do! eligibility (Commands.kind command) claim
+            do! Eligibility.check (Commands.kind command) claim.Status claim.Progress
 
             match command with
             | Command.Open _ -> return! Error DomainError.AlreadyExists
@@ -213,6 +209,17 @@ module Claim =
                 let! facts = Validation.registration rawFacts
                 do! Validation.notFuture "incidentNotificationDate" today facts.NotificationDate
                 return { claim with Facts = facts }
+            | Command.CorrectCase correction ->
+                let! fields = CaseCorrections.apply today (view claim).Fields correction
+
+                let! corrected =
+                    restore
+                        {
+                            Fields = fields
+                            Version = claim.Revision
+                        }
+
+                return corrected
             | _ -> return! changePayment today command claim
         }
 
@@ -233,6 +240,7 @@ module Claim =
                 | Command.Open input
                 | Command.AmendRegistration input ->
                     return! Validation.registration input |> Result.map ignore
+                | Command.CorrectCase correction -> return! CaseCorrections.validate correction
                 | Command.Decide input -> return! Validation.decision input |> Result.map ignore
                 | Command.RecordPayment value ->
                     return! Validation.date "paymentDate" value |> Result.map ignore
@@ -284,5 +292,6 @@ module Claim =
             []
         else
             CommandKinds.all
-            |> List.filter (fun kind -> eligibility kind claim |> Result.isOk)
+            |> List.filter (fun kind ->
+                Eligibility.check kind claim.Status claim.Progress |> Result.isOk)
             |> List.map CommandKinds.token

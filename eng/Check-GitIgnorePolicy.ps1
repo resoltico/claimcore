@@ -50,7 +50,7 @@ $mustRemainVisible = @(
     "README.md", "ClaimCore.slnx", "Directory.Build.props", "Directory.Packages.props",
     "NuGet.Config", "analyzer-suppressions.json", "compose.yaml", "dependency-holds.json",
     "db/001_initial.sql", "db/002_request_preparations.sql", "db/003_submission_attempts.sql",
-    "db/004_generalize_preparation_provenance.sql", "db/005_recovery_evidence_read_acl.sql",
+    "db/004_generalize_preparation_provenance.sql", "db/005_recovery_evidence_read_acl.sql", "db/006_operation_authority_and_business_time.sql",
     "db/migration-manifest.json",
     "docs/development.md", "eng/Check-GitIgnorePolicy.ps1",
     "src/ClaimCore.Domain/Claim.fs", "tests/ClaimCore.Tests/Suite.fs", "web/.npmrc",

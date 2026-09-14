@@ -41,16 +41,16 @@ module EndpointDispatch =
                 return CliWireCodec.importRetain (Endpoint.identifier endpoint) outcome
             }
 
-    let private recoveryList (core: IClaimsCore) cursor limit token =
+    let private recoveryList (core: IClaimsCore) view cursor limit token =
         task {
-            let! outcome = core.Recovery.List(cursor, limit, token)
+            let! outcome = core.Recovery.List(view, cursor, limit, token)
 
             return CliWireCodec.recoveryList (Endpoint.identifier Endpoint.RecoveryList) outcome
         }
 
-    let private recoveryInspect (core: IClaimsCore) operationId token =
+    let private recoveryInspect (core: IClaimsCore) operationId cursor limit token =
         task {
-            let! outcome = core.Recovery.Inspect(operationId, token)
+            let! outcome = core.Recovery.Inspect(operationId, cursor, limit, token)
 
             return
                 CliWireCodec.recoveryInspect (Endpoint.identifier Endpoint.RecoveryInspect) outcome
@@ -72,10 +72,10 @@ module EndpointDispatch =
 
     let private recovery (core: IClaimsCore) endpoint input token =
         match endpoint, input with
-        | Endpoint.RecoveryList, EndpointInput.RecoveryPage(cursor, limit) ->
-            recoveryList core cursor limit token
-        | Endpoint.RecoveryInspect, EndpointInput.Operation operationId ->
-            recoveryInspect core operationId token
+        | Endpoint.RecoveryList, EndpointInput.RecoveryPage(view, cursor, limit) ->
+            recoveryList core view cursor limit token
+        | Endpoint.RecoveryInspect, EndpointInput.RecoveryInspect(operationId, cursor, limit) ->
+            recoveryInspect core operationId cursor limit token
         | Endpoint.RecoveryResolve, EndpointInput.RecoveryResolve(operationId, digest) ->
             recoveryResolve core operationId digest token
         | Endpoint.RecoveryDismiss, EndpointInput.RecoveryDismiss(operationId, digest) ->
@@ -207,13 +207,23 @@ module EndpointDispatch =
         match endpoint, input with
         | Endpoint.CommandPrepare, EndpointInput.Draft draft ->
             task {
-                let! outcome = core.Prepare(draft, token)
+                let! outcome =
+                    match Drafts.bindForEndpoint draft with
+                    | Ok request -> core.Prepare(request, token)
+                    | Error rejection ->
+                        Task.FromResult(
+                            PrepareOutcome.PrepareRejected(draft.OperationId, rejection)
+                        )
 
                 return CliWireCodec.prepare (Endpoint.identifier endpoint) outcome
             }
         | Endpoint.CommandExecute, EndpointInput.Draft draft ->
             task {
-                let! outcome = core.Execute(draft, token)
+                let! outcome =
+                    match Drafts.bindForEndpoint draft with
+                    | Ok request -> core.Execute(request, token)
+                    | Error rejection ->
+                        Task.FromResult(SubmissionOutcome.RejectedBeforeAttempt(None, rejection))
 
                 return CliWireCodec.submission (Endpoint.identifier endpoint) outcome
             }

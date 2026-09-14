@@ -7,6 +7,12 @@ open ClaimCore.Domain
 open ClaimCore.RecordFormat
 
 module internal TypedSubmission =
+    [<NoEquality; NoComparison>]
+    type private RetainedRetry =
+        | RetryNotFound
+        | RetryRefused of SubmissionOutcome
+        | RetryResolution of RetainedPreparation
+
     let private integrityFailure (message: string) : CoreFault =
         {
             Code = FaultCode.RecoveryIntegrityError
@@ -30,6 +36,10 @@ module internal TypedSubmission =
                     Action = RecommendedAction.RecoverExact
                 }
             )
+        | RetainedResolution.RevokedPreparation summary ->
+            SubmissionOutcome.RejectedBeforeAttempt(summary, OperationRejection.revoked)
+        | RetainedResolution.AttemptLimitReached summary ->
+            SubmissionOutcome.RejectedBeforeAttempt(Some summary, OperationRejection.attemptLimit)
         | RetainedResolution.DigestConflict ->
             SubmissionOutcome.FailedBeforeAttempt(
                 None,
@@ -54,38 +64,57 @@ module internal TypedSubmission =
         | Some summary -> SubmissionOutcome.CancelledBeforeAttempt summary
         | None -> SubmissionOutcome.CancelledBeforeAdmission operationId
 
+    let private completedResolution =
+        function
+        | RetainedResolution.ObservedReceipt receipt ->
+            Some(SubmissionOutcome.ObservedAccepted receipt)
+        | RetainedResolution.Resolved(summary, attemptId, execution, settlement) ->
+            Some(SubmissionOutcome.Completed(summary, attemptId, execution, settlement))
+        | _ -> None
+
+    let private preAttemptResolution =
+        function
+        | RetainedResolution.MissingPreparation _
+        | RetainedResolution.DismissedPreparation _
+        | RetainedResolution.RevokedPreparation _
+        | RetainedResolution.AttemptLimitReached _
+        | RetainedResolution.DigestConflict
+        | RetainedResolution.ReceiptIdentityConflict as result -> Some(preAttemptOutcome result)
+        | _ -> None
+
+    let private interruptedResolution knownPreparation =
+        function
+        | RetainedResolution.ResolutionCancelledBeforeAdmission operationId ->
+            Some(cancelledResolution knownPreparation operationId)
+        | RetainedResolution.ResolutionFailedBeforeAttempt(summary, fault) ->
+            Some(SubmissionOutcome.FailedBeforeAttempt(summary, fault))
+        | RetainedResolution.ResolutionCancelledBeforeAttempt summary ->
+            Some(SubmissionOutcome.CancelledBeforeAttempt summary)
+        | RetainedResolution.ResolutionAdmissionUnknown(summary, fault) ->
+            Some(SubmissionOutcome.AttemptAdmissionUnknown(summary, fault))
+        | RetainedResolution.ResolutionUnresolved(summary, attemptId, fault) ->
+            Some(SubmissionOutcome.AttemptUnresolved(summary, attemptId, fault))
+        | _ -> None
+
     let private resolvedOutcome
         (knownPreparation: PreparationSummary option)
         (result: RetainedResolution)
         : SubmissionOutcome =
-        match result with
-        | RetainedResolution.ObservedReceipt receipt -> SubmissionOutcome.ObservedAccepted receipt
-        | RetainedResolution.Resolved(summary, attemptId, execution, settlement) ->
-            SubmissionOutcome.Completed(summary, attemptId, execution, settlement)
-        | RetainedResolution.MissingPreparation _
-        | RetainedResolution.DismissedPreparation _
-        | RetainedResolution.DigestConflict
-        | RetainedResolution.ReceiptIdentityConflict -> preAttemptOutcome result
-        | RetainedResolution.ResolutionCancelledBeforeAdmission operationId ->
-            cancelledResolution knownPreparation operationId
-        | RetainedResolution.ResolutionFailedBeforeAttempt(summary, fault) ->
-            SubmissionOutcome.FailedBeforeAttempt(summary, fault)
-        | RetainedResolution.ResolutionCancelledBeforeAttempt summary ->
-            SubmissionOutcome.CancelledBeforeAttempt summary
-        | RetainedResolution.ResolutionAdmissionUnknown(summary, fault) ->
-            SubmissionOutcome.AttemptAdmissionUnknown(summary, fault)
-        | RetainedResolution.ResolutionUnresolved(summary, attemptId, fault) ->
-            SubmissionOutcome.AttemptUnresolved(summary, attemptId, fault)
+        completedResolution result
+        |> Option.orElseWith (fun () -> preAttemptResolution result)
+        |> Option.orElseWith (fun () -> interruptedResolution knownPreparation result)
+        |> Option.defaultWith (fun () ->
+            invalidOp "An unsupported recovery resolution was returned.")
 
     let private completePrepared
         (store: IClaimStore)
         (recovery: IRecoveryStore)
-        (clock: IBusinessDate)
-        (draft: CommandDraft)
+        (clock: IBusinessTime)
+        (request: CommandRequest)
         (cancellationToken: CancellationToken)
         : Task<SubmissionOutcome> =
         task {
-            match! TypedPreparation.prepare store recovery clock draft cancellationToken with
+            match! TypedPreparation.prepare store recovery clock request cancellationToken with
             | PrepareOutcome.Prepared(details, _) ->
                 let digest = details.Summary.RequestSha256 |> Option.defaultValue ""
 
@@ -113,10 +142,53 @@ module internal TypedSubmission =
                 return SubmissionOutcome.PreparationStateUnknown(operationId, requestSha256, fault)
         }
 
+    let private exactMaterial
+        (canonical: byte array)
+        (digest: string)
+        (retained: RetainedPreparation)
+        =
+        retained.CanonicalRequestFormat = RecordVersions.CanonicalCommandFormat
+        && retained.RequestSha256 = digest
+        && CryptographicOperations.FixedTimeEquals(
+            System.ReadOnlySpan<byte>(retained.CanonicalRequest),
+            System.ReadOnlySpan<byte>(canonical)
+        )
+
+    let private retainedRetryDisposition
+        (canonical: byte array)
+        (digest: string)
+        (stored: RecoveryStoredOperation option)
+        =
+        match stored with
+        | None -> RetryNotFound
+        | Some(RecoveryStoredOperation.RevokedTombstone revocation) when
+            revocation.RequestSha256 = digest
+            ->
+            RetryRefused(SubmissionOutcome.RejectedBeforeAttempt(None, OperationRejection.revoked))
+        | Some(RecoveryStoredOperation.RevokedTombstone _) ->
+            RetryRefused(
+                SubmissionOutcome.RejectedBeforeAttempt(
+                    None,
+                    AcceptedObservation.idempotencyConflict
+                )
+            )
+        | Some(RecoveryStoredOperation.Retained(retained, _)) when
+            not (exactMaterial canonical digest retained)
+            ->
+            RetryRefused(
+                SubmissionOutcome.RejectedBeforeAttempt(
+                    None,
+                    AcceptedObservation.idempotencyConflict
+                )
+            )
+        | Some(RecoveryStoredOperation.Retained(_, RecoveryAuthority.RevokedAuthority)) ->
+            RetryRefused(SubmissionOutcome.RejectedBeforeAttempt(None, OperationRejection.revoked))
+        | Some(RecoveryStoredOperation.Retained(retained, _)) -> RetryResolution retained
+
     let private retainedRetry
         (store: IClaimStore)
         (recovery: IRecoveryStore)
-        (clock: IBusinessDate)
+        (clock: IBusinessTime)
         (request: CommandRequest)
         (canonical: byte array)
         digest
@@ -124,48 +196,36 @@ module internal TypedSubmission =
         =
         task {
             match! recovery.Get(request.OperationId, cancellationToken) with
-            | Ok(Some retained) when
-                retained.CanonicalRequestFormat = RecordVersions.CanonicalCommandFormat
-                && retained.RequestSha256 = digest
-                && CryptographicOperations.FixedTimeEquals(
-                    System.ReadOnlySpan<byte>(retained.CanonicalRequest),
-                    System.ReadOnlySpan<byte>(canonical)
-                )
-                ->
-                let! result =
-                    TypedResolution.resolveRetained
-                        store
-                        recovery
-                        clock
-                        request.OperationId
-                        digest
-                        cancellationToken
-
-                let knownPreparation = TypedProjection.summary true retained |> Result.toOption
-                return Some(resolvedOutcome knownPreparation result)
-            | Ok(Some _) ->
-                return
-                    Some(
-                        SubmissionOutcome.RejectedBeforeAttempt(
-                            None,
-                            AcceptedObservation.idempotencyConflict
-                        )
-                    )
-            | Ok _ -> return None
             | Error _ -> return None
+            | Ok stored ->
+                match retainedRetryDisposition canonical digest stored with
+                | RetryNotFound -> return None
+                | RetryRefused outcome -> return Some outcome
+                | RetryResolution retained ->
+                    let! result =
+                        TypedResolution.resolveRetained
+                            store
+                            recovery
+                            clock
+                            request.OperationId
+                            digest
+                            cancellationToken
+
+                    let knownPreparation = TypedProjection.summary true retained |> Result.toOption
+                    return Some(resolvedOutcome knownPreparation result)
         }
 
     let private retryOutcome
         (store: IClaimStore)
         (recovery: IRecoveryStore)
-        (clock: IBusinessDate)
-        (draft: CommandDraft)
+        (clock: IBusinessTime)
+        (request: CommandRequest)
         (cancellationToken: CancellationToken)
         =
         task {
-            match Drafts.bind draft with
+            match Claim.validateRequest request with
             | Error _ -> return None
-            | Ok request ->
+            | Ok() ->
                 let canonical = RequestRecord.encode request
                 let digest = canonical |> SHA256.HashData |> System.Convert.ToHexStringLower
 
@@ -203,15 +263,15 @@ module internal TypedSubmission =
     let execute
         (store: IClaimStore)
         (recovery: IRecoveryStore)
-        (clock: IBusinessDate)
-        (draft: CommandDraft)
+        (clock: IBusinessTime)
+        (request: CommandRequest)
         (cancellationToken: CancellationToken)
         : Task<SubmissionOutcome> =
         task {
             if cancellationToken.IsCancellationRequested then
-                return! completePrepared store recovery clock draft cancellationToken
+                return! completePrepared store recovery clock request cancellationToken
             else
-                match! retryOutcome store recovery clock draft cancellationToken with
+                match! retryOutcome store recovery clock request cancellationToken with
                 | Some outcome -> return outcome
-                | None -> return! completePrepared store recovery clock draft cancellationToken
+                | None -> return! completePrepared store recovery clock request cancellationToken
         }

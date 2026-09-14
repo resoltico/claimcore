@@ -25,6 +25,7 @@ module ConvergenceRequiredSubjects =
     let private core =
         set
             [
+                "assurance-core:atomic-correction"
                 "assurance-cancellation:execute-before-admission"
                 "assurance-cancellation:query-before-read"
                 "assurance-cancellation:resolve-after-attempt"
@@ -71,10 +72,10 @@ module ConvergenceRequiredSubjects =
             [
                 "assurance-migration:frozen-applied-bytes"
                 "assurance-migration:rollback"
-                "assurance-migration:upgrade-002-to-005"
-                "assurance-migration:upgrade-003-to-005"
-                "assurance-migration:upgrade-004-to-005"
-                "assurance-migration:upgrade-through-005"
+                "assurance-migration:upgrade-002-to-006"
+                "assurance-migration:upgrade-003-to-006"
+                "assurance-migration:upgrade-004-to-006"
+                "assurance-migration:upgrade-through-006"
                 "assurance-recovery:accepted-blocks-dismiss"
                 "assurance-recovery:atomic-retain-classification"
                 "assurance-recovery:canonical-byte-identity"
@@ -84,11 +85,12 @@ module ConvergenceRequiredSubjects =
                 "assurance-recovery:exact-prepare-retry"
                 "assurance-recovery:identity-conflict"
                 "assurance-recovery:legacy-marker-independent"
+                "assurance-recovery:operation-authority"
                 "assurance-recovery:provenance-first-writer"
                 "assurance-recovery:resolve-dismiss-race"
                 "assurance-recovery:started-uncertainty"
                 "assurance-recovery:state-table"
-                "assurance-recovery:unconfirmed-settlement"
+                "assurance-recovery:settlement-co-commit"
                 "assurance-runtime:admitted-outcomes"
                 "assurance-runtime:disposal-drain"
                 "assurance-runtime:open-cancellation-and-cleanup"

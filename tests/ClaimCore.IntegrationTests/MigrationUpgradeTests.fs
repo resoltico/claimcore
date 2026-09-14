@@ -251,6 +251,9 @@ let private manifestUpgradeTests =
                         5,
                         "005_recovery_evidence_read_acl",
                         "48652349e683df4f94e4dc2fcf27f40c2a35d69ba0ee7007871f616b79ce783b"
+                        6,
+                        "006_operation_authority_and_business_time",
+                        "b73ea23977478361bd708aef0fa357cf24d4af6ea096bfa3ff225710cb722818"
                     ]
                     "Applied migration names and bytes are immutable")
             testCase "[CC-DB-001] migrator refuses a newer manifest entry" (fun () ->
@@ -259,7 +262,7 @@ let private manifestUpgradeTests =
 
                     execute
                         admin
-                        "INSERT INTO claimcore.schema_migrations (version, name, script_sha256) VALUES (6, '006_future', repeat('0', 64))"
+                        "INSERT INTO claimcore.schema_migrations (version, name, script_sha256) VALUES (7, '007_future', repeat('0', 64))"
 
                     Expect.throws
                         (fun () -> Migrations.apply admin)
@@ -268,7 +271,7 @@ let private manifestUpgradeTests =
 
 let private upgradeTests =
     testList
-        "migration 001 through 005"
+        "migration 001 through 006"
         [ retentionUpgradeTests; atomicityUpgradeTests; manifestUpgradeTests ]
 
 let tests = testList "PostgreSQL migration upgrade qualification" [ upgradeTests ]

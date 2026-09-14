@@ -13,6 +13,7 @@ module internal SubmissionAttemptStore =
         | RecoverySettlement.Accepted -> "ACCEPTED"
         | RecoverySettlement.Rejected -> "REJECTED"
         | RecoverySettlement.FailedBeforeCommit -> "ERROR"
+        | RecoverySettlement.RevokedBeforeExecution -> "REVOKED_BEFORE_EXECUTION"
 
     let private insertAttempt connection transaction operationId =
         task {
@@ -35,18 +36,48 @@ module internal SubmissionAttemptStore =
             return attemptId
         }
 
-    let start connection transaction operationId preparation =
+    let private attemptCount connection transaction operationId =
+        task {
+            use command =
+                new NpgsqlCommand(
+                    "SELECT count(*) FROM claimcore.request_submission_attempts WHERE operation_id = @operation",
+                    connection,
+                    transaction
+                )
+
+            Sql.uuid command "operation" operationId
+            let! value = command.ExecuteScalarAsync()
+            return value :?> int64
+        }
+
+    let start
+        maximumAttempts
+        connection
+        transaction
+        operationId
+        preparation
+        : Task<Result<RecoveryStart, RecoveryStoreFailure>> =
         task {
             let! lifecycle = admitSubmission connection transaction operationId preparation
 
             match lifecycle with
-            | SubmissionLifecycle.Dismissed retained -> return RecoveryStart.Dismissed retained
+            | SubmissionLifecycle.Dismissed retained -> return Ok(RecoveryStart.Dismissed retained)
             | SubmissionLifecycle.Started retained ->
-                let! attemptId = insertAttempt connection transaction operationId
-                return RecoveryStart.Started(attemptId, retained)
+                let! count = attemptCount connection transaction operationId
+
+                if count >= int64 maximumAttempts then
+                    return Error RecoveryStoreFailure.CapacityExceeded
+                else
+                    let! attemptId = insertAttempt connection transaction operationId
+                    return Ok(RecoveryStart.Started(attemptId, retained))
             | SubmissionLifecycle.AlreadyStarted retained ->
-                let! attemptId = insertAttempt connection transaction operationId
-                return RecoveryStart.AlreadyStarted(attemptId, retained)
+                let! count = attemptCount connection transaction operationId
+
+                if count >= int64 maximumAttempts then
+                    return Error RecoveryStoreFailure.CapacityExceeded
+                else
+                    let! attemptId = insertAttempt connection transaction operationId
+                    return Ok(RecoveryStart.AlreadyStarted(attemptId, retained))
         }
 
     let settle connection transaction attemptId outcome =

@@ -25,7 +25,7 @@ outcomes but do not independently prove that a command ran.
 [`ClaimCore.ContractGenerator`](ClaimCore.ContractGenerator/) materializes checked artifacts from the
 pure `ClaimCore.Contracts` projection: semantic core, exact CLI-v3/Web-v2 request and response
 schemas, production-codec corpora, and split TypeScript DTO modules. The locked frontend postprocess
-adds bounded AJV standalone validators and binds the combined output manifest. The generator remains
+adds bounded AJV standalone core and recovery validator groups and binds the combined output manifest. The generator remains
 engineering tooling, not a runtime authority or additional application. CLI, Web, and the browser
 consume the same pure codec/schema authority; no legacy HTTP-v1 descriptor is retained.
 

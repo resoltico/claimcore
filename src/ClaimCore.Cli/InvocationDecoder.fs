@@ -1,33 +1,12 @@
 namespace ClaimCore.Cli
 
 open System
-open System.Globalization
 open System.Text.Json
 open ClaimCore.Application
-open ClaimCore.Domain
-
-[<NoEquality; NoComparison; RequireQualifiedAccess>]
-type EndpointInput =
-    | Draft of CommandDraft
-    | CaseReference of string
-    | CaseList of afterReference: string option * limit: int
-    | History of caseReference: string * cursor: string option * limit: int * detail: HistoryDetail
-    | Operation of Guid
-    | RecoveryPage of cursor: string option * limit: int
-    | RecoveryResolve of operationId: Guid * requestSha256: string
-    | RecoveryDismiss of operationId: Guid * requestSha256: string
-    | RecoveryExport of operationId: Guid * requestSha256: string * destination: string
-    | RecoveryImportPreview of source: string
-    | RecoveryImportRetain of source: string * sourceSha256: string
 
 module InvocationDecoder =
     let private failure code message path =
         Error(ProtocolFailure.create code message path)
-
-    let private requiredOption code message path value =
-        match value with
-        | Some item -> Ok item
-        | None -> failure code message path
 
     let private canonicalGuid path (value: JsonElement) =
         match StrictJson.stringAt path value with
@@ -49,24 +28,6 @@ module InvocationDecoder =
             Ok raw
         | Ok _ -> failure "INVALID_DIGEST" "Use a lowercase SHA-256 digest." path
 
-    let private revision path (value: JsonElement) =
-        match StrictJson.stringAt path value with
-        | Error problem -> Error problem
-        | Ok raw when raw = "0" -> Ok 0L
-        | Ok raw when raw.Length > 0 && raw[0] <> '0' && raw |> Seq.forall Char.IsAsciiDigit ->
-            match Int64.TryParse(raw, NumberStyles.None, CultureInfo.InvariantCulture) with
-            | true, parsed when parsed < Int64.MaxValue -> Ok parsed
-            | _ ->
-                failure
-                    "INVALID_REVISION"
-                    "Use a canonical unsigned revision below Int64.MaxValue."
-                    path
-        | Ok _ ->
-            failure
-                "INVALID_REVISION"
-                "Use a canonical unsigned revision below Int64.MaxValue."
-                path
-
     let private inputObject expected (value: JsonElement) =
         StrictJson.exactProperties "/input" expected value
 
@@ -83,69 +44,6 @@ module InvocationDecoder =
         StrictJson.requiredProperty path name input
         |> Result.bind (StrictJson.integerAt (path + "/" + name) minimum maximum)
 
-    let private commandKind path (value: JsonElement) =
-        StrictJson.stringAt path value
-        |> Result.bind (fun token ->
-            CommandKinds.all
-            |> List.tryFind (fun kind -> CommandKinds.token kind = token)
-            |> requiredOption
-                "INVALID_COMMAND"
-                "The command kind is not declared by the semantic contract."
-                path)
-
-    let private values kind (value: JsonElement) =
-        let expected = CommandDefinitions.forKind kind |> _.Inputs |> List.map _.FieldName
-
-        StrictJson.exactProperties "/input/command/values" expected value
-        |> Result.bind (fun source ->
-            expected
-            |> List.map (fun name ->
-                StrictJson.requiredProperty "/input/command/values" name source
-                |> Result.bind (StrictJson.stringAt ("/input/command/values/" + name))
-                |> Result.map (fun text -> name, text))
-            |> List.fold
-                (fun state item ->
-                    match state, item with
-                    | Ok collected, Ok decoded -> Ok(decoded :: collected)
-                    | Error problem, _ -> Error problem
-                    | _, Error problem -> Error problem)
-                (Ok [])
-            |> Result.map List.rev)
-
-    let private draft (input: JsonElement) =
-        let command source =
-            StrictJson.requiredProperty "/input" "command" source
-            |> Result.bind (StrictJson.exactProperties "/input/command" [ "kind"; "values" ])
-
-        inputObject [ "operationId"; "caseReference"; "expectedRevision"; "command" ] input
-        |> Result.bind (fun source ->
-            StrictJson.requiredProperty "/input" "operationId" source
-            |> Result.bind (canonicalGuid "/input/operationId")
-            |> Result.bind (fun operationId ->
-                requiredString "/input" "caseReference" source
-                |> Result.bind (fun caseReference ->
-                    StrictJson.requiredProperty "/input" "expectedRevision" source
-                    |> Result.bind (revision "/input/expectedRevision")
-                    |> Result.bind (fun expectedVersion ->
-                        command source
-                        |> Result.bind (fun commandValue ->
-                            StrictJson.requiredProperty "/input/command" "kind" commandValue
-                            |> Result.bind (commandKind "/input/command/kind")
-                            |> Result.bind (fun kind ->
-                                StrictJson.requiredProperty
-                                    "/input/command"
-                                    "values"
-                                    commandValue
-                                |> Result.bind (values kind)
-                                |> Result.map (fun fields ->
-                                    EndpointInput.Draft
-                                        {
-                                            OperationId = operationId
-                                            CaseReference = caseReference
-                                            ExpectedVersion = expectedVersion
-                                            Kind = kind
-                                            Values = fields
-                                        })))))))
 
     let private caseReference input =
         inputObject [ "caseReference" ] input
@@ -191,12 +89,41 @@ module InvocationDecoder =
         |> Result.map EndpointInput.Operation
 
     let private recoveryPage input =
-        StrictJson.allowedProperties "/input" [ "limit" ] [ "cursor"; "limit" ] input
+        StrictJson.allowedProperties "/input" [ "limit" ] [ "cursor"; "limit"; "view" ] input
         |> Result.bind (fun source ->
             optionalString "/input" "cursor" source
             |> Result.bind (fun cursor ->
                 requiredInteger "/input" "limit" 1 50 source
-                |> Result.map (fun limit -> EndpointInput.RecoveryPage(cursor, limit))))
+                |> Result.bind (fun limit ->
+                    match optionalString "/input" "view" source with
+                    | Ok None ->
+                        Ok(EndpointInput.RecoveryPage(RecoveryListView.Pending, cursor, limit))
+                    | Ok(Some "PENDING") ->
+                        Ok(EndpointInput.RecoveryPage(RecoveryListView.Pending, cursor, limit))
+                    | Ok(Some "TERMINAL") ->
+                        Ok(EndpointInput.RecoveryPage(RecoveryListView.Terminal, cursor, limit))
+                    | Ok(Some _) ->
+                        failure
+                            "INVALID_RECOVERY_VIEW"
+                            "Use PENDING or TERMINAL recovery view."
+                            "/input/view"
+                    | Error problem -> Error problem)))
+
+    let private recoveryInspect input =
+        StrictJson.allowedProperties
+            "/input"
+            [ "operationId"; "attemptLimit" ]
+            [ "operationId"; "attemptCursor"; "attemptLimit" ]
+            input
+        |> Result.bind (fun source ->
+            StrictJson.requiredProperty "/input" "operationId" source
+            |> Result.bind (canonicalGuid "/input/operationId")
+            |> Result.bind (fun operationId ->
+                optionalString "/input" "attemptCursor" source
+                |> Result.bind (fun cursor ->
+                    requiredInteger "/input" "attemptLimit" 1 50 source
+                    |> Result.map (fun limit ->
+                        EndpointInput.RecoveryInspect(operationId, cursor, limit)))))
 
     let private identityFrom source =
         StrictJson.requiredProperty "/input" "operationId" source
@@ -263,14 +190,14 @@ module InvocationDecoder =
         let handlers =
             Map.ofList
                 [
-                    Endpoint.CommandPrepare, draft
-                    Endpoint.CommandExecute, draft
+                    Endpoint.CommandPrepare, CliCommandInput.draft
+                    Endpoint.CommandExecute, CliCommandInput.draft
                     Endpoint.CaseGet, caseReference
                     Endpoint.CaseList, listInput
                     Endpoint.CaseHistory, history
                     Endpoint.OperationObserve, operation
                     Endpoint.RecoveryList, recoveryPage
-                    Endpoint.RecoveryInspect, operation
+                    Endpoint.RecoveryInspect, recoveryInspect
                     Endpoint.RecoveryResolve,
                     (fun input ->
                         recoveryIdentity input |> Result.map EndpointInput.RecoveryResolve)

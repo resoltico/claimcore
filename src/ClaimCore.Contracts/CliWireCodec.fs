@@ -74,6 +74,7 @@ module CliWireCodec =
         match execution with
         | DefiniteExecution.Accepted _ -> 0
         | DefiniteExecution.ExecutionRejected _ -> 2
+        | DefiniteExecution.ExecutionRevokedBeforeExecution _ -> 2
         | DefiniteExecution.FailedBeforeCommit _ -> 3
 
     let private submissionExit (outcome: SubmissionOutcome) =
@@ -106,7 +107,8 @@ module CliWireCodec =
     let private dismissExit (outcome: RecoveryDismissOutcome) =
         match outcome with
         | RecoveryDismissOutcome.DismissedPreparation _
-        | RecoveryDismissOutcome.AlreadyDismissedPreparation _ -> 0
+        | RecoveryDismissOutcome.AlreadyDismissedPreparation _
+        | RecoveryDismissOutcome.AlreadyRevoked _ -> 0
         | RecoveryDismissOutcome.DismissNotFound _
         | RecoveryDismissOutcome.DismissRefused _ -> 2
         | RecoveryDismissOutcome.DismissFailed _ -> 3
@@ -116,7 +118,8 @@ module CliWireCodec =
     let private retainExit (outcome: RecoveryImportRetainOutcome) =
         match outcome with
         | RecoveryImportRetainOutcome.RetainedPreparation _
-        | RecoveryImportRetainOutcome.ExistingPreparation _ -> 0
+        | RecoveryImportRetainOutcome.ExistingPreparation _
+        | RecoveryImportRetainOutcome.ObservedAcceptedImport _ -> 0
         | RecoveryImportRetainOutcome.ImportRejected _ -> 2
         | RecoveryImportRetainOutcome.ImportFailed _ -> 3
         | RecoveryImportRetainOutcome.ImportCancelledBeforeAdmission -> 130
@@ -158,7 +161,7 @@ module CliWireCodec =
 
     let recoveryInspect
         (endpoint: string)
-        (outcome: RecoveryQueryOutcome<Lookup<RecoveryDetails, Guid>>)
+        (outcome: RecoveryQueryOutcome<Lookup<RecoveryInspection, Guid>>)
         =
         result endpoint (recoveryLookupExit outcome) (fun writer ->
             CliWireQueries.recoveryDetails writer outcome)

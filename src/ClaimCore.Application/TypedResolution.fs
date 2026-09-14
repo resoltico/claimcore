@@ -3,6 +3,7 @@ namespace ClaimCore.Application
 open System
 open System.Threading
 open System.Threading.Tasks
+open ClaimCore.Domain
 open ClaimCore.RecordFormat
 
 module internal TypedResolution =
@@ -13,41 +14,21 @@ module internal TypedResolution =
             Action = RecommendedAction.StopAndInvestigate
         }
 
-    let private settle
-        (recovery: IRecoveryStore)
-        (attemptId: Guid)
-        (execution: DefiniteExecution)
-        : Task<SettlementConfirmation> =
-        let outcome =
-            match execution with
-            | DefiniteExecution.Accepted _ -> RecoverySettlement.Accepted
-            | DefiniteExecution.ExecutionRejected _ -> RecoverySettlement.Rejected
-            | DefiniteExecution.FailedBeforeCommit _ -> RecoverySettlement.FailedBeforeCommit
-
-        task {
-            try
-                match! recovery.Settle(attemptId, outcome, CancellationToken.None) with
-                | Ok() -> return SettlementConfirmation.Confirmed
-                | Error _ -> return SettlementConfirmation.Unconfirmed
-            with _ ->
-                return SettlementConfirmation.Unconfirmed
-        }
-
     let private executionResult
         (summary: PreparationSummary)
         (attemptId: Guid)
         (request: ClaimCore.Domain.CommandRequest)
-        (result: Result<Receipt, CoreFailure>)
+        (result: Result<AdmittedExecution, RecoveryStoreFailure>)
         : RetainedResolution =
         match result with
-        | Ok accepted ->
+        | Ok(AdmittedExecution.Accepted accepted) ->
             Resolved(
                 summary,
                 attemptId,
                 DefiniteExecution.Accepted(TypedProjection.receipt accepted),
                 SettlementConfirmation.Confirmed
             )
-        | Error(CoreFailure.Domain rejection) ->
+        | Ok(AdmittedExecution.Rejected(rejection, settlement)) ->
             Resolved(
                 summary,
                 attemptId,
@@ -55,15 +36,16 @@ module internal TypedResolution =
                     request.OperationId,
                     TypedProjection.rejection rejection
                 ),
-                SettlementConfirmation.Confirmed
+                settlement
             )
-        | Error(CoreFailure.CommitOutcomeUnknown _) ->
-            ResolutionUnresolved(
+        | Ok(AdmittedExecution.RevokedBeforeExecution settlement) ->
+            Resolved(
                 summary,
                 attemptId,
-                TypedProjection.coreFault (CoreFailure.CommitOutcomeUnknown request.OperationId)
+                DefiniteExecution.ExecutionRevokedBeforeExecution request.OperationId,
+                settlement
             )
-        | Error failure ->
+        | Ok(AdmittedExecution.FailedBeforeCommit(failure, settlement)) ->
             Resolved(
                 summary,
                 attemptId,
@@ -71,12 +53,20 @@ module internal TypedResolution =
                     request.OperationId,
                     TypedProjection.coreFault failure
                 ),
-                SettlementConfirmation.Confirmed
+                settlement
             )
+        | Ok(AdmittedExecution.CommitOutcomeUnknown _) ->
+            ResolutionUnresolved(
+                summary,
+                attemptId,
+                TypedProjection.coreFault (CoreFailure.CommitOutcomeUnknown request.OperationId)
+            )
+        | Error failure ->
+            ResolutionUnresolved(summary, attemptId, TypedProjection.recoveryFault failure)
 
     let private executeClaim
-        (store: IClaimStore)
-        (clock: IBusinessDate)
+        (recovery: IRecoveryStore)
+        (clock: IBusinessTime)
         (preparation: RetainedPreparation)
         (summary: PreparationSummary)
         (attemptId: Guid)
@@ -95,14 +85,30 @@ module internal TypedResolution =
                             "Retained canonical request bytes failed integrity validation."
                     )
             | Ok request ->
-                let! result = Service.executeAsync store clock request
-                return executionResult summary attemptId request result
+                match Operation.prepare request with
+                | Error _ ->
+                    return
+                        ResolutionFailedBeforeAttempt(
+                            Some summary,
+                            integrityFault
+                                "Retained request did not satisfy its closed domain shape."
+                        )
+                | Ok operation ->
+                    let! result =
+                        recovery.ExecuteAdmitted(
+                            operation,
+                            attemptId,
+                            (fun () -> (clock.Capture()).EffectiveBusinessDate),
+                            (fun today current -> Claim.decide today request current),
+                            CancellationToken.None
+                        )
+
+                    return executionResult summary attemptId request result
         }
 
     let private executeAdmitted
-        (store: IClaimStore)
         (recovery: IRecoveryStore)
-        (clock: IBusinessDate)
+        (clock: IBusinessTime)
         (retained: RetainedPreparation)
         (summary: PreparationSummary)
         (attemptId: Guid)
@@ -111,7 +117,7 @@ module internal TypedResolution =
             let! execution =
                 task {
                     try
-                        return! executeClaim store clock retained summary attemptId
+                        return! executeClaim recovery clock retained summary attemptId
                     with _ ->
                         // Attempt admission succeeded. A thrown claim execution cannot
                         // prove whether its transaction reached the commit boundary.
@@ -125,17 +131,12 @@ module internal TypedResolution =
                             )
                 }
 
-            match execution with
-            | Resolved(_, _, definite, _) ->
-                let! settlement = settle recovery attemptId definite
-                return Resolved(summary, attemptId, definite, settlement)
-            | other -> return other
+            return execution
         }
 
     let private start
-        (store: IClaimStore)
         (recovery: IRecoveryStore)
-        (clock: IBusinessDate)
+        (clock: IBusinessTime)
         (operationId: Guid)
         (summary: PreparationSummary)
         (cancellationToken: CancellationToken)
@@ -150,6 +151,7 @@ module internal TypedResolution =
                     )
             | Error RecoveryStoreFailure.CancelledBeforeCommit ->
                 return ResolutionCancelledBeforeAttempt summary
+            | Error RecoveryStoreFailure.CapacityExceeded -> return AttemptLimitReached summary
             | Error failure ->
                 return
                     ResolutionFailedBeforeAttempt(
@@ -158,20 +160,21 @@ module internal TypedResolution =
                     )
             | Ok(RecoveryStart.Dismissed retained) ->
                 match TypedProjection.summary true retained with
-                | Ok dismissed -> return DismissedPreparation dismissed
+                | Ok revoked -> return RevokedPreparation(Some revoked)
                 | Error fault -> return ResolutionFailedBeforeAttempt(Some summary, fault)
+            | Ok(RecoveryStart.ObservedAccepted receipt) ->
+                return ObservedReceipt(TypedProjection.receipt receipt)
             | Ok(RecoveryStart.Started(attemptId, retained))
             | Ok(RecoveryStart.AlreadyStarted(attemptId, retained)) ->
                 match TypedProjection.summary true retained with
                 | Error fault -> return ResolutionFailedBeforeAttempt(Some summary, fault)
-                | Ok admitted ->
-                    return! executeAdmitted store recovery clock retained admitted attemptId
+                | Ok admitted -> return! executeAdmitted recovery clock retained admitted attemptId
         }
 
     let private resolvePrepared
         (store: IClaimStore)
         (recovery: IRecoveryStore)
-        (clock: IBusinessDate)
+        (clock: IBusinessTime)
         (operationId: Guid)
         (requestSha256: string)
         (preparation: RetainedPreparation)
@@ -197,14 +200,13 @@ module internal TypedResolution =
                                 Some summary,
                                 TypedProjection.coreFault failure
                             )
-                    | Ok None ->
-                        return! start store recovery clock operationId summary cancellationToken
+                    | Ok None -> return! start recovery clock operationId summary cancellationToken
         }
 
     let resolveRetained
         (store: IClaimStore)
         (recovery: IRecoveryStore)
-        (clock: IBusinessDate)
+        (clock: IBusinessTime)
         (operationId: Guid)
         (requestSha256: string)
         (cancellationToken: CancellationToken)
@@ -220,14 +222,28 @@ module internal TypedResolution =
                     return
                         ResolutionFailedBeforeAttempt(None, TypedProjection.recoveryFault failure)
                 | Ok None -> return MissingPreparation operationId
-                | Ok(Some preparation) ->
-                    return!
-                        resolvePrepared
-                            store
-                            recovery
-                            clock
-                            operationId
-                            requestSha256
-                            preparation
-                            cancellationToken
+                | Ok(Some(RecoveryStoredOperation.RevokedTombstone revocation)) ->
+                    if revocation.RequestSha256 = requestSha256 then
+                        return RevokedPreparation None
+                    else
+                        return DigestConflict
+                | Ok(Some(RecoveryStoredOperation.Retained(preparation, authority))) ->
+                    if preparation.RequestSha256 <> requestSha256 then
+                        return DigestConflict
+                    elif authority = RecoveryAuthority.RevokedAuthority then
+                        match
+                            TypedProjection.summaryWithKnownAuthority true authority preparation
+                        with
+                        | Ok summary -> return RevokedPreparation(Some summary)
+                        | Error fault -> return ResolutionFailedBeforeAttempt(None, fault)
+                    else
+                        return!
+                            resolvePrepared
+                                store
+                                recovery
+                                clock
+                                operationId
+                                requestSha256
+                                preparation
+                                cancellationToken
         }

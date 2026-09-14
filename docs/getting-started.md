@@ -76,6 +76,17 @@ CLAIMCORE_ADMIN_CONNECTION_FILE=/absolute/private/path/admin.connection \
 dotnet run --project src/ClaimCore.Database --configuration Release --no-build -- migrate
 ```
 
+Choose and persist the installation business time zone before opening either case-work application.
+The command accepts a canonical IANA ID available to this runtime; `Etc/UTC` is the portable
+synthetic walkthrough choice. The first value is immutable for that installation, and repeating the
+same value is safe. Production operators should choose their actual business calendar during planned
+downtime rather than inheriting a laptop or server setting.
+
+```sh
+CLAIMCORE_ADMIN_CONNECTION_FILE=/absolute/private/path/admin.connection \
+dotnet run --project src/ClaimCore.Database --configuration Release --no-build -- set-business-zone Etc/UTC
+```
+
 The Web and CLI applications must use `app.connection`, never the owner connection. Database
 administration and retention details are in [PostgreSQL storage and administration](database.md).
 
@@ -151,8 +162,10 @@ Proceed only when the fingerprints and `localhost` identity match. Trust only th
 certificate, using the operating system or browser's local certificate controls; do not disable TLS
 validation globally. If `CLAIMCORE_WEB_ORIGIN` selects another port, use that port in the command.
 
-Use fictional case facts. The Web interface can open, amend, decide, withdraw a decision, record or
-clear payment, close, and reopen a case. Its Recovery view handles exact retained preparations.
+Use fictional case facts. The Web interface can open, amend, correct decided, paid, or closed facts
+atomically, decide, withdraw a decision, record or clear payment, close, and reopen a case. Its
+Recovery view defaults to actionable pending preparations and provides an explicit terminal view for
+accepted or revoked technical evidence.
 
 For a structured terminal lifecycle instead, follow the [synthetic CLI
 walkthrough](../examples/README.md).

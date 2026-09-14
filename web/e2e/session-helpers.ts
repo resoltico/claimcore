@@ -5,6 +5,7 @@ import { AxeBuilder } from "@axe-core/playwright";
 import { expect, type BrowserContext, type Page } from "@playwright/test";
 
 import { isHostFailure, isWebV2Response } from "../src/generated/convergence/web-v2.validation";
+import type { HostFailure, WebV2Response } from "../src/generated/convergence/web-v2.types";
 
 type BrowserReply = Readonly<{
   status: number;
@@ -72,20 +73,29 @@ export const browserRequest = async (
 
 export const sessionToken = async (page: Page): Promise<string> => {
   const reply = await browserRequest(page, "/api/v2/session");
-  if (!isWebV2Response("session", reply.payload)) throw new Error("Invalid session response.");
-  const snapshot = reply.payload.outcome.data;
+  if (!(await isWebV2Response("session", reply.payload))) {
+    throw new Error("Invalid session response.");
+  }
+  const snapshot = (reply.payload as WebV2Response<"session">).outcome.data;
   if (reply.status !== 200 || snapshot.antiforgeryToken === null) {
     throw new Error("Session response did not provide an antiforgery token.");
   }
   return snapshot.antiforgeryToken;
 };
 
-export const expectHostFailure = (reply: BrowserReply, status: number, code: string): void => {
+export const expectHostFailure = async (
+  reply: BrowserReply,
+  status: number,
+  code: string,
+): Promise<void> => {
   expect(reply.status).toBe(status);
   expect(reply.cacheControl).toContain("no-store");
-  expect(isHostFailure(reply.payload)).toBe(true);
-  if (!isHostFailure(reply.payload)) throw new Error("Invalid host-failure response.");
-  expect(reply.payload.code).toBe(code);
+  const valid = await isHostFailure("session", reply.payload);
+  expect(valid).toBe(true);
+  if (!valid) {
+    throw new Error("Invalid host-failure response.");
+  }
+  expect((reply.payload as HostFailure).code).toBe(code);
 };
 
 export const login = async (page: Page): Promise<void> => {
@@ -131,8 +141,10 @@ export const logout = async (page: Page): Promise<void> => {
   await expect(page.getByRole("heading", { name: "ClaimCore" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
   const reply = await browserRequest(page, "/api/v2/session");
-  if (!isWebV2Response("session", reply.payload)) throw new Error("Invalid logout response.");
-  expect(reply.payload.outcome.data.authenticated).toBe(false);
+  if (!(await isWebV2Response("session", reply.payload))) {
+    throw new Error("Invalid logout response.");
+  }
+  expect((reply.payload as WebV2Response<"session">).outcome.data.authenticated).toBe(false);
 };
 
 export const rejectedLogin = (page: Page, token: string): Promise<BrowserReply> =>

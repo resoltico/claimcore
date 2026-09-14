@@ -8,10 +8,7 @@ open ClaimCore.Application
 open ClaimCore.Domain
 open ClaimCore.Tests.Fixtures
 
-let private clock =
-    { new IBusinessDate with
-        member _.Today() = today
-    }
+let private clock = businessTime today
 
 let private waitFor (task: Task<'value>) = task.GetAwaiter().GetResult()
 
@@ -27,34 +24,33 @@ let private registrationValues =
     ]
 
 let private create () =
-    CoreApi.create
-        (new CoreStore.Store() :> IClaimStore)
-        (new CoreRecoveryStore.Store() :> IRecoveryStore)
-        clock
+    let claims = new CoreStore.Store()
+    let recovery = new CoreRecoveryStore.Store()
+    recovery.AttachClaimStore(claims :> IClaimStore)
+
+    CoreApi.create (claims :> IClaimStore) (recovery :> IRecoveryStore) clock
 
 let private openCase (core: IClaimsCore) operationId reference =
-    let command =
+    let command: CommandDraft =
         {
             OperationId = operationId
             CaseReference = reference
             ExpectedVersion = 0L
-            Kind = CommandKind.Open
-            Values = registrationValues
+            Command = DraftCommand.Flat(CommandKind.Open, registrationValues)
         }
 
-    core.Execute(command, CancellationToken.None) |> waitFor |> ignore
+    core.Execute(boundRequest command, CancellationToken.None) |> waitFor |> ignore
 
 let private closeCase (core: IClaimsCore) operationId reference revision =
-    let command =
+    let command: CommandDraft =
         {
             OperationId = operationId
             CaseReference = reference
             ExpectedVersion = revision
-            Kind = CommandKind.Close
-            Values = []
+            Command = DraftCommand.Flat(CommandKind.Close, [])
         }
 
-    core.Execute(command, CancellationToken.None) |> waitFor |> ignore
+    core.Execute(boundRequest command, CancellationToken.None) |> waitFor |> ignore
 
 let private casePages =
     testCase "case listing returns request-bounded stable pages without loss or overlap" (fun () ->

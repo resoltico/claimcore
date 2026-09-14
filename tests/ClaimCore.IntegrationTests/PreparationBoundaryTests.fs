@@ -28,12 +28,17 @@ let private draft () =
         PreparingContractKind = PreparingContractKind.SemanticCoreV1
     }
 
-let private currentPreparationCount () =
+let private currentPendingPreparationCount () =
     use connection = new NpgsqlConnection(appConnection ())
     connection.Open()
 
     use command =
-        new NpgsqlCommand("SELECT count(*) FROM claimcore.request_preparations", connection)
+        new NpgsqlCommand(
+            "SELECT count(*) FROM claimcore.request_preparations p "
+            + "WHERE NOT EXISTS (SELECT 1 FROM claimcore.case_changes c WHERE c.operation_id = p.operation_id) "
+            + "AND NOT EXISTS (SELECT 1 FROM claimcore.operation_revocations r WHERE r.operation_id = p.operation_id)",
+            connection
+        )
 
     command.ExecuteScalar() :?> int64
 
@@ -43,7 +48,7 @@ let private capacityRefusal =
 
         let limits =
             { PreparationLimits.defaults with
-                MaximumPreparations = int (currentPreparationCount ()) + 1
+                MaximumPreparations = int (currentPendingPreparationCount ()) + 1
             }
 
         let recovery = PostgresRecoveryStore(source, limits) :> IRecoveryStore
@@ -60,7 +65,7 @@ let private capacityRefusal =
         | _ -> failtest "A distinct preparation must be refused at the configured capacity."
 
         match recovery.Get(first.OperationId, CancellationToken.None) |> await with
-        | Ok(Some retained) ->
+        | Ok(Some(RecoveryStoredOperation.Retained(retained, _))) ->
             Expect.equal retained.RequestSha256 first.RequestSha256 "Refusal cannot erase recovery"
         | _ -> failtest "The retained first preparation must remain readable."
 
@@ -119,7 +124,7 @@ let private stableInstallationLineage =
         Expect.notEqual first Guid.Empty "Lineage cannot be the empty UUID"
         Expect.equal (read ()) first "Lineage is stable across independent reads")
 
-let private dismissedPreparation () =
+let private startedPreparation () =
     use runtime =
         Runtime.OpenPostgres(appConnection (), CancellationToken.None)
         |> await
@@ -127,38 +132,27 @@ let private dismissedPreparation () =
 
     let operationId = Guid.NewGuid()
 
-    match
-        runtime.Core.Prepare(
-            {
-                OperationId = operationId
-                CaseReference = "BOUNDARY-" + Guid.NewGuid().ToString("N")
-                ExpectedVersion = 0L
-                Kind = CommandKind.Open
-                Values =
-                    [
-                        "incidentDate", registration.IncidentDate
-                        "incidentNotificationDate", registration.IncidentNotificationDate
-                        "incidentCountry", registration.IncidentCountry
-                        "claimantName", registration.ClaimantName
-                        "insurerName", registration.InsurerName
-                        "claimedAmount", registration.ClaimedAmount
-                        "claimedCurrency", registration.ClaimedCurrency
-                    ]
-            },
-            CancellationToken.None
-        )
-        |> await
-    with
-    | PrepareOutcome.Prepared(details, _) ->
-        let digest = details.Summary.RequestSha256 |> Option.defaultValue ""
-
+    let digest =
         match
-            runtime.Core.Recovery.Dismiss(operationId, digest, true, CancellationToken.None)
+            runtime.Core.Prepare(
+                openRequest operationId ("BOUNDARY-" + Guid.NewGuid().ToString("N")),
+                CancellationToken.None
+            )
             |> await
         with
-        | RecoveryDismissOutcome.DismissedPreparation _ -> operationId
-        | _ -> failtest "A fresh preparation must be dismissible."
-    | _ -> failtest "A fresh preparation must be retained."
+        | PrepareOutcome.Prepared(details, _) ->
+            details.Summary.RequestSha256
+            |> Option.defaultWith (fun () -> failtest "Preparation digest is required.")
+        | _ -> failtest "A fresh preparation must be retained."
+
+    use source = NpgsqlDataSource.Create(appConnection ())
+
+    let recovery =
+        PostgresRecoveryStore(source, PreparationLimits.defaults) :> IRecoveryStore
+
+    match recovery.Start(operationId, CancellationToken.None) |> await with
+    | Ok(RecoveryStart.Started _) -> operationId
+    | _ -> failtestf "A retained preparation (%s) must create one lifecycle start marker." digest
 
 let private expectSqlState expected sql operationId =
     use connection = new NpgsqlConnection(appConnection ())
@@ -177,7 +171,7 @@ let private expectSqlState expected sql operationId =
 
 let private appendOnlyLifecycle =
     testCase "lifecycle markers are append-only and mutually exclusive" (fun () ->
-        let operationId = dismissedPreparation ()
+        let operationId = startedPreparation ()
 
         expectSqlState
             "23505"

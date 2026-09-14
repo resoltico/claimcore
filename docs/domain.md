@@ -49,6 +49,7 @@ close a case, and a case may close without a decision or payment.
 |---|---|
 | `OPEN` | Create an `OPENED`, undecided case at expected revision zero. |
 | `AMEND_REGISTRATION` | Replace registration facts on an open, undecided case; keep its reference. |
+| `CORRECT_CASE` | Atomically correct existing registration, decision, and payment facts on a decided, paid, or closed case without changing its reference or status. |
 | `DECIDE` | Record or replace an unpaid decision tuple. |
 | `WITHDRAW_DECISION` | Remove an unpaid decision tuple. |
 | `RECORD_PAYMENT` | Record the date the full positive decided amount was paid. |
@@ -64,6 +65,18 @@ A closed case must be reopened before editing. A paid date must be cleared befor
 withdrawn, and that unpaid decision must be withdrawn before registration facts can be amended.
 Clearing a record does not reverse a real transfer.
 
+`CORRECT_CASE` is intentionally different from `AMEND_REGISTRATION`: it preserves the historical
+meaning and eligibility of the older command, including pending historical requests. A correction
+always supplies all three tagged groups. Registration is `KEEP` or `REPLACE` with all seven inputs;
+decision is `KEEP`, `REPLACE` with its complete date/amount/currency tuple, or `CLEAR`; payment is
+`KEEP`, `REPLACE` with its date, or `CLEAR`. `KEEP` reads accepted state under the authoritative case
+lock, never a browser copy. A correction cannot be all-KEEP or make a no-op revision, add a missing
+decision or payment, change reference or status, or create an intermediate cleared snapshot.
+Clearing a paid decision requires clearing payment. Replacing a paid decision requires explicit
+payment replacement/reaffirmation or clearing payment so an old payment assertion is never silently
+carried to a new payable amount. A successful correction writes one complete revision; a refusal
+writes neither current state nor accepted history.
+
 Only the core derives available commands from current state, and execution revalidates the command
 against authoritative state and expected revision. An advertised command is advisory, not commit
 authority; adapters do not add another action policy.
@@ -76,8 +89,9 @@ claim.
 ## Scalars
 
 - Dates use real `YYYY-MM-DD` calendar values from year 0001 through 9999. Present dates follow
-  incident ≤ notification ≤ decision ≤ payment. Newly recorded event dates cannot be later than the
-  host-supplied business date.
+  incident ≤ notification ≤ decision ≤ payment. Newly asserted event dates cannot be later than the
+  installation's persisted business date. Reaffirming an unchanged accepted date does not make old
+  history invalid after a clock change.
 - Input amounts match `(0|[1-9][0-9]{0,17})(\.[0-9]{1,4})?`: no sign, exponent, leading integer
   zeroes, or bare decimal point. The maximum is `999999999999999999.9999`; values are rejected rather
   than rounded. Accepted views render the same decimal value canonically, without insignificant
@@ -95,6 +109,9 @@ Every newly accepted operation increments the case revision once. A command carr
 was prepared against; a fresh stale command is rejected. An exact replay of an accepted operation
 returns its retained receipt without another revision. An exact retained but unaccepted preparation
 made stale by a different commit directs the operator to Recovery without inventing a fresh review.
+An unaccepted operation may instead be durably revoked; its exact identity remains terminal even if
+the optional preparation is later pruned, while a different request under the same ID remains a
+privacy-safe conflict.
 
 Revisions remain nonnegative signed 64-bit values below `Int64.MaxValue`; restored snapshots must be
 positive. A case at `Int64.MaxValue - 1` advertises no new command, and execution refuses another

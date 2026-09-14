@@ -5,8 +5,10 @@ open System.IO
 open System.Text
 open System.Text.Json
 open Expecto
+open ClaimCore.Application
 open ClaimCore.Cli
 open ClaimCore.Contracts
+open ClaimCore.Domain
 open ClaimCore.TestSupport
 
 let private bytes value = Encoding.UTF8.GetBytes(value: string)
@@ -82,7 +84,11 @@ let private acceptsDraft =
         match InvocationFraming.decode document.RootElement with
         | Ok(Endpoint.CommandPrepare, EndpointInput.Draft draft, None) ->
             Expect.equal draft.ExpectedVersion 0L "Canonical decimal revision"
-            Expect.equal draft.Values.Length 7 "Exact OPEN field set"
+
+            match draft.Command with
+            | DraftCommand.Flat(CommandKind.Open, values) ->
+                Expect.equal values.Length 7 "Exact OPEN field set"
+            | _ -> failtest "Expected the typed OPEN flat command shape."
         | _ -> failtest "Expected decoded command.prepare draft."
 
         strictScalarAndContainerRejections ())

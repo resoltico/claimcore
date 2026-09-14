@@ -34,11 +34,12 @@ let private help () =
     let _, version, _ = identity ()
     printfn "ClaimCore.Database %s — schema and recovery-retention administration" version
     printfn "  ClaimCore.Database migrate"
+    printfn "  ClaimCore.Database set-business-zone <canonical-IANA-ID>"
     printfn "  ClaimCore.Database prune [--dry-run] [--settled-retention-days <1-3650>]"
     printfn "                           [--abandoned-retention-days <1-3650>] [--limit <1-1000>]"
     printfn "  ClaimCore.Database help"
     printfn "  ClaimCore.Database version [--json]"
-    printfn "Prune defaults: settled 30 days; dismissed 30 days; batch limit 100; deletion enabled."
+    printfn "Prune defaults: accepted 30 days; revoked 30 days; batch limit 100; deletion enabled."
     printfn "Set CLAIMCORE_ADMIN_CONNECTION_FILE to an owner-private schema-owner connection file."
 
 let private writeVersion () =
@@ -124,55 +125,79 @@ let private withOwner action =
     | None -> Error "Missing CLAIMCORE_ADMIN_CONNECTION_FILE."
     | Some path ->
         let value = ownerConnection path
-        action value
-        Ok()
+        let result = action value
+        Ok result
+
+let private ownerFailure message =
+    eprintfn "%s" message
+    3
+
+let private migrate () =
+    match withOwner Migrations.apply with
+    | Ok() ->
+        printfn
+            "Ordered database migrations installed or verified on the required PostgreSQL baseline."
+
+        0
+    | Error message -> ownerFailure message
+
+let private setBusinessZone zoneId =
+    match withOwner (fun connection -> InstallationBusinessZone.set connection zoneId) with
+    | Ok() ->
+        printfn "The installation business time zone is configured."
+        0
+    | Error message -> ownerFailure message
+
+let private prune options =
+    match pruneOptions options with
+    | Error message ->
+        eprintfn "%s" message
+        usage ()
+        64
+    | Ok parsed ->
+        match withOwner (fun connection -> PreparationPruning.prune connection parsed) with
+        | Ok result ->
+            printfn
+                "Recovery maintenance completed: %d candidates, %d deleted, %d terminal preparations, %d terminal canonical bytes."
+                result.CandidateCount
+                result.DeletedCount
+                result.TerminalPreparationCount
+                result.TerminalCanonicalRequestBytes
+
+            0
+        | Error message -> ownerFailure message
+
+let private version () =
+    let _, value, _ = identity ()
+    printfn "%s" value
+    0
+
+let private helpOrVersion =
+    function
+    | [ "help" ]
+    | [ "--help" ] ->
+        help ()
+        Some 0
+    | [ "version" ]
+    | [ "--version" ] -> Some(version ())
+    | [ "version"; "--json" ] -> Some(writeVersion ())
+    | _ -> None
 
 [<EntryPoint>]
 let main argv =
     try
-        match argv |> Array.toList with
-        | [ "help" ]
-        | [ "--help" ] ->
-            help ()
-            0
-        | [ "version" ]
-        | [ "--version" ] ->
-            let _, version, _ = identity ()
-            printfn "%s" version
-            0
-        | [ "version"; "--json" ] -> writeVersion ()
-        | [ "migrate" ] ->
-            match withOwner Migrations.apply with
-            | Ok() ->
-                printfn
-                    "Ordered database migrations installed or verified on the required PostgreSQL baseline."
+        let arguments = argv |> Array.toList
 
-                0
-            | Error message ->
-                eprintfn "%s" message
-                3
-        | "prune" :: options ->
-            match pruneOptions options with
-            | Error message ->
-                eprintfn "%s" message
+        match helpOrVersion arguments with
+        | Some code -> code
+        | None ->
+            match arguments with
+            | [ "migrate" ] -> migrate ()
+            | [ "set-business-zone"; zoneId ] -> setBusinessZone zoneId
+            | "prune" :: options -> prune options
+            | _ ->
                 usage ()
                 64
-            | Ok parsed ->
-                match
-                    withOwner (fun connection ->
-                        PreparationPruning.prune connection parsed |> ignore)
-                with
-                | Ok() ->
-                    printfn
-                        "Bounded preparation retention maintenance completed; counts are retained in the database audit journal."
-
-                    0
-                | Error message ->
-                    eprintfn "%s" message
-                    3
-        | _ ->
-            usage ()
-            64
     with error ->
         eprintfn
             "Database maintenance failed (%s). Inspect database configuration and version/checksum. No automatic repair or downgrade was attempted."

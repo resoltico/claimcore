@@ -70,7 +70,7 @@ module internal WebTypeScriptResponses =
         moduleBytes
             [
                 "import type { Fault, Receipt } from \"./web-v2.types.core\";"
-                "import type { DefiniteExecution, PreparationDetails, PreparationSummary, RecoveryDetails, RecoveryImportPreview, RecoveryRejection } from \"./web-v2.types.recovery\";"
+                "import type { DefiniteExecution, PreparationDetails, PreparationSummary, RecoveryImportPreview, RecoveryInspection, RecoveryPage, RecoveryRejection, RevokedOperation } from \"./web-v2.types.recovery\";"
             ]
             (responseMap "WebV2RecoveryResponseByEndpoint" endpoints)
 

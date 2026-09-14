@@ -42,6 +42,11 @@ module internal Eligibility =
         | CommandKind.Reopen -> Error DomainError.AlreadyOpened
         | CommandKind.Close -> Ok()
         | CommandKind.AmendRegistration -> amendment progress
+        | CommandKind.CorrectCase ->
+            match progress with
+            | PaymentProgress.Undecided -> Error DomainError.CorrectionRequiresExistingValue
+            | PaymentProgress.Decided _
+            | PaymentProgress.Paid _ -> Ok()
         | CommandKind.Decide -> decision progress
         | CommandKind.WithdrawDecision -> withdrawal progress
         | CommandKind.RecordPayment -> payment progress
@@ -52,5 +57,6 @@ module internal Eligibility =
         | CaseStatus.Closed, CommandKind.Open -> Error DomainError.AlreadyExists
         | CaseStatus.Closed, CommandKind.Reopen -> Ok()
         | CaseStatus.Closed, CommandKind.Close -> Error DomainError.AlreadyClosed
+        | CaseStatus.Closed, CommandKind.CorrectCase -> Ok()
         | CaseStatus.Closed, _ -> Error DomainError.ClosedCase
         | CaseStatus.Opened, _ -> opened kind progress

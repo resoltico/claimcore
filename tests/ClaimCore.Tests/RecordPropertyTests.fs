@@ -38,11 +38,26 @@ let private commandGenerator =
         let! registration = registrationGenerator
         let! payable = Gen.uint32 (Range.constant 0u 1_000_000u)
 
+        let correction =
+            Command.CorrectCase
+                {
+                    Registration = RegistrationCorrection.Replace registration
+                    Decision =
+                        DecisionCorrection.Replace
+                            {
+                                PaymentDecisionDate = "2026-08-15"
+                                PayableAmount = payable.ToString(CultureInfo.InvariantCulture)
+                                PayableCurrency = "USD"
+                            }
+                    Payment = PaymentCorrection.Clear
+                }
+
         return!
             Gen.item
                 [
                     Command.Open registration
                     Command.AmendRegistration registration
+                    correction
                     Command.Decide
                         {
                             PaymentDecisionDate = "2026-08-15"

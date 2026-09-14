@@ -178,26 +178,34 @@ let private coreHostWrappers () =
         (WebWireCodec.prepare prepare)
         (WebWire.prepare "command.prepare" prepare)
 
-let private recoveryHostWrappers () =
-    let missingDetails: RecoveryQueryOutcome<Lookup<RecoveryDetails, Guid>> =
-        RecoveryQueryOutcome.RecoverySucceeded(Lookup.NotFound operationId)
+let private recoveryPage () : RecoveryQueryOutcome<RecoveryPage> =
+    RecoveryQueryOutcome.RecoverySucceeded
+        {
+            View = RecoveryListView.Pending
+            Items = []
+            NextCursor = None
+            PendingPreparationCount = 0
+            PendingCanonicalRequestBytes = 0L
+            MaximumPendingPreparations = 1024
+            MaximumPendingCanonicalRequestBytes = 64L * 1024L * 1024L
+            NearCapacity = false
+        }
 
-    let missingExport: RecoveryQueryOutcome<Lookup<RecoveryExport, Guid>> =
+let private recoveryQueryWrappers () =
+    let missingDetails: RecoveryQueryOutcome<Lookup<RecoveryInspection, Guid>> =
         RecoveryQueryOutcome.RecoverySucceeded(Lookup.NotFound operationId)
-
-    let recoveryPage: RecoveryQueryOutcome<RecoveryPage> =
-        RecoveryQueryOutcome.RecoverySucceeded { Items = []; NextCursor = None }
 
     same
         "Recovery list wrapper"
-        (WebWireCodec.recoveryList recoveryPage)
-        (WebRecoveryWire.list recoveryPage)
+        (WebWireCodec.recoveryList (recoveryPage ()))
+        (WebRecoveryWire.list (recoveryPage ()))
 
     same
         "Recovery inspect wrapper"
         (WebWireCodec.recoveryInspect missingDetails)
         (WebRecoveryWire.inspect missingDetails)
 
+let private recoveryResolutionWrappers () =
     let resolve =
         ResolveOutcome.RefusedBeforeAttempt(
             None,
@@ -223,6 +231,10 @@ let private recoveryHostWrappers () =
     let dismiss = RecoveryDismissOutcome.DismissNotFound operationId
     same "Dismiss wrapper" (WebWireCodec.recoveryDismiss dismiss) (WebRecoveryWire.dismiss dismiss)
 
+let private recoveryTransferWrappers () =
+    let missingExport: RecoveryQueryOutcome<Lookup<RecoveryExport, Guid>> =
+        RecoveryQueryOutcome.RecoverySucceeded(Lookup.NotFound operationId)
+
     same
         "Export wrapper"
         (WebWireCodec.recoveryExport missingExport)
@@ -241,6 +253,11 @@ let private recoveryHostWrappers () =
         "Import-retain wrapper"
         (WebWireCodec.importRetain "recovery.importEnvelopeRetain" retain)
         (WebRecoveryWire.importRetain "recovery.importEnvelopeRetain" retain)
+
+let private recoveryHostWrappers () =
+    recoveryQueryWrappers ()
+    recoveryResolutionWrappers ()
+    recoveryTransferWrappers ()
 
 let private allHostWrappersUseContractBytes () =
     coreHostWrappers ()

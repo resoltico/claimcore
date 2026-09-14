@@ -59,7 +59,12 @@ let observe operationId =
 let recoveryList = input "recovery.list" {| limit = 50 |}
 
 let recoveryInspect operationId =
-    input "recovery.inspect" {| operationId = operationId |}
+    input
+        "recovery.inspect"
+        {|
+            operationId = operationId
+            attemptLimit = 50
+        |}
 
 let recoveryResolve operationId requestSha256 =
     input

@@ -9,6 +9,16 @@ let private candidates =
     [
         Command.Open registration
         Command.AmendRegistration registration
+        Command.CorrectCase
+            {
+                Registration =
+                    RegistrationCorrection.Replace
+                        { registration with
+                            ClaimantName = "Corrected Synthetic Claimant"
+                        }
+                Decision = DecisionCorrection.Keep
+                Payment = PaymentCorrection.Keep
+            }
         Command.Decide decision
         Command.WithdrawDecision
         Command.RecordPayment "2026-08-20"
@@ -27,9 +37,10 @@ let private stateActions =
         let cases =
             [
                 (opened (), [ "AMEND_REGISTRATION"; "DECIDE"; "CLOSE" ])
-                (decided (), [ "DECIDE"; "WITHDRAW_DECISION"; "RECORD_PAYMENT"; "CLOSE" ])
-                (paid (), [ "CLEAR_PAYMENT"; "CLOSE" ])
-                (zero, [ "DECIDE"; "WITHDRAW_DECISION"; "CLOSE" ])
+                (decided (),
+                 [ "CORRECT_CASE"; "DECIDE"; "WITHDRAW_DECISION"; "RECORD_PAYMENT"; "CLOSE" ])
+                (paid (), [ "CORRECT_CASE"; "CLEAR_PAYMENT"; "CLOSE" ])
+                (zero, [ "CORRECT_CASE"; "DECIDE"; "WITHDRAW_DECISION"; "CLOSE" ])
             ]
 
         for (state, expected) in cases do
@@ -53,8 +64,8 @@ let private stateActions =
 
             Expect.equal
                 (Claim.availableCommands closed)
-                [ "REOPEN" ]
-                "Closed cases can only reopen")
+                [ "CORRECT_CASE"; "REOPEN" ]
+                "Closed cases can correct facts or reopen")
 
 let private edgeActions =
     testList

@@ -10,42 +10,40 @@ open ClaimCore.Domain
 open ClaimCore.Tests.Fixtures
 
 let private wireFixtures () =
-    let clock =
-        { new IBusinessDate with
-            member _.Today() = today
-        }
+    let clock = businessTime today
+    let claims = new CoreStore.Store()
+    let recovery = new CoreRecoveryStore.Store()
+    recovery.AttachClaimStore(claims :> IClaimStore)
 
-    let core =
-        CoreApi.create
-            (new CoreStore.Store() :> IClaimStore)
-            (new CoreRecoveryStore.Store() :> IRecoveryStore)
-            clock
+    let core = CoreApi.create (claims :> IClaimStore) (recovery :> IRecoveryStore) clock
 
-    let draft =
+    let draft: CommandDraft =
         {
             OperationId = Guid.Parse("60000000-0000-4000-8000-000000000002")
             CaseReference = "CLI-PREPARE-WIRE-001"
             ExpectedVersion = 0L
-            Kind = CommandKind.Open
-            Values =
-                [
-                    "incidentDate", registration.IncidentDate
-                    "incidentNotificationDate", registration.IncidentNotificationDate
-                    "incidentCountry", registration.IncidentCountry
-                    "claimantName", registration.ClaimantName
-                    "insurerName", registration.InsurerName
-                    "claimedAmount", registration.ClaimedAmount
-                    "claimedCurrency", registration.ClaimedCurrency
-                ]
+            Command =
+                DraftCommand.Flat(
+                    CommandKind.Open,
+                    [
+                        "incidentDate", registration.IncidentDate
+                        "incidentNotificationDate", registration.IncidentNotificationDate
+                        "incidentCountry", registration.IncidentCountry
+                        "claimantName", registration.ClaimantName
+                        "insurerName", registration.InsurerName
+                        "claimedAmount", registration.ClaimedAmount
+                        "claimedCurrency", registration.ClaimedCurrency
+                    ]
+                )
         }
 
     let details =
-        match core.Prepare(draft, CancellationToken.None).Result with
+        match core.Prepare(boundRequest draft, CancellationToken.None).Result with
         | PrepareOutcome.Prepared(details, _) -> details
         | _ -> failtest "Expected a synthetic retained preparation."
 
     let receipt =
-        match core.Execute(draft, CancellationToken.None).Result with
+        match core.Execute(boundRequest draft, CancellationToken.None).Result with
         | SubmissionOutcome.Completed(_, _, DefiniteExecution.Accepted receipt, _) -> receipt
         | _ -> failtest "Expected a synthetic accepted receipt."
 
@@ -55,14 +53,24 @@ let private lookupAbsence =
     testCase "recovery lookup absence exits two while an empty recovery page succeeds" (fun () ->
         let operationId = Guid.Parse("60000000-0000-4000-8000-000000000001")
 
-        let inspection: RecoveryQueryOutcome<Lookup<RecoveryDetails, Guid>> =
+        let inspection: RecoveryQueryOutcome<Lookup<RecoveryInspection, Guid>> =
             RecoveryQueryOutcome.RecoverySucceeded(Lookup.NotFound operationId)
 
         let export: RecoveryQueryOutcome<Lookup<RecoveryExport, Guid>> =
             RecoveryQueryOutcome.RecoverySucceeded(Lookup.NotFound operationId)
 
         let page: RecoveryQueryOutcome<RecoveryPage> =
-            RecoveryQueryOutcome.RecoverySucceeded { Items = []; NextCursor = None }
+            RecoveryQueryOutcome.RecoverySucceeded
+                {
+                    View = RecoveryListView.Pending
+                    Items = []
+                    NextCursor = None
+                    PendingPreparationCount = 0
+                    PendingCanonicalRequestBytes = 0L
+                    MaximumPendingPreparations = 1024
+                    MaximumPendingCanonicalRequestBytes = 64L * 1024L * 1024L
+                    NearCapacity = false
+                }
 
         Expect.equal
             (CliWireCodec.recoveryInspect "recovery.inspect" inspection).ExitCode

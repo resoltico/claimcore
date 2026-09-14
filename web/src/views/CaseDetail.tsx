@@ -171,7 +171,10 @@ export const CaseDetail = ({
       v2.history(caseReference, cursor, 50, token, signal),
     [caseReference, token],
   );
-  const history = useRetryablePage(historyRequest, fullHistory);
+  const history = useRetryablePage<WebV2Response<"case.history">, Receipt>(
+    historyRequest,
+    fullHistory,
+  );
   const lookup = current.value?.tag === "FOUND" ? current.value.current : null;
   return (
     <section aria-labelledby="case-detail-title">

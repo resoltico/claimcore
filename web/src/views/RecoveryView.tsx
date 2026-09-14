@@ -1,5 +1,10 @@
 import { useCallback, useRef, useState } from "react";
-import type { PreparationSummary } from "../api/v2";
+import type {
+  PreparationSummary,
+  RecoveryListItem,
+  RecoveryPage as RecoveryPageResult,
+  WebV2Response,
+} from "../api/v2";
 import { v2 } from "../api/v2";
 import { useRetryablePage } from "../hooks/useV2Read";
 import { RecoveryPage } from "./recovery/RecoveryPage";
@@ -10,6 +15,7 @@ import {
   type ConfirmState,
   type ImportState,
   type Inspection,
+  type RecoveryViewKind,
 } from "./recovery/RecoveryState";
 
 type RecoveryViewProps = { token: string };
@@ -61,11 +67,18 @@ const useRecoveryDialogs = (token: string, listing: Listing) => {
 };
 
 export const RecoveryView = ({ token }: RecoveryViewProps) => {
+  const [view, setView] = useState<RecoveryViewKind>("PENDING");
   const request = useCallback(
-    (cursor: string | null, signal: AbortSignal) => v2.recoveryList(cursor, 50, token, signal),
-    [token],
+    (cursor: string | null, signal: AbortSignal) =>
+      v2.recoveryList(view, cursor, 50, token, signal),
+    [token, view],
   );
-  const listing = useRetryablePage(request, page);
+  const recoveryPage = useRetryablePage<
+    WebV2Response<"recovery.list">,
+    RecoveryListItem,
+    RecoveryPageResult
+  >(request, page);
+  const listing = { ...recoveryPage, view, setView };
   const dialogs = useRecoveryDialogs(token, listing);
   return <RecoveryPage listing={listing} {...dialogs} />;
 };

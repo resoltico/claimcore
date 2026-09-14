@@ -36,6 +36,8 @@ module WireTokens =
                 RejectionCode.AlreadyOpened, "ALREADY_OPENED"
                 RejectionCode.ZeroDecisionCannotBePaid, "ZERO_DECISION_CANNOT_BE_PAID"
                 RejectionCode.IdempotencyConflict, "IDEMPOTENCY_CONFLICT"
+                RejectionCode.OperationRevoked, "OPERATION_REVOKED"
+                RejectionCode.RecoveryAttemptLimitReached, "RECOVERY_ATTEMPT_LIMIT_REACHED"
             ]
 
     let rejectionCode value = Map.find value rejectionCodeMap
@@ -61,12 +63,26 @@ module WireTokens =
         | RecoveryRejectionCode.SourceDigestMismatch -> "SOURCE_DIGEST_MISMATCH"
         | RecoveryRejectionCode.InstallationMismatch -> "INSTALLATION_MISMATCH"
         | RecoveryRejectionCode.UnsupportedRecoveryArtifact -> "UNSUPPORTED_RECOVERY_ARTIFACT"
+        | RecoveryRejectionCode.OperationRevoked -> "OPERATION_REVOKED"
+        | RecoveryRejectionCode.AttemptLimitReached -> "ATTEMPT_LIMIT_REACHED"
 
     let preparationState =
         function
         | PreparationState.Unsubmitted -> "UNSUBMITTED"
         | PreparationState.SubmissionStarted -> "SUBMISSION_STARTED"
         | PreparationState.Dismissed -> "DISMISSED"
+        | PreparationState.Revoked -> "REVOKED"
+
+    let recoveryListView =
+        function
+        | RecoveryListView.Pending -> "PENDING"
+        | RecoveryListView.Terminal -> "TERMINAL"
+
+    let recoveryAuthority =
+        function
+        | RecoveryAuthority.PendingAuthority -> "PENDING"
+        | RecoveryAuthority.AcceptedAuthority -> "ACCEPTED"
+        | RecoveryAuthority.RevokedAuthority -> "REVOKED"
 
     let recoveryAction =
         function
@@ -112,6 +128,8 @@ module WireTokens =
             RejectionCode.AlreadyOpened
             RejectionCode.ZeroDecisionCannotBePaid
             RejectionCode.IdempotencyConflict
+            RejectionCode.OperationRevoked
+            RejectionCode.RecoveryAttemptLimitReached
         ]
         |> List.map rejectionCode
 
@@ -138,5 +156,7 @@ module WireTokens =
             RecoveryRejectionCode.SourceDigestMismatch
             RecoveryRejectionCode.InstallationMismatch
             RecoveryRejectionCode.UnsupportedRecoveryArtifact
+            RecoveryRejectionCode.OperationRevoked
+            RecoveryRejectionCode.AttemptLimitReached
         ]
         |> List.map recoveryRejectionCode

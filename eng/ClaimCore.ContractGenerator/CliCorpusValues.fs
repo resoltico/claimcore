@@ -144,9 +144,17 @@ module internal CliCorpusValues =
             Command = CommandKind.Open
             PreparedAt = timestamp
             State = PreparationState.Unsubmitted
+            Authority = RecoveryAuthority.PendingAuthority
             RequestSha256 = Some digest
             AvailableActions =
                 [ RecoveryAction.Resolve; RecoveryAction.Dismiss; RecoveryAction.Export ]
+        }
+
+    let revokedOperation =
+        {
+            OperationId = operationId
+            RevokedAt = timestamp
+            Reason = "Synthetic operator revocation."
         }
 
     let preparationDetails =
@@ -159,15 +167,19 @@ module internal CliCorpusValues =
             PreparingContractFingerprint = digest
             PreparingContractKind = "SEMANTIC_CORE_V1"
             Attempts =
-                [
-                    {
-                        AttemptId = attemptId
-                        StartedAt = timestamp
-                        Settlement = Some "ACCEPTED"
-                        SettledAt = Some timestamp
-                    }
-                ]
-            LegacyUncertainty = false
+                {
+                    Items =
+                        [
+                            {
+                                AttemptId = attemptId
+                                StartedAt = timestamp
+                                Settlement = Some "ACCEPTED"
+                                SettledAt = Some timestamp
+                            }
+                        ]
+                    NextCursor = None
+                    LegacyUncertainty = false
+                }
         }
 
     let review =

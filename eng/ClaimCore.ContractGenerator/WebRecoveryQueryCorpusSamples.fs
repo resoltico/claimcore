@@ -18,18 +18,36 @@ module internal WebRecoveryQueryCorpusSamples =
                 (encode (
                     RecoveryQueryOutcome.RecoverySucceeded
                         {
+                            View = RecoveryListView.Pending
                             Items =
                                 [
-                                    CliCorpusValues.preparationSummary
-                                    WebCorpusSamples.preparationWithoutDigest
+                                    RetainedRecoveryItem CliCorpusValues.preparationSummary
+                                    RetainedRecoveryItem WebCorpusSamples.preparationWithoutDigest
                                 ]
                             NextCursor = Some "synthetic-recovery-cursor"
+                            PendingPreparationCount = 2
+                            PendingCanonicalRequestBytes = 256L
+                            MaximumPendingPreparations = 1024
+                            MaximumPendingCanonicalRequestBytes = 67108864L
+                            NearCapacity = false
                         }
                 ))
             sample
-                "recovery-list-empty-page"
+                "recovery-list-terminal-revocation"
                 endpoint
-                (encode (RecoveryQueryOutcome.RecoverySucceeded { Items = []; NextCursor = None }))
+                (encode (
+                    RecoveryQueryOutcome.RecoverySucceeded
+                        {
+                            View = RecoveryListView.Terminal
+                            Items = [ RevokedRecoveryItem CliCorpusValues.revokedOperation ]
+                            NextCursor = None
+                            PendingPreparationCount = 0
+                            PendingCanonicalRequestBytes = 0L
+                            MaximumPendingPreparations = 1024
+                            MaximumPendingCanonicalRequestBytes = 67108864L
+                            NearCapacity = false
+                        }
+                ))
         ]
         @ WebCorpusSamples.recoveryFailures "recovery-list" endpoint encode
 
@@ -39,6 +57,7 @@ module internal WebRecoveryQueryCorpusSamples =
 
         let found details observation =
             WebCorpusSamples.recoveryDetails observation details
+            |> RetainedInspection
             |> Lookup.Found
             |> RecoveryQueryOutcome.RecoverySucceeded
             |> encode
@@ -54,6 +73,14 @@ module internal WebRecoveryQueryCorpusSamples =
                 (found
                     WebCorpusSamples.detailsWithNullableValues
                     (Lookup.NotFound CliCorpusValues.operationId))
+            sample
+                "recovery-inspect-found-revoked"
+                endpoint
+                (encode (
+                    RecoveryQueryOutcome.RecoverySucceeded(
+                        Lookup.Found(RevokedInspection CliCorpusValues.revokedOperation)
+                    )
+                ))
             sample
                 "recovery-inspect-not-found"
                 endpoint

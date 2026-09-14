@@ -3,7 +3,7 @@ import { Form } from "react-aria-components/Form";
 import type { RefObject } from "react";
 import type { CurrentCase, DefinitionPayload } from "../../api/v2";
 import { DescriptorField } from "../../components/DescriptorField";
-import { commandFor } from "../../domain/metadata";
+import { commandFor, isCorrectionValues, type CorrectionGroupName } from "../../domain/metadata";
 import type { OperationEditorModel } from "./editorTypes";
 
 type OperationFormProps = {
@@ -62,22 +62,123 @@ const Reference = ({ current, model }: Pick<OperationFormProps, "current" | "mod
   );
 };
 
-const AuthoringFields = ({ model }: Pick<OperationFormProps, "model">) => (
+const AuthoringFields = ({ model }: Pick<OperationFormProps, "model">) => {
+  if (isCorrectionValues(model.state.values)) return null;
+  const values = model.state.values;
+  return (
+    <>
+      {model.fields.map(({ field }) => (
+        <DescriptorField
+          key={field.name}
+          field={field}
+          value={values[field.name] ?? ""}
+          error={
+            model.state.fieldError?.name === field.name ? model.state.fieldError.message : undefined
+          }
+          onChange={(value) => model.edit(field.name, value)}
+        />
+      ))}
+      {model.fields.length === 0 ? <p>This command has no authored values.</p> : null}
+    </>
+  );
+};
+
+const CorrectionMode = ({
+  name,
+  mode,
+  actions,
+  locked,
+  onChange,
+}: {
+  name: CorrectionGroupName;
+  mode: string;
+  actions: ReadonlyArray<"KEEP" | "REPLACE" | "CLEAR">;
+  locked: boolean;
+  onChange: (next: string) => void;
+}) => (
   <>
-    {model.fields.map(({ field }) => (
-      <DescriptorField
-        key={field.name}
-        field={field}
-        value={model.state.values[field.name] ?? ""}
-        error={
-          model.state.fieldError?.name === field.name ? model.state.fieldError.message : undefined
-        }
-        onChange={(value) => model.edit(field.name, value)}
-      />
-    ))}
-    {model.fields.length === 0 ? <p>This command has no authored values.</p> : null}
+    <label htmlFor={`correction-${name}-mode`}>Action</label>
+    <select
+      id={`correction-${name}-mode`}
+      value={mode}
+      disabled={locked}
+      onChange={(event) => onChange(event.target.value)}
+    >
+      {actions.map((action) => (
+        <option key={action} value={action}>
+          {action}
+        </option>
+      ))}
+    </select>
   </>
 );
+
+const CorrectionGroup = ({
+  model,
+  name,
+  label,
+  meaning,
+  actions,
+  fields,
+}: {
+  model: OperationEditorModel;
+  name: CorrectionGroupName;
+  label: string;
+  meaning: string;
+  actions: ReadonlyArray<"KEEP" | "REPLACE" | "CLEAR">;
+  fields: ReadonlyArray<OperationEditorModel["groups"][number]["fields"][number]>;
+}) => {
+  if (!isCorrectionValues(model.state.values)) return null;
+  const values = model.state.values;
+  const value = values[name];
+  return (
+    <fieldset>
+      <legend>{label}</legend>
+      <p>{meaning}</p>
+      <CorrectionMode
+        name={name}
+        mode={value.mode}
+        actions={actions}
+        locked={model.locked}
+        onChange={(next) => model.setCorrectionMode(name, next)}
+      />
+      {value.mode !== "REPLACE"
+        ? null
+        : fields.map((field) => (
+            <DescriptorField
+              key={field.name}
+              field={field}
+              value={value.values[field.name] ?? ""}
+              error={
+                model.state.fieldError?.name === field.name ||
+                model.state.fieldError?.name === `${name}.${field.name}`
+                  ? model.state.fieldError.message
+                  : undefined
+              }
+              onChange={(next) => model.editCorrection(name, field.name, next)}
+            />
+          ))}
+    </fieldset>
+  );
+};
+
+const CorrectionFields = ({ model }: Pick<OperationFormProps, "model">) =>
+  model.groups.length === 0 ? null : (
+    <>
+      <p>Each correction group is explicit. KEEP preserves its accepted values.</p>
+      {model.groups.map(({ group, fields }) => (
+        <CorrectionGroup
+          key={group.name}
+          model={model}
+          name={group.name as CorrectionGroupName}
+          label={group.label}
+          meaning={group.meaning}
+          actions={group.actions}
+          fields={fields}
+        />
+      ))}
+    </>
+  );
 
 const Actions = ({
   model,
@@ -113,6 +214,7 @@ export const OperationForm = ({
     <Reference current={current} model={model} />
     <CommandPicker definition={definition} model={model} />
     <AuthoringFields model={model} />
+    <CorrectionFields model={model} />
     {model.state.message === null ? null : (
       <p className="error" role="alert">
         {model.state.message}

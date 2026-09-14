@@ -73,7 +73,10 @@ export const CaseList = ({ token, onSelect, onOpen }: CaseListProps) => {
     (cursor: string | null, signal: AbortSignal) => v2.list(cursor, 50, token, signal),
     [token],
   );
-  const { items, cursor, message, loading, load } = useRetryablePage(request, casePage);
+  const { items, cursor, message, loading, load } = useRetryablePage<
+    WebV2Response<"case.list">,
+    CaseSummary
+  >(request, casePage);
 
   return (
     <section aria-labelledby="case-list-title">

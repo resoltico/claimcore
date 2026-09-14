@@ -75,13 +75,17 @@ let private inspect app operationId =
         |> await
         |> Result.defaultWith (fun _ -> failtest "Migrated runtime must open.")
 
-    match runtime.Core.Recovery.Inspect(operationId, CancellationToken.None) |> await with
-    | RecoveryQueryOutcome.RecoverySucceeded(Lookup.Found details) -> details
+    match
+        runtime.Core.Recovery.Inspect(operationId, None, recoveryPageLimit, CancellationToken.None)
+        |> await
+    with
+    | RecoveryQueryOutcome.RecoverySucceeded(Lookup.Found(RecoveryInspection.RetainedInspection details)) ->
+        details
     | _ -> failtest "Migrated legacy preparation must be inspectable."
 
 let private assertUpgraded app operationId expectedAttemptCount =
     let details = inspect app operationId
-    Expect.isTrue details.Preparation.LegacyUncertainty "Pre-003 uncertainty is retained"
+    Expect.isTrue details.Preparation.Attempts.LegacyUncertainty "Pre-003 uncertainty is retained"
 
     Expect.equal
         details.Preparation.PreparingContractKind
@@ -89,11 +93,11 @@ let private assertUpgraded app operationId expectedAttemptCount =
         "Original provenance is not rewritten"
 
     Expect.equal
-        details.Preparation.Attempts.Length
+        details.Preparation.Attempts.Items.Length
         expectedAttemptCount
         "Exact append-only attempts are projected"
 
-    details.Preparation.Attempts
+    details.Preparation.Attempts.Items
     |> List.iter (fun attempt ->
         Expect.equal attempt.Settlement (Some "ERROR") "Stored settlement preserved")
 
@@ -122,6 +126,7 @@ let private upgradePath startVersion label =
                     None
 
             Migrations.apply admin
+            InstallationBusinessZone.set admin "Etc/UTC"
             let afterBytes, afterDigest = canonicalBytes admin operationId
             Expect.equal afterBytes beforeBytes "Canonical request bytes unchanged"
             Expect.equal afterDigest beforeDigest "Retained request digest unchanged"
@@ -142,15 +147,15 @@ let private upgradePath startVersion label =
 
 let tests =
     testList
-        "migration 005 recovery evidence"
+        "migration 006 recovery and authority evidence"
         [
             upgradePath
                 2
-                "[CC-DB-001] migration 002 state upgrades to 005 with exact legacy evidence"
+                "[CC-DB-001] migration 002 state upgrades to 006 with exact legacy evidence"
             upgradePath
                 3
-                "[CC-DB-001] migration 003 state upgrades to 005 with exact legacy evidence"
+                "[CC-DB-001] migration 003 state upgrades to 006 with exact legacy evidence"
             upgradePath
                 4
-                "[CC-DB-001] migration 004 state upgrades to 005 without rewriting attempts"
+                "[CC-DB-001] migration 004 state upgrades to 006 without rewriting attempts"
         ]

@@ -52,59 +52,76 @@ let private exportFallback invalidMetadata =
         RecoveryQueryOutcome.RecoverySucceeded(Lookup.NotFound operationId)
 
 type RuntimeStub(?invalidExportMetadata: bool) as this =
+    let pendingRecoveryPage =
+        RecoveryQueryOutcome.RecoverySucceeded
+            {
+                View = RecoveryListView.Pending
+                Items = []
+                NextCursor = None
+                PendingPreparationCount = 0
+                PendingCanonicalRequestBytes = 0L
+                MaximumPendingPreparations = 1024
+                MaximumPendingCanonicalRequestBytes = 64L * 1024L * 1024L
+                NearCapacity = false
+            }
+
+    let recoveryList cursor =
+        this.RecoveryCalls <- this.RecoveryCalls + 1
+        this.LastRecoveryCursor <- Some cursor
+        stubResult this.RecoveryListOutcome pendingRecoveryPage
+
+    let recoveryInspect () =
+        this.RecoveryCalls <- this.RecoveryCalls + 1
+
+        stubResult
+            this.RecoveryInspectOutcome
+            (RecoveryQueryOutcome.RecoverySucceeded(Lookup.NotFound operationId))
+
+    let recoveryResolve () =
+        this.RecoveryCalls <- this.RecoveryCalls + 1
+        stubResult this.ResolveOutcome absentResolve
+
+    let recoveryDismiss () =
+        this.RecoveryCalls <- this.RecoveryCalls + 1
+        stubResult this.DismissOutcome (RecoveryDismissOutcome.DismissNotFound operationId)
+
+    let recoveryExport () =
+        this.RecoveryCalls <- this.RecoveryCalls + 1
+        stubResult this.ExportOutcome (exportFallback (defaultArg invalidExportMetadata false))
+
+    let envelopePreview () =
+        this.RecoveryCalls <- this.RecoveryCalls + 1
+        stubResult this.EnvelopePreviewOutcome RecoveryQueryOutcome.RecoveryCancelled
+
+    let envelopeRetain () =
+        this.RecoveryCalls <- this.RecoveryCalls + 1
+
+        stubResult
+            this.EnvelopeRetainOutcome
+            RecoveryImportRetainOutcome.ImportCancelledBeforeAdmission
+
+    let recordPreview () =
+        this.RecoveryCalls <- this.RecoveryCalls + 1
+        stubResult this.RecordPreviewOutcome RecoveryQueryOutcome.RecoveryCancelled
+
+    let recordRetain () =
+        this.RecoveryCalls <- this.RecoveryCalls + 1
+
+        stubResult
+            this.RecordRetainOutcome
+            RecoveryImportRetainOutcome.ImportCancelledBeforeAdmission
+
     let recovery =
         { new IRecoveryWorkflow with
-            member _.List(cursor, _, _) =
-                this.RecoveryCalls <- this.RecoveryCalls + 1
-                this.LastRecoveryCursor <- Some cursor
-
-                stubResult
-                    this.RecoveryListOutcome
-                    (RecoveryQueryOutcome.RecoverySucceeded { Items = []; NextCursor = None })
-
-            member _.Inspect(_, _) =
-                this.RecoveryCalls <- this.RecoveryCalls + 1
-
-                stubResult
-                    this.RecoveryInspectOutcome
-                    (RecoveryQueryOutcome.RecoverySucceeded(Lookup.NotFound operationId))
-
-            member _.Resolve(_, _, _) =
-                this.RecoveryCalls <- this.RecoveryCalls + 1
-                stubResult this.ResolveOutcome absentResolve
-
-            member _.Dismiss(_, _, _, _) =
-                this.RecoveryCalls <- this.RecoveryCalls + 1
-                stubResult this.DismissOutcome (RecoveryDismissOutcome.DismissNotFound operationId)
-
-            member _.ExportEnvelope(_, _, _) =
-                this.RecoveryCalls <- this.RecoveryCalls + 1
-
-                stubResult
-                    this.ExportOutcome
-                    (exportFallback (defaultArg invalidExportMetadata false))
-
-            member _.PreviewEnvelopeImport(_, _) =
-                this.RecoveryCalls <- this.RecoveryCalls + 1
-                stubResult this.EnvelopePreviewOutcome RecoveryQueryOutcome.RecoveryCancelled
-
-            member _.RetainEnvelopeImport(_, _, _) =
-                this.RecoveryCalls <- this.RecoveryCalls + 1
-
-                stubResult
-                    this.EnvelopeRetainOutcome
-                    RecoveryImportRetainOutcome.ImportCancelledBeforeAdmission
-
-            member _.PreviewCanonicalRecordImport(_, _) =
-                this.RecoveryCalls <- this.RecoveryCalls + 1
-                stubResult this.RecordPreviewOutcome RecoveryQueryOutcome.RecoveryCancelled
-
-            member _.RetainCanonicalRecordImport(_, _, _) =
-                this.RecoveryCalls <- this.RecoveryCalls + 1
-
-                stubResult
-                    this.RecordRetainOutcome
-                    RecoveryImportRetainOutcome.ImportCancelledBeforeAdmission
+            member _.List(_, cursor, _, _) = recoveryList cursor
+            member _.Inspect(_, _, _, _) = recoveryInspect ()
+            member _.Resolve(_, _, _) = recoveryResolve ()
+            member _.Dismiss(_, _, _, _) = recoveryDismiss ()
+            member _.ExportEnvelope(_, _, _) = recoveryExport ()
+            member _.PreviewEnvelopeImport(_, _) = envelopePreview ()
+            member _.RetainEnvelopeImport(_, _, _) = envelopeRetain ()
+            member _.PreviewCanonicalRecordImport(_, _) = recordPreview ()
+            member _.RetainCanonicalRecordImport(_, _, _) = recordRetain ()
         }
 
     let core =
@@ -184,7 +201,7 @@ type RuntimeStub(?invalidExportMetadata: bool) as this =
     member val ExecuteOutcome: SubmissionOutcome option = None with get, set
     member val RecoveryListOutcome: RecoveryQueryOutcome<RecoveryPage> option = None with get, set
 
-    member val RecoveryInspectOutcome: RecoveryQueryOutcome<Lookup<RecoveryDetails, Guid>> option =
+    member val RecoveryInspectOutcome: RecoveryQueryOutcome<Lookup<RecoveryInspection, Guid>> option =
         None with get, set
 
     member val ResolveOutcome: ResolveOutcome option = None with get, set

@@ -62,7 +62,7 @@ that builder's eligible cache records, not just ClaimCore's, and prompts before 
 
 A complete result is conjunctive: locked restore, compiler build, repository policy, every required
 test project, generated semantic/CLI-v3/Web-v2 contract check, frontend assurance, documentation,
-fresh and upgrade-through-005 database qualifications, published CLI acceptance, published browser
+fresh and upgrade-through-006 database qualifications, published CLI acceptance, published browser
 lifecycle, coverage, and evidence must all succeed for the same source. Do not relabel one green
 family as the whole gate.
 
@@ -81,7 +81,7 @@ Run every project explicitly:
 ```sh
 dotnet test --project tests/ClaimCore.Tests/ClaimCore.Tests.fsproj \
   --configuration Release --no-build --no-restore \
-  --minimum-expected-tests=189 --zero-tests-policy=strict --timeout=10m -- \
+  --minimum-expected-tests=203 --zero-tests-policy=strict --timeout=10m -- \
   --settings="$PWD/eng/expecto.runsettings"
 dotnet test --project tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj \
   --configuration Release --no-build --no-restore \
@@ -93,7 +93,7 @@ dotnet test --project tests/ClaimCore.DocsTests/ClaimCore.DocsTests.fsproj \
   --settings="$PWD/eng/expecto.runsettings"
 dotnet test --project tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj \
   --configuration Release --no-build --no-restore \
-  --minimum-expected-tests=97 --zero-tests-policy=strict --timeout=30m -- \
+  --minimum-expected-tests=100 --zero-tests-policy=strict --timeout=30m -- \
   --settings="$PWD/eng/expecto.runsettings"
 dotnet test --project tests/ClaimCore.RecoveryQualificationTests/ClaimCore.RecoveryQualificationTests.fsproj \
   --configuration Release --no-build --no-restore \
@@ -127,7 +127,7 @@ The deterministic unit profile runs 200 cases per property. The scheduled extend
 CLAIMCORE_PROPERTY_PROFILE=extended CLAIMCORE_PROPERTY_BASE_SEED=<unsigned-seed> \
 dotnet test --project tests/ClaimCore.Tests/ClaimCore.Tests.fsproj \
   --configuration Release --no-build --no-restore \
-  --minimum-expected-tests=189 --zero-tests-policy=strict --timeout=20m -- \
+  --minimum-expected-tests=203 --zero-tests-policy=strict --timeout=20m -- \
   --settings="$PWD/eng/expecto.runsettings"
 ```
 
@@ -194,9 +194,10 @@ structure and the current compiler-API compatibility arrangement.
 
 Contract generation is two deterministic stages: the F# generator writes canonical schemas, pure
 codec corpora, and split DTO modules; the locked Node stage compiles the aggregate Web response graph
-to typed AJV standalone validators and finalizes the combined manifest. The generated minified
-validator module is the only source-analyzer exception for that output and is independently limited
-to one MiB; its exact exclusions remain registered in `analyzer-suppressions.json`.
+to typed AJV standalone core and recovery validator groups and finalizes the combined manifest. The
+generated minified validator groups are the only source-analyzer exception for that output, are each
+independently limited to 600 KiB, and are dynamically selected before response acceptance; their
+exact exclusions remain registered in `analyzer-suppressions.json`.
 
 Frontend corpus tests compare every generated CLI endpoint outcome kind and Web endpoint outcome tag
 against the exact response schemas, in addition to validating positive, malformed, and cross-endpoint

@@ -16,6 +16,16 @@ let private commands =
             { registration with
                 ClaimantName = "Amended Synthetic Name"
             }
+        Command.CorrectCase
+            {
+                Registration =
+                    RegistrationCorrection.Replace
+                        { registration with
+                            ClaimantName = "Corrected Synthetic Name"
+                        }
+                Decision = DecisionCorrection.Keep
+                Payment = PaymentCorrection.Keep
+            }
         Command.Decide decision
         Command.WithdrawDecision
         Command.RecordPayment "2026-08-20"
@@ -57,8 +67,8 @@ let private applyStep current step =
 
         let stable =
             match step.Command with
-            | Command.AmendRegistration _ ->
-                after.Fields.CaseReference = before.Fields.CaseReference
+            | Command.AmendRegistration _
+            | Command.CorrectCase _ -> after.Fields.CaseReference = before.Fields.CaseReference
             | _ -> registrationProjection after.Fields = registrationProjection before.Fields
 
         changed, after.Version = before.Version + 1L && stable
@@ -130,12 +140,12 @@ let private reach state =
 let private expectedCommands =
     function
     | OpenUndecided -> [ "AMEND_REGISTRATION"; "DECIDE"; "CLOSE" ]
-    | OpenDecided -> [ "DECIDE"; "WITHDRAW_DECISION"; "RECORD_PAYMENT"; "CLOSE" ]
-    | OpenZeroDecision -> [ "DECIDE"; "WITHDRAW_DECISION"; "CLOSE" ]
-    | OpenPaid -> [ "CLEAR_PAYMENT"; "CLOSE" ]
+    | OpenDecided -> [ "CORRECT_CASE"; "DECIDE"; "WITHDRAW_DECISION"; "RECORD_PAYMENT"; "CLOSE" ]
+    | OpenZeroDecision -> [ "CORRECT_CASE"; "DECIDE"; "WITHDRAW_DECISION"; "CLOSE" ]
+    | OpenPaid -> [ "CORRECT_CASE"; "CLEAR_PAYMENT"; "CLOSE" ]
     | ClosedUndecided
     | ClosedDecided
-    | ClosedPaid -> [ "REOPEN" ]
+    | ClosedPaid -> [ "CORRECT_CASE"; "REOPEN" ]
 
 let private executionMatchesAdvertisement claim expected =
     let view = Claim.view claim

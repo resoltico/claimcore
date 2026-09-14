@@ -8,10 +8,7 @@ open ClaimCore.Application
 open ClaimCore.Domain
 open ClaimCore.Tests.Fixtures
 
-let private clock =
-    { new IBusinessDate with
-        member _.Today() = today
-    }
+let private clock = businessTime today
 
 let private waitFor (task: Task<'value>) = task.GetAwaiter().GetResult()
 
@@ -27,10 +24,11 @@ let private values =
     ]
 
 let private createWithClock businessClock =
-    CoreApi.create
-        (new CoreStore.Store() :> IClaimStore)
-        (new CoreRecoveryStore.Store() :> IRecoveryStore)
-        businessClock
+    let claims = new CoreStore.Store()
+    let recovery = new CoreRecoveryStore.Store()
+    recovery.AttachClaimStore(claims :> IClaimStore)
+
+    CoreApi.create (claims :> IClaimStore) (recovery :> IRecoveryStore) businessClock
 
 let private create () = createWithClock clock
 
@@ -59,16 +57,15 @@ let private invalidReferenceQueries (core: IClaimsCore) =
     |> expectReferenceRejection
 
 let private openCase (core: IClaimsCore) operationId reference =
-    let draft =
+    let draft: CommandDraft =
         {
             OperationId = operationId
             CaseReference = reference
             ExpectedVersion = 0L
-            Kind = CommandKind.Open
-            Values = values
+            Command = DraftCommand.Flat(CommandKind.Open, values)
         }
 
-    core.Execute(draft, CancellationToken.None) |> waitFor |> ignore
+    core.Execute(boundRequest draft, CancellationToken.None) |> waitFor |> ignore
 
 let private lookupTests =
     testList
@@ -156,8 +153,8 @@ let private validationTests =
                 | _ -> failtest "Expected typed cancellation."
 
                 let clockMustNotRun =
-                    { new IBusinessDate with
-                        member _.Today() =
+                    { new IBusinessTime with
+                        member _.Capture() =
                             failwith "Queries must not read the business clock."
                     }
 

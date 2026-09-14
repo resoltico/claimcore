@@ -13,23 +13,7 @@ open ClaimCore.Postgres
 open ClaimCore.RecordFormat
 open ClaimCore.IntegrationTests.Fixtures
 
-let private draft operationId reference =
-    {
-        OperationId = operationId
-        CaseReference = reference
-        ExpectedVersion = 0L
-        Kind = CommandKind.Open
-        Values =
-            [
-                "incidentDate", registration.IncidentDate
-                "incidentNotificationDate", registration.IncidentNotificationDate
-                "incidentCountry", registration.IncidentCountry
-                "claimantName", registration.ClaimantName
-                "insurerName", registration.InsurerName
-                "claimedAmount", registration.ClaimedAmount
-                "claimedCurrency", registration.ClaimedCurrency
-            ]
-    }
+let private request operationId reference = openRequest operationId reference
 
 let private openRuntime () =
     Runtime.OpenPostgres(appConnection (), CancellationToken.None)
@@ -105,7 +89,7 @@ let private expectAccepted (core: IClaimsCore) input =
 
 let private withPrunedAcceptedCase action =
     use runtime = openRuntime ()
-    let input = draft (Guid.NewGuid()) ("PRUNED-" + Guid.NewGuid().ToString("N"))
+    let input = request (Guid.NewGuid()) ("PRUNED-" + Guid.NewGuid().ToString("N"))
 
     let digest =
         match runtime.Core.Execute(input, CancellationToken.None) |> await with
@@ -195,15 +179,11 @@ let private acceptedWithoutTechnicalPreparation =
     testCase
         "[CC-APP-002] PostgreSQL accepted history without preparation remains replayable"
         (fun () ->
-            let input = draft (Guid.NewGuid()) ("HISTORY-" + Guid.NewGuid().ToString("N"))
-
-            let request =
-                Drafts.bind input
-                |> Result.defaultWith (fun _ -> failtest "Synthetic draft must bind.")
+            let input = request (Guid.NewGuid()) ("HISTORY-" + Guid.NewGuid().ToString("N"))
 
             use claims = store ()
 
-            match Service.executeAsync claims clock request |> await with
+            match Service.executeAsync claims clock input |> await with
             | Ok _ -> ()
             | Error _ -> failtest "Synthetic direct history write must accept."
 
@@ -216,20 +196,16 @@ let private conflictPrecedesSnapshotProjection =
     testCase
         "[CC-APP-002] PostgreSQL rejects wrong digest before parsing accepted snapshot"
         (fun () ->
-            let input = draft (Guid.NewGuid()) ("CORRUPT-" + Guid.NewGuid().ToString("N"))
-
-            let request =
-                Drafts.bind input
-                |> Result.defaultWith (fun _ -> failtest "Synthetic draft must bind.")
+            let input = request (Guid.NewGuid()) ("CORRUPT-" + Guid.NewGuid().ToString("N"))
 
             use claims = store ()
 
-            match Service.executeAsync claims clock request |> await with
+            match Service.executeAsync claims clock input |> await with
             | Ok _ -> ()
             | Error _ -> failtest "Synthetic operation must accept."
 
             let digest =
-                request |> RequestRecord.encode |> SHA256.HashData |> Convert.ToHexStringLower
+                input |> RequestRecord.encode |> SHA256.HashData |> Convert.ToHexStringLower
 
             let wrongDigest = (if digest[0] = 'a' then "b" else "a") + digest.Substring(1)
 

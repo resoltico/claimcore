@@ -9,6 +9,21 @@ open ClaimCore.Application
 open ClaimCore.Postgres
 
 module private RuntimeOpening =
+    let private businessTime zoneId =
+        let zone = TimeZoneInfo.FindSystemTimeZoneById(zoneId)
+
+        { new IBusinessTime with
+            member _.Capture() =
+                let observed = TimeProvider.System.GetUtcNow()
+                let local = TimeZoneInfo.ConvertTime(observed, zone)
+
+                {
+                    ObservedUtcInstant = observed
+                    EffectiveBusinessDate = DateOnly.FromDateTime(local.DateTime)
+                    TimeZoneId = zoneId
+                }
+        }
+
     let private recoveryFault value =
         match value with
         | RecoveryStoreFailure.SchemaMismatch -> RuntimeOpenFault.RuntimeSchemaMismatch
@@ -22,6 +37,9 @@ module private RuntimeOpening =
             use! _connection =
                 RuntimeDatabase.openConnectionAsyncWithCancellation dataSource cancellationToken
 
+            let! businessTimeZone =
+                InstallationBusinessZone.requireConfigured _connection cancellationToken
+
             cancellationToken.ThrowIfCancellationRequested()
             let store = new PostgresStore(dataSource)
             let recovery = new PostgresRecoveryStore(dataSource, PreparationLimits.defaults)
@@ -31,10 +49,7 @@ module private RuntimeOpening =
             | Ok _ ->
                 cancellationToken.ThrowIfCancellationRequested()
 
-                let clock =
-                    { new IBusinessDate with
-                        member _.Today() = DateOnly.FromDateTime(DateTime.Today)
-                    }
+                let clock = businessTime businessTimeZone
 
                 return Ok(CoreApi.create (store :> IClaimStore) (recovery :> IRecoveryStore) clock)
         }

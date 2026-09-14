@@ -58,5 +58,15 @@ type internal IClaimStore =
     abstract Accepted:
         operationId: Guid * requestSha256: string -> Task<Result<Receipt option, CoreFailure>>
 
-type internal IBusinessDate =
-    abstract Today: unit -> DateOnly
+/// One capture is an observed instant and the installation calendar derived from it. Keeping these
+/// together prevents a preview from pairing a decision date with a separately observed host zone.
+[<NoEquality; NoComparison>]
+type internal BusinessContext =
+    {
+        ObservedUtcInstant: DateTimeOffset
+        EffectiveBusinessDate: DateOnly
+        TimeZoneId: string
+    }
+
+type internal IBusinessTime =
+    abstract Capture: unit -> BusinessContext

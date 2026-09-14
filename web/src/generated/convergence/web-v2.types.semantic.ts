@@ -37,10 +37,24 @@ export type CommandInputDescriptor =
       readonly prefill: "CURRENT_FIELD";
       readonly currentField: string;
     };
+export type CorrectionGroupDescriptor = {
+  readonly name: string;
+  readonly label: string;
+  readonly meaning: string;
+  readonly actions: ReadonlyArray<"KEEP" | "REPLACE" | "CLEAR">;
+  readonly replaceFields: ReadonlyArray<CommandInputDescriptor>;
+};
+export type CommandInputShape =
+  | { readonly kind: "FIELDS"; readonly fields: ReadonlyArray<CommandInputDescriptor> }
+  | {
+      readonly kind: "CORRECTION_GROUPS";
+      readonly groups: ReadonlyArray<CorrectionGroupDescriptor>;
+    };
 export type CommandDescriptor = {
   readonly kind:
     | "OPEN"
     | "AMEND_REGISTRATION"
+    | "CORRECT_CASE"
     | "DECIDE"
     | "WITHDRAW_DECISION"
     | "RECORD_PAYMENT"
@@ -49,7 +63,7 @@ export type CommandDescriptor = {
     | "REOPEN";
   readonly label: string;
   readonly meaning: string;
-  readonly inputs: ReadonlyArray<CommandInputDescriptor>;
+  readonly inputs: CommandInputShape;
 };
 export type SemanticDefinition = {
   readonly contractKind: "SEMANTIC_CORE_V1";

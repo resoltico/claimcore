@@ -25,6 +25,8 @@
     <Compile Include="RecoveryProcessTests.fs" />
     <Compile Include="RecoveryRaceTests.fs" />
     <Compile Include="RecoveryEvidenceTests.fs" />
+    <Compile Include="RecoveryLifecycleAuthorityTests.fs" />
+    <Compile Include="TerminalCapacityTests.fs" />
     <Compile Include="RecoveryStateTests.fs" />
     <Compile Include="RecoveryCancellationTests.fs" />
     <Compile Include="Suite.fs" />

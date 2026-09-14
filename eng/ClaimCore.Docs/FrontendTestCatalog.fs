@@ -7,6 +7,7 @@ module FrontendTestCatalog =
             [
                 "aborts a stale page load before appending a newer cursor page"
                 "accepts the matching generated definition fingerprint"
+                "allocates a new ID when editing a definitely refused prepared request"
                 "associates optional field errors and supports password text input"
                 "clears claimant definition state when the server rejects or mismatches assets"
                 "closes recovery detail, confirm, and import dialogs without dispatching mutations"
@@ -16,17 +17,27 @@ module FrontendTestCatalog =
                 "copies safe values and provides an accessible fallback when clipboard access is unavailable"
                 "discards an aborted definition response when session epoch changes"
                 "discards an aborted keyed read instead of replacing its newer response"
+                "encodes every correction action explicitly and refuses an invalid registration clear"
                 "fails a malformed authenticated session and leaves invalid mutation calls inert"
                 "fails closed on malformed delivery and validates recovery export"
                 "fails closed when the server definition is rejected or has a different Web fingerprint"
                 "fails immediately when the embedding document omits the application root"
+                "forks a new ID when an exposed request is edited after definite submit refusal"
+                "forks on a changed reference or command, but not on an unchanged field"
+                "freezes grouped correction identity while a later correction edit forks a new operation"
                 "generated contract corpora > accepts every production CLI branch and rejects malformed or cross-endpoint values"
                 "generated contract corpora > accepts generated Web host values and rejects every malformed or cross-endpoint value"
                 "gives simultaneous current and historical case fields distinct heading IDs"
+                "ignores late prepare and submit responses from inactive attempts"
                 "keeps a failed history page request-local without erasing current case data"
                 "keeps a non-reviewable retained Prepare exact and directs Recovery"
                 "keeps an unknown recovery result explicit and directs inspection"
                 "keeps existing references immutable and delegates a reviewed commit"
+            ]
+
+    let private vitestPart2 =
+        set
+            [
                 "keeps generated endpoint inventory callable and presents suspicious Unicode defensively"
                 "keeps invalid reducer transitions inert and records a completed receipt"
                 "keeps missing case lookup and non-full history entries out of case presentation"
@@ -49,7 +60,7 @@ module FrontendTestCatalog =
                 "opens a metadata-derived command from Dashboard's current-case transition"
             ]
 
-    let private vitestPart2 =
+    let private vitestPart3 =
         set
             [
                 "operation editor dialogs and render branches > changes a dirty command only after the discard confirmation"
@@ -69,7 +80,9 @@ module FrontendTestCatalog =
                 "operation editor transport outcomes > shows a definite prepare rejection without creating recovery uncertainty"
                 "operation editor transport outcomes > shows a definite submit rejection after preserving the prepared identity"
                 "rejects JSON-prefix spoofing and accepts an exact JSON media type with parameters"
+                "rejects impossible local draft shapes and keeps absent current correction values blank"
                 "rejects technical preparation details on an accepted Prepare replay"
+                "refuses an export action when inspected recovery evidence has no exact digest"
                 "renders a login form with disabled submission until anonymous antiforgery is available"
                 "renders a neutral shell while definition admission is pending"
                 "renders a recoverable session failure and invokes its refresh action"
@@ -81,32 +94,41 @@ module FrontendTestCatalog =
                 "renders observed recovery details and leaves only permitted server actions enabled"
                 "renders recovery import controls and lets the page reload without mutation"
                 "renders recovery list state, invokes inspection, and pages through a cursor"
+                "renders terminal revocation authority and exposes no mutation action"
                 "renders the loading shell before local session discovery completes"
                 "reports a failed list as a request-local error without manufacturing rows"
                 "reports a found observation without a receipt as a protocol failure"
                 "reports absent and malformed operation observations without leaving stale receipts"
                 "reports malformed pages, malformed inspections, rejected imports, and invalid exports"
+                "requests the next server attempt page only from an inspected retained item"
                 "requires fresh inspection before retrying a submission-started preparation"
                 "requires one exact attachment filename and matching UTF-8 filename parameter"
             ]
 
-    let private vitestPart3 =
+    let private vitestPart4 =
         set
             [
                 "retains an exact id until a retained preparation is edited, then starts a new id"
+                "retains authored replacement values for every grouped correction field"
+                "retains the frozen exact request on unchanged retry after unknown preparation"
+                "retries an unchanged definite refusal with its original exact identity"
+                "retries the frozen request after delivery loss despite a changed current revision"
                 "returns an accepted open operation to Dashboard through its committed transition"
                 "returns from a selected case through Dashboard's detail-back transition"
                 "rotates the retained operation ID when only an OPEN reference is changed"
                 "routes dashboard list selections and the new-case command into the typed editor"
+                "sends an explicit grouped correction and preserves all non-replaced groups"
                 "sends bounded raw imports with generated media type and digest header"
                 "shows current fields, server command labels, full expandable history and retryable history pages"
                 "shows logout transport failure as retriable and clears it after a session refresh"
                 "submits a retained operation ID and digest only once under duplicate confirmation"
                 "surfaces invalid snapshots after login and logout responses"
+                "switches recovery views explicitly and leaves unavailable capacity unrendered"
                 "treats a typed missing history as an empty read rather than a transport error"
                 "uses an exact operation lookup result and clears absent lookup presentation"
                 "uses generated v2 paths and typed endpoint outcomes"
                 "uses inspected accepted evidence to remove stale list mutation actions"
+                "uses the supplied attempt cursor for the next inspected evidence page"
                 "v2 Recovery import and export > exports the validated filename then retains previewed envelope material without submission"
                 "v2 Recovery import and export > retains canonical-record previews and reports rejected recovery pages"
                 "v2 Recovery view > inspects and dismisses only a server-advertised unsubmitted preparation"
@@ -115,7 +137,7 @@ module FrontendTestCatalog =
                 "v2 session lifecycle > hydrates, signs in, renders v2 definition, and signs out through the anonymous snapshot"
             ]
 
-    let vitest = Set.unionMany [ vitestPart1; vitestPart2; vitestPart3 ]
+    let vitest = Set.unionMany [ vitestPart1; vitestPart2; vitestPart3; vitestPart4 ]
 
     let browser =
         set

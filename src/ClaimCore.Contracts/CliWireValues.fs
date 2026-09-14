@@ -96,6 +96,7 @@ module internal CliWireValues =
         writer.WriteString("command", command value.Command)
         writer.WriteString("preparedAt", value.PreparedAt.ToUniversalTime().ToString("O"))
         writer.WriteString("state", WireTokens.preparationState value.State)
+        writer.WriteString("authority", WireTokens.recoveryAuthority value.Authority)
         optional writer "requestSha256" value.RequestSha256
         writer.WritePropertyName("availableActions")
         writer.WriteStartArray()
@@ -104,6 +105,13 @@ module internal CliWireValues =
         |> List.iter (WireTokens.recoveryAction >> writer.WriteStringValue)
 
         writer.WriteEndArray()
+        writer.WriteEndObject()
+
+    let revokedOperation (writer: Utf8JsonWriter) (value: RevokedOperation) =
+        writer.WriteStartObject()
+        writer.WriteString("operationId", value.OperationId)
+        writer.WriteString("revokedAt", value.RevokedAt.ToUniversalTime().ToString("O"))
+        writer.WriteString("reason", value.Reason)
         writer.WriteEndObject()
 
     let private attempt (writer: Utf8JsonWriter) (value: PreparationAttempt) =
@@ -117,6 +125,16 @@ module internal CliWireValues =
             "settledAt"
             (value.SettledAt |> Option.map (fun item -> item.ToUniversalTime().ToString("O")))
 
+        writer.WriteEndObject()
+
+    let private attemptPage (writer: Utf8JsonWriter) (value: PreparationAttemptPage) =
+        writer.WriteStartObject()
+        writer.WritePropertyName("items")
+        writer.WriteStartArray()
+        value.Items |> List.iter (attempt writer)
+        writer.WriteEndArray()
+        optional writer "nextCursor" value.NextCursor
+        writer.WriteBoolean("legacyUncertainty", value.LegacyUncertainty)
         writer.WriteEndObject()
 
     let preparationDetails (writer: Utf8JsonWriter) (value: PreparationDetails) =
@@ -136,8 +154,5 @@ module internal CliWireValues =
         writer.WriteString("preparingContractFingerprint", value.PreparingContractFingerprint)
         writer.WriteString("preparingContractKind", value.PreparingContractKind)
         writer.WritePropertyName("attempts")
-        writer.WriteStartArray()
-        value.Attempts |> List.iter (attempt writer)
-        writer.WriteEndArray()
-        writer.WriteBoolean("legacyUncertainty", value.LegacyUncertainty)
+        attemptPage writer value.Attempts
         writer.WriteEndObject()

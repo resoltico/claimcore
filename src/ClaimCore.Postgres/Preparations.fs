@@ -9,6 +9,7 @@ type internal PreparationLimits =
         MaximumPreparations: int
         MaximumCanonicalRequestBytes: int64
         MaximumPageSize: int
+        MaximumAttemptsPerOperation: int
     }
 
 /// PostgreSQL tokens for Application-owned preparation provenance.
@@ -40,6 +41,8 @@ type PreparationPruneResult =
         CandidateCount: int
         DeletedCount: int
         DryRun: bool
+        TerminalPreparationCount: int64
+        TerminalCanonicalRequestBytes: int64
     }
 
 module internal PreparationLimits =
@@ -48,6 +51,7 @@ module internal PreparationLimits =
             MaximumPreparations = 1024
             MaximumCanonicalRequestBytes = 64L * 1024L * 1024L
             MaximumPageSize = 100
+            MaximumAttemptsPerOperation = 64
         }
 
     let validate limits =
@@ -58,6 +62,8 @@ module internal PreparationLimits =
             || limits.MaximumCanonicalRequestBytes > 64L * 1024L * 1024L
             || limits.MaximumPageSize < 1
             || limits.MaximumPageSize > 100
+            || limits.MaximumAttemptsPerOperation < 1
+            || limits.MaximumAttemptsPerOperation > 64
         then
             invalidArg
                 (nameof limits)

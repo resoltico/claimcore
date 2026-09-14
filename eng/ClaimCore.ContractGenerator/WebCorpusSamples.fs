@@ -65,6 +65,7 @@ module internal WebCorpusSamples =
     let preparationWithoutDigest =
         { CliCorpusValues.preparationSummary with
             State = PreparationState.Dismissed
+            Authority = RecoveryAuthority.RevokedAuthority
             RequestSha256 = None
             AvailableActions = []
         }
@@ -83,18 +84,22 @@ module internal WebCorpusSamples =
             AuthoredValues = []
             PreparingContractKind = "LEGACY_UNCLASSIFIED"
             Attempts =
-                [
-                    attempt "30000000-0000-4000-8000-000000000001" None None
-                    attempt
-                        "30000000-0000-4000-8000-000000000002"
-                        (Some "REJECTED")
-                        (Some CliCorpusValues.timestamp)
-                    attempt
-                        "30000000-0000-4000-8000-000000000003"
-                        (Some "ERROR")
-                        (Some CliCorpusValues.timestamp)
-                ]
-            LegacyUncertainty = true
+                {
+                    Items =
+                        [
+                            attempt "30000000-0000-4000-8000-000000000001" None None
+                            attempt
+                                "30000000-0000-4000-8000-000000000002"
+                                (Some "REJECTED")
+                                (Some CliCorpusValues.timestamp)
+                            attempt
+                                "30000000-0000-4000-8000-000000000003"
+                                (Some "ERROR")
+                                (Some CliCorpusValues.timestamp)
+                        ]
+                    NextCursor = Some "synthetic-attempt-cursor"
+                    LegacyUncertainty = true
+                }
         }
 
     let reviewWithNullableValues =

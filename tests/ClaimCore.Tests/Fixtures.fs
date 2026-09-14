@@ -2,9 +2,26 @@ module ClaimCore.Tests.Fixtures
 
 open System
 open Expecto
+open ClaimCore.Application
 open ClaimCore.Domain
 
 let today = DateOnly(2026, 9, 7)
+
+let internal businessContext effectiveBusinessDate =
+    {
+        ObservedUtcInstant = DateTimeOffset(2026, 9, 7, 12, 0, 0, TimeSpan.Zero)
+        EffectiveBusinessDate = effectiveBusinessDate
+        TimeZoneId = "Etc/UTC"
+    }
+
+let internal businessTime effectiveBusinessDate =
+    { new IBusinessTime with
+        member _.Capture() = businessContext effectiveBusinessDate
+    }
+
+let boundRequest (draft: CommandDraft) =
+    Drafts.bind draft
+    |> Result.defaultWith (fun _ -> failtest "Synthetic test draft must bind to a command request.")
 
 let registration =
     {

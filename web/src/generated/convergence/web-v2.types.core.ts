@@ -22,7 +22,9 @@ export type Rejection = {
     | "ALREADY_CLOSED"
     | "ALREADY_OPENED"
     | "ZERO_DECISION_CANNOT_BE_PAID"
-    | "IDEMPOTENCY_CONFLICT";
+    | "IDEMPOTENCY_CONFLICT"
+    | "OPERATION_REVOKED"
+    | "RECOVERY_ATTEMPT_LIMIT_REACHED";
   readonly message: string;
   readonly field: string | null;
   readonly actualRevision: string | null;
@@ -85,6 +87,7 @@ export type CurrentCase = {
   readonly availableCommands: ReadonlyArray<
     | "OPEN"
     | "AMEND_REGISTRATION"
+    | "CORRECT_CASE"
     | "DECIDE"
     | "WITHDRAW_DECISION"
     | "RECORD_PAYMENT"
@@ -107,6 +110,7 @@ export type Receipt = {
   readonly command:
     | "OPEN"
     | "AMEND_REGISTRATION"
+    | "CORRECT_CASE"
     | "DECIDE"
     | "WITHDRAW_DECISION"
     | "RECORD_PAYMENT"
@@ -120,6 +124,7 @@ type ChangeSummary = {
   readonly command:
     | "OPEN"
     | "AMEND_REGISTRATION"
+    | "CORRECT_CASE"
     | "DECIDE"
     | "WITHDRAW_DECISION"
     | "RECORD_PAYMENT"
@@ -146,16 +151,76 @@ export type CommandDraft = {
   readonly operationId: string;
   readonly caseReference: string;
   readonly expectedRevision: string;
-  readonly command: {
-    readonly kind:
-      | "OPEN"
-      | "AMEND_REGISTRATION"
-      | "DECIDE"
-      | "WITHDRAW_DECISION"
-      | "RECORD_PAYMENT"
-      | "CLEAR_PAYMENT"
-      | "CLOSE"
-      | "REOPEN";
-    readonly values: Readonly<Record<string, string>>;
-  };
+  readonly command:
+    | {
+        readonly kind: "OPEN";
+        readonly values: {
+          readonly incidentDate: string;
+          readonly incidentNotificationDate: string;
+          readonly incidentCountry: string;
+          readonly claimantName: string;
+          readonly insurerName: string;
+          readonly claimedAmount: string;
+          readonly claimedCurrency: string;
+        };
+      }
+    | {
+        readonly kind: "AMEND_REGISTRATION";
+        readonly values: {
+          readonly incidentDate: string;
+          readonly incidentNotificationDate: string;
+          readonly incidentCountry: string;
+          readonly claimantName: string;
+          readonly insurerName: string;
+          readonly claimedAmount: string;
+          readonly claimedCurrency: string;
+        };
+      }
+    | {
+        readonly kind: "CORRECT_CASE";
+        readonly groups: {
+          readonly registration:
+            | { readonly mode: "KEEP" }
+            | {
+                readonly mode: "REPLACE";
+                readonly values: {
+                  readonly incidentDate: string;
+                  readonly incidentNotificationDate: string;
+                  readonly incidentCountry: string;
+                  readonly claimantName: string;
+                  readonly insurerName: string;
+                  readonly claimedAmount: string;
+                  readonly claimedCurrency: string;
+                };
+              };
+          readonly decision:
+            | { readonly mode: "KEEP" }
+            | {
+                readonly mode: "REPLACE";
+                readonly values: {
+                  readonly paymentDecisionDate: string;
+                  readonly payableAmount: string;
+                  readonly payableCurrency: string;
+                };
+              }
+            | { readonly mode: "CLEAR" };
+          readonly payment:
+            | { readonly mode: "KEEP" }
+            | { readonly mode: "REPLACE"; readonly values: { readonly paymentDate: string } }
+            | { readonly mode: "CLEAR" };
+        };
+      }
+    | {
+        readonly kind: "DECIDE";
+        readonly values: {
+          readonly paymentDecisionDate: string;
+          readonly payableAmount: string;
+          readonly payableCurrency: string;
+        };
+      }
+    | { readonly kind: "WITHDRAW_DECISION"; readonly values: Readonly<Record<string, never>> }
+    | { readonly kind: "RECORD_PAYMENT"; readonly values: { readonly paymentDate: string } }
+    | { readonly kind: "CLEAR_PAYMENT"; readonly values: Readonly<Record<string, never>> }
+    | { readonly kind: "CLOSE"; readonly values: Readonly<Record<string, never>> }
+    | { readonly kind: "REOPEN"; readonly values: Readonly<Record<string, never>> };
 };

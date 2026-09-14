@@ -16,6 +16,12 @@ module internal CoreConversions =
         | DomainError.AmendmentRequiresUndecided ->
             RejectionCode.AmendmentRequiresUndecided,
             "Withdraw an unpaid decision before amending registration."
+        | DomainError.CorrectionNoChanges ->
+            RejectionCode.InvalidInput,
+            "Choose at least one factual correction that changes the current case."
+        | DomainError.CorrectionRequiresExistingValue ->
+            RejectionCode.InvalidInput,
+            "A correction can only replace or clear a value already recorded on this case."
         | DomainError.DecisionRequired ->
             RejectionCode.DecisionRequired, "Record a payment decision first."
         | DomainError.PaymentAlreadyRecorded ->

@@ -74,14 +74,14 @@ it("renders an exact accepted Prepare replay as a definite receipt", async () =>
   expect(committed).toHaveBeenCalledOnce();
 });
 
-it("rejects technical preparation details on an accepted Prepare replay", () => {
+it("rejects technical preparation details on an accepted Prepare replay", async () => {
   const accepted = {
     endpoint: "command.prepare",
     outcome: { tag: "OBSERVED_ACCEPTED", data: { receipt } },
   };
-  expect(isWebV2Response("command.prepare", accepted)).toBe(true);
+  expect(await isWebV2Response("command.prepare", accepted)).toBe(true);
   expect(
-    isWebV2Response("command.prepare", {
+    await isWebV2Response("command.prepare", {
       ...accepted,
       outcome: { ...accepted.outcome, data: { receipt, details: preparation } },
     }),

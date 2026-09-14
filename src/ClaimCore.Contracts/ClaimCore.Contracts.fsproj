@@ -5,6 +5,7 @@
     <Compile Include="ContractModel.fs" />
     <Compile Include="WireTokens.fs" />
     <Compile Include="ScalarSchemas.fs" />
+    <Compile Include="CommandInputProjection.fs" />
     <Compile Include="Projection.fs" />
     <Compile Include="EndpointInputs.fs" />
     <Compile Include="CoreValueSchemas.fs" />
@@ -29,6 +30,7 @@
     <Compile Include="WebTypeScriptResponses.fs" />
     <Compile Include="WebTypeScript.fs" />
     <Compile Include="ContractFactory.fs" />
+    <Compile Include="SemanticInputRenderer.fs" />
     <Compile Include="Renderers.fs" />
     <Compile Include="ContractRenderers.fs" />
     <Compile Include="BuildIdentityCodec.fs" />

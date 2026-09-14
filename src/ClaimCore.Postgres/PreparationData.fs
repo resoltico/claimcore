@@ -74,8 +74,6 @@ module internal PreparationData =
                 PreparingContractFingerprint = reader.GetString(6)
                 PreparingContractKind = kind
                 Lifecycle = lifecycle reader
-                Attempts = []
-                LegacyUncertainty = false
             }
 
         match PreparationIntegrity.verify value with
@@ -124,36 +122,23 @@ module internal PreparationData =
                 return raise error
         }
 
-    let readOne
+    /// Header-only recovery read for authority, admission, and capacity paths. Attempt evidence is
+    /// intentionally loaded only by explicit detail inspection.
+    let readHeader
         (connection: NpgsqlConnection)
         (transaction: NpgsqlTransaction option)
         (operationId: Guid)
         : Task<RetainedPreparation option> =
         task {
-            let! found =
-                task {
-                    use command =
-                        new NpgsqlCommand(select + " WHERE p.operation_id = @operation", connection)
+            use command =
+                new NpgsqlCommand(select + " WHERE p.operation_id = @operation", connection)
 
-                    transaction |> Option.iter (fun value -> command.Transaction <- value)
-                    Sql.uuid command "operation" operationId
-                    let! result = command.ExecuteReaderAsync()
-                    use reader = result
-                    let! exists = reader.ReadAsync()
-                    return if exists then Some(read reader) else None
-                }
-
-            match found with
-            | None -> return None
-            | Some retained ->
-                let! attempts, legacy = PreparationEvidence.read connection transaction operationId
-
-                return
-                    Some
-                        { retained with
-                            Attempts = attempts
-                            LegacyUncertainty = legacy
-                        }
+            transaction |> Option.iter (fun value -> command.Transaction <- value)
+            Sql.uuid command "operation" operationId
+            let! result = command.ExecuteReaderAsync()
+            use reader = result
+            let! exists = reader.ReadAsync()
+            return if exists then Some(read reader) else None
         }
 
     let sameImmutable (draft: RecoveryPreparationDraft) (existing: RetainedPreparation) =
@@ -161,17 +146,23 @@ module internal PreparationData =
         && draft.RequestSha256 = existing.RequestSha256
         && draft.CanonicalRequest = existing.CanonicalRequest
 
-    let readCapacity
+    let readPendingCapacity
         (connection: NpgsqlConnection)
-        (transaction: NpgsqlTransaction)
+        (transaction: NpgsqlTransaction option)
         : Task<int64 * int64> =
         task {
             use command =
                 new NpgsqlCommand(
-                    "SELECT count(*), COALESCE(sum(octet_length(canonical_request)), 0)::bigint FROM claimcore.request_preparations",
-                    connection,
-                    transaction
+                    "SELECT count(*), COALESCE(sum(octet_length(p.canonical_request)), 0)::bigint "
+                    + "FROM claimcore.request_preparations p "
+                    + "WHERE NOT EXISTS (SELECT 1 FROM claimcore.case_changes accepted "
+                    + "                  WHERE accepted.operation_id = p.operation_id) "
+                    + "AND NOT EXISTS (SELECT 1 FROM claimcore.operation_revocations revoked "
+                    + "                WHERE revoked.operation_id = p.operation_id)",
+                    connection
                 )
+
+            transaction |> Option.iter (fun value -> command.Transaction <- value)
 
             let! result = command.ExecuteReaderAsync()
             use reader = result
@@ -182,6 +173,12 @@ module internal PreparationData =
 
             return reader.GetInt64(0), reader.GetInt64(1)
         }
+
+    let readCapacity
+        (connection: NpgsqlConnection)
+        (transaction: NpgsqlTransaction)
+        : Task<int64 * int64> =
+        readPendingCapacity connection (Some transaction)
 
     let private bindPreparationInsert (command: NpgsqlCommand) (draft: RecoveryPreparationDraft) =
         Sql.uuid command "operation" draft.OperationId
@@ -235,8 +232,6 @@ module internal PreparationData =
                     PreparingContractFingerprint = draft.PreparingContractFingerprint
                     PreparingContractKind = draft.PreparingContractKind
                     Lifecycle = PreparationLifecycle.Unsubmitted
-                    Attempts = []
-                    LegacyUncertainty = false
                 }
                 : RetainedPreparation)
         }

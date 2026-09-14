@@ -129,7 +129,7 @@ let private allDiscoveryVariants =
                 "Compiled product identity")
 
         discoveryArray [ "describe"; "fields" ] 13
-        discoveryArray [ "describe"; "commands" ] 8
+        discoveryArray [ "describe"; "commands" ] 9
         discoveryArray [ "describe"; "endpoints" ] 15
 
         for arguments in
