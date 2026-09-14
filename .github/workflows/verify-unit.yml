@@ -86,7 +86,7 @@ jobs:
             stage: architecture-linux
             assembly: ClaimCore.ArchitectureTests
             project: tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj
-            expected: 48
+            expected: 69
             prefix: architecture
             configuration: Debug
             coverage: false
@@ -96,7 +96,7 @@ jobs:
             stage: architecture-macos
             assembly: ClaimCore.ArchitectureTests
             project: tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj
-            expected: 48
+            expected: 69
             prefix: architecture
             configuration: Debug
             coverage: false
@@ -106,7 +106,7 @@ jobs:
             stage: architecture-windows
             assembly: ClaimCore.ArchitectureTests
             project: tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj
-            expected: 48
+            expected: 69
             prefix: architecture
             configuration: Debug
             coverage: false
@@ -171,6 +171,9 @@ jobs:
           if ($env:COLLECT_COVERAGE -eq "true") {
             $arguments += @("--coverlet", "--coverlet-file-prefix=$env:COVERAGE_PREFIX", "--coverlet-output-format=cobertura")
           }
+          if ($env:CONFIGURATION -eq "Debug") {
+            $env:CLAIMCORE_ARCHITECTURE_REPORT = Join-Path $results "architecture-report.json"
+          }
           & dotnet @arguments
           $testExit = $LASTEXITCODE
           $finished = (Get-Date).ToUniversalTime().ToString("O")
@@ -181,6 +184,33 @@ jobs:
           $manifestExit = $LASTEXITCODE
           if ($testExit -ne 0) { exit $testExit }
           if ($manifestExit -ne 0) { exit $manifestExit }
+      - name: Surface the inspected architecture graph
+        if: matrix.configuration == 'Debug'
+        shell: pwsh
+        env:
+          STAGE_ID: ${{ matrix.stage }}
+        run: |
+          Set-StrictMode -Version Latest
+          $path = Join-Path $PWD "artifacts/test-results/$env:STAGE_ID/architecture-report.json"
+          if (!(Test-Path -LiteralPath $path -PathType Leaf)) {
+            throw "The required ArchUnitNET report was not produced."
+          }
+          $report = Get-Content -Raw -LiteralPath $path | ConvertFrom-Json
+          $lines = [Collections.Generic.List[string]]::new()
+          $lines.Add("### ArchUnitNET inspected graph ($env:STAGE_ID)")
+          $lines.Add("")
+          $lines.Add("| Assembly | Inspected types |")
+          $lines.Add("|---|---:|")
+          foreach ($item in $report.assemblies) {
+            $lines.Add("| $($item.name) | $($item.inspectedTypes) |")
+          }
+          $lines.Add("")
+          $lines.Add("| Observed component edge |")
+          $lines.Add("|---|")
+          foreach ($edge in $report.edges) {
+            $lines.Add("| $($edge.source) → $($edge.target) |")
+          }
+          Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY -Value ($lines -join "`n")
       - name: Scan artifacts before upload
         id: artifact_scan
         if: always()

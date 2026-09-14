@@ -19,6 +19,7 @@
     <Compile Include="PublishManifestWriter.fs" />
     <Compile Include="TestInventory.fs" />
     <Compile Include="ConvergenceJson.fs" />
+    <Compile Include="ArchitectureInspectionReport.fs" />
     <Compile Include="StageCatalog.fs" />
     <Compile Include="Stages.fs" />
     <Compile Include="ReviewRegistry.fs" />
@@ -39,6 +40,7 @@
     <Compile Include="ConvergenceEndpointCatalog.fs" />
     <Compile Include="ConvergenceOutcomeCatalog.fs" />
     <Compile Include="ConvergenceMatrix.fs" />
+    <Compile Include="ConvergenceRequiredSubjects.fs" />
     <Compile Include="ConvergenceAssurance.fs" />
     <Compile Include="StructuredReports.fs" />
     <Compile Include="EvidenceCommands.fs" />

@@ -9,30 +9,45 @@
         "webHost"
       ],
       "id": "assurance-architecture:fsharp-inspection",
-      "subject": "Positive and deliberately violating F# Debug fixtures qualify dependency and member-call inspection, while absent, duplicate and empty required inputs fail closed.",
+      "subject": "Positive and deliberately violating F# Debug fixtures qualify dependency and selected direct member-call inspection, while missing types, assemblies, and selectors fail closed.",
       "tests": [
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Async accepts pure counterpart",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Async detects forbidden dependency",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Async detects forbidden member call",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Async permits noncalling member counterpart",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Clock detects platform effect",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Clock permits value-only use",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Closure accepts pure counterpart",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Closure detects forbidden dependency",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Closure detects forbidden member call",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Closure permits noncalling member counterpart",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.F# startup comma normalization preserves completeness",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Function accepts pure counterpart",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Function detects forbidden dependency",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Function detects forbidden member call",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Function permits noncalling member counterpart",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Generic accepts pure counterpart",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Generic detects forbidden dependency",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Generic detects forbidden member call",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Generic permits noncalling member counterpart",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Interface accepts pure counterpart",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Interface detects forbidden dependency",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Io detects platform effect",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Io permits value-only use",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Nested accepts pure counterpart",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Nested detects forbidden dependency",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Nested detects forbidden member call",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Nested permits noncalling member counterpart",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Sequence accepts pure counterpart",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Sequence detects forbidden dependency",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Sequence detects forbidden member call",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Sequence permits noncalling member counterpart",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Signature accepts pure counterpart",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Signature detects forbidden dependency",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Task accepts pure counterpart",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Task detects forbidden dependency",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Task detects forbidden member call",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Task permits noncalling member counterpart",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Union accepts pure counterpart",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Union detects forbidden dependency",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.duplicate inputs are refused",
@@ -40,7 +55,8 @@
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.empty required selector is refused",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.member rule detects only forbidden method",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.member rule permits other method on same type",
-        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.missing input fails before loading"
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.missing input fails before loading",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.omitted reflected type fails completeness"
       ]
     },
     {
@@ -58,12 +74,30 @@
     {
       "dimensions": [
         "core",
+        "documentation"
+      ],
+      "id": "assurance-architecture:observed-graph",
+      "subject": "Every required platform records the exact same-run ArchUnitNET type and edge inventory, while imported project references, missing reports, malformed graphs, and tampered downloads fail closed.",
+      "tests": [
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.evaluated project graph qualification.imported conditional references fail in the active configuration",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product graph evidence.compiled model covers every type and emits a bounded graph",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product graph evidence.evaluated Debug and Release dependencies obey component policy",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.ArchUnitNET report evidence.accepts a bounded sorted ArchUnitNET model report",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.ArchUnitNET report evidence.all three architecture stages require the inspected graph artifact",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.ArchUnitNET report evidence.refuses missing or tampered downloaded architecture evidence",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.ArchUnitNET report evidence.rejects duplicate, incomplete, or unknown architecture inventory"
+      ]
+    },
+    {
+      "dimensions": [
+        "core",
         "webHost"
       ],
       "id": "assurance-architecture:product-ownership",
-      "subject": "Selection-qualified compiled and declared-reference rules cover all current product assemblies, the native CLI graph, selected ambient APIs, runtime composition and one direct domain-decision call.",
+      "subject": "Selection-qualified compiled and evaluated rules cover all product assemblies, the reviewed direct dependency graph, selected ambient APIs, CLI/Web composition, and direct domain-decision calls.",
       "tests": [
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.Application respects owned component dependencies",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.CLI helpers cannot open the PostgreSQL runtime",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.Cli respects owned component dependencies",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.Contracts avoids selected ambient clock and host IO APIs",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.Contracts respects owned component dependencies",
@@ -75,6 +109,7 @@
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.RecordFormat avoids selected ambient clock and host IO APIs",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.RecordFormat respects owned component dependencies",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.Web respects owned component dependencies",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.adapters cannot call the domain decision directly",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.all production roots are classified",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.declared project references obey component permissions",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.endpoint helpers cannot reach runtime composition",

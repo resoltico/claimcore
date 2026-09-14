@@ -38,8 +38,8 @@ let private pair shape =
                 "Failure identifies the intended target, not merely an empty rule")
     ]
 
-let private methodRule side =
-    let subjects = select (side + "Method")
+let private methodRule side shape =
+    let subjects = select (side + shape)
 
     let methods =
         ArchRuleDefinition
@@ -80,14 +80,40 @@ let private preflight =
                     |> ignore)
                 "A renamed required target must fail")
         testCase "member rule permits other method on same type" (fun () ->
-            Inspection.check architecture.Value (methodRule "Good"))
+            Inspection.check architecture.Value (methodRule "Good" "Method"))
         testCase "member rule detects only forbidden method" (fun () ->
-            let failures = Inspection.violations architecture.Value (methodRule "Bad")
+            let failures = Inspection.violations architecture.Value (methodRule "Bad" "Method")
             Expect.isNonEmpty failures "Forbidden call must be found"
 
             Expect.isTrue
                 (failures |> List.exists (fun text -> text.Contains("Forbidden")))
                 "Failure names the selected method")
+        testCase "omitted reflected type fails completeness" (fun () ->
+            Expect.throwsT<InvalidOperationException>
+                (fun () ->
+                    Inspection.requireTypeNames
+                        "Synthetic"
+                        [ "Synthetic.Present"; "Synthetic.Omitted" ]
+                        [ "Synthetic.Present" ])
+                "A nonempty but incomplete loaded model must fail")
+        testCase "F# startup comma normalization preserves completeness" (fun () ->
+            Inspection.requireTypeNames
+                "Synthetic"
+                [ "<StartupCode$Synthetic>.$.NETCoreApp\\,Version=v10.0.AssemblyAttributes" ]
+                [ "<StartupCode$Synthetic>.$.NETCoreApp,Version=v10.0.AssemblyAttributes" ])
+    ]
+
+let private memberPair shape =
+    [
+        testCase (shape + " permits noncalling member counterpart") (fun () ->
+            Inspection.check architecture.Value (methodRule "Good" shape))
+        testCase (shape + " detects forbidden member call") (fun () ->
+            let failures = Inspection.violations architecture.Value (methodRule "Bad" shape)
+            Expect.isNonEmpty failures "The qualified F# form must retain the forbidden call"
+
+            Expect.isTrue
+                (failures |> List.exists (fun text -> text.Contains("Forbidden")))
+                "Failure identifies the selected method")
     ]
 
 let private platformPair shape (target: Type) methodName =
@@ -134,9 +160,14 @@ let tests =
         ]
         |> List.collect pair
 
+    let memberForms =
+        [ "Function"; "Generic"; "Closure"; "Nested"; "Task"; "Async"; "Sequence" ]
+        |> List.collect memberPair
+
     testList
         "F# inspection qualification"
         (forms
+         @ memberForms
          @ preflight
          @ platformPair "Clock" typeof<DateTime> "get_UtcNow"
          @ platformPair "Io" typeof<File> "ReadAllText")

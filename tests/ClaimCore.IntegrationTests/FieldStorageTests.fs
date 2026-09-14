@@ -109,7 +109,7 @@ let private verifyLifecycle () =
     use reopened = store ()
 
     let actual =
-        Service.getAsync (reopened :> IClaimStore) initial.CaseReference
+        (reopened :> IClaimStore).Get(initial.CaseReference)
         |> await
         |> accepted
         |> Option.defaultWith (fun () -> failtest "Persisted case missing")

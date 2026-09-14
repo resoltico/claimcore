@@ -3,11 +3,6 @@ namespace ClaimCore.Contracts
 open ClaimCore.Application
 
 module internal WebEndpointCatalog =
-    let private input (endpoints: CliEndpoint list) identifier =
-        endpoints
-        |> List.find (fun endpoint -> endpoint.Identifier = identifier)
-        |> fun endpoint -> endpoint.Input
-
     let private loginInput =
         Schema.objectOf
             false
@@ -48,32 +43,42 @@ module internal WebEndpointCatalog =
             endpoint responses "definition" "GET" "/api/v2/definition" None None
         ]
 
-    let private cases responses (inputs: Map<string, Schema>) =
-        let jsonInput identifier = inputs |> Map.find identifier |> json
-
+    let private cases responses (semantic: SemanticCoreContract) =
         [
-            endpoint responses "case.get" "POST" "/api/v2/cases/get" (jsonInput "case.get") None
-            endpoint responses "case.list" "POST" "/api/v2/cases/list" (jsonInput "case.list") None
+            endpoint
+                responses
+                "case.get"
+                "POST"
+                "/api/v2/cases/get"
+                (json (EndpointInputs.caseReference semantic))
+                None
+            endpoint
+                responses
+                "case.list"
+                "POST"
+                "/api/v2/cases/list"
+                (json (EndpointInputs.cursor semantic.MaximumPageSize))
+                None
             endpoint
                 responses
                 "case.history"
                 "POST"
                 "/api/v2/cases/history"
-                (jsonInput "case.history")
+                (json (EndpointInputs.history semantic))
                 None
             endpoint
                 responses
                 "operation.observe"
                 "POST"
                 "/api/v2/operations/observe"
-                (jsonInput "operation.observe")
+                (json EndpointInputs.operation)
                 None
             endpoint
                 responses
                 "command.prepare"
                 "POST"
                 "/api/v2/operations/prepare"
-                (jsonInput "command.prepare")
+                (json (ProjectionSchema.commandDraft semantic))
                 None
             endpoint
                 responses
@@ -84,37 +89,35 @@ module internal WebEndpointCatalog =
                 None
         ]
 
-    let private recoveryJson responses (inputs: Map<string, Schema>) =
-        let jsonInput identifier = inputs |> Map.find identifier |> json
-
+    let private recoveryJson responses (semantic: SemanticCoreContract) =
         [
             endpoint
                 responses
                 "recovery.list"
                 "POST"
                 "/api/v2/recovery/list"
-                (jsonInput "recovery.list")
+                (json (EndpointInputs.cursor semantic.MaximumPageSize))
                 None
             endpoint
                 responses
                 "recovery.inspect"
                 "POST"
                 "/api/v2/recovery/inspect"
-                (jsonInput "recovery.inspect")
+                (json EndpointInputs.operation)
                 None
             endpoint
                 responses
                 "recovery.resolve"
                 "POST"
                 "/api/v2/recovery/resolve"
-                (jsonInput "recovery.resolve")
+                (json EndpointInputs.recoveryResolution)
                 None
             endpoint
                 responses
                 "recovery.dismiss"
                 "POST"
                 "/api/v2/recovery/dismiss"
-                (jsonInput "recovery.dismiss")
+                (json EndpointInputs.recoveryDismiss)
                 None
             endpoint
                 responses
@@ -157,15 +160,10 @@ module internal WebEndpointCatalog =
                 None
         ]
 
-    let all cliEndpoints =
+    let all (semantic: SemanticCoreContract) =
         let responses = WebResponseSchemas.all () |> Map.ofList
 
-        let inputs =
-            cliEndpoints
-            |> List.map (fun (value: CliEndpoint) -> value.Identifier, value.Input)
-            |> Map.ofList
-
         sessions responses
-        @ cases responses inputs
-        @ recoveryJson responses inputs
+        @ cases responses semantic
+        @ recoveryJson responses semantic
         @ recoveryRaw responses

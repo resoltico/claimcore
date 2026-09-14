@@ -36,7 +36,7 @@ let private verifyPagination () =
 
     expected |> List.chunkBySize insertBatchSize |> List.iter (openBatch service)
 
-    let first = Service.listAsync service (Some prefix) |> await |> accepted
+    let first = service.List(Some prefix) |> await |> accepted
     Expect.equal first.Items.Length 50 "Page size"
     Expect.equal (references first) (expected |> List.take 50) "C-collation order"
 
@@ -44,7 +44,7 @@ let private verifyPagination () =
         first.NextAfter
         |> Option.defaultWith (fun () -> failtest "Expected continuation")
 
-    let second = Service.listAsync service (Some cursor) |> await |> accepted
+    let second = service.List(Some cursor) |> await |> accepted
     Expect.equal (references second) [ expected[50] ] "No duplicate or skipped boundary item"
     Expect.isNone second.NextAfter "Sequence ends"
 

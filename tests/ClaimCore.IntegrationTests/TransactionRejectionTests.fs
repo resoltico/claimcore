@@ -2,9 +2,11 @@ module ClaimCore.IntegrationTests.TransactionRejectionTests
 
 open System
 open System.Security.Cryptography
+open System.Threading
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.Hosting
 open ClaimCore.RecordFormat
 open ClaimCore.IntegrationTests.Fixtures
 
@@ -26,6 +28,28 @@ let private historyIdentity (page: HistoryPage) =
         caseDigest receipt.Case),
     page.NextAfterVersion
 
+let private requireTypedDecisionRejection (initial: CommandRequest) =
+    use runtime =
+        Runtime.OpenPostgres(appConnection (), CancellationToken.None)
+        |> await
+        |> Result.defaultWith (fun _ -> failtest "Synthetic runtime must open.")
+
+    let draft =
+        {
+            OperationId = Guid.NewGuid()
+            CaseReference = initial.CaseReference
+            ExpectedVersion = 1L
+            Kind = CommandKind.RecordPayment
+            Values = [ "paymentDate", "2026-08-20" ]
+        }
+
+    match runtime.Core.Execute(draft, CancellationToken.None) |> await with
+    | SubmissionOutcome.RejectedBeforeAttempt(None, rejection) when
+        rejection.Code = RejectionCode.DecisionRequired
+        ->
+        ()
+    | _ -> failtest "The typed core must return a definite decision-required rejection."
+
 let tests =
     testList
         "rejected transactions"
@@ -36,11 +60,9 @@ let tests =
                 let initial = newRequest ()
                 Service.executeAsync service clock initial |> await |> accepted |> ignore
 
-                let beforeCase =
-                    Service.getAsync service initial.CaseReference |> await |> accepted
+                let beforeCase = service.Get(initial.CaseReference) |> await |> accepted
 
-                let beforeHistory =
-                    Service.historyAsync service initial.CaseReference 0L |> await |> accepted
+                let beforeHistory = service.History(initial.CaseReference, 0L) |> await |> accepted
 
                 let result =
                     Service.executeAsync
@@ -49,12 +71,15 @@ let tests =
                         (next initial 1L (Command.RecordPayment "2026-08-20"))
                     |> await
 
-                Expect.isError result "No decision"
+                match result with
+                | Error(CoreFailure.Domain DomainError.DecisionRequired) -> ()
+                | _ -> failtest "A payment without decision must receive the Domain refusal."
 
-                let afterCase = Service.getAsync service initial.CaseReference |> await |> accepted
+                requireTypedDecisionRejection initial
 
-                let afterHistory =
-                    Service.historyAsync service initial.CaseReference 0L |> await |> accepted
+                let afterCase = service.Get(initial.CaseReference) |> await |> accepted
+
+                let afterHistory = service.History(initial.CaseReference, 0L) |> await |> accepted
 
                 Expect.equal
                     (afterCase |> Option.map caseDigest)

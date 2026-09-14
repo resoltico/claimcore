@@ -207,7 +207,10 @@ module StageCatalog =
                 ("architecture-" + platform)
                 platform
                 [ "dotnet"; "test"; "ClaimCore.ArchitectureTests"; "Debug" ]
-                [ OutputRequirement.Suffix "ClaimCore.ArchitectureTests.trx" ])
+                [
+                    OutputRequirement.Suffix "ClaimCore.ArchitectureTests.trx"
+                    OutputRequirement.Exact ArchitectureInspectionReport.fileName
+                ])
 
     let private webTests =
         [

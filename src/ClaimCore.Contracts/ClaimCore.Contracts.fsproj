@@ -40,7 +40,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../ClaimCore.Domain/ClaimCore.Domain.fsproj" />
-    <ProjectReference Include="../ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj" />
     <ProjectReference Include="../ClaimCore.Application/ClaimCore.Application.fsproj" />
   </ItemGroup>
 </Project>

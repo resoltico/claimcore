@@ -13,7 +13,7 @@ module ContractProjection =
             DefinitionSchema = definitionSchema
             CliEndpoints = cliEndpoints
             CliResponses = CliResponseSchemas.all semantic |> Map.ofList
-            WebEndpoints = WebEndpointCatalog.all cliEndpoints
+            WebEndpoints = WebEndpointCatalog.all semantic
         }
 
     let current () =

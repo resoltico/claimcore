@@ -2,6 +2,10 @@
   "schemaVersion": 1,
   "assembly": "ClaimCore.DocsTests",
   "tests": [
+    "ClaimCore documentation assurance.ArchUnitNET report evidence.accepts a bounded sorted ArchUnitNET model report",
+    "ClaimCore documentation assurance.ArchUnitNET report evidence.all three architecture stages require the inspected graph artifact",
+    "ClaimCore documentation assurance.ArchUnitNET report evidence.refuses missing or tampered downloaded architecture evidence",
+    "ClaimCore documentation assurance.ArchUnitNET report evidence.rejects duplicate, incomplete, or unknown architecture inventory",
     "ClaimCore documentation assurance.Evidence manifests.publish tree manifests.detects output mutation after manifest creation",
     "ClaimCore documentation assurance.Evidence manifests.publish tree manifests.rejects symlinks in output trees",
     "ClaimCore documentation assurance.Evidence manifests.publish tree manifests.rejects unsafe paths and duplicate JSON properties",

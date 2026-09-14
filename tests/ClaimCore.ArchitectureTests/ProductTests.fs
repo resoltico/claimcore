@@ -7,49 +7,12 @@ open Expecto
 open ArchUnitNET.Fluent
 open ClaimCore.TestSupport
 
-/// The permitted dependencies of the native service and its local presentation adapters.
-let private permissions =
-    [
-        "Domain", []
-        "RecordFormat", [ "Domain" ]
-        "Application", [ "Domain"; "RecordFormat" ]
-        "Contracts", [ "Domain"; "RecordFormat"; "Application" ]
-        "HostSecurity", []
-        "Postgres", [ "Domain"; "RecordFormat"; "Application" ]
-        "Cli",
-        [
-            "Domain"
-            "RecordFormat"
-            "Application"
-            "Contracts"
-            "Postgres"
-            "HostSecurity"
-        ]
-        "Web",
-        [
-            "Domain"
-            "RecordFormat"
-            "Application"
-            "Contracts"
-            "Postgres"
-            "HostSecurity"
-        ]
-        "Database", [ "Application"; "Domain"; "Postgres"; "HostSecurity"; "RecordFormat" ]
-    ]
-
-let private name part = "ClaimCore." + part
-let private names = permissions |> List.map (fst >> name)
-
-let private assemblies =
-    lazy (Inspection.loadRequired AppContext.BaseDirectory names)
-
-let private architecture = lazy (Inspection.build assemblies.Value)
-
-let private select part =
-    let assembly =
-        assemblies.Value |> Array.find (fun item -> item.GetName().Name = name part)
-
-    ArchRuleDefinition.Types().That().ResideInAssembly(assembly)
+let private permissions = ProductPolicy.permissions
+let private name = ProductPolicy.name
+let private names = ProductPolicy.names
+let private assemblies = ProductModel.assemblies
+let private architecture = ProductModel.architecture
+let private select = ProductModel.select
 
 let private dependencyCase (part, allowed) =
     testCase (part + " respects owned component dependencies") (fun () ->
@@ -57,11 +20,20 @@ let private dependencyCase (part, allowed) =
         let subjects = select part
         Inspection.requireSelection model subjects |> ignore
 
-        for other, _ in permissions do
-            if other <> part && not (List.contains other allowed) then
-                let target = select other
-                Inspection.requireSelection model target |> ignore
-                Inspection.check model (subjects.Should().NotDependOnAny(target)))
+        let failures =
+            permissions
+            |> List.collect (fun (other, _) ->
+                if other = part || List.contains other allowed then
+                    []
+                else
+                    let target = select other
+                    Inspection.requireSelection model target |> ignore
+
+                    Inspection.violations model (subjects.Should().NotDependOnAny(target))
+                    |> List.map (fun detail -> name part + " -> " + name other + ": " + detail))
+
+        if not failures.IsEmpty then
+            failtest (String.concat Environment.NewLine failures))
 
 let private roots () =
     let source = Path.Combine(RepositoryRoot.find (), "src")
@@ -90,18 +62,13 @@ let private projectGraph () =
     let projects = ProjectReferences.loadProjects source
     let names = ProjectReferences.names projects
 
-    let allowed =
-        permissions
-        |> List.map (fun (part, targets) -> name part, List.map name targets)
-        |> Map.ofList
+    let failures =
+        projects
+        |> List.collect (fun path ->
+            ProjectReferences.violations names ProductPolicy.allowed path (XDocument.Load path))
 
-    projects
-    |> List.collect (fun path ->
-        ProjectReferences.violations names allowed path (XDocument.Load path))
-    |> fun failures ->
-        Expect.isEmpty
-            failures
-            "Every declared product ProjectReference must follow the component policy"
+    if not failures.IsEmpty then
+        failtest (failures |> List.sort |> String.concat Environment.NewLine)
 
 let private unusedForbiddenReference () =
     let source = Path.Combine(RepositoryRoot.find (), "src")
@@ -175,16 +142,44 @@ let private endpointIsolation () =
     Inspection.check model (endpoints.Should().NotCallAny(factories))
     Inspection.check model (endpoints.Should().NotDependOnAny(composition))
 
-let private persistenceDoesNotDecide () =
+let private cliRuntimeIsolation () =
     let model = architecture.Value
 
-    let storage =
+    let composition =
         ArchRuleDefinition
             .Types()
             .That()
-            .Are(select "Postgres")
+            .HaveFullNameMatching(
+                @"^(?:ClaimCore\.Cli\.RuntimeSession(?:[+/.].*)?|<StartupCode\$ClaimCore-Cli>\.\$CliRunner\+Run@.*)$"
+            )
+
+    let generatedRun =
+        ArchRuleDefinition
+            .Types()
+            .That()
+            .HaveFullNameMatching(@"^<StartupCode\$ClaimCore-Cli>\.\$CliRunner\+Run@.*$")
+
+    let otherCli =
+        ArchRuleDefinition.Types().That().Are(select "Cli").And().AreNot(composition)
+
+    let factories =
+        ArchRuleDefinition
+            .MethodMembers()
+            .That()
+            .AreDeclaredIn(typeof<ClaimCore.Hosting.Runtime>)
             .And()
-            .DoNotResideInNamespaceMatching(@"^ClaimCore\.Hosting(?:\..*)?$")
+            .HaveNameContaining("OpenPostgres")
+
+    Inspection.requireSelection model composition |> ignore
+    Inspection.requireSelection model generatedRun |> ignore
+    Inspection.requireSelection model otherCli |> ignore
+    Inspection.requireSelection model factories |> ignore
+    Inspection.check model (otherCli.Should().NotCallAny(factories))
+
+let private persistenceDoesNotDecide () =
+    let model = architecture.Value
+
+    let storage = select "Postgres"
 
     let decision =
         ArchRuleDefinition.MethodMembers().That().HaveFullNameContaining("ClaimModule::decide(")
@@ -192,6 +187,19 @@ let private persistenceDoesNotDecide () =
     Inspection.requireSelection model storage |> ignore
     Inspection.requireSelection model decision |> ignore
     Inspection.check model (storage.Should().NotCallAny(decision))
+
+let private adaptersDoNotDecide () =
+    let model = architecture.Value
+
+    let decision =
+        ArchRuleDefinition.MethodMembers().That().HaveFullNameContaining("ClaimModule::decide(")
+
+    Inspection.requireSelection model decision |> ignore
+
+    for part in [ "Cli"; "Web"; "Database" ] do
+        let adapter = select part
+        Inspection.requireSelection model adapter |> ignore
+        Inspection.check model (adapter.Should().NotCallAny(decision))
 
 let tests =
     testList
@@ -203,8 +211,10 @@ let tests =
              testCase "unused forbidden declared reference is detected" unusedForbiddenReference
              testCase "production assemblies do not depend on test tooling" noTestDependency
              testCase "endpoint helpers cannot reach runtime composition" endpointIsolation
+             testCase "CLI helpers cannot open the PostgreSQL runtime" cliRuntimeIsolation
              testCase
                  "persistence cannot call the domain decision directly"
                  persistenceDoesNotDecide
+             testCase "adapters cannot call the domain decision directly" adaptersDoNotDecide
          ]
          @ ([ "Domain"; "RecordFormat"; "Contracts" ] |> List.map deterministic))

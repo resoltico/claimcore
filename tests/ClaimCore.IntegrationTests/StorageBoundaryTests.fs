@@ -132,7 +132,7 @@ let private environmentTests =
                     let original = Service.executeAsync service clock request |> await |> accepted
 
                     let current =
-                        Service.getAsync service request.CaseReference
+                        service.Get(request.CaseReference)
                         |> await
                         |> accepted
                         |> Option.defaultWith (fun () -> failtest "Expected the stored case.")
@@ -181,9 +181,7 @@ let private transactionTests =
                 use database = store ()
 
                 let current =
-                    Service.getAsync (database :> IClaimStore) request.CaseReference
-                    |> await
-                    |> accepted
+                    (database :> IClaimStore).Get(request.CaseReference) |> await |> accepted
 
                 Expect.isSome current "Commit ownership stays inside core/store boundary")
             testCase "runtime rejects installed script hash mismatch" (fun () ->

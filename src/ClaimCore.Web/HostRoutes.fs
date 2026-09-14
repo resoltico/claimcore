@@ -12,6 +12,7 @@ open Microsoft.AspNetCore.Http
 open Microsoft.AspNetCore.RateLimiting
 open Microsoft.AspNetCore.StaticFiles
 open Microsoft.Extensions.DependencyInjection
+open ClaimCore.Application
 
 module HostRoutes =
     let private hostFailure context status code message =
@@ -175,14 +176,14 @@ module HostRoutes =
             "Session was refused."
             None
 
-    let private mapDefinition sessions (runtime: IWebRuntime) (application: WebApplication) =
+    let private mapDefinition sessions (core: IClaimsCore) (application: WebApplication) =
         (application.MapGet(
             (WebContract.path "definition"),
             Func<HttpContext, IResult>(fun context ->
                 HttpHeaders.noStore context
 
                 if Admission.isCurrentSession sessions context then
-                    runtime.Core.Describe() |> WebWire.description
+                    core.Describe() |> WebWire.description
                 else
                     sessionFailure context)
         ))
@@ -194,13 +195,13 @@ module HostRoutes =
         configuration
         bootstrap
         sessions
-        (runtime: IWebRuntime)
+        (core: IClaimsCore)
         (application: WebApplication)
         =
         useStaticAssets application
         mapSessionRoutes configuration bootstrap sessions application
-        mapDefinition sessions runtime application
-        ApiRoutes.map configuration sessions runtime application
+        mapDefinition sessions core application
+        ApiRoutes.map configuration sessions core application
 
         application.MapGet(
             "/health/live",
