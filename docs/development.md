@@ -81,7 +81,7 @@ Run every project explicitly:
 ```sh
 dotnet test --project tests/ClaimCore.Tests/ClaimCore.Tests.fsproj \
   --configuration Release --no-build --no-restore \
-  --minimum-expected-tests=183 --zero-tests-policy=strict --timeout=10m -- \
+  --minimum-expected-tests=189 --zero-tests-policy=strict --timeout=10m -- \
   --settings="$PWD/eng/expecto.runsettings"
 dotnet test --project tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj \
   --configuration Release --no-build --no-restore \
@@ -93,7 +93,7 @@ dotnet test --project tests/ClaimCore.DocsTests/ClaimCore.DocsTests.fsproj \
   --settings="$PWD/eng/expecto.runsettings"
 dotnet test --project tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj \
   --configuration Release --no-build --no-restore \
-  --minimum-expected-tests=93 --zero-tests-policy=strict --timeout=30m -- \
+  --minimum-expected-tests=97 --zero-tests-policy=strict --timeout=30m -- \
   --settings="$PWD/eng/expecto.runsettings"
 dotnet test --project tests/ClaimCore.RecoveryQualificationTests/ClaimCore.RecoveryQualificationTests.fsproj \
   --configuration Release --no-build --no-restore \
@@ -127,7 +127,7 @@ The deterministic unit profile runs 200 cases per property. The scheduled extend
 CLAIMCORE_PROPERTY_PROFILE=extended CLAIMCORE_PROPERTY_BASE_SEED=<unsigned-seed> \
 dotnet test --project tests/ClaimCore.Tests/ClaimCore.Tests.fsproj \
   --configuration Release --no-build --no-restore \
-  --minimum-expected-tests=183 --zero-tests-policy=strict --timeout=20m -- \
+  --minimum-expected-tests=189 --zero-tests-policy=strict --timeout=20m -- \
   --settings="$PWD/eng/expecto.runsettings"
 ```
 
@@ -145,16 +145,18 @@ dotnet build tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fspro
   --configuration Debug --no-restore -p:Optimize=false
 dotnet test --project tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj \
   --configuration Debug --no-build --no-restore \
-  --minimum-expected-tests=46 --zero-tests-policy=strict --timeout=10m -- \
+  --minimum-expected-tests=48 --zero-tests-policy=strict --timeout=10m -- \
   --settings="$PWD/eng/expecto.runsettings"
 ```
 
 CI runs this suite on Linux, macOS and Windows. Historical test-baseline registrations remain
-immutable; new explicitly registered producers extend the live inventory without rewriting that baseline. Its named TRX results and stage manifests are
-required by the same final evidence reconciliation as the existing suites. No coverage collector
-rewrites these inspection inputs. Required assembly/selector preflight and positive/negative F#
-fixtures qualify the inspection mechanism; current native CLI allowances do not establish the
-not-yet-delivered service-client boundary. See [Architecture](architecture.md#compiled-architecture-enforcement).
+immutable; new explicitly registered producers extend the live inventory without rewriting that
+baseline. Its named TRX results and stage manifests are required by the same final evidence
+reconciliation as the existing suites. No coverage collector rewrites these inspection inputs.
+Required assembly/selector preflight and positive/negative F# fixtures qualify the compiled
+inspection mechanism. Declared project-reference checks also reject unused forbidden edges; selected
+ambient-effect and direct-call rules are deliberately narrower than full effect or semantic proofs.
+See [Architecture](architecture.md#compiled-architecture-enforcement).
 
 ### Frontend assurance
 

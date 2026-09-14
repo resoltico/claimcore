@@ -111,14 +111,21 @@ type internal PostgresStore private (dataSource: NpgsqlDataSource, ownsDataSourc
         member _.Operation(operationId) =
             StoreData.read dataSource (fun connection ->
                 task {
-                    use command = new NpgsqlCommand(Sql.operation, connection)
-                    Sql.uuid command "operation" operationId
-                    let! result = command.ExecuteReaderAsync()
-                    use reader = result
-                    let! exists = reader.ReadAsync()
-
-                    return if exists then Some(Rows.receipt reader true) else None
+                    let! observed = StoreData.readOperation connection None operationId
+                    return observed |> Option.map fst
                 })
+
+        member _.Accepted(operationId, requestSha256) =
+            task {
+                let! observed =
+                    StoreData.read dataSource (fun connection ->
+                        StoreData.readAccepted connection operationId requestSha256)
+
+                return
+                    match observed with
+                    | Error failure -> Error failure
+                    | Ok result -> result
+            }
 
     interface IDisposable with
         member _.Dispose() =

@@ -13,10 +13,7 @@ module internal CliResponseMutationSchemas =
                     ]
                 WireSchema.kind
                     "observedAccepted"
-                    [
-                        WireSchema.property "details" (RecoveryValueSchemas.detailsCli semantic)
-                        WireSchema.property "receipt" (CoreValueSchemas.cliReceipt semantic false)
-                    ]
+                    [ WireSchema.property "receipt" (CoreValueSchemas.cliReceipt semantic false) ]
                 WireSchema.kind
                     "retainedForRecovery"
                     [

@@ -53,5 +53,10 @@ type internal IClaimStore =
 
     abstract Operation: operationId: Guid -> Task<Result<Receipt option, CoreFailure>>
 
+    /// Verify the candidate's content identity before disclosing an accepted receipt.
+    /// Accepted history outlives optional technical preparation retention.
+    abstract Accepted:
+        operationId: Guid * requestSha256: string -> Task<Result<Receipt option, CoreFailure>>
+
 type internal IBusinessDate =
     abstract Today: unit -> DateOnly

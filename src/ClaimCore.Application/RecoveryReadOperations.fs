@@ -140,18 +140,32 @@ module internal RecoveryReadOperations =
             Task.FromResult(
                 ResolveOutcome.RefusedBeforeAttempt(None, RecoverySupport.invalid "resolve")
             )
+        elif cancellationToken.IsCancellationRequested then
+            Task.FromResult(ResolveOutcome.ResolveCancelledBeforeAdmission operationId)
         else
             task {
-                let! result =
-                    TypedResolution.resolveRetained
-                        store
-                        recovery
-                        clock
-                        operationId
-                        requestSha256
-                        cancellationToken
+                match! store.Accepted(operationId, requestSha256) with
+                | Ok(Some receipt) ->
+                    return ResolveOutcome.ResolveObservedAccepted(TypedProjection.receipt receipt)
+                | Error CoreFailure.IdempotencyConflict ->
+                    return ResolveOutcome.RefusedBeforeAttempt(None, RecoverySupport.conflict)
+                | Error failure ->
+                    return
+                        ResolveOutcome.ResolveFailedBeforeAttempt(
+                            None,
+                            TypedProjection.coreFault failure
+                        )
+                | Ok None ->
+                    let! result =
+                        TypedResolution.resolveRetained
+                            store
+                            recovery
+                            clock
+                            operationId
+                            requestSha256
+                            cancellationToken
 
-                return RecoverySupport.resolveOutcome result
+                    return RecoverySupport.resolveOutcome result
             }
 
     let private encodeExport

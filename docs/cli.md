@@ -55,6 +55,10 @@ response codec, conformance corpora, and CLI wire fingerprint. Use `describe` to
 fields, commands, endpoints, and recovery methods; use `schema` to obtain exact machine-readable
 schemas. Checked artifacts in the Web workspace are projections of the same source, not another
 authority.
+During the pre-1.0 source preview, `protocolVersion: 3` identifies this CLI framing and endpoint
+family, not a promise that every response shape remains backward-compatible. The exact wire
+fingerprint identifies the current schema; automation must use the matching contract rather than
+assuming the number alone establishes compatibility.
 
 Every invocation is an exact JSON object with `protocolVersion: 3`, an endpoint ID, and that
 endpoint's `input`. Only descriptors marked cancellable accept optional `timeoutMs`; mutation
@@ -131,9 +135,10 @@ relabels that uncertainty as a pre-attempt failure. A `recovery.resolve` cancell
 admission returns `cancelledBeforeAdmission` with the operation ID and exits 130, rather than claiming
 that the preparation was absent.
 
-An exact `command.prepare` retry after acceptance returns `observedAccepted` with the retained
-details and authoritative receipt (exit 0), not a fabricated current-state review. If an exact
-retained request is no longer reviewable against current state, it returns
+An exact `command.prepare` retry after acceptance returns `observedAccepted` with the authoritative
+receipt (exit 0), not technical preparation details or a fabricated current-state review. It remains
+available after the accepted preparation is pruned. If an exact retained request is no longer
+reviewable against current state, it returns
 `retainedForRecovery` with the retained details and typed reason (exit 2); inspect or resolve the
 same identity rather than auto-submitting a stale review.
 
@@ -170,13 +175,18 @@ history, and its existence does not establish commit. `recovery.inspect` returns
 provenance separately from its receipt observation. It also shows actual identified attempts and
 their definite settlements, and the pre-003 uncertainty marker independently of provenance. A
 bounded recovery list deliberately omits authored values, provenance, and attempt detail.
-Exact replay retains the original producer provenance and preparation timestamp; a newer binary's
-semantic fingerprint does not rewrite those first-writer facts or become part of operation identity.
+An accepted receipt remains observable even if its technical preparation has been pruned. While a
+preparation is retained, exact replay preserves its original producer provenance and timestamp; a
+newer binary's semantic fingerprint does not rewrite those first-writer facts or become part of
+operation identity. An exact `recovery.resolve` identity can observe the accepted receipt after
+pruning, but cannot export a preparation that no longer exists.
 Concurrent identical retains classify one creator and subsequent exact replays as existing without
 replacing the first retained bytes.
 
 Resolve, dismiss, and export require the exact operation ID and SHA-256 digest. A started or unknown
-attempt is not a license to regenerate a request. Cancellation proved before a technical COMMIT does
+attempt is not a license to regenerate a request. A mismatched identity refuses a mutation without
+returning the other preparation's metadata or authored values. `recovery.inspect` remains an
+intentional trusted-operator read by operation ID. Cancellation proved before a technical COMMIT does
 not imply that write committed and does not erase earlier attempt or receipt evidence. A lost result
 once COMMIT starts remains explicitly uncertain. A definite business execution remains visible even
 if its technical settlement cannot be confirmed; unknown and unresolved outcomes remain recoverable.

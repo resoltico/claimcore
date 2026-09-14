@@ -41,9 +41,17 @@ module internal StoreData =
             | :? InvalidCastException as error -> return Error(failure false Guid.Empty error)
         }
 
-    let readOperation (connection: NpgsqlConnection) (transaction: NpgsqlTransaction) operationId =
+    let readOperation
+        (connection: NpgsqlConnection)
+        (transaction: NpgsqlTransaction option)
+        operationId
+        =
         task {
-            use command = new NpgsqlCommand(Sql.operation, connection, transaction)
+            use command =
+                match transaction with
+                | Some value -> new NpgsqlCommand(Sql.operation, connection, value)
+                | None -> new NpgsqlCommand(Sql.operation, connection)
+
             Sql.uuid command "operation" operationId
             let! result = command.ExecuteReaderAsync()
             use reader = result
@@ -57,6 +65,22 @@ module internal StoreData =
                     )
                 else
                     None
+        }
+
+    let readAccepted (connection: NpgsqlConnection) operationId requestSha256 =
+        task {
+            use command = new NpgsqlCommand(Sql.operation, connection)
+            Sql.uuid command "operation" operationId
+            let! result = command.ExecuteReaderAsync()
+            use reader = result
+            let! exists = reader.ReadAsync()
+
+            if not exists then
+                return Ok None
+            elif reader.GetString(reader.GetOrdinal("request_sha256")) <> requestSha256 then
+                return Error CoreFailure.IdempotencyConflict
+            else
+                return Ok(Some(Rows.receipt reader true))
         }
 
     let readCase (connection: NpgsqlConnection) (transaction: NpgsqlTransaction) reference =

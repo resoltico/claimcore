@@ -16,10 +16,7 @@ export type WebV2CommandResponseByEndpoint = {
           readonly tag: "PREPARED";
           readonly data: { readonly details: PreparationDetails; readonly review: AdvisoryReview };
         }
-      | {
-          readonly tag: "OBSERVED_ACCEPTED";
-          readonly data: { readonly details: PreparationDetails; readonly receipt: Receipt };
-        }
+      | { readonly tag: "OBSERVED_ACCEPTED"; readonly data: { readonly receipt: Receipt } }
       | {
           readonly tag: "RETAINED_FOR_RECOVERY";
           readonly data: { readonly details: PreparationDetails; readonly rejection: Rejection };

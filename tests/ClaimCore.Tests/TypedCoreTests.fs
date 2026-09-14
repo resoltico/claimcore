@@ -243,13 +243,11 @@ let private observedIdentityConflict =
             match
                 core.Recovery.Resolve(operationId, digest, CancellationToken.None) |> waitFor
             with
-            | ResolveOutcome.RefusedBeforeAttempt(Some summary, rejection) ->
-                Expect.equal summary.OperationId operationId "Retained identity remains visible"
-
+            | ResolveOutcome.RefusedBeforeAttempt(None, rejection) ->
                 Expect.equal
                     rejection.Code
                     RecoveryRejectionCode.RecoveryIdempotencyConflict
-                    "Receipt content must match the retained canonical request"
+                    "Conflicting receipt content is refused without retained metadata"
             | _ -> failtest "A different accepted request must never be returned as exact replay."
 
             Expect.equal recovery.StartCalls 0 "No recovery attempt on identity conflict"

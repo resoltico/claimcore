@@ -18,6 +18,7 @@ let tests =
             CoreTests.tests
             TypedCoreTests.tests
             ExactReplayTests.tests
+            ReceiptFirstTests.tests
             RecoveryOutcomeTests.tests
             RecoveryCancellationOutcomeTests.tests
             CoreQueryTests.tests

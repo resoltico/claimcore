@@ -3,6 +3,7 @@ namespace ClaimCore.Application
 open System.Threading
 open System.Threading.Tasks
 open System.Security.Cryptography
+open ClaimCore.Domain
 open ClaimCore.RecordFormat
 
 module internal TypedSubmission =
@@ -29,15 +30,15 @@ module internal TypedSubmission =
                     Action = RecommendedAction.RecoverExact
                 }
             )
-        | RetainedResolution.DigestConflict summary ->
+        | RetainedResolution.DigestConflict ->
             SubmissionOutcome.FailedBeforeAttempt(
-                Some summary,
+                None,
                 integrityFailure
                     "The retained preparation digest does not match the submitted draft."
             )
-        | RetainedResolution.ReceiptIdentityConflict summary ->
+        | RetainedResolution.ReceiptIdentityConflict ->
             SubmissionOutcome.RejectedBeforeAttempt(
-                Some summary,
+                None,
                 {
                     Code = RejectionCode.IdempotencyConflict
                     Message = "This operation ID belongs to different accepted command content."
@@ -63,8 +64,8 @@ module internal TypedSubmission =
             SubmissionOutcome.Completed(summary, attemptId, execution, settlement)
         | RetainedResolution.MissingPreparation _
         | RetainedResolution.DismissedPreparation _
-        | RetainedResolution.DigestConflict _
-        | RetainedResolution.ReceiptIdentityConflict _ -> preAttemptOutcome result
+        | RetainedResolution.DigestConflict
+        | RetainedResolution.ReceiptIdentityConflict -> preAttemptOutcome result
         | RetainedResolution.ResolutionCancelledBeforeAdmission operationId ->
             cancelledResolution knownPreparation operationId
         | RetainedResolution.ResolutionFailedBeforeAttempt(summary, fault) ->
@@ -98,7 +99,7 @@ module internal TypedSubmission =
                         cancellationToken
 
                 return resolvedOutcome (Some details.Summary) result
-            | PrepareOutcome.ObservedAccepted(_, receipt) ->
+            | PrepareOutcome.ObservedAccepted receipt ->
                 return SubmissionOutcome.ObservedAccepted receipt
             | PrepareOutcome.RetainedForRecovery(details, reason) ->
                 return SubmissionOutcome.RejectedBeforeAttempt(Some details.Summary, reason)
@@ -110,6 +111,48 @@ module internal TypedSubmission =
                 return SubmissionOutcome.CancelledBeforeAdmission operationId
             | PrepareOutcome.PreparationStateUnknown(operationId, requestSha256, fault) ->
                 return SubmissionOutcome.PreparationStateUnknown(operationId, requestSha256, fault)
+        }
+
+    let private retainedRetry
+        (store: IClaimStore)
+        (recovery: IRecoveryStore)
+        (clock: IBusinessDate)
+        (request: CommandRequest)
+        (canonical: byte array)
+        digest
+        (cancellationToken: CancellationToken)
+        =
+        task {
+            match! recovery.Get(request.OperationId, cancellationToken) with
+            | Ok(Some retained) when
+                retained.CanonicalRequestFormat = RecordVersions.CanonicalCommandFormat
+                && retained.RequestSha256 = digest
+                && CryptographicOperations.FixedTimeEquals(
+                    System.ReadOnlySpan<byte>(retained.CanonicalRequest),
+                    System.ReadOnlySpan<byte>(canonical)
+                )
+                ->
+                let! result =
+                    TypedResolution.resolveRetained
+                        store
+                        recovery
+                        clock
+                        request.OperationId
+                        digest
+                        cancellationToken
+
+                let knownPreparation = TypedProjection.summary true retained |> Result.toOption
+                return Some(resolvedOutcome knownPreparation result)
+            | Ok(Some _) ->
+                return
+                    Some(
+                        SubmissionOutcome.RejectedBeforeAttempt(
+                            None,
+                            AcceptedObservation.idempotencyConflict
+                        )
+                    )
+            | Ok _ -> return None
+            | Error _ -> return None
         }
 
     let private retryOutcome
@@ -126,39 +169,35 @@ module internal TypedSubmission =
                 let canonical = RequestRecord.encode request
                 let digest = canonical |> SHA256.HashData |> System.Convert.ToHexStringLower
 
-                match! recovery.Get(request.OperationId, cancellationToken) with
-                | Ok(Some retained) when
-                    retained.CanonicalRequestFormat = RecordVersions.CanonicalCommandFormat
-                    && retained.RequestSha256 = digest
-                    && CryptographicOperations.FixedTimeEquals(
-                        System.ReadOnlySpan<byte>(retained.CanonicalRequest),
-                        System.ReadOnlySpan<byte>(canonical)
-                    )
-                    ->
-                    let! result =
-                        TypedResolution.resolveRetained
-                            store
-                            recovery
-                            clock
-                            request.OperationId
-                            digest
-                            cancellationToken
-
-                    let knownPreparation = TypedProjection.summary true retained |> Result.toOption
-
-                    return Some(resolvedOutcome knownPreparation result)
-                | Ok(Some retained) ->
-                    let knownPreparation = TypedProjection.summary true retained |> Result.toOption
-
+                match! store.Accepted(request.OperationId, digest) with
+                | Ok(Some receipt) ->
+                    return Some(SubmissionOutcome.ObservedAccepted(TypedProjection.receipt receipt))
+                | Error CoreFailure.IdempotencyConflict ->
                     return
                         Some(
                             SubmissionOutcome.RejectedBeforeAttempt(
-                                knownPreparation,
-                                TypedPreparation.idempotencyConflict
+                                None,
+                                AcceptedObservation.idempotencyConflict
                             )
                         )
-                | Ok _ -> return None
-                | Error _ -> return None
+                | Error failure ->
+                    return
+                        Some(
+                            SubmissionOutcome.FailedBeforeAttempt(
+                                None,
+                                TypedProjection.coreFault failure
+                            )
+                        )
+                | Ok None ->
+                    return!
+                        retainedRetry
+                            store
+                            recovery
+                            clock
+                            request
+                            canonical
+                            digest
+                            cancellationToken
         }
 
     let execute

@@ -26,7 +26,7 @@ jobs:
             stage: unit-linux
             assembly: ClaimCore.Tests
             project: tests/ClaimCore.Tests/ClaimCore.Tests.fsproj
-            expected: 183
+            expected: 189
             prefix: unit
             configuration: Release
             coverage: true
@@ -36,7 +36,7 @@ jobs:
             stage: unit-macos
             assembly: ClaimCore.Tests
             project: tests/ClaimCore.Tests/ClaimCore.Tests.fsproj
-            expected: 183
+            expected: 189
             prefix: unit
             configuration: Release
             coverage: true
@@ -46,7 +46,7 @@ jobs:
             stage: unit-windows
             assembly: ClaimCore.Tests
             project: tests/ClaimCore.Tests/ClaimCore.Tests.fsproj
-            expected: 183
+            expected: 189
             prefix: unit
             configuration: Release
             coverage: true
@@ -86,7 +86,7 @@ jobs:
             stage: architecture-linux
             assembly: ClaimCore.ArchitectureTests
             project: tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj
-            expected: 46
+            expected: 48
             prefix: architecture
             configuration: Debug
             coverage: false
@@ -96,7 +96,7 @@ jobs:
             stage: architecture-macos
             assembly: ClaimCore.ArchitectureTests
             project: tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj
-            expected: 46
+            expected: 48
             prefix: architecture
             configuration: Debug
             coverage: false
@@ -106,7 +106,7 @@ jobs:
             stage: architecture-windows
             assembly: ClaimCore.ArchitectureTests
             project: tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj
-            expected: 46
+            expected: 48
             prefix: architecture
             configuration: Debug
             coverage: false
@@ -131,10 +131,14 @@ jobs:
         run: |
           test "$(node --version)" = "v$(tr -d '\r\n' < .node-version)"
           test "$(npm --version)" = "$(node -p "require('./web/package.json').engines.npm")"
-      - name: Restore and build the locked source tree
-        run: |
-          dotnet restore ClaimCore.slnx --locked-mode
-          dotnet build ClaimCore.slnx --configuration Release --no-restore
+      - name: Restore the locked source tree
+        run: dotnet restore ClaimCore.slnx --locked-mode
+      - name: Build the Release source tree
+        if: matrix.configuration == 'Release'
+        run: dotnet build ClaimCore.slnx --configuration Release --no-restore
+      - name: Build the Release evidence manifest tool
+        if: matrix.configuration == 'Debug'
+        run: dotnet build eng/ClaimCore.Docs/ClaimCore.Docs.fsproj --configuration Release --no-restore
       - name: Build non-optimised Debug inspection inputs
         if: matrix.configuration == 'Debug'
         env:

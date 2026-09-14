@@ -68,29 +68,27 @@ module internal RecoveryDismissOperations =
         (retained: RetainedPreparation)
         : Task<RecoveryDismissOutcome> =
         task {
-            match TypedProjection.details retained with
-            | Error fault -> return RecoveryDismissOutcome.DismissFailed fault
-            | Ok details when retained.RequestSha256 <> requestSha256 ->
-                return
-                    RecoveryDismissOutcome.DismissRefused(
-                        Some details,
-                        RecoverySupport.digestMismatch
-                    )
-            | Ok details ->
-                match! TypedQueries.observe store operationId cancellationToken with
-                | QueryOutcome.Succeeded(Lookup.Found _) ->
-                    return
-                        RecoveryDismissOutcome.DismissRefused(
-                            Some details,
-                            RecoverySupport.accepted
-                        )
-                | QueryOutcome.Failed fault -> return RecoveryDismissOutcome.DismissFailed fault
-                | QueryOutcome.Rejected rejection ->
-                    return RecoveryDismissOutcome.DismissFailed(invalidFault rejection.Message)
-                | QueryOutcome.Cancelled ->
-                    return RecoveryDismissOutcome.DismissCancelledBeforeAdmission operationId
-                | QueryOutcome.Succeeded(Lookup.NotFound _) ->
-                    return! afterObservation recovery operationId requestSha256 cancellationToken
+            if retained.RequestSha256 <> requestSha256 then
+                return RecoveryDismissOutcome.DismissRefused(None, RecoverySupport.digestMismatch)
+            else
+                match TypedProjection.details retained with
+                | Error fault -> return RecoveryDismissOutcome.DismissFailed fault
+                | Ok details ->
+                    match! TypedQueries.observe store operationId cancellationToken with
+                    | QueryOutcome.Succeeded(Lookup.Found _) ->
+                        return
+                            RecoveryDismissOutcome.DismissRefused(
+                                Some details,
+                                RecoverySupport.accepted
+                            )
+                    | QueryOutcome.Failed fault -> return RecoveryDismissOutcome.DismissFailed fault
+                    | QueryOutcome.Rejected rejection ->
+                        return RecoveryDismissOutcome.DismissFailed(invalidFault rejection.Message)
+                    | QueryOutcome.Cancelled ->
+                        return RecoveryDismissOutcome.DismissCancelledBeforeAdmission operationId
+                    | QueryOutcome.Succeeded(Lookup.NotFound _) ->
+                        return!
+                            afterObservation recovery operationId requestSha256 cancellationToken
         }
 
     let dismiss

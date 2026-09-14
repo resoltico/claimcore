@@ -32,11 +32,9 @@ module internal WebWireMutations =
         | SettlementConfirmation.Confirmed -> "CONFIRMED"
         | SettlementConfirmation.Unconfirmed -> "UNCONFIRMED"
 
-    let private acceptedPreparation (writer: Utf8JsonWriter) details receipt =
+    let private acceptedPreparation (writer: Utf8JsonWriter) receipt =
         WebWireQueries.outcome writer "OBSERVED_ACCEPTED" (fun () ->
             writer.WriteStartObject()
-            writer.WritePropertyName("details")
-            WebWireValues.preparationDetails writer details
             writer.WritePropertyName("receipt")
             WebWireValues.receipt writer receipt
             writer.WriteEndObject())
@@ -60,8 +58,7 @@ module internal WebWireMutations =
                 writer.WritePropertyName("review")
                 WebWireValues.review writer review
                 writer.WriteEndObject())
-        | PrepareOutcome.ObservedAccepted(details, receipt) ->
-            acceptedPreparation writer details receipt
+        | PrepareOutcome.ObservedAccepted receipt -> acceptedPreparation writer receipt
         | PrepareOutcome.RetainedForRecovery(details, rejection) ->
             retainedPreparation writer details rejection
         | PrepareOutcome.PrepareRejected(operationId, rejection) ->

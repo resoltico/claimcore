@@ -36,7 +36,7 @@ module internal RecoverySupport =
     let conflict =
         rejection
             RecoveryRejectionCode.RecoveryIdempotencyConflict
-            "The supplied recovery identity conflicts with retained request material."
+            "The supplied recovery identity conflicts with an existing operation."
             RecommendedAction.StopAndInvestigate
 
     let dismissed =
@@ -223,10 +223,10 @@ module internal RecoverySupport =
             ResolveOutcome.RefusedBeforeAttempt(None, notFound)
         | RetainedResolution.DismissedPreparation preparation ->
             ResolveOutcome.RefusedBeforeAttempt(Some preparation, dismissed)
-        | RetainedResolution.DigestConflict preparation ->
-            ResolveOutcome.RefusedBeforeAttempt(Some preparation, digestMismatch)
-        | RetainedResolution.ReceiptIdentityConflict preparation ->
-            ResolveOutcome.RefusedBeforeAttempt(Some preparation, conflict)
+        | RetainedResolution.DigestConflict ->
+            ResolveOutcome.RefusedBeforeAttempt(None, digestMismatch)
+        | RetainedResolution.ReceiptIdentityConflict ->
+            ResolveOutcome.RefusedBeforeAttempt(None, conflict)
         | RetainedResolution.ResolutionCancelledBeforeAdmission operationId ->
             ResolveOutcome.ResolveCancelledBeforeAdmission operationId
         | RetainedResolution.ResolutionFailedBeforeAttempt(preparation, fault) ->

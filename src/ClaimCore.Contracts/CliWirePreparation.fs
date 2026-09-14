@@ -45,11 +45,9 @@ module internal CliWirePreparation =
         writer.WriteBoolean("advisory", value.IsAdvisory)
         writer.WriteEndObject()
 
-    let private accepted (writer: Utf8JsonWriter) details receipt =
+    let private accepted (writer: Utf8JsonWriter) receipt =
         writer.WriteStartObject()
         writer.WriteString("kind", "observedAccepted")
-        writer.WritePropertyName("details")
-        CliWireValues.preparationDetails writer details
         writer.WritePropertyName("receipt")
         CliWireValues.receipt false writer receipt
         writer.WriteEndObject()
@@ -73,7 +71,7 @@ module internal CliWirePreparation =
             writer.WritePropertyName("review")
             review writer advisory
             writer.WriteEndObject()
-        | PrepareOutcome.ObservedAccepted(details, receipt) -> accepted writer details receipt
+        | PrepareOutcome.ObservedAccepted receipt -> accepted writer receipt
         | PrepareOutcome.RetainedForRecovery(details, rejection) ->
             retained writer details rejection
         | PrepareOutcome.PrepareRejected(operationId, rejection) ->

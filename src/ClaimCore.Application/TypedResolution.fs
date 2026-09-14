@@ -178,31 +178,25 @@ module internal TypedResolution =
         (cancellationToken: CancellationToken)
         : Task<RetainedResolution> =
         task {
-            match TypedProjection.summary true preparation with
-            | Error fault -> return ResolutionFailedBeforeAttempt(None, fault)
-            | Ok summary when preparation.RequestSha256 <> requestSha256 ->
-                return DigestConflict summary
-            | Ok summary ->
-                let! observed = store.Operation operationId
+            if preparation.RequestSha256 <> requestSha256 then
+                return DigestConflict
+            else
+                match TypedProjection.summary true preparation with
+                | Error fault -> return ResolutionFailedBeforeAttempt(None, fault)
+                | Ok summary ->
+                    let! observed = store.Operation operationId
 
-                if cancellationToken.IsCancellationRequested then
-                    return ResolutionCancelledBeforeAttempt summary
-                else
                     match observed with
+                    | Ok(Some _) ->
+                        return! ObservedReceiptVerification.verify store clock preparation summary
+                    | _ when cancellationToken.IsCancellationRequested ->
+                        return ResolutionCancelledBeforeAttempt summary
                     | Error failure ->
                         return
                             ResolutionFailedBeforeAttempt(
                                 Some summary,
                                 TypedProjection.coreFault failure
                             )
-                    | Ok(Some _) ->
-                        return!
-                            ObservedReceiptVerification.verify
-                                store
-                                clock
-                                preparation
-                                summary
-                                cancellationToken
                     | Ok None ->
                         return! start store recovery clock operationId summary cancellationToken
         }
@@ -226,10 +220,6 @@ module internal TypedResolution =
                     return
                         ResolutionFailedBeforeAttempt(None, TypedProjection.recoveryFault failure)
                 | Ok None -> return MissingPreparation operationId
-                | Ok(Some preparation) when cancellationToken.IsCancellationRequested ->
-                    match TypedProjection.summary true preparation with
-                    | Ok summary -> return ResolutionCancelledBeforeAttempt summary
-                    | Error fault -> return ResolutionFailedBeforeAttempt(None, fault)
                 | Ok(Some preparation) ->
                     return!
                         resolvePrepared

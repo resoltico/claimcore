@@ -2,11 +2,12 @@ module ClaimCore.ArchitectureTests.ProductTests
 
 open System
 open System.IO
+open System.Xml.Linq
 open Expecto
 open ArchUnitNET.Fluent
 open ClaimCore.TestSupport
 
-/// Actual permissions while the native CLI is being migrated. This is not target-client isolation.
+/// The permitted dependencies of the native service and its local presentation adapters.
 let private permissions =
     [
         "Domain", []
@@ -84,8 +85,42 @@ let private noTestDependency () =
                      && not (List.contains dependencyName names)))
                 ("Tooling leaked into " + assembly.GetName().Name + ": " + dependencyName)
 
+let private projectGraph () =
+    let source = Path.Combine(RepositoryRoot.find (), "src")
+    let projects = ProjectReferences.loadProjects source
+    let names = ProjectReferences.names projects
+
+    let allowed =
+        permissions
+        |> List.map (fun (part, targets) -> name part, List.map name targets)
+        |> Map.ofList
+
+    projects
+    |> List.collect (fun path ->
+        ProjectReferences.violations names allowed path (XDocument.Load path))
+    |> fun failures ->
+        Expect.isEmpty
+            failures
+            "Every declared product ProjectReference must follow the component policy"
+
+let private unusedForbiddenReference () =
+    let source = Path.Combine(RepositoryRoot.find (), "src")
+    let projects = ProjectReferences.loadProjects source
+    let names = ProjectReferences.names projects
+    let domain = Path.Combine(source, "ClaimCore.Domain", "ClaimCore.Domain.fsproj")
+
+    let fixture =
+        XDocument.Parse
+            "<Project><ItemGroup><ProjectReference Include='../ClaimCore.Cli/ClaimCore.Cli.fsproj' /></ItemGroup></Project>"
+
+    let failures =
+        ProjectReferences.violations names (Map.ofList [ "ClaimCore.Domain", [] ]) domain fixture
+
+    Expect.isNonEmpty failures "An unused but forbidden declared reference must fail"
+    Expect.stringContains failures.Head "ClaimCore.Cli" "The failure names the forbidden target"
+
 let private deterministic part =
-    testCase (part + " does not consult ambient clock or host IO") (fun () ->
+    testCase (part + " avoids selected ambient clock and host IO APIs") (fun () ->
         let model = architecture.Value
         let subjects = select part
 
@@ -164,6 +199,8 @@ let tests =
         ((permissions |> List.map dependencyCase)
          @ [
              testCase "all production roots are classified" roots
+             testCase "declared project references obey component permissions" projectGraph
+             testCase "unused forbidden declared reference is detected" unusedForbiddenReference
              testCase "production assemblies do not depend on test tooling" noTestDependency
              testCase "endpoint helpers cannot reach runtime composition" endpointIsolation
              testCase

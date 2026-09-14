@@ -90,7 +90,7 @@ type RecoveryQueryOutcome<'value> =
 
 type PrepareOutcome =
     | Prepared of details: PreparationDetails * review: AdvisoryReview
-    | ObservedAccepted of details: PreparationDetails * receipt: OperationReceipt
+    | ObservedAccepted of OperationReceipt
     | RetainedForRecovery of details: PreparationDetails * reason: Rejection
     | PrepareRejected of operationId: Guid * rejection: Rejection
     | PrepareFailed of operationId: Guid * fault: CoreFault

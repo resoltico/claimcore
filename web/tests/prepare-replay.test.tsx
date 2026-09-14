@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import type { CurrentCase } from "../src/api/v2";
+import { isWebV2Response } from "../src/generated/convergence/web-v2.validation";
 import { OperationEditor } from "../src/views/OperationEditor";
 import { definition, fields, operationId, preparation, response } from "./v2-ui.fixtures";
 
@@ -63,7 +64,7 @@ it("renders an exact accepted Prepare replay as a definite receipt", async () =>
   const user = userEvent.setup();
   const committed = vi.fn();
   vi.mocked(globalThis.fetch).mockResolvedValueOnce(
-    response("command.prepare", "OBSERVED_ACCEPTED", { details: preparation, receipt }),
+    response("command.prepare", "OBSERVED_ACCEPTED", { receipt }),
   );
   renderEditor(committed);
   await user.click(screen.getByRole("button", { name: "Prepare exact request" }));
@@ -71,6 +72,20 @@ it("renders an exact accepted Prepare replay as a definite receipt", async () =>
   expect(screen.queryByRole("dialog", { name: "Review prepared operation" })).toBeNull();
   await user.click(screen.getByRole("button", { name: "Return to case" }));
   expect(committed).toHaveBeenCalledOnce();
+});
+
+it("rejects technical preparation details on an accepted Prepare replay", () => {
+  const accepted = {
+    endpoint: "command.prepare",
+    outcome: { tag: "OBSERVED_ACCEPTED", data: { receipt } },
+  };
+  expect(isWebV2Response("command.prepare", accepted)).toBe(true);
+  expect(
+    isWebV2Response("command.prepare", {
+      ...accepted,
+      outcome: { ...accepted.outcome, data: { receipt, details: preparation } },
+    }),
+  ).toBe(false);
 });
 
 it("keeps a non-reviewable retained Prepare exact and directs Recovery", async () => {

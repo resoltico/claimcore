@@ -15,6 +15,7 @@ type internal Store
         ?settleFailure: RecoveryStoreFailure,
         ?settleThrows: bool,
         ?onGet: unit -> unit,
+        ?getFailure: RecoveryStoreFailure,
         ?transformGet: RetainedPreparation -> RetainedPreparation,
         ?onStart: unit -> unit
     ) =
@@ -23,6 +24,7 @@ type internal Store
     let mutable values: Map<Guid, RetainedPreparation> = Map.empty
     let mutable startCalls = 0
     let mutable settlementCalls = 0
+    let mutable getCalls = 0
 
     let same (draft: RecoveryPreparationDraft) (retained: RetainedPreparation) =
         draft.CanonicalRequestFormat = retained.CanonicalRequestFormat
@@ -53,6 +55,7 @@ type internal Store
 
     member _.StartCalls = startCalls
     member _.SettlementCalls = settlementCalls
+    member _.GetCalls = getCalls
 
     interface IRecoveryStore with
         member _.InstallationLineage _ = Task.FromResult(Ok lineage)
@@ -78,12 +81,17 @@ type internal Store
         member _.Get(operationId, _) =
             let result =
                 lock gate (fun () ->
-                    Map.tryFind operationId values
-                    |> Option.map (fun value ->
-                        transformGet
-                        |> Option.map (fun change -> change value)
-                        |> Option.defaultValue value)
-                    |> Ok)
+                    getCalls <- getCalls + 1
+
+                    match getFailure with
+                    | Some failure -> Error failure
+                    | None ->
+                        Map.tryFind operationId values
+                        |> Option.map (fun value ->
+                            transformGet
+                            |> Option.map (fun change -> change value)
+                            |> Option.defaultValue value)
+                        |> Ok)
 
             onGet |> Option.iter (fun callback -> callback ())
             Task.FromResult result

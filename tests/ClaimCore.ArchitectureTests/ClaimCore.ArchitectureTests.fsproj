@@ -9,6 +9,7 @@
   <ItemGroup>
     <Compile Include="../RepositoryRoot.fs" Link="RepositoryRoot.fs" />
     <Compile Include="Inspection.fs" />
+    <Compile Include="ProjectReferences.fs" />
     <Compile Include="FixtureTests.fs" />
     <Compile Include="ProductTests.fs" />
     <Compile Include="Suite.fs" />

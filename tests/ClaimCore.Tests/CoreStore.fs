@@ -6,7 +6,8 @@ open ClaimCore.Domain
 open ClaimCore.Application
 
 /// Test-only port double: not a storage adapter and not a claim of PostgreSQL correctness.
-type internal Store(?onOperation: unit -> unit) =
+type internal Store
+    (?onOperation: unit -> unit, ?onAccepted: unit -> unit, ?acceptedFailure: CoreFailure) =
     let pageSize = SemanticContract.current.MaximumPageSize
     let mutable cases: Map<string, Claim> = Map.empty
     let mutable receipts: Map<Guid, string * Receipt> = Map.empty
@@ -113,4 +114,19 @@ type internal Store(?onOperation: unit -> unit) =
                     ))
 
             onOperation |> Option.iter (fun callback -> callback ())
+            Task.FromResult result
+
+        member _.Accepted(operationId, requestSha256) =
+            let result =
+                lock gate (fun () ->
+                    match acceptedFailure with
+                    | Some failure -> Error failure
+                    | None ->
+                        match Map.tryFind operationId receipts with
+                        | None -> Ok None
+                        | Some(original, receipt) when original = requestSha256 ->
+                            Ok(Some { receipt with Replayed = true })
+                        | Some _ -> Error CoreFailure.IdempotencyConflict)
+
+            onAccepted |> Option.iter (fun callback -> callback ())
             Task.FromResult result

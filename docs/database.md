@@ -42,7 +42,8 @@ executable configuration and tests own exact compatibility policy.
 ## Stored data
 
 - `claimcore.cases` contains exactly the thirteen business columns plus technical revision.
-- `claimcore.case_changes` contains immutable accepted-operation receipts and historical snapshots.
+- `claimcore.case_changes` contains immutable accepted-operation receipts, request fingerprints, and
+  historical snapshots. Accepted replay does not depend on retained technical preparations.
 - `claimcore.request_preparations`, its append-only lifecycle, and `installation_lineage` retain
   bounded technical material for exact-request recovery; they are not claim state or history.
 - Each preparation stores canonical command-record format, exact request digest and bytes, application
@@ -126,6 +127,9 @@ unsettled submission.
 The command requires a current schema and schema-owner identity, serializes pruning with a database
 lock, and records its parameters, candidate count, and deleted count in the owner-only prune journal.
 Run a dry pass and review operational retention requirements before deletion.
+Pruning an accepted operation's technical preparation does not remove its accepted `case_changes`
+receipt. Exact accepted replay uses that receipt and its stored request fingerprint, not preparation
+retention.
 
 ## Local development database
 

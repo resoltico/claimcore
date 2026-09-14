@@ -49,6 +49,8 @@ Version 0.1.0 is a source-preview release with no downloadable application binar
 first-run path builds from a source checkout, creates a dedicated persistent local PostgreSQL
 database, and launches the published Web host. Follow [Getting started](docs/getting-started.md);
 it uses only synthetic data.
+Pre-1.0 CLI and Web wire shapes may change without a compatibility shim; use the matching generated
+contract and exact fingerprint for a given source revision.
 
 The CLI's database-free `help`, `version`, `describe`, and `schema` commands are described in
 [CLI and protocol](docs/cli.md). Contributor builds, tests, and full verification live in one place:
