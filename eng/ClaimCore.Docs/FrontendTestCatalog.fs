@@ -69,6 +69,7 @@ module FrontendTestCatalog =
                 "operation editor transport outcomes > shows a definite prepare rejection without creating recovery uncertainty"
                 "operation editor transport outcomes > shows a definite submit rejection after preserving the prepared identity"
                 "rejects JSON-prefix spoofing and accepts an exact JSON media type with parameters"
+                "rejects technical preparation details on an accepted Prepare replay"
                 "renders a login form with disabled submission until anonymous antiforgery is available"
                 "renders a neutral shell while definition admission is pending"
                 "renders a recoverable session failure and invokes its refresh action"

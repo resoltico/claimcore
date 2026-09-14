@@ -125,7 +125,7 @@ let private prepareOutcomes (host: Host) token =
     for value, expected in
         [
             PrepareOutcome.Prepared(preparationDetails, review), "PREPARED"
-            PrepareOutcome.ObservedAccepted(preparationDetails, receipt), "OBSERVED_ACCEPTED"
+            PrepareOutcome.ObservedAccepted receipt, "OBSERVED_ACCEPTED"
             PrepareOutcome.RetainedForRecovery(preparationDetails, rejection),
             "RETAINED_FOR_RECOVERY"
             PrepareOutcome.PrepareRejected(operationId, rejection), "REJECTED"
@@ -154,6 +154,10 @@ let private prepareOutcomes (host: Host) token =
                 (data.GetProperty("receipt").GetProperty("operationId").GetString())
                 (operationId.ToString("D"))
                 "Accepted replay identifies the original operation"
+
+            Expect.isFalse
+                (data.TryGetProperty("details") |> fst)
+                "Accepted replay has no fabricated preparation details"
         elif expected = "RETAINED_FOR_RECOVERY" then
             Expect.equal
                 (data.GetProperty("rejection").GetProperty("code").GetString())

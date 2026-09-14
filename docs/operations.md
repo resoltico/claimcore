@@ -66,6 +66,10 @@ format-2 request or recovery-envelope bytes described in
 [CLI and protocol](cli.md#canonical-request-identity-and-recovery). Do not infer failure from missing
 output, a delivery loss, or a momentarily absent receipt. A restored database keeps its installation
 lineage and retained preparations, so recovery exports remain installation-bound after restoration.
+Lineage is not a freshness proof: restoring an older backup can remove later accepted receipts.
+Exact replay can establish only the accepted history present in the current database. ClaimCore has
+no automatic backup/restore workflow or cross-restore rollback fence; an operator must reconcile a
+restore against independently kept backup and operation evidence before resuming case work.
 
 The payment command records an operator assertion; ClaimCore does not transfer funds or contact a
 provider. Future external effects require durable intent, provider idempotency, acknowledgements, and

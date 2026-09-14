@@ -38,6 +38,9 @@ type private ScriptedClaimStore(mode: ExecutionMode) =
         member _.Operation operationId =
             (inner :> IClaimStore).Operation operationId
 
+        member _.Accepted(operationId, requestSha256) =
+            (inner :> IClaimStore).Accepted(operationId, requestSha256)
+
 let private clock =
     { new IBusinessDate with
         member _.Today() = today

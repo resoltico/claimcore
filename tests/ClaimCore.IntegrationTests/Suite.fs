@@ -18,6 +18,7 @@ let tests =
             RuntimeLifecycleTests.tests
             StorageBoundaryTests.tests
             PreparationTests.tests
+            AcceptedReplayStorageTests.tests
             PreparationBoundaryTests.tests
             MigrationUpgradeTests.tests
             MigrationEvidenceUpgradeTests.tests

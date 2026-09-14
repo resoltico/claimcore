@@ -1,6 +1,5 @@
 namespace ClaimCore.Application
 
-open System.Threading
 open System.Threading.Tasks
 open ClaimCore.RecordFormat
 
@@ -19,40 +18,31 @@ module internal ObservedReceiptVerification =
         (clock: IBusinessDate)
         (preparation: RetainedPreparation)
         (summary: PreparationSummary)
-        (cancellationToken: CancellationToken)
         : Task<RetainedResolution> =
         task {
-            if cancellationToken.IsCancellationRequested then
-                return ResolutionCancelledBeforeAttempt summary
-            else
-                match
-                    RequestRecord.decode
-                        SemanticContract.current.RequestByteLimit
-                        preparation.CanonicalRequest
-                with
-                | Error _ -> return ResolutionFailedBeforeAttempt(Some summary, corruptFault)
-                | Ok request ->
-                    try
-                        let! result = Service.executeAsync store clock request
+            match
+                RequestRecord.decode
+                    SemanticContract.current.RequestByteLimit
+                    preparation.CanonicalRequest
+            with
+            | Error _ -> return ResolutionFailedBeforeAttempt(Some summary, corruptFault)
+            | Ok request ->
+                try
+                    let! result = Service.executeAsync store clock request
 
-                        if cancellationToken.IsCancellationRequested then
-                            return ResolutionCancelledBeforeAttempt summary
-                        else
-                            match result with
-                            | Ok accepted ->
-                                return ObservedReceipt(TypedProjection.receipt accepted)
-                            | Error CoreFailure.IdempotencyConflict ->
-                                return ReceiptIdentityConflict summary
-                            | Error failure ->
-                                return
-                                    ResolutionFailedBeforeAttempt(
-                                        Some summary,
-                                        TypedProjection.coreFault failure
-                                    )
-                    with _ ->
+                    match result with
+                    | Ok accepted -> return ObservedReceipt(TypedProjection.receipt accepted)
+                    | Error CoreFailure.IdempotencyConflict -> return ReceiptIdentityConflict
+                    | Error failure ->
                         return
                             ResolutionFailedBeforeAttempt(
                                 Some summary,
-                                TypedProjection.coreFault CoreFailure.StoreUnavailable
+                                TypedProjection.coreFault failure
                             )
+                with _ ->
+                    return
+                        ResolutionFailedBeforeAttempt(
+                            Some summary,
+                            TypedProjection.coreFault CoreFailure.StoreUnavailable
+                        )
         }

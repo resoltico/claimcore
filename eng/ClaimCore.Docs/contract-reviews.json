@@ -40,10 +40,10 @@
     {
       "contractId": "CC-APP-001",
       "reviewerKind": "agent",
-      "reviewer": "Codex convergence documentation review",
-      "reviewedOn": "2026-09-12",
+      "reviewer": "Codex foundation integration review",
+      "reviewedOn": "2026-09-14",
       "conclusion": "approved",
-      "reviewSubjectHash": "11c9dd9ff86da12d9570532d379263293211fa04e31fdc37615a5511736b7433",
+      "reviewSubjectHash": "2027c06758751244dfcec2f85af59ed1d2ac5a861f1d5e5e858121a07d491e9a",
       "wholeFiles": [
         "src/ClaimCore.Application/TypedQueries.fs",
         "src/ClaimCore.Application/TypedPreparation.fs",
@@ -55,18 +55,27 @@
     {
       "contractId": "CC-APP-002",
       "reviewerKind": "agent",
-      "reviewer": "Codex convergence documentation review",
-      "reviewedOn": "2026-09-12",
+      "reviewer": "Codex foundation integration review",
+      "reviewedOn": "2026-09-14",
       "conclusion": "approved",
-      "reviewSubjectHash": "9bcc1d11c16f8e4a14e816e2bbdfc1932646c27440f814e3abc65aa249b3d7e4",
+      "reviewSubjectHash": "dd3584b5a1e3f551d20b907cd008d5f7973192b881cd8a38018a81b286fd89d1",
       "wholeFiles": [
+        "src/ClaimCore.Application/AcceptedObservation.fs",
+        "src/ClaimCore.Application/Ports.fs",
+        "src/ClaimCore.Application/RecoveryReadOperations.fs",
+        "src/ClaimCore.Application/RecoveryTypes.fs",
+        "src/ClaimCore.Application/RetainedPreparationReview.fs",
         "src/ClaimCore.Application/TypedResolution.fs",
         "src/ClaimCore.Application/TypedSubmission.fs",
         "src/ClaimCore.Application/TypedPreparation.fs",
+        "src/ClaimCore.Postgres/Store.fs",
+        "src/ClaimCore.Postgres/StoreData.fs",
         "src/ClaimCore.Postgres/StoreTransaction.fs",
         "src/ClaimCore.Postgres/RecoveryStore.fs",
+        "tests/ClaimCore.IntegrationTests/AcceptedReplayStorageTests.fs",
         "tests/ClaimCore.IntegrationTests/TransactionTests.fs",
-        "tests/ClaimCore.Tests/ExactReplayTests.fs"
+        "tests/ClaimCore.Tests/ExactReplayTests.fs",
+        "tests/ClaimCore.Tests/ReceiptFirstTests.fs"
       ],
       "markedSpans": []
     },
@@ -117,15 +126,19 @@
     {
       "contractId": "CC-REC-001",
       "reviewerKind": "agent",
-      "reviewer": "Codex convergence documentation review",
-      "reviewedOn": "2026-09-12",
+      "reviewer": "Codex foundation integration review",
+      "reviewedOn": "2026-09-14",
       "conclusion": "approved",
-      "reviewSubjectHash": "b3b452b46a19d5a18c98913c0d1cc6a8158a6afadcd01b6b3facbfa447da78de",
+      "reviewSubjectHash": "e12f0a566551521676b55f2658f70699440c6ab22ddb4a25faf60fd213e3e067",
       "wholeFiles": [
+        "src/ClaimCore.Application/AcceptedObservation.fs",
         "src/ClaimCore.Application/RecoveryCoordinator.fs",
+        "src/ClaimCore.Application/RecoveryDismissOperations.fs",
         "src/ClaimCore.Application/RecoveryReadOperations.fs",
         "src/ClaimCore.Application/RecoveryImports.fs",
         "src/ClaimCore.Application/RecoveryStorePort.fs",
+        "src/ClaimCore.Application/RecoverySupport.fs",
+        "src/ClaimCore.Application/RetainedPreparationReview.fs",
         "src/ClaimCore.Application/TypedPreparation.fs",
         "src/ClaimCore.Application/TypedResolution.fs",
         "src/ClaimCore.Cli/EndpointDispatch.fs",
@@ -136,10 +149,12 @@
         "tests/ClaimCore.IntegrationTests/RecoveryEvidenceTests.fs",
         "tests/ClaimCore.IntegrationTests/RecoveryRaceTests.fs",
         "tests/ClaimCore.IntegrationTests/RecoveryStateTests.fs",
+        "tests/ClaimCore.IntegrationTests/AcceptedReplayStorageTests.fs",
         "tests/ClaimCore.Tests/CliExitContractTests.fs",
         "tests/ClaimCore.Tests/ExactReplayTests.fs",
         "tests/ClaimCore.Tests/RecoveryCancellationOutcomeTests.fs",
         "tests/ClaimCore.Tests/RecoveryOutcomeTests.fs",
+        "tests/ClaimCore.Tests/ReceiptFirstTests.fs",
         "tests/ClaimCore.RecoveryQualificationTests/Suite.fs"
       ],
       "markedSpans": []
@@ -205,10 +220,10 @@
     {
       "contractId": "CC-WEB-001",
       "reviewerKind": "agent",
-      "reviewer": "Codex convergence documentation review",
-      "reviewedOn": "2026-09-12",
+      "reviewer": "Codex foundation integration review",
+      "reviewedOn": "2026-09-14",
       "conclusion": "approved",
-      "reviewSubjectHash": "f1dd9913b3d103afbe648b71890887f7cfa842f098cd85a24701e592c3d73dce",
+      "reviewSubjectHash": "f8a710d4620667b97efba32b3fb65a610865086e9da9b5a2f8870086114181dd",
       "wholeFiles": [
         "src/ClaimCore.Contracts/WebEndpointCatalog.fs",
         "src/ClaimCore.Contracts/WebResponseSchemas.fs",
@@ -246,7 +261,8 @@
         "tests/ClaimCore.WebTests/TestServerBoundaryTests.fs",
         "web/src/api/v2.ts",
         "web/src/generated/convergence/web-v2.endpoint-catalog.ts",
-        "web/tests/generated-contract-corpora.test.ts"
+        "web/tests/generated-contract-corpora.test.ts",
+        "web/tests/prepare-replay.test.tsx"
       ],
       "markedSpans": []
     }

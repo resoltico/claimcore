@@ -85,6 +85,9 @@ parsed conformance corpus, and Web wire fingerprint. The F# host consumes the sa
 authority. A deterministic Node postprocess compiles the aggregate response schema into strict AJV
 standalone validators and a typed selector. Run `npm --prefix web run contract:check` to regenerate
 and compare every checked artifact; do not hand edit generated contract files.
+During the pre-1.0 source preview, `/api/v2` identifies this route and admission family, not a
+promise that every response shape remains backward-compatible. The host and bundled browser must
+agree on the exact Web fingerprint before claimant-bearing responses are accepted.
 
 Before the host admits requests, shared HostSecurity checks physical credential, certificate, state,
 and lock paths through opened handles. Existing broad-mode, extended-ACL, or linked files are refused
@@ -133,10 +136,14 @@ accepting claimant-bearing data. Cross-endpoint and malformed values fail closed
 reconstructs a transition nor gains access to a store, retained preparation, recovery port, or
 transition callback.
 
-An exact prepare retry after acceptance returns typed `OBSERVED_ACCEPTED` with the retained details
-and authoritative receipt, not a new advisory review. Exact retained material that is no longer
-reviewable returns `RETAINED_FOR_RECOVERY` with a typed reason. Neither branch auto-submits; the
-operator follows the exact recovery identity when needed.
+An exact prepare retry after acceptance returns typed `OBSERVED_ACCEPTED` with the authoritative
+receipt, not technical preparation details or a new advisory review. It remains available after the
+accepted preparation is pruned. Exact retained material that is no longer reviewable returns
+`RETAINED_FOR_RECOVERY` with a typed reason. Neither branch auto-submits; the operator follows the
+exact recovery identity when needed.
+
+An exact submit or resolve identity also observes the accepted receipt after pruning without a new
+attempt; pruned technical material cannot be exported.
 
 ## Session and delivery safety
 

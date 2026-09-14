@@ -17,6 +17,7 @@
     <Compile Include="StorageDateTests.fs" />
     <Compile Include="StorageBoundaryTests.fs" />
     <Compile Include="PreparationTests.fs" />
+    <Compile Include="AcceptedReplayStorageTests.fs" />
     <Compile Include="PreparationBoundaryTests.fs" />
     <Compile Include="MigrationUpgradeSupport.fs" />
     <Compile Include="MigrationUpgradeTests.fs" />

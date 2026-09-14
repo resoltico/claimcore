@@ -209,12 +209,10 @@ module internal TypedQueries =
             task {
                 let! result = store.Operation operationId
 
-                if cancellationToken.IsCancellationRequested then
-                    return QueryOutcome.Cancelled
-                else
-                    match result with
-                    | Ok(Some value) ->
-                        return QueryOutcome.Succeeded(Lookup.Found(TypedProjection.receipt value))
-                    | Ok None -> return QueryOutcome.Succeeded(Lookup.NotFound operationId)
-                    | Error failure -> return QueryOutcome.Failed(TypedProjection.coreFault failure)
+                match result with
+                | Ok(Some value) ->
+                    return QueryOutcome.Succeeded(Lookup.Found(TypedProjection.receipt value))
+                | _ when cancellationToken.IsCancellationRequested -> return QueryOutcome.Cancelled
+                | Ok None -> return QueryOutcome.Succeeded(Lookup.NotFound operationId)
+                | Error failure -> return QueryOutcome.Failed(TypedProjection.coreFault failure)
             }

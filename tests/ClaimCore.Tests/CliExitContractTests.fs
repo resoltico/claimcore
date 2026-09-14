@@ -86,9 +86,7 @@ let private prepareReplayWire =
             let details, receipt = wireFixtures ()
 
             let accepted =
-                CliWireCodec.prepare
-                    "command.prepare"
-                    (PrepareOutcome.ObservedAccepted(details, receipt))
+                CliWireCodec.prepare "command.prepare" (PrepareOutcome.ObservedAccepted receipt)
 
             Expect.equal accepted.ExitCode 0 "Accepted observation is a definite success"
             use acceptedJson = JsonDocument.Parse(accepted.Bytes)

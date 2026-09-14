@@ -49,7 +49,7 @@ jobs:
         run: |
           dotnet restore ClaimCore.slnx --locked-mode
           dotnet build ClaimCore.slnx --configuration Release --no-restore
-      - name: Run 44 registered documentation-tool tests
+      - name: Run 47 registered documentation-tool tests
         shell: pwsh
         env:
           STAGE_ID: ${{ matrix.stage }}
@@ -62,7 +62,7 @@ jobs:
             "test", "--project", "tests/ClaimCore.DocsTests/ClaimCore.DocsTests.fsproj",
             "--configuration", "Release", "--no-build", "--no-restore",
             "--max-parallel-test-modules", "1", "--results-directory=$results",
-            "--minimum-expected-tests=44", "--zero-tests-policy=strict", "--timeout=20m",
+            "--minimum-expected-tests=47", "--zero-tests-policy=strict", "--timeout=20m",
             "--", "--settings=$PWD/eng/expecto.runsettings", "--report-trx",
             "--report-trx-filename=ClaimCore.DocsTests.trx"
           )

@@ -55,12 +55,7 @@ module internal WebMutationCorpusSamples =
             sample
                 "command-prepare-observed-accepted"
                 endpoint
-                (encode (
-                    PrepareOutcome.ObservedAccepted(
-                        CliCorpusValues.preparationDetails,
-                        CliCorpusValues.observedReceipt
-                    )
-                ))
+                (encode (PrepareOutcome.ObservedAccepted CliCorpusValues.observedReceipt))
             sample
                 "command-prepare-retained-for-recovery"
                 endpoint

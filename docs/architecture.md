@@ -4,6 +4,36 @@ ClaimCore is one local product, not a distributed system. An F#/.NET core, local
 React/TypeScript browser client, and PostgreSQL form the runtime. Repository engineering programs
 and tests qualify that runtime; they are not product services.
 
+## Modular-monolith boundary
+
+The CLI and Web host are separate local process adapters over the same typed `IClaimsCore` facade.
+Each composes its own core runtime; the React client uses only the local Web host. The CLI need not
+start or call the Web host, and the browser does not load native domain or storage code. The Database
+executable retains separate schema-owner authority and is not a case-work client. No remote service
+or additional business field is introduced by this structure.
+
+## Compiled architecture enforcement
+
+The dedicated `ClaimCore.ArchitectureTests` project uses ArchUnitNET only as a test dependency. Its
+F# fixtures establish that the selected rules detect module functions, generic/nested types,
+closures, tasks, async workflows, sequences, records, unions, interfaces and selected platform calls.
+Positive counterparts prove that permitted code is not rejected indiscriminately. Missing assembly
+inputs and empty required selections fail rather than being interpreted as absence of violations.
+
+The suite inspects Debug implementation assemblies with optimisation disabled, retaining generated
+types. It classifies all discovered product projects and checks both declared project references and
+compiled type dependencies against the component policy. Selected ambient API, endpoint/composition,
+and direct persistence/decision-call checks cover specific high-risk edges; they are not a general
+effect or authorization proof. An in-memory forbidden-reference fixture proves that an unused
+`ProjectReference` is rejected.
+
+These checks complement curated signatures, ordinary-consumer compile tests, protocol tests and
+real PostgreSQL/browser qualifications. They do not prove transaction correctness, complete effect
+freedom, runtime reflection behavior, or TypeScript dependencies. New rule selectors and expected
+results require owner review; a candidate cannot authorize weaker policy merely by making its own
+tests green. Commands and exact evidence registration are owned by
+[Development](development.md#architecture-inspection).
+
 ## Runtime responsibilities
 
 - **Domain** owns accepted values, field metadata, validation, available transitions, and case state.
@@ -83,12 +113,15 @@ as cancellation or failure by concurrent disposal.
 1. A CLI or Web adapter decodes an exact endpoint body into a `CommandDraft` or endpoint request.
 2. Application validates and binds the draft, preserves its operation ID and authored values, and
    derives canonical format-2 request bytes and their SHA-256 identity.
-3. `Prepare` checks exact retained identity, obtains a Domain advisory review for fresh reviewable
-   work, and durably retains technical recovery material before returning `Prepared`. Exact retries
-   report `ObservedAccepted` or `RetainedForRecovery`; a technical write whose completion cannot be
-   established returns an explicit unknown outcome.
-4. `Execute` or `Recovery.Resolve` serializes the exact operation, revalidates it under PostgreSQL
-   transaction locks, applies the Domain transition, and retains the receipt atomically when accepted.
+3. `Prepare` checks accepted operation identity and stored request fingerprint first. An exact
+   accepted request returns its receipt even if technical preparation was pruned; a same-ID conflict
+   discloses no receipt. Otherwise it checks retained identity, obtains a Domain advisory review for
+   fresh reviewable work, and durably retains technical recovery material before returning `Prepared`.
+   A retained request that is no longer reviewable reports `RetainedForRecovery`; a technical write
+   whose completion cannot be established returns an explicit unknown outcome.
+4. `Execute` and `Recovery.Resolve` check accepted identity before technical recovery. For a new
+   attempt, they serialize the exact operation, revalidate it under PostgreSQL transaction locks,
+   apply the Domain transition, and retain the receipt atomically when accepted.
 5. Recovery attempt admission and settlement are separate technical dimensions. A definite business
    result is not replaced by an unconfirmed settlement; unresolved and unknown outcomes remain
    recoverable.
@@ -113,9 +146,11 @@ settlements are recovery evidence, not claim state or accepted history.
 ### CC-APP-002 — Exact operation replay is idempotent and content-bound
 
 An exact operation ID and canonical request-content replay returns the retained receipt without a
-second revision. Different request content under the same operation ID is rejected as an identity
-conflict. If commit completion cannot be confirmed, the typed outcome remains uncertain. No adapter
-may silently rebase, generate a replacement operation ID, or infer non-commit.
+second revision, independently of technical preparation retention. Different request content under
+the same operation ID is rejected as an identity conflict without disclosing the accepted receipt or
+another preparation's details.
+If commit completion cannot be confirmed, the typed outcome remains uncertain. No adapter may
+silently rebase, generate a replacement operation ID, or infer non-commit.
 
 ## Trust boundary
 

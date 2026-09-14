@@ -58,17 +58,7 @@ let private exactAcceptedReplay =
             | _ -> failtest "The original exact operation must accept."
 
             match core.Prepare(input, CancellationToken.None) |> await with
-            | PrepareOutcome.ObservedAccepted(details, receipt) ->
-                Expect.equal
-                    details.Summary.PreparedAt
-                    first.Summary.PreparedAt
-                    "First writer retained"
-
-                Expect.equal
-                    details.Summary.AvailableActions
-                    [ RecoveryAction.Export ]
-                    "Accepted replay advertises export only"
-
+            | PrepareOutcome.ObservedAccepted receipt ->
                 Expect.equal receipt.OperationId operationId "Same accepted operation"
                 Expect.isTrue receipt.Replayed "Accepted observation is content-bound replay"
                 Expect.equal receipt.Snapshot.Version 1L "No second case revision"

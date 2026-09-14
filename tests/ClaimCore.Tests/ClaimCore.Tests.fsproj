@@ -22,6 +22,7 @@
     <Compile Include="CoreTests.fs" />
     <Compile Include="TypedCoreTests.fs" />
     <Compile Include="ExactReplayTests.fs" />
+    <Compile Include="ReceiptFirstTests.fs" />
     <Compile Include="RecoveryOutcomeTests.fs" />
     <Compile Include="RecoveryCancellationOutcomeTests.fs" />
     <Compile Include="CoreQueryTests.fs" />

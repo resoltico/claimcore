@@ -92,7 +92,9 @@ module internal StoreTransaction =
                     ("operation:" + request.OperationId.ToString("D"))
 
             let fingerprint = Operation.fingerprint operation
-            let! observed = StoreData.readOperation connection transaction request.OperationId
+
+            let! observed =
+                StoreData.readOperation connection (Some transaction) request.OperationId
 
             match observed with
             | Some(receipt, original) when original = fingerprint -> return Ok receipt

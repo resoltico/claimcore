@@ -17,12 +17,7 @@ module internal CliPrepareCorpusSamples =
             sample
                 "command-prepare-observed-accepted"
                 "command.prepare"
-                (encode (
-                    PrepareOutcome.ObservedAccepted(
-                        CliCorpusValues.preparationDetails,
-                        CliCorpusValues.observedReceipt
-                    )
-                ))
+                (encode (PrepareOutcome.ObservedAccepted CliCorpusValues.observedReceipt))
             sample
                 "command-prepare-retained-for-recovery"
                 "command.prepare"

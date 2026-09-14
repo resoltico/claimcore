@@ -10,8 +10,8 @@ type internal RetainedResolution =
     | Resolved of PreparationSummary * Guid * DefiniteExecution * SettlementConfirmation
     | MissingPreparation of Guid
     | DismissedPreparation of PreparationSummary
-    | DigestConflict of PreparationSummary
-    | ReceiptIdentityConflict of PreparationSummary
+    | DigestConflict
+    | ReceiptIdentityConflict
     | ResolutionCancelledBeforeAdmission of Guid
     | ResolutionFailedBeforeAttempt of PreparationSummary option * CoreFault
     | ResolutionCancelledBeforeAttempt of PreparationSummary

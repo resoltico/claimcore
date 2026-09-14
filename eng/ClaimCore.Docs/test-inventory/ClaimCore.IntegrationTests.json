@@ -2,6 +2,10 @@
   "schemaVersion": 1,
   "assembly": "ClaimCore.IntegrationTests",
   "tests": [
+    "ClaimCore PostgreSQL integration.PostgreSQL accepted receipt identity.[CC-APP-002] PostgreSQL accepted history without preparation remains replayable",
+    "ClaimCore PostgreSQL integration.PostgreSQL accepted receipt identity.[CC-APP-002] PostgreSQL accepted replay survives owner pruning of preparation",
+    "ClaimCore PostgreSQL integration.PostgreSQL accepted receipt identity.[CC-APP-002] PostgreSQL concurrent pruned replay and conflicts keep one accepted revision",
+    "ClaimCore PostgreSQL integration.PostgreSQL accepted receipt identity.[CC-APP-002] PostgreSQL rejects wrong digest before parsing accepted snapshot",
     "ClaimCore PostgreSQL integration.PostgreSQL migration upgrade qualification.migration 001 through 005.atomicity.[CC-DB-001] failed migration rolls back its objects and journal row",
     "ClaimCore PostgreSQL integration.PostgreSQL migration upgrade qualification.migration 001 through 005.manifest validation.[CC-DB-001] applied migration identities remain frozen",
     "ClaimCore PostgreSQL integration.PostgreSQL migration upgrade qualification.migration 001 through 005.manifest validation.[CC-DB-001] migrator refuses a newer manifest entry",

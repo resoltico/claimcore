@@ -81,7 +81,7 @@ Run every project explicitly:
 ```sh
 dotnet test --project tests/ClaimCore.Tests/ClaimCore.Tests.fsproj \
   --configuration Release --no-build --no-restore \
-  --minimum-expected-tests=183 --zero-tests-policy=strict --timeout=10m -- \
+  --minimum-expected-tests=189 --zero-tests-policy=strict --timeout=10m -- \
   --settings="$PWD/eng/expecto.runsettings"
 dotnet test --project tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj \
   --configuration Release --no-build --no-restore \
@@ -89,11 +89,11 @@ dotnet test --project tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj \
   --settings="$PWD/eng/expecto.runsettings"
 dotnet test --project tests/ClaimCore.DocsTests/ClaimCore.DocsTests.fsproj \
   --configuration Release --no-build --no-restore \
-  --minimum-expected-tests=44 --zero-tests-policy=strict --timeout=10m -- \
+  --minimum-expected-tests=47 --zero-tests-policy=strict --timeout=10m -- \
   --settings="$PWD/eng/expecto.runsettings"
 dotnet test --project tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj \
   --configuration Release --no-build --no-restore \
-  --minimum-expected-tests=93 --zero-tests-policy=strict --timeout=30m -- \
+  --minimum-expected-tests=97 --zero-tests-policy=strict --timeout=30m -- \
   --settings="$PWD/eng/expecto.runsettings"
 dotnet test --project tests/ClaimCore.RecoveryQualificationTests/ClaimCore.RecoveryQualificationTests.fsproj \
   --configuration Release --no-build --no-restore \
@@ -127,12 +127,36 @@ The deterministic unit profile runs 200 cases per property. The scheduled extend
 CLAIMCORE_PROPERTY_PROFILE=extended CLAIMCORE_PROPERTY_BASE_SEED=<unsigned-seed> \
 dotnet test --project tests/ClaimCore.Tests/ClaimCore.Tests.fsproj \
   --configuration Release --no-build --no-restore \
-  --minimum-expected-tests=183 --zero-tests-policy=strict --timeout=20m -- \
+  --minimum-expected-tests=189 --zero-tests-policy=strict --timeout=20m -- \
   --settings="$PWD/eng/expecto.runsettings"
 ```
 
 The base seed must be a canonical unsigned integer. CI chooses and records the weekly seed through
 `eng/Select-PropertySeed.ps1` so a failure can be reproduced exactly.
+
+### Architecture inspection
+
+The architecture suite supplements the Release behavioral tests with non-optimised Debug
+implementation inspection. It uses the existing Expecto/Microsoft Testing Platform driver, not a
+second test framework. After the locked solution restore:
+
+```sh
+dotnet build tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj \
+  --configuration Debug --no-restore -p:Optimize=false
+dotnet test --project tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj \
+  --configuration Debug --no-build --no-restore \
+  --minimum-expected-tests=48 --zero-tests-policy=strict --timeout=10m -- \
+  --settings="$PWD/eng/expecto.runsettings"
+```
+
+CI runs this suite on Linux, macOS and Windows. Historical test-baseline registrations remain
+immutable; new explicitly registered producers extend the live inventory without rewriting that
+baseline. Its named TRX results and stage manifests are required by the same final evidence
+reconciliation as the existing suites. No coverage collector rewrites these inspection inputs.
+Required assembly/selector preflight and positive/negative F# fixtures qualify the compiled
+inspection mechanism. Declared project-reference checks also reject unused forbidden edges; selected
+ambient-effect and direct-call rules are deliberately narrower than full effect or semantic proofs.
+See [Architecture](architecture.md#compiled-architecture-enforcement).
 
 ### Frontend assurance
 

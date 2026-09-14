@@ -15,8 +15,10 @@
     <Compile Include="HistoryCursor.fs" />
     <Compile Include="RecoveryCursorCodec.fs" />
     <Compile Include="TypedProjection.fs" />
+    <Compile Include="AcceptedObservation.fs" />
     <Compile Include="RetainedResolution.fs" />
     <Compile Include="ObservedReceiptVerification.fs" />
+    <Compile Include="RetainedPreparationReview.fs" />
     <Compile Include="TypedPreparation.fs" />
     <Compile Include="TypedResolution.fs" />
     <Compile Include="TypedSubmission.fs" />

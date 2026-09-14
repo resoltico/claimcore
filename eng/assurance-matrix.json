@@ -4,6 +4,86 @@
   "baselineSha256": "30b14fab0c28bdb6c3a3a1d231e8d55ab89fd2a475fc8c4fd2a3d6776c6311c5",
   "entries": [
     {
+      "dimensions": [
+        "core",
+        "webHost"
+      ],
+      "id": "assurance-architecture:fsharp-inspection",
+      "subject": "Positive and deliberately violating F# Debug fixtures qualify dependency and member-call inspection, while absent, duplicate and empty required inputs fail closed.",
+      "tests": [
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Async accepts pure counterpart",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Async detects forbidden dependency",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Clock detects platform effect",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Clock permits value-only use",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Closure accepts pure counterpart",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Closure detects forbidden dependency",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Function accepts pure counterpart",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Function detects forbidden dependency",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Generic accepts pure counterpart",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Generic detects forbidden dependency",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Interface accepts pure counterpart",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Interface detects forbidden dependency",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Io detects platform effect",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Io permits value-only use",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Nested accepts pure counterpart",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Nested detects forbidden dependency",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Sequence accepts pure counterpart",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Sequence detects forbidden dependency",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Signature accepts pure counterpart",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Signature detects forbidden dependency",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Task accepts pure counterpart",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Task detects forbidden dependency",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Union accepts pure counterpart",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.Union detects forbidden dependency",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.duplicate inputs are refused",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.empty input set is refused",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.empty required selector is refused",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.member rule detects only forbidden method",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.member rule permits other method on same type",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.F# inspection qualification.missing input fails before loading"
+      ]
+    },
+    {
+      "dimensions": [
+        "documentation"
+      ],
+      "id": "assurance-architecture:historical-registration",
+      "subject": "Adding an explicitly registered live test producer preserves every immutable historical source identity; missing or changed historical producers remain rejected.",
+      "tests": [
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.immutable source registrations.historical kind and inventory identity cannot change",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.immutable source registrations.new live producer does not rewrite historical registration",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.immutable source registrations.new producer cannot replace a missing historical producer"
+      ]
+    },
+    {
+      "dimensions": [
+        "core",
+        "webHost"
+      ],
+      "id": "assurance-architecture:product-ownership",
+      "subject": "Selection-qualified compiled and declared-reference rules cover all current product assemblies, the native CLI graph, selected ambient APIs, runtime composition and one direct domain-decision call.",
+      "tests": [
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.Application respects owned component dependencies",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.Cli respects owned component dependencies",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.Contracts avoids selected ambient clock and host IO APIs",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.Contracts respects owned component dependencies",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.Database respects owned component dependencies",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.Domain avoids selected ambient clock and host IO APIs",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.Domain respects owned component dependencies",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.HostSecurity respects owned component dependencies",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.Postgres respects owned component dependencies",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.RecordFormat avoids selected ambient clock and host IO APIs",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.RecordFormat respects owned component dependencies",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.Web respects owned component dependencies",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.all production roots are classified",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.declared project references obey component permissions",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.endpoint helpers cannot reach runtime composition",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.persistence cannot call the domain decision directly",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.production assemblies do not depend on test tooling",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.unused forbidden declared reference is detected"
+      ]
+    },
+    {
       "id": "assurance-browser:accessibility",
       "dimensions": [
         "webGui",
@@ -216,9 +296,18 @@
         "core",
         "recovery"
       ],
-      "subject": "An accepted operation replay returns its original receipt under a changed business clock and never advances the case twice.",
+      "subject": "Accepted-history identity is checked before technical recovery, including after owner pruning, while same-ID conflicts fail without receipt disclosure and uncertain or cancelled reads never invent non-commit.",
       "tests": [
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL accepted receipt identity.[CC-APP-002] PostgreSQL accepted history without preparation remains replayable",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL accepted receipt identity.[CC-APP-002] PostgreSQL accepted replay survives owner pruning of preparation",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL accepted receipt identity.[CC-APP-002] PostgreSQL concurrent pruned replay and conflicts keep one accepted revision",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL accepted receipt identity.[CC-APP-002] PostgreSQL rejects wrong digest before parsing accepted snapshot",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL transactions.persistence and replay.[CC-APP-002] exact replay returns original receipt, not current state",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.accepted receipt first.[CC-APP-002] accepted identity conflict refuses without recovery disclosure",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.accepted receipt first.[CC-APP-002] accepted receipt wins after original commit confirmation is lost",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.accepted receipt first.[CC-APP-002] accepted replay needs no retained preparation or recovery read",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.accepted receipt first.[CC-APP-002] accepted-history read failure refuses before fresh preparation",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.accepted receipt first.[CC-APP-002] cancellation after accepted observation preserves definite receipt",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core execution.typed execution.exact retry observes the original receipt without another commit"
       ]
     },
@@ -366,10 +455,11 @@
         "recovery",
         "webGui"
       ],
-      "subject": "A lost Prepare response permits one explicit byte-identical retry, accepted replay shows the authoritative receipt, and stale retained work directs Recovery without opening review.",
+      "subject": "A lost Prepare response permits one explicit byte-identical retry, accepted replay validates a receipt without technical details, and stale retained work directs Recovery without opening review.",
       "tests": [
         "frontend:vitest::keeps a non-reviewable retained Prepare exact and directs Recovery",
         "frontend:vitest::offers one explicit exact-ID Prepare retry after lost response",
+        "frontend:vitest::rejects technical preparation details on an accepted Prepare replay",
         "frontend:vitest::renders an exact accepted Prepare replay as a definite receipt"
       ]
     },
@@ -584,8 +674,9 @@
         "core",
         "recovery"
       ],
-      "subject": "An exact accepted Prepare retry returns the first retained details and observed replay receipt, while an exact retained but stale draft directs Recovery without inventing a review.",
+      "subject": "An exact accepted Prepare retry returns its receipt without requiring or inventing preparation details, while an exact retained but stale draft directs Recovery without inventing a review.",
       "tests": [
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL accepted receipt identity.[CC-APP-002] PostgreSQL accepted replay survives owner pruning of preparation",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.exact retained identity.[CC-REC-001] exact Prepare retry after acceptance returns an observed receipt",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.exact retained identity.[CC-REC-001] exact retained Prepare retry after another commit directs Recovery"
       ]
@@ -595,8 +686,9 @@
       "dimensions": [
         "recovery"
       ],
-      "subject": "An accepted receipt under the retained operation ID but different canonical request bytes cannot masquerade as an exact replay or admit another attempt.",
+      "subject": "A mismatched accepted or retained identity cannot masquerade as replay, admit another attempt, or disclose the other preparation's metadata through Resolve, Dismiss, or Execute.",
       "tests": [
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.accepted receipt first.[CC-REC-001] mismatched retained identity refuses without preparation metadata",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core facade.recovery.[CC-REC-001] existing receipt with different bytes cannot masquerade as replay"
       ]
     },

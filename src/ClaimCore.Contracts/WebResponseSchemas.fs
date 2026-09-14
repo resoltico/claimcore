@@ -162,11 +162,7 @@ module WebResponseSchemas =
                         WireSchema.property "review" (reference "AdvisoryReview")
                     ]
                 "OBSERVED_ACCEPTED",
-                WireSchema.objectOf
-                    [
-                        WireSchema.property "details" (reference "PreparationDetails")
-                        WireSchema.property "receipt" (reference "Receipt")
-                    ]
+                WireSchema.objectOf [ WireSchema.property "receipt" (reference "Receipt") ]
                 "RETAINED_FOR_RECOVERY",
                 WireSchema.objectOf
                     [
