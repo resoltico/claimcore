@@ -455,10 +455,11 @@
         "recovery",
         "webGui"
       ],
-      "subject": "A lost Prepare response permits one explicit byte-identical retry, accepted replay shows the authoritative receipt, and stale retained work directs Recovery without opening review.",
+      "subject": "A lost Prepare response permits one explicit byte-identical retry, accepted replay validates a receipt without technical details, and stale retained work directs Recovery without opening review.",
       "tests": [
         "frontend:vitest::keeps a non-reviewable retained Prepare exact and directs Recovery",
         "frontend:vitest::offers one explicit exact-ID Prepare retry after lost response",
+        "frontend:vitest::rejects technical preparation details on an accepted Prepare replay",
         "frontend:vitest::renders an exact accepted Prepare replay as a definite receipt"
       ]
     },
