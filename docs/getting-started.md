@@ -1,6 +1,6 @@
 # Getting started from source
 
-ClaimCore 0.1.0 is a source-preview release with no downloadable application binaries. This guide
+ClaimCore 0.2.0 is a source-preview release with no downloadable application binaries. This guide
 builds from a source checkout, creates a local PostgreSQL installation for synthetic data, applies
 its schema, and opens the published Web application.
 

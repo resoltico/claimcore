@@ -27,7 +27,7 @@ body:
     attributes:
       label: ClaimCore version or source revision
       description: Identify the current version or commit without pasting an environment dump.
-      placeholder: 0.1.0 or a commit identifier
+      placeholder: 0.2.0 or a commit identifier
     validations:
       required: true
   - type: dropdown

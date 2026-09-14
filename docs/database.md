@@ -12,7 +12,7 @@ open PostgreSQL; mutating administration commands require the private file selec
 
 <!-- generated:begin database-help -->
 ```text
-ClaimCore.Database 0.1.0 — schema and recovery-retention administration
+ClaimCore.Database 0.2.0 — schema and recovery-retention administration
   ClaimCore.Database migrate
   ClaimCore.Database prune [--dry-run] [--settled-retention-days <1-3650>]
                            [--abandoned-retention-days <1-3650>] [--limit <1-1000>]
