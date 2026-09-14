@@ -35,6 +35,13 @@ module internal RecoveryImports =
                 match TypedProjection.details value with
                 | Ok details -> return RecoveryImportRetainOutcome.ExistingPreparation details
                 | Error fault -> return RecoveryImportRetainOutcome.ImportFailed fault
+            | Ok(RecoveryRetain.ObservedAccepted receipt) ->
+                return
+                    RecoveryImportRetainOutcome.ObservedAcceptedImport(
+                        TypedProjection.receipt receipt
+                    )
+            | Ok(RecoveryRetain.Revoked _) ->
+                return RecoveryImportRetainOutcome.ImportRejected RecoverySupport.revoked
             | Error RecoveryStoreFailure.IdempotencyConflict ->
                 return RecoveryImportRetainOutcome.ImportRejected RecoverySupport.conflict
             | Error RecoveryStoreFailure.TechnicalMutationUnknown ->

@@ -1,6 +1,6 @@
 import type { Dispatch, SetStateAction } from "react";
 import type { CurrentCase, DefinitionPayload, PreparationDetails, Receipt } from "../../api/v2";
-import type { CommandDescriptor, FieldDescriptor } from "../../api/v2";
+import type { CommandDescriptor, CorrectionGroupDescriptor, FieldDescriptor } from "../../api/v2";
 import type { OperationAction, OperationState } from "../../domain/operationReducer";
 import type { CommandKind } from "../../domain/metadata";
 
@@ -26,6 +26,10 @@ export type EditorState = {
 export type EditorMetadata = {
   command: CommandDescriptor;
   fields: { field: FieldDescriptor }[];
+  groups: ReadonlyArray<{
+    group: CorrectionGroupDescriptor;
+    fields: ReadonlyArray<FieldDescriptor>;
+  }>;
   referenceField: FieldDescriptor | undefined;
   available: ReadonlyArray<CommandKind>;
   locked: boolean;
@@ -36,6 +40,8 @@ export type EditorMetadata = {
 
 export type EditorActions = {
   edit: (field: string, value: string) => void;
+  editCorrection: (group: string, field: string, value: string) => void;
+  setCorrectionMode: (group: string, mode: string) => void;
   editReference: (value: string) => void;
   applyCommand: (command: CommandKind) => void;
   prepare: () => Promise<void>;

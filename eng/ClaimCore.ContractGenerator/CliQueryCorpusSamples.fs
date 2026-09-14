@@ -116,8 +116,30 @@ module internal CliQueryCorpusSamples =
                 (encode (
                     RecoverySucceeded
                         {
-                            Items = [ CliCorpusValues.preparationSummary ]
+                            View = RecoveryListView.Pending
+                            Items = [ RetainedRecoveryItem CliCorpusValues.preparationSummary ]
                             NextCursor = Some "synthetic-recovery-cursor"
+                            PendingPreparationCount = 1
+                            PendingCanonicalRequestBytes = 128L
+                            MaximumPendingPreparations = 1024
+                            MaximumPendingCanonicalRequestBytes = 67108864L
+                            NearCapacity = false
+                        }
+                ))
+            sample
+                "recovery-list-terminal-revocation"
+                "recovery.list"
+                (encode (
+                    RecoverySucceeded
+                        {
+                            View = RecoveryListView.Terminal
+                            Items = [ RevokedRecoveryItem CliCorpusValues.revokedOperation ]
+                            NextCursor = None
+                            PendingPreparationCount = 0
+                            PendingCanonicalRequestBytes = 0L
+                            MaximumPendingPreparations = 1024
+                            MaximumPendingCanonicalRequestBytes = 67108864L
+                            NearCapacity = false
                         }
                 ))
             sample
@@ -144,11 +166,25 @@ module internal CliQueryCorpusSamples =
             sample
                 "recovery-inspect-found-observed"
                 "recovery.inspect"
-                (encode (RecoverySucceeded(Found(details (Found CliCorpusValues.receipt)))))
+                (encode (
+                    RecoverySucceeded(
+                        Found(RetainedInspection(details (Found CliCorpusValues.receipt)))
+                    )
+                ))
             sample
                 "recovery-inspect-found-unobserved"
                 "recovery.inspect"
-                (encode (RecoverySucceeded(Found(details (NotFound CliCorpusValues.operationId)))))
+                (encode (
+                    RecoverySucceeded(
+                        Found(RetainedInspection(details (NotFound CliCorpusValues.operationId)))
+                    )
+                ))
+            sample
+                "recovery-inspect-found-revoked"
+                "recovery.inspect"
+                (encode (
+                    RecoverySucceeded(Found(RevokedInspection CliCorpusValues.revokedOperation))
+                ))
             sample
                 "recovery-inspect-not-found"
                 "recovery.inspect"

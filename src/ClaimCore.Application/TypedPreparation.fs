@@ -8,6 +8,12 @@ open ClaimCore.Domain
 open ClaimCore.RecordFormat
 
 module internal TypedPreparation =
+    [<NoEquality; NoComparison>]
+    type private ExistingPreparation =
+        | Missing
+        | Refused of PrepareOutcome
+        | ReviewRetained of RetainedPreparation
+
     let private preparationDraft
         (request: CommandRequest)
         (canonical: byte array)
@@ -37,10 +43,41 @@ module internal TypedPreparation =
             ReadOnlySpan<byte>(canonical)
         )
 
+    let private existingPreparation
+        (request: CommandRequest)
+        (canonical: byte array)
+        (digest: string)
+        =
+        function
+        | None -> Missing
+        | Some(RecoveryStoredOperation.RevokedTombstone revocation) when
+            revocation.RequestSha256 = digest
+            ->
+            Refused(PrepareOutcome.PrepareRejected(request.OperationId, OperationRejection.revoked))
+        | Some(RecoveryStoredOperation.RevokedTombstone _) ->
+            Refused(
+                PrepareOutcome.PrepareRejected(
+                    request.OperationId,
+                    AcceptedObservation.idempotencyConflict
+                )
+            )
+        | Some(RecoveryStoredOperation.Retained(retained, _)) when
+            not (exactMaterial canonical digest retained)
+            ->
+            Refused(
+                PrepareOutcome.PrepareRejected(
+                    request.OperationId,
+                    AcceptedObservation.idempotencyConflict
+                )
+            )
+        | Some(RecoveryStoredOperation.Retained(_, RecoveryAuthority.RevokedAuthority)) ->
+            Refused(PrepareOutcome.PrepareRejected(request.OperationId, OperationRejection.revoked))
+        | Some(RecoveryStoredOperation.Retained(retained, _)) -> ReviewRetained retained
+
     let private existingOutcome
         (store: IClaimStore)
         (recovery: IRecoveryStore)
-        (clock: IBusinessDate)
+        (clock: IBusinessTime)
         (request: CommandRequest)
         (canonical: byte array)
         (digest: string)
@@ -58,25 +95,20 @@ module internal TypedPreparation =
                             TypedProjection.recoveryFault failure
                         )
                     )
-            | Ok None -> return None
-            | Ok(Some retained) when not (exactMaterial canonical digest retained) ->
-                return
-                    Some(
-                        PrepareOutcome.PrepareRejected(
-                            request.OperationId,
-                            AcceptedObservation.idempotencyConflict
-                        )
-                    )
-            | Ok(Some retained) ->
-                let! outcome =
-                    RetainedPreparationReview.knownRetained
-                        store
-                        clock
-                        request
-                        retained
-                        cancellationToken
+            | Ok stored ->
+                match existingPreparation request canonical digest stored with
+                | Missing -> return None
+                | Refused outcome -> return Some outcome
+                | ReviewRetained retained ->
+                    let! outcome =
+                        RetainedPreparationReview.knownRetained
+                            store
+                            clock
+                            request
+                            retained
+                            cancellationToken
 
-                return Some outcome
+                    return Some outcome
         }
 
     let private retentionFailure operationId requestSha256 failure =
@@ -96,7 +128,7 @@ module internal TypedPreparation =
     let private retainedOutcome
         (store: IClaimStore)
         (recovery: IRecoveryStore)
-        (clock: IBusinessDate)
+        (clock: IBusinessTime)
         (request: CommandRequest)
         (review: AdvisoryReview)
         (canonical: byte array)
@@ -127,13 +159,18 @@ module internal TypedPreparation =
                         request
                         retained
                         cancellationToken
+            | Ok(RecoveryRetain.ObservedAccepted receipt) ->
+                return PrepareOutcome.ObservedAccepted(TypedProjection.receipt receipt)
+            | Ok(RecoveryRetain.Revoked _) ->
+                return
+                    PrepareOutcome.PrepareRejected(request.OperationId, OperationRejection.revoked)
             | Error failure -> return retentionFailure request.OperationId requestSha256 failure
         }
 
     let private freshOutcome
         (store: IClaimStore)
         (recovery: IRecoveryStore)
-        (clock: IBusinessDate)
+        (clock: IBusinessTime)
         (request: CommandRequest)
         (canonical: byte array)
         (digest: string)
@@ -169,21 +206,21 @@ module internal TypedPreparation =
     let prepare
         (store: IClaimStore)
         (recovery: IRecoveryStore)
-        (clock: IBusinessDate)
-        (draft: CommandDraft)
+        (clock: IBusinessTime)
+        (request: CommandRequest)
         (cancellationToken: CancellationToken)
         : Task<PrepareOutcome> =
-        match Drafts.bind draft with
+        match Claim.validateRequest request with
         | Error rejection ->
             Task.FromResult(
                 PrepareOutcome.PrepareRejected(
-                    draft.OperationId,
+                    request.OperationId,
                     TypedProjection.rejection rejection
                 )
             )
-        | Ok request when cancellationToken.IsCancellationRequested ->
+        | Ok() when cancellationToken.IsCancellationRequested ->
             Task.FromResult(PrepareOutcome.CancelledBeforeAdmission request.OperationId)
-        | Ok request ->
+        | Ok() ->
             task {
                 let canonical = RequestRecord.encode request
                 let digest = canonical |> SHA256.HashData |> Convert.ToHexStringLower

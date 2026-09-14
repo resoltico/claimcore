@@ -96,14 +96,14 @@ module internal WebEndpointCatalog =
                 "recovery.list"
                 "POST"
                 "/api/v2/recovery/list"
-                (json (EndpointInputs.cursor semantic.MaximumPageSize))
+                (json (EndpointInputs.recoveryList semantic.MaximumPageSize))
                 None
             endpoint
                 responses
                 "recovery.inspect"
                 "POST"
                 "/api/v2/recovery/inspect"
-                (json EndpointInputs.operation)
+                (json (EndpointInputs.recoveryInspect semantic.MaximumPageSize))
                 None
             endpoint
                 responses

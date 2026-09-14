@@ -77,32 +77,35 @@ const validateExports = (validators) => {
   if (validators.length === 0) throw new Error("At least one validator export is required.");
 };
 
+const bundleOutput = async (temporary, entry, webDirectory) => {
+  const bundle = await rolldown({ input: entry, treeshake: true });
+  const generated = await bundle.generate({ format: "esm", minify: true, sourcemap: false });
+  const chunks = generated.output.filter((item) => item.type === "chunk");
+  if (
+    chunks.length !== 1 ||
+    generated.output.length !== 1 ||
+    chunks[0].imports.length !== 0 ||
+    chunks[0].dynamicImports.length !== 0
+  ) {
+    throw new Error("Standalone validator bundling must produce one self-contained ESM chunk.");
+  }
+  if (chunks[0].code.includes(temporary)) {
+    throw new Error("Standalone validator output contains a temporary path.");
+  }
+  return {
+    embeddedPackages: embeddedPackages(chunks[0].moduleIds, webDirectory, temporary),
+    source: `/* Generated from ClaimCore.Contracts schemas. Do not edit. */${chunks[0].code.trim()}\n`,
+  };
+};
+
 const bundledCode = async (source, webDirectory) => {
   const cache = resolve(webDirectory, "node_modules/.cache");
   await mkdir(cache, { recursive: true });
   const temporary = await mkdtemp(resolve(cache, "claimcore-validator-"));
-  const entry = resolve(temporary, "entry.mjs");
   try {
+    const entry = resolve(temporary, "entry.mjs");
     await writeFile(entry, source, "utf8");
-    const bundle = await rolldown({ input: entry, treeshake: true });
-    const generated = await bundle.generate({ format: "esm", minify: true, sourcemap: false });
-    const chunks = generated.output.filter((item) => item.type === "chunk");
-    if (
-      chunks.length !== 1 ||
-      generated.output.length !== 1 ||
-      chunks[0].imports.length !== 0 ||
-      chunks[0].dynamicImports.length !== 0
-    ) {
-      throw new Error("Standalone validator bundling must produce one self-contained ESM chunk.");
-    }
-    if (chunks[0].code.includes(temporary)) {
-      throw new Error("Standalone validator output contains a temporary path.");
-    }
-    const header = "/* Generated from ClaimCore.Contracts schemas. Do not edit. */";
-    return {
-      embeddedPackages: embeddedPackages(chunks[0].moduleIds, webDirectory, temporary),
-      source: `${header}${chunks[0].code.trim()}\n`,
-    };
+    return await bundleOutput(temporary, entry, webDirectory);
   } finally {
     await rm(temporary, { force: true, recursive: true });
   }

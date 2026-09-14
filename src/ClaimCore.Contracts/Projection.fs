@@ -97,24 +97,6 @@ module internal ProjectionSchema =
                 Schema.property "scalar" (scalarDefinition field.Scalar) true
             ]
 
-    let commandInput (input: CommandInputDefinition) =
-        match input.Prefill with
-        | PrefillSource.Blank ->
-            Schema.objectOf
-                false
-                [
-                    Schema.property "fieldName" (textConstant input.FieldName) true
-                    Schema.property "prefill" (textConstant "BLANK") true
-                ]
-        | PrefillSource.CurrentField current ->
-            Schema.objectOf
-                false
-                [
-                    Schema.property "fieldName" (textConstant input.FieldName) true
-                    Schema.property "prefill" (textConstant "CURRENT_FIELD") true
-                    Schema.property "currentField" (textConstant current) true
-                ]
-
     let private exactArray (schemas: Schema list) (length: int) =
         if schemas.Length <> length then
             invalidArg (nameof length) "Exact schema array length does not match its items."
@@ -128,12 +110,7 @@ module internal ProjectionSchema =
                 Schema.property "kind" (textConstant (CommandKinds.token command.Kind)) true
                 Schema.property "label" (textConstant command.Label) true
                 Schema.property "meaning" (textConstant command.Meaning) true
-                Schema.property
-                    "inputs"
-                    (command.Inputs
-                     |> List.map commandInput
-                     |> fun values -> exactArray values command.Inputs.Length)
-                    true
+                Schema.property "inputs" (CommandInputProjection.definition command.Inputs) true
             ]
 
     let private ruleDefinition (rule: DomainRuleDefinition) =
@@ -150,25 +127,8 @@ module internal ProjectionSchema =
                 Schema.property "meaning" (textConstant rule.Meaning) true
             ]
 
-    let private commandValues (fields: FieldDefinition list) (command: CommandDefinition) =
-        let fieldByName = fields |> List.map (fun field -> field.Name, field) |> Map.ofList
-
-        command.Inputs
-        |> List.map (fun input ->
-            let field = fieldByName.[input.FieldName]
-            Schema.property input.FieldName (ScalarSchemas.scalar field.Scalar) true)
-        |> Schema.objectOf false
-
     let private command (fields: FieldDefinition list) (definition: CommandDefinition) =
-        Schema.objectOf
-            false
-            [
-                Schema.property
-                    "kind"
-                    (Schema.constant (TextConstant(CommandKinds.token definition.Kind)))
-                    true
-                Schema.property "values" (commandValues fields definition) true
-            ]
+        CommandInputProjection.payload fields definition
 
     let commandDraft (semantic: SemanticCoreContract) =
         let caseReference =

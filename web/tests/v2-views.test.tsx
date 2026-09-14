@@ -6,7 +6,7 @@ import { CaseDetail } from "../src/views/CaseDetail";
 import { CaseList } from "../src/views/CaseList";
 import { Dashboard } from "../src/views/Dashboard";
 import { generatedResponse, generatedWebValue } from "./contract-corpus.fixtures";
-import { definition, fields, operationId, response } from "./v2-ui.fixtures";
+import { definition, fields, operationId, recoveryPage, response } from "./v2-ui.fixtures";
 
 const current: CurrentCase = {
   case: { fields, revision: "1" },
@@ -104,9 +104,7 @@ it("navigates dashboard case, operation and recovery surfaces without hidden bus
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockResolvedValueOnce(response("definition", "DESCRIBED", definition));
   fetch.mockResolvedValueOnce(response("case.list", "SUCCEEDED", { items: [], nextCursor: null }));
-  fetch.mockResolvedValueOnce(
-    response("recovery.list", "SUCCEEDED", { items: [], nextCursor: null }),
-  );
+  fetch.mockResolvedValueOnce(response("recovery.list", "SUCCEEDED", recoveryPage([])));
   render(<Dashboard token="token" sessionEpoch={1} onLogout={vi.fn(() => Promise.resolve())} />);
   await user.click(await screen.findByRole("button", { name: "Recovery" }));
   expect(await screen.findByRole("heading", { name: "Recovery" })).toBeVisible();

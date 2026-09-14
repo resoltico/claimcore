@@ -6,7 +6,7 @@ test.use({ storageState: { cookies: [], origins: [] } });
 
 const rejectMalformedAuthenticatedPosts = async (page: Page, token: string): Promise<void> => {
   const listPath = "/api/v2/cases/list";
-  expectHostFailure(
+  await expectHostFailure(
     await browserRequest(page, listPath, {
       method: "POST",
       headers: { "Content-Type": "text/plain", "X-ClaimCore-Antiforgery": token },
@@ -15,7 +15,7 @@ const rejectMalformedAuthenticatedPosts = async (page: Page, token: string): Pro
     415,
     "WEB_MEDIA_TYPE",
   );
-  expectHostFailure(
+  await expectHostFailure(
     await browserRequest(page, listPath, {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-ClaimCore-Antiforgery": token },
@@ -24,7 +24,7 @@ const rejectMalformedAuthenticatedPosts = async (page: Page, token: string): Pro
     413,
     "WEB_BODY_TOO_LARGE",
   );
-  expectHostFailure(
+  await expectHostFailure(
     await browserRequest(page, listPath, {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-ClaimCore-Antiforgery": token },
@@ -39,8 +39,8 @@ test("rejects retired routes and malformed published Web v2 admission before mut
   page,
 }) => {
   await page.goto("/");
-  expectHostFailure(await browserRequest(page, "/api/v1/query"), 404, "WEB_NOT_FOUND");
-  expectHostFailure(
+  await expectHostFailure(await browserRequest(page, "/api/v1/query"), 404, "WEB_NOT_FOUND");
+  await expectHostFailure(
     await browserRequest(page, "/api/v2/cases/list", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -51,7 +51,7 @@ test("rejects retired routes and malformed published Web v2 admission before mut
   );
   await login(page);
   const token = await sessionToken(page);
-  expectHostFailure(
+  await expectHostFailure(
     await browserRequest(page, "/api/v2/cases/list", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

@@ -59,11 +59,30 @@ module internal CliResponseQuerySchemas =
         |> fun success -> CliResponseSchemaCommon.query success CoreValueSchemas.rejection
 
     let recoveryList =
+        let item =
+            CliResponseSchemaCommon.choice
+                [
+                    WireSchema.kind
+                        "retained"
+                        [ WireSchema.property "summary" RecoveryValueSchemas.summary ]
+                    WireSchema.kind
+                        "revoked"
+                        [ WireSchema.property "revocation" RecoveryValueSchemas.revokedOperation ]
+                ]
+
         WireSchema.kind
             "succeeded"
             [
-                WireSchema.property "items" (WireSchema.array RecoveryValueSchemas.summary)
+                WireSchema.property "view" (WireSchema.enumeration [ "PENDING"; "TERMINAL" ])
+                WireSchema.property "items" (WireSchema.array item)
                 WireSchema.property "nextCursor" WireSchema.nullableText
+                WireSchema.property "pendingPreparationCount" (Schema.integer (Some 0L) None)
+                WireSchema.property "pendingCanonicalRequestBytes" (Schema.integer (Some 0L) None)
+                WireSchema.property "maximumPendingPreparations" (Schema.integer (Some 1L) None)
+                WireSchema.property
+                    "maximumPendingCanonicalRequestBytes"
+                    (Schema.integer (Some 1L) None)
+                WireSchema.property "nearCapacity" Schema.boolean
             ]
         |> fun success -> CliResponseSchemaCommon.query success RecoveryValueSchemas.rejection
 
@@ -74,11 +93,24 @@ module internal CliResponseQuerySchemas =
                 "operationId"
                 WireSchema.uuid
 
+        let inspection =
+            CliResponseSchemaCommon.choice
+                [
+                    WireSchema.kind
+                        "retained"
+                        [
+                            WireSchema.property
+                                "preparation"
+                                (RecoveryValueSchemas.detailsCli semantic)
+                            WireSchema.property "observation" observation
+                        ]
+                    WireSchema.kind
+                        "revoked"
+                        [ WireSchema.property "revocation" RecoveryValueSchemas.revokedOperation ]
+                ]
+
         CliResponseSchemaCommon.lookup
-            [
-                WireSchema.property "preparation" (RecoveryValueSchemas.detailsCli semantic)
-                WireSchema.property "observation" observation
-            ]
+            [ WireSchema.property "inspection" inspection ]
             "operationId"
             WireSchema.uuid
         |> fun success -> CliResponseSchemaCommon.query success RecoveryValueSchemas.rejection

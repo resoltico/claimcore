@@ -86,25 +86,6 @@ module internal ContractJson =
 
         writer.WriteEndArray()
 
-    let private writeCommandInputs (writer: Utf8JsonWriter) (inputs: CommandInputDefinition list) =
-        writer.WritePropertyName("inputs")
-        writer.WriteStartArray()
-
-        inputs
-        |> List.iter (fun input ->
-            writer.WriteStartObject()
-            writer.WriteString("fieldName", input.FieldName)
-
-            match input.Prefill with
-            | PrefillSource.Blank -> writer.WriteString("prefill", "BLANK")
-            | PrefillSource.CurrentField fieldName ->
-                writer.WriteString("prefill", "CURRENT_FIELD")
-                writer.WriteString("currentField", fieldName)
-
-            writer.WriteEndObject())
-
-        writer.WriteEndArray()
-
     let private writeCommands (writer: Utf8JsonWriter) (commands: CommandDefinition list) =
         writer.WritePropertyName("commands")
         writer.WriteStartArray()
@@ -115,7 +96,7 @@ module internal ContractJson =
             writer.WriteString("kind", CommandKinds.token command.Kind)
             writer.WriteString("label", command.Label)
             writer.WriteString("meaning", command.Meaning)
-            writeCommandInputs writer command.Inputs
+            SemanticInputRenderer.write writer command.Inputs
             writer.WriteEndObject())
 
         writer.WriteEndArray()

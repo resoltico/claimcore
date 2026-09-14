@@ -4,13 +4,19 @@ open System.Threading
 
 /// Public recovery capability assembled from focused Application-owned workflows. PostgreSQL only
 /// supplies `IRecoveryStore`; neither adapters nor Runtime expose that technical port.
-type internal RecoveryWorkflow(store: IClaimStore, recovery: IRecoveryStore, clock: IBusinessDate) =
+type internal RecoveryWorkflow(store: IClaimStore, recovery: IRecoveryStore, clock: IBusinessTime) =
     interface IRecoveryWorkflow with
-        member _.List(afterCursor, limit, cancellationToken) =
-            RecoveryReadOperations.list recovery afterCursor limit cancellationToken
+        member _.List(view, afterCursor, limit, cancellationToken) =
+            RecoveryReadOperations.list recovery view afterCursor limit cancellationToken
 
-        member _.Inspect(operationId, cancellationToken) =
-            RecoveryReadOperations.inspect store recovery operationId cancellationToken
+        member _.Inspect(operationId, afterCursor, limit, cancellationToken) =
+            RecoveryReadOperations.inspect
+                store
+                recovery
+                operationId
+                afterCursor
+                limit
+                cancellationToken
 
         member _.Resolve(operationId, requestSha256, cancellationToken) =
             RecoveryReadOperations.resolve
@@ -31,7 +37,7 @@ type internal RecoveryWorkflow(store: IClaimStore, recovery: IRecoveryStore, clo
                 cancellationToken
 
         member _.ExportEnvelope(operationId, requestSha256, cancellationToken) =
-            RecoveryReadOperations.export recovery operationId requestSha256 cancellationToken
+            RecoveryExports.export recovery operationId requestSha256 cancellationToken
 
         member _.PreviewEnvelopeImport(source, cancellationToken) =
             RecoveryImports.previewEnvelope recovery source cancellationToken

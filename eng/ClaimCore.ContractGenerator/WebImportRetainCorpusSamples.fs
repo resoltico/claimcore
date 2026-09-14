@@ -57,6 +57,13 @@ module internal WebImportRetainCorpusSamples =
                     )
                 ))
             sample
+                (endpoint + "-observed-accepted")
+                endpoint
+                (encode (
+                    RecoveryImportRetainOutcome.ObservedAcceptedImport
+                        CliCorpusValues.observedReceipt
+                ))
+            sample
                 (endpoint + "-state-unknown-without-operation")
                 endpoint
                 (encode (

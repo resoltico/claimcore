@@ -15,7 +15,7 @@ module internal ObservedReceiptVerification =
 
     let verify
         (store: IClaimStore)
-        (clock: IBusinessDate)
+        (clock: IBusinessTime)
         (preparation: RetainedPreparation)
         (summary: PreparationSummary)
         : Task<RetainedResolution> =

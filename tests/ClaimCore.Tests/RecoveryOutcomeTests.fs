@@ -41,31 +41,32 @@ type private ScriptedClaimStore(mode: ExecutionMode) =
         member _.Accepted(operationId, requestSha256) =
             (inner :> IClaimStore).Accepted(operationId, requestSha256)
 
-let private clock =
-    { new IBusinessDate with
-        member _.Today() = today
-    }
+let private clock = businessTime today
 
-let private draft operationId reference =
+let private draft operationId reference : CommandDraft =
     {
         OperationId = operationId
         CaseReference = reference
         ExpectedVersion = 0L
-        Kind = CommandKind.Open
-        Values =
-            [
-                "incidentDate", registration.IncidentDate
-                "incidentNotificationDate", registration.IncidentNotificationDate
-                "incidentCountry", registration.IncidentCountry
-                "claimantName", registration.ClaimantName
-                "insurerName", registration.InsurerName
-                "claimedAmount", registration.ClaimedAmount
-                "claimedCurrency", registration.ClaimedCurrency
-            ]
+        Command =
+            DraftCommand.Flat(
+                CommandKind.Open,
+                [
+                    "incidentDate", registration.IncidentDate
+                    "incidentNotificationDate", registration.IncidentNotificationDate
+                    "incidentCountry", registration.IncidentCountry
+                    "claimantName", registration.ClaimantName
+                    "insurerName", registration.InsurerName
+                    "claimedAmount", registration.ClaimedAmount
+                    "claimedCurrency", registration.ClaimedCurrency
+                ]
+            )
     }
 
 let private prepared (core: IClaimsCore) operationId reference =
-    match core.Prepare(draft operationId reference, CancellationToken.None).Result with
+    match
+        core.Prepare(boundRequest (draft operationId reference), CancellationToken.None).Result
+    with
     | PrepareOutcome.Prepared(details, _) ->
         details.Summary.RequestSha256
         |> Option.defaultWith (fun () -> failtest "Retained request digest is required.")
@@ -76,6 +77,7 @@ let private resolve (core: IClaimsCore) operationId digest token =
 
 let private makeCore mode (recovery: CoreRecoveryStore.Store) =
     let claims = new ScriptedClaimStore(mode)
+    recovery.AttachClaimStore(claims :> IClaimStore)
     CoreApi.create (claims :> IClaimStore) (recovery :> IRecoveryStore) clock, claims
 
 let private beforeAttemptCancellation =
@@ -168,7 +170,7 @@ let private unresolvedExecution mode expectedMessage =
         Expect.equal recovery.StartCalls 1 "One confirmed attempt admission"
         Expect.equal recovery.SettlementCalls 0 "Unknown execution is never settled")
 
-let private settlementUnconfirmed failure throws label =
+let private combinedCommitUncertain failure throws label =
     testCase label (fun () ->
         let recovery =
             new CoreRecoveryStore.Store(settleFailure = failure, settleThrows = throws)
@@ -180,15 +182,14 @@ let private settlementUnconfirmed failure throws label =
             prepared core operationId ("REC-SETTLEMENT-" + operationId.ToString("N"))
 
         match resolve core operationId digest CancellationToken.None with
-        | ResolveOutcome.ResolveCompleted(_,
-                                          _,
-                                          DefiniteExecution.Accepted receipt,
-                                          SettlementConfirmation.Unconfirmed) ->
-            Expect.equal receipt.OperationId operationId "Definite accepted receipt remains"
-        | _ -> failtest "Settlement loss must not erase definite acceptance."
+        | ResolveOutcome.ResolveAttemptUnresolved(summary, attemptId, fault) ->
+            Expect.equal summary.OperationId operationId "Retained operation identity"
+            Expect.notEqual attemptId Guid.Empty "Admitted attempt identity"
+            Expect.equal fault.Code FaultCode.CommitOutcomeUnknown "Co-commit uncertainty"
+        | _ -> failtest "A combined commit without confirmation must remain unresolved."
 
-        Expect.equal claims.TransactionCalls 1 "One definite claim transaction"
-        Expect.equal recovery.SettlementCalls 1 "Settlement was attempted once")
+        Expect.equal claims.TransactionCalls 0 "No independent claim-store transaction"
+        Expect.equal recovery.SettlementCalls 0 "No separately claimed settlement")
 
 let private failedBeforeCommitSettlement =
     testCase "[CC-REC-001] definite pre-commit failure is settled as a failure" (fun () ->
@@ -213,6 +214,7 @@ let private rejectedSettlement =
         let claims = new CoreStore.Store()
         let recovery = new CoreRecoveryStore.Store()
         let claimPort = claims :> IClaimStore
+        recovery.AttachClaimStore(claimPort)
         let core = CoreApi.create claimPort (recovery :> IRecoveryStore) clock
         let operationId = Guid.NewGuid()
         let reference = "REC-STALE-" + operationId.ToString("N")
@@ -255,6 +257,7 @@ let private receiptBetweenObservationAndAttempt =
             | Error _ -> failtest "Synthetic receipt must commit at the interleave barrier."
 
         let recovery = new CoreRecoveryStore.Store(onStart = commitBetween)
+        recovery.AttachClaimStore(claimPort)
         let core = CoreApi.create claimPort (recovery :> IRecoveryStore) clock
         let digest = prepared core operationId command.CaseReference
 
@@ -282,14 +285,14 @@ let tests =
                 Throws
                 "[CC-REC-001] thrown execution after admission remains unresolved"
             unresolvedExecution Unknown "[CC-REC-001] commit-unknown execution is never settled"
-            settlementUnconfirmed
+            combinedCommitUncertain
                 RecoveryStoreFailure.TechnicalMutationUnknown
                 false
-                "[CC-REC-001] settlement error preserves definite acceptance"
-            settlementUnconfirmed
+                "[CC-REC-001] combined commit uncertainty never fabricates accepted settlement"
+            combinedCommitUncertain
                 RecoveryStoreFailure.TechnicalMutationUnknown
                 true
-                "[CC-REC-001] thrown settlement preserves definite acceptance"
+                "[CC-REC-001] thrown combined commit is unresolved"
             failedBeforeCommitSettlement
             rejectedSettlement
             receiptBetweenObservationAndAttempt

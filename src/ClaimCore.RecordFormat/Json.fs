@@ -146,8 +146,8 @@ module internal Json =
         writer.Flush()
         stream.ToArray()
 
-    let writeRegistration (writer: Utf8JsonWriter) (registration: RegistrationInput) =
-        writer.WriteStartObject("registration")
+    let writeRegistrationValue (writer: Utf8JsonWriter) (registration: RegistrationInput) =
+        writer.WriteStartObject()
         writer.WriteString("incidentDate", registration.IncidentDate)
         writer.WriteString("incidentNotificationDate", registration.IncidentNotificationDate)
         writer.WriteString("incidentCountry", registration.IncidentCountry)
@@ -157,9 +157,17 @@ module internal Json =
         writer.WriteString("claimedCurrency", registration.ClaimedCurrency)
         writer.WriteEndObject()
 
-    let writeDecision (writer: Utf8JsonWriter) (decision: DecisionInput) =
-        writer.WriteStartObject("decision")
+    let writeRegistration (writer: Utf8JsonWriter) (registration: RegistrationInput) =
+        writer.WritePropertyName("registration")
+        writeRegistrationValue writer registration
+
+    let writeDecisionValue (writer: Utf8JsonWriter) (decision: DecisionInput) =
+        writer.WriteStartObject()
         writer.WriteString("paymentDecisionDate", decision.PaymentDecisionDate)
         writer.WriteString("payableAmount", decision.PayableAmount)
         writer.WriteString("payableCurrency", decision.PayableCurrency)
         writer.WriteEndObject()
+
+    let writeDecision (writer: Utf8JsonWriter) (decision: DecisionInput) =
+        writer.WritePropertyName("decision")
+        writeDecisionValue writer decision

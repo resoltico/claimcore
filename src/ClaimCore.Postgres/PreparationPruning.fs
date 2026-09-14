@@ -5,41 +5,23 @@ open System.IO
 open Npgsql
 open NpgsqlTypes
 
-/// Owner-only pruning of accepted, fully settled, or explicitly dismissed technical preparations.
+/// Owner-only pruning of accepted or durably revoked technical preparations. A rejected attempt is
+/// evidence, not authority closure: it can become valid after later case or business-date changes.
 module PreparationPruning =
     let private candidatesSql =
         """
         WITH candidates AS (
             SELECT p.operation_id
             FROM claimcore.request_preparations p
-            LEFT JOIN claimcore.request_preparation_lifecycle l ON l.operation_id = p.operation_id
             LEFT JOIN claimcore.case_changes c ON c.operation_id = p.operation_id
             WHERE
                 (c.operation_id IS NOT NULL AND c.recorded_at < clock_timestamp() - make_interval(days => @settled))
-                OR (c.operation_id IS NULL AND l.state = 'DISMISSED'
-                    AND l.recorded_at < clock_timestamp() - make_interval(days => @abandoned))
-                OR (c.operation_id IS NULL AND l.state = 'SUBMISSION_STARTED'
-                    AND NOT EXISTS (
-                        SELECT 1 FROM claimcore.request_submission_legacy_uncertainty u
-                        WHERE u.operation_id = p.operation_id
-                    )
-                    AND EXISTS (
-                        SELECT 1 FROM claimcore.request_submission_attempts a
-                        WHERE a.operation_id = p.operation_id
-                    )
-                    AND NOT EXISTS (
-                        SELECT 1 FROM claimcore.request_submission_attempts a
-                        LEFT JOIN claimcore.request_submission_settlements s
-                            ON s.attempt_id = a.attempt_id
-                        WHERE a.operation_id = p.operation_id AND s.attempt_id IS NULL
-                    )
-                    AND (
-                        SELECT max(s.recorded_at)
-                        FROM claimcore.request_submission_attempts a
-                        JOIN claimcore.request_submission_settlements s
-                            ON s.attempt_id = a.attempt_id
-                        WHERE a.operation_id = p.operation_id
-                    ) < clock_timestamp() - make_interval(days => @settled))
+                OR (c.operation_id IS NULL AND EXISTS (
+                    SELECT 1
+                    FROM claimcore.operation_revocations r
+                    WHERE r.operation_id = p.operation_id
+                        AND r.revoked_at < clock_timestamp() - make_interval(days => @abandoned)
+                ))
             ORDER BY p.prepared_at, p.operation_id
             LIMIT @limit
             FOR UPDATE OF p
@@ -103,6 +85,26 @@ module PreparationPruning =
         if command.ExecuteNonQuery() <> 1 then
             raise (InvalidDataException("Preparation prune audit was not recorded."))
 
+    let private terminalFootprint connection transaction =
+        use command =
+            new NpgsqlCommand(
+                "SELECT count(*), COALESCE(sum(octet_length(p.canonical_request)), 0)::bigint "
+                + "FROM claimcore.request_preparations p "
+                + "WHERE EXISTS (SELECT 1 FROM claimcore.case_changes c "
+                + "              WHERE c.operation_id = p.operation_id) "
+                + "OR EXISTS (SELECT 1 FROM claimcore.operation_revocations r "
+                + "           WHERE r.operation_id = p.operation_id)",
+                connection,
+                transaction
+            )
+
+        use reader = command.ExecuteReader()
+
+        if not (reader.Read()) then
+            raise (InvalidDataException("Terminal recovery footprint could not be read."))
+
+        reader.GetInt64(0), reader.GetInt64(1)
+
     let prune connectionString (options: PreparationPruneOptions) =
         PreparationPruneOptions.validate options
         let builder = Migrations.ownerBuilder connectionString
@@ -122,10 +124,13 @@ module PreparationPruning =
                 delete connection transaction options
 
         record connection transaction options candidateCount deletedCount
+        let terminalCount, terminalBytes = terminalFootprint connection transaction
         transaction.Commit()
 
         {
             CandidateCount = candidateCount
             DeletedCount = deletedCount
             DryRun = options.DryRun
+            TerminalPreparationCount = terminalCount
+            TerminalCanonicalRequestBytes = terminalBytes
         }

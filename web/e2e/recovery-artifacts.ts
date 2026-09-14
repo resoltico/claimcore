@@ -122,7 +122,9 @@ export const previewAndRetain = async (
   const payload: unknown = await response.json();
   const endpoint =
     kind === "envelope" ? "recovery.importEnvelopeRetain" : "recovery.importRecordRetain";
-  if (!isWebV2Response(endpoint, payload)) throw new Error("Invalid import-retain response.");
-  expect(["RETAINED", "EXISTING"]).toContain(payload.outcome.tag);
+  if (!(await isWebV2Response(endpoint, payload))) {
+    throw new Error("Invalid import-retain response.");
+  }
+  expect(["RETAINED", "EXISTING"]).toContain((payload as { outcome: { tag: string } }).outcome.tag);
   await expect(dialog).not.toBeVisible();
 };

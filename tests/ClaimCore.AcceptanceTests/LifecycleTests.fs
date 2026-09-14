@@ -188,7 +188,7 @@ let private importArtifacts context envelope record =
         CliV3Fixtures.importRetain "recovery.importEnvelopeRetain" envelope envelopeDigest
         |> call context "recovery.importEnvelopeRetain" 0
 
-    expectKind "existing" envelopeRetain
+    expectKind "observedAccepted" envelopeRetain
 
     use recordPreview =
         CliV3Fixtures.importPreview "recovery.importRecordPreview" record
@@ -207,7 +207,7 @@ let private importArtifacts context envelope record =
         CliV3Fixtures.importRetain "recovery.importRecordRetain" record recordDigest
         |> call context "recovery.importRecordRetain" 0
 
-    expectKind "existing" recordRetain
+    expectKind "observedAccepted" recordRetain
 
 let private lifecycle () =
     let context = DatabaseFixture.current ()

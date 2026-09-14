@@ -44,6 +44,7 @@ let private applyMigration version admin =
 let installMigrationTwo admin = applyMigration 2 admin
 let installMigrationThree admin = applyMigration 3 admin
 let installMigrationFour admin = applyMigration 4 admin
+let installMigrationFive admin = applyMigration 5 admin
 
 let insertLegacyStarted (admin: string) =
     let request = newRequest ()
@@ -148,6 +149,7 @@ let verifyLegacyUncertainty admin app =
     installMigrationThree admin
     Migrations.apply admin
     Migrations.apply admin
+    InstallationBusinessZone.set admin "Etc/UTC"
     assertLegacyProvenance admin legacyStarted
     resolveThroughPublicCore app legacyStarted digest
 

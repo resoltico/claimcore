@@ -69,5 +69,52 @@ let private snapshotVector =
             (withExtraField |> Encoding.UTF8.GetBytes |> CaseRecord.decodeSnapshot)
             "Retained snapshots reject an added claims field")
 
+let private correctionRecord =
+    testCase
+        "CORRECT_CASE uses explicit complete groups without changing historical format-2 vectors"
+        (fun () ->
+            let request =
+                {
+                    OperationId = System.Guid.Parse("20000000-0000-4000-8000-000000000009")
+                    CaseReference = "UNIT-001"
+                    ExpectedVersion = 3L
+                    Command =
+                        Command.CorrectCase
+                            {
+                                Registration = RegistrationCorrection.Keep
+                                Decision =
+                                    DecisionCorrection.Replace
+                                        {
+                                            PaymentDecisionDate = "2026-08-15"
+                                            PayableAmount = "650.00"
+                                            PayableCurrency = "EUR"
+                                        }
+                                Payment = PaymentCorrection.Replace "2026-08-21"
+                            }
+                }
+
+            let expected =
+                "{\"protocolVersion\":2,\"operationId\":\"20000000-0000-4000-8000-000000000009\",\"caseReference\":\"UNIT-001\",\"expectedVersion\":3,\"command\":{\"type\":\"CORRECT_CASE\",\"registration\":{\"mode\":\"KEEP\"},\"decision\":{\"mode\":\"REPLACE\",\"decision\":{\"paymentDecisionDate\":\"2026-08-15\",\"payableAmount\":\"650.00\",\"payableCurrency\":\"EUR\"}},\"payment\":{\"mode\":\"REPLACE\",\"paymentDate\":\"2026-08-21\"}}}"
+
+            let actual = RequestRecord.encode request |> Encoding.UTF8.GetString
+            Expect.equal actual expected "Deterministic grouped command bytes"
+
+            Expect.equal
+                (RequestRecord.decode 65536 (Encoding.UTF8.GetBytes expected))
+                (Ok request)
+                "Round trip"
+
+            let incomplete =
+                expected.Replace(
+                    "\"payment\":{\"mode\":\"REPLACE\",\"paymentDate\":\"2026-08-21\"}",
+                    ""
+                )
+
+            Expect.isError
+                (RequestRecord.decode 65536 (Encoding.UTF8.GetBytes incomplete))
+                "Every group is required")
+
 let tests =
-    testList "stable identity and historical encoding" [ commandVectors; snapshotVector ]
+    testList
+        "stable identity and historical encoding"
+        [ commandVectors; correctionRecord; snapshotVector ]

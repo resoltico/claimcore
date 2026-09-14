@@ -93,6 +93,9 @@ module internal CliResponseMutationSchemas =
                 WireSchema.kind
                     "alreadyDismissed"
                     [ WireSchema.property "details" (RecoveryValueSchemas.detailsCli semantic) ]
+                WireSchema.kind
+                    "alreadyRevoked"
+                    [ WireSchema.property "revocation" RecoveryValueSchemas.revokedOperation ]
                 CliResponseSchemaCommon.operationIdentity "notFound"
                 WireSchema.kind
                     "refused"

@@ -9,27 +9,26 @@ open ClaimCore.Domain
 open ClaimCore.RecordFormat
 open ClaimCore.Tests.Fixtures
 
-let private clock =
-    { new IBusinessDate with
-        member _.Today() = today
-    }
+let private clock = businessTime today
 
-let private draft operationId reference =
+let private draft operationId reference : CommandDraft =
     {
         OperationId = operationId
         CaseReference = reference
         ExpectedVersion = 0L
-        Kind = CommandKind.Open
-        Values =
-            [
-                "incidentDate", registration.IncidentDate
-                "incidentNotificationDate", registration.IncidentNotificationDate
-                "incidentCountry", registration.IncidentCountry
-                "claimantName", registration.ClaimantName
-                "insurerName", registration.InsurerName
-                "claimedAmount", registration.ClaimedAmount
-                "claimedCurrency", registration.ClaimedCurrency
-            ]
+        Command =
+            DraftCommand.Flat(
+                CommandKind.Open,
+                [
+                    "incidentDate", registration.IncidentDate
+                    "incidentNotificationDate", registration.IncidentNotificationDate
+                    "incidentCountry", registration.IncidentCountry
+                    "claimantName", registration.ClaimantName
+                    "insurerName", registration.InsurerName
+                    "claimedAmount", registration.ClaimedAmount
+                    "claimedCurrency", registration.ClaimedCurrency
+                ]
+            )
     }
 
 let private await (task: System.Threading.Tasks.Task<'value>) = task.GetAwaiter().GetResult()
@@ -45,10 +44,13 @@ let private exactAcceptedReplay =
         (fun () ->
             let claims = new CoreStore.Store()
             let recovery = new CoreRecoveryStore.Store()
+            recovery.AttachClaimStore(claims :> IClaimStore)
             let core = CoreApi.create claims recovery clock
             let operationId = Guid.NewGuid()
             let input = draft operationId "REPLAY-ACCEPTED"
-            let first = core.Prepare(input, CancellationToken.None) |> await |> prepared
+
+            let first =
+                core.Prepare(boundRequest input, CancellationToken.None) |> await |> prepared
 
             let digest =
                 first.Summary.RequestSha256 |> Option.defaultWith (fun () -> failtest "Digest")
@@ -57,7 +59,7 @@ let private exactAcceptedReplay =
             | ResolveOutcome.ResolveCompleted(_, _, DefiniteExecution.Accepted _, _) -> ()
             | _ -> failtest "The original exact operation must accept."
 
-            match core.Prepare(input, CancellationToken.None) |> await with
+            match core.Prepare(boundRequest input, CancellationToken.None) |> await with
             | PrepareOutcome.ObservedAccepted receipt ->
                 Expect.equal receipt.OperationId operationId "Same accepted operation"
                 Expect.isTrue receipt.Replayed "Accepted observation is content-bound replay"
@@ -68,21 +70,23 @@ let private retainedAfterOtherChange =
     testCase
         "[CC-REC-001] exact retained Prepare retry after another commit directs Recovery"
         (fun () ->
-            let core =
-                CoreApi.create
-                    (new CoreStore.Store() :> IClaimStore)
-                    (new CoreRecoveryStore.Store() :> IRecoveryStore)
-                    clock
+            let claims = new CoreStore.Store()
+            let recovery = new CoreRecoveryStore.Store()
+            recovery.AttachClaimStore(claims :> IClaimStore)
+            let core = CoreApi.create (claims :> IClaimStore) (recovery :> IRecoveryStore) clock
 
             let original = draft (Guid.NewGuid()) "REPLAY-STALE"
-            let first = core.Prepare(original, CancellationToken.None) |> await |> prepared
+
+            let first =
+                core.Prepare(boundRequest original, CancellationToken.None) |> await |> prepared
+
             let competing = draft (Guid.NewGuid()) "REPLAY-STALE"
 
-            match core.Execute(competing, CancellationToken.None) |> await with
+            match core.Execute(boundRequest competing, CancellationToken.None) |> await with
             | SubmissionOutcome.Completed(_, _, DefiniteExecution.Accepted _, _) -> ()
             | _ -> failtest "A distinct operation must advance the case."
 
-            match core.Prepare(original, CancellationToken.None) |> await with
+            match core.Prepare(boundRequest original, CancellationToken.None) |> await with
             | PrepareOutcome.RetainedForRecovery(details, reason) ->
                 Expect.equal
                     details.Summary.OperationId
@@ -128,11 +132,17 @@ let private spoofedDigestCannotBypassBytes =
                 )
 
             let claims = new CoreStore.Store()
+            recovery.AttachClaimStore(claims :> IClaimStore)
             let core = CoreApi.create claims recovery clock
-            core.Prepare(original, CancellationToken.None) |> await |> prepared |> ignore
+
+            core.Prepare(boundRequest original, CancellationToken.None)
+            |> await
+            |> prepared
+            |> ignore
+
             spoof <- true
 
-            match core.Execute(original, CancellationToken.None) |> await with
+            match core.Execute(boundRequest original, CancellationToken.None) |> await with
             | SubmissionOutcome.RejectedBeforeAttempt(_, reason) ->
                 Expect.equal
                     reason.Code
@@ -147,11 +157,10 @@ let private atomicImportOutcome =
     testCase
         "[CC-REC-001] concurrent canonical imports classify creator and existing replay"
         (fun () ->
-            let core =
-                CoreApi.create
-                    (new CoreStore.Store() :> IClaimStore)
-                    (new CoreRecoveryStore.Store() :> IRecoveryStore)
-                    clock
+            let claims = new CoreStore.Store()
+            let recovery = new CoreRecoveryStore.Store()
+            recovery.AttachClaimStore(claims :> IClaimStore)
+            let core = CoreApi.create (claims :> IClaimStore) (recovery :> IRecoveryStore) clock
 
             let canonical =
                 draft (Guid.NewGuid()) "IMPORT-ATOMIC"

@@ -14,6 +14,16 @@ type PreparationState =
     | Unsubmitted
     | SubmissionStarted
     | Dismissed
+    | Revoked
+
+type RecoveryListView =
+    | Pending
+    | Terminal
+
+type RecoveryAuthority =
+    | PendingAuthority
+    | AcceptedAuthority
+    | RevokedAuthority
 
 type PreparationSummary =
     {
@@ -22,6 +32,7 @@ type PreparationSummary =
         Command: CommandKind
         PreparedAt: DateTimeOffset
         State: PreparationState
+        Authority: RecoveryAuthority
         RequestSha256: string option
         AvailableActions: RecoveryAction list
     }
@@ -34,6 +45,13 @@ type PreparationAttempt =
         SettledAt: DateTimeOffset option
     }
 
+type PreparationAttemptPage =
+    {
+        Items: PreparationAttempt list
+        NextCursor: string option
+        LegacyUncertainty: bool
+    }
+
 type PreparationDetails =
     {
         Summary: PreparationSummary
@@ -43,15 +61,36 @@ type PreparationDetails =
         PreparingApplicationVersion: string
         PreparingContractFingerprint: string
         PreparingContractKind: string
-        Attempts: PreparationAttempt list
-        LegacyUncertainty: bool
+        Attempts: PreparationAttemptPage
     }
 
 /// A bounded recovery page deliberately excludes authored values and provenance.
+type RevokedOperation =
+    {
+        OperationId: Guid
+        RevokedAt: DateTimeOffset
+        Reason: string
+    }
+
+/// A terminal recovery list deliberately distinguishes retained technical evidence from a compact
+/// durable revocation whose preparation has been intentionally pruned. Tombstones never reveal
+/// authored values, case references, or command content.
+type RecoveryListItem =
+    | RetainedRecoveryItem of PreparationSummary
+    | RevokedRecoveryItem of RevokedOperation
+
+/// The bounded recovery list defaults to Pending at every transport boundary. The terminal view is
+/// explicit because it is an operator audit view, rather than work needing action.
 type RecoveryPage =
     {
-        Items: PreparationSummary list
+        View: RecoveryListView
+        Items: RecoveryListItem list
         NextCursor: string option
+        PendingPreparationCount: int
+        PendingCanonicalRequestBytes: int64
+        MaximumPendingPreparations: int
+        MaximumPendingCanonicalRequestBytes: int64
+        NearCapacity: bool
     }
 
 /// Detailed recovery inspection is the only recovery read that exposes retained authored values.
@@ -61,6 +100,10 @@ type RecoveryDetails =
         Preparation: PreparationDetails
         Observation: Lookup<OperationReceipt, Guid>
     }
+
+type RecoveryInspection =
+    | RetainedInspection of RecoveryDetails
+    | RevokedInspection of RevokedOperation
 
 type RecoveryRejectionCode =
     | InvalidRecoveryInput
@@ -72,6 +115,8 @@ type RecoveryRejectionCode =
     | SourceDigestMismatch
     | InstallationMismatch
     | UnsupportedRecoveryArtifact
+    | OperationRevoked
+    | AttemptLimitReached
 
 type RecoveryRejection =
     {
@@ -132,6 +177,7 @@ type ResolveOutcome =
 type RecoveryDismissOutcome =
     | DismissedPreparation of PreparationDetails
     | AlreadyDismissedPreparation of PreparationDetails
+    | AlreadyRevoked of RevokedOperation
     | DismissNotFound of Guid
     | DismissRefused of details: PreparationDetails option * rejection: RecoveryRejection
     | DismissFailed of CoreFault
@@ -172,6 +218,7 @@ type RecoveryImportPreview =
 type RecoveryImportRetainOutcome =
     | RetainedPreparation of PreparationDetails
     | ExistingPreparation of PreparationDetails
+    | ObservedAcceptedImport of OperationReceipt
     | ImportRejected of RecoveryRejection
     | ImportFailed of CoreFault
     | ImportCancelledBeforeAdmission
@@ -183,12 +230,18 @@ type RecoveryImportRetainOutcome =
 
 type IRecoveryWorkflow =
     abstract List:
-        afterCursor: string option * limit: int * cancellationToken: CancellationToken ->
+        view: RecoveryListView *
+        afterCursor: string option *
+        limit: int *
+        cancellationToken: CancellationToken ->
             Task<RecoveryQueryOutcome<RecoveryPage>>
 
     abstract Inspect:
-        operationId: Guid * cancellationToken: CancellationToken ->
-            Task<RecoveryQueryOutcome<Lookup<RecoveryDetails, Guid>>>
+        operationId: Guid *
+        afterCursor: string option *
+        limit: int *
+        cancellationToken: CancellationToken ->
+            Task<RecoveryQueryOutcome<Lookup<RecoveryInspection, Guid>>>
 
     abstract Resolve:
         operationId: Guid * requestSha256: string * cancellationToken: CancellationToken ->

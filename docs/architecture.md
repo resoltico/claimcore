@@ -80,8 +80,8 @@ Normal native callers use the endpoint-typed facade:
 ```fsharp
 type IClaimsCore =
     abstract Describe: unit -> CoreDescription
-    abstract Prepare: CommandDraft * CancellationToken -> Task<PrepareOutcome>
-    abstract Execute: CommandDraft * CancellationToken -> Task<SubmissionOutcome>
+    abstract Prepare: CommandRequest * CancellationToken -> Task<PrepareOutcome>
+    abstract Execute: CommandRequest * CancellationToken -> Task<SubmissionOutcome>
     abstract Get: string * CancellationToken -> Task<QueryOutcome<Lookup<CurrentCase, string>>>
     abstract List: CaseListRequest * CancellationToken -> Task<QueryOutcome<CaseSummaryPage>>
     abstract History: HistoryRequest * CancellationToken -> Task<QueryOutcome<Lookup<HistoryResultPage, string>>>
@@ -118,9 +118,11 @@ as cancellation or failure by concurrent disposal.
 
 ## Transaction and recovery path
 
-1. A CLI or Web adapter decodes an exact endpoint body into a `CommandDraft` or endpoint request.
-2. Application validates and binds the draft, preserves its operation ID and authored values, and
-   derives canonical format-2 request bytes and their SHA-256 identity.
+1. A CLI or Web adapter decodes an exact endpoint body into its form shape and uses the one pure
+   Application binder to create the closed Domain `CommandRequest`. Native callers supply that
+   closed request directly.
+2. Application revalidates the request, preserves its operation ID and authored values, and derives
+   canonical format-2 request bytes and their SHA-256 identity.
 3. `Prepare` checks accepted operation identity and stored request fingerprint first. An exact
    accepted request returns its receipt even if technical preparation was pruned; a same-ID conflict
    discloses no receipt. Otherwise it checks retained identity, obtains a Domain advisory review for
@@ -128,20 +130,25 @@ as cancellation or failure by concurrent disposal.
    A retained request that is no longer reviewable reports `RetainedForRecovery`; a technical write
    whose completion cannot be established returns an explicit unknown outcome.
 4. `Execute` and `Recovery.Resolve` check accepted identity before technical recovery. For a new
-   attempt, they serialize the exact operation, revalidate it under PostgreSQL transaction locks,
-   apply the Domain transition, and retain the receipt atomically when accepted.
+   attempt, PostgreSQL serializes operation authority before the case lock, rechecks accepted and
+   revoked identity, applies the pure Domain transition, and co-commits a receipt with its definite
+   accepted settlement. A durable revocation ends future execution authority even after an attempt
+   was admitted; it never rewrites earlier uncertainty.
 5. Recovery attempt admission and settlement are separate technical dimensions. A definite business
    result is not replaced by an unconfirmed settlement; unresolved and unknown outcomes remain
-   recoverable.
+   recoverable. Pending recovery capacity is separate from retained terminal evidence, attempt
+   inspection is keyset-paged, and pruned revocations remain payload-free tombstones.
 6. CLI and Web render the endpoint-specific result without rebasing, inventing an operation ID, or
    inferring non-commit.
 
-PostgreSQL detailed recovery reads project actual attempt IDs and their settlements plus the
-independent pre-003 uncertainty marker. Application keeps these separate from producer provenance and
-accepted claim history. Before a technical COMMIT begins, cancellation can prove a rollback and yield
-a definite cancelled outcome. Once COMMIT starts, its result is not cancellable into a claim of
-non-commit: lost confirmation remains explicitly unknown. An unconfirmed technical settlement never
-erases a definite business receipt.
+PostgreSQL detailed recovery reads project actual attempt IDs and their settlements through a bounded
+operation-bound keyset page, plus the independent pre-003 uncertainty marker. Application keeps these
+separate from producer provenance and accepted claim history. Before a technical COMMIT begins,
+cancellation can prove a rollback and yield a definite cancelled outcome. Once COMMIT starts, its
+result is not cancellable into a claim of non-commit: lost confirmation remains explicitly unknown.
+An unconfirmed technical settlement never erases a definite business receipt. Runtime business dates
+come from one stored installation IANA zone and one captured instant, not process-local calendar or
+zone settings.
 
 <a id="cc-app-001"></a>
 ### CC-APP-001 — Business rejection preserves durable business state

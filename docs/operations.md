@@ -37,11 +37,11 @@ authorization and disclosure rules.
   checkout is a suitable private location when its permissions and retention are controlled.
 
 Migration and retention credentials own schema administration and must never be used as application
-credentials. Upgrading through migration 005 requires planned downtime: stop local CLI and Web
+credentials. Upgrading through migration 006 requires planned downtime: stop local CLI and Web
 sessions, take the operator's backup, apply ordered migrations with the schema-owner Database
-executable, then start current applications. The 004 provenance generalization and 005 read-only
-legacy-marker grant preserve adopted records, format-2 request bytes, preparations, attempts,
-settlements, lineage, and legacy provenance bytes; neither reinterprets an old operation.
+executable, configure the immutable installation business time zone, then start current applications.
+Migrations 004–006 preserve adopted records, format-2 request bytes, preparations, attempts,
+settlements, lineage, and legacy provenance bytes; none reinterprets an old operation.
 Test credentials and containers must point only to disposable synthetic databases. Browser downloads
 and the operating-system clipboard leave ClaimCore's process boundary; see the
 [Web reference](web.md#recovery-downloads-and-clipboard).
@@ -49,17 +49,20 @@ and the operating-system clipboard leave ClaimCore's process boundary; see the
 ## Data and recovery
 
 History preserves prior facts after corrections. There is no general deletion, redaction, backup, or
-restore workflow. The supplied `ClaimCore.Database prune` command removes only bounded, provably
-settled or explicitly dismissed technical preparations; it never deletes accepted claim history.
+restore workflow. The supplied `ClaimCore.Database prune` command removes only bounded accepted or
+durably revoked technical preparations; it never deletes accepted claim history or durable revocation
+authority.
 Schema owners retain unrestricted administrative power outside that command. Recovery files contain
 claimant data and do not prove that a command committed. Submission attempts and their definite
 technical settlements are recovery evidence, not accepted claim history; an accepted operation
 receipt independently proves acceptance.
 
-Detailed recovery inspection shows actual identified attempts and their definite settlements, plus
+Detailed recovery inspection pages actual identified attempts and their definite settlements, plus
 the independent pre-003 uncertainty marker. An unset settlement or inherited marker remains explicit
 even after a later definite attempt; never treat a bounded list or a momentarily absent receipt as
-proof of non-commit.
+proof of non-commit. A post-006 revocation prevents future execution even after an earlier attempt
+was admitted; it does not rewrite what was already uncertain. A pre-006 dismissal whose full
+preparation was pruned cannot be reconstructed, so reconciling an older backup remains operator work.
 
 For an uncertain mutation, preserve and replay only the exact CLI-v3 operation identity and retained
 format-2 request or recovery-envelope bytes described in

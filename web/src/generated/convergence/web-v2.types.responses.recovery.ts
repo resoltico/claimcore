@@ -4,22 +4,18 @@ import type {
   DefiniteExecution,
   PreparationDetails,
   PreparationSummary,
-  RecoveryDetails,
   RecoveryImportPreview,
+  RecoveryInspection,
+  RecoveryPage,
   RecoveryRejection,
+  RevokedOperation,
 } from "./web-v2.types.recovery";
 
 export type WebV2RecoveryResponseByEndpoint = {
   readonly "recovery.list": {
     readonly endpoint: "recovery.list";
     readonly outcome:
-      | {
-          readonly tag: "SUCCEEDED";
-          readonly data: {
-            readonly items: ReadonlyArray<PreparationSummary>;
-            readonly nextCursor: string | null;
-          };
-        }
+      | { readonly tag: "SUCCEEDED"; readonly data: RecoveryPage }
       | { readonly tag: "REJECTED"; readonly data: RecoveryRejection }
       | { readonly tag: "FAILED"; readonly data: Fault }
       | { readonly tag: "CANCELLED"; readonly data: null };
@@ -30,7 +26,7 @@ export type WebV2RecoveryResponseByEndpoint = {
       | {
           readonly tag: "SUCCEEDED";
           readonly data:
-            | { readonly tag: "FOUND"; readonly value: RecoveryDetails }
+            | { readonly tag: "FOUND"; readonly value: RecoveryInspection }
             | { readonly tag: "NOT_FOUND"; readonly identity: string };
         }
       | { readonly tag: "REJECTED"; readonly data: RecoveryRejection }
@@ -87,6 +83,7 @@ export type WebV2RecoveryResponseByEndpoint = {
     readonly outcome:
       | { readonly tag: "DISMISSED"; readonly data: PreparationDetails }
       | { readonly tag: "ALREADY_DISMISSED"; readonly data: PreparationDetails }
+      | { readonly tag: "ALREADY_REVOKED"; readonly data: RevokedOperation }
       | { readonly tag: "NOT_FOUND"; readonly data: { readonly operationId: string } }
       | {
           readonly tag: "REFUSED";
@@ -130,6 +127,7 @@ export type WebV2RecoveryResponseByEndpoint = {
     readonly outcome:
       | { readonly tag: "RETAINED"; readonly data: PreparationDetails }
       | { readonly tag: "EXISTING"; readonly data: PreparationDetails }
+      | { readonly tag: "OBSERVED_ACCEPTED"; readonly data: { readonly receipt: Receipt } }
       | { readonly tag: "REJECTED"; readonly data: RecoveryRejection }
       | { readonly tag: "FAILED"; readonly data: Fault }
       | { readonly tag: "CANCELLED_BEFORE_ADMISSION"; readonly data: null }
@@ -156,6 +154,7 @@ export type WebV2RecoveryResponseByEndpoint = {
     readonly outcome:
       | { readonly tag: "RETAINED"; readonly data: PreparationDetails }
       | { readonly tag: "EXISTING"; readonly data: PreparationDetails }
+      | { readonly tag: "OBSERVED_ACCEPTED"; readonly data: { readonly receipt: Receipt } }
       | { readonly tag: "REJECTED"; readonly data: RecoveryRejection }
       | { readonly tag: "FAILED"; readonly data: Fault }
       | { readonly tag: "CANCELLED_BEFORE_ADMISSION"; readonly data: null }

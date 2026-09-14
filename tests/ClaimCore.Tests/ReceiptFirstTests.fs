@@ -8,27 +8,26 @@ open ClaimCore.Application
 open ClaimCore.Domain
 open ClaimCore.Tests.Fixtures
 
-let private clock =
-    { new IBusinessDate with
-        member _.Today() = today
-    }
+let private clock = businessTime today
 
-let private draft operationId reference =
+let private draft operationId reference : CommandDraft =
     {
         OperationId = operationId
         CaseReference = reference
         ExpectedVersion = 0L
-        Kind = CommandKind.Open
-        Values =
-            [
-                "incidentDate", registration.IncidentDate
-                "incidentNotificationDate", registration.IncidentNotificationDate
-                "incidentCountry", registration.IncidentCountry
-                "claimantName", registration.ClaimantName
-                "insurerName", registration.InsurerName
-                "claimedAmount", registration.ClaimedAmount
-                "claimedCurrency", registration.ClaimedCurrency
-            ]
+        Command =
+            DraftCommand.Flat(
+                CommandKind.Open,
+                [
+                    "incidentDate", registration.IncidentDate
+                    "incidentNotificationDate", registration.IncidentNotificationDate
+                    "incidentCountry", registration.IncidentCountry
+                    "claimantName", registration.ClaimantName
+                    "insurerName", registration.InsurerName
+                    "claimedAmount", registration.ClaimedAmount
+                    "claimedCurrency", registration.ClaimedCurrency
+                ]
+            )
     }
 
 let private await (operation: Threading.Tasks.Task<'value>) = operation.GetAwaiter().GetResult()
@@ -42,8 +41,9 @@ let private acceptDirectly (claims: CoreStore.Store) input =
     | Ok receipt -> receipt
     | Error _ -> failtest "Synthetic direct command must accept."
 
-let private core claims recovery =
-    CoreApi.create (claims :> IClaimStore) (recovery :> IRecoveryStore) clock
+let private core (claims: IClaimStore) (recovery: CoreRecoveryStore.Store) =
+    recovery.AttachClaimStore claims
+    CoreApi.create claims (recovery :> IRecoveryStore) clock
 
 type private LostConfirmationStore() =
     let inner = new CoreStore.Store()
@@ -87,15 +87,15 @@ let private acceptedWithoutPreparation =
 
             let input = draft (Guid.NewGuid()) "RECEIPT-FIRST"
             let original = acceptDirectly claims input
-            let runtime = core claims recovery
+            let runtime = core (claims :> IClaimStore) recovery
 
-            match runtime.Prepare(input, CancellationToken.None) |> await with
+            match runtime.Prepare(boundRequest input, CancellationToken.None) |> await with
             | PrepareOutcome.ObservedAccepted receipt ->
                 Expect.equal receipt.OperationId original.OperationId "Exact operation identity"
                 Expect.isTrue receipt.Replayed "Accepted history is replayed"
             | _ -> failtest "Prepare must observe accepted history before recovery."
 
-            match runtime.Execute(input, CancellationToken.None) |> await with
+            match runtime.Execute(boundRequest input, CancellationToken.None) |> await with
             | SubmissionOutcome.ObservedAccepted receipt ->
                 Expect.equal receipt.Snapshot.Version 1L "No second revision"
             | _ -> failtest "Execute must observe accepted history before recovery."
@@ -120,14 +120,14 @@ let private acceptedConflict =
                     CaseReference = "OTHER-REFERENCE"
                 }
 
-            let runtime = core claims recovery
+            let runtime = core (claims :> IClaimStore) recovery
 
-            match runtime.Prepare(conflicting, CancellationToken.None) |> await with
+            match runtime.Prepare(boundRequest conflicting, CancellationToken.None) |> await with
             | PrepareOutcome.PrepareRejected(_, rejection) ->
                 Expect.equal rejection.Code RejectionCode.IdempotencyConflict "Identity conflict"
             | _ -> failtest "Prepare must not disclose a different accepted receipt."
 
-            match runtime.Execute(conflicting, CancellationToken.None) |> await with
+            match runtime.Execute(boundRequest conflicting, CancellationToken.None) |> await with
             | SubmissionOutcome.RejectedBeforeAttempt(None, rejection) ->
                 Expect.equal rejection.Code RejectionCode.IdempotencyConflict "Identity conflict"
             | _ -> failtest "Execute must not disclose a different accepted receipt."
@@ -146,15 +146,15 @@ let private cancellationAfterObservation =
             let recovery = new CoreRecoveryStore.Store()
             let input = draft (Guid.NewGuid()) "RECEIPT-CANCEL"
             acceptDirectly claims input |> ignore
-            let runtime = core claims recovery
+            let runtime = core (claims :> IClaimStore) recovery
 
-            match runtime.Prepare(input, preparationCancellation.Token) |> await with
+            match runtime.Prepare(boundRequest input, preparationCancellation.Token) |> await with
             | PrepareOutcome.ObservedAccepted _ -> ()
             | _ -> failtest "Observed acceptance must not be relabelled cancellation."
 
             current <- executionCancellation
 
-            match runtime.Execute(input, executionCancellation.Token) |> await with
+            match runtime.Execute(boundRequest input, executionCancellation.Token) |> await with
             | SubmissionOutcome.ObservedAccepted _ -> ()
             | _ -> failtest "Observed acceptance must not be relabelled cancellation."
 
@@ -166,10 +166,11 @@ let private lostCommitConfirmation =
         (fun () ->
             let claims = new LostConfirmationStore()
             let recovery = new CoreRecoveryStore.Store()
+            recovery.AttachClaimStore(claims :> IClaimStore)
             let runtime = CoreApi.create claims recovery clock
             let input = draft (Guid.NewGuid()) "RECEIPT-UNCERTAIN"
 
-            match runtime.Execute(input, CancellationToken.None) |> await with
+            match runtime.Execute(boundRequest input, CancellationToken.None) |> await with
             | SubmissionOutcome.AttemptUnresolved(_, _, fault) ->
                 Expect.equal
                     fault.Code
@@ -179,7 +180,7 @@ let private lostCommitConfirmation =
 
             let recoveryReads = recovery.GetCalls
 
-            match runtime.Execute(input, CancellationToken.None) |> await with
+            match runtime.Execute(boundRequest input, CancellationToken.None) |> await with
             | SubmissionOutcome.ObservedAccepted receipt ->
                 Expect.equal receipt.Snapshot.Version 1L "One accepted revision"
             | _ -> failtest "Exact retry must find accepted history before recovery."
@@ -197,15 +198,15 @@ let private acceptedReadFailure =
         (fun () ->
             let claims = new CoreStore.Store(acceptedFailure = CoreFailure.StoreUnavailable)
             let recovery = new CoreRecoveryStore.Store()
-            let runtime = core claims recovery
+            let runtime = core (claims :> IClaimStore) recovery
             let input = draft (Guid.NewGuid()) "RECEIPT-FAULT"
 
-            match runtime.Prepare(input, CancellationToken.None) |> await with
+            match runtime.Prepare(boundRequest input, CancellationToken.None) |> await with
             | PrepareOutcome.PrepareFailed(_, fault) ->
                 Expect.equal fault.Code FaultCode.StoreUnavailable "Fail closed"
             | _ -> failtest "Prepare must not treat failed receipt read as missing."
 
-            match runtime.Execute(input, CancellationToken.None) |> await with
+            match runtime.Execute(boundRequest input, CancellationToken.None) |> await with
             | SubmissionOutcome.FailedBeforeAttempt(None, fault) ->
                 Expect.equal fault.Code FaultCode.StoreUnavailable "Fail closed"
             | _ -> failtest "Execute must not treat failed receipt read as missing."
@@ -219,11 +220,11 @@ let private retainedIdentityPrivacy =
         (fun () ->
             let claims = new CoreStore.Store()
             let recovery = new CoreRecoveryStore.Store()
-            let runtime = core claims recovery
+            let runtime = core (claims :> IClaimStore) recovery
             let input = draft (Guid.NewGuid()) "RETAINED-PRIVATE"
 
             let digest =
-                match runtime.Prepare(input, CancellationToken.None) |> await with
+                match runtime.Prepare(boundRequest input, CancellationToken.None) |> await with
                 | PrepareOutcome.Prepared(details, _) ->
                     details.Summary.RequestSha256
                     |> Option.defaultWith (fun () -> failtest "Synthetic digest is required.")
@@ -263,7 +264,7 @@ let private retainedIdentityPrivacy =
                     CaseReference = "OTHER-RETAINED"
                 }
 
-            match runtime.Execute(conflicting, CancellationToken.None) |> await with
+            match runtime.Execute(boundRequest conflicting, CancellationToken.None) |> await with
             | SubmissionOutcome.RejectedBeforeAttempt(None, rejection) ->
                 Expect.equal rejection.Code RejectionCode.IdempotencyConflict "Request conflict"
             | _ -> failtest "Wrong request bytes must not disclose retained preparation.")

@@ -101,13 +101,46 @@ module WebTypeScript =
                     ]
             ]
 
+    let private correctionGroupDescriptor =
+        WireSchema.objectOf
+            [
+                WireSchema.property "name" WireSchema.text
+                WireSchema.property "label" WireSchema.text
+                WireSchema.property "meaning" WireSchema.text
+                WireSchema.property
+                    "actions"
+                    (WireSchema.array (WireSchema.enumeration [ "KEEP"; "REPLACE"; "CLEAR" ]))
+                WireSchema.property
+                    "replaceFields"
+                    (WireSchema.array (reference "CommandInputDescriptor"))
+            ]
+
+    let private commandInputShape =
+        Schema.oneOf
+            [
+                WireSchema.objectOf
+                    [
+                        WireSchema.property "kind" (WireSchema.token "FIELDS")
+                        WireSchema.property
+                            "fields"
+                            (WireSchema.array (reference "CommandInputDescriptor"))
+                    ]
+                WireSchema.objectOf
+                    [
+                        WireSchema.property "kind" (WireSchema.token "CORRECTION_GROUPS")
+                        WireSchema.property
+                            "groups"
+                            (WireSchema.array (reference "CorrectionGroupDescriptor"))
+                    ]
+            ]
+
     let private commandDescriptor =
         WireSchema.objectOf
             [
                 WireSchema.property "kind" CoreValueSchemas.command
                 WireSchema.property "label" WireSchema.text
                 WireSchema.property "meaning" WireSchema.text
-                WireSchema.property "inputs" (WireSchema.array (reference "CommandInputDescriptor"))
+                WireSchema.property "inputs" (reference "CommandInputShape")
             ]
 
     let private semanticDefinition (semantic: SemanticCoreContract) =
@@ -145,21 +178,6 @@ module WebTypeScript =
                     ))
             ]
 
-    let private commandDraft =
-        WireSchema.objectOf
-            [
-                WireSchema.property "operationId" WireSchema.uuid
-                WireSchema.property "caseReference" WireSchema.text
-                WireSchema.property "expectedRevision" WireSchema.revision
-                WireSchema.property
-                    "command"
-                    (WireSchema.objectOf
-                        [
-                            WireSchema.property "kind" CoreValueSchemas.command
-                            WireSchema.property "values" (Schema.dictionary WireSchema.text)
-                        ])
-            ]
-
     let private definitions projection =
         WebSchemaDefinitions.all projection.Semantic projection.DefinitionSchema.Root
         |> Map.ofList
@@ -173,12 +191,14 @@ module WebTypeScript =
             [
                 "FieldDescriptor", fieldDescriptor
                 "CommandInputDescriptor", commandInputDescriptor
+                "CorrectionGroupDescriptor", correctionGroupDescriptor
+                "CommandInputShape", commandInputShape
                 "CommandDescriptor", commandDescriptor
                 "SemanticDefinition", semanticDefinition projection.Semantic
             ]
             []
 
-    let private coreModule values =
+    let private coreModule projection values =
         let aliases =
             fromDefinitions
                 [
@@ -198,7 +218,7 @@ module WebTypeScript =
                     "FieldDiff"
                 ]
                 values
-            @ [ "CommandDraft", commandDraft ]
+            @ [ "CommandDraft", ProjectionSchema.commandDraft projection.Semantic ]
 
         moduleBytes
             [ "import type { SemanticDefinition } from \"./web-v2.types.semantic\";" ]
@@ -211,10 +231,14 @@ module WebTypeScript =
                 [
                     "RecoveryRejection"
                     "PreparationSummary"
+                    "RevokedOperation"
                     "PreparationDetails"
+                    "RecoveryListItem"
+                    "RecoveryPage"
                     "AdvisoryReview"
                     "RecoveryImportPreview"
                     "RecoveryDetails"
+                    "RecoveryInspection"
                     "DefiniteExecution"
                 ]
                 values
@@ -243,7 +267,7 @@ module WebTypeScript =
 
         [
             "web-v2.types.semantic.ts", semanticModule projection
-            "web-v2.types.core.ts", coreModule values
+            "web-v2.types.core.ts", coreModule projection values
             "web-v2.types.recovery.ts", recoveryModule values
             "web-v2.types.ts", barrel
         ]

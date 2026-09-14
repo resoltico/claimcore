@@ -46,6 +46,13 @@ module internal CliWireImports =
         CliWireValues.preparationDetails writer value
         writer.WriteEndObject()
 
+    let private accepted (writer: Utf8JsonWriter) receipt =
+        writer.WriteStartObject()
+        writer.WriteString("kind", "observedAccepted")
+        writer.WritePropertyName("receipt")
+        CliWireValues.receipt false writer receipt
+        writer.WriteEndObject()
+
     let preview (writer: Utf8JsonWriter) (outcome: RecoveryQueryOutcome<RecoveryImportPreview>) =
         match outcome with
         | RecoveryQueryOutcome.RecoverySucceeded value ->
@@ -69,6 +76,7 @@ module internal CliWireImports =
             detailsOutcome writer "retained" details
         | RecoveryImportRetainOutcome.ExistingPreparation details ->
             detailsOutcome writer "existing" details
+        | RecoveryImportRetainOutcome.ObservedAcceptedImport receipt -> accepted writer receipt
         | RecoveryImportRetainOutcome.ImportRejected rejection ->
             writer.WriteStartObject()
             writer.WriteString("kind", "rejected")

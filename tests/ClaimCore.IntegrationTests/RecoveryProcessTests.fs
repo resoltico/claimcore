@@ -19,26 +19,10 @@ let private openRuntime () =
     |> Result.defaultWith (fun _ ->
         failtest "Runtime must open for synthetic recovery qualification.")
 
-let private draft operationId reference =
-    {
-        OperationId = operationId
-        CaseReference = reference
-        ExpectedVersion = 0L
-        Kind = CommandKind.Open
-        Values =
-            [
-                "incidentDate", registration.IncidentDate
-                "incidentNotificationDate", registration.IncidentNotificationDate
-                "incidentCountry", registration.IncidentCountry
-                "claimantName", registration.ClaimantName
-                "insurerName", registration.InsurerName
-                "claimedAmount", registration.ClaimedAmount
-                "claimedCurrency", registration.ClaimedCurrency
-            ]
-    }
+let private request operationId reference = openRequest operationId reference
 
 let private prepare (core: IClaimsCore) operationId reference =
-    match core.Prepare(draft operationId reference, CancellationToken.None) |> await with
+    match core.Prepare(request operationId reference, CancellationToken.None) |> await with
     | PrepareOutcome.Prepared(details, _) ->
         let digest =
             details.Summary.RequestSha256
@@ -77,8 +61,11 @@ let private validateEnvelope operationId digest (artifact: RecoveryExport) =
         "Exact canonical request bytes"
 
 let private assertUnsubmitted (core: IClaimsCore) operationId =
-    match core.Recovery.Inspect(operationId, CancellationToken.None) |> await with
-    | RecoveryQueryOutcome.RecoverySucceeded(Lookup.Found details) ->
+    match
+        core.Recovery.Inspect(operationId, None, recoveryPageLimit, CancellationToken.None)
+        |> await
+    with
+    | RecoveryQueryOutcome.RecoverySucceeded(Lookup.Found(RecoveryInspection.RetainedInspection details)) ->
         Expect.equal
             details.Preparation.Summary.State
             PreparationState.Unsubmitted
@@ -166,16 +153,12 @@ let private acceptedReceiptCannotBeDismissed () =
     use runtime = openRuntime ()
     let operationId = Guid.NewGuid()
     let reference = "RECOVERY-" + Guid.NewGuid().ToString("N")
-    let command = draft operationId reference
+    let command = request operationId reference
     let _, digest = prepare runtime.Core operationId reference
-
-    let request =
-        Drafts.bind command
-        |> Result.defaultWith (fun _ -> failtest "Synthetic accepted command must bind.")
 
     use database = store ()
 
-    Service.executeAsync (database :> IClaimStore) clock request
+    Service.executeAsync (database :> IClaimStore) clock command
     |> await
     |> accepted
     |> ignore
@@ -191,8 +174,11 @@ let private acceptedReceiptCannotBeDismissed () =
             "Accepted receipt cannot be dismissed even without a submission marker"
     | _ -> failtest "A retained accepted receipt must block dismissal."
 
-    match runtime.Core.Recovery.Inspect(operationId, CancellationToken.None) |> await with
-    | RecoveryQueryOutcome.RecoverySucceeded(Lookup.Found details) ->
+    match
+        runtime.Core.Recovery.Inspect(operationId, None, recoveryPageLimit, CancellationToken.None)
+        |> await
+    with
+    | RecoveryQueryOutcome.RecoverySucceeded(Lookup.Found(RecoveryInspection.RetainedInspection details)) ->
         Expect.equal details.Preparation.Summary.State PreparationState.Unsubmitted "No marker"
 
         match details.Observation with

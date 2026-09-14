@@ -12,8 +12,13 @@ let private persistDateExtrema (value: string) =
     let service = database :> IClaimStore
 
     let businessClock =
-        { new IBusinessDate with
-            member _.Today() = DateOnly.MaxValue
+        { new IBusinessTime with
+            member _.Capture() =
+                {
+                    ObservedUtcInstant = DateTimeOffset(9999, 12, 31, 0, 0, 0, TimeSpan.Zero)
+                    EffectiveBusinessDate = DateOnly.MaxValue
+                    TimeZoneId = "Etc/UTC"
+                }
         }
 
     let request =

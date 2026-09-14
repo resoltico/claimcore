@@ -179,6 +179,17 @@ let private create () =
         if migration.ExitCode <> 0 then
             invalidOp "Published database migration failed."
 
+        let businessZone =
+            ProcessRunner.dotnet
+                120_000
+                databaseDll
+                [ "set-business-zone"; "Etc/UTC" ]
+                environment
+                None
+
+        if businessZone.ExitCode <> 0 then
+            invalidOp "Published database business-time-zone configuration failed."
+
         {
             Inputs = inputs
             Container = container

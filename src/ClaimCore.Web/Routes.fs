@@ -81,7 +81,11 @@ module Routes =
             admit
             maximumBytes
             HttpInput.draft
-            (fun draft -> core.Prepare(draft, mutationToken))
+            (fun draft ->
+                match Drafts.bindForEndpoint draft with
+                | Ok request -> core.Prepare(request, mutationToken)
+                | Error rejection ->
+                    Task.FromResult(PrepareOutcome.PrepareRejected(draft.OperationId, rejection)))
             (WebWire.prepare "command.prepare")
             context
 
@@ -99,8 +103,9 @@ module Routes =
         json
             admit
             maximumBytes
-            (HttpInput.page (core.Describe()).Contract.MaximumPageSize)
-            (fun input -> core.Recovery.List(input.Cursor, input.Limit, requestToken context))
+            (HttpInput.recoveryPage (core.Describe()).Contract.MaximumPageSize)
+            (fun input ->
+                core.Recovery.List(input.View, input.Cursor, input.Limit, requestToken context))
             WebRecoveryWire.list
             context
 
@@ -108,8 +113,14 @@ module Routes =
         json
             admit
             maximumBytes
-            HttpInput.operationId
-            (fun operationId -> core.Recovery.Inspect(operationId, requestToken context))
+            (HttpInput.recoveryInspect (core.Describe()).Contract.MaximumPageSize)
+            (fun input ->
+                core.Recovery.Inspect(
+                    input.OperationId,
+                    input.AttemptCursor,
+                    input.AttemptLimit,
+                    requestToken context
+                ))
             WebRecoveryWire.inspect
             context
 

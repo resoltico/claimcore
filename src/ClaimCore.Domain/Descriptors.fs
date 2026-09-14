@@ -56,12 +56,38 @@ type PrefillSource =
     | Blank
     | CurrentField of fieldName: string
 
-/// Ordered authored input metadata. The immutable case target is never an input field.
-type CommandInputDefinition =
+/// Ordered authored scalar metadata. The immutable case target is never an input field.
+type FieldInputDefinition =
     {
         FieldName: string
         Prefill: PrefillSource
     }
+
+/// An explicit operator choice for one correction group. The tag is part of the request shape;
+/// it is not inferred from omitted or nullable scalar fields.
+[<RequireQualifiedAccess>]
+type CorrectionGroupAction =
+    | Keep
+    | Replace
+    | Clear
+
+/// One required grouped correction input. ReplaceFields are required only for REPLACE. KEEP reads
+/// the authoritative accepted value and CLEAR deliberately removes a value that is present.
+type CorrectionGroupDefinition =
+    {
+        Name: string
+        Label: string
+        Meaning: string
+        Actions: CorrectionGroupAction list
+        ReplaceFields: FieldInputDefinition list
+    }
+
+/// Commands either collect one ordered scalar object or explicitly collect required correction
+/// groups. This is the semantic source for every adapter; it avoids optional flat correction fields.
+[<RequireQualifiedAccess>]
+type CommandInputShape =
+    | Fields of FieldInputDefinition list
+    | CorrectionGroups of CorrectionGroupDefinition list
 
 /// Static, adapter-visible identifiers for executable Domain rules.
 [<RequireQualifiedAccess>]
@@ -143,7 +169,7 @@ module DomainRules =
             }
         ]
 
-    let private transitionRules =
+    let private caseStateTransitionRules =
         [
             {
                 Identifier = "CLOSED_CASE_REOPEN_FIRST"
@@ -156,6 +182,32 @@ module DomainRules =
                 Category = DomainRuleCategory.Transition
                 Meaning = "Registration facts may change only while the case has no decision."
             }
+        ]
+
+    let private correctionTransitionRules =
+        [
+            {
+                Identifier = "CORRECTION_REQUIRES_EXISTING_FACT"
+                Category = DomainRuleCategory.Transition
+                Meaning =
+                    "CORRECT_CASE changes only existing decided, paid, or closed case facts; it cannot add a decision or payment group that is absent."
+            }
+            {
+                Identifier = "CORRECTION_IS_ATOMIC"
+                Category = DomainRuleCategory.Transition
+                Meaning =
+                    "CORRECT_CASE validates the complete resulting state and records one revision without a cleared intermediate snapshot."
+            }
+            {
+                Identifier = "PAID_DECISION_REQUIRES_PAYMENT_REAFFIRMATION"
+                Category = DomainRuleCategory.Transition
+                Meaning =
+                    "Replacing a paid decision requires explicit replacement or clearing of the payment record."
+            }
+        ]
+
+    let private paymentAndClosureTransitionRules =
+        [
             {
                 Identifier = "DECISION_REQUIRES_UNPAID_CASE"
                 Category = DomainRuleCategory.Transition
@@ -188,5 +240,10 @@ module DomainRules =
                 Meaning = "REOPEN applies only to a closed case."
             }
         ]
+
+    let private transitionRules =
+        caseStateTransitionRules
+        @ correctionTransitionRules
+        @ paymentAndClosureTransitionRules
 
     let all = crossFieldRules @ admissionRules @ transitionRules

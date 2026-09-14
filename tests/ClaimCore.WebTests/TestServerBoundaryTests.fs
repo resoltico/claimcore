@@ -2,6 +2,7 @@ module ClaimCore.WebTests.TestServerBoundaryTests
 
 open System
 open System.Net.Http
+open System.Text.Json
 open Expecto
 open ClaimCore.Application
 open ClaimCore.Web
@@ -96,46 +97,58 @@ let private invalidUtf8 () =
 
     Expect.equal host.Runtime.CoreCalls 0 "Invalid bytes never enter the typed core"
 
+let private pageWithCursor cursor =
+    RecoveryQueryOutcome.RecoverySucceeded
+        {
+            View = RecoveryListView.Pending
+            Items = []
+            NextCursor = Some cursor
+            PendingPreparationCount = 0
+            PendingCanonicalRequestBytes = 0L
+            MaximumPendingPreparations = 1024
+            MaximumPendingCanonicalRequestBytes = 64L * 1024L * 1024L
+            NearCapacity = false
+        }
+
+let private expectCursor cursor (response: JsonElement) =
+    Expect.equal
+        (response.GetProperty("nextCursor").GetString())
+        cursor
+        "Opaque cursor is returned intact"
+
+let private rejectedCursorOutcome =
+    RecoveryQueryOutcome.RecoveryRejected
+        {
+            Code = RecoveryRejectionCode.InvalidRecoveryInput
+            Message = "Synthetic invalid opaque cursor."
+            Action = RecommendedAction.CorrectInput
+        }
+
 let private recoveryCursor () =
     use host = Host.Start()
     let token = authenticated host
     let cursor = "opaque.after.1"
 
-    host.Runtime.RecoveryListOutcome <-
-        Some(RecoveryQueryOutcome.RecoverySucceeded { Items = []; NextCursor = Some cursor })
+    host.Runtime.RecoveryListOutcome <- Some(pageWithCursor cursor)
 
     let first =
         postJson host token "recovery.list" """{"limit":10}"""
         |> tagged "recovery.list" "SUCCEEDED"
 
-    Expect.equal
-        (first.GetProperty("nextCursor").GetString())
-        cursor
-        "Opaque cursor is returned intact"
+    expectCursor cursor first
 
     let second =
         postJson host token "recovery.list" $"""{{"cursor":"{cursor}","limit":10}}"""
         |> tagged "recovery.list" "SUCCEEDED"
 
-    Expect.equal
-        (second.GetProperty("nextCursor").GetString())
-        cursor
-        "Page mode does not reinterpret cursor"
+    expectCursor cursor second
 
     Expect.equal
         host.Runtime.LastRecoveryCursor
         (Some(Some cursor))
         "Exact cursor reaches core Recovery.List"
 
-    host.Runtime.RecoveryListOutcome <-
-        Some(
-            RecoveryQueryOutcome.RecoveryRejected
-                {
-                    Code = RecoveryRejectionCode.InvalidRecoveryInput
-                    Message = "Synthetic invalid opaque cursor."
-                    Action = RecommendedAction.CorrectInput
-                }
-        )
+    host.Runtime.RecoveryListOutcome <- Some rejectedCursorOutcome
 
     let rejected =
         postJson host token "recovery.list" """{"cursor":"malformed","limit":10}"""

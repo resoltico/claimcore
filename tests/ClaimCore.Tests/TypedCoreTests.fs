@@ -7,10 +7,7 @@ open ClaimCore.Application
 open ClaimCore.Domain
 open ClaimCore.Tests.Fixtures
 
-let private clock =
-    { new IBusinessDate with
-        member _.Today() = today
-    }
+let private clock = businessTime today
 
 let private registrationValues =
     [
@@ -23,25 +20,28 @@ let private registrationValues =
         "claimedCurrency", registration.ClaimedCurrency
     ]
 
-let private draft operationId reference =
+let private draft operationId reference : CommandDraft =
     {
         OperationId = operationId
         CaseReference = reference
         ExpectedVersion = 0L
-        Kind = CommandKind.Open
-        Values = registrationValues
+        Command = DraftCommand.Flat(CommandKind.Open, registrationValues)
     }
 
 let private create () =
-    CoreApi.create
-        (new CoreStore.Store() :> IClaimStore)
-        (new CoreRecoveryStore.Store() :> IRecoveryStore)
-        clock
+    let claims = new CoreStore.Store()
+    let recovery = new CoreRecoveryStore.Store()
+    recovery.AttachClaimStore(claims :> IClaimStore)
+
+    CoreApi.create (claims :> IClaimStore) (recovery :> IRecoveryStore) clock
 
 let private waitFor (task: System.Threading.Tasks.Task<'value>) = task.GetAwaiter().GetResult()
 
 let private invalidRecoveryInputs (core: IClaimsCore) =
-    match core.Recovery.List(Some "not-a-cursor", 1, CancellationToken.None) |> waitFor with
+    match
+        core.Recovery.List(RecoveryListView.Pending, Some "not-a-cursor", 1, CancellationToken.None)
+        |> waitFor
+    with
     | RecoveryQueryOutcome.RecoveryRejected rejection ->
         Expect.equal rejection.Code RecoveryRejectionCode.InvalidRecoveryInput "Recovery cursor"
     | _ -> failtest "Expected malformed recovery-cursor refusal."
@@ -69,7 +69,11 @@ let private preparationTests =
                 let operationId = Guid.Parse("40000000-0000-4000-8000-000000000001")
 
                 let details, review =
-                    (create ()).Prepare(draft operationId "TYPED-001", CancellationToken.None)
+                    (create ())
+                        .Prepare(
+                            boundRequest (draft operationId "TYPED-001"),
+                            CancellationToken.None
+                        )
                     |> waitFor
                     |> prepared
 
@@ -122,7 +126,7 @@ let private resolveExactRetained =
         let operationId = Guid.Parse("40000000-0000-4000-8000-000000000002")
 
         let details, _ =
-            core.Prepare(draft operationId "TYPED-002", CancellationToken.None)
+            core.Prepare(boundRequest (draft operationId "TYPED-002"), CancellationToken.None)
             |> waitFor
             |> prepared
 
@@ -143,8 +147,8 @@ let private resolveExactRetained =
             Expect.equal receipt.Snapshot.Fields.CaseReference "TYPED-002" "Exact target committed"
         | _ -> failtest "Expected accepted recovery resolution."
 
-        match core.Recovery.Inspect(operationId, CancellationToken.None) |> waitFor with
-        | RecoveryQueryOutcome.RecoverySucceeded(Lookup.Found inspected) ->
+        match core.Recovery.Inspect(operationId, None, 50, CancellationToken.None) |> waitFor with
+        | RecoveryQueryOutcome.RecoverySucceeded(Lookup.Found(RecoveryInspection.RetainedInspection inspected)) ->
             Expect.equal
                 inspected.Preparation.Summary.AvailableActions
                 [ RecoveryAction.Export ]
@@ -157,7 +161,7 @@ let private dismissedRecovery =
         let operationId = Guid.Parse("40000000-0000-4000-8000-000000000003")
 
         let details, _ =
-            core.Prepare(draft operationId "TYPED-003", CancellationToken.None)
+            core.Prepare(boundRequest (draft operationId "TYPED-003"), CancellationToken.None)
             |> waitFor
             |> prepared
 
@@ -174,7 +178,7 @@ let private dismissedRecovery =
 
         match core.Recovery.Resolve(operationId, digest, CancellationToken.None) |> waitFor with
         | ResolveOutcome.RefusedBeforeAttempt(_, rejection) ->
-            Expect.equal rejection.Code RecoveryRejectionCode.PreparationDismissed "Dismissal wins"
+            Expect.equal rejection.Code RecoveryRejectionCode.OperationRevoked "Revocation wins"
         | _ -> failtest "Expected refusal without submission attempt.")
 
 let private exactExport =
@@ -183,7 +187,7 @@ let private exactExport =
         let operationId = Guid.Parse("40000000-0000-4000-8000-000000000004")
 
         let details, _ =
-            core.Prepare(draft operationId "TYPED-004", CancellationToken.None)
+            core.Prepare(boundRequest (draft operationId "TYPED-004"), CancellationToken.None)
             |> waitFor
             |> prepared
 
@@ -219,11 +223,15 @@ let private observedIdentityConflict =
             let claims = new CoreStore.Store()
             let recovery = new CoreRecoveryStore.Store()
             let claimPort = claims :> IClaimStore
+            recovery.AttachClaimStore(claimPort)
             let core = CoreApi.create claimPort (recovery :> IRecoveryStore) clock
             let operationId = Guid.NewGuid()
 
             let details, _ =
-                core.Prepare(draft operationId "TYPED-RETAINED", CancellationToken.None)
+                core.Prepare(
+                    boundRequest (draft operationId "TYPED-RETAINED"),
+                    CancellationToken.None
+                )
                 |> waitFor
                 |> prepared
 

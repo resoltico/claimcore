@@ -18,7 +18,9 @@ export type RecoveryRejection = {
     | "RECOVERY_ACTION_UNAVAILABLE"
     | "SOURCE_DIGEST_MISMATCH"
     | "INSTALLATION_MISMATCH"
-    | "UNSUPPORTED_RECOVERY_ARTIFACT";
+    | "UNSUPPORTED_RECOVERY_ARTIFACT"
+    | "OPERATION_REVOKED"
+    | "ATTEMPT_LIMIT_REACHED";
   readonly message: string;
   readonly recommendedAction:
     | "CORRECT_INPUT"
@@ -35,6 +37,7 @@ export type PreparationSummary = {
   readonly command:
     | "OPEN"
     | "AMEND_REGISTRATION"
+    | "CORRECT_CASE"
     | "DECIDE"
     | "WITHDRAW_DECISION"
     | "RECORD_PAYMENT"
@@ -42,9 +45,15 @@ export type PreparationSummary = {
     | "CLOSE"
     | "REOPEN";
   readonly preparedAt: string;
-  readonly state: "UNSUBMITTED" | "SUBMISSION_STARTED" | "DISMISSED";
+  readonly state: "UNSUBMITTED" | "SUBMISSION_STARTED" | "DISMISSED" | "REVOKED";
+  readonly authority: "PENDING" | "ACCEPTED" | "REVOKED";
   readonly requestSha256: string | null;
   readonly availableActions: ReadonlyArray<"RESOLVE" | "DISMISS" | "EXPORT">;
+};
+export type RevokedOperation = {
+  readonly operationId: string;
+  readonly revokedAt: string;
+  readonly reason: string;
 };
 export type PreparationDetails = {
   readonly summary: PreparationSummary;
@@ -54,13 +63,29 @@ export type PreparationDetails = {
   readonly preparingApplicationVersion: string;
   readonly preparingContractFingerprint: string;
   readonly preparingContractKind: "LEGACY_UNCLASSIFIED" | "SEMANTIC_CORE_V1";
-  readonly attempts: ReadonlyArray<{
-    readonly attemptId: string;
-    readonly startedAt: string;
-    readonly settlement: "ACCEPTED" | "REJECTED" | "ERROR" | null;
-    readonly settledAt: string | null;
-  }>;
-  readonly legacyUncertainty: boolean;
+  readonly attempts: {
+    readonly items: ReadonlyArray<{
+      readonly attemptId: string;
+      readonly startedAt: string;
+      readonly settlement: "ACCEPTED" | "REJECTED" | "ERROR" | "REVOKED_BEFORE_EXECUTION" | null;
+      readonly settledAt: string | null;
+    }>;
+    readonly nextCursor: string | null;
+    readonly legacyUncertainty: boolean;
+  };
+};
+export type RecoveryListItem =
+  | { readonly tag: "RETAINED"; readonly summary: PreparationSummary }
+  | { readonly tag: "REVOKED"; readonly revocation: RevokedOperation };
+export type RecoveryPage = {
+  readonly view: "PENDING" | "TERMINAL";
+  readonly items: ReadonlyArray<RecoveryListItem>;
+  readonly nextCursor: string | null;
+  readonly pendingPreparationCount: number;
+  readonly pendingCanonicalRequestBytes: number;
+  readonly maximumPendingPreparations: number;
+  readonly maximumPendingCanonicalRequestBytes: number;
+  readonly nearCapacity: boolean;
 };
 export type AdvisoryReview = {
   readonly before: CaseView | null;
@@ -78,6 +103,7 @@ export type RecoveryImportPreview = {
     readonly command:
       | "OPEN"
       | "AMEND_REGISTRATION"
+      | "CORRECT_CASE"
       | "DECIDE"
       | "WITHDRAW_DECISION"
       | "RECORD_PAYMENT"
@@ -97,7 +123,11 @@ export type RecoveryDetails = {
     | { readonly tag: "FOUND"; readonly value: Receipt }
     | { readonly tag: "NOT_FOUND"; readonly identity: string };
 };
+export type RecoveryInspection =
+  | { readonly tag: "RETAINED"; readonly value: RecoveryDetails }
+  | { readonly tag: "REVOKED"; readonly revocation: RevokedOperation };
 export type DefiniteExecution =
   | { readonly tag: "ACCEPTED"; readonly receipt: Receipt }
   | { readonly tag: "REJECTED"; readonly operationId: string; readonly rejection: Rejection }
+  | { readonly tag: "REVOKED_BEFORE_EXECUTION"; readonly operationId: string }
   | { readonly tag: "FAILED_BEFORE_COMMIT"; readonly operationId: string; readonly fault: Fault };

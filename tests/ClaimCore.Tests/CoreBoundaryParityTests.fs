@@ -23,25 +23,21 @@ let private values =
         "claimedCurrency", registration.ClaimedCurrency
     ]
 
-let private draft =
+let private draft: CommandDraft =
     {
         OperationId = operationId
         CaseReference = "BOUNDARY-PARITY-001"
         ExpectedVersion = 0L
-        Kind = CommandKind.Open
-        Values = values
+        Command = DraftCommand.Flat(CommandKind.Open, values)
     }
 
 let private core () =
-    let clock =
-        { new IBusinessDate with
-            member _.Today() = today
-        }
+    let clock = businessTime today
+    let claims = new CoreStore.Store()
+    let recovery = new CoreRecoveryStore.Store()
+    recovery.AttachClaimStore(claims :> IClaimStore)
 
-    CoreApi.create
-        (new CoreStore.Store() :> IClaimStore)
-        (new CoreRecoveryStore.Store() :> IRecoveryStore)
-        clock
+    CoreApi.create (claims :> IClaimStore) (recovery :> IRecoveryStore) clock
 
 let private v3Frame claimant =
     $"""{{"protocolVersion":3,"endpoint":"command.execute","input":{{"operationId":"{operationId:D}","caseReference":"BOUNDARY-PARITY-001","expectedRevision":"0","command":{{"kind":"OPEN","values":{{"incidentDate":"2026-08-01","incidentNotificationDate":"2026-08-03","incidentCountry":"Lithuania","claimantName":"{claimant}","insurerName":"Example Alleged Insurer","claimedAmount":"1000.00","claimedCurrency":"EUR"}}}}}}}}"""
@@ -71,10 +67,12 @@ let private decodedParity =
         let runtime = core ()
 
         let first =
-            runtime.Execute(draft, CancellationToken.None).GetAwaiter().GetResult()
+            runtime.Execute(boundRequest draft, CancellationToken.None).GetAwaiter().GetResult()
             |> receipt
 
-        match runtime.Execute(decoded, CancellationToken.None).GetAwaiter().GetResult() with
+        match
+            runtime.Execute(boundRequest decoded, CancellationToken.None).GetAwaiter().GetResult()
+        with
         | SubmissionOutcome.ObservedAccepted replay ->
             Expect.isTrue replay.Replayed "Decoded equivalent request exactly replays"
             Expect.equal replay.Snapshot.Fields first.Snapshot.Fields "Same Domain decision"
@@ -86,7 +84,12 @@ let private advisoryNonAuthority =
         let runtime = core ()
 
         let review =
-            match runtime.Prepare(draft, CancellationToken.None).GetAwaiter().GetResult() with
+            match
+                runtime
+                    .Prepare(boundRequest draft, CancellationToken.None)
+                    .GetAwaiter()
+                    .GetResult()
+            with
             | PrepareOutcome.Prepared(_, value) -> value
             | _ -> failtest "Expected a Domain-derived advisory review."
 
@@ -106,7 +109,7 @@ let private advisoryNonAuthority =
         Expect.notEqual forged.Proposed.Fields.ClaimantName registration.ClaimantName "Forgery"
 
         let accepted =
-            runtime.Execute(draft, CancellationToken.None).GetAwaiter().GetResult()
+            runtime.Execute(boundRequest draft, CancellationToken.None).GetAwaiter().GetResult()
             |> receipt
 
         Expect.equal
@@ -160,16 +163,16 @@ let private storageFailurePrivacy =
         let authored =
             { draft with
                 OperationId = Guid.Parse("30000000-0000-4000-8000-000000000702")
-                Values =
-                    values
-                    |> List.map (fun (name, value) ->
-                        name, if name = "claimantName" then canary else value)
+                Command =
+                    DraftCommand.Flat(
+                        CommandKind.Open,
+                        values
+                        |> List.map (fun (name, value) ->
+                            name, if name = "claimantName" then canary else value)
+                    )
             }
 
-        let clock =
-            { new IBusinessDate with
-                member _.Today() = today
-            }
+        let clock = businessTime today
 
         let runtime =
             CoreApi.create
@@ -179,7 +182,7 @@ let private storageFailurePrivacy =
                 clock
 
         let outcome =
-            runtime.Prepare(authored, CancellationToken.None).GetAwaiter().GetResult()
+            runtime.Prepare(boundRequest authored, CancellationToken.None).GetAwaiter().GetResult()
 
         match outcome with
         | PrepareOutcome.PrepareFailed(_, fault) ->

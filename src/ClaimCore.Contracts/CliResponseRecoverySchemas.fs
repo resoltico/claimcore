@@ -48,6 +48,9 @@ module internal CliResponseRecoverySchemas =
                 details "retained"
                 details "existing"
                 WireSchema.kind
+                    "observedAccepted"
+                    [ WireSchema.property "receipt" (CoreValueSchemas.cliReceipt semantic false) ]
+                WireSchema.kind
                     "rejected"
                     [ WireSchema.property "rejection" RecoveryValueSchemas.rejection ]
                 WireSchema.kind "failed" [ WireSchema.property "fault" CoreValueSchemas.fault ]

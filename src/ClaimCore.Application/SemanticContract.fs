@@ -40,6 +40,40 @@ module SemanticContract =
             append builder "CASE_STATUS"
             value.AllowedValues |> List.iter (CaseStatuses.token >> append builder)
 
+    let private inputShape builder shape =
+        match shape with
+        | CommandInputShape.Fields inputs ->
+            append builder "FIELDS"
+
+            inputs
+            |> List.iter (fun input ->
+                append builder input.FieldName
+
+                match input.Prefill with
+                | PrefillSource.Blank -> append builder "BLANK"
+                | PrefillSource.CurrentField field ->
+                    append builder "CURRENT_FIELD"
+                    append builder field)
+        | CommandInputShape.CorrectionGroups groups ->
+            append builder "CORRECTION_GROUPS"
+
+            groups
+            |> List.iter (fun group ->
+                append builder group.Name
+                append builder group.Label
+                append builder group.Meaning
+                group.Actions |> List.iter (string >> append builder)
+
+                group.ReplaceFields
+                |> List.iter (fun input ->
+                    append builder input.FieldName
+
+                    match input.Prefill with
+                    | PrefillSource.Blank -> append builder "BLANK"
+                    | PrefillSource.CurrentField field ->
+                        append builder "CURRENT_FIELD"
+                        append builder field))
+
     let current =
         {
             Application = BuildIdentity.current.Product
@@ -82,15 +116,7 @@ module SemanticContract =
             append builder command.Label
             append builder command.Meaning
 
-            command.Inputs
-            |> List.iter (fun input ->
-                append builder input.FieldName
-
-                match input.Prefill with
-                | PrefillSource.Blank -> append builder "BLANK"
-                | PrefillSource.CurrentField field ->
-                    append builder "CURRENT_FIELD"
-                    append builder field))
+            inputShape builder command.Inputs)
 
         contract.Statuses |> List.iter (CaseStatuses.token >> append builder)
 

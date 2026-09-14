@@ -10,10 +10,7 @@ open ClaimCore.Domain
 open ClaimCore.RecordFormat
 open ClaimCore.Tests.Fixtures
 
-let private clock =
-    { new IBusinessDate with
-        member _.Today() = today
-    }
+let private clock = businessTime today
 
 let private waitFor (task: Task<'value>) = task.GetAwaiter().GetResult()
 
@@ -28,23 +25,23 @@ let private openValues =
         "claimedCurrency", registration.ClaimedCurrency
     ]
 
-let private draft operationId reference expectedVersion kind values =
+let private draft operationId reference expectedVersion kind values : CommandDraft =
     {
         OperationId = operationId
         CaseReference = reference
         ExpectedVersion = expectedVersion
-        Kind = kind
-        Values = values
+        Command = DraftCommand.Flat(kind, values)
     }
 
 let private openDraft operationId reference =
     draft operationId reference 0L CommandKind.Open openValues
 
 let private createWithClock businessClock =
-    CoreApi.create
-        (new CoreStore.Store() :> IClaimStore)
-        (new CoreRecoveryStore.Store() :> IRecoveryStore)
-        businessClock
+    let claims = new CoreStore.Store()
+    let recovery = new CoreRecoveryStore.Store()
+    recovery.AttachClaimStore(claims :> IClaimStore)
+
+    CoreApi.create (claims :> IClaimStore) (recovery :> IRecoveryStore) businessClock
 
 let private create () = createWithClock clock
 
@@ -57,7 +54,7 @@ let private expectAccepted outcome =
     | _ -> failtest "Expected a definite accepted execution with confirmed settlement."
 
 let private expectOpen (core: IClaimsCore) operationId reference =
-    core.Execute(openDraft operationId reference, CancellationToken.None)
+    core.Execute(boundRequest (openDraft operationId reference), CancellationToken.None)
     |> waitFor
     |> expectAccepted
 
@@ -104,22 +101,22 @@ let private exactRetry =
         let mutable effectiveDate = today
 
         let changingClock =
-            { new IBusinessDate with
-                member _.Today() = effectiveDate
+            { new IBusinessTime with
+                member _.Capture() = businessContext effectiveDate
             }
 
         let core = createWithClock changingClock
         let operationId = Guid.Parse("20000000-0000-4000-8000-000000000102")
         let command = openDraft operationId "CORE-002"
 
-        core.Execute(command, CancellationToken.None)
+        core.Execute(boundRequest command, CancellationToken.None)
         |> waitFor
         |> expectAccepted
         |> ignore
 
         effectiveDate <- today.AddDays(1)
 
-        match core.Execute(command, CancellationToken.None) |> waitFor with
+        match core.Execute(boundRequest command, CancellationToken.None) |> waitFor with
         | SubmissionOutcome.ObservedAccepted receipt ->
             Expect.equal receipt.OperationId operationId "Original operation"
             Expect.isTrue receipt.Replayed "Exact retry is replayed"
@@ -135,7 +132,10 @@ let private rejections =
                 expectOpen core operationId "CORE-003" |> ignore
 
                 match
-                    core.Execute(openDraft operationId "CORE-003-CHANGED", CancellationToken.None)
+                    core.Execute(
+                        boundRequest (openDraft operationId "CORE-003-CHANGED"),
+                        CancellationToken.None
+                    )
                     |> waitFor
                 with
                 | SubmissionOutcome.RejectedBeforeAttempt(_, rejection) ->
@@ -158,7 +158,7 @@ let private rejections =
                         CommandKind.Close
                         []
 
-                match core.Execute(close, CancellationToken.None) |> waitFor with
+                match core.Execute(boundRequest close, CancellationToken.None) |> waitFor with
                 | SubmissionOutcome.RejectedBeforeAttempt(_, rejection) ->
                     Expect.equal
                         rejection.Code
@@ -176,7 +176,10 @@ let private cancellation =
         use cancelled = new CancellationTokenSource()
         cancelled.Cancel()
 
-        match core.Execute(openDraft operationId "CORE-005", cancelled.Token) |> waitFor with
+        match
+            core.Execute(boundRequest (openDraft operationId "CORE-005"), cancelled.Token)
+            |> waitFor
+        with
         | SubmissionOutcome.CancelledBeforeAdmission value ->
             Expect.equal value operationId "Cancelled operation identity"
         | _ -> failtest "Expected typed cancellation before admission."
@@ -207,7 +210,7 @@ let private unknownPreparationState =
                 (recovery :> IRecoveryStore)
                 clock
 
-        match core.Execute(command, CancellationToken.None) |> waitFor with
+        match core.Execute(boundRequest command, CancellationToken.None) |> waitFor with
         | SubmissionOutcome.PreparationStateUnknown(actualOperationId, digest, fault) ->
             Expect.equal actualOperationId operationId "Ambiguous retain operation identity"
             Expect.equal digest expectedDigest "Ambiguous retain canonical request digest"

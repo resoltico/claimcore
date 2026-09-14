@@ -30,7 +30,7 @@ module internal PreparationLifecycleStore =
             match recordedAt with
             | Some value -> return started value
             | None ->
-                let! preparation = readOne connection (Some transaction) operationId
+                let! preparation = readHeader connection (Some transaction) operationId
 
                 match preparation with
                 | Some value -> return observed value

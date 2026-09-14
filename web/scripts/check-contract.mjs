@@ -3,7 +3,7 @@ import { mkdtemp } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { generateConvergenceContracts } from "./contract-generation.mjs";
-import { maximumStandaloneValidatorBytes } from "./generate-web-validators.mjs";
+import { maximumStandaloneValidatorGroupBytes } from "./generate-web-validators.mjs";
 
 const root = resolve(import.meta.dirname, "../..");
 const generated = resolve(root, "web/src/generated/convergence");
@@ -43,17 +43,26 @@ const differs = async (output, file) => {
   return !checkedIn.equals(regenerated);
 };
 
-const assertValidatorSize = async (directory) => {
-  const validators = await readFile(join(directory, "web-v2.validators.mjs"));
-  if (validators.byteLength > maximumStandaloneValidatorBytes) {
-    throw new Error("Generated Web validators exceed their one-megabyte ceiling.");
+const assertValidatorSizes = async (directory) => {
+  const entries = await readdir(directory, { withFileTypes: true });
+  const validators = entries
+    .filter((entry) => /^web-v2\.validators\.[a-z]+\.mjs$/u.test(entry.name))
+    .map((entry) => entry.name)
+    .sort();
+  if (validators.length !== 2)
+    throw new Error("Generated Web validators must have exactly two groups.");
+  for (const name of validators) {
+    const source = await readFile(join(directory, name));
+    if (source.byteLength > maximumStandaloneValidatorGroupBytes) {
+      throw new Error(`Generated Web validator group ${name} exceeds its 600 KiB ceiling.`);
+    }
   }
 };
 
 const output = await mkdtemp(join(tmpdir(), "claimcore-convergence-contracts-"));
 try {
   await generateConvergenceContracts(output);
-  await assertValidatorSize(output);
+  await assertValidatorSizes(output);
   const expected = await manifestFiles(output);
   const generatedFiles = await actualFiles(generated);
   if (!sameInventory(generatedFiles, expected)) {

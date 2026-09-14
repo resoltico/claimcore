@@ -9,8 +9,8 @@ open ClaimCore.Domain
 /// claim and recovery ports; no caller receives persistence objects or transition callbacks.
 type IClaimsCore =
     abstract Describe: unit -> CoreDescription
-    abstract Prepare: CommandDraft * CancellationToken -> Task<PrepareOutcome>
-    abstract Execute: CommandDraft * CancellationToken -> Task<SubmissionOutcome>
+    abstract Prepare: CommandRequest * CancellationToken -> Task<PrepareOutcome>
+    abstract Execute: CommandRequest * CancellationToken -> Task<SubmissionOutcome>
 
     abstract Get: string * CancellationToken -> Task<QueryOutcome<Lookup<CurrentCase, string>>>
 
@@ -28,7 +28,7 @@ module internal CoreApi =
     let create
         (store: IClaimStore)
         (recovery: IRecoveryStore)
-        (clock: IBusinessDate)
+        (clock: IBusinessTime)
         : IClaimsCore =
         BuildIdentity.requireCompatibleAssembly typeof<Claim>.Assembly
 
@@ -37,11 +37,11 @@ module internal CoreApi =
         { new IClaimsCore with
             member _.Describe() = TypedProjection.description clock
 
-            member _.Prepare(draft, cancellationToken) =
-                TypedPreparation.prepare store recovery clock draft cancellationToken
+            member _.Prepare(request, cancellationToken) =
+                TypedPreparation.prepare store recovery clock request cancellationToken
 
-            member _.Execute(draft, cancellationToken) =
-                TypedSubmission.execute store recovery clock draft cancellationToken
+            member _.Execute(request, cancellationToken) =
+                TypedSubmission.execute store recovery clock request cancellationToken
 
             member _.Get(reference, cancellationToken) =
                 TypedQueries.get store reference cancellationToken

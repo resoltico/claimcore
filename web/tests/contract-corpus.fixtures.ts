@@ -9,7 +9,6 @@ import {
   type WebV2EndpointId,
   webV2Endpoints,
 } from "../src/generated/convergence/web-v2.endpoint-catalog";
-import { isWebV2Response } from "../src/generated/convergence/web-v2.validation";
 import type { WebV2Response } from "../src/generated/convergence/web-v2.types";
 
 type ParsedCase = {
@@ -259,7 +258,9 @@ export const generatedResponse = (endpoint: WebV2EndpointId, status = 200): Resp
 
 export const generatedWebValue = <K extends WebV2EndpointId>(endpoint: K): WebV2Response<K> => {
   const item = webCases().find((value) => value.valid && value.endpoint === endpoint);
-  if (item === undefined || !isWebV2Response(endpoint, item.value))
+  if (item === undefined)
     throw new Error(`Missing validated generated response fixture ${endpoint}.`);
-  return item.value;
+  // The generated-contract-corpora suite validates every corpus value through the async browser
+  // delivery selector. This helper only turns that checked-in positive corpus fixture into test data.
+  return item.value as WebV2Response<K>;
 };

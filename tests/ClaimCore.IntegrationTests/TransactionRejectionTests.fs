@@ -34,16 +34,15 @@ let private requireTypedDecisionRejection (initial: CommandRequest) =
         |> await
         |> Result.defaultWith (fun _ -> failtest "Synthetic runtime must open.")
 
-    let draft =
+    let request: ClaimCore.Domain.CommandRequest =
         {
             OperationId = Guid.NewGuid()
             CaseReference = initial.CaseReference
             ExpectedVersion = 1L
-            Kind = CommandKind.RecordPayment
-            Values = [ "paymentDate", "2026-08-20" ]
+            Command = Command.RecordPayment "2026-08-20"
         }
 
-    match runtime.Core.Execute(draft, CancellationToken.None) |> await with
+    match runtime.Core.Execute(request, CancellationToken.None) |> await with
     | SubmissionOutcome.RejectedBeforeAttempt(None, rejection) when
         rejection.Code = RejectionCode.DecisionRequired
         ->

@@ -19,6 +19,11 @@ module internal WebWireMutations =
             writer.WritePropertyName("rejection")
             CliWireValues.rejection writer rejection
             writer.WriteEndObject()
+        | DefiniteExecution.ExecutionRevokedBeforeExecution operationId ->
+            writer.WriteStartObject()
+            writer.WriteString("tag", "REVOKED_BEFORE_EXECUTION")
+            writer.WriteString("operationId", operationId)
+            writer.WriteEndObject()
         | DefiniteExecution.FailedBeforeCommit(operationId, fault) ->
             writer.WriteStartObject()
             writer.WriteString("tag", "FAILED_BEFORE_COMMIT")
@@ -179,6 +184,9 @@ module internal WebWireMutations =
         | RecoveryDismissOutcome.DismissedPreparation item -> details "DISMISSED" item
         | RecoveryDismissOutcome.AlreadyDismissedPreparation item ->
             details "ALREADY_DISMISSED" item
+        | RecoveryDismissOutcome.AlreadyRevoked revoked ->
+            WebWireQueries.outcome writer "ALREADY_REVOKED" (fun () ->
+                CliWireValues.revokedOperation writer revoked)
         | RecoveryDismissOutcome.DismissNotFound operationId ->
             WebWireQueries.outcome writer "NOT_FOUND" (fun () ->
                 writer.WriteStartObject()
@@ -220,6 +228,12 @@ module internal WebWireMutations =
         match value with
         | RecoveryImportRetainOutcome.RetainedPreparation item -> details "RETAINED" item
         | RecoveryImportRetainOutcome.ExistingPreparation item -> details "EXISTING" item
+        | RecoveryImportRetainOutcome.ObservedAcceptedImport receipt ->
+            WebWireQueries.outcome writer "OBSERVED_ACCEPTED" (fun () ->
+                writer.WriteStartObject()
+                writer.WritePropertyName("receipt")
+                WebWireValues.receipt writer receipt
+                writer.WriteEndObject())
         | RecoveryImportRetainOutcome.ImportRejected rejection ->
             WebWireQueries.outcome writer "REJECTED" (fun () ->
                 CliWireValues.recoveryRejection writer rejection)

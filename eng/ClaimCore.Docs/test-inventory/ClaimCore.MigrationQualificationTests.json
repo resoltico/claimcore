@@ -2,12 +2,12 @@
   "schemaVersion": 1,
   "assembly": "ClaimCore.MigrationQualificationTests",
   "tests": [
-    "ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 005.atomicity.[CC-DB-001] failed migration rolls back its objects and journal row",
-    "ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 005.manifest validation.[CC-DB-001] applied migration identities remain frozen",
-    "ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 005.manifest validation.[CC-DB-001] migrator refuses a newer manifest entry",
-    "ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 005.retained data.[CC-DB-001] upgrade preserves cases and history and installs recovery storage",
-    "ClaimCore migration qualification.migration 005 recovery evidence.[CC-DB-001] migration 002 state upgrades to 005 with exact legacy evidence",
-    "ClaimCore migration qualification.migration 005 recovery evidence.[CC-DB-001] migration 003 state upgrades to 005 with exact legacy evidence",
-    "ClaimCore migration qualification.migration 005 recovery evidence.[CC-DB-001] migration 004 state upgrades to 005 without rewriting attempts"
+    "ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 006.atomicity.[CC-DB-001] failed migration rolls back its objects and journal row",
+    "ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 006.manifest validation.[CC-DB-001] applied migration identities remain frozen",
+    "ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 006.manifest validation.[CC-DB-001] migrator refuses a newer manifest entry",
+    "ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 006.retained data.[CC-DB-001] upgrade preserves cases and history and installs recovery storage",
+    "ClaimCore migration qualification.migration 006 recovery and authority evidence.[CC-DB-001] migration 002 state upgrades to 006 with exact legacy evidence",
+    "ClaimCore migration qualification.migration 006 recovery and authority evidence.[CC-DB-001] migration 003 state upgrades to 006 with exact legacy evidence",
+    "ClaimCore migration qualification.migration 006 recovery and authority evidence.[CC-DB-001] migration 004 state upgrades to 006 without rewriting attempts"
   ]
 }

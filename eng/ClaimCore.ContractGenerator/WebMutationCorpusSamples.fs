@@ -126,6 +126,11 @@ module internal WebMutationCorpusSamples =
                 SettlementConfirmation.Unconfirmed
             completed
                 endpoint
+                "completed-revoked-before-execution"
+                (DefiniteExecution.ExecutionRevokedBeforeExecution CliCorpusValues.operationId)
+                SettlementConfirmation.Confirmed
+            completed
+                endpoint
                 "completed-failed"
                 (DefiniteExecution.FailedBeforeCommit(
                     CliCorpusValues.operationId,
@@ -223,6 +228,17 @@ module internal WebMutationCorpusSamples =
                 (encode (
                     RecoveryDismissOutcome.AlreadyDismissedPreparation
                         WebCorpusSamples.detailsWithNullableValues
+                ))
+            sample
+                "recovery-dismiss-already-revoked"
+                endpoint
+                (encode (
+                    RecoveryDismissOutcome.AlreadyRevoked
+                        {
+                            OperationId = CliCorpusValues.operationId
+                            RevokedAt = CliCorpusValues.timestamp
+                            Reason = "Synthetic operator revocation."
+                        }
                 ))
             sample
                 "recovery-dismiss-not-found"

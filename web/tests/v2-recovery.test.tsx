@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { RecoveryView } from "../src/views/RecoveryView";
-import { fields, operationId, preparation, response } from "./v2-ui.fixtures";
+import { fields, operationId, preparation, recoveryPage, response } from "./v2-ui.fixtures";
 
 const preview = {
   artifactKind: "ENVELOPE",
@@ -20,7 +20,7 @@ const preview = {
 };
 
 const list = (items: unknown[] = [preparation.summary]) =>
-  response("recovery.list", "SUCCEEDED", { items, nextCursor: null });
+  response("recovery.list", "SUCCEEDED", recoveryPage(items));
 
 const receipt = {
   operationId,
@@ -35,11 +35,14 @@ const inspection = (tag = "NOT_FOUND") =>
   response("recovery.inspect", "SUCCEEDED", {
     tag: "FOUND",
     value: {
-      preparation,
-      observation:
-        tag === "FOUND"
-          ? { tag: "FOUND", value: receipt }
-          : { tag: "NOT_FOUND", identity: operationId },
+      tag: "RETAINED",
+      value: {
+        preparation,
+        observation:
+          tag === "FOUND"
+            ? { tag: "FOUND", value: receipt }
+            : { tag: "NOT_FOUND", identity: operationId },
+      },
     },
   });
 

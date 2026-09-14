@@ -73,6 +73,8 @@ module WebSchemaDefinitions =
 
     let private preparationSummary = RecoveryValueSchemas.summary
 
+    let private revokedOperation = RecoveryValueSchemas.revokedOperation
+
     let private authoredValue =
         WireSchema.objectOf
             [
@@ -87,8 +89,19 @@ module WebSchemaDefinitions =
                 WireSchema.property "startedAt" WireSchema.timestamp
                 WireSchema.property
                     "settlement"
-                    (Schema.nullable (WireSchema.enumeration [ "ACCEPTED"; "REJECTED"; "ERROR" ]))
+                    (Schema.nullable (
+                        WireSchema.enumeration
+                            [ "ACCEPTED"; "REJECTED"; "ERROR"; "REVOKED_BEFORE_EXECUTION" ]
+                    ))
                 WireSchema.property "settledAt" (Schema.nullable WireSchema.timestamp)
+            ]
+
+    let private attemptPage =
+        WireSchema.objectOf
+            [
+                WireSchema.property "items" (WireSchema.array attempt)
+                WireSchema.property "nextCursor" WireSchema.nullableText
+                WireSchema.property "legacyUncertainty" Schema.boolean
             ]
 
     let private preparationDetails (semantic: SemanticCoreContract) =
@@ -105,8 +118,7 @@ module WebSchemaDefinitions =
                 WireSchema.property
                     "preparingContractKind"
                     (WireSchema.enumeration [ "LEGACY_UNCLASSIFIED"; "SEMANTIC_CORE_V1" ])
-                WireSchema.property "attempts" (WireSchema.array attempt)
-                WireSchema.property "legacyUncertainty" Schema.boolean
+                WireSchema.property "attempts" attemptPage
             ]
 
     let private advisoryReview =
@@ -160,6 +172,43 @@ module WebSchemaDefinitions =
                 WireSchema.property "observation" recoveryObservation
             ]
 
+    let private recoveryListItem =
+        Schema.oneOf
+            [
+                WireSchema.tagged
+                    "RETAINED"
+                    [ WireSchema.property "summary" (reference "PreparationSummary") ]
+                WireSchema.tagged
+                    "REVOKED"
+                    [ WireSchema.property "revocation" (reference "RevokedOperation") ]
+            ]
+
+    let private recoveryPage =
+        WireSchema.objectOf
+            [
+                WireSchema.property "view" (WireSchema.enumeration [ "PENDING"; "TERMINAL" ])
+                WireSchema.property "items" (WireSchema.array (reference "RecoveryListItem"))
+                WireSchema.property "nextCursor" WireSchema.nullableText
+                WireSchema.property "pendingPreparationCount" (Schema.integer (Some 0L) None)
+                WireSchema.property "pendingCanonicalRequestBytes" (Schema.integer (Some 0L) None)
+                WireSchema.property "maximumPendingPreparations" (Schema.integer (Some 1L) None)
+                WireSchema.property
+                    "maximumPendingCanonicalRequestBytes"
+                    (Schema.integer (Some 1L) None)
+                WireSchema.property "nearCapacity" Schema.boolean
+            ]
+
+    let private recoveryInspection =
+        Schema.oneOf
+            [
+                WireSchema.tagged
+                    "RETAINED"
+                    [ WireSchema.property "value" (reference "RecoveryDetails") ]
+                WireSchema.tagged
+                    "REVOKED"
+                    [ WireSchema.property "revocation" (reference "RevokedOperation") ]
+            ]
+
     let private definiteExecution =
         Schema.oneOf
             [
@@ -170,6 +219,9 @@ module WebSchemaDefinitions =
                         WireSchema.property "operationId" WireSchema.uuid
                         WireSchema.property "rejection" (reference "Rejection")
                     ]
+                WireSchema.tagged
+                    "REVOKED_BEFORE_EXECUTION"
+                    [ WireSchema.property "operationId" WireSchema.uuid ]
                 WireSchema.tagged
                     "FAILED_BEFORE_COMMIT"
                     [
@@ -197,9 +249,13 @@ module WebSchemaDefinitions =
             "DefinitionPayload", definitionPayload
             "SessionSnapshot", sessionSnapshot
             "PreparationSummary", preparationSummary
+            "RevokedOperation", revokedOperation
             "PreparationDetails", preparationDetails semantic
             "AdvisoryReview", advisoryReview
             "RecoveryImportPreview", importPreview semantic
             "RecoveryDetails", recoveryDetails
+            "RecoveryListItem", recoveryListItem
+            "RecoveryPage", recoveryPage
+            "RecoveryInspection", recoveryInspection
             "DefiniteExecution", definiteExecution
         ]

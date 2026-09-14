@@ -53,7 +53,7 @@ module internal RuntimeSchema =
         SchemaDefinition.all ()
         |> List.map (fun migration -> migration.Version, migration.Name, migration.Digest)
 
-    let private preparationSql =
+    let private preparationRelationChecks =
         """
         SELECT
             to_regclass('claimcore.installation_lineage') IS NOT NULL,
@@ -65,7 +65,26 @@ module internal RuntimeSchema =
             to_regclass('claimcore.request_submission_settlements') IS NOT NULL,
             to_regclass('claimcore.request_submission_legacy_uncertainty') IS NOT NULL,
             to_regclass('claimcore.request_submission_attempts_by_operation') IS NOT NULL,
+            to_regclass('claimcore.operation_revocations') IS NOT NULL,
+            to_regclass('claimcore.operation_revocations_by_revoked_at') IS NOT NULL,
+            to_regclass('claimcore.request_preparations_by_prepared_at') IS NOT NULL,
+        """
+
+    let private preparationColumnChecks =
+        """
             (SELECT count(*) = 1 AND bool_and(singleton AND lineage_id <> '00000000-0000-0000-0000-000000000000') FROM claimcore.installation_lineage),
+            (SELECT array_agg(a.attname::text ORDER BY a.attnum) = ARRAY[
+                'singleton',
+                'lineage_id',
+                'created_at',
+                'business_time_zone'
+            ] FROM pg_attribute a
+                JOIN pg_class c ON c.oid = a.attrelid
+                JOIN pg_namespace n ON n.oid = c.relnamespace
+            WHERE n.nspname = 'claimcore'
+                AND c.relname = 'installation_lineage'
+                AND a.attnum > 0
+                AND NOT a.attisdropped),
             (SELECT array_agg(a.attname::text ORDER BY a.attnum) = ARRAY[
                 'operation_id',
                 'canonical_request_format',
@@ -86,11 +105,63 @@ module internal RuntimeSchema =
             (SELECT count(*) = 9 FROM pg_attribute a JOIN pg_class c ON c.oid = a.attrelid JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'claimcore' AND c.relname = 'request_preparation_prunes' AND a.attnum > 0 AND NOT a.attisdropped),
             (SELECT count(*) = 3 FROM pg_attribute a JOIN pg_class c ON c.oid = a.attrelid JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'claimcore' AND c.relname = 'request_submission_attempts' AND a.attnum > 0 AND NOT a.attisdropped),
             (SELECT count(*) = 3 FROM pg_attribute a JOIN pg_class c ON c.oid = a.attrelid JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'claimcore' AND c.relname = 'request_submission_settlements' AND a.attnum > 0 AND NOT a.attisdropped),
-            (SELECT count(*) = 1 FROM pg_attribute a JOIN pg_class c ON c.oid = a.attrelid JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'claimcore' AND c.relname = 'request_submission_legacy_uncertainty' AND a.attnum > 0 AND NOT a.attisdropped)
+            (SELECT count(*) = 1 FROM pg_attribute a JOIN pg_class c ON c.oid = a.attrelid JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'claimcore' AND c.relname = 'request_submission_legacy_uncertainty' AND a.attnum > 0 AND NOT a.attisdropped),
         """
 
+    let private authorityChecks =
+        """
+            (SELECT array_agg(a.attname::text ORDER BY a.attnum) = ARRAY[
+                'operation_id',
+                'canonical_request_format',
+                'request_sha256',
+                'revoked_at',
+                'reason'
+            ] FROM pg_attribute a
+                JOIN pg_class c ON c.oid = a.attrelid
+                JOIN pg_namespace n ON n.oid = c.relnamespace
+            WHERE n.nspname = 'claimcore'
+                AND c.relname = 'operation_revocations'
+                AND a.attnum > 0
+                AND NOT a.attisdropped),
+            EXISTS (
+                SELECT 1
+                FROM pg_constraint constraint_value
+                JOIN pg_class relation ON relation.oid = constraint_value.conrelid
+                JOIN pg_namespace schema_value ON schema_value.oid = relation.relnamespace
+                WHERE schema_value.nspname = 'claimcore'
+                    AND relation.relname = 'request_submission_settlements'
+                    AND constraint_value.conname = 'request_submission_settlements_outcome_check'
+                    AND constraint_value.contype = 'c'
+                    AND position('REVOKED_BEFORE_EXECUTION' IN pg_get_constraintdef(constraint_value.oid)) > 0
+            ),
+            EXISTS (
+                SELECT 1
+                FROM pg_constraint constraint_value
+                JOIN pg_class relation ON relation.oid = constraint_value.conrelid
+                JOIN pg_namespace schema_value ON schema_value.oid = relation.relnamespace
+                WHERE schema_value.nspname = 'claimcore'
+                    AND relation.relname = 'case_changes'
+                    AND constraint_value.conname = 'case_changes_command_name_check'
+                    AND constraint_value.contype = 'c'
+                    AND position('CORRECT_CASE' IN pg_get_constraintdef(constraint_value.oid)) > 0
+            ),
+            EXISTS (
+                SELECT 1
+                FROM pg_constraint constraint_value
+                JOIN pg_class relation ON relation.oid = constraint_value.conrelid
+                JOIN pg_namespace schema_value ON schema_value.oid = relation.relnamespace
+                WHERE schema_value.nspname = 'claimcore'
+                    AND relation.relname = 'installation_lineage'
+                    AND constraint_value.conname = 'installation_lineage_business_time_zone_shape'
+                    AND constraint_value.contype = 'c'
+            )
+        """
+
+    let private preparationSql =
+        preparationRelationChecks + preparationColumnChecks + authorityChecks
+
     let private requirePreparation (reader: DbDataReader) =
-        for index in 0..15 do
+        for index in 0..23 do
             if not (reader.GetBoolean(index)) then
                 raise (
                     InvalidDataException($"Required recovery schema component {index} is absent.")

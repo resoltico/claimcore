@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 
 import { isWebV2Response } from "../src/generated/convergence/web-v2.validation";
+import type { WebV2Response } from "../src/generated/convergence/web-v2.types";
 import {
   droppedSubmission,
   keepForRecovery,
@@ -56,6 +57,12 @@ const navigateRecovery = async (page: Page): Promise<void> => {
   await expectAccessible(page);
 };
 
+const selectRecoveryView = async (page: Page, view: "PENDING" | "TERMINAL"): Promise<void> => {
+  const selector = page.getByLabel("Recovery view");
+  await selector.selectOption(view);
+  await expect(selector).toHaveValue(view);
+};
+
 const preparedDecision = async (page: Page, caseReference: string): Promise<PreparedIdentity> => {
   await openCase(page, caseReference);
   await startCommand(page, "Record payment decision");
@@ -81,12 +88,14 @@ const resolveAndObserve = async (page: Page, identity: PreparedIdentity): Promis
     .getByRole("dialog", { name: "Recovery details" })
     .getByRole("button", { name: "Cancel" })
     .click();
+  await selectRecoveryView(page, "TERMINAL");
   await inspect(page, identity);
   await expect(page.getByRole("button", { name: "Resolve exact preparation" })).toHaveCount(0);
   await page
     .getByRole("dialog", { name: "Recovery details" })
     .getByRole("button", { name: "Cancel" })
     .click();
+  await selectRecoveryView(page, "PENDING");
 };
 
 test("exports and retains both exact recovery artifact formats through published Web", async ({
@@ -139,6 +148,7 @@ test("preserves operation identity after a dropped published submit response", a
   await expect(page.getByRole("button", { name: "Sign out" })).toBeDisabled();
   await page.reload();
   await navigateRecovery(page);
+  await selectRecoveryView(page, "TERMINAL");
   await inspect(page, identity);
   await expect(page.getByRole("dialog", { name: "Recovery details" })).toContainText(
     "Observed accepted operation",
@@ -189,12 +199,13 @@ const observeAcceptedPrepareReplay = async (
     body: originalBody,
   });
   expect(reply.status).toBe(200);
-  if (!isWebV2Response("command.prepare", reply.payload)) {
+  if (!(await isWebV2Response("command.prepare", reply.payload))) {
     throw new Error("E2E_PREPARE_REPLAY_PROTOCOL");
   }
-  expect(reply.payload.outcome.tag).toBe("OBSERVED_ACCEPTED");
-  if (reply.payload.outcome.tag === "OBSERVED_ACCEPTED") {
-    expect(reply.payload.outcome.data.receipt.operationId).toBe(operationId);
+  const response = reply.payload as WebV2Response<"command.prepare">;
+  expect(response.outcome.tag).toBe("OBSERVED_ACCEPTED");
+  if (response.outcome.tag === "OBSERVED_ACCEPTED") {
+    expect(response.outcome.data.receipt.operationId).toBe(operationId);
   }
 };
 

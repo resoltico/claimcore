@@ -4,21 +4,21 @@ import { basename, join, resolve } from "node:path";
 import { format, resolveConfig } from "prettier";
 
 import { compileStandaloneValidators } from "./standalone-validators.mjs";
+import {
+  obsoleteStandaloneValidatorArtifacts,
+  standaloneValidatorArtifacts,
+  validationWrapper,
+  validatorDeclarations,
+  validatorGroups,
+  validatorName,
+} from "./validator-groups.mjs";
 
-const artifacts = [
-  "web-v2.validation.ts",
-  "web-v2.validators.d.mts",
-  "web-v2.validators.mjs",
-  "web-v2.validators.NOTICE.txt",
-];
-const obsoleteArtifacts = ["web-v2.validators.ts"];
 const hostSchema = "web-v2.host-failure.schema.json";
 const responsesSchema = "web-v2.responses.schema.json";
 const safeName = /^[A-Za-z0-9][A-Za-z0-9._-]*$/u;
-export const maximumStandaloneValidatorBytes = 1024 * 1024;
+export const maximumStandaloneValidatorGroupBytes = 600 * 1024;
 
 const readJson = async (file) => JSON.parse(await readFile(file, "utf8"));
-const validatorName = (endpoint) => `validate_${endpoint.replaceAll(/[^A-Za-z0-9_$]/gu, "_")}`;
 const formatTypeScript = async (source, filepath) => {
   const canonicalPath = resolve(
     import.meta.dirname,
@@ -91,54 +91,6 @@ const validatorInventory = async (directory, endpoints) => {
   };
 };
 
-const declarations = (endpoints) => `/* Generated from ClaimCore.Contracts schemas. Do not edit. */
-import type { HostFailure, WebV2ResponseByEndpoint } from "./web-v2.types";
-
-export type WebV2ValidationError = Readonly<{
-  instancePath: string;
-  schemaPath: string;
-  keyword: string;
-}>;
-
-export interface WebV2Validator<T> {
-  (value: unknown): value is T;
-  readonly errors: ReadonlyArray<WebV2ValidationError> | null | undefined;
-}
-
-export const validate_host_failure: WebV2Validator<HostFailure>;
-${endpoints
-  .map(
-    ({ endpoint, exportName }) =>
-      `export const ${exportName}: WebV2Validator<WebV2ResponseByEndpoint[${JSON.stringify(endpoint)}]>;`,
-  )
-  .join("\n")}
-`;
-
-const wrapper = (endpoints) => `/* Generated from ClaimCore.Contracts schemas. Do not edit. */
-import {
-  validate_host_failure,
-${endpoints.map(({ exportName }) => `  ${exportName},`).join("\n")}
-} from "./web-v2.validators.mjs";
-import type { WebV2EndpointId } from "./web-v2.endpoint-catalog";
-import type { HostFailure, WebV2Response, WebV2ResponseByEndpoint } from "./web-v2.types";
-
-const responseValidators = {
-${endpoints.map(({ endpoint, exportName }) => `  ${JSON.stringify(endpoint)}: ${exportName},`).join("\n")}
-} satisfies {
-  readonly [K in WebV2EndpointId]: (
-    value: unknown,
-  ) => value is WebV2ResponseByEndpoint[K];
-};
-
-export const isHostFailure = (value: unknown): value is HostFailure =>
-  validate_host_failure(value);
-
-export const isWebV2Response = <K extends WebV2EndpointId>(
-  endpoint: K,
-  value: unknown,
-): value is WebV2Response<K> => responseValidators[endpoint](value);
-`;
-
 const assertProvisionalOutput = async (directory, provisional) => {
   const entries = await readdir(directory, { withFileTypes: true });
   if (entries.some((entry) => !entry.isFile())) {
@@ -147,8 +99,8 @@ const assertProvisionalOutput = async (directory, provisional) => {
   const allowed = new Set([
     ...provisional,
     "convergence-manifest.json",
-    ...artifacts,
-    ...obsoleteArtifacts,
+    ...standaloneValidatorArtifacts,
+    ...obsoleteStandaloneValidatorArtifacts,
   ]);
   const extra = entries.map((entry) => entry.name).filter((name) => !allowed.has(name));
   const missing = [...provisional].filter((name) => !entries.some((entry) => entry.name === name));
@@ -219,14 +171,14 @@ const validatorNotice = async (webDirectory, lock, names) => {
   const notices = await Promise.all(names.map((name) => packageNotice(webDirectory, lock, name)));
   const header =
     "ClaimCore Web v2 standalone-validator third-party notices\n\n" +
-    "Generated from the exact locked packages whose code is embedded in web-v2.validators.mjs.";
+    "Generated from the exact locked packages whose code is embedded in the split Web-v2 validator modules.";
   const separator = `\n\n${"-".repeat(80)}\n\n`;
   return `${header}\n\n${notices.join(separator)}\n`;
 };
 
 const combinedManifest = (manifest, provisional, lock, embeddedPackages) => ({
   ...manifest,
-  files: [...provisional, ...artifacts].sort(),
+  files: [...provisional, ...standaloneValidatorArtifacts].sort(),
   ajv: {
     version: packageVersion(lock, "ajv"),
     formatsVersion: packageVersion(lock, "ajv-formats"),
@@ -248,8 +200,7 @@ const assertValidatorModule = async (source, entries) => {
   }
 };
 
-export const generateWebValidators = async (directory) => {
-  const output = resolve(directory);
+const provisionalInventory = async (output) => {
   const manifestPath = join(output, "convergence-manifest.json");
   const manifest = await readJson(manifestPath);
   if (!Array.isArray(manifest.files) || !manifest.files.every((file) => safeName.test(file))) {
@@ -258,7 +209,7 @@ export const generateWebValidators = async (directory) => {
   const provisional = new Set(manifest.files);
   if (
     provisional.size !== manifest.files.length ||
-    artifacts.some((artifact) => provisional.has(artifact))
+    standaloneValidatorArtifacts.some((artifact) => provisional.has(artifact))
   ) {
     throw new Error("The F# manifest must contain a unique provisional artifact inventory.");
   }
@@ -266,29 +217,63 @@ export const generateWebValidators = async (directory) => {
   if (!provisional.has(responsesSchema))
     throw new Error("The aggregate response schema is missing.");
   await assertProvisionalOutput(output, provisional);
-  await Promise.all(obsoleteArtifacts.map((name) => rm(join(output, name), { force: true })));
+  return { manifest, provisional };
+};
+
+const compileGroups = async (output, groups, webDirectory) =>
+  Promise.all(
+    Object.entries(groups).map(async ([group, groupEndpoints]) => {
+      const inventory = await validatorInventory(output, groupEndpoints);
+      const compiled = await compileStandaloneValidators(inventory, webDirectory);
+      if (Buffer.byteLength(compiled.source) > maximumStandaloneValidatorGroupBytes) {
+        throw new Error(`The ${group} standalone validator group exceeds the 600 KiB ceiling.`);
+      }
+      await assertValidatorModule(compiled.source, inventory.validators);
+      return { group, compiled };
+    }),
+  );
+
+const writeValidatorGroups = async (output, groups, compiledGroups) => {
+  await Promise.all(
+    compiledGroups.map(async ({ group, compiled }) => {
+      const declarationFile = join(output, `web-v2.validators.${group}.d.mts`);
+      const declarationSource = await formatTypeScript(
+        validatorDeclarations(groups[group]),
+        declarationFile,
+      );
+      await atomicWrite(declarationFile, declarationSource);
+      await atomicWrite(join(output, `web-v2.validators.${group}.mjs`), compiled.source);
+    }),
+  );
+};
+
+export const generateWebValidators = async (directory) => {
+  const output = resolve(directory);
+  const manifestPath = join(output, "convergence-manifest.json");
+  const { manifest, provisional } = await provisionalInventory(output);
+  await Promise.all(
+    obsoleteStandaloneValidatorArtifacts.map((name) => rm(join(output, name), { force: true })),
+  );
   await formatTypeScriptArtifacts(output, provisional);
   const catalog = await readJson(join(output, "web-v2.catalog.json"));
   const endpoints = endpointInventory(catalog, provisional);
-  const inventory = await validatorInventory(output, endpoints);
+  const groups = validatorGroups(endpoints);
   const webDirectory = resolve(import.meta.dirname, "..");
-  const compiled = await compileStandaloneValidators(inventory, webDirectory);
-  const moduleSource = compiled.source;
-  if (Buffer.byteLength(moduleSource) > maximumStandaloneValidatorBytes) {
-    throw new Error("Standalone validators exceed the one-megabyte generated-code ceiling.");
+  const compiledGroups = await compileGroups(output, groups, webDirectory);
+  const embeddedPackages = [
+    ...new Set(compiledGroups.flatMap(({ compiled }) => compiled.embeddedPackages)),
+  ].sort();
+  if (embeddedPackages.length === 0) {
+    throw new Error("Split standalone validator modules have no embedded package inventory.");
   }
-  await assertValidatorModule(moduleSource, inventory.validators);
   const lock = await readJson(resolve(webDirectory, "package-lock.json"));
-  const noticeSource = await validatorNotice(webDirectory, lock, compiled.embeddedPackages);
-  const declarationFile = join(output, "web-v2.validators.d.mts");
+  const noticeSource = await validatorNotice(webDirectory, lock, embeddedPackages);
   const wrapperFile = join(output, "web-v2.validation.ts");
-  const declarationSource = await formatTypeScript(declarations(endpoints), declarationFile);
-  const wrapperSource = await formatTypeScript(wrapper(endpoints), wrapperFile);
-  await atomicWrite(declarationFile, declarationSource);
-  await atomicWrite(join(output, "web-v2.validators.mjs"), moduleSource);
+  const wrapperSource = await formatTypeScript(validationWrapper(groups), wrapperFile);
+  await writeValidatorGroups(output, groups, compiledGroups);
   await atomicWrite(join(output, "web-v2.validators.NOTICE.txt"), noticeSource);
   await atomicWrite(wrapperFile, wrapperSource);
-  const combined = combinedManifest(manifest, provisional, lock, compiled.embeddedPackages);
+  const combined = combinedManifest(manifest, provisional, lock, embeddedPackages);
   await atomicWrite(manifestPath, `${JSON.stringify(combined)}\n`);
   await assertProvisionalOutput(output, new Set(combined.files));
 };

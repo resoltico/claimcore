@@ -15,6 +15,17 @@ trust boundaries. [Development](docs/development.md) owns commands and gates.
   retained preparations, recovery ports, or transition callbacks.
 - RecordFormat owns canonical operation and snapshot encoding. An uncertain retry must preserve the
   exact operation ID and request bytes; never rebase it or infer that a commit failed.
+- Operation identity, authority, and knowledge are separate. Accepted history proves acceptance;
+  durable revocation ends future unaccepted authority without rewriting old attempt uncertainty.
+  Recovery list defaults to pending work, detailed attempts are operation-bound and paged, and a
+  pruned revoked preparation may expose only its tombstone.
+- Native `IClaimsCore.Prepare` and `Execute` accept Domain `CommandRequest`. CLI and Web bind their
+  generated form shape once through `Drafts.bind`; do not add another public raw-field boundary.
+- `CORRECT_CASE` has three explicit tagged groups. Keep reads current accepted state; never add a
+  business field, broaden historical `AMEND_REGISTRATION`, or accept an adapter-only correction rule.
+- Migration 006 stores the installation's immutable canonical IANA business time zone. Runtime
+  opening requires it; derive business dates from one captured instant and that stored zone, never
+  `DateTime.Today`, `TimeZoneInfo.Local`, or a host environment default.
 - Never edit an applied migration. Add an ordered one and update readers, writers, constraints,
   contracts, tests, and documentation together.
 

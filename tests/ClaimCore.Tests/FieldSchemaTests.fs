@@ -101,6 +101,58 @@ let private semanticFieldTests =
                         ("Meaning: " + definition.Name))
         ]
 
+let private fieldInputNames
+    (commandKind: CommandKind)
+    (inputs: JsonElement)
+    (fields: FieldInputDefinition list)
+    =
+    Expect.equal (inputs.GetProperty("kind").GetString()) "FIELDS" "Input shape"
+
+    let rendered =
+        inputs.GetProperty("fields").EnumerateArray()
+        |> Seq.map (fun item -> item.GetProperty("fieldName").GetString())
+        |> Seq.toList
+
+    Expect.equal
+        rendered
+        (fields |> List.map (fun field -> field.FieldName))
+        ("Ordered inputs: " + CommandKinds.token commandKind)
+
+    rendered
+
+let private correctionInputNames (inputs: JsonElement) (groups: CorrectionGroupDefinition list) =
+    Expect.equal (inputs.GetProperty("kind").GetString()) "CORRECTION_GROUPS" "Grouped input shape"
+
+    let rendered = inputs.GetProperty("groups").EnumerateArray() |> Seq.toList
+
+    Expect.equal
+        (rendered |> List.map (fun item -> item.GetProperty("name").GetString()))
+        (groups |> List.map (fun group -> group.Name))
+        "Correction group order"
+
+    rendered
+    |> List.collect (fun group ->
+        group.GetProperty("replaceFields").EnumerateArray()
+        |> Seq.map (fun field -> field.GetProperty("fieldName").GetString())
+        |> Seq.toList)
+
+let private commandInputNames (definition: CommandDefinition) (inputs: JsonElement) =
+    match definition.Inputs with
+    | CommandInputShape.Fields fields -> fieldInputNames definition.Kind inputs fields
+    | CommandInputShape.CorrectionGroups groups -> correctionInputNames inputs groups
+
+let private assertCommandMetadata (rendered: JsonElement list) (definition: CommandDefinition) =
+    let command =
+        rendered
+        |> List.find (fun item ->
+            item.GetProperty("kind").GetString() = CommandKinds.token definition.Kind)
+
+    let names = command.GetProperty("inputs") |> commandInputNames definition
+
+    Expect.isFalse
+        (names |> List.contains "caseReference")
+        "Immutable target is not an authored command value"
+
 let private commandMetadataTests =
     testList
         "semantic command metadata"
@@ -116,26 +168,7 @@ let private commandMetadataTests =
                     CommandDefinitions.all.Length
                     "No duplicate command registry"
 
-                for definition in CommandDefinitions.all do
-                    let command =
-                        rendered
-                        |> List.find (fun item ->
-                            item.GetProperty("kind").GetString() = CommandKinds.token
-                                definition.Kind)
-
-                    let inputs =
-                        command.GetProperty("inputs").EnumerateArray()
-                        |> Seq.map (fun item -> item.GetProperty("fieldName").GetString())
-                        |> Seq.toList
-
-                    Expect.equal
-                        inputs
-                        (definition.Inputs |> List.map (fun input -> input.FieldName))
-                        ("Ordered inputs: " + CommandKinds.token definition.Kind)
-
-                    Expect.isFalse
-                        (inputs |> List.contains "caseReference")
-                        "Immutable target is not an authored command value")
+                CommandDefinitions.all |> List.iter (assertCommandMetadata rendered))
         ]
 
 let tests =

@@ -4,12 +4,15 @@ import type {
   Receipt,
   RecoveryDetails,
   RecoveryImportPreview,
+  RecoveryInspection,
+  RecoveryListItem,
+  RecoveryPage,
   WebV2Response,
 } from "../../api/v2";
 import { isMutationUncertain, resultMessage, v2 } from "../../api/v2";
 
-export type Inspection = RecoveryDetails;
-
+export type Inspection = RecoveryInspection;
+export type RecoveryViewKind = RecoveryPage["view"];
 export type ImportKind = "ENVELOPE" | "RECORD";
 export type ImportState = { file: File; kind: ImportKind; preview: RecoveryImportPreview };
 export type ConfirmState = { action: "RESOLVE" | "DISMISS" | "EXPORT"; item: PreparationSummary };
@@ -33,7 +36,8 @@ export type RecoveryUi = {
 };
 
 export type RecoveryActions = {
-  inspect: (item: PreparationSummary) => void;
+  inspect: (item: RecoveryListItem) => void;
+  loadAttempts: (operationId: string, cursor: string) => void;
   choose: (action: ConfirmState["action"], item: PreparationSummary) => void;
   act: () => Promise<void>;
   exportItem: (item: PreparationSummary) => void;
@@ -41,12 +45,8 @@ export type RecoveryActions = {
   retain: () => Promise<void>;
 };
 
-export const page = (
-  response: WebV2Response<"recovery.list">,
-): {
-  readonly items: ReadonlyArray<PreparationSummary>;
-  readonly nextCursor: string | null;
-} | null => (response.outcome.tag === "SUCCEEDED" ? response.outcome.data : null);
+export const page = (response: WebV2Response<"recovery.list">): RecoveryPage | null =>
+  response.outcome.tag === "SUCCEEDED" ? response.outcome.data : null;
 
 const inspection = (response: WebV2Response<"recovery.inspect">): Inspection | null =>
   response.outcome.tag === "SUCCEEDED" && response.outcome.data.tag === "FOUND"
@@ -62,21 +62,28 @@ const accepted = (response: WebV2Response<"recovery.resolve">): Receipt | null =
   return null;
 };
 
-const inspectItem = async (
-  item: PreparationSummary,
+const operationId = (item: RecoveryListItem): string =>
+  item.tag === "RETAINED" ? item.summary.operationId : item.revocation.operationId;
+
+const setInspection = (value: Inspection, ui: RecoveryUi): void => {
+  const retained: RecoveryDetails | null = value.tag === "RETAINED" ? value.value : null;
+  ui.setSelected(value);
+  ui.setSelectedSummary(retained?.preparation.summary ?? null);
+  ui.setMessage(null);
+};
+
+const inspectOperation = async (
+  id: string,
+  attemptCursor: string | null,
   token: string,
   ui: RecoveryUi,
 ): Promise<void> => {
-  ui.setBusy(item.operationId);
-  const result = await v2.recoveryInspect(item.operationId, token);
+  ui.setBusy(id);
+  const result = await v2.recoveryInspect(id, attemptCursor, 50, token);
   const details = result.kind === "outcome" ? inspection(result.value) : null;
   ui.setBusy(null);
   if (details === null) ui.setMessage(resultMessage(result));
-  else {
-    ui.setSelected(details);
-    ui.setSelectedSummary(details.preparation.summary);
-    ui.setMessage(null);
-  }
+  else setInspection(details, ui);
 };
 
 const performAction = async (token: string, listing: Listing, ui: RecoveryUi): Promise<void> => {
@@ -185,7 +192,8 @@ export const recoveryActions = (
   listing: Listing,
   ui: RecoveryUi,
 ): RecoveryActions => ({
-  inspect: (item) => void inspectItem(item, token, ui),
+  inspect: (item) => void inspectOperation(operationId(item), null, token, ui),
+  loadAttempts: (id, cursor) => void inspectOperation(id, cursor, token, ui),
   choose: (action, item) => ui.setConfirm({ action, item }),
   act: () => performAction(token, listing, ui),
   exportItem: (item) => ui.setConfirm({ action: "EXPORT", item }),

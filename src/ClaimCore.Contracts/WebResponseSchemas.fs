@@ -182,18 +182,11 @@ module WebResponseSchemas =
             ]
 
     let private recoveryList =
-        let page =
-            WireSchema.objectOf
-                [
-                    WireSchema.property "items" (WireSchema.array (reference "PreparationSummary"))
-                    WireSchema.property "nextCursor" WireSchema.nullableText
-                ]
-
-        query "recovery.list" page (reference "RecoveryRejection")
+        query "recovery.list" (reference "RecoveryPage") (reference "RecoveryRejection")
 
     let private recoveryInspect =
         let succeeded =
-            lookup "identity" WireSchema.uuid "value" (reference "RecoveryDetails")
+            lookup "identity" WireSchema.uuid "value" (reference "RecoveryInspection")
 
         query "recovery.inspect" succeeded (reference "RecoveryRejection")
 
@@ -205,6 +198,7 @@ module WebResponseSchemas =
             [
                 "DISMISSED", reference "PreparationDetails"
                 "ALREADY_DISMISSED", reference "PreparationDetails"
+                "ALREADY_REVOKED", reference "RevokedOperation"
                 "NOT_FOUND", operationIdentity
                 "REFUSED",
                 WireSchema.objectOf
@@ -244,6 +238,8 @@ module WebResponseSchemas =
             [
                 "RETAINED", reference "PreparationDetails"
                 "EXISTING", reference "PreparationDetails"
+                "OBSERVED_ACCEPTED",
+                WireSchema.objectOf [ WireSchema.property "receipt" (reference "Receipt") ]
                 "REJECTED", reference "RecoveryRejection"
                 "FAILED", reference "Fault"
                 "CANCELLED_BEFORE_ADMISSION", Schema.nullValue

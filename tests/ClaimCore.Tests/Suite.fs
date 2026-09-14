@@ -12,6 +12,7 @@ let tests =
             RecordPropertyTests.tests
             TransitionPropertyTests.tests
             DomainTests.tests
+            CaseCorrectionTests.tests
             DomainValidationTests.tests
             AvailabilityTests.tests
             PaginationTests.tests
@@ -21,6 +22,7 @@ let tests =
             ReceiptFirstTests.tests
             RecoveryOutcomeTests.tests
             RecoveryCancellationOutcomeTests.tests
+            RecoveryAuthorityTests.tests
             CoreQueryTests.tests
             CoreBoundaryParityTests.tests
             ExampleContractTests.tests

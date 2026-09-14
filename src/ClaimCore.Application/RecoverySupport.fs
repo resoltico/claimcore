@@ -8,6 +8,13 @@ open ClaimCore.Domain
 open ClaimCore.RecordFormat
 
 module internal RecoverySupport =
+    let revoked =
+        {
+            Code = RecoveryRejectionCode.OperationRevoked
+            Message = "This exact operation was durably revoked before execution."
+            Action = RecommendedAction.ReadCurrent
+        }
+
     type ImportDecoding =
         | Imported of RecoveryImportPreview
         | ImportRefused of RecoveryRejection
@@ -20,6 +27,12 @@ module internal RecoverySupport =
             Message = message
             Action = action
         }
+
+    let attemptLimit =
+        rejection
+            RecoveryRejectionCode.AttemptLimitReached
+            "This operation has reached its recovery attempt limit. Read the current case before authoring new work."
+            RecommendedAction.ReadCurrent
 
     let invalid field =
         rejection
@@ -141,10 +154,12 @@ module internal RecoverySupport =
                 return RecoveryQueryOutcome.RecoveryCancelled
             | Error failure ->
                 return RecoveryQueryOutcome.RecoveryFailed(TypedProjection.recoveryFault failure)
-            | Ok None -> return RecoveryQueryOutcome.RecoverySucceeded None
-            | Ok(Some value) ->
+            | Ok None
+            | Ok(Some(RecoveryStoredOperation.RevokedTombstone _)) ->
+                return RecoveryQueryOutcome.RecoverySucceeded None
+            | Ok(Some(RecoveryStoredOperation.Retained(value, authority))) ->
                 return
-                    TypedProjection.summary false value
+                    TypedProjection.summaryWithKnownAuthority false authority value
                     |> Result.map (Some >> RecoveryQueryOutcome.RecoverySucceeded)
                     |> Result.defaultWith RecoveryQueryOutcome.RecoveryFailed
         }
@@ -213,27 +228,47 @@ module internal RecoverySupport =
             | Error _ -> Error unsupported
         | RecoveryArtifactKind.UnboundCanonicalRecord -> Ok source
 
-    let resolveOutcome (result: RetainedResolution) : ResolveOutcome =
-        match result with
+    let private completedOutcome =
+        function
         | RetainedResolution.ObservedReceipt receipt ->
-            ResolveOutcome.ResolveObservedAccepted receipt
+            Some(ResolveOutcome.ResolveObservedAccepted receipt)
         | RetainedResolution.Resolved(preparation, attemptId, execution, settlement) ->
-            ResolveOutcome.ResolveCompleted(preparation, attemptId, execution, settlement)
+            Some(ResolveOutcome.ResolveCompleted(preparation, attemptId, execution, settlement))
+        | _ -> None
+
+    let private refusedOutcome =
+        function
         | RetainedResolution.MissingPreparation _ ->
-            ResolveOutcome.RefusedBeforeAttempt(None, notFound)
+            Some(ResolveOutcome.RefusedBeforeAttempt(None, notFound))
         | RetainedResolution.DismissedPreparation preparation ->
-            ResolveOutcome.RefusedBeforeAttempt(Some preparation, dismissed)
+            Some(ResolveOutcome.RefusedBeforeAttempt(Some preparation, dismissed))
+        | RetainedResolution.RevokedPreparation preparation ->
+            Some(ResolveOutcome.RefusedBeforeAttempt(preparation, revoked))
+        | RetainedResolution.AttemptLimitReached preparation ->
+            Some(ResolveOutcome.RefusedBeforeAttempt(Some preparation, attemptLimit))
         | RetainedResolution.DigestConflict ->
-            ResolveOutcome.RefusedBeforeAttempt(None, digestMismatch)
+            Some(ResolveOutcome.RefusedBeforeAttempt(None, digestMismatch))
         | RetainedResolution.ReceiptIdentityConflict ->
-            ResolveOutcome.RefusedBeforeAttempt(None, conflict)
+            Some(ResolveOutcome.RefusedBeforeAttempt(None, conflict))
+        | _ -> None
+
+    let private interruptedOutcome =
+        function
         | RetainedResolution.ResolutionCancelledBeforeAdmission operationId ->
-            ResolveOutcome.ResolveCancelledBeforeAdmission operationId
+            Some(ResolveOutcome.ResolveCancelledBeforeAdmission operationId)
         | RetainedResolution.ResolutionFailedBeforeAttempt(preparation, fault) ->
-            ResolveOutcome.ResolveFailedBeforeAttempt(preparation, fault)
+            Some(ResolveOutcome.ResolveFailedBeforeAttempt(preparation, fault))
         | RetainedResolution.ResolutionCancelledBeforeAttempt preparation ->
-            ResolveOutcome.ResolveCancelledBeforeAttempt preparation
+            Some(ResolveOutcome.ResolveCancelledBeforeAttempt preparation)
         | RetainedResolution.ResolutionAdmissionUnknown(preparation, fault) ->
-            ResolveOutcome.ResolveAttemptAdmissionUnknown(preparation, fault)
+            Some(ResolveOutcome.ResolveAttemptAdmissionUnknown(preparation, fault))
         | RetainedResolution.ResolutionUnresolved(preparation, attemptId, fault) ->
-            ResolveOutcome.ResolveAttemptUnresolved(preparation, attemptId, fault)
+            Some(ResolveOutcome.ResolveAttemptUnresolved(preparation, attemptId, fault))
+        | _ -> None
+
+    let resolveOutcome (result: RetainedResolution) : ResolveOutcome =
+        completedOutcome result
+        |> Option.orElseWith (fun () -> refusedOutcome result)
+        |> Option.orElseWith (fun () -> interruptedOutcome result)
+        |> Option.defaultWith (fun () ->
+            invalidOp "An unsupported recovery resolution was returned.")

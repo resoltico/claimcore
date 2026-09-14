@@ -25,12 +25,12 @@ test("bounds repeated published login admission and recovers after its window", 
   for (let attempt = 0; attempt < 6; attempt += 1) {
     const reply = await rejectedLogin(page, token);
     if (reply.status === 429) {
-      expectHostFailure(reply, 429, "WEB_BUSY");
+      await expectHostFailure(reply, 429, "WEB_BUSY");
       bounded = true;
       break;
     }
     if (reply.status !== 401) throw new Error(`E2E_RATE_STATUS_${reply.status}`);
-    expectHostFailure(reply, 401, "WEB_LOGIN_REJECTED");
+    await expectHostFailure(reply, 401, "WEB_LOGIN_REJECTED");
     refused += 1;
   }
   expect(refused).toBeGreaterThanOrEqual(2);

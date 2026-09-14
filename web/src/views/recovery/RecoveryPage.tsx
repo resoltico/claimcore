@@ -27,11 +27,41 @@ type RecoveryPageProps = DialogProps & { listing: Listing; message: string | nul
 const RecoveryHeading = ({ listing }: { listing: Listing }) => (
   <div className="section-heading">
     <h2 id="recovery-title">Recovery</h2>
+    <label>
+      Recovery view
+      <select
+        aria-label="Recovery view"
+        value={listing.view}
+        disabled={listing.loading}
+        onChange={(event) =>
+          listing.setView(event.target.value === "TERMINAL" ? "TERMINAL" : "PENDING")
+        }
+      >
+        <option value="PENDING">Pending</option>
+        <option value="TERMINAL">Terminal</option>
+      </select>
+    </label>
     <Button onPress={() => void listing.load(null)} isDisabled={listing.loading}>
       Reload
     </Button>
   </div>
 );
+
+const Capacity = ({ listing }: { listing: Listing }) => {
+  const page = listing.page;
+  if (page === null) return null;
+  return (
+    <p
+      className={page.nearCapacity ? "notice" : undefined}
+      role={page.nearCapacity ? "status" : undefined}
+    >
+      Pending recovery capacity: {page.pendingPreparationCount} / {page.maximumPendingPreparations}{" "}
+      preparations · {page.pendingCanonicalRequestBytes} /{" "}
+      {page.maximumPendingCanonicalRequestBytes} canonical bytes
+      {page.nearCapacity ? ". Near capacity; resolve or dismiss known pending items." : "."}
+    </p>
+  );
+};
 
 const RecoveryDialogs = ({
   selected,
@@ -71,9 +101,11 @@ export const RecoveryPage = ({
   <section aria-labelledby="recovery-title">
     <RecoveryHeading listing={listing} />
     <p>
-      Recovery records technical uncertainty. Inspect current server state before resolving or
+      Pending recovery is shown by default. Terminal view records accepted, dismissed, and revoked
+      authority without presenting it as executable work. Inspect server state before resolving or
       dismissing an item.
     </p>
+    <Capacity listing={listing} />
     <RecoveryImports busy={busy} actions={actions} />
     {message === null ? null : (
       <p className="notice" role="status">

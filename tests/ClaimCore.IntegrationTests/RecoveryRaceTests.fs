@@ -16,23 +16,7 @@ let private openRuntime () =
     |> Result.defaultWith (fun _ -> failtest "Synthetic recovery runtime must open.")
 
 let private prepare (core: IClaimsCore) operationId =
-    let request =
-        {
-            OperationId = operationId
-            CaseReference = "RACE-" + operationId.ToString("N")
-            ExpectedVersion = 0L
-            Kind = CommandKind.Open
-            Values =
-                [
-                    "incidentDate", registration.IncidentDate
-                    "incidentNotificationDate", registration.IncidentNotificationDate
-                    "incidentCountry", registration.IncidentCountry
-                    "claimantName", registration.ClaimantName
-                    "insurerName", registration.InsurerName
-                    "claimedAmount", registration.ClaimedAmount
-                    "claimedCurrency", registration.ClaimedCurrency
-                ]
-        }
+    let request = openRequest operationId ("RACE-" + operationId.ToString("N"))
 
     match core.Prepare(request, CancellationToken.None) |> await with
     | PrepareOutcome.Prepared(details, _) ->
@@ -128,17 +112,26 @@ let private resolveDismiss =
           RecoveryDismissOutcome.DismissRefused(_, refusal) ->
             Expect.equal
                 refusal.Code
-                RecoveryRejectionCode.SubmissionAlreadyStarted
-                "Attempt-first blocks dismissal"
+                RecoveryRejectionCode.RecoveryActionUnavailable
+                "Acceptance-first prevents revocation"
 
             Expect.equal (countFor operationId "attempts") 1L "One admitted attempt"
             Expect.equal (countFor operationId "receipts") 1L "One accepted receipt"
+            Expect.equal (countFor operationId "settlements") 1L "Accepted attempt is settled"
+        | ResolveOutcome.ResolveCompleted(_,
+                                          _,
+                                          DefiniteExecution.ExecutionRevokedBeforeExecution _,
+                                          SettlementConfirmation.Confirmed),
+          RecoveryDismissOutcome.DismissedPreparation _ ->
+            Expect.equal (countFor operationId "attempts") 1L "Started work remains evidence"
+            Expect.equal (countFor operationId "settlements") 1L "Revoked attempt is settled"
+            Expect.equal (countFor operationId "receipts") 0L "Revocation prevents case mutation"
         | ResolveOutcome.RefusedBeforeAttempt(_, refusal),
           RecoveryDismissOutcome.DismissedPreparation _ ->
             Expect.equal
                 refusal.Code
-                RecoveryRejectionCode.PreparationDismissed
-                "Dismiss-first blocks resolution"
+                RecoveryRejectionCode.OperationRevoked
+                "Dismiss-first closes future execution authority"
 
             Expect.equal (countFor operationId "attempts") 0L "No attempt after dismissal"
             Expect.equal (countFor operationId "receipts") 0L "No claim after dismissal"

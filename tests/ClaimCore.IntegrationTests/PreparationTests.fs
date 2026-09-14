@@ -16,26 +16,10 @@ let private openRuntime () =
     |> await
     |> Result.defaultWith (fun _ -> failtest "Runtime must open for recovery tests.")
 
-let private draft operationId reference =
-    {
-        OperationId = operationId
-        CaseReference = reference
-        ExpectedVersion = 0L
-        Kind = CommandKind.Open
-        Values =
-            [
-                "incidentDate", registration.IncidentDate
-                "incidentNotificationDate", registration.IncidentNotificationDate
-                "incidentCountry", registration.IncidentCountry
-                "claimantName", registration.ClaimantName
-                "insurerName", registration.InsurerName
-                "claimedAmount", registration.ClaimedAmount
-                "claimedCurrency", registration.ClaimedCurrency
-            ]
-    }
+let private request operationId reference = openRequest operationId reference
 
 let private prepared (core: IClaimsCore) operationId reference =
-    match core.Prepare(draft operationId reference, CancellationToken.None) |> await with
+    match core.Prepare(request operationId reference, CancellationToken.None) |> await with
     | PrepareOutcome.Prepared(details, review) -> details, review
     | _ -> failtest "Expected a retained typed preparation."
 
@@ -176,7 +160,15 @@ let private corruptedIdentity =
         setDigest operationId (String.replicate 64 "b")
 
         try
-            match runtime.Core.Recovery.Inspect(operationId, CancellationToken.None) |> await with
+            match
+                runtime.Core.Recovery.Inspect(
+                    operationId,
+                    None,
+                    recoveryPageLimit,
+                    CancellationToken.None
+                )
+                |> await
+            with
             | RecoveryQueryOutcome.RecoveryFailed fault ->
                 Expect.equal
                     fault.Code
@@ -210,7 +202,7 @@ let private durableDismissal =
             |> await
         with
         | ResolveOutcome.RefusedBeforeAttempt(_, rejection) ->
-            Expect.equal rejection.Code RecoveryRejectionCode.PreparationDismissed "Dismissal wins"
+            Expect.equal rejection.Code RecoveryRejectionCode.OperationRevoked "Dismissal wins"
         | _ -> failtest "Dismissed preparation must not start an attempt.")
 
 let private preparationTests =

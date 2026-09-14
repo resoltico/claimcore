@@ -63,6 +63,13 @@ module CliRawCorpus =
             $"{{\"protocolVersion\":3,\"endpoint\":\"recovery.resolve\",\"input\":{{\"operationId\":\"10000000-0000-4000-8000-000000000001\",\"requestSha256\":\"{value}\"}}}}"
         )
 
+    let private correctCase operationId =
+        utf8 (
+            """{"protocolVersion":3,"endpoint":"command.prepare","input":{"operationId":"""
+            + JsonSerializer.Serialize(operationId)
+            + """, "caseReference":"SYNTHETIC-CASE","expectedRevision":"3","command":{"kind":"CORRECT_CASE","groups":{"registration":{"mode":"REPLACE","values":{"incidentDate":"2026-08-01","incidentNotificationDate":"2026-08-03","incidentCountry":"Latvia","claimantName":"Synthetic Claimant","insurerName":"Synthetic Insurer","claimedAmount":"1000.00","claimedCurrency":"EUR"}},"decision":{"mode":"REPLACE","values":{"paymentDecisionDate":"2026-08-15","payableAmount":"750.00","payableCurrency":"EUR"}},"payment":{"mode":"REPLACE","values":{"paymentDate":"2026-08-20"}}}}}}"""
+        )
+
     let private structuralCases =
         let ordinary =
             utf8 "{\"protocolVersion\":3,\"endpoint\":\"case.list\",\"input\":{\"limit\":1}}"
@@ -146,7 +153,17 @@ module CliRawCorpus =
                 (digest (String.replicate 64 "A"))
         ]
 
-    let private boundaryCases = structuralCases @ scalarCases
+    let private groupedCorrectionCase =
+        {
+            Identifier = "valid-correct-case-groups"
+            Bytes = correctCase "10000000-0000-4000-8000-000000000001"
+            Valid = true
+            ExpectedCode = None
+            ExpectedPath = None
+        }
+
+    let private boundaryCases =
+        structuralCases @ scalarCases @ [ groupedCorrectionCase ]
 
     let private renderCase (writer: Utf8JsonWriter) value =
         writer.WriteStartObject()

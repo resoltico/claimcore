@@ -7,6 +7,8 @@
     <Compile Include="CommandDefinitions.fs" />
     <Compile Include="Validation.fs" />
     <Compile Include="Eligibility.fs" />
+    <Compile Include="CorrectionResolution.fs" />
+    <Compile Include="CaseCorrection.fs" />
     <Compile Include="Claim.fsi" />
     <Compile Include="Claim.fs" />
   </ItemGroup>

@@ -25,6 +25,11 @@
       "version": 5,
       "name": "005_recovery_evidence_read_acl",
       "sha256": "48652349e683df4f94e4dc2fcf27f40c2a35d69ba0ee7007871f616b79ce783b"
+    },
+    {
+      "version": 6,
+      "name": "006_operation_authority_and_business_time",
+      "sha256": "b73ea23977478361bd708aef0fa357cf24d4af6ea096bfa3ff225710cb722818"
     }
   ]
 }

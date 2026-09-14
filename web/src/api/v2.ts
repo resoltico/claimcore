@@ -6,30 +6,14 @@ import {
 import { isHostFailure, isWebV2Response } from "../generated/convergence/web-v2.validation";
 
 /** The generated endpoint catalogue owns route, method, media type, and byte limits. */
-export type {
-  AdvisoryReview,
+export type * from "./types";
+export { isMutationUncertain, resultMessage } from "./outcomes";
+import type {
   ApiResult,
-  CaseFields,
-  CaseSummary,
-  CaseView,
-  CommandDescriptor,
   CommandDraft,
-  CommandInputDescriptor,
-  CurrentCase,
-  DefinitionPayload,
-  EndpointOutcome,
-  FieldDescriptor,
-  PreparationDetails,
-  PreparationSummary,
-  Receipt,
-  RecoveryDetails,
-  RecoveryImportPreview,
-  SemanticDefinition,
-  SessionSnapshot,
+  HostFailure,
   WebV2Response,
 } from "../generated/convergence/web-v2.types";
-export { isMutationUncertain, resultMessage } from "./outcomes";
-import type { ApiResult, CommandDraft, WebV2Response } from "../generated/convergence/web-v2.types";
 
 type Download = { blob: Blob; filename: string };
 
@@ -98,10 +82,18 @@ const decodeJsonResponse = <K extends WebV2EndpointId>(
   id: K,
   status: number,
   value: unknown,
-): ApiResult<WebV2Response<K>> => {
-  if (isWebV2Response(id, value)) return { kind: "outcome", value, status };
-  if (hostFailureStatus(status) && isHostFailure(value)) {
-    return { kind: "hostFailure", failure: value, status };
+): Promise<ApiResult<WebV2Response<K>>> => decodeValidatedJsonResponse(id, status, value);
+
+const decodeValidatedJsonResponse = async <K extends WebV2EndpointId>(
+  id: K,
+  status: number,
+  value: unknown,
+): Promise<ApiResult<WebV2Response<K>>> => {
+  if (await isWebV2Response(id, value)) {
+    return { kind: "outcome", value: value as WebV2Response<K>, status };
+  }
+  if (hostFailureStatus(status) && (await isHostFailure(id, value))) {
+    return { kind: "hostFailure", failure: value as HostFailure, status };
   }
   return {
     kind: "deliveryFailure",
@@ -135,7 +127,7 @@ const request = async <K extends WebV2EndpointId>(
       ...(signal === undefined ? {} : { signal }),
     });
     const payload = await readJson(response);
-    return decodeJsonResponse(id, response.status, payload);
+    return await decodeJsonResponse(id, response.status, payload);
   } catch {
     return { kind: "deliveryFailure", message: "The local service could not be reached." };
   }
@@ -188,7 +180,7 @@ const exportRecovery = async (
     });
     const type = responseMediaType(response);
     if (type === "application/json") {
-      return decodeJsonResponse("recovery.export", response.status, await readJson(response));
+      return await decodeJsonResponse("recovery.export", response.status, await readJson(response));
     }
     const expected = `claimcore-recovery-${operationId}.json`;
     const disposition = response.headers.get("content-disposition");
@@ -245,10 +237,32 @@ export const v2 = {
   prepare: (draft: CommandDraft, token: string) => request("command.prepare", token, draft),
   submit: (operationId: string, requestSha256: string, token: string) =>
     request("command.execute", token, { operationId, requestSha256 }),
-  recoveryList: (cursor: string | null, limit: number, token: string, signal?: AbortSignal) =>
-    request("recovery.list", token, { ...(cursor === null ? {} : { cursor }), limit }, signal),
-  recoveryInspect: (operationId: string, token: string, signal?: AbortSignal) =>
-    request("recovery.inspect", token, { operationId }, signal),
+  recoveryList: (
+    view: "PENDING" | "TERMINAL",
+    cursor: string | null,
+    limit: number,
+    token: string,
+    signal?: AbortSignal,
+  ) =>
+    request(
+      "recovery.list",
+      token,
+      { view, ...(cursor === null ? {} : { cursor }), limit },
+      signal,
+    ),
+  recoveryInspect: (
+    operationId: string,
+    attemptCursor: string | null,
+    attemptLimit: number,
+    token: string,
+    signal?: AbortSignal,
+  ) =>
+    request(
+      "recovery.inspect",
+      token,
+      { operationId, ...(attemptCursor === null ? {} : { attemptCursor }), attemptLimit },
+      signal,
+    ),
   recoveryResolve: (operationId: string, requestSha256: string, token: string) =>
     request("recovery.resolve", token, { operationId, requestSha256 }),
   recoveryDismiss: (operationId: string, requestSha256: string, token: string) =>

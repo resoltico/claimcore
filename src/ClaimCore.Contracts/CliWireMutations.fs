@@ -24,6 +24,11 @@ module internal CliWireMutations =
             writer.WritePropertyName("rejection")
             CliWireValues.rejection writer rejection
             writer.WriteEndObject()
+        | DefiniteExecution.ExecutionRevokedBeforeExecution operationId ->
+            writer.WriteStartObject()
+            writer.WriteString("kind", "revokedBeforeExecution")
+            writer.WriteString("operationId", operationId)
+            writer.WriteEndObject()
         | DefiniteExecution.FailedBeforeCommit(operationId, fault) ->
             writer.WriteStartObject()
             writer.WriteString("kind", "failedBeforeCommit")
@@ -191,6 +196,12 @@ module internal CliWireMutations =
             detailsOutcome writer "dismissed" details
         | RecoveryDismissOutcome.AlreadyDismissedPreparation details ->
             detailsOutcome writer "alreadyDismissed" details
+        | RecoveryDismissOutcome.AlreadyRevoked revoked ->
+            writer.WriteStartObject()
+            writer.WriteString("kind", "alreadyRevoked")
+            writer.WritePropertyName("revocation")
+            CliWireValues.revokedOperation writer revoked
+            writer.WriteEndObject()
         | RecoveryDismissOutcome.DismissNotFound operationId ->
             operationOnly writer "notFound" operationId
         | RecoveryDismissOutcome.DismissRefused(details, rejection) ->

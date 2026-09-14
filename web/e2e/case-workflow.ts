@@ -1,6 +1,7 @@
 import { expect, type Page } from "@playwright/test";
 
 import { isWebV2Response } from "../src/generated/convergence/web-v2.validation";
+import type { WebV2Response } from "../src/generated/convergence/web-v2.types";
 import { progress } from "./session-helpers";
 
 export type PreparedIdentity = Readonly<{ operationId: string; requestSha256: string }>;
@@ -55,8 +56,10 @@ const submitReview = async (page: Page): Promise<void> => {
   const response = await responseEvent;
   if (response.status() !== 200) throw new Error("E2E_SUBMIT_HTTP_FAILURE");
   const payload: unknown = await response.json();
-  if (!isWebV2Response("command.execute", payload)) throw new Error("E2E_SUBMIT_PROTOCOL_FAILURE");
-  const outcome = payload.outcome;
+  if (!(await isWebV2Response("command.execute", payload))) {
+    throw new Error("E2E_SUBMIT_PROTOCOL_FAILURE");
+  }
+  const outcome = (payload as WebV2Response<"command.execute">).outcome;
   if (
     outcome.tag !== "OBSERVED_ACCEPTED" &&
     !(outcome.tag === "COMPLETED" && outcome.data.execution.tag === "ACCEPTED")

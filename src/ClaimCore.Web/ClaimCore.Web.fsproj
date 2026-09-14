@@ -12,6 +12,9 @@
     <Compile Include="Configuration.fs" />
     <Compile Include="Security.fs" />
     <Compile Include="JsonUnicode.fs" />
+    <Compile Include="HttpInputSupport.fs" />
+    <Compile Include="HttpCommandInput.fs" />
+    <Compile Include="HttpRecoveryInput.fs" />
     <Compile Include="HttpInput.fs" />
     <Compile Include="WebContract.fs" />
     <Compile Include="WireOutcomes.fs" />

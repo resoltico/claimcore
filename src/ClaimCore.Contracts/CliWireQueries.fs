@@ -148,17 +148,43 @@ module internal CliWireQueries =
         | RecoveryQueryOutcome.RecoveryCancelled -> cancelled writer
 
     let recoveryPage (writer: Utf8JsonWriter) (value: RecoveryQueryOutcome<RecoveryPage>) =
+        let item (output: Utf8JsonWriter) =
+            function
+            | RetainedRecoveryItem summary ->
+                output.WriteStartObject()
+                output.WriteString("kind", "retained")
+                output.WritePropertyName("summary")
+                CliWireValues.preparationSummary output summary
+                output.WriteEndObject()
+            | RevokedRecoveryItem revoked ->
+                output.WriteStartObject()
+                output.WriteString("kind", "revoked")
+                output.WritePropertyName("revocation")
+                CliWireValues.revokedOperation output revoked
+                output.WriteEndObject()
+
         let success (output: Utf8JsonWriter) (page: RecoveryPage) =
             output.WriteStartObject()
             output.WriteString("kind", "succeeded")
+            output.WriteString("view", WireTokens.recoveryListView page.View)
             output.WriteStartArray("items")
-            page.Items |> List.iter (CliWireValues.preparationSummary output)
+            page.Items |> List.iter (item output)
             output.WriteEndArray()
 
             match page.NextCursor with
             | Some cursor -> output.WriteString("nextCursor", cursor)
             | None -> output.WriteNull("nextCursor")
 
+            output.WriteNumber("pendingPreparationCount", page.PendingPreparationCount)
+            output.WriteNumber("pendingCanonicalRequestBytes", page.PendingCanonicalRequestBytes)
+            output.WriteNumber("maximumPendingPreparations", page.MaximumPendingPreparations)
+
+            output.WriteNumber(
+                "maximumPendingCanonicalRequestBytes",
+                page.MaximumPendingCanonicalRequestBytes
+            )
+
+            output.WriteBoolean("nearCapacity", page.NearCapacity)
             output.WriteEndObject()
 
         recoveryQuery writer success value
@@ -179,15 +205,32 @@ module internal CliWireQueries =
 
     let recoveryDetails
         (writer: Utf8JsonWriter)
-        (value: RecoveryQueryOutcome<Lookup<RecoveryDetails, Guid>>)
+        (value: RecoveryQueryOutcome<Lookup<RecoveryInspection, Guid>>)
         =
-        let found (output: Utf8JsonWriter) (details: RecoveryDetails) =
+        let retained (output: Utf8JsonWriter) (details: RecoveryDetails) =
             output.WriteStartObject()
-            output.WriteString("kind", "found")
+            output.WriteString("kind", "retained")
             output.WritePropertyName("preparation")
             CliWireValues.preparationDetails output details.Preparation
             output.WritePropertyName("observation")
             observation output details.Observation
+            output.WriteEndObject()
+
+        let inspection (output: Utf8JsonWriter) =
+            function
+            | RetainedInspection details -> retained output details
+            | RevokedInspection revoked ->
+                output.WriteStartObject()
+                output.WriteString("kind", "revoked")
+                output.WritePropertyName("revocation")
+                CliWireValues.revokedOperation output revoked
+                output.WriteEndObject()
+
+        let found (output: Utf8JsonWriter) item =
+            output.WriteStartObject()
+            output.WriteString("kind", "found")
+            output.WritePropertyName("inspection")
+            inspection output item
             output.WriteEndObject()
 
         let missing (output: Utf8JsonWriter) (operationId: Guid) =

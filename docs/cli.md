@@ -172,9 +172,11 @@ from a momentarily absent receipt.
 
 Recovery is one Application-owned workflow. A preparation is technical material, not accepted claim
 history, and its existence does not establish commit. `recovery.inspect` returns retained effect and
-provenance separately from its receipt observation. It also shows actual identified attempts and
-their definite settlements, and the pre-003 uncertainty marker independently of provenance. A
-bounded recovery list deliberately omits authored values, provenance, and attempt detail.
+provenance separately from its receipt observation. It pages actual identified attempts and their
+definite settlements with an opaque cursor bound to that operation, and shows the pre-003 uncertainty
+marker independently of provenance. `recovery.list` defaults to pending work and takes an explicit
+terminal view for retained accepted/revoked evidence and payload-free revocation tombstones. A bounded
+recovery list deliberately omits authored values, provenance, and attempt detail.
 An accepted receipt remains observable even if its technical preparation has been pruned. While a
 preparation is retained, exact replay preserves its original producer provenance and timestamp; a
 newer binary's semantic fingerprint does not rewrite those first-writer facts or become part of
@@ -190,6 +192,10 @@ intentional trusted-operator read by operation ID. Cancellation proved before a 
 not imply that write committed and does not erase earlier attempt or receipt evidence. A lost result
 once COMMIT starts remains explicitly uncertain. A definite business execution remains visible even
 if its technical settlement cannot be confirmed; unknown and unresolved outcomes remain recoverable.
+A durable revocation is different from a rejected attempt: it ends future execution authority for the
+exact identity, remains terminal after optional preparation pruning, and never changes earlier
+attempt knowledge. Attempt admission is capped at 64 per operation; reaching the cap does not block
+inspect, dismiss, export, or accepted replay.
 
 <a id="cc-cli-002"></a>
 ### CC-CLI-002 — Private CLI recovery artifacts stay inside handle-first paths

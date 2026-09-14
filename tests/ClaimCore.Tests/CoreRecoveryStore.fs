@@ -2,11 +2,11 @@ module ClaimCore.Tests.CoreRecoveryStore
 
 open System
 open System.Threading
-open System.Threading.Tasks
 open ClaimCore.Application
+open ClaimCore.Tests
 
-/// In-memory double for typed Application workflow tests. It models exact request identity and
-/// technical lifecycle only; PostgreSQL qualification remains the authority for transaction rules.
+/// In-memory double for typed Application workflow tests. Its focused state/read/mutation modules
+/// model authority and evidence without claiming PostgreSQL transaction or locking correctness.
 type internal Store
     (
         ?retainFailure: RecoveryStoreFailure,
@@ -19,169 +19,57 @@ type internal Store
         ?transformGet: RetainedPreparation -> RetainedPreparation,
         ?onStart: unit -> unit
     ) =
-    let gate = obj ()
-    let lineage = Guid.Parse("30000000-0000-4000-8000-000000000001")
-    let mutable values: Map<Guid, RetainedPreparation> = Map.empty
-    let mutable startCalls = 0
-    let mutable settlementCalls = 0
-    let mutable getCalls = 0
+    let state = RecoveryStoreState.create ()
 
-    let same (draft: RecoveryPreparationDraft) (retained: RetainedPreparation) =
-        draft.CanonicalRequestFormat = retained.CanonicalRequestFormat
-        && draft.RequestSha256 = retained.RequestSha256
-        && draft.CanonicalRequest = retained.CanonicalRequest
-
-    let materialize
-        (draft: RecoveryPreparationDraft)
-        (lifecycle: PreparationLifecycle)
-        : RetainedPreparation =
+    let settings: RecoveryStoreSettings =
         {
-            OperationId = draft.OperationId
-            CanonicalRequestFormat = draft.CanonicalRequestFormat
-            RequestSha256 = draft.RequestSha256
-            CanonicalRequest = Array.copy draft.CanonicalRequest
-            PreparedAt = DateTimeOffset(2026, 9, 7, 0, 0, 0, TimeSpan.Zero)
-            PreparingApplicationVersion = draft.PreparingApplicationVersion
-            PreparingContractFingerprint = draft.PreparingContractFingerprint
-            PreparingContractKind = draft.PreparingContractKind
-            Lifecycle = lifecycle
-            Attempts = []
-            LegacyUncertainty = false
+            RetainFailure = retainFailure
+            StartFailure = startFailure
+            DismissFailure = dismissFailure
+            SettleFailure = settleFailure
+            SettleThrows = settleThrows |> Option.defaultValue false
+            OnGet = onGet
+            GetFailure = getFailure
+            TransformGet = transformGet
+            OnStart = onStart
         }
 
-    let update (value: RetainedPreparation) =
-        values <- Map.add value.OperationId value values
-        value
+    member _.StartCalls = state.StartCalls
+    member _.SettlementCalls = state.SettlementCalls
+    member _.GetCalls = state.GetCalls
 
-    member _.StartCalls = startCalls
-    member _.SettlementCalls = settlementCalls
-    member _.GetCalls = getCalls
+    /// Composition setup for this synthetic double. Production Postgres owns this combined
+    /// transaction; unit tests share the same in-memory claim port so public reads observe it.
+    member _.AttachClaimStore(claimStore: IClaimStore) = state.ClaimStore <- Some claimStore
+
+    /// Test setup only: emulate owner pruning while preserving independent durable revocation.
+    member _.PruneRetainedForTest operationId =
+        RecoveryStoreState.pruneRetained state operationId
 
     interface IRecoveryStore with
-        member _.InstallationLineage _ = Task.FromResult(Ok lineage)
+        member _.InstallationLineage _ =
+            System.Threading.Tasks.Task.FromResult(Ok state.Lineage)
 
         member _.Retain(draft, _) =
-            Task.FromResult(
-                lock gate (fun () ->
-                    match retainFailure with
-                    | Some failure -> Error failure
-                    | None ->
-                        match Map.tryFind draft.OperationId values with
-                        | Some retained when same draft retained ->
-                            Ok(RecoveryRetain.Existing retained)
-                        | Some _ -> Error RecoveryStoreFailure.IdempotencyConflict
-                        | None ->
-                            Ok(
-                                materialize draft PreparationLifecycle.Unsubmitted
-                                |> update
-                                |> RecoveryRetain.Created
-                            ))
-            )
+            RecoveryStoreRead.retain state settings draft
 
         member _.Get(operationId, _) =
-            let result =
-                lock gate (fun () ->
-                    getCalls <- getCalls + 1
+            RecoveryStoreRead.get state settings operationId
 
-                    match getFailure with
-                    | Some failure -> Error failure
-                    | None ->
-                        Map.tryFind operationId values
-                        |> Option.map (fun value ->
-                            transformGet
-                            |> Option.map (fun change -> change value)
-                            |> Option.defaultValue value)
-                        |> Ok)
+        member _.Inspect(operationId, after, limit, _) =
+            RecoveryStoreRead.inspect state operationId after limit
 
-            onGet |> Option.iter (fun callback -> callback ())
-            Task.FromResult result
-
-        member _.List(_, limit, _) =
-            Task.FromResult(
-                lock gate (fun () ->
-                    let sorted =
-                        values
-                        |> Map.toList
-                        |> List.map snd
-                        |> List.sortByDescending (fun value -> value.PreparedAt, value.OperationId)
-
-                    let page = sorted |> List.truncate limit
-
-                    Ok
-                        {
-                            Items = page
-                            NextAfter =
-                                if sorted.Length > page.Length then
-                                    page
-                                    |> List.tryLast
-                                    |> Option.map (fun value ->
-                                        {
-                                            PreparedAt = value.PreparedAt
-                                            OperationId = value.OperationId
-                                        })
-                                else
-                                    None
-                        })
-            )
+        member _.List(view, after, limit, _) =
+            RecoveryStoreRead.list state view after limit
 
         member _.Start(operationId, _) =
-            let result =
-                lock gate (fun () ->
-                    startCalls <- startCalls + 1
+            RecoveryStoreMutation.start state settings operationId
 
-                    match startFailure with
-                    | Some failure -> Error failure
-                    | None ->
-                        match Map.tryFind operationId values with
-                        | None -> Error RecoveryStoreFailure.NotFound
-                        | Some value ->
-                            match value.Lifecycle with
-                            | PreparationLifecycle.Dismissed _ -> Ok(RecoveryStart.Dismissed value)
-                            | PreparationLifecycle.Unsubmitted ->
-                                let started =
-                                    { value with
-                                        Lifecycle =
-                                            PreparationLifecycle.SubmissionStarted
-                                                DateTimeOffset.UtcNow
-                                    }
-                                    |> update
+        member _.Settle(attemptId, outcome, _) =
+            RecoveryStoreMutation.settle state settings attemptId outcome
 
-                                Ok(RecoveryStart.Started(Guid.NewGuid(), started))
-                            | PreparationLifecycle.SubmissionStarted _ ->
-                                Ok(RecoveryStart.AlreadyStarted(Guid.NewGuid(), value)))
+        member _.ExecuteAdmitted(operation, attemptId, today, decide, _) =
+            RecoveryStoreMutation.executeAdmitted state settings operation attemptId today decide
 
-            onStart |> Option.iter (fun callback -> callback ())
-            Task.FromResult result
-
-        member _.Settle(_, _, _) =
-            lock gate (fun () -> settlementCalls <- settlementCalls + 1)
-
-            if settleThrows |> Option.defaultValue false then
-                Task.FromException<Result<unit, RecoveryStoreFailure>>(InvalidOperationException())
-            else
-                Task.FromResult(settleFailure |> Option.map Error |> Option.defaultValue (Ok()))
-
-        member _.Dismiss(operationId, _) =
-            Task.FromResult(
-                lock gate (fun () ->
-                    match dismissFailure with
-                    | Some failure -> Error failure
-                    | None ->
-                        match Map.tryFind operationId values with
-                        | None -> Error RecoveryStoreFailure.NotFound
-                        | Some value ->
-                            match value.Lifecycle with
-                            | PreparationLifecycle.Unsubmitted ->
-                                let dismissed =
-                                    { value with
-                                        Lifecycle =
-                                            PreparationLifecycle.Dismissed DateTimeOffset.UtcNow
-                                    }
-                                    |> update
-
-                                Ok(RecoveryDismissal.Dismissed dismissed)
-                            | PreparationLifecycle.Dismissed _ ->
-                                Ok(RecoveryDismissal.AlreadyDismissed value)
-                            | PreparationLifecycle.SubmissionStarted _ ->
-                                Ok(RecoveryDismissal.SubmissionAlreadyStarted value))
-            )
+        member _.Dismiss(operationId, requestSha256, _) =
+            RecoveryStoreMutation.dismiss state settings operationId requestSha256

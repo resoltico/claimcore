@@ -34,6 +34,8 @@ type RejectionCode =
     | AlreadyOpened
     | ZeroDecisionCannotBePaid
     | IdempotencyConflict
+    | OperationRevoked
+    | RecoveryAttemptLimitReached
 
 type Rejection =
     {
@@ -180,6 +182,7 @@ type Lookup<'found, 'identity> =
 type DefiniteExecution =
     | Accepted of OperationReceipt
     | ExecutionRejected of operationId: Guid * rejection: Rejection
+    | ExecutionRevokedBeforeExecution of operationId: Guid
     | FailedBeforeCommit of operationId: Guid * fault: CoreFault
 
 type SettlementConfirmation =

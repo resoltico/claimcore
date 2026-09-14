@@ -83,8 +83,9 @@ The pure `ClaimCore.Contracts` projection owns the canonical Web-v2 endpoint cat
 and response schemas, raw-media rules, deterministic response codecs, split TypeScript DTO modules,
 parsed conformance corpus, and Web wire fingerprint. The F# host consumes the same catalog and codec
 authority. A deterministic Node postprocess compiles the aggregate response schema into strict AJV
-standalone validators and a typed selector. Run `npm --prefix web run contract:check` to regenerate
-and compare every checked artifact; do not hand edit generated contract files.
+standalone core and recovery validator groups and a typed asynchronous selector. The selector loads
+only the group needed to validate the endpoint response. Run `npm --prefix web run contract:check` to
+regenerate and compare every checked artifact; do not hand edit generated contract files.
 During the pre-1.0 source preview, `/api/v2` identifies this route and admission family, not a
 promise that every response shape remains backward-compatible. The host and bundled browser must
 agree on the exact Web fingerprint before claimant-bearing responses are accepted.
@@ -161,12 +162,14 @@ state, and never retry automatically.
 
 ## Recovery, downloads, and clipboard
 
-The browser lists bounded recovery summaries and inspects details, including identified attempts,
-settlements, and independent legacy uncertainty, only on demand. It can resolve or
-dismiss only after accessible confirmation using the exact operation ID and digest. An accepted
-receipt is not offered as a new resolve action; an exact replay can observe it without a second
-accepted revision. Reload clears browser review state; durable recovery is the
-Application workflow, not browser state.
+The browser lists actionable pending recovery work by default and offers an explicit bounded terminal
+view for accepted and revoked technical material. Detailed inspection pages identified attempts with
+an opaque operation-bound cursor and includes independent legacy uncertainty only on demand. A
+pruned revoked preparation is a payload-free tombstone, not a substitute for claimant data. The UI
+can resolve or dismiss only after accessible confirmation using the exact operation ID and digest.
+An accepted receipt is not offered as a new resolve action; an exact replay can observe it without a
+second accepted revision. Reload clears browser review state; durable recovery is the Application
+workflow, not browser state.
 
 Export first warns the operator, then accepts only a bounded attachment named exactly
 `claimcore-recovery-<canonical-operation-id>.json` with media type
@@ -178,7 +181,7 @@ Downloads and clipboard content leave ClaimCore's process boundary. The host can
 directory, synchronization service, backup, clipboard observer, or later copies. Keep exports and
 clipboard data in approved private storage and follow the operator retention process.
 
-Apply through migration 005 with `ClaimCore.Database` before opening an existing installation with
-Web-v2.
+Apply through migration 006 and configure the installation business time zone with
+`ClaimCore.Database` before opening an existing installation with Web-v2.
 See [Database](database.md) for migration and retention administration and
 [Security and operations](operations.md) for deployment limits.

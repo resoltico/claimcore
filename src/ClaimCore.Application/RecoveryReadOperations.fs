@@ -13,11 +13,19 @@ module internal RecoveryReadOperations =
             Action = RecommendedAction.StopAndInvestigate
         }
 
+    let private projectListItem =
+        function
+        | RecoveryStoreListItem.Retained(preparation, authority) ->
+            TypedProjection.summaryWithKnownAuthority false authority preparation
+            |> Result.map RetainedRecoveryItem
+        | RecoveryStoreListItem.Revoked revocation ->
+            TypedProjection.revokedOperation revocation |> RevokedRecoveryItem |> Ok
+
     let private projectPage (page: RecoveryStorePage) =
-        let summaries = page.Items |> List.map (TypedProjection.summary false)
+        let items = page.Items |> List.map projectListItem
 
         match
-            summaries
+            items
             |> List.tryPick (function
                 | Error fault -> Some fault
                 | Ok _ -> None)
@@ -26,12 +34,22 @@ module internal RecoveryReadOperations =
         | None ->
             RecoveryQueryOutcome.RecoverySucceeded
                 {
-                    Items = summaries |> List.choose Result.toOption
+                    View = page.View
+                    Items = items |> List.choose Result.toOption
                     NextCursor = page.NextAfter |> Option.map RecoveryCursorCodec.encode
+                    PendingPreparationCount = page.PendingPreparationCount
+                    PendingCanonicalRequestBytes = page.PendingCanonicalRequestBytes
+                    MaximumPendingPreparations = page.MaximumPendingPreparations
+                    MaximumPendingCanonicalRequestBytes = page.MaximumPendingCanonicalRequestBytes
+                    NearCapacity =
+                        page.PendingPreparationCount >= (page.MaximumPendingPreparations * 9 / 10)
+                        || page.PendingCanonicalRequestBytes
+                           >= (page.MaximumPendingCanonicalRequestBytes * 9L / 10L)
                 }
 
     let list
         (recovery: IRecoveryStore)
+        (view: RecoveryListView)
         (afterCursor: string option)
         (limit: int)
         (cancellationToken: CancellationToken)
@@ -51,9 +69,13 @@ module internal RecoveryReadOperations =
                 Task.FromResult(
                     RecoveryQueryOutcome.RecoveryRejected(RecoverySupport.invalid "cursor")
                 )
+            | Ok cursor when cursor |> Option.exists (fun value -> value.View <> view) ->
+                Task.FromResult(
+                    RecoveryQueryOutcome.RecoveryRejected(RecoverySupport.invalid "cursor")
+                )
             | Ok cursor ->
                 task {
-                    match! recovery.List(cursor, limit, cancellationToken) with
+                    match! recovery.List(view, cursor, limit, cancellationToken) with
                     | Error RecoveryStoreFailure.ReadCancelled ->
                         return RecoveryQueryOutcome.RecoveryCancelled
                     | Error failure ->
@@ -73,9 +95,18 @@ module internal RecoveryReadOperations =
         (operationId: Guid)
         (cancellationToken: CancellationToken)
         (retained: RetainedPreparation)
-        : Task<RecoveryQueryOutcome<Lookup<RecoveryDetails, Guid>>> =
+        (attempts: RecoveryAttemptPage)
+        (authority: RecoveryAuthority)
+        : Task<RecoveryQueryOutcome<Lookup<RecoveryInspection, Guid>>> =
         task {
-            match TypedProjection.details retained with
+            let attemptPage =
+                {
+                    Items = attempts.Items
+                    NextCursor = attempts.NextAfter |> Option.map RecoveryAttemptCursorCodec.encode
+                    LegacyUncertainty = attempts.LegacyUncertainty
+                }
+
+            match TypedProjection.detailsWithKnownAuthority retained attemptPage authority with
             | Error fault -> return RecoveryQueryOutcome.RecoveryFailed fault
             | Ok details ->
                 match! TypedQueries.observe store operationId cancellationToken with
@@ -90,11 +121,13 @@ module internal RecoveryReadOperations =
 
                         return
                             RecoveryQueryOutcome.RecoverySucceeded(
-                                Lookup.Found
-                                    {
-                                        Preparation = inspected
-                                        Observation = observation
-                                    }
+                                Lookup.Found(
+                                    RecoveryInspection.RetainedInspection
+                                        {
+                                            Preparation = inspected
+                                            Observation = observation
+                                        }
+                                )
                             )
                 | QueryOutcome.Failed fault -> return RecoveryQueryOutcome.RecoveryFailed fault
                 | QueryOutcome.Cancelled -> return RecoveryQueryOutcome.RecoveryCancelled
@@ -102,36 +135,79 @@ module internal RecoveryReadOperations =
                     return RecoveryQueryOutcome.RecoveryFailed(invalidFault rejection.Message)
         }
 
+    let private inspectCursor operationId afterCursor =
+        afterCursor
+        |> Option.map (RecoveryAttemptCursorCodec.decode >> Result.map Some)
+        |> Option.defaultValue (Ok None)
+        |> Result.bind (fun cursor ->
+            if cursor |> Option.exists (fun value -> value.OperationId <> operationId) then
+                Error "Attempt cursor belongs to a different operation."
+            else
+                Ok cursor)
+
+    let private inspectStored
+        (store: IClaimStore)
+        (operationId: Guid)
+        (cancellationToken: CancellationToken)
+        =
+        function
+        | None ->
+            Task.FromResult(RecoveryQueryOutcome.RecoverySucceeded(Lookup.NotFound operationId))
+        | Some(RecoveryStoreInspection.Retained(retained, attempts, authority)) ->
+            inspectRetained store operationId cancellationToken retained attempts authority
+        | Some(RecoveryStoreInspection.RevokedTombstone revocation) ->
+            RecoveryInspection.RevokedInspection(TypedProjection.revokedOperation revocation)
+            |> Lookup.Found
+            |> RecoveryQueryOutcome.RecoverySucceeded
+            |> Task.FromResult
+
+    let private readInspection
+        (store: IClaimStore)
+        (recovery: IRecoveryStore)
+        (operationId: Guid)
+        (cursor: RecoveryAttemptCursor option)
+        (limit: int)
+        (cancellationToken: CancellationToken)
+        : Task<RecoveryQueryOutcome<Lookup<RecoveryInspection, Guid>>> =
+        task {
+            match! recovery.Inspect(operationId, cursor, limit, cancellationToken) with
+            | Error RecoveryStoreFailure.ReadCancelled ->
+                return RecoveryQueryOutcome.RecoveryCancelled
+            | Error failure ->
+                return RecoveryQueryOutcome.RecoveryFailed(TypedProjection.recoveryFault failure)
+            | Ok inspected -> return! inspectStored store operationId cancellationToken inspected
+        }
+
     let inspect
         (store: IClaimStore)
         (recovery: IRecoveryStore)
         (operationId: Guid)
+        (afterCursor: string option)
+        (limit: int)
         (cancellationToken: CancellationToken)
-        : Task<RecoveryQueryOutcome<Lookup<RecoveryDetails, Guid>>> =
+        : Task<RecoveryQueryOutcome<Lookup<RecoveryInspection, Guid>>> =
         if cancellationToken.IsCancellationRequested then
             Task.FromResult(RecoveryQueryOutcome.RecoveryCancelled)
-        elif operationId = Guid.Empty then
+        elif
+            operationId = Guid.Empty
+            || limit < 1
+            || limit > SemanticContract.current.MaximumPageSize
+        then
             Task.FromResult(
-                RecoveryQueryOutcome.RecoveryRejected(RecoverySupport.invalid "operationId")
+                RecoveryQueryOutcome.RecoveryRejected(RecoverySupport.invalid "recovery inspection")
             )
         else
-            task {
-                match! recovery.Get(operationId, cancellationToken) with
-                | Error RecoveryStoreFailure.ReadCancelled ->
-                    return RecoveryQueryOutcome.RecoveryCancelled
-                | Error failure ->
-                    return
-                        RecoveryQueryOutcome.RecoveryFailed(TypedProjection.recoveryFault failure)
-                | Ok None ->
-                    return RecoveryQueryOutcome.RecoverySucceeded(Lookup.NotFound operationId)
-                | Ok(Some retained) ->
-                    return! inspectRetained store operationId cancellationToken retained
-            }
+            match inspectCursor operationId afterCursor with
+            | Error _ ->
+                Task.FromResult(
+                    RecoveryQueryOutcome.RecoveryRejected(RecoverySupport.invalid "attempt cursor")
+                )
+            | Ok cursor -> readInspection store recovery operationId cursor limit cancellationToken
 
     let resolve
         (store: IClaimStore)
         (recovery: IRecoveryStore)
-        (clock: IBusinessDate)
+        (clock: IBusinessTime)
         (operationId: Guid)
         (requestSha256: string)
         (cancellationToken: CancellationToken)
@@ -166,88 +242,4 @@ module internal RecoveryReadOperations =
                             cancellationToken
 
                     return RecoverySupport.resolveOutcome result
-            }
-
-    let private encodeExport
-        (operationId: Guid)
-        (lineage: Guid)
-        (retained: RetainedPreparation)
-        : Result<RecoveryExport, CoreFault> =
-        match
-            RequestRecord.decode SemanticContract.current.RequestByteLimit retained.CanonicalRequest
-        with
-        | Error _ ->
-            Error(invalidFault "Retained canonical request bytes failed integrity validation.")
-        | Ok _ ->
-            let bytes =
-                RecoveryEnvelope.encode
-                    {
-                        InstallationId = lineage
-                        OperationId = retained.OperationId
-                        ProtocolVersion = retained.CanonicalRequestFormat
-                        RequestFingerprintVersion = RecordVersions.RequestFingerprint
-                        RequestSha256 = retained.RequestSha256
-                        CanonicalRequest = retained.CanonicalRequest
-                    }
-
-            Ok
-                {
-                    Bytes = bytes
-                    FileName = "claimcore-recovery-" + operationId.ToString("D") + ".json"
-                    MediaType = "application/vnd.claimcore.recovery+json"
-                    RequestSha256 = retained.RequestSha256
-                }
-
-    let private exportRetained
-        (recovery: IRecoveryStore)
-        (operationId: Guid)
-        (cancellationToken: CancellationToken)
-        (retained: RetainedPreparation)
-        : Task<RecoveryQueryOutcome<Lookup<RecoveryExport, Guid>>> =
-        task {
-            match! recovery.InstallationLineage cancellationToken with
-            | Error RecoveryStoreFailure.ReadCancelled ->
-                return RecoveryQueryOutcome.RecoveryCancelled
-            | Error failure ->
-                return RecoveryQueryOutcome.RecoveryFailed(TypedProjection.recoveryFault failure)
-            | Ok lineage ->
-                let encoded = encodeExport operationId lineage retained
-
-                if cancellationToken.IsCancellationRequested then
-                    return RecoveryQueryOutcome.RecoveryCancelled
-                else
-                    match encoded with
-                    | Error fault -> return RecoveryQueryOutcome.RecoveryFailed fault
-                    | Ok artifact ->
-                        return RecoveryQueryOutcome.RecoverySucceeded(Lookup.Found artifact)
-        }
-
-    let export
-        (recovery: IRecoveryStore)
-        (operationId: Guid)
-        (requestSha256: string)
-        (cancellationToken: CancellationToken)
-        : Task<RecoveryQueryOutcome<Lookup<RecoveryExport, Guid>>> =
-        if cancellationToken.IsCancellationRequested then
-            Task.FromResult(RecoveryQueryOutcome.RecoveryCancelled)
-        elif operationId = Guid.Empty || not (RecoverySupport.validDigest requestSha256) then
-            Task.FromResult(
-                RecoveryQueryOutcome.RecoveryRejected(RecoverySupport.invalid "export identity")
-            )
-        else
-            task {
-                match! recovery.Get(operationId, cancellationToken) with
-                | Error RecoveryStoreFailure.ReadCancelled ->
-                    return RecoveryQueryOutcome.RecoveryCancelled
-                | Error failure ->
-                    return
-                        RecoveryQueryOutcome.RecoveryFailed(TypedProjection.recoveryFault failure)
-                | Ok None ->
-                    return RecoveryQueryOutcome.RecoverySucceeded(Lookup.NotFound operationId)
-                | Ok(Some retained) when retained.RequestSha256 <> requestSha256 ->
-                    return RecoveryQueryOutcome.RecoveryRejected RecoverySupport.conflict
-                | Ok(Some _) when cancellationToken.IsCancellationRequested ->
-                    return RecoveryQueryOutcome.RecoveryCancelled
-                | Ok(Some retained) ->
-                    return! exportRetained recovery operationId cancellationToken retained
             }

@@ -183,6 +183,10 @@ module Schema =
         | TupleSchema items ->
             "readonly [" + (items |> List.map typeScript |> String.concat ", ") + "]"
         | DictionarySchema value -> "Readonly<Record<string, " + typeScript value + ">>"
+        | ObjectSchema constraints when
+            constraints.Properties.IsEmpty && not constraints.AdditionalProperties
+            ->
+            "Readonly<Record<string, never>>"
         | ObjectSchema constraints ->
             let properties =
                 constraints.Properties

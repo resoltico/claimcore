@@ -10,18 +10,6 @@ export default {
   plugins: [react()],
   build: {
     chunkSizeWarningLimit: 600,
-    rolldownOptions: {
-      output: {
-        codeSplitting: {
-          groups: [
-            {
-              name: "claimcore-validation",
-              test: /[\\/]web-v2\.validators\.mjs$/u,
-            },
-          ],
-        },
-      },
-    },
     target: "es2022",
     sourcemap: false,
   },

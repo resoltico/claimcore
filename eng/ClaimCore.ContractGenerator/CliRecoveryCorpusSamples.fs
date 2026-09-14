@@ -65,6 +65,10 @@ module internal CliRecoveryCorpusSamples =
                 endpoint
                 (encode (ExistingPreparation CliCorpusValues.preparationDetails))
             sample
+                (endpoint + "-observed-accepted")
+                endpoint
+                (encode (ObservedAcceptedImport CliCorpusValues.observedReceipt))
+            sample
                 (endpoint + "-rejected")
                 endpoint
                 (encode (ImportRejected CliCorpusValues.recoveryRejection))

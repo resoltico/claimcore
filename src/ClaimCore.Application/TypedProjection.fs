@@ -62,19 +62,56 @@ module internal TypedProjection =
             Action = action
         }
 
-    let runtimeContext (clock: IBusinessDate) : RuntimeContext =
+    let runtimeContext (context: BusinessContext) : RuntimeContext =
         {
             ProductVersion = BuildIdentity.current.Version
-            EffectiveBusinessDate = clock.Today()
-            TimeZoneId = TimeZoneInfo.Local.Id
+            EffectiveBusinessDate = context.EffectiveBusinessDate
+            TimeZoneId = context.TimeZoneId
         }
 
-    let description (clock: IBusinessDate) : CoreDescription =
+    let description (clock: IBusinessTime) : CoreDescription =
         {
             Contract = SemanticContract.current
             SemanticFingerprint = SemanticContract.fingerprint SemanticContract.current
-            Runtime = runtimeContext clock
+            Runtime = runtimeContext (clock.Capture())
         }
+
+    let private correctionValues correction =
+        let registration =
+            match correction.Registration with
+            | RegistrationCorrection.Keep -> [ "registration.action", "KEEP" ]
+            | RegistrationCorrection.Replace value ->
+                [
+                    "registration.action", "REPLACE"
+                    "incidentDate", value.IncidentDate
+                    "incidentNotificationDate", value.IncidentNotificationDate
+                    "incidentCountry", value.IncidentCountry
+                    "claimantName", value.ClaimantName
+                    "insurerName", value.InsurerName
+                    "claimedAmount", value.ClaimedAmount
+                    "claimedCurrency", value.ClaimedCurrency
+                ]
+
+        let decision =
+            match correction.Decision with
+            | DecisionCorrection.Keep -> [ "decision.action", "KEEP" ]
+            | DecisionCorrection.Clear -> [ "decision.action", "CLEAR" ]
+            | DecisionCorrection.Replace value ->
+                [
+                    "decision.action", "REPLACE"
+                    "paymentDecisionDate", value.PaymentDecisionDate
+                    "payableAmount", value.PayableAmount
+                    "payableCurrency", value.PayableCurrency
+                ]
+
+        let payment =
+            match correction.Payment with
+            | PaymentCorrection.Keep -> [ "payment.action", "KEEP" ]
+            | PaymentCorrection.Clear -> [ "payment.action", "CLEAR" ]
+            | PaymentCorrection.Replace value ->
+                [ "payment.action", "REPLACE"; "paymentDate", value ]
+
+        registration @ decision @ payment
 
     let private values (command: Command) =
         match command with
@@ -89,6 +126,7 @@ module internal TypedProjection =
                 "claimedAmount", registration.ClaimedAmount
                 "claimedCurrency", registration.ClaimedCurrency
             ]
+        | Command.CorrectCase correction -> correctionValues correction
         | Command.Decide decision ->
             [
                 "paymentDecisionDate", decision.PaymentDecisionDate
@@ -104,33 +142,43 @@ module internal TypedProjection =
     let authoredValues (request: CommandRequest) =
         let byName = values request.Command |> Map.ofList
 
-        CommandDefinitions.inputFields (Commands.kind request.Command)
-        |> List.map (fun fieldName -> fieldName, Map.find fieldName byName)
+        match (CommandDefinitions.forKind (Commands.kind request.Command)).Inputs with
+        | CommandInputShape.Fields fields ->
+            fields
+            |> List.map (fun field -> field.FieldName, Map.find field.FieldName byName)
+        | CommandInputShape.CorrectionGroups _ -> values request.Command
 
-    let private preparationState lifecycle =
+    let private preparationState authority lifecycle =
+        match authority with
+        | RecoveryAuthority.RevokedAuthority -> PreparationState.Revoked
+        | RecoveryAuthority.PendingAuthority
+        | RecoveryAuthority.AcceptedAuthority ->
+            match lifecycle with
+            | PreparationLifecycle.Unsubmitted -> PreparationState.Unsubmitted
+            | PreparationLifecycle.SubmissionStarted _ -> PreparationState.SubmissionStarted
+            | PreparationLifecycle.Dismissed _ -> PreparationState.Dismissed
+
+    let private preparationActions authority lifecycle =
+        match authority with
+        | RecoveryAuthority.AcceptedAuthority
+        | RecoveryAuthority.RevokedAuthority -> [ RecoveryAction.Export ]
+        | RecoveryAuthority.PendingAuthority ->
+            match lifecycle with
+            | PreparationLifecycle.Unsubmitted ->
+                [ RecoveryAction.Resolve; RecoveryAction.Dismiss; RecoveryAction.Export ]
+            | PreparationLifecycle.SubmissionStarted _ ->
+                [ RecoveryAction.Resolve; RecoveryAction.Dismiss; RecoveryAction.Export ]
+            | PreparationLifecycle.Dismissed _ -> [ RecoveryAction.Export ]
+
+    let private inferredAuthority lifecycle =
         match lifecycle with
-        | PreparationLifecycle.Unsubmitted -> PreparationState.Unsubmitted
-        | PreparationLifecycle.SubmissionStarted _ -> PreparationState.SubmissionStarted
-        | PreparationLifecycle.Dismissed _ -> PreparationState.Dismissed
+        | PreparationLifecycle.Dismissed _ -> RecoveryAuthority.RevokedAuthority
+        | PreparationLifecycle.Unsubmitted
+        | PreparationLifecycle.SubmissionStarted _ -> RecoveryAuthority.PendingAuthority
 
-    let private preparationActions lifecycle =
-        match lifecycle with
-        | PreparationLifecycle.Unsubmitted ->
-            [ RecoveryAction.Resolve; RecoveryAction.Dismiss; RecoveryAction.Export ]
-        | PreparationLifecycle.SubmissionStarted _ ->
-            [ RecoveryAction.Resolve; RecoveryAction.Export ]
-        | PreparationLifecycle.Dismissed _ -> [ RecoveryAction.Export ]
-
-    let acceptedDetails (details: PreparationDetails) : PreparationDetails =
-        { details with
-            Summary =
-                { details.Summary with
-                    AvailableActions = [ RecoveryAction.Export ]
-                }
-        }
-
-    let summary
+    let private summaryWithAuthority
         includeDigest
+        authority
         (preparation: RetainedPreparation)
         : Result<PreparationSummary, CoreFault> =
         let request =
@@ -154,21 +202,55 @@ module internal TypedProjection =
                     CaseReference = decoded.CaseReference
                     Command = Commands.kind decoded.Command
                     PreparedAt = preparation.PreparedAt
-                    State = preparationState preparation.Lifecycle
+                    State = preparationState authority preparation.Lifecycle
+                    Authority = authority
                     RequestSha256 =
                         if includeDigest then
                             Some preparation.RequestSha256
                         else
                             None
-                    AvailableActions = preparationActions preparation.Lifecycle
+                    AvailableActions = preparationActions authority preparation.Lifecycle
                 }
 
-    let details (preparation: RetainedPreparation) : Result<PreparationDetails, CoreFault> =
+    let summary includeDigest (preparation: RetainedPreparation) =
+        summaryWithAuthority includeDigest (inferredAuthority preparation.Lifecycle) preparation
+
+    let summaryWithKnownAuthority includeDigest authority preparation =
+        summaryWithAuthority includeDigest authority preparation
+
+    let revokedOperation (value: OperationRevocation) : RevokedOperation =
+        {
+            OperationId = value.OperationId
+            RevokedAt = value.RevokedAt
+            Reason = value.Reason
+        }
+
+    let acceptedDetails (details: PreparationDetails) : PreparationDetails =
+        { details with
+            Summary =
+                { details.Summary with
+                    Authority = RecoveryAuthority.AcceptedAuthority
+                    AvailableActions = [ RecoveryAction.Export ]
+                }
+        }
+
+    let private emptyAttemptPage =
+        {
+            Items = []
+            NextCursor = None
+            LegacyUncertainty = false
+        }
+
+    let private detailsWithAuthority
+        (preparation: RetainedPreparation)
+        (attempts: PreparationAttemptPage)
+        (authority: RecoveryAuthority)
+        : Result<PreparationDetails, CoreFault> =
         match
             RequestRecord.decode
                 SemanticContract.current.RequestByteLimit
                 preparation.CanonicalRequest,
-            summary true preparation
+            summaryWithKnownAuthority true authority preparation
         with
         | Ok request, Ok preparationSummary ->
             Ok
@@ -183,8 +265,7 @@ module internal TypedProjection =
                         match preparation.PreparingContractKind with
                         | PreparingContractKind.LegacyUnclassified -> "LEGACY_UNCLASSIFIED"
                         | PreparingContractKind.SemanticCoreV1 -> "SEMANTIC_CORE_V1"
-                    Attempts = preparation.Attempts
-                    LegacyUncertainty = preparation.LegacyUncertainty
+                    Attempts = attempts
                 }
         | Error _, _
         | _, Error _ ->
@@ -196,39 +277,14 @@ module internal TypedProjection =
                 }
             )
 
-    let review (clock: IBusinessDate) (before: Claim option) (proposed: Claim) : AdvisoryReview =
-        let previous =
-            before
-            |> Option.map (
-                Claim.view >> fun view -> FieldDefinitions.values view.Fields |> Map.ofList
-            )
-            |> Option.defaultValue Map.empty
+    let detailsWithAttempts
+        (preparation: RetainedPreparation)
+        (attempts: PreparationAttemptPage)
+        : Result<PreparationDetails, CoreFault> =
+        detailsWithAuthority preparation attempts (inferredAuthority preparation.Lifecycle)
 
-        let next =
-            proposed
-            |> Claim.view
-            |> fun view -> FieldDefinitions.values view.Fields |> Map.ofList
+    let detailsWithKnownAuthority preparation attempts authority =
+        detailsWithAuthority preparation attempts authority
 
-        let changes =
-            FieldDefinitions.all
-            |> List.choose (fun field ->
-                let beforeValue = previous |> Map.tryFind field.Name |> Option.flatten
-                let afterValue = next |> Map.tryFind field.Name |> Option.flatten
-
-                if beforeValue = afterValue then
-                    None
-                else
-                    Some
-                        {
-                            FieldName = field.Name
-                            Before = beforeValue
-                            After = afterValue
-                        })
-
-        {
-            Before = before |> Option.map Claim.view
-            Proposed = Claim.view proposed
-            Changes = changes
-            Context = runtimeContext clock
-            IsAdvisory = true
-        }
+    let details (preparation: RetainedPreparation) : Result<PreparationDetails, CoreFault> =
+        detailsWithAttempts preparation emptyAttemptPage

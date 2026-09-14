@@ -14,11 +14,12 @@ open PostgreSQL; mutating administration commands require the private file selec
 ```text
 ClaimCore.Database 0.2.0 — schema and recovery-retention administration
   ClaimCore.Database migrate
+  ClaimCore.Database set-business-zone <canonical-IANA-ID>
   ClaimCore.Database prune [--dry-run] [--settled-retention-days <1-3650>]
                            [--abandoned-retention-days <1-3650>] [--limit <1-1000>]
   ClaimCore.Database help
   ClaimCore.Database version [--json]
-Prune defaults: settled 30 days; dismissed 30 days; batch limit 100; deletion enabled.
+Prune defaults: accepted 30 days; revoked 30 days; batch limit 100; deletion enabled.
 Set CLAIMCORE_ADMIN_CONNECTION_FILE to an owner-private schema-owner connection file.
 ```
 <!-- generated:end database-help -->
@@ -76,10 +77,10 @@ to the frozen checksums in `db/migration-manifest.json`. `ClaimCore.Database` bo
 applies pending files in order in a transaction under a database lock, and refuses source or recorded
 drift.
 
-The currently supported paths apply a fresh database through 005 and upgrade an installed 001, 002,
-003, or 004 schema sequentially to 005. They preserve adopted cases, accepted history, canonical
+The currently supported paths apply a fresh database through 006 and upgrade an installed 001, 002,
+003, 004, or 005 schema sequentially to 006. They preserve adopted cases, accepted history, canonical
 request bytes, preparations, attempts, settlements, legacy uncertainty, installation lineage, and
-the exact 001–004 migration bytes. A failed migration rolls back atomically and recorded digests remain
+the exact 001–005 migration bytes. A failed migration rolls back atomically and recorded digests remain
 exact.
 
 Migration 002 added bounded request preparations. Migration 003 added per-submission attempts and
@@ -96,10 +97,18 @@ row or canonical byte. Current recovery inspection reads that marker separately 
 provenance and reads real append-only attempt and settlement rows; a later definite attempt does not
 erase uncertainty inherited from an earlier unidentified start.
 
-The upgrade through 005 requires planned downtime. Stop Web and CLI sessions, back up the
-installation, apply the ordered migrations with the schema-owner Database executable, then start
-current applications. There is no downgrade, compatibility view, or migration that converts legacy
-provenance into semantic provenance.
+Migration 006 adds durable operation revocations, the `REVOKED_BEFORE_EXECUTION` technical
+settlement, `CORRECT_CASE` storage admission, an installation business-time-zone field, and recovery
+ordering support. A revocation records only operation identity, canonical format, digest, timestamp,
+and a bounded technical reason; it has no foreign key to an optional preparation, so pruning cannot
+resurrect the operation. The migration backfills retained legacy dismissals. A dismissal that was
+already pruned before 006 had no recoverable operation identity, so ClaimCore documents that
+historical limit rather than inventing a retroactive guarantee.
+
+The upgrade through 006 requires planned downtime. Stop Web and CLI sessions, back up the
+installation, apply the ordered migrations with the schema-owner Database executable, configure the
+one installation business time zone, then start current applications. There is no downgrade,
+compatibility view, or migration that converts legacy provenance into semantic provenance.
 
 - Never edit, reorder, or replace an applied migration.
 - Add a new migration for every schema change.
@@ -112,13 +121,13 @@ order. It has no automatic downgrade, source-drift repair, or data-import path.
 
 ## Preparation retention
 
-`prune` removes only old technical request preparations in one of three proved states: the operation
-has an accepted receipt; the unsubmitted preparation was explicitly dismissed; or a post-003
-submission has at least one identified attempt and every attempt has a definite technical settlement.
-A start inherited from the pre-attempt schema and a legacy provenance marker remain conservative
-recovery evidence; neither authorizes inference that an operation did not commit. The command never
-deletes a case, accepted case history, canonical request bytes needed by a retained preparation, or an
-unsettled submission.
+`prune` removes only old technical request preparations whose authority is already terminal: the
+operation has an accepted receipt or it has a durable revocation. A definite rejection alone does
+not make an operation terminal—it may be valid later after state or business-date changes—and the
+command does not delete it merely because every known attempt settled. A start inherited from the
+pre-attempt schema and a legacy provenance marker remain conservative recovery evidence; neither
+authorizes inference that an operation did not commit. The command never deletes a case, accepted
+case history, durable revocation marker, installation lineage, or an unsettled submission.
 
 - `--dry-run` records candidate count without deleting candidates.
 - `--settled-retention-days` and `--abandoned-retention-days` accept 1–3650 days and default to 30.
@@ -129,7 +138,17 @@ lock, and records its parameters, candidate count, and deleted count in the owne
 Run a dry pass and review operational retention requirements before deletion.
 Pruning an accepted operation's technical preparation does not remove its accepted `case_changes`
 receipt. Exact accepted replay uses that receipt and its stored request fingerprint, not preparation
-retention.
+retention. Pruning a revoked preparation retains its compact revocation tombstone for exact terminal
+repeat and inspection, but does not retain authored values or exportable recovery bytes.
+
+## Installation business time zone
+
+After migration, a schema owner must run `set-business-zone <canonical-IANA-ID>` before a runtime can
+open. The first valid configured ID wins; an exact repeat succeeds, while a different ID fails. The
+runtime does not use `TimeZoneInfo.Local`, a per-process environment variable, or an upgrade default.
+Each description, preview, and execution captures one UTC instant and derives its effective business
+date through this stored zone. `Etc/UTC` is the explicit portable exception used by synthetic tests;
+operators should choose the business calendar that governs their installation.
 
 ## Local development database
 
