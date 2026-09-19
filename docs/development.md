@@ -207,6 +207,7 @@ samples. This is wire-conformance evidence, not a claim that every runtime branc
 
 ```text
 bash eng/Check-Fantomas.sh
+node --test eng/release/*.test.mjs
 pwsh -NoProfile -File eng/Check-AnalyzerSuppressions.ps1
 pwsh -NoProfile -File eng/Test-AnalyzerSuppressionPolicy.ps1
 pwsh -NoProfile -File eng/Test-SensitiveOutputPolicy.ps1

@@ -1,0 +1,54 @@
+name: Publish ClaimCore source release
+run-name: Publish ${{ inputs.tag }} from ${{ inputs.expected_sha }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing annotated tag, for example v0.3.0
+        required: true
+        type: string
+      expected_sha:
+        description: Full lowercase commit SHA identified by the tag
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: claimcore-source-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: release
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Check out the dispatch commit, not the requested release tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Use the repository Node version
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+      - name: Test release publishing policy
+        run: node --test eng/release/*.test.mjs
+      - name: Publish the verified changelog section
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          node eng/release/publish-release.mjs \
+            --tag "$RELEASE_TAG" \
+            --expected-sha "$EXPECTED_SHA" \
+            --publish

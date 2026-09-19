@@ -39,6 +39,8 @@ jobs:
         run: |
           test "$(node --version)" = "v$(tr -d '\r\n' < .node-version)"
           test "$(npm --version)" = "$(node -p "require('./web/package.json').engines.npm")"
+      - name: Test release publishing policy
+        run: node --test eng/release/*.test.mjs
       - name: Install checksum-verified source analyzers
         shell: bash
         run: |
