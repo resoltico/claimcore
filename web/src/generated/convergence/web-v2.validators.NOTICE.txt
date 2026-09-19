@@ -86,7 +86,7 @@ SOFTWARE.
 
 --------------------------------------------------------------------------------
 
-Package: rolldown@1.2.8
+Package: rolldown@1.2.9
 Declared license: MIT
 Upstream: git+https://github.com/rolldown/rolldown.git
 
