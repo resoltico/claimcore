@@ -23,10 +23,10 @@
     <PackageVersion Include="Microsoft.Extensions.FileSystemGlobbing" Version="10.0.12" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.12" />
     <PackageVersion Include="Microsoft.Extensions.Primitives" Version="10.0.12" />
-    <PackageVersion Include="Microsoft.Testing.Extensions.VSTestBridge" Version="2.4.0" />
-    <PackageVersion Include="Microsoft.Testing.Extensions.TrxReport" Version="2.4.0" />
-    <PackageVersion Include="Microsoft.Testing.Platform.MSBuild" Version="2.4.0" />
-    <PackageVersion Include="Microsoft.TestPlatform.ObjectModel" Version="18.10.0" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.VSTestBridge" Version="2.4.1" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.TrxReport" Version="2.4.1" />
+    <PackageVersion Include="Microsoft.Testing.Platform.MSBuild" Version="2.4.1" />
+    <PackageVersion Include="Microsoft.TestPlatform.ObjectModel" Version="18.10.1" />
     <PackageVersion Include="Npgsql" Version="10.0.3" />
     <PackageVersion Include="Testcontainers.PostgreSql" Version="4.15.0" />
     <PackageVersion Include="YoloDev.Expecto.TestSdk" Version="0.16.1" />
