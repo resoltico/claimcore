@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { canonicalNotes, declaredVersion, extractNotes, isSha, isVersion } from "./policy.mjs";
+import { canonicalNotes, declaredVersion, extractReleaseBody, isSha, isVersion } from "./policy.mjs";
 
 const workflowPath = ".github/workflows/ci.yml";
 
@@ -124,7 +124,7 @@ export const releaseClaimCore = async ({ repository, tag, expectedSha, api, publ
     tag,
     commit: expectedSha,
     title: `ClaimCore ${version} — source preview`,
-    body: extractNotes(await readSource(api, "CHANGELOG.md", expectedSha), version),
+    body: extractReleaseBody(await readSource(api, "CHANGELOG.md", expectedSha), version),
   };
   assert.equal(declaredVersion(await readSource(api, "Directory.Build.props", expectedSha)), version);
 
