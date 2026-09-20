@@ -13,7 +13,7 @@ configuration or open PostgreSQL.
 
 <!-- generated:begin web-help -->
 ```text
-ClaimCore.Web 0.2.0 — local HTTPS human interface
+ClaimCore.Web 0.3.0 — local HTTPS human interface
   ClaimCore.Web                 Start the configured loopback host
   ClaimCore.Web help            Show this configuration-free help
   ClaimCore.Web version         Show the compiled product version

@@ -20,8 +20,8 @@
       "claimcore.application": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Domain": "[0.2.0, )",
-          "ClaimCore.RecordFormat": "[0.2.0, )",
+          "ClaimCore.Domain": "[0.3.0, )",
+          "ClaimCore.RecordFormat": "[0.3.0, )",
           "FSharp.Core": "[10.1.401, )"
         }
       },
@@ -34,7 +34,7 @@
       "claimcore.recordformat": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Domain": "[0.2.0, )",
+          "ClaimCore.Domain": "[0.3.0, )",
           "FSharp.Core": "[10.1.401, )"
         }
       },
