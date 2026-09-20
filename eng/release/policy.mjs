@@ -68,8 +68,11 @@ const assertSelfContainedReferences = (changelog, section) => {
   }
 };
 
-/** Extracts the exact dated Keep-a-Changelog section, including its heading. */
-export const extractNotes = (changelog, version) => {
+/**
+ * Validates one dated Keep-a-Changelog section and returns its body without the heading.
+ * GitHub supplies the release title and publication time, so neither belongs in the body.
+ */
+export const extractReleaseBody = (changelog, version) => {
   assert(isVersion(version), "Expected a stable X.Y.Z version.");
   const source = canonicalNotes(changelog);
   const lines = source.split("\n");
@@ -91,14 +94,15 @@ export const extractNotes = (changelog, version) => {
   );
 
   const next = headingsOutsideFences(lines).find(({ index }) => index > selected.index);
-  const section = canonicalNotes(lines.slice(selected.index, next?.index ?? lines.length).join("\n"));
-  const content = section.slice(section.indexOf("\n") + 1);
+  const bodyLines = lines.slice(selected.index + 1, next?.index ?? lines.length);
+  while (bodyLines[0] === "") bodyLines.shift();
+  const body = canonicalNotes(bodyLines.join("\n"));
   assert(
-    content.split("\n").some((line) => line.trim() && !/^\s*#|^ {0,3}\[[^\]]+\]:/u.test(line)),
+    body.split("\n").some((line) => line.trim() && !/^\s*#|^ {0,3}\[[^\]]+\]:/u.test(line)),
     "Empty release section.",
   );
-  assertSelfContainedReferences(source, section);
-  return section;
+  assertSelfContainedReferences(source, body);
+  return body;
 };
 
 /** Reads the one literal, unconditional Version directly owned by Directory.Build.props. */

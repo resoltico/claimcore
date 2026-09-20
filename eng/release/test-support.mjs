@@ -7,8 +7,9 @@ const tagSha = "2".repeat(40);
 const mainSha = "3".repeat(40);
 export const repository = "resoltico/claimcore";
 export const title = `ClaimCore ${version} — source preview`;
-export const body = `## [${version}] - 2026-09-19\n\n### Fixed\n\n- Preserve café, punctuation, and **formatting**.  \n- Preserve this line.`;
-export const changelog = `# Changelog\n\n## [Unreleased]\n\n- Not released.\n\n${body}\n\n## [0.2.0] - 2026-09-14\n\n- Older change.\n`;
+export const body = `### Fixed\n\n- Preserve café, punctuation, and **formatting**.  \n- Preserve this line.`;
+export const section = `## [${version}] - 2026-09-19\n\n${body}`;
+export const changelog = `# Changelog\n\n## [Unreleased]\n\n- Not released.\n\n${section}\n\n## [0.2.0] - 2026-09-14\n\n- Older change.\n`;
 export const props = `<Project><PropertyGroup><Product>ClaimCore</Product><Version>${version}</Version></PropertyGroup></Project>`;
 
 const copy = (value) => structuredClone(value);

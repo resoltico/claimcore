@@ -1,9 +1,11 @@
 # Releasing ClaimCore
 
-ClaimCore publishes source previews. Each public GitHub Release body is the exact dated section from
-[`CHANGELOG.md`](../CHANGELOG.md), including its `## [X.Y.Z] - YYYY-MM-DD` heading. The publisher
-does not summarize, paraphrase, append verification links, add legal prose, generate notes, or upload
-application assets. GitHub supplies source archives for the annotated tag automatically.
+ClaimCore publishes source previews. The publisher validates the dated
+`## [X.Y.Z] - YYYY-MM-DD` section in [`CHANGELOG.md`](../CHANGELOG.md), then publishes its exact
+contents beneath that heading. It omits the changelog heading and separator because GitHub already
+displays the release title and publication time. The publisher does not summarize, paraphrase, append
+verification links, add legal prose, generate notes, or upload application assets. GitHub supplies
+source archives for the annotated tag automatically.
 
 Historical releases were manually authored before this policy existed. The publisher deliberately
 refuses to rewrite an existing release whose title, body, flags, or assets do not match its current
