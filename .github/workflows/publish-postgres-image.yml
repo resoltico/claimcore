@@ -233,7 +233,7 @@ jobs:
           echo "digest=$index_digest" >> "$GITHUB_OUTPUT"
 
       - name: Attest the amd64 SBOM to its exact child digest
-        uses: actions/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d # v4.2.1
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-name: ghcr.io/resoltico/claimcore-postgres
           subject-digest: ${{ steps.children.outputs.amd64_digest }}
@@ -243,7 +243,7 @@ jobs:
           show-summary: false
 
       - name: Attest the arm64 SBOM to its exact child digest
-        uses: actions/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d # v4.2.1
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-name: ghcr.io/resoltico/claimcore-postgres
           subject-digest: ${{ steps.children.outputs.arm64_digest }}
@@ -253,7 +253,7 @@ jobs:
           show-summary: false
 
       - name: Attest provenance to the final index digest
-        uses: actions/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d # v4.2.1
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-name: ghcr.io/resoltico/claimcore-postgres
           subject-digest: ${{ steps.index.outputs.digest }}
