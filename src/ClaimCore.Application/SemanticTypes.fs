@@ -10,42 +10,6 @@ module SemanticCoreFingerprint =
     let create value = SemanticCoreFingerprint value
     let value (SemanticCoreFingerprint value) = value
 
-type RecommendedAction =
-    | CorrectInput
-    | ReadCurrent
-    | RetrySafe
-    | RecoverExact
-    | Reauthenticate
-    | StopAndInvestigate
-    | NoneRequired
-
-type RejectionCode =
-    | InvalidInput
-    | CaseNotFound
-    | CaseAlreadyExists
-    | VersionConflict
-    | CaseClosed
-    | AmendmentRequiresUndecided
-    | DecisionRequired
-    | PaymentAlreadyRecorded
-    | PaymentNotRecorded
-    | DecisionAlreadyPaid
-    | AlreadyClosed
-    | AlreadyOpened
-    | ZeroDecisionCannotBePaid
-    | IdempotencyConflict
-    | OperationRevoked
-    | RecoveryAttemptLimitReached
-
-type Rejection =
-    {
-        Code: RejectionCode
-        Message: string
-        Field: string option
-        ActualVersion: int64 option
-        Action: RecommendedAction
-    }
-
 type FaultCode =
     | StoreUnavailable
     | StoreIntegrityError
@@ -78,6 +42,7 @@ type SemanticCoreContract =
         Commands: CommandDefinition list
         Statuses: CaseStatus list
         Rules: DomainRuleDefinition list
+        RejectionDiagnostics: RejectionDiagnosticDefinition list
         DefaultPageSize: int
         MaximumPageSize: int
         RequestByteLimit: int

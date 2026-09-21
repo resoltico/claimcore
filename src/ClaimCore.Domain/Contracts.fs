@@ -116,7 +116,7 @@ type CaseView = { Fields: CaseFields; Version: int64 }
 
 [<RequireQualifiedAccess>]
 type DomainError =
-    | InvalidInput of field: string * message: string
+    | InvalidInput of field: InputTarget * violation: InputViolation
     | NotFound
     | AlreadyExists
     | VersionConflict of actualVersion: int64

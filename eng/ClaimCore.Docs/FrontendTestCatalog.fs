@@ -27,6 +27,7 @@ module FrontendTestCatalog =
                 "freezes grouped correction identity while a later correction edit forks a new operation"
                 "generated contract corpora > accepts every production CLI branch and rejects malformed or cross-endpoint values"
                 "generated contract corpora > accepts generated Web host values and rejects every malformed or cross-endpoint value"
+                "generated contract corpora > qualifies every published diagnostic and its exact safe argument boundaries"
                 "gives simultaneous current and historical case fields distinct heading IDs"
                 "ignores late prepare and submit responses from inactive attempts"
                 "keeps a failed history page request-local without erasing current case data"

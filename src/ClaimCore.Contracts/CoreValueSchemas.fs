@@ -56,8 +56,15 @@ module CoreValueSchemas =
         WireSchema.objectOf
             [
                 WireSchema.property "code" rejectionCode
+                WireSchema.property "diagnostic" RejectionDiagnosticSchemas.value
                 WireSchema.property "message" WireSchema.text
-                WireSchema.property "field" WireSchema.nullableText
+                WireSchema.property
+                    "field"
+                    (Schema.nullable (
+                        WireSchema.enumeration (
+                            (InputTargets.all |> List.map snd) @ [ "limit"; "cursor" ]
+                        )
+                    ))
                 WireSchema.property "actualRevision" (Schema.nullable WireSchema.revision)
                 WireSchema.property "recommendedAction" action
             ]

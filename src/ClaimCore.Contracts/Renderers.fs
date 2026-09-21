@@ -121,6 +121,30 @@ module internal ContractJson =
 
         writer.WriteEndArray()
 
+    let private writeDiagnostics (writer: Utf8JsonWriter) definitions =
+        writer.WritePropertyName("rejectionDiagnostics")
+        writer.WriteStartArray()
+
+        definitions
+        |> List.iter (fun (definition: RejectionDiagnosticDefinition) ->
+            writer.WriteStartObject()
+            writer.WriteString("id", definition.Id)
+            writer.WritePropertyName("parameters")
+            writer.WriteStartArray()
+
+            definition.Parameters
+            |> List.iter (fun parameter ->
+                writer.WriteStartObject()
+                writer.WriteString("name", parameter.Name)
+                writer.WriteNumber("minimum", parameter.Minimum)
+                writer.WriteNumber("maximum", parameter.Maximum)
+                writer.WriteEndObject())
+
+            writer.WriteEndArray()
+            writer.WriteEndObject())
+
+        writer.WriteEndArray()
+
     let private writeSemantic (writer: Utf8JsonWriter) (semantic: SemanticCoreContract) =
         writer.WriteStartObject()
         writer.WriteString("contractKind", "SEMANTIC_CORE_V1")
@@ -140,6 +164,7 @@ module internal ContractJson =
         semantic.Statuses |> List.iter (CaseStatuses.token >> writer.WriteStringValue)
         writer.WriteEndArray()
         writeRules writer semantic.Rules
+        writeDiagnostics writer semantic.RejectionDiagnostics
         writer.WriteEndObject()
 
     let private endpointSchemaDocument (input: Schema) =

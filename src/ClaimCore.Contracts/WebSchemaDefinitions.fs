@@ -230,8 +230,34 @@ module WebSchemaDefinitions =
                     ]
             ]
 
+    let private sharedSemantic semantic semanticDefinition =
+        let catalogue, definitions =
+            RejectionDiagnosticSchemas.sharedCatalogue semantic.RejectionDiagnostics
+
+        match semanticDefinition with
+        | ObjectSchema value when
+            value.Properties |> List.exists (fun item -> item.Name = "rejectionDiagnostics")
+            ->
+            let properties =
+                value.Properties
+                |> List.map (fun item ->
+                    if item.Name = "rejectionDiagnostics" then
+                        { item with Schema = catalogue }
+                    else
+                        item)
+
+            Schema.objectOf value.AdditionalProperties properties, definitions
+        | _ ->
+            invalidArg
+                (nameof semanticDefinition)
+                "The diagnostic catalogue is missing from the semantic definition."
+
     let all semantic semanticDefinition =
-        [
+        let sharedDefinition, parameterDefinitions =
+            sharedSemantic semantic semanticDefinition
+
+        parameterDefinitions
+        @ [
             "HostFailure", hostFailure
             "Rejection", CoreValueSchemas.rejection
             "RecoveryRejection", RecoveryValueSchemas.rejection
@@ -245,7 +271,7 @@ module WebSchemaDefinitions =
             "HistoryEntry", historyEntry
             "RuntimeContext", CoreValueSchemas.runtimeContext
             "FieldDiff", CoreValueSchemas.fieldDiff
-            "SemanticDefinition", semanticDefinition
+            "SemanticDefinition", sharedDefinition
             "DefinitionPayload", definitionPayload
             "SessionSnapshot", sessionSnapshot
             "PreparationSummary", preparationSummary

@@ -131,8 +131,11 @@ module internal RecoveryReadOperations =
                             )
                 | QueryOutcome.Failed fault -> return RecoveryQueryOutcome.RecoveryFailed fault
                 | QueryOutcome.Cancelled -> return RecoveryQueryOutcome.RecoveryCancelled
-                | QueryOutcome.Rejected rejection ->
-                    return RecoveryQueryOutcome.RecoveryFailed(invalidFault rejection.Message)
+                | QueryOutcome.Rejected _ ->
+                    return
+                        RecoveryQueryOutcome.RecoveryFailed(
+                            invalidFault "Stored recovery data failed validation."
+                        )
         }
 
     let private inspectCursor operationId afterCursor =

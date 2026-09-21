@@ -7,36 +7,6 @@ export type HostFailure = {
   readonly message: string;
   readonly executionPhase: "NOT_STARTED" | "STARTED_UNCONFIRMED" | null;
 };
-export type Rejection = {
-  readonly code:
-    | "INVALID_INPUT"
-    | "CASE_NOT_FOUND"
-    | "CASE_ALREADY_EXISTS"
-    | "VERSION_CONFLICT"
-    | "CASE_CLOSED"
-    | "AMENDMENT_REQUIRES_UNDECIDED"
-    | "DECISION_REQUIRED"
-    | "PAYMENT_ALREADY_RECORDED"
-    | "PAYMENT_NOT_RECORDED"
-    | "DECISION_ALREADY_PAID"
-    | "ALREADY_CLOSED"
-    | "ALREADY_OPENED"
-    | "ZERO_DECISION_CANNOT_BE_PAID"
-    | "IDEMPOTENCY_CONFLICT"
-    | "OPERATION_REVOKED"
-    | "RECOVERY_ATTEMPT_LIMIT_REACHED";
-  readonly message: string;
-  readonly field: string | null;
-  readonly actualRevision: string | null;
-  readonly recommendedAction:
-    | "CORRECT_INPUT"
-    | "READ_CURRENT"
-    | "RETRY_SAFE"
-    | "RECOVER_EXACT"
-    | "REAUTHENTICATE"
-    | "STOP_AND_INVESTIGATE"
-    | "NONE_REQUIRED";
-};
 export type Fault = {
   readonly code:
     | "STORE_UNAVAILABLE"

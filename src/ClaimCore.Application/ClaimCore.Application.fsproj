@@ -3,6 +3,9 @@
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="BuildIdentity.fsi" />
     <Compile Include="BuildIdentity.fs" />
+    <Compile Include="Rejections.fs" />
+    <Compile Include="RejectionDiagnosticIds.fs" />
+    <Compile Include="RejectionDiagnostics.fs" />
     <Compile Include="SemanticTypes.fs" />
     <Compile Include="SemanticContract.fs" />
     <Compile Include="RecoveryTypes.fs" />

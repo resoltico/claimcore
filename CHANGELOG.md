@@ -6,6 +6,8 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Changed
 
+- **Ordinary rejection contracts now require a structured diagnostic.** CLI-v3/Web-v2 rejections include a stable `diagnostic.id` and an exact parameter object, so consumers can distinguish causes without parsing English. Native `Rejection` is now a closed reason with derived classification and guidance, and `DomainError.InvalidInput` has typed targets and violations instead of strings. Update native callers and rebuild matched host/browser contracts; old rejection shapes are not accepted. Default English remains available as presentation text. Case data, canonical operation records and recovery authority are unchanged, and no database migration is required. See [Rejection diagnostics](docs/diagnostics.md).
+
 - **The CLI-v3 and Web-v2 contract fingerprints change, and no old-contract path is kept.** Semantic identity no longer includes presentation labels and explanations, so editorial wording no longer alters machine identity; it now includes the text constraints on amount and currency values, which it previously omitted, and a separate rule-set revision for deliberate behaviour changes that no descriptor shape would show. Rebuild the browser and its host together from the same source revision and do not mix generated contracts with older binaries. Canonical operation-record encoding, authored operation identity, and the thirteen business fields are unchanged, so stored cases and accepted history are unaffected and no migration is required.
 - Building from source now requires every project reference to be declared. A case-work host can no longer compile against PostgreSQL administration or against Npgsql through the composition root, while the storage assemblies it needs at runtime are still published. A fork that relied on reaching those types indirectly must declare the reference it actually uses, or stop using it.
 
@@ -15,6 +17,8 @@ Notable changes to this project are documented in this file. The format is based
 - The domain contract said a closed case must be reopened before editing, which contradicted the one-step factual correction added in 0.3.0. It now records that correction as the deliberate exception.
 
 ### Internal
+
+- Rejection metadata is fingerprinted independently of explanation text. Complete diagnostic examples and malformed variants qualify the native, CLI and browser projections, while shared Web metadata schemas keep generated validators within the existing size limit. This prepares ordinary rejections for localization; it does not add language selection or translate the remaining failure families.
 
 - Semantic identity is now length-prefixed rather than separated by a null character, so no token boundary can be reproduced by a value that contains the separator, and integers are written with the invariant culture.
 - A successful test producer now validates its own result file against the same reviewed inventory that final evidence reconciliation uses, before it records success. A changed test count, a substituted name at the same count, and a missing, duplicated or wrong-assembly report are all refused at the job that produced them rather than at the end of the run. Seven regression tests cover the new refusals.

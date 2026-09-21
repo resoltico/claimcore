@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
-import type { CurrentCase } from "../src/api/v2";
+import type { CurrentCase, Rejection } from "../src/api/v2";
 import { OperationEditor } from "../src/views/OperationEditor";
 import { definition, fields, preparation, response } from "./v2-ui.fixtures";
 
@@ -52,16 +52,28 @@ const refusedResponse = () =>
     },
   });
 
-const rejectedResponse = (code: string, message: string, revision: string | null = null) =>
+const validationRefusal: Rejection = {
+  code: "INVALID_INPUT",
+  message: "Synthetic validation refusal.",
+  diagnostic: { id: "INPUT_TEXT_REQUIRED", parameters: {} },
+  field: "claimantName",
+  actualRevision: null,
+  recommendedAction: "CORRECT_INPUT",
+};
+
+const staleRefusal: Rejection = {
+  code: "VERSION_CONFLICT",
+  message: "Synthetic stale revision.",
+  diagnostic: { id: "CASE_REVISION_CONFLICT", parameters: {} },
+  field: null,
+  actualRevision: "2",
+  recommendedAction: "READ_CURRENT",
+};
+
+const rejectedResponse = (rejection: Rejection) =>
   response("command.prepare", "REJECTED", {
     operationId: preparation.summary.operationId,
-    rejection: {
-      code,
-      message,
-      field: null,
-      actualRevision: revision,
-      recommendedAction: revision === null ? "CORRECT_INPUT" : "READ_CURRENT",
-    },
+    rejection,
   });
 
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
@@ -71,7 +83,7 @@ it("allocates a new ID when editing a definitely refused prepared request", asyn
   vi.mocked(globalThis.fetch)
     .mockResolvedValueOnce(preparedResponse())
     .mockResolvedValueOnce(refusedResponse())
-    .mockResolvedValueOnce(rejectedResponse("INVALID_INPUT", "Synthetic validation refusal."));
+    .mockResolvedValueOnce(rejectedResponse(validationRefusal));
   render(editor(null, "OPEN"));
   await user.click(screen.getByRole("button", { name: "Prepare exact request" }));
   await user.click(
@@ -82,7 +94,7 @@ it("allocates a new ID when editing a definitely refused prepared request", asyn
   const claimant = screen.getByLabelText("Claimant name", { exact: true });
   await user.type(claimant, "Synthetic B");
   await user.click(screen.getByRole("button", { name: "Prepare exact request" }));
-  await screen.findByText("Synthetic validation refusal.");
+  expect(await screen.findByRole("alert")).toHaveTextContent("Synthetic validation refusal.");
   expect(sentDraft(0).operationId).not.toBe(sentDraft(2).operationId);
   expect(sentDraft(0).command.values["claimantName"]).toBe("");
   expect(sentDraft(2).command.values["claimantName"]).toBe("Synthetic B");
@@ -96,7 +108,7 @@ it("retries the frozen request after delivery loss despite a changed current rev
   };
   vi.mocked(globalThis.fetch)
     .mockRejectedValueOnce(new Error("Synthetic delivery loss"))
-    .mockResolvedValueOnce(rejectedResponse("VERSION_CONFLICT", "Synthetic stale revision.", "2"));
+    .mockResolvedValueOnce(rejectedResponse(staleRefusal));
   const view = render(editor(current, "CLOSE"));
   await user.click(screen.getByRole("button", { name: "Prepare exact request" }));
   await screen.findByText(/Inspect Recovery before retrying this exact operation/u);
@@ -105,6 +117,7 @@ it("retries the frozen request after delivery loss despite a changed current rev
   await waitFor(() => expect(vi.mocked(globalThis.fetch)).toHaveBeenCalledTimes(2));
   expect(sentDraft(1)).toEqual(sentDraft(0));
   expect(sentDraft(1).expectedRevision).toBe("1");
+  expect(await screen.findByText("Synthetic stale revision.")).toBeVisible();
 });
 
 it("sends an explicit grouped correction and preserves all non-replaced groups", async () => {
@@ -122,9 +135,7 @@ it("sends an explicit grouped correction and preserves all non-replaced groups",
     },
     availableCommands: ["CORRECT_CASE"],
   };
-  vi.mocked(globalThis.fetch).mockResolvedValueOnce(
-    rejectedResponse("INVALID_INPUT", "Synthetic validation refusal."),
-  );
+  vi.mocked(globalThis.fetch).mockResolvedValueOnce(rejectedResponse(validationRefusal));
   render(editor(current, "CORRECT_CASE"));
   const registration = document.querySelector<HTMLSelectElement>("#correction-registration-mode");
   if (registration === null) throw new Error("Expected a registration correction selector.");

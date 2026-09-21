@@ -163,6 +163,17 @@ module WebParsedCorpus =
         writer.WriteRawValue(value.Value, true)
         writer.WriteEndObject()
 
+    let private diagnosticCases =
+        DiagnosticCorpus.web
+        |> List.map (fun (id, valid, value) ->
+            {
+                Identifier = id
+                Endpoint = Some "case.get"
+                Status = 200
+                Valid = valid
+                Value = value.GetRawText()
+            })
+
     let artifact (projection: ContractModel) =
         let endpoints = projection.WebEndpoints |> List.map _.Identifier
         let samples = representatives endpoints
@@ -200,6 +211,7 @@ module WebParsedCorpus =
             @ patternBoundaries samples
             @ scalarBoundaries samples
             @ crossEndpoint samples
+            @ diagnosticCases
 
         let identifiers = cases |> List.map _.Identifier
 

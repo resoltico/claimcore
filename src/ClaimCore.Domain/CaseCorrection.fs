@@ -21,7 +21,7 @@ module internal CaseCorrections =
                 | Some prior ->
                     do!
                         CorrectionResolution.dateChanged
-                            "paymentDecisionDate"
+                            InputTarget.PaymentDecisionDate
                             today
                             prior.PaymentDecisionDate
                             replacement.PaymentDecisionDate
@@ -37,7 +37,7 @@ module internal CaseCorrections =
         result {
             match choice.Value, choice.Replaced, current.PaymentDate with
             | Some replacement, true, Some prior ->
-                do! CorrectionResolution.dateChanged "paymentDate" today prior replacement
+                do! CorrectionResolution.dateChanged InputTarget.PaymentDate today prior replacement
             | Some _, true, None -> return! Error DomainError.CorrectionRequiresExistingValue
             | _ -> ()
         }
@@ -52,7 +52,9 @@ module internal CaseCorrections =
             && current.PaymentDate.IsSome
             && not paymentChoice.Cleared
         then
-            invalid "payment" "Clearing a paid decision requires clearing the payment record."
+            invalid
+                InputTarget.Payment
+                (InputViolation.Correction CorrectionViolation.PaymentClearRequired)
         elif
             decisionChoice.Replaced
             && current.PaymentDate.IsSome
@@ -60,10 +62,12 @@ module internal CaseCorrections =
             && not paymentChoice.Cleared
         then
             invalid
-                "payment"
-                "Replacing a paid decision requires explicit payment reaffirmation or clearing the payment record."
+                InputTarget.Payment
+                (InputViolation.Correction CorrectionViolation.PaymentAcknowledgementRequired)
         elif decisionChoice.Value.IsNone && paymentChoice.Value.IsSome then
-            invalid "payment" "A payment record requires a complete payment decision."
+            invalid
+                InputTarget.Payment
+                (InputViolation.Correction CorrectionViolation.PaymentDecisionRequired)
         else
             Ok()
 
@@ -100,21 +104,25 @@ module internal CaseCorrections =
 
             match decisionValue, fields.PaymentDate with
             | None, None -> return ()
-            | None, Some _ -> return! invalid "paymentDate" "A payment date requires a decision."
+            | None, Some _ ->
+                return!
+                    invalid
+                        InputTarget.PaymentDate
+                        (InputViolation.Correction CorrectionViolation.PaymentDecisionRequired)
             | Some value, payment ->
                 let! parsedDecision = Validation.decision value
 
                 do!
                     Validation.onOrBefore
-                        "paymentDecisionDate"
+                        InputTarget.PaymentDecisionDate
                         facts.NotificationDate
                         parsedDecision.Date
 
                 match payment with
                 | None -> return ()
                 | Some rawDate ->
-                    let! paid = Validation.date "paymentDate" rawDate
-                    do! Validation.onOrBefore "paymentDate" parsedDecision.Date paid
+                    let! paid = Validation.date InputTarget.PaymentDate rawDate
+                    do! Validation.onOrBefore InputTarget.PaymentDate parsedDecision.Date paid
 
                     if parsedDecision.Payable.Value = 0M then
                         return! Error DomainError.ZeroDecisionCannotBePaid
@@ -133,7 +141,7 @@ module internal CaseCorrections =
             let! paid =
                 match fields.PaymentDate with
                 | None -> Ok None
-                | Some value -> Validation.date "paymentDate" value |> Result.map Some
+                | Some value -> Validation.date InputTarget.PaymentDate value |> Result.map Some
 
             return facts, parsedDecision, paid, fields.Status
         }
@@ -160,7 +168,7 @@ module internal CaseCorrections =
         | PaymentCorrection.Keep
         | PaymentCorrection.Clear -> Ok()
         | PaymentCorrection.Replace value ->
-            Validation.date "paymentDate" value |> Result.map ignore
+            Validation.date InputTarget.PaymentDate value |> Result.map ignore
 
     let validate (correction: CaseCorrection) =
         result {

@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { Rejection } from "../src/api/v2";
 import { RecoveryView } from "../src/views/RecoveryView";
 import { fields, operationId, preparation, recoveryPage, response } from "./v2-ui.fixtures";
 
@@ -67,10 +68,11 @@ const rejected = () =>
       rejection: {
         code: "VERSION_CONFLICT",
         message: "Synthetic version conflict.",
+        diagnostic: { id: "CASE_REVISION_CONFLICT", parameters: {} },
         field: null,
         actualRevision: "2",
         recommendedAction: "READ_CURRENT",
-      },
+      } satisfies Rejection,
     },
     settlement: "CONFIRMED",
   });

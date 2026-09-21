@@ -106,14 +106,7 @@ let private prepareReplayWire =
                 (receipt.OperationId.ToString("D"))
                 "Accepted receipt identity"
 
-            let reason: Rejection =
-                {
-                    Code = RejectionCode.VersionConflict
-                    Message = "Synthetic state is no longer reviewable."
-                    Field = None
-                    ActualVersion = Some 1L
-                    Action = RecommendedAction.ReadCurrent
-                }
+            let reason: Rejection = Rejection.Domain(DomainError.VersionConflict 1L)
 
             let retained =
                 CliWireCodec.prepare

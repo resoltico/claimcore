@@ -6,6 +6,7 @@
     <Compile Include="WireTokens.fs" />
     <Compile Include="ScalarSchemas.fs" />
     <Compile Include="CommandInputProjection.fs" />
+    <Compile Include="RejectionDiagnosticSchemas.fs" />
     <Compile Include="Projection.fs" />
     <Compile Include="EndpointInputs.fs" />
     <Compile Include="CoreValueSchemas.fs" />
@@ -18,6 +19,7 @@
     <Compile Include="WebSchemaDefinitions.fs" />
     <Compile Include="WebResponseSchemas.fs" />
     <Compile Include="CliWireTypes.fs" />
+    <Compile Include="RejectionPresentation.fs" />
     <Compile Include="CliWireValues.fs" />
     <Compile Include="CliWireQueries.fs" />
     <Compile Include="CliWirePreparation.fs" />

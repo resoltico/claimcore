@@ -22,8 +22,14 @@ module internal Validation =
 
     type Decision = { Date: DateOnly; Payable: Amount }
 
-    let invalid field message =
-        Error(DomainError.InvalidInput(field, message))
+    let invalid field violation =
+        Error(DomainError.InvalidInput(field, violation))
+
+    let invalidCommand field violation =
+        invalid field (InputViolation.Command violation)
+
+    let invalidCorrection field violation =
+        invalid field (InputViolation.Correction violation)
 
     let private validUnicode (value: string) =
         try
@@ -35,33 +41,30 @@ module internal Validation =
     let private matches (grammar: string) (value: string) =
         Regex(@"\A" + grammar + @"\z", RegexOptions.CultureInvariant).IsMatch(value)
 
-    let private amountFormatMessage (rule: AmountScalarRule) =
-        $"Use non-negative decimal text: up to {rule.MaximumIntegerDigits} integer digits and {rule.MaximumFractionalDigits} fractional digits; no sign or exponent."
-
     let text field (value: string) =
-        let constraints = FieldDefinitions.scalar field |> ScalarRules.textConstraints
+        let constraints =
+            FieldDefinitions.scalar (InputTargets.token field)
+            |> ScalarRules.textConstraints
 
         if constraints.RequiresNonBlank && String.IsNullOrWhiteSpace(value) then
-            invalid field "A non-blank value is required."
+            invalid field (InputViolation.Text TextViolation.NonBlankRequired)
         elif constraints.RequiresWellFormedUnicode && not (validUnicode value) then
-            invalid field "Malformed Unicode is not accepted."
+            invalid field (InputViolation.Text TextViolation.MalformedUnicode)
         elif constraints.RejectsSurroundingWhitespace && value <> value.Trim() then
-            invalid field "Leading or trailing whitespace is not accepted."
+            invalid field (InputViolation.Text TextViolation.SurroundingWhitespace)
         elif (value.EnumerateRunes() |> Seq.length) < constraints.MinimumCharacters then
             invalid
                 field
-                $"The value must contain at least {constraints.MinimumCharacters} Unicode characters."
+                (InputViolation.Text(TextViolation.TooShort constraints.MinimumCharacters))
         elif (value.EnumerateRunes() |> Seq.length) > constraints.MaximumCharacters then
-            invalid
-                field
-                $"The value must not exceed {constraints.MaximumCharacters} Unicode characters."
+            invalid field (InputViolation.Text(TextViolation.TooLong constraints.MaximumCharacters))
         elif constraints.RejectsControlCharacters && (value |> Seq.exists Char.IsControl) then
-            invalid field "Control characters are not accepted."
+            invalid field (InputViolation.Text TextViolation.ControlCharacters)
         else
             Ok value
 
     let date field (value: string) =
-        match FieldDefinitions.scalar field with
+        match FieldDefinitions.scalar (InputTargets.token field) with
         | ScalarRule.CalendarDate constraints ->
             match
                 DateOnly.TryParseExact(
@@ -77,33 +80,44 @@ module internal Validation =
                 && parsed <= constraints.Maximum
                 ->
                 Ok parsed
-            | _ -> invalid field "Use one valid calendar date in YYYY-MM-DD format."
+            | _ -> invalid field (InputViolation.Date DateViolation.CalendarDateRequired)
         | _ -> invalidArg "field" "The field is not a declared calendar-date field."
 
     let onOrBefore field (first: DateOnly) (last: DateOnly) =
         if first <= last then
             Ok()
         else
-            invalid field "The dates are in an invalid chronological order."
+            invalid field (InputViolation.Date DateViolation.ChronologicalOrder)
 
     let notFuture field today value =
         if value <= today then
             Ok()
         else
-            invalid field "A future date cannot record an event that has already occurred."
+            invalid field (InputViolation.Date DateViolation.FutureDate)
 
     let amount amountField currencyField rawAmount rawCurrency =
         result {
             let! valueText = text amountField rawAmount
             let! currency = text currencyField rawCurrency
 
-            match FieldDefinitions.scalar amountField, FieldDefinitions.scalar currencyField with
+            match
+                FieldDefinitions.scalar (InputTargets.token amountField),
+                FieldDefinitions.scalar (InputTargets.token currencyField)
+            with
             | ScalarRule.Amount amountRule, ScalarRule.Currency currencyRule ->
                 if not (matches amountRule.Grammar valueText) then
-                    return! invalid amountField (amountFormatMessage amountRule)
+                    return!
+                        invalid
+                            amountField
+                            (InputViolation.Amount(
+                                AmountViolation.DecimalFormat(
+                                    amountRule.MaximumIntegerDigits,
+                                    amountRule.MaximumFractionalDigits
+                                )
+                            ))
                 elif not (matches currencyRule.Grammar currency) then
                     return!
-                        invalid currencyField "Use a three-letter uppercase currency identifier."
+                        invalid currencyField (InputViolation.Amount AmountViolation.CurrencyFormat)
                 else
                     match
                         Decimal.TryParse(
@@ -115,7 +129,9 @@ module internal Validation =
                     | true, value -> return { Value = value; Currency = currency }
                     | _ ->
                         return!
-                            invalid amountField "The decimal amount cannot be represented exactly."
+                            invalid
+                                amountField
+                                (InputViolation.Amount AmountViolation.NotRepresentable)
             | _ ->
                 return
                     invalidArg
@@ -125,18 +141,25 @@ module internal Validation =
 
     let registration (input: RegistrationInput) =
         result {
-            let! incident = date "incidentDate" input.IncidentDate
-            let! notification = date "incidentNotificationDate" input.IncidentNotificationDate
-            do! onOrBefore "incidentNotificationDate" incident notification
+            let! incident = date InputTarget.IncidentDate input.IncidentDate
 
-            let! country = text "incidentCountry" input.IncidentCountry
+            let! notification =
+                date InputTarget.IncidentNotificationDate input.IncidentNotificationDate
 
-            let! claimant = text "claimantName" input.ClaimantName
+            do! onOrBefore InputTarget.IncidentNotificationDate incident notification
 
-            let! insurer = text "insurerName" input.InsurerName
+            let! country = text InputTarget.IncidentCountry input.IncidentCountry
+
+            let! claimant = text InputTarget.ClaimantName input.ClaimantName
+
+            let! insurer = text InputTarget.InsurerName input.InsurerName
 
             let! claimed =
-                amount "claimedAmount" "claimedCurrency" input.ClaimedAmount input.ClaimedCurrency
+                amount
+                    InputTarget.ClaimedAmount
+                    InputTarget.ClaimedCurrency
+                    input.ClaimedAmount
+                    input.ClaimedCurrency
 
             return
                 {
@@ -151,10 +174,14 @@ module internal Validation =
 
     let decision (input: DecisionInput) =
         result {
-            let! decisionDate = date "paymentDecisionDate" input.PaymentDecisionDate
+            let! decisionDate = date InputTarget.PaymentDecisionDate input.PaymentDecisionDate
 
             let! payable =
-                amount "payableAmount" "payableCurrency" input.PayableAmount input.PayableCurrency
+                amount
+                    InputTarget.PayableAmount
+                    InputTarget.PayableCurrency
+                    input.PayableAmount
+                    input.PayableCurrency
 
             return
                 {

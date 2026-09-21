@@ -47,7 +47,8 @@ module internal WebTypeScriptResponses =
 
         moduleBytes
             [
-                "import type { CaseSummary, CurrentCase, DefinitionPayload, Fault, HistoryEntry, Receipt, Rejection, SessionSnapshot } from \"./web-v2.types.core\";"
+                "import type { Rejection } from \"./web-v2.types.diagnostics\";"
+                "import type { CaseSummary, CurrentCase, DefinitionPayload, Fault, HistoryEntry, Receipt, SessionSnapshot } from \"./web-v2.types.core\";"
             ]
             (responseMap "WebV2ReadResponseByEndpoint" endpoints)
 
@@ -57,7 +58,8 @@ module internal WebTypeScriptResponses =
 
         moduleBytes
             [
-                "import type { Fault, Receipt, Rejection } from \"./web-v2.types.core\";"
+                "import type { Rejection } from \"./web-v2.types.diagnostics\";"
+                "import type { Fault, Receipt } from \"./web-v2.types.core\";"
                 "import type { AdvisoryReview, DefiniteExecution, PreparationDetails, PreparationSummary, RecoveryRejection } from \"./web-v2.types.recovery\";"
             ]
             (responseMap "WebV2CommandResponseByEndpoint" endpoints)

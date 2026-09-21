@@ -75,7 +75,7 @@ module Drafts =
             Error(
                 DomainError.InvalidInput(
                     field,
-                    "Supply each declared command input exactly once, with no extra fields."
+                    (InputViolation.Command CommandViolation.ExactInputsRequired)
                 )
             )
         else
@@ -85,7 +85,13 @@ module Drafts =
         match action with
         | CorrectionDraftAction.Replace values ->
             exactValues input (fields |> List.map _.FieldName) values
-        | _ -> Error(DomainError.InvalidInput(input, "Use REPLACE with every declared field."))
+        | _ ->
+            Error(
+                DomainError.InvalidInput(
+                    input,
+                    (InputViolation.Correction CorrectionViolation.ReplacementFieldsRequired)
+                )
+            )
 
     let private correctionGroups () =
         match (CommandDefinitions.forKind CommandKind.CorrectCase).Inputs with
@@ -99,7 +105,7 @@ module Drafts =
         match action with
         | CorrectionDraftAction.Keep -> Ok RegistrationCorrection.Keep
         | CorrectionDraftAction.Replace _ ->
-            replace (correctionGroup "registration").ReplaceFields "registration" action
+            replace (correctionGroup "registration").ReplaceFields InputTarget.Registration action
             |> Result.map (fun values ->
                 RegistrationCorrection.Replace
                     {
@@ -112,14 +118,19 @@ module Drafts =
                         ClaimedCurrency = Map.find "claimedCurrency" values
                     })
         | CorrectionDraftAction.Clear ->
-            Error(DomainError.InvalidInput("registration", "Registration cannot be cleared."))
+            Error(
+                DomainError.InvalidInput(
+                    InputTarget.Registration,
+                    (InputViolation.Correction CorrectionViolation.RegistrationCannotBeCleared)
+                )
+            )
 
     let private decisionCorrection action =
         match action with
         | CorrectionDraftAction.Keep -> Ok DecisionCorrection.Keep
         | CorrectionDraftAction.Clear -> Ok DecisionCorrection.Clear
         | CorrectionDraftAction.Replace _ ->
-            replace (correctionGroup "decision").ReplaceFields "decision" action
+            replace (correctionGroup "decision").ReplaceFields InputTarget.Decision action
             |> Result.map (fun values ->
                 DecisionCorrection.Replace
                     {
@@ -133,7 +144,7 @@ module Drafts =
         | CorrectionDraftAction.Keep -> Ok PaymentCorrection.Keep
         | CorrectionDraftAction.Clear -> Ok PaymentCorrection.Clear
         | CorrectionDraftAction.Replace _ ->
-            replace (correctionGroup "payment").ReplaceFields "payment" action
+            replace (correctionGroup "payment").ReplaceFields InputTarget.Payment action
             |> Result.map (fun values -> PaymentCorrection.Replace(Map.find "paymentDate" values))
 
     let private correctionCommand registration decision payment =
@@ -162,9 +173,15 @@ module Drafts =
             match draft.Command with
             | DraftCommand.Flat(kind, values) ->
                 match CommandDefinitions.flatInputFields kind with
-                | Error message -> Error(DomainError.InvalidInput("command", message))
+                | Error _ ->
+                    Error(
+                        DomainError.InvalidInput(
+                            InputTarget.Command,
+                            InputViolation.Command CommandViolation.GroupedCorrectionRequired
+                        )
+                    )
                 | Ok fields ->
-                    exactValues "fields" (fields |> List.map _.FieldName) values
+                    exactValues InputTarget.Fields (fields |> List.map _.FieldName) values
                     |> Result.map (flatCommand kind)
             | DraftCommand.Correction(registration, decision, payment) ->
                 correctionCommand registration decision payment

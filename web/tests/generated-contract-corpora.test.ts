@@ -1,6 +1,8 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
 
+import semantic from "../src/generated/convergence/semantic-core-v1.contract.json";
+
 import { isHostFailure, isWebV2Response } from "../src/generated/convergence/web-v2.validation";
 import { webV2HostFailureStatuses } from "../src/generated/convergence/web-v2.endpoint-catalog";
 import {
@@ -156,7 +158,42 @@ const expectWebLoneSurrogates = async (): Promise<void> => {
   }
 };
 
+const expectDiagnosticCoverage = (): void => {
+  for (const cases of [cliCases(), webCases()]) {
+    const required = (id: string, valid: boolean): void => {
+      expect(
+        cases.find((item) => item.id === id),
+        id,
+      ).toEqual(expect.objectContaining({ id, valid }));
+    };
+    for (const diagnostic of semantic.rejectionDiagnostics) {
+      const prefix = `diagnostic-${diagnostic.id}`;
+      required(prefix, true);
+      required(`${prefix}-translated-copy`, true);
+      for (const variant of [
+        "unknown-id",
+        "missing-diagnostic",
+        "extra-diagnostic",
+        "extra-parameter",
+        "wrong-parameters",
+        "unknown-field",
+      ]) {
+        required(`${prefix}-${variant}`, false);
+      }
+      for (const parameter of diagnostic.parameters) {
+        for (const variant of ["string", "fractional", "negative", "overflow"]) {
+          required(`${prefix}-argument-${parameter.name}-${variant}`, false);
+        }
+      }
+    }
+  }
+};
+
 describe("generated contract corpora", () => {
+  it("qualifies every published diagnostic and its exact safe argument boundaries", () => {
+    expectDiagnosticCoverage();
+  });
+
   it("accepts every production CLI branch and rejects malformed or cross-endpoint values", () => {
     expectCliCases();
     expectCliCoverage();

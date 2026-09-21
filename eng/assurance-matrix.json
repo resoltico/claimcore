@@ -498,6 +498,37 @@
       ]
     },
     {
+      "dimensions": [
+        "cli",
+        "core",
+        "documentation",
+        "protocol",
+        "webGui",
+        "webHost"
+      ],
+      "id": "assurance-diagnostics:typed-rejection-boundary",
+      "subject": "Ordinary rejection reasons are closed typed values with explicit stable diagnostic identities and safe numeric parameters; CLI and Web preserve outcome authority and reject incomplete or mismatched diagnostic shapes without parsing human text.",
+      "tests": [
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.rejection diagnostic emission.authored private values are not echoed into diagnostics",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.rejection diagnostic emission.domain validation emits specific scalar reasons rather than English",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.rejection diagnostic emission.form binding retains exact-field and correction causes",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.rejection diagnostic emission.parameter values come from owned scalar constraints",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.rejection diagnostic emission.query admission preserves page cursor and operation causes",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.rejection diagnostic emission.request and business-date admission retain distinct typed causes",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.rejection diagnostic emission.state refusals keep typed reasons and accepted data unchanged",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed rejection diagnostics.CLI and Web project identical diagnostics without changing rejection exit semantics",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed rejection diagnostics.ambient culture never selects rejection identity or parameter values",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed rejection diagnostics.diagnostic arguments match the closed safe parameter schema",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed rejection diagnostics.diagnostic identities and parameter shapes participate in all fingerprints",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed rejection diagnostics.diagnostic parameter names and both bounds participate in semantic identity",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed rejection diagnostics.every closed identity has one explicit token and a complete projection",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed rejection diagnostics.field targets are closed and use public revision vocabulary",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed rejection diagnostics.native rejection payloads cannot contain free text or arbitrary bags",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed rejection diagnostics.specific causes remain distinct under coarse codes and preserve actions",
+        "frontend:vitest::generated contract corpora > qualifies every published diagnostic and its exact safe argument boundaries"
+      ]
+    },
+    {
       "id": "assurance-documentation:declared-leaf-tags",
       "dimensions": [
         "documentation"

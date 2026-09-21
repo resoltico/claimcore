@@ -17,19 +17,16 @@ module internal HistoryCursor =
         let restored = cursor.Replace('-', '+').Replace('_', '/')
 
         if restored.Length <> 11 then
-            Error "Use one opaque history cursor returned by ClaimCore."
+            Error()
         else
             try
                 let bytes = Convert.FromBase64String(restored + "=")
 
                 if bytes.Length <> 8 then
-                    Error "Use one opaque history cursor returned by ClaimCore."
+                    Error()
                 else
                     let version = BinaryPrimitives.ReadInt64BigEndian(bytes)
 
-                    if version < 0L then
-                        Error "Use one opaque history cursor returned by ClaimCore."
-                    else
-                        Ok version
+                    if version < 0L then Error() else Ok version
             with :? FormatException ->
-                Error "Use one opaque history cursor returned by ClaimCore."
+                Error()

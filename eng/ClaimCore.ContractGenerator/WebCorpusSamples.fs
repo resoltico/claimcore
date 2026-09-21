@@ -37,10 +37,12 @@ module internal WebCorpusSamples =
         }
 
     let rejectionWithField: Rejection =
-        { CliCorpusValues.rejection with
-            Field = Some "claimedAmount"
-            ActualVersion = None
-        }
+        Rejection.Domain(
+            DomainError.InvalidInput(
+                InputTarget.ClaimedAmount,
+                InputViolation.Amount(AmountViolation.DecimalFormat(18, 4))
+            )
+        )
 
     let caseViewWithOptionals =
         {

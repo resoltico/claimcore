@@ -1,12 +1,6 @@
 /* Generated from ClaimCore.Contracts. Do not edit. */
-import type {
-  CaseView,
-  FieldDiff,
-  Fault,
-  Receipt,
-  Rejection,
-  RuntimeContext,
-} from "./web-v2.types.core";
+import type { Rejection } from "./web-v2.types.diagnostics";
+import type { CaseView, FieldDiff, Fault, Receipt, RuntimeContext } from "./web-v2.types.core";
 
 export type RecoveryRejection = {
   readonly code:

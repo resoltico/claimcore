@@ -101,6 +101,7 @@ module SemanticContract =
             Commands = CommandDefinitions.all
             Statuses = CaseStatuses.all
             Rules = DomainRules.all
+            RejectionDiagnostics = RejectionDiagnosticIds.definitions
             DefaultPageSize = 50
             MaximumPageSize = 50
             RequestByteLimit = 65536
@@ -108,6 +109,17 @@ module SemanticContract =
             RequestFingerprintVersion = RecordVersions.RequestFingerprint
             RecoveryEnvelopeFormat = 1
         }
+
+    let private diagnostic output (value: RejectionDiagnosticDefinition) =
+        append output value.Id
+
+        sequence
+            output
+            (fun target (parameter: DiagnosticParameterDefinition) ->
+                append target parameter.Name
+                number target parameter.Minimum
+                number target parameter.Maximum)
+            value.Parameters
 
     /// A descriptor digest is not a proof that two arbitrary implementations behave identically.
     /// RuleSetVersion accounts for deliberate behavior changes not represented by descriptor data.
@@ -154,6 +166,8 @@ module SemanticContract =
                 | DomainRuleCategory.CrossField -> append output "CROSS_FIELD"
                 | DomainRuleCategory.Transition -> append output "TRANSITION")
             contract.Rules
+
+        sequence builder diagnostic contract.RejectionDiagnostics
 
         builder.ToString()
         |> Encoding.UTF8.GetBytes
