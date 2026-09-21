@@ -158,6 +158,67 @@ export type SemanticDefinition = {
     | { readonly id: "OPERATION_REVOKED"; readonly parameters: readonly [] }
     | { readonly id: "OPERATION_RECOVERY_ATTEMPT_LIMIT"; readonly parameters: readonly [] }
   >;
+  readonly faultDiagnostics: ReadonlyArray<
+    | { readonly id: "CORE_OPERATION_CONTENT_CONFLICT"; readonly parameters: readonly [] }
+    | { readonly id: "CORE_STORE_UNAVAILABLE"; readonly parameters: readonly [] }
+    | { readonly id: "CORE_COMMIT_OUTCOME_UNKNOWN"; readonly parameters: readonly [] }
+    | { readonly id: "CORE_STORE_INTEGRITY_ERROR"; readonly parameters: readonly [] }
+    | { readonly id: "CORE_SCHEMA_MISMATCH"; readonly parameters: readonly [] }
+    | { readonly id: "RECOVERY_STORE_RESPONSE_INVALID"; readonly parameters: readonly [] }
+    | { readonly id: "RECOVERY_STORE_CONTENT_CONFLICT"; readonly parameters: readonly [] }
+    | { readonly id: "RECOVERY_STORE_PREPARATION_MISSING"; readonly parameters: readonly [] }
+    | { readonly id: "RECOVERY_CAPACITY_EXHAUSTED"; readonly parameters: readonly [] }
+    | { readonly id: "RECOVERY_SCHEMA_MISMATCH"; readonly parameters: readonly [] }
+    | { readonly id: "RECOVERY_STORE_UNAVAILABLE"; readonly parameters: readonly [] }
+    | { readonly id: "RECOVERY_STORE_INTEGRITY_ERROR"; readonly parameters: readonly [] }
+    | { readonly id: "RECOVERY_READ_CANCELLED"; readonly parameters: readonly [] }
+    | { readonly id: "RECOVERY_MUTATION_CANCELLED_BEFORE_COMMIT"; readonly parameters: readonly [] }
+    | { readonly id: "RECOVERY_MUTATION_OUTCOME_UNKNOWN"; readonly parameters: readonly [] }
+    | { readonly id: "RECOVERY_RETAINED_CANONICAL_INVALID"; readonly parameters: readonly [] }
+    | { readonly id: "RECOVERY_RETAINED_DOMAIN_SHAPE_INVALID"; readonly parameters: readonly [] }
+    | {
+        readonly id: "RECOVERY_RETAINED_PREPARATION_UNVERIFIABLE";
+        readonly parameters: readonly [];
+      }
+    | { readonly id: "RECOVERY_NEW_PREPARATION_MISSING"; readonly parameters: readonly [] }
+    | {
+        readonly id: "RECOVERY_PREPARATION_DISMISSED_BEFORE_EXECUTION";
+        readonly parameters: readonly [];
+      }
+    | { readonly id: "RECOVERY_RETAINED_DIGEST_MISMATCH"; readonly parameters: readonly [] }
+    | { readonly id: "RECOVERY_STORED_DATA_INVALID"; readonly parameters: readonly [] }
+  >;
+  readonly recoveryDiagnostics: ReadonlyArray<
+    | { readonly id: "RECOVERY_OPERATION_ID_REQUIRED"; readonly parameters: readonly [] }
+    | { readonly id: "RECOVERY_REQUEST_DIGEST_INVALID"; readonly parameters: readonly [] }
+    | { readonly id: "RECOVERY_PAGE_LIMIT_RANGE"; readonly parameters: readonly [] }
+    | { readonly id: "RECOVERY_LIST_CURSOR_INVALID"; readonly parameters: readonly [] }
+    | { readonly id: "RECOVERY_LIST_CURSOR_VIEW_MISMATCH"; readonly parameters: readonly [] }
+    | { readonly id: "RECOVERY_ATTEMPT_CURSOR_INVALID"; readonly parameters: readonly [] }
+    | {
+        readonly id: "RECOVERY_ATTEMPT_CURSOR_OPERATION_MISMATCH";
+        readonly parameters: readonly [];
+      }
+    | { readonly id: "RECOVERY_DISMISSAL_CONFIRMATION_REQUIRED"; readonly parameters: readonly [] }
+    | { readonly id: "RECOVERY_PREPARATION_NOT_FOUND"; readonly parameters: readonly [] }
+    | { readonly id: "RECOVERY_OPERATION_CONTENT_CONFLICT"; readonly parameters: readonly [] }
+    | { readonly id: "RECOVERY_PREPARATION_DISMISSED"; readonly parameters: readonly [] }
+    | { readonly id: "RECOVERY_SUBMISSION_ALREADY_STARTED"; readonly parameters: readonly [] }
+    | {
+        readonly id: "RECOVERY_ACCEPTED_OPERATION_DISMISSAL_FORBIDDEN";
+        readonly parameters: readonly [];
+      }
+    | { readonly id: "RECOVERY_SOURCE_DIGEST_MISMATCH"; readonly parameters: readonly [] }
+    | { readonly id: "RECOVERY_REQUEST_DIGEST_MISMATCH"; readonly parameters: readonly [] }
+    | { readonly id: "RECOVERY_INSTALLATION_MISMATCH"; readonly parameters: readonly [] }
+    | { readonly id: "RECOVERY_ENVELOPE_INVALID_OR_UNSUPPORTED"; readonly parameters: readonly [] }
+    | {
+        readonly id: "RECOVERY_CANONICAL_RECORD_INVALID_OR_UNSUPPORTED";
+        readonly parameters: readonly [];
+      }
+    | { readonly id: "RECOVERY_OPERATION_REVOKED"; readonly parameters: readonly [] }
+    | { readonly id: "RECOVERY_ATTEMPT_LIMIT_REACHED"; readonly parameters: readonly [] }
+  >;
   readonly rules: ReadonlyArray<{
     readonly identifier: string;
     readonly category: "CROSS_FIELD" | "TRANSITION";

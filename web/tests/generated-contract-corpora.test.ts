@@ -189,7 +189,49 @@ const expectDiagnosticCoverage = (): void => {
   }
 };
 
+const expectOutcomeDiagnostics = (): void => {
+  for (const cases of [cliCases(), webCases()]) {
+    for (const [prefix, inventory] of [
+      ["fault-", semantic.faultDiagnostics],
+      ["recovery-diagnostic-", semantic.recoveryDiagnostics],
+    ] as const) {
+      expect(inventory.length).toBeGreaterThan(0);
+      for (const diagnostic of inventory) {
+        const id = prefix + diagnostic.id;
+        expect(
+          cases.find((item) => item.id === id),
+          id,
+        ).toEqual(expect.objectContaining({ valid: true }));
+        expect(cases.find((item) => item.id === `${id}-translated-copy`)).toEqual(
+          expect.objectContaining({ valid: true }),
+        );
+        for (const variant of [
+          "unknown-id",
+          "cross-family-id",
+          "missing-id",
+          "missing-diagnostic",
+          "extra-diagnostic",
+          "missing-parameters",
+          "null-parameters",
+          "extra-parameter",
+          "contradictory-code",
+          "contradictory-action",
+        ]) {
+          expect(
+            cases.find((item) => item.id === `${id}-${variant}`),
+            `${id}-${variant}`,
+          ).toEqual(expect.objectContaining({ valid: false }));
+        }
+      }
+    }
+  }
+};
+
 describe("generated contract corpora", () => {
+  it("qualifies every fault and recovery identity with correlated code and guidance", () => {
+    expectOutcomeDiagnostics();
+  });
+
   it("qualifies every published diagnostic and its exact safe argument boundaries", () => {
     expectDiagnosticCoverage();
   });

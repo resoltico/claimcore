@@ -9,6 +9,8 @@
     <Compile Include="RejectionDiagnosticSchemas.fs" />
     <Compile Include="Projection.fs" />
     <Compile Include="EndpointInputs.fs" />
+    <Compile Include="CliLocalFaults.fs" />
+    <Compile Include="OutcomeDiagnosticSchemas.fs" />
     <Compile Include="CoreValueSchemas.fs" />
     <Compile Include="RecoveryValueSchemas.fs" />
     <Compile Include="CliResponseSchemaCommon.fs" />
@@ -20,6 +22,8 @@
     <Compile Include="WebResponseSchemas.fs" />
     <Compile Include="CliWireTypes.fs" />
     <Compile Include="RejectionPresentation.fs" />
+    <Compile Include="CoreFaultPresentation.fs" />
+    <Compile Include="RecoveryRejectionPresentation.fs" />
     <Compile Include="CliWireValues.fs" />
     <Compile Include="CliWireQueries.fs" />
     <Compile Include="CliWirePreparation.fs" />

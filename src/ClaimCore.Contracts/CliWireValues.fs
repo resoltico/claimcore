@@ -50,18 +50,37 @@ module internal CliWireValues =
         writer.WriteString("recommendedAction", action value.Action)
         writer.WriteEndObject()
 
+    let private parameterlessDiagnostic (writer: Utf8JsonWriter) identifier =
+        writer.WritePropertyName("diagnostic")
+        writer.WriteStartObject()
+        writer.WriteString("id", (identifier: string))
+        writer.WritePropertyName("parameters")
+        writer.WriteStartObject()
+        writer.WriteEndObject()
+        writer.WriteEndObject()
+
     let fault (writer: Utf8JsonWriter) (value: CoreFault) =
         writer.WriteStartObject()
         writer.WriteString("code", faultCode value.Code)
-        writer.WriteString("message", value.Message)
+        parameterlessDiagnostic writer (CoreFaults.token value)
+        writer.WriteString("message", CoreFaultPresentation.render value)
         writer.WriteString("recommendedAction", action value.Action)
         writer.WriteEndObject()
 
     let recoveryRejection (writer: Utf8JsonWriter) (value: RecoveryRejection) =
         writer.WriteStartObject()
         writer.WriteString("code", recoveryRejectionCode value.Code)
-        writer.WriteString("message", value.Message)
+        parameterlessDiagnostic writer (RecoveryRejections.token value)
+        writer.WriteString("message", RecoveryRejectionPresentation.render value)
         writer.WriteString("recommendedAction", action value.Action)
+        writer.WriteEndObject()
+
+    let localFault (writer: Utf8JsonWriter) (value: CliLocalFault) =
+        writer.WriteStartObject()
+        writer.WriteString("code", faultCode (CliLocalFaults.code value))
+        parameterlessDiagnostic writer (CliLocalFaults.token value)
+        writer.WriteString("message", CliLocalFaults.render value)
+        writer.WriteString("recommendedAction", action RecommendedAction.StopAndInvestigate)
         writer.WriteEndObject()
 
     let caseView (writer: Utf8JsonWriter) (value: CaseView) =

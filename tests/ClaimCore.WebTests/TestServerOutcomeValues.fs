@@ -51,19 +51,9 @@ let receipt =
 
 let rejection: Rejection = Rejection.Domain(DomainError.VersionConflict 2L)
 
-let fault: CoreFault =
-    {
-        Code = FaultCode.StoreUnavailable
-        Message = "Synthetic safe store failure."
-        Action = RecommendedAction.RetrySafe
-    }
+let fault: CoreFault = CoreFault.StoreUnavailable
 
-let recoveryRejection: RecoveryRejection =
-    {
-        Code = RecoveryRejectionCode.PreparationDismissed
-        Message = "Synthetic preparation is dismissed."
-        Action = RecommendedAction.ReadCurrent
-    }
+let recoveryRejection: RecoveryRejection = RecoveryRejection.PreparationDismissed
 
 let preparationSummary =
     {

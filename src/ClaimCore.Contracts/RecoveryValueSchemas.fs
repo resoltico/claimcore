@@ -6,13 +6,7 @@ open ClaimCore.Application
 module RecoveryValueSchemas =
     let rejectionCode = WireTokens.recoveryRejectionCodes |> WireSchema.enumeration
 
-    let rejection =
-        WireSchema.objectOf
-            [
-                WireSchema.property "code" rejectionCode
-                WireSchema.property "message" WireSchema.text
-                WireSchema.property "recommendedAction" CoreValueSchemas.action
-            ]
+    let rejection = OutcomeDiagnosticSchemas.recoveryRejection
 
     let private states =
         [

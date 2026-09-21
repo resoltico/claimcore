@@ -29,12 +29,7 @@ module internal RetainedPreparationReview =
                     return Previewed(AdvisoryReviewProjection.create context current proposed)
         }
 
-    let private replayFault: CoreFault =
-        {
-            Code = FaultCode.RecoveryIntegrityError
-            Message = "An exact retained preparation could not be verified."
-            Action = RecommendedAction.StopAndInvestigate
-        }
+    let private replayFault: CoreFault = CoreFault.RetainedPreparationUnverifiable
 
     let private observedOutcome
         (store: IClaimStore)

@@ -6,6 +6,8 @@
     <Compile Include="Rejections.fs" />
     <Compile Include="RejectionDiagnosticIds.fs" />
     <Compile Include="RejectionDiagnostics.fs" />
+    <Compile Include="CoreFaults.fs" />
+    <Compile Include="RecoveryRejections.fs" />
     <Compile Include="SemanticTypes.fs" />
     <Compile Include="SemanticContract.fs" />
     <Compile Include="RecoveryTypes.fs" />

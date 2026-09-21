@@ -6,12 +6,7 @@ open ClaimCore.RecordFormat
 /// A same-ID receipt is not an exact replay until the accepted fingerprint is checked against the
 /// retained canonical bytes by the content-bound claim transaction.
 module internal ObservedReceiptVerification =
-    let private corruptFault: CoreFault =
-        {
-            Code = FaultCode.RecoveryIntegrityError
-            Message = "Retained canonical request bytes failed integrity validation."
-            Action = RecommendedAction.StopAndInvestigate
-        }
+    let private corruptFault: CoreFault = CoreFault.RetainedCanonicalInvalid
 
     let verify
         (store: IClaimStore)

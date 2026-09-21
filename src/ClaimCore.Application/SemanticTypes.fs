@@ -10,22 +10,6 @@ module SemanticCoreFingerprint =
     let create value = SemanticCoreFingerprint value
     let value (SemanticCoreFingerprint value) = value
 
-type FaultCode =
-    | StoreUnavailable
-    | StoreIntegrityError
-    | SchemaMismatch
-    | RecoveryCapacityExceeded
-    | RecoveryIntegrityError
-    | CommitOutcomeUnknown
-    | TechnicalMutationUnknown
-
-type CoreFault =
-    {
-        Code: FaultCode
-        Message: string
-        Action: RecommendedAction
-    }
-
 type RuntimeContext =
     {
         ProductVersion: string
@@ -42,7 +26,9 @@ type SemanticCoreContract =
         Commands: CommandDefinition list
         Statuses: CaseStatus list
         Rules: DomainRuleDefinition list
-        RejectionDiagnostics: RejectionDiagnosticDefinition list
+        RejectionDiagnostics: DiagnosticDefinition list
+        FaultDiagnostics: DiagnosticDefinition list
+        RecoveryDiagnostics: DiagnosticDefinition list
         DefaultPageSize: int
         MaximumPageSize: int
         RequestByteLimit: int

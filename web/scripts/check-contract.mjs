@@ -4,6 +4,7 @@ import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { generateConvergenceContracts } from "./contract-generation.mjs";
 import { maximumStandaloneValidatorGroupBytes } from "./generate-web-validators.mjs";
+import { standaloneValidatorArtifacts } from "./validator-groups.mjs";
 
 const root = resolve(import.meta.dirname, "../..");
 const generated = resolve(root, "web/src/generated/convergence");
@@ -49,8 +50,11 @@ const assertValidatorSizes = async (directory) => {
     .filter((entry) => /^web-v2\.validators\.[a-z]+\.mjs$/u.test(entry.name))
     .map((entry) => entry.name)
     .sort();
-  if (validators.length !== 2)
-    throw new Error("Generated Web validators must have exactly two groups.");
+  const expected = standaloneValidatorArtifacts
+    .filter((name) => /^web-v2\.validators\.[a-z]+\.mjs$/u.test(name))
+    .sort();
+  if (!sameInventory(validators, expected))
+    throw new Error("Generated Web validators must match the declared group inventory.");
   for (const name of validators) {
     const source = await readFile(join(directory, name));
     if (source.byteLength > maximumStandaloneValidatorGroupBytes) {

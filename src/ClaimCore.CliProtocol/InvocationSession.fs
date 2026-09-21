@@ -9,28 +9,7 @@ open ClaimCore.Contracts
 /// holds no runtime, no store, and no connection: the composition root supplies the core.
 type InvocationSession(supplier: ICoreSupplier) =
     let openFault endpoint fault =
-        let code, message =
-            match fault with
-            | RuntimeOpenFault.RuntimeConfigurationInvalid ->
-                FaultCode.SchemaMismatch, "The local runtime configuration is invalid."
-            | RuntimeOpenFault.RuntimeSchemaMismatch ->
-                FaultCode.SchemaMismatch,
-                "The PostgreSQL schema is not compatible with this runtime."
-            | RuntimeOpenFault.RuntimeStoreUnavailable ->
-                FaultCode.StoreUnavailable, "The PostgreSQL runtime is unavailable."
-            | RuntimeOpenFault.RuntimeStoreIntegrityError ->
-                FaultCode.StoreIntegrityError, "The PostgreSQL runtime failed integrity checks."
-            | RuntimeOpenFault.RuntimeCancelled ->
-                FaultCode.StoreUnavailable,
-                "Runtime opening was cancelled before work was admitted."
-
-        CliWireCodec.localFailure
-            (Endpoint.identifier endpoint)
-            {
-                Code = code
-                Message = message
-                Action = RecommendedAction.StopAndInvestigate
-            }
+        CliWireCodec.localFailure (Endpoint.identifier endpoint) (CliLocalFault.RuntimeOpen fault)
 
     let unavailable endpoint reason =
         match reason with

@@ -53,10 +53,10 @@
     {
       "contractId": "CC-APP-001",
       "reviewerKind": "agent",
-      "reviewer": "Typed diagnostics: agent delta review of derived rejection metadata and query binding; no store mutation or fault-to-rejection conversion",
+      "reviewer": "Core outcome diagnostics: agent design and source-delta review of typed causes, guidance, privacy and unchanged operation authority; not independent owner approval",
       "reviewedOn": "2026-09-21",
       "conclusion": "approved",
-      "reviewSubjectHash": "409a65e51a0351763e64bd21ac02cf7c7257efc7338f43531d157d36aeeb5462",
+      "reviewSubjectHash": "16b738872386ec27fa97b0a431551f05fdb22bf738443f99298a704ad6db45db",
       "wholeFiles": [
         "src/ClaimCore.Application/Core.fs",
         "src/ClaimCore.Application/Service.fs",
@@ -76,17 +76,24 @@
         "src/ClaimCore.Application/Drafts.fs",
         "src/ClaimCore.Application/HistoryCursor.fs",
         "tests/ClaimCore.Tests/RejectionDiagnosticTests.fs",
-        "tests/ClaimCore.Tests/RejectionEmissionTests.fs"
+        "tests/ClaimCore.Tests/RejectionEmissionTests.fs",
+        "src/ClaimCore.Application/CoreFaults.fs",
+        "src/ClaimCore.Application/RecoveryRejections.fs",
+        "tests/ClaimCore.Tests/OutcomeDiagnosticTests.fs",
+        "tests/ClaimCore.Tests/OutcomeEmissionTests.fs",
+        "tests/ClaimCore.Tests/FaultDiagnosticExamples.fs",
+        "tests/ClaimCore.Tests/RecoveryDiagnosticExamples.fs",
+        "docs/diagnostics.md"
       ],
       "markedSpans": []
     },
     {
       "contractId": "CC-APP-002",
       "reviewerKind": "agent",
-      "reviewer": "Typed diagnostics: agent delta review of idempotency refusals and safe invalid-stored-data copy; receipt authority and replay unchanged",
+      "reviewer": "Core outcome diagnostics: agent design and source-delta review of typed causes, guidance, privacy and unchanged operation authority; not independent owner approval",
       "reviewedOn": "2026-09-21",
       "conclusion": "approved",
-      "reviewSubjectHash": "0a1902df1990b73c21c2df90f299dfd6bcb8a132a2ef04aa725f547796a5557e",
+      "reviewSubjectHash": "96fd2c4332f93f2516b4e5242098bfdc081d2661c66ba48d827cef2d27310909",
       "wholeFiles": [
         "src/ClaimCore.Application/AcceptedObservation.fs",
         "src/ClaimCore.Application/Core.fs",
@@ -111,17 +118,23 @@
         "tests/ClaimCore.IntegrationTests/AcceptedReplayStorageTests.fs",
         "tests/ClaimCore.IntegrationTests/TransactionTests.fs",
         "tests/ClaimCore.Tests/ExactReplayTests.fs",
-        "tests/ClaimCore.Tests/ReceiptFirstTests.fs"
+        "tests/ClaimCore.Tests/ReceiptFirstTests.fs",
+        "src/ClaimCore.Application/CoreFaults.fs",
+        "src/ClaimCore.Application/RecoveryRejections.fs",
+        "tests/ClaimCore.Tests/OutcomeDiagnosticTests.fs",
+        "tests/ClaimCore.Tests/OutcomeEmissionTests.fs",
+        "tests/ClaimCore.Tests/FaultDiagnosticExamples.fs",
+        "tests/ClaimCore.Tests/RecoveryDiagnosticExamples.fs"
       ],
       "markedSpans": []
     },
     {
       "contractId": "CC-CLI-001",
       "reviewerKind": "agent",
-      "reviewer": "Typed diagnostics: agent delta review of shared rejection codec, closed safe arguments and exact corpora; framing and exit semantics retained",
+      "reviewer": "Core outcome diagnostics: agent design and source-delta review of typed causes, guidance, privacy and unchanged operation authority; not independent owner approval",
       "reviewedOn": "2026-09-21",
       "conclusion": "approved",
-      "reviewSubjectHash": "2b55ebac1d0d30bf87c915b3aaae4d9fb0e96d8fc6d9779ce441388d3ce8cc9c",
+      "reviewSubjectHash": "0af6f01f4b2f2dc5c813cf997224841dbc7ccf0d709db85c537a63a29df3f66e",
       "wholeFiles": [
         "examples/01-open.json",
         "examples/02-decide.json",
@@ -143,7 +156,19 @@
         "src/ClaimCore.Contracts/RejectionDiagnosticSchemas.fs",
         "src/ClaimCore.Contracts/RejectionPresentation.fs",
         "eng/ClaimCore.ContractGenerator/DiagnosticCorpus.fs",
-        "eng/RejectionExamples.fs"
+        "eng/RejectionExamples.fs",
+        "src/ClaimCore.Contracts/CoreFaultPresentation.fs",
+        "src/ClaimCore.Contracts/RecoveryRejectionPresentation.fs",
+        "src/ClaimCore.Contracts/OutcomeDiagnosticSchemas.fs",
+        "src/ClaimCore.Contracts/CliLocalFaults.fs",
+        "eng/ClaimCore.ContractGenerator/OutcomeDiagnosticCorpus.fs",
+        "src/ClaimCore.Application/CoreFaults.fs",
+        "src/ClaimCore.Application/RecoveryRejections.fs",
+        "tests/ClaimCore.Tests/OutcomeDiagnosticTests.fs",
+        "tests/ClaimCore.Tests/OutcomeEmissionTests.fs",
+        "tests/ClaimCore.Tests/FaultDiagnosticExamples.fs",
+        "tests/ClaimCore.Tests/RecoveryDiagnosticExamples.fs",
+        "src/ClaimCore.CliProtocol/InvocationSession.fs"
       ],
       "markedSpans": []
     },
@@ -171,10 +196,10 @@
     {
       "contractId": "CC-REC-001",
       "reviewerKind": "agent",
-      "reviewer": "Typed diagnostics: agent delta review of ordinary rejections nested in definite recovery execution; no admission settlement or revocation change",
+      "reviewer": "Core outcome diagnostics: agent design and source-delta review of typed causes, guidance, privacy and unchanged operation authority; not independent owner approval",
       "reviewedOn": "2026-09-21",
       "conclusion": "approved",
-      "reviewSubjectHash": "10de8a8911df2c05f4e7d35f275d72e787ca05acbe700ac1797d14908263fa45",
+      "reviewSubjectHash": "71627c90be1a848fccac35397f9b829aded7ad16b4e6220fa8f815c707f9414d",
       "wholeFiles": [
         "src/ClaimCore.Application/AcceptedObservation.fs",
         "src/ClaimCore.Application/RecoveryCoordinator.fs",
@@ -211,7 +236,13 @@
         "tests/ClaimCore.Tests/RecoveryCancellationOutcomeTests.fs",
         "tests/ClaimCore.Tests/RecoveryOutcomeTests.fs",
         "tests/ClaimCore.Tests/ReceiptFirstTests.fs",
-        "tests/ClaimCore.RecoveryQualificationTests/Suite.fs"
+        "tests/ClaimCore.RecoveryQualificationTests/Suite.fs",
+        "src/ClaimCore.Application/CoreFaults.fs",
+        "src/ClaimCore.Application/RecoveryRejections.fs",
+        "tests/ClaimCore.Tests/OutcomeDiagnosticTests.fs",
+        "tests/ClaimCore.Tests/OutcomeEmissionTests.fs",
+        "tests/ClaimCore.Tests/FaultDiagnosticExamples.fs",
+        "tests/ClaimCore.Tests/RecoveryDiagnosticExamples.fs"
       ],
       "markedSpans": []
     },
@@ -285,10 +316,10 @@
     {
       "contractId": "CC-WEB-001",
       "reviewerKind": "agent",
-      "reviewer": "Typed diagnostics: agent delta review of exact schemas, shared validator definitions and typed UI fixtures; operation identity and outcome authority retained",
+      "reviewer": "Core outcome diagnostics: agent design and source-delta review of typed causes, guidance, privacy and unchanged operation authority; not independent owner approval",
       "reviewedOn": "2026-09-21",
       "conclusion": "approved",
-      "reviewSubjectHash": "bff8db5094a536fb42ada5ac3eb2d8cff0e48a7f2edb6e1364f809eb37b123c0",
+      "reviewSubjectHash": "a4d1cdffaab6f16e3c0bceea54ef919b4937a6a9a9b689228311bce915862b7c",
       "wholeFiles": [
         "src/ClaimCore.Contracts/ContractFactory.fs",
         "src/ClaimCore.Contracts/EndpointInputs.fs",
@@ -385,7 +416,19 @@
         "src/ClaimCore.Contracts/WebTypeScriptResponses.fs",
         "eng/ClaimCore.ContractGenerator/DiagnosticCorpus.fs",
         "eng/RejectionExamples.fs",
-        "web/tests/operation-editor.test.tsx"
+        "web/tests/operation-editor.test.tsx",
+        "src/ClaimCore.Contracts/CoreFaultPresentation.fs",
+        "src/ClaimCore.Contracts/RecoveryRejectionPresentation.fs",
+        "src/ClaimCore.Contracts/OutcomeDiagnosticSchemas.fs",
+        "src/ClaimCore.Contracts/CliLocalFaults.fs",
+        "eng/ClaimCore.ContractGenerator/OutcomeDiagnosticCorpus.fs",
+        "src/ClaimCore.Application/CoreFaults.fs",
+        "src/ClaimCore.Application/RecoveryRejections.fs",
+        "tests/ClaimCore.Tests/OutcomeDiagnosticTests.fs",
+        "tests/ClaimCore.Tests/OutcomeEmissionTests.fs",
+        "tests/ClaimCore.Tests/FaultDiagnosticExamples.fs",
+        "tests/ClaimCore.Tests/RecoveryDiagnosticExamples.fs",
+        "web/scripts/validator-groups.test.mjs"
       ],
       "markedSpans": []
     }

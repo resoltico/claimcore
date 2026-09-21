@@ -2,29 +2,116 @@
 import type { Rejection } from "./web-v2.types.diagnostics";
 import type { CaseView, FieldDiff, Fault, Receipt, RuntimeContext } from "./web-v2.types.core";
 
-export type RecoveryRejection = {
-  readonly code:
-    | "INVALID_RECOVERY_INPUT"
-    | "PREPARATION_NOT_FOUND"
-    | "RECOVERY_IDEMPOTENCY_CONFLICT"
-    | "PREPARATION_DISMISSED"
-    | "SUBMISSION_ALREADY_STARTED"
-    | "RECOVERY_ACTION_UNAVAILABLE"
-    | "SOURCE_DIGEST_MISMATCH"
-    | "INSTALLATION_MISMATCH"
-    | "UNSUPPORTED_RECOVERY_ARTIFACT"
-    | "OPERATION_REVOKED"
-    | "ATTEMPT_LIMIT_REACHED";
-  readonly message: string;
-  readonly recommendedAction:
-    | "CORRECT_INPUT"
-    | "READ_CURRENT"
-    | "RETRY_SAFE"
-    | "RECOVER_EXACT"
-    | "REAUTHENTICATE"
-    | "STOP_AND_INVESTIGATE"
-    | "NONE_REQUIRED";
-};
+export type RecoveryRejection =
+  | {
+      readonly code: "INVALID_RECOVERY_INPUT";
+      readonly diagnostic: {
+        readonly id:
+          | "RECOVERY_OPERATION_ID_REQUIRED"
+          | "RECOVERY_REQUEST_DIGEST_INVALID"
+          | "RECOVERY_PAGE_LIMIT_RANGE"
+          | "RECOVERY_LIST_CURSOR_INVALID"
+          | "RECOVERY_LIST_CURSOR_VIEW_MISMATCH"
+          | "RECOVERY_ATTEMPT_CURSOR_INVALID"
+          | "RECOVERY_ATTEMPT_CURSOR_OPERATION_MISMATCH"
+          | "RECOVERY_DISMISSAL_CONFIRMATION_REQUIRED";
+        readonly parameters: Readonly<Record<string, never>>;
+      };
+      readonly message: string;
+      readonly recommendedAction: "CORRECT_INPUT";
+    }
+  | {
+      readonly code: "PREPARATION_NOT_FOUND";
+      readonly diagnostic: {
+        readonly id: "RECOVERY_PREPARATION_NOT_FOUND";
+        readonly parameters: Readonly<Record<string, never>>;
+      };
+      readonly message: string;
+      readonly recommendedAction: "READ_CURRENT";
+    }
+  | {
+      readonly code: "RECOVERY_IDEMPOTENCY_CONFLICT";
+      readonly diagnostic: {
+        readonly id: "RECOVERY_OPERATION_CONTENT_CONFLICT";
+        readonly parameters: Readonly<Record<string, never>>;
+      };
+      readonly message: string;
+      readonly recommendedAction: "STOP_AND_INVESTIGATE";
+    }
+  | {
+      readonly code: "PREPARATION_DISMISSED";
+      readonly diagnostic: {
+        readonly id: "RECOVERY_PREPARATION_DISMISSED";
+        readonly parameters: Readonly<Record<string, never>>;
+      };
+      readonly message: string;
+      readonly recommendedAction: "READ_CURRENT";
+    }
+  | {
+      readonly code: "SUBMISSION_ALREADY_STARTED";
+      readonly diagnostic: {
+        readonly id: "RECOVERY_SUBMISSION_ALREADY_STARTED";
+        readonly parameters: Readonly<Record<string, never>>;
+      };
+      readonly message: string;
+      readonly recommendedAction: "RECOVER_EXACT";
+    }
+  | {
+      readonly code: "RECOVERY_ACTION_UNAVAILABLE";
+      readonly diagnostic: {
+        readonly id: "RECOVERY_ACCEPTED_OPERATION_DISMISSAL_FORBIDDEN";
+        readonly parameters: Readonly<Record<string, never>>;
+      };
+      readonly message: string;
+      readonly recommendedAction: "READ_CURRENT";
+    }
+  | {
+      readonly code: "SOURCE_DIGEST_MISMATCH";
+      readonly diagnostic: {
+        readonly id: "RECOVERY_SOURCE_DIGEST_MISMATCH" | "RECOVERY_REQUEST_DIGEST_MISMATCH";
+        readonly parameters: Readonly<Record<string, never>>;
+      };
+      readonly message: string;
+      readonly recommendedAction: "STOP_AND_INVESTIGATE";
+    }
+  | {
+      readonly code: "INSTALLATION_MISMATCH";
+      readonly diagnostic: {
+        readonly id: "RECOVERY_INSTALLATION_MISMATCH";
+        readonly parameters: Readonly<Record<string, never>>;
+      };
+      readonly message: string;
+      readonly recommendedAction: "STOP_AND_INVESTIGATE";
+    }
+  | {
+      readonly code: "UNSUPPORTED_RECOVERY_ARTIFACT";
+      readonly diagnostic: {
+        readonly id:
+          | "RECOVERY_ENVELOPE_INVALID_OR_UNSUPPORTED"
+          | "RECOVERY_CANONICAL_RECORD_INVALID_OR_UNSUPPORTED";
+        readonly parameters: Readonly<Record<string, never>>;
+      };
+      readonly message: string;
+      readonly recommendedAction: "CORRECT_INPUT";
+    }
+  | {
+      readonly code: "OPERATION_REVOKED";
+      readonly diagnostic: {
+        readonly id: "RECOVERY_OPERATION_REVOKED";
+        readonly parameters: Readonly<Record<string, never>>;
+      };
+      readonly message: string;
+      readonly recommendedAction: "READ_CURRENT";
+    }
+  | {
+      readonly code: "ATTEMPT_LIMIT_REACHED";
+      readonly diagnostic: {
+        readonly id: "RECOVERY_ATTEMPT_LIMIT_REACHED";
+        readonly parameters: Readonly<Record<string, never>>;
+      };
+      readonly message: string;
+      readonly recommendedAction: "READ_CURRENT";
+    };
 export type PreparationSummary = {
   readonly operationId: string;
   readonly caseReference: string;

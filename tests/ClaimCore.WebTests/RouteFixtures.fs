@@ -28,14 +28,7 @@ let private stubResult configured fallback =
     Task.FromResult(defaultArg configured fallback)
 
 let private absentResolve =
-    ResolveOutcome.RefusedBeforeAttempt(
-        None,
-        {
-            Code = RecoveryRejectionCode.PreparationNotFound
-            Message = "Synthetic preparation absence."
-            Action = RecommendedAction.ReadCurrent
-        }
-    )
+    ResolveOutcome.RefusedBeforeAttempt(None, RecoveryRejection.PreparationNotFound)
 
 let private exportFallback invalidMetadata =
     if invalidMetadata then

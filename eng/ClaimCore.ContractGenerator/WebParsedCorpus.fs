@@ -174,6 +174,17 @@ module WebParsedCorpus =
                 Value = value.GetRawText()
             })
 
+    let private outcomeDiagnosticCases =
+        OutcomeDiagnosticCorpus.web
+        |> List.map (fun (id, endpoint, valid, value) ->
+            {
+                Identifier = id
+                Endpoint = Some endpoint
+                Status = 200
+                Valid = valid
+                Value = value.GetRawText()
+            })
+
     let artifact (projection: ContractModel) =
         let endpoints = projection.WebEndpoints |> List.map _.Identifier
         let samples = representatives endpoints
@@ -212,6 +223,7 @@ module WebParsedCorpus =
             @ scalarBoundaries samples
             @ crossEndpoint samples
             @ diagnosticCases
+            @ outcomeDiagnosticCases
 
         let identifiers = cases |> List.map _.Identifier
 

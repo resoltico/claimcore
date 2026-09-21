@@ -11,6 +11,7 @@
     <Compile Include="CliRecoveryCorpusSamples.fs" />
     <Compile Include="CorpusJson.fs" />
     <Compile Include="DiagnosticCorpus.fs" />
+    <Compile Include="OutcomeDiagnosticCorpus.fs" />
     <Compile Include="ScalarCorpus.fs" />
     <Compile Include="CliResponseCorpus.fs" />
     <Compile Include="CliRawCorpus.fs" />

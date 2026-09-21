@@ -207,14 +207,7 @@ let private recoveryQueryWrappers () =
 
 let private recoveryResolutionWrappers () =
     let resolve =
-        ResolveOutcome.RefusedBeforeAttempt(
-            None,
-            {
-                Code = RecoveryRejectionCode.PreparationNotFound
-                Message = "Synthetic preparation absence."
-                Action = RecommendedAction.ReadCurrent
-            }
-        )
+        ResolveOutcome.RefusedBeforeAttempt(None, RecoveryRejection.PreparationNotFound)
 
     same
         "Resolve wrapper"

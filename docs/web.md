@@ -83,7 +83,7 @@ The pure `ClaimCore.Contracts` projection owns the canonical Web-v2 endpoint cat
 and response schemas, raw-media rules, deterministic response codecs, split TypeScript DTO modules,
 parsed conformance corpus, and Web wire fingerprint. The F# host consumes the same catalog and codec
 authority. A deterministic Node postprocess compiles the aggregate response schema into strict AJV
-standalone core and recovery validator groups and a typed asynchronous selector. The selector loads
+standalone discovery, core, and recovery validator groups and a typed asynchronous selector. The selector loads
 only the group needed to validate the endpoint response. Run `npm --prefix web run contract:check` to
 regenerate and compare every checked artifact; do not hand edit generated contract files.
 During the pre-1.0 source preview, `/api/v2` identifies this route and admission family, not a

@@ -498,6 +498,36 @@
       ]
     },
     {
+      "id": "assurance-diagnostics:core-outcome-vocabulary",
+      "dimensions": [
+        "cli",
+        "core",
+        "documentation",
+        "webGui",
+        "webHost"
+      ],
+      "subject": "Core faults and recovery refusals carry closed precise diagnostic meaning and derived guidance, never provider text. CLI and Web project matching diagnostics; separate local CLI failures do not impersonate core results. Every new ID, exact parameterless shape and contradictory payload is exercised without changing cancellation or uncertain-operation authority.",
+      "tests": [
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.core outcome diagnostic emission.diagnostic specificity preserves existing cancellation precedence",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.core outcome diagnostic emission.provider error payloads never enter diagnostic presentation",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.core outcome diagnostic emission.recovery cursors retain view and operation binding causes",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.core outcome diagnostic emission.recovery reads emit precise ID page and cursor causes",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.core outcome diagnostic emission.resolve dismissal and export preserve specific admission causes",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.core outcome diagnostic emission.source mismatch and unsupported artifact causes remain distinct",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.core outcome diagnostic emission.technical commit uncertainty preserves operation identity and recovery guidance",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core outcome diagnostics.adapter failures are distinct from core results on every CLI endpoint",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core outcome diagnostics.all lifecycle refusals have identical CLI and Web diagnostics",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core outcome diagnostics.all native faults have identical CLI and Web diagnostics",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core outcome diagnostics.ambient locale does not change core outcome diagnostics",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core outcome diagnostics.core reasons cannot carry messages arbitrary parameters or writable guidance",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core outcome diagnostics.fault and recovery diagnostic inventories participate in semantic identity",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core outcome diagnostics.fault identities and guidance match the reviewed closed vocabulary",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core outcome diagnostics.recovery identities and guidance match the reviewed closed vocabulary",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core outcome diagnostics.semantic diagnostic families are disjoint complete and parameterless",
+        "frontend:vitest::generated contract corpora > qualifies every fault and recovery identity with correlated code and guidance"
+      ]
+    },
+    {
       "dimensions": [
         "cli",
         "core",
@@ -762,7 +792,7 @@
       "dimensions": [
         "migration"
       ],
-      "subject": "The current manifest assertion pins the exact applied 001–006 migration names and SHA-256 digests, so an accidental source edit changes the expected identity.",
+      "subject": "The current manifest assertion pins the exact applied 001\u2013006 migration names and SHA-256 digests, so an accidental source edit changes the expected identity.",
       "tests": [
         "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 006.manifest validation.[CC-DB-001] applied migration identities remain frozen"
       ]
@@ -1287,6 +1317,7 @@
         "cancelled",
         "failed",
         "found",
+        "localFailure",
         "notFound",
         "rejected"
       ],
@@ -1307,6 +1338,7 @@
         "cancelled",
         "failed",
         "found",
+        "localFailure",
         "notFound",
         "rejected"
       ],
@@ -1326,6 +1358,7 @@
       "outcomeTags": [
         "cancelled",
         "failed",
+        "localFailure",
         "rejected",
         "succeeded"
       ],
@@ -1349,6 +1382,7 @@
         "cancelledBeforeAttempt",
         "completed",
         "failedBeforeAttempt",
+        "localFailure",
         "observedAccepted",
         "preparationStateUnknown",
         "rejectedBeforeAttempt"
@@ -1369,6 +1403,7 @@
       "outcomeTags": [
         "cancelledBeforeAdmission",
         "failed",
+        "localFailure",
         "observedAccepted",
         "preparationStateUnknown",
         "prepared",
@@ -1393,6 +1428,7 @@
         "cancelled",
         "failed",
         "found",
+        "localFailure",
         "notFound",
         "rejected"
       ],
@@ -1416,6 +1452,7 @@
         "dismissStateUnknown",
         "dismissed",
         "failed",
+        "localFailure",
         "notFound",
         "refused"
       ],
@@ -1436,6 +1473,7 @@
         "cancelled",
         "exported",
         "failed",
+        "localFailure",
         "notFound",
         "rejected"
       ],
@@ -1455,6 +1493,7 @@
       "outcomeTags": [
         "cancelled",
         "failed",
+        "localFailure",
         "previewed",
         "rejected"
       ],
@@ -1475,6 +1514,7 @@
         "cancelledBeforeAdmission",
         "existing",
         "failed",
+        "localFailure",
         "observedAccepted",
         "rejected",
         "retainStateUnknown",
@@ -1496,6 +1536,7 @@
       "outcomeTags": [
         "cancelled",
         "failed",
+        "localFailure",
         "previewed",
         "rejected"
       ],
@@ -1516,6 +1557,7 @@
         "cancelledBeforeAdmission",
         "existing",
         "failed",
+        "localFailure",
         "observedAccepted",
         "rejected",
         "retainStateUnknown",
@@ -1538,6 +1580,7 @@
         "cancelled",
         "failed",
         "found",
+        "localFailure",
         "notFound",
         "rejected"
       ],
@@ -1557,6 +1600,7 @@
       "outcomeTags": [
         "cancelled",
         "failed",
+        "localFailure",
         "rejected",
         "succeeded"
       ],
@@ -1580,6 +1624,7 @@
         "cancelledBeforeAttempt",
         "completed",
         "failedBeforeAttempt",
+        "localFailure",
         "observedAccepted",
         "refusedBeforeAttempt"
       ],

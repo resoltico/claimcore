@@ -39,6 +39,8 @@ let tests =
             SemanticIdentityTests.tests
             RejectionDiagnosticTests.tests
             RejectionEmissionTests.tests
+            OutcomeDiagnosticTests.tests
+            OutcomeEmissionTests.tests
             ConfigurationTests.tests
             CliProcessTests.tests
             PrivateFileSecurityTests.tests

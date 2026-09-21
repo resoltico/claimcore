@@ -6,13 +6,13 @@ type ResponseValidator<K extends WebV2EndpointId> = (
   value: unknown,
 ) => value is WebV2ResponseByEndpoint[K];
 type ValidatorModule = Readonly<Record<string, (value: unknown) => boolean>>;
-type ValidatorGroup = "core" | "recovery";
+type ValidatorGroup = "discovery" | "core" | "recovery";
 
 const endpointValidators = {
+  definition: "validate_definition",
   session: "validate_session",
   "session.login": "validate_session_login",
   "session.logout": "validate_session_logout",
-  definition: "validate_definition",
   "case.get": "validate_case_get",
   "case.list": "validate_case_list",
   "case.history": "validate_case_history",
@@ -36,7 +36,7 @@ const endpointGroups = {
   "case.list": "core",
   "command.execute": "core",
   "command.prepare": "core",
-  definition: "core",
+  definition: "discovery",
   "operation.observe": "core",
   "recovery.dismiss": "recovery",
   "recovery.export": "recovery",
@@ -52,11 +52,13 @@ const endpointGroups = {
   "session.logout": "core",
 } as const satisfies Readonly<Record<WebV2EndpointId, ValidatorGroup>>;
 
+const loadDiscovery = (): Promise<ValidatorModule> => import("./web-v2.validators.discovery.mjs");
 const loadCore = (): Promise<ValidatorModule> => import("./web-v2.validators.core.mjs");
 const loadRecovery = (): Promise<ValidatorModule> => import("./web-v2.validators.recovery.mjs");
 
+const loaders = { discovery: loadDiscovery, core: loadCore, recovery: loadRecovery };
 const validatorsFor = (endpoint: WebV2EndpointId): Promise<ValidatorModule> =>
-  endpointGroups[endpoint] === "recovery" ? loadRecovery() : loadCore();
+  loaders[endpointGroups[endpoint]]();
 
 const requiredValidator = async <K extends WebV2EndpointId>(
   endpoint: K,

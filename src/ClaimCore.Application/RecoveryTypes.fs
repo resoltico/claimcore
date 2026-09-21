@@ -105,26 +105,6 @@ type RecoveryInspection =
     | RetainedInspection of RecoveryDetails
     | RevokedInspection of RevokedOperation
 
-type RecoveryRejectionCode =
-    | InvalidRecoveryInput
-    | PreparationNotFound
-    | RecoveryIdempotencyConflict
-    | PreparationDismissed
-    | SubmissionAlreadyStarted
-    | RecoveryActionUnavailable
-    | SourceDigestMismatch
-    | InstallationMismatch
-    | UnsupportedRecoveryArtifact
-    | OperationRevoked
-    | AttemptLimitReached
-
-type RecoveryRejection =
-    {
-        Code: RecoveryRejectionCode
-        Message: string
-        Action: RecommendedAction
-    }
-
 /// Recovery has its own refusal vocabulary. Reusing `QueryOutcome` would erase whether a refusal
 /// came from business validation or from the preparation lifecycle.
 type RecoveryQueryOutcome<'value> =

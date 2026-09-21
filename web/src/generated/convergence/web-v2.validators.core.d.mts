@@ -16,7 +16,6 @@ export const validate_host_failure: WebV2Validator<HostFailure>;
 export const validate_session: WebV2Validator<WebV2ResponseByEndpoint["session"]>;
 export const validate_session_login: WebV2Validator<WebV2ResponseByEndpoint["session.login"]>;
 export const validate_session_logout: WebV2Validator<WebV2ResponseByEndpoint["session.logout"]>;
-export const validate_definition: WebV2Validator<WebV2ResponseByEndpoint["definition"]>;
 export const validate_case_get: WebV2Validator<WebV2ResponseByEndpoint["case.get"]>;
 export const validate_case_list: WebV2Validator<WebV2ResponseByEndpoint["case.list"]>;
 export const validate_case_history: WebV2Validator<WebV2ResponseByEndpoint["case.history"]>;

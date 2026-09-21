@@ -114,21 +114,12 @@ module internal CliCorpusValues =
             RecordedBy = "synthetic-operator"
         }
 
-    let fault: CoreFault =
-        {
-            Code = FaultCode.StoreUnavailable
-            Message = "Synthetic safe store failure."
-            Action = RecommendedAction.RetrySafe
-        }
+    let fault: CoreFault = CoreFault.StoreUnavailable
 
     let rejection: Rejection = Rejection.Domain(DomainError.VersionConflict 2L)
 
     let recoveryRejection: RecoveryRejection =
-        {
-            Code = RecoveryRejectionCode.RecoveryActionUnavailable
-            Message = "Synthetic recovery refusal."
-            Action = RecommendedAction.StopAndInvestigate
-        }
+        RecoveryRejection.AcceptedOperationCannotBeDismissed
 
     let preparationSummary =
         {

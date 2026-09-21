@@ -7,14 +7,8 @@ open ClaimCore.Application
 open ClaimCore.Contracts
 
 module EndpointDispatch =
-    let private localFailure (endpoint: Endpoint) (code: FaultCode) (message: string) =
-        CliWireCodec.localFailure
-            (Endpoint.identifier endpoint)
-            {
-                Code = code
-                Message = message
-                Action = RecommendedAction.StopAndInvestigate
-            }
+    let private localFailure (endpoint: Endpoint) reason =
+        CliWireCodec.localFailure (Endpoint.identifier endpoint) reason
 
     let private source (maximum: int) (path: string) : Result<byte array, ProtocolFailure> =
         PrivateFiles.readSource maximum path
@@ -92,13 +86,7 @@ module EndpointDispatch =
         | Endpoint.RecoveryImportRecordRetain, EndpointInput.RecoveryImportRetain(path, digest) ->
             importRetain endpoint path digest 65536 (fun bytes supplied ->
                 core.Recovery.RetainCanonicalRecordImport(bytes, supplied, token))
-        | _ ->
-            Task.FromResult(
-                localFailure
-                    endpoint
-                    FaultCode.RecoveryIntegrityError
-                    "The endpoint input does not match its generated contract."
-            )
+        | _ -> Task.FromResult(localFailure endpoint CliLocalFault.RecoveryInputMismatch)
 
     let private export (core: IClaimsCore) operationId digest destination token =
         task {
@@ -116,8 +104,8 @@ module EndpointDispatch =
                             operationId
                             artifact.RequestSha256
                             artifact.MediaType
-                | Error message ->
-                    return localFailure Endpoint.RecoveryExport FaultCode.StoreUnavailable message
+                | Error _ ->
+                    return localFailure Endpoint.RecoveryExport CliLocalFault.ExportWriteFailed
             | RecoveryQueryOutcome.RecoverySucceeded(Lookup.Found _) ->
                 return
                     CliWireCodec.exportIdentityConflict (
@@ -195,13 +183,7 @@ module EndpointDispatch =
             caseHistory core reference cursor limit detail token
         | Endpoint.OperationObserve, EndpointInput.Operation operationId ->
             observeOperation core operationId token
-        | _ ->
-            Task.FromResult(
-                localFailure
-                    endpoint
-                    FaultCode.StoreIntegrityError
-                    "The endpoint input does not match its generated contract."
-            )
+        | _ -> Task.FromResult(localFailure endpoint CliLocalFault.CaseInputMismatch)
 
     let private command (core: IClaimsCore) endpoint input token =
         match endpoint, input with
@@ -227,13 +209,7 @@ module EndpointDispatch =
 
                 return CliWireCodec.submission (Endpoint.identifier endpoint) outcome
             }
-        | _ ->
-            Task.FromResult(
-                localFailure
-                    endpoint
-                    FaultCode.StoreIntegrityError
-                    "The endpoint input does not match its generated contract."
-            )
+        | _ -> Task.FromResult(localFailure endpoint CliLocalFault.CaseInputMismatch)
 
     let private queryEndpoints =
         Set.ofList

@@ -13,39 +13,21 @@ module internal TypedSubmission =
         | RetryRefused of SubmissionOutcome
         | RetryResolution of RetainedPreparation
 
-    let private integrityFailure (message: string) : CoreFault =
-        {
-            Code = FaultCode.RecoveryIntegrityError
-            Message = message
-            Action = RecommendedAction.StopAndInvestigate
-        }
-
     let private preAttemptOutcome (result: RetainedResolution) : SubmissionOutcome =
         match result with
         | RetainedResolution.MissingPreparation _ ->
-            SubmissionOutcome.FailedBeforeAttempt(
-                None,
-                integrityFailure "A newly retained preparation was not available for execution."
-            )
+            SubmissionOutcome.FailedBeforeAttempt(None, CoreFault.NewPreparationMissing)
         | RetainedResolution.DismissedPreparation summary ->
             SubmissionOutcome.FailedBeforeAttempt(
                 Some summary,
-                {
-                    Code = FaultCode.TechnicalMutationUnknown
-                    Message = "The preparation was dismissed before execution could begin."
-                    Action = RecommendedAction.RecoverExact
-                }
+                CoreFault.PreparationDismissedBeforeExecution
             )
         | RetainedResolution.RevokedPreparation summary ->
             SubmissionOutcome.RejectedBeforeAttempt(summary, OperationRejection.revoked)
         | RetainedResolution.AttemptLimitReached summary ->
             SubmissionOutcome.RejectedBeforeAttempt(Some summary, OperationRejection.attemptLimit)
         | RetainedResolution.DigestConflict ->
-            SubmissionOutcome.FailedBeforeAttempt(
-                None,
-                integrityFailure
-                    "The retained preparation digest does not match the submitted draft."
-            )
+            SubmissionOutcome.FailedBeforeAttempt(None, CoreFault.RetainedDigestMismatch)
         | RetainedResolution.ReceiptIdentityConflict ->
             SubmissionOutcome.RejectedBeforeAttempt(None, Rejection.IdempotencyConflict)
         | _ -> invalidOp "A pre-attempt result was expected."
