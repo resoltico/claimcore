@@ -179,6 +179,12 @@ module internal ProjectionSchema =
                 Schema.property "commands" commands true
                 Schema.property "statuses" statusValues true
                 Schema.property "rules" rules true
+                Schema.property
+                    "rejectionDiagnostics"
+                    (semantic.RejectionDiagnostics
+                     |> List.map RejectionDiagnosticSchemas.definition
+                     |> Schema.tuple)
+                    true
             ]
 
     let definitionDocument (semantic: SemanticCoreContract) =

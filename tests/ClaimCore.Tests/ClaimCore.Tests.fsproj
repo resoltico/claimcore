@@ -6,6 +6,7 @@
     <EnableExpectoTestingPlatformIntegration>true</EnableExpectoTestingPlatformIntegration>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../../eng/RejectionExamples.fs" Link="RejectionExamples.fs" />
     <Compile Include="../RepositoryRoot.fs" Link="RepositoryRoot.fs" />
     <Compile Include="PropertyHarness.fs" />
     <Compile Include="PropertyHarnessTests.fs" />
@@ -44,6 +45,8 @@
     <Compile Include="DomainDescriptorTests.fs" />
     <Compile Include="ContractsTests.fs" />
     <Compile Include="SemanticIdentityTests.fs" />
+    <Compile Include="RejectionDiagnosticTests.fs" />
+    <Compile Include="RejectionEmissionTests.fs" />
     <Compile Include="ConfigurationTests.fs" />
     <Compile Include="CliProcessTests.fs" />
     <Compile Include="PrivateFileSecurityTests.fs" />

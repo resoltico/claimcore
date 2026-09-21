@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <Compile Include="InputProblems.fs" />
     <Compile Include="Contracts.fs" />
     <Compile Include="Vocabulary.fs" />
     <Compile Include="Descriptors.fs" />
@@ -9,6 +10,7 @@
     <Compile Include="Eligibility.fs" />
     <Compile Include="CorrectionResolution.fs" />
     <Compile Include="CaseCorrection.fs" />
+    <Compile Include="RequestValidation.fs" />
     <Compile Include="Claim.fsi" />
     <Compile Include="Claim.fs" />
   </ItemGroup>

@@ -37,6 +37,8 @@ let tests =
             DomainDescriptorTests.tests
             ContractsTests.tests
             SemanticIdentityTests.tests
+            RejectionDiagnosticTests.tests
+            RejectionEmissionTests.tests
             ConfigurationTests.tests
             CliProcessTests.tests
             PrivateFileSecurityTests.tests

@@ -17,6 +17,7 @@ export type {
   PreparationDetails,
   PreparationSummary,
   Receipt,
+  Rejection,
   RecoveryDetails,
   RecoveryImportPreview,
   RecoveryInspection,

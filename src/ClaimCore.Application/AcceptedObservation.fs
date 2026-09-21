@@ -4,14 +4,7 @@ open System.Threading.Tasks
 
 /// Accepted claim history is the authority for exact replay, independent of recovery housekeeping.
 module internal AcceptedObservation =
-    let idempotencyConflict: Rejection =
-        {
-            Code = RejectionCode.IdempotencyConflict
-            Message = "This operation ID belongs to different command content. Do not reuse it."
-            Field = None
-            ActualVersion = None
-            Action = RecommendedAction.StopAndInvestigate
-        }
+    let idempotencyConflict: Rejection = Rejection.IdempotencyConflict
 
     let prepare (store: IClaimStore) operationId digest : Task<PrepareOutcome option> =
         task {

@@ -175,7 +175,16 @@ module CliResponseCorpus =
                 @ (representatives |> List.collect malformed)
                 @ patternBoundaries representatives
                 @ scalarBoundaries representatives
-                @ crossEndpoint representatives)
+                @ crossEndpoint representatives
+                @ (DiagnosticCorpus.cli
+                   |> List.map (fun (id, valid, value) ->
+                       {
+                           Identifier = id
+                           Endpoint = Some "case.get"
+                           ExitCode = 2
+                           Valid = valid
+                           Value = value.GetRawText()
+                       })))
 
         let identifiers = cases |> List.map _.Identifier
 

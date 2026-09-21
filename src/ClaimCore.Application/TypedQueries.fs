@@ -8,9 +8,6 @@ open ClaimCore.Domain
 module internal TypedQueries =
     let private limit = SemanticContract.current.MaximumPageSize
 
-    let private invalid field message : Rejection =
-        TypedProjection.rejection (DomainError.InvalidInput(field, message))
-
     let get
         (store: IClaimStore)
         (reference: string)
@@ -82,9 +79,7 @@ module internal TypedQueries =
         if cancellationToken.IsCancellationRequested then
             Task.FromResult(QueryOutcome.Cancelled)
         elif request.Limit < 1 || request.Limit > limit then
-            Task.FromResult(
-                QueryOutcome.Rejected(invalid "limit" $"Use a value from 1 through {limit}.")
-            )
+            Task.FromResult(QueryOutcome.Rejected(Rejection.PageLimitOutOfRange limit))
         else
             match validAfter with
             | Error rejection ->
@@ -186,14 +181,12 @@ module internal TypedQueries =
         if cancellationToken.IsCancellationRequested then
             Task.FromResult(QueryOutcome.Cancelled)
         elif request.Limit < 1 || request.Limit > limit then
-            Task.FromResult(
-                QueryOutcome.Rejected(invalid "limit" $"Use a value from 1 through {limit}.")
-            )
+            Task.FromResult(QueryOutcome.Rejected(Rejection.PageLimitOutOfRange limit))
         else
             match Claim.validateReference request.CaseReference, afterVersion with
             | Error rejection, _ ->
                 Task.FromResult(QueryOutcome.Rejected(TypedProjection.rejection rejection))
-            | _, Error message -> Task.FromResult(QueryOutcome.Rejected(invalid "cursor" message))
+            | _, Error _ -> Task.FromResult(QueryOutcome.Rejected Rejection.InvalidHistoryCursor)
             | Ok(), Ok after -> existingHistory store request after cancellationToken
 
     let observe
@@ -204,7 +197,16 @@ module internal TypedQueries =
         if cancellationToken.IsCancellationRequested then
             Task.FromResult(QueryOutcome.Cancelled)
         elif operationId = Guid.Empty then
-            Task.FromResult(QueryOutcome.Rejected(invalid "operationId" "Use a non-empty UUID."))
+            Task.FromResult(
+                QueryOutcome.Rejected(
+                    Rejection.Domain(
+                        DomainError.InvalidInput(
+                            InputTarget.OperationId,
+                            InputViolation.Command CommandViolation.EmptyOperationId
+                        )
+                    )
+                )
+            )
         else
             task {
                 let! result = store.Operation operationId

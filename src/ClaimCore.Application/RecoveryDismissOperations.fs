@@ -88,8 +88,11 @@ module internal RecoveryDismissOperations =
                                 RecoverySupport.accepted
                             )
                     | QueryOutcome.Failed fault -> return RecoveryDismissOutcome.DismissFailed fault
-                    | QueryOutcome.Rejected rejection ->
-                        return RecoveryDismissOutcome.DismissFailed(invalidFault rejection.Message)
+                    | QueryOutcome.Rejected _ ->
+                        return
+                            RecoveryDismissOutcome.DismissFailed(
+                                invalidFault "Stored recovery data failed validation."
+                            )
                     | QueryOutcome.Cancelled ->
                         return RecoveryDismissOutcome.DismissCancelledBeforeAdmission operationId
                     | QueryOutcome.Succeeded(Lookup.NotFound _) ->

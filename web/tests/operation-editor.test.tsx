@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { CurrentCase, PreparationDetails } from "../src/api/v2";
+import type { CurrentCase, PreparationDetails, Rejection } from "../src/api/v2";
 import { OperationEditor } from "../src/views/OperationEditor";
 import { generatedResponse } from "./contract-corpus.fixtures";
 import { definition, fields, operationId, preparation, response } from "./v2-ui.fixtures";
@@ -59,10 +59,11 @@ const definitePrepareRejection = async (): Promise<void> => {
       rejection: {
         code: "INVALID_INPUT",
         message: "Correct the case reference.",
+        diagnostic: { id: "INPUT_TEXT_REQUIRED", parameters: {} },
         field: "caseReference",
         actualRevision: null,
         recommendedAction: "CORRECT_INPUT",
-      },
+      } satisfies Rejection,
     }),
   );
   renderEditor({ current: null, initialCommand: "OPEN" });
@@ -82,10 +83,11 @@ const namedAuthoringRejection = async (): Promise<void> => {
       rejection: {
         code: "INVALID_INPUT",
         message: "Correct the incident date.",
+        diagnostic: { id: "INPUT_CALENDAR_DATE_REQUIRED", parameters: {} },
         field: "incidentDate",
         actualRevision: null,
         recommendedAction: "CORRECT_INPUT",
-      },
+      } satisfies Rejection,
     }),
   );
   renderEditor({ current: null, initialCommand: "OPEN" });

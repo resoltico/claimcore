@@ -3,12 +3,14 @@
     <OutputType>Exe</OutputType>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../RejectionExamples.fs" Link="RejectionExamples.fs" />
     <Compile Include="CliCorpusValues.fs" />
     <Compile Include="CliQueryCorpusSamples.fs" />
     <Compile Include="CliPrepareCorpusSamples.fs" />
     <Compile Include="CliMutationCorpusSamples.fs" />
     <Compile Include="CliRecoveryCorpusSamples.fs" />
     <Compile Include="CorpusJson.fs" />
+    <Compile Include="DiagnosticCorpus.fs" />
     <Compile Include="ScalarCorpus.fs" />
     <Compile Include="CliResponseCorpus.fs" />
     <Compile Include="CliRawCorpus.fs" />

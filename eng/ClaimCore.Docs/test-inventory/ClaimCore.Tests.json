@@ -169,6 +169,13 @@
     "ClaimCore deterministic suite.recovery uncertainty boundaries.[CC-REC-001] thrown combined commit is unresolved",
     "ClaimCore deterministic suite.recovery uncertainty boundaries.[CC-REC-001] thrown execution after admission remains unresolved",
     "ClaimCore deterministic suite.recovery uncertainty boundaries.[CC-REC-001] unknown attempt admission never executes the claim",
+    "ClaimCore deterministic suite.rejection diagnostic emission.authored private values are not echoed into diagnostics",
+    "ClaimCore deterministic suite.rejection diagnostic emission.domain validation emits specific scalar reasons rather than English",
+    "ClaimCore deterministic suite.rejection diagnostic emission.form binding retains exact-field and correction causes",
+    "ClaimCore deterministic suite.rejection diagnostic emission.parameter values come from owned scalar constraints",
+    "ClaimCore deterministic suite.rejection diagnostic emission.query admission preserves page cursor and operation causes",
+    "ClaimCore deterministic suite.rejection diagnostic emission.request and business-date admission retain distinct typed causes",
+    "ClaimCore deterministic suite.rejection diagnostic emission.state refusals keep typed reasons and accepted data unchanged",
     "ClaimCore deterministic suite.single-owner compiled release identity.compiled source identity.CLI v3 discovery renders compiled release identity",
     "ClaimCore deterministic suite.single-owner compiled release identity.compiled source identity.native core identity comes from the SDK attributes, matching the sole source",
     "ClaimCore deterministic suite.single-owner compiled release identity.identity consumers and compatibility.a non-product assembly cannot be accepted as a compatible first-party component",
@@ -214,6 +221,15 @@
     "ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] definite attempt cancellation prevents claim execution",
     "ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] definite dismiss cancellation remains actionable",
     "ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] definite import retention cancellation does not submit",
-    "ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] definite retain cancellation becomes cancelled before admission"
+    "ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] definite retain cancellation becomes cancelled before admission",
+    "ClaimCore deterministic suite.typed rejection diagnostics.CLI and Web project identical diagnostics without changing rejection exit semantics",
+    "ClaimCore deterministic suite.typed rejection diagnostics.ambient culture never selects rejection identity or parameter values",
+    "ClaimCore deterministic suite.typed rejection diagnostics.diagnostic arguments match the closed safe parameter schema",
+    "ClaimCore deterministic suite.typed rejection diagnostics.diagnostic identities and parameter shapes participate in all fingerprints",
+    "ClaimCore deterministic suite.typed rejection diagnostics.diagnostic parameter names and both bounds participate in semantic identity",
+    "ClaimCore deterministic suite.typed rejection diagnostics.every closed identity has one explicit token and a complete projection",
+    "ClaimCore deterministic suite.typed rejection diagnostics.field targets are closed and use public revision vocabulary",
+    "ClaimCore deterministic suite.typed rejection diagnostics.native rejection payloads cannot contain free text or arbitrary bags",
+    "ClaimCore deterministic suite.typed rejection diagnostics.specific causes remain distinct under coarse codes and preserve actions"
   ]
 }

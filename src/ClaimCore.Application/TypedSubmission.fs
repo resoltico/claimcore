@@ -47,16 +47,7 @@ module internal TypedSubmission =
                     "The retained preparation digest does not match the submitted draft."
             )
         | RetainedResolution.ReceiptIdentityConflict ->
-            SubmissionOutcome.RejectedBeforeAttempt(
-                None,
-                {
-                    Code = RejectionCode.IdempotencyConflict
-                    Message = "This operation ID belongs to different accepted command content."
-                    Field = None
-                    ActualVersion = None
-                    Action = RecommendedAction.StopAndInvestigate
-                }
-            )
+            SubmissionOutcome.RejectedBeforeAttempt(None, Rejection.IdempotencyConflict)
         | _ -> invalidOp "A pre-attempt result was expected."
 
     let private cancelledResolution knownPreparation operationId =

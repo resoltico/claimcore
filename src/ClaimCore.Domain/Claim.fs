@@ -17,7 +17,7 @@ type Claim =
 module Claim =
     /// Canonical validation for both mutation and query references.
     let validateReference reference =
-        Validation.text "caseReference" reference |> Result.map ignore
+        Validation.text InputTarget.CaseReference reference |> Result.map ignore
 
     let view claim =
         let decision, paymentDate =
@@ -64,8 +64,8 @@ module Claim =
             match paid with
             | None -> return PaymentProgress.Decided decision
             | Some rawDate ->
-                let! date = Validation.date "paymentDate" rawDate
-                do! Validation.onOrBefore "paymentDate" decision.Date date
+                let! date = Validation.date InputTarget.PaymentDate rawDate
+                do! Validation.onOrBefore InputTarget.PaymentDate decision.Date date
 
                 if decision.Payable.Value = 0M then
                     return! Error DomainError.ZeroDecisionCannotBePaid
@@ -83,7 +83,11 @@ module Claim =
                         PayableCurrency = currency
                     }
 
-            do! Validation.onOrBefore "paymentDecisionDate" facts.NotificationDate decision.Date
+            do!
+                Validation.onOrBefore
+                    InputTarget.PaymentDecisionDate
+                    facts.NotificationDate
+                    decision.Date
 
             return! restorePayment decision paid
         }
@@ -100,9 +104,9 @@ module Claim =
         | Some decisionDate, Some amount, Some currency, paid ->
             restoreDecision facts decisionDate amount currency paid
         | _ ->
-            Validation.invalid
-                "paymentDecisionDate"
-                "Decision date, payable amount and payable currency must be present together or all absent."
+            Validation.invalidCorrection
+                InputTarget.PaymentDecisionDate
+                CorrectionViolation.CompleteDecisionRequired
 
     /// Restore the same thirteen fields. An incomplete decision tuple cannot become accepted state.
     /// Historical restoration does not apply today's clock to old data.
@@ -110,7 +114,7 @@ module Claim =
         result {
             let fields = snapshot.Fields
 
-            let! reference = Validation.text "caseReference" fields.CaseReference
+            let! reference = Validation.text InputTarget.CaseReference fields.CaseReference
 
             let! facts = fields |> registration |> Validation.registration
 
@@ -118,9 +122,9 @@ module Claim =
 
             if snapshot.Version < 1L || snapshot.Version = Int64.MaxValue then
                 return!
-                    Validation.invalid
-                        "version"
-                        "Stored versions must be positive and below Int64.MaxValue."
+                    Validation.invalidCommand
+                        InputTarget.Version
+                        CommandViolation.StoredVersionOutOfRange
             else
                 return
                     {
@@ -135,7 +139,12 @@ module Claim =
     let private openCase today (request: CommandRequest) registration =
         result {
             let! facts = Validation.registration registration
-            do! Validation.notFuture "incidentNotificationDate" today facts.NotificationDate
+
+            do!
+                Validation.notFuture
+                    InputTarget.IncidentNotificationDate
+                    today
+                    facts.NotificationDate
 
             return
                 {
@@ -155,11 +164,11 @@ module Claim =
 
                 do!
                     Validation.onOrBefore
-                        "paymentDecisionDate"
+                        InputTarget.PaymentDecisionDate
                         claim.Facts.NotificationDate
                         decision.Date
 
-                do! Validation.notFuture "paymentDecisionDate" today decision.Date
+                do! Validation.notFuture InputTarget.PaymentDecisionDate today decision.Date
 
                 return
                     { claim with
@@ -173,9 +182,9 @@ module Claim =
                 }
         | Command.RecordPayment rawDate, PaymentProgress.Decided decision ->
             result {
-                let! paidDate = Validation.date "paymentDate" rawDate
-                do! Validation.onOrBefore "paymentDate" decision.Date paidDate
-                do! Validation.notFuture "paymentDate" today paidDate
+                let! paidDate = Validation.date InputTarget.PaymentDate rawDate
+                do! Validation.onOrBefore InputTarget.PaymentDate decision.Date paidDate
+                do! Validation.notFuture InputTarget.PaymentDate today paidDate
 
                 return
                     { claim with
@@ -187,7 +196,8 @@ module Claim =
                 { claim with
                     Progress = PaymentProgress.Decided decision
                 }
-        | _ -> Validation.invalid "command" "The state guard and payment transition disagree."
+        | _ ->
+            Validation.invalidCommand InputTarget.Command CommandViolation.StateTransitionMismatch
 
     let private change today command claim =
         result {
@@ -207,7 +217,13 @@ module Claim =
                     }
             | Command.AmendRegistration rawFacts ->
                 let! facts = Validation.registration rawFacts
-                do! Validation.notFuture "incidentNotificationDate" today facts.NotificationDate
+
+                do!
+                    Validation.notFuture
+                        InputTarget.IncidentNotificationDate
+                        today
+                        facts.NotificationDate
+
                 return { claim with Facts = facts }
             | Command.CorrectCase correction ->
                 let! fields = CaseCorrections.apply today (view claim).Fields correction
@@ -223,32 +239,8 @@ module Claim =
             | _ -> return! changePayment today command claim
         }
 
-    /// Envelope and structural payload checks run before identity encoding and again at decision time.
-    let validateRequest (request: CommandRequest) =
-        result {
-            do! validateReference request.CaseReference
-
-            if request.OperationId = Guid.Empty then
-                return! Validation.invalid "operationId" "Use a non-empty UUID."
-            elif request.ExpectedVersion < 0L || request.ExpectedVersion = Int64.MaxValue then
-                return!
-                    Validation.invalid
-                        "expectedVersion"
-                        "Use a non-negative version below Int64.MaxValue."
-            else
-                match request.Command with
-                | Command.Open input
-                | Command.AmendRegistration input ->
-                    return! Validation.registration input |> Result.map ignore
-                | Command.CorrectCase correction -> return! CaseCorrections.validate correction
-                | Command.Decide input -> return! Validation.decision input |> Result.map ignore
-                | Command.RecordPayment value ->
-                    return! Validation.date "paymentDate" value |> Result.map ignore
-                | Command.WithdrawDecision
-                | Command.ClearPayment
-                | Command.Close
-                | Command.Reopen -> return ()
-        }
+    /// Envelope and payload admission stays behind the public Claim facade.
+    let validateRequest request = RequestValidation.validate request
 
     /// The same authority on transitions is called by every application adapter.
     /// An injectable business date keeps the domain free from environment/clock reads.
@@ -266,16 +258,16 @@ module Claim =
             | Some claim ->
                 if claim.Reference <> request.CaseReference then
                     return!
-                        Validation.invalid
-                            "caseReference"
-                            "The loaded case does not match this command."
+                        Validation.invalidCommand
+                            InputTarget.CaseReference
+                            CommandViolation.CaseReferenceMismatch
                 elif claim.Revision <> request.ExpectedVersion then
                     return! Error(DomainError.VersionConflict claim.Revision)
                 elif claim.Revision = Int64.MaxValue - 1L then
                     return!
-                        Validation.invalid
-                            "version"
-                            "The case revision cannot advance below Int64.MaxValue."
+                        Validation.invalidCommand
+                            InputTarget.Version
+                            CommandViolation.RevisionExhausted
                 else
                     let! changed = change today request.Command claim
 

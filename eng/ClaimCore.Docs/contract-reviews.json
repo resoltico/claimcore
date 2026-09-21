@@ -4,10 +4,10 @@
     {
       "contractId": "CC-DOM-001",
       "reviewerKind": "agent",
-      "reviewer": "Architecture audit: delta review of explicit rule-set metadata; thirteen-field record unchanged",
+      "reviewer": "Typed diagnostics: agent delta review of closed validation payloads; accepted fields and restoration constraints unchanged",
       "reviewedOn": "2026-09-21",
       "conclusion": "approved",
-      "reviewSubjectHash": "f25b7690c20ee141be40a84faca77c5eec889973de35681920458faf6e83afc7",
+      "reviewSubjectHash": "7ad285fb5f9320e35360ad635b713c2dc040eb60d9e95f215235ec992ddac79c",
       "wholeFiles": [
         "src/ClaimCore.Domain/Contracts.fs",
         "src/ClaimCore.Domain/Descriptors.fs",
@@ -18,17 +18,21 @@
         "tests/ClaimCore.Tests/CaseCorrectionTests.fs",
         "tests/ClaimCore.Tests/DomainDescriptorTests.fs",
         "tests/ClaimCore.Tests/DomainValidationTests.fs",
-        "tests/ClaimCore.Tests/FieldSchemaTests.fs"
+        "tests/ClaimCore.Tests/FieldSchemaTests.fs",
+        "src/ClaimCore.Domain/InputProblems.fs",
+        "src/ClaimCore.Domain/Validation.fs",
+        "src/ClaimCore.Domain/RequestValidation.fs",
+        "tests/ClaimCore.Tests/RejectionEmissionTests.fs"
       ],
       "markedSpans": []
     },
     {
       "contractId": "CC-DOM-002",
       "reviewerKind": "agent",
-      "reviewer": "Architecture audit: delta review of rule metadata and documented closed-case correction exception",
+      "reviewer": "Typed diagnostics: agent delta review of command admission extraction and typed causes; validation ordering and transitions unchanged",
       "reviewedOn": "2026-09-21",
       "conclusion": "approved",
-      "reviewSubjectHash": "9c794cfde2c2a1f497536fd10e536e437003a26c978ad1d1a9d3f661ed88c0da",
+      "reviewSubjectHash": "800814204aabfb23195388382cbc6b7a303e57fd2efeb0b6178dd4fe648d89c0",
       "wholeFiles": [
         "src/ClaimCore.Domain/Contracts.fs",
         "src/ClaimCore.Domain/Descriptors.fs",
@@ -39,17 +43,20 @@
         "tests/ClaimCore.Tests/CaseCorrectionTests.fs",
         "tests/ClaimCore.Tests/TransitionPropertyTests.fs",
         "tests/ClaimCore.Tests/AvailabilityTests.fs",
-        "tests/ClaimCore.Tests/DomainValidationTests.fs"
+        "tests/ClaimCore.Tests/DomainValidationTests.fs",
+        "src/ClaimCore.Domain/InputProblems.fs",
+        "src/ClaimCore.Domain/Validation.fs",
+        "src/ClaimCore.Domain/RequestValidation.fs"
       ],
       "markedSpans": []
     },
     {
       "contractId": "CC-APP-001",
       "reviewerKind": "agent",
-      "reviewer": "Claude fail-fast audit: authoritative request identity and guarded cursor identity re-review",
-      "reviewedOn": "2026-09-20",
+      "reviewer": "Typed diagnostics: agent delta review of derived rejection metadata and query binding; no store mutation or fault-to-rejection conversion",
+      "reviewedOn": "2026-09-21",
       "conclusion": "approved",
-      "reviewSubjectHash": "e30e50cd9128f7779be4cd29524d7238bde1553fadd93bbb7cf29227e71db9b7",
+      "reviewSubjectHash": "409a65e51a0351763e64bd21ac02cf7c7257efc7338f43531d157d36aeeb5462",
       "wholeFiles": [
         "src/ClaimCore.Application/Core.fs",
         "src/ClaimCore.Application/Service.fs",
@@ -61,17 +68,25 @@
         "src/ClaimCore.Postgres/StoreTransaction.fs",
         "src/ClaimCore.Postgres/RecoveryExecutionStore.fs",
         "src/ClaimCore.Postgres/RecoveryExecutionSupport.fs",
-        "tests/ClaimCore.IntegrationTests/TransactionRejectionTests.fs"
+        "tests/ClaimCore.IntegrationTests/TransactionRejectionTests.fs",
+        "src/ClaimCore.Application/Rejections.fs",
+        "src/ClaimCore.Application/RejectionDiagnosticIds.fs",
+        "src/ClaimCore.Application/RejectionDiagnostics.fs",
+        "src/ClaimCore.Application/CoreConversions.fs",
+        "src/ClaimCore.Application/Drafts.fs",
+        "src/ClaimCore.Application/HistoryCursor.fs",
+        "tests/ClaimCore.Tests/RejectionDiagnosticTests.fs",
+        "tests/ClaimCore.Tests/RejectionEmissionTests.fs"
       ],
       "markedSpans": []
     },
     {
       "contractId": "CC-APP-002",
       "reviewerKind": "agent",
-      "reviewer": "Claude release audit: Fantomas 8.0.0 whitespace-only reformatting re-review",
+      "reviewer": "Typed diagnostics: agent delta review of idempotency refusals and safe invalid-stored-data copy; receipt authority and replay unchanged",
       "reviewedOn": "2026-09-21",
       "conclusion": "approved",
-      "reviewSubjectHash": "d97c0ab383966ecb15334e1a0c6c9d5261aea66f8aad1986a4773ea71fda55ae",
+      "reviewSubjectHash": "0a1902df1990b73c21c2df90f299dfd6bcb8a132a2ef04aa725f547796a5557e",
       "wholeFiles": [
         "src/ClaimCore.Application/AcceptedObservation.fs",
         "src/ClaimCore.Application/Core.fs",
@@ -103,10 +118,10 @@
     {
       "contractId": "CC-CLI-001",
       "reviewerKind": "agent",
-      "reviewer": "Claude architecture audit: CLI composition-root split re-review",
-      "reviewedOn": "2026-09-20",
+      "reviewer": "Typed diagnostics: agent delta review of shared rejection codec, closed safe arguments and exact corpora; framing and exit semantics retained",
+      "reviewedOn": "2026-09-21",
       "conclusion": "approved",
-      "reviewSubjectHash": "a5937b5965b124e1fbbc0ac0e373a7d02ebbebb267c21acf3525bee1543fbec6",
+      "reviewSubjectHash": "2b55ebac1d0d30bf87c915b3aaae4d9fb0e96d8fc6d9779ce441388d3ce8cc9c",
       "wholeFiles": [
         "examples/01-open.json",
         "examples/02-decide.json",
@@ -122,7 +137,13 @@
         "tests/ClaimCore.AcceptanceTests/LifecycleTests.fs",
         "tests/ClaimCore.AcceptanceTests/PublishedExampleWalkthrough.fs",
         "tests/ClaimCore.AcceptanceTests/EndpointModeParityTests.fs",
-        "tests/ClaimCore.Tests/ExampleContractTests.fs"
+        "tests/ClaimCore.Tests/ExampleContractTests.fs",
+        "src/ClaimCore.Contracts/CliWireValues.fs",
+        "src/ClaimCore.Contracts/CoreValueSchemas.fs",
+        "src/ClaimCore.Contracts/RejectionDiagnosticSchemas.fs",
+        "src/ClaimCore.Contracts/RejectionPresentation.fs",
+        "eng/ClaimCore.ContractGenerator/DiagnosticCorpus.fs",
+        "eng/RejectionExamples.fs"
       ],
       "markedSpans": []
     },
@@ -150,10 +171,10 @@
     {
       "contractId": "CC-REC-001",
       "reviewerKind": "agent",
-      "reviewer": "Claude release audit: Fantomas 8.0.0 whitespace-only reformatting re-review",
+      "reviewer": "Typed diagnostics: agent delta review of ordinary rejections nested in definite recovery execution; no admission settlement or revocation change",
       "reviewedOn": "2026-09-21",
       "conclusion": "approved",
-      "reviewSubjectHash": "510b84d5bead0c5c3a4acddd33f030f84b6e6f03887495d45e326c898f24f3c6",
+      "reviewSubjectHash": "10de8a8911df2c05f4e7d35f275d72e787ca05acbe700ac1797d14908263fa45",
       "wholeFiles": [
         "src/ClaimCore.Application/AcceptedObservation.fs",
         "src/ClaimCore.Application/RecoveryCoordinator.fs",
@@ -264,10 +285,10 @@
     {
       "contractId": "CC-WEB-001",
       "reviewerKind": "agent",
-      "reviewer": "Architecture audit: delta review of bounded presentation text and regenerated exact wire identity; native Web and frontend tests passed",
+      "reviewer": "Typed diagnostics: agent delta review of exact schemas, shared validator definitions and typed UI fixtures; operation identity and outcome authority retained",
       "reviewedOn": "2026-09-21",
       "conclusion": "approved",
-      "reviewSubjectHash": "c473b56f552769dbac8a2f5513c463b5aa582183ba1eb0d3160f8ff48e4fb607",
+      "reviewSubjectHash": "bff8db5094a536fb42ada5ac3eb2d8cff0e48a7f2edb6e1364f809eb37b123c0",
       "wholeFiles": [
         "src/ClaimCore.Contracts/ContractFactory.fs",
         "src/ClaimCore.Contracts/EndpointInputs.fs",
@@ -350,7 +371,21 @@
         "web/e2e/case-workflow.ts",
         "web/e2e/recovery-artifacts.ts",
         "web/e2e/recovery-lifecycle.spec.ts",
-        "web/e2e/session-helpers.ts"
+        "web/e2e/session-helpers.ts",
+        "docs/diagnostics.md",
+        "src/ClaimCore.Application/SemanticContract.fs",
+        "src/ClaimCore.Application/RejectionDiagnosticIds.fs",
+        "src/ClaimCore.Contracts/RejectionDiagnosticSchemas.fs",
+        "src/ClaimCore.Contracts/RejectionPresentation.fs",
+        "src/ClaimCore.Contracts/Projection.fs",
+        "src/ClaimCore.Contracts/Renderers.fs",
+        "src/ClaimCore.Contracts/CoreValueSchemas.fs",
+        "src/ClaimCore.Contracts/WebSchemaDefinitions.fs",
+        "src/ClaimCore.Contracts/WebTypeScript.fs",
+        "src/ClaimCore.Contracts/WebTypeScriptResponses.fs",
+        "eng/ClaimCore.ContractGenerator/DiagnosticCorpus.fs",
+        "eng/RejectionExamples.fs",
+        "web/tests/operation-editor.test.tsx"
       ],
       "markedSpans": []
     }

@@ -121,14 +121,7 @@ module internal CliCorpusValues =
             Action = RecommendedAction.RetrySafe
         }
 
-    let rejection: Rejection =
-        {
-            Code = RejectionCode.VersionConflict
-            Message = "Synthetic version conflict."
-            Field = None
-            ActualVersion = Some 2L
-            Action = RecommendedAction.ReadCurrent
-        }
+    let rejection: Rejection = Rejection.Domain(DomainError.VersionConflict 2L)
 
     let recoveryRejection: RecoveryRejection =
         {

@@ -1,5 +1,6 @@
 /* Generated from ClaimCore.Contracts. Do not edit. */
-import type { Fault, Receipt, Rejection } from "./web-v2.types.core";
+import type { Rejection } from "./web-v2.types.diagnostics";
+import type { Fault, Receipt } from "./web-v2.types.core";
 import type {
   AdvisoryReview,
   DefiniteExecution,

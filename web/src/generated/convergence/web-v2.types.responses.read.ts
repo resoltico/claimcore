@@ -1,4 +1,5 @@
 /* Generated from ClaimCore.Contracts. Do not edit. */
+import type { Rejection } from "./web-v2.types.diagnostics";
 import type {
   CaseSummary,
   CurrentCase,
@@ -6,7 +7,6 @@ import type {
   Fault,
   HistoryEntry,
   Receipt,
-  Rejection,
   SessionSnapshot,
 } from "./web-v2.types.core";
 

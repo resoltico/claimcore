@@ -7,6 +7,7 @@ Choose the shortest path for the work you are doing:
 | Build the source and open the local Web application | [Getting started](getting-started.md) |
 | Understand the thirteen fields, validation, or transitions | [Domain contract](domain.md) |
 | Understand project dependencies and trust boundaries | [Architecture](architecture.md) |
+| Consume structured rejections or extend diagnostic presentation | [Rejection diagnostics](diagnostics.md) |
 | Automate ClaimCore or recover an uncertain CLI request | [CLI and protocol](cli.md) |
 | Configure or operate the browser host | [Web](web.md) |
 | Manage PostgreSQL schema or technical preparation retention | [Database](database.md) |

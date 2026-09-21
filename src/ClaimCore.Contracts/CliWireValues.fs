@@ -21,10 +21,30 @@ module internal CliWireValues =
         | Some value -> writer.WriteString(name, value)
         | None -> writer.WriteNull(name)
 
+    let private diagnostic (writer: Utf8JsonWriter) (value: Rejection) =
+        let projected = RejectionDiagnostics.describe value
+        writer.WriteStartObject()
+
+        writer.WriteString(
+            "id",
+            RejectionDiagnostics.identifier projected |> RejectionDiagnosticIds.token
+        )
+
+        writer.WritePropertyName("parameters")
+        writer.WriteStartObject()
+
+        RejectionDiagnostics.values projected
+        |> List.iter (fun (name, value) -> writer.WriteNumber(name, value))
+
+        writer.WriteEndObject()
+        writer.WriteEndObject()
+
     let rejection (writer: Utf8JsonWriter) (value: Rejection) =
         writer.WriteStartObject()
         writer.WriteString("code", rejectionCode value.Code)
-        writer.WriteString("message", value.Message)
+        writer.WritePropertyName("diagnostic")
+        diagnostic writer value
+        writer.WriteString("message", RejectionPresentation.render value)
         optional writer "field" value.Field
         optional writer "actualRevision" (value.ActualVersion |> Option.map revision)
         writer.WriteString("recommendedAction", action value.Action)

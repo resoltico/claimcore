@@ -113,6 +113,7 @@ export const definition: SemanticDefinition = {
   ],
   statuses: ["OPENED", "CLOSED"],
   rules: [],
+  rejectionDiagnostics: [],
 };
 
 export const preparation: PreparationDetails = {

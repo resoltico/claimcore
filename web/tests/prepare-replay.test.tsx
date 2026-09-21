@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
-import type { CurrentCase } from "../src/api/v2";
+import type { CurrentCase, Rejection } from "../src/api/v2";
 import { isWebV2Response } from "../src/generated/convergence/web-v2.validation";
 import { OperationEditor } from "../src/views/OperationEditor";
 import { definition, fields, operationId, preparation, response } from "./v2-ui.fixtures";
@@ -97,10 +97,11 @@ it("keeps a non-reviewable retained Prepare exact and directs Recovery", async (
       rejection: {
         code: "VERSION_CONFLICT",
         message: "The case changed after preparation.",
+        diagnostic: { id: "CASE_REVISION_CONFLICT", parameters: {} },
         field: null,
         actualRevision: "2",
         recommendedAction: "READ_CURRENT",
-      },
+      } satisfies Rejection,
     }),
   );
   renderEditor(vi.fn(), locked);

@@ -44,7 +44,10 @@ module internal CorrectionResolution =
                         PayableCurrency = currency
                     }
             )
-        | _ -> invalid "paymentDecisionDate" "Stored decision values must be complete."
+        | _ ->
+            invalid
+                InputTarget.PaymentDecisionDate
+                (InputViolation.Correction CorrectionViolation.CompleteDecisionRequired)
 
     let dateChanged field today before after =
         result {
@@ -61,11 +64,16 @@ module internal CorrectionResolution =
         (replacement: RegistrationInput)
         =
         result {
-            do! dateChanged "incidentDate" today current.IncidentDate replacement.IncidentDate
+            do!
+                dateChanged
+                    InputTarget.IncidentDate
+                    today
+                    current.IncidentDate
+                    replacement.IncidentDate
 
             do!
                 dateChanged
-                    "incidentNotificationDate"
+                    InputTarget.IncidentNotificationDate
                     today
                     current.IncidentNotificationDate
                     replacement.IncidentNotificationDate
@@ -136,7 +144,7 @@ module internal CorrectionResolution =
             match current.PaymentDate with
             | None -> Error DomainError.CorrectionRequiresExistingValue
             | Some _ ->
-                Validation.date "paymentDate" replacement
+                Validation.date InputTarget.PaymentDate replacement
                 |> Result.map (fun _ ->
                     {
                         Value = Some replacement
