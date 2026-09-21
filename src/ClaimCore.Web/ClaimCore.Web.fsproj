@@ -32,7 +32,7 @@
     <ProjectReference Include="../ClaimCore.Domain/ClaimCore.Domain.fsproj" />
     <ProjectReference Include="../ClaimCore.Application/ClaimCore.Application.fsproj" />
     <ProjectReference Include="../ClaimCore.Contracts/ClaimCore.Contracts.fsproj" />
-    <ProjectReference Include="../ClaimCore.Postgres/ClaimCore.Postgres.fsproj" />
+    <ProjectReference Include="../ClaimCore.Hosting/ClaimCore.Hosting.fsproj" />
   </ItemGroup>
   <Target Name="ConsumeFrontendAssets" BeforeTargets="ComputeFilesToPublish">
     <Exec Command="node &quot;$(WebClientDirectory)/scripts/verify-asset-manifest.mjs&quot;" />

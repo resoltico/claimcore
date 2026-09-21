@@ -22,23 +22,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+      - uses: ./.github/actions/toolchain
         with:
-          global-json-file: global.json
-          cache: true
-          cache-dependency-path: |
+          dotnet-cache-path: |
             **/packages.lock.json
             .config/dotnet-tools.json
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version-file: .node-version
-          cache: npm
-          cache-dependency-path: web/package-lock.json
-      - name: Require the exact Node and npm toolchain
-        shell: bash
-        run: |
-          test "$(node --version)" = "v$(tr -d '\r\n' < .node-version)"
-          test "$(npm --version)" = "$(node -p "require('./web/package.json').engines.npm")"
       - name: Test release publishing policy
         run: node --test eng/release/*.test.mjs
       - name: Install checksum-verified source analyzers
@@ -185,6 +173,8 @@ jobs:
           run_stage fantomas bash eng/Check-Fantomas.sh
           run_stage fsharplint bash eng/Check-FSharpLint.sh
           run_stage actionlint actionlint -color
+          run_stage workflow-toolchain pwsh -File eng/Check-WorkflowToolchainPolicy.ps1
+          run_stage workflow-toolchain-negative-controls pwsh -File eng/Test-WorkflowToolchainPolicy.ps1
           mapfile -d "" scripts < <(find eng db -type f -name "*.sh" -print0)
           run_stage shellcheck shellcheck "${scripts[@]}"
           run_stage compose-config env CLAIMCORE_COMPOSE_PROJECT=claimcore-config-${{ github.run_id }} POSTGRES_PASSWORD=owner-policy-value CLAIMCORE_APP_PASSWORD=runtime-policy-value CLAIMCORE_POSTGRES_PORT=0 docker compose --file compose.yaml config --quiet

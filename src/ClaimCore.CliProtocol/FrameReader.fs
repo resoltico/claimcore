@@ -11,7 +11,7 @@ type InputFrame =
 
 module FrameReader =
     let readDocument maximumBytes (stream: Stream) =
-        let buffer = Array.zeroCreate<byte> (maximumBytes + 1)
+        let buffer = Array.zeroCreate<byte>(maximumBytes + 1)
         let mutable total = 0
         let mutable read = 1
 

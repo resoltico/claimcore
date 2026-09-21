@@ -16,8 +16,11 @@
     <Compile Include="ProductModel.fs" />
     <Compile Include="FixtureTests.fs" />
     <Compile Include="ProjectEvaluationTests.fs" />
+    <Compile Include="ManifestTests.fs" />
+    <Compile Include="SurfaceTests.fs" />
     <Compile Include="ProductGraphTests.fs" />
     <Compile Include="ProductTests.fs" />
+    <Compile Include="OwnershipTests.fs" />
     <Compile Include="Suite.fs" />
   </ItemGroup>
   <ItemGroup>
@@ -29,6 +32,8 @@
     <ProjectReference Include="../../src/ClaimCore.Contracts/ClaimCore.Contracts.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Postgres/ClaimCore.Postgres.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Hosting/ClaimCore.Hosting.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.CliProtocol/ClaimCore.CliProtocol.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Cli/ClaimCore.Cli.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Web/ClaimCore.Web.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Database/ClaimCore.Database.fsproj" />

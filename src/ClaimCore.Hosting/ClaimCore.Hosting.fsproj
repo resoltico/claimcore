@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="RuntimeAdmission.fs" />
+    <Compile Include="RuntimeCoreFacade.fs" />
+    <Compile Include="RuntimeSourceOwnership.fs" />
+    <Compile Include="Runtime.fsi" />
+    <Compile Include="Runtime.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../ClaimCore.Domain/ClaimCore.Domain.fsproj" />
+    <ProjectReference Include="../ClaimCore.Application/ClaimCore.Application.fsproj" />
+    <ProjectReference Include="../ClaimCore.Postgres/ClaimCore.Postgres.fsproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Npgsql" />
+  </ItemGroup>
+</Project>

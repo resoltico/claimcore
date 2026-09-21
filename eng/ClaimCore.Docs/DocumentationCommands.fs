@@ -135,21 +135,27 @@ module DocumentationCommands =
         |> includeReportWrite operation result
 
     let check (root: RepositoryRoot) (runner: IProcessRunner) =
-        match assess root runner with
-        | Error errors -> finish root "check" "failed" None errors (Error errors)
-        | Ok assessment ->
-            let drift =
-                assessment.Generated
-                |> List.filter (fun item -> item.Original.Text <> item.ExpectedText)
-                |> List.map (fun item ->
-                    Diagnostic.create
-                        DiagnosticCode.GeneratedDrift
-                        $"Generated blocks are stale in '{item.Original.RelativePath}'.")
+        match ArchitectureManifest.requireCurrent root with
+        | Error message ->
+            let errors = [ Diagnostic.create DiagnosticCode.InvalidManifest message ]
+            finish root "check" "failed" None errors (Error errors)
+        | Ok() ->
 
-            if drift.IsEmpty then
-                finish root "check" "passed" (Some assessment) [] (Ok assessment)
-            else
-                finish root "check" "failed" (Some assessment) drift (Error drift)
+            match assess root runner with
+            | Error errors -> finish root "check" "failed" None errors (Error errors)
+            | Ok assessment ->
+                let drift =
+                    assessment.Generated
+                    |> List.filter (fun item -> item.Original.Text <> item.ExpectedText)
+                    |> List.map (fun item ->
+                        Diagnostic.create
+                            DiagnosticCode.GeneratedDrift
+                            $"Generated blocks are stale in '{item.Original.RelativePath}'.")
+
+                if drift.IsEmpty then
+                    finish root "check" "passed" (Some assessment) [] (Ok assessment)
+                else
+                    finish root "check" "failed" (Some assessment) drift (Error drift)
 
     let private replaceOne (root: RepositoryRoot) (document: MarkdownFile) (expected: string) =
         let temporary =

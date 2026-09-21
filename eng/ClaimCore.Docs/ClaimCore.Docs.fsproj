@@ -8,6 +8,8 @@
     <Compile Include="RepositoryPathPolicy.fs" />
     <Compile Include="Repository.fs" />
     <Compile Include="RepositoryInventory.fs" />
+    <Compile Include="ArchitectureManifest.fs" />
+    <Compile Include="ArchitectureTable.fs" />
     <Compile Include="MarkdownTypes.fs" />
     <Compile Include="MarkdownPipeline.fs" />
     <Compile Include="MarkdownModel.fs" />
@@ -20,6 +22,7 @@
     <Compile Include="TestInventory.fs" />
     <Compile Include="ConvergenceJson.fs" />
     <Compile Include="ArchitectureInspectionReport.fs" />
+    <Compile Include="TestSuiteStages.fs" />
     <Compile Include="StageCatalog.fs" />
     <Compile Include="Stages.fs" />
     <Compile Include="ReviewRegistry.fs" />
@@ -52,5 +55,6 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="test-inventory/*.json" LogicalName="ClaimCore.TestInventory.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="../../architecture.json" LogicalName="ClaimCore.ArchitectureManifest.json" />
   </ItemGroup>
 </Project>

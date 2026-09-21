@@ -39,6 +39,7 @@
     <Compile Include="WebWireMutations.fs" />
     <Compile Include="WebWireCodec.fs" />
     <Compile Include="CliSchemas.fs" />
+    <Compile Include="CliDiscovery.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../ClaimCore.Domain/ClaimCore.Domain.fsproj" />

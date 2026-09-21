@@ -12,7 +12,10 @@ trust boundaries. [Development](docs/development.md) owns commands and gates.
 - Domain and Application own business rules, transitions, available commands, outcomes, and
   recovery decisions. Normal callers use typed `IClaimsCore`, with recovery only through its
   `Recovery` member. CLI and Web render core outcomes; they do not invent rules or receive stores,
-  retained preparations, recovery ports, or transition callbacks.
+  retained preparations, recovery ports, or transition callbacks. `ClaimCore.Hosting` is the only
+  runtime composition root, and `ClaimCore.Cli` is the only CLI code that names it; a case-work host
+  never links `ClaimCore.Postgres` or reaches schema administration. Put a new CLI decision in
+  `ClaimCore.CliProtocol` over the supplied core, never in the entry point.
 - RecordFormat owns canonical operation and snapshot encoding. An uncertain retry must preserve the
   exact operation ID and request bytes; never rebase it or infer that a commit failed.
 - Operation identity, authority, and knowledge are separate. Accepted history proves acceptance;

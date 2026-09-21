@@ -11,19 +11,12 @@ type private TestInventoryResourceAnchor = class end
 module TestInventory =
     let private prefix = "ClaimCore.TestInventory."
 
+    /// The required inventory set comes from the architecture manifest, which this assembly embeds
+    /// at build time. There is no second list of test assemblies to drift from it.
+    /// The required inventory set comes from the architecture manifest this assembly embedded at
+    /// build time. There is no second list of test assemblies to drift from it.
     let private expectedAssemblies =
-        set
-            [
-                "ClaimCore.AcceptanceTests"
-                "ClaimCore.ArchitectureTests"
-                "ClaimCore.ConcurrencyQualificationTests"
-                "ClaimCore.DocsTests"
-                "ClaimCore.IntegrationTests"
-                "ClaimCore.MigrationQualificationTests"
-                "ClaimCore.RecoveryQualificationTests"
-                "ClaimCore.Tests"
-                "ClaimCore.WebTests"
-            ]
+        ArchitectureManifest.testInventoryAssemblies ArchitectureManifest.current.Value
 
     let assemblies = expectedAssemblies |> Set.toList
 

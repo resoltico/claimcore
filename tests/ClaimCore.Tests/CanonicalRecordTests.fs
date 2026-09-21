@@ -56,7 +56,8 @@ let private snapshotVector =
         let restored = view |> Claim.restore |> accepted
 
         Expect.isTrue
-            ((restored |> Claim.view |> CaseRecord.encodeSnapshot |> Encoding.UTF8.GetString) = canonical)
+            ((restored |> Claim.view |> CaseRecord.encodeSnapshot |> Encoding.UTF8.GetString) =
+                canonical)
             "Stable retained record"
 
         let withExtraField =

@@ -10,19 +10,6 @@ module ArchitectureInspectionReport =
     let fileName = "architecture-report.json"
     let private maximumBytes = 16 * 1024
 
-    let private requiredAssemblies =
-        set
-            [
-                "ClaimCore.Application"
-                "ClaimCore.Cli"
-                "ClaimCore.Contracts"
-                "ClaimCore.Database"
-                "ClaimCore.Domain"
-                "ClaimCore.HostSecurity"
-                "ClaimCore.Postgres"
-                "ClaimCore.RecordFormat"
-                "ClaimCore.Web"
-            ]
 
     let private exactProperties expected (element: JsonElement) =
         if element.ValueKind <> JsonValueKind.Object then
@@ -83,7 +70,7 @@ module ArchitectureInspectionReport =
             | Ok name, Ok count when count > 0 -> Ok name
             | _ -> Error "Architecture report has an invalid inspected assembly.")
 
-    let private edge (element: JsonElement) =
+    let private edge (requiredAssemblies: Set<string>) (element: JsonElement) =
         exactProperties (set [ "source"; "target" ]) element
         |> Result.bind (fun () ->
             match text "source" element, text "target" element with
@@ -109,10 +96,10 @@ module ArchitectureInspectionReport =
             else
                 source)
 
-    let private validateEntries (element: JsonElement) =
+    let private validateEntries (requiredAssemblies: Set<string>) (element: JsonElement) =
         match array "assemblies" element, array "edges" element with
         | Ok assemblies, Ok edges ->
-            match traverse assembly assemblies, traverse edge edges with
+            match traverse assembly assemblies, traverse (edge requiredAssemblies) edges with
             | Ok names, Ok connections when
                 names = ordinal names
                 && Set.ofList names = requiredAssemblies
@@ -125,7 +112,9 @@ module ArchitectureInspectionReport =
                 Error "Architecture report assembly or edge inventory is incomplete or unordered."
         | _ -> Error "Architecture report has missing inventory arrays."
 
-    let validateBytes (bytes: byte array) =
+    /// The expected assembly inventory is the product tier of `architecture.json`; this validator
+    /// never restates it.
+    let validateBytes (requiredAssemblies: Set<string>) (bytes: byte array) =
         if bytes.Length = 0 || bytes.Length > maximumBytes then
             Error "Architecture report exceeds its bounded size or is empty."
         else
@@ -141,12 +130,12 @@ module ArchitectureInspectionReport =
                         text "format" root, integer "formatVersion" root, text "configuration" root
                     with
                     | Ok "claimcore-architecture-inspection", Ok 1, Ok "Debug" ->
-                        validateEntries root
+                        validateEntries requiredAssemblies root
                     | _ -> Error "Architecture report format or configuration is invalid.")
             with :? JsonException ->
                 Error "Architecture report is not valid JSON."
 
-    let validateDownloaded (root: RepositoryRoot) (stage: StageManifest) =
+    let private validateStage (root: RepositoryRoot) requiredAssemblies (stage: StageManifest) =
         if
             not (
                 set [ "architecture-linux"; "architecture-macos"; "architecture-windows" ]
@@ -177,7 +166,12 @@ module ArchitectureInspectionReport =
                         then
                             Error "Architecture report differs from its producer manifest."
                         else
-                            File.ReadAllBytes(path) |> validateBytes
+                            File.ReadAllBytes(path) |> validateBytes requiredAssemblies
                     with _ ->
                         Error "Architecture report download could not be validated."
             | _ -> Error "Architecture stage lacks exactly one report."
+
+    let validateDownloaded (root: RepositoryRoot) (stage: StageManifest) =
+        ArchitectureManifest.current.Value
+        |> ArchitectureManifest.inTier "product"
+        |> fun required -> validateStage root required stage

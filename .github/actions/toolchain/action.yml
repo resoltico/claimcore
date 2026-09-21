@@ -1,0 +1,44 @@
+name: ClaimCore toolchain
+description: >-
+  Prepares the exact .NET and Node toolchains this repository pins, and proves the runner is using
+  them. Every workflow that builds, tests, or inspects ClaimCore composes this action instead of
+  repeating the setup, so a new workflow cannot quietly run on a different toolchain.
+
+inputs:
+  dotnet:
+    description: Set up the .NET SDK selected by global.json.
+    required: false
+    default: "true"
+  node:
+    description: Set up the Node release selected by .node-version and assert the exact npm.
+    required: false
+    default: "true"
+  dotnet-cache-path:
+    description: Cache key inputs for the .NET SDK cache.
+    required: false
+    default: "**/packages.lock.json"
+
+runs:
+  using: composite
+  steps:
+    - if: inputs.dotnet == 'true'
+      uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+      with:
+        global-json-file: global.json
+        cache: true
+        cache-dependency-path: ${{ inputs.dotnet-cache-path }}
+    - if: inputs.node == 'true'
+      uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      with:
+        node-version-file: .node-version
+        cache: npm
+        cache-dependency-path: web/package-lock.json
+    # The setup action selects a version; this proves the runner is actually running it, including
+    # the npm release, which no setup input pins.
+    - if: inputs.node == 'true'
+      name: Require the exact Node and npm toolchain
+      shell: bash
+      run: |
+        set -euo pipefail
+        test "$(node --version)" = "v$(tr -d '\r\n' < .node-version)"
+        test "$(npm --version)" = "$(node -p "require('./web/package.json').engines.npm")"

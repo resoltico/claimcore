@@ -44,7 +44,8 @@ module internal RetainedPreparationReview =
         (details: PreparationDetails)
         : Task<PrepareOutcome> =
         task {
-            let! verified = ObservedReceiptVerification.verify store clock retained details.Summary
+            let! verified =
+                ObservedReceiptVerification.verify store clock retained details.Summary
 
             match verified with
             | RetainedResolution.ObservedReceipt receipt ->

@@ -9,6 +9,9 @@ let tests =
         [
             FixtureTests.tests
             ProjectEvaluationTests.tests
+            ManifestTests.tests
+            SurfaceTests.tests
             ProductGraphTests.tests
             ProductTests.tests
+            OwnershipTests.tests
         ]

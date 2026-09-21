@@ -44,6 +44,8 @@ module StageCatalog =
                 "analyzer-suppression-negative-controls"
                 [ "pwsh"; "Test-AnalyzerSuppressionPolicy.ps1" ]
             gate "actionlint" [ "actionlint" ]
+            gate "workflow-toolchain" [ "pwsh"; "Check-WorkflowToolchainPolicy" ]
+            gate "workflow-toolchain-negative-controls" [ "pwsh"; "Test-WorkflowToolchainPolicy" ]
             gate "shellcheck" [ "shellcheck" ]
             gate "compose-config" [ "docker"; "compose"; "config" ]
             gate "compose-health" [ "docker"; "compose"; "up"; "--wait" ]
@@ -181,89 +183,6 @@ module StageCatalog =
             gate "publish-tree-verification" [ "claimcore-docs"; "verify-publish-manifest" ]
         ]
 
-    let private unitTests =
-        [
-            stage
-                "unit-linux"
-                "linux"
-                [ "dotnet"; "test"; "ClaimCore.Tests" ]
-                [ OutputRequirement.Suffix "ClaimCore.Tests.trx" ]
-            stage
-                "unit-macos"
-                "macos"
-                [ "dotnet"; "test"; "ClaimCore.Tests" ]
-                [ OutputRequirement.Suffix "ClaimCore.Tests.trx" ]
-            stage
-                "unit-windows"
-                "windows"
-                [ "dotnet"; "test"; "ClaimCore.Tests" ]
-                [ OutputRequirement.Suffix "ClaimCore.Tests.trx" ]
-        ]
-
-    let private architectureTests =
-        [ "linux"; "macos"; "windows" ]
-        |> List.map (fun platform ->
-            stage
-                ("architecture-" + platform)
-                platform
-                [ "dotnet"; "test"; "ClaimCore.ArchitectureTests"; "Debug" ]
-                [
-                    OutputRequirement.Suffix "ClaimCore.ArchitectureTests.trx"
-                    OutputRequirement.Exact ArchitectureInspectionReport.fileName
-                ])
-
-    let private webTests =
-        [
-            stage
-                "web-linux"
-                "linux"
-                [ "dotnet"; "test"; "ClaimCore.WebTests" ]
-                [ OutputRequirement.Suffix "ClaimCore.WebTests.trx" ]
-            stage
-                "web-macos"
-                "macos"
-                [ "dotnet"; "test"; "ClaimCore.WebTests" ]
-                [ OutputRequirement.Suffix "ClaimCore.WebTests.trx" ]
-            stage
-                "web-windows"
-                "windows"
-                [ "dotnet"; "test"; "ClaimCore.WebTests" ]
-                [ OutputRequirement.Suffix "ClaimCore.WebTests.trx" ]
-        ]
-
-    let private docsTests =
-        [
-            stage
-                "docs-linux"
-                "linux"
-                [ "dotnet"; "test"; "ClaimCore.DocsTests" ]
-                [ OutputRequirement.Suffix "ClaimCore.DocsTests.trx" ]
-            stage
-                "docs-macos"
-                "macos"
-                [ "dotnet"; "test"; "ClaimCore.DocsTests" ]
-                [ OutputRequirement.Suffix "ClaimCore.DocsTests.trx" ]
-            stage
-                "docs-windows"
-                "windows"
-                [ "dotnet"; "test"; "ClaimCore.DocsTests" ]
-                [ OutputRequirement.Suffix "ClaimCore.DocsTests.trx" ]
-        ]
-
-    let private persistenceTests =
-        [
-            stage
-                "integration-linux"
-                "linux"
-                [ "dotnet"; "test"; "ClaimCore.IntegrationTests" ]
-                [ OutputRequirement.Suffix "ClaimCore.IntegrationTests.trx" ]
-            stage
-                "acceptance-linux"
-                "linux"
-                [ "dotnet"; "test"; "ClaimCore.AcceptanceTests" ]
-                [ OutputRequirement.Suffix "ClaimCore.AcceptanceTests.trx" ]
-        ]
-
     let private browser engine =
         linux
             ("browser-" + engine)
@@ -280,11 +199,7 @@ module StageCatalog =
         @ documentation
         @ behavior
         @ publications
-        @ unitTests
-        @ architectureTests
-        @ webTests
-        @ docsTests
-        @ persistenceTests
+        @ TestSuiteStages.definitions
         @ browsers
         @ [
             linux

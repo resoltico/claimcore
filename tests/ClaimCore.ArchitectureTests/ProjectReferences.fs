@@ -4,6 +4,9 @@ open System
 open System.IO
 open System.Xml.Linq
 
+let private ordinal (left: string) right =
+    StringComparer.Ordinal.Compare(left, right)
+
 let private includedPaths (projectPath: string) (document: XDocument) =
     let directory =
         Path.GetDirectoryName projectPath
@@ -25,6 +28,8 @@ let private includedPaths (projectPath: string) (document: XDocument) =
         Path.GetFullPath(Path.Combine(directory, includeValue)))
     |> Seq.toList
 
+/// Declared edges must match the reviewed permission set exactly. A missing declaration is a stale
+/// permission and a surplus declaration is an unreviewed edge; both fail.
 let violations
     (projectNames: Map<string, string>)
     (permissions: Map<string, string list>)
@@ -34,18 +39,35 @@ let violations
     let source = nonNull (Path.GetFileNameWithoutExtension projectPath)
     let allowed = permissions |> Map.find source
 
-    includedPaths projectPath document
-    |> List.choose (fun targetPath ->
-        match Map.tryFind targetPath projectNames with
-        | None -> Some(source + " declares an unclassified project reference")
-        | Some target when not (List.contains target allowed) ->
-            Some(source + " declares a forbidden project reference: " + target)
-        | Some _ -> None)
+    let unclassified, declared =
+        includedPaths projectPath document
+        |> List.map (fun targetPath -> Map.tryFind targetPath projectNames)
+        |> List.partition Option.isNone
+
+    let declaredSet = declared |> List.choose id |> Set.ofList
+    let allowedSet = Set.ofList allowed
+
+    [
+        if not unclassified.IsEmpty then
+            source + " declares an unclassified project reference"
+
+        for surplus in Set.difference declaredSet allowedSet |> Set.toList |> List.sortWith ordinal do
+            source + " declares a forbidden project reference: " + surplus
+
+        for stale in Set.difference allowedSet declaredSet |> Set.toList |> List.sortWith ordinal do
+            source + " is permitted an undeclared project reference: " + stale
+    ]
 
 let loadProjects root =
     Directory.GetFiles(root, "*.fsproj", SearchOption.AllDirectories)
     |> Array.map Path.GetFullPath
     |> Array.toList
+
+/// Every project the repository actually builds, excluding generated output trees.
+let loadRepositoryProjects repositoryRoot =
+    [ "src"; "eng"; "tests" ]
+    |> List.collect (fun area -> loadProjects (Path.Combine(repositoryRoot, area)))
+    |> List.sortWith ordinal
 
 let names (projects: string list) =
     projects

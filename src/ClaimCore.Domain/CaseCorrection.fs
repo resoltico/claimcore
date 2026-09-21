@@ -180,7 +180,9 @@ module internal CaseCorrections =
             let! replacementDecision =
                 CorrectionResolution.decisionChoice current correction.Decision
 
-            let! replacementPayment = CorrectionResolution.paymentChoice current correction.Payment
+            let! replacementPayment =
+                CorrectionResolution.paymentChoice current correction.Payment
+
             do! validateDecisionDate today current replacementDecision
             do! validatePaymentDate today current replacementPayment
             do! combineDecisionAndPayment current replacementDecision replacementPayment

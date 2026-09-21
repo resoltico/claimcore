@@ -32,6 +32,7 @@ let tests =
             DraftTests.tests
             BuildIdentityTests.tests
             ArchitectureTests.tests
+            InstallationCalendarTests.tests
             FieldSchemaTests.tests
             DomainDescriptorTests.tests
             ContractsTests.tests

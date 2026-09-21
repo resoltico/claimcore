@@ -12,7 +12,25 @@ let private markers =
 let private marker id =
     $"<!-- generated:begin {id} -->\nold\n<!-- generated:end {id} -->\n"
 
+let private syntheticManifest =
+    """{"version":1,"components":[{"name":"ClaimCore.Alpha","tier":"product","layer":"core","""
+    + """"project":"src/ClaimCore.Alpha/ClaimCore.Alpha.fsproj","role":"Synthetic.","""
+    + """"dependsOn":[],"packages":[],"internalsVisibleTo":[],"testInventory":false}]}
+"""
+
+/// Every registration must occur exactly once across the supplied documents, so the fixture carries
+/// the architecture document and its manifest alongside the three executable help blocks.
 let private generatedFixture (repository: TempRepository) (helps: ProcessOutput list) =
+    repository.Write(ArchitectureManifest.fileName, syntheticManifest) |> ignore
+
+    let architecture =
+        repository.Write(
+            "docs/architecture.md",
+            "# Architecture\n\n" + marker "architecture-components"
+        )
+        |> MarkdownModel.read repository.Root
+        |> requireOk
+
     [
         "ClaimCore.Cli", "docs/cli.md", "cli-help", List.item 0 helps
         "ClaimCore.Database", "docs/database.md", "database-help", List.item 1 helps
@@ -26,7 +44,7 @@ let private generatedFixture (repository: TempRepository) (helps: ProcessOutput 
         let parsed = MarkdownModel.read repository.Root path |> requireOk
         parsed, [ processOutput 0 "build" ""; processOutput 0 (binary + "\n") ""; help ])
     |> List.unzip
-    |> fun (documents, outputs) -> documents, List.concat outputs
+    |> fun (documents, outputs) -> architecture :: documents, List.concat outputs
 
 let private blockTests =
     testList

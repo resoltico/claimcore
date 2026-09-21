@@ -86,18 +86,17 @@ jobs:
       - coverage
       - evidence
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
+      # Derived from `needs`, so a family added above is gated automatically. A second hand-written
+      # list here could fall out of step with `needs` and silently stop gating a whole family.
       - name: Require every verification family
         env:
-          RESULTS: >-
-            ${{ needs.quality.result }}
-            ${{ needs.frontend.result }}
-            ${{ needs.unit.result }}
-            ${{ needs.integration.result }}
-            ${{ needs.documentation.result }}
-            ${{ needs.publish.result }}
-            ${{ needs.acceptance.result }}
-            ${{ needs.browser.result }}
-            ${{ needs.coverage.result }}
-            ${{ needs.evidence.result }}
-        run: test "$RESULTS" = "success success success success success success success success success success"
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          set -euo pipefail
+          echo "Verification family results: $RESULTS"
+          test -n "$RESULTS"
+          for result in $RESULTS; do
+            test "$result" = "success"
+          done

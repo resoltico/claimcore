@@ -116,7 +116,9 @@ module internal TypedSubmission =
         task {
             match! TypedPreparation.prepare store recovery clock request cancellationToken with
             | PrepareOutcome.Prepared(details, _) ->
-                let digest = details.Summary.RequestSha256 |> Option.defaultValue ""
+                // The authoritative digest, not the summary's: a recovery view may withhold that
+                // one, and resolving under a substituted value would bind the wrong preparation.
+                let _, digest = TypedPreparation.requestIdentity request
 
                 let! result =
                     TypedResolution.resolveRetained

@@ -1,4 +1,4 @@
-name: ClaimCore extended property exploration
+name: ClaimCore extended property and fuzz exploration
 
 on:
   schedule:
@@ -27,18 +27,16 @@ env:
 
 jobs:
   properties:
-    name: Eight properties at 5,000 cases
+    name: Properties and boundary fuzzing at 5,000 cases
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+      - uses: ./.github/actions/toolchain
         with:
-          global-json-file: global.json
-          cache: true
-          cache-dependency-path: "**/packages.lock.json"
+          node: "false"
       - name: Select and validate the public exploration seed
         shell: pwsh
         env:
@@ -58,6 +56,8 @@ jobs:
         run: |
           dotnet restore ClaimCore.slnx --locked-mode
           dotnet build tests/ClaimCore.Tests/ClaimCore.Tests.fsproj --configuration Release --no-restore
+          dotnet build tests/ClaimCore.FuzzQualificationTests/ClaimCore.FuzzQualificationTests.fsproj \
+            --configuration Release --no-restore
       - name: Run the complete extended profile
         shell: bash
         run: |
@@ -67,9 +67,15 @@ jobs:
           dotnet test --project tests/ClaimCore.Tests/ClaimCore.Tests.fsproj \
             --configuration Release --no-build --no-restore --max-parallel-test-modules 1 \
             --results-directory="$results" \
-            --minimum-expected-tests=203 --zero-tests-policy=strict --timeout=30m \
+            --minimum-expected-tests=205 --zero-tests-policy=strict --timeout=30m \
             -- --settings="$PWD/eng/expecto.runsettings" --report-trx \
             --report-trx-filename=ClaimCore.Tests.extended.trx
+          dotnet test --project tests/ClaimCore.FuzzQualificationTests/ClaimCore.FuzzQualificationTests.fsproj \
+            --configuration Release --no-build --no-restore --max-parallel-test-modules 1 \
+            --results-directory="$results" \
+            --minimum-expected-tests=5 --zero-tests-policy=strict --timeout=30m \
+            -- --settings="$PWD/eng/expecto.runsettings" --report-trx \
+            --report-trx-filename=ClaimCore.FuzzQualificationTests.extended.trx
       - name: Scan artifacts before upload
         id: artifact_scan
         if: always()

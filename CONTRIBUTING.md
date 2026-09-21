@@ -19,8 +19,12 @@ tests are policy failures.
 
 - Preserve the thirteen-field contract unless the change explicitly revises product scope.
 - Put business decisions in Domain/Application, durable encoding in RecordFormat, wire schemas and
-  codecs in Contracts, persistence/runtime composition in Postgres, and process/HTTP presentation in
-  CLI/Web.
+  codecs in Contracts, persistence and schema-owner administration in Postgres, runtime composition
+  in Hosting, CLI-v3 framing and dispatch in CliProtocol, and process/HTTP presentation in Cli/Web.
+  `architecture.json` is the authority on which component may reference which.
+- Contracts owns every CLI-v3 and Web-v2 payload, including database-free discovery. A renderer
+  that composed wire JSON itself would fork the generated contract, so add the payload to Contracts
+  and select it from the adapter.
 - Add tests at the narrowest useful layer. Include PostgreSQL tests for SQL, schema changes,
   transactions, connection admission, and stored representations.
 - Never edit an applied migration. Add an ordered migration and test a fresh database and upgrade
@@ -29,9 +33,9 @@ tests are policy failures.
   synchronized with behavior.
 - Keep contract headings, `[CC-…]` evidence leaves, and review-subject hashes synchronized. A passing
   tagged test does not substitute for semantic review of its assertions.
-- Review architecture policy changes against the actual module boundaries, compiled inspection,
-  evaluated project graph, and required report evidence; do not widen permitted edges merely to
-  clear the gate.
+- Declare every component edge, package, and `InternalsVisibleTo` grant in `architecture.json`, and
+  review changes to it against the actual module boundaries, compiled inspection, evaluated project
+  graph, and required report evidence; do not widen permitted edges merely to clear the gate.
 - Update each dependency in its owning manifest and commit reviewed lock-file changes.
 - Do not commit local connections, credentials, build output, test reports, container state, or real
   case data.

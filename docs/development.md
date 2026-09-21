@@ -6,7 +6,7 @@ This document is the sole owner of contributor verification commands. Product op
 ## Prerequisites
 
 - The .NET SDK selected by [`global.json`](../global.json).
-- Node 26.8.2 from [`.node-version`](../.node-version) and the npm release declared by
+- Node 26.9.0 from [`.node-version`](../.node-version) and the npm release declared by
   [`web/package.json`](../web/package.json). On this workstation, run frontend commands through the
   configured Node 26 toolchain rather than the operating-system default Node executable.
 - Docker for PostgreSQL integration, published acceptance, and infrastructure checks.
@@ -81,7 +81,7 @@ Run every project explicitly:
 ```sh
 dotnet test --project tests/ClaimCore.Tests/ClaimCore.Tests.fsproj \
   --configuration Release --no-build --no-restore \
-  --minimum-expected-tests=203 --zero-tests-policy=strict --timeout=10m -- \
+  --minimum-expected-tests=205 --zero-tests-policy=strict --timeout=10m -- \
   --settings="$PWD/eng/expecto.runsettings"
 dotnet test --project tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj \
   --configuration Release --no-build --no-restore \
@@ -89,7 +89,7 @@ dotnet test --project tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj \
   --settings="$PWD/eng/expecto.runsettings"
 dotnet test --project tests/ClaimCore.DocsTests/ClaimCore.DocsTests.fsproj \
   --configuration Release --no-build --no-restore \
-  --minimum-expected-tests=51 --zero-tests-policy=strict --timeout=10m -- \
+  --minimum-expected-tests=54 --zero-tests-policy=strict --timeout=10m -- \
   --settings="$PWD/eng/expecto.runsettings"
 dotnet test --project tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj \
   --configuration Release --no-build --no-restore \
@@ -107,7 +107,20 @@ dotnet test --project tests/ClaimCore.MigrationQualificationTests/ClaimCore.Migr
   --configuration Release --no-build --no-restore \
   --minimum-expected-tests=7 --zero-tests-policy=strict --timeout=20m -- \
   --settings="$PWD/eng/expecto.runsettings"
+dotnet test --project tests/ClaimCore.FuzzQualificationTests/ClaimCore.FuzzQualificationTests.fsproj \
+  --configuration Release --no-build --no-restore \
+  --minimum-expected-tests=5 --zero-tests-policy=strict --timeout=15m -- \
+  --settings="$PWD/eng/expecto.runsettings"
 ```
+
+`ClaimCore.FuzzQualificationTests` runs on all three platforms in CI and its TRX is reconciled in
+final evidence like every other required suite. It needs no database. It drives every boundary that turns externally
+supplied bytes or opaque tokens into typed values - strict JSON, CLI invocation framing, canonical
+request and snapshot records, recovery envelopes, and history and recovery cursors - with arbitrary
+bytes, mutated valid encodings, adversarial JSON, and invalid UTF-8. A boundary passes only by
+refusing hostile input with a typed result; an escaping exception fails the property and prints a
+deterministic recheck token. It shares the property profile and base seed described below, so the
+scheduled extended run explores the same boundaries at 5,000 cases.
 
 The integration and qualification processes create exactly labelled isolated PostgreSQL containers.
 The separate qualification executables prevent a generic integration pass from being reported as
@@ -120,14 +133,14 @@ wire projection seams; those do not substitute for route execution.
 Windows CI builds and exercises fail-closed private-file branches, but the current private-file
 runtime contract supports macOS and Linux only; Windows is not a published first-run target.
 
-The deterministic unit profile runs 200 cases per property. The scheduled extended profile runs
-5,000:
+The deterministic unit and fuzz profiles run 200 cases per property. The scheduled extended profile
+runs 5,000 for both:
 
 ```sh
 CLAIMCORE_PROPERTY_PROFILE=extended CLAIMCORE_PROPERTY_BASE_SEED=<unsigned-seed> \
 dotnet test --project tests/ClaimCore.Tests/ClaimCore.Tests.fsproj \
   --configuration Release --no-build --no-restore \
-  --minimum-expected-tests=203 --zero-tests-policy=strict --timeout=20m -- \
+  --minimum-expected-tests=205 --zero-tests-policy=strict --timeout=20m -- \
   --settings="$PWD/eng/expecto.runsettings"
 ```
 
@@ -148,7 +161,7 @@ test ! -e "$claimcore_arch_results"
 CLAIMCORE_ARCHITECTURE_REPORT="$PWD/$claimcore_arch_results/architecture-report.json" \
 dotnet test --project tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj \
   --configuration Debug --no-build --no-restore --results-directory="$claimcore_arch_results" \
-  --minimum-expected-tests=69 --zero-tests-policy=strict --timeout=10m -- \
+  --minimum-expected-tests=86 --zero-tests-policy=strict --timeout=10m -- \
   --settings="$PWD/eng/expecto.runsettings"
 ```
 
@@ -163,9 +176,33 @@ missing parent, or preexisting report fails the suite rather than silently omitt
 CI scans and binds all three reports to stage manifests, rechecks
 their schema and hashes at final evidence, and displays a compact graph in the job summary. Type
 counts are observations, not fixed thresholds. Raw and evaluated project-reference checks reject
-forbidden unused edges; selected ambient-effect and direct-call rules are deliberately narrower than
-full effect or semantic proofs.
+forbidden unused edges and stale permissions alike; selected ambient-effect and direct-call rules
+are deliberately narrower than full effect or semantic proofs.
 See [Architecture](architecture.md#compiled-architecture-enforcement).
+
+#### Changing the component graph
+
+[`architecture.json`](../architecture.json) is the only place a component's tier, layer,
+responsibility, direct project edges, NuGet packages, or `InternalsVisibleTo` grants are declared.
+To add, split, or retire a component:
+
+1. Edit `architecture.json` and the affected `.fsproj` files together. Every `.fsproj` under `src/`,
+   `eng/`, and `tests/` must be classified exactly once, and every declared edge must match the
+   manifest in both directions.
+2. Keep each `InternalsVisibleTo` attribute and its manifest entry in step. A grant must name a
+   classified component that already references the granting one; an unmatched grant on either side
+   fails.
+3. Declare only edges, packages, and shared frameworks that the component actually uses. For the
+   product tier the compiled model is compared to the manifest, so a permitted-but-unused edge fails
+   as a stale permission.
+4. Run the architecture suite above, then refresh the generated component table with
+   `ClaimCore.Docs write` so [Architecture](architecture.md#the-component-contract) cannot drift.
+5. Regenerate the affected `eng/ClaimCore.Docs/test-inventory/*.json` entries, register any new test
+   identity in `eng/assurance-matrix.json`, and update the expected counts in this document and in
+   the workflows.
+
+Do not add a compatibility edge, a transitional package, or a temporary grant: removing one requires
+no allowance, and the manifest records only what the reviewed architecture permits today.
 
 ### Frontend assurance
 
@@ -217,6 +254,8 @@ pwsh -NoProfile -File eng/Test-PropertySeedPolicy.ps1
 pwsh -NoProfile -File eng/Test-TestDiagnosticPrivacy.ps1
 pwsh -NoProfile -File eng/Test-ArtifactSecretScanPolicy.ps1
 pwsh -NoProfile -File eng/Check-ArtifactUploadPolicy.ps1
+pwsh -NoProfile -File eng/Check-WorkflowToolchainPolicy.ps1
+pwsh -NoProfile -File eng/Test-WorkflowToolchainPolicy.ps1
 pwsh -NoProfile -File eng/Test-ArtifactUploadPolicy.ps1
 pwsh -NoProfile -File eng/Check-ConvergenceAssurance.ps1
 pwsh -NoProfile -File eng/Test-ConvergenceAssurancePolicy.ps1
@@ -235,6 +274,13 @@ Use Fantomas without `--check` to format changed F# files. The FSharpLint gate a
 syntax-tree rules after the strict compiler has type-checked the solution. FSharpLint, ESLint,
 Stylelint, and the centralized physical-line policy enforce size and complexity limits across product
 and test code; repair findings instead of weakening a rule.
+
+Every workflow selects its toolchain through [`.github/actions/toolchain`](../.github/actions/toolchain/action.yml),
+which sets up the SDK from `global.json`, the Node release from `.node-version`, and then proves the
+runner is actually using both, including the npm release that no setup input pins. A workflow that
+selected a toolchain itself, checked out with persisted credentials, or referenced an action by tag
+would fail `Check-WorkflowToolchainPolicy.ps1`; its negative controls keep that gate honest. The same
+check covers composite actions, and Dependabot scans their directory alongside the workflows.
 
 The Git-ignore gate checks private/generated probes and public release inputs through an isolated
 temporary Git database; it never initializes the working tree. The source-secret gate snapshots

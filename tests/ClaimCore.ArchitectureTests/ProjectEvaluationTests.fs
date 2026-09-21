@@ -34,14 +34,17 @@ let private conditionalImport () =
             |> ProjectReferences.names
 
         let permissions = Map.ofList [ "ClaimCore.Domain", [] ]
+        let packages = Map.ofList [ "ClaimCore.Domain", [] ]
+        let frameworks = Map.ofList [ "ClaimCore.Domain", [] ]
         let debug = ProjectEvaluation.evaluate source "Debug"
         let release = ProjectEvaluation.evaluate source "Release"
 
         Expect.isEmpty
-            (ProjectEvaluation.violations projects permissions source debug)
+            (ProjectEvaluation.violations projects permissions packages frameworks source debug)
             "The inactive conditional edge must not appear in Debug"
 
-        let failures = ProjectEvaluation.violations projects permissions source release
+        let failures =
+            ProjectEvaluation.violations projects permissions packages frameworks source release
 
         Expect.equal failures.Length 2 "Release must detect both imported forbidden edges"
 

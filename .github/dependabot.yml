@@ -12,6 +12,11 @@ updates:
     directory: /
     schedule:
       interval: weekly
+  # Composite actions are not covered by the repository-root entry, so their pins are scanned here.
+  - package-ecosystem: github-actions
+    directory: /.github/actions/toolchain
+    schedule:
+      interval: weekly
   - package-ecosystem: docker-compose
     directory: /
     schedule:

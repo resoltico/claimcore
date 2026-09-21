@@ -26,7 +26,7 @@ jobs:
             stage: unit-linux
             assembly: ClaimCore.Tests
             project: tests/ClaimCore.Tests/ClaimCore.Tests.fsproj
-            expected: 203
+            expected: 205
             prefix: unit
             configuration: Release
             coverage: true
@@ -36,7 +36,7 @@ jobs:
             stage: unit-macos
             assembly: ClaimCore.Tests
             project: tests/ClaimCore.Tests/ClaimCore.Tests.fsproj
-            expected: 203
+            expected: 205
             prefix: unit
             configuration: Release
             coverage: true
@@ -46,10 +46,40 @@ jobs:
             stage: unit-windows
             assembly: ClaimCore.Tests
             project: tests/ClaimCore.Tests/ClaimCore.Tests.fsproj
-            expected: 203
+            expected: 205
             prefix: unit
             configuration: Release
             coverage: true
+          - os: ubuntu-latest
+            platform: linux
+            label: Boundary decoding totality
+            stage: fuzz-linux
+            assembly: ClaimCore.FuzzQualificationTests
+            project: tests/ClaimCore.FuzzQualificationTests/ClaimCore.FuzzQualificationTests.fsproj
+            expected: 5
+            prefix: fuzz
+            configuration: Release
+            coverage: false
+          - os: macos-latest
+            platform: macos
+            label: Boundary decoding totality
+            stage: fuzz-macos
+            assembly: ClaimCore.FuzzQualificationTests
+            project: tests/ClaimCore.FuzzQualificationTests/ClaimCore.FuzzQualificationTests.fsproj
+            expected: 5
+            prefix: fuzz
+            configuration: Release
+            coverage: false
+          - os: windows-latest
+            platform: windows
+            label: Boundary decoding totality
+            stage: fuzz-windows
+            assembly: ClaimCore.FuzzQualificationTests
+            project: tests/ClaimCore.FuzzQualificationTests/ClaimCore.FuzzQualificationTests.fsproj
+            expected: 5
+            prefix: fuzz
+            configuration: Release
+            coverage: false
           - os: ubuntu-latest
             platform: linux
             label: Web host and security tests
@@ -86,7 +116,7 @@ jobs:
             stage: architecture-linux
             assembly: ClaimCore.ArchitectureTests
             project: tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj
-            expected: 69
+            expected: 86
             prefix: architecture
             configuration: Debug
             coverage: false
@@ -96,7 +126,7 @@ jobs:
             stage: architecture-macos
             assembly: ClaimCore.ArchitectureTests
             project: tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj
-            expected: 69
+            expected: 86
             prefix: architecture
             configuration: Debug
             coverage: false
@@ -106,7 +136,7 @@ jobs:
             stage: architecture-windows
             assembly: ClaimCore.ArchitectureTests
             project: tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj
-            expected: 69
+            expected: 86
             prefix: architecture
             configuration: Debug
             coverage: false
@@ -116,21 +146,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
-        with:
-          global-json-file: global.json
-          cache: true
-          cache-dependency-path: "**/packages.lock.json"
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version-file: .node-version
-          cache: npm
-          cache-dependency-path: web/package-lock.json
-      - name: Require the exact Node and npm toolchain
-        shell: bash
-        run: |
-          test "$(node --version)" = "v$(tr -d '\r\n' < .node-version)"
-          test "$(npm --version)" = "$(node -p "require('./web/package.json').engines.npm")"
+      - uses: ./.github/actions/toolchain
       - name: Restore the locked source tree
         run: dotnet restore ClaimCore.slnx --locked-mode
       - name: Build the Release source tree
