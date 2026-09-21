@@ -81,7 +81,7 @@ Run every project explicitly:
 ```sh
 dotnet test --project tests/ClaimCore.Tests/ClaimCore.Tests.fsproj \
   --configuration Release --no-build --no-restore \
-  --minimum-expected-tests=205 --zero-tests-policy=strict --timeout=10m -- \
+  --minimum-expected-tests=213 --zero-tests-policy=strict --timeout=10m -- \
   --settings="$PWD/eng/expecto.runsettings"
 dotnet test --project tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj \
   --configuration Release --no-build --no-restore \
@@ -140,7 +140,7 @@ runs 5,000 for both:
 CLAIMCORE_PROPERTY_PROFILE=extended CLAIMCORE_PROPERTY_BASE_SEED=<unsigned-seed> \
 dotnet test --project tests/ClaimCore.Tests/ClaimCore.Tests.fsproj \
   --configuration Release --no-build --no-restore \
-  --minimum-expected-tests=205 --zero-tests-policy=strict --timeout=20m -- \
+  --minimum-expected-tests=213 --zero-tests-policy=strict --timeout=20m -- \
   --settings="$PWD/eng/expecto.runsettings"
 ```
 

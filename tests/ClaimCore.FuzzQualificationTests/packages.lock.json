@@ -93,34 +93,34 @@
       "claimcore.application": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Domain": "[0.3.0, )",
-          "ClaimCore.RecordFormat": "[0.3.0, )",
+          "ClaimCore.Domain": "[0.4.0, )",
+          "ClaimCore.RecordFormat": "[0.4.0, )",
           "FSharp.Core": "[10.1.401, )"
         }
       },
       "claimcore.cliprotocol": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Application": "[0.3.0, )",
-          "ClaimCore.Contracts": "[0.3.0, )",
-          "ClaimCore.Domain": "[0.3.0, )",
-          "ClaimCore.HostSecurity": "[0.3.0, )",
+          "ClaimCore.Application": "[0.4.0, )",
+          "ClaimCore.Contracts": "[0.4.0, )",
+          "ClaimCore.Domain": "[0.4.0, )",
+          "ClaimCore.HostSecurity": "[0.4.0, )",
           "FSharp.Core": "[10.1.401, )"
         }
       },
       "claimcore.contracts": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Application": "[0.3.0, )",
-          "ClaimCore.Domain": "[0.3.0, )",
+          "ClaimCore.Application": "[0.4.0, )",
+          "ClaimCore.Domain": "[0.4.0, )",
           "FSharp.Core": "[10.1.401, )"
         }
       },
       "claimcore.database": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.HostSecurity": "[0.3.0, )",
-          "ClaimCore.Postgres": "[0.3.0, )",
+          "ClaimCore.HostSecurity": "[0.4.0, )",
+          "ClaimCore.Postgres": "[0.4.0, )",
           "FSharp.Core": "[10.1.401, )"
         }
       },
@@ -139,9 +139,9 @@
       "claimcore.postgres": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Application": "[0.3.0, )",
-          "ClaimCore.Domain": "[0.3.0, )",
-          "ClaimCore.RecordFormat": "[0.3.0, )",
+          "ClaimCore.Application": "[0.4.0, )",
+          "ClaimCore.Domain": "[0.4.0, )",
+          "ClaimCore.RecordFormat": "[0.4.0, )",
           "FSharp.Core": "[10.1.401, )",
           "Npgsql": "[10.0.3, )"
         }
@@ -149,20 +149,21 @@
       "claimcore.recordformat": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Domain": "[0.3.0, )",
+          "ClaimCore.Domain": "[0.4.0, )",
           "FSharp.Core": "[10.1.401, )"
         }
       },
       "claimcore.tests": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Application": "[0.3.0, )",
-          "ClaimCore.CliProtocol": "[0.3.0, )",
-          "ClaimCore.Contracts": "[0.3.0, )",
-          "ClaimCore.Database": "[0.3.0, )",
-          "ClaimCore.Domain": "[0.3.0, )",
-          "ClaimCore.HostSecurity": "[0.3.0, )",
-          "ClaimCore.RecordFormat": "[0.3.0, )",
+          "ClaimCore.Application": "[0.4.0, )",
+          "ClaimCore.CliProtocol": "[0.4.0, )",
+          "ClaimCore.Contracts": "[0.4.0, )",
+          "ClaimCore.Database": "[0.4.0, )",
+          "ClaimCore.Domain": "[0.4.0, )",
+          "ClaimCore.HostSecurity": "[0.4.0, )",
+          "ClaimCore.Postgres": "[0.4.0, )",
+          "ClaimCore.RecordFormat": "[0.4.0, )",
           "Expecto": "[11.1.0, )",
           "FSharp.Core": "[10.1.401, )",
           "Hedgehog": "[2.0.4, )"

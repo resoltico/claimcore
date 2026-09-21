@@ -112,6 +112,10 @@ module ScalarRules =
         | ScalarRule.CaseStatus _ -> invalidArg "rule" "The scalar rule is not text-like."
 
 module DomainRules =
+    /// Increment when executable business meaning changes without a descriptor-shape change.
+    /// Translations and editorial corrections do not change this revision.
+    let version = 1
+
     let private crossFieldRules =
         [
             {

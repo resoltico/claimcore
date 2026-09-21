@@ -16,7 +16,7 @@
     "assets:verify": "node scripts/verify-asset-manifest.mjs",
     "preview": "vite preview",
     "typecheck": "tsc -b --pretty false",
-    "lint": "eslint src tests e2e scripts vite.config.ts playwright.config.ts --max-warnings 0",
+    "lint": "npm run architecture:check && eslint src tests e2e scripts vite.config.ts playwright.config.ts --max-warnings 0",
     "lint:styles": "stylelint \"src/**/*.css\" \"tests/**/*.css\" --max-warnings 0 && node scripts/check-css-size.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -28,7 +28,8 @@
     "contract:check": "node scripts/check-contract.mjs && node scripts/check-react-aria.mjs",
     "licenses:check": "license-checker-rseidelsohn --production --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;0BSD;CC0-1.0'",
     "notices:generate": "node scripts/generate-third-party-notices.mjs",
-    "sbom": "node scripts/generate-sbom.mjs"
+    "sbom": "node scripts/generate-sbom.mjs",
+    "architecture:check": "node --test scripts/architecture-policy.test.mjs"
   },
   "dependencies": {
     "ajv": "8.20.0",

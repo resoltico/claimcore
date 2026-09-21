@@ -23,6 +23,8 @@
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="../../src/ClaimCore.Application/ClaimCore.Application.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Contracts/ClaimCore.Contracts.fsproj" />
   </ItemGroup>
 </Project>

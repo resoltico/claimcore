@@ -49,6 +49,31 @@ CLI or Web code can reach a connection, a row, a migration, or the bounded pruni
 by mistake: those types are not in its compile closure at all. `Database` keeps the opposite
 arrangement — it links `Postgres` for schema-owner administration and never composes a runtime.
 
+### Direct compilation boundaries
+
+`DisableTransitiveProjectReferences` is enabled in the shared build configuration. A component may
+compile against only the project references it declares. PostgreSQL's Npgsql dependency keeps its
+runtime assets transitive but does not expose compile/build/analyzer assets to case-work hosts.
+The evaluated-project rules reject a configuration or imported property that re-enables implicit
+transitive project references. Compiler-reference tests independently verify that CLI and Web can
+see the public facade but not PostgreSQL administration or Npgsql, while the CLI runtime still
+contains its storage dependencies. This is source encapsulation, not a substitute for database roles.
+
+### Machine identity and presentation
+
+Semantic identity covers machine names, every scalar constraint, command input shapes, rule IDs
+and categories, explicit rule-set revision, and operational/record-format limits. Its versioned
+length-framed encoding uses invariant values and collection lengths. Human-facing labels and
+explanations are not identity-bearing. Their wire schema remains bounded, but translating copy
+alone changes neither semantic nor CLI/Web wire fingerprints. `DomainRules.version` must advance
+when executable business behavior changes without a corresponding descriptor change. A digest of
+descriptors cannot automatically prove that arbitrary implementations behave identically.
+
+The browser networking policy covers all handwritten browser source except the validated API
+adapter. Its positive and negative controls include root components, domain-view helpers, qualified
+global access, and alternative networking APIs. ESLint is a development boundary, not a security
+sandbox for dynamically constructed JavaScript.
+
 ### Composition roots
 
 A composition root is the one place that knows how a runtime is wired. Nothing depends on it, it

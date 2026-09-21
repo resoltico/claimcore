@@ -4,10 +4,10 @@
     {
       "contractId": "CC-DOM-001",
       "reviewerKind": "agent",
-      "reviewer": "Claude release audit: Fantomas 8.0.0 whitespace-only reformatting re-review",
+      "reviewer": "Architecture audit: delta review of explicit rule-set metadata; thirteen-field record unchanged",
       "reviewedOn": "2026-09-21",
       "conclusion": "approved",
-      "reviewSubjectHash": "0b64c615e0eca6d8bd2bc319af79a6bc26a709742fc1149e40f1cdf0930e7792",
+      "reviewSubjectHash": "f25b7690c20ee141be40a84faca77c5eec889973de35681920458faf6e83afc7",
       "wholeFiles": [
         "src/ClaimCore.Domain/Contracts.fs",
         "src/ClaimCore.Domain/Descriptors.fs",
@@ -25,10 +25,10 @@
     {
       "contractId": "CC-DOM-002",
       "reviewerKind": "agent",
-      "reviewer": "Claude release audit: Fantomas 8.0.0 whitespace-only reformatting re-review",
+      "reviewer": "Architecture audit: delta review of rule metadata and documented closed-case correction exception",
       "reviewedOn": "2026-09-21",
       "conclusion": "approved",
-      "reviewSubjectHash": "44ac4c010212224895774279e46b8a514b93e134b515ed992765b1741d0c903a",
+      "reviewSubjectHash": "9c794cfde2c2a1f497536fd10e536e437003a26c978ad1d1a9d3f661ed88c0da",
       "wholeFiles": [
         "src/ClaimCore.Domain/Contracts.fs",
         "src/ClaimCore.Domain/Descriptors.fs",
@@ -264,10 +264,10 @@
     {
       "contractId": "CC-WEB-001",
       "reviewerKind": "agent",
-      "reviewer": "Claude release audit: Fantomas 8.0.0 whitespace-only reformatting re-review",
+      "reviewer": "Architecture audit: delta review of bounded presentation text and regenerated exact wire identity; native Web and frontend tests passed",
       "reviewedOn": "2026-09-21",
       "conclusion": "approved",
-      "reviewSubjectHash": "e0aef6be7dffe6388d3a2d2577403b8afbd0733b0e0732f8d32202b6a90c179b",
+      "reviewSubjectHash": "c473b56f552769dbac8a2f5513c463b5aa582183ba1eb0d3160f8ff48e4fb607",
       "wholeFiles": [
         "src/ClaimCore.Contracts/ContractFactory.fs",
         "src/ClaimCore.Contracts/EndpointInputs.fs",

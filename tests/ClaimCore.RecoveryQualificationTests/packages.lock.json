@@ -167,8 +167,8 @@
       "claimcore.application": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Domain": "[0.3.0, )",
-          "ClaimCore.RecordFormat": "[0.3.0, )",
+          "ClaimCore.Domain": "[0.4.0, )",
+          "ClaimCore.RecordFormat": "[0.4.0, )",
           "FSharp.Core": "[10.1.401, )"
         }
       },
@@ -181,9 +181,9 @@
       "claimcore.hosting": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Application": "[0.3.0, )",
-          "ClaimCore.Domain": "[0.3.0, )",
-          "ClaimCore.Postgres": "[0.3.0, )",
+          "ClaimCore.Application": "[0.4.0, )",
+          "ClaimCore.Domain": "[0.4.0, )",
+          "ClaimCore.Postgres": "[0.4.0, )",
           "FSharp.Core": "[10.1.401, )",
           "Npgsql": "[10.0.3, )"
         }
@@ -191,11 +191,11 @@
       "claimcore.integrationtests": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Application": "[0.3.0, )",
-          "ClaimCore.Domain": "[0.3.0, )",
-          "ClaimCore.Hosting": "[0.3.0, )",
-          "ClaimCore.Postgres": "[0.3.0, )",
-          "ClaimCore.RecordFormat": "[0.3.0, )",
+          "ClaimCore.Application": "[0.4.0, )",
+          "ClaimCore.Domain": "[0.4.0, )",
+          "ClaimCore.Hosting": "[0.4.0, )",
+          "ClaimCore.Postgres": "[0.4.0, )",
+          "ClaimCore.RecordFormat": "[0.4.0, )",
           "Expecto": "[11.1.0, )",
           "FSharp.Core": "[10.1.401, )",
           "Npgsql": "[10.0.3, )",
@@ -205,9 +205,9 @@
       "claimcore.postgres": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Application": "[0.3.0, )",
-          "ClaimCore.Domain": "[0.3.0, )",
-          "ClaimCore.RecordFormat": "[0.3.0, )",
+          "ClaimCore.Application": "[0.4.0, )",
+          "ClaimCore.Domain": "[0.4.0, )",
+          "ClaimCore.RecordFormat": "[0.4.0, )",
           "FSharp.Core": "[10.1.401, )",
           "Npgsql": "[10.0.3, )"
         }
@@ -215,7 +215,7 @@
       "claimcore.recordformat": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Domain": "[0.3.0, )",
+          "ClaimCore.Domain": "[0.4.0, )",
           "FSharp.Core": "[10.1.401, )"
         }
       },

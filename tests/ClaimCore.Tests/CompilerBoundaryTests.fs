@@ -3,6 +3,7 @@ module ClaimCore.Tests.CompilerBoundaryTests
 open System
 open System.IO
 open System.Text.RegularExpressions
+open System.Text.Json
 open Expecto
 open ClaimCore.TestSupport
 
@@ -81,11 +82,54 @@ let private inaccessible name symbol source =
 
         Expect.stringContains diagnostics symbol "Diagnostic identifies intended symbol")
 
+/// Inspect the actual compiler references, not just the declared ProjectReference graph.
+/// Runtime storage dependencies must still be published, but must not be usable by host source.
+let private hostCompileClosures () =
+    for name in [ "Cli"; "Web" ] do
+        let project =
+            Path.Combine(RepositoryRoot.find (), $"src/ClaimCore.{name}/ClaimCore.{name}.fsproj")
+
+        let result =
+            CliProcessTests.runDotnet
+                [
+                    "msbuild"
+                    project
+                    "-nologo"
+                    "-verbosity:quiet"
+                    "-property:Configuration=Release"
+                    "-target:ResolveReferences"
+                    "-getItem:ReferencePath"
+                ]
+                ""
+
+        Expect.equal result.ExitCode 0 "Compiler reference resolution must succeed"
+        use document = JsonDocument.Parse(result.StandardOutput)
+
+        let names =
+            document.RootElement.GetProperty("Items").GetProperty("ReferencePath").EnumerateArray()
+            |> Seq.map (fun value -> Path.GetFileName(value.GetProperty("FullPath").GetString()))
+            |> Set.ofSeq
+
+        Expect.isTrue (names.Contains "ClaimCore.Application.dll") "Positive facade reference"
+
+        for forbidden in [ "ClaimCore.Postgres.dll"; "Npgsql.dll" ] do
+            Expect.isFalse
+                (names.Contains forbidden)
+                (name + " cannot compile against " + forbidden)
+
+    for required in [ "ClaimCore.Postgres.dll"; "Npgsql.dll" ] do
+        Expect.isTrue
+            (File.Exists(Path.Combine(assemblyDirectory (), required)))
+            ("Runtime dependency is still delivered: " + required)
+
 let tests =
     testList
         "compiler-enforced core boundary"
         [
             testCase "ordinary caller can use IClaimsCore" requirePositive
+            testCase
+                "case-work hosts exclude storage from compilation, not deployment"
+                hostCompileClosures
             inaccessible
                 "ordinary caller cannot see the store port"
                 "IClaimStore"

@@ -4,6 +4,23 @@ Notable changes to this project are documented in this file. The format is based
 
 ## [Unreleased]
 
+### Changed
+
+- Semantic identity now excludes presentation labels and explanations, includes every text-like
+  scalar constraint, and carries an explicit executable-rule revision. CLI and Web fingerprints
+  change for this source revision; no old-contract compatibility path is provided. Canonical
+  operation-record encoding and the thirteen business fields are unchanged.
+- Source compilation now requires explicit project references. Case-work hosts cannot compile
+  against PostgreSQL administration or Npgsql through the composition root, while their runtime
+  storage dependencies remain present.
+
+### Fixed
+
+- Closed gaps in browser-networking lint coverage, including root components and qualified global
+  calls, and added positive and negative policy controls.
+- Removed a stale latest-release number from the README and clarified that factual correction is
+  the deliberate exception to the normal closed-case editing rule.
+
 ## [0.4.0] - 2026-09-21
 
 ### Added
