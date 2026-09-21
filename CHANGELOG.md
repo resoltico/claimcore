@@ -18,6 +18,7 @@ Notable changes to this project are documented in this file. The format is based
 
 - Semantic identity is now length-prefixed rather than separated by a null character, so no token boundary can be reproduced by a value that contains the separator, and integers are written with the invariant culture.
 - A successful test producer now validates its own result file against the same reviewed inventory that final evidence reconciliation uses, before it records success. A changed test count, a substituted name at the same count, and a missing, duplicated or wrong-assembly report are all refused at the job that produced them rather than at the end of the run. Seven regression tests cover the new refusals.
+- The evidence job fetches its artifact scanner once with a reviewed checksum instead of letting the scanner fetch itself mid-scan, and a scanner that cannot run is now reported differently from a scan that completed and refused its targets. Both still fail closed and neither emits a matched value or a target path, but a blocked run can now be told apart from a refused one.
 - Browser networking rules now cover root components, qualified global calls, and alternative networking APIs, with positive and negative controls run by the existing lint stage. This is bounded lint enforcement, not a sandbox.
 
 ## [0.4.0] - 2026-09-21

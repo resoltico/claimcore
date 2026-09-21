@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [string] $GitleaksArchivePath,
+    [string] $GitleaksArchivePath = $env:CLAIMCORE_SCANNER_ARCHIVE,
     [Parameter(Position = 0, ValueFromRemainingArguments = $true)]
     [string[]] $ArtifactPaths
 )
@@ -247,12 +247,14 @@ try {
         [Console]::Out.WriteLine("Artifact secret scan passed for $($targets.Count) explicit path(s).")
     }
     else {
-        [Console]::Error.WriteLine("Artifact secret scan failed.")
+        [Console]::Error.WriteLine("Artifact secret scan completed and refused its targets.")
     }
 }
 catch {
-    # Do not emit exception details, target paths, tool logs, or matched bytes.
-    [Console]::Error.WriteLine("Artifact secret scan failed.")
+    # Do not emit exception details, target paths, tool logs, or matched bytes. The message still
+    # distinguishes a scanner that could not run from a scan that completed and found something,
+    # because a fail-closed gate that cannot tell an operator which one happened is not actionable.
+    [Console]::Error.WriteLine("Artifact secret scan could not complete; the scanner did not run.")
     $exitCode = 1
 }
 finally {
