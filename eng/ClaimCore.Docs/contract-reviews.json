@@ -175,10 +175,10 @@
     {
       "contractId": "CC-CLI-002",
       "reviewerKind": "agent",
-      "reviewer": "Claude release audit: Fantomas 8.0.0 whitespace-only reformatting re-review",
+      "reviewer": "Core outcome diagnostics: agent source-delta review of the published export refusal oracle, retaining owner-only, exclusive, symlink and non-disclosure assertions; not independent owner approval",
       "reviewedOn": "2026-09-21",
       "conclusion": "approved",
-      "reviewSubjectHash": "7a4b835d4a4a1325c2ae0f8f9cddc1c0846a02622c08467f402d7881be99fde4",
+      "reviewSubjectHash": "32eaae383171db55dc8dddfe1b40e91c2a8a6b15ac1e5b57e066329df8cdee8a",
       "wholeFiles": [
         "src/ClaimCore.HostSecurity/PrivateFileService.fs",
         "src/ClaimCore.HostSecurity/PosixPrivateFiles.fs",
