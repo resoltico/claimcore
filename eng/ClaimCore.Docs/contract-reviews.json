@@ -4,10 +4,10 @@
     {
       "contractId": "CC-DOM-001",
       "reviewerKind": "agent",
-      "reviewer": "Codex CC-LIFECYCLE-001 review",
-      "reviewedOn": "2026-09-14",
+      "reviewer": "Claude release audit: Fantomas 8.0.0 whitespace-only reformatting re-review",
+      "reviewedOn": "2026-09-21",
       "conclusion": "approved",
-      "reviewSubjectHash": "010263c3ffc35885d1d7a3c2145a0440c5c9250e58c83e5c086d038a243ff661",
+      "reviewSubjectHash": "0b64c615e0eca6d8bd2bc319af79a6bc26a709742fc1149e40f1cdf0930e7792",
       "wholeFiles": [
         "src/ClaimCore.Domain/Contracts.fs",
         "src/ClaimCore.Domain/Descriptors.fs",
@@ -25,10 +25,10 @@
     {
       "contractId": "CC-DOM-002",
       "reviewerKind": "agent",
-      "reviewer": "Codex CC-LIFECYCLE-001 review",
-      "reviewedOn": "2026-09-14",
+      "reviewer": "Claude release audit: Fantomas 8.0.0 whitespace-only reformatting re-review",
+      "reviewedOn": "2026-09-21",
       "conclusion": "approved",
-      "reviewSubjectHash": "c87ace29e6ef782dae99075d143cb85a1e09c330d786bff1acd7b86bec7c8a17",
+      "reviewSubjectHash": "44ac4c010212224895774279e46b8a514b93e134b515ed992765b1741d0c903a",
       "wholeFiles": [
         "src/ClaimCore.Domain/Contracts.fs",
         "src/ClaimCore.Domain/Descriptors.fs",
@@ -68,10 +68,10 @@
     {
       "contractId": "CC-APP-002",
       "reviewerKind": "agent",
-      "reviewer": "Claude fail-fast audit: authoritative request identity and guarded cursor identity re-review",
-      "reviewedOn": "2026-09-20",
+      "reviewer": "Claude release audit: Fantomas 8.0.0 whitespace-only reformatting re-review",
+      "reviewedOn": "2026-09-21",
       "conclusion": "approved",
-      "reviewSubjectHash": "64fe4f94fda2208083a91643ccd398927842b3cc87ff495b199b7dbf10e305b8",
+      "reviewSubjectHash": "d97c0ab383966ecb15334e1a0c6c9d5261aea66f8aad1986a4773ea71fda55ae",
       "wholeFiles": [
         "src/ClaimCore.Application/AcceptedObservation.fs",
         "src/ClaimCore.Application/Core.fs",
@@ -129,10 +129,10 @@
     {
       "contractId": "CC-CLI-002",
       "reviewerKind": "agent",
-      "reviewer": "Claude architecture audit: CLI composition-root split re-review",
-      "reviewedOn": "2026-09-20",
+      "reviewer": "Claude release audit: Fantomas 8.0.0 whitespace-only reformatting re-review",
+      "reviewedOn": "2026-09-21",
       "conclusion": "approved",
-      "reviewSubjectHash": "2cde7656df1354dfb1cabcf79538779b42ba1ee5a6d43194013477c732bc0083",
+      "reviewSubjectHash": "7a4b835d4a4a1325c2ae0f8f9cddc1c0846a02622c08467f402d7881be99fde4",
       "wholeFiles": [
         "src/ClaimCore.HostSecurity/PrivateFileService.fs",
         "src/ClaimCore.HostSecurity/PosixPrivateFiles.fs",
@@ -150,10 +150,10 @@
     {
       "contractId": "CC-REC-001",
       "reviewerKind": "agent",
-      "reviewer": "Claude fail-fast audit: authoritative request identity and guarded cursor identity re-review",
-      "reviewedOn": "2026-09-20",
+      "reviewer": "Claude release audit: Fantomas 8.0.0 whitespace-only reformatting re-review",
+      "reviewedOn": "2026-09-21",
       "conclusion": "approved",
-      "reviewSubjectHash": "6f8668d8f697e34cd233668a1c09106da23b1a2a5eb8b2a07c939e78c096ca09",
+      "reviewSubjectHash": "510b84d5bead0c5c3a4acddd33f030f84b6e6f03887495d45e326c898f24f3c6",
       "wholeFiles": [
         "src/ClaimCore.Application/AcceptedObservation.fs",
         "src/ClaimCore.Application/RecoveryCoordinator.fs",
@@ -244,10 +244,10 @@
     {
       "contractId": "CC-DB-002",
       "reviewerKind": "agent",
-      "reviewer": "Codex CC-LIFECYCLE-001 review",
-      "reviewedOn": "2026-09-14",
+      "reviewer": "Claude release audit: Fantomas 8.0.0 whitespace-only reformatting re-review",
+      "reviewedOn": "2026-09-21",
       "conclusion": "approved",
-      "reviewSubjectHash": "9c233825b8b33c97c7ce7809e4ae417fc7564d0c7a06def031a8721de4033a77",
+      "reviewSubjectHash": "997b06a06616e920733078cdc4c44b5c7b10d25801eff917b45c956dcce72774",
       "wholeFiles": [
         "src/ClaimCore.HostSecurity/PrivateFileService.fs",
         "src/ClaimCore.HostSecurity/PosixPrivateFiles.fs",
@@ -264,10 +264,10 @@
     {
       "contractId": "CC-WEB-001",
       "reviewerKind": "agent",
-      "reviewer": "Codex CC-LIFECYCLE-001 review",
-      "reviewedOn": "2026-09-14",
+      "reviewer": "Claude release audit: Fantomas 8.0.0 whitespace-only reformatting re-review",
+      "reviewedOn": "2026-09-21",
       "conclusion": "approved",
-      "reviewSubjectHash": "be783405e35649363d0d65bf3bf133c7a113a5d8ca4179170710e60b32a16589",
+      "reviewSubjectHash": "e0aef6be7dffe6388d3a2d2577403b8afbd0733b0e0732f8d32202b6a90c179b",
       "wholeFiles": [
         "src/ClaimCore.Contracts/ContractFactory.fs",
         "src/ClaimCore.Contracts/EndpointInputs.fs",
