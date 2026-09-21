@@ -91,8 +91,8 @@ module internal ProjectionSchema =
             [
                 Schema.property "name" (textConstant field.Name) true
                 Schema.property "nativeName" (textConstant field.NativeName) true
-                Schema.property "label" (textConstant field.Label) true
-                Schema.property "meaning" (textConstant field.Meaning) true
+                Schema.property "label" (Schema.string None None (Some 1) (Some 4096)) true
+                Schema.property "meaning" (Schema.string None None (Some 1) (Some 4096)) true
                 Schema.property "allowsAbsence" (booleanConstant field.AllowsAbsence) true
                 Schema.property "scalar" (scalarDefinition field.Scalar) true
             ]
@@ -108,8 +108,8 @@ module internal ProjectionSchema =
             false
             [
                 Schema.property "kind" (textConstant (CommandKinds.token command.Kind)) true
-                Schema.property "label" (textConstant command.Label) true
-                Schema.property "meaning" (textConstant command.Meaning) true
+                Schema.property "label" (Schema.string None None (Some 1) (Some 4096)) true
+                Schema.property "meaning" (Schema.string None None (Some 1) (Some 4096)) true
                 Schema.property "inputs" (CommandInputProjection.definition command.Inputs) true
             ]
 
@@ -124,7 +124,7 @@ module internal ProjectionSchema =
             [
                 Schema.property "identifier" (textConstant rule.Identifier) true
                 Schema.property "category" (textConstant category) true
-                Schema.property "meaning" (textConstant rule.Meaning) true
+                Schema.property "meaning" (Schema.string None None (Some 1) (Some 4096)) true
             ]
 
     let private command (fields: FieldDefinition list) (definition: CommandDefinition) =
@@ -159,6 +159,7 @@ module internal ProjectionSchema =
                 Schema.property "contractKind" (textConstant "SEMANTIC_CORE_V1") true
                 Schema.property "application" (textConstant semantic.Application) true
                 Schema.property "scope" (textConstant semantic.Scope) true
+                Schema.property "ruleSetVersion" (integerConstant semantic.RuleSetVersion) true
                 Schema.property
                     "canonicalCommandFormat"
                     (integerConstant semantic.CanonicalCommandFormat)

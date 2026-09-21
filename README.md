@@ -46,7 +46,7 @@ The [domain contract](docs/domain.md) is authoritative for field and transition 
 
 ## Start here
 
-The latest public release is 0.3.0, a source preview without downloadable application binaries. The
+This is a source preview. For published release details, see [GitHub Releases](https://github.com/resoltico/claimcore/releases). The
 supported first-run path builds from source, creates a dedicated persistent local PostgreSQL database,
 and launches the published Web host. Follow [Getting started](docs/getting-started.md); it uses only
 synthetic data.

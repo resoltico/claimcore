@@ -11,6 +11,7 @@ let tests =
             PathAndLinkTests.tests
             ManifestTests.tests
             EvidenceTests.tests
+            StageEvidenceTests.tests
             FrontendReportInventoryTests.tests
             ArchitectureReportTests.tests
             ReviewTests.tests

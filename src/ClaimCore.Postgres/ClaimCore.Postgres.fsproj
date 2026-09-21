@@ -39,7 +39,7 @@
     <ProjectReference Include="../ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Npgsql" />
+    <PackageReference Include="Npgsql" PrivateAssets="compile;build;buildTransitive;analyzers;contentFiles" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="../../db/001_initial.sql" LogicalName="ClaimCore.Migrations.001_initial.sql" />

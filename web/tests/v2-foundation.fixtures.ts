@@ -23,6 +23,7 @@ export const caseFields: CaseFields = {
 
 export const definition: SemanticDefinition = {
   contractKind: "SEMANTIC_CORE_V1",
+  ruleSetVersion: 1,
   application: "ClaimCore",
   scope: "trusted-local-operator-claims-register",
   canonicalCommandFormat: 2,

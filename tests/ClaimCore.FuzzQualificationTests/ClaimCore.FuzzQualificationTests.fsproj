@@ -15,6 +15,9 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/ClaimCore.Application/ClaimCore.Application.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.CliProtocol/ClaimCore.CliProtocol.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj" />
     <ProjectReference Include="../ClaimCore.Tests/ClaimCore.Tests.fsproj" />
   </ItemGroup>
   <ItemGroup>

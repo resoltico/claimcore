@@ -10,6 +10,7 @@ type Items =
         Projects: string list
         Packages: string list
         Frameworks: string list
+        DirectReferencesOnly: bool
     }
 
 let private strings (property: string) (items: JsonElement) =
@@ -30,7 +31,14 @@ let private parse (output: string) =
     use document = JsonDocument.Parse(output)
     let items = document.RootElement.GetProperty("Items")
 
+    let directOnly =
+        document.RootElement
+            .GetProperty("Properties")
+            .GetProperty("DisableTransitiveProjectReferences")
+            .GetString()
+
     {
+        DirectReferencesOnly = Boolean.TryParse(directOnly) = (true, true)
         Projects = items.GetProperty("ProjectReference") |> strings "FullPath"
         Packages = items.GetProperty("PackageReference") |> strings "Identity"
         Frameworks = items.GetProperty("FrameworkReference") |> strings "Identity"
@@ -57,6 +65,7 @@ let evaluate (projectPath: string) (configuration: string) =
             "-getItem:ProjectReference,PackageReference,FrameworkReference"
         )
 
+        child.StartInfo.ArgumentList.Add("-getProperty:DisableTransitiveProjectReferences")
         child.StartInfo.ArgumentList.Add("-property:Configuration=" + configuration)
 
         if not (child.Start()) then
@@ -117,6 +126,9 @@ let violations
         |> Set.ofList
 
     [
+        if not items.DirectReferencesOnly then
+            source + " permits implicit transitive project references"
+
         if not unclassified.IsEmpty then
             source + " declares an unclassified evaluated project reference"
 

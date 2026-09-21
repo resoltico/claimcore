@@ -7,10 +7,32 @@ open System.Text
 open ClaimCore.Domain
 open ClaimCore.RecordFormat
 
-/// Builds the static semantic description directly from Domain-owned descriptors.
+/// Machine identity excludes presentation copy and includes every declared scalar constraint.
 module SemanticContract =
+    let private integer (value: int) =
+        value.ToString(CultureInfo.InvariantCulture)
+
+    // Length-prefix every token, including collection sizes, so field and collection boundaries
+    // cannot collide. This is an identity format, not a human-facing serialization.
     let private append (builder: StringBuilder) (value: string) =
-        builder.Append(value).Append(char 0) |> ignore
+        builder.Append(integer value.Length).Append(':').Append(value) |> ignore
+
+    let private number builder value = append builder (integer value)
+
+    let private boolean builder value =
+        append builder (if value then "true" else "false")
+
+    let private sequence builder write values =
+        number builder (List.length values)
+        values |> List.iter (write builder)
+
+    let private textConstraints builder (value: ScalarTextConstraints) =
+        number builder value.MinimumCharacters
+        number builder value.MaximumCharacters
+        boolean builder value.RequiresNonBlank
+        boolean builder value.RejectsSurroundingWhitespace
+        boolean builder value.RejectsControlCharacters
+        boolean builder value.RequiresWellFormedUnicode
 
     let private scalar builder rule =
         match rule with
@@ -21,63 +43,60 @@ module SemanticContract =
             append builder (value.Maximum.ToString("O", CultureInfo.InvariantCulture))
         | ScalarRule.Text value ->
             append builder "TEXT"
-            append builder (string value.MinimumCharacters)
-            append builder (string value.MaximumCharacters)
-            append builder (string value.RequiresNonBlank)
-            append builder (string value.RejectsSurroundingWhitespace)
-            append builder (string value.RejectsControlCharacters)
-            append builder (string value.RequiresWellFormedUnicode)
+            textConstraints builder value
         | ScalarRule.Amount value ->
             append builder "AMOUNT"
+            textConstraints builder value.Text
             append builder value.Grammar
-            append builder (string value.MaximumIntegerDigits)
-            append builder (string value.MaximumFractionalDigits)
+            number builder value.MaximumIntegerDigits
+            number builder value.MaximumFractionalDigits
         | ScalarRule.Currency value ->
             append builder "CURRENCY"
+            textConstraints builder value.Text
             append builder value.Grammar
-            append builder (string value.ExactCharacters)
+            number builder value.ExactCharacters
         | ScalarRule.CaseStatus value ->
             append builder "CASE_STATUS"
-            value.AllowedValues |> List.iter (CaseStatuses.token >> append builder)
+
+            sequence
+                builder
+                (fun output item -> append output (CaseStatuses.token item))
+                value.AllowedValues
+
+    let private input builder (value: FieldInputDefinition) =
+        append builder value.FieldName
+
+        match value.Prefill with
+        | PrefillSource.Blank -> append builder "BLANK"
+        | PrefillSource.CurrentField field ->
+            append builder "CURRENT_FIELD"
+            append builder field
+
+    let private groupAction builder action =
+        match action with
+        | CorrectionGroupAction.Keep -> append builder "KEEP"
+        | CorrectionGroupAction.Replace -> append builder "REPLACE"
+        | CorrectionGroupAction.Clear -> append builder "CLEAR"
+
+    let private group builder (value: CorrectionGroupDefinition) =
+        append builder value.Name
+        sequence builder groupAction value.Actions
+        sequence builder input value.ReplaceFields
 
     let private inputShape builder shape =
         match shape with
         | CommandInputShape.Fields inputs ->
             append builder "FIELDS"
-
-            inputs
-            |> List.iter (fun input ->
-                append builder input.FieldName
-
-                match input.Prefill with
-                | PrefillSource.Blank -> append builder "BLANK"
-                | PrefillSource.CurrentField field ->
-                    append builder "CURRENT_FIELD"
-                    append builder field)
+            sequence builder input inputs
         | CommandInputShape.CorrectionGroups groups ->
             append builder "CORRECTION_GROUPS"
-
-            groups
-            |> List.iter (fun group ->
-                append builder group.Name
-                append builder group.Label
-                append builder group.Meaning
-                group.Actions |> List.iter (string >> append builder)
-
-                group.ReplaceFields
-                |> List.iter (fun input ->
-                    append builder input.FieldName
-
-                    match input.Prefill with
-                    | PrefillSource.Blank -> append builder "BLANK"
-                    | PrefillSource.CurrentField field ->
-                        append builder "CURRENT_FIELD"
-                        append builder field))
+            sequence builder group groups
 
     let current =
         {
             Application = BuildIdentity.current.Product
             Scope = "trusted-local-operator-claims-register"
+            RuleSetVersion = DomainRules.version
             Fields = FieldDefinitions.all
             Commands = CommandDefinitions.all
             Statuses = CaseStatuses.all
@@ -90,41 +109,51 @@ module SemanticContract =
             RecoveryEnvelopeFormat = 1
         }
 
-    let fingerprint contract =
+    /// A descriptor digest is not a proof that two arbitrary implementations behave identically.
+    /// RuleSetVersion accounts for deliberate behavior changes not represented by descriptor data.
+    let fingerprint (contract: SemanticCoreContract) =
         let builder = StringBuilder()
+        append builder "CLAIMCORE_SEMANTIC_IDENTITY_V2"
         append builder contract.Application
         append builder contract.Scope
-        append builder (string contract.DefaultPageSize)
-        append builder (string contract.MaximumPageSize)
-        append builder (string contract.RequestByteLimit)
-        append builder (string contract.CanonicalCommandFormat)
-        append builder (string contract.RequestFingerprintVersion)
-        append builder (string contract.RecoveryEnvelopeFormat)
+        number builder contract.RuleSetVersion
+        number builder contract.DefaultPageSize
+        number builder contract.MaximumPageSize
+        number builder contract.RequestByteLimit
+        number builder contract.CanonicalCommandFormat
+        number builder contract.RequestFingerprintVersion
+        number builder contract.RecoveryEnvelopeFormat
 
-        contract.Fields
-        |> List.iter (fun field ->
-            append builder field.Name
-            append builder field.NativeName
-            append builder field.Label
-            append builder field.Meaning
-            append builder (string field.AllowsAbsence)
-            scalar builder field.Scalar)
+        sequence
+            builder
+            (fun output (field: FieldDefinition) ->
+                append output field.Name
+                append output field.NativeName
+                boolean output field.AllowsAbsence
+                scalar output field.Scalar)
+            contract.Fields
 
-        contract.Commands
-        |> List.iter (fun command ->
-            append builder (CommandKinds.token command.Kind)
-            append builder command.Label
-            append builder command.Meaning
+        sequence
+            builder
+            (fun output (command: CommandDefinition) ->
+                append output (CommandKinds.token command.Kind)
+                inputShape output command.Inputs)
+            contract.Commands
 
-            inputShape builder command.Inputs)
+        sequence
+            builder
+            (fun output status -> append output (CaseStatuses.token status))
+            contract.Statuses
 
-        contract.Statuses |> List.iter (CaseStatuses.token >> append builder)
+        sequence
+            builder
+            (fun output (rule: DomainRuleDefinition) ->
+                append output rule.Identifier
 
-        contract.Rules
-        |> List.iter (fun rule ->
-            append builder rule.Identifier
-            append builder rule.Meaning
-            append builder (string rule.Category))
+                match rule.Category with
+                | DomainRuleCategory.CrossField -> append output "CROSS_FIELD"
+                | DomainRuleCategory.Transition -> append output "TRANSITION")
+            contract.Rules
 
         builder.ToString()
         |> Encoding.UTF8.GetBytes

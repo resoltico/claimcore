@@ -213,7 +213,9 @@
       "project": "eng/ClaimCore.ContractGenerator/ClaimCore.ContractGenerator.fsproj",
       "role": "Materializes checked contract artifacts from the pure Contracts projection. Never a runtime authority.",
       "dependsOn": [
-        "ClaimCore.Contracts"
+        "ClaimCore.Application",
+        "ClaimCore.Contracts",
+        "ClaimCore.Domain"
       ],
       "packages": [],
       "internalsVisibleTo": [],
@@ -270,6 +272,7 @@
         "ClaimCore.Database",
         "ClaimCore.Domain",
         "ClaimCore.HostSecurity",
+        "ClaimCore.Postgres",
         "ClaimCore.RecordFormat"
       ],
       "packages": [],
@@ -285,6 +288,8 @@
       "role": "Production-route TestServer, admission, and wire projection tests for the Web host.",
       "dependsOn": [
         "ClaimCore.Application",
+        "ClaimCore.Contracts",
+        "ClaimCore.Domain",
         "ClaimCore.Web"
       ],
       "packages": [],
@@ -386,6 +391,9 @@
       "role": "Separate boundary-decoding qualification executable: every decoder that turns externally supplied bytes or tokens into typed values must refuse hostile input without throwing.",
       "dependsOn": [
         "ClaimCore.Application",
+        "ClaimCore.CliProtocol",
+        "ClaimCore.Domain",
+        "ClaimCore.RecordFormat",
         "ClaimCore.Tests"
       ],
       "packages": [],

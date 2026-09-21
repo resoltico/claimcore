@@ -43,6 +43,7 @@
     <Compile Include="FieldSchemaTests.fs" />
     <Compile Include="DomainDescriptorTests.fs" />
     <Compile Include="ContractsTests.fs" />
+    <Compile Include="SemanticIdentityTests.fs" />
     <Compile Include="ConfigurationTests.fs" />
     <Compile Include="CliProcessTests.fs" />
     <Compile Include="PrivateFileSecurityTests.fs" />
@@ -55,6 +56,7 @@
     <None Include="../../eng/claimcore.testconfig.json" Link="testconfig.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="../../src/ClaimCore.Postgres/ClaimCore.Postgres.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Application/ClaimCore.Application.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Contracts/ClaimCore.Contracts.fsproj" />

@@ -38,8 +38,8 @@ module internal CommandInputProjection =
             false
             [
                 Schema.property "name" (text group.Name) true
-                Schema.property "label" (text group.Label) true
-                Schema.property "meaning" (text group.Meaning) true
+                Schema.property "label" (Schema.string None None (Some 1) (Some 4096)) true
+                Schema.property "meaning" (Schema.string None None (Some 1) (Some 4096)) true
                 Schema.property
                     "actions"
                     (group.Actions |> List.map (action >> text) |> exactArray)

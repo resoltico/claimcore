@@ -1,6 +1,6 @@
 /* Generated from ClaimCore.Contracts. Do not edit. */
 export const webV2WireContractFingerprint =
-  "971e8ec8e370cdeca1df15376bb2d0eadcd8f493679d5f6988fb1f93a156bece";
+  "f36f0ca841ab604f70acccf329ce4137eb36d193cdd022de2be83f8aac8de01d";
 
 export const webV2HostFailureStatuses = [400, 401, 403, 404, 409, 413, 415, 429, 500, 503] as const;
 

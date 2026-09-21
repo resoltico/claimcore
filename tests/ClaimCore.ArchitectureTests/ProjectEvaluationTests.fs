@@ -24,10 +24,16 @@ let private conditionalImport () =
             imported,
             $"<Project><ItemGroup><ProjectReference Include='{cli}' Condition=\"'$(Configuration)' == 'Release'\" />"
             + "<PackageReference Include='Npgsql' Condition=\"'$(Configuration)' == 'Release'\" />"
-            + "</ItemGroup></Project>"
+            + "</ItemGroup><PropertyGroup Condition=\"'$(Configuration)' == 'Release'\">"
+            + "<DisableTransitiveProjectReferences>false</DisableTransitiveProjectReferences>"
+            + "</PropertyGroup></Project>"
         )
 
-        File.WriteAllText(source, "<Project><Import Project='edge.props' /></Project>")
+        File.WriteAllText(
+            source,
+            "<Project><PropertyGroup><DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>"
+            + "</PropertyGroup><Import Project='edge.props' /></Project>"
+        )
 
         let projects =
             ProjectReferences.loadProjects (Path.Combine(RepositoryRoot.find (), "src"))
@@ -46,7 +52,10 @@ let private conditionalImport () =
         let failures =
             ProjectEvaluation.violations projects permissions packages frameworks source release
 
-        Expect.equal failures.Length 2 "Release must detect both imported forbidden edges"
+        Expect.equal
+            failures.Length
+            3
+            "Release must detect both edges and the compiler-policy override"
 
         Expect.isTrue
             (failures |> List.exists (fun failure -> failure.Contains("ClaimCore.Cli")))

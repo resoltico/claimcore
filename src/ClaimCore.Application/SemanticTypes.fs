@@ -73,6 +73,7 @@ type SemanticCoreContract =
     {
         Application: string
         Scope: string
+        RuleSetVersion: int
         Fields: FieldDefinition list
         Commands: CommandDefinition list
         Statuses: CaseStatus list

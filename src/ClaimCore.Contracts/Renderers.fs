@@ -126,6 +126,7 @@ module internal ContractJson =
         writer.WriteString("contractKind", "SEMANTIC_CORE_V1")
         writer.WriteString("application", semantic.Application)
         writer.WriteString("scope", semantic.Scope)
+        writer.WriteNumber("ruleSetVersion", semantic.RuleSetVersion)
         writer.WriteNumber("canonicalCommandFormat", semantic.CanonicalCommandFormat)
         writer.WriteNumber("requestFingerprintVersion", semantic.RequestFingerprintVersion)
         writer.WriteNumber("recoveryEnvelopeFormat", semantic.RecoveryEnvelopeFormat)

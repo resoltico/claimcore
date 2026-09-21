@@ -61,8 +61,8 @@ Status and payment progress are separate state axes. A typical paid lifecycle is
 `RECORD_PAYMENT`; `CLOSE` and `REOPEN` only change status. `CLEAR_PAYMENT` returns a paid case to its
 decided-but-unpaid state. Each newly accepted command advances exactly one revision.
 
-A closed case must be reopened before editing. A paid date must be cleared before its decision can be
-withdrawn, and that unpaid decision must be withdrawn before registration facts can be amended.
+Ordinary editing of a closed case requires reopening it; `CORRECT_CASE` is the deliberate exception
+described below. A paid date must be cleared before its decision can be withdrawn, and that unpaid decision must be withdrawn before registration facts can be amended.
 Clearing a record does not reverse a real transfer.
 
 `CORRECT_CASE` is intentionally different from `AMEND_REGISTRATION`: it preserves the historical

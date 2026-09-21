@@ -5,6 +5,8 @@ import reactHooks from "eslint-plugin-react-hooks";
 import globals from "globals";
 import tseslint from "typescript-eslint";
 
+import { browserNetworkBoundary } from "./scripts/architecture-policy.mjs";
+
 const baseRules = {
   complexity: ["error", 12],
   "max-lines": ["error", { max: 300, skipBlankLines: false, skipComments: false }],
@@ -35,7 +37,7 @@ const typescriptRules = {
 const sourceRules = { ...baseRules, ...typescriptRules };
 
 export default tseslint.config(
-  // rationale: AJV/Rolldown outputs bounded generated code; suppression-registry: web/eslint.config.mjs|eslint-config-ignore|line:39
+  // rationale: AJV/Rolldown outputs bounded generated code; suppression-registry: web/eslint.config.mjs|eslint-config-ignore|line:41
   { ignores: ["src/generated/convergence/web-v2.validators.*.mjs"] },
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked.map((config) => ({
@@ -59,15 +61,7 @@ export default tseslint.config(
     files: ["tests/**/*.{ts,tsx}", "e2e/**/*.{ts,tsx}"],
     languageOptions: { globals: { ...globals.browser, ...globals.node, ...globals.vitest } },
   },
-  {
-    files: ["src/{components,hooks,utils,views}/**/*.{ts,tsx}"],
-    rules: {
-      "no-restricted-globals": [
-        "error",
-        { name: "fetch", message: "Features must use the validated browser API boundary." },
-      ],
-    },
-  },
+  browserNetworkBoundary,
   {
     files: ["scripts/**/*.mjs"],
     languageOptions: { globals: globals.node },

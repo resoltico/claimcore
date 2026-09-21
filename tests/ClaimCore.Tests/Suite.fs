@@ -36,6 +36,7 @@ let tests =
             FieldSchemaTests.tests
             DomainDescriptorTests.tests
             ContractsTests.tests
+            SemanticIdentityTests.tests
             ConfigurationTests.tests
             CliProcessTests.tests
             PrivateFileSecurityTests.tests

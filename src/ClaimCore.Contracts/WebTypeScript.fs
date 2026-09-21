@@ -149,6 +149,7 @@ module WebTypeScript =
                 WireSchema.property "contractKind" (WireSchema.token "SEMANTIC_CORE_V1")
                 WireSchema.property "application" (WireSchema.token semantic.Application)
                 WireSchema.property "scope" (WireSchema.token semantic.Scope)
+                WireSchema.property "ruleSetVersion" (WireSchema.number semantic.RuleSetVersion)
                 WireSchema.property
                     "canonicalCommandFormat"
                     (WireSchema.number semantic.CanonicalCommandFormat)

@@ -69,6 +69,7 @@ export type SemanticDefinition = {
   readonly contractKind: "SEMANTIC_CORE_V1";
   readonly application: "ClaimCore";
   readonly scope: "trusted-local-operator-claims-register";
+  readonly ruleSetVersion: 1;
   readonly canonicalCommandFormat: 2;
   readonly requestFingerprintVersion: 1;
   readonly recoveryEnvelopeFormat: 1;
