@@ -1,24 +1,108 @@
-name: Temporary diagnostics source export
+name: Temporary diagnostics candidate reproduction
 on:
   push:
     branches: [feat/typed-rejection-diagnostics]
     paths: [.github/workflows/diagnostics-workspace.yml]
 permissions:
-  contents: read
+  contents: write
 jobs:
-  source:
+  candidate:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: 1
+      DOTNET_NOLOGO: 1
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: 97a9f23e75ffcf5e52542b335f898fbb3724b8f2
           persist-credentials: false
-      - name: Export exact baseline without credentials or build output
-        run: git archive --format=tar.gz --prefix=claimcore/ HEAD > "$RUNNER_TEMP/diagnostics-baseline.tar.gz"
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-        with:
-          name: diagnostics-baseline
-          path: ${{ runner.temp }}/diagnostics-baseline.tar.gz
-          if-no-files-found: error
-          retention-days: 1
+      - name: Apply the checksum-verified reviewed source delta
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import base64, hashlib, json, lzma, os, subprocess, urllib.request
+          baseline = subprocess.check_output(['git', 'rev-parse', 'HEAD^{tree}'], text=True).strip()
+          if baseline != '2f87b71c239ca2dba3d40dbb25d40c311f3f4548':
+              raise SystemExit('Unexpected baseline tree.')
+          parts = [
+              ('ffc707a7fa7304c27b567d837a1a6fbf0097b95d', 10500),
+              ('74acc0f33285f7b4b9a08d4ce1d3393a7bd9880e', 10500),
+              ('b33545534ee18d5a1218f5541e69c4083ebb77d7', 10492),
+          ]
+          headers = {'Authorization': 'Bearer ' + os.environ['GH_TOKEN'], 'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28'}
+          chunks = []
+          for sha, length in parts:
+              url = 'https://api.github.com/repos/resoltico/claimcore/git/blobs/' + sha
+              with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=60) as response:
+                  blob = json.load(response)
+              if blob['sha'] != sha or blob['encoding'] != 'base64':
+                  raise SystemExit('Unexpected source-delta object.')
+              chunk = base64.b64decode(blob['content'])
+              if len(chunk) != length:
+                  raise SystemExit('Source-delta length mismatch.')
+              chunks.append(chunk)
+          patch = lzma.decompress(b''.join(chunks))
+          if hashlib.sha256(patch).hexdigest() != '62d5eed97c7f60c3596902c7bcffe04981750465fe8b4314a8d98566a3b6bb22':
+              raise SystemExit('Source-delta checksum mismatch.')
+          subprocess.run(['git', 'apply', '--check', '--index', '-'], input=patch, check=True)
+          subprocess.run(['git', 'apply', '--index', '-'], input=patch, check=True)
+          print('Reviewed source delta applied to the pinned merged baseline.')
+          PY
+      - uses: ./.github/actions/toolchain
+      - name: Restore pinned generator dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet restore eng/ClaimCore.ContractGenerator/ClaimCore.ContractGenerator.fsproj --locked-mode
+          npm ci --prefix web --ignore-scripts
+      - name: Reproduce generated contracts and verify the complete candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm --prefix web run contract:generate
+          git add -A
+          actual="$(git write-tree)"
+          printf 'Reproduced source tree: %s\n' "$actual"
+          test "$actual" = '6b251c606e1e47b6f28a9102a8290e16ac3dba3c'
+          test "$(git ls-files | wc -l | tr -d ' ')" = '767'
+          test "$(git diff --cached --name-only | wc -l | tr -d ' ')" = '109'
+      - name: Store verified source objects without changing any branch or tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, subprocess, urllib.request
+          def git(*args):
+              return subprocess.check_output(['git', *args])
+          if git('write-tree').decode().strip() != '6b251c606e1e47b6f28a9102a8290e16ac3dba3c':
+              raise SystemExit('Candidate changed after verification.')
+          changed = set(git('diff', '--cached', '--name-only', '-z').decode().strip('\0').split('\0'))
+          entries = []
+          for record in git('ls-files', '--stage', '-z').decode().strip('\0').split('\0'):
+              metadata, path = record.split('\t', 1)
+              if path not in changed or path.startswith('.github/workflows/'):
+                  continue
+              mode, sha, stage = metadata.split()
+              if stage != '0' or mode not in ('100644', '100755'):
+                  raise SystemExit('Unexpected staged file mode.')
+              entries.append({'path': path, 'mode': mode, 'type': 'blob', 'content': git('cat-file', 'blob', sha).decode('utf-8')})
+          if len(entries) != 108:
+              raise SystemExit('Unexpected reviewed change count.')
+          payload = json.dumps({'base_tree': '2f87b71c239ca2dba3d40dbb25d40c311f3f4548', 'tree': entries}).encode('utf-8')
+          headers = {'Authorization': 'Bearer ' + os.environ['GH_TOKEN'], 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json', 'X-GitHub-Api-Version': '2022-11-28'}
+          url = 'https://api.github.com/repos/resoltico/claimcore/git/trees'
+          with urllib.request.urlopen(urllib.request.Request(url, data=payload, headers=headers, method='POST'), timeout=120) as response:
+              result = json.load(response)
+          expected = '89d95f42a2c1f98c802794c058d41e55b9c5f9e1'
+          if result['sha'] != expected:
+              raise SystemExit('Remote source tree differs from the reviewed candidate.')
+          print('Verified remote source tree: ' + expected)
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
+              summary.write('Reproduced the complete diagnostics candidate: `6b251c606e1e47b6f28a9102a8290e16ac3dba3c`. Stored its source-only tree: `' + expected + '`. The authorized repository connection will supply the one reviewed CI workflow change. No branch or tag was updated by this job.\n')
+          PY
