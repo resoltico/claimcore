@@ -154,6 +154,28 @@ module StageCommands =
                     (PublishManifestWriter.serialize publish)
                 |> Result.map ignore
 
+    // A successful producer must satisfy the same reviewed inventory as final reconciliation.
+    // Failed producers retain their evidence without being relabelled as successful.
+    let private validateTestReport root stageId outcome safeOutput (publish: PublishTreeManifest) =
+        match
+            outcome, Stages.testReports |> List.tryFind (fun report -> report.StageId = stageId)
+        with
+        | "success", Some expected ->
+            let reports =
+                publish.Files
+                |> List.filter (fun file -> file.Path.EndsWith(".trx", StringComparison.Ordinal))
+
+            match reports with
+            | [ report ] when Path.GetFileName(report.Path) = expected.FileName ->
+                Repository.ensureExistingSafe root (Path.Combine(safeOutput, report.Path))
+                |> Result.bind (Evidence.parseTrx expected)
+                |> Result.map ignore
+                |> Result.mapError (fun message -> $"Stage '{stageId}': {message}")
+            | _ ->
+                Error
+                    $"Stage '{stageId}' must contain exactly one TRX report named '{expected.FileName}'."
+        | _ -> Ok()
+
     let stageManifest
         (root: RepositoryRoot)
         (runner: IProcessRunner)
@@ -171,16 +193,18 @@ module StageCommands =
             match createOutput root runner stageId safeOutput with
             | Error message -> Error message
             | Ok(_, publish) ->
-                writeStage
-                    root
-                    runId
-                    attempt
-                    definition
-                    outcome
-                    startedAt
-                    finishedAt
-                    relative
-                    publish
+                validateTestReport root stageId outcome safeOutput publish
+                |> Result.bind (fun () ->
+                    writeStage
+                        root
+                        runId
+                        attempt
+                        definition
+                        outcome
+                        startedAt
+                        finishedAt
+                        relative
+                        publish)
                 |> writePublishCopy root runId attempt stageId publish
 
     let private publishDefinition (stageId: string) =

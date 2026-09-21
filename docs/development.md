@@ -89,7 +89,7 @@ dotnet test --project tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj \
   --settings="$PWD/eng/expecto.runsettings"
 dotnet test --project tests/ClaimCore.DocsTests/ClaimCore.DocsTests.fsproj \
   --configuration Release --no-build --no-restore \
-  --minimum-expected-tests=54 --zero-tests-policy=strict --timeout=10m -- \
+  --minimum-expected-tests=61 --zero-tests-policy=strict --timeout=10m -- \
   --settings="$PWD/eng/expecto.runsettings"
 dotnet test --project tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj \
   --configuration Release --no-build --no-restore \
@@ -200,6 +200,12 @@ To add, split, or retire a component:
 5. Regenerate the affected `eng/ClaimCore.Docs/test-inventory/*.json` entries, register any new test
    identity in `eng/assurance-matrix.json`, and update the expected counts in this document and in
    the workflows.
+
+A test producer may record a successful stage manifest only when its single TRX report matches the
+compiled, reviewed test-name inventory exactly. Counts, names, assembly identity, and passing outcomes
+are checked at the producer and again during final evidence reconciliation. Runner minimum counts are
+an early floor, not an alternative inventory. Inventory changes must be reviewed against the source
+and actual discovery; CI never learns its expected names from the report it is validating.
 
 Do not add a compatibility edge, a transitional package, or a temporary grant: removing one requires
 no allowance, and the manifest records only what the reviewed architecture permits today.

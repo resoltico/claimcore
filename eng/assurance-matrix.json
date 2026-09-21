@@ -8,6 +8,17 @@
         "core",
         "documentation"
       ],
+      "id": "assurance-architecture:compiler-reference-boundary",
+      "subject": "Case-work hosts cannot compile against storage administration or Npgsql, while their published runtime dependencies retain the storage implementation.",
+      "tests": [
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.compiler-enforced core boundary.case-work hosts exclude storage from compilation, not deployment"
+      ]
+    },
+    {
+      "dimensions": [
+        "core",
+        "documentation"
+      ],
       "id": "assurance-architecture:component-contract",
       "subject": "The architecture manifest classifies every repository project exactly once, and declared project edges, product-tier isolation, graph acyclicity, and compiled InternalsVisibleTo grants are all compared to it in both directions with negative controls.",
       "tests": [
@@ -448,6 +459,23 @@
       ]
     },
     {
+      "dimensions": [
+        "core",
+        "documentation"
+      ],
+      "id": "assurance-core:presentation-neutral-identity",
+      "subject": "Semantic and wire identity exclude bounded presentation copy, include all scalar constraints and operational limits, frame distinct tokens unambiguously, remain culture-invariant, and expose an explicit executable-rule revision.",
+      "tests": [
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.presentation-neutral semantic identity.copy remains bounded without becoming a machine discriminator",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.presentation-neutral semantic identity.discovery exposes the explicit executable-rule revision",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.presentation-neutral semantic identity.editorial and translated copy changes no semantic or wire identity",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.presentation-neutral semantic identity.embedded separators cannot collapse distinct token boundaries",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.presentation-neutral semantic identity.every text constraint affects each text-like scalar identity",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.presentation-neutral semantic identity.operational limits and explicit rule revisions remain identity-bearing",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.presentation-neutral semantic identity.semantic identity is invariant under host cultures"
+      ]
+    },
+    {
       "id": "assurance-core:typed-public-api",
       "dimensions": [
         "core"
@@ -488,6 +516,22 @@
       "subject": "CLI, Database, and Web publish stages require the exact native private-file library on macOS or Linux and reject a foreign native artifact on Windows.",
       "tests": [
         "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Evidence manifests.stage registry and manifests.stage registry.native private-file library is required in each supported publish tree"
+      ]
+    },
+    {
+      "dimensions": [
+        "documentation"
+      ],
+      "id": "assurance-documentation:producer-test-evidence",
+      "subject": "Successful native test producers validate their single TRX against the same reviewed count, names, assembly and passing-result inventory as final reconciliation; invalid reports cannot acquire success manifests, while unsuccessful and non-test producers retain their own policies.",
+      "tests": [
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.producer test evidence.malformed failed and wrong-assembly evidence cannot pass the producer",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.producer test evidence.matching reviewed inventory records a successful producer",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.producer test evidence.missing and additional identities cannot pass the producer",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.producer test evidence.missing duplicate and substituted reports cannot pass the producer",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.producer test evidence.non-test publication stages do not require a test report",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.producer test evidence.same-count name substitution cannot pass the producer",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.producer test evidence.unsuccessful producers retain evidence without being relabelled"
       ]
     },
     {
@@ -687,7 +731,7 @@
       "dimensions": [
         "migration"
       ],
-      "subject": "The current manifest assertion pins the exact applied 001\u2013006 migration names and SHA-256 digests, so an accidental source edit changes the expected identity.",
+      "subject": "The current manifest assertion pins the exact applied 001–006 migration names and SHA-256 digests, so an accidental source edit changes the expected identity.",
       "tests": [
         "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 006.manifest validation.[CC-DB-001] applied migration identities remain frozen"
       ]
