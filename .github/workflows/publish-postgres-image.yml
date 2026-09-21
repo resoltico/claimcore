@@ -29,14 +29,14 @@ jobs:
           persist-credentials: false
 
       - name: Register pinned arm64 emulation
-        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
         with:
           image: tonistiigi/binfmt:qemu-v10.2.3-68@sha256:400a4873b838d1b89194d982c45e5fb3cda4593fbfd7e08a02e76b03b21166f0
           platforms: arm64
           cache-image: false
 
       - name: Start pinned BuildKit
-        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
         with:
           version: v0.34.0
           driver: docker-container
@@ -97,7 +97,7 @@ jobs:
       # Do not expose a package-write credential while a verifier or local Trivy
       # container has access to the Docker socket.
       - name: Log in to GHCR
-        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -233,7 +233,7 @@ jobs:
           echo "digest=$index_digest" >> "$GITHUB_OUTPUT"
 
       - name: Attest the amd64 SBOM to its exact child digest
-        uses: actions/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d # v4.2.1
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-name: ghcr.io/resoltico/claimcore-postgres
           subject-digest: ${{ steps.children.outputs.amd64_digest }}
@@ -243,7 +243,7 @@ jobs:
           show-summary: false
 
       - name: Attest the arm64 SBOM to its exact child digest
-        uses: actions/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d # v4.2.1
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-name: ghcr.io/resoltico/claimcore-postgres
           subject-digest: ${{ steps.children.outputs.arm64_digest }}
@@ -253,7 +253,7 @@ jobs:
           show-summary: false
 
       - name: Attest provenance to the final index digest
-        uses: actions/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d # v4.2.1
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-name: ghcr.io/resoltico/claimcore-postgres
           subject-digest: ${{ steps.index.outputs.digest }}

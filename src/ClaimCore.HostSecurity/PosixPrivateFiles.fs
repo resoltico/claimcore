@@ -77,7 +77,7 @@ module internal PosixPrivateFiles =
 
             let opened = PosixPrivateNative.privateRegular (handle.DangerousGetHandle())
             use stream = new FileStream(handle, FileAccess.Read)
-            let buffer = Array.zeroCreate<byte> (maximum + 1)
+            let buffer = Array.zeroCreate<byte>(maximum + 1)
             let mutable total = 0
             let mutable count = 1
 

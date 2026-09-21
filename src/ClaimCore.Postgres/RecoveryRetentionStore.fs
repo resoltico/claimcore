@@ -26,7 +26,8 @@ module internal RecoveryRetentionStore =
 
                 if
                     count >= int64 limits.MaximumPreparations
-                    || bytes + int64 draft.CanonicalRequest.Length > limits.MaximumCanonicalRequestBytes
+                    || bytes + int64 draft.CanonicalRequest.Length >
+                        limits.MaximumCanonicalRequestBytes
                 then
                     return Error RecoveryStoreFailure.CapacityExceeded
                 else
@@ -72,7 +73,8 @@ module internal RecoveryRetentionStore =
                     transaction
                     ("operation:" + draft.OperationId.ToString("D"))
 
-            let! accepted = StoreData.readOperation connection (Some transaction) draft.OperationId
+            let! accepted =
+                StoreData.readOperation connection (Some transaction) draft.OperationId
 
             match accepted with
             | Some(receipt, original) when original = draft.RequestSha256 ->
