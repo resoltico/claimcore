@@ -1,7 +1,6 @@
-namespace ClaimCore.Postgres
+namespace ClaimCore.Hosting
 
 open System.Runtime.CompilerServices
 
-[<assembly: InternalsVisibleTo("ClaimCore.Hosting")>]
 [<assembly: InternalsVisibleTo("ClaimCore.IntegrationTests")>]
 do ()

@@ -58,8 +58,15 @@ let build (assemblies: System.Reflection.Assembly array) =
             .WithoutArchitectureCache()
             .WithoutRuleEvaluationCache()
             .LoadAssemblies(assemblies)
-            .LoadNamespacesWithinAssembly(typeof<DateTime>.Assembly, [| "System"; "System.IO" |])
+            .LoadNamespacesWithinAssembly(
+                typeof<DateTime>.Assembly,
+                [| "System"; "System.IO"; "System.Threading" |]
+            )
             .LoadNamespacesWithinAssembly(typeof<Console>.Assembly, [| "System" |])
+            .LoadNamespacesWithinAssembly(
+                typeof<System.Text.Json.Utf8JsonWriter>.Assembly,
+                [| "System.Text.Json" |]
+            )
             .Build()
 
     for assembly in assemblies do

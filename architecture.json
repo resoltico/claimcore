@@ -1,0 +1,397 @@
+{
+  "version": 1,
+  "description": "The reviewed ClaimCore component contract. Compiled architecture tests and the architecture document both read this file; neither restates it. Every .fsproj in the repository is classified here exactly once. Removing an edge, a package, or an internals grant requires no compatibility allowance.",
+  "components": [
+    {
+      "name": "ClaimCore.Domain",
+      "tier": "product",
+      "layer": "core",
+      "project": "src/ClaimCore.Domain/ClaimCore.Domain.fsproj",
+      "role": "Accepted values, field metadata, validation, available transitions, and case state.",
+      "dependsOn": [],
+      "packages": [],
+      "internalsVisibleTo": [],
+      "frameworkReferences": [],
+      "testInventory": false
+    },
+    {
+      "name": "ClaimCore.RecordFormat",
+      "tier": "product",
+      "layer": "core",
+      "project": "src/ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj",
+      "role": "Byte-stable canonical command-record format 2, historical snapshots, and recovery-envelope format 1.",
+      "dependsOn": [
+        "ClaimCore.Domain"
+      ],
+      "packages": [],
+      "internalsVisibleTo": [],
+      "frameworkReferences": [],
+      "testInventory": false
+    },
+    {
+      "name": "ClaimCore.Application",
+      "tier": "product",
+      "layer": "core",
+      "project": "src/ClaimCore.Application/ClaimCore.Application.fsproj",
+      "role": "The typed IClaimsCore facade, request admission, operation identity, endpoint outcomes, and the sole public recovery workflow.",
+      "dependsOn": [
+        "ClaimCore.Domain",
+        "ClaimCore.RecordFormat"
+      ],
+      "packages": [],
+      "internalsVisibleTo": [
+        "ClaimCore.FuzzQualificationTests",
+        "ClaimCore.Hosting",
+        "ClaimCore.IntegrationTests",
+        "ClaimCore.Postgres",
+        "ClaimCore.Tests"
+      ],
+      "frameworkReferences": [],
+      "testInventory": false
+    },
+    {
+      "name": "ClaimCore.Contracts",
+      "tier": "product",
+      "layer": "contract",
+      "project": "src/ClaimCore.Contracts/ClaimCore.Contracts.fsproj",
+      "role": "Pure projection of Application's semantic description into CLI-v3 and Web-v2 wire contracts, schemas, codecs, and generated browser DTOs.",
+      "dependsOn": [
+        "ClaimCore.Application",
+        "ClaimCore.Domain"
+      ],
+      "packages": [],
+      "internalsVisibleTo": [],
+      "frameworkReferences": [],
+      "testInventory": false
+    },
+    {
+      "name": "ClaimCore.HostSecurity",
+      "tier": "product",
+      "layer": "infrastructure",
+      "project": "src/ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj",
+      "role": "Handle-first local private-file and directory admission. No claims or transport decision authority.",
+      "dependsOn": [],
+      "packages": [],
+      "internalsVisibleTo": [
+        "ClaimCore.Tests"
+      ],
+      "frameworkReferences": [],
+      "testInventory": false
+    },
+    {
+      "name": "ClaimCore.Postgres",
+      "tier": "product",
+      "layer": "infrastructure",
+      "project": "src/ClaimCore.Postgres/ClaimCore.Postgres.fsproj",
+      "role": "Durable storage, ordered migrations, connection validation, transaction boundaries, the private technical recovery store, and schema-owner administration.",
+      "dependsOn": [
+        "ClaimCore.Application",
+        "ClaimCore.Domain",
+        "ClaimCore.RecordFormat"
+      ],
+      "packages": [
+        "Npgsql"
+      ],
+      "internalsVisibleTo": [
+        "ClaimCore.Hosting",
+        "ClaimCore.IntegrationTests"
+      ],
+      "frameworkReferences": [],
+      "testInventory": false
+    },
+    {
+      "name": "ClaimCore.Hosting",
+      "tier": "product",
+      "layer": "composition",
+      "project": "src/ClaimCore.Hosting/ClaimCore.Hosting.fsproj",
+      "role": "The sole composition root. Owns runtime opening, the data-source lifetime, and the admission lease; the only component that binds a store to the core.",
+      "dependsOn": [
+        "ClaimCore.Application",
+        "ClaimCore.Domain",
+        "ClaimCore.Postgres"
+      ],
+      "packages": [
+        "Npgsql"
+      ],
+      "internalsVisibleTo": [
+        "ClaimCore.IntegrationTests"
+      ],
+      "frameworkReferences": [],
+      "testInventory": false
+    },
+    {
+      "name": "ClaimCore.CliProtocol",
+      "tier": "product",
+      "layer": "transport",
+      "project": "src/ClaimCore.CliProtocol/ClaimCore.CliProtocol.fsproj",
+      "role": "CLI-v3 framing, strict JSON decoding, discovery, and endpoint dispatch over a supplied core. It declares the core-supplier abstraction and cannot name a runtime factory.",
+      "dependsOn": [
+        "ClaimCore.Application",
+        "ClaimCore.Contracts",
+        "ClaimCore.Domain",
+        "ClaimCore.HostSecurity"
+      ],
+      "packages": [],
+      "frameworkReferences": [],
+      "internalsVisibleTo": [],
+      "testInventory": false
+    },
+    {
+      "name": "ClaimCore.Cli",
+      "tier": "product",
+      "layer": "entry point",
+      "project": "src/ClaimCore.Cli/ClaimCore.Cli.fsproj",
+      "role": "The CLI composition root and process entry point. It owns the runtime lifetime and stdin/stdout delivery; every protocol decision belongs to CliProtocol.",
+      "dependsOn": [
+        "ClaimCore.Application",
+        "ClaimCore.CliProtocol",
+        "ClaimCore.Contracts",
+        "ClaimCore.Hosting"
+      ],
+      "packages": [],
+      "internalsVisibleTo": [],
+      "frameworkReferences": [],
+      "testInventory": false
+    },
+    {
+      "name": "ClaimCore.Web",
+      "tier": "product",
+      "layer": "entry point",
+      "project": "src/ClaimCore.Web/ClaimCore.Web.fsproj",
+      "role": "Loopback HTTPS admission, Web-v2 transport, session handling, and browser interaction over a composed runtime. Never reaches storage or schema administration.",
+      "dependsOn": [
+        "ClaimCore.Application",
+        "ClaimCore.Contracts",
+        "ClaimCore.Domain",
+        "ClaimCore.HostSecurity",
+        "ClaimCore.Hosting"
+      ],
+      "packages": [],
+      "internalsVisibleTo": [
+        "ClaimCore.WebTests"
+      ],
+      "frameworkReferences": [
+        "Microsoft.AspNetCore.App"
+      ],
+      "testInventory": false
+    },
+    {
+      "name": "ClaimCore.Database",
+      "tier": "product",
+      "layer": "entry point",
+      "project": "src/ClaimCore.Database/ClaimCore.Database.fsproj",
+      "role": "Schema-owner administration for ordered migrations, installation business time, and bounded technical-preparation pruning. Not a case-work client, so it never composes a runtime.",
+      "dependsOn": [
+        "ClaimCore.HostSecurity",
+        "ClaimCore.Postgres"
+      ],
+      "packages": [],
+      "internalsVisibleTo": [],
+      "frameworkReferences": [],
+      "testInventory": false
+    },
+    {
+      "name": "ClaimCore.Docs",
+      "tier": "tooling",
+      "layer": "tooling",
+      "project": "eng/ClaimCore.Docs/ClaimCore.Docs.fsproj",
+      "role": "Repository documentation, publish-tree, and evidence reconciliation. Inspects the repository as data and never links product code.",
+      "dependsOn": [],
+      "packages": [
+        "Markdig"
+      ],
+      "internalsVisibleTo": [
+        "ClaimCore.DocsTests"
+      ],
+      "frameworkReferences": [],
+      "testInventory": false
+    },
+    {
+      "name": "ClaimCore.ContractGenerator",
+      "tier": "tooling",
+      "layer": "tooling",
+      "project": "eng/ClaimCore.ContractGenerator/ClaimCore.ContractGenerator.fsproj",
+      "role": "Materializes checked contract artifacts from the pure Contracts projection. Never a runtime authority.",
+      "dependsOn": [
+        "ClaimCore.Contracts"
+      ],
+      "packages": [],
+      "internalsVisibleTo": [],
+      "frameworkReferences": [],
+      "testInventory": false
+    },
+    {
+      "name": "ClaimCore.ArchitectureFixtures",
+      "tier": "test",
+      "layer": "test",
+      "project": "tests/ClaimCore.ArchitectureFixtures/ClaimCore.ArchitectureFixtures.fsproj",
+      "role": "Positive and negative F# shapes that qualify the compiled inspection mechanism itself.",
+      "dependsOn": [],
+      "packages": [],
+      "internalsVisibleTo": [],
+      "frameworkReferences": [],
+      "testInventory": false
+    },
+    {
+      "name": "ClaimCore.ArchitectureTests",
+      "tier": "test",
+      "layer": "test",
+      "project": "tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj",
+      "role": "Compiled enforcement of this manifest.",
+      "dependsOn": [
+        "ClaimCore.Application",
+        "ClaimCore.ArchitectureFixtures",
+        "ClaimCore.Cli",
+        "ClaimCore.CliProtocol",
+        "ClaimCore.Contracts",
+        "ClaimCore.Database",
+        "ClaimCore.Domain",
+        "ClaimCore.HostSecurity",
+        "ClaimCore.Hosting",
+        "ClaimCore.Postgres",
+        "ClaimCore.RecordFormat",
+        "ClaimCore.Web"
+      ],
+      "packages": [],
+      "internalsVisibleTo": [],
+      "frameworkReferences": [],
+      "testInventory": true
+    },
+    {
+      "name": "ClaimCore.Tests",
+      "tier": "test",
+      "layer": "test",
+      "project": "tests/ClaimCore.Tests/ClaimCore.Tests.fsproj",
+      "role": "Deterministic and property unit tests for the database-free boundaries.",
+      "dependsOn": [
+        "ClaimCore.Application",
+        "ClaimCore.CliProtocol",
+        "ClaimCore.Contracts",
+        "ClaimCore.Database",
+        "ClaimCore.Domain",
+        "ClaimCore.HostSecurity",
+        "ClaimCore.RecordFormat"
+      ],
+      "packages": [],
+      "internalsVisibleTo": [],
+      "frameworkReferences": [],
+      "testInventory": true
+    },
+    {
+      "name": "ClaimCore.WebTests",
+      "tier": "test",
+      "layer": "test",
+      "project": "tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj",
+      "role": "Production-route TestServer, admission, and wire projection tests for the Web host.",
+      "dependsOn": [
+        "ClaimCore.Application",
+        "ClaimCore.Web"
+      ],
+      "packages": [],
+      "internalsVisibleTo": [],
+      "frameworkReferences": [],
+      "testInventory": true
+    },
+    {
+      "name": "ClaimCore.IntegrationTests",
+      "tier": "test",
+      "layer": "test",
+      "project": "tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj",
+      "role": "Real PostgreSQL storage, transaction, migration, and composed-runtime tests.",
+      "dependsOn": [
+        "ClaimCore.Application",
+        "ClaimCore.Domain",
+        "ClaimCore.Hosting",
+        "ClaimCore.Postgres",
+        "ClaimCore.RecordFormat"
+      ],
+      "packages": [],
+      "internalsVisibleTo": [],
+      "frameworkReferences": [],
+      "testInventory": true
+    },
+    {
+      "name": "ClaimCore.RecoveryQualificationTests",
+      "tier": "test",
+      "layer": "test",
+      "project": "tests/ClaimCore.RecoveryQualificationTests/ClaimCore.RecoveryQualificationTests.fsproj",
+      "role": "Separate recovery qualification executable, so a generic integration pass cannot be reported as recovery evidence.",
+      "dependsOn": [
+        "ClaimCore.IntegrationTests"
+      ],
+      "packages": [],
+      "internalsVisibleTo": [],
+      "frameworkReferences": [],
+      "testInventory": true
+    },
+    {
+      "name": "ClaimCore.ConcurrencyQualificationTests",
+      "tier": "test",
+      "layer": "test",
+      "project": "tests/ClaimCore.ConcurrencyQualificationTests/ClaimCore.ConcurrencyQualificationTests.fsproj",
+      "role": "Separate concurrency qualification executable.",
+      "dependsOn": [
+        "ClaimCore.IntegrationTests"
+      ],
+      "packages": [],
+      "internalsVisibleTo": [],
+      "frameworkReferences": [],
+      "testInventory": true
+    },
+    {
+      "name": "ClaimCore.MigrationQualificationTests",
+      "tier": "test",
+      "layer": "test",
+      "project": "tests/ClaimCore.MigrationQualificationTests/ClaimCore.MigrationQualificationTests.fsproj",
+      "role": "Separate migration qualification executable.",
+      "dependsOn": [
+        "ClaimCore.IntegrationTests"
+      ],
+      "packages": [],
+      "internalsVisibleTo": [],
+      "frameworkReferences": [],
+      "testInventory": true
+    },
+    {
+      "name": "ClaimCore.AcceptanceTests",
+      "tier": "test",
+      "layer": "test",
+      "project": "tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj",
+      "role": "Published-process acceptance against publish trees only; it links no product project.",
+      "dependsOn": [],
+      "packages": [],
+      "internalsVisibleTo": [],
+      "frameworkReferences": [],
+      "testInventory": true
+    },
+    {
+      "name": "ClaimCore.DocsTests",
+      "tier": "test",
+      "layer": "test",
+      "project": "tests/ClaimCore.DocsTests/ClaimCore.DocsTests.fsproj",
+      "role": "Tests for the repository documentation and evidence tooling.",
+      "dependsOn": [
+        "ClaimCore.Docs"
+      ],
+      "packages": [],
+      "internalsVisibleTo": [],
+      "frameworkReferences": [],
+      "testInventory": true
+    },
+    {
+      "name": "ClaimCore.FuzzQualificationTests",
+      "tier": "test",
+      "layer": "test",
+      "project": "tests/ClaimCore.FuzzQualificationTests/ClaimCore.FuzzQualificationTests.fsproj",
+      "role": "Separate boundary-decoding qualification executable: every decoder that turns externally supplied bytes or tokens into typed values must refuse hostile input without throwing.",
+      "dependsOn": [
+        "ClaimCore.Application",
+        "ClaimCore.Tests"
+      ],
+      "packages": [],
+      "frameworkReferences": [],
+      "internalsVisibleTo": [],
+      "testInventory": true
+    }
+  ]
+}

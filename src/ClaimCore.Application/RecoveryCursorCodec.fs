@@ -5,6 +5,13 @@ open System.Buffers.Binary
 
 /// Application-owned opaque recovery cursor. Its fixed binary payload preserves the storage sort
 /// key without turning timestamp or operation ID into an adapter-defined protocol field.
+/// A cursor carries operation identity. A short or misplaced destination would silently encode a
+/// zero identity instead of failing, so the write is checked rather than discarded.
+module internal CursorIdentity =
+    let write (value: System.Guid) (destination: System.Span<byte>) =
+        if not (value.TryWriteBytes destination) then
+            invalidOp "A recovery cursor identity did not fit its fixed destination."
+
 module internal RecoveryCursorCodec =
     let encode (cursor: RecoveryCursor) =
         let bytes = Array.zeroCreate<byte> 25
@@ -19,7 +26,7 @@ module internal RecoveryCursorCodec =
             cursor.OccurredAt.UtcDateTime.Ticks
         )
 
-        cursor.OperationId.TryWriteBytes(bytes.AsSpan(9, 16)) |> ignore
+        CursorIdentity.write cursor.OperationId (bytes.AsSpan(9, 16))
 
         Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_')
 

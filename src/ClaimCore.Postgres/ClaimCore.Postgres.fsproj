@@ -32,11 +32,6 @@
     <Compile Include="Migrations.fs" />
     <Compile Include="InstallationBusinessZone.fs" />
     <Compile Include="PreparationPruning.fs" />
-    <Compile Include="Hosting/RuntimeAdmission.fs" />
-    <Compile Include="Hosting/RuntimeCoreFacade.fs" />
-    <Compile Include="Hosting/RuntimeSourceOwnership.fs" />
-    <Compile Include="Hosting/Runtime.fsi" />
-    <Compile Include="Hosting/Runtime.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../ClaimCore.Domain/ClaimCore.Domain.fsproj" />

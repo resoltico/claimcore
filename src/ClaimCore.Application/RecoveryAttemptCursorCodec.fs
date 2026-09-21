@@ -7,14 +7,14 @@ open System.Buffers.Binary
 module internal RecoveryAttemptCursorCodec =
     let encode (cursor: RecoveryAttemptCursor) =
         let bytes = Array.zeroCreate<byte> 40
-        cursor.OperationId.TryWriteBytes(bytes.AsSpan(0, 16)) |> ignore
+        CursorIdentity.write cursor.OperationId (bytes.AsSpan(0, 16))
 
         BinaryPrimitives.WriteInt64BigEndian(
             bytes.AsSpan(16, 8),
             cursor.StartedAt.UtcDateTime.Ticks
         )
 
-        cursor.AttemptId.TryWriteBytes(bytes.AsSpan(24, 16)) |> ignore
+        CursorIdentity.write cursor.AttemptId (bytes.AsSpan(24, 16))
         Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_')
 
     let decode (token: string) =

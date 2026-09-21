@@ -39,6 +39,7 @@
     <Compile Include="DraftTests.fs" />
     <Compile Include="BuildIdentityTests.fs" />
     <Compile Include="ArchitectureTests.fs" />
+    <Compile Include="InstallationCalendarTests.fs" />
     <Compile Include="FieldSchemaTests.fs" />
     <Compile Include="DomainDescriptorTests.fs" />
     <Compile Include="ContractsTests.fs" />
@@ -57,7 +58,7 @@
     <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Application/ClaimCore.Application.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Contracts/ClaimCore.Contracts.fsproj" />
-    <ProjectReference Include="../../src/ClaimCore.Cli/ClaimCore.Cli.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.CliProtocol/ClaimCore.CliProtocol.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Database/ClaimCore.Database.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj" />

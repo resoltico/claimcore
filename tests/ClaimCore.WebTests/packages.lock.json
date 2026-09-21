@@ -112,6 +112,16 @@
           "FSharp.Core": "[10.1.401, )"
         }
       },
+      "claimcore.hosting": {
+        "type": "Project",
+        "dependencies": {
+          "ClaimCore.Application": "[0.3.0, )",
+          "ClaimCore.Domain": "[0.3.0, )",
+          "ClaimCore.Postgres": "[0.3.0, )",
+          "FSharp.Core": "[10.1.401, )",
+          "Npgsql": "[10.0.3, )"
+        }
+      },
       "claimcore.hostsecurity": {
         "type": "Project",
         "dependencies": {
@@ -142,7 +152,7 @@
           "ClaimCore.Contracts": "[0.3.0, )",
           "ClaimCore.Domain": "[0.3.0, )",
           "ClaimCore.HostSecurity": "[0.3.0, )",
-          "ClaimCore.Postgres": "[0.3.0, )",
+          "ClaimCore.Hosting": "[0.3.0, )",
           "FSharp.Core": "[10.1.401, )"
         }
       },

@@ -2,14 +2,12 @@ namespace ClaimCore.Cli
 
 open System
 open System.Threading
-open System.Threading.Tasks
 open ClaimCore.Application
 open ClaimCore.Contracts
-open ClaimCore.Hosting
 
-type RuntimeSession() =
-    let mutable runtime: Runtime option = None
-
+/// Applies one decoded invocation to the supplied core under the invocation's own deadline. It
+/// holds no runtime, no store, and no connection: the composition root supplies the core.
+type InvocationSession(supplier: ICoreSupplier) =
     let openFault endpoint fault =
         let code, message =
             match fault with
@@ -34,6 +32,12 @@ type RuntimeSession() =
                 Action = RecommendedAction.StopAndInvestigate
             }
 
+    let unavailable endpoint reason =
+        match reason with
+        | CoreUnavailable.Configuration message ->
+            JsonResponse.protocolFailure 3 (ProtocolFailure.create "CONFIGURATION_ERROR" message "")
+        | CoreUnavailable.Open fault -> openFault endpoint fault
+
     member _.Run(endpoint, input, timeout: int option, stopped: CancellationToken) =
         task {
             use cancellation = new CancellationTokenSource()
@@ -45,36 +49,7 @@ type RuntimeSession() =
             | Some milliseconds -> cancellation.CancelAfter(milliseconds)
             | None -> ()
 
-            match runtime with
-            | Some active ->
-                return! EndpointDispatch.execute active.Core endpoint input linked.Token
-            | None ->
-                match PrivateFiles.connection () with
-                | Error message ->
-                    return
-                        JsonResponse.protocolFailure
-                            3
-                            (ProtocolFailure.create "CONFIGURATION_ERROR" message "")
-                | Ok connection ->
-                    match! Runtime.OpenPostgres(connection, linked.Token) with
-                    | Error fault -> return openFault endpoint fault
-                    | Ok opened ->
-                        runtime <- Some opened
-                        return! EndpointDispatch.execute opened.Core endpoint input linked.Token
+            match! supplier.Acquire linked.Token with
+            | Error reason -> return unavailable endpoint reason
+            | Ok core -> return! EndpointDispatch.execute core endpoint input linked.Token
         }
-
-    interface IDisposable with
-        member _.Dispose() =
-            runtime |> Option.iter (fun active -> (active :> IDisposable).Dispose())
-            runtime <- None
-
-module CliRunner =
-    let invoke (session: RuntimeSession) stopped bytes =
-        match StrictJson.parseDocument 131072 bytes with
-        | Error problem -> Task.FromResult(JsonResponse.protocolFailure 2 problem)
-        | Ok document ->
-            use source = document
-
-            match InvocationFraming.decode source.RootElement with
-            | Error problem -> Task.FromResult(JsonResponse.protocolFailure 2 problem)
-            | Ok(endpoint, input, timeout) -> session.Run(endpoint, input, timeout, stopped)

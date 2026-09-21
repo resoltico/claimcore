@@ -14,6 +14,13 @@ module internal TypedPreparation =
         | Refused of PrepareOutcome
         | ReviewRetained of RetainedPreparation
 
+    /// The canonical request bytes and their content identity. Every path that needs the
+    /// authoritative digest derives it here; none reads it back from a disclosure projection,
+    /// whose digest is deliberately withheld in some recovery views.
+    let requestIdentity (request: CommandRequest) =
+        let canonical = RequestRecord.encode request
+        canonical, canonical |> SHA256.HashData |> Convert.ToHexStringLower
+
     let private preparationDraft
         (request: CommandRequest)
         (canonical: byte array)
@@ -222,8 +229,7 @@ module internal TypedPreparation =
             Task.FromResult(PrepareOutcome.CancelledBeforeAdmission request.OperationId)
         | Ok() ->
             task {
-                let canonical = RequestRecord.encode request
-                let digest = canonical |> SHA256.HashData |> Convert.ToHexStringLower
+                let canonical, digest = requestIdentity request
 
                 match! AcceptedObservation.prepare store request.OperationId digest with
                 | Some outcome -> return outcome

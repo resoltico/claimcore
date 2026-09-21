@@ -4,9 +4,9 @@ open System
 open System.IO
 open Expecto
 open ClaimCore.Application
+open ClaimCore.Cli
 open ClaimCore.Contracts
 open ClaimCore.Domain
-open ClaimCore.Hosting
 open ClaimCore.TestSupport
 
 let private references (assembly: Reflection.Assembly) =
@@ -50,58 +50,20 @@ let private dependencyTests =
                 expectAbsent
                     typeof<ContractModel>.Assembly
                     [ "ClaimCore.Postgres"; "ClaimCore.Cli"; "Npgsql"; "Microsoft.AspNetCore.App" ])
+            testCase "the CLI protocol cannot reach storage or composition" (fun () ->
+                Expect.isTrue
+                    (Set.contains "ClaimCore.Application" (references typeof<Endpoint>.Assembly))
+                    "The protocol layer renders outcomes of the typed core"
+
+                expectAbsent
+                    typeof<Endpoint>.Assembly
+                    [ "ClaimCore.Hosting"; "ClaimCore.Postgres"; "Npgsql" ])
         ]
-
-let private applicationSurfaceIsClosed () =
-    let exported =
-        typeof<IClaimsCore>.Assembly.GetExportedTypes()
-        |> Array.map (fun value -> nonNull value.FullName)
-        |> Set.ofArray
-
-    for forbidden in
-        [
-            "ClaimCore.Application.IClaimStore"
-            "ClaimCore.Application.IRecoveryStore"
-            "ClaimCore.Application.CoreApi"
-            "ClaimCore.Application.PreparedOperation"
-            "ClaimCore.Application.RetainedPreparation"
-            "ClaimCore.Application.RegisterDefinition"
-        ] do
-        Expect.isFalse (Set.contains forbidden exported) ("Public bypass: " + forbidden)
-
-    Expect.isFalse
-        (exported
-         |> Set.exists (fun name ->
-             name.StartsWith("ClaimCore.Application.V2", StringComparison.Ordinal)))
-        "The typed API has no transitional namespace"
-
-let private postgresRecoverySeamIsSingular () =
-    let postgresTypes =
-        typeof<Runtime>.Assembly.GetTypes()
-        |> Array.map (fun value -> nonNull value.FullName)
-        |> Set.ofArray
-
-    for removed in
-        [
-            "ClaimCore.Postgres.IRequestPreparationService"
-            "ClaimCore.Postgres.PostgresPreparationService"
-            "ClaimCore.Hosting.PostgresRecoveryPort"
-        ] do
-        Expect.isFalse (Set.contains removed postgresTypes) ("Superseded recovery seam: " + removed)
 
 let private transportCodecsAreSingular () =
     let root = RepositoryRoot.find ()
-    let cli = Path.Combine(root, "src/ClaimCore.Cli")
+    let cli = Path.Combine(root, "src/ClaimCore.CliProtocol")
     let web = Path.Combine(root, "src/ClaimCore.Web")
-
-    for removed in
-        [
-            "JsonViews.fs"
-            "JsonOutcomeQueries.fs"
-            "JsonOutcomeMutations.fs"
-            "JsonOutcomeImports.fs"
-        ] do
-        Expect.isFalse (File.Exists(Path.Combine(cli, removed))) ("Removed CLI codec: " + removed)
 
     let webSource =
         Directory.GetFiles(web, "*.fs", SearchOption.AllDirectories)
@@ -118,10 +80,6 @@ let private transportCodecsAreSingular () =
 
     let dispatch = File.ReadAllText(Path.Combine(cli, "EndpointDispatch.fs"))
     Expect.stringContains dispatch "CliWireCodec" "CLI delegates encoding to Contracts"
-
-    Expect.isFalse
-        (dispatch.Contains("Utf8JsonWriter", StringComparison.Ordinal))
-        "No CLI endpoint codec"
 
 let private historicalSurfacesHaveNoActions () =
     for historical in [ typeof<OperationReceipt>; typeof<HistoryEntry>; typeof<CaseSummary> ] do
@@ -179,11 +137,6 @@ let private surfaceTests =
 
                     coreMethodShapes ()
                     historicalSurfacesHaveNoActions ())
-            testCase
-                "storage ports and preparation records are not public application types"
-                (fun () ->
-                    applicationSurfaceIsClosed ()
-                    postgresRecoverySeamIsSingular ())
             testCase
                 "transport codecs have one Contracts owner and no anonymous adapter projection"
                 transportCodecsAreSingular

@@ -34,7 +34,7 @@ let private identity (endpoint: Endpoint) (input: EndpointInput) =
 
 let private invoke
     (state: DeliveryState)
-    (session: RuntimeSession)
+    (session: InvocationSession)
     (stopped: CancellationToken)
     (bytes: byte array)
     : RenderedResponse =
@@ -50,7 +50,8 @@ let private invoke
             session.Run(endpoint, input, timeout, stopped).GetAwaiter().GetResult()
 
 let private call (state: DeliveryState) (stopped: CancellationToken) =
-    use session = new RuntimeSession()
+    use supplier = new RuntimeSupplier()
+    let session = InvocationSession(supplier)
     let frame = FrameReader.readDocument 131072 (Console.OpenStandardInput())
 
     match frame with
@@ -64,7 +65,8 @@ let private call (state: DeliveryState) (stopped: CancellationToken) =
         result.ExitCode
 
 let private session (state: DeliveryState) (stopped: CancellationToken) =
-    use runtime = new RuntimeSession()
+    use supplier = new RuntimeSupplier()
+    let runtime = InvocationSession(supplier)
     let input = Console.OpenStandardInput()
     let mutable running = true
 

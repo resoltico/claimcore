@@ -3,26 +3,14 @@
     <OutputType>Exe</OutputType>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="ProtocolTypes.fs" />
-    <Compile Include="StrictJson.fs" />
-    <Compile Include="InvocationTypes.fs" />
-    <Compile Include="CliCommandInput.fs" />
-    <Compile Include="PrivateFiles.fs" />
-    <Compile Include="FrameReader.fs" />
-    <Compile Include="Discovery.fs" />
-    <Compile Include="InvocationDecoder.fs" />
-    <Compile Include="InvocationFraming.fs" />
-    <Compile Include="JsonResponse.fs" />
-    <Compile Include="EndpointDispatch.fs" />
-    <Compile Include="CliRunner.fs" />
+    <Compile Include="RuntimeSupplier.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="../ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />
-    <ProjectReference Include="../ClaimCore.Domain/ClaimCore.Domain.fsproj" />
     <ProjectReference Include="../ClaimCore.Application/ClaimCore.Application.fsproj" />
+    <ProjectReference Include="../ClaimCore.CliProtocol/ClaimCore.CliProtocol.fsproj" />
     <ProjectReference Include="../ClaimCore.Contracts/ClaimCore.Contracts.fsproj" />
-    <ProjectReference Include="../ClaimCore.Postgres/ClaimCore.Postgres.fsproj" />
+    <ProjectReference Include="../ClaimCore.Hosting/ClaimCore.Hosting.fsproj" />
   </ItemGroup>
   <Import Project="../ClaimCore.HostSecurity/HostSecurity.Native.targets" />
 </Project>

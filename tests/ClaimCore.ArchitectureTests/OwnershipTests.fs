@@ -1,78 +1,17 @@
-module ClaimCore.ArchitectureTests.ProductTests
+module ClaimCore.ArchitectureTests.OwnershipTests
 
 open System
 open System.IO
 open System.Text.Json
 open System.Threading
-open System.Xml.Linq
 open Expecto
 open ArchUnitNET.Fluent
-open ClaimCore.TestSupport
 
-let private prefix = "ClaimCore."
-
-let private part (componentName: string) = componentName.Substring(prefix.Length)
-
-/// The reviewed product graph, expressed in the historical short part labels the selectors use.
-let private permissions =
-    ProductPolicy.product
-    |> List.map (fun item -> part item.Name, item.DependsOn |> List.map part)
-
-let private name = ProductPolicy.name
-let private assemblies = ProductModel.assemblies
 let private architecture = ProductModel.architecture
 let private select = ProductModel.select
 
-let private dependencyCase (subject, allowed) =
-    testCase (subject + " respects owned component dependencies") (fun () ->
-        let model = architecture.Value
-        let subjects = select subject
-        Inspection.requireSelection model subjects |> ignore
-
-        let failures =
-            permissions
-            |> List.collect (fun (other, _) ->
-                if other = subject || List.contains other allowed then
-                    []
-                else
-                    let target = select other
-                    Inspection.requireSelection model target |> ignore
-
-                    Inspection.violations model (subjects.Should().NotDependOnAny(target))
-                    |> List.map (fun detail -> name subject + " -> " + name other + ": " + detail))
-
-        if not failures.IsEmpty then
-            failtest (String.concat Environment.NewLine failures))
-
-let private noTestDependency () =
-    let productNames = ProductPolicy.names
-
-    for assembly in assemblies.Value do
-        for dependency in assembly.GetReferencedAssemblies() do
-            let dependencyName = nonNull dependency.Name
-
-            Expect.isFalse
-                (dependencyName.Contains("ArchUnitNET")
-                 || dependencyName.Contains("Expecto")
-                 || (dependencyName.StartsWith(prefix, StringComparison.Ordinal)
-                     && not (List.contains dependencyName productNames)))
-                ("Tooling leaked into " + assembly.GetName().Name + ": " + dependencyName)
-
-let private unusedForbiddenReference () =
-    let source = Path.Combine(RepositoryRoot.find (), "src")
-    let projects = ProjectReferences.loadProjects source
-    let names = ProjectReferences.names projects
-    let domain = Path.Combine(source, "ClaimCore.Domain", "ClaimCore.Domain.fsproj")
-
-    let fixture =
-        XDocument.Parse
-            "<Project><ItemGroup><ProjectReference Include='../ClaimCore.Cli/ClaimCore.Cli.fsproj' /></ItemGroup></Project>"
-
-    let failures =
-        ProjectReferences.violations names (Map.ofList [ "ClaimCore.Domain", [] ]) domain fixture
-
-    Expect.isNonEmpty failures "An unused but forbidden declared reference must fail"
-    Expect.stringContains failures.Head "ClaimCore.Cli" "The failure names the forbidden target"
+/// Components with no permitted effect boundary: they compute over values supplied by a caller.
+let private pureParts = [ "Domain"; "RecordFormat"; "Application"; "Contracts" ]
 
 let private forbiddenTypes =
     [
@@ -179,38 +118,93 @@ let private installationOwnsTheCalendar () =
         Inspection.requireSelection model other |> ignore
         Inspection.check model (other.Should().NotDependOnAny(zones))
 
-let private endpointIsolation () =
+let private persistenceDoesNotDecide () =
     let model = architecture.Value
 
-    let composition =
+    let storage = select "Postgres"
+
+    let decision =
+        ArchRuleDefinition.MethodMembers().That().HaveFullNameContaining("ClaimModule::decide(")
+
+    Inspection.requireSelection model storage |> ignore
+    Inspection.requireSelection model decision |> ignore
+    Inspection.check model (storage.Should().NotCallAny(decision))
+
+let private adaptersDoNotDecide () =
+    let model = architecture.Value
+
+    let decision =
+        ArchRuleDefinition.MethodMembers().That().HaveFullNameContaining("ClaimModule::decide(")
+
+    Inspection.requireSelection model decision |> ignore
+
+    for subject in [ "Cli"; "CliProtocol"; "Web"; "Database"; "Hosting" ] do
+        let adapter = select subject
+        Inspection.requireSelection model adapter |> ignore
+        Inspection.check model (adapter.Should().NotCallAny(decision))
+
+/// The composition root is the only component that binds a store to the core, so it is also the
+/// only one that may name Application's internal ports.
+let private compositionOwnsCoreConstruction () =
+    let model = architecture.Value
+
+    let construction =
+        ArchRuleDefinition
+            .MethodMembers()
+            .That()
+            .HaveFullNameContaining("CoreApi")
+            .And()
+            .HaveNameContaining("create")
+
+    Inspection.requireSelection model construction |> ignore
+
+    let composition = select "Hosting"
+    Inspection.requireSelection model composition |> ignore
+
+    Expect.isNonEmpty
+        (Inspection.violations model (composition.Should().NotCallAny(construction)))
+        "The composition root must be the component that constructs the typed core"
+
+    for subject in [ "Cli"; "CliProtocol"; "Web"; "Database"; "Contracts"; "Postgres" ] do
+        let other = select subject
+        Inspection.requireSelection model other |> ignore
+        Inspection.check model (other.Should().NotCallAny(construction))
+
+/// The Web and CLI hosts must not reach the schema-owner administration surface, which changes
+/// durable structure outside any case-work transaction.
+let private caseWorkHostsCannotAdminister () =
+    let model = architecture.Value
+
+    let administration =
         ArchRuleDefinition
             .Types()
             .That()
-            .HaveFullNameMatching(@"^ClaimCore\.Web\.Program(?:[+/.].*)?$")
+            .HaveFullNameMatching(
+                @"^ClaimCore\.Postgres\.(?:Migrations|PreparationPruning|InstallationBusinessZone)(?:[+/.].*)?$"
+            )
 
-    let endpoints =
-        ArchRuleDefinition.Types().That().Are(select "Web").And().AreNot(composition)
+    Inspection.requireSelection model administration |> ignore
 
-    let runtime =
-        ArchRuleDefinition.Types().That().Are(typeof<ClaimCore.Hosting.Runtime>)
-
-    Inspection.requireSelection model composition |> ignore
-    Inspection.requireSelection model endpoints |> ignore
-    Inspection.requireSelection model runtime |> ignore
-
-    Expect.isNonEmpty
-        (Inspection.violations model (composition.Should().NotDependOnAny(runtime)))
-        "The Web composition root must be the component that opens the runtime"
-
-    Inspection.check model (endpoints.Should().NotDependOnAny(runtime))
-    Inspection.check model (endpoints.Should().NotDependOnAny(composition))
+    for subject in [ "Cli"; "CliProtocol"; "Web" ] do
+        let host = select subject
+        Inspection.requireSelection model host |> ignore
+        Inspection.check model (host.Should().NotDependOnAny(administration))
 
 let tests =
     testList
-        "product component policy"
-        ((permissions |> List.map dependencyCase)
-         @ [
-             testCase "unused forbidden declared reference is detected" unusedForbiddenReference
-             testCase "production assemblies do not depend on test tooling" noTestDependency
-             testCase "endpoint helpers cannot reach runtime composition" endpointIsolation
-         ])
+        "component effect ownership"
+        ([
+            testCase "wire-contract renderers cannot author JSON" wireRenderersDoNotAuthorJson
+            testCase
+                "only the installation calendar owners resolve time zones"
+                installationOwnsTheCalendar
+            testCase "persistence cannot call the domain decision directly" persistenceDoesNotDecide
+            testCase "adapters cannot call the domain decision directly" adaptersDoNotDecide
+            testCase
+                "only the composition root constructs the typed core"
+                compositionOwnsCoreConstruction
+            testCase
+                "case-work hosts cannot reach schema administration"
+                caseWorkHostsCannotAdminister
+         ]
+         @ (pureParts |> List.map deterministic))

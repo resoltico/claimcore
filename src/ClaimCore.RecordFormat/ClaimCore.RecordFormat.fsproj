@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Versions.fs" />
     <Compile Include="Json.fs" />
     <Compile Include="RequestRecord.fs" />

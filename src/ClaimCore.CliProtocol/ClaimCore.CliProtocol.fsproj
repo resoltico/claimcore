@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <Compile Include="ProtocolTypes.fs" />
+    <Compile Include="StrictJson.fs" />
+    <Compile Include="InvocationTypes.fs" />
+    <Compile Include="CliCommandInput.fs" />
+    <Compile Include="PrivateFiles.fs" />
+    <Compile Include="FrameReader.fs" />
+    <Compile Include="Discovery.fs" />
+    <Compile Include="InvocationDecoder.fs" />
+    <Compile Include="InvocationFraming.fs" />
+    <Compile Include="JsonResponse.fs" />
+    <Compile Include="CoreSupply.fs" />
+    <Compile Include="EndpointDispatch.fs" />
+    <Compile Include="InvocationSession.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />
+    <ProjectReference Include="../ClaimCore.Domain/ClaimCore.Domain.fsproj" />
+    <ProjectReference Include="../ClaimCore.Application/ClaimCore.Application.fsproj" />
+    <ProjectReference Include="../ClaimCore.Contracts/ClaimCore.Contracts.fsproj" />
+  </ItemGroup>
+</Project>

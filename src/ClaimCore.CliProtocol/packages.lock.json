@@ -30,30 +30,10 @@
           "FSharp.Core": "[10.1.401, )"
         }
       },
-      "claimcore.hosting": {
-        "type": "Project",
-        "dependencies": {
-          "ClaimCore.Application": "[0.3.0, )",
-          "ClaimCore.Domain": "[0.3.0, )",
-          "ClaimCore.Postgres": "[0.3.0, )",
-          "FSharp.Core": "[10.1.401, )",
-          "Npgsql": "[10.0.3, )"
-        }
-      },
       "claimcore.hostsecurity": {
         "type": "Project",
         "dependencies": {
           "FSharp.Core": "[10.1.401, )"
-        }
-      },
-      "claimcore.postgres": {
-        "type": "Project",
-        "dependencies": {
-          "ClaimCore.Application": "[0.3.0, )",
-          "ClaimCore.Domain": "[0.3.0, )",
-          "ClaimCore.RecordFormat": "[0.3.0, )",
-          "FSharp.Core": "[10.1.401, )",
-          "Npgsql": "[10.0.3, )"
         }
       },
       "claimcore.recordformat": {
@@ -62,12 +42,6 @@
           "ClaimCore.Domain": "[0.3.0, )",
           "FSharp.Core": "[10.1.401, )"
         }
-      },
-      "Npgsql": {
-        "type": "CentralTransitive",
-        "requested": "[10.0.3, )",
-        "resolved": "10.0.3",
-        "contentHash": "7nb5YzXuvWWJxB0J8DiyL3we+X4FOctZrt0fIBnucOIaIevFEEwGQVZKtiu9olXdlNAK1eNgqSral6r/jlhI4w=="
       }
     }
   }

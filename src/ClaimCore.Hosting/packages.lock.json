@@ -8,6 +8,15 @@
         "resolved": "10.1.401",
         "contentHash": "/lvOK51KD8IangBYkfDVna3/HrE/r4VUnX3dI01KDspctoYXmind3POeoYkqWKeXHwiKlf6Hc9TxwSnoSCWcjw=="
       },
+      "Npgsql": {
+        "type": "Direct",
+        "requested": "[10.0.3, )",
+        "resolved": "10.0.3",
+        "contentHash": "7nb5YzXuvWWJxB0J8DiyL3we+X4FOctZrt0fIBnucOIaIevFEEwGQVZKtiu9olXdlNAK1eNgqSral6r/jlhI4w==",
+        "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "10.0.0"
+        }
+      },
       "claimcore.application": {
         "type": "Project",
         "dependencies": {
@@ -16,41 +25,7 @@
           "FSharp.Core": "[10.1.401, )"
         }
       },
-      "claimcore.cliprotocol": {
-        "type": "Project",
-        "dependencies": {
-          "ClaimCore.Application": "[0.3.0, )",
-          "ClaimCore.Contracts": "[0.3.0, )",
-          "ClaimCore.Domain": "[0.3.0, )",
-          "ClaimCore.HostSecurity": "[0.3.0, )",
-          "FSharp.Core": "[10.1.401, )"
-        }
-      },
-      "claimcore.contracts": {
-        "type": "Project",
-        "dependencies": {
-          "ClaimCore.Application": "[0.3.0, )",
-          "ClaimCore.Domain": "[0.3.0, )",
-          "FSharp.Core": "[10.1.401, )"
-        }
-      },
       "claimcore.domain": {
-        "type": "Project",
-        "dependencies": {
-          "FSharp.Core": "[10.1.401, )"
-        }
-      },
-      "claimcore.hosting": {
-        "type": "Project",
-        "dependencies": {
-          "ClaimCore.Application": "[0.3.0, )",
-          "ClaimCore.Domain": "[0.3.0, )",
-          "ClaimCore.Postgres": "[0.3.0, )",
-          "FSharp.Core": "[10.1.401, )",
-          "Npgsql": "[10.0.3, )"
-        }
-      },
-      "claimcore.hostsecurity": {
         "type": "Project",
         "dependencies": {
           "FSharp.Core": "[10.1.401, )"
@@ -86,15 +61,6 @@
         "contentHash": "+24lC4plfbEDNfLAdTV/SWKS7dW+16X4HdydO3R++134kSNTzcbYA4KpR1Hdh6uWisB8Za3AzwyOn+K+NxWIug==",
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.12"
-        }
-      },
-      "Npgsql": {
-        "type": "CentralTransitive",
-        "requested": "[10.0.3, )",
-        "resolved": "10.0.3",
-        "contentHash": "7nb5YzXuvWWJxB0J8DiyL3we+X4FOctZrt0fIBnucOIaIevFEEwGQVZKtiu9olXdlNAK1eNgqSral6r/jlhI4w==",
-        "dependencies": {
-          "Microsoft.Extensions.Logging.Abstractions": "10.0.0"
         }
       }
     }

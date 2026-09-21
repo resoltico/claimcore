@@ -123,10 +123,19 @@
         "type": "Project",
         "dependencies": {
           "ClaimCore.Application": "[0.3.0, )",
+          "ClaimCore.CliProtocol": "[0.3.0, )",
+          "ClaimCore.Contracts": "[0.3.0, )",
+          "ClaimCore.Hosting": "[0.3.0, )",
+          "FSharp.Core": "[10.1.401, )"
+        }
+      },
+      "claimcore.cliprotocol": {
+        "type": "Project",
+        "dependencies": {
+          "ClaimCore.Application": "[0.3.0, )",
           "ClaimCore.Contracts": "[0.3.0, )",
           "ClaimCore.Domain": "[0.3.0, )",
           "ClaimCore.HostSecurity": "[0.3.0, )",
-          "ClaimCore.Postgres": "[0.3.0, )",
           "FSharp.Core": "[10.1.401, )"
         }
       },
@@ -150,6 +159,16 @@
         "type": "Project",
         "dependencies": {
           "FSharp.Core": "[10.1.401, )"
+        }
+      },
+      "claimcore.hosting": {
+        "type": "Project",
+        "dependencies": {
+          "ClaimCore.Application": "[0.3.0, )",
+          "ClaimCore.Domain": "[0.3.0, )",
+          "ClaimCore.Postgres": "[0.3.0, )",
+          "FSharp.Core": "[10.1.401, )",
+          "Npgsql": "[10.0.3, )"
         }
       },
       "claimcore.hostsecurity": {
@@ -182,7 +201,7 @@
           "ClaimCore.Contracts": "[0.3.0, )",
           "ClaimCore.Domain": "[0.3.0, )",
           "ClaimCore.HostSecurity": "[0.3.0, )",
-          "ClaimCore.Postgres": "[0.3.0, )",
+          "ClaimCore.Hosting": "[0.3.0, )",
           "FSharp.Core": "[10.1.401, )"
         }
       },

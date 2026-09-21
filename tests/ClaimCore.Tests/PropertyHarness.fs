@@ -28,6 +28,11 @@ let private propertyIds =
             "CC-PROP-FINGERPRINT-001"
             "CC-PROP-TRANSITION-001"
             "CC-PROP-AVAILABILITY-001"
+            "CC-FUZZ-JSON-001"
+            "CC-FUZZ-INVOCATION-001"
+            "CC-FUZZ-RECORD-001"
+            "CC-FUZZ-ENVELOPE-001"
+            "CC-FUZZ-CURSOR-001"
         ]
 
 let private fixedBaseSeed = 0x434C41494D434F52UL
