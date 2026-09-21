@@ -6,20 +6,19 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Changed
 
-- Semantic identity now excludes presentation labels and explanations, includes every text-like
-  scalar constraint, and carries an explicit executable-rule revision. CLI and Web fingerprints
-  change for this source revision; no old-contract compatibility path is provided. Canonical
-  operation-record encoding and the thirteen business fields are unchanged.
-- Source compilation now requires explicit project references. Case-work hosts cannot compile
-  against PostgreSQL administration or Npgsql through the composition root, while their runtime
-  storage dependencies remain present.
+- **The CLI-v3 and Web-v2 contract fingerprints change, and no old-contract path is kept.** Semantic identity no longer includes presentation labels and explanations, so editorial wording no longer alters machine identity; it now includes the text constraints on amount and currency values, which it previously omitted, and a separate rule-set revision for deliberate behaviour changes that no descriptor shape would show. Rebuild the browser and its host together from the same source revision and do not mix generated contracts with older binaries. Canonical operation-record encoding, authored operation identity, and the thirteen business fields are unchanged, so stored cases and accepted history are unaffected and no migration is required.
+- Building from source now requires every project reference to be declared. A case-work host can no longer compile against PostgreSQL administration or against Npgsql through the composition root, while the storage assemblies it needs at runtime are still published. A fork that relied on reaching those types indirectly must declare the reference it actually uses, or stop using it.
 
 ### Fixed
 
-- Closed gaps in browser-networking lint coverage, including root components and qualified global
-  calls, and added positive and negative policy controls.
-- Removed a stale latest-release number from the README and clarified that factual correction is
-  the deliberate exception to the normal closed-case editing rule.
+- The README no longer names a specific latest release, which was stale as soon as the next one published; it points to GitHub Releases instead.
+- The domain contract said a closed case must be reopened before editing, which contradicted the one-step factual correction added in 0.3.0. It now records that correction as the deliberate exception.
+
+### Internal
+
+- Semantic identity is now length-prefixed rather than separated by a null character, so no token boundary can be reproduced by a value that contains the separator, and integers are written with the invariant culture.
+- A successful test producer now validates its own result file against the same reviewed inventory that final evidence reconciliation uses, before it records success. A changed test count, a substituted name at the same count, and a missing, duplicated or wrong-assembly report are all refused at the job that produced them rather than at the end of the run. Seven regression tests cover the new refusals.
+- Browser networking rules now cover root components, qualified global calls, and alternative networking APIs, with positive and negative controls run by the existing lint stage. This is bounded lint enforcement, not a sandbox.
 
 ## [0.4.0] - 2026-09-21
 
