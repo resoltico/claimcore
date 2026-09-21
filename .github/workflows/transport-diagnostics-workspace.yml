@@ -1,0 +1,24 @@
+name: Temporary transport diagnostics workspace
+on:
+  push:
+    branches: [feat/transport-host-admin-diagnostics]
+    paths: [.github/workflows/transport-diagnostics-workspace.yml]
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: dd9fa2f6228f8625d74ce14ea00827a8a4c350b3
+          persist-credentials: false
+      - name: Export exact baseline source only
+        run: git archive --format=tar.gz --prefix=claimcore/ HEAD > "$RUNNER_TEMP/transport-diagnostics-baseline.tar.gz"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: transport-diagnostics-baseline
+          path: ${{ runner.temp }}/transport-diagnostics-baseline.tar.gz
+          if-no-files-found: error
+          retention-days: 1
