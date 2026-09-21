@@ -17,7 +17,12 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsAsErrors>$(WarningsAsErrors);NU1901;NU1902;NU1903;NU1904</WarningsAsErrors>
     <WarningLevel>5</WarningLevel>
-    <WarnOn>$(WarnOn);1182;3218</WarnOn>
+    <!-- 1182 unused bindings; 3218 signature/implementation argument names; 3390 malformed
+         XML documentation; 3511/3512 a task or resumable computation that cannot compile to
+         a static state machine; 1178/64 silent generic
+         and comparison-constraint widening. All are currently clean, so each one only ever
+         fails a regression. -->
+    <WarnOn>$(WarnOn);1182;3218;3390;3511;3512;1178;64</WarnOn>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <Deterministic>true</Deterministic>
     <ContinuousIntegrationBuild Condition="'$(CI)' == 'true' Or '$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>

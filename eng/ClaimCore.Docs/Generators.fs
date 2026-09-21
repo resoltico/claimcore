@@ -173,6 +173,15 @@ module Generators =
                 "docs/web.md"
                 "ClaimCore.Web"
                 "src/ClaimCore.Web/ClaimCore.Web.fsproj"
+            {
+                Id = "architecture-components"
+                Document = "docs/architecture.md"
+                Render =
+                    fun context ->
+                        ArchitectureTable.render context.Root
+                        |> Result.mapError (fun message ->
+                            [ Diagnostic.create DiagnosticCode.InvalidManifest message ])
+            }
         ]
 
     let private collectBlocks (documents: MarkdownFile list) (errors: ResizeArray<Diagnostic>) =

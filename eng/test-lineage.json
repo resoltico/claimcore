@@ -400,7 +400,7 @@
       "replacementIds": [
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL migration upgrade qualification.migration 001 through 006.manifest validation.[CC-DB-001] applied migration identities remain frozen"
       ],
-      "reason": "The manifest assertion now pins all six ordered names and SHA-256 digests, including original migrations 001–003 and later 004–006, without editing applied bytes."
+      "reason": "The manifest assertion now pins all six ordered names and SHA-256 digests, including original migrations 001\u2013003 and later 004\u2013006, without editing applied bytes."
     },
     {
       "baselineId": "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL migration upgrade qualification.migration 001 to 002.manifest validation.[CC-DB-001] migrator refuses a newer manifest entry",
@@ -858,7 +858,7 @@
       "replacementIds": [
         "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 006.manifest validation.[CC-DB-001] applied migration identities remain frozen"
       ],
-      "reason": "The manifest assertion now pins all six ordered names and SHA-256 digests, including original migrations 001–003 and later 004–006, without editing applied bytes."
+      "reason": "The manifest assertion now pins all six ordered names and SHA-256 digests, including original migrations 001\u2013003 and later 004\u2013006, without editing applied bytes."
     },
     {
       "baselineId": "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 to 002.manifest validation.[CC-DB-001] migrator refuses a newer manifest entry",
@@ -1241,10 +1241,11 @@
       "baselineId": "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.core ownership and emitted interfaces.application friendship boundary.only trusted infrastructure and verification assemblies see application internals",
       "status": "replaced",
       "replacementIds": [
-        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.compiler-enforced core boundary.ordinary caller cannot see the store port",
-        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.core ownership and typed interfaces.typed core public surface.storage ports and preparation records are not public application types"
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.architecture manifest.compiled internals grants match the manifest exactly",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.published component surface.application storage ports stay private",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.compiler-enforced core boundary.ordinary caller cannot see the store port"
       ],
-      "reason": "Reflection and compiler-boundary tests independently require private Application storage/preparation types to remain inaccessible to ordinary callers."
+      "reason": "Compiler-boundary, reviewed-internals-grant, and exported-surface tests independently require private Application storage/preparation types to stay inaccessible to ordinary callers, and every widening of internals visibility to be a reviewed manifest entry."
     },
     {
       "baselineId": "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.core ownership and emitted interfaces.core dependency direction.application depends on record encoding but not renderer/database implementations",
@@ -1274,9 +1275,9 @@
       "baselineId": "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.core ownership and emitted interfaces.core public surface.store and decision-callback surfaces are not publicly exported",
       "status": "replaced",
       "replacementIds": [
-        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.core ownership and typed interfaces.typed core public surface.storage ports and preparation records are not public application types"
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.published component surface.application storage ports stay private"
       ],
-      "reason": "The exported-type boundary test rejects public IClaimStore, IRecoveryStore, CoreApi, retained preparation, and transition callback surfaces."
+      "reason": "The exported-surface test rejects public IClaimStore, IRecoveryStore, IBusinessTime, CoreApi, retained preparation, and prepared-operation surfaces on every inspected platform."
     },
     {
       "baselineId": "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.core ownership and emitted interfaces.merged composition boundary.CLI is the composition boundary for protocol and PostgreSQL",

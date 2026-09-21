@@ -46,6 +46,35 @@ Test credentials and containers must point only to disposable synthetic database
 and the operating-system clipboard leave ClaimCore's process boundary; see the
 [Web reference](web.md#recovery-downloads-and-clipboard).
 
+## The installation calendar
+
+Migration 006 stores one canonical IANA zone for the installation, set once with
+`ClaimCore.Database set-business-zone`. Every business date comes from that stored zone and one
+captured instant, never from a host default. The identifier is validated when it is set and again on
+every runtime opening: it must be enumerable on the host, must resolve, and must resolve back to
+exactly itself, so an alias, a Windows identifier, an abbreviation, or an offset literal is refused.
+A host that cannot resolve the stored zone refuses to open the runtime rather than producing a date
+from some other calendar.
+
+That validation binds the identifier, not the rules behind it. **ClaimCore resolves the zone through
+the host's IANA time-zone database, so the offsets and daylight-saving rules it uses are the host's.**
+Two hosts running different tzdata releases can therefore derive different business dates for the
+same instant, but only for an operation that falls inside a transition whose rules changed between
+those releases. The same applies to one host across an operating-system update.
+
+Treat the time-zone database as part of the installation:
+
+- Keep the hosts that serve one installation on the same operating-system time-zone data, and update
+  them together.
+- After a tzdata update, prefer a quiet period before resuming case work, for the same reason a
+  restore needs one.
+- `ClaimCore.Database set-business-zone` refuses to change an already configured zone. Choosing a
+  different calendar is a new installation decision, not an edit.
+
+ClaimCore does not ship its own time-zone database and does not detect tzdata skew between hosts.
+Nothing in the product weakens this by running with invariant globalization, which would remove IANA
+zone resolution altogether.
+
 ## Data and recovery
 
 History preserves prior facts after corrections. There is no general deletion, redaction, backup, or

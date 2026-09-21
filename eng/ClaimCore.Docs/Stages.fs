@@ -33,6 +33,10 @@ module Stages =
             "architecture"
             "ClaimCore.ArchitectureTests"
             "ClaimCore.ArchitectureTests.trx"
+        @ platformReports
+            "fuzz"
+            "ClaimCore.FuzzQualificationTests"
+            "ClaimCore.FuzzQualificationTests.trx"
         @ platformReports "web" "ClaimCore.WebTests" "ClaimCore.WebTests.trx"
         @ platformReports "docs" "ClaimCore.DocsTests" "ClaimCore.DocsTests.trx"
         @ [
@@ -52,7 +56,6 @@ module Stages =
             report "acceptance-linux" "ClaimCore.AcceptanceTests" "ClaimCore.AcceptanceTests.trx"
         ]
 
-    let requiredStageIds = definitions |> List.map _.Id |> Set.ofList
 
     let tryFind (id: string) =
         definitions |> List.tryFind (fun item -> item.Id = id)

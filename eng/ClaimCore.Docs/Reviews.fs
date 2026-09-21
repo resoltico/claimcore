@@ -132,7 +132,9 @@ module Reviews =
                         errors.Add(
                             Diagnostic.create
                                 DiagnosticCode.InvalidReview
-                                $"Review '{review.ContractId}' is stale."
+                                ($"Review '{review.ContractId}' is stale; its current subject hash is "
+                                 + $"{actual}. Re-review the exact heading and assertion sources "
+                                 + "before recording it.")
                         )
                     | Ok _ -> ()
 

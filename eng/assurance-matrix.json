@@ -6,6 +6,27 @@
     {
       "dimensions": [
         "core",
+        "documentation"
+      ],
+      "id": "assurance-architecture:component-contract",
+      "subject": "The architecture manifest classifies every repository project exactly once, and declared project edges, product-tier isolation, graph acyclicity, and compiled InternalsVisibleTo grants are all compared to it in both directions with negative controls.",
+      "tests": [
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.architecture manifest.compiled internals grants match the manifest exactly",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.architecture manifest.declared project edges match the manifest exactly",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.architecture manifest.every repository project is classified",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.architecture manifest.internals grants follow declared project edges",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.architecture manifest.internals grants name classified components",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.architecture manifest.product components depend only on product components",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.architecture manifest.stale permissions and empty grant sets are detected",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.architecture manifest.the reviewed component graph is acyclic",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product graph evidence.every permitted product edge is actually used",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.convergence registration and evidence coverage.every inventoried test assembly is required evidence in some stage",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.convergence registration and evidence coverage.every required report names a registered stage"
+      ]
+    },
+    {
+      "dimensions": [
+        "core",
         "webHost"
       ],
       "id": "assurance-architecture:fsharp-inspection",
@@ -66,9 +87,9 @@
       "id": "assurance-architecture:historical-registration",
       "subject": "Adding an explicitly registered live test producer preserves every immutable historical source identity; missing or changed historical producers remain rejected.",
       "tests": [
-        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.immutable source registrations.historical kind and inventory identity cannot change",
-        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.immutable source registrations.new live producer does not rewrite historical registration",
-        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.immutable source registrations.new producer cannot replace a missing historical producer"
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.convergence registration and evidence coverage.immutable source registrations.historical kind and inventory identity cannot change",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.convergence registration and evidence coverage.immutable source registrations.new live producer does not rewrite historical registration",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.convergence registration and evidence coverage.immutable source registrations.new producer cannot replace a missing historical producer"
       ]
     },
     {
@@ -82,6 +103,7 @@
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.evaluated project graph qualification.imported conditional references fail in the active configuration",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product graph evidence.compiled model covers every type and emits a bounded graph",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product graph evidence.evaluated Debug and Release dependencies obey component policy",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.ArchUnitNET report evidence.a manifest that drifted from the compiled tool fails the documentation check",
         "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.ArchUnitNET report evidence.accepts a bounded sorted ArchUnitNET model report",
         "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.ArchUnitNET report evidence.all three architecture stages require the inspected graph artifact",
         "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.ArchUnitNET report evidence.refuses missing or tampered downloaded architecture evidence",
@@ -94,28 +116,61 @@
         "webHost"
       ],
       "id": "assurance-architecture:product-ownership",
-      "subject": "Selection-qualified compiled and evaluated rules cover all product assemblies, the reviewed direct dependency graph, selected ambient APIs, CLI/Web composition, and direct domain-decision calls.",
+      "subject": "Selection-qualified compiled and evaluated rules cover all product assemblies, the reviewed direct dependency graph, selected ambient APIs, Web composition confinement, and direct domain-decision calls. The CLI composition root is a separate assembly, so its confinement is a project edge rather than a compiled rule.",
       "tests": [
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.component effect ownership.Application avoids selected ambient clock, identity and host IO APIs",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.component effect ownership.Contracts avoids selected ambient clock, identity and host IO APIs",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.component effect ownership.Domain avoids selected ambient clock, identity and host IO APIs",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.component effect ownership.RecordFormat avoids selected ambient clock, identity and host IO APIs",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.component effect ownership.adapters cannot call the domain decision directly",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.component effect ownership.case-work hosts cannot reach schema administration",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.component effect ownership.only the composition root constructs the typed core",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.component effect ownership.persistence cannot call the domain decision directly",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.component effect ownership.wire-contract renderers cannot author JSON",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.Application respects owned component dependencies",
-        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.CLI helpers cannot open the PostgreSQL runtime",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.Cli respects owned component dependencies",
-        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.Contracts avoids selected ambient clock and host IO APIs",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.CliProtocol respects owned component dependencies",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.Contracts respects owned component dependencies",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.Database respects owned component dependencies",
-        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.Domain avoids selected ambient clock and host IO APIs",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.Domain respects owned component dependencies",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.HostSecurity respects owned component dependencies",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.Hosting respects owned component dependencies",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.Postgres respects owned component dependencies",
-        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.RecordFormat avoids selected ambient clock and host IO APIs",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.RecordFormat respects owned component dependencies",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.Web respects owned component dependencies",
-        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.adapters cannot call the domain decision directly",
-        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.all production roots are classified",
-        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.declared project references obey component permissions",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.endpoint helpers cannot reach runtime composition",
-        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.persistence cannot call the domain decision directly",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.production assemblies do not depend on test tooling",
         "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.product component policy.unused forbidden declared reference is detected"
+      ]
+    },
+    {
+      "dimensions": [
+        "core",
+        "webHost"
+      ],
+      "id": "assurance-architecture:published-surface",
+      "subject": "The composition root exports exactly one entry point, storage exports only its schema-owner administration surface, Application's storage ports stay private, and the CLI protocol publishes its own core seam without any runtime factory type.",
+      "tests": [
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.published component surface.application storage ports stay private",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.published component surface.storage exports only schema-owner administration",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.published component surface.the CLI protocol declares its own core seam",
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.published component surface.the composition root exports one entry point"
+      ]
+    },
+    {
+      "dimensions": [
+        "cli",
+        "protocol",
+        "recovery"
+      ],
+      "id": "assurance-boundary:decoding-totality",
+      "subject": "Every boundary that turns externally supplied bytes or opaque tokens into typed values refuses hostile input with a typed result rather than an escaping exception: strict JSON, CLI invocation framing, canonical request and snapshot records, recovery envelopes, and history and recovery cursors, exercised with arbitrary bytes, mutated valid encodings, adversarial JSON, and invalid UTF-8 under a deterministic seed.",
+      "tests": [
+        "dotnet:ClaimCore.FuzzQualificationTests::ClaimCore fuzz qualification.boundary decoding totality.CLI invocation framing refuses hostile input without throwing",
+        "dotnet:ClaimCore.FuzzQualificationTests::ClaimCore fuzz qualification.boundary decoding totality.canonical record decoding refuses hostile input without throwing",
+        "dotnet:ClaimCore.FuzzQualificationTests::ClaimCore fuzz qualification.boundary decoding totality.opaque cursors refuse hostile tokens without throwing",
+        "dotnet:ClaimCore.FuzzQualificationTests::ClaimCore fuzz qualification.boundary decoding totality.recovery envelope decoding refuses hostile input without throwing",
+        "dotnet:ClaimCore.FuzzQualificationTests::ClaimCore fuzz qualification.boundary decoding totality.strict JSON parsing refuses hostile input without throwing"
       ]
     },
     {
@@ -181,6 +236,19 @@
         "frontend:playwright::publishes payment, correction, close and reopen with current-case parity",
         "frontend:playwright::rotates a retained OPEN identity when only its target reference changes",
         "frontend:playwright::shows exact case and operation misses without implying a failed mutation"
+      ]
+    },
+    {
+      "dimensions": [
+        "core",
+        "migration"
+      ],
+      "id": "assurance-calendar:installation-zone",
+      "subject": "One installation calendar: only a canonical IANA identifier that enumerates, resolves, and resolves back to itself can be stored, so an alias, Windows identifier, abbreviation, offset literal, or untrimmed value is refused before any connection; and only the components that own the calendar may reach the host time-zone database.",
+      "tests": [
+        "dotnet:ClaimCore.ArchitectureTests::ClaimCore architecture suite.component effect ownership.only the installation calendar owners resolve time zones",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.installation business calendar.a canonical zone passes validation and fails later, on the host",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.installation business calendar.only a canonical zone identifier can become the installation calendar"
       ]
     },
     {
@@ -619,7 +687,7 @@
       "dimensions": [
         "migration"
       ],
-      "subject": "The current manifest assertion pins the exact applied 001–006 migration names and SHA-256 digests, so an accidental source edit changes the expected identity.",
+      "subject": "The current manifest assertion pins the exact applied 001\u2013006 migration names and SHA-256 digests, so an accidental source edit changes the expected identity.",
       "tests": [
         "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 006.manifest validation.[CC-DB-001] applied migration identities remain frozen"
       ]
@@ -1935,7 +2003,7 @@
         "recovery"
       ],
       "subject": "Every current dotnet:ClaimCore.IntegrationTests identity is mapped to its surviving convergence assurance surface after the typed core and transport cutover.",
-"tests": [
+      "tests": [
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL accepted receipt identity.[CC-APP-002] PostgreSQL accepted history without preparation remains replayable",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL accepted receipt identity.[CC-APP-002] PostgreSQL accepted replay survives owner pruning of preparation",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL accepted receipt identity.[CC-APP-002] PostgreSQL concurrent pruned replay and conflicts keep one accepted revision",
@@ -2044,7 +2112,7 @@
         "migration"
       ],
       "subject": "Every current dotnet:ClaimCore.MigrationQualificationTests identity is mapped to its surviving convergence assurance surface after the typed core and transport cutover.",
-"tests": [
+      "tests": [
         "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 006.atomicity.[CC-DB-001] failed migration rolls back its objects and journal row",
         "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 006.manifest validation.[CC-DB-001] applied migration identities remain frozen",
         "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 006.manifest validation.[CC-DB-001] migrator refuses a newer manifest entry",
@@ -2091,7 +2159,7 @@
         "recovery"
       ],
       "subject": "Every current dotnet:ClaimCore.Tests identity is mapped to its surviving convergence assurance surface after the typed core and transport cutover.",
-"tests": [
+      "tests": [
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI private-file security.[CC-CLI-002] concurrent source replacement yields one complete inode or a safe refusal",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI private-file security.[CC-CLI-002] private export is exclusive, owner-only, and removes its failed partial file",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.CLI private-file security.[CC-CLI-002] private export rejects leaf and ancestor links without changing targets",
@@ -2165,8 +2233,8 @@
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.core ownership and typed interfaces.dependency direction.Application has no transport, contract, or PostgreSQL dependency",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.core ownership and typed interfaces.dependency direction.Contracts projects semantic values without adapter dependencies",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.core ownership and typed interfaces.dependency direction.Domain has no adapter or infrastructure dependency",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.core ownership and typed interfaces.dependency direction.the CLI protocol cannot reach storage or composition",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.core ownership and typed interfaces.typed core public surface.IClaimsCore exposes only typed endpoint methods and recovery workflow",
-        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.core ownership and typed interfaces.typed core public surface.storage ports and preparation records are not public application types",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.core ownership and typed interfaces.typed core public surface.transport codecs have one Contracts owner and no anonymous adapter projection",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain validation.chronology.decision before notification is rejected",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain validation.chronology.future payment is rejected",
@@ -2394,7 +2462,7 @@
         "webGui"
       ],
       "subject": "Every current frontend:vitest identity is mapped to its surviving convergence assurance surface after the typed core and transport cutover.",
-"tests": [
+      "tests": [
         "frontend:vitest::aborts a stale page load before appending a newer cursor page",
         "frontend:vitest::accepts the matching generated definition fingerprint",
         "frontend:vitest::allocates a new ID when editing a definitely refused prepared request",

@@ -8,18 +8,15 @@ open Expecto
 open ClaimCore.Docs
 open ClaimCore.DocsTests.Fixtures
 
-let private names =
-    [
-        "ClaimCore.Application"
-        "ClaimCore.Cli"
-        "ClaimCore.Contracts"
-        "ClaimCore.Database"
-        "ClaimCore.Domain"
-        "ClaimCore.HostSecurity"
-        "ClaimCore.Postgres"
-        "ClaimCore.RecordFormat"
-        "ClaimCore.Web"
-    ]
+/// The production validator takes its expected set from the manifest this tool embedded, so the
+/// fixture uses that same set rather than restating one.
+let private required =
+    ArchitectureManifest.current.Value |> ArchitectureManifest.inTier "product"
+
+let private names = required |> Set.toList |> List.sort
+
+let private validate bytes =
+    ArchitectureInspectionReport.validateBytes required bytes
 
 let private graphBytes names edges =
     JsonSerializer.SerializeToUtf8Bytes(
@@ -38,11 +35,9 @@ let private valid = graphBytes names [ "ClaimCore.Application", "ClaimCore.Domai
 
 let private reportShape =
     testCase "accepts a bounded sorted ArchUnitNET model report" (fun () ->
-        Expect.equal (ArchitectureInspectionReport.validateBytes valid) (Ok()) "Exact graph"
+        Expect.equal (validate valid) (Ok()) "Exact graph"
 
-        Expect.isError
-            (ArchitectureInspectionReport.validateBytes (Array.zeroCreate (16 * 1024 + 1)))
-            "Oversized report is refused")
+        Expect.isError (validate (Array.zeroCreate (16 * 1024 + 1))) "Oversized report is refused")
 
 let private reportInventory =
     testCase "rejects duplicate, incomplete, or unknown architecture inventory" (fun () ->
@@ -53,16 +48,11 @@ let private reportInventory =
                 graphBytes names [ "ClaimCore.Application", "ClaimCore.Unknown" ]
                 graphBytes
                     names
-                    [
-                        "ClaimCore.Application", "ClaimCore.Domain"
-                        "ClaimCore.Application", "ClaimCore.Domain"
-                    ]
+                    [ "ClaimCore.Beta", "ClaimCore.Alpha"; "ClaimCore.Beta", "ClaimCore.Alpha" ]
             ]
 
         for bytes in invalid do
-            Expect.isError
-                (ArchitectureInspectionReport.validateBytes bytes)
-                "Unqualified inventory is refused"
+            Expect.isError (validate bytes) "Unqualified inventory is refused"
 
         let duplicated =
             Encoding.UTF8
@@ -74,7 +64,7 @@ let private reportInventory =
                 )
 
         Expect.isError
-            (ArchitectureInspectionReport.validateBytes (Encoding.UTF8.GetBytes duplicated))
+            (validate (Encoding.UTF8.GetBytes duplicated))
             "Duplicate JSON properties are refused")
 
 let private stage runId files =
@@ -151,6 +141,32 @@ let private downloadedReport =
             (ArchitectureInspectionReport.validateDownloaded repository.Root producer)
             "Missing download is refused")
 
+let private manifestCurrency =
+    testCase
+        "a manifest that drifted from the compiled tool fails the documentation check"
+        (fun () ->
+            use repository = new TempRepository()
+
+            Expect.isError
+                (ArchitectureManifest.requireCurrent repository.Root)
+                "A repository without the manifest cannot be current"
+
+            repository.Write(ArchitectureManifest.fileName, "{\"version\":1,\"components\":[]}")
+            |> ignore
+
+            Expect.isError
+                (ArchitectureManifest.requireCurrent repository.Root)
+                "A manifest that differs from the embedded copy is refused"
+
+            Expect.isError
+                (ArchitectureManifest.parse "{\"version\":2,\"components\":[]}")
+                "Version"
+
+            Expect.isError (ArchitectureManifest.parse "not json") "Malformed manifest"
+            Expect.isError (ArchitectureManifest.parse "{\"version\":1,\"components\":[]}") "Empty"
+
+            Expect.isNonEmpty required "The embedded manifest classifies product components")
+
 let private stageRequirement =
     testCase "all three architecture stages require the inspected graph artifact" (fun () ->
         for platform in [ "linux"; "macos"; "windows" ] do
@@ -164,4 +180,10 @@ let private stageRequirement =
 let tests =
     testList
         "ArchUnitNET report evidence"
-        [ reportShape; reportInventory; downloadedReport; stageRequirement ]
+        [
+            reportShape
+            reportInventory
+            downloadedReport
+            manifestCurrency
+            stageRequirement
+        ]

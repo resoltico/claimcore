@@ -22,21 +22,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
-        with:
-          global-json-file: global.json
-          cache: true
-          cache-dependency-path: "**/packages.lock.json"
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version-file: .node-version
-          cache: npm
-          cache-dependency-path: web/package-lock.json
-      - name: Require the exact Node and npm toolchain
-        shell: bash
-        run: |
-          test "$(node --version)" = "v$(tr -d '\r\n' < .node-version)"
-          test "$(npm --version)" = "$(node -p "require('./web/package.json').engines.npm")"
+      - uses: ./.github/actions/toolchain
       - name: Collect all current-attempt stage manifests
         continue-on-error: true
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -62,6 +48,24 @@ jobs:
         with:
           name: claimcore-test-unit-windows-${{ github.run_id }}-${{ github.run_attempt }}
           path: artifacts/evidence-inputs/unit-windows
+      - name: Collect Linux fuzz TRX
+        continue-on-error: true
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: claimcore-test-fuzz-linux-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/evidence-inputs/fuzz-linux
+      - name: Collect macOS fuzz TRX
+        continue-on-error: true
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: claimcore-test-fuzz-macos-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/evidence-inputs/fuzz-macos
+      - name: Collect Windows fuzz TRX
+        continue-on-error: true
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: claimcore-test-fuzz-windows-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/evidence-inputs/fuzz-windows
       - name: Collect Linux architecture TRX
         continue-on-error: true
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
