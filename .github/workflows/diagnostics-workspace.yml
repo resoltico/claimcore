@@ -1,0 +1,24 @@
+name: Temporary diagnostics source export
+on:
+  push:
+    branches: [feat/typed-rejection-diagnostics]
+    paths: [.github/workflows/diagnostics-workspace.yml]
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 97a9f23e75ffcf5e52542b335f898fbb3724b8f2
+          persist-credentials: false
+      - name: Export exact baseline without credentials or build output
+        run: git archive --format=tar.gz --prefix=claimcore/ HEAD > "$RUNNER_TEMP/diagnostics-baseline.tar.gz"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: diagnostics-baseline
+          path: ${{ runner.temp }}/diagnostics-baseline.tar.gz
+          if-no-files-found: error
+          retention-days: 1
