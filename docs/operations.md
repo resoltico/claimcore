@@ -52,7 +52,7 @@ Migration 006 stores one canonical IANA zone for the installation, set once with
 `ClaimCore.Database set-business-zone`. Every business date comes from that stored zone and one
 captured instant, never from a host default. The identifier is validated when it is set and again on
 every runtime opening: it must be enumerable on the host, must resolve, and must resolve back to
-exactly itself, so an alias, a Windows identifier, an abbreviation, or an offset literal is refused.
+exactly itself, and must be an IANA identifier rather than a platform-native one, so an alias, a Windows identifier, an abbreviation, or an offset literal is refused on every host.
 A host that cannot resolve the stored zone refuses to open the runtime rather than producing a date
 from some other calendar.
 

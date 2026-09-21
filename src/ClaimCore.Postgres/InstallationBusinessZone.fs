@@ -27,7 +27,13 @@ module InstallationBusinessZone =
             try
                 let resolved = TimeZoneInfo.FindSystemTimeZoneById(zoneId)
 
-                if String.Equals(resolved.Id, zoneId, StringComparison.Ordinal) then
+                // HasIanaId keeps the stored calendar portable. A host can resolve and round-trip
+                // its own platform identifier - a Windows zone name does so on Windows - but that
+                // value would not resolve on the macOS and Linux hosts this runtime supports.
+                if
+                    resolved.HasIanaId
+                    && String.Equals(resolved.Id, zoneId, StringComparison.Ordinal)
+                then
                     Ok zoneId
                 else
                     Error()

@@ -197,10 +197,10 @@
     {
       "contractId": "CC-RUN-001",
       "reviewerKind": "agent",
-      "reviewer": "Claude architecture audit: composition-root extraction re-review",
-      "reviewedOn": "2026-09-20",
+      "reviewer": "Claude release audit: installation calendar requires an IANA identifier re-review",
+      "reviewedOn": "2026-09-21",
       "conclusion": "approved",
-      "reviewSubjectHash": "9a058b4702b40fe4f172439af4b4142bea59be45ead1fb0cdcbe646626d861cd",
+      "reviewSubjectHash": "426fe5be0aa72efb4ab603670afa95a848c71da126ea2daa3022b14979c44120",
       "wholeFiles": [
         "src/ClaimCore.Hosting/Runtime.fsi",
         "src/ClaimCore.Hosting/Runtime.fs",
@@ -216,10 +216,10 @@
     {
       "contractId": "CC-DB-001",
       "reviewerKind": "agent",
-      "reviewer": "Claude architecture audit: composition-root extraction re-review",
-      "reviewedOn": "2026-09-20",
+      "reviewer": "Claude release audit: installation calendar requires an IANA identifier re-review",
+      "reviewedOn": "2026-09-21",
       "conclusion": "approved",
-      "reviewSubjectHash": "333f3f25bdacef7f7ad1cd0c32188dbead1f216da59ea7b9052fc637b2e8103e",
+      "reviewSubjectHash": "d979c2e0b47dd83d00793734c344585e7d156b433a675f27d6a9fdff9b58cafe",
       "wholeFiles": [
         "db/001_initial.sql",
         "db/002_request_preparations.sql",
@@ -244,10 +244,10 @@
     {
       "contractId": "CC-DB-002",
       "reviewerKind": "agent",
-      "reviewer": "Claude release audit: Fantomas 8.0.0 whitespace-only reformatting re-review",
+      "reviewer": "Claude release audit: installation calendar requires an IANA identifier re-review",
       "reviewedOn": "2026-09-21",
       "conclusion": "approved",
-      "reviewSubjectHash": "997b06a06616e920733078cdc4c44b5c7b10d25801eff917b45c956dcce72774",
+      "reviewSubjectHash": "f0d043d263eb6c721f3e7a5e799a333e411d956901707225e9413575a2578cad",
       "wholeFiles": [
         "src/ClaimCore.HostSecurity/PrivateFileService.fs",
         "src/ClaimCore.HostSecurity/PosixPrivateFiles.fs",

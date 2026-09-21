@@ -15,6 +15,10 @@ Notable changes to this project are documented in this file. The format is based
 - Building from source now requires Node 26.9.0 instead of 26.8.2; the npm release is unchanged. Anyone following the first-run path or running frontend commands must install the release selected by [`.node-version`](.node-version) before building.
 - The published CLI tree now also contains `ClaimCore.CliProtocol.dll` and `ClaimCore.Hosting.dll`, and the published Web tree now also contains `ClaimCore.Hosting.dll`; each appears in that tree's .NET SBOM. The Database tree is unchanged, and case work, the CLI-v3 and Web-v2 contracts, and their fingerprints are identical to 0.3.0. Administrators comparing a publish tree or SBOM against a 0.3.0 inventory should expect the additional assemblies.
 
+### Fixed
+
+- `ClaimCore.Database set-business-zone` now refuses a platform-native time-zone identifier on every host. A Windows zone name such as `W. Europe Standard Time` resolves and round-trips on Windows, so it could previously be stored as the installation calendar even though the macOS and Linux hosts that run the case-work applications cannot resolve it. The stored identifier must be an IANA identifier, as the documentation has always described. Installations configured on a supported host are unaffected.
+
 ### Internal
 
 - Added a required boundary-decoding qualification suite covering strict JSON parsing, CLI invocation framing, canonical request and snapshot records, recovery envelopes, and history and recovery cursors. It drives each with arbitrary bytes, mutated valid encodings, adversarial JSON, and invalid UTF-8, and requires a typed refusal rather than an escaping exception. The suite runs on Linux, macOS, and Windows, and at a higher case count in the scheduled exploration run. It found no defect in the boundaries it now covers.
