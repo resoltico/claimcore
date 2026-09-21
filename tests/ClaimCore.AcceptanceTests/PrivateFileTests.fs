@@ -127,16 +127,31 @@ let private exportRefused context operation digest path =
     let result =
         CliV3Fixtures.recoveryExport operation digest path |> CliV3Fixtures.call context
 
-    Expect.equal result.ExitCode 3 "Unsafe export fails locally"
     noDisclosure result path
-    use document = JsonDocument.Parse(result.StandardOutput)
+    use document = CliV3Fixtures.decode 3 "recovery.export" result
 
     Expect.equal
-        (document.RootElement.GetProperty("kind").GetString())
-        "result"
-        "Failure result frame"
+        (CliV3Fixtures.outcomeKind document)
+        "localFailure"
+        "Export refusal is an adapter outcome, not a core failure"
 
-    Expect.equal (CliV3Fixtures.outcomeKind document) "failed" "Export failure outcome"
+    let fault = document.RootElement.GetProperty("outcome").GetProperty("fault")
+    let diagnostic = fault.GetProperty("diagnostic")
+    Expect.equal (fault.GetProperty("code").GetString()) "STORE_UNAVAILABLE" "Local export code"
+
+    Expect.equal
+        (fault.GetProperty("recommendedAction").GetString())
+        "STOP_AND_INVESTIGATE"
+        "A file-write refusal does not authorize command replay"
+
+    Expect.equal
+        (diagnostic.GetProperty("id").GetString())
+        "CLI_EXPORT_WRITE_FAILED"
+        "Specific adapter cause"
+
+    Expect.isTrue
+        (diagnostic.GetProperty("parameters").EnumerateObject() |> Seq.isEmpty)
+        "No private path or request content becomes a diagnostic argument"
 
 let private exportBoundaries () =
     let context = DatabaseFixture.current ()

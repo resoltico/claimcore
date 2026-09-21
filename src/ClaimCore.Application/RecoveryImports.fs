@@ -114,7 +114,9 @@ module internal RecoveryImports =
             if cancellationToken.IsCancellationRequested then
                 return RecoveryImportRetainOutcome.ImportCancelledBeforeAdmission
             elif not (sourceMatches sourceSha256 source) then
-                return RecoveryImportRetainOutcome.ImportRejected RecoverySupport.digestMismatch
+                return
+                    RecoveryImportRetainOutcome.ImportRejected
+                        RecoveryRejection.SourceDigestMismatch
             else
                 match! RecoverySupport.decodeEnvelope recovery source cancellationToken with
                 | RecoverySupport.ImportRefused rejection ->
@@ -141,7 +143,9 @@ module internal RecoveryImports =
             if cancellationToken.IsCancellationRequested then
                 return RecoveryImportRetainOutcome.ImportCancelledBeforeAdmission
             elif not (sourceMatches sourceSha256 source) then
-                return RecoveryImportRetainOutcome.ImportRejected RecoverySupport.digestMismatch
+                return
+                    RecoveryImportRetainOutcome.ImportRejected
+                        RecoveryRejection.SourceDigestMismatch
             else
                 match RecoverySupport.decodeCanonical source with
                 | Error rejection -> return RecoveryImportRetainOutcome.ImportRejected rejection

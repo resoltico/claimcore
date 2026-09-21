@@ -22,6 +22,21 @@ module CliResponseSchemas =
             "recovery.importRecordPreview", CliResponseRecoverySchemas.importPreview semantic
             "recovery.importRecordRetain", CliResponseRecoverySchemas.importRetain semantic
         ]
+        |> List.map (fun (endpoint, outcome) ->
+            let alternatives =
+                match outcome with
+                | OneOfSchema values -> values
+                | value -> [ value ]
+
+            endpoint,
+            Schema.oneOf (
+                alternatives
+                @ [
+                    WireSchema.kind
+                        "localFailure"
+                        [ WireSchema.property "fault" OutcomeDiagnosticSchemas.localFault ]
+                ]
+            ))
 
     let protocolFailure =
         WireSchema.objectOf

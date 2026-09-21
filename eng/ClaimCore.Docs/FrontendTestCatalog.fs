@@ -28,6 +28,7 @@ module FrontendTestCatalog =
                 "generated contract corpora > accepts every production CLI branch and rejects malformed or cross-endpoint values"
                 "generated contract corpora > accepts generated Web host values and rejects every malformed or cross-endpoint value"
                 "generated contract corpora > qualifies every published diagnostic and its exact safe argument boundaries"
+                "generated contract corpora > qualifies every fault and recovery identity with correlated code and guidance"
                 "gives simultaneous current and historical case fields distinct heading IDs"
                 "ignores late prepare and submit responses from inactive attempts"
                 "keeps a failed history page request-local without erasing current case data"

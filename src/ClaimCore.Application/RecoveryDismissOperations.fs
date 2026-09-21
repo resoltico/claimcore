@@ -7,13 +7,6 @@ open System.Threading.Tasks
 /// Dismissal is separate from recovery reads because receipt observation and the technical
 /// lifecycle mutation have different points of no return.
 module internal RecoveryDismissOperations =
-    let private invalidFault message : CoreFault =
-        {
-            Code = FaultCode.RecoveryIntegrityError
-            Message = message
-            Action = RecommendedAction.StopAndInvestigate
-        }
-
     let private dismissalOutcome (operationId: Guid) (requestSha256: string) =
         function
         | Ok(RecoveryDismissal.Dismissed updated) ->
@@ -89,10 +82,7 @@ module internal RecoveryDismissOperations =
                             )
                     | QueryOutcome.Failed fault -> return RecoveryDismissOutcome.DismissFailed fault
                     | QueryOutcome.Rejected _ ->
-                        return
-                            RecoveryDismissOutcome.DismissFailed(
-                                invalidFault "Stored recovery data failed validation."
-                            )
+                        return RecoveryDismissOutcome.DismissFailed(CoreFault.StoredRecoveryInvalid)
                     | QueryOutcome.Cancelled ->
                         return RecoveryDismissOutcome.DismissCancelledBeforeAdmission operationId
                     | QueryOutcome.Succeeded(Lookup.NotFound _) ->
@@ -110,13 +100,20 @@ module internal RecoveryDismissOperations =
         : Task<RecoveryDismissOutcome> =
         if cancellationToken.IsCancellationRequested then
             Task.FromResult(RecoveryDismissOutcome.DismissCancelledBeforeAdmission operationId)
-        elif
-            operationId = Guid.Empty
-            || not (RecoverySupport.validDigest requestSha256)
-            || not confirmed
-        then
+        elif operationId = Guid.Empty then
             Task.FromResult(
-                RecoveryDismissOutcome.DismissRefused(None, RecoverySupport.invalid "dismiss")
+                RecoveryDismissOutcome.DismissRefused(None, RecoveryRejection.OperationIdRequired)
+            )
+        elif not (RecoverySupport.validDigest requestSha256) then
+            Task.FromResult(
+                RecoveryDismissOutcome.DismissRefused(None, RecoveryRejection.RequestDigestInvalid)
+            )
+        elif not confirmed then
+            Task.FromResult(
+                RecoveryDismissOutcome.DismissRefused(
+                    None,
+                    RecoveryRejection.DismissalConfirmationRequired
+                )
             )
         else
             task {

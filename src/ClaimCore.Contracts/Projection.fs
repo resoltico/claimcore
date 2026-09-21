@@ -146,6 +146,18 @@ module internal ProjectionSchema =
                     true
             ]
 
+    let private diagnostics (semantic: SemanticCoreContract) =
+        [
+            "rejectionDiagnostics", semantic.RejectionDiagnostics
+            "faultDiagnostics", semantic.FaultDiagnostics
+            "recoveryDiagnostics", semantic.RecoveryDiagnostics
+        ]
+        |> List.map (fun (name, definitions) ->
+            Schema.property
+                name
+                (definitions |> List.map RejectionDiagnosticSchemas.definition |> Schema.tuple)
+                true)
+
     let private definitionRoot
         (semantic: SemanticCoreContract)
         (fields: Schema)
@@ -153,39 +165,33 @@ module internal ProjectionSchema =
         (statusValues: Schema)
         (rules: Schema)
         =
-        Schema.objectOf
-            false
-            [
-                Schema.property "contractKind" (textConstant "SEMANTIC_CORE_V1") true
-                Schema.property "application" (textConstant semantic.Application) true
-                Schema.property "scope" (textConstant semantic.Scope) true
-                Schema.property "ruleSetVersion" (integerConstant semantic.RuleSetVersion) true
-                Schema.property
-                    "canonicalCommandFormat"
-                    (integerConstant semantic.CanonicalCommandFormat)
-                    true
-                Schema.property
-                    "requestFingerprintVersion"
-                    (integerConstant semantic.RequestFingerprintVersion)
-                    true
-                Schema.property
-                    "recoveryEnvelopeFormat"
-                    (integerConstant semantic.RecoveryEnvelopeFormat)
-                    true
-                Schema.property "defaultPageSize" (integerConstant semantic.DefaultPageSize) true
-                Schema.property "maximumPageSize" (integerConstant semantic.MaximumPageSize) true
-                Schema.property "requestByteLimit" (integerConstant semantic.RequestByteLimit) true
-                Schema.property "fields" fields true
-                Schema.property "commands" commands true
-                Schema.property "statuses" statusValues true
-                Schema.property "rules" rules true
-                Schema.property
-                    "rejectionDiagnostics"
-                    (semantic.RejectionDiagnostics
-                     |> List.map RejectionDiagnosticSchemas.definition
-                     |> Schema.tuple)
-                    true
-            ]
+        [
+            Schema.property "contractKind" (textConstant "SEMANTIC_CORE_V1") true
+            Schema.property "application" (textConstant semantic.Application) true
+            Schema.property "scope" (textConstant semantic.Scope) true
+            Schema.property "ruleSetVersion" (integerConstant semantic.RuleSetVersion) true
+            Schema.property
+                "canonicalCommandFormat"
+                (integerConstant semantic.CanonicalCommandFormat)
+                true
+            Schema.property
+                "requestFingerprintVersion"
+                (integerConstant semantic.RequestFingerprintVersion)
+                true
+            Schema.property
+                "recoveryEnvelopeFormat"
+                (integerConstant semantic.RecoveryEnvelopeFormat)
+                true
+            Schema.property "defaultPageSize" (integerConstant semantic.DefaultPageSize) true
+            Schema.property "maximumPageSize" (integerConstant semantic.MaximumPageSize) true
+            Schema.property "requestByteLimit" (integerConstant semantic.RequestByteLimit) true
+            Schema.property "fields" fields true
+            Schema.property "commands" commands true
+            Schema.property "statuses" statusValues true
+            Schema.property "rules" rules true
+        ]
+        |> List.append (diagnostics semantic)
+        |> Schema.objectOf false
 
     let definitionDocument (semantic: SemanticCoreContract) =
         let fields =

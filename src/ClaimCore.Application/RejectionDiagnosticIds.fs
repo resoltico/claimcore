@@ -57,7 +57,7 @@ type DiagnosticParameterDefinition =
         Maximum: int
     }
 
-type RejectionDiagnosticDefinition =
+type DiagnosticDefinition =
     {
         Id: string
         Parameters: DiagnosticParameterDefinition list

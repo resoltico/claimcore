@@ -135,8 +135,13 @@ module CliWireCodec =
         | PrepareOutcome.CancelledBeforeAdmission _ -> 130
         | PrepareOutcome.PreparationStateUnknown _ -> 4
 
-    let localFailure (endpoint: string) (fault: CoreFault) =
-        result endpoint 3 (fun writer -> CliWireQueries.failed writer fault)
+    let localFailure (endpoint: string) (fault: CliLocalFault) =
+        result endpoint 3 (fun writer ->
+            writer.WriteStartObject()
+            writer.WriteString("kind", "localFailure")
+            writer.WritePropertyName("fault")
+            CliWireValues.localFault writer fault
+            writer.WriteEndObject())
 
     let caseGet (endpoint: string) (outcome: QueryOutcome<Lookup<CurrentCase, string>>) =
         result endpoint (queryExit outcome) (fun writer ->

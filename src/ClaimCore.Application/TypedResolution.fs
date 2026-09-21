@@ -7,13 +7,6 @@ open ClaimCore.Domain
 open ClaimCore.RecordFormat
 
 module internal TypedResolution =
-    let private integrityFault (message: string) : CoreFault =
-        {
-            Code = FaultCode.RecoveryIntegrityError
-            Message = message
-            Action = RecommendedAction.StopAndInvestigate
-        }
-
     let private executionResult
         (summary: PreparationSummary)
         (attemptId: Guid)
@@ -79,19 +72,14 @@ module internal TypedResolution =
             with
             | Error _ ->
                 return
-                    ResolutionFailedBeforeAttempt(
-                        Some summary,
-                        integrityFault
-                            "Retained canonical request bytes failed integrity validation."
-                    )
+                    ResolutionFailedBeforeAttempt(Some summary, CoreFault.RetainedCanonicalInvalid)
             | Ok request ->
                 match Operation.prepare request with
                 | Error _ ->
                     return
                         ResolutionFailedBeforeAttempt(
                             Some summary,
-                            integrityFault
-                                "Retained request did not satisfy its closed domain shape."
+                            CoreFault.RetainedDomainShapeInvalid
                         )
                 | Ok operation ->
                     let! result =

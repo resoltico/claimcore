@@ -153,6 +153,17 @@ module CliResponseCorpus =
         @ CliMutationCorpusSamples.all
         @ CliRecoveryCorpusSamples.all
 
+    let private outcomeDiagnostics =
+        OutcomeDiagnosticCorpus.cli
+        |> List.map (fun (id, endpoint, exitCode, valid, value) ->
+            {
+                Identifier = id
+                Endpoint = Some endpoint
+                ExitCode = exitCode
+                Valid = valid
+                Value = value.GetRawText()
+            })
+
     let artifact (projection: ContractModel) =
         let endpoints = projection.CliEndpoints |> List.map _.Identifier
         let representatives = representatives endpoints productionSamples
@@ -176,6 +187,7 @@ module CliResponseCorpus =
                 @ patternBoundaries representatives
                 @ scalarBoundaries representatives
                 @ crossEndpoint representatives
+                @ outcomeDiagnostics
                 @ (DiagnosticCorpus.cli
                    |> List.map (fun (id, valid, value) ->
                        {

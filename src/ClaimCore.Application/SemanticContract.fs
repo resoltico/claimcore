@@ -102,6 +102,8 @@ module SemanticContract =
             Statuses = CaseStatuses.all
             Rules = DomainRules.all
             RejectionDiagnostics = RejectionDiagnosticIds.definitions
+            FaultDiagnostics = CoreFaults.definitions
+            RecoveryDiagnostics = RecoveryRejections.definitions
             DefaultPageSize = 50
             MaximumPageSize = 50
             RequestByteLimit = 65536
@@ -110,7 +112,7 @@ module SemanticContract =
             RecoveryEnvelopeFormat = 1
         }
 
-    let private diagnostic output (value: RejectionDiagnosticDefinition) =
+    let private diagnostic output (value: DiagnosticDefinition) =
         append output value.Id
 
         sequence
@@ -168,6 +170,8 @@ module SemanticContract =
             contract.Rules
 
         sequence builder diagnostic contract.RejectionDiagnostics
+        sequence builder diagnostic contract.FaultDiagnostics
+        sequence builder diagnostic contract.RecoveryDiagnostics
 
         builder.ToString()
         |> Encoding.UTF8.GetBytes

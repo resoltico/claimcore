@@ -46,20 +46,20 @@ module RejectionDiagnosticSchemas =
                 ])
         |> Schema.tuple
 
-    let private definitionWith parameters (diagnostic: RejectionDiagnosticDefinition) =
+    let private definitionWith parameters (diagnostic: DiagnosticDefinition) =
         Schema.objectOf
             false
             [ property "id" (text diagnostic.Id); property "parameters" parameters ]
 
-    let definition (diagnostic: RejectionDiagnosticDefinition) =
+    let definition (diagnostic: DiagnosticDefinition) =
         definitionWith (parameterDefinition diagnostic.Parameters) diagnostic
 
     /// Share repeated parameter metadata in Web schemas without changing catalogue admission.
-    let sharedCatalogue (diagnostics: RejectionDiagnosticDefinition list) =
+    let sharedCatalogue prefix (diagnostics: DiagnosticDefinition list) =
         let shapes = diagnostics |> List.map _.Parameters |> List.distinct
 
         let name index =
-            "RejectionParameterDefinition" + string index
+            prefix + "ParameterDefinition" + string index
 
         let definitions =
             shapes |> List.mapi (fun index shape -> name index, parameterDefinition shape)

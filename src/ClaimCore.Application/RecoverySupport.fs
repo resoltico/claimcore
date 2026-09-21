@@ -8,12 +8,7 @@ open ClaimCore.Domain
 open ClaimCore.RecordFormat
 
 module internal RecoverySupport =
-    let revoked =
-        {
-            Code = RecoveryRejectionCode.OperationRevoked
-            Message = "This exact operation was durably revoked before execution."
-            Action = RecommendedAction.ReadCurrent
-        }
+    let revoked = RecoveryRejection.OperationRevoked
 
     type ImportDecoding =
         | Imported of RecoveryImportPreview
@@ -21,72 +16,14 @@ module internal RecoverySupport =
         | ImportFailed of CoreFault
         | ImportCancelled
 
-    let rejection code message action : RecoveryRejection =
-        {
-            Code = code
-            Message = message
-            Action = action
-        }
-
-    let attemptLimit =
-        rejection
-            RecoveryRejectionCode.AttemptLimitReached
-            "This operation has reached its recovery attempt limit. Read the current case before authoring new work."
-            RecommendedAction.ReadCurrent
-
-    let invalid field =
-        rejection
-            RecoveryRejectionCode.InvalidRecoveryInput
-            ($"The {field} value is invalid.")
-            RecommendedAction.CorrectInput
-
-    let notFound =
-        rejection
-            RecoveryRejectionCode.PreparationNotFound
-            "The recovery preparation was not found."
-            RecommendedAction.ReadCurrent
-
-    let conflict =
-        rejection
-            RecoveryRejectionCode.RecoveryIdempotencyConflict
-            "The supplied recovery identity conflicts with an existing operation."
-            RecommendedAction.StopAndInvestigate
-
-    let dismissed =
-        rejection
-            RecoveryRejectionCode.PreparationDismissed
-            "A dismissed preparation cannot be submitted."
-            RecommendedAction.ReadCurrent
-
-    let started =
-        rejection
-            RecoveryRejectionCode.SubmissionAlreadyStarted
-            "The preparation has already started submission and must be resolved exactly."
-            RecommendedAction.RecoverExact
-
-    let accepted =
-        rejection
-            RecoveryRejectionCode.RecoveryActionUnavailable
-            "An accepted operation cannot be dismissed. Inspect its retained receipt."
-            RecommendedAction.ReadCurrent
-
-    let digestMismatch =
-        rejection
-            RecoveryRejectionCode.SourceDigestMismatch
-            "The supplied digest does not match the exact retained request bytes."
-            RecommendedAction.StopAndInvestigate
-
-    let unsupported =
-        rejection
-            RecoveryRejectionCode.UnsupportedRecoveryArtifact
-            "The recovery artifact is unsupported or failed canonical decoding."
-            RecommendedAction.CorrectInput
-
-    let installationMismatch =
-        rejection
-            RecoveryRejectionCode.InstallationMismatch
-            "The recovery envelope belongs to a different ClaimCore installation."
-            RecommendedAction.StopAndInvestigate
+    let attemptLimit = RecoveryRejection.AttemptLimitReached
+    let notFound = RecoveryRejection.PreparationNotFound
+    let conflict = RecoveryRejection.ContentConflict
+    let dismissed = RecoveryRejection.PreparationDismissed
+    let started = RecoveryRejection.SubmissionAlreadyStarted
+    let accepted = RecoveryRejection.AcceptedOperationCannotBeDismissed
+    let digestMismatch = RecoveryRejection.RequestDigestMismatch
+    let installationMismatch = RecoveryRejection.InstallationMismatch
 
     let validDigest (value: string) =
         not (Object.ReferenceEquals(value, null))
@@ -101,7 +38,7 @@ module internal RecoverySupport =
         (canonical: byte array)
         : Result<RecoveryImportPreview, RecoveryRejection> =
         match RequestRecord.decode SemanticContract.current.RequestByteLimit canonical with
-        | Error _ -> Error unsupported
+        | Error _ -> Error RecoveryRejection.CanonicalRecordInvalidOrUnsupported
         | Ok request ->
             Ok
                 {
@@ -192,7 +129,7 @@ module internal RecoverySupport =
         : Task<ImportDecoding> =
         task {
             match RecoveryEnvelope.decode SemanticContract.current.RequestByteLimit source with
-            | Error _ -> return ImportRefused unsupported
+            | Error _ -> return ImportRefused RecoveryRejection.EnvelopeInvalidOrUnsupported
             | Ok envelope ->
                 match! recovery.InstallationLineage cancellationToken with
                 | _ when cancellationToken.IsCancellationRequested -> return ImportCancelled
@@ -225,7 +162,7 @@ module internal RecoverySupport =
         | RecoveryArtifactKind.Envelope ->
             match RecoveryEnvelope.decode SemanticContract.current.RequestByteLimit source with
             | Ok envelope -> Ok envelope.CanonicalRequest
-            | Error _ -> Error unsupported
+            | Error _ -> Error RecoveryRejection.EnvelopeInvalidOrUnsupported
         | RecoveryArtifactKind.UnboundCanonicalRecord -> Ok source
 
     let private completedOutcome =

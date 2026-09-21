@@ -143,6 +143,12 @@ module WebTypeScript =
                 WireSchema.property "inputs" (reference "CommandInputShape")
             ]
 
+    let private diagnosticInventory definitions =
+        definitions
+        |> List.map RejectionDiagnosticSchemas.definition
+        |> Schema.oneOf
+        |> WireSchema.array
+
     let private semanticDefinition (semantic: SemanticCoreContract) =
         WireSchema.objectOf
             [
@@ -167,10 +173,13 @@ module WebTypeScript =
                 WireSchema.property "statuses" (WireSchema.array CoreValueSchemas.status)
                 WireSchema.property
                     "rejectionDiagnostics"
-                    (semantic.RejectionDiagnostics
-                     |> List.map RejectionDiagnosticSchemas.definition
-                     |> Schema.oneOf
-                     |> WireSchema.array)
+                    (diagnosticInventory semantic.RejectionDiagnostics)
+                WireSchema.property
+                    "faultDiagnostics"
+                    (diagnosticInventory semantic.FaultDiagnostics)
+                WireSchema.property
+                    "recoveryDiagnostics"
+                    (diagnosticInventory semantic.RecoveryDiagnostics)
                 WireSchema.property
                     "rules"
                     (WireSchema.array (

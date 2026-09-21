@@ -69,13 +69,7 @@ module CoreValueSchemas =
                 WireSchema.property "recommendedAction" action
             ]
 
-    let fault =
-        WireSchema.objectOf
-            [
-                WireSchema.property "code" faultCode
-                WireSchema.property "message" WireSchema.text
-                WireSchema.property "recommendedAction" action
-            ]
+    let fault = OutcomeDiagnosticSchemas.fault
 
     let caseFields (semantic: SemanticCoreContract) =
         semantic.Fields

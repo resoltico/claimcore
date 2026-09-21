@@ -1,4 +1,4 @@
-const groupNames = ["core", "recovery"];
+const groupNames = ["discovery", "core", "recovery"];
 
 export const standaloneValidatorArtifacts = [
   "web-v2.validation.ts",
@@ -18,7 +18,10 @@ export const obsoleteStandaloneValidatorArtifacts = [
 export const validatorName = (endpoint) =>
   `validate_${endpoint.replaceAll(/[^A-Za-z0-9_$]/gu, "_")}`;
 
-const groupForEndpoint = (endpoint) => (endpoint.startsWith("recovery.") ? "recovery" : "core");
+const groupForEndpoint = (endpoint) => {
+  if (endpoint === "definition") return "discovery";
+  return endpoint.startsWith("recovery.") ? "recovery" : "core";
+};
 
 export const validatorGroups = (endpoints) => {
   const groups = Object.fromEntries(groupNames.map((name) => [name, []]));
@@ -80,7 +83,7 @@ import type { WebV2ResponseByEndpoint } from "./web-v2.types";
 type ResponseValidator<K extends WebV2EndpointId> =
   (value: unknown) => value is WebV2ResponseByEndpoint[K];
 type ValidatorModule = Readonly<Record<string, (value: unknown) => boolean>>;
-type ValidatorGroup = "core" | "recovery";
+type ValidatorGroup = "discovery" | "core" | "recovery";
 
 const endpointValidators = {
 ${endpointValidators(Object.values(groups).flat())}
@@ -90,11 +93,13 @@ const endpointGroups = {
 ${endpointGroups(groups)}
 } as const satisfies Readonly<Record<WebV2EndpointId, ValidatorGroup>>;
 
+const loadDiscovery = (): Promise<ValidatorModule> => import("./web-v2.validators.discovery.mjs");
 const loadCore = (): Promise<ValidatorModule> => import("./web-v2.validators.core.mjs");
 const loadRecovery = (): Promise<ValidatorModule> => import("./web-v2.validators.recovery.mjs");
 
+const loaders = { discovery: loadDiscovery, core: loadCore, recovery: loadRecovery };
 const validatorsFor = (endpoint: WebV2EndpointId): Promise<ValidatorModule> =>
-  endpointGroups[endpoint] === "recovery" ? loadRecovery() : loadCore();
+  loaders[endpointGroups[endpoint]]();
 
 const requiredValidator = async <K extends WebV2EndpointId>(
   endpoint: K,

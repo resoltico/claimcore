@@ -114,6 +114,8 @@ export const definition: SemanticDefinition = {
   statuses: ["OPENED", "CLOSED"],
   rules: [],
   rejectionDiagnostics: [],
+  faultDiagnostics: [],
+  recoveryDiagnostics: [],
 };
 
 export const preparation: PreparationDetails = {

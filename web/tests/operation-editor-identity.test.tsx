@@ -1,3 +1,4 @@
+import type { RecoveryRejection } from "../src/generated/convergence/web-v2.types";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
@@ -46,10 +47,11 @@ const refusedResponse = () =>
   response("command.execute", "REFUSED_BEFORE_ATTEMPT", {
     preparation: null,
     rejection: {
-      code: "RECOVERY_ACTION_UNAVAILABLE",
+      code: "PREPARATION_DISMISSED",
+      diagnostic: { id: "RECOVERY_PREPARATION_DISMISSED", parameters: {} },
       message: "The exact preparation was refused.",
       recommendedAction: "READ_CURRENT",
-    },
+    } satisfies RecoveryRejection,
   });
 
 const validationRefusal: Rejection = {

@@ -13,54 +13,17 @@ module internal TypedProjection =
     let receipt = CoreConversions.receipt
 
     let recoveryFault (failure: RecoveryStoreFailure) : CoreFault =
-        let code, message, action =
-            match failure with
-            | RecoveryStoreFailure.InvalidInput _ ->
-                FaultCode.RecoveryIntegrityError,
-                "Recovery storage returned an invalid technical response.",
-                RecommendedAction.StopAndInvestigate
-            | RecoveryStoreFailure.IdempotencyConflict ->
-                FaultCode.TechnicalMutationUnknown,
-                "Recovery identity conflicts with retained data.",
-                RecommendedAction.StopAndInvestigate
-            | RecoveryStoreFailure.NotFound ->
-                FaultCode.RecoveryIntegrityError,
-                "Recovery storage lost an expected preparation.",
-                RecommendedAction.StopAndInvestigate
-            | RecoveryStoreFailure.CapacityExceeded ->
-                FaultCode.RecoveryCapacityExceeded,
-                "Recovery capacity is exhausted.",
-                RecommendedAction.StopAndInvestigate
-            | RecoveryStoreFailure.SchemaMismatch ->
-                FaultCode.SchemaMismatch,
-                "Recovery storage is incompatible with this runtime.",
-                RecommendedAction.StopAndInvestigate
-            | RecoveryStoreFailure.StoreUnavailable ->
-                FaultCode.StoreUnavailable,
-                "Recovery storage was unavailable before completion was confirmed.",
-                RecommendedAction.RetrySafe
-            | RecoveryStoreFailure.StoreCorrupt ->
-                FaultCode.RecoveryIntegrityError,
-                "Recovery storage failed integrity validation.",
-                RecommendedAction.StopAndInvestigate
-            | RecoveryStoreFailure.ReadCancelled ->
-                FaultCode.StoreUnavailable,
-                "The recovery read was cancelled.",
-                RecommendedAction.RetrySafe
-            | RecoveryStoreFailure.CancelledBeforeCommit ->
-                FaultCode.StoreUnavailable,
-                "The technical mutation was cancelled before commit.",
-                RecommendedAction.RetrySafe
-            | RecoveryStoreFailure.TechnicalMutationUnknown ->
-                FaultCode.TechnicalMutationUnknown,
-                "The recovery-state mutation may have committed but could not be confirmed.",
-                RecommendedAction.RecoverExact
-
-        {
-            Code = code
-            Message = message
-            Action = action
-        }
+        match failure with
+        | RecoveryStoreFailure.InvalidInput _ -> CoreFault.RecoveryResponseInvalid
+        | RecoveryStoreFailure.IdempotencyConflict -> CoreFault.RecoveryContentConflict
+        | RecoveryStoreFailure.NotFound -> CoreFault.RecoveryPreparationMissing
+        | RecoveryStoreFailure.CapacityExceeded -> CoreFault.RecoveryCapacityExhausted
+        | RecoveryStoreFailure.SchemaMismatch -> CoreFault.RecoverySchemaMismatch
+        | RecoveryStoreFailure.StoreUnavailable -> CoreFault.RecoveryStoreUnavailable
+        | RecoveryStoreFailure.StoreCorrupt -> CoreFault.RecoveryStoreIntegrityError
+        | RecoveryStoreFailure.ReadCancelled -> CoreFault.RecoveryReadCancelled
+        | RecoveryStoreFailure.CancelledBeforeCommit -> CoreFault.RecoveryMutationCancelled
+        | RecoveryStoreFailure.TechnicalMutationUnknown -> CoreFault.RecoveryMutationUnknown
 
     let runtimeContext (context: BusinessContext) : RuntimeContext =
         {
@@ -187,14 +150,7 @@ module internal TypedProjection =
                 preparation.CanonicalRequest
 
         match request with
-        | Error _ ->
-            Error(
-                {
-                    Code = FaultCode.RecoveryIntegrityError
-                    Message = "Retained canonical request bytes failed integrity validation."
-                    Action = RecommendedAction.StopAndInvestigate
-                }
-            )
+        | Error _ -> Error(CoreFault.RetainedCanonicalInvalid)
         | Ok decoded ->
             Ok
                 {
@@ -268,14 +224,7 @@ module internal TypedProjection =
                     Attempts = attempts
                 }
         | Error _, _
-        | _, Error _ ->
-            Error(
-                {
-                    Code = FaultCode.RecoveryIntegrityError
-                    Message = "Retained canonical request bytes failed integrity validation."
-                    Action = RecommendedAction.StopAndInvestigate
-                }
-            )
+        | _, Error _ -> Error(CoreFault.RetainedCanonicalInvalid)
 
     let detailsWithAttempts
         (preparation: RetainedPreparation)

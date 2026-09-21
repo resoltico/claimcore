@@ -8,13 +8,6 @@ open ClaimCore.RecordFormat
 /// Recovery export remains a separate narrow read because it handles claimant-bearing artifact bytes
 /// while ordinary recovery list and inspection stay metadata-only.
 module internal RecoveryExports =
-    let private integrityFault message : CoreFault =
-        {
-            Code = FaultCode.RecoveryIntegrityError
-            Message = message
-            Action = RecommendedAction.StopAndInvestigate
-        }
-
     let private encode
         (operationId: Guid)
         (lineage: Guid)
@@ -23,8 +16,7 @@ module internal RecoveryExports =
         match
             RequestRecord.decode SemanticContract.current.RequestByteLimit retained.CanonicalRequest
         with
-        | Error _ ->
-            Error(integrityFault "Retained canonical request bytes failed integrity validation.")
+        | Error _ -> Error(CoreFault.RetainedCanonicalInvalid)
         | Ok _ ->
             let bytes =
                 RecoveryEnvelope.encode
@@ -74,9 +66,13 @@ module internal RecoveryExports =
         : Task<RecoveryQueryOutcome<Lookup<RecoveryExport, Guid>>> =
         if cancellationToken.IsCancellationRequested then
             Task.FromResult(RecoveryQueryOutcome.RecoveryCancelled)
-        elif operationId = Guid.Empty || not (RecoverySupport.validDigest requestSha256) then
+        elif operationId = Guid.Empty then
             Task.FromResult(
-                RecoveryQueryOutcome.RecoveryRejected(RecoverySupport.invalid "export identity")
+                RecoveryQueryOutcome.RecoveryRejected RecoveryRejection.OperationIdRequired
+            )
+        elif not (RecoverySupport.validDigest requestSha256) then
+            Task.FromResult(
+                RecoveryQueryOutcome.RecoveryRejected RecoveryRejection.RequestDigestInvalid
             )
         else
             task {

@@ -47,6 +47,16 @@ Discovery commands do not open PostgreSQL. call reads one strict JSON invocation
 input line while retaining a retryable runtime session. It does not accept positional command verbs,
 paths containing claimant data, aliases, text output, or protocol selection flags.
 
+## Local failures and core outcomes
+
+Runtime-opening, endpoint-input mismatches, and private-export write failures return
+`outcome.kind: "localFailure"` with a typed adapter diagnostic, exit code 3, and
+`STOP_AND_INVESTIGATE`. They are not IClaimsCore faults and never imply a claim did not commit.
+Ordinary core failures and recovery refusals retain their outer result/uncertainty categories and
+now require `diagnostic.id` and exact `diagnostic.parameters`. Consumers must rebuild against the
+matching contract; old fault shapes and the former adapter-as-core `failed` representation are not
+supported. [Core outcome diagnostics](diagnostics.md) defines ownership and the native/wire break.
+
 ## Contracts and invocation
 
 The pure `ClaimCore.Contracts` projection owns the semantic description, CLI-v3 catalog, invocation

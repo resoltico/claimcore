@@ -187,7 +187,10 @@ let private storageFailurePrivacy =
         match outcome with
         | PrepareOutcome.PrepareFailed(_, fault) ->
             Expect.equal fault.Code FaultCode.StoreUnavailable "Typed failure classification"
-            Expect.isFalse (fault.Message.Contains(canary)) "Core fault omits claimant text"
+
+            Expect.isFalse
+                ((CoreFaults.token fault).Contains(canary))
+                "Core fault omits claimant text"
         | _ -> failtest "Expected a definite technical preparation failure."
 
         let response = ClaimCore.Contracts.CliWireCodec.prepare "command.prepare" outcome

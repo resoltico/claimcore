@@ -8,36 +8,14 @@ module internal CoreConversions =
     let rejection error = Rejection.Domain error
 
     let fault (error: CoreFailure) : CoreFault =
-        let code, message, action =
-            match error with
-            | CoreFailure.Domain domain ->
-                invalidArg "error" ($"Domain failure is not a core fault: {domain}.")
-            | CoreFailure.IdempotencyConflict ->
-                FaultCode.TechnicalMutationUnknown,
-                "The operation ID belongs to different request content.",
-                RecommendedAction.StopAndInvestigate
-            | CoreFailure.StoreUnavailable ->
-                FaultCode.StoreUnavailable,
-                "The store was unavailable before completion was confirmed.",
-                RecommendedAction.RetrySafe
-            | CoreFailure.CommitOutcomeUnknown _ ->
-                FaultCode.CommitOutcomeUnknown,
-                "Commit completion was not confirmed.",
-                RecommendedAction.RecoverExact
-            | CoreFailure.StoreCorrupt ->
-                FaultCode.StoreIntegrityError,
-                "Stored data failed integrity validation.",
-                RecommendedAction.StopAndInvestigate
-            | CoreFailure.SchemaMismatch ->
-                FaultCode.SchemaMismatch,
-                "The runtime schema or database settings are incompatible.",
-                RecommendedAction.StopAndInvestigate
-
-        {
-            Code = code
-            Message = message
-            Action = action
-        }
+        match error with
+        | CoreFailure.Domain domain ->
+            invalidArg "error" ($"Domain failure is not a core fault: {domain}.")
+        | CoreFailure.IdempotencyConflict -> CoreFault.OperationContentConflict
+        | CoreFailure.StoreUnavailable -> CoreFault.StoreUnavailable
+        | CoreFailure.CommitOutcomeUnknown _ -> CoreFault.CommitOutcomeUnknown
+        | CoreFailure.StoreCorrupt -> CoreFault.StoreIntegrityError
+        | CoreFailure.SchemaMismatch -> CoreFault.SchemaMismatch
 
     let currentCase claim =
         {

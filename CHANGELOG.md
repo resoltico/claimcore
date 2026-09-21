@@ -6,7 +6,15 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Changed
 
-- **Ordinary rejection contracts now require a structured diagnostic.** CLI-v3/Web-v2 rejections include a stable `diagnostic.id` and an exact parameter object, so consumers can distinguish causes without parsing English. Native `Rejection` is now a closed reason with derived classification and guidance, and `DomainError.InvalidInput` has typed targets and violations instead of strings. Update native callers and rebuild matched host/browser contracts; old rejection shapes are not accepted. Default English remains available as presentation text. Case data, canonical operation records and recovery authority are unchanged, and no database migration is required. See [Rejection diagnostics](docs/diagnostics.md).
+- Core faults and recovery refusals now expose specific diagnostic identities with exact empty
+  argument objects. Their native types are closed reasons rather than writable message records;
+  consumers must adapt and rebuild the browser and host together with matching generated contracts.
+  Canonical operation records and database state are unchanged; no migration is required.
+- CLI adapter failures now use a distinct `localFailure` outcome instead of pretending to be core
+  failures. Exit code 3 and stop-and-investigate guidance remain unchanged; scripts must recognize
+  the new outcome and must not infer claim commit status from an adapter failure.
+
+- **Ordinary rejection contracts now require a structured diagnostic.** CLI-v3/Web-v2 rejections include a stable `diagnostic.id` and an exact parameter object, so consumers can distinguish causes without parsing English. Native `Rejection` is now a closed reason with derived classification and guidance, and `DomainError.InvalidInput` has typed targets and violations instead of strings. Update native callers and rebuild matched host/browser contracts; old rejection shapes are not accepted. Default English remains available as presentation text. Case data, canonical operation records and recovery authority are unchanged, and no database migration is required. See [Core outcome diagnostics](docs/diagnostics.md).
 
 - **The CLI-v3 and Web-v2 contract fingerprints change, and no old-contract path is kept.** Semantic identity no longer includes presentation labels and explanations, so editorial wording no longer alters machine identity; it now includes the text constraints on amount and currency values, which it previously omitted, and a separate rule-set revision for deliberate behaviour changes that no descriptor shape would show. Rebuild the browser and its host together from the same source revision and do not mix generated contracts with older binaries. Canonical operation-record encoding, authored operation identity, and the thirteen business fields are unchanged, so stored cases and accepted history are unaffected and no migration is required.
 - Building from source now requires every project reference to be declared. A case-work host can no longer compile against PostgreSQL administration or against Npgsql through the composition root, while the storage assemblies it needs at runtime are still published. A fork that relied on reaching those types indirectly must declare the reference it actually uses, or stop using it.
@@ -17,6 +25,9 @@ Notable changes to this project are documented in this file. The format is based
 - The domain contract said a closed case must be reopened before editing, which contradicted the one-step factual correction added in 0.3.0. It now records that correction as the deliberate exception.
 
 ### Internal
+
+- Correlate fault/refusal identity, code and guidance in the generated schemas, qualify every cause
+  and malformed counterpart, and isolate lazy discovery validation without raising bundle budgets.
 
 - Rejection metadata is fingerprinted independently of explanation text. Complete diagnostic examples and malformed variants qualify the native, CLI and browser projections, while shared Web metadata schemas keep generated validators within the existing size limit. This prepares ordinary rejections for localization; it does not add language selection or translate the remaining failure families.
 

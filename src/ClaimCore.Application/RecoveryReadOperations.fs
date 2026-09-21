@@ -6,13 +6,6 @@ open System.Threading.Tasks
 open ClaimCore.RecordFormat
 
 module internal RecoveryReadOperations =
-    let private invalidFault message : CoreFault =
-        {
-            Code = FaultCode.RecoveryIntegrityError
-            Message = message
-            Action = RecommendedAction.StopAndInvestigate
-        }
-
     let private projectListItem =
         function
         | RecoveryStoreListItem.Retained(preparation, authority) ->
@@ -57,7 +50,9 @@ module internal RecoveryReadOperations =
         if cancellationToken.IsCancellationRequested then
             Task.FromResult(RecoveryQueryOutcome.RecoveryCancelled)
         elif limit < 1 || limit > SemanticContract.current.MaximumPageSize then
-            Task.FromResult(RecoveryQueryOutcome.RecoveryRejected(RecoverySupport.invalid "limit"))
+            Task.FromResult(
+                RecoveryQueryOutcome.RecoveryRejected(RecoveryRejection.PageLimitOutOfRange)
+            )
         else
             let after =
                 afterCursor
@@ -67,11 +62,11 @@ module internal RecoveryReadOperations =
             match after with
             | Error _ ->
                 Task.FromResult(
-                    RecoveryQueryOutcome.RecoveryRejected(RecoverySupport.invalid "cursor")
+                    RecoveryQueryOutcome.RecoveryRejected(RecoveryRejection.ListCursorInvalid)
                 )
             | Ok cursor when cursor |> Option.exists (fun value -> value.View <> view) ->
                 Task.FromResult(
-                    RecoveryQueryOutcome.RecoveryRejected(RecoverySupport.invalid "cursor")
+                    RecoveryQueryOutcome.RecoveryRejected(RecoveryRejection.ListCursorViewMismatch)
                 )
             | Ok cursor ->
                 task {
@@ -132,19 +127,17 @@ module internal RecoveryReadOperations =
                 | QueryOutcome.Failed fault -> return RecoveryQueryOutcome.RecoveryFailed fault
                 | QueryOutcome.Cancelled -> return RecoveryQueryOutcome.RecoveryCancelled
                 | QueryOutcome.Rejected _ ->
-                    return
-                        RecoveryQueryOutcome.RecoveryFailed(
-                            invalidFault "Stored recovery data failed validation."
-                        )
+                    return RecoveryQueryOutcome.RecoveryFailed(CoreFault.StoredRecoveryInvalid)
         }
 
     let private inspectCursor operationId afterCursor =
         afterCursor
         |> Option.map (RecoveryAttemptCursorCodec.decode >> Result.map Some)
         |> Option.defaultValue (Ok None)
+        |> Result.mapError (fun _ -> RecoveryRejection.AttemptCursorInvalid)
         |> Result.bind (fun cursor ->
             if cursor |> Option.exists (fun value -> value.OperationId <> operationId) then
-                Error "Attempt cursor belongs to a different operation."
+                Error RecoveryRejection.AttemptCursorOperationMismatch
             else
                 Ok cursor)
 
@@ -191,20 +184,17 @@ module internal RecoveryReadOperations =
         : Task<RecoveryQueryOutcome<Lookup<RecoveryInspection, Guid>>> =
         if cancellationToken.IsCancellationRequested then
             Task.FromResult(RecoveryQueryOutcome.RecoveryCancelled)
-        elif
-            operationId = Guid.Empty
-            || limit < 1
-            || limit > SemanticContract.current.MaximumPageSize
-        then
+        elif operationId = Guid.Empty then
             Task.FromResult(
-                RecoveryQueryOutcome.RecoveryRejected(RecoverySupport.invalid "recovery inspection")
+                RecoveryQueryOutcome.RecoveryRejected RecoveryRejection.OperationIdRequired
+            )
+        elif limit < 1 || limit > SemanticContract.current.MaximumPageSize then
+            Task.FromResult(
+                RecoveryQueryOutcome.RecoveryRejected RecoveryRejection.PageLimitOutOfRange
             )
         else
             match inspectCursor operationId afterCursor with
-            | Error _ ->
-                Task.FromResult(
-                    RecoveryQueryOutcome.RecoveryRejected(RecoverySupport.invalid "attempt cursor")
-                )
+            | Error rejection -> Task.FromResult(RecoveryQueryOutcome.RecoveryRejected rejection)
             | Ok cursor -> readInspection store recovery operationId cursor limit cancellationToken
 
     let resolve
@@ -215,9 +205,13 @@ module internal RecoveryReadOperations =
         (requestSha256: string)
         (cancellationToken: CancellationToken)
         : Task<ResolveOutcome> =
-        if operationId = Guid.Empty || not (RecoverySupport.validDigest requestSha256) then
+        if operationId = Guid.Empty then
             Task.FromResult(
-                ResolveOutcome.RefusedBeforeAttempt(None, RecoverySupport.invalid "resolve")
+                ResolveOutcome.RefusedBeforeAttempt(None, RecoveryRejection.OperationIdRequired)
+            )
+        elif not (RecoverySupport.validDigest requestSha256) then
+            Task.FromResult(
+                ResolveOutcome.RefusedBeforeAttempt(None, RecoveryRejection.RequestDigestInvalid)
             )
         elif cancellationToken.IsCancellationRequested then
             Task.FromResult(ResolveOutcome.ResolveCancelledBeforeAdmission operationId)

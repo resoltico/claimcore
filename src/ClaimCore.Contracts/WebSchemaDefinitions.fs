@@ -231,26 +231,37 @@ module WebSchemaDefinitions =
             ]
 
     let private sharedSemantic semantic semanticDefinition =
-        let catalogue, definitions =
-            RejectionDiagnosticSchemas.sharedCatalogue semantic.RejectionDiagnostics
+        let catalogues =
+            [
+                "rejectionDiagnostics", "Rejection", semantic.RejectionDiagnostics
+                "faultDiagnostics", "Fault", semantic.FaultDiagnostics
+                "recoveryDiagnostics", "Recovery", semantic.RecoveryDiagnostics
+            ]
+            |> List.map (fun (name, prefix, items) ->
+                let catalogue, definitions =
+                    RejectionDiagnosticSchemas.sharedCatalogue prefix items
+
+                name, catalogue, definitions)
 
         match semanticDefinition with
         | ObjectSchema value when
-            value.Properties |> List.exists (fun item -> item.Name = "rejectionDiagnostics")
+            catalogues
+            |> List.forall (fun (name, _, _) ->
+                value.Properties |> List.exists (fun item -> item.Name = name))
             ->
             let properties =
                 value.Properties
                 |> List.map (fun item ->
-                    if item.Name = "rejectionDiagnostics" then
-                        { item with Schema = catalogue }
-                    else
-                        item)
+                    match catalogues |> List.tryFind (fun (name, _, _) -> name = item.Name) with
+                    | Some(_, catalogue, _) -> { item with Schema = catalogue }
+                    | None -> item)
 
-            Schema.objectOf value.AdditionalProperties properties, definitions
+            Schema.objectOf value.AdditionalProperties properties,
+            catalogues |> List.collect (fun (_, _, definitions) -> definitions)
         | _ ->
             invalidArg
                 (nameof semanticDefinition)
-                "The diagnostic catalogue is missing from the semantic definition."
+                "A diagnostic catalogue is missing from the semantic definition."
 
     let all semantic semanticDefinition =
         let sharedDefinition, parameterDefinitions =

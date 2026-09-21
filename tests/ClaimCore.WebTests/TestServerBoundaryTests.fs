@@ -117,12 +117,7 @@ let private expectCursor cursor (response: JsonElement) =
         "Opaque cursor is returned intact"
 
 let private rejectedCursorOutcome =
-    RecoveryQueryOutcome.RecoveryRejected
-        {
-            Code = RecoveryRejectionCode.InvalidRecoveryInput
-            Message = "Synthetic invalid opaque cursor."
-            Action = RecommendedAction.CorrectInput
-        }
+    RecoveryQueryOutcome.RecoveryRejected RecoveryRejection.OperationIdRequired
 
 let private recoveryCursor () =
     use host = Host.Start()

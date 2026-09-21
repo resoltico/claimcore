@@ -121,12 +121,12 @@ module internal ContractJson =
 
         writer.WriteEndArray()
 
-    let private writeDiagnostics (writer: Utf8JsonWriter) definitions =
-        writer.WritePropertyName("rejectionDiagnostics")
+    let private writeDiagnostics (writer: Utf8JsonWriter) (name: string) definitions =
+        writer.WritePropertyName(name)
         writer.WriteStartArray()
 
         definitions
-        |> List.iter (fun (definition: RejectionDiagnosticDefinition) ->
+        |> List.iter (fun (definition: DiagnosticDefinition) ->
             writer.WriteStartObject()
             writer.WriteString("id", definition.Id)
             writer.WritePropertyName("parameters")
@@ -164,7 +164,9 @@ module internal ContractJson =
         semantic.Statuses |> List.iter (CaseStatuses.token >> writer.WriteStringValue)
         writer.WriteEndArray()
         writeRules writer semantic.Rules
-        writeDiagnostics writer semantic.RejectionDiagnostics
+        writeDiagnostics writer "rejectionDiagnostics" semantic.RejectionDiagnostics
+        writeDiagnostics writer "faultDiagnostics" semantic.FaultDiagnostics
+        writeDiagnostics writer "recoveryDiagnostics" semantic.RecoveryDiagnostics
         writer.WriteEndObject()
 
     let private endpointSchemaDocument (input: Schema) =

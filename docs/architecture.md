@@ -190,14 +190,16 @@ record, recovery port, and transition callback are unreachable implementation de
 view, a preview, or advertised command is never commit authority; execution always revalidates
 authoritative state and expected revision.
 
-## Ordinary rejection meaning and presentation
+## Core outcome meaning and presentation
 
-Ordinary rejections are closed typed reasons; classification, field target, revision context and
-recommended action are derived from them. Stable diagnostic identities and exact safe parameters
-are part of semantic discovery and both wire contracts. Their default English explanation is
-rendered by Contracts, outside Domain/Application. This changes neither validation authority nor
-non-rejection outcomes. [Rejection diagnostics](diagnostics.md) owns the scope, schema, privacy rules,
-and remaining localization boundaries.
+Ordinary rejections, core faults and recovery lifecycle refusals are separate closed typed reasons.
+Their classification and recommended action are derived, never independently writable. Stable
+diagnostic identities and exact safe parameters are part of semantic discovery and both wire
+contracts. Contracts renders default English outside Domain/Application. CLI setup and local-file
+failures have their own transport outcome; they cannot manufacture core fault authority. These
+changes preserve validation, cancellation, commit-uncertainty and recovery semantics.
+[Core outcome diagnostics](diagnostics.md) owns the scope, schema, privacy rules and remaining
+localization boundaries.
 
 ## Transaction and recovery path
 

@@ -7,25 +7,93 @@ export type HostFailure = {
   readonly message: string;
   readonly executionPhase: "NOT_STARTED" | "STARTED_UNCONFIRMED" | null;
 };
-export type Fault = {
-  readonly code:
-    | "STORE_UNAVAILABLE"
-    | "STORE_INTEGRITY_ERROR"
-    | "SCHEMA_MISMATCH"
-    | "RECOVERY_CAPACITY_EXCEEDED"
-    | "RECOVERY_INTEGRITY_ERROR"
-    | "COMMIT_OUTCOME_UNKNOWN"
-    | "TECHNICAL_MUTATION_UNKNOWN";
-  readonly message: string;
-  readonly recommendedAction:
-    | "CORRECT_INPUT"
-    | "READ_CURRENT"
-    | "RETRY_SAFE"
-    | "RECOVER_EXACT"
-    | "REAUTHENTICATE"
-    | "STOP_AND_INVESTIGATE"
-    | "NONE_REQUIRED";
-};
+export type Fault =
+  | {
+      readonly code: "TECHNICAL_MUTATION_UNKNOWN";
+      readonly diagnostic: {
+        readonly id: "CORE_OPERATION_CONTENT_CONFLICT" | "RECOVERY_STORE_CONTENT_CONFLICT";
+        readonly parameters: Readonly<Record<string, never>>;
+      };
+      readonly message: string;
+      readonly recommendedAction: "STOP_AND_INVESTIGATE";
+    }
+  | {
+      readonly code: "STORE_UNAVAILABLE";
+      readonly diagnostic: {
+        readonly id:
+          | "CORE_STORE_UNAVAILABLE"
+          | "RECOVERY_STORE_UNAVAILABLE"
+          | "RECOVERY_READ_CANCELLED"
+          | "RECOVERY_MUTATION_CANCELLED_BEFORE_COMMIT";
+        readonly parameters: Readonly<Record<string, never>>;
+      };
+      readonly message: string;
+      readonly recommendedAction: "RETRY_SAFE";
+    }
+  | {
+      readonly code: "COMMIT_OUTCOME_UNKNOWN";
+      readonly diagnostic: {
+        readonly id: "CORE_COMMIT_OUTCOME_UNKNOWN";
+        readonly parameters: Readonly<Record<string, never>>;
+      };
+      readonly message: string;
+      readonly recommendedAction: "RECOVER_EXACT";
+    }
+  | {
+      readonly code: "STORE_INTEGRITY_ERROR";
+      readonly diagnostic: {
+        readonly id: "CORE_STORE_INTEGRITY_ERROR";
+        readonly parameters: Readonly<Record<string, never>>;
+      };
+      readonly message: string;
+      readonly recommendedAction: "STOP_AND_INVESTIGATE";
+    }
+  | {
+      readonly code: "SCHEMA_MISMATCH";
+      readonly diagnostic: {
+        readonly id: "CORE_SCHEMA_MISMATCH" | "RECOVERY_SCHEMA_MISMATCH";
+        readonly parameters: Readonly<Record<string, never>>;
+      };
+      readonly message: string;
+      readonly recommendedAction: "STOP_AND_INVESTIGATE";
+    }
+  | {
+      readonly code: "RECOVERY_INTEGRITY_ERROR";
+      readonly diagnostic: {
+        readonly id:
+          | "RECOVERY_STORE_RESPONSE_INVALID"
+          | "RECOVERY_STORE_PREPARATION_MISSING"
+          | "RECOVERY_STORE_INTEGRITY_ERROR"
+          | "RECOVERY_RETAINED_CANONICAL_INVALID"
+          | "RECOVERY_RETAINED_DOMAIN_SHAPE_INVALID"
+          | "RECOVERY_RETAINED_PREPARATION_UNVERIFIABLE"
+          | "RECOVERY_NEW_PREPARATION_MISSING"
+          | "RECOVERY_RETAINED_DIGEST_MISMATCH"
+          | "RECOVERY_STORED_DATA_INVALID";
+        readonly parameters: Readonly<Record<string, never>>;
+      };
+      readonly message: string;
+      readonly recommendedAction: "STOP_AND_INVESTIGATE";
+    }
+  | {
+      readonly code: "RECOVERY_CAPACITY_EXCEEDED";
+      readonly diagnostic: {
+        readonly id: "RECOVERY_CAPACITY_EXHAUSTED";
+        readonly parameters: Readonly<Record<string, never>>;
+      };
+      readonly message: string;
+      readonly recommendedAction: "STOP_AND_INVESTIGATE";
+    }
+  | {
+      readonly code: "TECHNICAL_MUTATION_UNKNOWN";
+      readonly diagnostic: {
+        readonly id:
+          "RECOVERY_MUTATION_OUTCOME_UNKNOWN" | "RECOVERY_PREPARATION_DISMISSED_BEFORE_EXECUTION";
+        readonly parameters: Readonly<Record<string, never>>;
+      };
+      readonly message: string;
+      readonly recommendedAction: "RECOVER_EXACT";
+    };
 export type SessionSnapshot = {
   readonly authenticated: boolean;
   readonly antiforgeryToken: string | null;
