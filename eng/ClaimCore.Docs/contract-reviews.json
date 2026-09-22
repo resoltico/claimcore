@@ -187,7 +187,7 @@
       "reviewer": "Transport diagnostics: agent design and source-delta review of safe typed boundaries, frame-local delivery and conservative administrative completion; no independent owner approval",
       "reviewedOn": "2026-09-22",
       "conclusion": "approved",
-      "reviewSubjectHash": "bc783e9b3490aa6af283d8b5b290d81191fc1ec551ba67dbc6ae4bddd7f48f53",
+      "reviewSubjectHash": "0e821fad4780cf0edd087da3cb41c6ad4553707ad926d4ab2bff29ca24ce34ec",
       "wholeFiles": [
         "src/ClaimCore.HostSecurity/PrivateFileService.fs",
         "src/ClaimCore.HostSecurity/PosixPrivateFiles.fs",
@@ -339,7 +339,7 @@
       "reviewer": "Transport diagnostics: agent design/source review, including shared host validation and explicit 200-KiB aggregate bundle budget; no independent owner approval",
       "reviewedOn": "2026-09-22",
       "conclusion": "approved",
-      "reviewSubjectHash": "f8729b3e91c9705880f980ddcf523bf3f29af6e7fe3aa00820b5c475798a744e",
+      "reviewSubjectHash": "5585d08ec89f6e7595328d7bc873bdd0644b7e198e2a5034e44a482c96417631",
       "wholeFiles": [
         "src/ClaimCore.Contracts/ContractFactory.fs",
         "src/ClaimCore.Contracts/EndpointInputs.fs",
