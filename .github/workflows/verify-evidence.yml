@@ -222,8 +222,7 @@ jobs:
             artifacts/assurance-inputs/container-sbom \
             artifacts/assurance-inputs/frontend-product \
             artifacts/assurance-inputs/frontend-sbom \
-            artifacts/assurance-inputs/published \
-            "artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages" || status=1
+            artifacts/assurance-inputs/published || status=1
           finished="$(date -u +%Y-%m-%dT%H:%M:%S.0000000+00:00)"
           mkdir -p "$output"
           outcome=failure

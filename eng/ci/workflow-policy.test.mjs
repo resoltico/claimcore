@@ -134,6 +134,16 @@ for (const [name, path, modify] of [
     (s) => s.replace("merge-multiple: false", "merge-multiple: true"),
   ],
   [
+    "self-referential evidence stage scan",
+    "verify-evidence.yml",
+    (s) =>
+      s.replace(
+        "            artifacts/evidence-producers \\",
+        '            "artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages" \\\n' +
+          "            artifacts/evidence-producers \\",
+      ),
+  ],
+  [
     "duplicate security execution",
     "verify-frontend.yml",
     (s) =>

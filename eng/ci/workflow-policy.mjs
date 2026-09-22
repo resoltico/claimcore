@@ -171,6 +171,14 @@ export function validateWorkflowSources(sources, { graph = true } = {}) {
       falseInput(collections[0].with["merge-multiple"]),
       "Stage artifacts must retain producer directories.",
     );
+    const artifactScan = Object.values(evidence.jobs)
+      .flatMap((job) => job.steps ?? [])
+      .find((step) => step.id === "artifact_secrets");
+    assert(
+      typeof artifactScan?.run === "string" &&
+        !artifactScan.run.includes("artifacts/evidence/${{ github.run_id }}"),
+      "Artifact scanning cannot read its own stage directory before that manifest exists.",
+    );
     const allRuns = [...workflows]
       .filter(([path]) => !standalonePaths.has(path))
       .flatMap(([, value]) =>
