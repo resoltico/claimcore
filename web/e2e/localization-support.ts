@@ -12,11 +12,8 @@ import type { PreparedIdentity } from "./case-workflow";
 export const ui = (language: "en" | "lv" | "ar", key: keyof typeof en): string =>
   ({ en, lv, ar })[language][key];
 export const selectLanguage = async (page: Page, language: Language): Promise<void> => {
-  const dialog = page.getByRole("dialog");
-  const scope = (await dialog.count()) === 1 ? dialog : page;
-  const control = scope
-    .getByRole("combobox")
-    .filter({ has: page.locator('option[value="en-XA"]') });
+  const control = page.getByRole("combobox").filter({ has: page.locator('option[value="en-XA"]') });
+  await expect(control).toHaveCount(1);
   await control.selectOption(language);
   await expect(control).toHaveValue(language);
   await expect(page.locator("html")).toHaveAttribute(
@@ -26,11 +23,8 @@ export const selectLanguage = async (page: Page, language: Language): Promise<vo
   await expect(page.locator("html")).toHaveAttribute("dir", language === "ar" ? "rtl" : "ltr");
 };
 export const selectFormat = async (page: Page, locale: DisplayLocale): Promise<void> => {
-  const dialog = page.getByRole("dialog");
-  const scope = (await dialog.count()) === 1 ? dialog : page;
-  const control = scope
-    .getByRole("combobox")
-    .filter({ has: page.locator('option[value="en-GB"]') });
+  const control = page.getByRole("combobox").filter({ has: page.locator('option[value="en-GB"]') });
+  await expect(control).toHaveCount(1);
   await control.selectOption(locale);
   await expect(control).toHaveValue(locale);
 };

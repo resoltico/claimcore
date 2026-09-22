@@ -126,6 +126,13 @@ describe("v2 Recovery view", () => {
     render(<RecoveryView token="token" />);
     await user.click(await screen.findByRole("button", { name: "Inspect" }));
     await user.click(screen.getByRole("button", { name: "Resolve exact preparation" }));
+    await screen.findByRole("button", { name: "Confirm resolve" });
+    expect(screen.getAllByRole("dialog")).toHaveLength(1);
+    const language = screen.getByRole("combobox", { name: "Interface language" });
+    await user.selectOptions(language, "ar");
+    expect(screen.getAllByRole("dialog")).toHaveLength(1);
+    await user.selectOptions(language, "en");
+    expect(fetch).toHaveBeenCalledTimes(2);
     await user.click(await screen.findByRole("button", { name: "Confirm resolve" }));
     expect(await screen.findByText(`Accepted exact operation ${operationId}.`)).toBeVisible();
   });

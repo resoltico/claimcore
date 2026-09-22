@@ -62,7 +62,7 @@
     {
       "file": "web/eslint.config.mjs",
       "rule": "eslint-config-ignore",
-      "scope": "line:41",
+      "scope": "line:43",
       "owner": "project maintainers",
       "rationale": "Excludes only the deterministic, generated AJV standalone validator groups from human-source lint rules; contract generation enforces their exact schema inventory, runtime exports, deterministic bytes, and 600 KiB per-group ceiling.",
       "reviewOn": "2027-03-01"
