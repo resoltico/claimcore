@@ -3,6 +3,8 @@ import { mkdir, rename, unlink, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { BrowserStepDiagnostic, browserSources } from "./playwright-diagnostics.mjs";
+
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const scope = process.env["CLAIMCORE_WEB_E2E_ENGINE"] ?? "all";
 
@@ -54,6 +56,8 @@ const recordFailure = (reporter, result) => {
 
 export default class SanitizedPlaywrightReporter {
   expected = 0;
+  sourceLocations = browserSources(resolve(scriptDirectory, "../.."));
+  stepDiagnostics = new WeakMap();
   totals = { passed: 0, failed: 0, skipped: 0, timedOut: 0, interrupted: 0 };
   tests = [];
   failureLines = [];
@@ -64,8 +68,17 @@ export default class SanitizedPlaywrightReporter {
     this.expected = suite.allTests().length;
   }
 
-  onTestBegin() {
+  onTestBegin(_test, result) {
+    this.stepDiagnostics.set(result, new BrowserStepDiagnostic(this.sourceLocations));
     if (progressFile !== undefined) writeFileSync(progressFile, "test-start");
+  }
+
+  onStepBegin(_test, result, step) {
+    this.stepDiagnostics.get(result)?.begin(step);
+  }
+
+  onStepEnd(_test, result, step) {
+    this.stepDiagnostics.get(result)?.end(step);
   }
 
   onTestEnd(test, result) {
@@ -77,6 +90,7 @@ export default class SanitizedPlaywrightReporter {
       status: result.status,
       stage: safeStage(),
       line: result.errors[0]?.location?.line ?? null,
+      step: this.stepDiagnostics.get(result)?.snapshot() ?? null,
     });
   }
 
