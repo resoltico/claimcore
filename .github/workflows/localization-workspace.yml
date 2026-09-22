@@ -1,0 +1,24 @@
+name: Temporary localization source export
+on:
+  push:
+    branches: [feat/presentation-localization]
+    paths: [.github/workflows/localization-workspace.yml]
+permissions:
+  contents: read
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: 1febe2f752224eae0e514da6d682dee3f49db7b9
+          persist-credentials: false
+      - name: Export tracked source at the reviewed baseline
+        run: git archive --format=tar.gz --prefix=claimcore/ HEAD > "$RUNNER_TEMP/localization-baseline.tar.gz"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: localization-baseline
+          path: ${{ runner.temp }}/localization-baseline.tar.gz
+          retention-days: 1
+          if-no-files-found: error
