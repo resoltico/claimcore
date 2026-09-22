@@ -45,6 +45,8 @@ it("keeps the anonymous token after a rejected credential so login can be retrie
       JSON.stringify({
         kind: "HOST_FAILURE",
         code: "WEB_LOGIN_REJECTED",
+        status: 401,
+        diagnostic: { id: "WEB_HOST_LOGIN_REJECTED", parameters: {} },
         message: "Credential was rejected.",
         executionPhase: "NOT_STARTED",
       }),

@@ -56,6 +56,13 @@
     "ClaimCore.Web.Web v2 admission.[CC-WEB-001] keeps the mutable browser session registry server-side",
     "ClaimCore.Web.Web v2 admission.[CC-WEB-001] rejects absent and remote peers or wrong host authority",
     "ClaimCore.Web.Web v2 admission.[CC-WEB-001] requires one exact browser origin and same-origin metadata",
-    "ClaimCore.Web.Web v2 admission.[CC-WEB-001] returns typed CSRF admission refusal"
+    "ClaimCore.Web.Web v2 admission.[CC-WEB-001] returns typed CSRF admission refusal",
+    "ClaimCore.Web.transport and host diagnostics.all public host causes have exact parameterless diagnostics",
+    "ClaimCore.Web.transport and host diagnostics.bounded HTTP input distinguishes limit and read failures",
+    "ClaimCore.Web.transport and host diagnostics.framework method refusal uses the typed host boundary",
+    "ClaimCore.Web.transport and host diagnostics.host failures preserve request-local dispatch knowledge",
+    "ClaimCore.Web.transport and host diagnostics.startup diagnostics expose known settings but no supplied values",
+    "ClaimCore.Web.transport and host diagnostics.strict HTTP readers emit specific closed causes",
+    "ClaimCore.Web.transport and host diagnostics.typed input classification binds diagnostic and HTTP status"
   ]
 }

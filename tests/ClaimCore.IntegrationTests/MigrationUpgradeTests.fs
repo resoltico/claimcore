@@ -199,9 +199,8 @@ let private atomicityUpgradeTests =
                             admin
                             "ALTER TABLE claimcore.request_preparations ADD COLUMN preparing_contract_kind text"
 
-                        Expect.throws
-                            (fun () -> Migrations.apply admin)
-                            "Conflicting migration DDL fails as one transaction"
+                        Migrations.apply admin
+                        |> refusedAdministration AdministrationFailure.DatabaseUnavailable
 
                         use connection = new NpgsqlConnection(admin)
                         connection.Open()
@@ -258,15 +257,14 @@ let private manifestUpgradeTests =
                     "Applied migration names and bytes are immutable")
             testCase "[CC-DB-001] migrator refuses a newer manifest entry" (fun () ->
                 withMigrationOne (fun admin _ ->
-                    Migrations.apply admin
+                    Migrations.apply admin |> completedAdministration
 
                     execute
                         admin
                         "INSERT INTO claimcore.schema_migrations (version, name, script_sha256) VALUES (7, '007_future', repeat('0', 64))"
 
-                    Expect.throws
-                        (fun () -> Migrations.apply admin)
-                        "A binary refuses migrations newer than its embedded manifest"))
+                    Migrations.apply admin
+                    |> refusedAdministration AdministrationFailure.MigrationNewerThanRuntime))
         ]
 
 let private upgradeTests =

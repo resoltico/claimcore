@@ -3,12 +3,13 @@ namespace ClaimCore.Cli
 open System.Threading
 open System.Threading.Tasks
 open ClaimCore.Application
+open ClaimCore.Contracts
 
 /// Why a composed core could not be supplied for an invocation. The protocol layer renders these
 /// refusals; it never names a runtime factory, a connection string, or a store.
 [<RequireQualifiedAccess>]
 type CoreUnavailable =
-    | Configuration of message: string
+    | Configuration of reason: ProtocolProblem
     | Open of fault: RuntimeOpenFault
 
 /// Supplies the composed typed core on demand. The CLI composition root implements this, which is

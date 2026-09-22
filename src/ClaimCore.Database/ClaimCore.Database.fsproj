@@ -1,6 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><OutputType>Exe</OutputType></PropertyGroup>
   <ItemGroup>
+    <Compile Include="DatabaseArguments.fs" />
+    <Compile Include="DatabaseDiagnostics.fs" />
+    <Compile Include="DatabaseContracts.fs" />
+    <Compile Include="DatabaseExecution.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>

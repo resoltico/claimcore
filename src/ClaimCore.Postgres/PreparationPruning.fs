@@ -83,7 +83,7 @@ module PreparationPruning =
         command.Parameters.AddWithValue("deleted", deleted) |> ignore
 
         if command.ExecuteNonQuery() <> 1 then
-            raise (InvalidDataException("Preparation prune audit was not recorded."))
+            AdministrationFailures.refuse AdministrationFailure.PruneAuditFailed
 
     let private terminalFootprint connection transaction =
         use command =
@@ -101,11 +101,15 @@ module PreparationPruning =
         use reader = command.ExecuteReader()
 
         if not (reader.Read()) then
-            raise (InvalidDataException("Terminal recovery footprint could not be read."))
+            AdministrationFailures.refuse AdministrationFailure.RecoveryFootprintUnreadable
 
         reader.GetInt64(0), reader.GetInt64(1)
 
-    let prune connectionString (options: PreparationPruneOptions) =
+    let private pruneValue
+        (progress: AdministrationProgress<PreparationPruneResult>)
+        connectionString
+        (options: PreparationPruneOptions)
+        =
         PreparationPruneOptions.validate options
         let builder = Migrations.ownerBuilder connectionString
         use connection = new NpgsqlConnection(builder.ConnectionString)
@@ -114,6 +118,7 @@ module PreparationPruning =
         Migrations.requireOwnerIdentity connection
         Migrations.requireCurrent connection
         use transaction = connection.BeginTransaction(IsolationLevel.ReadCommitted)
+        progress.BeginWork()
         Sql.lockKey connection transaction "claimcore:request-preparation-prune"
         let candidateCount = candidates connection transaction options
 
@@ -125,12 +130,17 @@ module PreparationPruning =
 
         record connection transaction options candidateCount deletedCount
         let terminalCount, terminalBytes = terminalFootprint connection transaction
-        transaction.Commit()
 
-        {
-            CandidateCount = candidateCount
-            DeletedCount = deletedCount
-            DryRun = options.DryRun
-            TerminalPreparationCount = terminalCount
-            TerminalCanonicalRequestBytes = terminalBytes
-        }
+        let result =
+            {
+                CandidateCount = candidateCount
+                DeletedCount = deletedCount
+                DryRun = options.DryRun
+                TerminalPreparationCount = terminalCount
+                TerminalCanonicalRequestBytes = terminalBytes
+            }
+
+        progress.Commit((fun () -> transaction.Commit()), result)
+
+    let prune connectionString options =
+        AdministrationExecution.run (fun progress -> pruneValue progress connectionString options)

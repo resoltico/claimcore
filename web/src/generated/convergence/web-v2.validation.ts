@@ -52,6 +52,7 @@ const endpointGroups = {
   "session.logout": "core",
 } as const satisfies Readonly<Record<WebV2EndpointId, ValidatorGroup>>;
 
+const loadHost = (): Promise<ValidatorModule> => import("./web-v2.validators.host.mjs");
 const loadDiscovery = (): Promise<ValidatorModule> => import("./web-v2.validators.discovery.mjs");
 const loadCore = (): Promise<ValidatorModule> => import("./web-v2.validators.core.mjs");
 const loadRecovery = (): Promise<ValidatorModule> => import("./web-v2.validators.recovery.mjs");
@@ -65,12 +66,9 @@ const requiredValidator = async <K extends WebV2EndpointId>(
 ): Promise<ResponseValidator<K>> =>
   (await validatorsFor(endpoint))[endpointValidators[endpoint]] as ResponseValidator<K>;
 
-export const isHostFailure = async (
-  endpoint: WebV2EndpointId,
-  value: unknown,
-): Promise<boolean> => {
-  const validator = (await validatorsFor(endpoint))["validate_host_failure"]!;
-  return validator(value);
+export const isHostFailure = async (value: unknown, status: number): Promise<boolean> => {
+  const validator = (await loadHost())["validate_host_failure"]!;
+  return validator(value) && (value as { readonly status: number }).status === status;
 };
 
 export const isWebV2Response = async <K extends WebV2EndpointId>(

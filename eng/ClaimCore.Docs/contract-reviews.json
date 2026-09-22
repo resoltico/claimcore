@@ -53,10 +53,10 @@
     {
       "contractId": "CC-APP-001",
       "reviewerKind": "agent",
-      "reviewer": "Core outcome diagnostics: agent design and source-delta review of typed causes, guidance, privacy and unchanged operation authority; not independent owner approval",
-      "reviewedOn": "2026-09-21",
+      "reviewer": "Transport diagnostics: agent design/source review, including shared host validation and explicit 200-KiB aggregate bundle budget; no independent owner approval",
+      "reviewedOn": "2026-09-22",
       "conclusion": "approved",
-      "reviewSubjectHash": "16b738872386ec27fa97b0a431551f05fdb22bf738443f99298a704ad6db45db",
+      "reviewSubjectHash": "1c73729dddd4ce692553bb211c47d129e9f522ca38b2c02962b3125f0dcbfd79",
       "wholeFiles": [
         "src/ClaimCore.Application/Core.fs",
         "src/ClaimCore.Application/Service.fs",
@@ -90,10 +90,10 @@
     {
       "contractId": "CC-APP-002",
       "reviewerKind": "agent",
-      "reviewer": "Core outcome diagnostics: agent design and source-delta review of typed causes, guidance, privacy and unchanged operation authority; not independent owner approval",
-      "reviewedOn": "2026-09-21",
+      "reviewer": "Transport diagnostics: agent design and source-delta review of safe typed boundaries, frame-local delivery and conservative administrative completion; no independent owner approval",
+      "reviewedOn": "2026-09-22",
       "conclusion": "approved",
-      "reviewSubjectHash": "96fd2c4332f93f2516b4e5242098bfdc081d2661c66ba48d827cef2d27310909",
+      "reviewSubjectHash": "e7cc3d9ef715a634a16845472df7947c33ccd06f6ef88a901b073c249f7dc34d",
       "wholeFiles": [
         "src/ClaimCore.Application/AcceptedObservation.fs",
         "src/ClaimCore.Application/Core.fs",
@@ -131,10 +131,10 @@
     {
       "contractId": "CC-CLI-001",
       "reviewerKind": "agent",
-      "reviewer": "Core outcome diagnostics: agent design and source-delta review of typed causes, guidance, privacy and unchanged operation authority; not independent owner approval",
-      "reviewedOn": "2026-09-21",
+      "reviewer": "Transport diagnostics: agent design and source-delta review of safe typed boundaries, frame-local delivery and conservative administrative completion; no independent owner approval",
+      "reviewedOn": "2026-09-22",
       "conclusion": "approved",
-      "reviewSubjectHash": "0af6f01f4b2f2dc5c813cf997224841dbc7ccf0d709db85c537a63a29df3f66e",
+      "reviewSubjectHash": "2d1cc83c85a4a309ff7bd748a4209dc25ad6a38667a195f4744cd2b766768c79",
       "wholeFiles": [
         "examples/01-open.json",
         "examples/02-decide.json",
@@ -168,17 +168,26 @@
         "tests/ClaimCore.Tests/OutcomeEmissionTests.fs",
         "tests/ClaimCore.Tests/FaultDiagnosticExamples.fs",
         "tests/ClaimCore.Tests/RecoveryDiagnosticExamples.fs",
-        "src/ClaimCore.CliProtocol/InvocationSession.fs"
+        "src/ClaimCore.CliProtocol/InvocationSession.fs",
+        "src/ClaimCore.Contracts/ProtocolProblems.fs",
+        "src/ClaimCore.Contracts/ProtocolFailure.fs",
+        "src/ClaimCore.Contracts/CliProcessDiagnostics.fs",
+        "src/ClaimCore.Contracts/TransportDiagnosticSchemas.fs",
+        "src/ClaimCore.CliProtocol/EndpointReply.fs",
+        "src/ClaimCore.CliProtocol/FrameDelivery.fs",
+        "src/ClaimCore.CliProtocol/ReplyRecoveryContext.fs",
+        "tests/ClaimCore.Tests/FrameDeliveryTests.fs",
+        "tests/ClaimCore.Tests/ProtocolDiagnosticTests.fs"
       ],
       "markedSpans": []
     },
     {
       "contractId": "CC-CLI-002",
       "reviewerKind": "agent",
-      "reviewer": "Core outcome diagnostics: agent source-delta review of the published export refusal oracle, retaining owner-only, exclusive, symlink and non-disclosure assertions; not independent owner approval",
-      "reviewedOn": "2026-09-21",
+      "reviewer": "Transport diagnostics: agent design and source-delta review of safe typed boundaries, frame-local delivery and conservative administrative completion; no independent owner approval",
+      "reviewedOn": "2026-09-22",
       "conclusion": "approved",
-      "reviewSubjectHash": "32eaae383171db55dc8dddfe1b40e91c2a8a6b15ac1e5b57e066329df8cdee8a",
+      "reviewSubjectHash": "0e821fad4780cf0edd087da3cb41c6ad4553707ad926d4ab2bff29ca24ce34ec",
       "wholeFiles": [
         "src/ClaimCore.HostSecurity/PrivateFileService.fs",
         "src/ClaimCore.HostSecurity/PosixPrivateFiles.fs",
@@ -189,17 +198,18 @@
         "tests/ClaimCore.Tests/PrivateFileSecurityTests.fs",
         "tests/ClaimCore.Tests/NativePrivateFileRaceTests.fs",
         "tests/ClaimCore.AcceptanceTests/PrivateFileTests.fs",
-        "eng/Run-PublishedCliAcceptance.sh"
+        "eng/Run-PublishedCliAcceptance.sh",
+        "src/ClaimCore.HostSecurity/PrivateFileFailure.fs"
       ],
       "markedSpans": []
     },
     {
       "contractId": "CC-REC-001",
       "reviewerKind": "agent",
-      "reviewer": "Core outcome diagnostics: agent design and source-delta review of typed causes, guidance, privacy and unchanged operation authority; not independent owner approval",
-      "reviewedOn": "2026-09-21",
+      "reviewer": "Transport diagnostics: agent design and source-delta review of safe typed boundaries, frame-local delivery and conservative administrative completion; no independent owner approval",
+      "reviewedOn": "2026-09-22",
       "conclusion": "approved",
-      "reviewSubjectHash": "71627c90be1a848fccac35397f9b829aded7ad16b4e6220fa8f815c707f9414d",
+      "reviewSubjectHash": "8cd90a7e4d33e4067be52c12814726033331adae8f535d201265e53257331739",
       "wholeFiles": [
         "src/ClaimCore.Application/AcceptedObservation.fs",
         "src/ClaimCore.Application/RecoveryCoordinator.fs",
@@ -249,10 +259,10 @@
     {
       "contractId": "CC-RUN-001",
       "reviewerKind": "agent",
-      "reviewer": "Claude release audit: installation calendar requires an IANA identifier re-review",
-      "reviewedOn": "2026-09-21",
+      "reviewer": "Transport diagnostics: agent design and source-delta review of safe typed boundaries, frame-local delivery and conservative administrative completion; no independent owner approval",
+      "reviewedOn": "2026-09-22",
       "conclusion": "approved",
-      "reviewSubjectHash": "426fe5be0aa72efb4ab603670afa95a848c71da126ea2daa3022b14979c44120",
+      "reviewSubjectHash": "13588766a2a446735f4cbe1dded006ca0448fcab6fb82590dbf042235222b841",
       "wholeFiles": [
         "src/ClaimCore.Hosting/Runtime.fsi",
         "src/ClaimCore.Hosting/Runtime.fs",
@@ -268,10 +278,10 @@
     {
       "contractId": "CC-DB-001",
       "reviewerKind": "agent",
-      "reviewer": "Claude release audit: installation calendar requires an IANA identifier re-review",
-      "reviewedOn": "2026-09-21",
+      "reviewer": "Transport diagnostics: agent design and source-delta review of safe typed boundaries, frame-local delivery and conservative administrative completion; no independent owner approval",
+      "reviewedOn": "2026-09-22",
       "conclusion": "approved",
-      "reviewSubjectHash": "d979c2e0b47dd83d00793734c344585e7d156b433a675f27d6a9fdff9b58cafe",
+      "reviewSubjectHash": "f0879f7cdf33e0f63d4bba1458634e54004a6c9ae3ff356b6187fe98a601c13e",
       "wholeFiles": [
         "db/001_initial.sql",
         "db/002_request_preparations.sql",
@@ -289,17 +299,25 @@
         "src/ClaimCore.Postgres/SchemaDefinition.fs",
         "tests/ClaimCore.AcceptanceTests/DatabaseFixture.fs",
         "tests/ClaimCore.IntegrationTests/MigrationUpgradeTests.fs",
-        "tests/ClaimCore.IntegrationTests/MigrationEvidenceUpgradeTests.fs"
+        "tests/ClaimCore.IntegrationTests/MigrationEvidenceUpgradeTests.fs",
+        "src/ClaimCore.Postgres/AdministrationTypes.fs",
+        "src/ClaimCore.Postgres/AdministrationExecution.fs",
+        "src/ClaimCore.Database/DatabaseArguments.fs",
+        "src/ClaimCore.Database/DatabaseDiagnostics.fs",
+        "src/ClaimCore.Database/DatabaseContracts.fs",
+        "src/ClaimCore.Database/DatabaseExecution.fs",
+        "tests/ClaimCore.IntegrationTests/AdministrationCompletionTests.fs",
+        "tests/ClaimCore.Tests/AdministrationDiagnosticTests.fs"
       ],
       "markedSpans": []
     },
     {
       "contractId": "CC-DB-002",
       "reviewerKind": "agent",
-      "reviewer": "Claude release audit: installation calendar requires an IANA identifier re-review",
-      "reviewedOn": "2026-09-21",
+      "reviewer": "Transport diagnostics: agent design and source-delta review of safe typed boundaries, frame-local delivery and conservative administrative completion; no independent owner approval",
+      "reviewedOn": "2026-09-22",
       "conclusion": "approved",
-      "reviewSubjectHash": "f0d043d263eb6c721f3e7a5e799a333e411d956901707225e9413575a2578cad",
+      "reviewSubjectHash": "e07b3c2b891de4314c748a8fd5a7c1e97b5db0bfeaf53e3acab4bce674407f73",
       "wholeFiles": [
         "src/ClaimCore.HostSecurity/PrivateFileService.fs",
         "src/ClaimCore.HostSecurity/PosixPrivateFiles.fs",
@@ -309,17 +327,19 @@
         "src/ClaimCore.Database/Program.fs",
         "src/ClaimCore.Postgres/InstallationBusinessZone.fs",
         "tests/ClaimCore.AcceptanceTests/DatabaseFixture.fs",
-        "tests/ClaimCore.Tests/DatabasePrivateFileTests.fs"
+        "tests/ClaimCore.Tests/DatabasePrivateFileTests.fs",
+        "src/ClaimCore.Database/DatabaseArguments.fs",
+        "src/ClaimCore.Database/DatabaseExecution.fs"
       ],
       "markedSpans": []
     },
     {
       "contractId": "CC-WEB-001",
       "reviewerKind": "agent",
-      "reviewer": "Core outcome diagnostics: agent design and source-delta review of typed causes, guidance, privacy and unchanged operation authority; not independent owner approval",
-      "reviewedOn": "2026-09-21",
+      "reviewer": "Transport diagnostics: agent design/source review, including shared host validation and explicit 200-KiB aggregate bundle budget; no independent owner approval",
+      "reviewedOn": "2026-09-22",
       "conclusion": "approved",
-      "reviewSubjectHash": "a4d1cdffaab6f16e3c0bceea54ef919b4937a6a9a9b689228311bce915862b7c",
+      "reviewSubjectHash": "5585d08ec89f6e7595328d7bc873bdd0644b7e198e2a5034e44a482c96417631",
       "wholeFiles": [
         "src/ClaimCore.Contracts/ContractFactory.fs",
         "src/ClaimCore.Contracts/EndpointInputs.fs",
@@ -428,7 +448,14 @@
         "tests/ClaimCore.Tests/OutcomeEmissionTests.fs",
         "tests/ClaimCore.Tests/FaultDiagnosticExamples.fs",
         "tests/ClaimCore.Tests/RecoveryDiagnosticExamples.fs",
-        "web/scripts/validator-groups.test.mjs"
+        "web/scripts/validator-groups.test.mjs",
+        "src/ClaimCore.Contracts/HttpInputProblems.fs",
+        "src/ClaimCore.Contracts/WebHostFailures.fs",
+        "src/ClaimCore.Contracts/WebHostFailureSchema.fs",
+        "src/ClaimCore.Contracts/WebStartupDiagnostics.fs",
+        "src/ClaimCore.Web/RouteSupport.fs",
+        "tests/ClaimCore.WebTests/TransportDiagnosticTests.fs",
+        "web/tests/local-diagnostics.test.ts"
       ],
       "markedSpans": []
     }

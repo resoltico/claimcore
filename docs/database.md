@@ -17,6 +17,7 @@ ClaimCore.Database 0.4.0 — schema and recovery-retention administration
   ClaimCore.Database set-business-zone <canonical-IANA-ID>
   ClaimCore.Database prune [--dry-run] [--settled-retention-days <1-3650>]
                            [--abandoned-retention-days <1-3650>] [--limit <1-1000>]
+  ClaimCore.Database describe diagnostics
   ClaimCore.Database help
   ClaimCore.Database version [--json]
 Prune defaults: accepted 30 days; revoked 30 days; batch limit 100; deletion enabled.
@@ -39,6 +40,20 @@ The runtime validates the supported server range, required durability and sessio
 role, and exact installed migration manifest when opening a connection. Development and CI use the
 digest-pinned image selected by [`db/postgresql-baseline.json`](../db/postgresql-baseline.json);
 executable configuration and tests own exact compatibility policy.
+
+## Administration results and delivery
+
+`ClaimCore.Database describe diagnostics` publishes the exact response schema and its fingerprint
+without configuration or database access. Maintenance reports structured JSON and separates
+`NOT_STARTED`, `NOT_COMMITTED`, `COMPLETION_UNKNOWN`, `COMPLETED` and
+`COMPLETED_CLEANUP_FAILED`. Unconfirmed commit exits 4 and requires inspection/reconciliation;
+it is not safe automatic-retry advice. Definite admission/action failures exit 3.
+
+Output failure after confirmed maintenance does not relabel the action as failed. It makes one
+bounded stderr delivery diagnostic and returns a nonzero exit. Terminal preparation counts and
+canonical byte totals are exact decimal strings. Native callers handle `AdministrationOutcome`
+instead of assuming an exception or a returned unit captures every completion state. Existing
+migration history and stored formats remain unchanged in this package.
 
 ## Stored data
 
@@ -80,8 +95,8 @@ drift.
 The currently supported paths apply a fresh database through 006 and upgrade an installed 001, 002,
 003, 004, or 005 schema sequentially to 006. They preserve adopted cases, accepted history, canonical
 request bytes, preparations, attempts, settlements, legacy uncertainty, installation lineage, and
-the exact 001–005 migration bytes. A failed migration rolls back atomically and recorded digests remain
-exact.
+the exact 001–005 migration bytes. A pre-commit failure rolls back atomically and recorded digests remain exact. A lost commit
+confirmation is reported as completion unknown, never inferred rollback.
 
 Migration 002 added bounded request preparations. Migration 003 added per-submission attempts and
 definite technical settlements while conservatively retaining uncertainty from starts without attempt

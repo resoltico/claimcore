@@ -67,7 +67,7 @@ jobs:
           dotnet test --project tests/ClaimCore.Tests/ClaimCore.Tests.fsproj \
             --configuration Release --no-build --no-restore --max-parallel-test-modules 1 \
             --results-directory="$results" \
-            --minimum-expected-tests=213 --zero-tests-policy=strict --timeout=30m \
+            --minimum-expected-tests=263 --zero-tests-policy=strict --timeout=30m \
             -- --settings="$PWD/eng/expecto.runsettings" --report-trx \
             --report-trx-filename=ClaimCore.Tests.extended.trx
           dotnet test --project tests/ClaimCore.FuzzQualificationTests/ClaimCore.FuzzQualificationTests.fsproj \

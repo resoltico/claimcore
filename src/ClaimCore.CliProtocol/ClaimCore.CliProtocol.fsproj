@@ -11,8 +11,11 @@
     <Compile Include="InvocationFraming.fs" />
     <Compile Include="JsonResponse.fs" />
     <Compile Include="CoreSupply.fs" />
+    <Compile Include="EndpointReply.fs" />
+    <Compile Include="ReplyRecoveryContext.fs" />
     <Compile Include="EndpointDispatch.fs" />
     <Compile Include="InvocationSession.fs" />
+    <Compile Include="FrameDelivery.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />

@@ -30,14 +30,21 @@ module CliWireCodec =
             writeOutcome writer
             writer.WriteEndObject())
 
-    let protocolFailure (exitCode: int) (code: string) (message: string) (path: string) =
+    let protocolFailure (exitCode: int) (failure: ProtocolFailure) =
         encode exitCode (fun writer ->
             writer.WriteStartObject()
             writer.WriteNumber("protocolVersion", 3)
             writer.WriteString("kind", "protocolFailure")
-            writer.WriteString("code", code)
-            writer.WriteString("message", message)
-            writer.WriteString("path", path)
+            writer.WriteString("code", failure.Code)
+            writer.WritePropertyName("diagnostic")
+            writer.WriteStartObject()
+            writer.WriteString("id", ProtocolProblems.token failure.Reason)
+            writer.WritePropertyName("parameters")
+            writer.WriteStartObject()
+            writer.WriteEndObject()
+            writer.WriteEndObject()
+            writer.WriteString("message", ProtocolProblems.render failure.Reason)
+            writer.WriteString("path", failure.Path)
             writer.WriteEndObject())
 
     let private queryExit (outcome: QueryOutcome<Lookup<'value, 'identity>>) =
@@ -209,11 +216,4 @@ module CliWireCodec =
             writer.WriteString("operationId", operationId)
             writer.WriteString("requestSha256", digest)
             writer.WriteString("mediaType", mediaType)
-            writer.WriteEndObject())
-
-    let exportIdentityConflict (endpoint: string) =
-        result endpoint 2 (fun writer ->
-            writer.WriteStartObject()
-            writer.WriteString("kind", "rejected")
-            writer.WriteString("code", "RECOVERY_IDEMPOTENCY_CONFLICT")
             writer.WriteEndObject())

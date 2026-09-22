@@ -89,10 +89,10 @@ const decodeValidatedJsonResponse = async <K extends WebV2EndpointId>(
   status: number,
   value: unknown,
 ): Promise<ApiResult<WebV2Response<K>>> => {
-  if (await isWebV2Response(id, value)) {
+  if (status === 200 && (await isWebV2Response(id, value))) {
     return { kind: "outcome", value: value as WebV2Response<K>, status };
   }
-  if (hostFailureStatus(status) && (await isHostFailure(id, value))) {
+  if (hostFailureStatus(status) && (await isHostFailure(value, status))) {
     return { kind: "hostFailure", failure: value as HostFailure, status };
   }
   return {

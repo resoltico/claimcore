@@ -1,5 +1,5 @@
 /* Generated from ClaimCore.Contracts schemas. Do not edit. */
-import type { HostFailure, WebV2ResponseByEndpoint } from "./web-v2.types";
+import type { WebV2ResponseByEndpoint } from "./web-v2.types";
 
 export type WebV2ValidationError = Readonly<{
     instancePath: string;
@@ -12,7 +12,6 @@ export interface WebV2Validator<T> {
     readonly errors: ReadonlyArray<WebV2ValidationError> | null | undefined;
 }
 
-export const validate_host_failure: WebV2Validator<HostFailure>;
 export const validate_recovery_list: WebV2Validator<WebV2ResponseByEndpoint["recovery.list"]>;
 export const validate_recovery_inspect: WebV2Validator<WebV2ResponseByEndpoint["recovery.inspect"]>;
 export const validate_recovery_resolve: WebV2Validator<WebV2ResponseByEndpoint["recovery.resolve"]>;

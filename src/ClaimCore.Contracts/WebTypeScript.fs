@@ -218,7 +218,6 @@ module WebTypeScript =
         let aliases =
             fromDefinitions
                 [
-                    "HostFailure"
                     "Fault"
                     "SessionSnapshot"
                     "DefinitionPayload"
@@ -271,6 +270,7 @@ module WebTypeScript =
             "/* Generated from ClaimCore.Contracts. Do not edit. */"
             "export type * from \"./web-v2.types.semantic\";"
             "export type * from \"./web-v2.types.core\";"
+            "export type * from \"./web-v2.types.transport\";"
             "export type * from \"./web-v2.types.diagnostics\";"
             "export type * from \"./web-v2.types.recovery\";"
             "export type * from \"./web-v2.types.responses\";"
@@ -285,6 +285,8 @@ module WebTypeScript =
         [
             "web-v2.types.semantic.ts", semanticModule projection
             "web-v2.types.core.ts", coreModule projection values
+            "web-v2.types.transport.ts",
+            moduleBytes [] (fromDefinitions [ "HostFailure" ] values) []
             "web-v2.types.diagnostics.ts",
             moduleBytes [] (fromDefinitions [ "Rejection" ] values) []
             "web-v2.types.recovery.ts", recoveryModule values

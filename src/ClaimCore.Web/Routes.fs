@@ -5,6 +5,7 @@ open System.Threading
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Http
 open ClaimCore.Application
+open ClaimCore.Contracts
 
 /// Thin HTTP-v2 endpoint bindings. The host validates transport admission and exact input shapes,
 /// then calls one typed core endpoint. It contains no recovery lifecycle or claims business logic.
@@ -20,7 +21,9 @@ module Routes =
                 match decode bytes with
                 | Error message -> return RouteSupport.inputFailure context message
                 | Ok input ->
+                    RouteSupport.markDispatched context
                     let! outcome = invoke input
+                    RouteSupport.markCompleted context
                     return project outcome
         }
 
@@ -157,13 +160,18 @@ module Routes =
                 match HttpInput.resolve bytes with
                 | Error message -> return RouteSupport.inputFailure context message
                 | Ok input ->
-                    match!
+                    RouteSupport.markDispatched context
+
+                    let! exported =
                         core.Recovery.ExportEnvelope(
                             input.OperationId,
                             input.RequestSha256,
                             requestToken context
                         )
-                    with
+
+                    RouteSupport.markCompleted context
+
+                    match exported with
                     | RecoveryQueryOutcome.RecoverySucceeded(Lookup.Found artifact) ->
                         let expectedName =
                             "claimcore-recovery-" + input.OperationId.ToString("D") + ".json"
@@ -175,10 +183,7 @@ module Routes =
                             return
                                 RouteSupport.hostFailure
                                     context
-                                    StatusCodes.Status500InternalServerError
-                                    "WEB_PROTOCOL"
-                                    "Recovery export metadata was invalid."
-                                    None
+                                    WebHostFailure.ExportMetadataInvalid
                         else
                             return
                                 Results.File(artifact.Bytes, artifact.MediaType, artifact.FileName)
@@ -190,7 +195,9 @@ module Routes =
             match! RouteSupport.admittedBody admit maximumBytes context with
             | Error result -> return result
             | Ok source ->
+                RouteSupport.markDispatched context
                 let! outcome = invoke source
+                RouteSupport.markCompleted context
                 return project outcome
         }
 
@@ -202,7 +209,9 @@ module Routes =
                 match RouteSupport.sourceDigest sourceDigestHeader context with
                 | Error result -> return result
                 | Ok digest ->
+                    RouteSupport.markDispatched context
                     let! outcome = invoke source digest
+                    RouteSupport.markCompleted context
                     return WebRecoveryWire.importRetain endpoint outcome
         }
 

@@ -57,6 +57,10 @@
     <Compile Include="NativePrivateFileRaceTests.fs" />
     <Compile Include="DatabasePrivateFileTests.fs" />
     <Compile Include="CompilerBoundaryTests.fs" />
+    <Compile Include="DiagnosticTestStreams.fs" />
+    <Compile Include="FrameDeliveryTests.fs" />
+    <Compile Include="AdministrationDiagnosticTests.fs" />
+    <Compile Include="ProtocolDiagnosticTests.fs" />
     <Compile Include="Suite.fs" />
   </ItemGroup>
   <ItemGroup>

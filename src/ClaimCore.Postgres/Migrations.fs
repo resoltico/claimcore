@@ -21,7 +21,7 @@ module Migrations =
         use reader = command.ExecuteReader()
 
         if not (reader.Read()) then
-            raise (InvalidDataException("Database catalog state could not be read."))
+            AdministrationFailures.refuse AdministrationFailure.CatalogUnreadable
 
         reader.GetBoolean(0), reader.GetBoolean(1)
 
@@ -70,11 +70,7 @@ module Migrations =
         (installed: (int * string * string) list)
         =
         if installed.Length > expected.Length then
-            raise (
-                InvalidDataException(
-                    "The database contains migrations newer than this application."
-                )
-            )
+            AdministrationFailures.refuse AdministrationFailure.MigrationNewerThanRuntime
 
         List.zip installed (expected |> List.take installed.Length)
         |> List.iter (fun ((version, name, digest), migration) ->
@@ -83,11 +79,7 @@ module Migrations =
                 || name <> migration.Name
                 || digest <> migration.Digest
             then
-                raise (
-                    InvalidDataException(
-                        "An installed migration name or checksum does not match this application."
-                    )
-                ))
+                AdministrationFailures.refuse AdministrationFailure.MigrationIdentityMismatch)
 
     let private applyMigration
         (connection: NpgsqlConnection)
@@ -109,7 +101,7 @@ module Migrations =
         Sql.text record "digest" migration.Digest
 
         if record.ExecuteNonQuery() <> 1 then
-            raise (InvalidDataException("A migration journal row was not inserted."))
+            AdministrationFailures.refuse AdministrationFailure.MigrationJournalWriteFailed
 
     let internal ownerBuilder (connectionString: string) =
         let builder = NpgsqlConnectionStringBuilder(connectionString)
@@ -122,9 +114,7 @@ module Migrations =
             || builder.LogParameters
             || builder.PersistSecurityInfo
         then
-            invalidArg
-                (nameof connectionString)
-                "Use an explicit owner login without startup options, parameter logging, retained secrets, or pool reset bypasses."
+            AdministrationFailures.refuse AdministrationFailure.OwnerConnectionInvalid
 
         builder.Enlist <- false
         builder.Timeout <- 5
@@ -150,7 +140,7 @@ module Migrations =
             )
 
         if not (identity.ExecuteScalar() :?> bool) then
-            raise RuntimeDatabaseMismatch
+            AdministrationFailures.refuse AdministrationFailure.OwnerIdentityRejected
 
     let private ensureJournal connection transaction =
         let schemaExists, hasJournal = journalExists connection transaction
@@ -158,17 +148,12 @@ module Migrations =
         match schemaExists, hasJournal with
         | false, false -> createJournal connection transaction
         | true, true -> ()
-        | false, true ->
-            raise (InvalidDataException("The migration journal exists without its owning schema."))
-        | true, false ->
-            raise (
-                InvalidDataException(
-                    "The claimcore schema predates the ordered migration journal; no implicit adoption is allowed."
-                )
-            )
+        | false, true -> AdministrationFailures.refuse AdministrationFailure.JournalWithoutSchema
+        | true, false -> AdministrationFailures.refuse AdministrationFailure.SchemaWithoutJournal
 
-    let private migrate (connection: NpgsqlConnection) =
+    let private migrate (progress: AdministrationProgress<unit>) (connection: NpgsqlConnection) =
         use transaction = connection.BeginTransaction(IsolationLevel.ReadCommitted)
+        progress.BeginWork()
         Sql.lockKey connection transaction "claimcore:schema"
         ensureJournal connection transaction
         let expected = SchemaDefinition.all ()
@@ -179,25 +164,30 @@ module Migrations =
         |> List.skip installed.Length
         |> List.iter (applyMigration connection transaction)
 
-        transaction.Commit()
+        progress.Commit((fun () -> transaction.Commit()), ())
 
     let internal requireCurrent (connection: NpgsqlConnection) =
         use transaction = connection.BeginTransaction(IsolationLevel.ReadCommitted)
         Sql.lockKey connection transaction "claimcore:schema"
-        ensureJournal connection transaction
+        let schemaExists, hasJournal = journalExists connection transaction
+
+        if not schemaExists || not hasJournal then
+            AdministrationFailures.refuse AdministrationFailure.MigrationsPending
+
         let expected = SchemaDefinition.all ()
         let installed = installedMigrations connection transaction
         validateInstalled expected installed
 
         if installed.Length <> expected.Length then
-            raise (InvalidDataException("The database has pending ordered migrations."))
+            AdministrationFailures.refuse AdministrationFailure.MigrationsPending
 
         transaction.Commit()
 
     let apply (connectionString: string) =
-        let builder = ownerBuilder connectionString
-        use connection = new NpgsqlConnection(builder.ConnectionString)
-        connection.Open()
-        DatabaseEnvironment.requireCompatible connection
-        requireOwnerIdentity connection
-        migrate connection
+        AdministrationExecution.run (fun progress ->
+            let builder = ownerBuilder connectionString
+            use connection = new NpgsqlConnection(builder.ConnectionString)
+            connection.Open()
+            DatabaseEnvironment.requireCompatible connection
+            requireOwnerIdentity connection
+            migrate progress connection)

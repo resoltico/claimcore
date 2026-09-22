@@ -1,12 +1,14 @@
 namespace ClaimCore.Cli
 
+open ClaimCore.Contracts
+
 open System
 open System.Text.Json
 open ClaimCore.Application
 
 module InvocationDecoder =
-    let private failure code message path =
-        Error(ProtocolFailure.create code message path)
+    let private failure reason path =
+        Error(ProtocolFailure.create reason (ProtocolLocation.fromPath path))
 
     let private canonicalGuid path (value: JsonElement) =
         match StrictJson.stringAt path value with
@@ -14,7 +16,7 @@ module InvocationDecoder =
         | Ok raw ->
             match Guid.TryParseExact(raw, "D") with
             | true, parsed when parsed <> Guid.Empty && parsed.ToString("D") = raw -> Ok parsed
-            | _ -> failure "INVALID_UUID" "Use a non-empty canonical lowercase UUID." path
+            | _ -> failure ProtocolProblem.InvalidUuid path
 
     let private digest path (value: JsonElement) =
         match StrictJson.stringAt path value with
@@ -26,7 +28,7 @@ module InvocationDecoder =
                     Char.IsAsciiHexDigit(character) && not (Char.IsUpper(character))))
             ->
             Ok raw
-        | Ok _ -> failure "INVALID_DIGEST" "Use a lowercase SHA-256 digest." path
+        | Ok _ -> failure ProtocolProblem.InvalidDigest path
 
     let private inputObject expected (value: JsonElement) =
         StrictJson.exactProperties "/input" expected value
@@ -102,11 +104,7 @@ module InvocationDecoder =
                         Ok(EndpointInput.RecoveryPage(RecoveryListView.Pending, cursor, limit))
                     | Ok(Some "TERMINAL") ->
                         Ok(EndpointInput.RecoveryPage(RecoveryListView.Terminal, cursor, limit))
-                    | Ok(Some _) ->
-                        failure
-                            "INVALID_RECOVERY_VIEW"
-                            "Use PENDING or TERMINAL recovery view."
-                            "/input/view"
+                    | Ok(Some _) -> failure ProtocolProblem.RecoveryView "/input/view"
                     | Error problem -> Error problem)))
 
     let private recoveryInspect input =
@@ -145,10 +143,7 @@ module InvocationDecoder =
                 if confirmed then
                     identityFrom source
                 else
-                    failure
-                        "AFFIRMATION_REQUIRED"
-                        "Recovery dismissal requires confirmed: true."
-                        "/input/confirmed"))
+                    failure ProtocolProblem.DismissConfirmation "/input/confirmed"))
         |> Result.map EndpointInput.RecoveryDismiss
 
     let private recoveryExport input =
@@ -174,10 +169,7 @@ module InvocationDecoder =
                 if confirmed then
                     Ok source
                 else
-                    failure
-                        "AFFIRMATION_REQUIRED"
-                        "Recovery retention requires confirmed: true."
-                        "/input/confirmed"))
+                    failure ProtocolProblem.RetainConfirmation "/input/confirmed"))
         |> Result.bind (fun source ->
             requiredString "/input" "source" source
             |> Result.bind (fun path ->

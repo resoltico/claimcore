@@ -8,6 +8,7 @@ open System.Security.Cryptography.X509Certificates
 open System.Globalization
 open ClaimCore.Application
 open ClaimCore.HostSecurity
+open ClaimCore.Contracts
 
 [<NoEquality; NoComparison>]
 type WebAdmissionLimits =
@@ -36,9 +37,10 @@ module Configuration =
         |> Option.ofObj
         |> Option.filter (String.IsNullOrWhiteSpace >> not)
 
-    let private required name =
-        environment name
-        |> Option.defaultWith (fun () -> invalidOp $"Set {name} to a private configuration value.")
+    let private required setting =
+        environment (WebSettings.token setting)
+        |> Option.defaultWith (fun () ->
+            WebStartupDiagnostics.refuse (WebStartupProblem.MissingSetting setting))
 
     let parseOrigin value =
         try
@@ -51,58 +53,55 @@ module Configuration =
                 || not (String.IsNullOrEmpty(parsed.Fragment))
                 || not (String.IsNullOrEmpty(parsed.UserInfo))
             then
-                invalidOp "CLAIMCORE_WEB_ORIGIN must be one HTTPS localhost origin without a path."
+                WebStartupDiagnostics.refuse WebStartupProblem.OriginInvalid
 
             parsed
         with :? UriFormatException ->
-            invalidOp "CLAIMCORE_WEB_ORIGIN must be one HTTPS localhost origin without a path."
+            WebStartupDiagnostics.refuse WebStartupProblem.OriginInvalid
 
     let private origin () =
         environment "CLAIMCORE_WEB_ORIGIN"
         |> Option.defaultValue "https://localhost:5443"
         |> parseOrigin
 
-    let private boundedInt name fallback maximum =
-        match environment name with
+    let private boundedInt setting fallback maximum =
+        match environment (WebSettings.token setting) with
         | None -> fallback
         | Some raw ->
             match Int32.TryParse(raw, NumberStyles.None, CultureInfo.InvariantCulture) with
             | true, value when value >= 1 && value <= maximum -> value
-            | _ -> invalidOp $"{name} must be a positive integer no greater than {maximum}."
+            | _ -> WebStartupDiagnostics.refuse (WebStartupProblem.InvalidSetting setting)
 
     let private admission () =
         {
             MaximumJsonBytes =
                 boundedInt
-                    "CLAIMCORE_WEB_MAX_JSON_BYTES"
+                    WebSetting.JsonLimit
                     SemanticContract.current.RequestByteLimit
                     SemanticContract.current.RequestByteLimit
-            CorePermitLimit = boundedInt "CLAIMCORE_WEB_CORE_PERMITS" 4 4
-            CoreQueueLimit = boundedInt "CLAIMCORE_WEB_CORE_QUEUE" 16 16
-            LoginPermitLimit = boundedInt "CLAIMCORE_WEB_LOGIN_PERMITS" 5 5
+            CorePermitLimit = boundedInt WebSetting.CorePermits 4 4
+            CoreQueueLimit = boundedInt WebSetting.CoreQueue 16 16
+            LoginPermitLimit = boundedInt WebSetting.LoginPermits 5 5
         }
 
     let private minutes name fallback maximum =
         boundedInt name fallback maximum |> float |> TimeSpan.FromMinutes
 
     let private stateDirectory () =
-        let path = required "CLAIMCORE_WEB_STATE_DIR"
+        let path = required WebSetting.StateDirectory
 
         match PrivateFileService.ensureDirectory path with
         | Ok privatePath -> privatePath
-        | Error _ ->
-            invalidOp
-                "CLAIMCORE_WEB_STATE_DIR must name an owner-only absolute directory without links."
+        | Error _ -> WebStartupDiagnostics.refuse WebStartupProblem.StateDirectoryRefused
 
     let private certificate () =
-        let path = required "CLAIMCORE_WEB_CERTIFICATE_PATH"
+        let path = required WebSetting.CertificatePath
 
         let bytes =
             match PrivateFileService.readBinary (8 * 1024 * 1024) path with
             | Ok value when value.Length > 0 -> value
             | Ok _
-            | Error _ ->
-                invalidOp "CLAIMCORE_WEB_CERTIFICATE_PATH must name a bounded private PKCS#12 file."
+            | Error _ -> WebStartupDiagnostics.refuse WebStartupProblem.CertificateAccessRefused
 
         // macOS does not implement EphemeralKeySet for PKCS#12 imports. The certificate is a
         // private, mode-restricted local deployment input; use the platform default there and
@@ -122,37 +121,35 @@ module Configuration =
                         keyStorage
                     )
                 with :? CryptographicException ->
-                    invalidOp "The configured Web certificate is not a valid PKCS#12 value."
+                    WebStartupDiagnostics.refuse WebStartupProblem.CertificateInvalid
             finally
                 CryptographicOperations.ZeroMemory(Span<byte>(bytes))
 
         if not loaded.HasPrivateKey then
             loaded.Dispose()
-            invalidOp "The configured Web certificate must include a private key."
+            WebStartupDiagnostics.refuse WebStartupProblem.CertificateKeyMissing
 
         loaded
 
     let private connectionString () =
-        let path = required "CLAIMCORE_CONNECTION_FILE"
+        let path = required WebSetting.ConnectionFile
 
         let value =
             match PrivateFileService.readUtf8Text 8192 path with
             | Ok text -> text.Trim()
-            | Error _ ->
-                invalidOp "CLAIMCORE_CONNECTION_FILE must name a bounded private UTF-8 file."
+            | Error _ -> WebStartupDiagnostics.refuse WebStartupProblem.ConnectionFileRefused
 
         if String.IsNullOrWhiteSpace(value) then
-            invalidOp "The configured application connection file is empty."
+            WebStartupDiagnostics.refuse WebStartupProblem.ConnectionFileEmpty
 
         value
 
     let load () =
-        let sessionIdle = minutes "CLAIMCORE_WEB_SESSION_IDLE_MINUTES" 30 30
-        let sessionAbsolute = minutes "CLAIMCORE_WEB_SESSION_ABSOLUTE_MINUTES" 480 480
+        let sessionIdle = minutes WebSetting.SessionIdle 30 30
+        let sessionAbsolute = minutes WebSetting.SessionAbsolute 480 480
 
         if sessionAbsolute < sessionIdle then
-            invalidOp
-                "CLAIMCORE_WEB_SESSION_ABSOLUTE_MINUTES must not be less than the idle lifetime."
+            WebStartupDiagnostics.refuse WebStartupProblem.SessionLifetimeInvalid
 
         let configuredOrigin = origin ()
         let configuredConnection = connectionString ()

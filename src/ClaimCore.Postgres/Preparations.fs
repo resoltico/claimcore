@@ -87,6 +87,4 @@ module PreparationPruneOptions =
             || options.BatchLimit < 1
             || options.BatchLimit > 1000
         then
-            invalidArg
-                (nameof options)
-                "Retention periods and maintenance batches must stay within the reviewed bounds."
+            AdministrationFailures.refuse AdministrationFailure.PruneOptionsInvalid

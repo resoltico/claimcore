@@ -23,7 +23,7 @@ module internal CliRecoveryCorpusSamples =
             sample
                 "recovery-export-identity-conflict"
                 endpoint
-                (CliWireCodec.exportIdentityConflict endpoint)
+                (CliWireCodec.localFailure endpoint CliLocalFault.ExportIdentityConflict)
             sample
                 "recovery-export-not-found"
                 endpoint

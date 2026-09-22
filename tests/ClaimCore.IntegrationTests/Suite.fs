@@ -29,5 +29,6 @@ let tests =
             TerminalCapacityTests.tests
             RecoveryStateTests.tests
             RecoveryCancellationTests.tests
+            AdministrationCompletionTests.tests
         ]
     |> testSequenced

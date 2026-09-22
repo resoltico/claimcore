@@ -13,12 +13,13 @@ open Microsoft.AspNetCore.RateLimiting
 open Microsoft.AspNetCore.StaticFiles
 open Microsoft.Extensions.DependencyInjection
 open ClaimCore.Application
+open ClaimCore.Contracts
 
 module HostRoutes =
-    let private hostFailure context status code message =
+    let private hostFailure context reason =
         task {
             HttpHeaders.noStore context
-            do! (RouteSupport.hostFailure context status code message None).ExecuteAsync(context)
+            do! (RouteSupport.hostFailure context reason).ExecuteAsync(context)
         }
 
     let private useStaticAssets (application: WebApplication) =
@@ -37,12 +38,7 @@ module HostRoutes =
                     HttpHeaders.noStore context
 
                     if context.Request.Path.StartsWithSegments(PathString("/api")) then
-                        do!
-                            hostFailure
-                                context
-                                StatusCodes.Status404NotFound
-                                "WEB_NOT_FOUND"
-                                "Endpoint was not found."
+                        do! hostFailure context WebHostFailure.EndpointMissing
                     else
                         let index = Path.Combine(assets, "index.html")
                         do! Results.File(index, "text/html; charset=utf-8").ExecuteAsync(context)
@@ -80,12 +76,7 @@ module HostRoutes =
         }
 
     let private loginRejected (context: HttpContext) =
-        RouteSupport.hostFailure
-            context
-            StatusCodes.Status401Unauthorized
-            "WEB_LOGIN_REJECTED"
-            "Login was refused."
-            (Some "NOT_STARTED")
+        RouteSupport.hostFailure context WebHostFailure.LoginRejected
 
     let private suppliedAntiforgeryToken (context: HttpContext) =
         match context.Request.Headers.TryGetValue("X-ClaimCore-Antiforgery") with
@@ -169,12 +160,7 @@ module HostRoutes =
         |> ignore
 
     let private sessionFailure context =
-        RouteSupport.hostFailure
-            context
-            StatusCodes.Status401Unauthorized
-            "WEB_SESSION_REJECTED"
-            "Session was refused."
-            None
+        RouteSupport.hostFailure context WebHostFailure.SessionRejected
 
     let private mapDefinition sessions (core: IClaimsCore) (application: WebApplication) =
         (application.MapGet(

@@ -79,7 +79,22 @@ let private transportCodecsAreSingular () =
         "No adapter JSON codec"
 
     let dispatch = File.ReadAllText(Path.Combine(cli, "EndpointDispatch.fs"))
-    Expect.stringContains dispatch "CliWireCodec" "CLI delegates encoding to Contracts"
+
+    Expect.stringContains
+        dispatch
+        "EndpointReply"
+        "Dispatch retains typed outcomes before presentation"
+
+    Expect.isFalse
+        (dispatch.Contains("CliWireCodec", StringComparison.Ordinal))
+        "Dispatch does not encode before recording its result"
+
+    let replies = File.ReadAllText(Path.Combine(cli, "EndpointReply.fs"))
+    Expect.stringContains replies "CliWireCodec" "The reply encoder delegates to Contracts"
+
+    Expect.isFalse
+        (replies.Contains("JsonSerializer", StringComparison.Ordinal))
+        "No competing reply codec"
 
 let private historicalSurfacesHaveNoActions () =
     for historical in [ typeof<OperationReceipt>; typeof<HistoryEntry>; typeof<CaseSummary> ] do

@@ -6,6 +6,7 @@ open System.Reflection
 open System.Text.Json
 open ClaimCore.HostSecurity
 open ClaimCore.Postgres
+open ClaimCore.Database
 
 let private identity () =
     let assembly = Assembly.GetExecutingAssembly()
@@ -37,6 +38,7 @@ let private help () =
     printfn "  ClaimCore.Database set-business-zone <canonical-IANA-ID>"
     printfn "  ClaimCore.Database prune [--dry-run] [--settled-retention-days <1-3650>]"
     printfn "                           [--abandoned-retention-days <1-3650>] [--limit <1-1000>]"
+    printfn "  ClaimCore.Database describe diagnostics"
     printfn "  ClaimCore.Database help"
     printfn "  ClaimCore.Database version [--json]"
     printfn "Prune defaults: accepted 30 days; revoked 30 days; batch limit 100; deletion enabled."
@@ -55,152 +57,37 @@ let private writeVersion () =
     let output = Console.OpenStandardOutput()
     output.Write(buffer.WrittenSpan)
     output.WriteByte(byte '\n')
+    output.Flush()
     0
 
-let private ownerConnection path =
-    let value =
-        match PrivateFileService.readUtf8Text 8192 path with
-        | Ok text -> text.Trim()
-        | Error _ ->
-            invalidArg
-                (nameof path)
-                "The owner connection file must be a bounded private UTF-8 regular file."
+let private dispatch argv =
+    let output = Console.OpenStandardOutput()
+    let errors = Console.OpenStandardError()
 
-    if String.IsNullOrWhiteSpace(value) then
-        invalidArg (nameof path) "The owner connection file is empty."
-
-    value
-
-let private usage () =
-    eprintfn "Use ClaimCore.Database help for supported arguments."
-
-let private positiveBounded name maximum (value: string) =
-    match Int32.TryParse(value) with
-    | true, parsed when parsed >= 1 && parsed <= maximum -> Ok parsed
-    | _ -> Error(sprintf "%s must be an integer from 1 through %d." name maximum)
-
-let private pruneOptions arguments =
-    let rec read (options: PreparationPruneOptions) seen remaining =
-        match remaining with
-        | [] -> Ok options
-        | "--dry-run" :: tail when not (Set.contains "--dry-run" seen) ->
-            read { options with DryRun = true } (Set.add "--dry-run" seen) tail
-        | "--settled-retention-days" :: value :: tail when
-            not (Set.contains "--settled-retention-days" seen)
-            ->
-            match positiveBounded "--settled-retention-days" 3650 value with
-            | Ok days ->
-                read
-                    { options with
-                        SettledRetentionDays = days
-                    }
-                    (Set.add "--settled-retention-days" seen)
-                    tail
-            | Error message -> Error message
-        | "--abandoned-retention-days" :: value :: tail when
-            not (Set.contains "--abandoned-retention-days" seen)
-            ->
-            match positiveBounded "--abandoned-retention-days" 3650 value with
-            | Ok days ->
-                read
-                    { options with
-                        AbandonedRetentionDays = days
-                    }
-                    (Set.add "--abandoned-retention-days" seen)
-                    tail
-            | Error message -> Error message
-        | "--limit" :: value :: tail when not (Set.contains "--limit" seen) ->
-            match positiveBounded "--limit" 1000 value with
-            | Ok limit -> read { options with BatchLimit = limit } (Set.add "--limit" seen) tail
-            | Error message -> Error message
-        | option :: _ -> Error(sprintf "Unknown, incomplete, or repeated option: %s" option)
-
-    read PreparationPruneOptions.defaults Set.empty arguments
-
-let private withOwner action =
-    match
-        Environment.GetEnvironmentVariable("CLAIMCORE_ADMIN_CONNECTION_FILE")
-        |> Option.ofObj
-    with
-    | None -> Error "Missing CLAIMCORE_ADMIN_CONNECTION_FILE."
-    | Some path ->
-        let value = ownerConnection path
-        let result = action value
-        Ok result
-
-let private ownerFailure message =
-    eprintfn "%s" message
-    3
-
-let private migrate () =
-    match withOwner Migrations.apply with
-    | Ok() ->
-        printfn
-            "Ordered database migrations installed or verified on the required PostgreSQL baseline."
-
-        0
-    | Error message -> ownerFailure message
-
-let private setBusinessZone zoneId =
-    match withOwner (fun connection -> InstallationBusinessZone.set connection zoneId) with
-    | Ok() ->
-        printfn "The installation business time zone is configured."
-        0
-    | Error message -> ownerFailure message
-
-let private prune options =
-    match pruneOptions options with
-    | Error message ->
-        eprintfn "%s" message
-        usage ()
-        64
-    | Ok parsed ->
-        match withOwner (fun connection -> PreparationPruning.prune connection parsed) with
-        | Ok result ->
-            printfn
-                "Recovery maintenance completed: %d candidates, %d deleted, %d terminal preparations, %d terminal canonical bytes."
-                result.CandidateCount
-                result.DeletedCount
-                result.TerminalPreparationCount
-                result.TerminalCanonicalRequestBytes
-
-            0
-        | Error message -> ownerFailure message
-
-let private version () =
-    let _, value, _ = identity ()
-    printfn "%s" value
-    0
-
-let private helpOrVersion =
-    function
-    | [ "help" ]
-    | [ "--help" ] ->
+    match DatabaseArguments.parse (Array.toList argv) with
+    | Error reason -> DatabaseExecution.inputFailure reason errors 64
+    | Ok DatabaseCommand.Help ->
         help ()
-        Some 0
-    | [ "version" ]
-    | [ "--version" ] -> Some(version ())
-    | [ "version"; "--json" ] -> Some(writeVersion ())
-    | _ -> None
+        Console.Out.Flush()
+        0
+    | Ok DatabaseCommand.Version ->
+        let _, version, _ = identity ()
+        Console.Out.WriteLine version
+        Console.Out.Flush()
+        0
+    | Ok DatabaseCommand.VersionJson -> writeVersion ()
+    | Ok DatabaseCommand.Diagnostics ->
+        output.Write(DatabaseContracts.catalogue ())
+        output.Flush()
+        0
+    | Ok command -> DatabaseExecution.run command output errors
 
 [<EntryPoint>]
 let main argv =
     try
-        let arguments = argv |> Array.toList
-
-        match helpOrVersion arguments with
-        | Some code -> code
-        | None ->
-            match arguments with
-            | [ "migrate" ] -> migrate ()
-            | [ "set-business-zone"; zoneId ] -> setBusinessZone zoneId
-            | "prune" :: options -> prune options
-            | _ ->
-                usage ()
-                64
-    with error ->
-        eprintfn
-            "Database maintenance failed (%s). Inspect database configuration and version/checksum. No automatic repair or downgrade was attempted."
-            (error.GetType().Name)
-
-        3
+        dispatch argv
+    with _ ->
+        DatabaseExecution.inputFailure
+            DatabaseInputProblem.ProcessFailed
+            (Console.OpenStandardError())
+            70

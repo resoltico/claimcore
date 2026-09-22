@@ -9,6 +9,12 @@
     <Compile Include="RejectionDiagnosticSchemas.fs" />
     <Compile Include="Projection.fs" />
     <Compile Include="EndpointInputs.fs" />
+    <Compile Include="ProtocolProblems.fs" />
+    <Compile Include="ProtocolFailure.fs" />
+    <Compile Include="HttpInputProblems.fs" />
+    <Compile Include="WebHostFailures.fs" />
+    <Compile Include="CliProcessDiagnostics.fs" />
+    <Compile Include="WebStartupDiagnostics.fs" />
     <Compile Include="CliLocalFaults.fs" />
     <Compile Include="OutcomeDiagnosticSchemas.fs" />
     <Compile Include="CoreValueSchemas.fs" />
@@ -18,6 +24,8 @@
     <Compile Include="CliResponseMutationSchemas.fs" />
     <Compile Include="CliResponseRecoverySchemas.fs" />
     <Compile Include="CliResponseSchemas.fs" />
+    <Compile Include="TransportDiagnosticSchemas.fs" />
+    <Compile Include="WebHostFailureSchema.fs" />
     <Compile Include="WebSchemaDefinitions.fs" />
     <Compile Include="WebResponseSchemas.fs" />
     <Compile Include="CliWireTypes.fs" />
@@ -37,6 +45,7 @@
     <Compile Include="WebTypeScript.fs" />
     <Compile Include="ContractFactory.fs" />
     <Compile Include="SemanticInputRenderer.fs" />
+    <Compile Include="TransportCatalogueWriter.fs" />
     <Compile Include="Renderers.fs" />
     <Compile Include="ContractRenderers.fs" />
     <Compile Include="BuildIdentityCodec.fs" />

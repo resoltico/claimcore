@@ -12,6 +12,8 @@
     <Compile Include="CorpusJson.fs" />
     <Compile Include="DiagnosticCorpus.fs" />
     <Compile Include="OutcomeDiagnosticCorpus.fs" />
+    <Compile Include="TransportDiagnosticCorpus.fs" />
+    <Compile Include="ProcessDiagnosticCorpus.fs" />
     <Compile Include="ScalarCorpus.fs" />
     <Compile Include="CliResponseCorpus.fs" />
     <Compile Include="CliRawCorpus.fs" />
@@ -28,6 +30,8 @@
   <ItemGroup>
     <ProjectReference Include="../../src/ClaimCore.Application/ClaimCore.Application.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Database/ClaimCore.Database.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Postgres/ClaimCore.Postgres.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Contracts/ClaimCore.Contracts.fsproj" />
   </ItemGroup>
 </Project>

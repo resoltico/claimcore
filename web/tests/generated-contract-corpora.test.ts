@@ -34,7 +34,7 @@ const loneSurrogates = ["\ud800", "\udfff"] as const;
 
 const validHostFailure = async (status: number, value: unknown): Promise<boolean> =>
   webV2HostFailureStatuses.some((candidate) => candidate === status) &&
-  (await isHostFailure("session", value));
+  (await isHostFailure(value, status));
 
 const compiledCliValidators = cliValidators();
 const emittedHostCodes = [

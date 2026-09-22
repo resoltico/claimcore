@@ -1,4 +1,5 @@
-const groupNames = ["discovery", "core", "recovery"];
+const endpointGroupNames = ["discovery", "core", "recovery"];
+const groupNames = ["host", ...endpointGroupNames];
 
 export const standaloneValidatorArtifacts = [
   "web-v2.validation.ts",
@@ -26,7 +27,7 @@ const groupForEndpoint = (endpoint) => {
 export const validatorGroups = (endpoints) => {
   const groups = Object.fromEntries(groupNames.map((name) => [name, []]));
   for (const endpoint of endpoints) groups[groupForEndpoint(endpoint.endpoint)].push(endpoint);
-  for (const group of groupNames) {
+  for (const group of endpointGroupNames) {
     if (groups[group].length === 0) throw new Error(`The ${group} validator group is empty.`);
   }
   return groups;
@@ -43,7 +44,7 @@ const declarations = (endpoints) =>
 export const validatorDeclarations = (
   endpoints,
 ) => `/* Generated from ClaimCore.Contracts schemas. Do not edit. */
-import type { HostFailure, WebV2ResponseByEndpoint } from "./web-v2.types";
+${endpoints.length === 0 ? 'import type { HostFailure } from "./web-v2.types";' : 'import type { WebV2ResponseByEndpoint } from "./web-v2.types";'}
 
 export type WebV2ValidationError = Readonly<{
   instancePath: string;
@@ -56,7 +57,7 @@ export interface WebV2Validator<T> {
   readonly errors: ReadonlyArray<WebV2ValidationError> | null | undefined;
 }
 
-export const validate_host_failure: WebV2Validator<HostFailure>;
+${endpoints.length === 0 ? "export const validate_host_failure: WebV2Validator<HostFailure>;" : ""}
 ${declarations(endpoints)}
 `;
 
@@ -93,6 +94,7 @@ const endpointGroups = {
 ${endpointGroups(groups)}
 } as const satisfies Readonly<Record<WebV2EndpointId, ValidatorGroup>>;
 
+const loadHost = (): Promise<ValidatorModule> => import("./web-v2.validators.host.mjs");
 const loadDiscovery = (): Promise<ValidatorModule> => import("./web-v2.validators.discovery.mjs");
 const loadCore = (): Promise<ValidatorModule> => import("./web-v2.validators.core.mjs");
 const loadRecovery = (): Promise<ValidatorModule> => import("./web-v2.validators.recovery.mjs");
@@ -107,11 +109,11 @@ const requiredValidator = async <K extends WebV2EndpointId>(
   (await validatorsFor(endpoint))[endpointValidators[endpoint]] as ResponseValidator<K>;
 
 export const isHostFailure = async (
-  endpoint: WebV2EndpointId,
   value: unknown,
+  status: number,
 ): Promise<boolean> => {
-  const validator = (await validatorsFor(endpoint))["validate_host_failure"]!;
-  return validator(value);
+  const validator = (await loadHost())["validate_host_failure"]!;
+  return validator(value) && (value as { readonly status: number }).status === status;
 };
 
 export const isWebV2Response = async <K extends WebV2EndpointId>(

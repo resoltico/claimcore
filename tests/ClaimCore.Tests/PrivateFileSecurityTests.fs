@@ -8,6 +8,7 @@ open System.Threading
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Cli
+open ClaimCore.HostSecurity
 
 let private privateFileMode = UnixFileMode.UserRead ||| UnixFileMode.UserWrite
 
@@ -60,8 +61,15 @@ let private makeFile directory name bytes =
 
 let private expectRefused message result =
     match result with
-    | Error(error: string) ->
-        Expect.isFalse (error.Contains("claimcore-private-test-", StringComparison.Ordinal)) message
+    | Error(error: PrivateFileFailure) ->
+        let case, arguments =
+            Microsoft.FSharp.Reflection.FSharpValue.GetUnionFields(
+                error,
+                typeof<PrivateFileFailure>
+            )
+
+        Expect.equal arguments.Length 0 message
+        Expect.isNonEmpty case.Name "Closed private-file cause"
     | Ok _ -> failtest message
 
 let private windowsReadRefusal () =
@@ -224,10 +232,7 @@ let private replacementRacePosix () =
                 match PrivateFiles.readSource 65536 target with
                 | Ok bytes ->
                     Expect.isTrue (bytes = first || bytes = second) "Read pins one complete inode"
-                | Error message ->
-                    Expect.isFalse
-                        (message.Contains(directory, StringComparison.Ordinal))
-                        "Race refusal is path-safe"
+                | Error failure -> expectRefused "Race refusal is path-safe" (Error failure)
         finally
             writer.GetAwaiter().GetResult())
 

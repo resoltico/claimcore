@@ -23,14 +23,22 @@ module WebWireCodec =
             writeOutcome writer
             writer.WriteEndObject())
 
-    let hostFailure (code: string) (message: string) (executionPhase: string option) =
+    let hostFailure (reason: WebHostFailure) =
         encode (fun writer ->
             writer.WriteStartObject()
             writer.WriteString("kind", "HOST_FAILURE")
-            writer.WriteString("code", code)
-            writer.WriteString("message", message)
+            writer.WriteString("code", WebHostFailures.code reason)
+            writer.WriteNumber("status", WebHostFailures.status reason)
+            writer.WriteString("message", WebHostFailures.render reason)
+            writer.WritePropertyName("diagnostic")
+            writer.WriteStartObject()
+            writer.WriteString("id", WebHostFailures.token reason)
+            writer.WritePropertyName("parameters")
+            writer.WriteStartObject()
+            writer.WriteEndObject()
+            writer.WriteEndObject()
 
-            match executionPhase with
+            match WebHostFailures.phase reason with
             | Some value -> writer.WriteString("executionPhase", value)
             | None -> writer.WriteNull("executionPhase")
 

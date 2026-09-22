@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="AdministrationTypes.fs" />
     <Compile Include="Baseline.fs" />
     <Compile Include="SchemaDefinition.fs" />
     <Compile Include="Preparations.fs" />
@@ -29,6 +30,7 @@
     <Compile Include="RecoveryExecutionStore.fs" />
     <Compile Include="RecoveryStore.fs" />
     <Compile Include="Store.fs" />
+    <Compile Include="AdministrationExecution.fs" />
     <Compile Include="Migrations.fs" />
     <Compile Include="InstallationBusinessZone.fs" />
     <Compile Include="PreparationPruning.fs" />

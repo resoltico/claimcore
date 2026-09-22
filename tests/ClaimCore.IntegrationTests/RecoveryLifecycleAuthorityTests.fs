@@ -87,6 +87,7 @@ let private pruneRevoked operationId =
             { PreparationPruneOptions.defaults with
                 AbandonedRetentionDays = 1
             }
+        |> completedAdministration
 
     Expect.equal result.DeletedCount 1 "The aged terminal preparation is owner-prunable"
 

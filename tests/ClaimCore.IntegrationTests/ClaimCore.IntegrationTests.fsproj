@@ -29,6 +29,7 @@
     <Compile Include="TerminalCapacityTests.fs" />
     <Compile Include="RecoveryStateTests.fs" />
     <Compile Include="RecoveryCancellationTests.fs" />
+    <Compile Include="AdministrationCompletionTests.fs" />
     <Compile Include="Suite.fs" />
   </ItemGroup>
   <ItemGroup>

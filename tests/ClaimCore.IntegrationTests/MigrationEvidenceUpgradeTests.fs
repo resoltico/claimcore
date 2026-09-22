@@ -125,8 +125,8 @@ let private upgradePath startVersion label =
                 else
                     None
 
-            Migrations.apply admin
-            InstallationBusinessZone.set admin "Etc/UTC"
+            Migrations.apply admin |> completedAdministration
+            InstallationBusinessZone.set admin "Etc/UTC" |> completedAdministration
             let afterBytes, afterDigest = canonicalBytes admin operationId
             Expect.equal afterBytes beforeBytes "Canonical request bytes unchanged"
             Expect.equal afterDigest beforeDigest "Retained request digest unchanged"

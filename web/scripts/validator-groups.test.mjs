@@ -21,7 +21,8 @@ const endpoints = catalogue.endpoints.map((entry) => ({
 
 test("validator split preserves every endpoint exactly once with discovery isolated", () => {
   const groups = validatorGroups(endpoints);
-  assert.deepEqual(Object.keys(groups), ["discovery", "core", "recovery"]);
+  assert.deepEqual(Object.keys(groups), ["host", "discovery", "core", "recovery"]);
+  assert.deepEqual(groups.host, []);
   assert.deepEqual(
     groups.discovery,
     endpoints.filter((entry) => entry.endpoint === "definition"),
@@ -52,9 +53,11 @@ test("missing validator families fail instead of emitting a partial wrapper", ()
   }
 });
 
-test("all three validator chunks are declared and lazily loaded", () => {
+test("host validation is shared and all four chunks are lazily loaded", () => {
   const wrapper = validationWrapper(validatorGroups(endpoints));
-  for (const group of ["discovery", "core", "recovery"]) {
+  assert.ok(wrapper.includes('(await loadHost())["validate_host_failure"]'));
+  assert.ok(!wrapper.includes('(await validatorsFor(endpoint))["validate_host_failure"]'));
+  for (const group of ["host", "discovery", "core", "recovery"]) {
     assert.ok(standaloneValidatorArtifacts.includes(`web-v2.validators.${group}.mjs`));
     assert.ok(standaloneValidatorArtifacts.includes(`web-v2.validators.${group}.d.mts`));
     assert.ok(wrapper.includes(`import("./web-v2.validators.${group}.mjs")`));

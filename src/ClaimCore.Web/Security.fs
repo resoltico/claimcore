@@ -7,6 +7,7 @@ open System.Security.Cryptography
 open System.Text
 open Microsoft.Win32.SafeHandles
 open ClaimCore.HostSecurity
+open ClaimCore.Contracts
 
 [<NoEquality; NoComparison>]
 type BootstrapCredential = { Path: string; Digest: byte array }
@@ -89,8 +90,7 @@ module Security =
 
         match PrivateFileService.openExclusive path with
         | Ok stream -> new StateDirectoryLease(stream)
-        | Error _ ->
-            raise (InvalidDataException("The Web state lock is not an owner-private regular file."))
+        | Error _ -> WebStartupDiagnostics.refuse WebStartupProblem.StateLockRefused
 
     let private removeStaleCredentials (stateDirectory: string) =
         for path in Directory.EnumerateFileSystemEntries(stateDirectory) do
@@ -99,12 +99,7 @@ module Security =
             if exactCredentialName name then
                 match PrivateFileService.deletePrivate path with
                 | Ok() -> ()
-                | Error _ ->
-                    raise (
-                        InvalidDataException(
-                            "A stale bootstrap credential is not a private regular file."
-                        )
-                    )
+                | Error _ -> WebStartupDiagnostics.refuse WebStartupProblem.BootstrapRemovalFailed
 
     let private createBootstrapCredential stateDirectory =
         let path =
@@ -118,10 +113,7 @@ module Security =
 
         try
             match PrivateFileService.writeNew 128 path fileBytes with
-            | Error _ ->
-                raise (
-                    InvalidDataException("The bootstrap credential could not be written privately.")
-                )
+            | Error _ -> WebStartupDiagnostics.refuse WebStartupProblem.BootstrapWriteFailed
             | Ok() ->
                 {
                     Path = path

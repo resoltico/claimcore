@@ -4,22 +4,11 @@ open ClaimCore.Application
 
 [<RequireQualifiedAccess>]
 module WebSchemaDefinitions =
-    let hostFailureStatuses = [ 400; 401; 403; 404; 409; 413; 415; 429; 500; 503 ]
+    let hostFailureStatuses = WebHostFailures.statuses
 
     let private reference = Schema.reference
 
-    let hostFailure =
-        WireSchema.objectOf
-            [
-                WireSchema.property "kind" (WireSchema.token "HOST_FAILURE")
-                WireSchema.property "code" WireSchema.text
-                WireSchema.property "message" WireSchema.text
-                WireSchema.property
-                    "executionPhase"
-                    (Schema.nullable (
-                        WireSchema.enumeration [ "NOT_STARTED"; "STARTED_UNCONFIRMED" ]
-                    ))
-            ]
+    let hostFailure = WebHostFailureSchema.schema
 
     let sessionSnapshot =
         WireSchema.objectOf

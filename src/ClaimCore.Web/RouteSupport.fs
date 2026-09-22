@@ -1,74 +1,35 @@
 namespace ClaimCore.Web
 
+open System
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Http
+open ClaimCore.Contracts
 
 module RouteSupport =
-    let hostFailure context status code message executionPhase =
+    let private dispatchKey = obj ()
+
+    let markDispatched (context: HttpContext) = context.Items[dispatchKey] <- box false
+    let markCompleted (context: HttpContext) = context.Items[dispatchKey] <- box true
+
+    let hostFailure context reason =
         HttpHeaders.noStore context
-        WebWire.hostFailure status code message executionPhase
+        WebWire.hostFailure reason
 
     let admissionFailure context failure =
-        match failure with
-        | AdmissionFailure.UntrustedConnection ->
-            hostFailure
-                context
-                StatusCodes.Status403Forbidden
-                "WEB_CONNECTION_REJECTED"
-                "Connection was refused."
-                None
-        | AdmissionFailure.OriginRejected
-        | AdmissionFailure.FetchMetadataRejected ->
-            hostFailure
-                context
-                StatusCodes.Status403Forbidden
-                "WEB_ORIGIN_REJECTED"
-                "Request origin was refused."
-                None
-        | AdmissionFailure.UnsupportedMediaType ->
-            hostFailure
-                context
-                StatusCodes.Status415UnsupportedMediaType
-                "WEB_MEDIA_TYPE"
-                "The endpoint media type was refused."
-                None
-        | AdmissionFailure.BodyTooLarge ->
-            hostFailure
-                context
-                StatusCodes.Status413PayloadTooLarge
-                "WEB_BODY_TOO_LARGE"
-                "Request body is too large."
-                None
-        | AdmissionFailure.SessionRejected ->
-            hostFailure
-                context
-                StatusCodes.Status401Unauthorized
-                "WEB_SESSION_REJECTED"
-                "Session was refused."
-                None
-        | AdmissionFailure.AntiforgeryRejected ->
-            hostFailure
-                context
-                StatusCodes.Status403Forbidden
-                "WEB_CSRF_REJECTED"
-                "Request verification was refused."
-                None
+        let reason =
+            match failure with
+            | AdmissionFailure.UntrustedConnection -> WebHostFailure.ConnectionRejected
+            | AdmissionFailure.OriginRejected
+            | AdmissionFailure.FetchMetadataRejected -> WebHostFailure.OriginRejected
+            | AdmissionFailure.UnsupportedMediaType -> WebHostFailure.MediaTypeRejected
+            | AdmissionFailure.BodyTooLarge -> WebHostFailure.BodyTooLarge
+            | AdmissionFailure.SessionRejected -> WebHostFailure.SessionRejected
+            | AdmissionFailure.AntiforgeryRejected -> WebHostFailure.AntiforgeryRejected
 
-    let inputFailure context message =
-        if message = "The request exceeds the configured byte limit." then
-            hostFailure
-                context
-                StatusCodes.Status413PayloadTooLarge
-                "WEB_BODY_TOO_LARGE"
-                "Request body is too large."
-                None
-        else
-            hostFailure
-                context
-                StatusCodes.Status400BadRequest
-                "WEB_INVALID_REQUEST"
-                "Request input was refused."
-                (Some "NOT_STARTED")
+        hostFailure context reason
+
+    let inputFailure context reason =
+        hostFailure context (WebHostFailure.Input reason)
 
     let admittedBody admit maximumBytes (context: HttpContext) =
         task {
@@ -78,7 +39,7 @@ module RouteSupport =
             | Error failure -> return Error(admissionFailure context failure)
             | Ok() ->
                 match! HttpInput.readBounded maximumBytes context.Request.Body with
-                | Error message -> return Error(inputFailure context message)
+                | Error reason -> return Error(inputFailure context reason)
                 | Ok bytes -> return Ok bytes
         }
 
@@ -87,5 +48,32 @@ module RouteSupport =
         | true, values when values.Count = 1 ->
             match values[0] |> string |> HttpInput.sourceDigest with
             | Ok value -> Ok value
-            | Error message -> Error(inputFailure context message)
-        | _ -> Error(inputFailure context "A canonical source digest header is required.")
+            | Error reason -> Error(inputFailure context reason)
+        | _ -> Error(inputFailure context HttpInputProblem.SourceDigestHeader)
+
+    /// A partial response is aborted, never followed by a second JSON object. No exception text
+    /// escapes. Dispatch knowledge is request-local and cannot be inferred from HTTP status.
+    let handleFailures (context: HttpContext) (next: RequestDelegate) : Task =
+        task {
+            try
+                do! next.Invoke context
+
+                if context.Response.StatusCode = 405 && not context.Response.HasStarted then
+                    do! (hostFailure context WebHostFailure.MethodRejected).ExecuteAsync context
+            with _ ->
+                if context.Response.HasStarted then
+                    context.Abort()
+                else
+                    let reason =
+                        match context.Items.TryGetValue dispatchKey with
+                        | true, (:? bool as completed) when completed ->
+                            WebHostFailure.CompletedResponseFailed
+                        | true, _ -> WebHostFailure.DispatchUnconfirmed
+                        | _ -> WebHostFailure.BeforeDispatchFailed
+
+                    try
+                        context.Response.Clear()
+                        do! (hostFailure context reason).ExecuteAsync context
+                    with _ ->
+                        context.Abort()
+        }

@@ -39,11 +39,28 @@ module CliResponseSchemas =
             ))
 
     let protocolFailure =
-        WireSchema.objectOf
-            [
-                WireSchema.property "protocolVersion" (WireSchema.number 3)
-                WireSchema.property "kind" (WireSchema.token "protocolFailure")
-                WireSchema.property "code" WireSchema.text
-                WireSchema.property "message" WireSchema.text
-                WireSchema.property "path" (Schema.string None None (Some 0) None)
-            ]
+        ProtocolProblems.all
+        |> List.groupBy ProtocolProblems.code
+        |> List.map (fun (code, reasons) ->
+            WireSchema.objectOf
+                [
+                    WireSchema.property "protocolVersion" (WireSchema.number 3)
+                    WireSchema.property "kind" (WireSchema.token "protocolFailure")
+                    WireSchema.property "code" (WireSchema.token code)
+                    WireSchema.property
+                        "diagnostic"
+                        (WireSchema.objectOf
+                            [
+                                WireSchema.property
+                                    "id"
+                                    (reasons
+                                     |> List.map ProtocolProblems.token
+                                     |> WireSchema.enumeration)
+                                WireSchema.property "parameters" (WireSchema.objectOf [])
+                            ])
+                    WireSchema.property "message" WireSchema.text
+                    WireSchema.property
+                        "path"
+                        (Schema.string None (Some ProtocolLocation.pattern) (Some 0) (Some 256))
+                ])
+        |> Schema.oneOf

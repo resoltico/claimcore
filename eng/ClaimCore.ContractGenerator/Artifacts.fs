@@ -158,6 +158,7 @@ module ContractArtifacts =
             CliResponseCorpus.artifact projection
             CliRawCorpus.artifact projection
             WebParsedCorpus.artifact projection
+            ProcessDiagnosticCorpus.artifact ()
         ]
         |> List.map (fun (name, bytes) -> { Name = name; Bytes = bytes })
 
@@ -169,6 +170,20 @@ module ContractArtifacts =
         @ cliEndpointResponseArtifacts projection
         @ [
             artifact "web-v2.catalog.json" web
+            artifact
+                "cli-v3.process-failure.schema.json"
+                TransportDiagnosticSchemas.cliProcessDocument
+            artifact
+                "web-v2.process-failure.schema.json"
+                TransportDiagnosticSchemas.webStartupDocument
+            {
+                Name = "administration-v1.response.schema.json"
+                Bytes = ClaimCore.Database.DatabaseContracts.schema ()
+            }
+            {
+                Name = "administration-v1.catalog.json"
+                Bytes = ClaimCore.Database.DatabaseContracts.catalogue ()
+            }
             artifact "web-v2.host-failure.schema.json" WebSchemas.hostFailure
             artifact "web-v2.responses.schema.json" (WebSchemas.responses projection)
             typeScriptArtifact

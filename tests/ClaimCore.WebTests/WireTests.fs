@@ -80,7 +80,7 @@ let private failureEnvelope () =
     context.Response.Body <- new System.IO.MemoryStream()
 
     use document =
-        WebWire.hostFailure 413 "WEB_BODY_TOO_LARGE" "Request body is too large." None
+        WebWire.hostFailure WebHostFailure.BodyTooLarge
         |> execute context
         |> JsonDocument.Parse
 

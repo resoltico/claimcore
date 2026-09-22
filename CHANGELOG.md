@@ -6,6 +6,14 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Changed
 
+- **Transport, host and administration failures now have typed diagnostic contracts.** CLI protocol
+  refusals require stable IDs and safe locations; HTTP failures require correlated status, cause and
+  execution phase. Process stderr and database administration now emit structured JSON. Use
+  `claimcore describe diagnostics` or `ClaimCore.Database describe diagnostics`, adapt native
+  maintenance callers to `AdministrationOutcome`, and rebuild matching host/browser contracts.
+  Old failure shapes and string-taking diagnostic constructors are not retained. Case data,
+  canonical requests, business semantics and recovery authority are unchanged.
+
 - Core faults and recovery refusals now expose specific diagnostic identities with exact empty
   argument objects. Their native types are closed reasons rather than writable message records;
   consumers must adapt and rebuild the browser and host together with matching generated contracts.
@@ -21,10 +29,26 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Fixed
 
+- Scope CLI delivery tracking to the current frame and observe native results before encoding;
+  a later malformed frame cannot inherit an earlier operation ID. Failed writes/flushes preserve
+  current recovery context without appending a second stdout frame or replaying work.
+- Preserve administrative commit uncertainty and confirmed results across cleanup/reporting errors.
+  A commit exception no longer implies rollback, and failed output cannot relabel completed work.
+  Pruning audit writes retain this discipline even in dry-run mode.
+- Select HTTP 400/413 from typed input causes rather than English wording; bound startup and
+  administration diagnostics so provider details, paths and unknown arguments are not echoed.
+
 - The README no longer names a specific latest release, which was stale as soon as the next one published; it points to GitHub Releases instead.
 - The domain contract said a closed case must be reopened before editing, which contradicted the one-step factual correction added in 0.3.0. It now records that correction as the deliberate exception.
 
 ### Internal
+
+- Emit one shared lazy host-failure validator rather than duplicate it across endpoint groups.
+  The aggregate compressed JavaScript budget is revised from 192 KiB to 200 KiB for the expanded
+  diagnostic contract; per-chunk, initial-load, stylesheet and coverage limits are unchanged.
+
+- Generate and qualify strict process/administration schemas and transport conformance corpora;
+  register failure-injection tests and keep compiled ownership and evidence reconciliation intact.
 
 - Correlate fault/refusal identity, code and guidance in the generated schemas, qualify every cause
   and malformed counterpart, and isolate lazy discovery validation without raising bundle budgets.

@@ -528,6 +528,53 @@
       ]
     },
     {
+      "id": "assurance-diagnostics:transport-host-administration",
+      "dimensions": [
+        "cli",
+        "documentation",
+        "migration",
+        "webGui",
+        "webHost"
+      ],
+      "subject": "Typed transport, host and owner-only administration diagnostics preserve outcome ownership, frame-local identity, private-file admission, conservative commit knowledge and one-shot failed delivery. Strict native and generated schema controls reject contradictory status, unknown IDs, untrusted location tokens and unsafe arguments without changing business or recovery authority.",
+      "tests": [
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.administration completion knowledge.a second administrative commit cannot be issued",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.administration completion knowledge.commit exception preserves uncertainty without retry",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.administration completion knowledge.owner admission refusal cannot start maintenance",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.administration completion knowledge.postcommit disposal failure preserves the confirmed result",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.administration completion knowledge.precommit failure is distinct from unconfirmed commit",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.administration completion knowledge.the confirmed checkpoint owns the returned value",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.administration diagnostic boundaries.administration counters retain exact 64-bit values",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.administration diagnostic boundaries.argument causes are precise without echoing unknown input",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.administration diagnostic boundaries.failed stderr cannot change commit uncertainty or append another frame",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.administration diagnostic boundaries.native administrative reasons have a complete closed vocabulary",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.administration diagnostic boundaries.output failure cannot relabel confirmed maintenance",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.administration diagnostic boundaries.unexpected process failure makes no not-started claim",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.frame-local delivery diagnostics.a failed flush preserves the observed outcome and request digest",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.frame-local delivery diagnostics.a later input failure cannot inherit a delivered operation identity",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.frame-local delivery diagnostics.a malformed next frame stays independent of completed work",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.frame-local delivery diagnostics.a partial write preserves the current exact context without replay",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.frame-local delivery diagnostics.broken diagnostic output cannot loop or repeat an operation",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.frame-local delivery diagnostics.native outcome observation precedes serialization",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.frame-local delivery diagnostics.runtime acquisition failure is separate from input and dispatch failure",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.frame-local delivery diagnostics.uncertain import retention captures its newly known operation identity",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed protocol diagnostic boundaries.oversized NDJSON frames drain before admitting the next frame",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed protocol diagnostic boundaries.protocol vocabulary is closed complete and presentation-free",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed protocol diagnostic boundaries.untrusted property names cannot enter diagnostic locations",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed protocol diagnostic boundaries.wrong scalar kinds are typed refusals rather than escaping exceptions",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.transport and host diagnostics.all public host causes have exact parameterless diagnostics",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.transport and host diagnostics.bounded HTTP input distinguishes limit and read failures",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.transport and host diagnostics.framework method refusal uses the typed host boundary",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.transport and host diagnostics.host failures preserve request-local dispatch knowledge",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.transport and host diagnostics.startup diagnostics expose known settings but no supplied values",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.transport and host diagnostics.strict HTTP readers emit specific closed causes",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.transport and host diagnostics.typed input classification binds diagnostic and HTTP status",
+        "frontend:vitest::local diagnostic contracts > fingerprints the administration grammar independently of display text",
+        "frontend:vitest::local diagnostic contracts > rejects mismatched actual HTTP status even for an otherwise valid host body",
+        "frontend:vitest::local diagnostic contracts > validates every process and administration cause and hostile counterpart"
+      ]
+    },
+    {
       "dimensions": [
         "cli",
         "core",
@@ -792,7 +839,7 @@
       "dimensions": [
         "migration"
       ],
-      "subject": "The current manifest assertion pins the exact applied 001\u2013006 migration names and SHA-256 digests, so an accidental source edit changes the expected identity.",
+      "subject": "The current manifest assertion pins the exact applied 001–006 migration names and SHA-256 digests, so an accidental source edit changes the expected identity.",
       "tests": [
         "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 006.manifest validation.[CC-DB-001] applied migration identities remain frozen"
       ]

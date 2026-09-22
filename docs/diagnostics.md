@@ -1,4 +1,4 @@
-# Core outcome diagnostics
+# Product diagnostics
 
 Ordinary rejections, core faults, and recovery refusals expose machine-readable causes separately
 from their human explanations. This is a localization foundation, not a multilingual user interface. The domain still owns
@@ -41,8 +41,8 @@ their existing meaning; ordinary cancellation paths still return their cancellat
 Host/protocol admission failures and local adapter failures remain separate from the core. CLI
 runtime opening, endpoint-shape mismatches and private-export write failures use a closed
 `CliLocalFault` and distinct `localFailure` result (exit 3, stop-and-investigate), not a fabricated
-`CoreFault`. These eight local identities have no input-derived arguments. Raw CLI protocol errors,
-Web host failures and database administration diagnostics remain outside this completed core slice.
+`CoreFault`. These eight local identities have no input-derived arguments. Raw protocol, Web host and owner-only administration diagnostics are described below; they remain
+separate from business and recovery outcomes.
 
 ## Machine contract
 
@@ -119,10 +119,104 @@ explanations, missing or extraneous arguments, cross-family IDs and contradictor
 variants. The CLI corpus also exercises every local failure on every runtime endpoint. The existing runtime and standalone validators must
 agree on these examples; missing or substituted test evidence is still refused by the common gate.
 
-The subsequent localization work must cover transport/host/administration failures and establish
+The subsequent localization work establishes
 presentation-owned catalogs with an explicit locale/fallback policy. UI language, display locale,
 installation business calendar, currency and jurisdiction are independent. Locale must not enter
 `CaseFields`, canonical records or operation authority. Language switching needs real-locale,
 pseudolocale, RTL and accessibility qualification without losing drafts, reminting operation IDs,
 rebasing revisions, changing authored content or triggering recovery. Database/recovery fresh-baseline
 work remains a separate coherent change, not a deletion of migration files in this PR.
+
+## Transport, host and administration boundaries
+
+The transport follow-up completes the remaining product failure boundaries. CLI `ProtocolFailure`
+is a private value of a closed `ProtocolProblem` and known-member location; it carries no writable
+message. Unknown JSON property names collapse to the known containing object or root. Oversized
+NDJSON lines are drained before the next frame, and wrong scalar kinds return typed refusals.
+`claimcore describe diagnostics` publishes the protocol and process schemas without opening a store.
+
+HTTP readers return `HttpInputProblem`, not English sentences. The host policy binds each identity
+to its code, HTTP status and execution phase; the serialized `status` must agree with actual HTTP
+status. Framework method refusals also use this policy. Runtime and standalone browser validators
+reject contradictions and old shapes. Security admission remains intentionally bounded and does
+not expose credentials, unexpected property names or provider information.
+
+The request-local failure boundary is installed before connection, authentication and rate-limit
+middleware. It distinguishes pre-dispatch failure, unconfirmed dispatch, and failed delivery after
+a returned result. Only pre-dispatch failure claims `NOT_STARTED`. Once a response has started, the
+host aborts instead of appending another JSON document. A stopped host or broken response is never
+proof that a command rolled back. Preserve exact authored operation identity for recovery.
+
+CLI endpoint execution returns an `EndpointReply` before it is encoded. Frame-local state records
+runtime acquisition, dispatch, native-result observation and completed output flushing separately.
+The state is reset before every input frame and after successful flushing; no later parse/read
+failure inherits a prior operation ID. A failed write or flush makes one bounded stderr attempt,
+never a second stdout frame or an implicit replay. Exact known operation context is separate from
+diagnostic arguments; retained import identity is captured from its typed result. A potentially
+state-changing frame with lost delivery exits 4, even if its returned result was confirmed.
+
+`HostSecurity` owns closed private-file failures and still has no transport dependency. Consumers
+map those causes into their own diagnostics. No-follow, owner-only, descriptor identity, bounded
+UTF-8, exclusive creation, cleanup and buffer-zeroing rules remain in force. Web startup exposes
+only known setting tokens and bounded causes; unexpected exceptions never escape as stack traces
+or reflected type names.
+
+`ClaimCore.Database` owns its administration diagnostic codec and schema; it does not depend on
+Contracts. `describe diagnostics`, help and version remain configuration-free. Known option names
+and fixed bounds may be diagnostic arguments, but unknown arguments, paths and connection values
+are never echoed. The contract generator references Database and Postgres solely as development
+tooling to reproduce this owner-owned schema and real-codec conformance corpus.
+
+Postgres administration returns `AdministrationOutcome`: `Completed`, `NotStarted`, `NotCommitted`,
+`CompletionUnknown`, or `CompletedCleanupFailed`. A commit call is marked before execution; an
+exception during commit cannot prove rollback. A confirmed checkpoint survives subsequent disposal
+or reporting failure. Each operation permits exactly one commit. Pruning dry-runs still write audit
+evidence, so they use the same completion discipline. Current-schema qualification no longer
+implicitly creates a journal; only explicit migration initializes it. Migration bytes are unchanged.
+
+Administration stdout/stderr is structured JSON. Completed maintenance and failed output are
+separate outcomes: output failure cannot claim the action failed. There is one bounded reporting
+attempt, no automatic maintenance retry. Large terminal counts and byte totals are canonical
+nonnegative Int64 strings, not lossy JSON numbers. Owner-only administration remains isolated from
+case-work hosts, and a diagnostic does not grant permission to change stored state.
+
+## Transport design and separate QA record
+
+The transport design was reviewed against merged baseline `dd9fa2f` before product edits. It kept
+native cause ownership at each boundary, presentation outward, and locale out of canonical records.
+Separate design QA rejected arbitrary message/argument bags, English-based HTTP classification,
+previous-frame delivery state and the conflation of maintenance execution with reporting. The
+complete transport/host/administration work is one package, not deferred slices.
+
+Implementation QA added real emitted-cause and hostile-schema controls, secret canaries, per-frame
+write/flush/read failures, serialization after native-result observation, and administrative failure
+injection before work, before commit, during commit and after confirmation. Positive controls prove
+successful operation and changed display copy; negative controls prove refusal and no implicit
+replay. Every added test is registered in the same reviewed evidence inventory as its producer.
+These records describe agent design/source review, not independent owner approval.
+
+## Deliberate consumer break
+
+Protocol and host failure objects require structured diagnostics. Host objects also require exact
+status correlation. Process stderr and owner-only administration use their published JSON schemas;
+old string constructors, writable message records and old response shapes are not retained.
+Native maintenance callers must handle every `AdministrationOutcome` case. Rebuild CLI, browser and
+host from matching contracts. Semantic business identity, case fields, request bytes, revisions,
+accepted history and recovery authority do not change. No case-data migration is introduced here.
+
+The remaining release packages are presentation catalogs with fully qualified language switching;
+fresh-baseline database/recovery reset; and owner-review enforcement. They remain three packages
+following this one, before the future 0.5.0 release.
+
+### Browser validation loading and size review
+
+Host-failure validation is emitted once in a separate lazy module, not duplicated in
+each discovery, core and recovery module. The existing runtime and standalone
+corpora qualify the same strict schemas; this changes loading, not admission.
+
+The expanded product diagnostics increase the aggregate compressed JavaScript
+budget from 192 KiB to 200 KiB. The measured candidate is 197,683 bytes at gzip
+level 9, including the shared host validator (5,141 bytes). The per-chunk 600 KiB,
+initial-load 900 KiB and CSS 64 KiB limits are unchanged. This is an explicit
+feature-size budget revision for owner review, not a claim of unchanged budgets
+or a relaxation of diagnostic, coverage or evidence validation.

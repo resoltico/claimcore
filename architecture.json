@@ -215,7 +215,9 @@
       "dependsOn": [
         "ClaimCore.Application",
         "ClaimCore.Contracts",
-        "ClaimCore.Domain"
+        "ClaimCore.Database",
+        "ClaimCore.Domain",
+        "ClaimCore.Postgres"
       ],
       "packages": [],
       "internalsVisibleTo": [],
@@ -392,6 +394,7 @@
       "dependsOn": [
         "ClaimCore.Application",
         "ClaimCore.CliProtocol",
+        "ClaimCore.Contracts",
         "ClaimCore.Domain",
         "ClaimCore.RecordFormat",
         "ClaimCore.Tests"

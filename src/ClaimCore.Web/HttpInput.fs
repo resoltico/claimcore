@@ -1,5 +1,7 @@
 namespace ClaimCore.Web
 
+open ClaimCore.Contracts
+
 open ClaimCore.Application
 open HttpInputSupport
 
@@ -22,7 +24,7 @@ module HttpInput =
             let values = properties root |> exactProperties []
 
             if not values.IsEmpty then
-                fail "Logout requires an empty JSON object.")
+                fail HttpInputProblem.LogoutShape)
 
     let draft bytes = parse bytes HttpCommandInput.draft
 
@@ -37,7 +39,7 @@ module HttpInput =
             let limit = required "limit" values |> integerValue
 
             if limit < 1 || limit > maximum then
-                fail "The requested page size is outside the supported range."
+                fail HttpInputProblem.PageRange
 
             {
                 Cursor = optionalString "cursor" values
@@ -59,13 +61,13 @@ module HttpInput =
             let limit = required "limit" values |> integerValue
 
             if limit < 1 || limit > maximum then
-                fail "The requested page size is outside the supported range."
+                fail HttpInputProblem.PageRange
 
             let detail =
                 match required "detail" values |> stringValue with
                 | "SUMMARY" -> HistoryDetail.Summary
                 | "FULL" -> HistoryDetail.Full
-                | _ -> fail "The history detail is not supported."
+                | _ -> fail HttpInputProblem.HistoryDetail
 
             {
                 CaseReference = required "caseReference" values |> stringValue

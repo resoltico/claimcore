@@ -47,4 +47,7 @@ let tests =
             NativePrivateFileRaceTests.tests
             DatabasePrivateFileTests.tests
             CompilerBoundaryTests.tests
+            FrameDeliveryTests.tests
+            ProtocolDiagnosticTests.tests
+            AdministrationDiagnosticTests.tests
         ]

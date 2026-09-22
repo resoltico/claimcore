@@ -129,6 +129,7 @@ let private assertRetained admin operationId =
                 SettledRetentionDays = 1
                 AbandonedRetentionDays = 1
             }
+        |> completedAdministration
 
     Expect.equal prune.DeletedCount 0 "Pre-003 uncertainty is never inferred away"
     use connection = new NpgsqlConnection(admin)
@@ -147,9 +148,9 @@ let verifyLegacyUncertainty admin app =
     installMigrationTwo admin
     let legacyStarted, digest = insertLegacyStarted admin
     installMigrationThree admin
-    Migrations.apply admin
-    Migrations.apply admin
-    InstallationBusinessZone.set admin "Etc/UTC"
+    Migrations.apply admin |> completedAdministration
+    Migrations.apply admin |> completedAdministration
+    InstallationBusinessZone.set admin "Etc/UTC" |> completedAdministration
     assertLegacyProvenance admin legacyStarted
     resolveThroughPublicCore app legacyStarted digest
 

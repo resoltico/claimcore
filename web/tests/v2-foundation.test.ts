@@ -136,15 +136,17 @@ it("uses generated v2 paths and typed endpoint outcomes", async () => {
       {
         kind: "HOST_FAILURE",
         code: "WEB_SESSION_REJECTED",
+        status: 401,
+        diagnostic: { id: "WEB_HOST_SESSION_REJECTED", parameters: {} },
         message: "No",
-        executionPhase: "NOT_STARTED",
+        executionPhase: null,
       },
       401,
     ),
   );
   const rejected = await v2.get("CASE-1", "token");
   expect(rejected).toMatchObject({ kind: "hostFailure", status: 401 });
-  expect(isMutationUncertain(rejected)).toBe(false);
+  expect(isMutationUncertain(rejected)).toBe(true);
   expect(resultMessage(rejected)).toContain("WEB_SESSION_REJECTED");
 });
 
