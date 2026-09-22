@@ -1,4 +1,4 @@
-name: Temporary localization transfer verification
+name: Temporary localization source reproduction
 on:
   push:
     branches: [feat/presentation-localization]
@@ -6,29 +6,105 @@ on:
 permissions:
   contents: read
 jobs:
-  verify:
+  reproduce:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 25
+    permissions:
+      contents: write
     steps:
-      - name: Export source-transfer objects for byte comparison
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: 1febe2f752224eae0e514da6d682dee3f49db7b9
+          persist-credentials: false
+      - name: Restore checksum-bound source delta
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          mkdir "$RUNNER_TEMP/localization-transfer"
+          test "$(git rev-parse HEAD^{tree})" = 1324a33d34ec61c3fe35662542048738088f7391
           python3 - <<'PY'
-          import base64, hashlib, json, os, pathlib, subprocess
-          shas = ['6ce66aec5a3a8f15c54911a9b9a395f63b08364a', '9386d0013571d226325c528f2d85a607a0332fc6', 'bc52ad769c1b40c77a9c92be53ece1beb9dc0d9c']
-          for index, sha in enumerate(shas, 1):
-              data = json.loads(subprocess.check_output(['gh', 'api', f'repos/{os.environ["GITHUB_REPOSITORY"]}/git/blobs/{sha}']))
-              content = base64.b64decode(data['content'])
-              assert hashlib.sha1(f'blob {len(content)}\0'.encode() + content).hexdigest() == sha
-              (pathlib.Path(os.environ['RUNNER_TEMP']) / 'localization-transfer' / f'chunk{index}.txt').write_bytes(content)
+          import base64, bz2, hashlib, json, os, pathlib, subprocess
+          objects = [
+              ('6ce66aec5a3a8f15c54911a9b9a395f63b08364a', 'ab400b9b69252a1a14bf1658e9bcc94c8fb909db'),
+              ('9386d0013571d226325c528f2d85a607a0332fc6', '648be45ba059b4876068fb7319858635eeeb5f86'),
+              ('bc52ad769c1b40c77a9c92be53ece1beb9dc0d9c', '6b8f2c697c55231d061204d4da63e356427ff623'),
+              ('f93410955ee810cda577af6a30e27d4e2e776906', 'f93410955ee810cda577af6a30e27d4e2e776906'),
+              ('d8dcdee009ff3302fcc2349c9f01ca9002f760a1', 'd8dcdee009ff3302fcc2349c9f01ca9002f760a1'),
+              ('0428a0a8c267de99f9a69df0816ead0c1b6be25e', '0428a0a8c267de99f9a69df0816ead0c1b6be25e'),
+              ('f584b305fcb096da4a3ed245a8696173b58252bb', 'f584b305fcb096da4a3ed245a8696173b58252bb'),
+          ]
+          repairs = {1: [(9345,9347,'qq',''),(4582,4584,'qq','')], 2: [(8795,8797,'NN','')], 3: [(5118,5120,'iI','')]}
+          def blob_sha(data):
+              return hashlib.sha1(f'blob {len(data)}\0'.encode() + data).hexdigest()
+          pieces = []
+          for index, (stored, expected) in enumerate(objects, 1):
+              response = json.loads(subprocess.check_output(['gh','api',f'repos/{os.environ["GITHUB_REPOSITORY"]}/git/blobs/{stored}']))
+              data = base64.b64decode(response['content'])
+              assert blob_sha(data) == stored, 'Stored transfer object differs'
+              text = data.decode('ascii')
+              for start, end, old, new in repairs.get(index, []):
+                  assert text[start:end] == old, 'Transfer correction precondition differs'
+                  text = text[:start] + new + text[end:]
+              assert blob_sha(text.encode()) == expected, 'Corrected transfer object differs'
+              pieces.append(text)
+          archive = base64.b64decode(''.join(pieces), validate=True)
+          assert hashlib.sha256(archive).hexdigest() == 'd62cf6f104ae5319e4bf969672d3d4881b5f8ee3696dc855acc779b081235c0e'
+          patch = bz2.decompress(archive)
+          assert hashlib.sha256(patch).hexdigest() == '7fb3fba814561194ad9576a3b78a8069eb81e8f403253db04642515c0133bdb4'
+          destination = pathlib.Path(os.environ['RUNNER_TEMP']) / 'localization-source.patch'
+          destination.write_bytes(patch)
+          subprocess.run(['git','apply','--index','--whitespace=error',str(destination)], check=True)
           PY
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: localization-transfer-verification
-          path: ${{ runner.temp }}/localization-transfer/
-          retention-days: 1
-          if-no-files-found: error
+      - uses: ./.github/actions/toolchain
+      - name: Regenerate and qualify the exact source candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet restore ClaimCore.slnx --locked-mode
+          npm ci --prefix web
+          npm --prefix web run contract:generate
+          npm --prefix web run localization:generate
+          npm --prefix web run localization:check
+          npm --prefix web run typecheck
+          npm --prefix web run format:check
+          git add -A
+          test "$(git write-tree)" = 49a4cde650116537a5222b4347de0a6978c28f4d
+          test "$(git ls-files | wc -l | tr -d ' ')" = 916
+          test "$(git diff --cached --name-only | wc -l | tr -d ' ')" = 138
+          test ! -e .github/workflows/localization-workspace.yml
+      - name: Store verified Git tree without updating branches or tags
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, pathlib, subprocess
+          def git(*args):
+              return subprocess.check_output(['git', *args])
+          assert git('write-tree').decode().strip() == '49a4cde650116537a5222b4347de0a6978c28f4d'
+          indexed = {}
+          for row in git('ls-files','-s','-z').split(b'\0'):
+              if row:
+                  metadata, path = row.split(b'\t', 1)
+                  mode, sha, stage = metadata.decode().split()
+                  assert stage == '0'
+                  indexed[path.decode()] = (mode, sha)
+          paths = [p.decode() for p in git('diff','--cached','--name-only','-z').split(b'\0') if p]
+          assert len(paths) == 138
+          entries = []
+          for path in paths:
+              if path not in indexed:
+                  entries.append({'path':path,'mode':'100644','type':'blob','sha':None})
+              else:
+                  mode, sha = indexed[path]
+                  assert mode in ('100644','100755')
+                  content = git('show', ':' + path).decode('utf-8')
+                  entries.append({'path':path,'mode':mode,'type':'blob','content':content})
+          payload = {'base_tree':'1324a33d34ec61c3fe35662542048738088f7391','tree':entries}
+          result = json.loads(subprocess.check_output(['gh','api','--method','POST',f'repos/{os.environ["GITHUB_REPOSITORY"]}/git/trees','--input','-'], input=json.dumps(payload,ensure_ascii=False).encode()))
+          assert result['sha'] == '49a4cde650116537a5222b4347de0a6978c28f4d', 'Remote candidate tree differs'
+          print('Verified source tree stored: ' + result['sha'])
+          print('No branch, tag or pull request was changed by this job.')
+          PY
