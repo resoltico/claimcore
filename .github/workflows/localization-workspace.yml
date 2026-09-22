@@ -1,4 +1,4 @@
-name: Temporary localization source export
+name: Temporary localization dependency workspace
 on:
   push:
     branches: [feat/presentation-localization]
@@ -6,19 +6,30 @@ on:
 permissions:
   contents: read
 jobs:
-  export:
+  dependencies:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: 1febe2f752224eae0e514da6d682dee3f49db7b9
           persist-credentials: false
-      - name: Export tracked source at the reviewed baseline
-        run: git archive --format=tar.gz --prefix=claimcore/ HEAD > "$RUNNER_TEMP/localization-baseline.tar.gz"
+      - uses: ./.github/actions/toolchain
+        with:
+          dotnet: "false"
+      - name: Resolve and verify exact ICU dependencies
+        run: |
+          set -euo pipefail
+          npm ci --prefix web
+          npm install --prefix web --save-exact intl-messageformat@12.1.2
+          npm install --prefix web --save-dev --save-exact @formatjs/icu-messageformat-parser@3.5.20
+          npm audit --prefix web --audit-level=low
+          npm audit --prefix web signatures
+          tar -C web -czf "$RUNNER_TEMP/localization-web-dependencies.tar.gz" node_modules package.json package-lock.json
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: localization-baseline
-          path: ${{ runner.temp }}/localization-baseline.tar.gz
+          name: localization-web-dependencies
+          path: ${{ runner.temp }}/localization-web-dependencies.tar.gz
           retention-days: 1
           if-no-files-found: error
+          compression-level: 0
