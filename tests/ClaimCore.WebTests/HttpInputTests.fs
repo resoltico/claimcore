@@ -8,6 +8,7 @@ open System.Threading
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Application
+open ClaimCore.Contracts
 open ClaimCore.Domain
 open ClaimCore.Web
 
@@ -23,7 +24,7 @@ let private validDraft =
 
 let private flatDraftTests () =
     match HttpInput.draft (bytes validDraft) with
-    | Error message -> failtestf "Expected v2 draft acceptance: %A" message
+    | Error _ -> failtest "Expected v2 draft acceptance."
     | Ok draft ->
         match draft.Command with
         | DraftCommand.Flat(CommandKind.Open, values) ->
@@ -44,7 +45,7 @@ let private flatDraftTests () =
 
     match HttpInput.draft (bytes (revision largest)) with
     | Ok draft -> Expect.equal draft.ExpectedVersion (Int64.MaxValue - 1L) "Largest revision"
-    | Error message -> failtestf "Expected largest revision acceptance: %A" message
+    | Error _ -> failtest "Expected largest revision acceptance."
 
     expectError (HttpInput.draft (bytes (revision maximum))) "Int64.MaxValue is reserved"
 
@@ -73,7 +74,7 @@ let private correctionDraftTests () =
 
         Expect.equal clear CorrectionDraftAction.Clear "Correction clearing remains explicit"
     | Ok _ -> failtest "Correction groups remain a typed draft variant"
-    | Error message -> failtestf "Expected correction draft acceptance: %A" message
+    | Error _ -> failtest "Expected correction draft acceptance."
 
     let unknownMode =
         correction.Replace("\"KEEP\"", "\"UNKNOWN\"", StringComparison.Ordinal)
@@ -93,7 +94,7 @@ let private endpointInputTests () =
     | Ok input ->
         Expect.isNone input.Cursor "A cursor is absent rather than an overloaded null sentinel"
         Expect.equal input.Limit 50 "Page limits remain endpoint-local integers"
-    | Error message -> failtestf "Expected page acceptance: %A" message
+    | Error _ -> failtest "Expected page acceptance."
 
     expectError (HttpInput.page 50 (bytes """{"limit":51}""")) "Page bounds are exact"
 
@@ -104,7 +105,7 @@ let private endpointInputTests () =
         Expect.equal input.CaseReference "WEB-V2-001" "History preserves its explicit target"
         Expect.isNone input.Cursor "History starts without an implicit revision cursor"
         Expect.equal input.Limit 1 "History page limit remains local"
-    | Error message -> failtestf "Expected history acceptance: %A" message
+    | Error _ -> failtest "Expected history acceptance."
 
     expectError
         (HttpInput.resolve (
@@ -140,10 +141,8 @@ let private unicodeInputTests () =
     let unknown = "{\"caseReference\":\"synthetic\",\"" + marker + "\":\"synthetic\"}"
 
     match HttpInput.caseReference (bytes unknown) with
-    | Error message ->
-        Expect.isFalse
-            ((sprintf "%A" message).Contains(marker, StringComparison.Ordinal))
-            "No input name in errors"
+    | Error HttpInputProblem.UnknownProperty -> ()
+    | Error _ -> failtest "Unknown input name must use the closed property cause."
     | Ok _ -> failtest "An unknown synthetic property must be refused."
 
 let private sessionInputTests () =
@@ -151,7 +150,7 @@ let private sessionInputTests () =
     | Ok input ->
         Expect.equal input.Credential "synthetic" "Login keeps the submitted credential private"
         Expect.equal input.AntiforgeryToken "token" "Login body declares the matching token"
-    | Error message -> failtestf "Expected login acceptance: %A" message
+    | Error _ -> failtest "Expected login acceptance."
 
     Expect.isOk (HttpInput.logout (bytes "{}")) "Logout requires the explicit empty object"
     expectError (HttpInput.logout (bytes """{"unexpected":true}""")) "Logout rejects extra data"
@@ -200,7 +199,7 @@ let private recoveryAndDraftRefusals () =
 
     match HttpInput.dismiss (bytes (dismiss "false")) with
     | Ok value -> Expect.isFalse value.Confirmed "A Boolean false remains a value for core policy"
-    | Error message -> failtestf "Expected syntactically valid false confirmation: %A" message
+    | Error _ -> failtest "Expected syntactically valid false confirmation."
 
     expectError (HttpInput.dismiss (bytes (dismiss "0"))) "Confirmation is a JSON Boolean"
     expectError (HttpInput.dismiss (bytes (dismiss "null"))) "Null is not a Boolean"

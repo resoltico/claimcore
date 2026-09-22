@@ -232,10 +232,7 @@ let private replacementRacePosix () =
                 match PrivateFiles.readSource 65536 target with
                 | Ok bytes ->
                     Expect.isTrue (bytes = first || bytes = second) "Read pins one complete inode"
-                | Error message ->
-                    Expect.isFalse
-                        ((sprintf "%A" message).Contains(directory, StringComparison.Ordinal))
-                        "Race refusal is path-safe"
+                | Error failure -> expectRefused "Race refusal is path-safe" (Error failure)
         finally
             writer.GetAwaiter().GetResult())
 

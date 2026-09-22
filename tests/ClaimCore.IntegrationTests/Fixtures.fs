@@ -17,14 +17,14 @@ open ClaimCore.Postgres
 let completedAdministration outcome =
     match outcome with
     | AdministrationOutcome.Completed value -> value
-    | result -> failtestf "Expected confirmed administrative completion, got %A" result
+    | _ -> failtest "Expected confirmed administrative completion."
 
 let refusedAdministration expected outcome =
     match outcome with
     | AdministrationOutcome.NotStarted reason
     | AdministrationOutcome.NotCommitted reason ->
         Expect.equal reason expected "Exact administrative refusal"
-    | result -> failtestf "Expected definite administrative refusal, got %A" result
+    | _ -> failtest "Expected definite administrative refusal."
 
 let accepted result =
     match result with

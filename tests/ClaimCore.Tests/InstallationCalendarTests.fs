@@ -10,7 +10,7 @@ let private unreachable =
 let private refuses label zoneId =
     match InstallationBusinessZone.set unreachable zoneId with
     | AdministrationOutcome.NotStarted AdministrationFailure.BusinessZoneInvalid -> ()
-    | result -> failtestf "Expected calendar admission refusal for %s, got %A" label result
+    | _ -> failtest ("Expected calendar admission refusal for " + label + ".")
 
 let tests =
     testList
@@ -33,6 +33,5 @@ let tests =
             testCase "a canonical zone passes validation and fails later, on the host" (fun () ->
                 match InstallationBusinessZone.set unreachable "Etc/UTC" with
                 | AdministrationOutcome.NotStarted AdministrationFailure.DatabaseUnavailable -> ()
-                | result ->
-                    failtestf "A canonical zone must reach database admission, got %A" result)
+                | _ -> failtest "A canonical zone must reach database admission.")
         ]
