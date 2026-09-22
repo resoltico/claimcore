@@ -9,6 +9,7 @@ type CliLocalFault =
     | CaseInputMismatch
     | RecoveryInputMismatch
     | ExportWriteFailed
+    | ExportIdentityConflict
 
 module CliLocalFaults =
     let private runtime =
@@ -51,7 +52,16 @@ module CliLocalFaults =
              "The recovery export could not be written to a new private file.")
         ]
 
-    let private entries = runtime @ adapter
+    let private entries =
+        runtime
+        @ adapter
+        @ [
+            CliLocalFault.ExportIdentityConflict,
+            ("CLI_EXPORT_IDENTITY_CONFLICT",
+             FaultCode.RecoveryIntegrityError,
+             "The export metadata does not match the requested operation. No file was written.")
+        ]
+
     let all = entries |> List.map fst
 
     let private description reason =

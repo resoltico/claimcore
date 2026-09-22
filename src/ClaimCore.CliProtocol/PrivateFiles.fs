@@ -2,6 +2,7 @@ namespace ClaimCore.Cli
 
 open System
 open ClaimCore.HostSecurity
+open ClaimCore.Contracts
 
 module PrivateFiles =
     let readSource maximum path =
@@ -9,17 +10,15 @@ module PrivateFiles =
 
     let connection () =
         match Environment.GetEnvironmentVariable("CLAIMCORE_CONNECTION_FILE") with
-        | null -> Error "Set CLAIMCORE_CONNECTION_FILE to a private application connection file."
+        | null -> Error ProtocolProblem.ConnectionMissing
         | path ->
             match PrivateFileService.readUtf8Text 8192 path with
-            | Error _ ->
-                Error
-                    "The connection file must be an owner-only regular UTF-8 file at a safe absolute path."
+            | Error _ -> Error ProtocolProblem.ConnectionAccess
             | Ok text ->
                 let value = text.Trim()
 
                 if String.IsNullOrWhiteSpace(value) then
-                    Error "The connection file is empty."
+                    Error ProtocolProblem.ConnectionEmpty
                 else
                     Ok value
 

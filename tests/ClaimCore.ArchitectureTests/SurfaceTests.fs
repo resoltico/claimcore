@@ -25,6 +25,16 @@ let private storageSurfaceIsAdministrationOnly () =
         (exported "ClaimCore.Postgres")
         (Set.ofList
             [
+                "ClaimCore.Postgres.AdministrationFailure"
+                "ClaimCore.Postgres.AdministrationFailure+Tags"
+                "ClaimCore.Postgres.AdministrationOutcome"
+                "ClaimCore.Postgres.AdministrationOutcome`1"
+                "ClaimCore.Postgres.AdministrationOutcome`1+Completed"
+                "ClaimCore.Postgres.AdministrationOutcome`1+CompletedCleanupFailed"
+                "ClaimCore.Postgres.AdministrationOutcome`1+CompletionUnknown"
+                "ClaimCore.Postgres.AdministrationOutcome`1+NotCommitted"
+                "ClaimCore.Postgres.AdministrationOutcome`1+NotStarted"
+                "ClaimCore.Postgres.AdministrationOutcome`1+Tags"
                 "ClaimCore.Postgres.Baseline"
                 "ClaimCore.Postgres.InstallationBusinessZone"
                 "ClaimCore.Postgres.Migrations"

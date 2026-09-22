@@ -1,12 +1,6 @@
 /* Generated from ClaimCore.Contracts. Do not edit. */
 import type { SemanticDefinition } from "./web-v2.types.semantic";
 
-export type HostFailure = {
-  readonly kind: "HOST_FAILURE";
-  readonly code: string;
-  readonly message: string;
-  readonly executionPhase: "NOT_STARTED" | "STARTED_UNCONFIRMED" | null;
-};
 export type Fault =
   | {
       readonly code: "TECHNICAL_MUTATION_UNKNOWN";

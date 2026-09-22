@@ -246,7 +246,12 @@ let private sessionTests =
             testCase "removed protocol-v2 verbs are unsupported process invocations" (fun () ->
                 let result = invoke [ "capabilities" ] ""
                 Expect.equal result.ExitCode 64 "Hard process grammar break"
-                Expect.stringContains result.StandardError "CLI v3 grammar" "Safe usage direction")
+                use error = JsonDocument.Parse(result.StandardError)
+
+                Expect.equal
+                    (error.RootElement.GetProperty("diagnostic").GetProperty("id").GetString())
+                    "CLI_INVOCATION_UNSUPPORTED"
+                    "Typed safe usage direction")
         ]
 
 let private invocationTests =

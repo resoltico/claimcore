@@ -130,7 +130,7 @@ jobs:
             if ($testExit -ne 0 -or $LASTEXITCODE -ne 0) { $script:overall = 1 }
           }
 
-          Invoke-RegisteredProject "integration-linux" "tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj" "ClaimCore.IntegrationTests" 100 $true
+          Invoke-RegisteredProject "integration-linux" "tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj" "ClaimCore.IntegrationTests" 106 $true
           $qualifications = @(
             Start-RegisteredProject "recovery-qualification" "tests/ClaimCore.RecoveryQualificationTests/ClaimCore.RecoveryQualificationTests.fsproj" "ClaimCore.RecoveryQualificationTests" 19
             Start-RegisteredProject "concurrency-qualification" "tests/ClaimCore.ConcurrencyQualificationTests/ClaimCore.ConcurrencyQualificationTests.fsproj" "ClaimCore.ConcurrencyQualificationTests" 5

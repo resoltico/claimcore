@@ -169,14 +169,6 @@ module internal ContractJson =
         writeDiagnostics writer "recoveryDiagnostics" semantic.RecoveryDiagnostics
         writer.WriteEndObject()
 
-    let private endpointSchemaDocument (input: Schema) =
-        {
-            Identifier = "https://claimcore.local/contracts/endpoint.schema.json"
-            Title = "ClaimCore endpoint input"
-            Root = input
-            Definitions = []
-        }
-
     let private writeCliEndpoint
         (writer: Utf8JsonWriter)
         (responses: Map<string, Schema>)
@@ -186,15 +178,23 @@ module internal ContractJson =
         writer.WriteString("id", endpoint.Identifier)
         writer.WriteBoolean("cancellable", endpoint.Cancellable)
         writer.WritePropertyName("inputSchema")
-        writeSchemaDocument writer (endpointSchemaDocument endpoint.Input) endpoint.Input
+        writeSchemaDocument writer (TransportCatalogueWriter.document endpoint.Input) endpoint.Input
         let response = Map.find endpoint.Identifier responses
         writer.WritePropertyName("responseSchema")
-        writeSchemaDocument writer (endpointSchemaDocument response) response
+        writeSchemaDocument writer (TransportCatalogueWriter.document response) response
         writer.WriteEndObject()
 
     let private writeCli (writer: Utf8JsonWriter) (projection: ContractModel) =
         writer.WriteStartObject()
         writer.WriteString("contractKind", "CLAIMCORE_CLI_V3")
+
+        TransportCatalogueWriter.write
+            writer
+            [
+                "protocolFailureSchema", CliResponseSchemas.protocolFailure
+                "processFailureSchema", TransportDiagnosticSchemas.cliProcess
+            ]
+
         writer.WriteNumber("protocolVersion", 3)
         writer.WritePropertyName("definitionSchema")
         writeSchemaDocument writer projection.DefinitionSchema projection.DefinitionSchema.Root
@@ -223,7 +223,7 @@ module internal ContractJson =
             writer.WriteStartObject()
             writer.WriteString("kind", "JSON")
             writer.WritePropertyName("schema")
-            writeSchemaDocument writer (endpointSchemaDocument input) input
+            writeSchemaDocument writer (TransportCatalogueWriter.document input) input
             writer.WriteEndObject()
         | Some(RawBody(mediaType, maximumBytes, headers)) ->
             writer.WritePropertyName("body")
@@ -237,7 +237,7 @@ module internal ContractJson =
             headers
             |> List.iter (fun (name, schema) ->
                 writer.WritePropertyName(name)
-                writeSchemaDocument writer (endpointSchemaDocument schema) schema)
+                writeSchemaDocument writer (TransportCatalogueWriter.document schema) schema)
 
             writer.WriteEndObject()
             writer.WriteEndObject()
@@ -264,6 +264,14 @@ module internal ContractJson =
     let private writeWeb (writer: Utf8JsonWriter) (projection: ContractModel) =
         writer.WriteStartObject()
         writer.WriteString("contractKind", "CLAIMCORE_WEB_HTTP_V2")
+
+        TransportCatalogueWriter.write
+            writer
+            [
+                "hostFailureSchema", WebSchemaDefinitions.hostFailure
+                "processFailureSchema", TransportDiagnosticSchemas.webStartup
+            ]
+
         writer.WriteNumber("httpVersion", 2)
         writer.WritePropertyName("hostFailureStatuses")
         writer.WriteStartArray()

@@ -70,9 +70,15 @@ const readSchema = async (directory, file) => {
   return schema;
 };
 
-const validatorInventory = async (directory, endpoints) => {
+const validatorInventory = async (directory, endpoints, group) => {
+  if (group === "host") {
+    const host = await readSchema(directory, hostSchema);
+    return {
+      schemas: [host],
+      validators: [{ exportName: "validate_host_failure", schemaReference: host.$id }],
+    };
+  }
   const aggregate = await readSchema(directory, responsesSchema);
-  const host = await readSchema(directory, hostSchema);
   const endpointValidators = endpoints.map(({ exportName, responseDefinition }) => {
     if (aggregate.$defs?.[responseDefinition] === undefined) {
       throw new Error(`Aggregate responses omit ${responseDefinition}.`);
@@ -83,11 +89,8 @@ const validatorInventory = async (directory, endpoints) => {
     };
   });
   return {
-    schemas: [aggregate, host],
-    validators: [
-      { exportName: "validate_host_failure", schemaReference: host.$id },
-      ...endpointValidators,
-    ],
+    schemas: [aggregate],
+    validators: endpointValidators,
   };
 };
 
@@ -223,7 +226,7 @@ const provisionalInventory = async (output) => {
 const compileGroups = async (output, groups, webDirectory) =>
   Promise.all(
     Object.entries(groups).map(async ([group, groupEndpoints]) => {
-      const inventory = await validatorInventory(output, groupEndpoints);
+      const inventory = await validatorInventory(output, groupEndpoints, group);
       const compiled = await compileStandaloneValidators(inventory, webDirectory);
       if (Buffer.byteLength(compiled.source) > maximumStandaloneValidatorGroupBytes) {
         throw new Error(`The ${group} standalone validator group exceeds the 600 KiB ceiling.`);

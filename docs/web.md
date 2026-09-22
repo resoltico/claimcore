@@ -83,7 +83,7 @@ The pure `ClaimCore.Contracts` projection owns the canonical Web-v2 endpoint cat
 and response schemas, raw-media rules, deterministic response codecs, split TypeScript DTO modules,
 parsed conformance corpus, and Web wire fingerprint. The F# host consumes the same catalog and codec
 authority. A deterministic Node postprocess compiles the aggregate response schema into strict AJV
-standalone discovery, core, and recovery validator groups and a typed asynchronous selector. The selector loads
+standalone shared host, discovery, core, and recovery validator groups and a typed asynchronous selector. The selector loads
 only the group needed to validate the endpoint response. Run `npm --prefix web run contract:check` to
 regenerate and compare every checked artifact; do not hand edit generated contract files.
 During the pre-1.0 source preview, `/api/v2` identifies this route and admission family, not a
@@ -185,3 +185,13 @@ Apply through migration 006 and configure the installation business time zone wi
 `ClaimCore.Database` before opening an existing installation with Web-v2.
 See [Database](database.md) for migration and retention administration and
 [Security and operations](operations.md) for deployment limits.
+
+## Diagnostic and delivery boundaries
+
+Host failure payloads require a stable diagnostic, exact safe parameters, and `status` matching the
+actual HTTP response. Status and execution phase come from typed causes, never message text.
+Pre-dispatch errors, unconfirmed dispatch, and failed response delivery remain distinguishable;
+only established pre-dispatch refusal claims no operation started. Partial responses are aborted,
+not followed by a second JSON object. Startup failures use bounded structured stderr without raw
+provider or configuration values. [Product diagnostics](diagnostics.md) owns this boundary and its
+native/wire break. Rebuild browser and host from matching generated contracts.

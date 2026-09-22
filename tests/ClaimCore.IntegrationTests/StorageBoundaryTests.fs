@@ -154,9 +154,8 @@ let private environmentTests =
                 let builder = NpgsqlConnectionStringBuilder(adminConnection ())
                 builder.Options <- "-c synchronous_commit=off"
 
-                Expect.throwsT<ArgumentException>
-                    (fun () -> Migrations.apply builder.ConnectionString)
-                    "No DDL session accepts startup overrides")
+                Migrations.apply builder.ConnectionString
+                |> refusedAdministration AdministrationFailure.OwnerConnectionInvalid)
         ]
 
 let private transactionTests =
@@ -203,9 +202,8 @@ let private transactionTests =
                 try
                     set (String.replicate 64 "0")
 
-                    Expect.throwsT<InvalidDataException>
-                        (fun () -> Migrations.apply (adminConnection ()))
-                        "Migrator never rewrites an adopted checksum"
+                    Migrations.apply (adminConnection ())
+                    |> refusedAdministration AdministrationFailure.MigrationIdentityMismatch
 
                     use database = new PostgresStore(appConnection ())
 

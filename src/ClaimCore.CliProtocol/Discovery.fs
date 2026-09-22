@@ -32,6 +32,7 @@ module Discovery =
   describe commands [command-kind]
   describe endpoints [endpoint-id]
   describe recovery
+  describe diagnostics
   schema invocation|response|definition|recovery-envelope
   schema endpoint <endpoint-id>
   call
@@ -53,8 +54,9 @@ Discovery commands do not open PostgreSQL. call reads one strict JSON invocation
         | [ "commands"; kind ] -> Ok(json (CliDiscovery.command model kind))
         | [ "endpoints" ] -> Ok(json (CliDiscovery.endpoints model))
         | [ "endpoints"; identifier ] -> Ok(json (CliDiscovery.endpoint model identifier))
+        | [ "diagnostics" ] -> Ok(json (CliDiscovery.diagnostics model))
         | [ "recovery" ] -> Ok(json (CliDiscovery.recovery model))
-        | _ -> Error "Use help for the supported describe commands."
+        | _ -> Error ProtocolProblem.UnsupportedInvocation
 
     let schema arguments =
         let model = projection ()
@@ -67,5 +69,5 @@ Discovery commands do not open PostgreSQL. call reads one strict JSON invocation
         | [ "endpoint"; identifier ] ->
             CliSchemas.endpoint model identifier
             |> Option.map json
-            |> requiredOption "The endpoint is not declared by the generated CLI contract."
-        | _ -> Error "Use help for the supported schema commands."
+            |> requiredOption ProtocolProblem.UnknownEndpoint
+        | _ -> Error ProtocolProblem.UnsupportedInvocation

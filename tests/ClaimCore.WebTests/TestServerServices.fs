@@ -1,5 +1,6 @@
 module ClaimCore.WebTests.TestServerServices
 
+open ClaimCore.Contracts
 open System
 open System.Security.Cryptography
 open System.Security.Cryptography.X509Certificates
@@ -52,12 +53,7 @@ let configureServices loginPermits (services: IServiceCollection) =
                 HttpHeaders.noStore rejected.HttpContext
 
                 ValueTask(
-                    (WebWire.hostFailure
-                        StatusCodes.Status429TooManyRequests
-                        "WEB_BUSY"
-                        "Request admission is busy."
-                        None)
-                        .ExecuteAsync(rejected.HttpContext)
+                    (WebWire.hostFailure WebHostFailure.Busy).ExecuteAsync(rejected.HttpContext)
                 ))
 
         options.AddConcurrencyLimiter(

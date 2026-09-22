@@ -90,7 +90,7 @@ export const expectHostFailure = async (
 ): Promise<void> => {
   expect(reply.status).toBe(status);
   expect(reply.cacheControl).toContain("no-store");
-  const valid = await isHostFailure("session", reply.payload);
+  const valid = await isHostFailure(reply.payload, reply.status);
   expect(valid).toBe(true);
   if (!valid) {
     throw new Error("Invalid host-failure response.");

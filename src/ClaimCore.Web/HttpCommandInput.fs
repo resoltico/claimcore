@@ -1,5 +1,7 @@
 namespace ClaimCore.Web
 
+open ClaimCore.Contracts
+
 open System.Text.Json
 open ClaimCore.Application
 open ClaimCore.Domain
@@ -9,14 +11,14 @@ module HttpCommandInput =
     let private commandKind value =
         CommandKinds.all
         |> List.tryFind (fun kind -> CommandKinds.token kind = value)
-        |> Option.defaultWith (fun () -> fail "The command token is not supported.")
+        |> Option.defaultWith (fun () -> fail HttpInputProblem.UnknownCommand)
 
     let private commandValues (expected: FieldInputDefinition list) values =
         let names = expected |> List.map _.FieldName
         exactProperties names values |> ignore
 
         if names |> List.exists (fun name -> not (values.ContainsKey name)) then
-            fail "A required command value is missing."
+            fail HttpInputProblem.MissingCommandValue
 
         names |> List.map (fun name -> name, values[name] |> stringValue)
 
@@ -32,7 +34,7 @@ module HttpCommandInput =
                 | CorrectionGroupAction.Clear -> "CLEAR")
 
         if not (List.contains mode allowed) then
-            fail "The correction action is not declared by the semantic contract."
+            fail HttpInputProblem.CorrectionAction
 
         match mode with
         | "KEEP" ->
@@ -45,7 +47,7 @@ module HttpCommandInput =
             exactProperties [ "mode"; "values" ] values |> ignore
             let replacement = required "values" values |> properties
             commandValues group.ReplaceFields replacement |> CorrectionDraftAction.Replace
-        | _ -> fail "The correction action is not declared by the semantic contract."
+        | _ -> fail HttpInputProblem.CorrectionAction
 
     let private correctionCommand (groups: Map<string, JsonElement>) =
         match (CommandDefinitions.forKind CommandKind.CorrectCase).Inputs with

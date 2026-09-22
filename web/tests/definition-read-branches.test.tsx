@@ -21,10 +21,12 @@ it("clears claimant definition state when the server rejects or mismatches asset
       JSON.stringify({
         kind: "HOST_FAILURE",
         code: "WEB_BUSY",
+        status: 429,
+        diagnostic: { id: "WEB_HOST_BUSY", parameters: {} },
         message: "Busy",
         executionPhase: null,
       }),
-      { status: 503, headers: { "content-type": "application/json" } },
+      { status: 429, headers: { "content-type": "application/json" } },
     ),
   );
   const { result, rerender } = renderHook(({ epoch }) => useDefinition(epoch), {

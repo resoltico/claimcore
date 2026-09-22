@@ -33,6 +33,7 @@ ClaimCore CLI v3
   describe commands [command-kind]
   describe endpoints [endpoint-id]
   describe recovery
+  describe diagnostics
   schema invocation|response|definition|recovery-envelope
   schema endpoint <endpoint-id>
   call
@@ -56,6 +57,13 @@ Ordinary core failures and recovery refusals retain their outer result/uncertain
 now require `diagnostic.id` and exact `diagnostic.parameters`. Consumers must rebuild against the
 matching contract; old fault shapes and the former adapter-as-core `failed` representation are not
 supported. [Core outcome diagnostics](diagnostics.md) defines ownership and the native/wire break.
+
+Protocol failures now require `diagnostic.id`, exact parameters and a known-member path. Use
+`claimcore describe diagnostics` for protocol and process schemas. A process delivery failure uses
+structured stderr, preserves only the current frame's known operation context, and never writes a
+second stdout frame. A potentially state-changing frame with unconfirmed delivery exits 4; no
+failure diagnostic authorizes implicit retry. Export metadata mismatch is a local integrity failure,
+not a manufactured core rejection. See [Product diagnostics](diagnostics.md).
 
 ## Contracts and invocation
 

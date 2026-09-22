@@ -164,21 +164,25 @@ module CliResponseCorpus =
                 Value = value.GetRawText()
             })
 
+    let private protocolFailure =
+        CliWireCodec.protocolFailure
+            2
+            (ProtocolFailure.create
+                ProtocolProblem.ExpectedObject
+                (ProtocolLocation.fromPath "/input"))
+
+    let private protocolCase =
+        {
+            Identifier = "valid-protocol-failure"
+            Endpoint = None
+            ExitCode = protocolFailure.ExitCode
+            Valid = true
+            Value = Encoding.UTF8.GetString(protocolFailure.Bytes)
+        }
+
     let artifact (projection: ContractModel) =
         let endpoints = projection.CliEndpoints |> List.map _.Identifier
         let representatives = representatives endpoints productionSamples
-
-        let protocolFailure =
-            CliWireCodec.protocolFailure 2 "INVALID_SHAPE" "Synthetic safe failure." "/input"
-
-        let protocolCase =
-            {
-                Identifier = "valid-protocol-failure"
-                Endpoint = None
-                ExitCode = protocolFailure.ExitCode
-                Valid = true
-                Value = Encoding.UTF8.GetString(protocolFailure.Bytes)
-            }
 
         let cases =
             protocolCase
@@ -188,6 +192,15 @@ module CliResponseCorpus =
                 @ scalarBoundaries representatives
                 @ crossEndpoint representatives
                 @ outcomeDiagnostics
+                @ (TransportDiagnosticCorpus.cli
+                   |> List.map (fun (id, valid, value) ->
+                       {
+                           Identifier = id
+                           Endpoint = None
+                           ExitCode = 2
+                           Valid = valid
+                           Value = value.GetRawText()
+                       }))
                 @ (DiagnosticCorpus.cli
                    |> List.map (fun (id, valid, value) ->
                        {

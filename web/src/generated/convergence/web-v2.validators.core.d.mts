@@ -1,5 +1,5 @@
 /* Generated from ClaimCore.Contracts schemas. Do not edit. */
-import type { HostFailure, WebV2ResponseByEndpoint } from "./web-v2.types";
+import type { WebV2ResponseByEndpoint } from "./web-v2.types";
 
 export type WebV2ValidationError = Readonly<{
     instancePath: string;
@@ -12,7 +12,6 @@ export interface WebV2Validator<T> {
     readonly errors: ReadonlyArray<WebV2ValidationError> | null | undefined;
 }
 
-export const validate_host_failure: WebV2Validator<HostFailure>;
 export const validate_session: WebV2Validator<WebV2ResponseByEndpoint["session"]>;
 export const validate_session_login: WebV2Validator<WebV2ResponseByEndpoint["session.login"]>;
 export const validate_session_logout: WebV2Validator<WebV2ResponseByEndpoint["session.logout"]>;

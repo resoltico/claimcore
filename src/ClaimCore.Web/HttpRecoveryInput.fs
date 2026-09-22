@@ -1,5 +1,7 @@
 namespace ClaimCore.Web
 
+open ClaimCore.Contracts
+
 open ClaimCore.Application
 open HttpInputSupport
 
@@ -9,14 +11,14 @@ module HttpRecoveryInput =
         let limit = required "limit" values |> integerValue
 
         if limit < 1 || limit > maximum then
-            fail "The requested page size is outside the supported range."
+            fail HttpInputProblem.PageRange
 
         let view =
             match optionalString "view" values with
             | None -> RecoveryListView.Pending
             | Some "PENDING" -> RecoveryListView.Pending
             | Some "TERMINAL" -> RecoveryListView.Terminal
-            | Some _ -> fail "Use PENDING or TERMINAL recovery view."
+            | Some _ -> fail HttpInputProblem.RecoveryView
 
         {
             View = view
@@ -32,7 +34,7 @@ module HttpRecoveryInput =
         let limit = required "attemptLimit" values |> integerValue
 
         if limit < 1 || limit > maximum then
-            fail "The requested page size is outside the supported range."
+            fail HttpInputProblem.PageRange
 
         {
             OperationId = required "operationId" values |> stringValue |> operationIdValue

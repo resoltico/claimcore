@@ -2,6 +2,7 @@ namespace ClaimCore.Cli
 
 open System
 open System.Text.Json
+open ClaimCore.Contracts
 
 [<RequireQualifiedAccess>]
 type Endpoint =
@@ -65,22 +66,6 @@ module Endpoint =
 
     let tryParse value =
         all |> List.tryFind (fun endpoint -> identifier endpoint = value)
-
-[<NoEquality; NoComparison>]
-type ProtocolFailure =
-    {
-        Code: string
-        Message: string
-        Path: string
-    }
-
-module ProtocolFailure =
-    let create code message path =
-        {
-            Code = code
-            Message = message
-            Path = path
-        }
 
 [<NoEquality; NoComparison>]
 type Invocation =

@@ -10,6 +10,7 @@ let tests =
             ConfigurationTests.tests
             AdmissionEdgeTests.tests
             HttpInputTests.tests
+            TransportDiagnosticTests.tests
             ProgramEntryTests.tests
             WireTests.tests
             HostRouteTests.tests

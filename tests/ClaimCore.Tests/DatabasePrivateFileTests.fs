@@ -85,10 +85,17 @@ let private expectRefused path =
     Expect.equal exitCode 3 "Unsafe admin file refuses migration before DB access"
     Expect.equal stdout "" "Unsafe admin file emits no success payload"
 
-    Expect.stringContains
-        stderr
-        "Database maintenance failed (ArgumentException)"
-        "Admission rejects before opening PostgreSQL"
+    use diagnostic = System.Text.Json.JsonDocument.Parse(stderr)
+
+    Expect.equal
+        (diagnostic.RootElement.GetProperty("diagnostic").GetProperty("id").GetString())
+        "DB_CONNECTION_FILE_REFUSED"
+        "Specific private-file admission cause"
+
+    Expect.equal
+        (diagnostic.RootElement.GetProperty("operationOutcome").GetString())
+        "NOT_STARTED"
+        "No maintenance was attempted"
 
     Expect.isFalse (stderr.Contains(path, StringComparison.Ordinal)) "Diagnostics omit private path"
 

@@ -4,8 +4,8 @@ open System.Text.Json
 open ClaimCore.Contracts
 
 module InvocationFraming =
-    let private failure code message path =
-        Error(ProtocolFailure.create code message path)
+    let private failure reason path =
+        Error(ProtocolFailure.create reason (ProtocolLocation.fromPath path))
 
     let private endpoint frame =
         StrictJson.requiredProperty "" "endpoint" frame
@@ -13,12 +13,7 @@ module InvocationFraming =
         |> Result.bind (fun identifier ->
             Endpoint.tryParse identifier
             |> Option.map Ok
-            |> Option.defaultValue (
-                failure
-                    "UNKNOWN_ENDPOINT"
-                    "The endpoint is not declared by the generated CLI contract."
-                    "/endpoint"
-            ))
+            |> Option.defaultValue (failure ProtocolProblem.UnknownEndpoint "/endpoint"))
 
     let private timeout endpoint frame =
         match StrictJson.optionalProperty "timeoutMs" frame with
@@ -34,10 +29,7 @@ module InvocationFraming =
                 if supported then
                     Ok(Some milliseconds)
                 else
-                    failure
-                        "TIMEOUT_FORBIDDEN"
-                        "This endpoint does not permit caller cancellation."
-                        "/timeoutMs")
+                    failure ProtocolProblem.TimeoutForbidden "/timeoutMs")
 
     let decode (root: JsonElement) =
         StrictJson.allowedProperties

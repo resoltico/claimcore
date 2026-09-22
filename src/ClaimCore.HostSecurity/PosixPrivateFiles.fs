@@ -92,7 +92,7 @@ module internal PosixPrivateFiles =
                 if not (current parent name opened) then
                     raise (IOException("Private source identity changed while reading."))
                 elif total > maximum then
-                    Error "The private file exceeds the configured byte limit."
+                    Error PrivateFileFailure.TooLarge
                 else
                     Ok(Array.truncate total buffer)
             finally

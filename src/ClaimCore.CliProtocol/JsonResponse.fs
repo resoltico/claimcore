@@ -9,4 +9,4 @@ module JsonResponse =
     let bytes (response: RenderedResponse) = response.Bytes
 
     let protocolFailure exitCode (failure: ProtocolFailure) =
-        CliWireCodec.protocolFailure exitCode failure.Code failure.Message failure.Path
+        CliWireCodec.protocolFailure exitCode failure

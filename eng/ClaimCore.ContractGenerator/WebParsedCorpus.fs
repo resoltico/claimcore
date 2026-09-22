@@ -185,6 +185,20 @@ module WebParsedCorpus =
                 Value = value.GetRawText()
             })
 
+    let private hostFailures =
+        WebHostCorpusSamples.all
+        |> List.map (fun sample ->
+            valid ("host-" + sample.Identifier) None sample.Status sample.Bytes)
+
+    let private invalidHost =
+        let hostFailure = WebHostCorpusSamples.all |> List.head
+
+        invalid
+            "host-failure-missing-code"
+            None
+            hostFailure.Status
+            (CorpusJson.rewrite (parsed hostFailure.Bytes) "code" None false)
+
     let artifact (projection: ContractModel) =
         let endpoints = projection.WebEndpoints |> List.map _.Identifier
         let samples = representatives endpoints
@@ -194,20 +208,6 @@ module WebParsedCorpus =
             invalidOp "Web parsed corpus must follow the exact generated endpoint inventory."
 
         WebHostCorpusSamples.assertComplete ()
-
-        let hostFailures =
-            WebHostCorpusSamples.all
-            |> List.map (fun sample ->
-                valid ("host-" + sample.Identifier) None sample.Status sample.Bytes)
-
-        let invalidHost =
-            let hostFailure = WebHostCorpusSamples.all |> List.head
-
-            invalid
-                "host-failure-missing-code"
-                None
-                hostFailure.Status
-                (CorpusJson.rewrite (parsed hostFailure.Bytes) "code" None false)
 
         let validResponses =
             productionSamples
@@ -224,6 +224,15 @@ module WebParsedCorpus =
             @ crossEndpoint samples
             @ diagnosticCases
             @ outcomeDiagnosticCases
+            @ (TransportDiagnosticCorpus.web
+               |> List.map (fun (id, status, valid, value) ->
+                   {
+                       Identifier = id
+                       Endpoint = None
+                       Status = status
+                       Valid = valid
+                       Value = value.GetRawText()
+                   }))
 
         let identifiers = cases |> List.map _.Identifier
 

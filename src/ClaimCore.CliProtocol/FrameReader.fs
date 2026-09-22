@@ -1,5 +1,7 @@
 namespace ClaimCore.Cli
 
+open ClaimCore.Contracts
+
 open System
 open System.IO
 
@@ -21,10 +23,7 @@ module FrameReader =
 
         if total > maximumBytes then
             InputFrame.Failure(
-                ProtocolFailure.create
-                    "INPUT_TOO_LARGE"
-                    "The JSON input exceeds the configured byte limit."
-                    ""
+                ProtocolFailure.create ProtocolProblem.DocumentTooLarge ProtocolLocation.root
             )
         else
             InputFrame.Bytes(Array.truncate total buffer)
@@ -48,24 +47,15 @@ module FrameReader =
             InputFrame.EndOfInput
         elif oversized then
             InputFrame.Failure(
-                ProtocolFailure.create
-                    "FRAME_TOO_LARGE"
-                    "The NDJSON frame exceeds the configured byte limit."
-                    ""
+                ProtocolFailure.create ProtocolProblem.FrameTooLarge ProtocolLocation.root
             )
         elif total = 0 then
             InputFrame.Failure(
-                ProtocolFailure.create
-                    "BLANK_FRAME"
-                    "NDJSON frames must contain one JSON object."
-                    ""
+                ProtocolFailure.create ProtocolProblem.BlankFrame ProtocolLocation.root
             )
         elif buffer[total - 1] = byte '\r' then
             InputFrame.Failure(
-                ProtocolFailure.create
-                    "CRLF_FORBIDDEN"
-                    "NDJSON uses LF as its only frame terminator."
-                    ""
+                ProtocolFailure.create ProtocolProblem.CrLfForbidden ProtocolLocation.root
             )
         else
             InputFrame.Bytes(Array.truncate total buffer)

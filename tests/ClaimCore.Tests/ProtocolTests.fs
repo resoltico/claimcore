@@ -207,7 +207,10 @@ let private privateErrorPaths =
 
         for problem in [ unknownFailure; duplicateFailure ] do
             Expect.isFalse (problem.Path.Contains(canary)) "No authored key in the path"
-            Expect.isFalse (problem.Message.Contains(canary)) "No authored key in the message")
+
+            Expect.isFalse
+                ((ClaimCore.Contracts.ProtocolProblems.render problem.Reason).Contains(canary))
+                "No authored key in the message")
 
 let private missingRequiredInput =
     testCase "missing required endpoint input is rejected before runtime access" (fun () ->

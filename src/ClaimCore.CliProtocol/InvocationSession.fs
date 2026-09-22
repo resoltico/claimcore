@@ -9,15 +9,22 @@ open ClaimCore.Contracts
 /// holds no runtime, no store, and no connection: the composition root supplies the core.
 type InvocationSession(supplier: ICoreSupplier) =
     let openFault endpoint fault =
-        CliWireCodec.localFailure (Endpoint.identifier endpoint) (CliLocalFault.RuntimeOpen fault)
+        EndpointReply.Local(endpoint, CliLocalFault.RuntimeOpen fault)
 
     let unavailable endpoint reason =
         match reason with
-        | CoreUnavailable.Configuration message ->
-            JsonResponse.protocolFailure 3 (ProtocolFailure.create "CONFIGURATION_ERROR" message "")
+        | CoreUnavailable.Configuration reason ->
+            EndpointReply.Protocol(3, ProtocolFailure.create reason ProtocolLocation.root)
         | CoreUnavailable.Open fault -> openFault endpoint fault
 
-    member _.Run(endpoint, input, timeout: int option, stopped: CancellationToken) =
+    member _.Run
+        (
+            endpoint,
+            input,
+            timeout: int option,
+            stopped: CancellationToken,
+            beforeDispatch: unit -> unit
+        ) =
         task {
             use cancellation = new CancellationTokenSource()
 
@@ -30,5 +37,7 @@ type InvocationSession(supplier: ICoreSupplier) =
 
             match! supplier.Acquire linked.Token with
             | Error reason -> return unavailable endpoint reason
-            | Ok core -> return! EndpointDispatch.execute core endpoint input linked.Token
+            | Ok core ->
+                beforeDispatch ()
+                return! EndpointDispatch.execute core endpoint input linked.Token
         }

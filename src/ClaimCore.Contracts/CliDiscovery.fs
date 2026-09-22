@@ -96,3 +96,6 @@ module CliDiscovery =
     let endpoint (projection: ContractModel) identifier =
         slice (ContractRenderers.cli projection) "endpoints" (fun items ->
             named items "id" identifier)
+
+    let diagnostics projection =
+        slice (ContractRenderers.cli projection) "diagnostics" Some

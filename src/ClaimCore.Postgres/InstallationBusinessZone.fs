@@ -55,14 +55,22 @@ module InstallationBusinessZone =
             )
 
         match command.ExecuteScalar() with
-        | null -> raise (InvalidDataException("Installation lineage is missing."))
+        | null -> AdministrationFailures.refuse AdministrationFailure.InstallationLineageMissing
         | :? DBNull -> None
         | :? string as value -> Some value
-        | _ -> raise (InvalidDataException("Installation business time zone has an invalid type."))
+        | _ -> AdministrationFailures.refuse AdministrationFailure.BusinessZoneTypeInvalid
 
     /// Configure the business zone once. An exact repeat is idempotent; a different zone fails.
-    let set (connectionString: string) (zoneId: string) =
-        let requested = validated zoneId
+    let private setValue
+        (progress: AdministrationProgress<unit>)
+        (connectionString: string)
+        (zoneId: string)
+        =
+        let requested =
+            match canonical zoneId with
+            | Ok value -> value
+            | Error() -> AdministrationFailures.refuse AdministrationFailure.BusinessZoneInvalid
+
         let builder = Migrations.ownerBuilder connectionString
         use connection = new NpgsqlConnection(builder.ConnectionString)
         connection.Open()
@@ -70,17 +78,14 @@ module InstallationBusinessZone =
         Migrations.requireOwnerIdentity connection
         Migrations.requireCurrent connection
         use transaction = connection.BeginTransaction(IsolationLevel.ReadCommitted)
+        progress.BeginWork()
         Sql.lockKey connection transaction "claimcore:installation-business-time-zone"
 
         match read connection transaction with
         | Some existing when String.Equals(existing, requested, StringComparison.Ordinal) ->
-            transaction.Commit()
+            progress.Commit((fun () -> transaction.Commit()), ())
         | Some _ ->
-            raise (
-                InvalidOperationException(
-                    "The installation business time zone is already configured."
-                )
-            )
+            AdministrationFailures.refuse AdministrationFailure.BusinessZoneAlreadyConfigured
         | None ->
             use command =
                 new NpgsqlCommand(
@@ -94,9 +99,12 @@ module InstallationBusinessZone =
             Sql.text command "zone" requested
 
             if command.ExecuteNonQuery() <> 1 then
-                raise (InvalidDataException("Installation business time zone was not configured."))
+                AdministrationFailures.refuse AdministrationFailure.BusinessZoneWriteFailed
 
-            transaction.Commit()
+            progress.Commit((fun () -> transaction.Commit()), ())
+
+    let set connectionString zoneId =
+        AdministrationExecution.run (fun progress -> setValue progress connectionString zoneId)
 
     /// Runtime admission uses this after schema and ACL checks. It intentionally rejects a fresh
     /// or upgraded installation until its owner chooses the calendar used for business decisions.

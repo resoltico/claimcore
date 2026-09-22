@@ -14,6 +14,18 @@ open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.Postgres
 
+let completedAdministration outcome =
+    match outcome with
+    | AdministrationOutcome.Completed value -> value
+    | result -> failtestf "Expected confirmed administrative completion, got %A" result
+
+let refusedAdministration expected outcome =
+    match outcome with
+    | AdministrationOutcome.NotStarted reason
+    | AdministrationOutcome.NotCommitted reason ->
+        Expect.equal reason expected "Exact administrative refusal"
+    | result -> failtestf "Expected definite administrative refusal, got %A" result
+
 let accepted result =
     match result with
     | Ok value -> value
@@ -135,8 +147,8 @@ let private provision (admin: string) (databaseName: string) (appPassword: strin
         )
 
     command.ExecuteNonQuery() |> ignore
-    Migrations.apply admin
-    InstallationBusinessZone.set admin "Etc/UTC"
+    Migrations.apply admin |> completedAdministration
+    InstallationBusinessZone.set admin "Etc/UTC" |> completedAdministration
 
 let private runtimeConnection (admin: string) (appPassword: string) =
     let application = NpgsqlConnectionStringBuilder(admin)

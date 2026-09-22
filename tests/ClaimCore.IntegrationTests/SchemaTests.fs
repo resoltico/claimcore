@@ -28,8 +28,8 @@ let private constraintTests =
         [
             testCase "migration is repeatable only with identical source checksum" (fun () ->
                 let admin = adminConnection ()
-                Migrations.apply admin
-                Migrations.apply admin)
+                Migrations.apply admin |> completedAdministration
+                Migrations.apply admin |> completedAdministration)
             testCase "database rejects excessive precision instead of rounding it" (fun () ->
                 use database = store ()
                 let request = newRequest ()

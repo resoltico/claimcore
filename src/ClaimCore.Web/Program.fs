@@ -56,12 +56,12 @@ let private assetDirectory () =
     if Directory.Exists(published) && File.Exists(manifest) then
         published
     else
-        invalidOp "Publish the verified ClaimCore Web asset manifest before starting ClaimCore.Web."
+        WebStartupDiagnostics.refuse WebStartupProblem.AssetsMissing
 
-let private writeHostFailure context status code message =
+let private writeHostFailure context reason =
     task {
         HttpHeaders.noStore context
-        do! (WebWire.hostFailure status code message None).ExecuteAsync(context)
+        do! (WebWire.hostFailure reason).ExecuteAsync(context)
     }
 
 let private configureRateLimits (configuration: WebConfiguration) (services: IServiceCollection) =
@@ -70,13 +70,7 @@ let private configureRateLimits (configuration: WebConfiguration) (services: ISe
 
         options.OnRejected <-
             Func<OnRejectedContext, CancellationToken, ValueTask>(fun rejected _ ->
-                ValueTask(
-                    writeHostFailure
-                        rejected.HttpContext
-                        StatusCodes.Status429TooManyRequests
-                        "WEB_BUSY"
-                        "Request admission is busy."
-                ))
+                ValueTask(writeHostFailure rejected.HttpContext WebHostFailure.Busy))
 
         options.AddConcurrencyLimiter(
             "core",
@@ -141,13 +135,13 @@ let private configureAuthentication (services: IServiceCollection) =
 
             options.Events.OnRedirectToLogin <-
                 Func<RedirectContext<CookieAuthenticationOptions>, Task>(fun context ->
-                    context.Response.StatusCode <- StatusCodes.Status401Unauthorized
-                    Task.CompletedTask)
+                    (WebWire.hostFailure WebHostFailure.SessionRejected)
+                        .ExecuteAsync(context.HttpContext))
 
             options.Events.OnRedirectToAccessDenied <-
                 Func<RedirectContext<CookieAuthenticationOptions>, Task>(fun context ->
-                    context.Response.StatusCode <- StatusCodes.Status403Forbidden
-                    Task.CompletedTask))
+                    (WebWire.hostFailure WebHostFailure.SessionForbidden)
+                        .ExecuteAsync(context.HttpContext)))
     |> ignore
 
 let private requireTrustedConnection
@@ -161,17 +155,13 @@ let private requireTrustedConnection
         if Admission.trustedConnection configuration.Origin context then
             do! next.Invoke(context)
         else
-            do!
-                writeHostFailure
-                    context
-                    StatusCodes.Status403Forbidden
-                    "WEB_CONNECTION_REJECTED"
-                    "Connection was refused."
+            do! writeHostFailure context WebHostFailure.ConnectionRejected
     }
     :> Task)
 
 let private run () =
     let configuration = Configuration.load ()
+    use _certificate = configuration.Certificate
     use _stateLease = Security.acquireStateDirectory configuration.StateDirectory
     use bootstrapLease = Security.rotateBootstrapCredential configuration.StateDirectory
     let bootstrap = bootstrapLease.Credential
@@ -188,7 +178,7 @@ let private run () =
                 .GetResult()
         with
         | Ok value -> value
-        | Error _ -> invalidOp "ClaimCore Web could not open the configured application runtime."
+        | Error reason -> WebStartupDiagnostics.refuse (WebStartupProblem.RuntimeOpen reason)
 
     let builder =
         WebApplication.CreateBuilder(WebApplicationOptions(WebRootPath = assets))
@@ -200,6 +190,9 @@ let private run () =
     configureRateLimits configuration builder.Services
     builder.Services.AddAuthorization() |> ignore
     let application = builder.Build()
+
+    application.Use(Func<HttpContext, RequestDelegate, Task>(RouteSupport.handleFailures))
+    |> ignore
 
     application.Lifetime.ApplicationStopping.Register(Action(fun () -> sessions.RevokeAll()))
     |> ignore
@@ -223,8 +216,7 @@ let private run () =
     application.Run()
     0
 
-[<EntryPoint>]
-let main arguments =
+let private dispatch arguments =
     match arguments |> Array.toList with
     | [] -> run ()
     | [ "help" ]
@@ -236,6 +228,28 @@ let main arguments =
         printfn "%s" BuildIdentity.current.Version
         0
     | [ "version"; "--json" ] -> writeVersion ()
+    | _ -> WebStartupDiagnostics.refuse WebStartupProblem.UnsupportedInvocation
+
+let private report reason =
+    try
+        let stream = Console.OpenStandardError()
+        stream.Write(WebStartupDiagnostics.encode reason)
+        stream.Flush()
+    with _ ->
+        ()
+
+[<EntryPoint>]
+let main arguments =
+    try
+        dispatch arguments
+    with
+    | WebStartupException reason ->
+        report reason
+
+        if reason = WebStartupProblem.UnsupportedInvocation then
+            64
+        else
+            3
     | _ ->
-        eprintfn "Use ClaimCore.Web help for supported arguments."
-        64
+        report WebStartupProblem.UnexpectedFailure
+        70

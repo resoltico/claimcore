@@ -14,13 +14,6 @@ module internal CliResponseRecoverySchemas =
                             "mediaType"
                             (WireSchema.token "application/vnd.claimcore.recovery+json")
                     ]
-                WireSchema.kind
-                    "rejected"
-                    [
-                        WireSchema.property
-                            "code"
-                            (WireSchema.token "RECOVERY_IDEMPOTENCY_CONFLICT")
-                    ]
                 CliResponseSchemaCommon.operationIdentity "notFound"
                 WireSchema.kind
                     "rejected"

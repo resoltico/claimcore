@@ -1,5 +1,7 @@
 namespace ClaimCore.Web
 
+open ClaimCore.Contracts
+
 open System
 open System.Globalization
 open System.IO
@@ -58,19 +60,19 @@ type DismissInput =
     }
 
 module HttpInputSupport =
-    exception InvalidInput of string
+    exception InvalidInput of HttpInputProblem
 
     let fail message = raise (InvalidInput message)
 
     let properties (element: JsonElement) =
         if element.ValueKind <> JsonValueKind.Object then
-            fail "Expected a JSON object."
+            fail HttpInputProblem.ExpectedObject
 
         let values = element.EnumerateObject() |> Seq.toList
         let names = values |> List.map _.Name
 
         if names.Length <> (names |> Set.ofList |> Set.count) then
-            fail "Duplicate JSON properties are not accepted."
+            fail HttpInputProblem.DuplicateProperty
 
         values |> List.map (fun property -> property.Name, property.Value) |> Map.ofList
 
@@ -79,22 +81,22 @@ module HttpInputSupport =
         let allowed = expected |> Set.ofList
 
         if not (Set.isSubset names allowed) then
-            fail "The JSON object contains an unknown property."
+            fail HttpInputProblem.UnknownProperty
 
         values
 
     let required name values =
         values
         |> Map.tryFind name
-        |> Option.defaultWith (fun () -> fail "A required JSON property is missing.")
+        |> Option.defaultWith (fun () -> fail HttpInputProblem.MissingProperty)
 
     let stringValue (property: JsonElement) =
         if property.ValueKind <> JsonValueKind.String then
-            fail "Expected a JSON string."
+            fail HttpInputProblem.ExpectedString
 
         property.GetString()
         |> Option.ofObj
-        |> Option.defaultWith (fun () -> fail "JSON null is not accepted here.")
+        |> Option.defaultWith (fun () -> fail HttpInputProblem.NullForbidden)
 
     let optionalString name values =
         values |> Map.tryFind name |> Option.map stringValue
@@ -104,7 +106,7 @@ module HttpInputSupport =
             property.ValueKind <> JsonValueKind.True
             && property.ValueKind <> JsonValueKind.False
         then
-            fail "Expected a JSON boolean."
+            fail HttpInputProblem.ExpectedBoolean
 
         property.GetBoolean()
 
@@ -112,7 +114,7 @@ module HttpInputSupport =
         let mutable value = 0
 
         if property.ValueKind <> JsonValueKind.Number || not (property.TryGetInt32(&value)) then
-            fail "Expected a JSON integer."
+            fail HttpInputProblem.ExpectedInteger
 
         value
 
@@ -122,19 +124,19 @@ module HttpInputSupport =
             parsed < Int64.MaxValue && parsed.ToString(CultureInfo.InvariantCulture) = value
             ->
             parsed
-        | _ -> fail "Expected a canonical non-negative revision below Int64.MaxValue."
+        | _ -> fail HttpInputProblem.InvalidRevision
 
     let operationIdValue (value: string) =
         match Guid.TryParseExact(value, "D") with
         | true, parsed when parsed <> Guid.Empty && parsed.ToString("D") = value -> parsed
-        | _ -> fail "Use one non-empty canonical lowercase UUID."
+        | _ -> fail HttpInputProblem.InvalidUuid
 
     let digestValue (value: string) =
         let validCharacter character =
             ('0' <= character && character <= '9') || ('a' <= character && character <= 'f')
 
         if value.Length <> 64 || not (value |> Seq.forall validCharacter) then
-            fail "Use one lowercase SHA-256 digest."
+            fail HttpInputProblem.InvalidDigest
 
         value
 
@@ -146,13 +148,13 @@ module HttpInputSupport =
                 JsonDocument.Parse(ReadOnlyMemory<byte>(bytes), JsonDocumentOptions(MaxDepth = 32))
 
             if not (JsonUnicode.validDecodedStrings document.RootElement) then
-                fail "Malformed Unicode escape in JSON text."
+                fail HttpInputProblem.InvalidUnicode
 
             Ok(read document.RootElement)
         with
         | InvalidInput message -> Error message
-        | :? DecoderFallbackException -> Error "The request must be valid UTF-8."
-        | :? JsonException -> Error "Malformed JSON or an unsupported JSON shape."
+        | :? DecoderFallbackException -> Error HttpInputProblem.InvalidUtf8
+        | :? JsonException -> Error HttpInputProblem.InvalidJson
 
     let readBounded limit (stream: Stream) =
         task {
@@ -177,11 +179,16 @@ module HttpInputSupport =
                         output.Write(buffer, 0, count)
 
                 if total > limit then
-                    return Error "The request exceeds the configured byte limit."
+                    return Error HttpInputProblem.BodyTooLarge
                 else
                     return Ok(output.ToArray())
-            with :? IOException ->
-                return Error "The request body could not be read."
+            with
+            | :? Microsoft.AspNetCore.Http.BadHttpRequestException as failure when
+                failure.StatusCode = 413
+                ->
+                return Error HttpInputProblem.BodyTooLarge
+            | :? OperationCanceledException -> return Error HttpInputProblem.BodyCancelled
+            | :? IOException -> return Error HttpInputProblem.BodyUnreadable
         }
 
     let sourceDigest value =

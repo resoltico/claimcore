@@ -80,7 +80,7 @@ module internal WebTypeScriptResponses =
         moduleBytes
             [
                 "import type { WebV2EndpointId } from \"./web-v2.endpoint-catalog\";"
-                "import type { HostFailure } from \"./web-v2.types.core\";"
+                "import type { HostFailure } from \"./web-v2.types.transport\";"
                 "import type { WebV2ReadResponseByEndpoint } from \"./web-v2.types.responses.read\";"
                 "import type { WebV2CommandResponseByEndpoint } from \"./web-v2.types.responses.command\";"
                 "import type { WebV2RecoveryResponseByEndpoint } from \"./web-v2.types.responses.recovery\";"

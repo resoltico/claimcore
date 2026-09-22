@@ -106,6 +106,7 @@ let private withPrunedAcceptedCase action =
         { PreparationPruneOptions.defaults with
             SettledRetentionDays = 1
         }
+    |> completedAdministration
     |> ignore
 
     Expect.equal (rowCount "request_preparations" input.OperationId) 0L "Preparation pruned"

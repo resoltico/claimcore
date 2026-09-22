@@ -1,5 +1,7 @@
 namespace ClaimCore.Cli
 
+open ClaimCore.Contracts
+
 open System
 open System.Globalization
 open System.Text.Json
@@ -9,13 +11,13 @@ open ClaimCore.Domain
 /// Strict CLI-v3 command decoder. It creates only adapter input; the single Application binder
 /// remains responsible for constructing a closed Domain request.
 module internal CliCommandInput =
-    let private failure code message path =
-        Error(ProtocolFailure.create code message path)
+    let private failure reason path =
+        Error(ProtocolFailure.create reason (ProtocolLocation.fromPath path))
 
-    let private requiredOption code message path =
+    let private requiredOption reason path =
         function
         | Some item -> Ok item
-        | None -> failure code message path
+        | None -> failure reason path
 
     let private canonicalGuid path (value: JsonElement) =
         match StrictJson.stringAt path value with
@@ -23,7 +25,7 @@ module internal CliCommandInput =
         | Ok raw ->
             match Guid.TryParseExact(raw, "D") with
             | true, parsed when parsed <> Guid.Empty && parsed.ToString("D") = raw -> Ok parsed
-            | _ -> failure "INVALID_UUID" "Use a non-empty canonical lowercase UUID." path
+            | _ -> failure ProtocolProblem.InvalidUuid path
 
     let private revision path (value: JsonElement) =
         match StrictJson.stringAt path value with
@@ -32,16 +34,8 @@ module internal CliCommandInput =
         | Ok raw when raw.Length > 0 && raw[0] <> '0' && raw |> Seq.forall Char.IsAsciiDigit ->
             match Int64.TryParse(raw, NumberStyles.None, CultureInfo.InvariantCulture) with
             | true, parsed when parsed < Int64.MaxValue -> Ok parsed
-            | _ ->
-                failure
-                    "INVALID_REVISION"
-                    "Use a canonical unsigned revision below Int64.MaxValue."
-                    path
-        | Ok _ ->
-            failure
-                "INVALID_REVISION"
-                "Use a canonical unsigned revision below Int64.MaxValue."
-                path
+            | _ -> failure ProtocolProblem.InvalidRevision path
+        | Ok _ -> failure ProtocolProblem.InvalidRevision path
 
     let private requiredString path name input =
         StrictJson.requiredProperty path name input
@@ -52,10 +46,7 @@ module internal CliCommandInput =
         |> Result.bind (fun token ->
             CommandKinds.all
             |> List.tryFind (fun kind -> CommandKinds.token kind = token)
-            |> requiredOption
-                "INVALID_COMMAND"
-                "The command kind is not declared by the semantic contract."
-                path)
+            |> requiredOption ProtocolProblem.UnknownCommand path)
 
     let private values path (expected: FieldInputDefinition list) (value: JsonElement) =
         let names = expected |> List.map _.FieldName
@@ -90,10 +81,7 @@ module internal CliCommandInput =
                     | CorrectionGroupAction.Clear -> "CLEAR")
 
             if not (List.contains mode allowed) then
-                failure
-                    "INVALID_COMMAND"
-                    "The correction action is not declared by the semantic contract."
-                    path
+                failure ProtocolProblem.CorrectionAction path
             else
                 match mode with
                 | "KEEP" ->
@@ -108,11 +96,7 @@ module internal CliCommandInput =
                         StrictJson.requiredProperty path "values" source
                         |> Result.bind (values (path + "/values") group.ReplaceFields)
                         |> Result.map CorrectionDraftAction.Replace)
-                | _ ->
-                    failure
-                        "INVALID_COMMAND"
-                        "The correction action is not declared by the semantic contract."
-                        path)
+                | _ -> failure ProtocolProblem.CorrectionAction path)
 
     let private correctionGroups (value: JsonElement) =
         match (CommandDefinitions.forKind CommandKind.CorrectCase).Inputs with

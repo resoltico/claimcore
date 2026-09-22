@@ -186,6 +186,9 @@ type Host
         configureServices (defaultArg loginPermits 5) builder.Services
         let application = builder.Build()
 
+        application.Use(Func<HttpContext, RequestDelegate, Task>(RouteSupport.handleFailures))
+        |> ignore
+
         application.Use(
             Func<HttpContext, RequestDelegate, Task>(fun context next ->
                 context.Connection.RemoteIpAddress <- IPAddress.Loopback

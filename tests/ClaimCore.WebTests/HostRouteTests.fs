@@ -1,5 +1,6 @@
 module ClaimCore.WebTests.HostRouteTests
 
+open ClaimCore.Contracts
 open System
 open System.Security.Cryptography
 open System.Text
@@ -18,13 +19,16 @@ let private inputFailureTests () =
     let oversized = context "{}"
 
     let oversizedBody =
-        HostRoutes.invalidLoginBody oversized "The request exceeds the configured byte limit."
+        HostRoutes.invalidLoginBody oversized HttpInputProblem.BodyTooLarge
 
     execute oversized oversizedBody |> ignore
     Expect.equal oversized.Response.StatusCode 413 "Login keeps its smaller independent body limit"
 
     let malformed = context "{}"
-    let malformedBody = HostRoutes.invalidLoginBody malformed "Malformed"
+
+    let malformedBody =
+        HostRoutes.invalidLoginBody malformed HttpInputProblem.InvalidJson
+
     execute malformed malformedBody |> ignore
 
     Expect.equal

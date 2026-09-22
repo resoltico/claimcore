@@ -170,7 +170,7 @@ let private persistenceTests =
                 "all fields survive decision, payment and closure without currency coercion"
                 verifyLifecycle
             testCase "migration journal exactly matches the ordered embedded manifest" (fun () ->
-                Migrations.apply (adminConnection ())
+                Migrations.apply (adminConnection ()) |> completedAdministration
 
                 let expected =
                     SchemaDefinition.all ()

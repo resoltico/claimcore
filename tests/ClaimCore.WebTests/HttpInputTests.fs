@@ -23,7 +23,7 @@ let private validDraft =
 
 let private flatDraftTests () =
     match HttpInput.draft (bytes validDraft) with
-    | Error message -> failtestf "Expected v2 draft acceptance: %s" message
+    | Error message -> failtestf "Expected v2 draft acceptance: %A" message
     | Ok draft ->
         match draft.Command with
         | DraftCommand.Flat(CommandKind.Open, values) ->
@@ -44,7 +44,7 @@ let private flatDraftTests () =
 
     match HttpInput.draft (bytes (revision largest)) with
     | Ok draft -> Expect.equal draft.ExpectedVersion (Int64.MaxValue - 1L) "Largest revision"
-    | Error message -> failtestf "Expected largest revision acceptance: %s" message
+    | Error message -> failtestf "Expected largest revision acceptance: %A" message
 
     expectError (HttpInput.draft (bytes (revision maximum))) "Int64.MaxValue is reserved"
 
@@ -73,7 +73,7 @@ let private correctionDraftTests () =
 
         Expect.equal clear CorrectionDraftAction.Clear "Correction clearing remains explicit"
     | Ok _ -> failtest "Correction groups remain a typed draft variant"
-    | Error message -> failtestf "Expected correction draft acceptance: %s" message
+    | Error message -> failtestf "Expected correction draft acceptance: %A" message
 
     let unknownMode =
         correction.Replace("\"KEEP\"", "\"UNKNOWN\"", StringComparison.Ordinal)
@@ -93,7 +93,7 @@ let private endpointInputTests () =
     | Ok input ->
         Expect.isNone input.Cursor "A cursor is absent rather than an overloaded null sentinel"
         Expect.equal input.Limit 50 "Page limits remain endpoint-local integers"
-    | Error message -> failtestf "Expected page acceptance: %s" message
+    | Error message -> failtestf "Expected page acceptance: %A" message
 
     expectError (HttpInput.page 50 (bytes """{"limit":51}""")) "Page bounds are exact"
 
@@ -104,7 +104,7 @@ let private endpointInputTests () =
         Expect.equal input.CaseReference "WEB-V2-001" "History preserves its explicit target"
         Expect.isNone input.Cursor "History starts without an implicit revision cursor"
         Expect.equal input.Limit 1 "History page limit remains local"
-    | Error message -> failtestf "Expected history acceptance: %s" message
+    | Error message -> failtestf "Expected history acceptance: %A" message
 
     expectError
         (HttpInput.resolve (
@@ -142,7 +142,7 @@ let private unicodeInputTests () =
     match HttpInput.caseReference (bytes unknown) with
     | Error message ->
         Expect.isFalse
-            (message.Contains(marker, StringComparison.Ordinal))
+            ((sprintf "%A" message).Contains(marker, StringComparison.Ordinal))
             "No input name in errors"
     | Ok _ -> failtest "An unknown synthetic property must be refused."
 
@@ -151,7 +151,7 @@ let private sessionInputTests () =
     | Ok input ->
         Expect.equal input.Credential "synthetic" "Login keeps the submitted credential private"
         Expect.equal input.AntiforgeryToken "token" "Login body declares the matching token"
-    | Error message -> failtestf "Expected login acceptance: %s" message
+    | Error message -> failtestf "Expected login acceptance: %A" message
 
     Expect.isOk (HttpInput.logout (bytes "{}")) "Logout requires the explicit empty object"
     expectError (HttpInput.logout (bytes """{"unexpected":true}""")) "Logout rejects extra data"
@@ -200,7 +200,7 @@ let private recoveryAndDraftRefusals () =
 
     match HttpInput.dismiss (bytes (dismiss "false")) with
     | Ok value -> Expect.isFalse value.Confirmed "A Boolean false remains a value for core policy"
-    | Error message -> failtestf "Expected syntactically valid false confirmation: %s" message
+    | Error message -> failtestf "Expected syntactically valid false confirmation: %A" message
 
     expectError (HttpInput.dismiss (bytes (dismiss "0"))) "Confirmation is a JSON Boolean"
     expectError (HttpInput.dismiss (bytes (dismiss "null"))) "Null is not a Boolean"

@@ -25,9 +25,9 @@ module internal EncodedJson =
 module WebWire =
     let liveness = WebWireCodec.liveness |> EncodedJson.ok
 
-    let hostFailure status code message executionPhase =
-        WebWireCodec.hostFailure code message executionPhase
-        |> EncodedJson.result status
+    let hostFailure reason =
+        WebWireCodec.hostFailure reason
+        |> EncodedJson.result (WebHostFailures.status reason)
 
     let session endpoint authenticated (antiforgeryToken: string | null) =
         WebWireCodec.session endpoint authenticated (Option.ofObj antiforgeryToken)

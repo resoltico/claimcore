@@ -133,10 +133,12 @@ it("reports a failed list as a request-local error without manufacturing rows", 
       JSON.stringify({
         kind: "HOST_FAILURE",
         code: "WEB_BUSY",
+        status: 429,
+        diagnostic: { id: "WEB_HOST_BUSY", parameters: {} },
         message: "Busy",
         executionPhase: null,
       }),
-      { status: 503, headers: { "content-type": "application/json" } },
+      { status: 429, headers: { "content-type": "application/json" } },
     ),
   );
   render(<CaseList token="token" onSelect={vi.fn()} onOpen={vi.fn()} />);
@@ -151,6 +153,8 @@ it("fails closed when the server definition is rejected or has a different Web f
       JSON.stringify({
         kind: "HOST_FAILURE",
         code: "WEB_SESSION_REJECTED",
+        status: 401,
+        diagnostic: { id: "WEB_HOST_SESSION_REJECTED", parameters: {} },
         message: "No",
         executionPhase: null,
       }),

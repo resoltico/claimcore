@@ -5,63 +5,80 @@ open System.Threading
 open System.Threading.Tasks
 open ClaimCore.Application
 open ClaimCore.Contracts
+open ClaimCore.HostSecurity
 
 module EndpointDispatch =
-    let private localFailure (endpoint: Endpoint) reason =
-        CliWireCodec.localFailure (Endpoint.identifier endpoint) reason
+    let private localFailure (endpoint: Endpoint) reason = EndpointReply.Local(endpoint, reason)
 
     let private source (maximum: int) (path: string) : Result<byte array, ProtocolFailure> =
         PrivateFiles.readSource maximum path
-        |> Result.mapError (fun message ->
-            ProtocolFailure.create "PRIVATE_FILE_ERROR" message "/input/source")
+        |> Result.mapError (fun error ->
+            let reason =
+                match error with
+                | PrivateFileFailure.TooLarge -> ProtocolProblem.SourceLimit
+                | PrivateFileFailure.InvalidUtf8 -> ProtocolProblem.SourceEncoding
+                | PrivateFileFailure.UnsupportedPlatform -> ProtocolProblem.SourcePlatform
+                | PrivateFileFailure.InvalidLimit
+                | PrivateFileFailure.AccessRefused -> ProtocolProblem.SourceAccess
+
+            ProtocolFailure.create reason (ProtocolLocation.fromPath "/input/source"))
 
     let private importPreview endpoint sourcePath maximum load =
         match source maximum sourcePath with
-        | Error problem -> Task.FromResult(JsonResponse.protocolFailure 3 problem)
+        | Error problem -> Task.FromResult(EndpointReply.Protocol(3, problem))
         | Ok bytes ->
             task {
                 let! outcome = load bytes
 
-                return CliWireCodec.importPreview (Endpoint.identifier endpoint) outcome
+                return
+                    (if endpoint = Endpoint.RecoveryImportEnvelopePreview then
+                         EndpointReply.EnvelopePreview
+                     else
+                         EndpointReply.RecordPreview)
+                        outcome
             }
 
     let private importRetain endpoint sourcePath digest maximum retain =
         match source maximum sourcePath with
-        | Error problem -> Task.FromResult(JsonResponse.protocolFailure 3 problem)
+        | Error problem -> Task.FromResult(EndpointReply.Protocol(3, problem))
         | Ok bytes ->
             task {
                 let! outcome = retain bytes digest
 
-                return CliWireCodec.importRetain (Endpoint.identifier endpoint) outcome
+                return
+                    (if endpoint = Endpoint.RecoveryImportEnvelopeRetain then
+                         EndpointReply.EnvelopeRetain
+                     else
+                         EndpointReply.RecordRetain)
+                        outcome
             }
 
     let private recoveryList (core: IClaimsCore) view cursor limit token =
         task {
             let! outcome = core.Recovery.List(view, cursor, limit, token)
 
-            return CliWireCodec.recoveryList (Endpoint.identifier Endpoint.RecoveryList) outcome
+            return EndpointReply.RecoveryList outcome
         }
 
     let private recoveryInspect (core: IClaimsCore) operationId cursor limit token =
         task {
             let! outcome = core.Recovery.Inspect(operationId, cursor, limit, token)
 
-            return
-                CliWireCodec.recoveryInspect (Endpoint.identifier Endpoint.RecoveryInspect) outcome
+            return EndpointReply.Inspect outcome
         }
 
     let private recoveryResolve (core: IClaimsCore) operationId digest token =
         task {
             let! outcome = core.Recovery.Resolve(operationId, digest, token)
 
-            return CliWireCodec.resolve (Endpoint.identifier Endpoint.RecoveryResolve) outcome
+            return EndpointReply.Resolve outcome
         }
 
     let private recoveryDismiss (core: IClaimsCore) operationId digest token =
         task {
             let! outcome = core.Recovery.Dismiss(operationId, digest, true, token)
 
-            return CliWireCodec.dismiss (Endpoint.identifier Endpoint.RecoveryDismiss) outcome
+            return EndpointReply.Dismiss outcome
         }
 
     let private recovery (core: IClaimsCore) endpoint input token =
@@ -99,38 +116,24 @@ module EndpointDispatch =
                 match PrivateFiles.writeNew destination artifact.Bytes with
                 | Ok() ->
                     return
-                        CliWireCodec.exported
-                            (Endpoint.identifier Endpoint.RecoveryExport)
-                            operationId
-                            artifact.RequestSha256
+                        EndpointReply.Exported(
+                            operationId,
+                            artifact.RequestSha256,
                             artifact.MediaType
+                        )
                 | Error _ ->
                     return localFailure Endpoint.RecoveryExport CliLocalFault.ExportWriteFailed
             | RecoveryQueryOutcome.RecoverySucceeded(Lookup.Found _) ->
-                return
-                    CliWireCodec.exportIdentityConflict (
-                        Endpoint.identifier Endpoint.RecoveryExport
-                    )
-            | RecoveryQueryOutcome.RecoveryRejected rejection when
-                rejection.Code = RecoveryRejectionCode.RecoveryIdempotencyConflict
-                ->
-                return
-                    CliWireCodec.exportIdentityConflict (
-                        Endpoint.identifier Endpoint.RecoveryExport
-                    )
-            | _ ->
-                return
-                    CliWireCodec.recoveryExport
-                        (Endpoint.identifier Endpoint.RecoveryExport)
-                        operationId
-                        outcome
+                return localFailure Endpoint.RecoveryExport CliLocalFault.ExportIdentityConflict
+            | _ -> return EndpointReply.Export(operationId, outcome)
+
         }
 
     let private currentCase (core: IClaimsCore) reference token =
         task {
             let! outcome = core.Get(reference, token)
 
-            return CliWireCodec.caseGet (Endpoint.identifier Endpoint.CaseGet) outcome
+            return EndpointReply.Get outcome
         }
 
     let private caseList (core: IClaimsCore) cursor limit token =
@@ -144,7 +147,7 @@ module EndpointDispatch =
                     token
                 )
 
-            return CliWireCodec.caseList (Endpoint.identifier Endpoint.CaseList) outcome
+            return EndpointReply.List outcome
         }
 
     let private caseHistory (core: IClaimsCore) reference cursor limit detail token =
@@ -160,17 +163,14 @@ module EndpointDispatch =
                     token
                 )
 
-            return CliWireCodec.caseHistory (Endpoint.identifier Endpoint.CaseHistory) outcome
+            return EndpointReply.History outcome
         }
 
     let private observeOperation (core: IClaimsCore) operationId token =
         task {
             let! outcome = core.ObserveOperation(operationId, token)
 
-            return
-                CliWireCodec.operationObserve
-                    (Endpoint.identifier Endpoint.OperationObserve)
-                    outcome
+            return EndpointReply.Observe outcome
         }
 
     let private query (core: IClaimsCore) endpoint input token =
@@ -197,7 +197,7 @@ module EndpointDispatch =
                             PrepareOutcome.PrepareRejected(draft.OperationId, rejection)
                         )
 
-                return CliWireCodec.prepare (Endpoint.identifier endpoint) outcome
+                return EndpointReply.Prepare outcome
             }
         | Endpoint.CommandExecute, EndpointInput.Draft draft ->
             task {
@@ -207,7 +207,7 @@ module EndpointDispatch =
                     | Error rejection ->
                         Task.FromResult(SubmissionOutcome.RejectedBeforeAttempt(None, rejection))
 
-                return CliWireCodec.submission (Endpoint.identifier endpoint) outcome
+                return EndpointReply.Submit outcome
             }
         | _ -> Task.FromResult(localFailure endpoint CliLocalFault.CaseInputMismatch)
 

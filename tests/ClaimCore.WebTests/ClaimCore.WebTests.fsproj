@@ -26,6 +26,7 @@
     <Compile Include="TestServerCoreOutcomeTests.fs" />
     <Compile Include="TestServerRecoveryOutcomeTests.fs" />
     <Compile Include="TestServerBoundaryTests.fs" />
+    <Compile Include="TransportDiagnosticTests.fs" />
     <Compile Include="Suite.fs" />
   </ItemGroup>
   <ItemGroup>
