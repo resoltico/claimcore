@@ -1,0 +1,24 @@
+name: Temporary governance source export
+on:
+  push:
+    branches: [feat/workflow-governance]
+    paths: [.github/workflows/governance-workspace.yml]
+permissions:
+  contents: read
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: b18b380f28bbf7943799aa137342aaa71c5c114f
+          persist-credentials: false
+      - name: Export exact tracked source only
+        run: git archive --format=tar.gz --prefix=claimcore/ HEAD > "$RUNNER_TEMP/governance-baseline.tar.gz"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: governance-baseline
+          path: ${{ runner.temp }}/governance-baseline.tar.gz
+          retention-days: 1
+          if-no-files-found: error
