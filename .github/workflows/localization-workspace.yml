@@ -1,4 +1,4 @@
-name: Temporary localization dependency workspace
+name: Temporary localization transfer verification
 on:
   push:
     branches: [feat/presentation-localization]
@@ -6,30 +6,29 @@ on:
 permissions:
   contents: read
 jobs:
-  dependencies:
+  verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 5
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: 1febe2f752224eae0e514da6d682dee3f49db7b9
-          persist-credentials: false
-      - uses: ./.github/actions/toolchain
-        with:
-          dotnet: "false"
-      - name: Resolve and verify exact ICU dependencies
+      - name: Export source-transfer objects for byte comparison
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
         run: |
           set -euo pipefail
-          npm ci --prefix web
-          npm install --prefix web --save-exact intl-messageformat@12.1.2
-          npm install --prefix web --save-dev --save-exact @formatjs/icu-messageformat-parser@3.5.20
-          npm audit --prefix web --audit-level=low
-          npm audit --prefix web signatures
-          tar -C web -czf "$RUNNER_TEMP/localization-web-dependencies.tar.gz" node_modules package.json package-lock.json
+          mkdir "$RUNNER_TEMP/localization-transfer"
+          python3 - <<'PY'
+          import base64, hashlib, json, os, pathlib, subprocess
+          shas = ['6ce66aec5a3a8f15c54911a9b9a395f63b08364a', '9386d0013571d226325c528f2d85a607a0332fc6', 'bc52ad769c1b40c77a9c92be53ece1beb9dc0d9c']
+          for index, sha in enumerate(shas, 1):
+              data = json.loads(subprocess.check_output(['gh', 'api', f'repos/{os.environ["GITHUB_REPOSITORY"]}/git/blobs/{sha}']))
+              content = base64.b64decode(data['content'])
+              assert hashlib.sha1(f'blob {len(content)}\0'.encode() + content).hexdigest() == sha
+              (pathlib.Path(os.environ['RUNNER_TEMP']) / 'localization-transfer' / f'chunk{index}.txt').write_bytes(content)
+          PY
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: localization-web-dependencies
-          path: ${{ runner.temp }}/localization-web-dependencies.tar.gz
+          name: localization-transfer-verification
+          path: ${{ runner.temp }}/localization-transfer/
           retention-days: 1
           if-no-files-found: error
-          compression-level: 0
