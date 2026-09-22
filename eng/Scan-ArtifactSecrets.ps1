@@ -1,5 +1,6 @@
 [CmdletBinding()]
 param(
+    [Parameter(Position = -2147483648)]
     [string] $GitleaksArchivePath = $env:CLAIMCORE_SCANNER_ARCHIVE,
     [Parameter(Position = 0, ValueFromRemainingArguments = $true)]
     [string[]] $ArtifactPaths
