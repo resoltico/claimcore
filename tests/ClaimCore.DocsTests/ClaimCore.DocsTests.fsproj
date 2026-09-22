@@ -13,6 +13,7 @@
     <Compile Include="ManifestTests.fs" />
     <Compile Include="EvidenceTests.fs" />
     <Compile Include="StageEvidenceTests.fs" />
+    <Compile Include="StageCollectionTests.fs" />
     <Compile Include="FrontendReportInventoryTests.fs" />
     <Compile Include="ArchitectureReportTests.fs" />
     <Compile Include="ReviewTests.fs" />

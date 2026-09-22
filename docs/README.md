@@ -12,6 +12,7 @@ Choose the shortest path for the work you are doing:
 | Configure or operate the browser host | [Web](web.md) |
 | Manage PostgreSQL schema or technical preparation retention | [Database](database.md) |
 | Build, test, lint, update dependencies, or qualify a change | [Development](development.md) |
+| Publish a PR, diagnose CI, or activate repository governance | [CI governance](ci-governance.md) |
 | Prepare or publish a source-preview release | [Releasing](releasing.md) |
 | Assess privacy, recovery, or deployment readiness | [Security and operations](operations.md) |
 | Exercise one synthetic CLI lifecycle | [Synthetic walkthrough](../examples/README.md) |

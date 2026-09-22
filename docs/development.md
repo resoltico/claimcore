@@ -89,7 +89,7 @@ dotnet test --project tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj \
   --settings="$PWD/eng/expecto.runsettings"
 dotnet test --project tests/ClaimCore.DocsTests/ClaimCore.DocsTests.fsproj \
   --configuration Release --no-build --no-restore \
-  --minimum-expected-tests=61 --zero-tests-policy=strict --timeout=10m -- \
+  --minimum-expected-tests=73 --zero-tests-policy=strict --timeout=10m -- \
   --settings="$PWD/eng/expecto.runsettings"
 dotnet test --project tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj \
   --configuration Release --no-build --no-restore \
@@ -265,9 +265,9 @@ pwsh -NoProfile -File eng/Test-WorkflowToolchainPolicy.ps1
 pwsh -NoProfile -File eng/Test-ArtifactUploadPolicy.ps1
 pwsh -NoProfile -File eng/Check-ConvergenceAssurance.ps1
 pwsh -NoProfile -File eng/Test-ConvergenceAssurancePolicy.ps1
-pwsh -NoProfile -File eng/Check-DependencyCurrency.ps1
+pwsh -NoProfile -File eng/Check-DependencySecurity.ps1
 bash eng/Check-FSharpLint.sh
-actionlint -color .github/workflows/*.yml
+actionlint -color
 shellcheck eng/*.sh db/*.sh
 bash eng/Test-LabeledTestContainerCleanup.sh
 bash eng/Test-ComposePolicy.sh
@@ -286,7 +286,9 @@ which sets up the SDK from `global.json`, the Node release from `.node-version`,
 runner is actually using both, including the npm release that no setup input pins. A workflow that
 selected a toolchain itself, checked out with persisted credentials, or referenced an action by tag
 would fail `Check-WorkflowToolchainPolicy.ps1`; its negative controls keep that gate honest. The same
-check covers composite actions, and Dependabot scans their directory alongside the workflows.
+check covers both YAML extensions and composite metadata names, parses actual settings, checks the
+mandatory graph and guards artifact uploads. Dependabot scans composite actions alongside workflows.
+[CI governance](ci-governance.md) owns producer identity, failure reports, reruns and publication policy.
 
 The Git-ignore gate checks private/generated probes and public release inputs through an isolated
 temporary Git database; it never initializes the working tree. The source-secret gate snapshots
@@ -331,7 +333,7 @@ volume at a newly selected image without the operator's backup and planned downt
 ### Documentation assurance
 
 Build the solution first, then check every Markdown file, generated help block, exact-case local link
-and anchor, contract declaration, and current hash-bound review attestation:
+and anchor, contract declaration, and current hash-bound source review:
 
 ```text
 dotnet artifacts/bin/ClaimCore.Docs/release/ClaimCore.Docs.dll check
@@ -396,8 +398,9 @@ ClaimCore.Web package at 80%/70%. The floor negative controls cover exact pass b
 failures, missing or weak Web packages, nonfinite rates, and ignored DTD entity references.
 
 The final evidence job reconciles source identity, locks, stage manifests, test inventories, TRX,
-browser reports, coverage, publish manifests, documentation synchronization, and repository review
-attestations for the same attempt. Generated reports belong under ignored `artifacts/` or
+browser reports, coverage, publish manifests, documentation synchronization, and semantic source reviews for the same attempt. Producer artifacts retain separate directories
+until ownership/uniqueness checks pass; a source review does not establish owner authorization.
+Use **Re-run all jobs**, not mixed-attempt partial reruns. Generated reports belong under ignored `artifacts/` or
 current-attempt CI artifacts, not in source.
 
 ## Dependency updates
@@ -427,10 +430,14 @@ review the exact graph and lifecycle scripts, run `npm ci`, then run frontend an
 verification. Apply the equivalent owner-and-lock discipline to SDKs, tools, images, and actions. Do
 not delete selected locks, hand-edit generated locks, or let CI choose a new graph.
 
-`eng/Check-DependencyCurrency.ps1` rejects stale, deprecated, or vulnerable direct packages and
-unreviewed transitive updates. A temporary compatibility boundary must be exact, owned, justified,
-and review-dated in [`dependency-holds.json`](../dependency-holds.json); a hold is not permission to
-leave an update unexamined.
+`eng/Check-DependencySecurity.ps1` keeps direct/transitive NuGet vulnerability and deprecation
+checks and approved hold governance in required CI. npm audit, signatures and license checks remain
+required. Upstream freshness is reported separately by the daily dependency-health workflow and
+`eng/Check-DependencyCurrency.ps1`; an available update does not block an unrelated PR. Holds remain
+exact for the installed graph, owned, justified and review-dated in
+[`dependency-holds.json`](../dependency-holds.json). A hold is not permission to ignore security
+findings or leave an update unexamined. [CI governance](ci-governance.md#safe-actionable-failures)
+defines report ownership and transient-failure handling.
 
 ## Reporting results
 

@@ -55,10 +55,10 @@ jobs:
             else
               manifest_status=$?
             fi
+            node eng/ci/stage-report.mjs frontend "$stage" "$status" "$manifest_status" "$log" || overall=1
             if [[ "$status" -ne 0 || "$manifest_status" -ne 0 ]]; then overall=1; fi
           }
           run_stage restore-frontend artifacts/stages/restore-frontend npm --prefix web ci
-          run_stage dependency-currency artifacts/stages/dependency-currency pwsh -File eng/Check-DependencyCurrency.ps1
           run_stage frontend-format artifacts/stages/frontend-format npm --prefix web run format:check
           run_stage frontend-types artifacts/stages/frontend-types npm --prefix web run typecheck
           run_stage frontend-eslint artifacts/stages/frontend-eslint npm --prefix web run lint
@@ -81,7 +81,8 @@ jobs:
             artifacts/frontend-product/ `
             artifacts/frontend/ `
             artifacts/sbom/ `
-            "artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/"
+            "artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/" `
+            artifacts/diagnostics/frontend/
       - name: Upload immutable frontend product
         if: ${{ always() && steps.artifact_scan.outcome == 'success' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -112,5 +113,13 @@ jobs:
         with:
           name: claimcore-stage-frontend-${{ github.run_id }}-${{ github.run_attempt }}
           path: artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/*.json
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload safe frontend stage diagnostics
+        if: ${{ always() && steps.artifact_scan.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: claimcore-diagnostics-frontend-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/diagnostics/frontend/
           if-no-files-found: error
           retention-days: 14

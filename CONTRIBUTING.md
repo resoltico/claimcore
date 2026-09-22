@@ -63,6 +63,11 @@ Use only synthetic examples. Security-sensitive findings and data-bearing diagno
 [SECURITY.md](SECURITY.md), not a public issue or ordinary test attachment. General issue guidance is
 in [SUPPORT.md](SUPPORT.md).
 
+Publication and repository-policy changes follow [CI governance](docs/ci-governance.md). Use one
+feature branch and verify the actual PR head and current attempt; preserve a truthful handoff after
+follow-up commits. Semantic review records say `source-reviewed`, never independent owner approval.
+A green gate is necessary execution evidence, not an instruction to merge.
+
 ## Licensing contributions
 
 ClaimCore is licensed under the [Apache License 2.0](LICENSE). Unless explicitly designated in

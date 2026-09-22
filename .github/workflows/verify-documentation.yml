@@ -53,7 +53,7 @@ jobs:
             "test", "--project", "tests/ClaimCore.DocsTests/ClaimCore.DocsTests.fsproj",
             "--configuration", "Release", "--no-build", "--no-restore",
             "--max-parallel-test-modules", "1", "--results-directory=$results",
-            "--minimum-expected-tests=61", "--zero-tests-policy=strict", "--timeout=20m",
+            "--minimum-expected-tests=73", "--zero-tests-policy=strict", "--timeout=20m",
             "--", "--settings=$PWD/eng/expecto.runsettings", "--report-trx",
             "--report-trx-filename=ClaimCore.DocsTests.trx"
           )

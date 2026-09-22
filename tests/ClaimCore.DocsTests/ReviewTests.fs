@@ -2,6 +2,7 @@ module ClaimCore.DocsTests.ReviewTests
 
 open System
 open System.Text
+open System.Text.Json
 open Expecto
 open ClaimCore.Docs
 open ClaimCore.DocsTests.Fixtures
@@ -23,7 +24,7 @@ let private review whole spans hash =
         ReviewerKind = "agent"
         Reviewer = "independent QA"
         ReviewedOn = DateOnly(2026, 9, 9)
-        Conclusion = "approved"
+        Conclusion = "source-reviewed"
         ReviewSubjectHash = hash
         WholeFiles = whole
         MarkedSpans = spans
@@ -126,17 +127,57 @@ let private vacuousRegistryTest =
     <| fun _ ->
         use repository = new TempRepository()
 
-        repository.Write(ReviewRegistry.path, "{\"schemaVersion\":1,\"reviews\":[]}")
+        repository.Write(ReviewRegistry.path, "{\"schemaVersion\":2,\"reviews\":[]}")
         |> ignore
 
         Reviews.verify repository.Root [ declaration ] (DateOnly(2026, 9, 9))
         |> requireError
         |> ignore
 
+let private registryEntry conclusion =
+    JsonSerializer.Serialize(
+        {|
+            schemaVersion = 2
+            reviews =
+                [|
+                    {|
+                        contractId = "CC-DOM-001"
+                        reviewerKind = "agent"
+                        reviewer = "Agent source review; not owner authorization"
+                        reviewedOn = "2026-09-22"
+                        conclusion = conclusion
+                        reviewSubjectHash = String.replicate 64 "a"
+                        wholeFiles = [| "src/file.fs" |]
+                        markedSpans = Array.empty<string>
+                    |}
+                |]
+        |}
+    )
+
+let private sourceReviewOnly =
+    testCase "source review is not accepted as independent owner approval" (fun () ->
+        use repository = new TempRepository()
+        repository.Write(ReviewRegistry.path, registryEntry "source-reviewed") |> ignore
+        ReviewRegistry.load repository.Root |> requireOk |> ignore
+        repository.Write(ReviewRegistry.path, registryEntry "approved") |> ignore
+        ReviewRegistry.load repository.Root |> requireError |> ignore)
+
+let private legacyRegistry =
+    testCase "legacy approval registry schema is refused without compatibility fallback" (fun () ->
+        use repository = new TempRepository()
+
+        repository.Write(ReviewRegistry.path, "{\"schemaVersion\":1,\"reviews\":[]}")
+        |> ignore
+
+        ReviewRegistry.load repository.Root |> requireError |> ignore)
+
+
 let tests =
     testList
         "semantic review subjects"
         [
+            sourceReviewOnly
+            legacyRegistry
             wholeFileTest
             contractBodyTest
             markedSpanTest

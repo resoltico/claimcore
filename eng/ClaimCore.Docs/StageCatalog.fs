@@ -5,6 +5,7 @@ module StageCatalog =
     let private stage id platform procedure outputs =
         {
             Id = id
+            Producer = id
             AllowedPlatforms = [ platform ]
             EvidencePlatform = Some platform
             Procedure = procedure
@@ -18,6 +19,7 @@ module StageCatalog =
     let private portable id procedure outputs =
         {
             Id = id
+            Producer = id
             AllowedPlatforms = [ "linux"; "macos"; "windows" ]
             EvidencePlatform = Some "linux"
             Procedure = procedure
@@ -77,7 +79,7 @@ module StageCatalog =
 
     let private dependencies =
         [
-            gate "dependency-currency" [ "pwsh"; "Check-DependencyCurrency.ps1" ]
+            gate "dependency-security" [ "pwsh"; "Check-DependencySecurity.ps1" ]
             gate "nuget-audit" [ "dotnet"; "restore"; "audit" ]
             gate "npm-audit" [ "npm"; "audit" ]
             gate "npm-signatures" [ "npm"; "audit"; "signatures" ]
@@ -191,19 +193,42 @@ module StageCatalog =
 
     let private browsers = [ browser "chromium"; browser "firefox"; browser "webkit" ]
 
+    let private owned producer (values: StageDefinition list) =
+        values |> List.map (fun value -> { value with Producer = producer })
+
+    let private reassigned exceptions (values: StageDefinition list) =
+        values
+        |> List.map (fun value ->
+            match exceptions |> List.tryFind (fun (id, _) -> value.Id = id) with
+            | Some(_, producer) -> { value with Producer = producer }
+            | None -> value)
+
     let definitions =
-        bootstrap
-        @ sourceQuality
-        @ dependencies
-        @ frontend
-        @ documentation
-        @ behavior
-        @ publications
-        @ TestSuiteStages.definitions
+        (bootstrap |> owned "quality" |> reassigned [ "restore-frontend", "frontend" ])
+        @ (sourceQuality
+           |> owned "quality"
+           |> reassigned [ "secret-scan-artifacts", "evidence" ])
+        @ (dependencies
+           |> owned "quality"
+           |> reassigned
+               [
+                   "npm-audit", "frontend"
+                   "npm-signatures", "frontend"
+                   "dependency-licenses", "frontend"
+                   "sbom", "frontend"
+               ])
+        @ owned "frontend" frontend
+        @ owned "documentation" documentation
+        @ (behavior |> owned "integration" |> reassigned [ "coverage", "coverage" ])
+        @ owned "publish" publications
+        @ (TestSuiteStages.definitions
+           |> reassigned [ "integration-linux", "integration"; "acceptance-linux", "acceptance" ])
         @ browsers
-        @ [
-            linux
-                "evidence-inputs"
-                [ "claimcore-docs"; "evidence-inputs" ]
-                [ OutputRequirement.Suffix ".trx" ]
-        ]
+        @ owned
+            "evidence"
+            [
+                linux
+                    "evidence-inputs"
+                    [ "claimcore-docs"; "evidence-inputs" ]
+                    [ OutputRequirement.Suffix ".trx" ]
+            ]

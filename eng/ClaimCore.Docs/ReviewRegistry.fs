@@ -121,8 +121,8 @@ module ReviewRegistry =
             Error "'reviewerKind' must be 'human' or 'agent'."
         elif reviewer.Trim().Length < 3 then
             Error "A review requires a substantive reviewer identity."
-        elif conclusion <> "approved" then
-            Error "A required semantic review conclusion must be 'approved'."
+        elif conclusion <> "source-reviewed" then
+            Error "A semantic source review must say 'source-reviewed'; it is not owner approval."
         elif not (digest.IsMatch(subject)) then
             Error "'reviewSubjectHash' must be lowercase SHA-256."
         else
@@ -193,7 +193,7 @@ module ReviewRegistry =
 
                         if
                             not (element.GetProperty("schemaVersion").TryGetInt32(&version))
-                            || version <> 1
+                            || version <> 2
                         then
                             Error "Unsupported contract-review schema version."
                         elif reviews.ValueKind <> JsonValueKind.Array then

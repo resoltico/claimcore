@@ -31,6 +31,7 @@
     <Compile Include="TrxStructure.fs" />
     <Compile Include="Evidence.fs" />
     <Compile Include="EvidenceReconciliation.fs" />
+    <Compile Include="StageCollection.fs" />
     <Compile Include="DocumentationReport.fs" />
     <Compile Include="DocumentationCommands.fs" />
     <Compile Include="EvidenceReport.fs" />

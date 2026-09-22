@@ -1,12 +1,12 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "reviews": [
     {
       "contractId": "CC-DOM-001",
       "reviewerKind": "agent",
       "reviewer": "Typed diagnostics: agent delta review of closed validation payloads; accepted fields and restoration constraints unchanged",
       "reviewedOn": "2026-09-21",
-      "conclusion": "approved",
+      "conclusion": "source-reviewed",
       "reviewSubjectHash": "7ad285fb5f9320e35360ad635b713c2dc040eb60d9e95f215235ec992ddac79c",
       "wholeFiles": [
         "src/ClaimCore.Domain/Contracts.fs",
@@ -31,7 +31,7 @@
       "reviewerKind": "agent",
       "reviewer": "Typed diagnostics: agent delta review of command admission extraction and typed causes; validation ordering and transitions unchanged",
       "reviewedOn": "2026-09-21",
-      "conclusion": "approved",
+      "conclusion": "source-reviewed",
       "reviewSubjectHash": "800814204aabfb23195388382cbc6b7a303e57fd2efeb0b6178dd4fe648d89c0",
       "wholeFiles": [
         "src/ClaimCore.Domain/Contracts.fs",
@@ -55,7 +55,7 @@
       "reviewerKind": "agent",
       "reviewer": "Transport diagnostics: agent design/source review, including shared host validation and explicit 200-KiB aggregate bundle budget; no independent owner approval",
       "reviewedOn": "2026-09-22",
-      "conclusion": "approved",
+      "conclusion": "source-reviewed",
       "reviewSubjectHash": "1c73729dddd4ce692553bb211c47d129e9f522ca38b2c02962b3125f0dcbfd79",
       "wholeFiles": [
         "src/ClaimCore.Application/Core.fs",
@@ -92,7 +92,7 @@
       "reviewerKind": "agent",
       "reviewer": "Transport diagnostics: agent design and source-delta review of safe typed boundaries, frame-local delivery and conservative administrative completion; no independent owner approval",
       "reviewedOn": "2026-09-22",
-      "conclusion": "approved",
+      "conclusion": "source-reviewed",
       "reviewSubjectHash": "e7cc3d9ef715a634a16845472df7947c33ccd06f6ef88a901b073c249f7dc34d",
       "wholeFiles": [
         "src/ClaimCore.Application/AcceptedObservation.fs",
@@ -133,7 +133,7 @@
       "reviewerKind": "agent",
       "reviewer": "Transport diagnostics: agent design and source-delta review of safe typed boundaries, frame-local delivery and conservative administrative completion; no independent owner approval",
       "reviewedOn": "2026-09-22",
-      "conclusion": "approved",
+      "conclusion": "source-reviewed",
       "reviewSubjectHash": "2d1cc83c85a4a309ff7bd748a4209dc25ad6a38667a195f4744cd2b766768c79",
       "wholeFiles": [
         "examples/01-open.json",
@@ -186,7 +186,7 @@
       "reviewerKind": "agent",
       "reviewer": "Transport diagnostics: agent design and source-delta review of safe typed boundaries, frame-local delivery and conservative administrative completion; no independent owner approval",
       "reviewedOn": "2026-09-22",
-      "conclusion": "approved",
+      "conclusion": "source-reviewed",
       "reviewSubjectHash": "0e821fad4780cf0edd087da3cb41c6ad4553707ad926d4ab2bff29ca24ce34ec",
       "wholeFiles": [
         "src/ClaimCore.HostSecurity/PrivateFileService.fs",
@@ -208,7 +208,7 @@
       "reviewerKind": "agent",
       "reviewer": "Transport diagnostics: agent design and source-delta review of safe typed boundaries, frame-local delivery and conservative administrative completion; no independent owner approval",
       "reviewedOn": "2026-09-22",
-      "conclusion": "approved",
+      "conclusion": "source-reviewed",
       "reviewSubjectHash": "8cd90a7e4d33e4067be52c12814726033331adae8f535d201265e53257331739",
       "wholeFiles": [
         "src/ClaimCore.Application/AcceptedObservation.fs",
@@ -261,7 +261,7 @@
       "reviewerKind": "agent",
       "reviewer": "Transport diagnostics: agent design and source-delta review of safe typed boundaries, frame-local delivery and conservative administrative completion; no independent owner approval",
       "reviewedOn": "2026-09-22",
-      "conclusion": "approved",
+      "conclusion": "source-reviewed",
       "reviewSubjectHash": "13588766a2a446735f4cbe1dded006ca0448fcab6fb82590dbf042235222b841",
       "wholeFiles": [
         "src/ClaimCore.Hosting/Runtime.fsi",
@@ -280,7 +280,7 @@
       "reviewerKind": "agent",
       "reviewer": "Transport diagnostics: agent design and source-delta review of safe typed boundaries, frame-local delivery and conservative administrative completion; no independent owner approval",
       "reviewedOn": "2026-09-22",
-      "conclusion": "approved",
+      "conclusion": "source-reviewed",
       "reviewSubjectHash": "f0879f7cdf33e0f63d4bba1458634e54004a6c9ae3ff356b6187fe98a601c13e",
       "wholeFiles": [
         "db/001_initial.sql",
@@ -316,7 +316,7 @@
       "reviewerKind": "agent",
       "reviewer": "Transport diagnostics: agent design and source-delta review of safe typed boundaries, frame-local delivery and conservative administrative completion; no independent owner approval",
       "reviewedOn": "2026-09-22",
-      "conclusion": "approved",
+      "conclusion": "source-reviewed",
       "reviewSubjectHash": "e07b3c2b891de4314c748a8fd5a7c1e97b5db0bfeaf53e3acab4bce674407f73",
       "wholeFiles": [
         "src/ClaimCore.HostSecurity/PrivateFileService.fs",
@@ -338,7 +338,7 @@
       "reviewerKind": "agent",
       "reviewer": "Transport diagnostics: agent design/source review, including shared host validation and explicit 200-KiB aggregate bundle budget; no independent owner approval",
       "reviewedOn": "2026-09-22",
-      "conclusion": "approved",
+      "conclusion": "source-reviewed",
       "reviewSubjectHash": "5585d08ec89f6e7595328d7bc873bdd0644b7e198e2a5034e44a482c96417631",
       "wholeFiles": [
         "src/ClaimCore.Contracts/ContractFactory.fs",

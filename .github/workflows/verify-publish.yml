@@ -92,6 +92,7 @@ jobs:
             else
               manifest_status=$?
             fi
+            node eng/ci/stage-report.mjs publish "$stage" "$status" "$manifest_status" - || overall=1
             if [[ "$status" -ne 0 || "$manifest_status" -ne 0 ]]; then overall=1; fi
           }
           publish_stage publish-cli src/ClaimCore.Cli/ClaimCore.Cli.fsproj artifacts/publish/cli ClaimCore.Cli
@@ -137,7 +138,8 @@ jobs:
             "artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/publish-cli.json" `
             "artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/publish-database.json" `
             "artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/publish-web.json" `
-            "artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/publish-tree-verification.json"
+            "artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/publish-tree-verification.json" `
+            artifacts/diagnostics/publish/
       - name: Upload immutable published applications
         if: ${{ always() && steps.artifact_scan.outcome == 'success' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -156,5 +158,13 @@ jobs:
             artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/publish-database.json
             artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/publish-web.json
             artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/publish-tree-verification.json
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload safe publish stage diagnostics
+        if: ${{ always() && steps.artifact_scan.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: claimcore-diagnostics-publish-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/diagnostics/publish/
           if-no-files-found: error
           retention-days: 14
