@@ -4,6 +4,14 @@ Notable changes to this project are documented in this file. The format is based
 
 ## [Unreleased]
 
+### Added
+
+- Presentation-owned English, Latvian, Arabic and expanded-English catalogs with independent
+  display-locale selection, complete typed diagnostic translations and accessible RTL controls.
+  Exact amount/date display preserves canonical authored values, copied values and recovery files.
+  Language switching preserves drafts, preparation consent, operation identities and uncertain
+  outcomes without issuing requests. See [Browser presentation](docs/localization.md).
+
 ### Changed
 
 - **Transport, host and administration failures now have typed diagnostic contracts.** CLI protocol
@@ -29,6 +37,10 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Fixed
 
+- Require fresh consent for a newly received preparation while retaining consent across language
+  changes. Focus rejected correction fields by canonical identity, and retain file-read failures
+  as local notices rather than leaving import state busy.
+
 - Scope CLI delivery tracking to the current frame and observe native results before encoding;
   a later malformed frame cannot inherit an earlier operation ID. Failed writes/flushes preserve
   current recovery context without appending a second stdout frame or replaying work.
@@ -42,6 +54,12 @@ Notable changes to this project are documented in this file. The format is based
 - The domain contract said a closed case must be reopened before editing, which contradicted the one-step factual correction added in 0.3.0. It now records that correction as the deliberate exception.
 
 ### Internal
+
+- Qualify ICU catalogs, generated arguments, rendered tokens and locale-blind request coordinators
+  in the existing mandatory contract/lint gates, with language-state and three-browser scenarios.
+  Split synchronous catalogs into a static chunk and explicitly revise the aggregate compressed
+  JavaScript budget from 200 KiB to 256 KiB for complete translations. Per-chunk, initial-load,
+  stylesheet, privacy, security and coverage limits remain unchanged.
 
 - Give CI evidence one declared producer per stage and reject duplicate, wrong-owner, stale or
   unsafe artifacts before consolidation. Preserve complete-attempt qualification and explicitly

@@ -1,0 +1,86 @@
+.review-values > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: 0.65rem;
+}
+
+.presentation-controls > div {
+  display: grid;
+  gap: 0.3rem;
+  flex: 1 1 12rem;
+  min-inline-size: 0;
+}
+
+.presentation-bar {
+  inline-size: min(100% - 2rem, 72rem);
+  margin-inline: auto;
+  padding-block: 1rem;
+}
+
+.presentation-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 1rem;
+  align-items: end;
+  padding-block: 0.5rem;
+  overflow-wrap: anywhere;
+}
+
+.presentation-controls select {
+  inline-size: 100%;
+  max-inline-size: 100%;
+  padding: 0.5rem;
+  border: 1px solid #617384;
+  border-radius: 0.35rem;
+  color: #17212b;
+  background: #fff;
+}
+
+.presentation-controls small,
+.presentation-status {
+  flex-basis: 100%;
+}
+
+.review-modal,
+.operation-editor {
+  overflow-wrap: anywhere;
+}
+
+[dir="rtl"] .review-arrow {
+  display: inline-block;
+  transform: scaleX(-1);
+}
+
+@media (width <= 42rem) {
+  .review-values > div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.review-confirmation {
+  display: inline-flex;
+  gap: 0.6rem;
+  align-items: center;
+  min-block-size: 2.75rem;
+  cursor: pointer;
+}
+
+.review-checkmark {
+  display: inline-grid;
+  flex: 0 0 1.3rem;
+  place-items: center;
+  inline-size: 1.3rem;
+  block-size: 1.3rem;
+  border: 2px solid currentcolor;
+  border-radius: 0.2rem;
+}
+
+.review-confirmation[data-focus-visible] {
+  outline: 2px solid currentcolor;
+  outline-offset: 3px;
+}
+
+.review-confirmation[data-disabled] {
+  cursor: default;
+  opacity: 0.7;
+}

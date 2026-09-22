@@ -1,7 +1,9 @@
+import { localNotice } from "../api/notices";
+import type { Notice } from "../api/notices";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   type ApiResult,
-  resultMessage,
+  resultNotice,
   type SessionSnapshot,
   v2,
   type WebV2Response,
@@ -9,9 +11,9 @@ import {
 
 export type SessionState =
   | { kind: "loading"; epoch: number }
-  | { kind: "anonymous"; token: string | null; message: string | null; epoch: number }
+  | { kind: "anonymous"; token: string | null; message: Notice | null; epoch: number }
   | { kind: "authenticated"; token: string; epoch: number }
-  | { kind: "failure"; message: string; epoch: number };
+  | { kind: "failure"; message: Notice; epoch: number };
 
 type SessionResponse =
   WebV2Response<"session"> | WebV2Response<"session.login"> | WebV2Response<"session.logout">;
@@ -23,17 +25,17 @@ const snapshot = (result: ApiResult<SessionResponse>): SessionSnapshot | null =>
 
 const stateFor = (
   value: SessionSnapshot | null,
-  failed: string | null,
+  failed: Notice | null,
   epoch: number,
 ): SessionState => {
   if (failed !== null || value === null)
-    return { kind: "failure", message: failed ?? "Invalid session response.", epoch };
+    return { kind: "failure", message: failed ?? localNotice("invalidSession"), epoch };
   if (!value.authenticated)
     return { kind: "anonymous", token: value.antiforgeryToken, message: null, epoch };
   return value.antiforgeryToken === null
     ? {
         kind: "failure",
-        message: "Authenticated session did not include an antiforgery token.",
+        message: localNotice("missingCsrf"),
         epoch,
       }
     : { kind: "authenticated", token: value.antiforgeryToken, epoch };
@@ -50,7 +52,7 @@ export const useSession = () => {
   const refresh = useCallback(async (): Promise<void> => {
     const result = await v2.session();
     const value = snapshot(result);
-    setState(stateFor(value, value === null ? resultMessage(result) : null, nextEpoch()));
+    setState(stateFor(value, value === null ? resultNotice(result) : null, nextEpoch()));
   }, []);
 
   useEffect(() => {
@@ -64,13 +66,13 @@ export const useSession = () => {
       setState({
         kind: "anonymous",
         token: state.token,
-        message: resultMessage(result),
+        message: resultNotice(result),
         epoch: nextEpoch(),
       });
       return;
     }
     const value = snapshot(result);
-    setState(stateFor(value, value === null ? resultMessage(result) : null, nextEpoch()));
+    setState(stateFor(value, value === null ? resultNotice(result) : null, nextEpoch()));
   };
 
   const logout = async (): Promise<void> => {
@@ -78,7 +80,7 @@ export const useSession = () => {
     const result = await v2.logout(state.token);
     const value = snapshot(result);
     // A successful logout response is an anonymous snapshot. No claimant-bearing state survives its epoch.
-    setState(stateFor(value, value === null ? resultMessage(result) : null, nextEpoch()));
+    setState(stateFor(value, value === null ? resultNotice(result) : null, nextEpoch()));
   };
 
   return { state, login, logout, refresh };

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Rejection } from "../src/api/v2";
@@ -142,7 +142,7 @@ describe("v2 Recovery view", () => {
     await user.click(screen.getByRole("button", { name: "Resolve exact preparation" }));
     await user.click(await screen.findByRole("button", { name: "Confirm resolve" }));
     expect(await screen.findByRole("status", { hidden: true })).toHaveTextContent(
-      "did not complete",
+      "Read the current case",
     );
     expect(screen.queryByText(/Accepted exact operation/u)).toBeNull();
   });

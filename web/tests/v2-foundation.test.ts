@@ -1,12 +1,9 @@
+import { createPresenter } from "../src/presentation/presenter";
+import { defaults } from "../src/presentation/preferences";
+const fieldHint = createPresenter(defaults).hint;
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { isMutationUncertain, resultMessage, v2 } from "../src/api/v2";
-import {
-  commandFor,
-  commandInputs,
-  createDraft,
-  fieldHint,
-  prefilledValues,
-} from "../src/domain/metadata";
+import { isMutationUncertain, resultNotice, v2 } from "../src/api/v2";
+import { commandFor, commandInputs, createDraft, prefilledValues } from "../src/domain/metadata";
 import { generatedResponse, generatedWebValue } from "./contract-corpus.fixtures";
 import { caseFields, definition } from "./v2-foundation.fixtures";
 
@@ -147,7 +144,10 @@ it("uses generated v2 paths and typed endpoint outcomes", async () => {
   const rejected = await v2.get("CASE-1", "token");
   expect(rejected).toMatchObject({ kind: "hostFailure", status: 401 });
   expect(isMutationUncertain(rejected)).toBe(true);
-  expect(resultMessage(rejected)).toContain("WEB_SESSION_REJECTED");
+  expect(resultNotice(rejected)).toEqual({
+    kind: "diagnostic",
+    diagnostic: { id: "WEB_HOST_SESSION_REJECTED", parameters: {} },
+  });
 });
 
 it("maps every JSON endpoint to v2 and preserves nullable cursors and mutation identity", async () => {

@@ -1,3 +1,4 @@
+import { usePresentation } from "../presentation/context";
 import { useEffect, useRef } from "react";
 import { useOperationEditor } from "../hooks/operation/useOperationEditor";
 import { AcceptedOperation, CommandChangeDialog } from "./operation/OperationDialogs";
@@ -12,6 +13,7 @@ const OperationEditorLayout = ({
   props: OperationEditorProps;
   model: OperationEditorModel;
 }) => {
+  const p = usePresentation();
   const section = useRef<HTMLElement>(null);
   const prepareButtonRef = useRef<HTMLButtonElement>(null);
   const previousDelivery = useRef(model.state.delivery);
@@ -20,7 +22,9 @@ const OperationEditorLayout = ({
     if (model.state.delivery !== "DEFINITELY_REJECTED" || field === undefined) return;
     // React attaches this ref during commit before effects run.
     const inputs = section.current!.querySelectorAll("input");
-    const target = [...inputs].find((input) => input.name === field);
+    const target =
+      [...inputs].find((input) => input.name === field) ??
+      [...inputs].find((input) => input.dataset["fieldName"] === field);
     target?.focus();
   }, [model.state.delivery, model.state.fieldError]);
   useEffect(() => {
@@ -31,9 +35,9 @@ const OperationEditorLayout = ({
   }, [model.state.delivery]);
   return (
     <section ref={section} aria-labelledby="operation-title" className="operation-editor">
-      <h2 id="operation-title">{model.command.label}</h2>
-      <p>{model.command.meaning}</p>
-      <p>Accepted state is unchanged until the exact prepared request is explicitly submitted.</p>
+      <h2 id="operation-title">{p.commandLabel(model.state.command)}</h2>
+      <p>{p.commandMeaning(model.state.command)}</p>
+      <p>{p.text("ui.unchangedUntilSubmit")}</p>
       <OperationForm
         definition={props.definition}
         current={props.current}

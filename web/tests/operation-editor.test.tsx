@@ -1,5 +1,5 @@
 import type { RecoveryRejection } from "../src/generated/convergence/web-v2.types";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { CurrentCase, PreparationDetails, Rejection } from "../src/api/v2";
@@ -72,7 +72,7 @@ const definitePrepareRejection = async (): Promise<void> => {
   const input = screen.getByLabelText("Handler's case reference", { exact: true });
   await waitFor(() => expect(document.activeElement).toBe(input));
   expect(input).toHaveAttribute("aria-invalid", "true");
-  expect(screen.getAllByText("Correct the case reference.").length).toBeGreaterThan(0);
+  expect(screen.getAllByText("A non-blank value is required.").length).toBeGreaterThan(0);
   expect(screen.queryByRole("dialog", { name: "Review prepared operation" })).toBeNull();
 };
 
@@ -100,7 +100,7 @@ const namedAuthoringRejection = async (): Promise<void> => {
     .split(" ")
     .map((id) => document.getElementById(id)?.textContent ?? "")
     .join(" ");
-  expect(descriptions).toContain("Correct the incident date.");
+  expect(descriptions).toContain("Use one valid calendar date in YYYY-MM-DD format.");
 };
 
 const uncertainPrepareDelivery = async (): Promise<void> => {
@@ -143,7 +143,9 @@ const definiteSubmitRejection = async (): Promise<void> => {
   renderEditor();
   await openReview(user);
   await selectConfirmedSubmit(user);
-  expect(await screen.findByRole("alert")).toHaveTextContent("The exact preparation was refused.");
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "A dismissed preparation cannot be submitted.",
+  );
 };
 
 const uncertainSubmitDelivery = async (): Promise<void> => {

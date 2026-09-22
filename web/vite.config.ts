@@ -10,6 +10,13 @@ export default {
   plugins: [react()],
   build: {
     chunkSizeWarningLimit: 600,
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [{ name: "presentation-catalogs", test: /\/src\/presentation\/generated\// }],
+        },
+      },
+    },
     target: "es2022",
     sourcemap: false,
   },

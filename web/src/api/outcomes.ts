@@ -1,41 +1,43 @@
-import type { ApiResult, EndpointOutcome } from "../generated/convergence/web-v2.types";
+import type { EndpointOutcome } from "../generated/convergence/web-v2.types";
+import type { ApiResult } from "./types";
+import { localNotice, type Notice } from "./notices";
 
 type Download = { blob: Blob; filename: string };
-
-const isObject = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null && !Array.isArray(value);
-
-const nestedMessage = (data: Record<string, unknown>, key: string): string | null => {
-  const value = data[key];
-  return isObject(value) && typeof value["message"] === "string" ? value["message"] : null;
+const diagnosticFrom = (data: EndpointOutcome["outcome"]["data"]): Notice | null => {
+  if (typeof data !== "object" || data === null) return null;
+  if ("diagnostic" in data) return { kind: "diagnostic", diagnostic: data.diagnostic };
+  if ("rejection" in data) return { kind: "diagnostic", diagnostic: data.rejection.diagnostic };
+  if ("fault" in data) return { kind: "diagnostic", diagnostic: data.fault.diagnostic };
+  if ("execution" in data) {
+    const execution = data.execution;
+    if ("rejection" in execution)
+      return { kind: "diagnostic", diagnostic: execution.rejection.diagnostic };
+    if ("fault" in execution) return { kind: "diagnostic", diagnostic: execution.fault.diagnostic };
+  }
+  return null;
 };
-
-export const resultMessage = (result: ApiResult<EndpointOutcome | Download>): string => {
-  if (result.kind === "deliveryFailure") return result.message;
-  if (result.kind === "hostFailure") return `${result.failure.code}: ${result.failure.message}`;
+/** Preserve diagnostics as data. Server English is never parsed or used as a translation key. */
+export const resultNotice = (result: ApiResult<EndpointOutcome | Download>): Notice => {
+  if (result.kind === "deliveryFailure") return result.notice;
+  if (result.kind === "hostFailure")
+    return { kind: "diagnostic", diagnostic: result.failure.diagnostic };
   const value = result.value;
-  if (!("outcome" in value) || !isObject(value.outcome.data))
-    return "The operation did not complete.";
-  const data = value.outcome.data;
-  const message =
-    nestedMessage(data, "rejection") ??
-    nestedMessage(data, "fault") ??
-    nestedMessage(data, "message");
-  if (message !== null) return message;
+  if (!("outcome" in value)) return localNotice("incomplete");
+  const diagnostic = diagnosticFrom(value.outcome.data);
+  if (diagnostic !== null) return diagnostic;
   switch (value.outcome.tag) {
     case "DISMISSED":
-      return "Preparation dismissed.";
+      return localNotice("dismissed");
     case "ALREADY_DISMISSED":
-      return "Preparation was already dismissed.";
+      return localNotice("alreadyDismissed");
     case "RETAINED":
-      return "Recovery material retained.";
+      return localNotice("retained");
     case "EXISTING":
-      return "Recovery material was already retained.";
+      return localNotice("existing");
     default:
-      return "The operation did not complete.";
+      return localNotice("incomplete");
   }
 };
-
 export const isMutationUncertain = (result: ApiResult<EndpointOutcome>): boolean => {
   if (result.kind === "deliveryFailure") return true;
   if (result.kind === "hostFailure") return result.failure.executionPhase !== "NOT_STARTED";

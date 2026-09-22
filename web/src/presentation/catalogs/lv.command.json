@@ -1,0 +1,20 @@
+{
+  "command.OPEN.label": "Atvērt lietu",
+  "command.OPEN.meaning": "Izveidot pamata ierakstu. Netiek pieņemts lēmums vai maksājums.",
+  "command.AMEND_REGISTRATION.label": "Grozīt reģistrāciju",
+  "command.AMEND_REGISTRATION.meaning": "Aizstāt sākotnējos faktus. Administratora lietas numurs nemainās.",
+  "command.CORRECT_CASE.label": "Labot lietas faktus",
+  "command.CORRECT_CASE.meaning": "Vienotā darbībā labot izlemtas, apmaksātas vai slēgtas lietas faktus. Saglabāšana izmanto pieņemtās vērtības; maksājuma ieraksta dzēšana neatceļ ārēju pārskaitījumu.",
+  "command.DECIDE.label": "Reģistrēt izmaksas lēmumu",
+  "command.DECIDE.meaning": "Reģistrēt vai aizstāt nolemto summu un valūtu. Tas nepārskaita naudu.",
+  "command.WITHDRAW_DECISION.label": "Atsaukt izmaksas lēmumu",
+  "command.WITHDRAW_DECISION.meaning": "Noņemt neapmaksātā lēmuma laukus, saglabājot agrāko vēsturi.",
+  "command.RECORD_PAYMENT.label": "Reģistrēt faktisko maksājumu",
+  "command.RECORD_PAYMENT.meaning": "Reģistrēt datumu, kad nolemtā summa pilnībā samaksāta. Tas neveic un nepārbauda pārskaitījumu.",
+  "command.CLEAR_PAYMENT.label": "Labot kļūdainu maksājuma ierakstu",
+  "command.CLEAR_PAYMENT.meaning": "Noņemt kļūdaini reģistrētu maksājuma datumu. Tas nav faktiskā pārskaitījuma atmaksa vai atcelšana. Agrākā vēsture saglabājas.",
+  "command.CLOSE.label": "Slēgt lietu",
+  "command.CLOSE.meaning": "Iestatīt lietas statusu SLĒGTA. Slēgšana nenozīmē maksājumu.",
+  "command.REOPEN.label": "Atvērt lietu atkārtoti",
+  "command.REOPEN.meaning": "Iestatīt lietas statusu ATVĒRTA, saglabājot pārējos laukus un vēsturi."
+}

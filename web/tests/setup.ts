@@ -4,4 +4,11 @@ import { afterEach, expect } from "vitest";
 
 expect.extend(matchers);
 
-afterEach(() => cleanup());
+afterEach(() => {
+  cleanup();
+  if (typeof document !== "undefined") {
+    window.localStorage.clear();
+    document.documentElement.lang = "en";
+    document.documentElement.dir = "ltr";
+  }
+});

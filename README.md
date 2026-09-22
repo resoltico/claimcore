@@ -27,6 +27,10 @@ Runtime operations that use private credentials or artifacts are supported on ma
 Windows remains a source build/test and database-free discovery host; the three applications fail
 closed there for private-file runtime work until an independently verified Windows backend exists.
 
+The browser supports English, Latvian, Arabic and expanded-English layout testing, with independent
+display formats. Language switching preserves authored requests and recovery state; it does not
+change the installation calendar or recorded currency. See [Browser presentation](docs/localization.md).
+
 ## Guarantees and limits
 
 - `CaseFields` has exactly thirteen business fields; revisions, operation IDs, timestamps,

@@ -32,12 +32,19 @@ it("clears claimant definition state when the server rejects or mismatches asset
   const { result, rerender } = renderHook(({ epoch }) => useDefinition(epoch), {
     initialProps: { epoch: 1 },
   });
-  await waitFor(() => expect(result.current.message).toContain("WEB_BUSY"));
+  await waitFor(() =>
+    expect(result.current.message).toEqual({
+      kind: "diagnostic",
+      diagnostic: { id: "WEB_HOST_BUSY", parameters: {} },
+    }),
+  );
   fetch.mockResolvedValueOnce(
     response("definition", "DESCRIBED", { ...definition, webFingerprint: "0".repeat(64) }),
   );
   rerender({ epoch: 2 });
-  await waitFor(() => expect(result.current.message).toContain("does not match"));
+  await waitFor(() =>
+    expect(result.current.message).toEqual({ kind: "local", reason: "definitionMismatch" }),
+  );
   expect(result.current.definition).toBeNull();
 });
 

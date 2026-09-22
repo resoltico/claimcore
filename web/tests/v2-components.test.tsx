@@ -1,4 +1,5 @@
-import { render, screen } from "@testing-library/react";
+import { localNotice } from "../src/api/notices";
+import { render, screen } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { isWebV2EndpointId } from "../src/generated/convergence/web-v2.endpoint-catalog";
@@ -38,13 +39,13 @@ it("associates optional field errors and supports password text input", () => {
       <DescriptorField
         field={definition.definition.fields[0]!}
         value="CASE-1"
-        error="Bad reference"
+        error={localNotice("unreachable")}
         onChange={onChange}
       />
     </>,
   );
   expect(screen.getByLabelText("Credential")).toHaveAttribute("type", "password");
-  expect(screen.getAllByText(/Required|Bad reference/u)).toHaveLength(2);
+  expect(screen.getAllByText(/Required|could not be reached/u)).toHaveLength(2);
 });
 
 it("keeps generated endpoint inventory callable and presents suspicious Unicode defensively", () => {

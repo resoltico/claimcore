@@ -1,4 +1,5 @@
-import { render, screen } from "@testing-library/react";
+import { localNotice } from "../src/api/notices";
+import { render, screen } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 
@@ -20,11 +21,11 @@ it("renders a recoverable session failure and invokes its refresh action", async
   const user = userEvent.setup();
   const state = actions();
   useSession.mockReturnValue({
-    state: { kind: "failure", message: "Session unavailable", epoch: 1 },
+    state: { kind: "failure", message: localNotice("unreachable"), epoch: 1 },
     ...state,
   });
   render(<App />);
-  expect(screen.getByRole("alert")).toHaveTextContent("Session unavailable");
+  expect(screen.getByRole("alert")).toHaveTextContent("The local service could not be reached.");
   await user.click(screen.getByRole("button", { name: "Try again" }));
   expect(state.refresh).toHaveBeenCalledOnce();
 });

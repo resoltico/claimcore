@@ -1,0 +1,22 @@
+{
+  "notice.unreachable": "تعذر الوصول إلى الخدمة المحلية.",
+  "notice.invalidHttp": "أعادت الخدمة المحلية استجابة HTTP {status} غير صالحة.",
+  "notice.fileTooLarge": "يتجاوز الملف المحدد {maximumBytes} بايت.",
+  "notice.fileUnreadable": "تعذرت قراءة الملف المحدد.",
+  "notice.exportInvalid": "لم تجتز استجابة تصدير الاسترداد فحوص البروتوكول.",
+  "notice.incomplete": "لم تكتمل العملية.",
+  "notice.definitionMismatch": "لا يطابق عقد الويب المثبّت موارد المتصفح هذه. أعد التحميل بعد نشر الموارد المطابقة.",
+  "notice.invalidSession": "استجابة الجلسة غير صالحة.",
+  "notice.missingCsrf": "لم تتضمن الجلسة الموثّقة رمز الحماية من تزوير الطلبات.",
+  "notice.dismissed": "استُبعد التحضير.",
+  "notice.alreadyDismissed": "سبق استبعاد التحضير.",
+  "notice.retained": "احتُفظ بمادة الاسترداد.",
+  "notice.existing": "سبق الاحتفاظ بمادة الاسترداد.",
+  "notice.accepted": "اعتُمدت العملية نفسها {operationId}.",
+  "notice.digestUnavailable": "بصمة الاسترداد الدقيقة غير متاحة؛ افحص التحضير.",
+  "notice.exportStarted": "بدأ تصدير الاسترداد. يحتوي الملف على بيانات المطالب؛ احتفظ به بشكل خاص.",
+  "notice.inspectBeforeRetry": "افحص الاسترداد قبل إعادة محاولة العملية نفسها.",
+  "notice.inspectBeforeAction": "افحص الاسترداد قبل اتخاذ إجراء آخر.",
+  "notice.keptForRecovery": "احتُفظ بالطلب المحضّر. استخدم الاسترداد لفحصه أو معالجته أو استبعاده.",
+  "notice.unknownDiagnostic": "الشرح غير متاح. اتبع النتيجة المعلنة وإرشادات الاسترداد؛ لا تفترض السماح بإعادة المحاولة."
+}

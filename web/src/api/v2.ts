@@ -1,3 +1,5 @@
+import type { ApiResult } from "./types";
+import { localNotice } from "./notices";
 import {
   type WebV2EndpointId,
   webV2Endpoints,
@@ -7,9 +9,8 @@ import { isHostFailure, isWebV2Response } from "../generated/convergence/web-v2.
 
 /** The generated endpoint catalogue owns route, method, media type, and byte limits. */
 export type * from "./types";
-export { isMutationUncertain, resultMessage } from "./outcomes";
+export { isMutationUncertain, resultNotice } from "./outcomes";
 import type {
-  ApiResult,
   CommandDraft,
   HostFailure,
   WebV2Response,
@@ -97,7 +98,7 @@ const decodeValidatedJsonResponse = async <K extends WebV2EndpointId>(
   }
   return {
     kind: "deliveryFailure",
-    message: `The local service returned an invalid HTTP ${status} response.`,
+    notice: { kind: "invalidHttp", status },
   };
 };
 
@@ -129,7 +130,7 @@ const request = async <K extends WebV2EndpointId>(
     const payload = await readJson(response);
     return await decodeJsonResponse(id, response.status, payload);
   } catch {
-    return { kind: "deliveryFailure", message: "The local service could not be reached." };
+    return { kind: "deliveryFailure", notice: localNotice("unreachable") };
   }
 };
 
@@ -157,12 +158,16 @@ const importRaw = async <K extends RawEndpointId>(
   if (source.size > rule.maximumBytes)
     return {
       kind: "deliveryFailure",
-      message: `The selected file exceeds ${rule.maximumBytes} bytes.`,
+      notice: { kind: "fileTooLarge", maximumBytes: rule.maximumBytes },
     };
-  const bytes = new Uint8Array(await source.arrayBuffer());
-  const headers =
-    sourceSha256 === undefined ? undefined : { "X-ClaimCore-Source-Sha256": sourceSha256 };
-  return request(id, token, { bytes, mediaType: rule.mediaType, headers }, signal);
+  try {
+    const bytes = new Uint8Array(await source.arrayBuffer());
+    const headers =
+      sourceSha256 === undefined ? undefined : { "X-ClaimCore-Source-Sha256": sourceSha256 };
+    return request(id, token, { bytes, mediaType: rule.mediaType, headers }, signal);
+  } catch {
+    return { kind: "deliveryFailure", notice: localNotice("fileUnreadable") };
+  }
 };
 
 const exportRecovery = async (
@@ -192,7 +197,7 @@ const exportRecovery = async (
     )
       return {
         kind: "deliveryFailure",
-        message: "The recovery export response failed its protocol checks.",
+        notice: localNotice("exportInvalid"),
       };
     return {
       kind: "outcome",
@@ -200,7 +205,7 @@ const exportRecovery = async (
       status: response.status,
     };
   } catch {
-    return { kind: "deliveryFailure", message: "The local service could not be reached." };
+    return { kind: "deliveryFailure", notice: localNotice("unreachable") };
   }
 };
 

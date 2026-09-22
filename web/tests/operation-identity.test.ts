@@ -1,3 +1,4 @@
+import { localNotice } from "../src/api/notices";
 import { expect, it } from "vitest";
 import { createDraft } from "../src/domain/metadata";
 import {
@@ -23,7 +24,7 @@ const refused = (state: OperationState, requestId: number) =>
   operationReducer(state, {
     type: "DEFINITELY_REJECTED",
     requestId,
-    message: "Synthetic refusal",
+    message: localNotice("unreachable"),
     field: null,
   });
 const reviewed = () =>
@@ -84,7 +85,7 @@ it("retains the frozen exact request on unchanged retry after unknown preparatio
   const unknown = operationReducer(first, {
     type: "PREPARATION_UNKNOWN",
     requestId: 1,
-    message: "Synthetic delivery loss",
+    message: localNotice("unreachable"),
   });
   const retry = begin(unknown, 2);
   expect(retry.delivery).toBe("PREPARING");
@@ -114,7 +115,7 @@ it("ignores late prepare and submit responses from inactive attempts", () => {
   const unknown = operationReducer(begin(initial(), 1), {
     type: "PREPARATION_UNKNOWN",
     requestId: 1,
-    message: "Synthetic delivery loss",
+    message: localNotice("unreachable"),
   });
   const retry = begin(unknown, 2);
   expect(operationReducer(retry, { type: "PREPARED", requestId: 1, preparation, review })).toBe(
@@ -174,7 +175,7 @@ it("models definite rejection and unknown outcomes without allowing a dispatched
   const unknown = operationReducer(begin(initial(), 1), {
     type: "PREPARATION_UNKNOWN",
     requestId: 1,
-    message: "Synthetic delivery loss",
+    message: localNotice("unreachable"),
   });
   expect(
     operationReducer(unknown, {
@@ -203,7 +204,7 @@ it("models definite rejection and unknown outcomes without allowing a dispatched
   });
   const completed = operationReducer(
     operationReducer(reviewing, { type: "SUBMITTING", requestId: 4 }),
-    { type: "OUTCOME_UNKNOWN", requestId: 4, message: "Synthetic uncertainty" },
+    { type: "OUTCOME_UNKNOWN", requestId: 4, message: localNotice("unreachable") },
   );
   expect(completed.delivery).toBe("OUTCOME_UNKNOWN");
   expect(operationReducer(completed, { type: "RESET_MESSAGE" }).message).toBeNull();

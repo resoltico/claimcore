@@ -1,3 +1,4 @@
+import { localNotice } from "../src/api/notices";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
@@ -11,15 +12,20 @@ const renderState = async (state: SessionState) => {
     useSession: () => ({ state, login: vi.fn(), logout: vi.fn(), refresh: vi.fn() }),
   }));
   const { App } = await import("../src/App");
-  return render(<App />);
+  const { PresentationProvider } = await import("../src/presentation/PresentationProvider");
+  return render(
+    <PresentationProvider>
+      <App />
+    </PresentationProvider>,
+  );
 };
 
 it("renders loading and refreshable session failures", async () => {
   const loading = await renderState({ kind: "loading", epoch: 0 });
   expect(screen.getByText("Loading local session…")).toBeVisible();
   loading.unmount();
-  await renderState({ kind: "failure", message: "Safe failure", epoch: 1 });
-  expect(screen.getByRole("alert")).toHaveTextContent("Safe failure");
+  await renderState({ kind: "failure", message: localNotice("unreachable"), epoch: 1 });
+  expect(screen.getByRole("alert")).toHaveTextContent("The local service could not be reached.");
   await userEvent.setup().click(screen.getByRole("button", { name: "Try again" }));
 });
 
@@ -30,10 +36,10 @@ it("renders anonymous login and authenticated dashboard paths", async () => {
   const rejected = await renderState({
     kind: "anonymous",
     token: "anonymous",
-    message: "Credential was rejected.",
+    message: localNotice("invalidSession"),
     epoch: 3,
   });
-  expect(screen.getByRole("alert")).toHaveTextContent("Credential was rejected.");
+  expect(screen.getByRole("alert")).toHaveTextContent("Invalid session response.");
   expect(screen.getByRole("button", { name: "Sign in" })).not.toBeDisabled();
   rejected.unmount();
   await renderState({ kind: "authenticated", token: "token", epoch: 4 });

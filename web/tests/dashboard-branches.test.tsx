@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import { Dashboard } from "../src/views/Dashboard";
@@ -23,7 +23,7 @@ it("locks navigation and logout while a prepared mutation is dispatched", async 
   await user.click(await screen.findByRole("button", { name: "Open new case" }));
   const inputs = screen.getAllByRole("textbox");
   await user.type(inputs[0]!, "LOCK-001");
-  const incidentDate = document.querySelector<HTMLInputElement>('input[type="date"]');
+  const incidentDate = document.querySelector<HTMLInputElement>('input[name="incidentDate"]');
   if (incidentDate === null) throw new Error("Open-case incident date input was not rendered.");
   await user.type(incidentDate, "2026-09-09");
   await user.click(screen.getByRole("button", { name: "Prepare exact request" }));

@@ -1,0 +1,20 @@
+{
+  "command.OPEN.label": "Open a case",
+  "command.OPEN.meaning": "Create the basic record. No decision or payment is inferred.",
+  "command.AMEND_REGISTRATION.label": "Amend registration",
+  "command.AMEND_REGISTRATION.meaning": "Replace the initial facts. The handler's case reference remains unchanged.",
+  "command.CORRECT_CASE.label": "Correct case facts",
+  "command.CORRECT_CASE.meaning": "Correct existing decided, paid, or closed case facts atomically. Keep reads accepted values; clearing a payment record does not reverse an external transfer.",
+  "command.DECIDE.label": "Record payment decision",
+  "command.DECIDE.meaning": "Record or replace the decided amount and currency. This does not send money.",
+  "command.WITHDRAW_DECISION.label": "Withdraw payment decision",
+  "command.WITHDRAW_DECISION.meaning": "Remove the unpaid decision tuple while retaining its earlier history.",
+  "command.RECORD_PAYMENT.label": "Record actual payment",
+  "command.RECORD_PAYMENT.meaning": "Record the date the full decided amount was actually paid. This does not execute or verify a transfer.",
+  "command.CLEAR_PAYMENT.label": "Correct an erroneous payment record",
+  "command.CLEAR_PAYMENT.meaning": "Remove an erroneously recorded payment date. This is not a refund or reversal of an actual transfer. Earlier history remains.",
+  "command.CLOSE.label": "Close the case",
+  "command.CLOSE.meaning": "Set the case status to CLOSED. Closing does not imply any payment.",
+  "command.REOPEN.label": "Reopen the case",
+  "command.REOPEN.meaning": "Set the case status to OPENED, retaining its other fields and history."
+}

@@ -1,0 +1,1054 @@
+{
+  "command.OPEN.label": [{ "type": 0, "value": "Atvērt lietu" }],
+  "command.OPEN.meaning": [
+    { "type": 0, "value": "Izveidot pamata ierakstu. Netiek pieņemts lēmums vai maksājums." }
+  ],
+  "command.AMEND_REGISTRATION.label": [{ "type": 0, "value": "Grozīt reģistrāciju" }],
+  "command.AMEND_REGISTRATION.meaning": [
+    { "type": 0, "value": "Aizstāt sākotnējos faktus. Administratora lietas numurs nemainās." }
+  ],
+  "command.CORRECT_CASE.label": [{ "type": 0, "value": "Labot lietas faktus" }],
+  "command.CORRECT_CASE.meaning": [
+    {
+      "type": 0,
+      "value": "Vienotā darbībā labot izlemtas, apmaksātas vai slēgtas lietas faktus. Saglabāšana izmanto pieņemtās vērtības; maksājuma ieraksta dzēšana neatceļ ārēju pārskaitījumu."
+    }
+  ],
+  "command.DECIDE.label": [{ "type": 0, "value": "Reģistrēt izmaksas lēmumu" }],
+  "command.DECIDE.meaning": [
+    { "type": 0, "value": "Reģistrēt vai aizstāt nolemto summu un valūtu. Tas nepārskaita naudu." }
+  ],
+  "command.WITHDRAW_DECISION.label": [{ "type": 0, "value": "Atsaukt izmaksas lēmumu" }],
+  "command.WITHDRAW_DECISION.meaning": [
+    { "type": 0, "value": "Noņemt neapmaksātā lēmuma laukus, saglabājot agrāko vēsturi." }
+  ],
+  "command.RECORD_PAYMENT.label": [{ "type": 0, "value": "Reģistrēt faktisko maksājumu" }],
+  "command.RECORD_PAYMENT.meaning": [
+    {
+      "type": 0,
+      "value": "Reģistrēt datumu, kad nolemtā summa pilnībā samaksāta. Tas neveic un nepārbauda pārskaitījumu."
+    }
+  ],
+  "command.CLEAR_PAYMENT.label": [{ "type": 0, "value": "Labot kļūdainu maksājuma ierakstu" }],
+  "command.CLEAR_PAYMENT.meaning": [
+    {
+      "type": 0,
+      "value": "Noņemt kļūdaini reģistrētu maksājuma datumu. Tas nav faktiskā pārskaitījuma atmaksa vai atcelšana. Agrākā vēsture saglabājas."
+    }
+  ],
+  "command.CLOSE.label": [{ "type": 0, "value": "Slēgt lietu" }],
+  "command.CLOSE.meaning": [
+    { "type": 0, "value": "Iestatīt lietas statusu SLĒGTA. Slēgšana nenozīmē maksājumu." }
+  ],
+  "command.REOPEN.label": [{ "type": 0, "value": "Atvērt lietu atkārtoti" }],
+  "command.REOPEN.meaning": [
+    { "type": 0, "value": "Iestatīt lietas statusu ATVĒRTA, saglabājot pārējos laukus un vēsturi." }
+  ],
+  "diagnostic.INPUT_TEXT_REQUIRED": [{ "type": 0, "value": "Nepieciešama netukša vērtība." }],
+  "diagnostic.INPUT_MALFORMED_UNICODE": [{ "type": 0, "value": "Nederīgs Unicode nav atļauts." }],
+  "diagnostic.INPUT_SURROUNDING_WHITESPACE": [
+    { "type": 0, "value": "Atstarpes vērtības sākumā vai beigās nav atļautas." }
+  ],
+  "diagnostic.INPUT_TEXT_TOO_SHORT": [
+    { "type": 0, "value": "Vērtībai jāsatur vismaz " },
+    { "type": 1, "value": "minimumCharacters" },
+    { "type": 0, "value": " Unicode rakstzīmes." }
+  ],
+  "diagnostic.INPUT_TEXT_TOO_LONG": [
+    { "type": 0, "value": "Vērtība nedrīkst pārsniegt " },
+    { "type": 1, "value": "maximumCharacters" },
+    { "type": 0, "value": " Unicode rakstzīmes." }
+  ],
+  "diagnostic.INPUT_CONTROL_CHARACTERS": [
+    { "type": 0, "value": "Vadības rakstzīmes nav atļautas." }
+  ],
+  "diagnostic.INPUT_CALENDAR_DATE_REQUIRED": [
+    { "type": 0, "value": "Izmantojiet vienu derīgu datumu formātā YYYY-MM-DD." }
+  ],
+  "diagnostic.INPUT_DATE_ORDER": [{ "type": 0, "value": "Datumu hronoloģiskā secība nav derīga." }],
+  "diagnostic.INPUT_FUTURE_DATE": [
+    { "type": 0, "value": "Nākotnes datums nevar apzīmēt jau notikušu notikumu." }
+  ],
+  "diagnostic.INPUT_DECIMAL_FORMAT": [
+    { "type": 0, "value": "Izmantojiet nenegatīvu decimālskaitli: līdz " },
+    { "type": 1, "value": "maximumIntegerDigits" },
+    { "type": 0, "value": " veseliem cipariem un " },
+    { "type": 1, "value": "maximumFractionalDigits" },
+    { "type": 0, "value": " daļas cipariem; bez zīmes vai eksponenta." }
+  ],
+  "diagnostic.INPUT_CURRENCY_FORMAT": [
+    { "type": 0, "value": "Izmantojiet trīs lielo latīņu burtu valūtas identifikatoru." }
+  ],
+  "diagnostic.INPUT_AMOUNT_NOT_REPRESENTABLE": [
+    { "type": 0, "value": "Decimālo summu nevar attēlot precīzi." }
+  ],
+  "diagnostic.COMMAND_OPERATION_ID_REQUIRED": [{ "type": 0, "value": "Izmantojiet netukšu UUID." }],
+  "diagnostic.COMMAND_EXPECTED_REVISION_RANGE": [
+    { "type": 0, "value": "Izmantojiet nenegatīvu redakciju, kas mazāka par Int64.MaxValue." }
+  ],
+  "diagnostic.STATE_STORED_REVISION_RANGE": [
+    { "type": 0, "value": "Saglabātajām redakcijām jābūt pozitīvām un mazākām par Int64.MaxValue." }
+  ],
+  "diagnostic.STATE_REVISION_EXHAUSTED": [
+    { "type": 0, "value": "Lietas redakciju vairs nevar palielināt zem Int64.MaxValue robežas." }
+  ],
+  "diagnostic.STATE_CASE_REFERENCE_MISMATCH": [
+    { "type": 0, "value": "Ielādētā lieta neatbilst šai komandai." }
+  ],
+  "diagnostic.STATE_TRANSITION_MISMATCH": [
+    { "type": 0, "value": "Stāvokļa pārbaude un maksājuma pāreja nav saskaņotas." }
+  ],
+  "diagnostic.INPUT_EXACT_FIELDS_REQUIRED": [
+    {
+      "type": 0,
+      "value": "Norādiet katru komandas ievades lauku tieši vienreiz un bez papildu laukiem."
+    }
+  ],
+  "diagnostic.COMMAND_GROUPED_CORRECTION_REQUIRED": [
+    { "type": 0, "value": "Norādiet visas trīs marķētās labojumu grupas." }
+  ],
+  "diagnostic.CORRECTION_COMPLETE_DECISION_REQUIRED": [
+    {
+      "type": 0,
+      "value": "Lēmuma datumam, summai un valūtai jābūt norādītiem kopā vai visiem tukšiem."
+    }
+  ],
+  "diagnostic.CORRECTION_PAYMENT_CLEAR_REQUIRED": [
+    { "type": 0, "value": "Apmaksāta lēmuma dzēšanai jādzēš arī maksājuma ieraksts." }
+  ],
+  "diagnostic.CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED": [
+    {
+      "type": 0,
+      "value": "Apmaksāta lēmuma aizstāšanai skaidri jāapstiprina maksājums vai jādzēš tā ieraksts."
+    }
+  ],
+  "diagnostic.CORRECTION_PAYMENT_DECISION_REQUIRED": [
+    { "type": 0, "value": "Maksājuma ierakstam nepieciešams pilnīgs izmaksas lēmums." }
+  ],
+  "diagnostic.CORRECTION_REPLACEMENT_FIELDS_REQUIRED": [
+    { "type": 0, "value": "Izmantojiet AIZSTĀT ar visiem noteiktajiem laukiem." }
+  ],
+  "diagnostic.CORRECTION_REGISTRATION_CLEAR_FORBIDDEN": [
+    { "type": 0, "value": "Reģistrāciju nevar dzēst." }
+  ],
+  "diagnostic.CASE_NOT_FOUND": [{ "type": 0, "value": "Lietas numurs nav atrasts." }],
+  "diagnostic.CASE_ALREADY_EXISTS": [{ "type": 0, "value": "Lietas numurs jau pastāv." }],
+  "diagnostic.CASE_REVISION_CONFLICT": [
+    { "type": 0, "value": "Pirms mainīta pieprasījuma veidošanas nolasiet pašreizējo lietu." }
+  ],
+  "diagnostic.CASE_CLOSED": [
+    { "type": 0, "value": "Pirms faktu maiņas atveriet lietu atkārtoti." }
+  ],
+  "diagnostic.CASE_ALREADY_CLOSED": [{ "type": 0, "value": "Lieta jau ir slēgta." }],
+  "diagnostic.CASE_ALREADY_OPENED": [{ "type": 0, "value": "Lieta jau ir atvērta." }],
+  "diagnostic.CASE_AMENDMENT_REQUIRES_UNDECIDED": [
+    { "type": 0, "value": "Pirms reģistrācijas grozīšanas atsauciet neapmaksāto lēmumu." }
+  ],
+  "diagnostic.CORRECTION_NO_CHANGES": [
+    { "type": 0, "value": "Izvēlieties vismaz vienu faktu labojumu, kas maina pašreizējo lietu." }
+  ],
+  "diagnostic.CORRECTION_EXISTING_VALUE_REQUIRED": [
+    {
+      "type": 0,
+      "value": "Labojums var aizstāt vai dzēst tikai jau reģistrētu šīs lietas vērtību."
+    }
+  ],
+  "diagnostic.CASE_DECISION_REQUIRED": [
+    { "type": 0, "value": "Vispirms reģistrējiet izmaksas lēmumu." }
+  ],
+  "diagnostic.CASE_PAYMENT_ALREADY_RECORDED": [
+    { "type": 0, "value": "ClaimCore reģistrē vienu pilnu maksājumu." }
+  ],
+  "diagnostic.CASE_PAYMENT_NOT_RECORDED": [
+    { "type": 0, "value": "Nav maksājuma ieraksta, ko dzēst." }
+  ],
+  "diagnostic.CASE_DECISION_ALREADY_PAID": [
+    { "type": 0, "value": "Reģistrēts maksājums neļauj mainīt tā lēmumu." }
+  ],
+  "diagnostic.CASE_ZERO_DECISION_CANNOT_BE_PAID": [
+    { "type": 0, "value": "Nulles lēmums nav maksājums." }
+  ],
+  "diagnostic.QUERY_PAGE_LIMIT_RANGE": [
+    { "type": 0, "value": "Izmantojiet vērtību no 1 līdz " },
+    { "type": 1, "value": "maximumPageSize" },
+    { "type": 0, "value": "." }
+  ],
+  "diagnostic.QUERY_HISTORY_CURSOR_INVALID": [
+    { "type": 0, "value": "Izmantojiet vienu nemainītu ClaimCore atgriezto vēstures kursoru." }
+  ],
+  "diagnostic.OPERATION_CONTENT_CONFLICT": [
+    {
+      "type": 0,
+      "value": "Šis operācijas ID pieder citam komandas saturam. Neizmantojiet to atkārtoti."
+    }
+  ],
+  "diagnostic.OPERATION_REVOKED": [
+    {
+      "type": 0,
+      "value": "Šīs precīzās operācijas tiesības neatgriezeniski atsauktas pirms izpildes."
+    }
+  ],
+  "diagnostic.OPERATION_RECOVERY_ATTEMPT_LIMIT": [
+    {
+      "type": 0,
+      "value": "Sasniegta operācijas atkopšanas mēģinājumu robeža. Nolasiet pašreizējo lietu un veidojiet jaunu operāciju tikai pēc pārskatīšanas."
+    }
+  ],
+  "diagnostic.CORE_OPERATION_CONTENT_CONFLICT": [
+    { "type": 0, "value": "Operācijas ID pieder citam pieprasījuma saturam." }
+  ],
+  "diagnostic.CORE_STORE_UNAVAILABLE": [
+    { "type": 0, "value": "Krātuve nebija pieejama pirms pabeigšanas apstiprināšanas." }
+  ],
+  "diagnostic.CORE_COMMIT_OUTCOME_UNKNOWN": [
+    { "type": 0, "value": "Saglabāšanas pabeigšana nav apstiprināta." }
+  ],
+  "diagnostic.CORE_STORE_INTEGRITY_ERROR": [
+    { "type": 0, "value": "Saglabātie dati neizturēja integritātes pārbaudi." }
+  ],
+  "diagnostic.CORE_SCHEMA_MISMATCH": [
+    { "type": 0, "value": "Izpildlaika shēma vai datubāzes iestatījumi nav saderīgi." }
+  ],
+  "diagnostic.RECOVERY_STORE_RESPONSE_INVALID": [
+    { "type": 0, "value": "Atkopšanas krātuve atgrieza nederīgu tehnisko atbildi." }
+  ],
+  "diagnostic.RECOVERY_STORE_CONTENT_CONFLICT": [
+    { "type": 0, "value": "Atkopšanas identitāte konfliktē ar saglabātajiem datiem." }
+  ],
+  "diagnostic.RECOVERY_STORE_PREPARATION_MISSING": [
+    { "type": 0, "value": "Atkopšanas krātuvē trūkst paredzētās sagataves." }
+  ],
+  "diagnostic.RECOVERY_CAPACITY_EXHAUSTED": [
+    { "type": 0, "value": "Atkopšanas ietilpība ir izsmelta." }
+  ],
+  "diagnostic.RECOVERY_SCHEMA_MISMATCH": [
+    { "type": 0, "value": "Atkopšanas krātuve nav saderīga ar šo izpildlaiku." }
+  ],
+  "diagnostic.RECOVERY_STORE_UNAVAILABLE": [
+    { "type": 0, "value": "Atkopšanas krātuve nebija pieejama pirms pabeigšanas apstiprināšanas." }
+  ],
+  "diagnostic.RECOVERY_STORE_INTEGRITY_ERROR": [
+    { "type": 0, "value": "Atkopšanas krātuve neizturēja integritātes pārbaudi." }
+  ],
+  "diagnostic.RECOVERY_READ_CANCELLED": [{ "type": 0, "value": "Atkopšanas nolasīšana atcelta." }],
+  "diagnostic.RECOVERY_MUTATION_CANCELLED_BEFORE_COMMIT": [
+    { "type": 0, "value": "Tehniskā izmaiņa atcelta pirms saglabāšanas." }
+  ],
+  "diagnostic.RECOVERY_MUTATION_OUTCOME_UNKNOWN": [
+    {
+      "type": 0,
+      "value": "Atkopšanas stāvokļa izmaiņa var būt saglabāta, bet to nevarēja apstiprināt."
+    }
+  ],
+  "diagnostic.RECOVERY_RETAINED_CANONICAL_INVALID": [
+    {
+      "type": 0,
+      "value": "Saglabātie kanoniskā pieprasījuma baiti neizturēja integritātes pārbaudi."
+    }
+  ],
+  "diagnostic.RECOVERY_RETAINED_DOMAIN_SHAPE_INVALID": [
+    { "type": 0, "value": "Saglabātais pieprasījums neatbilst noteiktajai domēna formai." }
+  ],
+  "diagnostic.RECOVERY_RETAINED_PREPARATION_UNVERIFIABLE": [
+    { "type": 0, "value": "Precīzo saglabāto sagatavi nevarēja pārbaudīt." }
+  ],
+  "diagnostic.RECOVERY_NEW_PREPARATION_MISSING": [
+    { "type": 0, "value": "Jaunā saglabātā sagatave nebija pieejama izpildei." }
+  ],
+  "diagnostic.RECOVERY_PREPARATION_DISMISSED_BEFORE_EXECUTION": [
+    { "type": 0, "value": "Sagatave noraidīta pirms izpildes sākuma." }
+  ],
+  "diagnostic.RECOVERY_RETAINED_DIGEST_MISMATCH": [
+    { "type": 0, "value": "Saglabātās sagataves kontrolsumma neatbilst iesniegtajam melnrakstam." }
+  ],
+  "diagnostic.RECOVERY_STORED_DATA_INVALID": [
+    { "type": 0, "value": "Saglabātie atkopšanas dati neizturēja pārbaudi." }
+  ],
+  "diagnostic.RECOVERY_OPERATION_ID_REQUIRED": [
+    { "type": 0, "value": "Nepieciešams netukšs atkopšanas operācijas ID." }
+  ],
+  "diagnostic.RECOVERY_REQUEST_DIGEST_INVALID": [
+    {
+      "type": 0,
+      "value": "Atkopšanas pieprasījuma kontrolsummai jābūt SHA-256 formātā ar mazajiem burtiem."
+    }
+  ],
+  "diagnostic.RECOVERY_PAGE_LIMIT_RANGE": [
+    { "type": 0, "value": "Atkopšanas lapas ierobežojums ir ārpus atļautā diapazona." }
+  ],
+  "diagnostic.RECOVERY_LIST_CURSOR_INVALID": [
+    { "type": 0, "value": "Atkopšanas saraksta kursors nav derīgs." }
+  ],
+  "diagnostic.RECOVERY_LIST_CURSOR_VIEW_MISMATCH": [
+    { "type": 0, "value": "Atkopšanas saraksta kursors pieder citam skatam." }
+  ],
+  "diagnostic.RECOVERY_ATTEMPT_CURSOR_INVALID": [
+    { "type": 0, "value": "Atkopšanas mēģinājuma kursors nav derīgs." }
+  ],
+  "diagnostic.RECOVERY_ATTEMPT_CURSOR_OPERATION_MISMATCH": [
+    { "type": 0, "value": "Atkopšanas mēģinājuma kursors pieder citai operācijai." }
+  ],
+  "diagnostic.RECOVERY_DISMISSAL_CONFIRMATION_REQUIRED": [
+    { "type": 0, "value": "Atkopšanas sagataves noraidīšanai nepieciešams skaidrs apstiprinājums." }
+  ],
+  "diagnostic.RECOVERY_PREPARATION_NOT_FOUND": [
+    { "type": 0, "value": "Atkopšanas sagatave nav atrasta." }
+  ],
+  "diagnostic.RECOVERY_OPERATION_CONTENT_CONFLICT": [
+    { "type": 0, "value": "Norādītā atkopšanas identitāte konfliktē ar esošu operāciju." }
+  ],
+  "diagnostic.RECOVERY_PREPARATION_DISMISSED": [
+    { "type": 0, "value": "Noraidītu sagatavi nevar iesniegt." }
+  ],
+  "diagnostic.RECOVERY_SUBMISSION_ALREADY_STARTED": [
+    { "type": 0, "value": "Sagataves iesniegšana jau sākta; jāatrisina tieši šī sagatave." }
+  ],
+  "diagnostic.RECOVERY_ACCEPTED_OPERATION_DISMISSAL_FORBIDDEN": [
+    {
+      "type": 0,
+      "value": "Pieņemtu operāciju nevar noraidīt. Pārbaudiet tās saglabāto apliecinājumu."
+    }
+  ],
+  "diagnostic.RECOVERY_SOURCE_DIGEST_MISMATCH": [
+    { "type": 0, "value": "Norādītā avota kontrolsumma neatbilst precīzajiem importa baitiem." }
+  ],
+  "diagnostic.RECOVERY_REQUEST_DIGEST_MISMATCH": [
+    {
+      "type": 0,
+      "value": "Norādītā kontrolsumma neatbilst precīzajiem saglabātā pieprasījuma baitiem."
+    }
+  ],
+  "diagnostic.RECOVERY_INSTALLATION_MISMATCH": [
+    { "type": 0, "value": "Atkopšanas aploksne pieder citai ClaimCore instalācijai." }
+  ],
+  "diagnostic.RECOVERY_ENVELOPE_INVALID_OR_UNSUPPORTED": [
+    {
+      "type": 0,
+      "value": "Atkopšanas aploksne nav atbalstīta vai neizturēja kanonisko dekodēšanu."
+    }
+  ],
+  "diagnostic.RECOVERY_CANONICAL_RECORD_INVALID_OR_UNSUPPORTED": [
+    {
+      "type": 0,
+      "value": "Kanoniskais atkopšanas ieraksts nav atbalstīts vai neizturēja kanonisko dekodēšanu."
+    }
+  ],
+  "diagnostic.RECOVERY_OPERATION_REVOKED": [
+    {
+      "type": 0,
+      "value": "Šīs precīzās operācijas tiesības neatgriezeniski atsauktas pirms izpildes."
+    }
+  ],
+  "diagnostic.RECOVERY_ATTEMPT_LIMIT_REACHED": [
+    {
+      "type": 0,
+      "value": "Sasniegta operācijas atkopšanas mēģinājumu robeža. Pirms jauna darba nolasiet pašreizējo lietu."
+    }
+  ],
+  "diagnostic.WEB_HOST_CONNECTION_REJECTED": [
+    { "type": 0, "value": "Serveris noraidīja savienojumu." }
+  ],
+  "diagnostic.WEB_HOST_ORIGIN_REJECTED": [
+    { "type": 0, "value": "Pieprasījuma izcelsme noraidīta." }
+  ],
+  "diagnostic.WEB_HOST_MEDIA_TYPE_REJECTED": [
+    { "type": 0, "value": "Pieprasījuma satura veids nav atbalstīts." }
+  ],
+  "diagnostic.WEB_HOST_BODY_TOO_LARGE": [
+    { "type": 0, "value": "Pieprasījums pārsniedz iestatīto baitu robežu." }
+  ],
+  "diagnostic.WEB_INPUT_BODY_TOO_LARGE": [
+    { "type": 0, "value": "Pieprasījums pārsniedz iestatīto baitu robežu." }
+  ],
+  "diagnostic.WEB_HOST_SESSION_REJECTED": [
+    { "type": 0, "value": "Sesija noraidīta. Pierakstieties vietējā instalācijā." }
+  ],
+  "diagnostic.WEB_HOST_ANTIFORGERY_REJECTED": [
+    { "type": 0, "value": "Pretviltošanas pārbaude neizdevās." }
+  ],
+  "diagnostic.WEB_HOST_LOGIN_REJECTED": [
+    { "type": 0, "value": "Sākotnējās piekļuves atslēga noraidīta." }
+  ],
+  "diagnostic.WEB_HOST_ENDPOINT_MISSING": [
+    { "type": 0, "value": "Pieprasītais galapunkts nav atrasts." }
+  ],
+  "diagnostic.WEB_HOST_BUSY": [{ "type": 0, "value": "Vietējais serveris ir aizņemts." }],
+  "diagnostic.WEB_HOST_EXPORT_METADATA_INVALID": [
+    { "type": 0, "value": "Atkopšanas eksporta metadati neizturēja pārbaudi." }
+  ],
+  "diagnostic.WEB_HOST_BEFORE_DISPATCH_FAILED": [
+    { "type": 0, "value": "Servera kļūme pirms pieprasījuma nodošanas izpildei." }
+  ],
+  "diagnostic.WEB_HOST_DISPATCH_UNCONFIRMED": [
+    {
+      "type": 0,
+      "value": "Nodotā pieprasījuma rezultāts nav apstiprināts. Pirms citas izmaiņas pārbaudiet atkopšanu."
+    }
+  ],
+  "diagnostic.WEB_HOST_COMPLETED_RESPONSE_FAILED": [
+    { "type": 0, "value": "Operācija pabeigta, taču atbildi neizdevās piegādāt." }
+  ],
+  "diagnostic.WEB_HOST_SESSION_FORBIDDEN": [
+    { "type": 0, "value": "Šai sesijai piekļuve resursam nav atļauta." }
+  ],
+  "diagnostic.WEB_HOST_METHOD_REJECTED": [
+    { "type": 0, "value": "Galapunkts neatbalsta šo pieprasījuma metodi." }
+  ],
+  "diagnostic.WEB_INPUT_EXPECTED_OBJECT": [{ "type": 0, "value": "Nepieciešams JSON objekts." }],
+  "diagnostic.WEB_INPUT_DUPLICATE_PROPERTY": [
+    { "type": 0, "value": "Atkārtoti pieprasījuma lauki nav atļauti." }
+  ],
+  "diagnostic.WEB_INPUT_UNKNOWN_PROPERTY": [
+    { "type": 0, "value": "Pieprasījums satur nedeklarētu lauku." }
+  ],
+  "diagnostic.WEB_INPUT_MISSING_PROPERTY": [
+    { "type": 0, "value": "Trūkst obligāta pieprasījuma lauka." }
+  ],
+  "diagnostic.WEB_INPUT_EXPECTED_STRING": [{ "type": 0, "value": "Nepieciešama teksta vērtība." }],
+  "diagnostic.WEB_INPUT_NULL_FORBIDDEN": [
+    { "type": 0, "value": "Šajā pieprasījuma vietā null nav atļauts." }
+  ],
+  "diagnostic.WEB_INPUT_EXPECTED_BOOLEAN": [
+    { "type": 0, "value": "Nepieciešama loģiskā vērtība." }
+  ],
+  "diagnostic.WEB_INPUT_EXPECTED_INTEGER": [
+    { "type": 0, "value": "Nepieciešams vesels skaitlis." }
+  ],
+  "diagnostic.WEB_INPUT_INVALID_REVISION": [
+    { "type": 0, "value": "Norādiet atbalstītu kanonisku redakciju." }
+  ],
+  "diagnostic.WEB_INPUT_INVALID_UUID": [
+    { "type": 0, "value": "Norādiet kanonisku netukšu operācijas UUID." }
+  ],
+  "diagnostic.WEB_INPUT_INVALID_DIGEST": [
+    { "type": 0, "value": "Norādiet kanonisku SHA-256 kontrolsummu ar mazajiem burtiem." }
+  ],
+  "diagnostic.WEB_INPUT_INVALID_UNICODE": [
+    { "type": 0, "value": "Pieprasījums satur nederīgu Unicode." }
+  ],
+  "diagnostic.WEB_INPUT_INVALID_UTF8": [{ "type": 0, "value": "Pieprasījums nav derīgs UTF-8." }],
+  "diagnostic.WEB_INPUT_INVALID_JSON": [{ "type": 0, "value": "Pieprasījums nav derīgs JSON." }],
+  "diagnostic.WEB_INPUT_BODY_UNREADABLE": [
+    { "type": 0, "value": "Pieprasījuma saturu neizdevās nolasīt." }
+  ],
+  "diagnostic.WEB_INPUT_BODY_CANCELLED": [
+    { "type": 0, "value": "Pieprasījuma satura nolasīšana atcelta." }
+  ],
+  "diagnostic.WEB_INPUT_UNKNOWN_COMMAND": [{ "type": 0, "value": "Komanda nav atpazīta." }],
+  "diagnostic.WEB_INPUT_MISSING_COMMAND_VALUE": [
+    { "type": 0, "value": "Trūkst obligātas komandas vērtības." }
+  ],
+  "diagnostic.WEB_INPUT_CORRECTION_ACTION": [
+    { "type": 0, "value": "Šai grupai labojuma darbība nav derīga." }
+  ],
+  "diagnostic.WEB_INPUT_LOGOUT_SHAPE": [
+    { "type": 0, "value": "Izrakstīšanās pieprasījuma forma nav derīga." }
+  ],
+  "diagnostic.WEB_INPUT_PAGE_RANGE": [
+    { "type": 0, "value": "Pieprasītais lapas izmērs ir ārpus atļautā diapazona." }
+  ],
+  "diagnostic.WEB_INPUT_HISTORY_DETAIL": [
+    { "type": 0, "value": "Pieprasītā vēstures detalizācija nav atbalstīta." }
+  ],
+  "diagnostic.WEB_INPUT_RECOVERY_VIEW": [
+    { "type": 0, "value": "Pieprasītais atkopšanas skats nav atbalstīts." }
+  ],
+  "diagnostic.WEB_INPUT_SOURCE_DIGEST_HEADER": [
+    { "type": 0, "value": "Avota kontrolsummas galvene trūkst vai nav derīga." }
+  ],
+  "field.incidentDate.label": [{ "type": 0, "value": "Notikuma datums" }],
+  "field.incidentDate.meaning": [{ "type": 0, "value": "Datums, kurā notika negadījums." }],
+  "field.incidentNotificationDate.label": [
+    { "type": 0, "value": "Pirmās paziņošanas datums (FNOL)" }
+  ],
+  "field.incidentNotificationDate.meaning": [
+    {
+      "type": 0,
+      "value": "Datums, kad šis atlīdzību administrators pirmoreiz saņēma paziņojumu no jebkuras personas, ne obligāti prasītāja. Nevis datums, kad paziņots citam apdrošinātājam vai organizācijai."
+    }
+  ],
+  "field.incidentCountry.label": [{ "type": 0, "value": "Notikuma valsts" }],
+  "field.incidentCountry.meaning": [
+    {
+      "type": 0,
+      "value": "Valsts, kurā notika negadījums; saglabā ievadīto vērtību, nenosakot piemērojamos tiesību aktus."
+    }
+  ],
+  "field.claimantName.label": [{ "type": 0, "value": "Prasītāja nosaukums" }],
+  "field.claimantName.meaning": [
+    {
+      "type": 0,
+      "value": "Prasītāja vārds vai uzņēmuma nosaukums. Nav atsevišķu personas veida vai juridiskās identitātes lauku."
+    }
+  ],
+  "field.insurerName.label": [{ "type": 0, "value": "Iespējami atbildīgais apdrošinātājs" }],
+  "field.insurerName.meaning": [
+    {
+      "type": 0,
+      "value": "Apdrošinātājs, kura atbildība tiek apgalvota. Ieraksts nenosaka galīgo atbildību vai vietu regresa ķēdē."
+    }
+  ],
+  "field.claimedAmount.label": [{ "type": 0, "value": "Pieprasītā summa" }],
+  "field.claimedAmount.meaning": [
+    {
+      "type": 0,
+      "value": "Prasītāja pieprasītā summa precīzā nenegatīva decimālskaitļa formā. Nulle ir reģistrēta summa, nevis nezināmas vērtības aizstājējs."
+    }
+  ],
+  "field.claimedCurrency.label": [{ "type": 0, "value": "Pieprasītās summas valūta" }],
+  "field.claimedCurrency.meaning": [
+    {
+      "type": 0,
+      "value": "Trīs lielo burtu valūtas identifikators; netiek veikta valūtas konvertēšana vai secinājumi pēc reģistra."
+    }
+  ],
+  "field.caseReference.label": [{ "type": 0, "value": "Administratora lietas numurs" }],
+  "field.caseReference.meaning": [
+    {
+      "type": 0,
+      "value": "Numurs, ko piešķīris šī reģistra atlīdzību administrators, nevis apdrošinātāja numurs. Unikāls, nemaināms un reģistrjutīgs vienas instalācijas ietvaros."
+    }
+  ],
+  "field.paymentDecisionDate.label": [{ "type": 0, "value": "Izmaksas lēmuma datums" }],
+  "field.paymentDecisionDate.meaning": [
+    {
+      "type": 0,
+      "value": "Datums, kad šis administrators nolēma izmaksājamo summu. Tukšs līdz lēmuma reģistrēšanai; nav maksājums vai bankas rīkojums."
+    }
+  ],
+  "field.payableAmount.label": [{ "type": 0, "value": "Izmaksājamā summa" }],
+  "field.payableAmount.meaning": [
+    {
+      "type": 0,
+      "value": "Nolemtā izmaksājamā summa precīzā nenegatīva decimālskaitļa formā. Tukša līdz lēmumam; var atšķirties no pieprasītās summas."
+    }
+  ],
+  "field.payableCurrency.label": [{ "type": 0, "value": "Izmaksājamās summas valūta" }],
+  "field.payableCurrency.meaning": [
+    {
+      "type": 0,
+      "value": "Nolemtās summas valūta. Tukša līdz lēmumam; tai nav jāsakrīt ar pieprasītās summas valūtu."
+    }
+  ],
+  "field.paymentDate.label": [{ "type": 0, "value": "Maksājuma datums" }],
+  "field.paymentDate.meaning": [
+    {
+      "type": 0,
+      "value": "Datums, kad nolemtā summa faktiski samaksāta pēc operatora ieraksta. Tukšs, ja nav samaksāts vai nav zināms. Tikai viens pilns maksājums; reģistrēšana neveic un neatkarīgi nepārbauda bankas pārskaitījumu."
+    }
+  ],
+  "field.status.label": [{ "type": 0, "value": "Lietas statuss" }],
+  "field.status.meaning": [
+    {
+      "type": 0,
+      "value": "Administratīvais stāvoklis ATVĒRTA vai SLĒGTA neatkarīgi no lēmuma un maksājuma. Citu lietas statusu nav."
+    }
+  ],
+  "group.registration.label": [{ "type": 0, "value": "Reģistrācija" }],
+  "group.registration.meaning": [
+    {
+      "type": 0,
+      "value": "Saglabāt pieņemtos reģistrācijas faktus vai kopā aizstāt visus septiņus ievades laukus."
+    }
+  ],
+  "group.decision.label": [{ "type": 0, "value": "Izmaksas lēmums" }],
+  "group.decision.meaning": [
+    {
+      "type": 0,
+      "value": "Saglabāt pieņemto lēmumu, kopā aizstāt tā datumu, summu un valūtu vai to dzēst."
+    }
+  ],
+  "group.payment.label": [{ "type": 0, "value": "Maksājuma ieraksts" }],
+  "group.payment.meaning": [
+    {
+      "type": 0,
+      "value": "Saglabāt pieņemto maksājuma ierakstu, aizstāt tā datumu vai dzēst reģistrēto datumu; dzēšana neatceļ ārēju pārskaitījumu."
+    }
+  ],
+  "notice.unreachable": [{ "type": 0, "value": "Vietējais pakalpojums nav sasniedzams." }],
+  "notice.invalidHttp": [
+    { "type": 0, "value": "Vietējais pakalpojums atgrieza nederīgu HTTP " },
+    { "type": 1, "value": "status" },
+    { "type": 0, "value": " atbildi." }
+  ],
+  "notice.fileTooLarge": [
+    { "type": 0, "value": "Izvēlētais fails pārsniedz " },
+    { "type": 1, "value": "maximumBytes" },
+    { "type": 0, "value": " baitus." }
+  ],
+  "notice.fileUnreadable": [{ "type": 0, "value": "Izvēlēto failu neizdevās nolasīt." }],
+  "notice.exportInvalid": [
+    { "type": 0, "value": "Atkopšanas eksporta atbilde neizturēja protokola pārbaudi." }
+  ],
+  "notice.incomplete": [{ "type": 0, "value": "Operācija netika pabeigta." }],
+  "notice.definitionMismatch": [
+    {
+      "type": 0,
+      "value": "Instalētais tīmekļa līgums neatbilst pārlūka resursiem. Pārlādējiet pēc atbilstošu resursu publicēšanas."
+    }
+  ],
+  "notice.invalidSession": [{ "type": 0, "value": "Nederīga sesijas atbilde." }],
+  "notice.missingCsrf": [
+    { "type": 0, "value": "Autentificētajā sesijā nav pretviltošanas marķiera." }
+  ],
+  "notice.dismissed": [{ "type": 0, "value": "Sagatave noraidīta." }],
+  "notice.alreadyDismissed": [{ "type": 0, "value": "Sagatave jau bija noraidīta." }],
+  "notice.retained": [{ "type": 0, "value": "Atkopšanas materiāls saglabāts." }],
+  "notice.existing": [{ "type": 0, "value": "Atkopšanas materiāls jau bija saglabāts." }],
+  "notice.accepted": [
+    { "type": 0, "value": "Pieņemta precīzā operācija " },
+    { "type": 1, "value": "operationId" },
+    { "type": 0, "value": "." }
+  ],
+  "notice.digestUnavailable": [
+    { "type": 0, "value": "Precīzā atkopšanas kontrolsumma nav pieejama; pārbaudiet sagatavi." }
+  ],
+  "notice.exportStarted": [
+    {
+      "type": 0,
+      "value": "Atkopšanas eksports sākts. Fails satur prasītāja datus; glabājiet to privāti."
+    }
+  ],
+  "notice.inspectBeforeRetry": [
+    { "type": 0, "value": "Pirms precīzās operācijas atkārtošanas pārbaudiet atkopšanu." }
+  ],
+  "notice.inspectBeforeAction": [
+    { "type": 0, "value": "Pirms citas darbības pārbaudiet atkopšanu." }
+  ],
+  "notice.keptForRecovery": [
+    {
+      "type": 0,
+      "value": "Sagatavotais pieprasījums ir saglabāts. Izmantojiet atkopšanu, lai to pārbaudītu, atrisinātu vai noraidītu."
+    }
+  ],
+  "notice.unknownDiagnostic": [
+    {
+      "type": 0,
+      "value": "Skaidrojums nav pieejams. Ievērojiet paziņoto rezultātu un atkopšanas norādījumus; neuzskatiet to par atļauju atkārtot."
+    }
+  ],
+  "token.OPENED": [{ "type": 0, "value": "ATVĒRTA" }],
+  "token.CLOSED": [{ "type": 0, "value": "SLĒGTA" }],
+  "token.KEEP": [{ "type": 0, "value": "SAGLABĀT" }],
+  "token.REPLACE": [{ "type": 0, "value": "AIZSTĀT" }],
+  "token.CLEAR": [{ "type": 0, "value": "DZĒST" }],
+  "token.PENDING": [{ "type": 0, "value": "GAIDOŠA" }],
+  "token.ACCEPTED": [{ "type": 0, "value": "PIEŅEMTA" }],
+  "token.REVOKED": [{ "type": 0, "value": "ATSAUKTA" }],
+  "token.REJECTED": [{ "type": 0, "value": "NORAIDĪTA" }],
+  "token.ERROR": [{ "type": 0, "value": "Izpildes kļūda" }],
+  "token.REVOKED_BEFORE_EXECUTION": [{ "type": 0, "value": "Atsaukts pirms izpildes" }],
+  "token.ENVELOPE": [{ "type": 0, "value": "APLOKSNE" }],
+  "token.UNBOUND_CANONICAL_RECORD": [{ "type": 0, "value": "Nesaistīts kanoniskais ieraksts" }],
+  "token.FOUND": [{ "type": 0, "value": "ATRASTA" }],
+  "token.NOT_FOUND": [{ "type": 0, "value": "NAV ATRASTA" }],
+  "ui.language": [{ "type": 0, "value": "Saskarnes valoda" }],
+  "ui.displayLocale": [{ "type": 0, "value": "Attēlošanas formāts" }],
+  "ui.preferencesHint": [
+    {
+      "type": 0,
+      "value": "Tikai attēlošanai. Ievadītie datumi un summas saglabā kanonisko formātu."
+    }
+  ],
+  "ui.preferencesChanged": [{ "type": 0, "value": "Attēlošanas iestatījumi mainīti." }],
+  "ui.preferencesNotSaved": [
+    { "type": 0, "value": "Iestatījumi darbojas šajā sesijā, taču tos neizdevās saglabāt pārlūkā." }
+  ],
+  "ui.pseudo": [{ "type": 0, "value": "Izvērsta angļu valoda (izkārtojuma pārbaude)" }],
+  "ui.loadingSession": [{ "type": 0, "value": "Ielādē vietējo sesiju…" }],
+  "ui.tryAgain": [{ "type": 0, "value": "Mēģināt vēlreiz" }],
+  "ui.trustedInstallation": [{ "type": 0, "value": "Uzticama vietējā instalācija" }],
+  "ui.signOut": [{ "type": 0, "value": "Izrakstīties" }],
+  "ui.primary": [{ "type": 0, "value": "Galvenā navigācija" }],
+  "ui.cases": [{ "type": 0, "value": "Lietas" }],
+  "ui.recovery": [{ "type": 0, "value": "Atkopšana" }],
+  "ui.operations": [{ "type": 0, "value": "Operācijas" }],
+  "ui.loadingDefinition": [{ "type": 0, "value": "Ielādē kodola definīciju…" }],
+  "ui.loginInstructions": [
+    {
+      "type": 0,
+      "value": "Ievadiet sākotnējās piekļuves atslēgu no privātā faila, kas norādīts, palaižot vietējo tīmekļa serveri."
+    }
+  ],
+  "ui.credential": [{ "type": 0, "value": "Sākotnējās piekļuves atslēga" }],
+  "ui.signingIn": [{ "type": 0, "value": "Pierakstās…" }],
+  "ui.signIn": [{ "type": 0, "value": "Pierakstīties" }],
+  "ui.caseReference": [{ "type": 0, "value": "lietas numurs" }],
+  "ui.caseRow": [
+    { "type": 1, "value": "status" },
+    { "type": 0, "value": " · redakcija " },
+    { "type": 1, "value": "revision" }
+  ],
+  "ui.exactCaseReference": [{ "type": 0, "value": "Precīzs lietas numurs" }],
+  "ui.findCase": [{ "type": 0, "value": "Atrast lietu" }],
+  "ui.loading": [{ "type": 0, "value": "Ielādē…" }],
+  "ui.reloadCases": [{ "type": 0, "value": "Pārlādēt lietas" }],
+  "ui.openNewCase": [{ "type": 0, "value": "Atvērt jaunu lietu" }],
+  "ui.loadingCases": [{ "type": 0, "value": "Ielādē lietas…" }],
+  "ui.moreCases": [{ "type": 0, "value": "Ielādēt vēl lietas" }],
+  "ui.acceptedHistory": [{ "type": 0, "value": "Pieņemtā vēsture" }],
+  "ui.historyHint": [
+    {
+      "type": 0,
+      "value": "Vēstures ieraksti ir tikai lasāmi. Izvērsiet ierakstu, lai skatītu pieņemto stāvokli un tā autoru."
+    }
+  ],
+  "ui.historySummary": [
+    { "type": 1, "value": "command" },
+    { "type": 0, "value": " · redakcija " },
+    { "type": 1, "value": "revision" },
+    { "type": 0, "value": " · " },
+    { "type": 1, "value": "timestamp" }
+  ],
+  "ui.receiptAttribution": [
+    { "type": 0, "value": "Operācija " },
+    { "type": 1, "value": "operationId" },
+    { "type": 0, "value": " · reģistrēja " },
+    { "type": 1, "value": "actor" },
+    { "type": 0, "value": " · " },
+    { "type": 1, "value": "state" }
+  ],
+  "ui.exactReplay": [{ "type": 0, "value": "precīzs atkārtojums" }],
+  "ui.accepted": [{ "type": 0, "value": "pieņemta" }],
+  "ui.historyContext": [
+    { "type": 0, "value": "vēstures operācija " },
+    { "type": 1, "value": "operationId" }
+  ],
+  "ui.loadingHistory": [{ "type": 0, "value": "Ielādē pieņemto vēsturi…" }],
+  "ui.moreHistory": [{ "type": 0, "value": "Ielādēt vēl vēsturi" }],
+  "ui.availableCommands": [{ "type": 0, "value": "Pieejamās komandas" }],
+  "ui.commandDescription": [
+    { "type": 1, "value": "label" },
+    { "type": 0, "value": ": " },
+    { "type": 1, "value": "meaning" }
+  ],
+  "ui.loadingCurrentCase": [{ "type": 0, "value": "Ielādē pašreizējo lietu…" }],
+  "ui.caseNotFound": [{ "type": 0, "value": "Lieta nav atrasta." }],
+  "ui.currentCase": [{ "type": 0, "value": "pašreizējā lieta" }],
+  "ui.caseDetail": [{ "type": 0, "value": "Lietas informācija" }],
+  "ui.backToCases": [{ "type": 0, "value": "Atpakaļ uz lietām" }],
+  "ui.exactReference": [
+    { "type": 0, "value": "Precīzs numurs: " },
+    { "type": 1, "value": "reference" }
+  ],
+  "ui.unchangedUntilSubmit": [
+    {
+      "type": 0,
+      "value": "Pieņemtais stāvoklis nemainās, kamēr precīzais sagatavotais pieprasījums nav apzināti iesniegts."
+    }
+  ],
+  "ui.observedReceipt": [
+    { "type": 0, "value": "Pieņemtā operācija " },
+    { "type": 1, "value": "operationId" },
+    { "type": 0, "value": " · " },
+    { "type": 1, "value": "command" },
+    { "type": 0, "value": " · reģistrēja " },
+    { "type": 1, "value": "actor" }
+  ],
+  "ui.observedContext": [
+    { "type": 0, "value": "novērotā operācija " },
+    { "type": 1, "value": "operationId" }
+  ],
+  "ui.operationNotObserved": [{ "type": 0, "value": "Operācija nav novērota." }],
+  "ui.operationLookup": [{ "type": 0, "value": "Operācijas meklēšana" }],
+  "ui.exactOperationId": [{ "type": 0, "value": "Precīzs operācijas ID" }],
+  "ui.lookingUp": [{ "type": 0, "value": "Meklē…" }],
+  "ui.observeOperation": [{ "type": 0, "value": "Novērot operāciju" }],
+  "ui.cancel": [{ "type": 0, "value": "Atcelt" }],
+  "ui.notRecorded": [{ "type": 0, "value": "Nav reģistrēts" }],
+  "ui.unavailable": [{ "type": 0, "value": "Nav pieejams" }],
+  "ui.revision": [
+    { "type": 0, "value": "Redakcija " },
+    { "type": 1, "value": "revision" }
+  ],
+  "ui.revisionLabel": [{ "type": 0, "value": "Redakcija" }],
+  "ui.characterWarning": [
+    { "type": 0, "value": "Satur " },
+    { "type": 1, "value": "characters" }
+  ],
+  "ui.caseFieldsContext": [
+    { "type": 0, "value": "Lietas lauki: " },
+    { "type": 1, "value": "context" }
+  ],
+  "ui.acceptedSummary": [{ "type": 0, "value": "pieņemtais lietas kopsavilkums" }],
+  "ui.copy": [
+    { "type": 0, "value": "Kopēt: " },
+    { "type": 1, "value": "label" }
+  ],
+  "ui.copied": [
+    { "type": 0, "value": "Nokopēts: " },
+    { "type": 1, "value": "label" },
+    { "type": 0, "value": "." }
+  ],
+  "ui.copyFallback": [
+    { "type": 0, "value": "Kopēšanas alternatīva: " },
+    { "type": 1, "value": "label" }
+  ],
+  "ui.textHint": [
+    { "type": 0, "value": "Līdz " },
+    { "type": 1, "value": "maximum" },
+    { "type": 0, "value": " rakstzīmēm." }
+  ],
+  "ui.dateHint": [{ "type": 0, "value": "Izmantojiet yyyy-MM-dd (Gregora kalendāra datums)." }],
+  "ui.amountHint": [
+    { "type": 0, "value": "Precīzs decimālskaitlis; līdz " },
+    { "type": 1, "value": "maximum" },
+    { "type": 0, "value": " zīmēm aiz komata. Izmantojiet punktu, nevis komatu." }
+  ],
+  "ui.currencyHint": [
+    { "type": 1, "value": "length" },
+    { "type": 0, "value": " lielie burti." }
+  ],
+  "ui.command": [{ "type": 0, "value": "Komanda" }],
+  "ui.reference": [
+    { "type": 0, "value": "Lietas numurs: " },
+    { "type": 1, "value": "reference" }
+  ],
+  "ui.noAuthoredValues": [{ "type": 0, "value": "Šai komandai nav ievadāmu vērtību." }],
+  "ui.action": [{ "type": 0, "value": "Darbība" }],
+  "ui.correctionHint": [
+    {
+      "type": 0,
+      "value": "Katra labojumu grupa ir norādīta atsevišķi. SAGLABĀT saglabā tās pieņemtās vērtības."
+    }
+  ],
+  "ui.preparing": [{ "type": 0, "value": "Sagatavo…" }],
+  "ui.prepareExact": [{ "type": 0, "value": "Sagatavot precīzo pieprasījumu" }],
+  "ui.retryPrepare": [{ "type": 0, "value": "Atkārtot precīzo sagatavošanu" }],
+  "ui.backWithoutPreparing": [{ "type": 0, "value": "Atpakaļ bez sagatavošanas" }],
+  "ui.changeCommandTitle": [{ "type": 0, "value": "Atmest šo komandas melnrakstu?" }],
+  "ui.changeCommandDescription": [
+    {
+      "type": 0,
+      "value": "Mainot komandu, ievadītās vērtības tiek atmestas un izveidots jauns operācijas ID."
+    }
+  ],
+  "ui.discardAndChange": [{ "type": 0, "value": "Atmest un mainīt komandu" }],
+  "ui.acceptedOperation": [{ "type": 0, "value": "Pieņemtā operācija" }],
+  "ui.operationAccepted": [
+    { "type": 0, "value": "Operācija " },
+    { "type": 1, "value": "operationId" },
+    { "type": 0, "value": " ir pieņemta." }
+  ],
+  "ui.acceptedContext": [
+    { "type": 0, "value": "pieņemtā operācija " },
+    { "type": 1, "value": "operationId" }
+  ],
+  "ui.returnToCase": [{ "type": 0, "value": "Atgriezties lietā" }],
+  "ui.reviewTitle": [{ "type": 0, "value": "Pārskatīt sagatavoto operāciju" }],
+  "ui.reviewDescription": [
+    {
+      "type": 0,
+      "value": "Pieprasījums ir sagatavots, bet pieņemto lietu nav mainījis. Iesniegšana sāk izmaiņu, kuru vairs nevar atcelt."
+    }
+  ],
+  "ui.reviewTarget": [
+    { "type": 0, "value": "Mērķis " },
+    { "type": 1, "value": "reference" },
+    { "type": 0, "value": " · paredzētā redakcija " },
+    { "type": 1, "value": "revision" }
+  ],
+  "ui.operationDigest": [
+    { "type": 0, "value": "Operācija " },
+    { "type": 1, "value": "operationId" },
+    { "type": 0, "value": " · kontrolsumma " },
+    { "type": 1, "value": "digest" }
+  ],
+  "ui.reviewConfirmation": [
+    { "type": 0, "value": "Es iesniegšu tieši šo sagatavoto pieprasījumu." }
+  ],
+  "ui.keepForRecovery": [{ "type": 0, "value": "Saglabāt atkopšanai" }],
+  "ui.submitting": [{ "type": 0, "value": "Iesniedz…" }],
+  "ui.submitExact": [{ "type": 0, "value": "Iesniegt precīzo pieprasījumu" }],
+  "ui.before": [
+    { "type": 0, "value": "Pirms: " },
+    { "type": 1, "value": "value" }
+  ],
+  "ui.after": [
+    { "type": 0, "value": "Pēc: " },
+    { "type": 1, "value": "value" }
+  ],
+  "ui.recoveryView": [{ "type": 0, "value": "Atkopšanas skats" }],
+  "ui.pending": [{ "type": 0, "value": "Gaidošās" }],
+  "ui.terminal": [{ "type": 0, "value": "Noslēgtās" }],
+  "ui.reload": [{ "type": 0, "value": "Pārlādēt" }],
+  "ui.capacity": [
+    { "type": 0, "value": "Gaidošās atkopšanas ietilpība: " },
+    { "type": 1, "value": "count" },
+    { "type": 0, "value": " / " },
+    { "type": 1, "value": "maximum" },
+    { "type": 0, "value": " sagatavēm · " },
+    { "type": 1, "value": "bytes" },
+    { "type": 0, "value": " / " },
+    { "type": 1, "value": "maximumBytes" },
+    { "type": 0, "value": " kanoniskajiem baitiem." }
+  ],
+  "ui.nearCapacity": [
+    {
+      "type": 0,
+      "value": "Tuvojas ietilpības robežai; atrisiniet vai noraidiet zināmās gaidošās sagataves."
+    }
+  ],
+  "ui.recoveryHint": [
+    {
+      "type": 0,
+      "value": "Pēc noklusējuma tiek rādīta gaidošā atkopšana. Noslēgtais skats rāda pieņemtas, noraidītas un atsauktas tiesības, neuzrādot tās kā izpildāmu darbu. Pirms atrisināšanas vai noraidīšanas pārbaudiet servera stāvokli."
+    }
+  ],
+  "ui.recoverySummary": [
+    { "type": 1, "value": "command" },
+    { "type": 0, "value": " · " },
+    { "type": 1, "value": "reference" },
+    { "type": 0, "value": " · " },
+    { "type": 1, "value": "authority" },
+    { "type": 0, "value": " · " },
+    { "type": 1, "value": "operationId" }
+  ],
+  "ui.revocationSummary": [
+    { "type": 0, "value": "ATSAUKTA · " },
+    { "type": 1, "value": "operationId" },
+    { "type": 0, "value": " · " },
+    { "type": 1, "value": "timestamp" }
+  ],
+  "ui.attemptCount": [
+    {
+      "type": 6,
+      "value": "count",
+      "options": {
+        "zero": {
+          "value": [
+            { "type": 0, "value": "Mēģinājumu pierādījumi: parādīti " },
+            { "type": 7 },
+            { "type": 0, "value": "." }
+          ]
+        },
+        "one": {
+          "value": [
+            { "type": 0, "value": "Mēģinājumu pierādījumi: parādīts " },
+            { "type": 7 },
+            { "type": 0, "value": "." }
+          ]
+        },
+        "other": {
+          "value": [
+            { "type": 0, "value": "Mēģinājumu pierādījumi: parādīti " },
+            { "type": 7 },
+            { "type": 0, "value": "." }
+          ]
+        }
+      },
+      "offset": 0,
+      "pluralType": "cardinal"
+    }
+  ],
+  "ui.legacyUncertainty": [{ "type": 0, "value": "Saglabājas agrākā nenoteiktība." }],
+  "ui.moreAttempts": [{ "type": 0, "value": "Ielādēt vēl mēģinājumus" }],
+  "ui.retainedIdentity": [
+    { "type": 0, "value": "Operācija " },
+    { "type": 1, "value": "operationId" },
+    { "type": 0, "value": " · tiesības " },
+    { "type": 1, "value": "authority" },
+    { "type": 0, "value": " · kontrolsumma " },
+    { "type": 1, "value": "digest" }
+  ],
+  "ui.retainedCommand": [
+    { "type": 0, "value": "Lieta " },
+    { "type": 1, "value": "reference" },
+    { "type": 0, "value": " · komanda " },
+    { "type": 1, "value": "command" }
+  ],
+  "ui.retainedFormat": [
+    { "type": 0, "value": "Paredzētā redakcija " },
+    { "type": 1, "value": "revision" },
+    { "type": 0, "value": " · kanoniskais formāts " },
+    { "type": 1, "value": "format" }
+  ],
+  "ui.provenance": [
+    { "type": 0, "value": "Sagatavošanas izcelsme: " },
+    { "type": 1, "value": "version" },
+    { "type": 0, "value": " · " },
+    { "type": 1, "value": "contract" }
+  ],
+  "ui.revokedOperation": [
+    { "type": 0, "value": "Operācija " },
+    { "type": 1, "value": "operationId" },
+    { "type": 0, "value": " atsaukta: " },
+    { "type": 1, "value": "timestamp" },
+    { "type": 0, "value": "." }
+  ],
+  "ui.revokedHint": [
+    { "type": 0, "value": "Atsauktās tiesības ir galīgas. Tās nevar atjaunot vai iesniegt." }
+  ],
+  "ui.inspect": [{ "type": 0, "value": "Pārbaudīt" }],
+  "ui.inspectRevocation": [{ "type": 0, "value": "Pārbaudīt atsaukumu" }],
+  "ui.moreRecovery": [{ "type": 0, "value": "Ielādēt vēl atkopšanu" }],
+  "ui.resolveExact": [{ "type": 0, "value": "Atrisināt precīzo sagatavi" }],
+  "ui.dismissPreparation": [{ "type": 0, "value": "Noraidīt sagatavi" }],
+  "ui.exportEnvelope": [{ "type": 0, "value": "Eksportēt atkopšanas aploksni" }],
+  "ui.recoveryDetails": [{ "type": 0, "value": "Atkopšanas informācija" }],
+  "ui.recoveryDetailsHint": [
+    {
+      "type": 0,
+      "value": "Serveris sniedza pašreizējās tiesības, pierādījumus un novērojuma stāvokli."
+    }
+  ],
+  "ui.observation": [
+    { "type": 0, "value": "Novērojums: " },
+    { "type": 1, "value": "state" }
+  ],
+  "ui.observedAccepted": [
+    { "type": 0, "value": "Novērota pieņemta operācija " },
+    { "type": 1, "value": "operationId" },
+    { "type": 0, "value": "." }
+  ],
+  "ui.exportTitle": [{ "type": 0, "value": "Eksportēt atkopšanas aploksni?" }],
+  "ui.resolveTitle": [{ "type": 0, "value": "Atrisināt precīzo sagatavi?" }],
+  "ui.dismissTitle": [{ "type": 0, "value": "Noraidīt sagatavi?" }],
+  "ui.exportWarning": [
+    {
+      "type": 0,
+      "value": "Fails satur prasītāja datus un atkopšanas baitus. Saglabājiet to tikai privātā krātuvē."
+    }
+  ],
+  "ui.recoveryConfirmHint": [
+    {
+      "type": 0,
+      "value": "Darbība izmanto parādīto operācijas ID un pieprasījuma kontrolsummu. Noteicošs paliek serveris."
+    }
+  ],
+  "ui.working": [{ "type": 0, "value": "Apstrādā…" }],
+  "ui.confirmResolve": [{ "type": 0, "value": "Apstiprināt atrisināšanu" }],
+  "ui.confirmDismiss": [{ "type": 0, "value": "Apstiprināt noraidīšanu" }],
+  "ui.confirmExport": [{ "type": 0, "value": "Apstiprināt eksportu" }],
+  "ui.artifact": [
+    { "type": 0, "value": "Artefakts " },
+    { "type": 1, "value": "kind" },
+    { "type": 0, "value": " · avota kontrolsumma " },
+    { "type": 1, "value": "digest" }
+  ],
+  "ui.importTarget": [
+    { "type": 0, "value": "Dekodētais mērķis " },
+    { "type": 1, "value": "reference" },
+    { "type": 0, "value": " · komanda " },
+    { "type": 1, "value": "command" },
+    { "type": 0, "value": " · paredzētā redakcija " },
+    { "type": 1, "value": "revision" }
+  ],
+  "ui.importHint": [
+    {
+      "type": 0,
+      "value": "Artefakts tiek saglabāts apzinātai atkopšanas darbībai; tas nekad netiek iesniegts automātiski."
+    }
+  ],
+  "ui.importEnvelope": [{ "type": 0, "value": "Importēt atkopšanas aploksni" }],
+  "ui.importRecord": [{ "type": 0, "value": "Importēt kanonisko ierakstu" }],
+  "ui.importTitle": [{ "type": 0, "value": "Saglabāt importēto atkopšanas materiālu?" }],
+  "ui.importDescription": [
+    {
+      "type": 0,
+      "value": "Priekšskatījums tiek saglabāts tikai pēc apstiprinājuma un nekad netiek iesniegts automātiski."
+    }
+  ],
+  "ui.retainForRecovery": [{ "type": 0, "value": "Saglabāt atkopšanai" }],
+  "ui.keepEditing": [{ "type": 0, "value": "Turpināt rediģēšanu" }]
+}
