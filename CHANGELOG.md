@@ -43,6 +43,17 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Internal
 
+- Give CI evidence one declared producer per stage and reject duplicate, wrong-owner, stale or
+  unsafe artifacts before consolidation. Preserve complete-attempt qualification and explicitly
+  direct partial reruns to **Re-run all jobs**.
+- Structurally qualify both workflow YAML extensions, real credential settings, Gate reachability,
+  guarded artifact uploads and event-isolated concurrency. Retain safe stage diagnostics instead
+  of losing failure explanations with runner-temporary logs.
+- Separate scheduled dependency freshness from required vulnerability/deprecation/signature/license
+  and locked-graph checks. Semantic review records now say `source-reviewed`, not owner-approved.
+  Add explicit PR read-back and owner-only settings plan/apply/check tooling; merging source does
+  not itself activate native repository protections. See [CI governance](docs/ci-governance.md).
+
 - Emit one shared lazy host-failure validator rather than duplicate it across endpoint groups.
   The aggregate compressed JavaScript budget is revised from 192 KiB to 200 KiB for the expanded
   diagnostic contract; per-chunk, initial-load, stylesheet and coverage limits are unchanged.

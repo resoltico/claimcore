@@ -7,6 +7,7 @@ module TestSuiteStages =
     let private stage id platform procedure outputs =
         {
             Id = id
+            Producer = id
             AllowedPlatforms = [ platform ]
             EvidencePlatform = Some platform
             Procedure = procedure
@@ -20,6 +21,7 @@ module TestSuiteStages =
     let private portable id procedure outputs =
         {
             Id = id
+            Producer = id
             AllowedPlatforms = [ "linux"; "macos"; "windows" ]
             EvidencePlatform = Some "linux"
             Procedure = procedure

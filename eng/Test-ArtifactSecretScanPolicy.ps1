@@ -64,6 +64,22 @@ try {
     if ((Invoke-Scanner @($safe)).ExitCode -ne 0) {
         throw "A benign artifact failed the scan."
     }
+    $previousArchive = $env:CLAIMCORE_SCANNER_ARCHIVE
+    try {
+        $env:CLAIMCORE_SCANNER_ARCHIVE = $archivePath
+        $environmentOutput = @(& $pwsh -NoProfile -File $scanner $safe 2>&1)
+        if ($LASTEXITCODE -ne 0) {
+            throw "An environment-supplied scanner archive did not preserve positional artifact paths."
+        }
+    }
+    finally {
+        if ($null -eq $previousArchive) {
+            Remove-Item Env:CLAIMCORE_SCANNER_ARCHIVE -ErrorAction SilentlyContinue
+        }
+        else {
+            $env:CLAIMCORE_SCANNER_ARCHIVE = $previousArchive
+        }
+    }
     $discarded = @(& $pwsh -NoProfile -File $scanner -GitleaksArchivePath $safe $safe 2>&1)
     if ($LASTEXITCODE -eq 0) {
         throw "An unverified scanner archive was accepted."

@@ -4,7 +4,7 @@ open System
 
 [<RequireQualifiedAccess>]
 module EvidenceCommands =
-    let private loadStages (root: RepositoryRoot) (runId: string) attempt =
+    let private loadCollectedStages (root: RepositoryRoot) (runId: string) attempt =
         let loaded =
             Stages.definitions
             |> List.map (EvidenceReconciliation.loadStage root runId attempt)
@@ -23,6 +23,16 @@ module EvidenceCommands =
                     | Ok value -> Some value
                     | _ -> None)
             )
+
+    let private loadStages root runId attempt =
+        StageCollection.collect root runId attempt
+        |> Result.bind (fun () -> loadCollectedStages root runId attempt)
+        |> Result.mapError (fun message ->
+            if attempt > 1 then
+                message
+                + " Use Re-run all jobs: every producer must belong to this complete attempt."
+            else
+                message)
 
     let private stageIdentityError (source: SourceIdentity) (stages: StageManifest list) =
         if

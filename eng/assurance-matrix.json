@@ -643,6 +643,27 @@
       ]
     },
     {
+      "id": "assurance-governance:producer-ownership-and-source-review",
+      "dimensions": [
+        "documentation"
+      ],
+      "subject": "Producer manifests retain artifact ownership and are rejected before copying on wrong owner, duplicate or unregistered stage, stale run or attempt, existing destination or symlink. Source reviews cannot claim independent owner approval; legacy approval registries are refused. Workflow/API/node policy negative controls are additionally required by the workflow-toolchain-negative-controls stage.",
+      "tests": [
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.isolated producer collection.every stage has a unique identity and declared owner",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.isolated producer collection.refuses symlinked producer evidence",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.isolated producer collection.refuses to overwrite an existing destination",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.isolated producer collection.rejects a stage from the wrong producer before copying",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.isolated producer collection.rejects a stale attempt identity",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.isolated producer collection.rejects a stale run identity",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.isolated producer collection.rejects downloaded reconciliation-owned evidence",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.isolated producer collection.rejects duplicate stage data before copying any record",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.isolated producer collection.rejects unregistered stages",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.isolated producer collection.retains exact manifests from their registered producer",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.semantic review subjects.legacy approval registry schema is refused without compatibility fallback",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.semantic review subjects.source review is not accepted as independent owner approval"
+      ]
+    },
+    {
       "id": "assurance-gui:case-list-detail-history",
       "dimensions": [
         "webGui"

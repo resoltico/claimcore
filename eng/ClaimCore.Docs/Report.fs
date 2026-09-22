@@ -27,7 +27,7 @@ module AtomicFile =
                 else
                     Directory.CreateDirectory(current) |> ignore
 
-    let write (root: RepositoryRoot) (relative: string) (bytes: byte array) =
+    let private writeFile overwrite (root: RepositoryRoot) (relative: string) (bytes: byte array) =
         match Repository.registeredPath root relative with
         | Error message -> Error message
         | Ok _ when not (relative.StartsWith("artifacts/", StringComparison.Ordinal)) ->
@@ -47,13 +47,18 @@ module AtomicFile =
                 stream.Write(bytes, 0, bytes.Length)
                 stream.Flush(true)
                 stream.Close()
-                File.Move(temporary, target, true)
+                File.Move(temporary, target, overwrite)
                 Ok target
             with error ->
                 if File.Exists(temporary) then
                     File.Delete(temporary)
 
                 Error(error.GetType().Name + ": " + error.Message)
+
+    let write root relative bytes = writeFile true root relative bytes
+
+    /// Exclusive atomic publication; an existing report is never replaced.
+    let writeNew root relative bytes = writeFile false root relative bytes
 
 [<RequireQualifiedAccess>]
 module StageManifestFormat =

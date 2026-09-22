@@ -71,6 +71,7 @@ module EvidenceReport =
         writer.WriteString("synchronized", synchronized)
         writer.WriteString("behaviorExercised", behavior)
         writer.WriteString("semanticReview", semantic)
+        writer.WriteString("ownerAuthorization", "not-assessed-by-ci")
         writer.WriteStartArray("semanticReviewerKinds")
 
         reviewerKinds
@@ -107,7 +108,7 @@ module EvidenceReport =
             writer
             "passed"
             "passed"
-            "repository-attested"
+            "source-reviewed"
             (result.Reviews |> List.map _.ReviewerKind)
             []
 

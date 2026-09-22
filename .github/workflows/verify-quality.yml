@@ -158,6 +158,7 @@ jobs:
             else
               manifest_status=$?
             fi
+            node eng/ci/stage-report.mjs quality "$stage" "$status" "$manifest_status" "$log" || overall=1
             if [[ "$status" -ne 0 || "$manifest_status" -ne 0 ]]; then overall=1; fi
           }
           run_stage analyzer-suppressions pwsh -File eng/Check-AnalyzerSuppressions.ps1
@@ -169,7 +170,7 @@ jobs:
           run_stage test-diagnostic-negative-controls pwsh -File eng/Test-TestDiagnosticPrivacy.ps1
           run_stage convergence-assurance pwsh -File eng/Check-ConvergenceAssurance.ps1
           run_stage convergence-assurance-negative-controls pwsh -File eng/Test-ConvergenceAssurancePolicy.ps1
-          run_stage dependency-currency pwsh -File eng/Check-DependencyCurrency.ps1
+          run_stage dependency-security pwsh -File eng/Check-DependencySecurity.ps1
           run_stage fantomas bash eng/Check-Fantomas.sh
           run_stage fsharplint bash eng/Check-FSharpLint.sh
           run_stage actionlint actionlint -color
@@ -196,7 +197,8 @@ jobs:
         run: |
           pwsh -NoProfile -File eng/Scan-ArtifactSecrets.ps1 `
             "artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/" `
-            artifacts/stages/container-sbom/
+            artifacts/stages/container-sbom/ `
+            artifacts/diagnostics/quality/
       - name: Upload quality stage evidence
         if: ${{ always() && steps.artifact_scan.outcome == 'success' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -213,3 +215,11 @@ jobs:
           path: artifacts/stages/container-sbom/
           if-no-files-found: error
           retention-days: 30
+      - name: Upload safe quality stage diagnostics
+        if: ${{ always() && steps.artifact_scan.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: claimcore-diagnostics-quality-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/diagnostics/quality/
+          if-no-files-found: error
+          retention-days: 14

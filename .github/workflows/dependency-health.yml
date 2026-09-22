@@ -1,0 +1,44 @@
+name: ClaimCore dependency health
+
+on:
+  schedule:
+    - cron: "41 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: claimcore-dependency-health-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  health:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/toolchain
+      - name: Restore the exact graph
+        run: |
+          dotnet restore ClaimCore.slnx --locked-mode
+          npm --prefix web ci --ignore-scripts
+      - name: Report available updates without changing the graph
+        shell: pwsh
+        run: pwsh -NoProfile -File eng/Check-DependencyCurrency.ps1
+      - name: Scan the safe dependency report
+        id: artifact_scan
+        if: always()
+        shell: pwsh
+        run: pwsh -NoProfile -File eng/Scan-ArtifactSecrets.ps1 artifacts/dependency-health/
+      - name: Retain the actionable dependency report
+        if: ${{ always() && steps.artifact_scan.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: claimcore-dependency-health-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/dependency-health/
+          if-no-files-found: error
+          retention-days: 14

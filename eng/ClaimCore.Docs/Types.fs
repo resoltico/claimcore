@@ -173,6 +173,7 @@ type OutputRequirement =
 type StageDefinition =
     {
         Id: string
+        Producer: string
         AllowedPlatforms: string list
         EvidencePlatform: string option
         Procedure: string list
