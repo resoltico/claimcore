@@ -68,6 +68,10 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Internal
 
+- Refresh the locked frontend formatter and NuGet test dependency graph to current releases,
+  including TypeShape 10 and Application Insights 3. Remove the corresponding dependency holds;
+  the scheduled dependency-health check now has no outstanding updates.
+
 - Qualify ICU catalogs, generated arguments, rendered tokens and locale-blind request coordinators
   in the existing mandatory contract/lint gates, with language-state and three-browser scenarios.
   Split synchronous catalogs into a static chunk and explicitly revise the aggregate compressed
