@@ -339,7 +339,7 @@
       "reviewer": "Localization: agent design, state-lifetime, typed catalog and exact-format source review; publication/browser qualification tracked separately; no independent owner or native-speaker approval",
       "reviewedOn": "2026-09-22",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "34d8955c207270d0739884925d37b8af4ea80c3917c765add0f9b1b0ccc74909",
+      "reviewSubjectHash": "e8d92e2fa821a9f2c4d4c3aef6cb1faa8a77fdde44594b81334debf2f889158e",
       "wholeFiles": [
         "docs/diagnostics.md",
         "docs/localization.md",

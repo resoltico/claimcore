@@ -107,22 +107,43 @@ export const inspectPending = async (page: Page, identity: PreparedIdentity): Pr
   await row.getByRole("button", { name: "Inspect", exact: true }).click();
   await expect(page.getByRole("dialog")).toContainText(identity.requestSha256);
 };
+const collectLayoutMetrics = () => {
+  const clientWidth = document.documentElement.clientWidth;
+  const offenders = [...document.querySelectorAll("*")]
+    .map((element) => ({ element, rect: element.getBoundingClientRect() }))
+    .filter(({ rect }) => rect.left < -1 || rect.right > clientWidth + 1)
+    .slice(0, 5)
+    .map(({ element, rect }) => ({
+      tag: element.tagName.toLowerCase(),
+      className: typeof element.className === "string" ? element.className : "",
+      left: Math.round(rect.left),
+      right: Math.round(rect.right),
+      width: Math.round(rect.width),
+    }));
+  const scrollable = [...document.querySelectorAll("*")]
+    .filter(
+      (element) =>
+        element !== document.documentElement &&
+        element !== document.body &&
+        element.scrollWidth > element.clientWidth + 1,
+    )
+    .sort((left, right) => right.scrollWidth - left.scrollWidth)
+    .slice(0, 10)
+    .map((element) => ({
+      tag: element.tagName.toLowerCase(),
+      className: typeof element.className === "string" ? element.className : "",
+      clientWidth: element.clientWidth,
+      scrollWidth: element.scrollWidth,
+    }));
+  return {
+    clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+    offenders,
+    scrollable,
+  };
+};
 export const noHorizontalOverflow = async (page: Page, stage: "narrow" | "zoom"): Promise<void> => {
-  const metrics = await page.evaluate(() => {
-    const clientWidth = document.documentElement.clientWidth;
-    const offenders = [...document.querySelectorAll("*")]
-      .map((element) => ({ element, rect: element.getBoundingClientRect() }))
-      .filter(({ rect }) => rect.right > clientWidth + 1)
-      .slice(0, 5)
-      .map(({ element, rect }) => ({
-        tag: element.tagName.toLowerCase(),
-        className: typeof element.className === "string" ? element.className : "",
-        left: Math.round(rect.left),
-        right: Math.round(rect.right),
-        width: Math.round(rect.width),
-      }));
-    return { clientWidth, scrollWidth: document.documentElement.scrollWidth, offenders };
-  });
+  const metrics = await page.evaluate(collectLayoutMetrics);
   if (metrics.scrollWidth <= metrics.clientWidth + 1) return;
   const engine = process.env["CLAIMCORE_WEB_E2E_ENGINE"];
   if (engine !== undefined && ["chromium", "firefox", "webkit"].includes(engine)) {
@@ -137,7 +158,13 @@ export const noHorizontalOverflow = async (page: Page, stage: "narrow" | "zoom")
       right,
       width,
     }));
-    await writeFile(report, `${JSON.stringify({ stage, ...metrics, offenders })}\n`);
+    const scrollable = metrics.scrollable.map(({ tag, className, clientWidth, scrollWidth }) => ({
+      tag,
+      className: className.replace(/[^a-zA-Z0-9_-]/gu, "").slice(0, 40),
+      clientWidth,
+      scrollWidth,
+    }));
+    await writeFile(report, `${JSON.stringify({ stage, ...metrics, offenders, scrollable })}\n`);
   }
   throw new Error(`E2E_LOCALIZATION_${stage.toUpperCase()}_OVERFLOW`);
 };

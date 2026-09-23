@@ -24,10 +24,7 @@ body {
   margin: 0;
 }
 
-button,
-input,
-select,
-textarea {
+:is(button, input, select, textarea) {
   font: inherit;
 }
 
@@ -174,6 +171,7 @@ button:disabled {
 .operation-editor select,
 .copy-value textarea {
   inline-size: 100%;
+  min-inline-size: 0;
   border: 1px solid #617384;
   border-radius: 0.35rem;
   padding: 0.55rem;
@@ -252,6 +250,7 @@ button:disabled {
   flex-wrap: wrap;
   gap: 0.25rem;
   align-items: center;
+  inline-size: 100%;
   max-inline-size: 100%;
   min-inline-size: 0;
 }
