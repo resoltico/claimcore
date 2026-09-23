@@ -1,90 +1,117 @@
 # ClaimCore
 
-ClaimCore is a deliberately narrow, pre-1.0 claims case register. Its F#/.NET core and PostgreSQL
-store preserve thirteen business fields and every accepted revision; a local React Web host and a
-structured CLI expose the same business rules.
+**A local claims case register with one core for people and automation.**
 
-ClaimCore assumes a single trusted local administrative boundary. Its Web bootstrap credential
-controls local admission but does not identify or authorize individual users. ClaimCore records a
-handler's assertions; it does not adjudicate coverage, transfer money, or provide a remotely
-accessible or multi-tenant service.
+Record claim facts, payment decisions and payment dates through a structured CLI or a browser
+interface. Both use the same F#/.NET core for validation, case transitions and recovery, with
+PostgreSQL storing the current case and its accepted history.
 
-## Applications
+[Get started](docs/getting-started.md) · [Documentation](docs/README.md) ·
+[CLI reference](docs/cli.md) · [Architecture](docs/architecture.md) ·
+[Releases](https://github.com/resoltico/claimcore/releases)
 
-ClaimCore publishes exactly three application executables:
+> **Source preview.** ClaimCore is pre-1.0 software for evaluation with synthetic data, not a
+> production deployment template. The instructions and contracts in a checkout describe that
+> source revision; they may differ from a published release.
 
-| Executable | Purpose | Intended operator |
-|---|---|---|
-| `ClaimCore.Web` | Localhost-only HTTPS React interface for normal case work and recovery. | A trusted human operator. |
-| `ClaimCore.Cli` | Strict JSON CLI-v3 interface for automation and operational use. | Trusted scripts, agents, and terminal users. |
-| `ClaimCore.Database` | Atomic fresh-baseline initialization with an explicit business calendar, read-only verification, and bounded technical-preparation pruning. | A database administrator using the schema-owner credential. |
+## What it records
 
-The Database executable changes ClaimCore's PostgreSQL schema and technical recovery storage. It is
-not a second case-work interface. Product libraries and repository tooling are not additional
-applications.
+The [thirteen-field business record](docs/domain.md) covers incident and notification details,
+parties, claimed and payable amounts, case reference, decision and payment dates, and status.
+Revisions, operation IDs and other technical metadata remain separate.
 
-Runtime operations that use private credentials or artifacts are supported on macOS and Linux.
-Windows remains a source build/test and database-free discovery host; the three applications fail
-closed there for private-file runtime work until an independently verified Windows backend exists.
+Register and amend a case; record or withdraw a payment decision; record or clear a payment date;
+close or reopen the case. Atomic factual corrections preserve accepted history. Payment progress
+and open/closed status are independent: recording payment does not close a case.
 
-The browser supports English, Latvian, Arabic and expanded-English layout testing, with independent
-display formats. Language switching preserves authored requests and recovery state; it does not
-change the installation calendar or recorded currency. See [Browser presentation](docs/localization.md).
+These are the handler's recorded assertions. ClaimCore does not adjudicate insurance coverage,
+transfer funds, or replace a complete claims-management platform. Policies, reserves, banking
+details, notes and attachments are outside the current record.
 
-## Guarantees and limits
+## Interfaces
 
-- `CaseFields` has exactly thirteen business fields; revisions, operation IDs, timestamps,
-  attribution, and available commands remain technical metadata.
-- The closed domain model owns validation and every declared case command, including atomic factual correction.
-- Optimistic concurrency prevents a stale command from silently overwriting a newer revision.
-- Content-bound operation IDs provide exact replay after an uncertain result; durable revocation closes an unaccepted operation without erasing its earlier evidence.
-- Each installation stores one explicit IANA business time zone, so every process uses the same business date.
-- PostgreSQL transactions, structural constraints, and a checksum-bound fresh baseline protect
-  durable state.
-- One semantic contract projects pure CLI-v3/Web-v2 codecs, exact response schemas, generated
-  browser DTOs and validators, keeping adapters aligned with the core.
-- Deterministic, property, PostgreSQL, published-process, three-engine browser, accessibility, and
-  recovery tests exercise the supported boundaries.
+| Application | Use it for |
+|---|---|
+| `ClaimCore.Cli` | Strict JSON commands and structured outcomes for agents, scripts and terminal users. Runs independently of the Web host. |
+| `ClaimCore.Web` | Localhost-only HTTPS browser interface for human case work and explicit recovery. |
+| `ClaimCore.Database` | Schema-owner administration: fresh initialization, read-only verification and bounded pruning of technical preparations. Not a case-work interface. |
 
-The [domain contract](docs/domain.md) is authoritative for field and transition meaning.
+The browser offers English, Latvian and Arabic, independent display formats and right-to-left
+layout. Expanded English is a layout-test pseudolocale. Language changes preserve drafts, prepared
+requests, confirmation and recovery state without changing the installation calendar or recorded
+currency. See [Browser presentation](docs/web.md#browser-presentation).
 
-## Start here
+## Try ClaimCore
 
-This is a source preview. For published release details, see [GitHub Releases](https://github.com/resoltico/claimcore/releases). The
-supported first-run path builds from source, creates a dedicated persistent local PostgreSQL database,
-and launches the published Web host. Follow [Getting started](docs/getting-started.md); it uses only
-synthetic data.
-Pre-1.0 CLI and Web wire shapes may change without a compatibility shim; use the matching generated
-contract and exact fingerprint for a given source revision.
+### Inspect the CLI without a database
 
-The CLI's database-free `help`, `version`, `describe`, and `schema` commands are described in
-[CLI and protocol](docs/cli.md). Contributor builds, tests, and full verification live in one place:
-[Development](docs/development.md).
+After the [Release build](docs/development.md#first-checkout), run these commands from the repository
+root to inspect the semantic summary and machine-readable invocation schema:
 
-## Documentation
+```sh
+dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- describe summary
+dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- schema invocation
+```
 
-- [Documentation map](docs/README.md) routes readers by task.
-- [Domain contract](docs/domain.md) defines the business record and transitions.
-- [Architecture](docs/architecture.md) defines runtime responsibilities and trust boundaries.
-- [Web](docs/web.md), [CLI](docs/cli.md), and [Database](docs/database.md) are the application
-  references.
-- [Security and operations](docs/operations.md) defines privacy, recovery, and deployment limits.
-- [Synthetic walkthrough](examples/README.md) exercises one complete CLI lifecycle.
+Neither command starts PostgreSQL or the Web host, or requires runtime credentials. The
+[synthetic CLI walkthrough](examples/README.md) exercises a complete case lifecycle.
 
-## Maturity and safety
+### Run the local application
 
-This repository is a local application, not a production deployment template. Before considering
-personal or operational data, read [Security and operations](docs/operations.md). Vulnerabilities and
-sensitive reports must follow [SECURITY.md](SECURITY.md), never a public issue. General help and
-privacy-safe issue routing are in [SUPPORT.md](SUPPORT.md).
-A restored backup can omit later accepted operations; see the [recovery guidance](docs/operations.md#data-and-recovery) before resuming case work after a restore.
+Follow [Getting started](docs/getting-started.md) from source build through PostgreSQL initialization,
+private credentials, a local HTTPS certificate and first login. Keep administrator credentials
+separate from runtime credentials.
 
-## Contributing and license
+**Runtime support is macOS and Linux.** Windows supports source builds, tests and database-free
+discovery; private-file runtime operations fail closed there.
 
-Contributor rules are in [CONTRIBUTING.md](CONTRIBUTING.md). ClaimCore is open-source software under
-the [Apache License 2.0](LICENSE). The original work is copyright © 2026 Ervins Strauhmanis;
-contributors retain copyright in their own contributions.
+**Fresh baseline, no in-place upgrade.** Unsupported existing installations and old recovery
+formats are refused, not converted or deleted. Preserve old databases and artifacts with their
+matching software. Read the [installation boundary](docs/database.md#fresh-installation-boundary)
+before initializing a new target.
 
-CI-qualified publish trees for CLI, Database, and Web contain the project license, a .NET CycloneDX
-SBOM, and full-text third-party notices. The qualified Web tree also carries its manifest-bound locked
-npm SBOM and notices.
+ClaimCore assumes one trusted local administrative boundary. Browser admission does not provide
+individual operator identities or per-user authorization. Remote access and multi-tenancy are not
+supported. Read [Security and operations](docs/operations.md) before considering real data.
+
+## How state stays consistent
+
+- **One authority.** Domain and Application own validation and available commands. Execution
+  revalidates authoritative state; an editable form or preview is not permission to commit.
+- **Revision-aware changes.** Stale commands cannot silently overwrite newer state. A newly accepted
+  operation advances one revision; an exact replay returns its recorded receipt without another.
+- **Explicit uncertainty.** Missing output is not proof of failure. Recovery preserves the exact
+  operation ID and request bytes. Durable revocation ends an unaccepted operation's authority
+  without erasing earlier attempt evidence.
+- **An explicit calendar.** Each installation has one immutable IANA business time zone, separate
+  from browser language and display formats. Amount display preserves decimal precision; authoring
+  and canonical copying remain independent of presentation.
+
+Recovery is not a backup system. Restoring an older database can remove later acceptance evidence;
+reconcile the restore before resuming case work. See [Data and recovery](docs/operations.md#data-and-recovery).
+
+## Architecture and verification
+
+ClaimCore is a typed modular monolith, not a collection of distributed services.
+[`architecture.json`](architecture.json) defines component responsibilities and permitted
+dependencies; compiled architecture tests check those boundaries. Shared contract projections
+produce the CLI/Web schemas and browser validators instead of letting each adapter invent its own.
+
+Required verification includes deterministic and property tests, real PostgreSQL tests, published
+CLI tests, and Chromium, Firefox and WebKit lifecycle and accessibility checks. A passing gate is
+execution evidence, not owner approval or production certification. [Development](docs/development.md)
+owns the build and verification commands; [Architecture](docs/architecture.md) explains the design.
+
+## Contributing and support
+
+Read [Contributing](CONTRIBUTING.md) and, for agent-assisted work, [AGENTS.md](AGENTS.md).
+[Support](SUPPORT.md) covers general help and privacy-safe issue reporting.
+
+Report vulnerabilities and sensitive findings through [Security](SECURITY.md), never a public
+issue. Do not include claimant data, credentials or recovery artifacts in public reports.
+
+## License
+
+[Apache License 2.0](LICENSE). Original work © 2026 Ervins Strauhmanis; contributors retain copyright
+in their contributions. Qualified publish outputs include third-party notices and software bills
+of materials. Release changes are recorded in the [changelog](CHANGELOG.md).

@@ -4,107 +4,35 @@ Notable changes to this project are documented in this file. The format is based
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-09-23
+
 ### Added
 
-- Add revision-bound owner-review reporting for every changed source path, with explicit
-  architecture/security/contract-policy review scopes and no fabricated approval. Extend the
-  opt-in repository-settings plan with a separate owner-only PR-update rule, keep Gate
-  non-bypassable, and disable auto-merge; live activation remains an owner administration step.
-
-- Presentation-owned English, Latvian, Arabic and expanded-English catalogs with independent
-  display-locale selection, complete typed diagnostic translations and accessible RTL controls.
-  Exact amount/date display preserves canonical authored values, copied values and recovery files.
-  Language switching preserves drafts, preparation consent, operation identities and uncertain
-  outcomes without issuing requests. See [Browser presentation](docs/localization.md).
+- The local Web interface now offers English, Latvian and Arabic text, right-to-left layout, and independent `en-GB`, `lv-LV` and `ar-EG` display formats. Changing language or format keeps drafts, prepared reviews, consent and recovery identities; displayed dates and amounts are localized while authored values, canonical copies and recovery files remain exact. Expanded English is a layout-test pseudolocale. See [Browser presentation](docs/web.md#browser-presentation).
 
 ### Changed
 
-- Replace historical database upgrades with one checksum-bound fresh installation baseline and
-  atomic `initialize <canonical-IANA-ID>` plus read-only `verify`. Existing old, partial and unknown
-  installations are refused without modifying data; there is no automatic reset or conversion.
-- Require canonical command-record format 3 and recovery-envelope format 2; remove historical
-  provenance and unidentified-start compatibility while preserving exact replay, independent
-  revocation and real attempt/settlement evidence. Terminal pruning now retains preparations with
-  any unsettled attempt, even after a later accepted retry.
+- **Breaking for database administrators:** `ClaimCore.Database initialize <canonical-IANA-ID>` now creates one checksum-bound schema, installation identity and immutable business time zone atomically; `verify` checks the result without changing it. The 0.5.0 runtime refuses 0.4.0 and other unsupported ClaimCore schemas without modifying them. Preserve existing databases and backups with their matching older software, and initialize a separate database; this release cannot upgrade or import their case history. See [Database](docs/database.md#fresh-installation-boundary).
+- **Breaking for recovery operators and integrations:** New requests use canonical command-record format 3 and recovery envelopes use format 2. An uncertain retry must keep its exact operation ID and request bytes. Terminal technical preparations with an unsettled identified attempt are now excluded from pruning, even after a later accepted retry. See [Recovery](docs/cli.md#canonical-request-identity-and-recovery).
+- **Breaking for CLI, Web and native consumers:** Ordinary rejections, core faults, recovery refusals, CLI protocol and local failures, HTTP host failures and database administration results now expose closed diagnostic identities and exact parameters. CLI adapter failures use `localFailure`; host failures carry correlated HTTP status and execution phase. Old failure payloads and native failure records are unsupported: regenerate clients against the matching CLI-v3/Web-v2 contracts and deploy the matching Web bundle and host. The semantic fingerprint now covers scalar constraints and rule revision, excludes presentation wording, and uses length-framed encoding. See [Diagnostics](docs/diagnostics.md).
+- Source builds now require direct project references for every dependency. Forks or tools that previously reached PostgreSQL administration or Npgsql through a case-work host must declare an allowed direct dependency or remove that usage. See [Architecture](docs/architecture.md#direct-compilation-boundaries).
 
-- **Transport, host and administration failures now have typed diagnostic contracts.** CLI protocol
-  refusals require stable IDs and safe locations; HTTP failures require correlated status, cause and
-  execution phase. Process stderr and database administration now emit structured JSON. Use
-  `claimcore describe diagnostics` or `ClaimCore.Database describe diagnostics`, adapt native
-  maintenance callers to `AdministrationOutcome`, and rebuild matching host/browser contracts.
-  Old failure shapes and string-taking diagnostic constructors are not retained. Case data,
-  canonical requests, business semantics and recovery authority are unchanged.
+### Removed
 
-- Core faults and recovery refusals now expose specific diagnostic identities with exact empty
-  argument objects. Their native types are closed reasons rather than writable message records;
-  consumers must adapt and rebuild the browser and host together with matching generated contracts.
-  Canonical operation records and database state are unchanged; no migration is required.
-- CLI adapter failures now use a distinct `localFailure` outcome instead of pretending to be core
-  failures. Exit code 3 and stop-and-investigate guidance remain unchanged; scripts must recognize
-  the new outcome and must not infer claim commit status from an adapter failure.
-
-- **Ordinary rejection contracts now require a structured diagnostic.** CLI-v3/Web-v2 rejections include a stable `diagnostic.id` and an exact parameter object, so consumers can distinguish causes without parsing English. Native `Rejection` is now a closed reason with derived classification and guidance, and `DomainError.InvalidInput` has typed targets and violations instead of strings. Update native callers and rebuild matched host/browser contracts; old rejection shapes are not accepted. Default English remains available as presentation text. Case data, canonical operation records and recovery authority are unchanged, and no database migration is required. See [Core outcome diagnostics](docs/diagnostics.md).
-
-- **The CLI-v3 and Web-v2 contract fingerprints change, and no old-contract path is kept.** Semantic identity no longer includes presentation labels and explanations, so editorial wording no longer alters machine identity; it now includes the text constraints on amount and currency values, which it previously omitted, and a separate rule-set revision for deliberate behaviour changes that no descriptor shape would show. Rebuild the browser and its host together from the same source revision and do not mix generated contracts with older binaries. Canonical operation-record encoding, authored operation identity, and the thirteen business fields are unchanged, so stored cases and accepted history are unaffected and no migration is required.
-- Building from source now requires every project reference to be declared. A case-work host can no longer compile against PostgreSQL administration or against Npgsql through the composition root, while the storage assemblies it needs at runtime are still published. A fork that relied on reaching those types indirectly must declare the reference it actually uses, or stop using it.
+- `ClaimCore.Database migrate` and `set-business-zone`, the ordered in-place upgrade path, and import support for historical canonical records and recovery envelopes are removed. There is no compatibility alias or automatic conversion; keep old recovery material with matching earlier software.
 
 ### Fixed
 
-- Require fresh consent for a newly received preparation while retaining consent across language
-  changes. Focus rejected correction fields by canonical identity, and retain file-read failures
-  as local notices rather than leaving import state busy.
-
-- Scope CLI delivery tracking to the current frame and observe native results before encoding;
-  a later malformed frame cannot inherit an earlier operation ID. Failed writes/flushes preserve
-  current recovery context without appending a second stdout frame or replaying work.
-- Preserve administrative commit uncertainty and confirmed results across cleanup/reporting errors.
-  A commit exception no longer implies rollback, and failed output cannot relabel completed work.
-  Pruning audit writes retain this discipline even in dry-run mode.
-- Select HTTP 400/413 from typed input causes rather than English wording; bound startup and
-  administration diagnostics so provider details, paths and unknown arguments are not echoed.
-
-- The README no longer names a specific latest release, which was stale as soon as the next one published; it points to GitHub Releases instead.
-- The domain contract said a closed case must be reopened before editing, which contradicted the one-step factual correction added in 0.3.0. It now records that correction as the deliberate exception.
+- CLI delivery failures and malformed later frames no longer inherit a prior operation's recovery context or append a second stdout result. A lost write or flush preserves the current exact operation context and reports uncertainty when work may have started; inspect that identity before retrying. See [CLI](docs/cli.md#local-failures-and-core-outcomes).
+- Database administration preserves confirmed work and unknown commit status across cleanup or result-delivery errors. Exit 4 requires inspection and reconciliation rather than assuming rollback. See [Database](docs/database.md#administration-results-and-delivery).
+- HTTP input failures select status 400 or 413 from typed causes rather than English wording. Protocol, startup and administration diagnostics use bounded, known locations and causes without echoing unknown arguments, private paths or provider messages.
+- Correction validation focuses the rejected field in its tagged group, and an unreadable recovery import reports a local failure instead of leaving the import busy.
 
 ### Internal
 
-- Refresh the locked frontend formatter, Knip and NuGet test dependency graph to current releases,
-  including TypeShape 10 and Application Insights 3. Remove the corresponding dependency holds;
-  the scheduled dependency-health check now has no outstanding updates.
-
-- Qualify ICU catalogs, generated arguments, rendered tokens and locale-blind request coordinators
-  in the existing mandatory contract/lint gates, with language-state and three-browser scenarios.
-  Split synchronous catalogs into a static chunk and explicitly revise the aggregate compressed
-  JavaScript budget from 200 KiB to 256 KiB for complete translations. Per-chunk, initial-load,
-  stylesheet, privacy, security and coverage limits remain unchanged.
-
-- Give CI evidence one declared producer per stage and reject duplicate, wrong-owner, stale or
-  unsafe artifacts before consolidation. Preserve complete-attempt qualification and explicitly
-  direct partial reruns to **Re-run all jobs**.
-- Structurally qualify both workflow YAML extensions, real credential settings, Gate reachability,
-  guarded artifact uploads and event-isolated concurrency. Retain safe stage diagnostics instead
-  of losing failure explanations with runner-temporary logs.
-- Separate scheduled dependency freshness from required vulnerability/deprecation/signature/license
-  and locked-graph checks. Semantic review records now say `source-reviewed`, not owner-approved.
-  Add explicit PR read-back and owner-only settings plan/apply/check tooling; merging source does
-  not itself activate native repository protections. See [CI governance](docs/ci-governance.md).
-
-- Emit one shared lazy host-failure validator rather than duplicate it across endpoint groups.
-  The aggregate compressed JavaScript budget is revised from 192 KiB to 200 KiB for the expanded
-  diagnostic contract; per-chunk, initial-load, stylesheet and coverage limits are unchanged.
-
-- Generate and qualify strict process/administration schemas and transport conformance corpora;
-  register failure-injection tests and keep compiled ownership and evidence reconciliation intact.
-
-- Correlate fault/refusal identity, code and guidance in the generated schemas, qualify every cause
-  and malformed counterpart, and isolate lazy discovery validation without raising bundle budgets.
-
-- Rejection metadata is fingerprinted independently of explanation text. Complete diagnostic examples and malformed variants qualify the native, CLI and browser projections, while shared Web metadata schemas keep generated validators within the existing size limit. This prepares ordinary rejections for localization; it does not add language selection or translate the remaining failure families.
-
-- Semantic identity is now length-prefixed rather than separated by a null character, so no token boundary can be reproduced by a value that contains the separator, and integers are written with the invariant culture.
-- A successful test producer now validates its own result file against the same reviewed inventory that final evidence reconciliation uses, before it records success. A changed test count, a substituted name at the same count, and a missing, duplicated or wrong-assembly report are all refused at the job that produced them rather than at the end of the run. Seven regression tests cover the new refusals.
-- The evidence job fetches its artifact scanner once with a reviewed checksum instead of letting the scanner fetch itself mid-scan, and a scanner that cannot run is now reported differently from a scan that completed and refused its targets. Both still fail closed and neither emits a matched value or a target path, but a blocked run can now be told apart from a refused one.
-- Browser networking rules now cover root components, qualified global calls, and alternative networking APIs, with positive and negative controls run by the existing lint stage. This is bounded lint enforcement, not a sandbox.
+- CI now checks one producer per evidence stage, complete current-attempt results and coverage, structural workflow policy, and bounded failure summaries. Scheduled dependency freshness is separate from required vulnerability, deprecation, signature and license checks. See [CI governance](docs/ci-governance.md).
+- A read-only owner-review report inventories changed paths and current-revision CI, and an opt-in settings plan describes owner-only PR updates. Merging this source does not activate the GitHub ruleset or establish independent human approval. See [Owner review](docs/owner-review.md).
+- Locked frontend and NuGet test dependencies were refreshed, including Prettier, Knip, TypeShape 10 and ApplicationInsights 3; the previous dependency holds were removed after qualification.
 
 ## [0.4.0] - 2026-09-21
 
