@@ -87,7 +87,7 @@ module WebStartupDiagnostics =
             ("WEB_CERTIFICATE_ACCESS_REFUSED",
              "The certificate must be a bounded private PKCS#12 file.")
             WebStartupProblem.CertificateInvalid,
-            ("WEB_CERTIFICATE_INVALID", "The certificate is not a valid PKCS#12 value.")
+            ("WEB_CERTIFICATE_INVALID", "The certificate is not valid for localhost HTTPS.")
             WebStartupProblem.CertificateKeyMissing,
             ("WEB_CERTIFICATE_KEY_MISSING", "The certificate must include a private key.")
             WebStartupProblem.ConnectionFileRefused,

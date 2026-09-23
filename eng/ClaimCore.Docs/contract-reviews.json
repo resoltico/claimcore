@@ -279,7 +279,7 @@
       "reviewer": "Fresh baseline: agent design, separate design QA and source/assertion review of atomic initialization, non-destructive refusal and current exact recovery; SQL/CI execution reported separately; no independent owner approval",
       "reviewedOn": "2026-09-23",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "a4164ff85f9b3a203591a9bf6a3a8b26f2b2d4244f722f1afe9f890801664324",
+      "reviewSubjectHash": "3576ccdacd3e671662ad771ec6eb573af7be6b260e015c631ce17e2f2efe2438",
       "wholeFiles": [
         "src/ClaimCore.Hosting/Runtime.fsi",
         "src/ClaimCore.Hosting/Runtime.fs",
@@ -292,6 +292,7 @@
         "src/ClaimCore.Postgres/SchemaAdmission.fs",
         "src/ClaimCore.Postgres/RuntimeSchema.fs",
         "src/ClaimCore.Postgres/RuntimeDatabase.fs",
+        "src/ClaimCore.Postgres/ConnectionTransport.fs",
         "src/ClaimCore.Postgres/RuntimeAccessPolicy.fs",
         "src/ClaimCore.Postgres/RuntimeAcl.fs"
       ],
@@ -303,7 +304,7 @@
       "reviewer": "Fresh baseline: agent design, separate design QA and source/assertion review of atomic initialization, non-destructive refusal and current exact recovery; SQL/CI execution reported separately; no independent owner approval",
       "reviewedOn": "2026-09-23",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "242cf04565304bdca159cb752402bf45ad6b49755070fc04844a87ee05686d6f",
+      "reviewSubjectHash": "636441502297cf7505e648e799d48f9dbc267868f7631d844088baeabfd9f075",
       "wholeFiles": [
         "src/ClaimCore.Hosting/Runtime.fs",
         "src/ClaimCore.Postgres/InstallationBusinessZone.fs",
@@ -323,6 +324,7 @@
         "db/baseline.sql",
         "db/schema-baseline.json",
         "src/ClaimCore.Postgres/OwnerConnection.fs",
+        "src/ClaimCore.Postgres/ConnectionTransport.fs",
         "src/ClaimCore.Postgres/SchemaAdmission.fs",
         "src/ClaimCore.Postgres/SchemaBaseline.fs",
         "tests/ClaimCore.IntegrationTests/BaselineRefusalTests.fs",
@@ -337,7 +339,7 @@
       "reviewer": "Fresh baseline: agent design, separate design QA and source/assertion review of atomic initialization, non-destructive refusal and current exact recovery; SQL/CI execution reported separately; no independent owner approval",
       "reviewedOn": "2026-09-23",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "b35be7fab3c97a4b84fcbed79b9773ddc915d105f3e9e1c5c47220cce5548937",
+      "reviewSubjectHash": "579243719d1775b7c4898c02c5b2771de755803f4c8b600c336c0351e662e0a6",
       "wholeFiles": [
         "src/ClaimCore.HostSecurity/PrivateFileService.fs",
         "src/ClaimCore.HostSecurity/PosixPrivateFiles.fs",
@@ -351,12 +353,14 @@
         "src/ClaimCore.Database/DatabaseArguments.fs",
         "src/ClaimCore.Database/DatabaseExecution.fs",
         "src/ClaimCore.Postgres/OwnerConnection.fs",
+        "src/ClaimCore.Postgres/ConnectionTransport.fs",
         "src/ClaimCore.Postgres/SchemaAdmission.fs",
         "src/ClaimCore.Postgres/SchemaBaseline.fs",
         "src/ClaimCore.Postgres/SchemaDefinition.fs",
         "tests/ClaimCore.IntegrationTests/BaselineRefusalTests.fs",
         "tests/ClaimCore.IntegrationTests/FreshBaselineSupport.fs",
-        "tests/ClaimCore.IntegrationTests/FreshBaselineTests.fs"
+        "tests/ClaimCore.IntegrationTests/FreshBaselineTests.fs",
+        "tests/ClaimCore.IntegrationTests/StorageBoundaryTests.fs"
       ],
       "markedSpans": []
     },
@@ -366,7 +370,7 @@
       "reviewer": "Fresh baseline: agent design, separate design QA and source/assertion review of atomic initialization, non-destructive refusal and current exact recovery; SQL/CI execution reported separately; no independent owner approval",
       "reviewedOn": "2026-09-23",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "cef097911a85bad1af962e3c5fbdcdf9220e91a65d2639de472efa009045d89a",
+      "reviewSubjectHash": "8d6f1cbbb60bede92529783e20932530597f9d6430e6a38b702cb550dd19310e",
       "wholeFiles": [
         "docs/diagnostics.md",
         "eng/ClaimCore.ContractGenerator/Artifacts.fs",
@@ -438,9 +442,11 @@
         "tests/ClaimCore.WebTests/TestServerRecoveryOutcomeTests.fs",
         "tests/ClaimCore.WebTests/TestServerRouteTests.fs",
         "tests/ClaimCore.WebTests/TestServerSessionFailureTests.fs",
+        "tests/ClaimCore.WebTests/TestServerServices.fs",
         "tests/ClaimCore.WebTests/TransportDiagnosticTests.fs",
         "tests/ClaimCore.WebTests/WebHostSecurityTests.fs",
         "tests/ClaimCore.WebTests/WireTests.fs",
+        "eng/Run-PublishedWebE2E.sh",
         "web/e2e/case-workflow.ts",
         "web/e2e/localization-artifacts.spec.ts",
         "web/e2e/localization-editor.spec.ts",

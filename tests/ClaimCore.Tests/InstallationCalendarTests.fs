@@ -5,7 +5,7 @@ open ClaimCore.Postgres
 
 // Validation must stop bad zone identifiers before the unreachable database is opened.
 let private unreachable =
-    "Host=invalid.invalid;Username=claimcore_owner;Database=claimcore;Timeout=1"
+    "Host=127.0.0.1;Port=1;Username=claimcore_owner;Database=claimcore;Timeout=1"
 
 let private refuses label zoneId =
     match SchemaBaseline.initialize unreachable zoneId with

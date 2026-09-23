@@ -183,6 +183,7 @@ certificate_pem="$state_dir/web.pem"
 openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
   -subj /CN=localhost \
   -addext 'subjectAltName=DNS:localhost' \
+  -addext 'extendedKeyUsage=serverAuth' \
   -keyout "$certificate_key" \
   -out "$certificate_pem" >/dev/null 2>&1
 openssl pkcs12 -export -out "$certificate" -inkey "$certificate_key" -in "$certificate_pem" \

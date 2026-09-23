@@ -31,6 +31,19 @@ let private sessionExpiry () =
         (registry.IsCurrent(absolute, now.AddMinutes(25.)))
         "Absolute expiry cannot be extended by activity"
 
+    let untouched = registry.Create(now)
+    Expect.equal registry.StoredCount 1 "An untouched session is retained until expiration"
+    let replacement = registry.Create(now.AddMinutes(26.))
+    Expect.equal registry.StoredCount 1 "A new login sweeps expired session entries"
+
+    Expect.isFalse
+        (registry.IsCurrent(untouched, now.AddMinutes(26.)))
+        "Expired authority stays revoked"
+
+    Expect.isTrue
+        (registry.IsCurrent(replacement, now.AddMinutes(26.)))
+        "New authority remains live"
+
     use host = Host.Start()
     authenticated host |> ignore
     host.Sessions.RevokeAll()

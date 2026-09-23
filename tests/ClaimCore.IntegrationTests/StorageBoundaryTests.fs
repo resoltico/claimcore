@@ -155,7 +155,24 @@ let private environmentTests =
                 builder.Options <- "-c synchronous_commit=off"
 
                 SchemaBaseline.initialize builder.ConnectionString "Etc/UTC"
-                |> refusedAdministration AdministrationFailure.OwnerConnectionInvalid)
+                |> refusedAdministration AdministrationFailure.OwnerConnectionInvalid
+
+                builder.Options <- ""
+                builder.Host <- "database.example.invalid"
+
+                for mode in [ SslMode.Disable; SslMode.Prefer; SslMode.Require; SslMode.VerifyCA ] do
+                    builder.SslMode <- mode
+
+                    SchemaBaseline.verify builder.ConnectionString
+                    |> refusedAdministration AdministrationFailure.OwnerConnectionInvalid
+
+                builder.SslMode <- SslMode.VerifyFull
+                let verified = OwnerConnection.builder builder.ConnectionString
+
+                Expect.equal
+                    verified.GssEncryptionMode
+                    GssEncryptionMode.Disable
+                    "A remote owner connection must use authenticated TLS rather than GSS fallback")
         ]
 
 let private transactionTests =

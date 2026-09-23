@@ -25,6 +25,13 @@ let private certificate () =
     let request =
         CertificateRequest("CN=localhost", key, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1)
 
+    let names = SubjectAlternativeNameBuilder()
+    names.AddDnsName("localhost")
+    request.CertificateExtensions.Add(names.Build())
+    let usages = OidCollection()
+    usages.Add(Oid("1.3.6.1.5.5.7.3.1")) |> ignore
+    request.CertificateExtensions.Add(X509EnhancedKeyUsageExtension(usages, false))
+
     request.CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1.), DateTimeOffset.UtcNow.AddDays(1.))
 
 let configureServices loginPermits (services: IServiceCollection) =

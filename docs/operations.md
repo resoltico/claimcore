@@ -27,8 +27,10 @@ authorization and disclosure rules.
   captures. CLI delivery diagnostics may contain only an operation ID, a digest, and safe recovery
   direction after mutation admission.
 - Local Compose database connections may disable TLS only while bound to its loopback development
-  port. Any non-local PostgreSQL connection requires authenticated TLS and managed secrets; ClaimCore
-  still provides no supported remotely accessible application service.
+  port. Both runtime and schema-owner connection admission require `SSL Mode=VerifyFull` for a
+  non-loopback PostgreSQL host and disable GSS encryption fallback; the server certificate and host
+  name must validate. Supply a trusted root certificate where needed and keep credentials private.
+  ClaimCore still provides no supported remotely accessible application service.
 - Private-file runtime operations are supported on macOS and Linux only. Windows source builds,
   tests, and database-free discovery work, but CLI, Web, and Database private-file operations fail
   closed until an independently verified Windows handle/ACL implementation exists.

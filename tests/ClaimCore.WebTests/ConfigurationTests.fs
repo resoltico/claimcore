@@ -6,6 +6,7 @@ open System.Security.Cryptography
 open System.Security.Cryptography.X509Certificates
 open Expecto
 open ClaimCore.Web
+open ClaimCore.Contracts
 open ClaimCore.WebTests.PrivateTestPaths
 
 let private variables =
@@ -22,7 +23,7 @@ let private variables =
         "CLAIMCORE_WEB_SESSION_ABSOLUTE_MINUTES"
     ]
 
-let private certificate path includeKey =
+let private certificateFor path includeKey dnsName notBefore notAfter (purpose: string) =
     use rsa = RSA.Create(2048)
 
     let request =
@@ -31,11 +32,16 @@ let private certificate path includeKey =
     let basic = X509BasicConstraintsExtension(false, false, 0, false)
     request.CertificateExtensions.Add(basic)
 
-    use issued =
-        request.CreateSelfSigned(
-            DateTimeOffset.UtcNow.AddDays(-1),
-            DateTimeOffset.UtcNow.AddDays(1)
-        )
+    if not (String.IsNullOrEmpty(dnsName)) then
+        let names = SubjectAlternativeNameBuilder()
+        names.AddDnsName(dnsName)
+        request.CertificateExtensions.Add(names.Build())
+
+    let usages = OidCollection()
+    usages.Add(Oid(purpose)) |> ignore
+    request.CertificateExtensions.Add(X509EnhancedKeyUsageExtension(usages, false))
+
+    use issued = request.CreateSelfSigned(notBefore, notAfter)
 
     let bytes =
         if includeKey then
@@ -47,6 +53,15 @@ let private certificate path includeKey =
             publicOnly.Export(X509ContentType.Pfx)
 
     File.WriteAllBytes(path, bytes)
+
+let private certificate path includeKey =
+    certificateFor
+        path
+        includeKey
+        "localhost"
+        (DateTimeOffset.UtcNow.AddDays(-1))
+        (DateTimeOffset.UtcNow.AddDays(1))
+        "1.3.6.1.5.5.7.3.1"
 
 let private restore originals =
     originals
@@ -211,6 +226,31 @@ let private absolutePathTests (directory: string) (connection: string) (certific
     Expect.throws (fun () -> Configuration.load () |> ignore) "Certificate path is absolute"
     Environment.SetEnvironmentVariable("CLAIMCORE_WEB_CERTIFICATE_PATH", certificatePath)
 
+let private certificateIdentityTests certificatePath =
+    let now = DateTimeOffset.UtcNow
+
+    for label, name, start, finish, purpose in
+        [
+            "wrong host", "example.invalid", now.AddDays(-1), now.AddDays(1), "1.3.6.1.5.5.7.3.1"
+            "missing DNS name", "", now.AddDays(-1), now.AddDays(1), "1.3.6.1.5.5.7.3.1"
+            "expired", "localhost", now.AddDays(-3), now.AddDays(-2), "1.3.6.1.5.5.7.3.1"
+            "not yet valid", "localhost", now.AddDays(1), now.AddDays(2), "1.3.6.1.5.5.7.3.1"
+            "wrong purpose", "localhost", now.AddDays(-1), now.AddDays(1), "1.3.6.1.5.5.7.3.2"
+        ] do
+        certificateFor certificatePath true name start finish purpose
+
+        let refused =
+            try
+                let loaded = Configuration.load ()
+                loaded.Certificate.Dispose()
+                false
+            with WebStartupException WebStartupProblem.CertificateInvalid ->
+                true
+
+        Expect.isTrue refused ("Unusable localhost certificate is refused: " + label)
+
+    certificate certificatePath true
+
 let private unsafePathTests () =
     configured (fun directory connection certificatePath ->
         if OperatingSystem.IsWindows() then
@@ -226,7 +266,8 @@ let private unsafePathTests () =
             Environment.SetEnvironmentVariable("CLAIMCORE_WEB_CERTIFICATE_PATH", certificatePath)
             permissionTests connection certificatePath
             connectionContentTests connection
-            absolutePathTests directory connection certificatePath)
+            absolutePathTests directory connection certificatePath
+            certificateIdentityTests certificatePath)
 
 let tests =
     testList

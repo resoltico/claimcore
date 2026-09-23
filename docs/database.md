@@ -36,6 +36,10 @@ supports macOS and Linux and fails closed on Windows. Database-free discovery re
 every build host. The file contains an Npgsql connection string for the schema owner and must never
 be passed to CLI or Web as their runtime credential. Startup-option overrides and application-role
 credentials are refused by owner administration; no credential is elevated through `SET ROLE`.
+Both owner and case-work connections refuse a non-loopback host unless its connection string selects
+`SSL Mode=VerifyFull`. Remote admission disables GSS encryption fallback so TLS verifies the server
+certificate and requested hostname. Loopback development connections may disable TLS; an omitted
+SSL mode is not sufficient for a remote host.
 
 Runtime connection admission checks the supported server, durability/session settings, confined
 application identity, exact current baseline identity, required structural checks and least-privilege

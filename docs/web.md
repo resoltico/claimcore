@@ -54,6 +54,10 @@ host exclusively leases a state directory, creates one random owner-private boot
 and prints only the login URL and credential-file path. A restart revokes all sessions and issues a
 new bootstrap credential; it does not preserve browser admission.
 
+Startup refuses a certificate outside its validity period, without a `localhost` DNS subject
+alternative name, or without the server-authentication extended key usage. A matching self-signed
+certificate still requires the operator to verify and trust its public certificate in the browser.
+
 ## Configuration reference
 
 | Variable | Requirement and bound |
@@ -116,6 +120,9 @@ no-store `404` and never fall through to the single-page application. Business a
 outcomes are HTTP `200` endpoint bodies. Typed host failures use the appropriate `400`, `401`, `403`,
 `404`, `409`, `413`, `415`, `429`, `500`, or `503` response and state
 `executionPhase: NOT_STARTED` or `STARTED_UNCONFIRMED` where meaningful.
+
+Browser sessions remain server-side and are bounded by idle and absolute expiry. A new login removes
+expired entries from the in-memory registry; it cannot revive an expired session.
 
 | Method and path | Core mapping |
 |---|---|

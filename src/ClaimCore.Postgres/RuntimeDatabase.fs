@@ -103,6 +103,7 @@ module internal RuntimeDataSource =
             || builder.NoResetOnClose
             || builder.LogParameters
             || builder.PersistSecurityInfo
+            || not (ConnectionTransport.requireAuthenticatedRemote builder)
         then
             invalidArg
                 (nameof connectionString)
