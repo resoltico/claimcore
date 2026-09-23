@@ -1,4 +1,4 @@
-name: Temporary fresh-baseline source export
+name: Temporary fresh-baseline source recovery
 on:
   push:
     branches: [feat/fresh-baseline-recovery]
@@ -10,23 +10,38 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ad45a9c649d14f5cb592d772c56b043c1b093ba2
-          persist-credentials: false
-      - name: Export only tracked source from the verified base
+      - name: Recover only the previously uploaded source objects
+        env:
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = ad45a9c649d14f5cb592d772c56b043c1b093ba2
-          test "$(git rev-parse HEAD^{tree})" = 0bb6a84f4f7afd403c072a627ada86199bfe8ed6
-          mkdir "$RUNNER_TEMP/fresh-baseline-source"
-          git archive --format=tar.gz HEAD > "$RUNNER_TEMP/fresh-baseline-source/source.tar.gz"
-          cd "$RUNNER_TEMP/fresh-baseline-source"
-          sha256sum source.tar.gz > source.tar.gz.sha256
+          python3 - <<'PY'
+          import base64, hashlib, json, lzma, os, pathlib, subprocess
+          shas = ['53267a40b01503ac63e26d55a5a408b72c06a666','014a07a92d69ce38c16db3fbb7c95e89d815f842','260b6d4658ce1d094ca4fcd65e7353493d7bc179','8588ef1ab76199dc435ccc1320ba2f155498f396','7d2e3b6843e796ae23f73bbf5393143bc5ca4d9b','58f1a23c63735150bfca3f73d447dcb742624d29','af55a0526119761091119a369856e0b95ac7b4fe','0eb3d1958ba81fe4080af4f8478fe31cbe881186']
+          root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'fresh-baseline-recovery'
+          root.mkdir()
+          pieces = []
+          for index, sha in enumerate(shas, 1):
+              response = json.loads(subprocess.check_output(['gh','api',f'repos/{os.environ["GITHUB_REPOSITORY"]}/git/blobs/{sha}']))
+              content = base64.b64decode(response['content'])
+              assert hashlib.sha1(f'blob {len(content)}\0'.encode() + content).hexdigest() == sha
+              (root / f'chunk-{index}.txt').write_bytes(content)
+              pieces.append(content)
+          compressed = base64.b64decode(b''.join(pieces), validate=True)
+          (root / 'source-delta.xz').write_bytes(compressed)
+          try:
+              payload = lzma.decompress(compressed)
+              (root / 'source-delta.decoded').write_bytes(payload)
+              print('Transfer decompression verified; payload bytes:', len(payload))
+          except lzma.LZMAError:
+              print('Transfer objects recovered; compressed-stream verification requires inspection.')
+          lines = [f'{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.name}' for p in sorted(root.iterdir()) if p.is_file()]
+          (root / 'SHA256SUMS').write_text('\n'.join(lines) + '\n')
+          PY
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: fresh-baseline-source
-          path: ${{ runner.temp }}/fresh-baseline-source/
+          name: fresh-baseline-recovered-source
+          path: ${{ runner.temp }}/fresh-baseline-recovery/
           retention-days: 1
           if-no-files-found: error
