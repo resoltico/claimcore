@@ -31,12 +31,9 @@ textarea {
   font: inherit;
 }
 
-button {
-  cursor: pointer;
-}
-
 button,
 .copy-button {
+  cursor: pointer;
   max-inline-size: 100%;
   min-inline-size: 0;
   border: 1px solid #075cac;
@@ -129,9 +126,10 @@ textarea:focus-visible {
   text-transform: uppercase;
 }
 
-h1,
-h2 {
+:is(h1, h2) {
   color: #0d2538;
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
 }
 
 h1 {
@@ -254,6 +252,8 @@ button:disabled {
   flex-wrap: wrap;
   gap: 0.25rem;
   align-items: center;
+  max-inline-size: 100%;
+  min-inline-size: 0;
 }
 
 .copy-value textarea {
