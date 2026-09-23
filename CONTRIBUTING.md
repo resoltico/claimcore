@@ -66,7 +66,9 @@ in [SUPPORT.md](SUPPORT.md).
 Publication and repository-policy changes follow [CI governance](docs/ci-governance.md). Use one
 feature branch and verify the actual PR head and current attempt; preserve a truthful handoff after
 follow-up commits. Semantic review records say `source-reviewed`, never independent owner approval.
-A green gate is necessary execution evidence, not an instruction to merge.
+A green gate is necessary execution evidence, not an instruction to merge. Follow the separate
+[owner-review procedure](docs/owner-review.md) on exact current revisions; review reports do not
+record approval and settings declarations are not active native enforcement.
 
 ## Licensing contributions
 

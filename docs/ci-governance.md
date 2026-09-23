@@ -18,7 +18,8 @@ unbounded/raw failure logs and required self-approval for a sole-owner repositor
 also identified failure-permissive or skipped Gate steps and widened publication conditions; the
 structural controls reject these even when the expected script text remains present.
 
-The chosen authorization model is explicit owner merge and publication review. If agent and owner
+The chosen authorization model is explicit owner merge and publication review, with the remaining
+native merge restriction and revision-bound review procedure owned by [Owner review](owner-review.md). If agent and owner
 use the same account, that cannot provide independent identity separation. A distinct automation
 identity and independent human approval require a separate deliberate credentials arrangement;
 this source tree does not fabricate that arrangement. This implements the already-agreed governance
@@ -141,10 +142,14 @@ It never retries a possibly completed write or rolls back over concurrent edits.
 not a multi-operation transaction: on partial failure, inspect confirmed operations and obtain a
 fresh plan. An authorization error is not interpreted as missing configuration.
 
-The reviewed minimal policy requires PRs and resolved review threads while retaining strict
+The reviewed policy requires PRs and resolved review threads while retaining strict
 GitHub Actions Gate, non-fast-forward and deletion protections. New PR rules require zero approving
 reviews to avoid impossible self-approval; stronger pre-existing review rules are preserved. Branch
 cleanup and update-branch UI use native repository flags, not custom branch-deletion automation.
+Auto-merge is disabled. A separate update-only ruleset allows only the numeric repository owner
+User to merge through a PR; its bypass never applies to the independent Gate ruleset. Wider, hidden
+or incompatible existing owner rules require reconciliation, not automatic replacement. The
+[owner-review design](owner-review.md) explains activation and same-credential limitations.
 Version tags become immutable against update/deletion; tag creation remains with existing content
 writers and release publication remains separately reviewed.
 
@@ -154,7 +159,8 @@ are preserved, not weakened. The initial sole-owner policy allows approving one'
 publication job; this is explicit owner authorization, not independent review. Ambiguous/inherited
 rules, existing bypass actors and unfamiliar environment restrictions require owner reconciliation.
 
-The helper checks only its declared flags/rules/environment. It does not certify classic branch
+The helper checks only its declared flags/rules/environment, including the separate owner-only
+PR-update rule. It binds the owner identity as well as the repository and proposed operations. It does not certify classic branch
 protection, all Actions execution-policy settings, credential scopes or identity separation.
 Those require separate owner inspection in GitHub. Source tests use mocked GitHub responses and are
 not evidence that live settings were applied. Do not record this package as operationally activated

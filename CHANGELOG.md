@@ -6,6 +6,11 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Added
 
+- Add revision-bound owner-review reporting for every changed source path, with explicit
+  architecture/security/contract-policy review scopes and no fabricated approval. Extend the
+  opt-in repository-settings plan with a separate owner-only PR-update rule, keep Gate
+  non-bypassable, and disable auto-merge; live activation remains an owner administration step.
+
 - Presentation-owned English, Latvian, Arabic and expanded-English catalogs with independent
   display-locale selection, complete typed diagnostic translations and accessible RTL controls.
   Exact amount/date display preserves canonical authored values, copied values and recovery files.

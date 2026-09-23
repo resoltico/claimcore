@@ -35,7 +35,13 @@ function example() {
     ],
   };
   const jobs = [
-    { run_id: 12, name: "Gate", status: "completed", conclusion: "success" },
+    {
+      id: 21,
+      run_id: 12,
+      name: "Gate",
+      status: "completed",
+      conclusion: "success",
+    },
   ];
   return { pr, workflow, run, jobs };
 }
@@ -93,7 +99,7 @@ test("PR read-back rejects a changed attempt and never fabricates approval", asy
     if (path === "actions/workflows/ci.yml") return workflow;
     if (path.includes("/runs?"))
       return { total_count: 1, workflow_runs: [run] };
-    if (path.includes("/jobs?")) return { jobs };
+    if (path.includes("/jobs?")) return { total_count: jobs.length, jobs };
     if (path === "actions/runs/12")
       return { ...run, run_attempt: ++reads > 1 ? 2 : 1 };
     throw new Error("Unexpected read.");
