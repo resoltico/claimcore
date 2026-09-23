@@ -1,0 +1,32 @@
+name: Temporary owner-review source export
+on:
+  push:
+    branches: [feat/owner-review-enforcement]
+    paths: [.github/workflows/owner-review-workspace.yml]
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: bf439ebbde15166ef889377186c0813a6ed6ac6f
+          persist-credentials: false
+      - name: Export tracked source only
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = bf439ebbde15166ef889377186c0813a6ed6ac6f
+          mkdir "$RUNNER_TEMP/owner-review-source"
+          git archive --format=tar.gz HEAD > "$RUNNER_TEMP/owner-review-source/source.tar.gz"
+          git rev-parse HEAD^{tree} > "$RUNNER_TEMP/owner-review-source/tree.txt"
+          cd "$RUNNER_TEMP/owner-review-source"
+          sha256sum source.tar.gz > SHA256SUMS
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: owner-review-source
+          path: ${{ runner.temp }}/owner-review-source/
+          retention-days: 1
+          if-no-files-found: error
