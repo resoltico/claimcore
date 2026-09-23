@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { keepForRecovery, openCase, prepare, startCommand } from "./case-workflow";
-import { expectAccessible, openAuthenticated } from "./session-helpers";
+import { expectAccessible, openAuthenticated, progress } from "./session-helpers";
 import {
   inspectPending,
   confirmPrepared,
@@ -11,6 +11,19 @@ import {
   trackRequests,
   ui,
 } from "./localization-support";
+
+const returnToRecovery = async (page: Page): Promise<void> => {
+  await progress("localized-recovery-reload");
+  await page.reload();
+  await expect(page.locator("main.app-shell header small")).toBeVisible({ timeout: 10_000 });
+  await progress("localized-recovery-definition-ready");
+  const navigation = page.getByRole("button", { name: "Recovery", exact: true });
+  await expect(navigation).toBeEnabled();
+  await navigation.click();
+  await expect(navigation).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("heading", { name: "Recovery", exact: true })).toBeVisible();
+  await progress("localized-recovery-navigation-ready");
+};
 
 test("preserves a committed operation and exact recovery identity when its localized submit response is lost", async ({
   page,
@@ -44,8 +57,7 @@ test("preserves a committed operation and exact recovery identity when its local
     pending.release();
   }
   // This explicit reload is recovery action by the operator, never a language-change side effect.
-  await page.reload();
-  await page.getByRole("button", { name: "Recovery", exact: true }).click();
+  await returnToRecovery(page);
   const view = page.getByLabel("Recovery view");
   await expect(view).toBeVisible({ timeout: 10_000 });
   await view.selectOption("TERMINAL");
