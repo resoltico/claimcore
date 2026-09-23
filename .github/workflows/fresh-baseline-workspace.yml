@@ -54,16 +54,18 @@ jobs:
         run: |
           set -euo pipefail
           dotnet restore ClaimCore.slnx --locked-mode
+          dotnet build ClaimCore.slnx --configuration Release --no-restore
           npm ci --prefix web
           npm --prefix web run contract:generate
           npm --prefix web run localization:generate
-          npm --prefix web run notices:generate
-          dotnet run --project eng/ClaimCore.Docs --configuration Release --no-restore -- write
+          dotnet run --project eng/ClaimCore.Docs --configuration Release --no-build --no-restore -- write
           npm --prefix web run localization:check
           npm --prefix web run typecheck
           git add -A
           git diff --cached --check
-          test "$(git write-tree)" = eba09c24bd7b53a1a4817ba89f06b9b88705e383
+          actual="$(git write-tree)"
+          echo "Reproduced tree: $actual"
+          test "$actual" = eba09c24bd7b53a1a4817ba89f06b9b88705e383
           test "$(git ls-files | wc -l | tr -d ' ')" = 915
           test "$(git diff --cached --no-renames --name-only | wc -l | tr -d ' ')" = 175
           test ! -e .github/workflows/fresh-baseline-workspace.yml
