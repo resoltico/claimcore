@@ -106,6 +106,12 @@ without rewriting any marker, lineage, timestamp, data or provenance. Concurrent
 serialize before classification. A different calendar is refused, not silently substituted.
 `verify` runs current identity/structure/calendar checks in a read-only transaction; it cannot
 initialize, repair or upgrade. Required runtime-role ACLs are additionally checked by the runtime.
+Both runtime opening and read-only verification require the critical business-record and accepted-
+history constraints to be present, validated and enforced, including primary, unique and reference
+keys. A matching baseline marker does not admit a schema whose protections have been removed or
+declared `NOT ENFORCED`. This catalog check does not prove that a schema owner has not changed a
+constraint expression under the same name; schema-owner authority remains trusted. It is not a
+full case/history row audit or proof that a restored database contains every prior acceptance.
 
 Every pre-existing unsupported `claimcore` namespace is refused untouched, including an empty
 namespace, a partial installation, old migration-ledger schemas 001–006, mixed old/current metadata,

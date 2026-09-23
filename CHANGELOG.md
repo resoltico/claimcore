@@ -6,6 +6,7 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Security
 
+- Runtime opening and database verification now refuse a schema missing critical business-record or accepted-history constraints, or carrying an unvalidated or unenforced version of them. The existing baseline SQL and stored data are unchanged; operators must stop and reconcile the installation under a reviewed recovery procedure, not edit its marker to pass admission.
 - Runtime and schema-owner connections now refuse non-loopback PostgreSQL targets unless `SSL Mode=VerifyFull` authenticates the server certificate and hostname; GSS encryption fallback is disabled for those connections. Operators using a remote database must update both private connection files before opening it. Loopback development connections remain available without TLS.
 - The Web host now removes expired in-memory session entries when a new session is created, preventing dormant entries from accumulating without changing idle or absolute session lifetimes.
 - The Web host now refuses expired, wrong-hostname, and non-server certificates at startup. Replace an unsuitable PFX with an owner-private certificate containing a `localhost` DNS subject alternative name and server-authentication usage; browser trust remains a separate operator step.

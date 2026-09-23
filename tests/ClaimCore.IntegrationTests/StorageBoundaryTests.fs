@@ -11,6 +11,52 @@ open ClaimCore.Domain
 open ClaimCore.Postgres
 open ClaimCore.IntegrationTests.Fixtures
 
+let private requireConstraintAdmissionRefusal connection transaction =
+    use drop =
+        new NpgsqlCommand(
+            "ALTER TABLE claimcore.cases DROP CONSTRAINT claimed_money",
+            connection,
+            transaction
+        )
+
+    drop.ExecuteNonQuery() |> ignore
+
+    Expect.throwsT<InvalidDataException>
+        (fun () -> RuntimeSchema.requireCompatible connection)
+        "The matching marker cannot admit a database without its money constraint"
+
+    use unenforced =
+        new NpgsqlCommand(
+            "ALTER TABLE claimcore.cases ADD CONSTRAINT claimed_money CHECK (claimed_amount >= 0) NOT ENFORCED",
+            connection,
+            transaction
+        )
+
+    unenforced.ExecuteNonQuery() |> ignore
+
+    Expect.throwsT<InvalidDataException>
+        (fun () -> RuntimeSchema.requireCompatible connection)
+        "A named but unenforced constraint cannot satisfy runtime admission"
+
+let private requireHistoryConstraintAdmissionRefusal (connection: NpgsqlConnection) =
+    use transaction = connection.BeginTransaction()
+
+    try
+        use drop =
+            new NpgsqlCommand(
+                "ALTER TABLE claimcore.case_changes DROP CONSTRAINT case_changes_case_reference_revision_key",
+                connection,
+                transaction
+            )
+
+        drop.ExecuteNonQuery() |> ignore
+
+        Expect.throwsT<InvalidDataException>
+            (fun () -> RuntimeSchema.requireCompatible connection)
+            "A matching marker cannot admit history without unique case revisions"
+    finally
+        transaction.Rollback()
+
 let private rejectDriftedAmount (value: string) =
     use database = store ()
     let request = newRequest ()
@@ -26,14 +72,7 @@ let private rejectDriftedAmount (value: string) =
     use transaction = connection.BeginTransaction()
 
     try
-        use drop =
-            new NpgsqlCommand(
-                "ALTER TABLE claimcore.cases DROP CONSTRAINT claimed_money",
-                connection,
-                transaction
-            )
-
-        drop.ExecuteNonQuery() |> ignore
+        requireConstraintAdmissionRefusal connection transaction
 
         use corrupt =
             new NpgsqlCommand(
@@ -63,6 +102,8 @@ let private rejectDriftedAmount (value: string) =
         reader.Close()
     finally
         transaction.Rollback()
+
+    requireHistoryConstraintAdmissionRefusal connection
 
 let private withRoleSetting (setting: string) (value: string) action =
     use connection = new NpgsqlConnection(adminConnection ())

@@ -85,6 +85,7 @@ module internal RuntimeSchema =
                     AND relation.relname = 'request_submission_settlements'
                     AND constraint_value.conname = 'request_submission_settlements_outcome_check'
                     AND constraint_value.contype = 'c'
+                    AND constraint_value.convalidated AND constraint_value.conenforced
                     AND position('REVOKED_BEFORE_EXECUTION' IN pg_get_constraintdef(constraint_value.oid)) > 0
             ),
             EXISTS (
@@ -96,8 +97,13 @@ module internal RuntimeSchema =
                     AND relation.relname = 'case_changes'
                     AND constraint_value.conname = 'case_changes_command_name_check'
                     AND constraint_value.contype = 'c'
+                    AND constraint_value.convalidated AND constraint_value.conenforced
                     AND position('CORRECT_CASE' IN pg_get_constraintdef(constraint_value.oid)) > 0
             ),
+        """
+
+    let private authorityCalendarChecks =
+        """
             EXISTS (
                 SELECT 1
                 FROM pg_constraint constraint_value
@@ -107,6 +113,7 @@ module internal RuntimeSchema =
                     AND relation.relname = 'installation_lineage'
                     AND constraint_value.conname = 'installation_lineage_business_time_zone_shape'
                     AND constraint_value.contype = 'c'
+                    AND constraint_value.convalidated AND constraint_value.conenforced
             )
         """
 
@@ -115,7 +122,7 @@ module internal RuntimeSchema =
             (SELECT bool_and(a.attnotnull) FROM pg_catalog.pg_attribute a
                 WHERE a.attrelid = 'claimcore.installation_lineage'::regclass
                     AND a.attnum > 0 AND NOT a.attisdropped),
-            (SELECT count(*) = 2 AND bool_and(position('(canonical_request_format = 3)' IN pg_get_constraintdef(c.oid)) > 0)
+            (SELECT count(*) = 2 AND bool_and(c.convalidated AND c.conenforced AND position('(canonical_request_format = 3)' IN pg_get_constraintdef(c.oid)) > 0)
                 FROM pg_catalog.pg_constraint c WHERE c.conrelid IN (
                     'claimcore.request_preparations'::regclass, 'claimcore.operation_revocations'::regclass
                 ) AND c.conname IN ('request_preparations_canonical_request_format_check', 'operation_revocations_canonical_request_format_check')
@@ -123,19 +130,19 @@ module internal RuntimeSchema =
             EXISTS (SELECT 1 FROM pg_catalog.pg_constraint c
                 WHERE c.conrelid = 'claimcore.request_preparations'::regclass
                     AND c.conname = 'request_preparations_preparing_contract_kind_check'
-                    AND c.contype = 'c' AND c.convalidated
+                    AND c.contype = 'c' AND c.convalidated AND c.conenforced
                     AND position('CANONICAL_RECORD_V3' IN pg_get_constraintdef(c.oid)) > 0
                     AND position('LEGACY' IN pg_get_constraintdef(c.oid)) = 0),
             EXISTS (SELECT 1 FROM pg_catalog.pg_constraint c
                 WHERE c.conrelid = 'claimcore.operation_revocations'::regclass
                     AND c.conname = 'operation_revocations_reason_check'
-                    AND c.contype = 'c' AND c.convalidated
+                    AND c.contype = 'c' AND c.convalidated AND c.conenforced
                     AND position('OPERATOR_DISMISSAL' IN pg_get_constraintdef(c.oid)) > 0
                     AND position('LEGACY' IN pg_get_constraintdef(c.oid)) = 0),
             EXISTS (SELECT 1 FROM pg_catalog.pg_constraint c
                 WHERE c.conrelid = 'claimcore.request_preparation_lifecycle'::regclass
                     AND c.conname = 'request_preparation_lifecycle_state_check'
-                    AND c.contype = 'c' AND c.convalidated
+                    AND c.contype = 'c' AND c.convalidated AND c.conenforced
                     AND position('SUBMISSION_STARTED' IN pg_get_constraintdef(c.oid)) > 0
                     AND position('DISMISSED' IN pg_get_constraintdef(c.oid)) = 0)
         """
@@ -144,7 +151,9 @@ module internal RuntimeSchema =
         preparationRelationChecks
         + preparationColumnChecks
         + authorityChecks
+        + authorityCalendarChecks
         + freshChecks
+        + RuntimeConstraintPolicy.sql
 
     let private requirePreparation (reader: DbDataReader) =
         for index in 0 .. reader.FieldCount - 1 do
