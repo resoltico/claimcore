@@ -98,7 +98,6 @@ module internal RecoveryReadOperations =
                 {
                     Items = attempts.Items
                     NextCursor = attempts.NextAfter |> Option.map RecoveryAttemptCursorCodec.encode
-                    LegacyUncertainty = attempts.LegacyUncertainty
                 }
 
             match TypedProjection.detailsWithKnownAuthority retained attemptPage authority with

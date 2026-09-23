@@ -103,7 +103,6 @@
   "ui.recoverySummary": "{command} · {reference} · {authority} · {operationId}",
   "ui.revocationSummary": "ATSAUKTA · {operationId} · {timestamp}",
   "ui.attemptCount": "{count, plural, zero {Mēģinājumu pierādījumi: parādīti #.} one {Mēģinājumu pierādījumi: parādīts #.} other {Mēģinājumu pierādījumi: parādīti #.}}",
-  "ui.legacyUncertainty": "Saglabājas agrākā nenoteiktība.",
   "ui.moreAttempts": "Ielādēt vēl mēģinājumus",
   "ui.retainedIdentity": "Operācija {operationId} · tiesības {authority} · kontrolsumma {digest}",
   "ui.retainedCommand": "Lieta {reference} · komanda {command}",

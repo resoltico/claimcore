@@ -62,7 +62,7 @@ that builder's eligible cache records, not just ClaimCore's, and prompts before 
 
 A complete result is conjunctive: locked restore, compiler build, repository policy, every required
 test project, generated semantic/CLI-v3/Web-v2 contract check, frontend assurance, documentation,
-fresh and upgrade-through-006 database qualifications, published CLI acceptance, published browser
+fresh-baseline creation/refusal database qualifications, published CLI acceptance, published browser
 lifecycle, coverage, and evidence must all succeed for the same source. Do not relabel one green
 family as the whole gate.
 
@@ -81,7 +81,7 @@ Run every project explicitly:
 ```sh
 dotnet test --project tests/ClaimCore.Tests/ClaimCore.Tests.fsproj \
   --configuration Release --no-build --no-restore \
-  --minimum-expected-tests=263 --zero-tests-policy=strict --timeout=10m -- \
+  --minimum-expected-tests=268 --zero-tests-policy=strict --timeout=10m -- \
   --settings="$PWD/eng/expecto.runsettings"
 dotnet test --project tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj \
   --configuration Release --no-build --no-restore \
@@ -93,7 +93,7 @@ dotnet test --project tests/ClaimCore.DocsTests/ClaimCore.DocsTests.fsproj \
   --settings="$PWD/eng/expecto.runsettings"
 dotnet test --project tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj \
   --configuration Release --no-build --no-restore \
-  --minimum-expected-tests=106 --zero-tests-policy=strict --timeout=30m -- \
+  --minimum-expected-tests=114 --zero-tests-policy=strict --timeout=30m -- \
   --settings="$PWD/eng/expecto.runsettings"
 dotnet test --project tests/ClaimCore.RecoveryQualificationTests/ClaimCore.RecoveryQualificationTests.fsproj \
   --configuration Release --no-build --no-restore \
@@ -105,7 +105,7 @@ dotnet test --project tests/ClaimCore.ConcurrencyQualificationTests/ClaimCore.Co
   --settings="$PWD/eng/expecto.runsettings"
 dotnet test --project tests/ClaimCore.MigrationQualificationTests/ClaimCore.MigrationQualificationTests.fsproj \
   --configuration Release --no-build --no-restore \
-  --minimum-expected-tests=7 --zero-tests-policy=strict --timeout=20m -- \
+  --minimum-expected-tests=15 --zero-tests-policy=strict --timeout=20m -- \
   --settings="$PWD/eng/expecto.runsettings"
 dotnet test --project tests/ClaimCore.FuzzQualificationTests/ClaimCore.FuzzQualificationTests.fsproj \
   --configuration Release --no-build --no-restore \
@@ -124,7 +124,7 @@ scheduled extended run explores the same boundaries at 5,000 cases.
 
 The integration and qualification processes create exactly labelled isolated PostgreSQL containers.
 The separate qualification executables prevent a generic integration pass from being reported as
-recovery, concurrency, or migration evidence.
+recovery, concurrency, or fresh-baseline evidence.
 
 `ClaimCore.WebTests` includes production-route `TestServer` requests for all nineteen generated
 Web-v2 endpoints, real session cookies and antiforgery admission, retired-route 404 behavior, raw
@@ -140,7 +140,7 @@ runs 5,000 for both:
 CLAIMCORE_PROPERTY_PROFILE=extended CLAIMCORE_PROPERTY_BASE_SEED=<unsigned-seed> \
 dotnet test --project tests/ClaimCore.Tests/ClaimCore.Tests.fsproj \
   --configuration Release --no-build --no-restore \
-  --minimum-expected-tests=263 --zero-tests-policy=strict --timeout=20m -- \
+  --minimum-expected-tests=268 --zero-tests-policy=strict --timeout=20m -- \
   --settings="$PWD/eng/expecto.runsettings"
 ```
 
@@ -349,7 +349,7 @@ quality or identity of the reviewer.
 
 The CLI acceptance harness builds fresh CLI and Database publish trees with their license, .NET SBOM,
 third-party notices, and immutable manifests, then runs the registered process tests against an
-isolated migrated database:
+isolated freshly initialized database:
 
 ```text
 bash eng/Run-PublishedCliAcceptance.sh

@@ -103,7 +103,6 @@
   "ui.recoverySummary": "{command} · {reference} · {authority} · {operationId}",
   "ui.revocationSummary": "مسحوبة · {operationId} · {timestamp}",
   "ui.attemptCount": "{count, plural, zero {أدلة المحاولات: لا شيء معروض.} one {أدلة المحاولات: محاولة واحدة معروضة.} two {أدلة المحاولات: محاولتان معروضتان.} few {أدلة المحاولات: # محاولات معروضة.} many {أدلة المحاولات: # محاولة معروضة.} other {أدلة المحاولات: # محاولة معروضة.}}",
-  "ui.legacyUncertainty": "ما زال عدم اليقين السابق قائمًا.",
   "ui.moreAttempts": "تحميل المزيد من المحاولات",
   "ui.retainedIdentity": "العملية {operationId} · الصلاحية {authority} · البصمة {digest}",
   "ui.retainedCommand": "الملف {reference} · الأمر {command}",

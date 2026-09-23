@@ -26,7 +26,7 @@ export const definition: SemanticDefinition = {
   ruleSetVersion: 1,
   application: "ClaimCore",
   scope: "trusted-local-operator-claims-register",
-  canonicalCommandFormat: 2,
+  canonicalCommandFormat: 3,
   requestFingerprintVersion: 1,
   recoveryEnvelopeFormat: 1,
   defaultPageSize: 50,
@@ -131,11 +131,11 @@ export const preparation: PreparationDetails = {
   },
   expectedRevision: "0",
   authoredValues: [],
-  canonicalCommandFormat: 2,
+  canonicalCommandFormat: 3,
   preparingApplicationVersion: "0.1.0",
   preparingContractFingerprint: "b".repeat(64),
   preparingContractKind: "SEMANTIC_CORE_V1",
-  attempts: { items: [], nextCursor: null, legacyUncertainty: false },
+  attempts: { items: [], nextCursor: null },
 };
 export const review: AdvisoryReview = {
   before: null,

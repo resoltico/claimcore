@@ -8,17 +8,13 @@ type AdministrationFailure =
     | PostgresVersionUnsupported
     | DatabaseConfigurationInvalid
     | CatalogUnreadable
-    | MigrationNewerThanRuntime
-    | MigrationIdentityMismatch
-    | MigrationJournalWriteFailed
-    | JournalWithoutSchema
-    | SchemaWithoutJournal
-    | MigrationsPending
+    | BaselineMissing
+    | UnsupportedInstallation
+    | BaselineIdentityMismatch
+    | BaselineMarkerWriteFailed
     | BusinessZoneInvalid
     | BusinessZoneAlreadyConfigured
     | InstallationLineageMissing
-    | BusinessZoneTypeInvalid
-    | BusinessZoneWriteFailed
     | PruneOptionsInvalid
     | PruneAuditFailed
     | RecoveryFootprintUnreadable

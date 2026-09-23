@@ -146,7 +146,7 @@ let private stageRegistryTests =
                     "convergence-assurance-negative-controls"
                     "npm-audit"
                     "docs-write-idempotence"
-                    "migration-upgrade-qualification"
+                    "fresh-baseline-qualification"
                     "container-image-assurance-negative-controls"
                     "docker-cleanup-assurance"
                     "secret-scan-artifacts"

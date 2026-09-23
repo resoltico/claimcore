@@ -1,15 +1,14 @@
 namespace ClaimCore.Postgres
 
 open System
-open System.Data
 open System.IO
 open System.Threading
 open System.Threading.Tasks
 open Npgsql
 
-/// Owner-only configuration for the single business calendar used by one ClaimCore installation.
+/// Validation of the immutable business calendar installed with one ClaimCore baseline.
 /// The persisted name is a canonical runtime zone ID, never a host-local default or an alias.
-module InstallationBusinessZone =
+module internal InstallationBusinessZone =
     let private invalidZone () =
         invalidArg
             "zoneId"
@@ -46,68 +45,23 @@ module InstallationBusinessZone =
         | Ok value -> value
         | Error() -> invalidZone ()
 
-    let private read (connection: NpgsqlConnection) (transaction: NpgsqlTransaction) =
+    let internal requireValid zoneId =
+        match canonical zoneId with
+        | Ok value -> value
+        | Error() -> AdministrationFailures.refuse AdministrationFailure.BusinessZoneInvalid
+
+    let internal read (connection: NpgsqlConnection) =
         use command =
             new NpgsqlCommand(
-                "SELECT business_time_zone FROM claimcore.installation_lineage WHERE singleton FOR UPDATE",
-                connection,
-                transaction
+                "SELECT business_time_zone FROM claimcore.installation_lineage WHERE singleton",
+                connection
             )
 
         match command.ExecuteScalar() with
-        | null -> AdministrationFailures.refuse AdministrationFailure.InstallationLineageMissing
-        | :? DBNull -> None
-        | :? string as value -> Some value
-        | _ -> AdministrationFailures.refuse AdministrationFailure.BusinessZoneTypeInvalid
+        | :? string as value -> requireValid value
+        | _ -> AdministrationFailures.refuse AdministrationFailure.InstallationLineageMissing
 
-    /// Configure the business zone once. An exact repeat is idempotent; a different zone fails.
-    let private setValue
-        (progress: AdministrationProgress<unit>)
-        (connectionString: string)
-        (zoneId: string)
-        =
-        let requested =
-            match canonical zoneId with
-            | Ok value -> value
-            | Error() -> AdministrationFailures.refuse AdministrationFailure.BusinessZoneInvalid
-
-        let builder = Migrations.ownerBuilder connectionString
-        use connection = new NpgsqlConnection(builder.ConnectionString)
-        connection.Open()
-        DatabaseEnvironment.requireCompatible connection
-        Migrations.requireOwnerIdentity connection
-        Migrations.requireCurrent connection
-        use transaction = connection.BeginTransaction(IsolationLevel.ReadCommitted)
-        progress.BeginWork()
-        Sql.lockKey connection transaction "claimcore:installation-business-time-zone"
-
-        match read connection transaction with
-        | Some existing when String.Equals(existing, requested, StringComparison.Ordinal) ->
-            progress.Commit((fun () -> transaction.Commit()), ())
-        | Some _ ->
-            AdministrationFailures.refuse AdministrationFailure.BusinessZoneAlreadyConfigured
-        | None ->
-            use command =
-                new NpgsqlCommand(
-                    "UPDATE claimcore.installation_lineage "
-                    + "SET business_time_zone = @zone "
-                    + "WHERE singleton AND business_time_zone IS NULL",
-                    connection,
-                    transaction
-                )
-
-            Sql.text command "zone" requested
-
-            if command.ExecuteNonQuery() <> 1 then
-                AdministrationFailures.refuse AdministrationFailure.BusinessZoneWriteFailed
-
-            progress.Commit((fun () -> transaction.Commit()), ())
-
-    let set connectionString zoneId =
-        AdministrationExecution.run (fun progress -> setValue progress connectionString zoneId)
-
-    /// Runtime admission uses this after schema and ACL checks. It intentionally rejects a fresh
-    /// or upgraded installation until its owner chooses the calendar used for business decisions.
+    /// Runtime reads the zone installed atomically with the baseline, never a host-local default.
     let requireConfigured
         (connection: NpgsqlConnection)
         (cancellationToken: CancellationToken)

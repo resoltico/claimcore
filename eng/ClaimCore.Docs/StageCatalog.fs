@@ -138,7 +138,7 @@ module StageCatalog =
                 [ "dotnet"; "test"; "ClaimCore.ConcurrencyQualificationTests" ]
                 [ OutputRequirement.Suffix "ClaimCore.ConcurrencyQualificationTests.trx" ]
             linux
-                "migration-upgrade-qualification"
+                "fresh-baseline-qualification"
                 [ "dotnet"; "test"; "ClaimCore.MigrationQualificationTests" ]
                 [ OutputRequirement.Suffix "ClaimCore.MigrationQualificationTests.trx" ]
             linux

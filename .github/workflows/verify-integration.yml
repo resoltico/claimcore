@@ -130,11 +130,11 @@ jobs:
             if ($testExit -ne 0 -or $LASTEXITCODE -ne 0) { $script:overall = 1 }
           }
 
-          Invoke-RegisteredProject "integration-linux" "tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj" "ClaimCore.IntegrationTests" 106 $true
+          Invoke-RegisteredProject "integration-linux" "tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj" "ClaimCore.IntegrationTests" 114 $true
           $qualifications = @(
             Start-RegisteredProject "recovery-qualification" "tests/ClaimCore.RecoveryQualificationTests/ClaimCore.RecoveryQualificationTests.fsproj" "ClaimCore.RecoveryQualificationTests" 19
             Start-RegisteredProject "concurrency-qualification" "tests/ClaimCore.ConcurrencyQualificationTests/ClaimCore.ConcurrencyQualificationTests.fsproj" "ClaimCore.ConcurrencyQualificationTests" 5
-            Start-RegisteredProject "migration-upgrade-qualification" "tests/ClaimCore.MigrationQualificationTests/ClaimCore.MigrationQualificationTests.fsproj" "ClaimCore.MigrationQualificationTests" 7
+            Start-RegisteredProject "fresh-baseline-qualification" "tests/ClaimCore.MigrationQualificationTests/ClaimCore.MigrationQualificationTests.fsproj" "ClaimCore.MigrationQualificationTests" 15
           )
           foreach ($qualification in $qualifications) {
             Complete-RegisteredProject $qualification
@@ -153,11 +153,11 @@ jobs:
             artifacts/test-results/integration-linux/ `
             artifacts/test-results/recovery-qualification/ `
             artifacts/test-results/concurrency-qualification/ `
-            artifacts/test-results/migration-upgrade-qualification/ `
+            artifacts/test-results/fresh-baseline-qualification/ `
             "artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/integration-linux.json" `
             "artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/recovery-qualification.json" `
             "artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/concurrency-qualification.json" `
-            "artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/migration-upgrade-qualification.json"
+            "artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/fresh-baseline-qualification.json"
       - name: Upload required integration results
         if: ${{ always() && steps.artifact_scan.outcome == 'success' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -174,7 +174,7 @@ jobs:
           path: |
             artifacts/test-results/recovery-qualification/
             artifacts/test-results/concurrency-qualification/
-            artifacts/test-results/migration-upgrade-qualification/
+            artifacts/test-results/fresh-baseline-qualification/
           if-no-files-found: error
           retention-days: 14
       - name: Upload integration stage evidence
@@ -186,6 +186,6 @@ jobs:
             artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/integration-linux.json
             artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/recovery-qualification.json
             artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/concurrency-qualification.json
-            artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/migration-upgrade-qualification.json
+            artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/fresh-baseline-qualification.json
           if-no-files-found: error
           retention-days: 14

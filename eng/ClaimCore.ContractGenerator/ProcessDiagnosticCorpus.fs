@@ -94,7 +94,7 @@ module internal ProcessDiagnosticCorpus =
 
             outcomes
             |> List.collect (fun outcome ->
-                DatabaseDiagnostics.outcome DatabaseCommand.Migrate outcome
+                DatabaseDiagnostics.outcome DatabaseCommand.Verify outcome
                 |> samples
                     "administration"
                     (DatabaseDiagnostics.nativeToken reason
@@ -121,8 +121,8 @@ module internal ProcessDiagnosticCorpus =
             }
 
         [
-            DatabaseCommand.Migrate, None
-            DatabaseCommand.SetBusinessZone "Etc/UTC", None
+            DatabaseCommand.Verify, None
+            DatabaseCommand.Initialize "Etc/UTC", None
             DatabaseCommand.Prune PreparationPruneOptions.defaults, Some counts
         ]
         |> List.collect (fun (command, data) ->

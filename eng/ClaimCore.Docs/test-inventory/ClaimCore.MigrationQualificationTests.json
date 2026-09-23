@@ -2,12 +2,20 @@
   "schemaVersion": 1,
   "assembly": "ClaimCore.MigrationQualificationTests",
   "tests": [
-    "ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 006.atomicity.[CC-DB-001] failed migration rolls back its objects and journal row",
-    "ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 006.manifest validation.[CC-DB-001] applied migration identities remain frozen",
-    "ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 006.manifest validation.[CC-DB-001] migrator refuses a newer manifest entry",
-    "ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 006.retained data.[CC-DB-001] upgrade preserves cases and history and installs recovery storage",
-    "ClaimCore migration qualification.migration 006 recovery and authority evidence.[CC-DB-001] migration 002 state upgrades to 006 with exact legacy evidence",
-    "ClaimCore migration qualification.migration 006 recovery and authority evidence.[CC-DB-001] migration 003 state upgrades to 006 with exact legacy evidence",
-    "ClaimCore migration qualification.migration 006 recovery and authority evidence.[CC-DB-001] migration 004 state upgrades to 006 without rewriting attempts"
+    "ClaimCore fresh baseline qualification.fresh installation qualification.[CC-DB-001] a different calendar is refused without rewriting installation identity",
+    "ClaimCore fresh baseline qualification.fresh installation qualification.[CC-DB-001] baseline DDL failure rolls back the entire namespace before commit",
+    "ClaimCore fresh baseline qualification.fresh installation qualification.[CC-DB-001] concurrent different calendars cannot both win initialization",
+    "ClaimCore fresh baseline qualification.fresh installation qualification.[CC-DB-001] concurrent identical initializers serialize to one complete installation",
+    "ClaimCore fresh baseline qualification.fresh installation qualification.[CC-DB-001] fresh initialization atomically installs the current identity and calendar",
+    "ClaimCore fresh baseline qualification.fresh installation qualification.[CC-DB-001] identical initialization and read-only verification preserve every stored byte",
+    "ClaimCore fresh baseline qualification.fresh installation qualification.[CC-DB-001] verification and maintenance refuse an absent baseline without creating it",
+    "ClaimCore fresh baseline qualification.unsupported installation refusal.[CC-DB-001] a matching marker does not conceal missing current integrity constraints",
+    "ClaimCore fresh baseline qualification.unsupported installation refusal.[CC-DB-001] all old installation markers are refused without touching evidence or history",
+    "ClaimCore fresh baseline qualification.unsupported installation refusal.[CC-DB-001] an unmarked occupied namespace is refused without deleting its contents",
+    "ClaimCore fresh baseline qualification.unsupported installation refusal.[CC-DB-001] current-looking tables without a baseline marker remain unsupported",
+    "ClaimCore fresh baseline qualification.unsupported installation refusal.[CC-DB-001] even an empty pre-existing namespace is not silently adopted",
+    "ClaimCore fresh baseline qualification.unsupported installation refusal.[CC-DB-001] malformed or executable baseline lookalikes are not queried or repaired",
+    "ClaimCore fresh baseline qualification.unsupported installation refusal.[CC-DB-001] mixing a current marker with historical metadata cannot authorize old storage",
+    "ClaimCore fresh baseline qualification.unsupported installation refusal.[CC-DB-001] unknown identities and altered digests are refused with no repair"
   ]
 }

@@ -59,7 +59,7 @@ let private invoke path =
     start.RedirectStandardOutput <- true
     start.RedirectStandardError <- true
     start.ArgumentList.Add(dll)
-    start.ArgumentList.Add("migrate")
+    start.ArgumentList.Add("verify")
 
     start.Environment.Keys
     |> Seq.filter (fun key ->
@@ -82,7 +82,7 @@ let private invoke path =
 
 let private expectRefused path =
     let exitCode, stdout, stderr = invoke path
-    Expect.equal exitCode 3 "Unsafe admin file refuses migration before DB access"
+    Expect.equal exitCode 3 "Unsafe admin file refuses initialization before DB access"
     Expect.equal stdout "" "Unsafe admin file emits no success payload"
 
     use diagnostic = System.Text.Json.JsonDocument.Parse(stderr)

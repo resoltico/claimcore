@@ -27,16 +27,16 @@ allowance. Adding one is a reviewed change to the architecture, not an implement
 | Component | Layer | Responsibility | Direct dependencies |
 |---|---|---|---|
 | `Domain` | core | Accepted values, field metadata, validation, available transitions, and case state. | none |
-| `RecordFormat` | core | Byte-stable canonical command-record format 2, historical snapshots, and recovery-envelope format 1. | `Domain` |
+| `RecordFormat` | core | Byte-stable canonical command-record format 3, historical snapshots, and recovery-envelope format 2. | `Domain` |
 | `Application` | core | The typed IClaimsCore facade, request admission, operation identity, endpoint outcomes, and the sole public recovery workflow. | `Domain`, `RecordFormat` |
 | `Contracts` | contract | Pure projection of Application's semantic description into CLI-v3 and Web-v2 wire contracts, schemas, codecs, and generated browser DTOs. | `Application`, `Domain` |
 | `HostSecurity` | infrastructure | Handle-first local private-file and directory admission. No claims or transport decision authority. | none |
-| `Postgres` | infrastructure | Durable storage, ordered migrations, connection validation, transaction boundaries, the private technical recovery store, and schema-owner administration. | `Application`, `Domain`, `RecordFormat` |
+| `Postgres` | infrastructure | Durable storage, atomic fresh-baseline initialization and admission, transaction boundaries, the private technical recovery store, and schema-owner administration. | `Application`, `Domain`, `RecordFormat` |
 | `Hosting` | composition | The sole composition root. Owns runtime opening, the data-source lifetime, and the admission lease; the only component that binds a store to the core. | `Application`, `Domain`, `Postgres` |
 | `CliProtocol` | transport | CLI-v3 framing, strict JSON decoding, discovery, and endpoint dispatch over a supplied core. It declares the core-supplier abstraction and cannot name a runtime factory. | `Application`, `Contracts`, `Domain`, `HostSecurity` |
 | `Cli` | entry point | The CLI composition root and process entry point. It owns the runtime lifetime and stdin/stdout delivery; every protocol decision belongs to CliProtocol. | `Application`, `CliProtocol`, `Contracts`, `Hosting` |
 | `Web` | entry point | Loopback HTTPS admission, Web-v2 transport, session handling, and browser interaction over a composed runtime. Never reaches storage or schema administration. | `Application`, `Contracts`, `Domain`, `HostSecurity`, `Hosting` |
-| `Database` | entry point | Schema-owner administration for ordered migrations, installation business time, and bounded technical-preparation pruning. Not a case-work client, so it never composes a runtime. | `HostSecurity`, `Postgres` |
+| `Database` | entry point | Schema-owner administration for atomic baseline initialization, read-only verification, and bounded technical-preparation pruning. Not a case-work client, so it never composes a runtime. | `HostSecurity`, `Postgres` |
 <!-- generated:end architecture-components -->
 
 Dependency direction points toward Domain and Application. CLI and Web may collect and render data,
@@ -45,7 +45,7 @@ enforces durable structural integrity but does not become a second claims workfl
 
 `Hosting` is the only component that binds a store to the core, so it is the only one that sees
 Application's internal ports. Because a case-work host links `Hosting` rather than `Postgres`, no
-CLI or Web code can reach a connection, a row, a migration, or the bounded pruning entry point even
+CLI or Web code can reach a connection, a row, a baseline initializer, or the bounded pruning entry point even
 by mistake: those types are not in its compile closure at all. `Database` keeps the opposite
 arrangement — it links `Postgres` for schema-owner administration and never composes a runtime.
 
@@ -207,7 +207,7 @@ localization boundaries.
    Application binder to create the closed Domain `CommandRequest`. Native callers supply that
    closed request directly.
 2. Application revalidates the request, preserves its operation ID and authored values, and derives
-   canonical format-2 request bytes and their SHA-256 identity.
+   canonical format-3 request bytes and their SHA-256 identity.
 3. `Prepare` checks accepted operation identity and stored request fingerprint first. An exact
    accepted request returns its receipt even if technical preparation was pruned; a same-ID conflict
    discloses no receipt. Otherwise it checks retained identity, obtains a Domain advisory review for
@@ -227,7 +227,8 @@ localization boundaries.
    inferring non-commit.
 
 PostgreSQL detailed recovery reads project actual attempt IDs and their settlements through a bounded
-operation-bound keyset page, plus the independent pre-003 uncertainty marker. Application keeps these
+operation-bound keyset page. Unsettled attempts are never converted to definite settlement by a
+later acceptance and continue to block pruning of that preparation. Application keeps these
 separate from producer provenance and accepted claim history. Before a technical COMMIT begins,
 cancellation can prove a rollback and yield a definite cancelled outcome. Once COMMIT starts, its
 result is not cancellable into a claim of non-commit: lost confirmation remains explicitly unknown.
@@ -263,7 +264,7 @@ halves are deliberate, and the second is the harder one.
 Web host loads and validates its whole configuration - required private paths, one exact HTTPS
 localhost origin, every bounded admission limit - before it opens a runtime, and the runtime opens
 only after connection, role, ACL, schema, and lineage admission all succeed. Compiled assemblies must
-match the product release, the migration manifest must match its checksums, and the installation must
+match the product release, the baseline identity must match its frozen checksum, and the installation must
 have an explicit stored IANA business zone. None of these degrade into a default.
 
 **Refuse to guess.** A lost commit confirmation is not a failure, and cancellation after `COMMIT`

@@ -84,7 +84,7 @@ module internal WebCorpusSamples =
         { CliCorpusValues.preparationDetails with
             Summary = preparationWithoutDigest
             AuthoredValues = []
-            PreparingContractKind = "LEGACY_UNCLASSIFIED"
+            PreparingContractKind = "CANONICAL_RECORD_V3"
             Attempts =
                 {
                     Items =
@@ -100,7 +100,6 @@ module internal WebCorpusSamples =
                                 (Some CliCorpusValues.timestamp)
                         ]
                     NextCursor = Some "synthetic-attempt-cursor"
-                    LegacyUncertainty = true
                 }
         }
 

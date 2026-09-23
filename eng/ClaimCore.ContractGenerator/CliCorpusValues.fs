@@ -146,7 +146,7 @@ module internal CliCorpusValues =
             Summary = preparationSummary
             ExpectedVersion = 0L
             AuthoredValues = [ "claimantName", fields.ClaimantName ]
-            CanonicalCommandFormat = 2
+            CanonicalCommandFormat = SemanticContract.current.CanonicalCommandFormat
             PreparingApplicationVersion = "0.1.0"
             PreparingContractFingerprint = digest
             PreparingContractKind = "SEMANTIC_CORE_V1"
@@ -162,7 +162,7 @@ module internal CliCorpusValues =
                             }
                         ]
                     NextCursor = None
-                    LegacyUncertainty = false
+
                 }
         }
 
@@ -198,7 +198,7 @@ module internal CliCorpusValues =
                     Command = CommandKind.Open
                     ExpectedVersion = 0L
                     AuthoredValues = [ "claimantName", fields.ClaimantName ]
-                    CanonicalCommandFormat = 2
+                    CanonicalCommandFormat = SemanticContract.current.CanonicalCommandFormat
                     RequestSha256 = digest
                 }
             ExistingPreparation = Some preparationSummary

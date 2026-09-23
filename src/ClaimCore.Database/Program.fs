@@ -34,8 +34,8 @@ let private identity () =
 let private help () =
     let _, version, _ = identity ()
     printfn "ClaimCore.Database %s — schema and recovery-retention administration" version
-    printfn "  ClaimCore.Database migrate"
-    printfn "  ClaimCore.Database set-business-zone <canonical-IANA-ID>"
+    printfn "  ClaimCore.Database initialize <canonical-IANA-ID>"
+    printfn "  ClaimCore.Database verify"
     printfn "  ClaimCore.Database prune [--dry-run] [--settled-retention-days <1-3650>]"
     printfn "                           [--abandoned-retention-days <1-3650>] [--limit <1-1000>]"
     printfn "  ClaimCore.Database describe diagnostics"

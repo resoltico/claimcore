@@ -147,8 +147,7 @@ let private provision (admin: string) (databaseName: string) (appPassword: strin
         )
 
     command.ExecuteNonQuery() |> ignore
-    Migrations.apply admin |> completedAdministration
-    InstallationBusinessZone.set admin "Etc/UTC" |> completedAdministration
+    SchemaBaseline.initialize admin "Etc/UTC" |> completedAdministration
 
 let private runtimeConnection (admin: string) (appPassword: string) =
     let application = NpgsqlConnectionStringBuilder(admin)

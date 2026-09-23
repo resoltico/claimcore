@@ -70,12 +70,12 @@ module ConvergenceRequiredSubjects =
     let private persistence =
         set
             [
-                "assurance-migration:frozen-applied-bytes"
-                "assurance-migration:rollback"
-                "assurance-migration:upgrade-002-to-006"
-                "assurance-migration:upgrade-003-to-006"
-                "assurance-migration:upgrade-004-to-006"
-                "assurance-migration:upgrade-through-006"
+                "assurance-baseline:frozen-identity-and-repeat"
+                "assurance-baseline:atomic-rollback"
+                "assurance-baseline:old-installation-refusal"
+                "assurance-baseline:partial-and-mixed-refusal"
+                "assurance-baseline:concurrent-initialization"
+                "assurance-baseline:immutable-calendar"
                 "assurance-recovery:accepted-blocks-dismiss"
                 "assurance-recovery:atomic-retain-classification"
                 "assurance-recovery:canonical-byte-identity"
@@ -84,7 +84,7 @@ module ConvergenceRequiredSubjects =
                 "assurance-recovery:evidence-attempt-settlement"
                 "assurance-recovery:exact-prepare-retry"
                 "assurance-recovery:identity-conflict"
-                "assurance-recovery:legacy-marker-independent"
+                "assurance-recovery:current-import-provenance"
                 "assurance-recovery:operation-authority"
                 "assurance-recovery:provenance-first-writer"
                 "assurance-recovery:resolve-dismiss-race"

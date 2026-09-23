@@ -121,13 +121,13 @@ let private verifyLifecycle () =
 
     Expect.equal actual.Version 4L "Concurrency is separate metadata"
 
-let private installedMigrations () =
+let private installedBaseline () =
     use connection = new NpgsqlConnection(adminConnection ())
     connection.Open()
 
     use command =
         new NpgsqlCommand(
-            "SELECT version, name, script_sha256 FROM claimcore.schema_migrations ORDER BY version",
+            "SELECT baseline_id, script_sha256 FROM claimcore.schema_baseline",
             connection
         )
 
@@ -135,7 +135,7 @@ let private installedMigrations () =
 
     [
         while reader.Read() do
-            reader.GetInt32(0), reader.GetString(1), reader.GetString(2)
+            reader.GetString(0), reader.GetString(1)
     ]
 
 let private baselineTests =
@@ -164,23 +164,22 @@ let private baselineTests =
 
 let private persistenceTests =
     testList
-        "field persistence and migration journal"
+        "field persistence and baseline identity"
         [
             testCase
                 "all fields survive decision, payment and closure without currency coercion"
                 verifyLifecycle
-            testCase "migration journal exactly matches the ordered embedded manifest" (fun () ->
-                Migrations.apply (adminConnection ()) |> completedAdministration
+            testCase "baseline marker exactly matches the embedded baseline identity" (fun () ->
+                SchemaBaseline.initialize (adminConnection ()) "Etc/UTC"
+                |> completedAdministration
 
-                let expected =
-                    SchemaDefinition.all ()
-                    |> List.map (fun migration ->
-                        migration.Version, migration.Name, migration.Digest)
+                let baseline = SchemaDefinition.current ()
+                let expected = [ baseline.Id, baseline.Digest ]
 
                 Expect.equal
-                    (installedMigrations ())
+                    (installedBaseline ())
                     expected
-                    "Every installed migration is ordered and checksum-bound")
+                    "The installation has exactly one checksum-bound baseline marker")
         ]
 
 let tests =

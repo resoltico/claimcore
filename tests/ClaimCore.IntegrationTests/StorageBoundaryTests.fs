@@ -150,17 +150,17 @@ let private environmentTests =
                             (database.CheckSchema() |> await)
                             (Error CoreFailure.SchemaMismatch)
                             "Connection settings must meet baseline"))
-            testCase "migration refuses startup-option overrides" (fun () ->
+            testCase "initializer refuses startup-option overrides" (fun () ->
                 let builder = NpgsqlConnectionStringBuilder(adminConnection ())
                 builder.Options <- "-c synchronous_commit=off"
 
-                Migrations.apply builder.ConnectionString
+                SchemaBaseline.initialize builder.ConnectionString "Etc/UTC"
                 |> refusedAdministration AdministrationFailure.OwnerConnectionInvalid)
         ]
 
 let private transactionTests =
     testList
-        "transaction and migration integrity"
+        "transaction and baseline integrity"
         [
             testCase "core transaction does not join caller ambient scope" (fun () ->
                 let request = newRequest ()
@@ -184,14 +184,14 @@ let private transactionTests =
 
                 Expect.isSome current "Commit ownership stays inside core/store boundary")
             testCase "runtime rejects installed script hash mismatch" (fun () ->
-                let original = (SchemaDefinition.all ()).Head.Digest
+                let original = (SchemaDefinition.current ()).Digest
                 use connection = new NpgsqlConnection(adminConnection ())
                 connection.Open()
 
                 let set value =
                     use update =
                         new NpgsqlCommand(
-                            "UPDATE claimcore.schema_migrations SET script_sha256 = @value WHERE version = 1",
+                            "UPDATE claimcore.schema_baseline SET script_sha256 = @value WHERE singleton",
                             connection
                         )
 
@@ -202,15 +202,15 @@ let private transactionTests =
                 try
                     set (String.replicate 64 "0")
 
-                    Migrations.apply (adminConnection ())
-                    |> refusedAdministration AdministrationFailure.MigrationIdentityMismatch
+                    SchemaBaseline.initialize (adminConnection ()) "Etc/UTC"
+                    |> refusedAdministration AdministrationFailure.BaselineIdentityMismatch
 
                     use database = new PostgresStore(appConnection ())
 
                     Expect.equal
                         (database.CheckSchema() |> await)
                         (Error CoreFailure.SchemaMismatch)
-                        "Same integer schema version is insufficient"
+                        "A marker with the wrong digest is not a supported baseline"
                 finally
                     set original)
         ]

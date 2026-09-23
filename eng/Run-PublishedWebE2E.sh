@@ -174,15 +174,15 @@ app_connection="$state_dir/application.connection"
 printf 'Host=127.0.0.1;Port=%s;Database=claimcore;Username=postgres;Password=%s\n' "$port" "$owner_secret" >"$owner_connection"
 printf 'Host=127.0.0.1;Port=%s;Database=claimcore;Username=claimcore_app;Password=%s\n' "$port" "$app_secret" >"$app_connection"
 
-echo "Applying ordered migrations to the isolated synthetic database."
+echo "Initializing the fresh baseline in the isolated synthetic database."
 if ! CLAIMCORE_ADMIN_CONNECTION_FILE="$owner_connection" \
-  dotnet "$database_dll" migrate >/dev/null 2>&1; then
-  echo "The published database migration failed." >&2
+  dotnet "$database_dll" initialize Etc/UTC >/dev/null 2>&1; then
+  echo "The published database initialization failed." >&2
   exit 1
 fi
 if ! CLAIMCORE_ADMIN_CONNECTION_FILE="$owner_connection" \
-  dotnet "$database_dll" set-business-zone Etc/UTC >/dev/null 2>&1; then
-  echo "The published database business-time-zone configuration failed." >&2
+  dotnet "$database_dll" verify >/dev/null 2>&1; then
+  echo "The published database baseline verification failed." >&2
   exit 1
 fi
 certificate="$state_dir/web.pfx"

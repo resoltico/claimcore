@@ -13,9 +13,7 @@ open ClaimCore.RecordFormat
 /// business decision; it only reads and appends exact operation authority evidence.
 module internal OperationAuthorityStore =
     [<RequireQualifiedAccess>]
-    type RevocationReason =
-        | OperatorDismissal
-        | LegacyDismissal
+    type RevocationReason = | OperatorDismissal
 
     [<NoEquality; NoComparison>]
     type Revocation =
@@ -30,12 +28,10 @@ module internal OperationAuthorityStore =
     let private reason =
         function
         | RevocationReason.OperatorDismissal -> "OPERATOR_DISMISSAL"
-        | RevocationReason.LegacyDismissal -> "LEGACY_DISMISSAL"
 
     let private readReason =
         function
         | "OPERATOR_DISMISSAL" -> RevocationReason.OperatorDismissal
-        | "LEGACY_DISMISSAL" -> RevocationReason.LegacyDismissal
         | _ -> raise (InvalidDataException("Stored operation revocation reason is unknown."))
 
     let private read (reader: DbDataReader) =

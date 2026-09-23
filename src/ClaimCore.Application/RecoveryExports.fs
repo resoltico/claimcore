@@ -23,7 +23,7 @@ module internal RecoveryExports =
                     {
                         InstallationId = lineage
                         OperationId = retained.OperationId
-                        ProtocolVersion = retained.CanonicalRequestFormat
+                        CanonicalCommandFormat = retained.CanonicalRequestFormat
                         RequestFingerprintVersion = RecordVersions.RequestFingerprint
                         RequestSha256 = retained.RequestSha256
                         CanonicalRequest = retained.CanonicalRequest

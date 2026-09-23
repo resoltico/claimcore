@@ -6,15 +6,15 @@ normal case work uses Web or CLI with a separate runtime credential.
 
 ## Database executable
 
-The generated block below is synchronized with the compiled program. `help` and `version` do not
-open PostgreSQL; mutating administration commands require the private file selected by
-`CLAIMCORE_ADMIN_CONNECTION_FILE`.
+The generated block below is synchronized with the compiled program. `help`, `version`, and
+`describe diagnostics` are database-free. Initialization, verification and pruning require the
+private file selected by `CLAIMCORE_ADMIN_CONNECTION_FILE`.
 
 <!-- generated:begin database-help -->
 ```text
 ClaimCore.Database 0.4.0 — schema and recovery-retention administration
-  ClaimCore.Database migrate
-  ClaimCore.Database set-business-zone <canonical-IANA-ID>
+  ClaimCore.Database initialize <canonical-IANA-ID>
+  ClaimCore.Database verify
   ClaimCore.Database prune [--dry-run] [--settled-retention-days <1-3650>]
                            [--abandoned-retention-days <1-3650>] [--limit <1-1000>]
   ClaimCore.Database describe diagnostics
@@ -31,139 +31,123 @@ Set CLAIMCORE_ADMIN_CONNECTION_FILE to an owner-private schema-owner connection 
 The admin connection file must have an absolute canonical path to an owner-private regular UTF-8 file
 no larger than 8,192 bytes, with no linked leaf or ancestor. The shared private-file service verifies
 its opened file handle and rejects unsafe mode, extended ACLs, links, invalid UTF-8, and oversize
-before a database connection is attempted; failure diagnostics disclose neither the path nor file
-bytes. This runtime path supports macOS and Linux and fails closed on Windows. Database-free `help`
-and `version` remain available on every build host. The file contains an Npgsql connection string for
-the schema owner and must never be passed to CLI or Web as their runtime credential.
+before database access; diagnostics disclose neither the path nor file bytes. This runtime path
+supports macOS and Linux and fails closed on Windows. Database-free discovery remains available on
+every build host. The file contains an Npgsql connection string for the schema owner and must never
+be passed to CLI or Web as their runtime credential. Startup-option overrides and application-role
+credentials are refused by owner administration; no credential is elevated through `SET ROLE`.
 
-The runtime validates the supported server range, required durability and session settings, runtime
-role, and exact installed migration manifest when opening a connection. Development and CI use the
-digest-pinned image selected by [`db/postgresql-baseline.json`](../db/postgresql-baseline.json);
-executable configuration and tests own exact compatibility policy.
+Runtime connection admission checks the supported server, durability/session settings, confined
+application identity, exact current baseline identity, required structural checks and least-privilege
+ACLs. Development and CI use the digest-pinned image in
+[`db/postgresql-baseline.json`](../db/postgresql-baseline.json). Unsupported old storage is classified
+before queries assume the current relation layout.
 
 ## Administration results and delivery
 
-`ClaimCore.Database describe diagnostics` publishes the exact response schema and its fingerprint
-without configuration or database access. Maintenance reports structured JSON and separates
-`NOT_STARTED`, `NOT_COMMITTED`, `COMPLETION_UNKNOWN`, `COMPLETED` and
-`COMPLETED_CLEANUP_FAILED`. Unconfirmed commit exits 4 and requires inspection/reconciliation;
-it is not safe automatic-retry advice. Definite admission/action failures exit 3.
+`describe diagnostics` publishes the exact response schema and its fingerprint without configuration
+or database access. Results distinguish `NOT_STARTED`, `NOT_COMMITTED`, `COMPLETION_UNKNOWN`,
+`COMPLETED` and `COMPLETED_CLEANUP_FAILED`. An unconfirmed commit exits 4 and requires reconciliation,
+not an inferred rollback or automatic mutation retry. Definite admission/action failures exit 3.
+Use read-only `verify` after reconnecting to inspect installation readiness; verification is not a
+historical operation receipt and cannot prove which caller created an installation.
 
-Output failure after confirmed maintenance does not relabel the action as failed. It makes one
-bounded stderr delivery diagnostic and returns a nonzero exit. Terminal preparation counts and
-canonical byte totals are exact decimal strings. Native callers handle `AdministrationOutcome`
-instead of assuming an exception or a returned unit captures every completion state. Existing
-migration history and stored formats remain unchanged in this package.
+Output failure after confirmed administration does not relabel the database action as uncommitted.
+It emits one bounded stderr delivery diagnostic and returns a nonzero exit. Terminal preparation
+counts and byte totals are exact decimal strings. Native callers handle `AdministrationOutcome`
+rather than assuming an exception or returned unit expresses every completion state.
 
 ## Stored data
 
-- `claimcore.cases` contains exactly the thirteen business columns plus technical revision.
-- `claimcore.case_changes` contains immutable accepted-operation receipts, request fingerprints, and
-  historical snapshots. Accepted replay does not depend on retained technical preparations.
-- `claimcore.request_preparations`, its append-only lifecycle, and `installation_lineage` retain
-  bounded technical material for exact-request recovery; they are not claim state or history.
-- Each preparation stores canonical command-record format, exact request digest and bytes, application
-  version, and generalized preparation provenance. Provenance is audit context, not operation
-  identity; an exact canonical-byte replay preserves the first producer's version, fingerprint,
-  provenance kind, and preparation timestamp.
-- Submission-attempt and settlement tables retain append-only technical evidence for each recovery
-  execution attempt. Detailed inspection reads the actual attempt IDs, start times, definite
-  settlements, and an independent marker preserving uncertainty inherited from the pre-003 schema.
-  A bounded list omits this detail and authored request values.
-- `claimcore.schema_migrations` records each ordered migration's version, name, and SHA-256 digest.
-- `claimcore.request_preparation_prunes` records every preparation-pruning attempt and its bounded
-  outcome.
+`cases` retains exactly thirteen business columns plus technical revision. `case_changes` retains
+append-only accepted-operation receipts, request fingerprints and snapshots; exact accepted replay
+does not depend on optional preparation retention. These accepted facts remain independent of
+technical attempt evidence.
 
-Revision is storage metadata, not part of `CaseFields`. Constraints enforce representable scalar
-bounds, decision-tuple completeness, chronology, payment prerequisites, keys, and references. They
-are defense in depth and do not replace the domain state machine.
+`request_preparations` stores exact format-3 canonical request bytes and digest, application version,
+preparing fingerprint/kind and timestamp. `SEMANTIC_CORE_V1` denotes a semantic preparation;
+`CANONICAL_RECORD_V3` denotes validation and retention of an unbound current canonical record, not an
+invented original producer. An exact-byte replay preserves the first retained metadata. The
+append-only lifecycle records submission start only. Actual identified attempts and their independent
+definite settlements remain available through bounded operation-specific inspection.
 
-The runtime role has the minimum data privileges needed by the application. Schema ownership and
-administration use a separate credential. Runtime credentials still permit some direct SQL and
+`operation_revocations` contains durable operation ID, format, digest, timestamp and
+`OPERATOR_DISMISSAL` reason. It deliberately has no foreign key to the optional preparation; deleting
+a terminal preparation cannot resurrect execution authority. `installation_lineage` contains one
+nonempty installation UUID and its mandatory business time zone. `schema_baseline` contains one
+baseline identity/digest and installation audit metadata. `request_preparation_prunes` is owner-only
+maintenance audit. No old migration ledger, unidentified-start table, legacy provenance or legacy
+dismissal reason is part of this installation.
+
+Scalar bounds, exact numeric precision, complete decision tuples, chronology, payment prerequisites,
+keys and references remain enforced in the final CREATE definitions. These are defense in depth,
+not a replacement for the Domain state machine. Runtime credentials permit some direct SQL and
 therefore belong only to trusted infrastructure.
 
-## Migration policy
+## Fresh installation boundary
 
 <a id="cc-db-001"></a>
-### CC-DB-001 — Ordered migration integrity and supported upgrade
+### CC-DB-001 — Atomic fresh baseline and non-destructive refusal
 
-Migration files under `db/` are ordered, append-only, embedded in the PostgreSQL assembly, and bound
-to the frozen checksums in `db/migration-manifest.json`. `ClaimCore.Database` bootstraps the ledger,
-applies pending files in order in a transaction under a database lock, and refuses source or recorded
-drift.
+[`db/baseline.sql`](../db/baseline.sql) is one direct final-state schema definition, embedded with the
+frozen identity and SHA-256 digest in [`db/schema-baseline.json`](../db/schema-baseline.json).
+`initialize <canonical-IANA-ID>` validates an explicitly chosen calendar before connecting. Under a
+transaction-scoped schema lock it inspects the namespace before executing DDL. Only an absent
+`claimcore` namespace may be created. Schema, grants, baseline marker, new lineage UUID and non-null
+calendar commit in one transaction. A pre-commit DDL failure rolls all of them back; loss of commit
+confirmation remains explicitly unknown.
 
-The currently supported paths apply a fresh database through 006 and upgrade an installed 001, 002,
-003, 004, or 005 schema sequentially to 006. They preserve adopted cases, accepted history, canonical
-request bytes, preparations, attempts, settlements, legacy uncertainty, installation lineage, and
-the exact 001–005 migration bytes. A pre-commit failure rolls back atomically and recorded digests remain exact. A lost commit
-confirmation is reported as completion unknown, never inferred rollback.
+A repeated initialization of the exact current baseline with the identical calendar validates it
+without rewriting any marker, lineage, timestamp, data or provenance. Concurrent initializers
+serialize before classification. A different calendar is refused, not silently substituted.
+`verify` runs current identity/structure/calendar checks in a read-only transaction; it cannot
+initialize, repair or upgrade. Required runtime-role ACLs are additionally checked by the runtime.
 
-Migration 002 added bounded request preparations. Migration 003 added per-submission attempts and
-definite technical settlements while conservatively retaining uncertainty from starts without attempt
-identities. Migration 004 is a hard provenance generalization: it renames `protocol_version` to
-`canonical_request_format`, renames `web_contract_fingerprint` to
-`preparing_contract_fingerprint`, and adds non-null `preparing_contract_kind`. Existing fingerprint
-bytes are preserved exactly and marked `LEGACY_UNCLASSIFIED`; new semantic preparations use
-`SEMANTIC_CORE_V1`. The change does not rewrite canonical request bytes, receipts, lineage, attempts,
-or settlements.
+Every pre-existing unsupported `claimcore` namespace is refused untouched, including an empty
+namespace, a partial installation, old migration-ledger schemas 001–006, mixed old/current metadata,
+unknown baseline IDs, altered digests and malformed marker relations. A marker alone does not skip
+current structural admission. Neither initialization nor verification deletes or adopts data.
+Old `migrate` and `set-business-zone` invocations are unsupported, not aliases. There are no ordered
+migration files, migration-prefix engine, compatibility views, backfills or automatic conversions.
 
-Migration 005 grants the confined runtime `SELECT` on the pre-003 uncertainty marker. It changes no
-row or canonical byte. Current recovery inspection reads that marker separately from producer
-provenance and reads real append-only attempt and settlement rows; a later definite attempt does not
-erase uncertainty inherited from an earlier unidentified start.
+For an old installation, stop attempting to open it with this build. Retain its database, volumes,
+backups and recovery files under the compatible old software and the operator's retention policy.
+Provision a **separate** database for this fresh baseline and explicitly choose its business calendar.
+No supported import of old database contents or old recovery artifacts is provided. Do not copy an
+old lineage, relabel a marker, rewrite artifact versions or create new operation IDs to get past
+refusal; those actions do not transfer accepted/revoked authority and can duplicate effects. Any
+future data transition requires a separate reviewed operator-led plan, not a shim in this package.
 
-Migration 006 adds durable operation revocations, the `REVOKED_BEFORE_EXECUTION` technical
-settlement, `CORRECT_CASE` storage admission, an installation business-time-zone field, and recovery
-ordering support. A revocation records only operation identity, canonical format, digest, timestamp,
-and a bounded technical reason; it has no foreign key to an optional preparation, so pruning cannot
-resurrect the operation. The migration backfills retained legacy dismissals. A dismissal that was
-already pruned before 006 had no recoverable operation identity, so ClaimCore documents that
-historical limit rather than inventing a retroactive guarantee.
-
-The upgrade through 006 requires planned downtime. Stop Web and CLI sessions, back up the
-installation, apply the ordered migrations with the schema-owner Database executable, configure the
-one installation business time zone, then start current applications. There is no downgrade,
-compatibility view, or migration that converts legacy provenance into semantic provenance.
-
-- Never edit, reorder, or replace an applied migration.
-- Add a new migration for every schema change.
-- Update readers, writers, constraints, generated transport contracts, tests, and documentation together.
-- Test both a fresh database and an upgrade from the previous supported schema state.
-- Never delete or recreate adopted data merely to make a migration pass.
-
-`migrate` verifies already-installed entries and applies each pending PostgreSQL schema migration in
-order. It has no automatic downgrade, source-drift repair, or data-import path.
+The baseline digest identifies a frozen installation contract, not the application release number.
+Changing it must deliberately define another supported/refused installation boundary; it is not a
+license to edit an existing database or silently advance its marker. Keep readers, writers,
+constraints, generated contracts, tests and documentation coherent. The
+[pre-implementation design and separate QA](fresh-baseline-design.md) records this decision.
 
 ## Preparation retention
 
-`prune` removes only old technical request preparations whose authority is already terminal: the
-operation has an accepted receipt or it has a durable revocation. A definite rejection alone does
-not make an operation terminal—it may be valid later after state or business-date changes—and the
-command does not delete it merely because every known attempt settled. A start inherited from the
-pre-attempt schema and a legacy provenance marker remain conservative recovery evidence; neither
-authorizes inference that an operation did not commit. The command never deletes a case, accepted
-case history, durable revocation marker, installation lineage, or an unsettled submission.
+Pruning is an explicit owner operation, never an initialization side effect. Eligible preparations
+must already be terminal through an accepted receipt or durable revocation **and have no unsettled
+identified attempt**. A later accepted retry does not erase an earlier attempt's uncertainty.
+Definite rejection alone does not close authority: the request may become valid after later state
+or business-date changes. Pending, rejected-only and unsettled evidence is never inferred away.
 
-- `--dry-run` records candidate count without deleting candidates.
-- `--settled-retention-days` and `--abandoned-retention-days` accept 1–3650 days and default to 30.
-- `--limit` accepts 1–1000 candidates and defaults to 100.
-
-The command requires a current schema and schema-owner identity, serializes pruning with a database
-lock, and records its parameters, candidate count, and deleted count in the owner-only prune journal.
-Run a dry pass and review operational retention requirements before deletion.
-Pruning an accepted operation's technical preparation does not remove its accepted `case_changes`
-receipt. Exact accepted replay uses that receipt and its stored request fingerprint, not preparation
-retention. Pruning a revoked preparation retains its compact revocation tombstone for exact terminal
-repeat and inspection, but does not retain authored values or exportable recovery bytes.
+`--dry-run` audits candidate count without deleting candidates. `--settled-retention-days` and
+`--abandoned-retention-days` accept 1–3650 days, defaulting to 30; `--limit` accepts 1–1000, defaulting
+to 100. Pruning requires current-baseline admission and schema ownership, serializes maintenance,
+and audits parameters/counts. Review a dry run and the operator's retention requirements before
+explicit deletion. It never deletes a case, accepted history, independent revocation or lineage.
+An accepted receipt continues to support exact idempotent replay after technical pruning; a revoked
+operation retains only its compact tombstone when its preparation is pruned, not exportable bytes.
 
 ## Installation business time zone
 
-After migration, a schema owner must run `set-business-zone <canonical-IANA-ID>` before a runtime can
-open. The first valid configured ID wins; an exact repeat succeeds, while a different ID fails. The
-runtime does not use `TimeZoneInfo.Local`, a per-process environment variable, or an upgrade default.
-Each description, preview, and execution captures one UTC instant and derives its effective business
-date through this stored zone. `Etc/UTC` is the explicit portable exception used by synthetic tests;
-operators should choose the business calendar that governs their installation.
+The initializer takes the mandatory canonical IANA identifier and stores it atomically with lineage.
+There is no post-installation setter, implicit UTC default or host-local fallback. Every description,
+preview and execution captures one UTC instant and derives its effective business date from this
+stored zone. `Etc/UTC` is the explicit portable choice used by synthetic tests; operators choose the
+calendar governing their installation. Runtime opening refuses a zone unavailable on its host.
+Host tzdata remains part of the operational environment; see [operations](operations.md).
 
 ## Local development database
 
@@ -187,12 +171,12 @@ does not rotate roles in a retained database. The authenticated health check rem
 the retained roles and new values disagree. Restore the matching private configuration or perform an
 administrator-led credential rotation—do not delete an adopted volume to clear a health failure.
 
-Integration tests create isolated Testcontainers instances, apply migrations themselves, and never
+Integration tests create isolated Testcontainers instances, initialize fresh baselines themselves, and never
 reuse the persistent developer database or repository connection files.
 
 ## Operational limits
 
-An installed checksum proves which migration source was recorded; it does not attest every live DDL
+An installed checksum identifies the baseline source that was recorded; it does not attest every live DDL
 object against administrator tampering. ClaimCore has no automatic repair, downgrade, backup, or
 restore implementation. The composed application runtime owns one `NpgsqlDataSource` shared by its
 private claim and recovery stores; opening a second product process creates a separate runtime and

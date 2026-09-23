@@ -8,7 +8,7 @@ open Npgsql
 module internal RuntimeAcl =
     let private expected =
         let databaseAndSchema = [ true; false; true; false ]
-        let tables = List.replicate 10 [ true; false ] |> List.concat
+        let tables = List.replicate 9 [ true; false ] |> List.concat
         databaseAndSchema @ tables @ [ false; false ]
 
     let requireRole (connection: NpgsqlConnection) =

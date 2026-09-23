@@ -103,7 +103,7 @@ let private runtimeReadinessTests =
                     executeRuntime "DELETE FROM claimcore.request_preparation_lifecycle")
 
                 expectSqlState "42501" (fun () ->
-                    executeRuntime "DELETE FROM claimcore.request_submission_legacy_uncertainty")
+                    executeRuntime "DELETE FROM claimcore.operation_revocations")
 
                 expectSqlState "42501" (fun () ->
                     executeRuntime

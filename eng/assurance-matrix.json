@@ -169,6 +169,80 @@
       ]
     },
     {
+      "id": "assurance-baseline:atomic-rollback",
+      "dimensions": [
+        "migration"
+      ],
+      "subject": "A deliberately failing CREATE during baseline initialization rolls back the entire namespace and marker; only the isolated fixture failure is removed before a subsequent successful initialization.",
+      "tests": [
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore fresh baseline qualification.fresh installation qualification.[CC-DB-001] baseline DDL failure rolls back the entire namespace before commit"
+      ]
+    },
+    {
+      "id": "assurance-baseline:concurrent-initialization",
+      "dimensions": [
+        "migration",
+        "recovery"
+      ],
+      "subject": "Concurrent initializers acquire the shared transaction-scoped schema lock before classification. Identical calendars converge to one complete installation; differing calendars cannot both succeed.",
+      "tests": [
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore fresh baseline qualification.fresh installation qualification.[CC-DB-001] concurrent different calendars cannot both win initialization",
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore fresh baseline qualification.fresh installation qualification.[CC-DB-001] concurrent identical initializers serialize to one complete installation"
+      ]
+    },
+    {
+      "id": "assurance-baseline:frozen-identity-and-repeat",
+      "dimensions": [
+        "migration"
+      ],
+      "subject": "The embedded direct baseline is checksum-bound. Fresh installation creates one complete identity and calendar; same-zone repeats and read-only verification preserve every stored row, timestamp, lineage and byte.",
+      "tests": [
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore fresh baseline qualification.fresh installation qualification.[CC-DB-001] fresh initialization atomically installs the current identity and calendar",
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore fresh baseline qualification.fresh installation qualification.[CC-DB-001] identical initialization and read-only verification preserve every stored byte"
+      ]
+    },
+    {
+      "id": "assurance-baseline:immutable-calendar",
+      "dimensions": [
+        "migration",
+        "recovery"
+      ],
+      "subject": "Installation identity, lineage and non-null canonical business zone are committed together. An attempt to initialize the same database with a different calendar fails without rewriting any stored value.",
+      "tests": [
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore fresh baseline qualification.fresh installation qualification.[CC-DB-001] a different calendar is refused without rewriting installation identity",
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore fresh baseline qualification.fresh installation qualification.[CC-DB-001] fresh initialization atomically installs the current identity and calendar"
+      ]
+    },
+    {
+      "id": "assurance-baseline:old-installation-refusal",
+      "dimensions": [
+        "migration",
+        "recovery"
+      ],
+      "subject": "All six historical schema-ledger identities are refused by initialization, verification, runtime admission and maintenance; catalog and synthetic evidence snapshots remain unchanged.",
+      "tests": [
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore fresh baseline qualification.unsupported installation refusal.[CC-DB-001] all old installation markers are refused without touching evidence or history"
+      ]
+    },
+    {
+      "id": "assurance-baseline:partial-and-mixed-refusal",
+      "dimensions": [
+        "migration",
+        "recovery"
+      ],
+      "subject": "Empty, unmarked, partial, malformed, unknown, checksum-drifted and mixed historical/current namespaces are not adopted, queried as executable marker views, repaired or deleted.",
+      "tests": [
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore fresh baseline qualification.fresh installation qualification.[CC-DB-001] verification and maintenance refuse an absent baseline without creating it",
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore fresh baseline qualification.unsupported installation refusal.[CC-DB-001] a matching marker does not conceal missing current integrity constraints",
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore fresh baseline qualification.unsupported installation refusal.[CC-DB-001] an unmarked occupied namespace is refused without deleting its contents",
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore fresh baseline qualification.unsupported installation refusal.[CC-DB-001] current-looking tables without a baseline marker remain unsupported",
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore fresh baseline qualification.unsupported installation refusal.[CC-DB-001] even an empty pre-existing namespace is not silently adopted",
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore fresh baseline qualification.unsupported installation refusal.[CC-DB-001] malformed or executable baseline lookalikes are not queried or repaired",
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore fresh baseline qualification.unsupported installation refusal.[CC-DB-001] mixing a current marker with historical metadata cannot authorize old storage",
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore fresh baseline qualification.unsupported installation refusal.[CC-DB-001] unknown identities and altered digests are refused with no repair"
+      ]
+    },
+    {
       "dimensions": [
         "cli",
         "protocol",
@@ -410,9 +484,9 @@
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.atomic case correction.paid correction.clearing a paid decision requires clearing its payment record",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.atomic case correction.paid correction.paid corrections replace related facts in one complete revision",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.atomic case correction.paid correction.paid decision replacement requires explicit payment action",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.current identity and durable encoding.CORRECT_CASE uses explicit complete groups without changing the other format-3 vectors",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.draft validation.grouped correction requires complete replacements and one actual action",
-        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.form binding.grouped correction binding retains each replacement scalar exactly",
-        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.stable identity and historical encoding.CORRECT_CASE uses explicit complete groups without changing historical format-2 vectors"
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.form binding.grouped correction binding retains each replacement scalar exactly"
       ]
     },
     {
@@ -856,70 +930,6 @@
       ]
     },
     {
-      "id": "assurance-migration:frozen-applied-bytes",
-      "dimensions": [
-        "migration"
-      ],
-      "subject": "The current manifest assertion pins the exact applied 001–006 migration names and SHA-256 digests, so an accidental source edit changes the expected identity.",
-      "tests": [
-        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 006.manifest validation.[CC-DB-001] applied migration identities remain frozen"
-      ]
-    },
-    {
-      "id": "assurance-migration:rollback",
-      "dimensions": [
-        "migration"
-      ],
-      "subject": "A failed ordered migration rolls back attempted DDL and the migration journal row atomically.",
-      "tests": [
-        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 006.atomicity.[CC-DB-001] failed migration rolls back its objects and journal row"
-      ]
-    },
-    {
-      "id": "assurance-migration:upgrade-002-to-006",
-      "dimensions": [
-        "migration",
-        "recovery"
-      ],
-      "subject": "A seeded migration-002 installation upgrades through 006 with exact old canonical bytes, legacy uncertainty, durable authority, and installation business-time state preserved without inventing attempts.",
-      "tests": [
-        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.migration 006 recovery and authority evidence.[CC-DB-001] migration 002 state upgrades to 006 with exact legacy evidence"
-      ]
-    },
-    {
-      "id": "assurance-migration:upgrade-003-to-006",
-      "dimensions": [
-        "migration",
-        "recovery"
-      ],
-      "subject": "A seeded migration-003 installation upgrades through 006 with its legacy uncertainty marker, retained request bytes, and new lifecycle authority structures unchanged or correctly added.",
-      "tests": [
-        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.migration 006 recovery and authority evidence.[CC-DB-001] migration 003 state upgrades to 006 with exact legacy evidence"
-      ]
-    },
-    {
-      "id": "assurance-migration:upgrade-004-to-006",
-      "dimensions": [
-        "migration",
-        "recovery"
-      ],
-      "subject": "A seeded migration-004 installation upgrades through 006 while retaining old attempts and settlements byte-for-byte and adding only the forward lifecycle authority and business-time state.",
-      "tests": [
-        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.migration 006 recovery and authority evidence.[CC-DB-001] migration 004 state upgrades to 006 without rewriting attempts"
-      ]
-    },
-    {
-      "id": "assurance-migration:upgrade-through-006",
-      "dimensions": [
-        "migration",
-        "recovery"
-      ],
-      "subject": "An installation beginning at migration 001 upgrades through 006 without changing an accepted case, historical receipt, or canonical request bytes and admits the current thirteen-field read.",
-      "tests": [
-        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 006.retained data.[CC-DB-001] upgrade preserves cases and history and installs recovery storage"
-      ]
-    },
-    {
       "id": "assurance-recovery:accepted-blocks-dismiss",
       "dimensions": [
         "recovery"
@@ -947,10 +957,15 @@
         "core",
         "recovery"
       ],
-      "subject": "A same-operation, same-digest retained row with different canonical bytes is refused before claim transaction or recovery attempt admission.",
+      "subject": "Canonical format-3 fixed vectors and envelope-2 round trips preserve operation identity and exact current request bytes. Old or forged versions, altered digest/identity and noncanonical import layouts are rejected without conversion; snapshot version 2 remains independent.",
       "tests": [
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.current identity and durable encoding.CORRECT_CASE uses explicit complete groups without changing the other format-3 vectors",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.exact retained identity.[CC-REC-001] Execute rejects a same-ID same-digest record with different canonical bytes",
-        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.stable identity and historical encoding.CORRECT_CASE uses explicit complete groups without changing historical format-2 vectors"
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.fresh recovery format boundary.[CC-REC-001] fresh canonical and envelope formats preserve exact request identity",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.fresh recovery format boundary.[CC-REC-001] fresh envelopes reject digest tampering and operation substitution",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.fresh recovery format boundary.[CC-REC-001] historical canonical records are refused rather than re-encoded",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.fresh recovery format boundary.[CC-REC-001] noncanonical layouts may decode but cannot enter exact recovery retention",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.fresh recovery format boundary.[CC-REC-001] old envelopes and forged new envelopes cannot import old requests"
       ]
     },
     {
@@ -963,6 +978,16 @@
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL operation authority lifecycle.[CC-REC-001] attempt 65 is refused while bounded evidence pages remain available",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL preparation boundary.capacity refusal preserves retained material and permits exact replay",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL terminal capacity.[CC-REC-001] 1,024 recent accepted operations leave capacity for a distinct fresh preparation"
+      ]
+    },
+    {
+      "id": "assurance-recovery:current-import-provenance",
+      "dimensions": [
+        "recovery"
+      ],
+      "subject": "Current canonical-record imports retain exact bytes under explicit CANONICAL_RECORD_V3 provenance, never claim a historical or semantic producer, and do not create a submission attempt before explicit resolution. Unsupported old installations and old recovery formats are refused instead of converted.",
+      "tests": [
+        "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.PostgreSQL recovery evidence.[CC-REC-001] current canonical import retains exact bytes with explicit import provenance"
       ]
     },
     {
@@ -1009,16 +1034,6 @@
       "tests": [
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.accepted receipt first.[CC-REC-001] mismatched retained identity refuses without preparation metadata",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core facade.recovery.[CC-REC-001] existing receipt with different bytes cannot masquerade as replay"
-      ]
-    },
-    {
-      "id": "assurance-recovery:legacy-marker-independent",
-      "dimensions": [
-        "recovery"
-      ],
-      "subject": "Pre-003 uncertainty is read as an independent marker even when semantic producer provenance is current and no attempt ID exists.",
-      "tests": [
-        "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.PostgreSQL recovery evidence.[CC-REC-001] inspect reads pre-003 uncertainty marker independently of provenance"
       ]
     },
     {
@@ -2178,6 +2193,11 @@
       ],
       "subject": "Every current dotnet:ClaimCore.DocsTests identity is mapped to its surviving convergence assurance surface after the typed core and transport cutover.",
       "tests": [
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.ArchUnitNET report evidence.a manifest that drifted from the compiled tool fails the documentation check",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.ArchUnitNET report evidence.accepts a bounded sorted ArchUnitNET model report",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.ArchUnitNET report evidence.all three architecture stages require the inspected graph artifact",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.ArchUnitNET report evidence.refuses missing or tampered downloaded architecture evidence",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.ArchUnitNET report evidence.rejects duplicate, incomplete, or unknown architecture inventory",
         "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Evidence manifests.publish tree manifests.detects output mutation after manifest creation",
         "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Evidence manifests.publish tree manifests.rejects symlinks in output trees",
         "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Evidence manifests.publish tree manifests.rejects unsafe paths and duplicate JSON properties",
@@ -2217,9 +2237,33 @@
         "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Path and link safety.repository path confinement.rejects a symlink in an existing path",
         "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Path and link safety.repository path confinement.rejects rooted dot parent and backslash registered paths",
         "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Path and link safety.repository path confinement.source provenance is closed, private-aware, and Git-worktree-safe",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.convergence registration and evidence coverage.every inventoried test assembly is required evidence in some stage",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.convergence registration and evidence coverage.every required report names a registered stage",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.convergence registration and evidence coverage.immutable source registrations.historical kind and inventory identity cannot change",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.convergence registration and evidence coverage.immutable source registrations.new live producer does not rewrite historical registration",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.convergence registration and evidence coverage.immutable source registrations.new producer cannot replace a missing historical producer",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.isolated producer collection.every stage has a unique identity and declared owner",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.isolated producer collection.refuses symlinked producer evidence",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.isolated producer collection.refuses to overwrite an existing destination",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.isolated producer collection.rejects a stage from the wrong producer before copying",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.isolated producer collection.rejects a stale attempt identity",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.isolated producer collection.rejects a stale run identity",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.isolated producer collection.rejects downloaded reconciliation-owned evidence",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.isolated producer collection.rejects duplicate stage data before copying any record",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.isolated producer collection.rejects unregistered stages",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.isolated producer collection.retains exact manifests from their registered producer",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.producer test evidence.malformed failed and wrong-assembly evidence cannot pass the producer",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.producer test evidence.matching reviewed inventory records a successful producer",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.producer test evidence.missing and additional identities cannot pass the producer",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.producer test evidence.missing duplicate and substituted reports cannot pass the producer",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.producer test evidence.non-test publication stages do not require a test report",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.producer test evidence.same-count name substitution cannot pass the producer",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.producer test evidence.unsuccessful producers retain evidence without being relabelled",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.semantic review subjects.legacy approval registry schema is refused without compatibility fallback",
         "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.semantic review subjects.marked spans ignore unrelated bytes but detect reviewed changes",
         "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.semantic review subjects.normative contract-body changes invalidate the review subject",
         "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.semantic review subjects.review registry cannot include itself or an empty subject",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.semantic review subjects.source review is not accepted as independent owner approval",
         "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.semantic review subjects.strict verification rejects a vacuous review registry",
         "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.semantic review subjects.whole-file changes invalidate the review subject"
       ]
@@ -2237,10 +2281,6 @@
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL accepted receipt identity.[CC-APP-002] PostgreSQL accepted replay survives owner pruning of preparation",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL accepted receipt identity.[CC-APP-002] PostgreSQL concurrent pruned replay and conflicts keep one accepted revision",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL accepted receipt identity.[CC-APP-002] PostgreSQL rejects wrong digest before parsing accepted snapshot",
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL migration upgrade qualification.migration 001 through 006.atomicity.[CC-DB-001] failed migration rolls back its objects and journal row",
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL migration upgrade qualification.migration 001 through 006.manifest validation.[CC-DB-001] applied migration identities remain frozen",
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL migration upgrade qualification.migration 001 through 006.manifest validation.[CC-DB-001] migrator refuses a newer manifest entry",
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL migration upgrade qualification.migration 001 through 006.retained data.[CC-DB-001] upgrade preserves cases and history and installs recovery storage",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL operation authority lifecycle.[CC-REC-001] a started worker cannot execute after revocation or later preparation pruning",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL operation authority lifecycle.[CC-REC-001] attempt 65 is refused while bounded evidence pages remain available",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL preparation boundary.[CC-REC-001] concurrent same-ID retain reports one creator and one existing replay",
@@ -2257,23 +2297,23 @@
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL recovery cancellation.[CC-REC-001] cancelled retain has no durable preparation",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL recovery cancellation.[CC-REC-001] cancelled settlement leaves admitted attempt unsettled",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL recovery cancellation.[CC-REC-001] technical commit-start failure remains uncertain",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL recovery evidence.[CC-REC-001] current canonical import retains exact bytes with explicit import provenance",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL recovery evidence.[CC-REC-001] exact replay preserves first producer provenance",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL recovery evidence.[CC-REC-001] inspect preserves an earlier unsettled attempt",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL recovery evidence.[CC-REC-001] inspect projects the accepted attempt and settlement",
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL recovery evidence.[CC-REC-001] inspect reads pre-003 uncertainty marker independently of provenance",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL recovery races.[CC-REC-001] simultaneous exact resolves retain one accepted revision",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL recovery races.[CC-REC-001] simultaneous resolve and dismiss have one lifecycle winner",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL recovery state table.[CC-REC-001] accepted receipt permits replay and export but never dismissal",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL recovery state table.[CC-REC-001] dismissed preparation is idempotent and export-only",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL recovery state table.[CC-REC-001] missing preparation has explicit read and action outcomes",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL schema and failure boundary.atomic persistence.failure after case update rolls back case and audit together",
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL schema and failure boundary.migration and constraints.database rejects excessive precision instead of rounding it",
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL schema and failure boundary.migration and constraints.database rejects partial decision tuple",
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL schema and failure boundary.migration and constraints.database rejects payment without decision",
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL schema and failure boundary.migration and constraints.migration is repeatable only with identical source checksum",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL schema and failure boundary.baseline and constraints.database rejects excessive precision instead of rounding it",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL schema and failure boundary.baseline and constraints.database rejects partial decision tuple",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL schema and failure boundary.baseline and constraints.database rejects payment without decision",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL schema and failure boundary.baseline and constraints.initialization is repeatable only with identical baseline identity",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL schema and failure boundary.runtime privileges and formats.accepted receipts retain explicit request and snapshot format revisions",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL schema and failure boundary.runtime privileges and formats.runtime role cannot delete cases",
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL schema and failure boundary.runtime privileges and formats.runtime role cannot mutate the migration journal",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL schema and failure boundary.runtime privileges and formats.runtime role cannot mutate the baseline marker",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL schema and failure boundary.runtime privileges and formats.runtime role cannot rewrite audit history",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL terminal capacity.[CC-REC-001] 1,024 recent accepted operations leave capacity for a distinct fresh preparation",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL transactions.concurrency qualification.absent case concurrency.concurrent distinct opens of one absent reference accept exactly one revision",
@@ -2291,7 +2331,7 @@
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL typed recovery.runtime recovery boundary.runtime cannot alter lineage or recovery lifecycle tables",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.Storage boundary qualification.database environment.DateStyle cannot change date persistence",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.Storage boundary qualification.database environment.async commit and read-only sessions are refused",
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.Storage boundary qualification.database environment.migration refuses startup-option overrides",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.Storage boundary qualification.database environment.initializer refuses startup-option overrides",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.Storage boundary qualification.finite date storage.maximum supported date is not positive infinity",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.Storage boundary qualification.finite date storage.minimum supported date is not negative infinity",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.Storage boundary qualification.storage scalars and fixture target.date day encoding has exact limits",
@@ -2299,17 +2339,27 @@
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.Storage boundary qualification.storage scalars and fixture target.integration setup refuses different test endpoints",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.Storage boundary qualification.storage scalars and fixture target.non-finite stored money is refused",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.Storage boundary qualification.storage scalars and fixture target.out of decimal range is rejected without conversion overflow",
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.Storage boundary qualification.transaction and migration integrity.core transaction does not join caller ambient scope",
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.Storage boundary qualification.transaction and migration integrity.runtime rejects installed script hash mismatch",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.Storage boundary qualification.transaction and baseline integrity.core transaction does not join caller ambient scope",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.Storage boundary qualification.transaction and baseline integrity.runtime rejects installed script hash mismatch",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.administration completion knowledge.a second administrative commit cannot be issued",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.administration completion knowledge.commit exception preserves uncertainty without retry",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.administration completion knowledge.owner admission refusal cannot start maintenance",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.administration completion knowledge.postcommit disposal failure preserves the confirmed result",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.administration completion knowledge.precommit failure is distinct from unconfirmed commit",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.administration completion knowledge.the confirmed checkpoint owns the returned value",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.basic schema and PostgreSQL 18.6 baseline.baseline and current schema.actual server is on the required baseline",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.basic schema and PostgreSQL 18.6 baseline.baseline and current schema.baseline rejects older releases and unqualified next major",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.basic schema and PostgreSQL 18.6 baseline.baseline and current schema.live current-state row keeps exactly thirteen business columns plus revision metadata",
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.basic schema and PostgreSQL 18.6 baseline.field persistence and migration journal.all fields survive decision, payment and closure without currency coercion",
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.basic schema and PostgreSQL 18.6 baseline.field persistence and migration journal.migration journal exactly matches the ordered embedded manifest",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.basic schema and PostgreSQL 18.6 baseline.field persistence and baseline identity.all fields survive decision, payment and closure without currency coercion",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.basic schema and PostgreSQL 18.6 baseline.field persistence and baseline identity.baseline marker exactly matches the embedded baseline identity",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.case pagination has an exact fifty-item boundary and lossless continuation",
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.migration 006 recovery and authority evidence.[CC-DB-001] migration 002 state upgrades to 006 with exact legacy evidence",
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.migration 006 recovery and authority evidence.[CC-DB-001] migration 003 state upgrades to 006 with exact legacy evidence",
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.migration 006 recovery and authority evidence.[CC-DB-001] migration 004 state upgrades to 006 without rewriting attempts",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.fresh installation qualification.[CC-DB-001] a different calendar is refused without rewriting installation identity",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.fresh installation qualification.[CC-DB-001] baseline DDL failure rolls back the entire namespace before commit",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.fresh installation qualification.[CC-DB-001] concurrent different calendars cannot both win initialization",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.fresh installation qualification.[CC-DB-001] concurrent identical initializers serialize to one complete installation",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.fresh installation qualification.[CC-DB-001] fresh initialization atomically installs the current identity and calendar",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.fresh installation qualification.[CC-DB-001] identical initialization and read-only verification preserve every stored byte",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.fresh installation qualification.[CC-DB-001] verification and maintenance refuse an absent baseline without creating it",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.production core boundary.composed runtime.host exposes the same core API used by a native renderer",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.production core boundary.connection admission.an elevated session cannot impersonate the runtime role",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.production core boundary.connection admission.dangerous runtime connection switches are refused before database access",
@@ -2332,7 +2382,15 @@
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.typed retained-request recovery.[CC-REC-001] accepted receipt blocks dismissal without a lifecycle marker",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.typed retained-request recovery.[CC-REC-001] export and resolve preserve the exact retained request",
         "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.typed retained-request recovery.[CC-REC-001] foreign installation lineage is rejected before submission",
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.typed retained-request recovery.[CC-REC-001] incompatible request fingerprint is rejected before submission"
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.typed retained-request recovery.[CC-REC-001] incompatible request fingerprint is rejected before submission",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.unsupported installation refusal.[CC-DB-001] a matching marker does not conceal missing current integrity constraints",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.unsupported installation refusal.[CC-DB-001] all old installation markers are refused without touching evidence or history",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.unsupported installation refusal.[CC-DB-001] an unmarked occupied namespace is refused without deleting its contents",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.unsupported installation refusal.[CC-DB-001] current-looking tables without a baseline marker remain unsupported",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.unsupported installation refusal.[CC-DB-001] even an empty pre-existing namespace is not silently adopted",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.unsupported installation refusal.[CC-DB-001] malformed or executable baseline lookalikes are not queried or repaired",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.unsupported installation refusal.[CC-DB-001] mixing a current marker with historical metadata cannot authorize old storage",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.unsupported installation refusal.[CC-DB-001] unknown identities and altered digests are refused with no repair"
       ]
     },
     {
@@ -2340,15 +2398,23 @@
       "dimensions": [
         "migration"
       ],
-      "subject": "Every current dotnet:ClaimCore.MigrationQualificationTests identity is mapped to its surviving convergence assurance surface after the typed core and transport cutover.",
+      "subject": "Every live fresh-baseline and unsupported-installation qualification test is explicitly registered as required persistence evidence.",
       "tests": [
-        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 006.atomicity.[CC-DB-001] failed migration rolls back its objects and journal row",
-        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 006.manifest validation.[CC-DB-001] applied migration identities remain frozen",
-        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 006.manifest validation.[CC-DB-001] migrator refuses a newer manifest entry",
-        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 006.retained data.[CC-DB-001] upgrade preserves cases and history and installs recovery storage",
-        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.migration 006 recovery and authority evidence.[CC-DB-001] migration 002 state upgrades to 006 with exact legacy evidence",
-        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.migration 006 recovery and authority evidence.[CC-DB-001] migration 003 state upgrades to 006 with exact legacy evidence",
-        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.migration 006 recovery and authority evidence.[CC-DB-001] migration 004 state upgrades to 006 without rewriting attempts"
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore fresh baseline qualification.fresh installation qualification.[CC-DB-001] a different calendar is refused without rewriting installation identity",
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore fresh baseline qualification.fresh installation qualification.[CC-DB-001] baseline DDL failure rolls back the entire namespace before commit",
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore fresh baseline qualification.fresh installation qualification.[CC-DB-001] concurrent different calendars cannot both win initialization",
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore fresh baseline qualification.fresh installation qualification.[CC-DB-001] concurrent identical initializers serialize to one complete installation",
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore fresh baseline qualification.fresh installation qualification.[CC-DB-001] fresh initialization atomically installs the current identity and calendar",
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore fresh baseline qualification.fresh installation qualification.[CC-DB-001] identical initialization and read-only verification preserve every stored byte",
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore fresh baseline qualification.fresh installation qualification.[CC-DB-001] verification and maintenance refuse an absent baseline without creating it",
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore fresh baseline qualification.unsupported installation refusal.[CC-DB-001] a matching marker does not conceal missing current integrity constraints",
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore fresh baseline qualification.unsupported installation refusal.[CC-DB-001] all old installation markers are refused without touching evidence or history",
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore fresh baseline qualification.unsupported installation refusal.[CC-DB-001] an unmarked occupied namespace is refused without deleting its contents",
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore fresh baseline qualification.unsupported installation refusal.[CC-DB-001] current-looking tables without a baseline marker remain unsupported",
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore fresh baseline qualification.unsupported installation refusal.[CC-DB-001] even an empty pre-existing namespace is not silently adopted",
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore fresh baseline qualification.unsupported installation refusal.[CC-DB-001] malformed or executable baseline lookalikes are not queried or repaired",
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore fresh baseline qualification.unsupported installation refusal.[CC-DB-001] mixing a current marker with historical metadata cannot authorize old storage",
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore fresh baseline qualification.unsupported installation refusal.[CC-DB-001] unknown identities and altered digests are refused with no repair"
       ]
     },
     {
@@ -2366,10 +2432,10 @@
         "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.PostgreSQL recovery cancellation.[CC-REC-001] cancelled retain has no durable preparation",
         "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.PostgreSQL recovery cancellation.[CC-REC-001] cancelled settlement leaves admitted attempt unsettled",
         "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.PostgreSQL recovery cancellation.[CC-REC-001] technical commit-start failure remains uncertain",
+        "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.PostgreSQL recovery evidence.[CC-REC-001] current canonical import retains exact bytes with explicit import provenance",
         "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.PostgreSQL recovery evidence.[CC-REC-001] exact replay preserves first producer provenance",
         "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.PostgreSQL recovery evidence.[CC-REC-001] inspect preserves an earlier unsettled attempt",
         "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.PostgreSQL recovery evidence.[CC-REC-001] inspect projects the accepted attempt and settlement",
-        "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.PostgreSQL recovery evidence.[CC-REC-001] inspect reads pre-003 uncertainty marker independently of provenance",
         "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.PostgreSQL recovery state table.[CC-REC-001] accepted receipt permits replay and export but never dismissal",
         "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.PostgreSQL recovery state table.[CC-REC-001] dismissed preparation is idempotent and export-only",
         "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.PostgreSQL recovery state table.[CC-REC-001] missing preparation has explicit read and action outcomes",
@@ -2445,6 +2511,12 @@
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.accepted receipt first.[CC-APP-002] accepted-history read failure refuses before fresh preparation",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.accepted receipt first.[CC-APP-002] cancellation after accepted observation preserves definite receipt",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.accepted receipt first.[CC-REC-001] mismatched retained identity refuses without preparation metadata",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.administration diagnostic boundaries.administration counters retain exact 64-bit values",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.administration diagnostic boundaries.argument causes are precise without echoing unknown input",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.administration diagnostic boundaries.failed stderr cannot change commit uncertainty or append another frame",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.administration diagnostic boundaries.native administrative reasons have a complete closed vocabulary",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.administration diagnostic boundaries.output failure cannot relabel confirmed maintenance",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.administration diagnostic boundaries.unexpected process failure makes no not-started claim",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.atomic case correction.closed correction.all-keep correction is refused without changing the accepted case",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.atomic case correction.closed correction.closed cases may correct facts while retaining CLOSED status",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.atomic case correction.closed correction.equivalent scalar spelling cannot create a correction-only revision",
@@ -2453,18 +2525,29 @@
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.atomic case correction.paid correction.clearing a paid decision requires clearing its payment record",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.atomic case correction.paid correction.paid corrections replace related facts in one complete revision",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.atomic case correction.paid correction.paid decision replacement requires explicit payment action",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.compiler-enforced core boundary.case-work hosts exclude storage from compilation, not deployment",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.compiler-enforced core boundary.ordinary caller can use IClaimsCore",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.compiler-enforced core boundary.ordinary caller cannot create the core callback",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.compiler-enforced core boundary.ordinary caller cannot forge a prepared operation",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.compiler-enforced core boundary.ordinary caller cannot instantiate PostgreSQL storage",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.compiler-enforced core boundary.ordinary caller cannot see the store port",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.configuration projections.Compose uses the canonical digest-pinned PostgreSQL image",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.core outcome diagnostic emission.diagnostic specificity preserves existing cancellation precedence",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.core outcome diagnostic emission.provider error payloads never enter diagnostic presentation",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.core outcome diagnostic emission.recovery cursors retain view and operation binding causes",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.core outcome diagnostic emission.recovery reads emit precise ID page and cursor causes",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.core outcome diagnostic emission.resolve dismissal and export preserve specific admission causes",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.core outcome diagnostic emission.source mismatch and unsupported artifact causes remain distinct",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.core outcome diagnostic emission.technical commit uncertainty preserves operation identity and recovery guidance",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.core ownership and typed interfaces.dependency direction.Application has no transport, contract, or PostgreSQL dependency",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.core ownership and typed interfaces.dependency direction.Contracts projects semantic values without adapter dependencies",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.core ownership and typed interfaces.dependency direction.Domain has no adapter or infrastructure dependency",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.core ownership and typed interfaces.dependency direction.the CLI protocol cannot reach storage or composition",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.core ownership and typed interfaces.typed core public surface.IClaimsCore exposes only typed endpoint methods and recovery workflow",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.core ownership and typed interfaces.typed core public surface.transport codecs have one Contracts owner and no anonymous adapter projection",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.current identity and durable encoding.CORRECT_CASE uses explicit complete groups without changing the other format-3 vectors",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.current identity and durable encoding.all eight command encodings and identities match fixed format-3 vectors",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.current identity and durable encoding.snapshot-2 encoding stays independent of advisory rendering metadata",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain validation.chronology.decision before notification is rejected",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain validation.chronology.future payment is rejected",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain validation.chronology.payment before decision is rejected",
@@ -2518,9 +2601,24 @@
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.exact retained identity.[CC-REC-001] concurrent canonical imports classify creator and existing replay",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.exact retained identity.[CC-REC-001] exact Prepare retry after acceptance returns an observed receipt",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.exact retained identity.[CC-REC-001] exact retained Prepare retry after another commit directs Recovery",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.frame-local delivery diagnostics.a failed flush preserves the observed outcome and request digest",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.frame-local delivery diagnostics.a later input failure cannot inherit a delivered operation identity",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.frame-local delivery diagnostics.a malformed next frame stays independent of completed work",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.frame-local delivery diagnostics.a partial write preserves the current exact context without replay",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.frame-local delivery diagnostics.broken diagnostic output cannot loop or repeat an operation",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.frame-local delivery diagnostics.native outcome observation precedes serialization",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.frame-local delivery diagnostics.runtime acquisition failure is separate from input and dispatch failure",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.frame-local delivery diagnostics.uncertain import retention captures its newly known operation identity",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.fresh recovery format boundary.[CC-REC-001] fresh canonical and envelope formats preserve exact request identity",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.fresh recovery format boundary.[CC-REC-001] fresh envelopes reject digest tampering and operation substitution",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.fresh recovery format boundary.[CC-REC-001] historical canonical records are refused rather than re-encoded",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.fresh recovery format boundary.[CC-REC-001] noncanonical layouts may decode but cannot enter exact recovery retention",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.fresh recovery format boundary.[CC-REC-001] old envelopes and forged new envelopes cannot import old requests",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.generated semantic field contract.semantic command metadata.command descriptors are the only ordered input inventory",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.generated semantic field contract.semantic field schema.[CC-DOM-001] semantic contract renders exactly thirteen ordered field descriptors",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.generated semantic field contract.semantic field schema.semantic scalar metadata originates from Domain descriptors",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.installation business calendar.a canonical zone passes validation and fails later, on the host",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.installation business calendar.only a canonical zone identifier can become the installation calendar",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.draft validation.flat forms reject missing extra and duplicate values",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.draft validation.form binding does not trim uppercase or round business input",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.draft validation.grouped correction requires complete replacements and one actual action",
@@ -2529,6 +2627,13 @@
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.form binding.grouped correction binding retains each replacement scalar exactly",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native form contract.form definitions.all nine forms cover the canonical commands in canonical order",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.native private-file ancestor race.[CC-CLI-002] descriptor-relative create and lock remain in pinned parent after ancestor swap",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.presentation-neutral semantic identity.copy remains bounded without becoming a machine discriminator",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.presentation-neutral semantic identity.discovery exposes the explicit executable-rule revision",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.presentation-neutral semantic identity.editorial and translated copy changes no semantic or wire identity",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.presentation-neutral semantic identity.embedded separators cannot collapse distinct token boundaries",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.presentation-neutral semantic identity.every text constraint affects each text-like scalar identity",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.presentation-neutral semantic identity.operational limits and explicit rule revisions remain identity-bearing",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.presentation-neutral semantic identity.semantic identity is invariant under host cultures",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.property harness policy.failure diagnostic privacy.property failures omit generated payload and control canaries",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.property harness policy.failure diagnostic privacy.structural assertion failures omit compared claimant values",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.property harness policy.property configuration.partial and additional recheck inputs fail closed",
@@ -2546,14 +2651,18 @@
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.recovery uncertainty boundaries.[CC-REC-001] thrown combined commit is unresolved",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.recovery uncertainty boundaries.[CC-REC-001] thrown execution after admission remains unresolved",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.recovery uncertainty boundaries.[CC-REC-001] unknown attempt admission never executes the claim",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.rejection diagnostic emission.authored private values are not echoed into diagnostics",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.rejection diagnostic emission.domain validation emits specific scalar reasons rather than English",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.rejection diagnostic emission.form binding retains exact-field and correction causes",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.rejection diagnostic emission.parameter values come from owned scalar constraints",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.rejection diagnostic emission.query admission preserves page cursor and operation causes",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.rejection diagnostic emission.request and business-date admission retain distinct typed causes",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.rejection diagnostic emission.state refusals keep typed reasons and accepted data unchanged",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.single-owner compiled release identity.compiled source identity.CLI v3 discovery renders compiled release identity",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.single-owner compiled release identity.compiled source identity.native core identity comes from the SDK attributes, matching the sole source",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.single-owner compiled release identity.identity consumers and compatibility.a non-product assembly cannot be accepted as a compatible first-party component",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.single-owner compiled release identity.identity consumers and compatibility.current test and application assemblies have matching release identity",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.single-owner compiled release identity.version ownership.only Directory.Build.props authors product version properties",
-        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.stable identity and historical encoding.CORRECT_CASE uses explicit complete groups without changing historical format-2 vectors",
-        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.stable identity and historical encoding.all eight command encodings and identities match fixed protocol-2 vectors",
-        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.stable identity and historical encoding.snapshot-2 encoding stays independent of advisory rendering metadata",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.state guard and advertised actions.[CC-DOM-002] each state advertises and enforces the specified command set",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.state guard and advertised actions.availability edge conditions.availability does not substitute for payload validation",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.state guard and advertised actions.availability edge conditions.no action is advertised at the exhausted revision",
@@ -2575,6 +2684,15 @@
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core facade.recovery.dismissed recovery is refused before an attempt starts",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core facade.recovery.recovery export requires the exact retained digest",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core facade.recovery.recovery resolve executes an exact retained preparation once",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core outcome diagnostics.adapter failures are distinct from core results on every CLI endpoint",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core outcome diagnostics.all lifecycle refusals have identical CLI and Web diagnostics",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core outcome diagnostics.all native faults have identical CLI and Web diagnostics",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core outcome diagnostics.ambient locale does not change core outcome diagnostics",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core outcome diagnostics.core reasons cannot carry messages arbitrary parameters or writable guidance",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core outcome diagnostics.fault and recovery diagnostic inventories participate in semantic identity",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core outcome diagnostics.fault identities and guidance match the reviewed closed vocabulary",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core outcome diagnostics.recovery identities and guidance match the reviewed closed vocabulary",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core outcome diagnostics.semantic diagnostic families are disjoint complete and parameterless",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core queries.query validation and cancellation.history rejects malformed opaque cursors",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core queries.query validation and cancellation.query cancellation returns no synthetic success or failure",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core queries.typed lookup outcomes.empty history is explicit only after the case exists",
@@ -2582,6 +2700,10 @@
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core queries.typed lookup outcomes.operation observation distinguishes a missing operation from a store fault",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed pagination boundaries.case listing returns request-bounded stable pages without loss or overlap",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed pagination boundaries.history cursors preserve detail mode and continue from the last returned revision",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed protocol diagnostic boundaries.oversized NDJSON frames drain before admitting the next frame",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed protocol diagnostic boundaries.protocol vocabulary is closed complete and presentation-free",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed protocol diagnostic boundaries.untrusted property names cannot enter diagnostic locations",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed protocol diagnostic boundaries.wrong scalar kinds are typed refusals rather than escaping exceptions",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] cancellation during receipt observation returns cancelled read",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] cancellation during recovery inspect hides receipt result",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] cancellation during resolve observation prevents attempt",
@@ -2591,7 +2713,16 @@
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] definite attempt cancellation prevents claim execution",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] definite dismiss cancellation remains actionable",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] definite import retention cancellation does not submit",
-        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] definite retain cancellation becomes cancelled before admission"
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] definite retain cancellation becomes cancelled before admission",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed rejection diagnostics.CLI and Web project identical diagnostics without changing rejection exit semantics",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed rejection diagnostics.ambient culture never selects rejection identity or parameter values",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed rejection diagnostics.diagnostic arguments match the closed safe parameter schema",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed rejection diagnostics.diagnostic identities and parameter shapes participate in all fingerprints",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed rejection diagnostics.diagnostic parameter names and both bounds participate in semantic identity",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed rejection diagnostics.every closed identity has one explicit token and a complete projection",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed rejection diagnostics.field targets are closed and use public revision vocabulary",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed rejection diagnostics.native rejection payloads cannot contain free text or arbitrary bags",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed rejection diagnostics.specific causes remain distinct under coarse codes and preserve actions"
       ]
     },
     {
@@ -2656,7 +2787,14 @@
         "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web v2 admission.[CC-WEB-001] keeps the mutable browser session registry server-side",
         "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web v2 admission.[CC-WEB-001] rejects absent and remote peers or wrong host authority",
         "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web v2 admission.[CC-WEB-001] requires one exact browser origin and same-origin metadata",
-        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web v2 admission.[CC-WEB-001] returns typed CSRF admission refusal"
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web v2 admission.[CC-WEB-001] returns typed CSRF admission refusal",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.transport and host diagnostics.all public host causes have exact parameterless diagnostics",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.transport and host diagnostics.bounded HTTP input distinguishes limit and read failures",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.transport and host diagnostics.framework method refusal uses the typed host boundary",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.transport and host diagnostics.host failures preserve request-local dispatch knowledge",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.transport and host diagnostics.startup diagnostics expose known settings but no supplied values",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.transport and host diagnostics.strict HTTP readers emit specific closed causes",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.transport and host diagnostics.typed input classification binds diagnostic and HTTP status"
       ]
     },
     {

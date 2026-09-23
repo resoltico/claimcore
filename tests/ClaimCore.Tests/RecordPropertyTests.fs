@@ -119,7 +119,7 @@ let private reordered (bytes: byte array) =
             "expectedVersion"
             "caseReference"
             "operationId"
-            "protocolVersion"
+            "canonicalCommandFormat"
         ] do
         writer.WritePropertyName(name)
         document.RootElement.GetProperty(name).WriteTo(writer)

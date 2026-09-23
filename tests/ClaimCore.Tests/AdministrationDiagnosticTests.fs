@@ -12,6 +12,10 @@ open ClaimCore.Tests.DiagnosticTestStreams
 let private inputCauses () =
     for arguments, expected in
         [
+            [ "migrate" ], DatabaseInputProblem.UnsupportedInvocation
+            [ "set-business-zone"; "Etc/UTC" ], DatabaseInputProblem.UnsupportedInvocation
+            [ "initialize" ], DatabaseInputProblem.UnsupportedInvocation
+            [ "verify"; "--force" ], DatabaseInputProblem.UnsupportedInvocation
             [ "prune"; "--PRIVATE-UNKNOWN" ], DatabaseInputProblem.UnknownOption
             [ "prune"; "--limit" ], DatabaseInputProblem.MissingOptionValue DatabaseOption.Limit
             [ "prune"; "--limit"; "--dry-run" ],
@@ -60,7 +64,7 @@ let private completedDelivery () =
         AdministrationOutcome.Completed None
 
     Expect.equal
-        (DatabaseExecution.deliver DatabaseCommand.Migrate result output errors)
+        (DatabaseExecution.deliver DatabaseCommand.Verify result output errors)
         3
         "Completed operation, failed reporting"
 
@@ -86,7 +90,7 @@ let private unknownDelivery () =
         AdministrationOutcome.CompletionUnknown AdministrationFailure.CommitUnconfirmed
 
     Expect.equal
-        (DatabaseExecution.deliver DatabaseCommand.Migrate result output errors)
+        (DatabaseExecution.deliver DatabaseCommand.Verify result output errors)
         4
         "Lost commit confirmation stays uncertain"
 

@@ -10,7 +10,7 @@ open ClaimCore.Domain
 /// sole public recovery capability.
 [<RequireQualifiedAccess>]
 type internal PreparingContractKind =
-    | LegacyUnclassified
+    | CanonicalRecordV3
     | SemanticCoreV1
 
 [<RequireQualifiedAccess>]
@@ -58,7 +58,7 @@ type internal RecoveryAttemptPage =
     {
         Items: PreparationAttempt list
         NextAfter: RecoveryAttemptCursor option
-        LegacyUncertainty: bool
+
     }
 
 /// Durable authority closure deliberately outlives optional preparation rows. It carries only the

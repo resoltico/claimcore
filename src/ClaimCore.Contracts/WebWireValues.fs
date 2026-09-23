@@ -71,7 +71,7 @@ module internal WebWireValues =
         writer.WriteEndArray()
         writer.WritePropertyName("nextCursor")
         optional writer value.NextCursor writer.WriteStringValue
-        writer.WriteBoolean("legacyUncertainty", value.LegacyUncertainty)
+
         writer.WriteEndObject()
 
     let preparationDetails (writer: Utf8JsonWriter) (value: PreparationDetails) =

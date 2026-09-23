@@ -80,24 +80,6 @@ module internal PreparationEvidence =
             return! collectAttempts reader
         }
 
-    let private legacyMarker
-        (connection: NpgsqlConnection)
-        (transaction: NpgsqlTransaction option)
-        (operationId: Guid)
-        : Task<bool> =
-        task {
-            use command =
-                new NpgsqlCommand(
-                    "SELECT EXISTS (SELECT 1 FROM claimcore.request_submission_legacy_uncertainty WHERE operation_id = @operation)",
-                    connection
-                )
-
-            transaction |> Option.iter (fun value -> command.Transaction <- value)
-            Sql.uuid command "operation" operationId
-            let! value = command.ExecuteScalarAsync()
-            return value :?> bool
-        }
-
     let readPage connection transaction operationId after limit : Task<RecoveryAttemptPage> =
         task {
             if
@@ -113,7 +95,6 @@ module internal PreparationEvidence =
                     )
             else
                 let! attemptEvidence = attempts connection transaction operationId after limit
-                let! legacyUncertainty = legacyMarker connection transaction operationId
                 let items = attemptEvidence |> List.truncate limit
 
                 let page: RecoveryAttemptPage =
@@ -131,7 +112,6 @@ module internal PreparationEvidence =
                                     })
                             else
                                 None
-                        LegacyUncertainty = legacyUncertainty
                     }
 
                 return page

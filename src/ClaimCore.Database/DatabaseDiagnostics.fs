@@ -21,26 +21,22 @@ module DatabaseDiagnostics =
              "The database environment does not satisfy the required settings.")
             AdministrationFailure.CatalogUnreadable,
             ("DB_CATALOG_UNREADABLE", "The database catalog could not be qualified.")
-            AdministrationFailure.MigrationNewerThanRuntime,
-            ("DB_MIGRATION_NEWER_THAN_RUNTIME",
-             "The database contains migrations newer than this runtime.")
         ]
 
     let private group1 =
         [
-            AdministrationFailure.MigrationIdentityMismatch,
-            ("DB_MIGRATION_IDENTITY_MISMATCH",
-             "The installed migration identity does not match this runtime.")
-            AdministrationFailure.MigrationJournalWriteFailed,
-            ("DB_MIGRATION_JOURNAL_WRITE_FAILED", "A migration journal entry could not be recorded.")
-            AdministrationFailure.JournalWithoutSchema,
-            ("DB_JOURNAL_WITHOUT_SCHEMA", "The migration journal lacks its owning schema.")
-            AdministrationFailure.SchemaWithoutJournal,
-            ("DB_SCHEMA_WITHOUT_JOURNAL",
-             "The existing schema cannot be adopted without its ordered journal.")
-            AdministrationFailure.MigrationsPending,
-            ("DB_MIGRATIONS_PENDING",
-             "The database has not applied the required ordered migrations.")
+            AdministrationFailure.BaselineMissing,
+            ("DB_BASELINE_MISSING",
+             "No ClaimCore installation exists. Explicitly initialize a fresh baseline with its business time zone.")
+            AdministrationFailure.UnsupportedInstallation,
+            ("DB_INSTALLATION_UNSUPPORTED",
+             "The existing ClaimCore schema is unsupported and was left untouched. Use a separate fresh installation; no upgrade or reset is provided.")
+            AdministrationFailure.BaselineIdentityMismatch,
+            ("DB_BASELINE_IDENTITY_MISMATCH",
+             "The installed baseline identity or digest differs. The installation was left untouched; no repair or conversion is provided.")
+            AdministrationFailure.BaselineMarkerWriteFailed,
+            ("DB_BASELINE_MARKER_WRITE_FAILED",
+             "The atomic baseline identity could not be recorded.")
             AdministrationFailure.BusinessZoneInvalid,
             ("DB_BUSINESS_ZONE_INVALID",
              "Choose a canonical IANA business time zone supported by this runtime.")
@@ -53,12 +49,6 @@ module DatabaseDiagnostics =
              "The installation already has a different immutable business time zone.")
             AdministrationFailure.InstallationLineageMissing,
             ("DB_INSTALLATION_LINEAGE_MISSING", "The installation lineage is missing.")
-            AdministrationFailure.BusinessZoneTypeInvalid,
-            ("DB_BUSINESS_ZONE_TYPE_INVALID",
-             "The stored business time zone has an invalid representation.")
-            AdministrationFailure.BusinessZoneWriteFailed,
-            ("DB_BUSINESS_ZONE_WRITE_FAILED",
-             "The installation business time zone could not be recorded.")
             AdministrationFailure.PruneOptionsInvalid,
             ("DB_PRUNE_OPTIONS_INVALID",
              "Retention periods and batch size must remain within the supported bounds.")
@@ -73,7 +63,7 @@ module DatabaseDiagnostics =
              "The terminal recovery footprint could not be read.")
             AdministrationFailure.SchemaDefinitionInvalid,
             ("DB_SCHEMA_DEFINITION_INVALID",
-             "The embedded schema definition is invalid or unavailable.")
+             "The current schema definition or required installed structure is invalid or unavailable. No repair was attempted.")
             AdministrationFailure.DatabaseUnavailable,
             ("DB_DATABASE_UNAVAILABLE", "Database access failed before commit was attempted.")
             AdministrationFailure.OperationFailed,

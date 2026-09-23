@@ -72,7 +72,7 @@ new bootstrap credential; it does not preserve browser admission.
 The host listens only on loopback at the configured port and requires exact Host admission. It sets a
 131,072-byte Kestrel ceiling solely for the largest raw envelope import; every endpoint applies its
 own lower limit before allocation. `GET /health/live` is a loopback host liveness probe, not an
-authenticated readiness, database-integrity, migration, or backup check.
+authenticated readiness, database-integrity, installation-readiness, or backup check.
 
 ## Web-v2 contract and admission
 
@@ -164,7 +164,7 @@ state, and never retry automatically.
 
 The browser lists actionable pending recovery work by default and offers an explicit bounded terminal
 view for accepted and revoked technical material. Detailed inspection pages identified attempts with
-an opaque operation-bound cursor and includes independent legacy uncertainty only on demand. A
+an opaque operation-bound cursor; unset settlements remain uncertain even after a later accepted retry. A
 pruned revoked preparation is a payload-free tombstone, not a substitute for claimant data. The UI
 can resolve or dismiss only after accessible confirmation using the exact operation ID and digest.
 An accepted receipt is not offered as a new resolve action; an exact replay can observe it without a
@@ -181,9 +181,10 @@ Downloads and clipboard content leave ClaimCore's process boundary. The host can
 directory, synchronization service, backup, clipboard observer, or later copies. Keep exports and
 clipboard data in approved private storage and follow the operator retention process.
 
-Apply through migration 006 and configure the installation business time zone with
-`ClaimCore.Database` before opening an existing installation with Web-v2.
-See [Database](database.md) for migration and retention administration and
+Initialize a separate fresh database and explicit installation business calendar with
+`ClaimCore.Database initialize <canonical-IANA-ID>` before opening Web-v2. Old installations and
+old recovery artifacts are refused untouched, not upgraded.
+See [Database](database.md) for initialization, verification and retention administration and
 [Security and operations](operations.md) for deployment limits.
 
 ## Diagnostic and delivery boundaries

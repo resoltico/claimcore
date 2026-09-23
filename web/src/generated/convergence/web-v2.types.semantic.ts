@@ -70,7 +70,7 @@ export type SemanticDefinition = {
   readonly application: "ClaimCore";
   readonly scope: "trusted-local-operator-claims-register";
   readonly ruleSetVersion: 1;
-  readonly canonicalCommandFormat: 2;
+  readonly canonicalCommandFormat: 3;
   readonly requestFingerprintVersion: 1;
   readonly recoveryEnvelopeFormat: 1;
   readonly defaultPageSize: 50;

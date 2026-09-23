@@ -67,25 +67,3 @@ module internal PreparationLifecycleStore =
             Task.FromResult(SubmissionLifecycle.AlreadyStarted preparation)
         | PreparationLifecycle.Dismissed _ ->
             Task.FromResult(SubmissionLifecycle.Dismissed preparation)
-
-    let dismiss
-        (connection: NpgsqlConnection)
-        (transaction: NpgsqlTransaction)
-        operationId
-        (preparation: RetainedPreparation)
-        : Task<RecoveryDismissal> =
-        match preparation.Lifecycle with
-        | PreparationLifecycle.Unsubmitted ->
-            observeMarker
-                connection
-                transaction
-                operationId
-                "DISMISSED"
-                "Preparation disappeared during dismissal."
-                (fun recordedAt ->
-                    RecoveryDismissal.Dismissed
-                        { preparation with
-                            Lifecycle = PreparationLifecycle.Dismissed recordedAt
-                        })
-                asDismissal
-        | _ -> Task.FromResult(asDismissal preparation)

@@ -29,6 +29,7 @@ let tests =
             ProtocolTests.tests
             CliExitContractTests.tests
             CanonicalRecordTests.tests
+            FreshRecoveryFormatTests.tests
             DraftTests.tests
             BuildIdentityTests.tests
             ArchitectureTests.tests

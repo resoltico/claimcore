@@ -86,13 +86,12 @@ module internal RuntimeAccessPolicy =
         [
             readWriteAcl "cases"
             readAppendAcl "case_changes"
-            readOnlyAcl "schema_migrations"
+            readOnlyAcl "schema_baseline"
             readOnlyAcl "installation_lineage"
             readAppendAcl "request_preparations"
             readAppendAcl "request_preparation_lifecycle"
             readAppendAcl "request_submission_attempts"
             readAppendAcl "request_submission_settlements"
-            readOnlyAcl "request_submission_legacy_uncertainty"
             readAppendAcl "operation_revocations"
         ]
         |> String.concat ",\n        "
@@ -113,13 +112,12 @@ module internal RuntimeAccessPolicy =
               AND (p.grantee = 0 OR p.is_grantable OR CASE c.relname
                   WHEN 'cases' THEN p.privilege_type NOT IN ('SELECT', 'INSERT', 'UPDATE')
                   WHEN 'case_changes' THEN p.privilege_type NOT IN ('SELECT', 'INSERT')
-                  WHEN 'schema_migrations' THEN p.privilege_type <> 'SELECT'
+                  WHEN 'schema_baseline' THEN p.privilege_type <> 'SELECT'
                   WHEN 'installation_lineage' THEN p.privilege_type <> 'SELECT'
                   WHEN 'request_preparations' THEN p.privilege_type NOT IN ('SELECT', 'INSERT')
                   WHEN 'request_preparation_lifecycle' THEN p.privilege_type NOT IN ('SELECT', 'INSERT')
                   WHEN 'request_submission_attempts' THEN p.privilege_type NOT IN ('SELECT', 'INSERT')
                   WHEN 'request_submission_settlements' THEN p.privilege_type NOT IN ('SELECT', 'INSERT')
-                  WHEN 'request_submission_legacy_uncertainty' THEN p.privilege_type <> 'SELECT'
                   WHEN 'operation_revocations' THEN p.privilege_type NOT IN ('SELECT', 'INSERT')
                   ELSE TRUE END)
         )

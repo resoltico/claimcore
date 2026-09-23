@@ -7,9 +7,9 @@ do afterRunTests ClaimCore.IntegrationTests.Fixtures.shutdown
 [<Tests>]
 let tests =
     testList
-        "ClaimCore migration qualification"
+        "ClaimCore fresh baseline qualification"
         [
-            ClaimCore.IntegrationTests.MigrationUpgradeTests.tests
-            ClaimCore.IntegrationTests.MigrationEvidenceUpgradeTests.tests
+            ClaimCore.IntegrationTests.FreshBaselineTests.tests
+            ClaimCore.IntegrationTests.BaselineRefusalTests.tests
         ]
     |> testSequenced

@@ -843,7 +843,6 @@
       "pluralType": "cardinal"
     }
   ],
-  "ui.legacyUncertainty": [{ "type": 0, "value": "ما زال عدم اليقين السابق قائمًا." }],
   "ui.moreAttempts": [{ "type": 0, "value": "تحميل المزيد من المحاولات" }],
   "ui.retainedIdentity": [
     { "type": 0, "value": "العملية " },

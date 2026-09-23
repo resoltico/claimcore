@@ -56,10 +56,7 @@ const AttemptEvidence = ({
   const p = usePresentation();
   return (
     <>
-      <p>
-        {p.text("ui.attemptCount", { count: value.attempts.items.length })}
-        {value.attempts.legacyUncertainty ? p.text("ui.legacyUncertainty") : null}
-      </p>
+      <p>{p.text("ui.attemptCount", { count: value.attempts.items.length })}</p>
       <ul>
         {value.attempts.items.map((attempt) => (
           <li key={attempt.attemptId}>

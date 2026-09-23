@@ -941,7 +941,6 @@
       "pluralType": "cardinal"
     }
   ],
-  "ui.legacyUncertainty": [{ "type": 0, "value": "Saglabājas agrākā nenoteiktība." }],
   "ui.moreAttempts": [{ "type": 0, "value": "Ielādēt vēl mēģinājumus" }],
   "ui.retainedIdentity": [
     { "type": 0, "value": "Operācija " },

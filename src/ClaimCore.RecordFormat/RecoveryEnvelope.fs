@@ -9,7 +9,7 @@ type RecoveryEnvelope =
     {
         InstallationId: Guid
         OperationId: Guid
-        ProtocolVersion: int
+        CanonicalCommandFormat: int
         RequestFingerprintVersion: int
         RequestSha256: string
         CanonicalRequest: byte array
@@ -17,7 +17,7 @@ type RecoveryEnvelope =
 
 module RecoveryEnvelope =
     let private format = "claimcore-recovery"
-    let private formatVersion = 1
+    let private formatVersion = 2
 
     let private canonicalId path raw =
         match Guid.TryParseExact(raw, "D") with
@@ -41,7 +41,7 @@ module RecoveryEnvelope =
                 "formatVersion"
                 "installationId"
                 "operationId"
-                "protocolVersion"
+                "canonicalCommandFormat"
                 "requestFingerprintVersion"
                 "requestSha256"
                 "canonicalRequestBase64"
@@ -54,17 +54,17 @@ module RecoveryEnvelope =
         then
             Json.reject "$" "The recovery envelope format is unsupported."
 
-    let private compatibility root =
-        let protocolVersion = Json.integer "$" "protocolVersion" root
+    let private versions root =
+        let canonicalCommandFormat = Json.integer "$" "canonicalCommandFormat" root
         let fingerprintVersion = Json.integer "$" "requestFingerprintVersion" root
 
         if
-            protocolVersion <> int64 RecordVersions.CanonicalCommandFormat
+            canonicalCommandFormat <> int64 RecordVersions.CanonicalCommandFormat
             || fingerprintVersion <> int64 RecordVersions.RequestFingerprint
         then
-            Json.reject "$" "The recovery envelope compatibility version is unsupported."
+            Json.reject "$" "The recovery envelope version is unsupported."
 
-        int protocolVersion, int fingerprintVersion
+        int canonicalCommandFormat, int fingerprintVersion
 
     let private canonicalRequest maximumCanonicalRequestBytes root =
         let requestSha256 = Json.text "$" "requestSha256" root
@@ -107,7 +107,7 @@ module RecoveryEnvelope =
 
     let private read maximumCanonicalRequestBytes root =
         exactShape root
-        let protocolVersion, fingerprintVersion = compatibility root
+        let canonicalCommandFormat, fingerprintVersion = versions root
         let requestSha256, canonical = canonicalRequest maximumCanonicalRequestBytes root
 
         let operationId = Json.text "$" "operationId" root |> canonicalId "$.operationId"
@@ -116,7 +116,7 @@ module RecoveryEnvelope =
         {
             InstallationId = Json.text "$" "installationId" root |> canonicalId "$.installationId"
             OperationId = operationId
-            ProtocolVersion = protocolVersion
+            CanonicalCommandFormat = canonicalCommandFormat
             RequestFingerprintVersion = fingerprintVersion
             RequestSha256 = requestSha256
             CanonicalRequest = canonical
@@ -138,7 +138,7 @@ module RecoveryEnvelope =
             writer.WriteNumber("formatVersion", formatVersion)
             writer.WriteString("installationId", envelope.InstallationId)
             writer.WriteString("operationId", envelope.OperationId)
-            writer.WriteNumber("protocolVersion", envelope.ProtocolVersion)
+            writer.WriteNumber("canonicalCommandFormat", envelope.CanonicalCommandFormat)
             writer.WriteNumber("requestFingerprintVersion", envelope.RequestFingerprintVersion)
             writer.WriteString("requestSha256", envelope.RequestSha256)
 

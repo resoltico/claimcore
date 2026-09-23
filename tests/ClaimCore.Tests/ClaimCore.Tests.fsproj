@@ -37,6 +37,7 @@
     <Compile Include="ProtocolTests.fs" />
     <Compile Include="CliExitContractTests.fs" />
     <Compile Include="CanonicalRecordTests.fs" />
+    <Compile Include="FreshRecoveryFormatTests.fs" />
     <Compile Include="DraftTests.fs" />
     <Compile Include="BuildIdentityTests.fs" />
     <Compile Include="ArchitectureTests.fs" />

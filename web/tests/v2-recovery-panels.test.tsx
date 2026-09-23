@@ -131,7 +131,7 @@ it("keeps recovery import dialog accessible before retention", async () => {
             command: "CLOSE",
             expectedRevision: "1",
             authoredValues: [],
-            canonicalCommandFormat: 2,
+            canonicalCommandFormat: 3,
             requestSha256: "b".repeat(64),
           },
           existingPreparation: null,
@@ -261,7 +261,6 @@ it("requests the next server attempt page only from an inspected retained item",
       },
     ],
     nextCursor: "next-attempt",
-    legacyUncertainty: true,
   } as const;
   render(
     <RecoveryDetailsDialog
@@ -277,7 +276,7 @@ it("requests the next server attempt page only from an inspected retained item",
       actions={action}
     />,
   );
-  expect(screen.getByText(/Legacy uncertainty remains/u)).toBeVisible();
+  expect(screen.getByRole("listitem")).toHaveTextContent("PENDING");
   await user.click(screen.getByRole("button", { name: "Load more attempts" }));
   expect(action.loadAttempts).toHaveBeenCalledWith(operationId, "next-attempt");
 });

@@ -69,8 +69,7 @@ module internal PreparationIntegrity =
             Error "preparingContractFingerprint"
         else
             match kind with
-            | PreparingContractKind.LegacyUnclassified when requiresCurrentSemanticFingerprint ->
-                Error "preparingContractKind"
+            | PreparingContractKind.CanonicalRecordV3
             | PreparingContractKind.SemanticCoreV1 when
                 requiresCurrentSemanticFingerprint
                 && contractFingerprint <> semanticFingerprint ()

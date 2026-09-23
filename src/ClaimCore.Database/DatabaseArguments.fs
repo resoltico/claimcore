@@ -53,8 +53,8 @@ type DatabaseCommand =
     | Version
     | VersionJson
     | Diagnostics
-    | Migrate
-    | SetBusinessZone of string
+    | Initialize of string
+    | Verify
     | Prune of PreparationPruneOptions
 
 module DatabaseArguments =
@@ -107,15 +107,15 @@ module DatabaseArguments =
         | [ "--version" ] -> Ok DatabaseCommand.Version
         | [ "version"; "--json" ] -> Ok DatabaseCommand.VersionJson
         | [ "describe"; "diagnostics" ] -> Ok DatabaseCommand.Diagnostics
-        | [ "migrate" ] -> Ok DatabaseCommand.Migrate
-        | [ "set-business-zone"; zone ] -> Ok(DatabaseCommand.SetBusinessZone zone)
+        | [ "initialize"; zone ] -> Ok(DatabaseCommand.Initialize zone)
+        | [ "verify" ] -> Ok DatabaseCommand.Verify
         | "prune" :: options -> prune options
         | _ -> Error DatabaseInputProblem.UnsupportedInvocation
 
     let commandToken =
         function
-        | DatabaseCommand.Migrate -> "MIGRATE"
-        | DatabaseCommand.SetBusinessZone _ -> "SET_BUSINESS_ZONE"
+        | DatabaseCommand.Initialize _ -> "INITIALIZE"
+        | DatabaseCommand.Verify -> "VERIFY"
         | DatabaseCommand.Prune _ -> "PRUNE"
         | DatabaseCommand.Help -> "HELP"
         | DatabaseCommand.Version

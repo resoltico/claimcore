@@ -48,4 +48,4 @@ silently accepts stale assets.
 
 Browser operation and private runtime configuration belong in the [Web
 reference](../docs/web.md). The browser suite always targets published bytes and independently
-migrated synthetic databases, never a Vite development server.
+freshly initialized synthetic databases, never a Vite development server.

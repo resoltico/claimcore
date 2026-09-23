@@ -27,9 +27,9 @@ tests are policy failures.
   and select it from the adapter.
 - Add tests at the narrowest useful layer. Include PostgreSQL tests for SQL, schema changes,
   transactions, connection admission, and stored representations.
-- Never edit an applied migration. Add an ordered migration and test a fresh database and upgrade
-  from the previous supported schema state.
-- Keep protocol, capability, Web contract, example, documentation, schema, and migration projections
+- Keep one checksum-bound fresh baseline. Refuse unsupported existing installations untouched;
+  qualify atomic creation, repeatability, rollback and refusal without an upgrade or conversion path.
+- Keep protocol, capability, Web contract, example, documentation, schema, and baseline projections
   synchronized with behavior.
 - Keep contract headings, `[CC-…]` evidence leaves, and review-subject hashes synchronized. A passing
   tagged test does not substitute for semantic review of its assertions.

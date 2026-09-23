@@ -140,10 +140,10 @@ export type PreparationDetails = {
   readonly summary: PreparationSummary;
   readonly expectedRevision: string;
   readonly authoredValues: ReadonlyArray<{ readonly name: string; readonly value: string }>;
-  readonly canonicalCommandFormat: 2;
+  readonly canonicalCommandFormat: 3;
   readonly preparingApplicationVersion: string;
   readonly preparingContractFingerprint: string;
-  readonly preparingContractKind: "LEGACY_UNCLASSIFIED" | "SEMANTIC_CORE_V1";
+  readonly preparingContractKind: "CANONICAL_RECORD_V3" | "SEMANTIC_CORE_V1";
   readonly attempts: {
     readonly items: ReadonlyArray<{
       readonly attemptId: string;
@@ -152,7 +152,6 @@ export type PreparationDetails = {
       readonly settledAt: string | null;
     }>;
     readonly nextCursor: string | null;
-    readonly legacyUncertainty: boolean;
   };
 };
 export type RecoveryListItem =
@@ -193,7 +192,7 @@ export type RecoveryImportPreview = {
       | "REOPEN";
     readonly expectedRevision: string;
     readonly authoredValues: ReadonlyArray<{ readonly name: string; readonly value: string }>;
-    readonly canonicalCommandFormat: 2;
+    readonly canonicalCommandFormat: 3;
     readonly requestSha256: string;
   };
   readonly existingPreparation: PreparationSummary | null;

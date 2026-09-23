@@ -19,7 +19,7 @@ let private text (value: JsonElement) (name: string) =
     |> Option.defaultWith (fun () -> failtest "Golden vector text is missing")
 
 let private commandVectors =
-    testCase "all eight command encodings and identities match fixed protocol-2 vectors" (fun () ->
+    testCase "all eight command encodings and identities match fixed format-3 vectors" (fun () ->
         use document = JsonDocument.Parse(File.ReadAllText(vectorPath))
 
         let vectors =
@@ -40,7 +40,7 @@ let private commandVectors =
 
             Expect.isTrue
                 (actual = canonical)
-                "No identity format change hidden in a layer refactor"
+                "The deliberately new format matches its fixed golden bytes"
 
             let fingerprint = request |> Operation.prepare |> accepted |> Operation.fingerprint
             Expect.equal fingerprint (text vector "sha256") "Fixed independently computed identity")
@@ -72,7 +72,7 @@ let private snapshotVector =
 
 let private correctionRecord =
     testCase
-        "CORRECT_CASE uses explicit complete groups without changing historical format-2 vectors"
+        "CORRECT_CASE uses explicit complete groups without changing the other format-3 vectors"
         (fun () ->
             let request =
                 {
@@ -95,7 +95,7 @@ let private correctionRecord =
                 }
 
             let expected =
-                "{\"protocolVersion\":2,\"operationId\":\"20000000-0000-4000-8000-000000000009\",\"caseReference\":\"UNIT-001\",\"expectedVersion\":3,\"command\":{\"type\":\"CORRECT_CASE\",\"registration\":{\"mode\":\"KEEP\"},\"decision\":{\"mode\":\"REPLACE\",\"decision\":{\"paymentDecisionDate\":\"2026-08-15\",\"payableAmount\":\"650.00\",\"payableCurrency\":\"EUR\"}},\"payment\":{\"mode\":\"REPLACE\",\"paymentDate\":\"2026-08-21\"}}}"
+                "{\"canonicalCommandFormat\":3,\"operationId\":\"20000000-0000-4000-8000-000000000009\",\"caseReference\":\"UNIT-001\",\"expectedVersion\":3,\"command\":{\"type\":\"CORRECT_CASE\",\"registration\":{\"mode\":\"KEEP\"},\"decision\":{\"mode\":\"REPLACE\",\"decision\":{\"paymentDecisionDate\":\"2026-08-15\",\"payableAmount\":\"650.00\",\"payableCurrency\":\"EUR\"}},\"payment\":{\"mode\":\"REPLACE\",\"paymentDate\":\"2026-08-21\"}}}"
 
             let actual = RequestRecord.encode request |> Encoding.UTF8.GetString
             Expect.equal actual expected "Deterministic grouped command bytes"
@@ -117,5 +117,5 @@ let private correctionRecord =
 
 let tests =
     testList
-        "stable identity and historical encoding"
+        "current identity and durable encoding"
         [ commandVectors; correctionRecord; snapshotVector ]
