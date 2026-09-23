@@ -61,7 +61,7 @@
     "eslint-plugin-react-hooks": "7.1.1",
     "globals": "17.12.0",
     "jsdom": "30.1.1",
-    "knip": "6.37.0",
+    "knip": "6.38.0",
     "license-checker-rseidelsohn": "5.0.1",
     "prettier": "3.9.9",
     "rolldown": "1.2.9",

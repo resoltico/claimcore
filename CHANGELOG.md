@@ -68,7 +68,7 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Internal
 
-- Refresh the locked frontend formatter and NuGet test dependency graph to current releases,
+- Refresh the locked frontend formatter, Knip and NuGet test dependency graph to current releases,
   including TypeShape 10 and Application Insights 3. Remove the corresponding dependency holds;
   the scheduled dependency-health check now has no outstanding updates.
 
