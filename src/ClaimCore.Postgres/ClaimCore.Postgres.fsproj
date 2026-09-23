@@ -10,6 +10,7 @@
     <Compile Include="PreparationIntegrity.fs" />
     <Compile Include="RuntimeAccessPolicy.fs" />
     <Compile Include="RuntimeAcl.fs" />
+    <Compile Include="RuntimeConstraintPolicy.fs" />
     <Compile Include="RuntimeSchema.fs" />
     <Compile Include="DatabaseEnvironment.fs" />
     <Compile Include="RuntimeDatabase.fs" />

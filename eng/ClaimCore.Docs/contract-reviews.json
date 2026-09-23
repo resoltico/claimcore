@@ -276,10 +276,10 @@
     {
       "contractId": "CC-RUN-001",
       "reviewerKind": "agent",
-      "reviewer": "Fresh baseline: agent design, separate design QA and source/assertion review of atomic initialization, non-destructive refusal and current exact recovery; SQL/CI execution reported separately; no independent owner approval",
+      "reviewer": "Fresh data-safety audit: agent reviewed runtime admission, the enforced-constraint policy, and its assertions; execution evidence is separate and no independent owner approval is claimed",
       "reviewedOn": "2026-09-23",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "3576ccdacd3e671662ad771ec6eb573af7be6b260e015c631ce17e2f2efe2438",
+      "reviewSubjectHash": "389eebacf74e0ca69622e864d56d62d8dd342bd7f079595adc0b9798d62cda8b",
       "wholeFiles": [
         "src/ClaimCore.Hosting/Runtime.fsi",
         "src/ClaimCore.Hosting/Runtime.fs",
@@ -291,6 +291,7 @@
         "tests/ClaimCore.IntegrationTests/RuntimeLifecycleTests.fs",
         "src/ClaimCore.Postgres/SchemaAdmission.fs",
         "src/ClaimCore.Postgres/RuntimeSchema.fs",
+        "src/ClaimCore.Postgres/RuntimeConstraintPolicy.fs",
         "src/ClaimCore.Postgres/RuntimeDatabase.fs",
         "src/ClaimCore.Postgres/ConnectionTransport.fs",
         "src/ClaimCore.Postgres/RuntimeAccessPolicy.fs",
@@ -301,16 +302,17 @@
     {
       "contractId": "CC-DB-001",
       "reviewerKind": "agent",
-      "reviewer": "Fresh baseline: agent design, separate design QA and source/assertion review of atomic initialization, non-destructive refusal and current exact recovery; SQL/CI execution reported separately; no independent owner approval",
+      "reviewer": "Fresh data-safety audit: agent reviewed non-destructive baseline admission, enforced constraints, and rollback-only drift assertions; execution evidence is separate and no independent owner approval is claimed",
       "reviewedOn": "2026-09-23",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "636441502297cf7505e648e799d48f9dbc267868f7631d844088baeabfd9f075",
+      "reviewSubjectHash": "5dde5eceaa9e4fd5687ec6c5ca0ea1cda536cd0936858bb1f9c47bf0fc9fd842",
       "wholeFiles": [
         "src/ClaimCore.Hosting/Runtime.fs",
         "src/ClaimCore.Postgres/InstallationBusinessZone.fs",
         "src/ClaimCore.Postgres/OperationAuthorityStore.fs",
         "src/ClaimCore.Postgres/RuntimeAcl.fs",
         "src/ClaimCore.Postgres/RuntimeSchema.fs",
+        "src/ClaimCore.Postgres/RuntimeConstraintPolicy.fs",
         "src/ClaimCore.Postgres/SchemaDefinition.fs",
         "tests/ClaimCore.AcceptanceTests/DatabaseFixture.fs",
         "src/ClaimCore.Postgres/AdministrationTypes.fs",
@@ -329,17 +331,18 @@
         "src/ClaimCore.Postgres/SchemaBaseline.fs",
         "tests/ClaimCore.IntegrationTests/BaselineRefusalTests.fs",
         "tests/ClaimCore.IntegrationTests/FreshBaselineSupport.fs",
-        "tests/ClaimCore.IntegrationTests/FreshBaselineTests.fs"
+        "tests/ClaimCore.IntegrationTests/FreshBaselineTests.fs",
+        "tests/ClaimCore.IntegrationTests/StorageBoundaryTests.fs"
       ],
       "markedSpans": []
     },
     {
       "contractId": "CC-DB-002",
       "reviewerKind": "agent",
-      "reviewer": "Fresh baseline: agent design, separate design QA and source/assertion review of atomic initialization, non-destructive refusal and current exact recovery; SQL/CI execution reported separately; no independent owner approval",
+      "reviewer": "Fresh data-safety audit: agent re-reviewed schema-owner credential admission and the shared storage-boundary assertions; execution evidence is separate and no independent owner approval is claimed",
       "reviewedOn": "2026-09-23",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "579243719d1775b7c4898c02c5b2771de755803f4c8b600c336c0351e662e0a6",
+      "reviewSubjectHash": "f6f3b5a6c5ecf04ed58facf686b3598916a9e2152a1bbf1174d082429ea1f64d",
       "wholeFiles": [
         "src/ClaimCore.HostSecurity/PrivateFileService.fs",
         "src/ClaimCore.HostSecurity/PosixPrivateFiles.fs",
