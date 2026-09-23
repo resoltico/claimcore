@@ -11,7 +11,6 @@ Choose the shortest path for the work you are doing:
 | Automate ClaimCore or recover an uncertain CLI request | [CLI and protocol](cli.md) |
 | Configure or operate the browser host | [Web](web.md) |
 | Manage PostgreSQL schema or technical preparation retention | [Database](database.md) |
-| Review the fresh-installation clean-break design and its pre-implementation QA | [Fresh-baseline design](fresh-baseline-design.md) |
 | Build, test, lint, update dependencies, or qualify a change | [Development](development.md) |
 | Publish a PR, diagnose CI, or activate repository governance | [CI governance](ci-governance.md) |
 | Review exact architecture/security/contract-policy changes and authorize a merge | [Owner review](owner-review.md) |

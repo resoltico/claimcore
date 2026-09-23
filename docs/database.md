@@ -12,7 +12,7 @@ private file selected by `CLAIMCORE_ADMIN_CONNECTION_FILE`.
 
 <!-- generated:begin database-help -->
 ```text
-ClaimCore.Database 0.4.0 — schema and recovery-retention administration
+ClaimCore.Database 0.5.0 — schema and recovery-retention administration
   ClaimCore.Database initialize <canonical-IANA-ID>
   ClaimCore.Database verify
   ClaimCore.Database prune [--dry-run] [--settled-retention-days <1-3650>]
@@ -121,8 +121,7 @@ future data transition requires a separate reviewed operator-led plan, not a shi
 The baseline digest identifies a frozen installation contract, not the application release number.
 Changing it must deliberately define another supported/refused installation boundary; it is not a
 license to edit an existing database or silently advance its marker. Keep readers, writers,
-constraints, generated contracts, tests and documentation coherent. The
-[pre-implementation design and separate QA](fresh-baseline-design.md) records this decision.
+constraints, generated contracts, tests and documentation coherent.
 
 ## Preparation retention
 

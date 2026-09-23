@@ -439,8 +439,10 @@ exact for the installed graph, owned, justified and review-dated in
 findings or leave an update unexamined. [CI governance](ci-governance.md#safe-actionable-failures)
 defines report ownership and transient-failure handling.
 
-See [Browser presentation](localization.md) for catalog generation, exact-value display, language-switch
-qualification and the explicitly reviewed presentation bundle budget.
+See [Browser presentation](web.md#browser-presentation) for user-visible locale behavior and the
+[frontend source](../web/README.md) for catalog commands. Qualify language changes against exact
+value display, preserved in-progress state, accessibility, and the reviewed 256 KiB aggregate gzip
+JavaScript budget.
 
 ## Reporting results
 

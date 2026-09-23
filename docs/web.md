@@ -13,7 +13,7 @@ configuration or open PostgreSQL.
 
 <!-- generated:begin web-help -->
 ```text
-ClaimCore.Web 0.4.0 — local HTTPS human interface
+ClaimCore.Web 0.5.0 — local HTTPS human interface
   ClaimCore.Web                 Start the configured loopback host
   ClaimCore.Web help            Show this configuration-free help
   ClaimCore.Web version         Show the compiled product version
@@ -73,6 +73,19 @@ The host listens only on loopback at the configured port and requires exact Host
 131,072-byte Kestrel ceiling solely for the largest raw envelope import; every endpoint applies its
 own lower limit before allocation. `GET /health/live` is a loopback host liveness probe, not an
 authenticated readiness, database-integrity, installation-readiness, or backup check.
+
+## Browser presentation
+
+The browser offers English, Latvian and Arabic interface text, with right-to-left layout for Arabic.
+Language and display format are separate controls: the available formats are `en-GB`, `lv-LV` and
+`ar-EG`. The defaults are English and `en-GB`, regardless of the host or browser locale. Expanded
+English (`en-XA`) is a layout-test pseudolocale, not a translation for case work.
+
+Changing either preference does not submit a command or clear a draft, prepared review, consent or
+recovery identity. Preferences are stored locally in the browser when storage is available; they do
+not change the installation's business time zone or recorded currency. Displayed dates and accepted
+amounts follow the selected format, but authored dates and amounts retain their canonical input
+syntax. Copied canonical values and downloaded recovery artifacts remain exact.
 
 ## Web-v2 contract and admission
 
