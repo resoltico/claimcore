@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { pullMergeRevision } from "./github-api.mjs";
 import { inspectPr } from "./pr-qualification.mjs";
 import {
   changedFiles,
@@ -68,8 +69,9 @@ export async function ownerReview(api, number, expectedHead, toolSource) {
       pr.base.repo.full_name === repository.full_name,
     "Review repository differs.",
   );
+  const mergeSha = await pullMergeRevision(api, pr);
   const base = await readCommit(api, pr.base.sha);
-  const merge = await readCommit(api, pr.merge_commit_sha);
+  const merge = await readCommit(api, mergeSha);
   assert.deepEqual(
     merge.parents?.map((parent) => parent.sha),
     [pr.base.sha, pr.head.sha],
@@ -87,13 +89,21 @@ export async function ownerReview(api, number, expectedHead, toolSource) {
   assert(changes.length > 0, "No proposed source changes to review.");
   const ci = await inspectPr(api, number, expectedHead);
   assert(
-    ci.baseSha === pr.base.sha && ci.state === "open" && ci.draft === pr.draft,
+    ci.baseSha === pr.base.sha &&
+      ci.mergeSha === mergeSha &&
+      ci.state === "open" &&
+      ci.draft === pr.draft,
     "PR changed while collecting review scope.",
   );
   assert.deepEqual(
     identity(await api(`pulls/${number}`)),
     identity(pr),
     "Review revisions changed.",
+  );
+  assert.equal(
+    await pullMergeRevision(api, pr),
+    mergeSha,
+    "Review merge revision changed.",
   );
   const currentRepository = await api("");
   for (const key of ["id", "full_name", "default_branch"])
@@ -111,7 +121,7 @@ export async function ownerReview(api, number, expectedHead, toolSource) {
     pr: number,
     baseSha: pr.base.sha,
     headSha: pr.head.sha,
-    mergeSha: pr.merge_commit_sha,
+    mergeSha,
     baseTree: base.tree.sha,
     mergeTree: merge.tree.sha,
     toolSource,

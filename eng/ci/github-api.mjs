@@ -81,3 +81,18 @@ export async function pages(api, path, field) {
   }
   throw new Error("GITHUB_PAGINATION_INCOMPLETE");
 }
+
+export async function pullMergeRevision(api, pr) {
+  const ref = `refs/pull/${pr.number}/merge`;
+  const response = await api(`git/ref/pull/${pr.number}/merge`);
+  const sha = response?.object?.sha;
+  if (
+    response?.ref !== ref ||
+    response.object?.type !== "commit" ||
+    typeof sha !== "string" ||
+    !/^[0-9a-f]{40}$/u.test(sha) ||
+    (pr.merge_commit_sha != null && pr.merge_commit_sha !== sha)
+  )
+    throw new Error("GITHUB_PR_MERGE_REVISION_MISMATCH");
+  return sha;
+}

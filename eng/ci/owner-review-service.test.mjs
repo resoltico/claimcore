@@ -54,6 +54,10 @@ function fixture() {
   const documents = {
     "": repo,
     "pulls/3": pr,
+    "git/ref/pull/3/merge": {
+      ref: "refs/pull/3/merge",
+      object: { type: "commit", sha: merge },
+    },
     [`git/commits/${base}`]: { sha: base, tree: { sha: baseTree } },
     [`git/commits/${merge}`]: {
       sha: merge,
@@ -115,6 +119,13 @@ test("draft and pending CI are reportable but are not approval", async () => {
   assert.equal(result.ci.qualification, "checks-pending-or-approval-required");
   assert.equal(result.ownerAuthorization, "not-granted-by-this-report");
 });
+test("owner report accepts a null PR merge field only with the exact tested merge ref", async () => {
+  const f = fixture();
+  f.pr.merge_commit_sha = null;
+  const report = await ownerReview(f.api, 3, head, source);
+  assert.equal(report.mergeSha, merge);
+  assert.equal(report.ci.qualification, "verified-current-head-ci");
+});
 for (const [label, mutate] of [
   [
     "stale head",
@@ -141,9 +152,9 @@ for (const [label, mutate] of [
     },
   ],
   [
-    "missing merge",
+    "missing merge ref",
     (f) => {
-      f.pr.merge_commit_sha = null;
+      f.documents["git/ref/pull/3/merge"].object.sha = null;
     },
   ],
   [

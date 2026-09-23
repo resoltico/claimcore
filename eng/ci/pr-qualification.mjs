@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { pages } from "./github-api.mjs";
+import { pages, pullMergeRevision } from "./github-api.mjs";
 
 const sha = (value) =>
   typeof value === "string" && /^[0-9a-f]{40}$/u.test(value);
@@ -73,6 +73,8 @@ export async function inspectPr(api, number, expectedHead) {
     expectedHead,
     "The PR has changed; inspect its actual head before reporting success.",
   );
+  const mergeSha =
+    pr.state === "open" ? await pullMergeRevision(api, pr) : null;
   const result = {
     number,
     url: pr.html_url,
@@ -80,6 +82,7 @@ export async function inspectPr(api, number, expectedHead) {
     head: pr.head.ref,
     headSha: pr.head.sha,
     baseSha: pr.base.sha,
+    mergeSha,
     draft: pr.draft,
     state: pr.state,
     ownerAuthorization: "not-assessed-by-ci",
@@ -106,7 +109,12 @@ export async function inspectPr(api, number, expectedHead) {
           "jobs",
         )
       : [];
-  const qualification = qualifyRun(pr, run, jobs, workflow);
+  const qualification = qualifyRun(
+    { ...pr, merge_commit_sha: mergeSha },
+    run,
+    jobs,
+    workflow,
+  );
   const refreshed = await api(`actions/runs/${run.id}`);
   assert.equal(
     refreshed.run_attempt,
@@ -119,9 +127,12 @@ export async function inspectPr(api, number, expectedHead) {
     "CI status changed; repeat the read-only check.",
   );
   assert.equal(refreshed.conclusion, run.conclusion);
-  assert(
-    samePr(pr, await api(`pulls/${number}`)),
-    "PR changed during verification.",
+  const refreshedPr = await api(`pulls/${number}`);
+  assert(samePr(pr, refreshedPr), "PR changed during verification.");
+  assert.equal(
+    await pullMergeRevision(api, refreshedPr),
+    mergeSha,
+    "Tested PR merge revision changed during verification.",
   );
   const latest = await pages(
     api,

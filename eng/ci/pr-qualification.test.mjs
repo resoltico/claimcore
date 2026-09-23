@@ -96,6 +96,11 @@ test("PR read-back rejects a changed attempt and never fabricates approval", asy
   let reads = 0;
   const api = async (path) => {
     if (path === "pulls/9") return structuredClone(pr);
+    if (path === "git/ref/pull/9/merge")
+      return {
+        ref: "refs/pull/9/merge",
+        object: { type: "commit", sha: pr.merge_commit_sha },
+      };
     if (path === "actions/workflows/ci.yml") return workflow;
     if (path.includes("/runs?"))
       return { total_count: 1, workflow_runs: [run] };
@@ -105,6 +110,28 @@ test("PR read-back rejects a changed attempt and never fabricates approval", asy
     throw new Error("Unexpected read.");
   };
   await assert.rejects(inspectPr(api, 9, pr.head.sha), /attempt changed/u);
+});
+test("PR read-back uses a verified merge ref when the PR response omits its SHA", async () => {
+  const { pr, run, jobs, workflow } = example();
+  const merge = pr.merge_commit_sha;
+  pr.merge_commit_sha = null;
+  const api = async (path) => {
+    if (path === "pulls/9") return structuredClone(pr);
+    if (path === "git/ref/pull/9/merge")
+      return {
+        ref: "refs/pull/9/merge",
+        object: { type: "commit", sha: merge },
+      };
+    if (path === "actions/workflows/ci.yml") return workflow;
+    if (path.includes("/runs?"))
+      return { total_count: 1, workflow_runs: [run] };
+    if (path.includes("/jobs?")) return { total_count: jobs.length, jobs };
+    if (path === "actions/runs/12") return run;
+    throw new Error("Unexpected read.");
+  };
+  const result = await inspectPr(api, 9, pr.head.sha);
+  assert.equal(result.mergeSha, merge);
+  assert.equal(result.qualification, "verified-current-head-ci");
 });
 test("GitHub requests use fixed authority and do not disclose denied response or token", async () => {
   const request = async (url, options) => {

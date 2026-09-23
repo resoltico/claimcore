@@ -25,7 +25,9 @@ Disable repository auto-merge so a deferred automatic merge cannot stand in for 
 current head. No merge bot or new privileged PR workflow is introduced.
 
 A read-only owner-review report binds repository ID, owner ID, PR number, base/head commits, tested
-merge commit and tree, reviewed tool revision, and current CI run/attempt. It compares the full base
+merge commit and tree, reviewed tool revision, and current CI run/attempt. It reads the exact
+`refs/pull/<number>/merge` commit when the PR response omits its merge SHA, verifies both parents,
+and checks the ref again before reporting. It compares the full base
 and tested-merge Git trees, not the PR description, labels, a contributor-authored checklist, or a
 possibly truncated patch list. Every changed path requires owner review. Architecture, security,
 contract-policy and general scopes highlight review questions; they are never exemptions. Removals,
