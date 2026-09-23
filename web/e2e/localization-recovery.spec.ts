@@ -83,7 +83,9 @@ test("keeps inspected recovery authority and confirmation stable while language 
     await selectFormat(page, "ar-EG");
     await page.keyboard.press("Escape");
     await expect(page.getByRole("button", { name: ui("ar", "ui.working") })).toBeDisabled();
-    await expect(page.getByRole("dialog")).toContainText(identity.requestSha256);
+    await expect(
+      page.getByRole("dialog", { name: ui("ar", "ui.resolveTitle"), exact: true }),
+    ).toContainText(identity.requestSha256);
     expect(requests).toHaveLength(1);
     await expectAccessible(page);
     pending.release();

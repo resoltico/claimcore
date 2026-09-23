@@ -11,8 +11,12 @@ import type { PreparedIdentity } from "./case-workflow";
 
 export const ui = (language: "en" | "lv" | "ar", key: keyof typeof en): string =>
   ({ en, lv, ar })[language][key];
+// Role lookup includes inert background controls; require the active native control.
 export const selectLanguage = async (page: Page, language: Language): Promise<void> => {
-  const control = page.getByRole("combobox").filter({ has: page.locator('option[value="en-XA"]') });
+  const control = page
+    .getByRole("combobox")
+    .and(page.locator("select:not([inert], [inert] *)"))
+    .filter({ has: page.locator('option[value="en-XA"]') });
   await expect(control).toHaveCount(1);
   await control.selectOption(language);
   await expect(control).toHaveValue(language);
@@ -23,7 +27,10 @@ export const selectLanguage = async (page: Page, language: Language): Promise<vo
   await expect(page.locator("html")).toHaveAttribute("dir", language === "ar" ? "rtl" : "ltr");
 };
 export const selectFormat = async (page: Page, locale: DisplayLocale): Promise<void> => {
-  const control = page.getByRole("combobox").filter({ has: page.locator('option[value="en-GB"]') });
+  const control = page
+    .getByRole("combobox")
+    .and(page.locator("select:not([inert], [inert] *)"))
+    .filter({ has: page.locator('option[value="en-GB"]') });
   await expect(control).toHaveCount(1);
   await control.selectOption(locale);
   await expect(control).toHaveValue(locale);
