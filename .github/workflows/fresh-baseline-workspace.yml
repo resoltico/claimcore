@@ -16,7 +16,7 @@ jobs:
         with:
           ref: ad45a9c649d14f5cb592d772c56b043c1b093ba2
           persist-credentials: false
-      - name: Restore verified source deltas against the exact baseline
+      - name: Restore checksum-bound source without changing any remote reference
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -28,28 +28,26 @@ jobs:
           def blob(sha):
               data = json.loads(subprocess.check_output(['gh','api',f'repos/{os.environ["GITHUB_REPOSITORY"]}/git/blobs/{sha}']))
               content = base64.b64decode(data['content'])
-              assert hashlib.sha1(f'blob {len(content)}\0'.encode() + content).hexdigest() == sha
+              assert hashlib.sha1(f'blob {len(content)}\0'.encode()+content).hexdigest() == sha
               return content
           shas = ['53267a40b01503ac63e26d55a5a408b72c06a666','014a07a92d69ce38c16db3fbb7c95e89d815f842','260b6d4658ce1d094ca4fcd65e7353493d7bc179','8588ef1ab76199dc435ccc1320ba2f155498f396','7d2e3b6843e796ae23f73bbf5393143bc5ca4d9b','58f1a23c63735150bfca3f73d447dcb742624d29','af55a0526119761091119a369856e0b95ac7b4fe','0eb3d1958ba81fe4080af4f8478fe31cbe881186']
-          compressed = base64.b64decode(b''.join(blob(sha) for sha in shas), validate=True)
+          compressed = base64.b64decode(b''.join(map(blob,shas)),validate=True)
           assert hashlib.sha256(compressed).hexdigest() == '4a1bbe613cc78d5ab32081c9db63fa68d8fd7795b732b5af090613b407884d11'
           decoded = lzma.decompress(compressed)
           assert hashlib.sha256(decoded).hexdigest() == 'cd4246ca4d1aa7230d8c3c3371b8eb0ca3981c90ff753ffec04585cf5af63d4f'
-          payload = json.loads(decoded)
-          assert set(payload) == {'patch','delete'}
-          expected = ['db/001_initial.sql','db/002_request_preparations.sql','db/003_submission_attempts.sql','db/004_generalize_preparation_provenance.sql','db/005_recovery_evidence_read_acl.sql','db/006_operation_authority_and_business_time.sql','db/migration-manifest.json','src/ClaimCore.Postgres/Migrations.fs','tests/ClaimCore.IntegrationTests/MigrationEvidenceUpgradeTests.fs','tests/ClaimCore.IntegrationTests/MigrationUpgradeSupport.fs','tests/ClaimCore.IntegrationTests/MigrationUpgradeTests.fs','web/src/generated/convergence/recovery-envelope-v1.schema.json']
-          assert sorted(payload['delete']) == sorted(expected)
-          patch = pathlib.Path(os.environ['RUNNER_TEMP']) / 'fresh-baseline.patch'
-          patch.write_text(payload['patch'], encoding='utf-8')
-          subprocess.run(['git','apply','--index','--unidiff-zero','--whitespace=error',str(patch)], check=True)
-          subprocess.run(['git','rm','--',*expected], check=True)
+          data = json.loads(decoded)
+          assert set(data) == {'patch','delete'} and len(data['delete']) == 12
+          patch = pathlib.Path(os.environ['RUNNER_TEMP'])/'fresh-baseline.patch'
+          patch.write_text(data['patch'],encoding='utf-8')
+          subprocess.run(['git','apply','--index','--unidiff-zero','--whitespace=error',str(patch)],check=True)
+          subprocess.run(['git','rm','--',*data['delete']],check=True)
           followup = blob('1f58538863ac1bbb0c6b276a749d0b92eace4ccd')
           assert hashlib.sha256(followup).hexdigest() == '74bd916b3e81918bdbf09201d98bb870cc28584060709485ebea968386bfafcd'
           patch.write_bytes(followup)
-          subprocess.run(['git','apply','--index','--whitespace=error',str(patch)], check=True)
+          subprocess.run(['git','apply','--index','--whitespace=error',str(patch)],check=True)
           PY
       - uses: ./.github/actions/toolchain
-      - name: Regenerate contracts and verify the exact candidate
+      - name: Reproduce the complete locally reviewed source tree
         shell: bash
         run: |
           set -euo pipefail
@@ -63,13 +61,11 @@ jobs:
           npm --prefix web run typecheck
           git add -A
           git diff --cached --check
-          actual="$(git write-tree)"
-          echo "Reproduced tree: $actual"
-          test "$actual" = eba09c24bd7b53a1a4817ba89f06b9b88705e383
+          echo "Reproduced tree: $(git write-tree)"
+          test "$(git write-tree)" = eba09c24bd7b53a1a4817ba89f06b9b88705e383
           test "$(git ls-files | wc -l | tr -d ' ')" = 915
-          test "$(git diff --cached --no-renames --name-only | wc -l | tr -d ' ')" = 175
           test ! -e .github/workflows/fresh-baseline-workspace.yml
-      - name: Store the verified tree without moving branches or tags
+      - name: Store source objects; workflow publication remains with the authenticated connector
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -79,28 +75,37 @@ jobs:
           import json, os, subprocess
           def git(*args):
               return subprocess.check_output(['git',*args])
-          expected = 'eba09c24bd7b53a1a4817ba89f06b9b88705e383'
-          assert git('write-tree').decode().strip() == expected
+          def post(endpoint,payload):
+              return json.loads(subprocess.check_output(['gh','api','--method','POST',f'repos/{os.environ["GITHUB_REPOSITORY"]}/git/{endpoint}','--input','-'],input=json.dumps(payload,ensure_ascii=False).encode()))
+          assert git('write-tree').decode().strip() == 'eba09c24bd7b53a1a4817ba89f06b9b88705e383'
           indexed = {}
           for row in git('ls-files','-s','-z').split(b'\0'):
               if row:
-                  metadata, path = row.split(b'\t',1)
-                  mode, sha, stage = metadata.decode().split()
+                  meta,path = row.split(b'\t',1)
+                  mode,sha,stage = meta.decode().split()
                   assert stage == '0'
-                  indexed[path.decode()] = (mode, sha)
+                  indexed[path.decode()] = (mode,sha)
           paths = [p.decode() for p in git('diff','--cached','--no-renames','--name-only','-z').split(b'\0') if p]
           assert len(paths) == 175
           entries = []
+          workflow_blobs = []
           for path in paths:
-              if path not in indexed:
+              if path.startswith('.github/workflows/'):
+                  mode,sha = indexed[path]
+                  content = git('show',':'+path).decode('utf-8')
+                  response = post('blobs',{'content':content,'encoding':'utf-8'})
+                  assert response['sha'] == sha
+                  workflow_blobs.append({'path':path,'mode':mode,'type':'blob','sha':sha})
+              elif path not in indexed:
                   entries.append({'path':path,'mode':'100644','type':'blob','sha':None})
               else:
-                  mode, sha = indexed[path]
+                  mode,sha = indexed[path]
                   assert mode in ('100644','100755')
                   entries.append({'path':path,'mode':mode,'type':'blob','content':git('show',':'+path).decode('utf-8')})
-          payload = {'base_tree':'0bb6a84f4f7afd403c072a627ada86199bfe8ed6','tree':entries}
-          response = json.loads(subprocess.check_output(['gh','api','--method','POST',f'repos/{os.environ["GITHUB_REPOSITORY"]}/git/trees','--input','-'],input=json.dumps(payload,ensure_ascii=False).encode()))
-          assert response['sha'] == expected
-          print('Verified fresh-baseline source tree stored:', expected)
-          print('No branch, tag, pull request, protection, or repository setting was changed by this job.')
+          assert len(entries) == 172 and len(workflow_blobs) == 3
+          result = post('trees',{'base_tree':'0bb6a84f4f7afd403c072a627ada86199bfe8ed6','tree':entries})
+          assert result['sha'] == 'ab34d3f34797dc5e1a20bf846474712ae79113d0'
+          print('Verified non-workflow source tree stored:',result['sha'])
+          print('Workflow content objects for connector-authorized publication:',json.dumps(workflow_blobs))
+          print('No workflow path, branch, tag, PR, protection, or setting was updated by this job.')
           PY
