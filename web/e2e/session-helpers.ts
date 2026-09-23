@@ -32,7 +32,7 @@ export const openAuthenticated = async (page: Page): Promise<void> => {
     throw new Error("E2E_AUTH_STATE_INVALID");
   }
   await page.context().addCookies(state.cookies as Cookies);
-  await page.goto("/");
+  await page.goto("/", { waitUntil: "domcontentloaded", timeout: 10_000 });
   await expect(page.getByRole("heading", { name: "Cases", exact: true })).toBeVisible();
 };
 

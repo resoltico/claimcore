@@ -45,20 +45,54 @@ export function githubApi(repository, token, request = fetch) {
 }
 export async function pages(api, path, field) {
   const values = [];
+  const ids = new Set();
+  let total;
+  const counted = ["workflow_runs", "jobs"].includes(field);
   for (let page = 1; page <= 100; page += 1) {
     const document = await api(
       `${path}${path.includes("?") ? "&" : "?"}per_page=100&page=${page}`,
     );
-    if (
-      field === "workflow_runs" &&
-      (!Number.isSafeInteger(document.total_count) ||
-        document.total_count > 1000)
-    )
-      throw new Error("GITHUB_PAGINATION_INCOMPLETE");
+    if (counted) {
+      const count = document.total_count;
+      if (
+        !Number.isSafeInteger(count) ||
+        count < 0 ||
+        count > (field === "workflow_runs" ? 1000 : 10000) ||
+        (total !== undefined && count !== total)
+      )
+        throw new Error("GITHUB_PAGINATION_INCOMPLETE");
+      total = count;
+    }
     const rows = field === undefined ? document : document[field];
-    if (!Array.isArray(rows)) throw new Error("GITHUB_PAGINATION_INVALID");
+    if (!Array.isArray(rows) || rows.length > 100)
+      throw new Error("GITHUB_PAGINATION_INVALID");
+    if (counted)
+      for (const row of rows) {
+        if (!Number.isSafeInteger(row.id) || row.id <= 0 || ids.has(row.id))
+          throw new Error("GITHUB_PAGINATION_DUPLICATE_OR_INVALID_ID");
+        ids.add(row.id);
+      }
     values.push(...rows);
-    if (rows.length < 100) return values;
+    if (rows.length < 100) {
+      if (counted && values.length !== total)
+        throw new Error("GITHUB_PAGINATION_INCOMPLETE");
+      return values;
+    }
   }
   throw new Error("GITHUB_PAGINATION_INCOMPLETE");
+}
+
+export async function pullMergeRevision(api, pr) {
+  const ref = `refs/pull/${pr.number}/merge`;
+  const response = await api(`git/ref/pull/${pr.number}/merge`);
+  const sha = response?.object?.sha;
+  if (
+    response?.ref !== ref ||
+    response.object?.type !== "commit" ||
+    typeof sha !== "string" ||
+    !/^[0-9a-f]{40}$/u.test(sha) ||
+    (pr.merge_commit_sha != null && pr.merge_commit_sha !== sha)
+  )
+    throw new Error("GITHUB_PR_MERGE_REVISION_MISMATCH");
+  return sha;
 }

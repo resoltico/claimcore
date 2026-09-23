@@ -35,6 +35,11 @@ trust boundaries. [Development](docs/development.md) owns commands and gates.
 
 ## Safety and evidence
 
+- Follow [Owner review](docs/owner-review.md). Source review and green CI never grant owner approval.
+  Publish a branch/PR and report its exact revisions; do not approve, merge, enable auto-merge or
+  change native protections unless separately and explicitly authorized. Do not use shared owner
+  credentials as evidence of independent human review.
+
 - Test only with synthetic data in isolated databases. Preserve adopted cases, database volumes,
   private `.local` state, and retained old installation evidence. Never print secrets, connection strings,
   recovery bytes, or claimant payloads.

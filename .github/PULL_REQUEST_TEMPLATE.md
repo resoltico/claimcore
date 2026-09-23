@@ -6,6 +6,10 @@ security, contracts, workflow/gate policy, dependencies or release controls expl
 ## Design and QA
 
 Link the design and separate QA record. Distinguish agent/source review from owner authorization.
+Use `docs/owner-review.md` for the revision-bound report and complete changed-path
+scope, including review-tool and gate changes. Do not pre-check owner approval on the owner's behalf.
+The report, source-review registry and CI cannot grant approval; the owner decides on the current
+head/base before a manual merge.
 
 ## Verification and handoff
 

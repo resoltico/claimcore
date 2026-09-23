@@ -175,16 +175,8 @@ printf 'Host=127.0.0.1;Port=%s;Database=claimcore;Username=postgres;Password=%s\
 printf 'Host=127.0.0.1;Port=%s;Database=claimcore;Username=claimcore_app;Password=%s\n' "$port" "$app_secret" >"$app_connection"
 
 echo "Initializing the fresh baseline in the isolated synthetic database."
-if ! CLAIMCORE_ADMIN_CONNECTION_FILE="$owner_connection" \
-  dotnet "$database_dll" initialize Etc/UTC >/dev/null 2>&1; then
-  echo "The published database initialization failed." >&2
-  exit 1
-fi
-if ! CLAIMCORE_ADMIN_CONNECTION_FILE="$owner_connection" \
-  dotnet "$database_dll" verify >/dev/null 2>&1; then
-  echo "The published database baseline verification failed." >&2
-  exit 1
-fi
+bash "$repo_root/eng/Initialize-PublishedWebDatabase.sh" \
+  "$database_dll" "$owner_connection" "$state_dir"
 certificate="$state_dir/web.pfx"
 certificate_key="$state_dir/web.key"
 certificate_pem="$state_dir/web.pem"

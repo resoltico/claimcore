@@ -45,6 +45,12 @@ export async function configureSettings(
     const remaining = initial.operations.slice(index);
     // Re-read and re-plan immediately before each write, preserving all unrelated/stronger policy.
     const current = settingsPlan(await readSettings(api));
+    assert.equal(
+      current.repositoryId,
+      initial.repositoryId,
+      "Repository identity changed.",
+    );
+    assert.equal(current.ownerId, initial.ownerId, "Owner identity changed.");
     assert.deepEqual(
       current.operations,
       remaining,
@@ -53,6 +59,12 @@ export async function configureSettings(
     const operation = remaining[0];
     await api(operation.path, operation);
     const after = settingsPlan(await readSettings(api));
+    assert.equal(
+      after.repositoryId,
+      initial.repositoryId,
+      "Repository identity changed.",
+    );
+    assert.equal(after.ownerId, initial.ownerId, "Owner identity changed.");
     assert.deepEqual(
       after.operations,
       remaining.slice(1),
@@ -71,6 +83,8 @@ export async function configureSettings(
     scope: [
       "repository-flags",
       "main-Gate-ruleset",
+      "owner-only-PR-update-ruleset",
+      "manual-merge-only",
       "version-tag-immutability",
       "release-environment",
     ],

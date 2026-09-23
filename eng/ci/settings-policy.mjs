@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { isDeepStrictEqual } from "node:util";
 import { createHash } from "node:crypto";
+import { ownerMergeOperation } from "./owner-settings.mjs";
 
 const prRule = {
   type: "pull_request",
@@ -216,11 +217,14 @@ export function settingsPlan(snapshot) {
   );
   assert(
     snapshot.repository.owner.type === "User" &&
-      Number.isSafeInteger(snapshot.repository.owner.id),
+      Number.isSafeInteger(snapshot.repository.owner.id) &&
+      snapshot.repository.owner.id > 0,
     "This reviewed sole-owner policy requires a personal repository.",
   );
   const operations = [];
   const flags = {};
+  if (snapshot.repository.allow_auto_merge !== false)
+    flags.allow_auto_merge = false;
   if (!snapshot.repository.delete_branch_on_merge)
     flags.delete_branch_on_merge = true;
   if (!snapshot.repository.allow_update_branch)
@@ -229,23 +233,27 @@ export function settingsPlan(snapshot) {
     operations.push({ path: "", method: "PATCH", json: flags });
   for (const operation of [
     branchOperation(snapshot),
+    ownerMergeOperation(snapshot),
     tagOperation(snapshot),
     ...environmentOperations(snapshot),
   ])
     if (operation) operations.push(operation);
   return {
     repository: snapshot.repository.full_name,
+    repositoryId: snapshot.repository.id,
+    ownerId: snapshot.repository.owner.id,
     operations,
     planSha256: createHash("sha256")
       .update(
         JSON.stringify({
           repository: snapshot.repository.full_name,
           id: snapshot.repository.id,
+          ownerId: snapshot.repository.owner.id,
           operations,
         }),
       )
       .digest("hex"),
     authorization:
-      "explicit-owner-merge-and-publication-review; not independent self-review",
+      "owner-only-PR-merge; separate-non-bypassable-Gate; not independent human identity",
   };
 }

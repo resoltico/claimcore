@@ -6,6 +6,11 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Added
 
+- Add revision-bound owner-review reporting for every changed source path, with explicit
+  architecture/security/contract-policy review scopes and no fabricated approval. Extend the
+  opt-in repository-settings plan with a separate owner-only PR-update rule, keep Gate
+  non-bypassable, and disable auto-merge; live activation remains an owner administration step.
+
 - Presentation-owned English, Latvian, Arabic and expanded-English catalogs with independent
   display-locale selection, complete typed diagnostic translations and accessible RTL controls.
   Exact amount/date display preserves canonical authored values, copied values and recovery files.
@@ -62,6 +67,10 @@ Notable changes to this project are documented in this file. The format is based
 - The domain contract said a closed case must be reopened before editing, which contradicted the one-step factual correction added in 0.3.0. It now records that correction as the deliberate exception.
 
 ### Internal
+
+- Refresh the locked frontend formatter and NuGet test dependency graph to current releases,
+  including TypeShape 10 and Application Insights 3. Remove the corresponding dependency holds;
+  the scheduled dependency-health check now has no outstanding updates.
 
 - Qualify ICU catalogs, generated arguments, rendered tokens and locale-blind request coordinators
   in the existing mandatory contract/lint gates, with language-state and three-browser scenarios.
