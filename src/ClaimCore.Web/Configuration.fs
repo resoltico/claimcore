@@ -129,6 +129,31 @@ module Configuration =
             loaded.Dispose()
             WebStartupDiagnostics.refuse WebStartupProblem.CertificateKeyMissing
 
+        let usable =
+            try
+                let now = DateTime.UtcNow
+
+                let serverAuthentication =
+                    loaded.Extensions
+                    |> Seq.tryPick (function
+                        | :? X509EnhancedKeyUsageExtension as value -> Some value
+                        | _ -> None)
+                    |> Option.exists (fun value ->
+                        value.EnhancedKeyUsages
+                        |> Seq.cast<Oid>
+                        |> Seq.exists (fun usage -> usage.Value = "1.3.6.1.5.5.7.3.1"))
+
+                loaded.NotBefore.ToUniversalTime() <= now
+                && now < loaded.NotAfter.ToUniversalTime()
+                && loaded.MatchesHostname("localhost", false, false)
+                && serverAuthentication
+            with :? CryptographicException ->
+                false
+
+        if not usable then
+            loaded.Dispose()
+            WebStartupDiagnostics.refuse WebStartupProblem.CertificateInvalid
+
         loaded
 
     let private connectionString () =

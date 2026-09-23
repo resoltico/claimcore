@@ -4,6 +4,12 @@ Notable changes to this project are documented in this file. The format is based
 
 ## [Unreleased]
 
+### Security
+
+- Runtime and schema-owner connections now refuse non-loopback PostgreSQL targets unless `SSL Mode=VerifyFull` authenticates the server certificate and hostname; GSS encryption fallback is disabled for those connections. Operators using a remote database must update both private connection files before opening it. Loopback development connections remain available without TLS.
+- The Web host now removes expired in-memory session entries when a new session is created, preventing dormant entries from accumulating without changing idle or absolute session lifetimes.
+- The Web host now refuses expired, wrong-hostname, and non-server certificates at startup. Replace an unsuitable PFX with an owner-private certificate containing a `localhost` DNS subject alternative name and server-authentication usage; browser trust remains a separate operator step.
+
 ## [0.5.0] - 2026-09-23
 
 ### Added

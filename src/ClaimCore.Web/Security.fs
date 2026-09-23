@@ -42,6 +42,14 @@ type SessionRegistry(idleLifetime: TimeSpan, absoluteLifetime: TimeSpan) =
     let gate = obj ()
     let sessions = Dictionary<string, Session>(StringComparer.Ordinal)
 
+    let removeExpired now =
+        sessions
+        |> Seq.filter (fun entry ->
+            entry.Value.AbsoluteExpiry <= now || entry.Value.IdleExpiry <= now)
+        |> Seq.map (fun entry -> entry.Key)
+        |> Seq.toArray
+        |> Array.iter (fun id -> sessions.Remove(id) |> ignore)
+
     member _.Create(now: DateTimeOffset) =
         let id = Guid.NewGuid().ToString("N")
 
@@ -52,6 +60,8 @@ type SessionRegistry(idleLifetime: TimeSpan, absoluteLifetime: TimeSpan) =
             }
 
         lock gate (fun () ->
+            removeExpired now
+
             if sessions.TryAdd(id, session) then
                 id
             else
@@ -72,6 +82,8 @@ type SessionRegistry(idleLifetime: TimeSpan, absoluteLifetime: TimeSpan) =
         lock gate (fun () -> sessions.Remove(id) |> ignore)
 
     member _.RevokeAll() = lock gate sessions.Clear
+
+    member internal _.StoredCount = lock gate (fun () -> sessions.Count)
 
 module Security =
     let private credentialName = "bootstrap-credential"

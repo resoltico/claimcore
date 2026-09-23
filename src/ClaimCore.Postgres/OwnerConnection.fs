@@ -16,6 +16,7 @@ module internal OwnerConnection =
             || builder.NoResetOnClose
             || builder.LogParameters
             || builder.PersistSecurityInfo
+            || not (ConnectionTransport.requireAuthenticatedRemote builder)
         then
             AdministrationFailures.refuse AdministrationFailure.OwnerConnectionInvalid
 

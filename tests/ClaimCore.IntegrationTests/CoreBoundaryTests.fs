@@ -189,6 +189,34 @@ let private runtimeAdmissionTests =
                 cancelledOpeningReturnsTypedFault
         ]
 
+let private dangerousConnectionSwitches () =
+    let expectRejected (change: NpgsqlConnectionStringBuilder -> unit) =
+        let builder = NpgsqlConnectionStringBuilder(appConnection ())
+        change builder
+
+        Expect.throwsT<ArgumentException>
+            (fun () -> new PostgresStore(builder.ConnectionString) |> ignore)
+            "Connection policy"
+
+    expectRejected (fun builder -> builder.Options <- "-c role=claimcore_app")
+    expectRejected (fun builder -> builder.NoResetOnClose <- true)
+    expectRejected (fun builder -> builder.LogParameters <- true)
+    expectRejected (fun builder -> builder.PersistSecurityInfo <- true)
+
+    for mode in [ SslMode.Disable; SslMode.Prefer; SslMode.Require; SslMode.VerifyCA ] do
+        expectRejected (fun builder ->
+            builder.Host <- "database.example.invalid"
+            builder.SslMode <- mode)
+
+    let verified = NpgsqlConnectionStringBuilder(appConnection ())
+    verified.Host <- "database.example.invalid"
+    verified.SslMode <- SslMode.VerifyFull
+    use accepted = new PostgresStore(verified.ConnectionString)
+
+    Expect.isNotNull
+        (box accepted)
+        "A hostname-verified remote transport passes configuration admission"
+
 let private admissionTests =
     testList
         "connection admission"
@@ -216,19 +244,7 @@ let private admissionTests =
                     "Both authenticated session_user and effective current_user are required")
             testCase
                 "dangerous runtime connection switches are refused before database access"
-                (fun () ->
-                    let expectRejected (change: Npgsql.NpgsqlConnectionStringBuilder -> unit) =
-                        let builder = Npgsql.NpgsqlConnectionStringBuilder(appConnection ())
-                        change builder
-
-                        Expect.throwsT<ArgumentException>
-                            (fun () -> new PostgresStore(builder.ConnectionString) |> ignore)
-                            "Connection policy"
-
-                    expectRejected (fun builder -> builder.Options <- "-c role=claimcore_app")
-                    expectRejected (fun builder -> builder.NoResetOnClose <- true)
-                    expectRejected (fun builder -> builder.LogParameters <- true)
-                    expectRejected (fun builder -> builder.PersistSecurityInfo <- true))
+                dangerousConnectionSwitches
             testCase
                 "host rejects elevated connection rather than handing a renderer a store"
                 (fun () ->

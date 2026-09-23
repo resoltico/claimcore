@@ -2,6 +2,7 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="AdministrationTypes.fs" />
+    <Compile Include="ConnectionTransport.fs" />
     <Compile Include="Baseline.fs" />
     <Compile Include="SchemaDefinition.fs" />
     <Compile Include="SchemaAdmission.fs" />
