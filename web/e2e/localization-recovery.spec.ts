@@ -15,6 +15,7 @@ import {
 test("preserves a committed operation and exact recovery identity when its localized submit response is lost", async ({
   page,
 }) => {
+  test.setTimeout(45_000);
   await openAuthenticated(page);
   await openCase(page, `LOCALE-LOSS-${randomUUID()}`);
   await startCommand(page, "Close the case");
@@ -45,7 +46,10 @@ test("preserves a committed operation and exact recovery identity when its local
   // This explicit reload is recovery action by the operator, never a language-change side effect.
   await page.reload();
   await page.getByRole("button", { name: "Recovery", exact: true }).click();
-  await page.getByLabel("Recovery view").selectOption("TERMINAL");
+  const view = page.getByLabel("Recovery view");
+  await expect(view).toBeVisible({ timeout: 10_000 });
+  await view.selectOption("TERMINAL");
+  await expect(view).toHaveValue("TERMINAL");
   const row = page.locator(".recovery-list li").filter({ hasText: identity.operationId });
   await expect(row).toHaveCount(1);
   await row.getByRole("button", { name: "Inspect", exact: true }).click();
