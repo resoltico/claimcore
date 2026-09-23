@@ -11,7 +11,7 @@
 
 .sr-only {
   position: absolute;
-  width: 1px;
+  inline-size: 1px;
   height: 1px;
   padding: 0;
   overflow: hidden;
@@ -24,24 +24,21 @@ body {
   margin: 0;
 }
 
-button,
-input,
-select,
-textarea {
+:is(button, input, select, textarea) {
   font: inherit;
-}
-
-button {
-  cursor: pointer;
 }
 
 button,
 .copy-button {
+  cursor: pointer;
+  max-inline-size: 100%;
+  min-inline-size: 0;
   border: 1px solid #075cac;
   border-radius: 0.4rem;
   padding: 0.5rem 0.75rem;
   color: #fff;
   background: #075cac;
+  overflow-wrap: anywhere;
 }
 
 button:focus-visible,
@@ -55,7 +52,8 @@ textarea:focus-visible {
 .app-shell,
 .login-shell,
 .loading {
-  width: min(100% - 2rem, 72rem);
+  inline-size: min(100% - 2rem, 72rem);
+  min-inline-size: 0;
   margin: 0 auto;
   padding: 2rem 0 4rem;
 }
@@ -72,21 +70,19 @@ textarea:focus-visible {
   align-items: center;
 }
 
-.app-shell > header,
-.section-heading {
+:is(.app-shell > header, .section-heading) {
   justify-content: space-between;
 }
 
 .app-shell > header > div {
-  min-width: 0;
+  min-inline-size: 0;
   overflow-wrap: anywhere;
 }
 
-.app-shell > header,
+.app-shell > :is(header, section),
 .login-card,
 .operation-editor,
 .case-fields,
-.app-shell > section,
 .review-modal {
   background: #fff;
   border: 1px solid #c7d2dc;
@@ -105,17 +101,17 @@ textarea:focus-visible {
   place-items: center;
 }
 
-.app-shell > header,
-.app-shell > section,
+.app-shell > :is(header, section),
 .operation-editor,
 .case-fields,
 .login-card {
+  min-inline-size: 0;
   padding: 1.5rem;
 }
 
 .app-shell > section,
 .operation-editor {
-  margin-top: 1rem;
+  margin-block-start: 1rem;
 }
 
 .eyebrow {
@@ -127,9 +123,10 @@ textarea:focus-visible {
   text-transform: uppercase;
 }
 
-h1,
-h2 {
+:is(h1, h2) {
   color: #0d2538;
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
 }
 
 h1 {
@@ -137,7 +134,7 @@ h1 {
 }
 
 h2 {
-  margin-top: 0;
+  margin-block-start: 0;
 }
 
 button[aria-pressed="false"],
@@ -173,7 +170,8 @@ button:disabled {
 .lookup input,
 .operation-editor select,
 .copy-value textarea {
-  width: 100%;
+  inline-size: 100%;
+  min-inline-size: 0;
   border: 1px solid #617384;
   border-radius: 0.35rem;
   padding: 0.55rem;
@@ -188,30 +186,28 @@ button:disabled {
 }
 
 .login-card {
-  width: min(100%, 34rem);
+  inline-size: min(100%, 34rem);
 }
 
 .error {
-  border-left: 0.3rem solid #b42318;
-  padding-left: 0.75rem;
+  border-inline-start: 0.3rem solid #b42318;
+  padding-inline-start: 0.75rem;
   color: #8d1e14;
   font-weight: 700;
 }
 
 .notice {
-  border-left: 0.3rem solid #06c;
-  padding-left: 0.75rem;
+  border-inline-start: 0.3rem solid #06c;
+  padding-inline-start: 0.75rem;
 }
 
 .case-list,
 .recovery-list,
 .history-list {
-  padding-left: 1.25rem;
+  padding-inline-start: 1.25rem;
 }
 
-.case-list li,
-.recovery-list li,
-.history-list li {
+:is(.case-list, .recovery-list, .history-list) li {
   margin: 0.75rem 0;
 }
 
@@ -232,7 +228,7 @@ button:disabled {
   grid-template-columns: minmax(12rem, 1fr) minmax(0, 2fr);
   gap: 0.75rem;
   padding: 0.75rem 0;
-  border-top: 1px solid #dce4ea;
+  border-block-start: 1px solid #dce4ea;
   overflow-wrap: anywhere;
 }
 
@@ -241,11 +237,11 @@ button:disabled {
   flex-wrap: wrap;
   gap: 0.5rem;
   margin: 0;
-  min-width: 0;
+  min-inline-size: 0;
 }
 
 .character-warning {
-  width: 100%;
+  inline-size: 100%;
   color: #8d1e14;
 }
 
@@ -254,6 +250,9 @@ button:disabled {
   flex-wrap: wrap;
   gap: 0.25rem;
   align-items: center;
+  inline-size: 100%;
+  max-inline-size: 100%;
+  min-inline-size: 0;
 }
 
 .copy-value textarea {
@@ -261,7 +260,7 @@ button:disabled {
 }
 
 .review-modal {
-  width: min(100% - 2rem, 42rem);
+  inline-size: min(100% - 2rem, 42rem);
   max-height: calc(100dvh - 2rem);
   overflow: auto;
   padding: 1.5rem;
@@ -269,7 +268,7 @@ button:disabled {
 
 .review-values {
   display: grid;
-  grid-template-columns: minmax(10rem, 1fr) 2fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.65rem;
 }
 
@@ -280,7 +279,7 @@ button:disabled {
 
 .dialog-actions {
   justify-content: end;
-  margin-top: 1rem;
+  margin-block-start: 1rem;
 }
 
 @media (width <= 42rem) {
@@ -293,7 +292,7 @@ button:disabled {
   .app-shell,
   .login-shell,
   .loading {
-    width: min(100% - 1rem, 72rem);
+    inline-size: min(100% - 1rem, 72rem);
     padding-top: 1rem;
   }
 }

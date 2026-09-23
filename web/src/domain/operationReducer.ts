@@ -1,3 +1,4 @@
+import type { Notice } from "../api/notices";
 import type { AdvisoryReview, CommandDraft, PreparationDetails, Receipt } from "../api/v2";
 import type { CommandKind, CorrectionGroupName, CorrectionMode, DraftValues } from "./metadata";
 import { isCorrectionValues } from "./metadata";
@@ -25,8 +26,8 @@ export type OperationState = {
   preparation: PreparationDetails | null;
   review: AdvisoryReview | null;
   receipt: Receipt | null;
-  message: string | null;
-  fieldError: { name: string; message: string } | null;
+  message: Notice | null;
+  fieldError: { name: string; message: Notice } | null;
   exposedRequest: CommandDraft | null;
   pending: { kind: "PREPARE" | "SUBMIT"; requestId: number } | null;
 };
@@ -49,17 +50,17 @@ export type OperationAction =
   | { type: "CHANGE_COMMAND"; command: CommandKind; values: DraftValues; nextOperationId: string }
   | { type: "PREPARING"; requestId: number; draft: CommandDraft }
   | { type: "PREPARED"; requestId: number; preparation: PreparationDetails; review: AdvisoryReview }
-  | { type: "PREPARATION_UNKNOWN"; requestId: number; message: string }
+  | { type: "PREPARATION_UNKNOWN"; requestId: number; message: Notice }
   | {
       type: "RETAINED_FOR_RECOVERY";
       requestId: number;
       preparation: PreparationDetails;
-      message: string;
+      message: Notice;
     }
-  | { type: "DEFINITELY_REJECTED"; requestId: number; message: string; field: string | null }
+  | { type: "DEFINITELY_REJECTED"; requestId: number; message: Notice; field: string | null }
   | { type: "SUBMITTING"; requestId: number }
   | { type: "ACCEPTED"; requestId: number; receipt: Receipt }
-  | { type: "OUTCOME_UNKNOWN"; requestId: number; message: string }
+  | { type: "OUTCOME_UNKNOWN"; requestId: number; message: Notice }
   | { type: "KEEP_FOR_RECOVERY" }
   | { type: "RESET_MESSAGE" };
 
@@ -145,7 +146,7 @@ const change = (
 const only = (
   state: OperationState,
   delivery: DeliveryState,
-  message: string | null,
+  message: Notice | null,
 ): OperationState => ({ ...state, delivery, message, fieldError: null });
 const preparing = (
   state: OperationState,

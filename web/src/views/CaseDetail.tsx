@@ -1,3 +1,6 @@
+import { NoticeView } from "../presentation/Message";
+import { usePresentation } from "../presentation/context";
+import type { Notice } from "../api/notices";
 import { Button } from "react-aria-components/Button";
 import { useCallback } from "react";
 import type {
@@ -10,7 +13,7 @@ import type {
 import { v2 } from "../api/v2";
 import { CaseFieldsView } from "../components/CaseFieldsView";
 import { CopyValue } from "../components/CopyValue";
-import { commandFor, type CommandKind } from "../domain/metadata";
+import { type CommandKind } from "../domain/metadata";
 import { useRetryablePage, useV2Read } from "../hooks/useV2Read";
 
 type CaseDetailProps = {
@@ -35,7 +38,42 @@ const fullHistory = (response: WebV2Response<"case.history">) => {
 const caseLookup = (response: WebV2Response<"case.get">) =>
   response.outcome.tag === "SUCCEEDED" ? response.outcome.data : null;
 
-const acceptedHistory = ({
+const HistoryReceipt = ({
+  receipt,
+  fields,
+}: {
+  receipt: Receipt;
+  fields: ReadonlyArray<FieldDescriptor>;
+}) => {
+  const p = usePresentation();
+  return (
+    <li>
+      <details>
+        <summary>
+          {p.text("ui.historySummary", {
+            command: p.commandLabel(receipt.command),
+            revision: p.integer(receipt.snapshot.revision),
+            timestamp: receipt.recordedAt,
+          })}
+        </summary>
+        <p>
+          {p.text("ui.receiptAttribution", {
+            operationId: receipt.operationId,
+            actor: receipt.recordedBy,
+            state: receipt.replayed ? p.text("ui.exactReplay") : p.text("ui.accepted"),
+          })}
+        </p>
+        <CaseFieldsView
+          caseView={receipt.snapshot}
+          fields={fields}
+          context={p.text("ui.historyContext", { operationId: receipt.operationId })}
+        />
+      </details>
+    </li>
+  );
+};
+
+const AcceptedHistory = ({
   items,
   cursor,
   message,
@@ -44,95 +82,86 @@ const acceptedHistory = ({
   fields,
 }: ReturnType<typeof useRetryablePage<WebV2Response<"case.history">, Receipt>> & {
   fields: ReadonlyArray<FieldDescriptor>;
-}) => (
-  <section aria-labelledby="history-title">
-    <h2 id="history-title">Accepted history</h2>
-    <p>
-      Historical entries are read-only. Expand an entry to inspect its accepted snapshot and
-      attribution.
-    </p>
-    <ol className="history-list">
-      {items.map((receipt) => (
-        <li key={receipt.operationId}>
-          <details>
-            <summary>
-              <bdi>{receipt.command}</bdi> · revision {receipt.snapshot.revision} ·{" "}
-              <bdi>{receipt.recordedAt}</bdi>
-            </summary>
-            <p>
-              Operation <bdi>{receipt.operationId}</bdi> · recorded by{" "}
-              <bdi>{receipt.recordedBy}</bdi> · {receipt.replayed ? "exact replay" : "accepted"}
-            </p>
-            <CaseFieldsView
-              caseView={receipt.snapshot}
-              fields={fields}
-              context={`history operation ${receipt.operationId}`}
-            />
-          </details>
-        </li>
-      ))}
-    </ol>
-    {message === null ? null : (
-      <p className="error" role="alert">
-        {message}
-      </p>
-    )}
-    {loading ? <p role="status">Loading accepted history…</p> : null}
-    {cursor === null ? null : (
-      <Button onPress={() => void load(cursor)} isDisabled={loading}>
-        Load more history
-      </Button>
-    )}
-  </section>
-);
+}) => {
+  const p = usePresentation();
+  return (
+    <section aria-labelledby="history-title">
+      <h2 id="history-title">{p.text("ui.acceptedHistory")}</h2>
+      <p>{p.text("ui.historyHint")}</p>
+      <ol className="history-list">
+        {items.map((receipt) => (
+          <HistoryReceipt key={receipt.operationId} receipt={receipt} fields={fields} />
+        ))}
+      </ol>
+      {message === null ? null : (
+        <p className="error" role="alert">
+          <NoticeView value={message} />
+        </p>
+      )}
+      {loading ? <p role="status">{p.text("ui.loadingHistory")}</p> : null}
+      {cursor === null ? null : (
+        <Button onPress={() => void load(cursor)} isDisabled={loading}>
+          {p.text("ui.moreHistory")}
+        </Button>
+      )}
+    </section>
+  );
+};
 
 const AvailableCommands = ({
   current,
-  definition,
   onCommand,
 }: {
   current: CurrentCase;
   definition: SemanticDefinition;
   onCommand: (command: CommandKind) => void;
-}) => (
-  <section aria-labelledby="commands-title">
-    <h2 id="commands-title">Available commands</h2>
-    <div className="actions">
-      {current.availableCommands.map((command) => {
-        const descriptor = commandFor(definition, command);
-        return (
-          <Button
-            key={command}
-            onPress={() => onCommand(command)}
-            aria-label={`${descriptor.label}: ${descriptor.meaning}`}
-          >
-            {descriptor.label}
-          </Button>
-        );
-      })}
-    </div>
-  </section>
-);
+}) => {
+  const p = usePresentation();
+  return (
+    <section aria-labelledby="commands-title">
+      <h2 id="commands-title">{p.text("ui.availableCommands")}</h2>
+      <div className="actions">
+        {current.availableCommands.map((command) => {
+          return (
+            <Button
+              key={command}
+              onPress={() => onCommand(command)}
+              aria-label={p.text("ui.commandDescription", {
+                label: p.commandLabel(command),
+                meaning: p.commandMeaning(command),
+              })}
+            >
+              {p.commandLabel(command)}
+            </Button>
+          );
+        })}
+      </div>
+    </section>
+  );
+};
 
 const CurrentFeedback = ({
   message,
   loading,
   missing,
 }: {
-  message: string | null;
+  message: Notice | null;
   loading: boolean;
   missing: boolean;
-}) => (
-  <>
-    {message === null ? null : (
-      <p className="error" role="alert">
-        {message}
-      </p>
-    )}
-    {loading ? <p role="status">Loading current case…</p> : null}
-    {missing ? <p role="status">Case was not found.</p> : null}
-  </>
-);
+}) => {
+  const p = usePresentation();
+  return (
+    <>
+      {message === null ? null : (
+        <p className="error" role="alert">
+          <NoticeView value={message} />
+        </p>
+      )}
+      {loading ? <p role="status">{p.text("ui.loadingCurrentCase")}</p> : null}
+      {missing ? <p role="status">{p.text("ui.caseNotFound")}</p> : null}
+    </>
+  );
+};
 
 const CurrentPresentation = ({
   current,
@@ -142,16 +171,23 @@ const CurrentPresentation = ({
   current: CurrentCase;
   definition: SemanticDefinition;
   onCommand: (current: CurrentCase, command: CommandKind) => void;
-}) => (
-  <>
-    <CaseFieldsView caseView={current.case} fields={definition.fields} context="current case" />
-    <AvailableCommands
-      current={current}
-      definition={definition}
-      onCommand={(command) => onCommand(current, command)}
-    />
-  </>
-);
+}) => {
+  const p = usePresentation();
+  return (
+    <>
+      <CaseFieldsView
+        caseView={current.case}
+        fields={definition.fields}
+        context={p.text("ui.currentCase")}
+      />
+      <AvailableCommands
+        current={current}
+        definition={definition}
+        onCommand={(command) => onCommand(current, command)}
+      />
+    </>
+  );
+};
 
 export const CaseDetail = ({
   token,
@@ -161,6 +197,7 @@ export const CaseDetail = ({
   onBack,
   onCommand,
 }: CaseDetailProps) => {
+  const p = usePresentation();
   const get = useCallback(
     (signal: AbortSignal) => v2.get(caseReference, token, signal),
     [caseReference, token],
@@ -179,12 +216,12 @@ export const CaseDetail = ({
   return (
     <section aria-labelledby="case-detail-title">
       <div className="section-heading">
-        <h2 id="case-detail-title">Case detail</h2>
-        <Button onPress={onBack}>Back to cases</Button>
+        <h2 id="case-detail-title">{p.text("ui.caseDetail")}</h2>
+        <Button onPress={onBack}>{p.text("ui.backToCases")}</Button>
       </div>
       <p>
-        Exact reference: <bdi>{caseReference}</bdi>{" "}
-        <CopyValue label="case reference" value={caseReference} />
+        {p.text("ui.exactReference", { reference: caseReference })}{" "}
+        <CopyValue label={p.text("ui.caseReference")} value={caseReference} />
       </p>
       <CurrentFeedback
         message={current.message}
@@ -194,7 +231,7 @@ export const CaseDetail = ({
       {lookup === null ? null : (
         <CurrentPresentation current={lookup} definition={definition} onCommand={onCommand} />
       )}
-      {acceptedHistory({ ...history, fields: definition.fields })}
+      <AcceptedHistory {...history} fields={definition.fields} />
     </section>
   );
 };

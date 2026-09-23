@@ -33,7 +33,7 @@ test("prefills metadata fields and confirms dirty command changes before review"
     "Currency of amount to be paid": "EUR",
   });
   const review = page.getByRole("dialog", { name: "Review prepared operation" });
-  await expect(review).toContainText("paymentDecisionDate");
+  await expect(review).toContainText("Payment decision date");
   await expect(review).toContainText("300.25");
   await expectAccessible(page);
 });

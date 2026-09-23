@@ -1,5 +1,7 @@
+import { usePreparedConsent } from "./usePreparedConsent";
+import { recoveryNotice } from "../../api/notices";
 import { useEffect, useReducer, useRef, useState } from "react";
-import { isMutationUncertain, resultMessage, v2 } from "../../api/v2";
+import { isMutationUncertain, resultNotice, v2 } from "../../api/v2";
 import {
   commandFor,
   commandInputs,
@@ -39,7 +41,7 @@ const useEditorState = (props: OperationEditorProps): EditorState => {
     ),
   );
   const [state, dispatch] = useReducer(operationReducer, initial);
-  const [confirmed, setConfirmed] = useState(false);
+  const { confirmed, setConfirmed } = usePreparedConsent(state.preparation);
   const [pendingCommand, setPendingCommand] = useState<CommandKind | null>(null);
   return {
     state,
@@ -86,7 +88,10 @@ const dispatchPrepareResult = (
       type: "RETAINED_FOR_RECOVERY",
       requestId,
       preparation: details,
-      message: `${rejection.message} Inspect Recovery for this exact operation before taking another action.`,
+      message: recoveryNotice(
+        { kind: "diagnostic", diagnostic: rejection.diagnostic },
+        "inspectBeforeAction",
+      ),
     });
     return;
   }
@@ -94,7 +99,7 @@ const dispatchPrepareResult = (
     state.dispatch({
       type: "PREPARATION_UNKNOWN",
       requestId,
-      message: `${resultMessage(result)} Inspect Recovery before retrying this exact operation.`,
+      message: recoveryNotice(resultNotice(result), "inspectBeforeRetry"),
     });
     return;
   }
@@ -102,7 +107,7 @@ const dispatchPrepareResult = (
     result.kind === "outcome" && result.value.outcome.tag === "REJECTED"
       ? result.value.outcome.data.rejection.field
       : null;
-  state.dispatch({ type: "DEFINITELY_REJECTED", requestId, message: resultMessage(result), field });
+  state.dispatch({ type: "DEFINITELY_REJECTED", requestId, message: resultNotice(result), field });
 };
 
 const sendPrepare = async (
@@ -132,13 +137,13 @@ const sendSubmit = async ({
     dispatch({
       type: "OUTCOME_UNKNOWN",
       requestId,
-      message: `${resultMessage(result)} Inspect Recovery before taking another action.`,
+      message: recoveryNotice(resultNotice(result), "inspectBeforeAction"),
     });
   else
     dispatch({
       type: "DEFINITELY_REJECTED",
       requestId,
-      message: resultMessage(result),
+      message: resultNotice(result),
       field: null,
     });
 };
@@ -217,7 +222,7 @@ const useEditorActions = (props: OperationEditorProps, state: EditorState): Edit
     ...changes,
     prepare,
     submit: async () => {
-      if (submitting.current || state.state.delivery !== "REVIEWING") return;
+      if (submitting.current || !state.confirmed || state.state.delivery !== "REVIEWING") return;
       submitting.current = true;
       try {
         await sendSubmit({

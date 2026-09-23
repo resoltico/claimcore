@@ -1,0 +1,22 @@
+{
+  "notice.unreachable": "The local service could not be reached.",
+  "notice.invalidHttp": "The local service returned an invalid HTTP {status} response.",
+  "notice.fileTooLarge": "The selected file exceeds {maximumBytes} bytes.",
+  "notice.fileUnreadable": "The selected file could not be read.",
+  "notice.exportInvalid": "The recovery export response failed its protocol checks.",
+  "notice.incomplete": "The operation did not complete.",
+  "notice.definitionMismatch": "The installed Web contract does not match these browser assets. Reload after publishing matching assets.",
+  "notice.invalidSession": "Invalid session response.",
+  "notice.missingCsrf": "Authenticated session did not include an antiforgery token.",
+  "notice.dismissed": "Preparation dismissed.",
+  "notice.alreadyDismissed": "Preparation was already dismissed.",
+  "notice.retained": "Recovery material retained.",
+  "notice.existing": "Recovery material was already retained.",
+  "notice.accepted": "Accepted exact operation {operationId}.",
+  "notice.digestUnavailable": "The exact recovery digest is unavailable; inspect the preparation.",
+  "notice.exportStarted": "Recovery export started. The file contains claimant data; keep it private.",
+  "notice.inspectBeforeRetry": "Inspect Recovery before retrying this exact operation.",
+  "notice.inspectBeforeAction": "Inspect Recovery before taking another action.",
+  "notice.keptForRecovery": "Prepared request is retained. Use Recovery to inspect, resolve, or dismiss it.",
+  "notice.unknownDiagnostic": "An explanation is unavailable. Follow the reported outcome and recovery guidance; do not infer permission to retry."
+}

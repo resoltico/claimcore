@@ -1,3 +1,5 @@
+import { localNotice, recoveryNotice } from "../../api/notices";
+import type { Notice } from "../../api/notices";
 import type { Dispatch, SetStateAction } from "react";
 import type {
   PreparationSummary,
@@ -9,7 +11,7 @@ import type {
   RecoveryPage,
   WebV2Response,
 } from "../../api/v2";
-import { isMutationUncertain, resultMessage, v2 } from "../../api/v2";
+import { isMutationUncertain, resultNotice, v2 } from "../../api/v2";
 
 export type Inspection = RecoveryInspection;
 export type RecoveryViewKind = RecoveryPage["view"];
@@ -29,8 +31,8 @@ export type RecoveryUi = {
   setConfirm: Setter<ConfirmState | null>;
   importing: ImportState | null;
   setImporting: Setter<ImportState | null>;
-  message: string | null;
-  setMessage: Setter<string | null>;
+  message: Notice | null;
+  setMessage: Setter<Notice | null>;
   busy: string | null;
   setBusy: Setter<string | null>;
 };
@@ -82,7 +84,7 @@ const inspectOperation = async (
   const result = await v2.recoveryInspect(id, attemptCursor, 50, token);
   const details = result.kind === "outcome" ? inspection(result.value) : null;
   ui.setBusy(null);
-  if (details === null) ui.setMessage(resultMessage(result));
+  if (details === null) ui.setMessage(resultNotice(result));
   else setInspection(details, ui);
 };
 
@@ -101,7 +103,7 @@ const performAction = async (token: string, listing: Listing, ui: RecoveryUi): P
     const result = await v2.recoveryDismiss(choice.item.operationId, digest, token);
     ui.setBusy(null);
     ui.setConfirm(null);
-    ui.setMessage(resultMessage(result));
+    ui.setMessage(resultNotice(result));
     void listing.load(null);
     return;
   }
@@ -111,10 +113,10 @@ const performAction = async (token: string, listing: Listing, ui: RecoveryUi): P
   const receipt = result.kind === "outcome" ? accepted(result.value) : null;
   ui.setMessage(
     receipt !== null
-      ? `Accepted exact operation ${receipt.operationId}.`
+      ? { kind: "accepted", operationId: receipt.operationId }
       : isMutationUncertain(result)
-        ? `${resultMessage(result)} Inspect Recovery before retrying this exact preparation.`
-        : resultMessage(result),
+        ? recoveryNotice(resultNotice(result), "inspectBeforeRetry")
+        : resultNotice(result),
   );
   void listing.load(null);
 };
@@ -132,14 +134,14 @@ export const onceWhilePending = (
 
 const download = async (item: PreparationSummary, token: string, ui: RecoveryUi): Promise<void> => {
   if (item.requestSha256 === null) {
-    ui.setMessage("The exact recovery digest is unavailable; inspect the preparation.");
+    ui.setMessage(localNotice("digestUnavailable"));
     return;
   }
   ui.setBusy(item.operationId);
   const result = await v2.recoveryExport(item.operationId, item.requestSha256, token);
   ui.setBusy(null);
   if (result.kind !== "outcome" || !("blob" in result.value)) {
-    ui.setMessage(resultMessage(result));
+    ui.setMessage(resultNotice(result));
     return;
   }
   const url = URL.createObjectURL(result.value.blob);
@@ -150,7 +152,7 @@ const download = async (item: PreparationSummary, token: string, ui: RecoveryUi)
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
-  ui.setMessage("Recovery export started. The file contains claimant data; keep it private.");
+  ui.setMessage(localNotice("exportStarted"));
 };
 
 const previewImport = async (
@@ -169,7 +171,7 @@ const previewImport = async (
     result.kind === "outcome" && result.value.outcome.tag === "SUCCEEDED"
       ? result.value.outcome.data
       : null;
-  if (data === null) ui.setMessage(resultMessage(result));
+  if (data === null) ui.setMessage(resultNotice(result));
   else ui.setImporting({ file, kind, preview: data });
 };
 
@@ -183,7 +185,7 @@ const retainImport = async (token: string, listing: Listing, ui: RecoveryUi): Pr
       : await v2.importRecordRetain(value.file, value.preview.sourceSha256, token);
   ui.setBusy(null);
   ui.setImporting(null);
-  ui.setMessage(resultMessage(result));
+  ui.setMessage(resultNotice(result));
   void listing.load(null);
 };
 

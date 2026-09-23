@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Rejection } from "../src/api/v2";
@@ -126,6 +126,13 @@ describe("v2 Recovery view", () => {
     render(<RecoveryView token="token" />);
     await user.click(await screen.findByRole("button", { name: "Inspect" }));
     await user.click(screen.getByRole("button", { name: "Resolve exact preparation" }));
+    await screen.findByRole("button", { name: "Confirm resolve" });
+    expect(screen.getAllByRole("dialog")).toHaveLength(1);
+    const language = screen.getByRole("combobox", { name: "Interface language" });
+    await user.selectOptions(language, "ar");
+    expect(screen.getAllByRole("dialog")).toHaveLength(1);
+    await user.selectOptions(language, "en");
+    expect(fetch).toHaveBeenCalledTimes(2);
     await user.click(await screen.findByRole("button", { name: "Confirm resolve" }));
     expect(await screen.findByText(`Accepted exact operation ${operationId}.`)).toBeVisible();
   });
@@ -142,7 +149,7 @@ describe("v2 Recovery view", () => {
     await user.click(screen.getByRole("button", { name: "Resolve exact preparation" }));
     await user.click(await screen.findByRole("button", { name: "Confirm resolve" }));
     expect(await screen.findByRole("status", { hidden: true })).toHaveTextContent(
-      "did not complete",
+      "Read the current case",
     );
     expect(screen.queryByText(/Accepted exact operation/u)).toBeNull();
   });

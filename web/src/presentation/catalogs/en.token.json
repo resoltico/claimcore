@@ -1,0 +1,17 @@
+{
+  "token.OPENED": "OPENED",
+  "token.CLOSED": "CLOSED",
+  "token.KEEP": "KEEP",
+  "token.REPLACE": "REPLACE",
+  "token.CLEAR": "CLEAR",
+  "token.PENDING": "PENDING",
+  "token.ACCEPTED": "ACCEPTED",
+  "token.REVOKED": "REVOKED",
+  "token.REJECTED": "REJECTED",
+  "token.ERROR": "Execution error",
+  "token.REVOKED_BEFORE_EXECUTION": "Revoked before execution",
+  "token.ENVELOPE": "ENVELOPE",
+  "token.UNBOUND_CANONICAL_RECORD": "Unbound canonical record",
+  "token.FOUND": "FOUND",
+  "token.NOT_FOUND": "NOT_FOUND"
+}

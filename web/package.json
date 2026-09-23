@@ -25,15 +25,18 @@
     "test:e2e": "playwright test",
     "dead-code": "knip",
     "contract:generate": "node scripts/regenerate-contract.mjs",
-    "contract:check": "node scripts/check-contract.mjs && node scripts/check-react-aria.mjs",
+    "contract:check": "node scripts/check-contract.mjs && node scripts/check-react-aria.mjs && npm run localization:check",
     "licenses:check": "license-checker-rseidelsohn --production --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;0BSD;CC0-1.0'",
     "notices:generate": "node scripts/generate-third-party-notices.mjs",
     "sbom": "node scripts/generate-sbom.mjs",
-    "architecture:check": "node --test scripts/architecture-policy.test.mjs scripts/validator-groups.test.mjs"
+    "architecture:check": "node --test scripts/architecture-policy.test.mjs scripts/validator-groups.test.mjs scripts/localization-policy.test.mjs scripts/localization-boundary.test.mjs",
+    "localization:generate": "node scripts/localization.mjs --write",
+    "localization:check": "node scripts/localization.mjs"
   },
   "dependencies": {
     "ajv": "8.20.0",
     "ajv-formats": "3.0.1",
+    "intl-messageformat": "12.1.2",
     "react": "19.3.0",
     "react-aria-components": "1.21.1",
     "react-dom": "19.3.0"
@@ -41,6 +44,7 @@
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
     "@eslint/js": "10.0.1",
+    "@formatjs/icu-messageformat-parser": "3.5.20",
     "@playwright/test": "1.63.0",
     "@testing-library/jest-dom": "7.0.1",
     "@testing-library/react": "16.3.3",

@@ -5,6 +5,8 @@ import reactHooks from "eslint-plugin-react-hooks";
 import globals from "globals";
 import tseslint from "typescript-eslint";
 
+import { dynamicLocaleImport, localeStateBoundaries } from "./scripts/localization-boundary.mjs";
+
 import { browserNetworkBoundary } from "./scripts/architecture-policy.mjs";
 
 const baseRules = {
@@ -37,7 +39,7 @@ const typescriptRules = {
 const sourceRules = { ...baseRules, ...typescriptRules };
 
 export default tseslint.config(
-  // rationale: AJV/Rolldown outputs bounded generated code; suppression-registry: web/eslint.config.mjs|eslint-config-ignore|line:41
+  // rationale: AJV/Rolldown outputs bounded generated code; suppression-registry: web/eslint.config.mjs|eslint-config-ignore|line:43
   { ignores: ["src/generated/convergence/web-v2.validators.*.mjs"] },
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked.map((config) => ({
@@ -62,6 +64,13 @@ export default tseslint.config(
     languageOptions: { globals: { ...globals.browser, ...globals.node, ...globals.vitest } },
   },
   browserNetworkBoundary,
+  ...localeStateBoundaries.map((policy) => ({
+    ...policy,
+    rules: {
+      ...policy.rules,
+      "no-restricted-syntax": [...baseRules["no-restricted-syntax"], dynamicLocaleImport],
+    },
+  })),
   {
     files: ["scripts/**/*.mjs"],
     languageOptions: { globals: globals.node },

@@ -1,3 +1,4 @@
+import type { Notice } from "../api/notices";
 import { useCallback, useRef, useState } from "react";
 import type {
   PreparationSummary,
@@ -26,7 +27,7 @@ const useRecoveryDialogs = (token: string, listing: Listing) => {
   const [selectedSummary, setSelectedSummary] = useState<PreparationSummary | null>(null);
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
   const [importing, setImporting] = useState<ImportState | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<Notice | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const actionInFlight = useRef(false);
   const actions = recoveryActions(token, listing, {

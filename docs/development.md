@@ -439,6 +439,9 @@ exact for the installed graph, owned, justified and review-dated in
 findings or leave an update unexamined. [CI governance](ci-governance.md#safe-actionable-failures)
 defines report ownership and transient-failure handling.
 
+See [Browser presentation](localization.md) for catalog generation, exact-value display, language-switch
+qualification and the explicitly reviewed presentation bundle budget.
+
 ## Reporting results
 
 List commands actually executed with their outcomes. Separately identify conclusions drawn from

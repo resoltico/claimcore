@@ -1,5 +1,5 @@
 import type { RecoveryRejection } from "../src/generated/convergence/web-v2.types";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import type { CurrentCase, Rejection } from "../src/api/v2";
@@ -92,11 +92,11 @@ it("allocates a new ID when editing a definitely refused prepared request", asyn
     await screen.findByRole("checkbox", { name: "I will submit this exact prepared request." }),
   );
   await user.click(screen.getByRole("button", { name: "Submit exact request" }));
-  await screen.findByText("The exact preparation was refused.");
+  await screen.findByText("A dismissed preparation cannot be submitted.");
   const claimant = screen.getByLabelText("Claimant name", { exact: true });
   await user.type(claimant, "Synthetic B");
   await user.click(screen.getByRole("button", { name: "Prepare exact request" }));
-  expect(await screen.findByRole("alert")).toHaveTextContent("Synthetic validation refusal.");
+  expect(await screen.findByRole("alert")).toHaveTextContent("A non-blank value is required.");
   expect(sentDraft(0).operationId).not.toBe(sentDraft(2).operationId);
   expect(sentDraft(0).command.values["claimantName"]).toBe("");
   expect(sentDraft(2).command.values["claimantName"]).toBe("Synthetic B");
@@ -119,7 +119,9 @@ it("retries the frozen request after delivery loss despite a changed current rev
   await waitFor(() => expect(vi.mocked(globalThis.fetch)).toHaveBeenCalledTimes(2));
   expect(sentDraft(1)).toEqual(sentDraft(0));
   expect(sentDraft(1).expectedRevision).toBe("1");
-  expect(await screen.findByText("Synthetic stale revision.")).toBeVisible();
+  expect(
+    await screen.findByText("Read the current case before making a changed request."),
+  ).toBeVisible();
 });
 
 it("sends an explicit grouped correction and preserves all non-replaced groups", async () => {

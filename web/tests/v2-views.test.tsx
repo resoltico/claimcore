@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import type { CurrentCase } from "../src/api/v2";
@@ -91,8 +91,8 @@ it("shows current fields, server command labels, full expandable history and ret
   expect(await screen.findByText("CASE-1")).toBeVisible();
   await user.click(screen.getByRole("button", { name: /Close the case/u }));
   expect(command).toHaveBeenCalledWith(current, "CLOSE");
-  await user.click(screen.getAllByText(full.receipt.command)[0]!);
-  expect(screen.getAllByText("synthetic-operator")).toHaveLength(2);
+  await user.click(screen.getAllByText(/Close the case · revision/u)[0]!);
+  expect(screen.getAllByText(/synthetic-operator/u)).toHaveLength(2);
   expect(document.body).toHaveTextContent("exact replay");
   await user.click(screen.getByRole("button", { name: "Load more history" }));
   await user.click(screen.getByRole("button", { name: "Back to cases" }));
@@ -142,7 +142,7 @@ it("reports a failed list as a request-local error without manufacturing rows", 
     ),
   );
   render(<CaseList token="token" onSelect={vi.fn()} onOpen={vi.fn()} />);
-  expect(await screen.findByRole("alert")).toHaveTextContent("WEB_BUSY");
+  expect(await screen.findByRole("alert")).toHaveTextContent("The local host is busy.");
   expect(screen.queryByRole("listitem")).toBeNull();
 });
 
@@ -164,7 +164,7 @@ it("fails closed when the server definition is rejected or has a different Web f
   const first = render(
     <Dashboard token="token" sessionEpoch={2} onLogout={vi.fn(() => Promise.resolve())} />,
   );
-  expect(await screen.findByRole("alert")).toHaveTextContent("WEB_SESSION_REJECTED");
+  expect(await screen.findByRole("alert")).toHaveTextContent("The session was refused.");
   first.unmount();
   fetch.mockResolvedValueOnce(
     response("definition", "DESCRIBED", { ...definition, webFingerprint: "0".repeat(64) }),

@@ -21,7 +21,8 @@
     "noPropertyAccessFromIndexSignature": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": false,
-    "types": ["node", "vite/client", "vitest/globals"]
+    "types": ["node", "vite/client", "vitest/globals"],
+    "resolveJsonModule": true
   },
   "include": ["src", "tests", "e2e"]
 }

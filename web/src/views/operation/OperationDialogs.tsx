@@ -1,3 +1,4 @@
+import { usePresentation } from "../../presentation/context";
 import { Button } from "react-aria-components/Button";
 import type { DefinitionPayload, Receipt } from "../../api/v2";
 import { AccessibleModal } from "../../components/AccessibleModal";
@@ -7,22 +8,23 @@ import type { OperationEditorModel } from "./editorTypes";
 type CommandChangeProps = { model: OperationEditorModel };
 
 export const CommandChangeDialog = ({ model }: CommandChangeProps) => {
+  const p = usePresentation();
   if (model.pendingCommand === null) return null;
   const pendingCommand = model.pendingCommand;
   return (
     <AccessibleModal
-      title="Discard this command draft?"
-      description="Changing command discards these authored values and creates a new operation ID."
+      title={p.text("ui.changeCommandTitle")}
+      description={p.text("ui.changeCommandDescription")}
       isOpen
       isDismissable
       onOpenChange={() => model.setPendingCommand(null)}
     >
       <div className="dialog-actions">
         <Button className="secondary-button" onPress={() => model.setPendingCommand(null)}>
-          Keep editing
+          {p.text("ui.keepEditing")}
         </Button>
         <Button onPress={() => model.applyCommand(pendingCommand)}>
-          Discard and change command
+          {p.text("ui.discardAndChange")}
         </Button>
       </div>
     </AccessibleModal>
@@ -36,19 +38,18 @@ type AcceptedOperationProps = {
 };
 
 export const AcceptedOperation = ({ definition, receipt, onCommitted }: AcceptedOperationProps) => {
+  const p = usePresentation();
   if (receipt === null) return null;
   return (
     <section aria-labelledby="accepted-title" className="receipt">
-      <h2 id="accepted-title">Accepted operation</h2>
-      <p>
-        Operation <bdi>{receipt.operationId}</bdi> is accepted.
-      </p>
+      <h2 id="accepted-title">{p.text("ui.acceptedOperation")}</h2>
+      <p>{p.text("ui.operationAccepted", { operationId: receipt.operationId })}</p>
       <CaseFieldsView
         caseView={receipt.snapshot}
         fields={definition.definition.fields}
-        context={`accepted operation ${receipt.operationId}`}
+        context={p.text("ui.acceptedContext", { operationId: receipt.operationId })}
       />
-      <Button onPress={onCommitted}>Return to case</Button>
+      <Button onPress={onCommitted}>{p.text("ui.returnToCase")}</Button>
     </section>
   );
 };

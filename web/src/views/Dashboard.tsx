@@ -1,3 +1,5 @@
+import { NoticeView } from "../presentation/Message";
+import { usePresentation } from "../presentation/context";
 import { Button } from "react-aria-components/Button";
 import { useState } from "react";
 import type { CurrentCase, DefinitionPayload } from "../api/v2";
@@ -20,26 +22,29 @@ const Header = ({
   definition: DefinitionPayload | null;
   locked: boolean;
   onLogout: () => Promise<void>;
-}) => (
-  <header>
-    <div>
-      <p className="eyebrow">Trusted local installation</p>
-      <h1>
-        {definition === null
-          ? "ClaimCore"
-          : `${definition.definition.application} ${definition.runtime.productVersion}`}
-      </h1>
-      {definition === null ? null : (
-        <small>
-          Semantic {definition.semanticFingerprint} · Web v2 {definition.webFingerprint}
-        </small>
-      )}
-    </div>
-    <Button onPress={() => void onLogout()} isDisabled={locked}>
-      Sign out
-    </Button>
-  </header>
-);
+}) => {
+  const p = usePresentation();
+  return (
+    <header>
+      <div>
+        <p className="eyebrow">{p.text("ui.trustedInstallation")}</p>
+        <h1>
+          {definition === null
+            ? "ClaimCore"
+            : `${definition.definition.application} ${definition.runtime.productVersion}`}
+        </h1>
+        {definition === null ? null : (
+          <small>
+            Semantic {definition.semanticFingerprint} · Web v2 {definition.webFingerprint}
+          </small>
+        )}
+      </div>
+      <Button onPress={() => void onLogout()} isDisabled={locked}>
+        {p.text("ui.signOut")}
+      </Button>
+    </header>
+  );
+};
 
 const DashboardNav = ({
   active,
@@ -49,21 +54,23 @@ const DashboardNav = ({
   active: string;
   locked: boolean;
   navigate: (next: "cases" | "recovery" | "operations") => void;
-}) => (
-  <nav aria-label="Primary">
-    {(["cases", "recovery", "operations"] as const).map((item) => (
-      <Button
-        key={item}
-        onPress={() => navigate(item)}
-        isDisabled={locked}
-        aria-pressed={active === item}
-      >
-        {item[0]?.toUpperCase()}
-        {item.slice(1)}
-      </Button>
-    ))}
-  </nav>
-);
+}) => {
+  const p = usePresentation();
+  return (
+    <nav aria-label={p.text("ui.primary")}>
+      {(["cases", "recovery", "operations"] as const).map((item) => (
+        <Button
+          key={item}
+          onPress={() => navigate(item)}
+          isDisabled={locked}
+          aria-pressed={active === item}
+        >
+          {p.text(`ui.${item}`)}
+        </Button>
+      ))}
+    </nav>
+  );
+};
 
 type ContentProps = {
   token: string;
@@ -90,7 +97,8 @@ const DashboardContent = ({
   setLocked,
   committed,
 }: ContentProps) => {
-  if (definition === null) return <p>Loading core definition…</p>;
+  const p = usePresentation();
+  if (definition === null) return <p>{p.text("ui.loadingDefinition")}</p>;
   if (operation !== null)
     return (
       <OperationEditor
@@ -151,7 +159,7 @@ export const Dashboard = ({ token, sessionEpoch, onLogout }: DashboardProps) => 
       <DashboardNav active={active} locked={locked} navigate={navigate} />
       {message === null ? null : (
         <p className="error" role="alert">
-          {message}
+          <NoticeView value={message} />
         </p>
       )}
       <DashboardContent

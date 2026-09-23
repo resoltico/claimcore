@@ -1,0 +1,17 @@
+{
+  "token.OPENED": "ATVĒRTA",
+  "token.CLOSED": "SLĒGTA",
+  "token.KEEP": "SAGLABĀT",
+  "token.REPLACE": "AIZSTĀT",
+  "token.CLEAR": "DZĒST",
+  "token.PENDING": "GAIDOŠA",
+  "token.ACCEPTED": "PIEŅEMTA",
+  "token.REVOKED": "ATSAUKTA",
+  "token.REJECTED": "NORAIDĪTA",
+  "token.ERROR": "Izpildes kļūda",
+  "token.REVOKED_BEFORE_EXECUTION": "Atsaukts pirms izpildes",
+  "token.ENVELOPE": "APLOKSNE",
+  "token.UNBOUND_CANONICAL_RECORD": "Nesaistīts kanoniskais ieraksts",
+  "token.FOUND": "ATRASTA",
+  "token.NOT_FOUND": "NAV ATRASTA"
+}

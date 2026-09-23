@@ -6,9 +6,6 @@ import { progress } from "./session-helpers";
 
 export type PreparedIdentity = Readonly<{ operationId: string; requestSha256: string }>;
 
-const identityPattern =
-  /Operation\s+([0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12})\s+·\s+digest\s+([0-9a-f]{64})/u;
-
 const fill = async (page: Page, values: Readonly<Record<string, string>>): Promise<void> => {
   for (const [label, value] of Object.entries(values)) {
     const stage = label
@@ -18,19 +15,6 @@ const fill = async (page: Page, values: Readonly<Record<string, string>>): Promi
     await progress(`fill-${stage}`);
     await page.getByLabel(label, { exact: true }).fill(value);
   }
-};
-
-const preparedIdentity = async (page: Page): Promise<PreparedIdentity> => {
-  const dialog = page.getByRole("dialog", { name: "Review prepared operation" });
-  await expect(dialog).toBeVisible();
-  const text = (await dialog.textContent()) ?? "";
-  const match = identityPattern.exec(text);
-  const operationId = match?.[1];
-  const requestSha256 = match?.[2];
-  if (operationId === undefined || requestSha256 === undefined) {
-    throw new Error("Prepared operation identity was not rendered.");
-  }
-  return { operationId, requestSha256 };
 };
 
 const submitReview = async (page: Page): Promise<void> => {
@@ -99,8 +83,22 @@ export const prepare = async (
 ): Promise<PreparedIdentity> => {
   await fill(page, values);
   await progress("prepare-dispatch");
+  const event = page.waitForResponse((response) =>
+    response.url().endsWith("/api/v2/operations/prepare"),
+  );
   await page.getByRole("button", { name: "Prepare exact request" }).click();
-  const identity = await preparedIdentity(page);
+  const response = await event;
+  const payload: unknown = await response.json();
+  if (response.status() !== 200 || !(await isWebV2Response("command.prepare", payload)))
+    throw new Error("E2E_PREPARE_PROTOCOL_FAILURE");
+  const outcome = (payload as WebV2Response<"command.prepare">).outcome;
+  if (outcome.tag !== "PREPARED") throw new Error("E2E_PREPARE_REVIEW_UNAVAILABLE");
+  const { operationId, requestSha256 } = outcome.data.details.summary;
+  if (requestSha256 === null) throw new Error("E2E_PREPARE_EXACT_IDENTITY_UNAVAILABLE");
+  const identity = { operationId, requestSha256 };
+  const dialog = page.getByRole("dialog", { name: "Review prepared operation" });
+  await expect(dialog).toContainText(operationId);
+  await expect(dialog).toContainText(requestSha256);
   await progress("prepare-reviewed");
   return identity;
 };

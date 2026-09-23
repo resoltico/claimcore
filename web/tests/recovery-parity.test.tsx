@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import type { PreparationDetails } from "../src/api/v2";
@@ -153,7 +153,7 @@ it("keeps an unknown recovery result explicit and directs inspection", async () 
   await user.click(screen.getByRole("button", { name: "Resolve exact preparation" }));
   await user.click(await screen.findByRole("button", { name: "Confirm resolve" }));
   expect(
-    await screen.findByText(/Inspect Recovery before retrying this exact preparation/u),
+    await screen.findByText(/Inspect Recovery before retrying this exact operation/u),
   ).toBeVisible();
   expect(screen.queryByText(/Accepted exact operation/u)).toBeNull();
 });
@@ -168,9 +168,7 @@ it("refuses an export action when inspected recovery evidence has no exact diges
   const actions = recoveryActions("token", { load: vi.fn(() => Promise.resolve()) }, ui);
   await actions.act();
   expect(globalThis.fetch).not.toHaveBeenCalled();
-  expect(ui.setMessage).toHaveBeenCalledWith(
-    "The exact recovery digest is unavailable; inspect the preparation.",
-  );
+  expect(ui.setMessage).toHaveBeenCalledWith({ kind: "local", reason: "digestUnavailable" });
 });
 
 it("uses the supplied attempt cursor for the next inspected evidence page", async () => {

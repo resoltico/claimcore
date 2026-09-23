@@ -142,7 +142,37 @@ module FrontendTestCatalog =
                 "v2 session lifecycle > hydrates, signs in, renders v2 definition, and signs out through the anonymous snapshot"
             ]
 
-    let vitest = Set.unionMany [ vitestPart1; vitestPart2; vitestPart3; vitestPart4 ]
+    let private vitestLocalization =
+        set
+            [
+                "announces unsaved preferences in the chosen language without blocking the switch"
+                "binds consent to one reviewed preparation and exact identity rather than an editor-wide boolean"
+                "does not rebase a frozen preparation after language switching and an external revision change"
+                "formats Gregorian date-only values without shifting days or truncating early years"
+                "formats only read-only scalar displays and leaves technical text and currency invariant"
+                "keeps ICU plural grammar independent from the number-display locale"
+                "keeps an in-flight submission and its exact recovery identity through language and format switches"
+                "keeps cancelled or non-diagnostic outcomes distinct from a translated core refusal"
+                "leaves invalid authored decimal and integer text unchanged for core validation"
+                "localizes late validation by diagnostic identity and focuses the unchanged authoring field"
+                "persists only presentation preferences and remains usable when storage is denied"
+                "preserves authored content, DOM selection and operation identity across language switches before preparation"
+                "preserves diagnostics from direct read refusals and nested recovery execution faults without server prose"
+                "preserves every permitted amount digit and trailing zero in independent display locales"
+                "refuses corrupt, oversized and unknown preference records without retaining arbitrary data"
+                "refuses unknown or malformed message arguments without echoing the supplied material"
+                "renders a delayed preparation in the selected language without replay or confirmation loss"
+                "renders every catalog key in every language and preserves typed interpolation contracts"
+                "renders every specific diagnostic using only its closed safe parameter contract"
+                "requires an explicit presentation provider instead of silently using ambient locale"
+                "resolves explicit language and display-format preferences independently with deterministic fallbacks"
+                "retains local, accepted and uncertain notices as language-neutral data"
+                "switches language and display formats without remounting children or rewriting a draft"
+                "uses stable metadata identity rather than supplied English labels as catalog authority"
+            ]
+
+    let vitest =
+        Set.unionMany [ vitestPart1; vitestPart2; vitestPart3; vitestPart4; vitestLocalization ]
 
     let browser =
         set
@@ -162,4 +192,10 @@ module FrontendTestCatalog =
                 "rotates a retained OPEN identity when only its target reference changes"
                 "shows exact case and operation misses without implying a failed mutation"
                 "uses the published v2 login boundary and accessible case workspace"
+                "retains unchanged canonical file bytes and preview digest through localized import without automatic execution"
+                "renders exact accepted amounts with RTL and pseudolocale accessibility while canonical copy remains unchanged"
+                "preserves authored Unicode and invalid calendar text while localizing real core validation"
+                "switches language and independent display format through native preparation without changing review consent"
+                "preserves a committed operation and exact recovery identity when its localized submit response is lost"
+                "keeps inspected recovery authority and confirmation stable while language changes during native resolution"
             ]

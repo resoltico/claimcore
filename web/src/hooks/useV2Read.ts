@@ -1,8 +1,9 @@
+import type { Notice } from "../api/notices";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import { resultMessage, type ApiResult, type EndpointOutcome } from "../api/v2";
+import { resultNotice, type ApiResult, type EndpointOutcome } from "../api/v2";
 
-type ReadState<T> = { value: T | null; message: string | null; loading: boolean };
+type ReadState<T> = { value: T | null; message: Notice | null; loading: boolean };
 type Page<T> = { readonly items: ReadonlyArray<T>; readonly nextCursor: string | null };
 
 export const useV2Read = <R extends EndpointOutcome, T>(
@@ -19,7 +20,7 @@ export const useV2Read = <R extends EndpointOutcome, T>(
       const value = result.kind === "outcome" ? select(result.value) : null;
       setState(
         value === null
-          ? { value: null, message: resultMessage(result), loading: false }
+          ? { value: null, message: resultNotice(result), loading: false }
           : { value, message: null, loading: false },
       );
     });
@@ -33,7 +34,7 @@ const usePageLoader = <R extends EndpointOutcome, T, P extends Page<T>>(
   select: (response: R) => P | null,
   setItems: Dispatch<SetStateAction<T[]>>,
   setCursor: Dispatch<SetStateAction<string | null>>,
-  setMessage: Dispatch<SetStateAction<string | null>>,
+  setMessage: Dispatch<SetStateAction<Notice | null>>,
   setLoading: Dispatch<SetStateAction<boolean>>,
   setPage: Dispatch<SetStateAction<P | null>>,
 ) => {
@@ -56,7 +57,7 @@ const usePageLoader = <R extends EndpointOutcome, T, P extends Page<T>>(
         const result = await request(next, current.signal);
         if (current.signal.aborted) return;
         const page = result.kind === "outcome" ? select(result.value) : null;
-        if (page === null) setMessage(resultMessage(result));
+        if (page === null) setMessage(resultNotice(result));
         else {
           setItems((previous) => (next === null ? [...page.items] : [...previous, ...page.items]));
           setCursor(page.nextCursor);
@@ -81,7 +82,7 @@ export const useRetryablePage = <R extends EndpointOutcome, T, P extends Page<T>
 ) => {
   const [items, setItems] = useState<T[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<Notice | null>(null);
   const [loading, setLoading] = useState(false);
   const [currentPage, setPage] = useState<P | null>(null);
   const { load, abort } = usePageLoader(

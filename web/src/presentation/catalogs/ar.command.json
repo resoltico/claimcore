@@ -1,0 +1,20 @@
+{
+  "command.OPEN.label": "فتح ملف",
+  "command.OPEN.meaning": "إنشاء السجل الأساسي. لا يُستنتج منه قرار أو دفع.",
+  "command.AMEND_REGISTRATION.label": "تعديل التسجيل",
+  "command.AMEND_REGISTRATION.meaning": "استبدال الوقائع الأولية. يبقى مرجع المعالج دون تغيير.",
+  "command.CORRECT_CASE.label": "تصحيح وقائع الملف",
+  "command.CORRECT_CASE.meaning": "تصحيح وقائع ملف تقرّر بشأنه أو دُفع أو أُغلق، في عملية ذرّية واحدة. الإبقاء يستخدم القيم المعتمدة؛ ومسح سجل الدفع لا يعكس تحويلًا خارجيًا.",
+  "command.DECIDE.label": "تسجيل قرار الدفع",
+  "command.DECIDE.meaning": "تسجيل أو استبدال المبلغ والعملة المقررين. لا يرسل ذلك أموالًا.",
+  "command.WITHDRAW_DECISION.label": "سحب قرار الدفع",
+  "command.WITHDRAW_DECISION.meaning": "إزالة حقول القرار غير المدفوع مع الاحتفاظ بالسجل السابق.",
+  "command.RECORD_PAYMENT.label": "تسجيل الدفع الفعلي",
+  "command.RECORD_PAYMENT.meaning": "تسجيل تاريخ الدفع الفعلي لكامل المبلغ المقرر. لا ينفّذ ذلك التحويل ولا يتحقق منه.",
+  "command.CLEAR_PAYMENT.label": "تصحيح سجل دفع خاطئ",
+  "command.CLEAR_PAYMENT.meaning": "إزالة تاريخ دفع سُجّل خطأً. هذا ليس استردادًا أو عكسًا لتحويل فعلي. يبقى السجل السابق.",
+  "command.CLOSE.label": "إغلاق الملف",
+  "command.CLOSE.meaning": "تعيين حالة الملف إلى مغلق. الإغلاق لا يعني حصول أي دفع.",
+  "command.REOPEN.label": "إعادة فتح الملف",
+  "command.REOPEN.meaning": "تعيين حالة الملف إلى مفتوح مع الاحتفاظ ببقية الحقول والسجل."
+}

@@ -1,0 +1,8 @@
+{
+  "group.registration.label": "Registration",
+  "group.registration.meaning": "Keep the accepted registration facts or replace all seven registration inputs together.",
+  "group.decision.label": "Payment decision",
+  "group.decision.meaning": "Keep the accepted decision, replace its complete date, amount, and currency tuple, or clear it.",
+  "group.payment.label": "Payment record",
+  "group.payment.meaning": "Keep the accepted payment record, replace its date, or clear the recorded payment date; clearing does not reverse an external transfer."
+}

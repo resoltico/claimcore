@@ -1,4 +1,5 @@
-import { render, screen } from "@testing-library/react";
+import { localNotice } from "../src/api/notices";
+import { render, screen } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { RecoveryPage } from "../src/views/recovery/RecoveryPage";
@@ -25,7 +26,7 @@ const actions = (): RecoveryActions => ({
 const listing = (cursor: string | null = null): Listing => ({
   items: [{ tag: "RETAINED" as const, summary: preparation.summary }],
   cursor,
-  message: "Synthetic recovery error",
+  message: localNotice("unreachable"),
   loading: false,
   page: {
     view: "PENDING" as const,
@@ -47,7 +48,7 @@ it("renders recovery list state, invokes inspection, and pages through a cursor"
   const action = actions();
   const page = listing("next");
   render(<RecoveryList listing={page} busy={null} actions={action} />);
-  expect(screen.getByRole("alert")).toHaveTextContent("Synthetic recovery error");
+  expect(screen.getByRole("alert")).toHaveTextContent("The local service could not be reached.");
   await user.click(screen.getByRole("button", { name: "Inspect" }));
   await user.click(screen.getByRole("button", { name: "Load more recovery" }));
   expect(action.inspect).toHaveBeenCalledWith({ tag: "RETAINED", summary: preparation.summary });
@@ -83,7 +84,7 @@ it("renders observed recovery details and leaves only permitted server actions e
       actions={action}
     />,
   );
-  expect(screen.getAllByText(operationId)).toHaveLength(2);
+  expect(screen.getAllByText(new RegExp(operationId, "u"))).toHaveLength(2);
   expect(screen.queryByRole("button", { name: "Resolve exact preparation" })).toBeNull();
   expect(screen.queryByRole("button", { name: "Dismiss preparation" })).toBeNull();
   await user.click(screen.getByRole("button", { name: "Export recovery envelope" }));
@@ -214,7 +215,7 @@ it("renders terminal revocation authority and exposes no mutation action", () =>
       />
     </>,
   );
-  expect(screen.getByText(/Pending recovery capacity/u)).toHaveTextContent("1020 / 1024");
+  expect(screen.getByText(/Pending recovery capacity/u)).toHaveTextContent("1,020 / 1,024");
   expect(screen.getByText(/cannot be resurrected/u)).toBeVisible();
   expect(screen.queryByRole("button", { name: "Resolve exact preparation" })).toBeNull();
 });
@@ -276,7 +277,7 @@ it("requests the next server attempt page only from an inspected retained item",
       actions={action}
     />,
   );
-  expect(screen.getByText(/legacy uncertainty remains/u)).toBeVisible();
+  expect(screen.getByText(/Legacy uncertainty remains/u)).toBeVisible();
   await user.click(screen.getByRole("button", { name: "Load more attempts" }));
   expect(action.loadAttempts).toHaveBeenCalledWith(operationId, "next-attempt");
 });

@@ -1141,6 +1141,47 @@
       ]
     },
     {
+      "dimensions": [
+        "documentation",
+        "webGui",
+        "webHost"
+      ],
+      "id": "assurance-web:presentation-authority",
+      "subject": "Presentation-owned catalogs, exact formats, fallback, RTL and accessibility preserve canonical authoring, preparation consent, operation identity and recovery authority during language switching.",
+      "tests": [
+        "frontend:playwright::keeps inspected recovery authority and confirmation stable while language changes during native resolution",
+        "frontend:playwright::preserves a committed operation and exact recovery identity when its localized submit response is lost",
+        "frontend:playwright::preserves authored Unicode and invalid calendar text while localizing real core validation",
+        "frontend:playwright::renders exact accepted amounts with RTL and pseudolocale accessibility while canonical copy remains unchanged",
+        "frontend:playwright::retains unchanged canonical file bytes and preview digest through localized import without automatic execution",
+        "frontend:playwright::switches language and independent display format through native preparation without changing review consent",
+        "frontend:vitest::announces unsaved preferences in the chosen language without blocking the switch",
+        "frontend:vitest::binds consent to one reviewed preparation and exact identity rather than an editor-wide boolean",
+        "frontend:vitest::does not rebase a frozen preparation after language switching and an external revision change",
+        "frontend:vitest::formats Gregorian date-only values without shifting days or truncating early years",
+        "frontend:vitest::formats only read-only scalar displays and leaves technical text and currency invariant",
+        "frontend:vitest::keeps ICU plural grammar independent from the number-display locale",
+        "frontend:vitest::keeps an in-flight submission and its exact recovery identity through language and format switches",
+        "frontend:vitest::keeps cancelled or non-diagnostic outcomes distinct from a translated core refusal",
+        "frontend:vitest::leaves invalid authored decimal and integer text unchanged for core validation",
+        "frontend:vitest::localizes late validation by diagnostic identity and focuses the unchanged authoring field",
+        "frontend:vitest::persists only presentation preferences and remains usable when storage is denied",
+        "frontend:vitest::preserves authored content, DOM selection and operation identity across language switches before preparation",
+        "frontend:vitest::preserves diagnostics from direct read refusals and nested recovery execution faults without server prose",
+        "frontend:vitest::preserves every permitted amount digit and trailing zero in independent display locales",
+        "frontend:vitest::refuses corrupt, oversized and unknown preference records without retaining arbitrary data",
+        "frontend:vitest::refuses unknown or malformed message arguments without echoing the supplied material",
+        "frontend:vitest::renders a delayed preparation in the selected language without replay or confirmation loss",
+        "frontend:vitest::renders every catalog key in every language and preserves typed interpolation contracts",
+        "frontend:vitest::renders every specific diagnostic using only its closed safe parameter contract",
+        "frontend:vitest::requires an explicit presentation provider instead of silently using ambient locale",
+        "frontend:vitest::resolves explicit language and display-format preferences independently with deterministic fallbacks",
+        "frontend:vitest::retains local, accepted and uncertain notices as language-neutral data",
+        "frontend:vitest::switches language and display formats without remounting children or rewriting a draft",
+        "frontend:vitest::uses stable metadata identity rather than supplied English labels as catalog authority"
+      ]
+    },
+    {
       "id": "assurance-web:process-discovery",
       "dimensions": [
         "webHost"

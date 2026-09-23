@@ -176,16 +176,3 @@ export const isDirty = (values: DraftValues): boolean =>
   isCorrectionValues(values)
     ? correctionGroupNames.some((group) => values[group].mode !== "KEEP")
     : Object.values(values).some((value) => value !== "");
-
-export const presentationInputType = (field: FieldDescriptor): "date" | "text" =>
-  field.scalar.kind === "CALENDAR_DATE" ? "date" : "text";
-
-export const fieldHint = (field: FieldDescriptor): string => {
-  const scalar = field.scalar;
-  if (scalar.kind === "TEXT") return `Up to ${scalar.maximumCharacters} characters.`;
-  if (scalar.kind === "CALENDAR_DATE") return `Use ${scalar.exactFormat}.`;
-  if (scalar.kind === "AMOUNT")
-    return `Exact decimal text; up to ${scalar.maximumFractionalDigits} decimal places.`;
-  if (scalar.kind === "CURRENCY") return `${scalar.exactCharacters} uppercase letters.`;
-  return scalar.allowedValues.join(", ");
-};

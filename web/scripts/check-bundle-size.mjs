@@ -69,7 +69,7 @@ const totalGzipBytes = bytes.reduce(
 if (
   bytes.some((value) => value.byteLength > 600 * 1024) ||
   initialBytes > 900 * 1024 ||
-  totalGzipBytes > 200 * 1024
+  totalGzipBytes > 256 * 1024
 ) {
   throw new Error("The Web JavaScript bundle exceeds its reviewed byte budget.");
 }

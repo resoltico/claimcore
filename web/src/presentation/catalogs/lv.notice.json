@@ -1,0 +1,22 @@
+{
+  "notice.unreachable": "Vietējais pakalpojums nav sasniedzams.",
+  "notice.invalidHttp": "Vietējais pakalpojums atgrieza nederīgu HTTP {status} atbildi.",
+  "notice.fileTooLarge": "Izvēlētais fails pārsniedz {maximumBytes} baitus.",
+  "notice.fileUnreadable": "Izvēlēto failu neizdevās nolasīt.",
+  "notice.exportInvalid": "Atkopšanas eksporta atbilde neizturēja protokola pārbaudi.",
+  "notice.incomplete": "Operācija netika pabeigta.",
+  "notice.definitionMismatch": "Instalētais tīmekļa līgums neatbilst pārlūka resursiem. Pārlādējiet pēc atbilstošu resursu publicēšanas.",
+  "notice.invalidSession": "Nederīga sesijas atbilde.",
+  "notice.missingCsrf": "Autentificētajā sesijā nav pretviltošanas marķiera.",
+  "notice.dismissed": "Sagatave noraidīta.",
+  "notice.alreadyDismissed": "Sagatave jau bija noraidīta.",
+  "notice.retained": "Atkopšanas materiāls saglabāts.",
+  "notice.existing": "Atkopšanas materiāls jau bija saglabāts.",
+  "notice.accepted": "Pieņemta precīzā operācija {operationId}.",
+  "notice.digestUnavailable": "Precīzā atkopšanas kontrolsumma nav pieejama; pārbaudiet sagatavi.",
+  "notice.exportStarted": "Atkopšanas eksports sākts. Fails satur prasītāja datus; glabājiet to privāti.",
+  "notice.inspectBeforeRetry": "Pirms precīzās operācijas atkārtošanas pārbaudiet atkopšanu.",
+  "notice.inspectBeforeAction": "Pirms citas darbības pārbaudiet atkopšanu.",
+  "notice.keptForRecovery": "Sagatavotais pieprasījums ir saglabāts. Izmantojiet atkopšanu, lai to pārbaudītu, atrisinātu vai noraidītu.",
+  "notice.unknownDiagnostic": "Skaidrojums nav pieejams. Ievērojiet paziņoto rezultātu un atkopšanas norādījumus; neuzskatiet to par atļauju atkārtot."
+}

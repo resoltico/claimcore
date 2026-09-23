@@ -18,7 +18,7 @@ export type EditorState = {
   state: OperationState;
   dispatch: Dispatch<OperationAction>;
   confirmed: boolean;
-  setConfirmed: Dispatch<SetStateAction<boolean>>;
+  setConfirmed: (value: boolean) => void;
   pendingCommand: CommandKind | null;
   setPendingCommand: Dispatch<SetStateAction<CommandKind | null>>;
 };

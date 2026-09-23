@@ -1,0 +1,17 @@
+{
+  "token.OPENED": "مفتوح",
+  "token.CLOSED": "مغلق",
+  "token.KEEP": "إبقاء",
+  "token.REPLACE": "استبدال",
+  "token.CLEAR": "مسح",
+  "token.PENDING": "معلّقة",
+  "token.ACCEPTED": "معتمدة",
+  "token.REVOKED": "مسحوبة",
+  "token.REJECTED": "مرفوضة",
+  "token.ERROR": "خطأ في التنفيذ",
+  "token.REVOKED_BEFORE_EXECUTION": "أُلغي قبل التنفيذ",
+  "token.ENVELOPE": "حافظة",
+  "token.UNBOUND_CANONICAL_RECORD": "سجل معياري غير مرتبط",
+  "token.FOUND": "موجودة",
+  "token.NOT_FOUND": "غير موجودة"
+}

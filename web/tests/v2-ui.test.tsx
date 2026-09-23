@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../src/App";
@@ -76,7 +76,7 @@ const acceptsOperation = async (): Promise<void> => {
   );
   await user.click(screen.getByRole("button", { name: "Submit exact request" }));
   expect(await screen.findByRole("heading", { name: "Accepted operation" })).toBeVisible();
-  expect(screen.getByText(operationId)).toBeVisible();
+  expect(screen.getByText(`Operation ${operationId} is accepted.`)).toBeVisible();
   await user.click(screen.getByRole("button", { name: "Return to case" }));
   expect(committed).toHaveBeenCalledOnce();
 };

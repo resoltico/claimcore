@@ -1,0 +1,2174 @@
+{
+  "command.OPEN.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÖÖpëën àà cààsëë" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "command.OPEN.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Crëëààtëë thëë bààsïïc rëëcöörd. Nöö dëëcïïsïïöön öör pààymëënt ïïs ïïnfëërrëëd."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "command.AMEND_REGISTRATION.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÀÀmëënd rëëgïïstrààtïïöön" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "command.AMEND_REGISTRATION.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Rëëplààcëë thëë ïïnïïtïïààl fààcts. Thëë hààndlëër's cààsëë rëëfëërëëncëë rëëmààïïns üünchààngëëd."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "command.CORRECT_CASE.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Cöörrëëct cààsëë fààcts" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "command.CORRECT_CASE.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Cöörrëëct ëëxïïstïïng dëëcïïdëëd, pààïïd, öör clöösëëd cààsëë fààcts ààtöömïïcààlly. Këëëëp rëëààds ààccëëptëëd vààlüüëës; clëëààrïïng àà pààymëënt rëëcöörd dööëës nööt rëëvëërsëë ààn ëëxtëërnààl tràànsfëër."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "command.DECIDE.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëcöörd pààymëënt dëëcïïsïïöön" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "command.DECIDE.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Rëëcöörd öör rëëplààcëë thëë dëëcïïdëëd ààmööüünt àànd cüürrëëncy. Thïïs dööëës nööt sëënd möönëëy."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "command.WITHDRAW_DECISION.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Wïïthdrààw pààymëënt dëëcïïsïïöön" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "command.WITHDRAW_DECISION.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Rëëmöövëë thëë üünpààïïd dëëcïïsïïöön tüüplëë whïïlëë rëëtààïïnïïng ïïts ëëààrlïïëër hïïstööry."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "command.RECORD_PAYMENT.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëcöörd ààctüüààl pààymëënt" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "command.RECORD_PAYMENT.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Rëëcöörd thëë dààtëë thëë füüll dëëcïïdëëd ààmööüünt wààs ààctüüààlly pààïïd. Thïïs dööëës nööt ëëxëëcüütëë öör vëërïïfy àà tràànsfëër."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "command.CLEAR_PAYMENT.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Cöörrëëct ààn ëërröönëëööüüs pààymëënt rëëcöörd" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "command.CLEAR_PAYMENT.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Rëëmöövëë ààn ëërröönëëööüüsly rëëcöördëëd pààymëënt dààtëë. Thïïs ïïs nööt àà rëëfüünd öör rëëvëërsààl ööf ààn ààctüüààl tràànsfëër. ËËààrlïïëër hïïstööry rëëmààïïns."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "command.CLOSE.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Clöösëë thëë cààsëë" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "command.CLOSE.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Sëët thëë cààsëë stààtüüs töö CLÖÖSËËD. Clöösïïng dööëës nööt ïïmply ààny pààymëënt."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "command.REOPEN.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëööpëën thëë cààsëë" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "command.REOPEN.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Sëët thëë cààsëë stààtüüs töö ÖÖPËËNËËD, rëëtààïïnïïng ïïts ööthëër fïïëëlds àànd hïïstööry."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.INPUT_TEXT_REQUIRED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÀÀ nöön-blàànk vààlüüëë ïïs rëëqüüïïrëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.INPUT_MALFORMED_UNICODE": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Mààlföörmëëd ÜÜnïïcöödëë ïïs nööt ààccëëptëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.INPUT_SURROUNDING_WHITESPACE": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Lëëààdïïng öör trààïïlïïng whïïtëëspààcëë ïïs nööt ààccëëptëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.INPUT_TEXT_TOO_SHORT": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë vààlüüëë müüst cööntààïïn ààt lëëààst " },
+    { "type": 1, "value": "minimumCharacters" },
+    { "type": 0, "value": " ÜÜnïïcöödëë chààrààctëërs." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.INPUT_TEXT_TOO_LONG": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë vààlüüëë müüst nööt ëëxcëëëëd " },
+    { "type": 1, "value": "maximumCharacters" },
+    { "type": 0, "value": " ÜÜnïïcöödëë chààrààctëërs." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.INPUT_CONTROL_CHARACTERS": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Cööntrööl chààrààctëërs ààrëë nööt ààccëëptëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.INPUT_CALENDAR_DATE_REQUIRED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÜÜsëë öönëë vààlïïd cààlëëndààr dààtëë ïïn YYYY-MM-DD föörmààt." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.INPUT_DATE_ORDER": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë dààtëës ààrëë ïïn ààn ïïnvààlïïd chröönöölöögïïcààl öördëër." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.INPUT_FUTURE_DATE": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "ÀÀ füütüürëë dààtëë càànnööt rëëcöörd ààn ëëvëënt thààt hààs ààlrëëààdy ööccüürrëëd."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.INPUT_DECIMAL_FORMAT": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÜÜsëë nöön-nëëgààtïïvëë dëëcïïmààl tëëxt: üüp töö " },
+    { "type": 1, "value": "maximumIntegerDigits" },
+    { "type": 0, "value": " ïïntëëgëër dïïgïïts àànd " },
+    { "type": 1, "value": "maximumFractionalDigits" },
+    { "type": 0, "value": " frààctïïöönààl dïïgïïts; nöö sïïgn öör ëëxpöönëënt." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.INPUT_CURRENCY_FORMAT": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÜÜsëë àà thrëëëë-lëëttëër üüppëërcààsëë cüürrëëncy ïïdëëntïïfïïëër." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.INPUT_AMOUNT_NOT_REPRESENTABLE": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë dëëcïïmààl ààmööüünt càànnööt bëë rëëprëësëëntëëd ëëxààctly." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.COMMAND_OPERATION_ID_REQUIRED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÜÜsëë àà nöön-ëëmpty ÜÜÜÜÏÏD." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.COMMAND_EXPECTED_REVISION_RANGE": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÜÜsëë àà nöön-nëëgààtïïvëë vëërsïïöön bëëlööw ÏÏnt64.MààxVààlüüëë." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.STATE_STORED_REVISION_RANGE": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Stöörëëd vëërsïïööns müüst bëë pöösïïtïïvëë àànd bëëlööw ÏÏnt64.MààxVààlüüëë."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.STATE_REVISION_EXHAUSTED": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë cààsëë rëëvïïsïïöön càànnööt ààdvààncëë bëëlööw ÏÏnt64.MààxVààlüüëë."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.STATE_CASE_REFERENCE_MISMATCH": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë lööààdëëd cààsëë dööëës nööt mààtch thïïs cöömmàànd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.STATE_TRANSITION_MISMATCH": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë stààtëë güüààrd àànd pààymëënt tràànsïïtïïöön dïïsààgrëëëë." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.INPUT_EXACT_FIELDS_REQUIRED": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Süüpply ëëààch dëëclààrëëd cöömmàànd ïïnpüüt ëëxààctly ööncëë, wïïth nöö ëëxtràà fïïëëlds."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.COMMAND_GROUPED_CORRECTION_REQUIRED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Süüpply ààll thrëëëë tààggëëd cöörrëëctïïöön grööüüps." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CORRECTION_COMPLETE_DECISION_REQUIRED": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Dëëcïïsïïöön dààtëë, pààyààblëë ààmööüünt àànd pààyààblëë cüürrëëncy müüst bëë prëësëënt töögëëthëër öör ààll ààbsëënt."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CORRECTION_PAYMENT_CLEAR_REQUIRED": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Clëëààrïïng àà pààïïd dëëcïïsïïöön rëëqüüïïrëës clëëààrïïng thëë pààymëënt rëëcöörd."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Rëëplààcïïng àà pààïïd dëëcïïsïïöön rëëqüüïïrëës ëëxplïïcïït pààymëënt rëëààffïïrmààtïïöön öör clëëààrïïng thëë pààymëënt rëëcöörd."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CORRECTION_PAYMENT_DECISION_REQUIRED": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "ÀÀ pààymëënt rëëcöörd rëëqüüïïrëës àà cöömplëëtëë pààymëënt dëëcïïsïïöön."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CORRECTION_REPLACEMENT_FIELDS_REQUIRED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÜÜsëë RËËPLÀÀCËË wïïth ëëvëëry dëëclààrëëd fïïëëld." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CORRECTION_REGISTRATION_CLEAR_FORBIDDEN": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëgïïstrààtïïöön càànnööt bëë clëëààrëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CASE_NOT_FOUND": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë cààsëë rëëfëërëëncëë wààs nööt fööüünd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CASE_ALREADY_EXISTS": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë cààsëë rëëfëërëëncëë ààlrëëààdy ëëxïïsts." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CASE_REVISION_CONFLICT": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Rëëààd thëë cüürrëënt cààsëë bëëföörëë mààkïïng àà chààngëëd rëëqüüëëst."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CASE_CLOSED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëööpëën thëë cààsëë bëëföörëë chààngïïng ïïts fààcts." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CASE_ALREADY_CLOSED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë cààsëë ïïs ààlrëëààdy clöösëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CASE_ALREADY_OPENED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë cààsëë ïïs ààlrëëààdy ööpëën." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CASE_AMENDMENT_REQUIRES_UNDECIDED": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Wïïthdrààw ààn üünpààïïd dëëcïïsïïöön bëëföörëë ààmëëndïïng rëëgïïstrààtïïöön."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CORRECTION_NO_CHANGES": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Chöööösëë ààt lëëààst öönëë fààctüüààl cöörrëëctïïöön thààt chààngëës thëë cüürrëënt cààsëë."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CORRECTION_EXISTING_VALUE_REQUIRED": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "ÀÀ cöörrëëctïïöön cààn öönly rëëplààcëë öör clëëààr àà vààlüüëë ààlrëëààdy rëëcöördëëd öön thïïs cààsëë."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CASE_DECISION_REQUIRED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëcöörd àà pààymëënt dëëcïïsïïöön fïïrst." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CASE_PAYMENT_ALREADY_RECORDED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ClààïïmCöörëë rëëcöörds öönëë füüll pààymëënt." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CASE_PAYMENT_NOT_RECORDED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëërëë ïïs nöö pààymëënt rëëcöörd töö clëëààr." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CASE_DECISION_ALREADY_PAID": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÀÀ rëëcöördëëd pààymëënt prëëvëënts chààngïïng ïïts dëëcïïsïïöön." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CASE_ZERO_DECISION_CANNOT_BE_PAID": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÀÀ zëëröö dëëcïïsïïöön ïïs nööt àà pààymëënt." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.QUERY_PAGE_LIMIT_RANGE": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÜÜsëë àà vààlüüëë frööm 1 thrööüügh " },
+    { "type": 1, "value": "maximumPageSize" },
+    { "type": 0, "value": "." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.QUERY_HISTORY_CURSOR_INVALID": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "ÜÜsëë öönëë ööpààqüüëë hïïstööry cüürsöör rëëtüürnëëd by ClààïïmCöörëë."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.OPERATION_CONTENT_CONFLICT": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thïïs ööpëërààtïïöön ÏÏD bëëlööngs töö dïïffëërëënt cöömmàànd cööntëënt. Döö nööt rëëüüsëë ïït."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.OPERATION_REVOKED": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thïïs ëëxààct ööpëërààtïïöön wààs düürààbly rëëvöökëëd bëëföörëë ëëxëëcüütïïöön."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.OPERATION_RECOVERY_ATTEMPT_LIMIT": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thïïs ööpëërààtïïöön hààs rëëààchëëd ïïts rëëcöövëëry ààttëëmpt lïïmïït. Rëëààd thëë cüürrëënt cààsëë àànd ààüüthöör àà nëëw ööpëërààtïïöön öönly ààftëër rëëvïïëëw."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CORE_OPERATION_CONTENT_CONFLICT": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë ööpëërààtïïöön ÏÏD bëëlööngs töö dïïffëërëënt rëëqüüëëst cööntëënt."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CORE_STORE_UNAVAILABLE": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë stöörëë wààs üünààvààïïlààblëë bëëföörëë cöömplëëtïïöön wààs cöönfïïrmëëd."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CORE_COMMIT_OUTCOME_UNKNOWN": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Cöömmïït cöömplëëtïïöön wààs nööt cöönfïïrmëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CORE_STORE_INTEGRITY_ERROR": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Stöörëëd dààtàà fààïïlëëd ïïntëëgrïïty vààlïïdààtïïöön." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CORE_SCHEMA_MISMATCH": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë rüüntïïmëë schëëmàà öör dààtààbààsëë sëëttïïngs ààrëë ïïncöömpààtïïblëë."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_STORE_RESPONSE_INVALID": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Rëëcöövëëry stöörààgëë rëëtüürnëëd ààn ïïnvààlïïd tëëchnïïcààl rëëspöönsëë."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_STORE_CONTENT_CONFLICT": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëcöövëëry ïïdëëntïïty cöönflïïcts wïïth rëëtààïïnëëd dààtàà." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_STORE_PREPARATION_MISSING": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëcöövëëry stöörààgëë lööst ààn ëëxpëëctëëd prëëpààrààtïïöön." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_CAPACITY_EXHAUSTED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëcöövëëry cààpààcïïty ïïs ëëxhààüüstëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_SCHEMA_MISMATCH": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëcöövëëry stöörààgëë ïïs ïïncöömpààtïïblëë wïïth thïïs rüüntïïmëë." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_STORE_UNAVAILABLE": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Rëëcöövëëry stöörààgëë wààs üünààvààïïlààblëë bëëföörëë cöömplëëtïïöön wààs cöönfïïrmëëd."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_STORE_INTEGRITY_ERROR": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëcöövëëry stöörààgëë fààïïlëëd ïïntëëgrïïty vààlïïdààtïïöön." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_READ_CANCELLED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë rëëcöövëëry rëëààd wààs cààncëëllëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_MUTATION_CANCELLED_BEFORE_COMMIT": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë tëëchnïïcààl müütààtïïöön wààs cààncëëllëëd bëëföörëë cöömmïït." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_MUTATION_OUTCOME_UNKNOWN": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë rëëcöövëëry-stààtëë müütààtïïöön màày hààvëë cöömmïïttëëd büüt cööüüld nööt bëë cöönfïïrmëëd."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_RETAINED_CANONICAL_INVALID": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Rëëtààïïnëëd càànöönïïcààl rëëqüüëëst bytëës fààïïlëëd ïïntëëgrïïty vààlïïdààtïïöön."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_RETAINED_DOMAIN_SHAPE_INVALID": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Rëëtààïïnëëd rëëqüüëëst dïïd nööt sààtïïsfy ïïts clöösëëd döömààïïn shààpëë."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_RETAINED_PREPARATION_UNVERIFIABLE": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "ÀÀn ëëxààct rëëtààïïnëëd prëëpààrààtïïöön cööüüld nööt bëë vëërïïfïïëëd."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_NEW_PREPARATION_MISSING": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "ÀÀ nëëwly rëëtààïïnëëd prëëpààrààtïïöön wààs nööt ààvààïïlààblëë föör ëëxëëcüütïïöön."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_PREPARATION_DISMISSED_BEFORE_EXECUTION": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë prëëpààrààtïïöön wààs dïïsmïïssëëd bëëföörëë ëëxëëcüütïïöön cööüüld bëëgïïn."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_RETAINED_DIGEST_MISMATCH": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë rëëtààïïnëëd prëëpààrààtïïöön dïïgëëst dööëës nööt mààtch thëë süübmïïttëëd drààft."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_STORED_DATA_INVALID": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Stöörëëd rëëcöövëëry dààtàà fààïïlëëd vààlïïdààtïïöön." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_OPERATION_ID_REQUIRED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÀÀ nöön-ëëmpty rëëcöövëëry ööpëërààtïïöön ÏÏD ïïs rëëqüüïïrëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_REQUEST_DIGEST_INVALID": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë rëëcöövëëry rëëqüüëëst dïïgëëst müüst bëë àà lööwëërcààsëë SHÀÀ-256 dïïgëëst."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_PAGE_LIMIT_RANGE": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë rëëcöövëëry pààgëë lïïmïït ïïs ööüütsïïdëë thëë süüppöörtëëd rààngëë."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_LIST_CURSOR_INVALID": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë rëëcöövëëry lïïst cüürsöör ïïs ïïnvààlïïd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_LIST_CURSOR_VIEW_MISMATCH": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë rëëcöövëëry lïïst cüürsöör bëëlööngs töö àà dïïffëërëënt vïïëëw." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_ATTEMPT_CURSOR_INVALID": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë rëëcöövëëry ààttëëmpt cüürsöör ïïs ïïnvààlïïd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_ATTEMPT_CURSOR_OPERATION_MISMATCH": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë rëëcöövëëry ààttëëmpt cüürsöör bëëlööngs töö àà dïïffëërëënt ööpëërààtïïöön."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_DISMISSAL_CONFIRMATION_REQUIRED": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "ËËxplïïcïït cöönfïïrmààtïïöön ïïs rëëqüüïïrëëd töö dïïsmïïss àà rëëcöövëëry prëëpààrààtïïöön."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_PREPARATION_NOT_FOUND": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë rëëcöövëëry prëëpààrààtïïöön wààs nööt fööüünd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_OPERATION_CONTENT_CONFLICT": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë süüpplïïëëd rëëcöövëëry ïïdëëntïïty cöönflïïcts wïïth ààn ëëxïïstïïng ööpëërààtïïöön."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_PREPARATION_DISMISSED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÀÀ dïïsmïïssëëd prëëpààrààtïïöön càànnööt bëë süübmïïttëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_SUBMISSION_ALREADY_STARTED": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë prëëpààrààtïïöön hààs ààlrëëààdy stààrtëëd süübmïïssïïöön àànd müüst bëë rëësöölvëëd ëëxààctly."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_ACCEPTED_OPERATION_DISMISSAL_FORBIDDEN": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "ÀÀn ààccëëptëëd ööpëërààtïïöön càànnööt bëë dïïsmïïssëëd. ÏÏnspëëct ïïts rëëtààïïnëëd rëëcëëïïpt."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_SOURCE_DIGEST_MISMATCH": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë süüpplïïëëd sööüürcëë dïïgëëst dööëës nööt mààtch thëë ëëxààct ïïmpöört bytëës."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_REQUEST_DIGEST_MISMATCH": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë süüpplïïëëd dïïgëëst dööëës nööt mààtch thëë ëëxààct rëëtààïïnëëd rëëqüüëëst bytëës."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_INSTALLATION_MISMATCH": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë rëëcöövëëry ëënvëëlööpëë bëëlööngs töö àà dïïffëërëënt ClààïïmCöörëë ïïnstààllààtïïöön."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_ENVELOPE_INVALID_OR_UNSUPPORTED": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë rëëcöövëëry ëënvëëlööpëë ïïs üünsüüppöörtëëd öör fààïïlëëd càànöönïïcààl dëëcöödïïng."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_CANONICAL_RECORD_INVALID_OR_UNSUPPORTED": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë càànöönïïcààl rëëcöövëëry rëëcöörd ïïs üünsüüppöörtëëd öör fààïïlëëd càànöönïïcààl dëëcöödïïng."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_OPERATION_REVOKED": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thïïs ëëxààct ööpëërààtïïöön wààs düürààbly rëëvöökëëd bëëföörëë ëëxëëcüütïïöön."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_ATTEMPT_LIMIT_REACHED": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thïïs ööpëërààtïïöön hààs rëëààchëëd ïïts rëëcöövëëry ààttëëmpt lïïmïït. Rëëààd thëë cüürrëënt cààsëë bëëföörëë ààüüthöörïïng nëëw wöörk."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_HOST_CONNECTION_REJECTED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë hööst rëëfüüsëëd thïïs cöönnëëctïïöön." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_HOST_ORIGIN_REJECTED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë rëëqüüëëst öörïïgïïn wààs rëëfüüsëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_HOST_MEDIA_TYPE_REJECTED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë rëëqüüëëst mëëdïïàà typëë ïïs üünsüüppöörtëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_HOST_BODY_TOO_LARGE": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë rëëqüüëëst ëëxcëëëëds thëë cöönfïïgüürëëd bytëë lïïmïït." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_BODY_TOO_LARGE": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë rëëqüüëëst ëëxcëëëëds thëë cöönfïïgüürëëd bytëë lïïmïït." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_HOST_SESSION_REJECTED": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë sëëssïïöön wààs rëëfüüsëëd. Sïïgn ïïn töö thëë lööcààl ïïnstààllààtïïöön."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_HOST_ANTIFORGERY_REJECTED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë ààntïïföörgëëry chëëck fààïïlëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_HOST_LOGIN_REJECTED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë böööötstrààp crëëdëëntïïààl wààs rëëfüüsëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_HOST_ENDPOINT_MISSING": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë rëëqüüëëstëëd ëëndpööïïnt wààs nööt fööüünd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_HOST_BUSY": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë lööcààl hööst ïïs büüsy." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_HOST_EXPORT_METADATA_INVALID": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëcöövëëry ëëxpöört mëëtààdààtàà fààïïlëëd vààlïïdààtïïöön." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_HOST_BEFORE_DISPATCH_FAILED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë hööst fààïïlëëd bëëföörëë dïïspààtchïïng thëë rëëqüüëëst." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_HOST_DISPATCH_UNCONFIRMED": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë dïïspààtchëëd rëëqüüëëst ööüütcöömëë ïïs üüncöönfïïrmëëd. ÏÏnspëëct Rëëcöövëëry bëëföörëë àànööthëër müütààtïïöön."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_HOST_COMPLETED_RESPONSE_FAILED": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë ööpëërààtïïöön cöömplëëtëëd, büüt ïïts rëëspöönsëë cööüüld nööt bëë dëëlïïvëërëëd."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_HOST_SESSION_FORBIDDEN": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thïïs sëëssïïöön ïïs nööt pëërmïïttëëd töö ààccëëss thëë rëësööüürcëë."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_HOST_METHOD_REJECTED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë rëëqüüëëst mëëthööd ïïs nööt süüppöörtëëd by thïïs ëëndpööïïnt." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_EXPECTED_OBJECT": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÀÀ JSÖÖN ööbjëëct ïïs rëëqüüïïrëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_DUPLICATE_PROPERTY": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Düüplïïcààtëë rëëqüüëëst prööpëërtïïëës ààrëë nööt ààccëëptëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_UNKNOWN_PROPERTY": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë rëëqüüëëst cööntààïïns ààn üündëëclààrëëd prööpëërty." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_MISSING_PROPERTY": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÀÀ rëëqüüïïrëëd rëëqüüëëst prööpëërty ïïs mïïssïïng." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_EXPECTED_STRING": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÀÀ tëëxt vààlüüëë ïïs rëëqüüïïrëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_NULL_FORBIDDEN": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Nüüll ïïs nööt ààccëëptëëd ààt thïïs rëëqüüëëst lööcààtïïöön." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_EXPECTED_BOOLEAN": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÀÀ Böööölëëààn vààlüüëë ïïs rëëqüüïïrëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_EXPECTED_INTEGER": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÀÀn ïïntëëgëër vààlüüëë ïïs rëëqüüïïrëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_INVALID_REVISION": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Süüpply àà càànöönïïcààl süüppöörtëëd rëëvïïsïïöön." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_INVALID_UUID": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Süüpply àà càànöönïïcààl nöön-ëëmpty ööpëërààtïïöön ÜÜÜÜÏÏD." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_INVALID_DIGEST": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Süüpply àà càànöönïïcààl lööwëërcààsëë SHÀÀ-256 dïïgëëst." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_INVALID_UNICODE": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë rëëqüüëëst cööntààïïns mààlföörmëëd ÜÜnïïcöödëë." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_INVALID_UTF8": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë rëëqüüëëst ïïs nööt vààlïïd ÜÜTF-8." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_INVALID_JSON": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë rëëqüüëëst ïïs nööt vààlïïd JSÖÖN." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_BODY_UNREADABLE": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë rëëqüüëëst böödy cööüüld nööt bëë rëëààd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_BODY_CANCELLED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëààdïïng thëë rëëqüüëëst böödy wààs cààncëëllëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_UNKNOWN_COMMAND": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë cöömmàànd ïïs nööt rëëcöögnïïzëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_MISSING_COMMAND_VALUE": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÀÀ rëëqüüïïrëëd cöömmàànd vààlüüëë ïïs mïïssïïng." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_CORRECTION_ACTION": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë cöörrëëctïïöön ààctïïöön ïïs nööt vààlïïd föör thïïs grööüüp." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_LOGOUT_SHAPE": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë sïïgn-ööüüt rëëqüüëëst hààs ààn ïïnvààlïïd shààpëë." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_PAGE_RANGE": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë rëëqüüëëstëëd pààgëë sïïzëë ïïs ööüütsïïdëë ïïts pëërmïïttëëd rààngëë."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_HISTORY_DETAIL": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë rëëqüüëëstëëd hïïstööry dëëtààïïl ïïs üünsüüppöörtëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_RECOVERY_VIEW": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë rëëqüüëëstëëd rëëcöövëëry vïïëëw ïïs üünsüüppöörtëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_SOURCE_DIGEST_HEADER": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë sööüürcëë-dïïgëëst hëëààdëër ïïs ààbsëënt öör ïïnvààlïïd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.incidentDate.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÏÏncïïdëënt dààtëë" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.incidentDate.meaning": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Dààtëë öön whïïch thëë ïïncïïdëënt ööccüürrëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.incidentNotificationDate.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÏÏncïïdëënt nöötïïfïïcààtïïöön dààtëë (FNÖÖL)" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.incidentNotificationDate.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Dààtëë whëën thïïs clààïïms hààndlëër wààs fïïrst nöötïïfïïëëd ööf thëë ïïncïïdëënt by àànyöönëë, nööt nëëcëëssààrïïly thëë clààïïmàànt. Nööt thëë dààtëë àànööthëër ïïnsüürëër öör öörgàànïïsààtïïöön wààs nöötïïfïïëëd."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.incidentCountry.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Cööüüntry ööf ïïncïïdëënt" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.incidentCountry.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Cööüüntry whëërëë thëë ïïncïïdëënt ööccüürrëëd; rëëcöördëëd ààs ëëntëërëëd wïïthööüüt ïïnfëërrïïng ààpplïïcààblëë lààw."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.claimantName.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Clààïïmàànt nààmëë" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.claimantName.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Nààmëë ööf thëë clààïïmàànt, whëëthëër àà prïïvààtëë pëërsöön öör àà cöömpààny. Nöö sëëpààrààtëë pààrty-typëë öör lëëgààl-ïïdëëntïïty fïïëëlds."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.insurerName.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÀÀllëëgëëdly rëëspöönsïïblëë ïïnsüürëër" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.insurerName.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Nààmëë ööf thëë ïïnsüürëër clààïïmëëd töö bëë rëëspöönsïïblëë. Thïïs dööëës nööt ëëstààblïïsh üültïïmààtëë lïïààbïïlïïty öör àà rëëcööüürsëë-chààïïn pöösïïtïïöön."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.claimedAmount.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÀÀmööüünt clààïïmëëd" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.claimedAmount.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "ÀÀmööüünt clààïïmëëd by thëë clààïïmàànt, ëëncöödëëd ààs ëëxààct nöön-nëëgààtïïvëë dëëcïïmààl tëëxt. Zëëröö ïïs àà rëëcöördëëd ààmööüünt, nööt àà süübstïïtüütëë föör üünknööwn."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.claimedCurrency.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Cüürrëëncy ööf clààïïmëëd ààmööüünt" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.claimedCurrency.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thrëëëë-lëëttëër üüppëërcààsëë ïïdëëntïïfïïëër föör thëë clààïïmëëd ààmööüünt; nöö cüürrëëncy cöönvëërsïïöön öör rëëgïïstry ïïnfëërëëncëë."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.caseReference.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Hààndlëër's cààsëë rëëfëërëëncëë" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.caseReference.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Rëëfëërëëncëë ààssïïgnëëd by thëë clààïïms hààndlëër ööpëërààtïïng thïïs rëëgïïstëër, nööt ààn ïïnsüürëër rëëfëërëëncëë. ÜÜnïïqüüëë, ïïmmüütààblëë àànd cààsëë-sëënsïïtïïvëë wïïthïïn öönëë ïïnstààllààtïïöön."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.paymentDecisionDate.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Pààymëënt dëëcïïsïïöön dààtëë" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.paymentDecisionDate.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Dààtëë whëën thïïs clààïïms hààndlëër dëëcïïdëëd thëë ààmööüünt töö bëë pààïïd. Nüüll üüntïïl àà dëëcïïsïïöön ïïs rëëcöördëëd; nööt àà pààymëënt öör bàànk ïïnstrüüctïïöön."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.payableAmount.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÀÀmööüünt töö bëë pààïïd" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.payableAmount.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Dëëcïïdëëd ààmööüünt töö bëë pààïïd, ïïn ëëxààct nöön-nëëgààtïïvëë dëëcïïmààl tëëxt. Nüüll üüntïïl dëëcïïdëëd; màày dïïffëër frööm thëë clààïïmëëd ààmööüünt."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.payableCurrency.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Cüürrëëncy ööf ààmööüünt töö bëë pààïïd" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.payableCurrency.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Cüürrëëncy ööf thëë dëëcïïdëëd ààmööüünt. Nüüll üüntïïl dëëcïïdëëd; ïït nëëëëd nööt ëëqüüààl thëë clààïïmëëd cüürrëëncy."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.paymentDate.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Pààymëënt dààtëë" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.paymentDate.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Dààtëë whëën thëë dëëcïïdëëd ààmööüünt wààs ààctüüààlly pààïïd, ààs rëëcöördëëd by thëë ööpëërààtöör. Nüüll whïïlëë üünpààïïd öör üünknööwn. ÖÖnëë füüll pààymëënt öönly; rëëcöördïïng dööëës nööt ëëxëëcüütëë öör ïïndëëpëëndëëntly vëërïïfy àà bàànk tràànsfëër."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.status.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Cààsëë stààtüüs" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.status.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "ÀÀdmïïnïïstrààtïïvëë stààtëë ÖÖPËËNËËD öör CLÖÖSËËD, ïïndëëpëëndëënt ööf dëëcïïsïïöön àànd pààymëënt. Nöö ààddïïtïïöönààl cààsëë stààtüüsëës."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "group.registration.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëgïïstrààtïïöön" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "group.registration.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Këëëëp thëë ààccëëptëëd rëëgïïstrààtïïöön fààcts öör rëëplààcëë ààll sëëvëën rëëgïïstrààtïïöön ïïnpüüts töögëëthëër."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "group.decision.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Pààymëënt dëëcïïsïïöön" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "group.decision.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Këëëëp thëë ààccëëptëëd dëëcïïsïïöön, rëëplààcëë ïïts cöömplëëtëë dààtëë, ààmööüünt, àànd cüürrëëncy tüüplëë, öör clëëààr ïït."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "group.payment.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Pààymëënt rëëcöörd" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "group.payment.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Këëëëp thëë ààccëëptëëd pààymëënt rëëcöörd, rëëplààcëë ïïts dààtëë, öör clëëààr thëë rëëcöördëëd pààymëënt dààtëë; clëëààrïïng dööëës nööt rëëvëërsëë ààn ëëxtëërnààl tràànsfëër."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "notice.unreachable": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë lööcààl sëërvïïcëë cööüüld nööt bëë rëëààchëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "notice.invalidHttp": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë lööcààl sëërvïïcëë rëëtüürnëëd ààn ïïnvààlïïd HTTP " },
+    { "type": 1, "value": "status" },
+    { "type": 0, "value": " rëëspöönsëë." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "notice.fileTooLarge": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë sëëlëëctëëd fïïlëë ëëxcëëëëds " },
+    { "type": 1, "value": "maximumBytes" },
+    { "type": 0, "value": " bytëës." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "notice.fileUnreadable": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë sëëlëëctëëd fïïlëë cööüüld nööt bëë rëëààd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "notice.exportInvalid": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë rëëcöövëëry ëëxpöört rëëspöönsëë fààïïlëëd ïïts pröötööcööl chëëcks."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "notice.incomplete": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë ööpëërààtïïöön dïïd nööt cöömplëëtëë." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "notice.definitionMismatch": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë ïïnstààllëëd Wëëb cööntrààct dööëës nööt mààtch thëësëë brööwsëër ààssëëts. Rëëlööààd ààftëër püüblïïshïïng mààtchïïng ààssëëts."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "notice.invalidSession": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÏÏnvààlïïd sëëssïïöön rëëspöönsëë." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "notice.missingCsrf": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "ÀÀüüthëëntïïcààtëëd sëëssïïöön dïïd nööt ïïnclüüdëë ààn ààntïïföörgëëry töökëën."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "notice.dismissed": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Prëëpààrààtïïöön dïïsmïïssëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "notice.alreadyDismissed": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Prëëpààrààtïïöön wààs ààlrëëààdy dïïsmïïssëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "notice.retained": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëcöövëëry mààtëërïïààl rëëtààïïnëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "notice.existing": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëcöövëëry mààtëërïïààl wààs ààlrëëààdy rëëtààïïnëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "notice.accepted": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÀÀccëëptëëd ëëxààct ööpëërààtïïöön " },
+    { "type": 1, "value": "operationId" },
+    { "type": 0, "value": "." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "notice.digestUnavailable": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë ëëxààct rëëcöövëëry dïïgëëst ïïs üünààvààïïlààblëë; ïïnspëëct thëë prëëpààrààtïïöön."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "notice.exportStarted": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Rëëcöövëëry ëëxpöört stààrtëëd. Thëë fïïlëë cööntààïïns clààïïmàànt dààtàà; këëëëp ïït prïïvààtëë."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "notice.inspectBeforeRetry": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "ÏÏnspëëct Rëëcöövëëry bëëföörëë rëëtryïïng thïïs ëëxààct ööpëërààtïïöön."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "notice.inspectBeforeAction": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÏÏnspëëct Rëëcöövëëry bëëföörëë tààkïïng àànööthëër ààctïïöön." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "notice.keptForRecovery": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Prëëpààrëëd rëëqüüëëst ïïs rëëtààïïnëëd. ÜÜsëë Rëëcöövëëry töö ïïnspëëct, rëësöölvëë, öör dïïsmïïss ïït."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "notice.unknownDiagnostic": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "ÀÀn ëëxplàànààtïïöön ïïs üünààvààïïlààblëë. Fööllööw thëë rëëpöörtëëd ööüütcöömëë àànd rëëcöövëëry güüïïdààncëë; döö nööt ïïnfëër pëërmïïssïïöön töö rëëtry."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "token.OPENED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÖÖPËËNËËD" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "token.CLOSED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "CLÖÖSËËD" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "token.KEEP": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "KËËËËP" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "token.REPLACE": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "RËËPLÀÀCËË" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "token.CLEAR": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "CLËËÀÀR" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "token.PENDING": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "PËËNDÏÏNG" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "token.ACCEPTED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÀÀCCËËPTËËD" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "token.REVOKED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "RËËVÖÖKËËD" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "token.REJECTED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "RËËJËËCTËËD" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "token.ERROR": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ËËxëëcüütïïöön ëërröör" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "token.REVOKED_BEFORE_EXECUTION": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëvöökëëd bëëföörëë ëëxëëcüütïïöön" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "token.ENVELOPE": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ËËNVËËLÖÖPËË" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "token.UNBOUND_CANONICAL_RECORD": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÜÜnbööüünd càànöönïïcààl rëëcöörd" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "token.FOUND": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "FÖÖÜÜND" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "token.NOT_FOUND": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "NÖÖT_FÖÖÜÜND" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.language": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÏÏntëërfààcëë lààngüüààgëë" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.displayLocale": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Dïïsplàày föörmààt" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.preferencesHint": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Prëësëëntààtïïöön öönly. ÀÀüüthöörëëd dààtëës àànd ààmööüünts rëëmààïïn ïïn càànöönïïcààl föörmààt."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.preferencesChanged": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Prëësëëntààtïïöön prëëfëërëëncëës chààngëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.preferencesNotSaved": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Prëëfëërëëncëës wöörk föör thïïs sëëssïïöön büüt cööüüld nööt bëë sààvëëd ïïn thïïs brööwsëër."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.pseudo": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ËËxpààndëëd ËËnglïïsh (lààyööüüt tëëst)" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.loadingSession": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Lööààdïïng lööcààl sëëssïïöön…" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.tryAgain": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Try ààgààïïn" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.trustedInstallation": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Trüüstëëd lööcààl ïïnstààllààtïïöön" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.signOut": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Sïïgn ööüüt" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.primary": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Prïïmààry" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.cases": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Cààsëës" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.recovery": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëcöövëëry" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.operations": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÖÖpëërààtïïööns" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.loadingDefinition": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Lööààdïïng cöörëë dëëfïïnïïtïïöön…" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.loginInstructions": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "ËËntëër thëë böööötstrààp crëëdëëntïïààl frööm thëë ööwnëër-prïïvààtëë fïïlëë prïïntëëd whëën thëë lööcààl Wëëb hööst stààrtëëd."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.credential": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Böööötstrààp crëëdëëntïïààl" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.signingIn": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Sïïgnïïng ïïn…" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.signIn": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Sïïgn ïïn" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.caseReference": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "cààsëë rëëfëërëëncëë" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.caseRow": [
+    { "type": 0, "value": "⟦" },
+    { "type": 1, "value": "status" },
+    { "type": 0, "value": " · rëëvïïsïïöön " },
+    { "type": 1, "value": "revision" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.exactCaseReference": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ËËxààct cààsëë rëëfëërëëncëë" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.findCase": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Fïïnd cààsëë" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.loading": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Lööààdïïng…" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.reloadCases": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëlööààd cààsëës" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.openNewCase": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÖÖpëën nëëw cààsëë" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.loadingCases": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Lööààdïïng cààsëës…" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.moreCases": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Lööààd möörëë cààsëës" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.acceptedHistory": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÀÀccëëptëëd hïïstööry" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.historyHint": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Hïïstöörïïcààl ëëntrïïëës ààrëë rëëààd-öönly. ËËxpàànd ààn ëëntry töö ïïnspëëct ïïts ààccëëptëëd snààpshööt àànd ààttrïïbüütïïöön."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.historySummary": [
+    { "type": 0, "value": "⟦" },
+    { "type": 1, "value": "command" },
+    { "type": 0, "value": " · rëëvïïsïïöön " },
+    { "type": 1, "value": "revision" },
+    { "type": 0, "value": " · " },
+    { "type": 1, "value": "timestamp" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.receiptAttribution": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÖÖpëërààtïïöön " },
+    { "type": 1, "value": "operationId" },
+    { "type": 0, "value": " · rëëcöördëëd by " },
+    { "type": 1, "value": "actor" },
+    { "type": 0, "value": " · " },
+    { "type": 1, "value": "state" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.exactReplay": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ëëxààct rëëplàày" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.accepted": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ààccëëptëëd" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.historyContext": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "hïïstööry ööpëërààtïïöön " },
+    { "type": 1, "value": "operationId" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.loadingHistory": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Lööààdïïng ààccëëptëëd hïïstööry…" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.moreHistory": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Lööààd möörëë hïïstööry" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.availableCommands": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÀÀvààïïlààblëë cöömmàànds" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.commandDescription": [
+    { "type": 0, "value": "⟦" },
+    { "type": 1, "value": "label" },
+    { "type": 0, "value": ": " },
+    { "type": 1, "value": "meaning" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.loadingCurrentCase": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Lööààdïïng cüürrëënt cààsëë…" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.caseNotFound": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Cààsëë wààs nööt fööüünd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.currentCase": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "cüürrëënt cààsëë" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.caseDetail": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Cààsëë dëëtààïïl" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.backToCases": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Bààck töö cààsëës" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.exactReference": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ËËxààct rëëfëërëëncëë: " },
+    { "type": 1, "value": "reference" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.unchangedUntilSubmit": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "ÀÀccëëptëëd stààtëë ïïs üünchààngëëd üüntïïl thëë ëëxààct prëëpààrëëd rëëqüüëëst ïïs ëëxplïïcïïtly süübmïïttëëd."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.observedReceipt": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÀÀccëëptëëd ööpëërààtïïöön " },
+    { "type": 1, "value": "operationId" },
+    { "type": 0, "value": " · " },
+    { "type": 1, "value": "command" },
+    { "type": 0, "value": " · rëëcöördëëd by " },
+    { "type": 1, "value": "actor" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.observedContext": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ööbsëërvëëd ööpëërààtïïöön " },
+    { "type": 1, "value": "operationId" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.operationNotObserved": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÖÖpëërààtïïöön wààs nööt ööbsëërvëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.operationLookup": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÖÖpëërààtïïöön lööööküüp" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.exactOperationId": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ËËxààct ööpëërààtïïöön ÏÏD" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.lookingUp": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Löööökïïng üüp…" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.observeOperation": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÖÖbsëërvëë ööpëërààtïïöön" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.cancel": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Cààncëël" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.notRecorded": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Nööt rëëcöördëëd" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.unavailable": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÜÜnààvààïïlààblëë" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.revision": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëvïïsïïöön " },
+    { "type": 1, "value": "revision" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.revisionLabel": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëvïïsïïöön" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.characterWarning": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Cööntààïïns " },
+    { "type": 1, "value": "characters" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.caseFieldsContext": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Cààsëë fïïëëlds föör " },
+    { "type": 1, "value": "context" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.acceptedSummary": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ààccëëptëëd cààsëë süümmààry" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.copy": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Cööpy " },
+    { "type": 1, "value": "label" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.copied": [
+    { "type": 0, "value": "⟦" },
+    { "type": 1, "value": "label" },
+    { "type": 0, "value": " cööpïïëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.copyFallback": [
+    { "type": 0, "value": "⟦" },
+    { "type": 1, "value": "label" },
+    { "type": 0, "value": " cööpy fààllbààck" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.textHint": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÜÜp töö " },
+    { "type": 1, "value": "maximum" },
+    { "type": 0, "value": " chààrààctëërs." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.dateHint": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÜÜsëë yyyy-MM-dd (Grëëgöörïïààn dààtëë)." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.amountHint": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ËËxààct dëëcïïmààl tëëxt; üüp töö " },
+    { "type": 1, "value": "maximum" },
+    { "type": 0, "value": " dëëcïïmààl plààcëës. ÜÜsëë àà dööt, nööt àà cöömmàà." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.currencyHint": [
+    { "type": 0, "value": "⟦" },
+    { "type": 1, "value": "length" },
+    { "type": 0, "value": " üüppëërcààsëë lëëttëërs." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.command": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Cöömmàànd" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.reference": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Cààsëë rëëfëërëëncëë: " },
+    { "type": 1, "value": "reference" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.noAuthoredValues": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thïïs cöömmàànd hààs nöö ààüüthöörëëd vààlüüëës." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.action": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÀÀctïïöön" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.correctionHint": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "ËËààch cöörrëëctïïöön grööüüp ïïs ëëxplïïcïït. KËËËËP prëësëërvëës ïïts ààccëëptëëd vààlüüëës."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.preparing": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Prëëpààrïïng…" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.prepareExact": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Prëëpààrëë ëëxààct rëëqüüëëst" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.retryPrepare": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëtry ëëxààct prëëpààrëë" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.backWithoutPreparing": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Bààck wïïthööüüt prëëpààrïïng" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.changeCommandTitle": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Dïïscààrd thïïs cöömmàànd drààft?" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.changeCommandDescription": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Chààngïïng cöömmàànd dïïscààrds thëësëë ààüüthöörëëd vààlüüëës àànd crëëààtëës àà nëëw ööpëërààtïïöön ÏÏD."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.discardAndChange": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Dïïscààrd àànd chààngëë cöömmàànd" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.acceptedOperation": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÀÀccëëptëëd ööpëërààtïïöön" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.operationAccepted": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÖÖpëërààtïïöön " },
+    { "type": 1, "value": "operationId" },
+    { "type": 0, "value": " ïïs ààccëëptëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.acceptedContext": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ààccëëptëëd ööpëërààtïïöön " },
+    { "type": 1, "value": "operationId" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.returnToCase": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëtüürn töö cààsëë" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.reviewTitle": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëvïïëëw prëëpààrëëd ööpëërààtïïöön" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.reviewDescription": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë rëëqüüëëst ïïs prëëpààrëëd büüt hààs nööt chààngëëd thëë ààccëëptëëd cààsëë. Süübmïïttïïng ïït stààrts àà müütààtïïöön thààt càànnööt bëë cààncëëllëëd."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.reviewTarget": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Tààrgëët " },
+    { "type": 1, "value": "reference" },
+    { "type": 0, "value": " · ëëxpëëctëëd rëëvïïsïïöön " },
+    { "type": 1, "value": "revision" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.operationDigest": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÖÖpëërààtïïöön " },
+    { "type": 1, "value": "operationId" },
+    { "type": 0, "value": " · dïïgëëst " },
+    { "type": 1, "value": "digest" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.reviewConfirmation": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÏÏ wïïll süübmïït thïïs ëëxààct prëëpààrëëd rëëqüüëëst." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.keepForRecovery": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Këëëëp föör Rëëcöövëëry" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.submitting": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Süübmïïttïïng…" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.submitExact": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Süübmïït ëëxààct rëëqüüëëst" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.before": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Bëëföörëë: " },
+    { "type": 1, "value": "value" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.after": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÀÀftëër: " },
+    { "type": 1, "value": "value" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.recoveryView": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëcöövëëry vïïëëw" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.pending": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Pëëndïïng" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.terminal": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Tëërmïïnààl" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.reload": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëlööààd" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.capacity": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Pëëndïïng rëëcöövëëry cààpààcïïty: " },
+    { "type": 1, "value": "count" },
+    { "type": 0, "value": " / " },
+    { "type": 1, "value": "maximum" },
+    { "type": 0, "value": " prëëpààrààtïïööns · " },
+    { "type": 1, "value": "bytes" },
+    { "type": 0, "value": " / " },
+    { "type": 1, "value": "maximumBytes" },
+    { "type": 0, "value": " càànöönïïcààl bytëës." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.nearCapacity": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Nëëààr cààpààcïïty; rëësöölvëë öör dïïsmïïss knööwn pëëndïïng ïïtëëms."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.recoveryHint": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Pëëndïïng rëëcöövëëry ïïs shööwn by dëëfààüült. Tëërmïïnààl vïïëëw rëëcöörds ààccëëptëëd, dïïsmïïssëëd, àànd rëëvöökëëd ààüüthöörïïty wïïthööüüt prëësëëntïïng ïït ààs ëëxëëcüütààblëë wöörk. ÏÏnspëëct sëërvëër stààtëë bëëföörëë rëësöölvïïng öör dïïsmïïssïïng ààn ïïtëëm."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.recoverySummary": [
+    { "type": 0, "value": "⟦" },
+    { "type": 1, "value": "command" },
+    { "type": 0, "value": " · " },
+    { "type": 1, "value": "reference" },
+    { "type": 0, "value": " · " },
+    { "type": 1, "value": "authority" },
+    { "type": 0, "value": " · " },
+    { "type": 1, "value": "operationId" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.revocationSummary": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "RËËVÖÖKËËD · " },
+    { "type": 1, "value": "operationId" },
+    { "type": 0, "value": " · " },
+    { "type": 1, "value": "timestamp" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.attemptCount": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 6,
+      "value": "count",
+      "options": {
+        "one": {
+          "value": [
+            { "type": 0, "value": "ÀÀttëëmpt ëëvïïdëëncëë: " },
+            { "type": 7 },
+            { "type": 0, "value": " shööwn." }
+          ]
+        },
+        "other": {
+          "value": [
+            { "type": 0, "value": "ÀÀttëëmpt ëëvïïdëëncëë: " },
+            { "type": 7 },
+            { "type": 0, "value": " shööwn." }
+          ]
+        }
+      },
+      "offset": 0,
+      "pluralType": "cardinal"
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.legacyUncertainty": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Lëëgààcy üüncëërtààïïnty rëëmààïïns." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.moreAttempts": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Lööààd möörëë ààttëëmpts" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.retainedIdentity": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÖÖpëërààtïïöön " },
+    { "type": 1, "value": "operationId" },
+    { "type": 0, "value": " · ààüüthöörïïty " },
+    { "type": 1, "value": "authority" },
+    { "type": 0, "value": " · dïïgëëst " },
+    { "type": 1, "value": "digest" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.retainedCommand": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Cààsëë " },
+    { "type": 1, "value": "reference" },
+    { "type": 0, "value": " · cöömmàànd " },
+    { "type": 1, "value": "command" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.retainedFormat": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ËËxpëëctëëd rëëvïïsïïöön " },
+    { "type": 1, "value": "revision" },
+    { "type": 0, "value": " · càànöönïïcààl föörmààt " },
+    { "type": 1, "value": "format" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.provenance": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Prëëpààrïïng pröövëënààncëë: " },
+    { "type": 1, "value": "version" },
+    { "type": 0, "value": " · " },
+    { "type": 1, "value": "contract" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.revokedOperation": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÖÖpëërààtïïöön " },
+    { "type": 1, "value": "operationId" },
+    { "type": 0, "value": " wààs rëëvöökëëd ààt " },
+    { "type": 1, "value": "timestamp" },
+    { "type": 0, "value": "." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.revokedHint": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thïïs rëëvöökëëd ààüüthöörïïty ïïs tëërmïïnààl. ÏÏt càànnööt bëë rëësüürrëëctëëd öör süübmïïttëëd."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.inspect": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÏÏnspëëct" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.inspectRevocation": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÏÏnspëëct rëëvööcààtïïöön" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.moreRecovery": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Lööààd möörëë rëëcöövëëry" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.resolveExact": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëësöölvëë ëëxààct prëëpààrààtïïöön" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.dismissPreparation": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Dïïsmïïss prëëpààrààtïïöön" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.exportEnvelope": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ËËxpöört rëëcöövëëry ëënvëëlööpëë" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.recoveryDetails": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëcöövëëry dëëtààïïls" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.recoveryDetailsHint": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë sëërvëër süüpplïïëëd thëë cüürrëënt ààüüthöörïïty, ëëvïïdëëncëë, àànd ööbsëërvààtïïöön stààtëë."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.observation": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÖÖbsëërvààtïïöön: " },
+    { "type": 1, "value": "state" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.observedAccepted": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÖÖbsëërvëëd ààccëëptëëd ööpëërààtïïöön " },
+    { "type": 1, "value": "operationId" },
+    { "type": 0, "value": "." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.exportTitle": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ËËxpöört rëëcöövëëry ëënvëëlööpëë?" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.resolveTitle": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëësöölvëë ëëxààct prëëpààrààtïïöön?" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.dismissTitle": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Dïïsmïïss prëëpààrààtïïöön?" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.exportWarning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thïïs fïïlëë cööntààïïns clààïïmàànt dààtàà àànd rëëcöövëëry bytëës. Sààvëë ïït öönly ïïn prïïvààtëë stöörààgëë."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.recoveryConfirmHint": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thïïs ààctïïöön üüsëës thëë dïïsplààyëëd ööpëërààtïïöön ÏÏD àànd rëëqüüëëst dïïgëëst. Thëë sëërvëër rëëmààïïns ààüüthöörïïtààtïïvëë."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.working": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Wöörkïïng…" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.confirmResolve": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Cöönfïïrm rëësöölvëë" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.confirmDismiss": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Cöönfïïrm dïïsmïïss" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.confirmExport": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Cöönfïïrm ëëxpöört" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.artifact": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÀÀrtïïfààct " },
+    { "type": 1, "value": "kind" },
+    { "type": 0, "value": " · sööüürcëë dïïgëëst " },
+    { "type": 1, "value": "digest" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.importTarget": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Dëëcöödëëd tààrgëët " },
+    { "type": 1, "value": "reference" },
+    { "type": 0, "value": " · cöömmàànd " },
+    { "type": 1, "value": "command" },
+    { "type": 0, "value": " · ëëxpëëctëëd rëëvïïsïïöön " },
+    { "type": 1, "value": "revision" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.importHint": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë ààrtïïfààct ïïs rëëtààïïnëëd föör ëëxplïïcïït Rëëcöövëëry ààctïïöön; ïït ïïs nëëvëër süübmïïttëëd ààüütöömààtïïcààlly."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.importEnvelope": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÏÏmpöört rëëcöövëëry ëënvëëlööpëë" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.importRecord": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÏÏmpöört càànöönïïcààl rëëcöörd" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.importTitle": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëtààïïn ïïmpöörtëëd rëëcöövëëry mààtëërïïààl?" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.importDescription": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë prëëvïïëëw ïïs rëëtààïïnëëd öönly ààftëër cöönfïïrmààtïïöön àànd ïïs nëëvëër süübmïïttëëd ààüütöömààtïïcààlly."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.retainForRecovery": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëtààïïn föör Rëëcöövëëry" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.keepEditing": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Këëëëp ëëdïïtïïng" },
+    { "type": 0, "value": "⟧" }
+  ]
+}

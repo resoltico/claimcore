@@ -58,7 +58,10 @@ it("keeps the anonymous token after a rejected credential so login can be retrie
     expect(result.current.state).toMatchObject({
       kind: "anonymous",
       token: "anonymous",
-      message: "WEB_LOGIN_REJECTED: Credential was rejected.",
+      message: {
+        kind: "diagnostic",
+        diagnostic: { id: "WEB_HOST_LOGIN_REJECTED", parameters: {} },
+      },
     }),
   );
   fetch.mockResolvedValueOnce(
