@@ -1,4 +1,4 @@
-name: Temporary fresh-baseline source recovery
+name: Temporary fresh-baseline source reproduction
 on:
   push:
     branches: [feat/fresh-baseline-recovery]
@@ -6,42 +6,99 @@ on:
 permissions:
   contents: read
 jobs:
-  source:
+  reproduce:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 25
+    permissions:
+      contents: write
     steps:
-      - name: Recover only the previously uploaded source objects
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ad45a9c649d14f5cb592d772c56b043c1b093ba2
+          persist-credentials: false
+      - name: Restore verified source deltas against the exact baseline
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^{tree})" = 0bb6a84f4f7afd403c072a627ada86199bfe8ed6
+          python3 - <<'PY'
+          import base64, hashlib, json, lzma, os, pathlib, subprocess
+          def blob(sha):
+              data = json.loads(subprocess.check_output(['gh','api',f'repos/{os.environ["GITHUB_REPOSITORY"]}/git/blobs/{sha}']))
+              content = base64.b64decode(data['content'])
+              assert hashlib.sha1(f'blob {len(content)}\0'.encode() + content).hexdigest() == sha
+              return content
+          shas = ['53267a40b01503ac63e26d55a5a408b72c06a666','014a07a92d69ce38c16db3fbb7c95e89d815f842','260b6d4658ce1d094ca4fcd65e7353493d7bc179','8588ef1ab76199dc435ccc1320ba2f155498f396','7d2e3b6843e796ae23f73bbf5393143bc5ca4d9b','58f1a23c63735150bfca3f73d447dcb742624d29','af55a0526119761091119a369856e0b95ac7b4fe','0eb3d1958ba81fe4080af4f8478fe31cbe881186']
+          compressed = base64.b64decode(b''.join(blob(sha) for sha in shas), validate=True)
+          assert hashlib.sha256(compressed).hexdigest() == '4a1bbe613cc78d5ab32081c9db63fa68d8fd7795b732b5af090613b407884d11'
+          decoded = lzma.decompress(compressed)
+          assert hashlib.sha256(decoded).hexdigest() == 'cd4246ca4d1aa7230d8c3c3371b8eb0ca3981c90ff753ffec04585cf5af63d4f'
+          payload = json.loads(decoded)
+          assert set(payload) == {'patch','delete'}
+          expected = ['db/001_initial.sql','db/002_request_preparations.sql','db/003_submission_attempts.sql','db/004_generalize_preparation_provenance.sql','db/005_recovery_evidence_read_acl.sql','db/006_operation_authority_and_business_time.sql','db/migration-manifest.json','src/ClaimCore.Postgres/Migrations.fs','tests/ClaimCore.IntegrationTests/MigrationEvidenceUpgradeTests.fs','tests/ClaimCore.IntegrationTests/MigrationUpgradeSupport.fs','tests/ClaimCore.IntegrationTests/MigrationUpgradeTests.fs','web/src/generated/convergence/recovery-envelope-v1.schema.json']
+          assert sorted(payload['delete']) == sorted(expected)
+          patch = pathlib.Path(os.environ['RUNNER_TEMP']) / 'fresh-baseline.patch'
+          patch.write_text(payload['patch'], encoding='utf-8')
+          subprocess.run(['git','apply','--index','--unidiff-zero','--whitespace=error',str(patch)], check=True)
+          subprocess.run(['git','rm','--',*expected], check=True)
+          followup = blob('1f58538863ac1bbb0c6b276a749d0b92eace4ccd')
+          assert hashlib.sha256(followup).hexdigest() == '74bd916b3e81918bdbf09201d98bb870cc28584060709485ebea968386bfafcd'
+          patch.write_bytes(followup)
+          subprocess.run(['git','apply','--index','--whitespace=error',str(patch)], check=True)
+          PY
+      - uses: ./.github/actions/toolchain
+      - name: Regenerate contracts and verify the exact candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet restore ClaimCore.slnx --locked-mode
+          npm ci --prefix web
+          npm --prefix web run contract:generate
+          npm --prefix web run localization:generate
+          npm --prefix web run notices:generate
+          dotnet run --project eng/ClaimCore.Docs --configuration Release --no-restore -- write
+          npm --prefix web run localization:check
+          npm --prefix web run typecheck
+          git add -A
+          git diff --cached --check
+          test "$(git write-tree)" = eba09c24bd7b53a1a4817ba89f06b9b88705e383
+          test "$(git ls-files | wc -l | tr -d ' ')" = 915
+          test "$(git diff --cached --no-renames --name-only | wc -l | tr -d ' ')" = 175
+          test ! -e .github/workflows/fresh-baseline-workspace.yml
+      - name: Store the verified tree without moving branches or tags
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import base64, hashlib, json, lzma, os, pathlib, subprocess
-          shas = ['53267a40b01503ac63e26d55a5a408b72c06a666','014a07a92d69ce38c16db3fbb7c95e89d815f842','260b6d4658ce1d094ca4fcd65e7353493d7bc179','8588ef1ab76199dc435ccc1320ba2f155498f396','7d2e3b6843e796ae23f73bbf5393143bc5ca4d9b','58f1a23c63735150bfca3f73d447dcb742624d29','af55a0526119761091119a369856e0b95ac7b4fe','0eb3d1958ba81fe4080af4f8478fe31cbe881186']
-          root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'fresh-baseline-recovery'
-          root.mkdir()
-          pieces = []
-          for index, sha in enumerate(shas, 1):
-              response = json.loads(subprocess.check_output(['gh','api',f'repos/{os.environ["GITHUB_REPOSITORY"]}/git/blobs/{sha}']))
-              content = base64.b64decode(response['content'])
-              assert hashlib.sha1(f'blob {len(content)}\0'.encode() + content).hexdigest() == sha
-              (root / f'chunk-{index}.txt').write_bytes(content)
-              pieces.append(content)
-          compressed = base64.b64decode(b''.join(pieces), validate=True)
-          (root / 'source-delta.xz').write_bytes(compressed)
-          try:
-              payload = lzma.decompress(compressed)
-              (root / 'source-delta.decoded').write_bytes(payload)
-              print('Transfer decompression verified; payload bytes:', len(payload))
-          except lzma.LZMAError:
-              print('Transfer objects recovered; compressed-stream verification requires inspection.')
-          lines = [f'{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.name}' for p in sorted(root.iterdir()) if p.is_file()]
-          (root / 'SHA256SUMS').write_text('\n'.join(lines) + '\n')
+          import json, os, subprocess
+          def git(*args):
+              return subprocess.check_output(['git',*args])
+          expected = 'eba09c24bd7b53a1a4817ba89f06b9b88705e383'
+          assert git('write-tree').decode().strip() == expected
+          indexed = {}
+          for row in git('ls-files','-s','-z').split(b'\0'):
+              if row:
+                  metadata, path = row.split(b'\t',1)
+                  mode, sha, stage = metadata.decode().split()
+                  assert stage == '0'
+                  indexed[path.decode()] = (mode, sha)
+          paths = [p.decode() for p in git('diff','--cached','--no-renames','--name-only','-z').split(b'\0') if p]
+          assert len(paths) == 175
+          entries = []
+          for path in paths:
+              if path not in indexed:
+                  entries.append({'path':path,'mode':'100644','type':'blob','sha':None})
+              else:
+                  mode, sha = indexed[path]
+                  assert mode in ('100644','100755')
+                  entries.append({'path':path,'mode':mode,'type':'blob','content':git('show',':'+path).decode('utf-8')})
+          payload = {'base_tree':'0bb6a84f4f7afd403c072a627ada86199bfe8ed6','tree':entries}
+          response = json.loads(subprocess.check_output(['gh','api','--method','POST',f'repos/{os.environ["GITHUB_REPOSITORY"]}/git/trees','--input','-'],input=json.dumps(payload,ensure_ascii=False).encode()))
+          assert response['sha'] == expected
+          print('Verified fresh-baseline source tree stored:', expected)
+          print('No branch, tag, pull request, protection, or repository setting was changed by this job.')
           PY
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: fresh-baseline-recovered-source
-          path: ${{ runner.temp }}/fresh-baseline-recovery/
-          retention-days: 1
-          if-no-files-found: error
