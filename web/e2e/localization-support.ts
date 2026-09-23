@@ -1,3 +1,5 @@
+import { writeFile } from "node:fs/promises";
+
 import { expect, type Page, type Locator } from "@playwright/test";
 import type { WebV2EndpointId } from "../src/generated/convergence/web-v2.endpoint-catalog";
 import { webV2Endpoints } from "../src/generated/convergence/web-v2.endpoint-catalog";
@@ -105,11 +107,39 @@ export const inspectPending = async (page: Page, identity: PreparedIdentity): Pr
   await row.getByRole("button", { name: "Inspect", exact: true }).click();
   await expect(page.getByRole("dialog")).toContainText(identity.requestSha256);
 };
-export const noHorizontalOverflow = async (page: Page): Promise<void> => {
-  const fits = await page.evaluate(
-    () => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1,
-  );
-  expect(fits).toBe(true);
+export const noHorizontalOverflow = async (page: Page, stage: "narrow" | "zoom"): Promise<void> => {
+  const metrics = await page.evaluate(() => {
+    const clientWidth = document.documentElement.clientWidth;
+    const offenders = [...document.querySelectorAll("*")]
+      .map((element) => ({ element, rect: element.getBoundingClientRect() }))
+      .filter(({ rect }) => rect.right > clientWidth + 1)
+      .slice(0, 5)
+      .map(({ element, rect }) => ({
+        tag: element.tagName.toLowerCase(),
+        className: typeof element.className === "string" ? element.className : "",
+        left: Math.round(rect.left),
+        right: Math.round(rect.right),
+        width: Math.round(rect.width),
+      }));
+    return { clientWidth, scrollWidth: document.documentElement.scrollWidth, offenders };
+  });
+  if (metrics.scrollWidth <= metrics.clientWidth + 1) return;
+  const engine = process.env["CLAIMCORE_WEB_E2E_ENGINE"];
+  if (engine !== undefined && ["chromium", "firefox", "webkit"].includes(engine)) {
+    const report = new URL(
+      `../../artifacts/browser/localization-layout-${engine}.json`,
+      import.meta.url,
+    );
+    const offenders = metrics.offenders.map(({ tag, className, left, right, width }) => ({
+      tag,
+      className: className.replace(/[^a-zA-Z0-9_-]/gu, "").slice(0, 40),
+      left,
+      right,
+      width,
+    }));
+    await writeFile(report, `${JSON.stringify({ stage, ...metrics, offenders })}\n`);
+  }
+  throw new Error(`E2E_LOCALIZATION_${stage.toUpperCase()}_OVERFLOW`);
 };
 
 export const expectKeyboardContained = async (page: Page, dialog: Locator): Promise<void> => {

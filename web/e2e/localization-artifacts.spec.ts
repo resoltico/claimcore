@@ -102,7 +102,7 @@ test("renders exact accepted amounts with RTL and pseudolocale accessibility whi
   const requests = trackRequests(page);
   await page.setViewportSize({ width: 320, height: 720 });
   await page.emulateMedia({ reducedMotion: "reduce", forcedColors: "active" });
-  await noHorizontalOverflow(page);
+  await noHorizontalOverflow(page, "narrow");
   await expectAccessible(page);
   await selectFormat(page, "lv-LV");
   await expect(page.locator("html")).toHaveAttribute("lang", "ar");
@@ -113,7 +113,7 @@ test("renders exact accepted amounts with RTL and pseudolocale accessibility whi
   await page.evaluate(() => {
     document.documentElement.style.zoom = "2";
   });
-  await noHorizontalOverflow(page);
+  await noHorizontalOverflow(page, "zoom");
   await expect(row.getByRole("textbox")).toHaveValue(amount);
   expect(requests).toHaveLength(0);
 });
