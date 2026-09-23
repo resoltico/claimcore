@@ -1,4 +1,4 @@
-name: Temporary owner-review source export
+name: Temporary owner-review source reproduction
 on:
   push:
     branches: [feat/owner-review-enforcement]
@@ -6,27 +6,88 @@ on:
 permissions:
   contents: read
 jobs:
-  source:
+  reproduce:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 20
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: bf439ebbde15166ef889377186c0813a6ed6ac6f
           persist-credentials: false
-      - name: Export tracked source only
+      - name: Restore checksum-bound source against the exact reviewed base
+        env:
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = bf439ebbde15166ef889377186c0813a6ed6ac6f
-          mkdir "$RUNNER_TEMP/owner-review-source"
-          git archive --format=tar.gz HEAD > "$RUNNER_TEMP/owner-review-source/source.tar.gz"
-          git rev-parse HEAD^{tree} > "$RUNNER_TEMP/owner-review-source/tree.txt"
-          cd "$RUNNER_TEMP/owner-review-source"
-          sha256sum source.tar.gz > SHA256SUMS
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-        with:
-          name: owner-review-source
-          path: ${{ runner.temp }}/owner-review-source/
-          retention-days: 1
-          if-no-files-found: error
+          test "$(git rev-parse HEAD^{tree})" = 6698bac86f00088fe600c677a0a1a43b29397f60
+          python3 - <<'PY'
+          import base64, hashlib, json, lzma, os, pathlib, subprocess
+          chunks = ['6d7f4d07ad3fe9326ed57d5d0e435723bb1b12a4','95ba1f20cc473a891061f9922fcb183082967f67','16ba3ea5a7345254854bfee6a86bd73585260d53']
+          pieces = []
+          for sha in chunks:
+              result = json.loads(subprocess.check_output(['gh','api',f'repos/{os.environ["GITHUB_REPOSITORY"]}/git/blobs/{sha}']))
+              data = base64.b64decode(result['content'])
+              assert hashlib.sha1(f'blob {len(data)}\0'.encode()+data).hexdigest() == sha
+              pieces.append(data)
+          compressed = base64.b64decode(b''.join(pieces),validate=True)
+          assert hashlib.sha256(compressed).hexdigest() == '9b20618fe68d35d736512d57966ba2851f6ed5bb408fcf6a2d6166880852efe6'
+          patch = lzma.decompress(compressed)
+          assert hashlib.sha256(patch).hexdigest() == 'cf2a1db241e7190d08774fdc970b15e753f35db2ccc8c339d897649cfeafd08c'
+          path = pathlib.Path(os.environ['RUNNER_TEMP'])/'owner-review.patch'
+          path.write_bytes(patch)
+          subprocess.run(['git','apply','--index','--whitespace=error',str(path)],check=True)
+          PY
+      - uses: ./.github/actions/toolchain
+      - name: Qualify source without activating repository settings or granting approval
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --prefix web
+          node --test eng/ci/*.test.mjs eng/release/*.test.mjs
+          node web/node_modules/prettier/bin/prettier.cjs --check 'eng/ci/*.mjs'
+          node eng/ci/check-workflows.mjs
+          dotnet restore ClaimCore.slnx --locked-mode
+          dotnet build ClaimCore.slnx --configuration Release --no-restore -m:2
+          dotnet artifacts/bin/ClaimCore.Docs/release/ClaimCore.Docs.dll check
+          git add -A
+          git diff --cached --check
+          test "$(git write-tree)" = 3a335a484cd0d7aa6376ba4c4360cb19b06f9723
+          test "$(git ls-files | wc -l | tr -d ' ')" = 927
+          test "$(git diff --cached --no-renames --name-only | wc -l | tr -d ' ')" = 23
+          test ! -e .github/workflows/owner-review-workspace.yml
+      - name: Store exact source tree without updating any branch, tag or policy
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, subprocess
+          def git(*args):
+              return subprocess.check_output(['git',*args])
+          expected = '3a335a484cd0d7aa6376ba4c4360cb19b06f9723'
+          assert git('write-tree').decode().strip() == expected
+          index = {}
+          for row in git('ls-files','-s','-z').split(b'\0'):
+              if row:
+                  meta,path = row.split(b'\t',1)
+                  mode,sha,stage = meta.decode().split()
+                  assert stage == '0'
+                  index[path.decode()] = (mode,sha)
+          paths = [p.decode() for p in git('diff','--cached','--no-renames','--name-only','-z').split(b'\0') if p]
+          assert len(paths) == 23 and not any(p.startswith('.github/workflows/') for p in paths)
+          entries = []
+          for path in paths:
+              assert path in index
+              mode,sha = index[path]
+              assert mode in ('100644','100755')
+              entries.append({'path':path,'mode':mode,'type':'blob','content':git('show',':'+path).decode('utf-8')})
+          payload = {'base_tree':'6698bac86f00088fe600c677a0a1a43b29397f60','tree':entries}
+          result = json.loads(subprocess.check_output(['gh','api','--method','POST',f'repos/{os.environ["GITHUB_REPOSITORY"]}/git/trees','--input','-'],input=json.dumps(payload,ensure_ascii=False).encode()))
+          assert result['sha'] == expected
+          print('Verified owner-review source tree stored:',expected)
+          print('No remote branch, tag, pull request, protection, environment or repository setting was changed by this job.')
+          PY
