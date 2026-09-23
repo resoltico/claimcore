@@ -75,6 +75,16 @@ export async function inspectPr(api, number, expectedHead) {
   );
   const mergeSha =
     pr.state === "open" ? await pullMergeRevision(api, pr) : null;
+  if (mergeSha !== null) {
+    const commit = await api(`git/commits/${mergeSha}`);
+    assert(
+      commit.sha === mergeSha &&
+        commit.parents?.length === 2 &&
+        commit.parents[0].sha === pr.base.sha &&
+        commit.parents[1].sha === pr.head.sha,
+      "Tested PR merge does not contain the current base and head.",
+    );
+  }
   const result = {
     number,
     url: pr.html_url,
