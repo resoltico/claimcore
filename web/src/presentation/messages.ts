@@ -1,5 +1,5 @@
 import IntlMessageFormat from "intl-messageformat";
-import type { MessageFormatElement } from "@formatjs/icu-messageformat-parser";
+import { type MessageFormatElement } from "@formatjs/icu-messageformat-parser";
 import en from "./generated/en.json";
 import lv from "./generated/lv.json";
 import ar from "./generated/ar.json";

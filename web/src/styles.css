@@ -37,11 +37,14 @@ button {
 
 button,
 .copy-button {
+  max-inline-size: 100%;
+  min-inline-size: 0;
   border: 1px solid #075cac;
   border-radius: 0.4rem;
   padding: 0.5rem 0.75rem;
   color: #fff;
   background: #075cac;
+  overflow-wrap: anywhere;
 }
 
 button:focus-visible,
@@ -56,6 +59,7 @@ textarea:focus-visible {
 .login-shell,
 .loading {
   inline-size: min(100% - 2rem, 72rem);
+  min-inline-size: 0;
   margin: 0 auto;
   padding: 2rem 0 4rem;
 }
@@ -72,8 +76,7 @@ textarea:focus-visible {
   align-items: center;
 }
 
-.app-shell > header,
-.section-heading {
+:is(.app-shell > header, .section-heading) {
   justify-content: space-between;
 }
 
@@ -82,11 +85,10 @@ textarea:focus-visible {
   overflow-wrap: anywhere;
 }
 
-.app-shell > header,
+.app-shell > :is(header, section),
 .login-card,
 .operation-editor,
 .case-fields,
-.app-shell > section,
 .review-modal {
   background: #fff;
   border: 1px solid #c7d2dc;
@@ -105,11 +107,11 @@ textarea:focus-visible {
   place-items: center;
 }
 
-.app-shell > header,
-.app-shell > section,
+.app-shell > :is(header, section),
 .operation-editor,
 .case-fields,
 .login-card {
+  min-inline-size: 0;
   padding: 1.5rem;
 }
 
@@ -209,9 +211,7 @@ button:disabled {
   padding-inline-start: 1.25rem;
 }
 
-.case-list li,
-.recovery-list li,
-.history-list li {
+:is(.case-list, .recovery-list, .history-list) li {
   margin: 0.75rem 0;
 }
 
