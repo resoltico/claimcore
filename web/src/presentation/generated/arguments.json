@@ -328,7 +328,6 @@
   },
   "ui.revocationSummary": { "operationId": "string", "timestamp": "string" },
   "ui.attemptCount": { "count": "number" },
-  "ui.legacyUncertainty": {},
   "ui.moreAttempts": {},
   "ui.retainedIdentity": { "authority": "string", "digest": "string", "operationId": "string" },
   "ui.retainedCommand": { "command": "string", "reference": "string" },

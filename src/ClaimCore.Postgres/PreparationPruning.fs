@@ -14,14 +14,19 @@ module PreparationPruning =
             SELECT p.operation_id
             FROM claimcore.request_preparations p
             LEFT JOIN claimcore.case_changes c ON c.operation_id = p.operation_id
-            WHERE
+            WHERE (
                 (c.operation_id IS NOT NULL AND c.recorded_at < clock_timestamp() - make_interval(days => @settled))
                 OR (c.operation_id IS NULL AND EXISTS (
                     SELECT 1
                     FROM claimcore.operation_revocations r
                     WHERE r.operation_id = p.operation_id
                         AND r.revoked_at < clock_timestamp() - make_interval(days => @abandoned)
-                ))
+                )))
+                AND NOT EXISTS (
+                    SELECT 1 FROM claimcore.request_submission_attempts a
+                    LEFT JOIN claimcore.request_submission_settlements s ON s.attempt_id = a.attempt_id
+                    WHERE a.operation_id = p.operation_id AND s.attempt_id IS NULL
+                )
             ORDER BY p.prepared_at, p.operation_id
             LIMIT @limit
             FOR UPDATE OF p
@@ -111,12 +116,12 @@ module PreparationPruning =
         (options: PreparationPruneOptions)
         =
         PreparationPruneOptions.validate options
-        let builder = Migrations.ownerBuilder connectionString
+        let builder = OwnerConnection.builder connectionString
         use connection = new NpgsqlConnection(builder.ConnectionString)
         connection.Open()
         DatabaseEnvironment.requireCompatible connection
-        Migrations.requireOwnerIdentity connection
-        Migrations.requireCurrent connection
+        OwnerConnection.requireIdentity connection
+        SchemaBaseline.requireCurrent connection
         use transaction = connection.BeginTransaction(IsolationLevel.ReadCommitted)
         progress.BeginWork()
         Sql.lockKey connection transaction "claimcore:request-preparation-prune"

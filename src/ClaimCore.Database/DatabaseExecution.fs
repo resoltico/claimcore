@@ -21,10 +21,10 @@ module DatabaseExecution =
 
     let private execute connection =
         function
-        | DatabaseCommand.Migrate ->
-            Migrations.apply connection |> AdministrationOutcome.map (fun () -> None)
-        | DatabaseCommand.SetBusinessZone zone ->
-            InstallationBusinessZone.set connection zone
+        | DatabaseCommand.Verify ->
+            SchemaBaseline.verify connection |> AdministrationOutcome.map (fun () -> None)
+        | DatabaseCommand.Initialize zone ->
+            SchemaBaseline.initialize connection zone
             |> AdministrationOutcome.map (fun () -> None)
         | DatabaseCommand.Prune options ->
             PreparationPruning.prune connection options |> AdministrationOutcome.map Some

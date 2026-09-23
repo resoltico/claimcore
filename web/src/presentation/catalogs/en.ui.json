@@ -103,7 +103,6 @@
   "ui.recoverySummary": "{command} · {reference} · {authority} · {operationId}",
   "ui.revocationSummary": "REVOKED · {operationId} · {timestamp}",
   "ui.attemptCount": "{count, plural, one {Attempt evidence: # shown.} other {Attempt evidence: # shown.}}",
-  "ui.legacyUncertainty": "Legacy uncertainty remains.",
   "ui.moreAttempts": "Load more attempts",
   "ui.retainedIdentity": "Operation {operationId} · authority {authority} · digest {digest}",
   "ui.retainedCommand": "Case {reference} · command {command}",

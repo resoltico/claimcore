@@ -17,7 +17,7 @@ ClaimCore publishes exactly three application executables:
 |---|---|---|
 | `ClaimCore.Web` | Localhost-only HTTPS React interface for normal case work and recovery. | A trusted human operator. |
 | `ClaimCore.Cli` | Strict JSON CLI-v3 interface for automation and operational use. | Trusted scripts, agents, and terminal users. |
-| `ClaimCore.Database` | PostgreSQL schema migration, installation business-time-zone setup, and bounded technical-preparation pruning. | A database administrator using the schema-owner credential. |
+| `ClaimCore.Database` | Atomic fresh-baseline initialization with an explicit business calendar, read-only verification, and bounded technical-preparation pruning. | A database administrator using the schema-owner credential. |
 
 The Database executable changes ClaimCore's PostgreSQL schema and technical recovery storage. It is
 not a second case-work interface. Product libraries and repository tooling are not additional
@@ -39,7 +39,7 @@ change the installation calendar or recorded currency. See [Browser presentation
 - Optimistic concurrency prevents a stale command from silently overwriting a newer revision.
 - Content-bound operation IDs provide exact replay after an uncertain result; durable revocation closes an unaccepted operation without erasing its earlier evidence.
 - Each installation stores one explicit IANA business time zone, so every process uses the same business date.
-- PostgreSQL transactions, structural constraints, and checksum-bound ordered migrations protect
+- PostgreSQL transactions, structural constraints, and a checksum-bound fresh baseline protect
   durable state.
 - One semantic contract projects pure CLI-v3/Web-v2 codecs, exact response schemas, generated
   browser DTOs and validators, keeping adapters aligned with the core.

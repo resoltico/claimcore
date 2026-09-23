@@ -124,7 +124,7 @@ module ContractArtifacts =
             artifact "cli-v3.invocation.schema.json" (CliSchemas.invocation projection)
             artifact "cli-v3.response.schema.json" (CliSchemas.response projection)
             artifact "cli-v3.definition.schema.json" (CliSchemas.definition projection)
-            artifact "recovery-envelope-v1.schema.json" (CliSchemas.recoveryEnvelope projection)
+            artifact "recovery-envelope-v2.schema.json" (CliSchemas.recoveryEnvelope projection)
         ]
 
     let private cliEndpointArtifacts projection =

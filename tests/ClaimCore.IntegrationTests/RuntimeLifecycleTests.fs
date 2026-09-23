@@ -70,7 +70,7 @@ let private admittedQuerySurvivesDispose () =
             disposing.Wait(2000) |> ignore
 
 let private cancellationInterruptsSchemaInspection () =
-    let connection, lockedTransaction = exclusiveLock "schema_migrations"
+    let connection, lockedTransaction = exclusiveLock "schema_baseline"
     use connection = connection
     use transaction = lockedTransaction
     use cancellation = new CancellationTokenSource()

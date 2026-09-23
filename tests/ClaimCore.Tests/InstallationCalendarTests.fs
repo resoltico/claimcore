@@ -8,7 +8,7 @@ let private unreachable =
     "Host=invalid.invalid;Username=claimcore_owner;Database=claimcore;Timeout=1"
 
 let private refuses label zoneId =
-    match InstallationBusinessZone.set unreachable zoneId with
+    match SchemaBaseline.initialize unreachable zoneId with
     | AdministrationOutcome.NotStarted AdministrationFailure.BusinessZoneInvalid -> ()
     | _ -> failtest ("Expected calendar admission refusal for " + label + ".")
 
@@ -31,7 +31,7 @@ let tests =
                     refuses "traversal" "../Europe/Vilnius")
 
             testCase "a canonical zone passes validation and fails later, on the host" (fun () ->
-                match InstallationBusinessZone.set unreachable "Etc/UTC" with
+                match SchemaBaseline.initialize unreachable "Etc/UTC" with
                 | AdministrationOutcome.NotStarted AdministrationFailure.DatabaseUnavailable -> ()
                 | _ -> failtest "A canonical zone must reach database admission.")
         ]

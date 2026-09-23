@@ -1,7 +1,7 @@
 # Synthetic CLI-v3 walkthrough
 
 All names and facts in this directory are fictional. Complete [Getting
-started](../docs/getting-started.md) and its database migration before submitting the requests.
+started](../docs/getting-started.md) and its fresh database initialization before submitting the requests.
 
 The files form one deterministic CLI-v3 `command.execute` sequence for `DEMO-0001`. Each invocation
 has a fixed operation ID and expected revision, so use a dedicated synthetic database without that
@@ -72,7 +72,7 @@ an insurance coverage rule.
 ## CC-CLI-001 — Published synthetic walkthrough
 
 The published CLI must accept this exact six-invocation CLI-v3 sequence through `call` against an
-isolated database migrated through 005. The resulting current view is version 6 and `OPENED`, retains
+isolated database initialized with the current baseline. The resulting current view is version 6 and `OPENED`, retains
 the decision, clears the payment date, exposes exactly the thirteen documented business fields, and
 has exactly six ordered accepted-history entries. Exact replay of the final invocation returns its
 retained receipt and creates no seventh entry.

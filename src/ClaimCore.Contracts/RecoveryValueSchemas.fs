@@ -82,7 +82,6 @@ module RecoveryValueSchemas =
             [
                 WireSchema.property "items" (WireSchema.array attempt)
                 WireSchema.property "nextCursor" WireSchema.nullableText
-                WireSchema.property "legacyUncertainty" Schema.boolean
             ]
 
     let details (semantic: SemanticCoreContract) authoredValues =
@@ -98,7 +97,7 @@ module RecoveryValueSchemas =
                 WireSchema.property "preparingContractFingerprint" WireSchema.digest
                 WireSchema.property
                     "preparingContractKind"
-                    (WireSchema.enumeration [ "LEGACY_UNCLASSIFIED"; "SEMANTIC_CORE_V1" ])
+                    (WireSchema.enumeration [ "CANONICAL_RECORD_V3"; "SEMANTIC_CORE_V1" ])
                 WireSchema.property "attempts" attemptPage
             ]
 

@@ -190,12 +190,7 @@ module internal TypedProjection =
                 }
         }
 
-    let private emptyAttemptPage =
-        {
-            Items = []
-            NextCursor = None
-            LegacyUncertainty = false
-        }
+    let private emptyAttemptPage = { Items = []; NextCursor = None }
 
     let private detailsWithAuthority
         (preparation: RetainedPreparation)
@@ -219,7 +214,7 @@ module internal TypedProjection =
                     PreparingContractFingerprint = preparation.PreparingContractFingerprint
                     PreparingContractKind =
                         match preparation.PreparingContractKind with
-                        | PreparingContractKind.LegacyUnclassified -> "LEGACY_UNCLASSIFIED"
+                        | PreparingContractKind.CanonicalRecordV3 -> "CANONICAL_RECORD_V3"
                         | PreparingContractKind.SemanticCoreV1 -> "SEMANTIC_CORE_V1"
                     Attempts = attempts
                 }

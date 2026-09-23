@@ -53,10 +53,10 @@
     {
       "contractId": "CC-APP-001",
       "reviewerKind": "agent",
-      "reviewer": "Transport diagnostics: agent design/source review, including shared host validation and explicit 200-KiB aggregate bundle budget; no independent owner approval",
-      "reviewedOn": "2026-09-22",
+      "reviewer": "Fresh baseline: agent design, separate design QA and source/assertion review of atomic initialization, non-destructive refusal and current exact recovery; SQL/CI execution reported separately; no independent owner approval",
+      "reviewedOn": "2026-09-23",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "1c73729dddd4ce692553bb211c47d129e9f522ca38b2c02962b3125f0dcbfd79",
+      "reviewSubjectHash": "3f57a5c1fd97308f985ab6148fa01be4290c501e0b98d68b7020b49d1bfcd923",
       "wholeFiles": [
         "src/ClaimCore.Application/Core.fs",
         "src/ClaimCore.Application/Service.fs",
@@ -90,10 +90,10 @@
     {
       "contractId": "CC-APP-002",
       "reviewerKind": "agent",
-      "reviewer": "Transport diagnostics: agent design and source-delta review of safe typed boundaries, frame-local delivery and conservative administrative completion; no independent owner approval",
-      "reviewedOn": "2026-09-22",
+      "reviewer": "Fresh baseline: agent design, separate design QA and source/assertion review of atomic initialization, non-destructive refusal and current exact recovery; SQL/CI execution reported separately; no independent owner approval",
+      "reviewedOn": "2026-09-23",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "e7cc3d9ef715a634a16845472df7947c33ccd06f6ef88a901b073c249f7dc34d",
+      "reviewSubjectHash": "a53880e9fe889b78c464af466fcf0f8d97a40f9a7ef012d98a5785c986a46769",
       "wholeFiles": [
         "src/ClaimCore.Application/AcceptedObservation.fs",
         "src/ClaimCore.Application/Core.fs",
@@ -124,17 +124,23 @@
         "tests/ClaimCore.Tests/OutcomeDiagnosticTests.fs",
         "tests/ClaimCore.Tests/OutcomeEmissionTests.fs",
         "tests/ClaimCore.Tests/FaultDiagnosticExamples.fs",
-        "tests/ClaimCore.Tests/RecoveryDiagnosticExamples.fs"
+        "tests/ClaimCore.Tests/RecoveryDiagnosticExamples.fs",
+        "src/ClaimCore.Application/RecoverySupport.fs",
+        "src/ClaimCore.Postgres/PreparationPruning.fs",
+        "src/ClaimCore.RecordFormat/RecoveryEnvelope.fs",
+        "src/ClaimCore.RecordFormat/RequestRecord.fs",
+        "src/ClaimCore.RecordFormat/Versions.fs",
+        "tests/ClaimCore.Tests/FreshRecoveryFormatTests.fs"
       ],
       "markedSpans": []
     },
     {
       "contractId": "CC-CLI-001",
       "reviewerKind": "agent",
-      "reviewer": "Transport diagnostics: agent design and source-delta review of safe typed boundaries, frame-local delivery and conservative administrative completion; no independent owner approval",
-      "reviewedOn": "2026-09-22",
+      "reviewer": "Fresh baseline: agent design, separate design QA and source/assertion review of atomic initialization, non-destructive refusal and current exact recovery; SQL/CI execution reported separately; no independent owner approval",
+      "reviewedOn": "2026-09-23",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "2d1cc83c85a4a309ff7bd748a4209dc25ad6a38667a195f4744cd2b766768c79",
+      "reviewSubjectHash": "6240b0158c77ce95cdad18e6a4cc8269f5434957507412b905a915e3c128a70f",
       "wholeFiles": [
         "examples/01-open.json",
         "examples/02-decide.json",
@@ -177,7 +183,13 @@
         "src/ClaimCore.CliProtocol/FrameDelivery.fs",
         "src/ClaimCore.CliProtocol/ReplyRecoveryContext.fs",
         "tests/ClaimCore.Tests/FrameDeliveryTests.fs",
-        "tests/ClaimCore.Tests/ProtocolDiagnosticTests.fs"
+        "tests/ClaimCore.Tests/ProtocolDiagnosticTests.fs",
+        "src/ClaimCore.Application/RecoverySupport.fs",
+        "src/ClaimCore.Postgres/PreparationPruning.fs",
+        "src/ClaimCore.RecordFormat/RecoveryEnvelope.fs",
+        "src/ClaimCore.RecordFormat/RequestRecord.fs",
+        "src/ClaimCore.RecordFormat/Versions.fs",
+        "tests/ClaimCore.Tests/FreshRecoveryFormatTests.fs"
       ],
       "markedSpans": []
     },
@@ -206,10 +218,10 @@
     {
       "contractId": "CC-REC-001",
       "reviewerKind": "agent",
-      "reviewer": "Transport diagnostics: agent design and source-delta review of safe typed boundaries, frame-local delivery and conservative administrative completion; no independent owner approval",
-      "reviewedOn": "2026-09-22",
+      "reviewer": "Fresh baseline: agent design, separate design QA and source/assertion review of atomic initialization, non-destructive refusal and current exact recovery; SQL/CI execution reported separately; no independent owner approval",
+      "reviewedOn": "2026-09-23",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "8cd90a7e4d33e4067be52c12814726033331adae8f535d201265e53257331739",
+      "reviewSubjectHash": "3d69cc7411b468ff3d8cc0d8d4921f3a4b0b75606e5c7d063cb961b475ea6e21",
       "wholeFiles": [
         "src/ClaimCore.Application/AcceptedObservation.fs",
         "src/ClaimCore.Application/RecoveryCoordinator.fs",
@@ -252,17 +264,22 @@
         "tests/ClaimCore.Tests/OutcomeDiagnosticTests.fs",
         "tests/ClaimCore.Tests/OutcomeEmissionTests.fs",
         "tests/ClaimCore.Tests/FaultDiagnosticExamples.fs",
-        "tests/ClaimCore.Tests/RecoveryDiagnosticExamples.fs"
+        "tests/ClaimCore.Tests/RecoveryDiagnosticExamples.fs",
+        "src/ClaimCore.Postgres/PreparationPruning.fs",
+        "src/ClaimCore.RecordFormat/RecoveryEnvelope.fs",
+        "src/ClaimCore.RecordFormat/RequestRecord.fs",
+        "src/ClaimCore.RecordFormat/Versions.fs",
+        "tests/ClaimCore.Tests/FreshRecoveryFormatTests.fs"
       ],
       "markedSpans": []
     },
     {
       "contractId": "CC-RUN-001",
       "reviewerKind": "agent",
-      "reviewer": "Transport diagnostics: agent design and source-delta review of safe typed boundaries, frame-local delivery and conservative administrative completion; no independent owner approval",
-      "reviewedOn": "2026-09-22",
+      "reviewer": "Fresh baseline: agent design, separate design QA and source/assertion review of atomic initialization, non-destructive refusal and current exact recovery; SQL/CI execution reported separately; no independent owner approval",
+      "reviewedOn": "2026-09-23",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "13588766a2a446735f4cbe1dded006ca0448fcab6fb82590dbf042235222b841",
+      "reviewSubjectHash": "a4164ff85f9b3a203591a9bf6a3a8b26f2b2d4244f722f1afe9f890801664324",
       "wholeFiles": [
         "src/ClaimCore.Hosting/Runtime.fsi",
         "src/ClaimCore.Hosting/Runtime.fs",
@@ -271,35 +288,30 @@
         "src/ClaimCore.Hosting/RuntimeCoreFacade.fs",
         "src/ClaimCore.Hosting/RuntimeSourceOwnership.fs",
         "tests/ClaimCore.IntegrationTests/CoreBoundaryTests.fs",
-        "tests/ClaimCore.IntegrationTests/RuntimeLifecycleTests.fs"
+        "tests/ClaimCore.IntegrationTests/RuntimeLifecycleTests.fs",
+        "src/ClaimCore.Postgres/SchemaAdmission.fs",
+        "src/ClaimCore.Postgres/RuntimeSchema.fs",
+        "src/ClaimCore.Postgres/RuntimeDatabase.fs",
+        "src/ClaimCore.Postgres/RuntimeAccessPolicy.fs",
+        "src/ClaimCore.Postgres/RuntimeAcl.fs"
       ],
       "markedSpans": []
     },
     {
       "contractId": "CC-DB-001",
       "reviewerKind": "agent",
-      "reviewer": "Transport diagnostics: agent design and source-delta review of safe typed boundaries, frame-local delivery and conservative administrative completion; no independent owner approval",
-      "reviewedOn": "2026-09-22",
+      "reviewer": "Fresh baseline: agent design, separate design QA and source/assertion review of atomic initialization, non-destructive refusal and current exact recovery; SQL/CI execution reported separately; no independent owner approval",
+      "reviewedOn": "2026-09-23",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "f0879f7cdf33e0f63d4bba1458634e54004a6c9ae3ff356b6187fe98a601c13e",
+      "reviewSubjectHash": "2fb6ca5cdcbc98b9adeb6f38c5a4a2ff87dfe0e6c8b15663bf1bb0b26eb0d2c2",
       "wholeFiles": [
-        "db/001_initial.sql",
-        "db/002_request_preparations.sql",
-        "db/003_submission_attempts.sql",
-        "db/004_generalize_preparation_provenance.sql",
-        "db/005_recovery_evidence_read_acl.sql",
-        "db/006_operation_authority_and_business_time.sql",
-        "db/migration-manifest.json",
         "src/ClaimCore.Hosting/Runtime.fs",
         "src/ClaimCore.Postgres/InstallationBusinessZone.fs",
         "src/ClaimCore.Postgres/OperationAuthorityStore.fs",
         "src/ClaimCore.Postgres/RuntimeAcl.fs",
         "src/ClaimCore.Postgres/RuntimeSchema.fs",
-        "src/ClaimCore.Postgres/Migrations.fs",
         "src/ClaimCore.Postgres/SchemaDefinition.fs",
         "tests/ClaimCore.AcceptanceTests/DatabaseFixture.fs",
-        "tests/ClaimCore.IntegrationTests/MigrationUpgradeTests.fs",
-        "tests/ClaimCore.IntegrationTests/MigrationEvidenceUpgradeTests.fs",
         "src/ClaimCore.Postgres/AdministrationTypes.fs",
         "src/ClaimCore.Postgres/AdministrationExecution.fs",
         "src/ClaimCore.Database/DatabaseArguments.fs",
@@ -307,17 +319,26 @@
         "src/ClaimCore.Database/DatabaseContracts.fs",
         "src/ClaimCore.Database/DatabaseExecution.fs",
         "tests/ClaimCore.IntegrationTests/AdministrationCompletionTests.fs",
-        "tests/ClaimCore.Tests/AdministrationDiagnosticTests.fs"
+        "tests/ClaimCore.Tests/AdministrationDiagnosticTests.fs",
+        "db/baseline.sql",
+        "db/schema-baseline.json",
+        "docs/fresh-baseline-design.md",
+        "src/ClaimCore.Postgres/OwnerConnection.fs",
+        "src/ClaimCore.Postgres/SchemaAdmission.fs",
+        "src/ClaimCore.Postgres/SchemaBaseline.fs",
+        "tests/ClaimCore.IntegrationTests/BaselineRefusalTests.fs",
+        "tests/ClaimCore.IntegrationTests/FreshBaselineSupport.fs",
+        "tests/ClaimCore.IntegrationTests/FreshBaselineTests.fs"
       ],
       "markedSpans": []
     },
     {
       "contractId": "CC-DB-002",
       "reviewerKind": "agent",
-      "reviewer": "Transport diagnostics: agent design and source-delta review of safe typed boundaries, frame-local delivery and conservative administrative completion; no independent owner approval",
-      "reviewedOn": "2026-09-22",
+      "reviewer": "Fresh baseline: agent design, separate design QA and source/assertion review of atomic initialization, non-destructive refusal and current exact recovery; SQL/CI execution reported separately; no independent owner approval",
+      "reviewedOn": "2026-09-23",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "e07b3c2b891de4314c748a8fd5a7c1e97b5db0bfeaf53e3acab4bce674407f73",
+      "reviewSubjectHash": "b01359e031845f1ffb1453f6be8bb7cca77e2af335daa88d61eb6776dba94ec0",
       "wholeFiles": [
         "src/ClaimCore.HostSecurity/PrivateFileService.fs",
         "src/ClaimCore.HostSecurity/PosixPrivateFiles.fs",
@@ -329,17 +350,25 @@
         "tests/ClaimCore.AcceptanceTests/DatabaseFixture.fs",
         "tests/ClaimCore.Tests/DatabasePrivateFileTests.fs",
         "src/ClaimCore.Database/DatabaseArguments.fs",
-        "src/ClaimCore.Database/DatabaseExecution.fs"
+        "src/ClaimCore.Database/DatabaseExecution.fs",
+        "docs/fresh-baseline-design.md",
+        "src/ClaimCore.Postgres/OwnerConnection.fs",
+        "src/ClaimCore.Postgres/SchemaAdmission.fs",
+        "src/ClaimCore.Postgres/SchemaBaseline.fs",
+        "src/ClaimCore.Postgres/SchemaDefinition.fs",
+        "tests/ClaimCore.IntegrationTests/BaselineRefusalTests.fs",
+        "tests/ClaimCore.IntegrationTests/FreshBaselineSupport.fs",
+        "tests/ClaimCore.IntegrationTests/FreshBaselineTests.fs"
       ],
       "markedSpans": []
     },
     {
       "contractId": "CC-WEB-001",
       "reviewerKind": "agent",
-      "reviewer": "Localization: agent design, state-lifetime, typed catalog and exact-format source review; publication/browser qualification tracked separately; no independent owner or native-speaker approval",
-      "reviewedOn": "2026-09-22",
+      "reviewer": "Fresh baseline: agent design, separate design QA and source/assertion review of atomic initialization, non-destructive refusal and current exact recovery; SQL/CI execution reported separately; no independent owner approval",
+      "reviewedOn": "2026-09-23",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "e8d92e2fa821a9f2c4d4c3aef6cb1faa8a77fdde44594b81334debf2f889158e",
+      "reviewSubjectHash": "1de27e43c1ad91b308bfe92987ea6869549a7314b8a07d884d95bcfd85afa144",
       "wholeFiles": [
         "docs/diagnostics.md",
         "docs/localization.md",
@@ -511,7 +540,9 @@
         "web/tests/v2-recovery-panels.test.tsx",
         "web/tests/v2-recovery.test.tsx",
         "web/tests/v2-views.test.tsx",
-        "web/vite.config.ts"
+        "web/vite.config.ts",
+        "src/ClaimCore.Application/RecoveryReadOperations.fs",
+        "src/ClaimCore.Contracts/RecoveryValueSchemas.fs"
       ],
       "markedSpans": []
     }

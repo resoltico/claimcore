@@ -180,7 +180,7 @@ let private caseWorkHostsCannotAdminister () =
             .Types()
             .That()
             .HaveFullNameMatching(
-                @"^ClaimCore\.Postgres\.(?:Migrations|PreparationPruning|InstallationBusinessZone)(?:[+/.].*)?$"
+                @"^ClaimCore\.Postgres\.(?:SchemaBaseline|PreparationPruning|InstallationBusinessZone)(?:[+/.].*)?$"
             )
 
     Inspection.requireSelection model administration |> ignore

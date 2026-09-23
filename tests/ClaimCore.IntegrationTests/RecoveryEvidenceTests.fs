@@ -48,9 +48,6 @@ let private settledAttempt =
         let before = inspect runtime.Core operationId None recoveryPageLimit
         Expect.isEmpty before.Preparation.Attempts.Items "No attempt before submission"
 
-        Expect.isFalse
-            before.Preparation.Attempts.LegacyUncertainty
-            "New preparation is not legacy"
 
         resolve runtime.Core operationId digest
         let after = inspect runtime.Core operationId None recoveryPageLimit
@@ -65,6 +62,37 @@ let private settledAttempt =
         match after.Observation with
         | Lookup.Found receipt -> Expect.equal receipt.OperationId operationId "Receipt separate"
         | Lookup.NotFound _ -> failtest "Accepted operation must remain observable.")
+
+let private preserveUnsettledOnPrune operationId (core: IClaimsCore) earlierId =
+    use connection = new NpgsqlConnection(adminConnection ())
+    connection.Open()
+
+    use age =
+        new NpgsqlCommand(
+            "UPDATE claimcore.case_changes SET recorded_at=clock_timestamp()-interval '3 days' WHERE operation_id=@operation",
+            connection
+        )
+
+    Sql.uuid age "operation" operationId
+    Expect.equal (age.ExecuteNonQuery()) 1 "Only the synthetic accepted receipt is aged"
+
+    PreparationPruning.prune
+        (adminConnection ())
+        { PreparationPruneOptions.defaults with
+            SettledRetentionDays = 1
+        }
+    |> completedAdministration
+    |> ignore
+
+    let retained = inspect core operationId None recoveryPageLimit
+
+    let unresolved =
+        retained.Preparation.Attempts.Items
+        |> List.find (fun item -> item.AttemptId = earlierId)
+
+    Expect.isNone
+        unresolved.Settlement
+        "Pruning cannot erase an earlier unsettled attempt after acceptance"
 
 let private unresolvedAttempt =
     testCase "[CC-REC-001] inspect preserves an earlier unsettled attempt" (fun () ->
@@ -105,52 +133,51 @@ let private unresolvedAttempt =
              |> List.filter (fun item -> item.Settlement.IsSome))
                 .Length
             1
-            "Only definite later attempt is settled")
+            "Only definite later attempt is settled"
 
-let private legacyMarker =
+        preserveUnsettledOnPrune operationId runtime.Core firstId)
+
+let private currentCanonicalImport =
     testCase
-        "[CC-REC-001] inspect reads pre-003 uncertainty marker independently of provenance"
+        "[CC-REC-001] current canonical import retains exact bytes with explicit import provenance"
         (fun () ->
             use runtime = openRuntime ()
-            let operationId = Guid.NewGuid()
-            prepare runtime.Core operationId |> ignore
+            let request = newRequest ()
+            let bytes = RequestRecord.encode request
+            let digest = bytes |> SHA256.HashData |> Convert.ToHexStringLower
 
-            use connection = new NpgsqlConnection(adminConnection ())
-            connection.Open()
+            match
+                runtime.Core.Recovery.PreviewCanonicalRecordImport(bytes, CancellationToken.None)
+                |> await
+            with
+            | RecoveryQueryOutcome.RecoverySucceeded preview ->
+                Expect.equal preview.SourceSha256 digest "Source review binds the exact file"
+                Expect.equal preview.DecodedEffect.CanonicalCommandFormat 3 "Current record format"
+            | _ -> failtest "A current canonical record must be previewable."
 
-            use command =
-                new NpgsqlCommand(
-                    "INSERT INTO claimcore.request_preparation_lifecycle (operation_id, state) VALUES (@operation, 'SUBMISSION_STARTED'); "
-                    + "INSERT INTO claimcore.request_submission_legacy_uncertainty (operation_id) VALUES (@operation)",
-                    connection
+            match
+                runtime.Core.Recovery.RetainCanonicalRecordImport(
+                    bytes,
+                    digest,
+                    CancellationToken.None
                 )
+                |> await
+            with
+            | RecoveryImportRetainOutcome.RetainedPreparation details ->
+                Expect.equal
+                    details.PreparingContractKind
+                    "CANONICAL_RECORD_V3"
+                    "Not fictitious old producer provenance"
 
-            Sql.uuid command "operation" operationId
+                Expect.equal
+                    details.Summary.State
+                    PreparationState.Unsubmitted
+                    "Import never submits"
+            | _ -> failtest "A reviewed current canonical record must be retainable."
 
-            Expect.equal
-                (command.ExecuteNonQuery())
-                2
-                "Synthetic pre-003 start and marker inserted"
-
-            let details = inspect runtime.Core operationId None recoveryPageLimit
-
-            Expect.equal
-                details.Preparation.PreparingContractKind
-                "SEMANTIC_CORE_V1"
-                "Producer provenance remains independent"
-
-            Expect.isTrue
-                details.Preparation.Attempts.LegacyUncertainty
-                "Legacy uncertainty marker surfaced"
-
-            Expect.equal
-                details.Preparation.Summary.State
-                PreparationState.SubmissionStarted
-                "Inherited start remains visible"
-
-            Expect.isEmpty
-                details.Preparation.Attempts.Items
-                "Pre-003 start has no identified attempt")
+            let before = inspect runtime.Core request.OperationId None recoveryPageLimit
+            Expect.isEmpty before.Preparation.Attempts.Items "No hidden execution"
+            resolve runtime.Core request.OperationId digest)
 
 let private provenanceReplay =
     testCase "[CC-REC-001] exact replay preserves first producer provenance" (fun () ->
@@ -186,7 +213,7 @@ let private provenanceReplay =
             { original with
                 PreparingApplicationVersion = "999.0.0"
                 PreparingContractFingerprint = String.replicate 64 "b"
-                PreparingContractKind = PreparingContractKind.LegacyUnclassified
+                PreparingContractKind = PreparingContractKind.CanonicalRecordV3
             }
 
         let replay =
@@ -207,4 +234,4 @@ let private provenanceReplay =
 let tests =
     testList
         "PostgreSQL recovery evidence"
-        [ settledAttempt; unresolvedAttempt; legacyMarker; provenanceReplay ]
+        [ settledAttempt; unresolvedAttempt; currentCanonicalImport; provenanceReplay ]

@@ -126,7 +126,6 @@ export type UiArgs = {
   };
   "ui.revocationSummary": { readonly operationId: string; readonly timestamp: string };
   "ui.attemptCount": { readonly count: number };
-  "ui.legacyUncertainty": Readonly<Record<string, never>>;
   "ui.moreAttempts": Readonly<Record<string, never>>;
   "ui.retainedIdentity": {
     readonly authority: string;

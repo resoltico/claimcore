@@ -173,7 +173,7 @@ module internal CliWireValues =
         value.Items |> List.iter (attempt writer)
         writer.WriteEndArray()
         optional writer "nextCursor" value.NextCursor
-        writer.WriteBoolean("legacyUncertainty", value.LegacyUncertainty)
+
         writer.WriteEndObject()
 
     let preparationDetails (writer: Utf8JsonWriter) (value: PreparationDetails) =

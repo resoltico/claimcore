@@ -24,12 +24,12 @@ let private expectSqlState expected action =
 
 let private constraintTests =
     testList
-        "migration and constraints"
+        "baseline and constraints"
         [
-            testCase "migration is repeatable only with identical source checksum" (fun () ->
+            testCase "initialization is repeatable only with identical baseline identity" (fun () ->
                 let admin = adminConnection ()
-                Migrations.apply admin |> completedAdministration
-                Migrations.apply admin |> completedAdministration)
+                SchemaBaseline.initialize admin "Etc/UTC" |> completedAdministration
+                SchemaBaseline.initialize admin "Etc/UTC" |> completedAdministration)
             testCase "database rejects excessive precision instead of rounding it" (fun () ->
                 use database = store ()
                 let request = newRequest ()
@@ -84,11 +84,11 @@ let private privilegeTests =
                         (appConnection ())
                         "UPDATE claimcore.case_changes SET recorded_by = 'forged' WHERE case_reference = @reference"
                         "NO-SUCH-CASE"))
-            testCase "runtime role cannot mutate the migration journal" (fun () ->
+            testCase "runtime role cannot mutate the baseline marker" (fun () ->
                 expectSqlState "42501" (fun () ->
                     runSql
                         (appConnection ())
-                        "UPDATE claimcore.schema_migrations SET name = name WHERE @reference = @reference"
+                        "UPDATE claimcore.schema_baseline SET baseline_id = baseline_id WHERE @reference = @reference"
                         "NO-SUCH-CASE"))
             testCase "runtime role cannot delete cases" (fun () ->
                 expectSqlState "42501" (fun () ->

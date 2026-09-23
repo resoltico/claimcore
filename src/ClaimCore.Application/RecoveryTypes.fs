@@ -49,7 +49,7 @@ type PreparationAttemptPage =
     {
         Items: PreparationAttempt list
         NextCursor: string option
-        LegacyUncertainty: bool
+
     }
 
 type PreparationDetails =

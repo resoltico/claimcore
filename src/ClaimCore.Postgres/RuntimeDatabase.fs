@@ -12,10 +12,15 @@ module internal RuntimeDatabase =
     let requireCompatible (connection: NpgsqlConnection) =
         try
             RuntimeAcl.requireRole connection
-            RuntimeAcl.requireAcl connection
             RuntimeSchema.requireCompatible connection
+            RuntimeAcl.requireAcl connection
         with
-        | :? PostgresException as error when error.SqlState = "42P01" || error.SqlState = "3F000" ->
+        | :? PostgresException as error when
+            error.SqlState = "42P01"
+            || error.SqlState = "3F000"
+            || error.SqlState = "42501"
+            || error.SqlState = "42703"
+            ->
             raise RuntimeDatabaseMismatch
         | :? InvalidCastException
         | :? IndexOutOfRangeException
@@ -28,15 +33,19 @@ module internal RuntimeDatabase =
         task {
             try
                 do! RuntimeAcl.requireRoleAsyncWithCancellation connection cancellationToken
-                do! RuntimeAcl.requireAclAsyncWithCancellation connection cancellationToken
 
                 do!
                     RuntimeSchema.requireCompatibleAsyncWithCancellation
                         connection
                         cancellationToken
+
+                do! RuntimeAcl.requireAclAsyncWithCancellation connection cancellationToken
             with
             | :? PostgresException as error when
-                error.SqlState = "42P01" || error.SqlState = "3F000"
+                error.SqlState = "42P01"
+                || error.SqlState = "3F000"
+                || error.SqlState = "42501"
+                || error.SqlState = "42703"
                 ->
                 return raise RuntimeDatabaseMismatch
             | :? InvalidCastException

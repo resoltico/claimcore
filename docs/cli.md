@@ -116,7 +116,7 @@ file:
 orders the authored values by Domain command definition before canonical encoding. The case reference
 remains the immutable top-level target, not a command value.
 
-CLI-v3 is distinct from durable canonical command-record format 2 and recovery-envelope format 1.
+CLI-v3 is distinct from durable canonical command-record format 3 and recovery-envelope format 2.
 The latter formats preserve exact recovery bytes; they are not earlier CLI protocols.
 
 ## Endpoint inventory
@@ -176,9 +176,16 @@ credentials, or connection strings.
 
 ## Canonical request identity and recovery
 
-Canonical format-2 request identity preserves authored string content. Thus amount spellings such as
+Canonical format-3 request identity preserves authored string content. Thus amount spellings such as
 `"1"` and `"1.00"` identify different request content even though accepted views render the same
 decimal canonically. Case references retain exact Unicode content and casing.
+
+Current recovery imports require canonical format 3 (`canonicalCommandFormat: 3`) and envelope
+format 2. Older property/version layouts, including protocol-2 canonical records and envelope-v1,
+are refused even when their hashes are internally correct. No compatibility rewrite or relabeling
+is performed. Snapshot format 2 and SHA-256 fingerprint algorithm version 1 remain separate current
+formats. An unbound current canonical import records `CANONICAL_RECORD_V3` retention context, not a
+claim about an original producer; it neither imports old database authority nor submits a command.
 
 For an uncertain result, preserve the exact operation ID and original request bytes. First use
 `operation.observe`; then inspect recovery as necessary. Never create a replacement operation ID,
@@ -191,8 +198,8 @@ from a momentarily absent receipt.
 Recovery is one Application-owned workflow. A preparation is technical material, not accepted claim
 history, and its existence does not establish commit. `recovery.inspect` returns retained effect and
 provenance separately from its receipt observation. It pages actual identified attempts and their
-definite settlements with an opaque cursor bound to that operation, and shows the pre-003 uncertainty
-marker independently of provenance. `recovery.list` defaults to pending work and takes an explicit
+definite settlements with an opaque cursor bound to that operation. Unsettled identified attempts
+remain independent of later acceptance and prevent pruning of their preparation. `recovery.list` defaults to pending work and takes an explicit
 terminal view for retained accepted/revoked evidence and payload-free revocation tombstones. A bounded
 recovery list deliberately omits authored values, provenance, and attempt detail.
 An accepted receipt remains observable even if its technical preparation has been pruned. While a

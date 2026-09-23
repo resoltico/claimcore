@@ -918,7 +918,6 @@
       "pluralType": "cardinal"
     }
   ],
-  "ui.legacyUncertainty": [{ "type": 0, "value": "Legacy uncertainty remains." }],
   "ui.moreAttempts": [{ "type": 0, "value": "Load more attempts" }],
   "ui.retainedIdentity": [
     { "type": 0, "value": "Operation " },

@@ -26,16 +26,17 @@ trust boundaries. [Development](docs/development.md) owns commands and gates.
   generated form shape once through `Drafts.bind`; do not add another public raw-field boundary.
 - `CORRECT_CASE` has three explicit tagged groups. Keep reads current accepted state; never add a
   business field, broaden historical `AMEND_REGISTRATION`, or accept an adapter-only correction rule.
-- Migration 006 stores the installation's immutable canonical IANA business time zone. Runtime
+- The fresh initializer atomically stores the installation's immutable canonical IANA business time zone. Runtime
   opening requires it; derive business dates from one captured instant and that stored zone, never
   `DateTime.Today`, `TimeZoneInfo.Local`, or a host environment default.
-- Never edit an applied migration. Add an ordered one and update readers, writers, constraints,
-  contracts, tests, and documentation together.
+- Storage has one checksum-bound fresh baseline, not an upgrade engine. Refuse unsupported old
+  namespaces untouched. No reset, adoption, automatic deletion or recovery-format conversion.
+  Update readers, writers, constraints, contracts, tests and documentation together.
 
 ## Safety and evidence
 
 - Test only with synthetic data in isolated databases. Preserve adopted cases, database volumes,
-  private `.local` state, and applied migration bytes. Never print secrets, connection strings,
+  private `.local` state, and retained old installation evidence. Never print secrets, connection strings,
   recovery bytes, or claimant payloads.
 - Keep contract headings in their registered owner documents and evidence-test leaf names prefixed
   with one matching `[CC-…]` token. Reattest `eng/ClaimCore.Docs/contract-reviews.json` only after

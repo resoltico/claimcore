@@ -36,20 +36,20 @@ authorization and disclosure rules.
   ancestors and are intentionally refused. An ignored repo-local `.local` under a physical `/Users`
   checkout is a suitable private location when its permissions and retention are controlled.
 
-Migration and retention credentials own schema administration and must never be used as application
-credentials. Upgrading through migration 006 requires planned downtime: stop local CLI and Web
-sessions, take the operator's backup, apply ordered migrations with the schema-owner Database
-executable, configure the immutable installation business time zone, then start current applications.
-Migrations 004–006 preserve adopted records, format-2 request bytes, preparations, attempts,
-settlements, lineage, and legacy provenance bytes; none reinterprets an old operation.
+Initialization and retention credentials own schema administration and must never be application
+credentials. This build intentionally refuses every old installation without changing its data.
+Retain old databases and artifacts under their compatible software; provision a separate fresh
+installation using `ClaimCore.Database initialize <canonical-IANA-ID>`. There is no automatic
+upgrade, reset, deletion, database-content import or artifact conversion. See the
+[installation boundary](database.md#fresh-installation-boundary).
 Test credentials and containers must point only to disposable synthetic databases. Browser downloads
 and the operating-system clipboard leave ClaimCore's process boundary; see the
 [Web reference](web.md#recovery-downloads-and-clipboard).
 
 ## The installation calendar
 
-Migration 006 stores one canonical IANA zone for the installation, set once with
-`ClaimCore.Database set-business-zone`. Every business date comes from that stored zone and one
+The fresh initializer stores one mandatory canonical IANA zone atomically with installation
+lineage. Every business date comes from that stored zone and one
 captured instant, never from a host default. The identifier is validated when it is set and again on
 every runtime opening: it must be enumerable on the host, must resolve, and must resolve back to
 exactly itself, and must be an IANA identifier rather than a platform-native one, so an alias, a Windows identifier, an abbreviation, or an offset literal is refused on every host.
@@ -68,7 +68,7 @@ Treat the time-zone database as part of the installation:
   them together.
 - After a tzdata update, prefer a quiet period before resuming case work, for the same reason a
   restore needs one.
-- `ClaimCore.Database set-business-zone` refuses to change an already configured zone. Choosing a
+- `ClaimCore.Database initialize` refuses a calendar different from the installed one. Choosing a
   different calendar is a new installation decision, not an edit.
 
 ClaimCore does not ship its own time-zone database and does not detect tzdata skew between hosts.
@@ -86,15 +86,15 @@ claimant data and do not prove that a command committed. Submission attempts and
 technical settlements are recovery evidence, not accepted claim history; an accepted operation
 receipt independently proves acceptance.
 
-Detailed recovery inspection pages actual identified attempts and their definite settlements, plus
-the independent pre-003 uncertainty marker. An unset settlement or inherited marker remains explicit
-even after a later definite attempt; never treat a bounded list or a momentarily absent receipt as
-proof of non-commit. A post-006 revocation prevents future execution even after an earlier attempt
-was admitted; it does not rewrite what was already uncertain. A pre-006 dismissal whose full
-preparation was pruned cannot be reconstructed, so reconciling an older backup remains operator work.
+Detailed recovery inspection pages actual identified attempts and definite settlements. An unsettled
+attempt stays unsettled even after a later definite attempt and excludes its preparation from
+pruning. Never treat a bounded list or a momentarily absent receipt as proof of non-commit. Durable
+revocation prevents future unaccepted execution without rewriting earlier uncertainty. Historical
+unidentified-start and dismissal compatibility is absent because old installations are refused;
+there is no inferred or retroactively fabricated authority transfer.
 
 For an uncertain mutation, preserve and replay only the exact CLI-v3 operation identity and retained
-format-2 request or recovery-envelope bytes described in
+format-3 request or format-2 recovery-envelope bytes described in
 [CLI and protocol](cli.md#canonical-request-identity-and-recovery). Do not infer failure from missing
 output, a delivery loss, or a momentarily absent receipt. A restored database keeps its installation
 lineage and retained preparations, so recovery exports remain installation-bound after restoration.

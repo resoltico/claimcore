@@ -14,6 +14,14 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Changed
 
+- Replace historical database upgrades with one checksum-bound fresh installation baseline and
+  atomic `initialize <canonical-IANA-ID>` plus read-only `verify`. Existing old, partial and unknown
+  installations are refused without modifying data; there is no automatic reset or conversion.
+- Require canonical command-record format 3 and recovery-envelope format 2; remove historical
+  provenance and unidentified-start compatibility while preserving exact replay, independent
+  revocation and real attempt/settlement evidence. Terminal pruning now retains preparations with
+  any unsettled attempt, even after a later accepted retry.
+
 - **Transport, host and administration failures now have typed diagnostic contracts.** CLI protocol
   refusals require stable IDs and safe locations; HTTP failures require correlated status, cause and
   execution phase. Process stderr and database administration now emit structured JSON. Use

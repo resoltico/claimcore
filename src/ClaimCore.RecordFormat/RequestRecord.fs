@@ -4,7 +4,7 @@ open System
 open System.Text.Json
 open ClaimCore.Domain
 
-/// Version-2 canonical request bytes. Stable identity format, also emitted by the wire encoder.
+/// Format-3 canonical command bytes with an independent explicit durable-format identity.
 /// This codec supplies bytes only; Application owns hashing and replay admission.
 module RequestRecord =
     let private correctionRegistration (value: JsonElement) =
@@ -152,7 +152,7 @@ module RequestRecord =
                 "$.command.type"
                 "Unknown command type. Use capabilities to discover supported commands."
 
-    /// Strict canonical-command-format-2 decoding shared by durable recovery and imports.
+    /// Strict canonical-command-format-3 decoding shared by durable recovery and imports.
     let decode maxBytes (bytes: byte array) =
         if bytes.Length > maxBytes then
             Error
@@ -165,7 +165,7 @@ module RequestRecord =
                 Json.properties
                     "$"
                     [
-                        "protocolVersion"
+                        "canonicalCommandFormat"
                         "operationId"
                         "caseReference"
                         "expectedVersion"
@@ -174,11 +174,11 @@ module RequestRecord =
                     root
 
                 if
-                    Json.integer "$" "protocolVersion" root
+                    Json.integer "$" "canonicalCommandFormat" root
                     <> int64 RecordVersions.CanonicalCommandFormat
                 then
                     Json.reject
-                        "$.protocolVersion"
+                        "$.canonicalCommandFormat"
                         $"Only canonical command format {RecordVersions.CanonicalCommandFormat} is supported."
 
                 let idText = Json.text "$" "operationId" root
@@ -203,7 +203,7 @@ module RequestRecord =
     let encode (request: CommandRequest) =
         Json.encode (fun writer ->
             writer.WriteStartObject()
-            writer.WriteNumber("protocolVersion", RecordVersions.CanonicalCommandFormat)
+            writer.WriteNumber("canonicalCommandFormat", RecordVersions.CanonicalCommandFormat)
             writer.WriteString("operationId", request.OperationId)
             writer.WriteString("caseReference", request.CaseReference)
             writer.WriteNumber("expectedVersion", request.ExpectedVersion)

@@ -88,7 +88,7 @@ module internal RecoveryStoreState =
             || (attempt.StartedAt = cursor.StartedAt
                 && attempt.AttemptId.CompareTo(cursor.AttemptId) < 0))
 
-    let attemptPage state operationId after limit =
+    let attemptPage state operationId after limit : RecoveryAttemptPage =
         let ordered =
             attemptsFor state operationId
             |> List.sortByDescending (fun attempt -> attempt.StartedAt, attempt.AttemptId)
@@ -110,7 +110,7 @@ module internal RecoveryStoreState =
                         })
                 else
                     None
-            LegacyUncertainty = false
+
         }
 
     let recordSettlement state operationId attemptId settlement =

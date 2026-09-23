@@ -4,6 +4,7 @@
     <Compile Include="AdministrationTypes.fs" />
     <Compile Include="Baseline.fs" />
     <Compile Include="SchemaDefinition.fs" />
+    <Compile Include="SchemaAdmission.fs" />
     <Compile Include="Preparations.fs" />
     <Compile Include="PreparationIntegrity.fs" />
     <Compile Include="RuntimeAccessPolicy.fs" />
@@ -31,8 +32,9 @@
     <Compile Include="RecoveryStore.fs" />
     <Compile Include="Store.fs" />
     <Compile Include="AdministrationExecution.fs" />
-    <Compile Include="Migrations.fs" />
+    <Compile Include="OwnerConnection.fs" />
     <Compile Include="InstallationBusinessZone.fs" />
+    <Compile Include="SchemaBaseline.fs" />
     <Compile Include="PreparationPruning.fs" />
   </ItemGroup>
   <ItemGroup>
@@ -44,13 +46,8 @@
     <PackageReference Include="Npgsql" PrivateAssets="compile;build;buildTransitive;analyzers;contentFiles" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="../../db/001_initial.sql" LogicalName="ClaimCore.Migrations.001_initial.sql" />
-    <EmbeddedResource Include="../../db/002_request_preparations.sql" LogicalName="ClaimCore.Migrations.002_request_preparations.sql" />
-    <EmbeddedResource Include="../../db/003_submission_attempts.sql" LogicalName="ClaimCore.Migrations.003_submission_attempts.sql" />
-    <EmbeddedResource Include="../../db/004_generalize_preparation_provenance.sql" LogicalName="ClaimCore.Migrations.004_generalize_preparation_provenance.sql" />
-    <EmbeddedResource Include="../../db/005_recovery_evidence_read_acl.sql" LogicalName="ClaimCore.Migrations.005_recovery_evidence_read_acl.sql" />
-    <EmbeddedResource Include="../../db/006_operation_authority_and_business_time.sql" LogicalName="ClaimCore.Migrations.006_operation_authority_and_business_time.sql" />
-    <EmbeddedResource Include="../../db/migration-manifest.json" LogicalName="ClaimCore.Migrations.manifest.json" />
+    <EmbeddedResource Include="../../db/baseline.sql" LogicalName="ClaimCore.SchemaBaseline.sql" />
+    <EmbeddedResource Include="../../db/schema-baseline.json" LogicalName="ClaimCore.SchemaBaseline.json" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="../../db/postgresql-baseline.json" LogicalName="ClaimCore.PostgresBaseline.json" />

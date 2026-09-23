@@ -19,7 +19,7 @@
       "tier": "product",
       "layer": "core",
       "project": "src/ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj",
-      "role": "Byte-stable canonical command-record format 2, historical snapshots, and recovery-envelope format 1.",
+      "role": "Byte-stable canonical command-record format 3, historical snapshots, and recovery-envelope format 2.",
       "dependsOn": [
         "ClaimCore.Domain"
       ],
@@ -83,7 +83,7 @@
       "tier": "product",
       "layer": "infrastructure",
       "project": "src/ClaimCore.Postgres/ClaimCore.Postgres.fsproj",
-      "role": "Durable storage, ordered migrations, connection validation, transaction boundaries, the private technical recovery store, and schema-owner administration.",
+      "role": "Durable storage, atomic fresh-baseline initialization and admission, transaction boundaries, the private technical recovery store, and schema-owner administration.",
       "dependsOn": [
         "ClaimCore.Application",
         "ClaimCore.Domain",
@@ -180,7 +180,7 @@
       "tier": "product",
       "layer": "entry point",
       "project": "src/ClaimCore.Database/ClaimCore.Database.fsproj",
-      "role": "Schema-owner administration for ordered migrations, installation business time, and bounded technical-preparation pruning. Not a case-work client, so it never composes a runtime.",
+      "role": "Schema-owner administration for atomic baseline initialization, read-only verification, and bounded technical-preparation pruning. Not a case-work client, so it never composes a runtime.",
       "dependsOn": [
         "ClaimCore.HostSecurity",
         "ClaimCore.Postgres"
@@ -304,7 +304,7 @@
       "tier": "test",
       "layer": "test",
       "project": "tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj",
-      "role": "Real PostgreSQL storage, transaction, migration, and composed-runtime tests.",
+      "role": "Real PostgreSQL storage, transaction, fresh-baseline refusal, and composed-runtime tests.",
       "dependsOn": [
         "ClaimCore.Application",
         "ClaimCore.Domain",
@@ -350,7 +350,7 @@
       "tier": "test",
       "layer": "test",
       "project": "tests/ClaimCore.MigrationQualificationTests/ClaimCore.MigrationQualificationTests.fsproj",
-      "role": "Separate migration qualification executable.",
+      "role": "Separate fresh-baseline creation/refusal qualification executable; stable historical evidence-producer identity.",
       "dependsOn": [
         "ClaimCore.IntegrationTests"
       ],

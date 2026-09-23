@@ -39,6 +39,10 @@ module internal RecoverySupport =
         : Result<RecoveryImportPreview, RecoveryRejection> =
         match RequestRecord.decode SemanticContract.current.RequestByteLimit canonical with
         | Error _ -> Error RecoveryRejection.CanonicalRecordInvalidOrUnsupported
+        | Ok request when
+            not (CryptographicOperations.FixedTimeEquals(RequestRecord.encode request, canonical))
+            ->
+            Error RecoveryRejection.CanonicalRecordInvalidOrUnsupported
         | Ok request ->
             Ok
                 {
@@ -75,7 +79,7 @@ module internal RecoverySupport =
                 match kind with
                 | RecoveryArtifactKind.Envelope -> PreparingContractKind.SemanticCoreV1
                 | RecoveryArtifactKind.UnboundCanonicalRecord ->
-                    PreparingContractKind.LegacyUnclassified
+                    PreparingContractKind.CanonicalRecordV3
         }
 
     let existing

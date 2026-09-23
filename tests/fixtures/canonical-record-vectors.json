@@ -3,43 +3,43 @@
   "requests": [
     {
       "command": "OPEN",
-      "canonicalUtf8": "{\"protocolVersion\":2,\"operationId\":\"20000000-0000-4000-8000-000000000001\",\"caseReference\":\"UNIT-001\",\"expectedVersion\":0,\"command\":{\"type\":\"OPEN\",\"registration\":{\"incidentDate\":\"2026-08-01\",\"incidentNotificationDate\":\"2026-08-03\",\"incidentCountry\":\"Lithuania\",\"claimantName\":\"Example Claimant Ltd\",\"insurerName\":\"Example Alleged Insurer\",\"claimedAmount\":\"1000.00\",\"claimedCurrency\":\"EUR\"}}}",
-      "sha256": "06697cb47ed88f55be4f931b802ba9552947ff661ff294ebdfa1240266eff4ed"
+      "canonicalUtf8": "{\"canonicalCommandFormat\":3,\"operationId\":\"20000000-0000-4000-8000-000000000001\",\"caseReference\":\"UNIT-001\",\"expectedVersion\":0,\"command\":{\"type\":\"OPEN\",\"registration\":{\"incidentDate\":\"2026-08-01\",\"incidentNotificationDate\":\"2026-08-03\",\"incidentCountry\":\"Lithuania\",\"claimantName\":\"Example Claimant Ltd\",\"insurerName\":\"Example Alleged Insurer\",\"claimedAmount\":\"1000.00\",\"claimedCurrency\":\"EUR\"}}}",
+      "sha256": "e864acb9068a5de0b932a6efd1b7d3ece7d4217694b2fbfca46db15ad9f4fe8f"
     },
     {
       "command": "AMEND_REGISTRATION",
-      "canonicalUtf8": "{\"protocolVersion\":2,\"operationId\":\"20000000-0000-4000-8000-000000000002\",\"caseReference\":\"UNIT-001\",\"expectedVersion\":1,\"command\":{\"type\":\"AMEND_REGISTRATION\",\"registration\":{\"incidentDate\":\"2026-08-01\",\"incidentNotificationDate\":\"2026-08-03\",\"incidentCountry\":\"Lithuania\",\"claimantName\":\"Example Claimant Ltd\",\"insurerName\":\"Example Alleged Insurer\",\"claimedAmount\":\"1000.00\",\"claimedCurrency\":\"EUR\"}}}",
-      "sha256": "72ecd8a5bdcdb7f8a2debf2f85f7caff5649839c7e3389d9ebbbea6e23403534"
+      "canonicalUtf8": "{\"canonicalCommandFormat\":3,\"operationId\":\"20000000-0000-4000-8000-000000000002\",\"caseReference\":\"UNIT-001\",\"expectedVersion\":1,\"command\":{\"type\":\"AMEND_REGISTRATION\",\"registration\":{\"incidentDate\":\"2026-08-01\",\"incidentNotificationDate\":\"2026-08-03\",\"incidentCountry\":\"Lithuania\",\"claimantName\":\"Example Claimant Ltd\",\"insurerName\":\"Example Alleged Insurer\",\"claimedAmount\":\"1000.00\",\"claimedCurrency\":\"EUR\"}}}",
+      "sha256": "a28d0323c328a3f94a53dc5bb1c520b238edc677286cba55f26b26224843b3ca"
     },
     {
       "command": "DECIDE",
-      "canonicalUtf8": "{\"protocolVersion\":2,\"operationId\":\"20000000-0000-4000-8000-000000000003\",\"caseReference\":\"UNIT-001\",\"expectedVersion\":1,\"command\":{\"type\":\"DECIDE\",\"decision\":{\"paymentDecisionDate\":\"2026-08-15\",\"payableAmount\":\"750.00\",\"payableCurrency\":\"EUR\"}}}",
-      "sha256": "088a718595e217a09e5b9685fc36e13077b87297fb1022fc3bde730a1a9bfae7"
+      "canonicalUtf8": "{\"canonicalCommandFormat\":3,\"operationId\":\"20000000-0000-4000-8000-000000000003\",\"caseReference\":\"UNIT-001\",\"expectedVersion\":1,\"command\":{\"type\":\"DECIDE\",\"decision\":{\"paymentDecisionDate\":\"2026-08-15\",\"payableAmount\":\"750.00\",\"payableCurrency\":\"EUR\"}}}",
+      "sha256": "65f003de44ec2b9483859f47a033f046389f7243ec84d383843f8299ca4173d1"
     },
     {
       "command": "WITHDRAW_DECISION",
-      "canonicalUtf8": "{\"protocolVersion\":2,\"operationId\":\"20000000-0000-4000-8000-000000000004\",\"caseReference\":\"UNIT-001\",\"expectedVersion\":1,\"command\":{\"type\":\"WITHDRAW_DECISION\"}}",
-      "sha256": "a95c679554fdf3b782f5d3c6e11685b3825cbc277752cb205cad5080819ef83d"
+      "canonicalUtf8": "{\"canonicalCommandFormat\":3,\"operationId\":\"20000000-0000-4000-8000-000000000004\",\"caseReference\":\"UNIT-001\",\"expectedVersion\":1,\"command\":{\"type\":\"WITHDRAW_DECISION\"}}",
+      "sha256": "d83c60140a41e6794c30a0f8626d45ac7ab19360a86ba93ab40901fccb0d2ff9"
     },
     {
       "command": "RECORD_PAYMENT",
-      "canonicalUtf8": "{\"protocolVersion\":2,\"operationId\":\"20000000-0000-4000-8000-000000000005\",\"caseReference\":\"UNIT-001\",\"expectedVersion\":1,\"command\":{\"type\":\"RECORD_PAYMENT\",\"paymentDate\":\"2026-08-20\"}}",
-      "sha256": "d6a9001d9df559c9a8cfb43607b7d9cddb88082cffd9731981fddb424ef3b18e"
+      "canonicalUtf8": "{\"canonicalCommandFormat\":3,\"operationId\":\"20000000-0000-4000-8000-000000000005\",\"caseReference\":\"UNIT-001\",\"expectedVersion\":1,\"command\":{\"type\":\"RECORD_PAYMENT\",\"paymentDate\":\"2026-08-20\"}}",
+      "sha256": "afffc353a0435c45ffbca3a277732d84be72e242ba44b46adc82c5a0d3e7be59"
     },
     {
       "command": "CLEAR_PAYMENT",
-      "canonicalUtf8": "{\"protocolVersion\":2,\"operationId\":\"20000000-0000-4000-8000-000000000006\",\"caseReference\":\"UNIT-001\",\"expectedVersion\":1,\"command\":{\"type\":\"CLEAR_PAYMENT\"}}",
-      "sha256": "ae7ae3092ecde818c0ec203dda69629a37a3b7709f3276e2bd4dc752b7300a01"
+      "canonicalUtf8": "{\"canonicalCommandFormat\":3,\"operationId\":\"20000000-0000-4000-8000-000000000006\",\"caseReference\":\"UNIT-001\",\"expectedVersion\":1,\"command\":{\"type\":\"CLEAR_PAYMENT\"}}",
+      "sha256": "17be1b4d48fd5b9a2118712580f978b32754a9abd854e532bff4ee5646c56afa"
     },
     {
       "command": "CLOSE",
-      "canonicalUtf8": "{\"protocolVersion\":2,\"operationId\":\"20000000-0000-4000-8000-000000000007\",\"caseReference\":\"UNIT-001\",\"expectedVersion\":1,\"command\":{\"type\":\"CLOSE\"}}",
-      "sha256": "06d2cc30edc7775a3146f074f218af7db9f4ca6924661986297dff7975b1165d"
+      "canonicalUtf8": "{\"canonicalCommandFormat\":3,\"operationId\":\"20000000-0000-4000-8000-000000000007\",\"caseReference\":\"UNIT-001\",\"expectedVersion\":1,\"command\":{\"type\":\"CLOSE\"}}",
+      "sha256": "f3e81cfe17e2a2d606dd00234355ff6ac46fea7f0e5214bcb7e41d9d876971e7"
     },
     {
       "command": "REOPEN",
-      "canonicalUtf8": "{\"protocolVersion\":2,\"operationId\":\"20000000-0000-4000-8000-000000000008\",\"caseReference\":\"UNIT-001\",\"expectedVersion\":1,\"command\":{\"type\":\"REOPEN\"}}",
-      "sha256": "318e8e6b679637fc1e27cbfe61ca0e6d845143db01af7a0c8f7c11c66c8ce82f"
+      "canonicalUtf8": "{\"canonicalCommandFormat\":3,\"operationId\":\"20000000-0000-4000-8000-000000000008\",\"caseReference\":\"UNIT-001\",\"expectedVersion\":1,\"command\":{\"type\":\"REOPEN\"}}",
+      "sha256": "fb011e6de0efa57382199cff85e906597bc0b800b62a85ffefa0b3bb96dcb1e6"
     }
   ],
   "snapshot": "{\"fields\":{\"incidentDate\":\"2026-08-01\",\"incidentNotificationDate\":\"2026-08-03\",\"incidentCountry\":\"Lithuania\",\"claimantName\":\"Example Claimant Ltd\",\"insurerName\":\"Example Alleged Insurer\",\"claimedAmount\":\"1000\",\"claimedCurrency\":\"EUR\",\"caseReference\":\"UNIT-001\",\"paymentDecisionDate\":null,\"payableAmount\":null,\"payableCurrency\":null,\"paymentDate\":null,\"status\":\"OPENED\"},\"version\":1}"

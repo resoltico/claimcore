@@ -122,5 +122,5 @@ Current views may advertise state-derived commands. Receipts and history are sna
 no actions. Read the current case before preparing another change. Safe recovery from an uncertain
 result is defined in [CLI and protocol](cli.md#canonical-request-identity-and-recovery).
 
-Changing this contract requires coordinated domain, codec, CLI, Web contract, schema, migration,
+Changing this contract requires coordinated domain, codec, CLI, Web contract, schema, baseline,
 documentation, and test changes. Do not extend the record through an adapter-only field.

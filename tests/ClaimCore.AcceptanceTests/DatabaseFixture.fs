@@ -173,22 +173,17 @@ let private create () =
         environment["CLAIMCORE_ADMIN_CONNECTION_FILE"] <- adminFile
         environment.Remove("CLAIMCORE_CONNECTION_FILE") |> ignore
 
-        let migration =
-            ProcessRunner.dotnet 120_000 databaseDll [ "migrate" ] environment None
+        let initialization =
+            ProcessRunner.dotnet 120_000 databaseDll [ "initialize"; "Etc/UTC" ] environment None
 
-        if migration.ExitCode <> 0 then
-            invalidOp "Published database migration failed."
+        if initialization.ExitCode <> 0 then
+            invalidOp "Published database initialization failed."
 
-        let businessZone =
-            ProcessRunner.dotnet
-                120_000
-                databaseDll
-                [ "set-business-zone"; "Etc/UTC" ]
-                environment
-                None
+        let verification =
+            ProcessRunner.dotnet 120_000 databaseDll [ "verify" ] environment None
 
-        if businessZone.ExitCode <> 0 then
-            invalidOp "Published database business-time-zone configuration failed."
+        if verification.ExitCode <> 0 then
+            invalidOp "Published database baseline verification failed."
 
         {
             Inputs = inputs

@@ -20,8 +20,8 @@ let tests =
             PreparationTests.tests
             AcceptedReplayStorageTests.tests
             PreparationBoundaryTests.tests
-            MigrationUpgradeTests.tests
-            MigrationEvidenceUpgradeTests.tests
+            FreshBaselineTests.tests
+            BaselineRefusalTests.tests
             RecoveryProcessTests.tests
             RecoveryRaceTests.tests
             RecoveryEvidenceTests.tests

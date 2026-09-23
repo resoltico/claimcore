@@ -55,7 +55,7 @@ module DatabaseContracts =
         exact [ "id", constant id; "parameters", exact parameters ]
 
     let private action value = "recommendedAction", constant value
-    let private commands = [ "MIGRATE"; "SET_BUSINESS_ZONE"; "PRUNE" ]
+    let private commands = [ "INITIALIZE"; "VERIFY"; "PRUNE" ]
 
     let private inputParameters =
         function

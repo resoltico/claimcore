@@ -14,7 +14,7 @@ const preview = {
     command: "CLOSE",
     expectedRevision: "1",
     authoredValues: [],
-    canonicalCommandFormat: 2,
+    canonicalCommandFormat: 3,
     requestSha256: "b".repeat(64),
   },
   existingPreparation: null,

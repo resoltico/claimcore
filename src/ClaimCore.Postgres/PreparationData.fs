@@ -50,7 +50,6 @@ module internal PreparationData =
 
             match reader.GetString(8) with
             | "SUBMISSION_STARTED" -> PreparationLifecycle.SubmissionStarted recordedAt
-            | "DISMISSED" -> PreparationLifecycle.Dismissed recordedAt
             | _ -> raise (InvalidDataException("Stored preparation lifecycle is unknown."))
 
     let read (reader: DbDataReader) : RetainedPreparation =
@@ -267,11 +266,3 @@ module internal PreparationData =
                 else
                     None
         }
-
-    let asDismissal (preparation: RetainedPreparation) =
-        match preparation.Lifecycle with
-        | PreparationLifecycle.Unsubmitted ->
-            invalidOp "A dismissal outcome requires a lifecycle marker."
-        | PreparationLifecycle.SubmissionStarted _ ->
-            RecoveryDismissal.SubmissionAlreadyStarted preparation
-        | PreparationLifecycle.Dismissed _ -> RecoveryDismissal.AlreadyDismissed preparation

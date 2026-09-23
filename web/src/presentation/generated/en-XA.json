@@ -1944,11 +1944,6 @@
     },
     { "type": 0, "value": "⟧" }
   ],
-  "ui.legacyUncertainty": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Lëëgààcy üüncëërtààïïnty rëëmààïïns." },
-    { "type": 0, "value": "⟧" }
-  ],
   "ui.moreAttempts": [
     { "type": 0, "value": "⟦" },
     { "type": 0, "value": "Lööààd möörëë ààttëëmpts" },

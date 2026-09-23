@@ -19,9 +19,9 @@
     <Compile Include="PreparationTests.fs" />
     <Compile Include="AcceptedReplayStorageTests.fs" />
     <Compile Include="PreparationBoundaryTests.fs" />
-    <Compile Include="MigrationUpgradeSupport.fs" />
-    <Compile Include="MigrationUpgradeTests.fs" />
-    <Compile Include="MigrationEvidenceUpgradeTests.fs" />
+    <Compile Include="FreshBaselineSupport.fs" />
+    <Compile Include="FreshBaselineTests.fs" />
+    <Compile Include="BaselineRefusalTests.fs" />
     <Compile Include="RecoveryProcessTests.fs" />
     <Compile Include="RecoveryRaceTests.fs" />
     <Compile Include="RecoveryEvidenceTests.fs" />

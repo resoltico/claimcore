@@ -390,33 +390,35 @@
       "baselineId": "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL migration upgrade qualification.migration 001 to 002.atomicity.[CC-DB-001] failed migration rolls back its objects and journal row",
       "status": "replaced",
       "replacementIds": [
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL migration upgrade qualification.migration 001 through 006.atomicity.[CC-DB-001] failed migration rolls back its objects and journal row"
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.fresh installation qualification.[CC-DB-001] baseline DDL failure rolls back the entire namespace before commit"
       ],
-      "reason": "The qualification starts from migration 003, deliberately conflicts with migration 004, and verifies that its transaction leaves no partial objects or journal row; the catalog otherwise extends through immutable migration 006."
+      "reason": "The owner-authorized fresh-baseline clean break deliberately replaces supported in-place upgrades with strict refusal. Replacement assertions exercise the corresponding frozen-identity, atomicity, data-preservation or admission obligation on the current initializer, and old-installation fixtures prove that prior cases, receipts and technical evidence remain untouched instead of being converted."
     },
     {
       "baselineId": "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL migration upgrade qualification.migration 001 to 002.manifest validation.[CC-DB-001] applied migration identities remain frozen",
       "status": "replaced",
       "replacementIds": [
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL migration upgrade qualification.migration 001 through 006.manifest validation.[CC-DB-001] applied migration identities remain frozen"
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.fresh installation qualification.[CC-DB-001] fresh initialization atomically installs the current identity and calendar",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.fresh installation qualification.[CC-DB-001] identical initialization and read-only verification preserve every stored byte"
       ],
-      "reason": "The manifest assertion now pins all six ordered names and SHA-256 digests, including original migrations 001\u2013003 and later 004\u2013006, without editing applied bytes."
+      "reason": "The owner-authorized fresh-baseline clean break deliberately replaces supported in-place upgrades with strict refusal. Replacement assertions exercise the corresponding frozen-identity, atomicity, data-preservation or admission obligation on the current initializer, and old-installation fixtures prove that prior cases, receipts and technical evidence remain untouched instead of being converted."
     },
     {
       "baselineId": "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL migration upgrade qualification.migration 001 to 002.manifest validation.[CC-DB-001] migrator refuses a newer manifest entry",
       "status": "replaced",
       "replacementIds": [
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL migration upgrade qualification.migration 001 through 006.manifest validation.[CC-DB-001] migrator refuses a newer manifest entry"
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.unsupported installation refusal.[CC-DB-001] unknown identities and altered digests are refused with no repair"
       ],
-      "reason": "The manifest qualification still adds an unrecognized later migration entry and requires the migrator to refuse it before modifying installed schema."
+      "reason": "The owner-authorized fresh-baseline clean break deliberately replaces supported in-place upgrades with strict refusal. Replacement assertions exercise the corresponding frozen-identity, atomicity, data-preservation or admission obligation on the current initializer, and old-installation fixtures prove that prior cases, receipts and technical evidence remain untouched instead of being converted."
     },
     {
       "baselineId": "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL migration upgrade qualification.migration 001 to 002.retained data.[CC-DB-001] upgrade preserves cases and history and installs recovery storage",
       "status": "replaced",
       "replacementIds": [
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL migration upgrade qualification.migration 001 through 006.retained data.[CC-DB-001] upgrade preserves cases and history and installs recovery storage"
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.fresh installation qualification.[CC-DB-001] fresh initialization atomically installs the current identity and calendar",
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.unsupported installation refusal.[CC-DB-001] all old installation markers are refused without touching evidence or history"
       ],
-      "reason": "The migration-001 upgrade test still compares the accepted history projection before and after full upgrade through 006, verifies legacy uncertainty and current thirteen-field reads."
+      "reason": "The owner-authorized fresh-baseline clean break deliberately replaces supported in-place upgrades with strict refusal. Replacement assertions exercise the corresponding frozen-identity, atomicity, data-preservation or admission obligation on the current initializer, and old-installation fixtures prove that prior cases, receipts and technical evidence remain untouched instead of being converted."
     },
     {
       "baselineId": "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL preparation recovery.durable request preparations.immutable preparation data.[CC-REC-001] preparation retains exact bytes and immutable identity",
@@ -486,35 +488,35 @@
     },
     {
       "baselineId": "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL schema and failure boundary.migration and constraints.database rejects excessive precision instead of rounding it",
-      "status": "retained",
+      "status": "replaced",
       "replacementIds": [
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL schema and failure boundary.migration and constraints.database rejects excessive precision instead of rounding it"
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL schema and failure boundary.baseline and constraints.database rejects excessive precision instead of rounding it"
       ],
-      "reason": "The current identity still directly verifies the same v0.1 behavior after the verified hard cutover."
+      "reason": "The owner-authorized fresh-baseline clean break deliberately replaces supported in-place upgrades with strict refusal. Replacement assertions exercise the corresponding frozen-identity, atomicity, data-preservation or admission obligation on the current initializer, and old-installation fixtures prove that prior cases, receipts and technical evidence remain untouched instead of being converted."
     },
     {
       "baselineId": "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL schema and failure boundary.migration and constraints.database rejects partial decision tuple",
-      "status": "retained",
+      "status": "replaced",
       "replacementIds": [
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL schema and failure boundary.migration and constraints.database rejects partial decision tuple"
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL schema and failure boundary.baseline and constraints.database rejects partial decision tuple"
       ],
-      "reason": "The current identity still directly verifies the same v0.1 behavior after the verified hard cutover."
+      "reason": "The owner-authorized fresh-baseline clean break deliberately replaces supported in-place upgrades with strict refusal. Replacement assertions exercise the corresponding frozen-identity, atomicity, data-preservation or admission obligation on the current initializer, and old-installation fixtures prove that prior cases, receipts and technical evidence remain untouched instead of being converted."
     },
     {
       "baselineId": "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL schema and failure boundary.migration and constraints.database rejects payment without decision",
-      "status": "retained",
+      "status": "replaced",
       "replacementIds": [
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL schema and failure boundary.migration and constraints.database rejects payment without decision"
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL schema and failure boundary.baseline and constraints.database rejects payment without decision"
       ],
-      "reason": "The current identity still directly verifies the same v0.1 behavior after the verified hard cutover."
+      "reason": "The owner-authorized fresh-baseline clean break deliberately replaces supported in-place upgrades with strict refusal. Replacement assertions exercise the corresponding frozen-identity, atomicity, data-preservation or admission obligation on the current initializer, and old-installation fixtures prove that prior cases, receipts and technical evidence remain untouched instead of being converted."
     },
     {
       "baselineId": "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL schema and failure boundary.migration and constraints.migration is repeatable only with identical source checksum",
-      "status": "retained",
+      "status": "replaced",
       "replacementIds": [
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL schema and failure boundary.migration and constraints.migration is repeatable only with identical source checksum"
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL schema and failure boundary.baseline and constraints.initialization is repeatable only with identical baseline identity"
       ],
-      "reason": "The current identity still directly verifies the same v0.1 behavior after the verified hard cutover."
+      "reason": "The owner-authorized fresh-baseline clean break deliberately replaces supported in-place upgrades with strict refusal. Replacement assertions exercise the corresponding frozen-identity, atomicity, data-preservation or admission obligation on the current initializer, and old-installation fixtures prove that prior cases, receipts and technical evidence remain untouched instead of being converted."
     },
     {
       "baselineId": "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL schema and failure boundary.runtime privileges and formats.accepted receipts retain explicit request and snapshot format revisions",
@@ -534,11 +536,11 @@
     },
     {
       "baselineId": "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL schema and failure boundary.runtime privileges and formats.runtime role cannot mutate the migration journal",
-      "status": "retained",
+      "status": "replaced",
       "replacementIds": [
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL schema and failure boundary.runtime privileges and formats.runtime role cannot mutate the migration journal"
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL schema and failure boundary.runtime privileges and formats.runtime role cannot mutate the baseline marker"
       ],
-      "reason": "The current identity still directly verifies the same v0.1 behavior after the verified hard cutover."
+      "reason": "The owner-authorized fresh-baseline clean break deliberately replaces supported in-place upgrades with strict refusal. Replacement assertions exercise the corresponding frozen-identity, atomicity, data-preservation or admission obligation on the current initializer, and old-installation fixtures prove that prior cases, receipts and technical evidence remain untouched instead of being converted."
     },
     {
       "baselineId": "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.PostgreSQL schema and failure boundary.runtime privileges and formats.runtime role cannot rewrite audit history",
@@ -630,11 +632,11 @@
     },
     {
       "baselineId": "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.Storage boundary qualification.database environment.migration refuses startup-option overrides",
-      "status": "retained",
+      "status": "replaced",
       "replacementIds": [
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.Storage boundary qualification.database environment.migration refuses startup-option overrides"
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.Storage boundary qualification.database environment.initializer refuses startup-option overrides"
       ],
-      "reason": "The current identity still directly verifies the same v0.1 behavior after the verified hard cutover."
+      "reason": "The owner-authorized fresh-baseline clean break deliberately replaces supported in-place upgrades with strict refusal. Replacement assertions exercise the corresponding frozen-identity, atomicity, data-preservation or admission obligation on the current initializer, and old-installation fixtures prove that prior cases, receipts and technical evidence remain untouched instead of being converted."
     },
     {
       "baselineId": "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.Storage boundary qualification.finite date storage.maximum supported date is not positive infinity",
@@ -694,19 +696,19 @@
     },
     {
       "baselineId": "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.Storage boundary qualification.transaction and migration integrity.core transaction does not join caller ambient scope",
-      "status": "retained",
+      "status": "replaced",
       "replacementIds": [
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.Storage boundary qualification.transaction and migration integrity.core transaction does not join caller ambient scope"
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.Storage boundary qualification.transaction and baseline integrity.core transaction does not join caller ambient scope"
       ],
-      "reason": "The current identity still directly verifies the same v0.1 behavior after the verified hard cutover."
+      "reason": "The owner-authorized fresh-baseline clean break deliberately replaces supported in-place upgrades with strict refusal. Replacement assertions exercise the corresponding frozen-identity, atomicity, data-preservation or admission obligation on the current initializer, and old-installation fixtures prove that prior cases, receipts and technical evidence remain untouched instead of being converted."
     },
     {
       "baselineId": "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.Storage boundary qualification.transaction and migration integrity.runtime rejects installed script hash mismatch",
-      "status": "retained",
+      "status": "replaced",
       "replacementIds": [
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.Storage boundary qualification.transaction and migration integrity.runtime rejects installed script hash mismatch"
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.Storage boundary qualification.transaction and baseline integrity.runtime rejects installed script hash mismatch"
       ],
-      "reason": "The current identity still directly verifies the same v0.1 behavior after the verified hard cutover."
+      "reason": "The owner-authorized fresh-baseline clean break deliberately replaces supported in-place upgrades with strict refusal. Replacement assertions exercise the corresponding frozen-identity, atomicity, data-preservation or admission obligation on the current initializer, and old-installation fixtures prove that prior cases, receipts and technical evidence remain untouched instead of being converted."
     },
     {
       "baselineId": "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.basic schema and PostgreSQL 18.6 baseline.baseline and current schema.actual server is on the required baseline",
@@ -734,19 +736,19 @@
     },
     {
       "baselineId": "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.basic schema and PostgreSQL 18.6 baseline.field persistence and migration journal.all fields survive decision, payment and closure without currency coercion",
-      "status": "retained",
+      "status": "replaced",
       "replacementIds": [
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.basic schema and PostgreSQL 18.6 baseline.field persistence and migration journal.all fields survive decision, payment and closure without currency coercion"
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.basic schema and PostgreSQL 18.6 baseline.field persistence and baseline identity.all fields survive decision, payment and closure without currency coercion"
       ],
-      "reason": "The current identity still directly verifies the same v0.1 behavior after the verified hard cutover."
+      "reason": "The owner-authorized fresh-baseline clean break deliberately replaces supported in-place upgrades with strict refusal. Replacement assertions exercise the corresponding frozen-identity, atomicity, data-preservation or admission obligation on the current initializer, and old-installation fixtures prove that prior cases, receipts and technical evidence remain untouched instead of being converted."
     },
     {
       "baselineId": "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.basic schema and PostgreSQL 18.6 baseline.field persistence and migration journal.migration journal exactly matches the ordered embedded manifest",
-      "status": "retained",
+      "status": "replaced",
       "replacementIds": [
-        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.basic schema and PostgreSQL 18.6 baseline.field persistence and migration journal.migration journal exactly matches the ordered embedded manifest"
+        "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.basic schema and PostgreSQL 18.6 baseline.field persistence and baseline identity.baseline marker exactly matches the embedded baseline identity"
       ],
-      "reason": "The current identity still directly verifies the same v0.1 behavior after the verified hard cutover."
+      "reason": "The owner-authorized fresh-baseline clean break deliberately replaces supported in-place upgrades with strict refusal. Replacement assertions exercise the corresponding frozen-identity, atomicity, data-preservation or admission obligation on the current initializer, and old-installation fixtures prove that prior cases, receipts and technical evidence remain untouched instead of being converted."
     },
     {
       "baselineId": "dotnet:ClaimCore.IntegrationTests::ClaimCore PostgreSQL integration.case pagination has an exact fifty-item boundary and lossless continuation",
@@ -848,33 +850,35 @@
       "baselineId": "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 to 002.atomicity.[CC-DB-001] failed migration rolls back its objects and journal row",
       "status": "replaced",
       "replacementIds": [
-        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 006.atomicity.[CC-DB-001] failed migration rolls back its objects and journal row"
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore fresh baseline qualification.fresh installation qualification.[CC-DB-001] baseline DDL failure rolls back the entire namespace before commit"
       ],
-      "reason": "The qualification starts from migration 003, deliberately conflicts with migration 004, and verifies that its transaction leaves no partial objects or journal row; the catalog otherwise extends through immutable migration 006."
+      "reason": "The owner-authorized fresh-baseline clean break deliberately replaces supported in-place upgrades with strict refusal. Replacement assertions exercise the corresponding frozen-identity, atomicity, data-preservation or admission obligation on the current initializer, and old-installation fixtures prove that prior cases, receipts and technical evidence remain untouched instead of being converted."
     },
     {
       "baselineId": "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 to 002.manifest validation.[CC-DB-001] applied migration identities remain frozen",
       "status": "replaced",
       "replacementIds": [
-        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 006.manifest validation.[CC-DB-001] applied migration identities remain frozen"
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore fresh baseline qualification.fresh installation qualification.[CC-DB-001] fresh initialization atomically installs the current identity and calendar",
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore fresh baseline qualification.fresh installation qualification.[CC-DB-001] identical initialization and read-only verification preserve every stored byte"
       ],
-      "reason": "The manifest assertion now pins all six ordered names and SHA-256 digests, including original migrations 001\u2013003 and later 004\u2013006, without editing applied bytes."
+      "reason": "The owner-authorized fresh-baseline clean break deliberately replaces supported in-place upgrades with strict refusal. Replacement assertions exercise the corresponding frozen-identity, atomicity, data-preservation or admission obligation on the current initializer, and old-installation fixtures prove that prior cases, receipts and technical evidence remain untouched instead of being converted."
     },
     {
       "baselineId": "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 to 002.manifest validation.[CC-DB-001] migrator refuses a newer manifest entry",
       "status": "replaced",
       "replacementIds": [
-        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 006.manifest validation.[CC-DB-001] migrator refuses a newer manifest entry"
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore fresh baseline qualification.unsupported installation refusal.[CC-DB-001] unknown identities and altered digests are refused with no repair"
       ],
-      "reason": "The manifest qualification still adds an unrecognized later migration entry and requires the migrator to refuse it before modifying installed schema."
+      "reason": "The owner-authorized fresh-baseline clean break deliberately replaces supported in-place upgrades with strict refusal. Replacement assertions exercise the corresponding frozen-identity, atomicity, data-preservation or admission obligation on the current initializer, and old-installation fixtures prove that prior cases, receipts and technical evidence remain untouched instead of being converted."
     },
     {
       "baselineId": "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 to 002.retained data.[CC-DB-001] upgrade preserves cases and history and installs recovery storage",
       "status": "replaced",
       "replacementIds": [
-        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore migration qualification.PostgreSQL migration upgrade qualification.migration 001 through 006.retained data.[CC-DB-001] upgrade preserves cases and history and installs recovery storage"
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore fresh baseline qualification.fresh installation qualification.[CC-DB-001] fresh initialization atomically installs the current identity and calendar",
+        "dotnet:ClaimCore.MigrationQualificationTests::ClaimCore fresh baseline qualification.unsupported installation refusal.[CC-DB-001] all old installation markers are refused without touching evidence or history"
       ],
-      "reason": "The migration-001 upgrade test still compares the accepted history projection before and after full upgrade through 006, verifies legacy uncertainty and current thirteen-field reads."
+      "reason": "The owner-authorized fresh-baseline clean break deliberately replaces supported in-place upgrades with strict refusal. Replacement assertions exercise the corresponding frozen-identity, atomicity, data-preservation or admission obligation on the current initializer, and old-installation fixtures prove that prior cases, receipts and technical evidence remain untouched instead of being converted."
     },
     {
       "baselineId": "dotnet:ClaimCore.RecoveryQualificationTests::ClaimCore recovery qualification.CLI retained-request recovery.[CC-REC-001] export and apply preserve and submit the exact retained request",
@@ -1726,9 +1730,9 @@
       "baselineId": "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.exact business-field schema.closed field and protocol contracts.added claims fields are rejected in retained snapshots",
       "status": "replaced",
       "replacementIds": [
-        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.stable identity and historical encoding.snapshot-2 encoding stays independent of advisory rendering metadata"
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.current identity and durable encoding.snapshot-2 encoding stays independent of advisory rendering metadata"
       ],
-      "reason": "The stable snapshot test inserts an unexpected business key into canonical snapshot format 2 and requires durable decoding to reject it."
+      "reason": "The canonical clean break moves commands to explicit canonicalCommandFormat 3 without changing snapshot-2 encoding or SHA-256 identity rules. Renamed fixed-vector and boundary tests verify the current exact bytes and fingerprints; separate negative tests reject historical shapes without re-encoding or automatically resubmitting them."
     },
     {
       "baselineId": "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.exact business-field schema.closed field and protocol contracts.old protocol and extra correction reason are rejected, not silently ignored",
@@ -1857,9 +1861,9 @@
       "baselineId": "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.protocol and application boundary.command encoding.all commands round-trip without adding domain facts",
       "status": "replaced",
       "replacementIds": [
-        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.stable identity and historical encoding.all eight command encodings and identities match fixed protocol-2 vectors"
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.current identity and durable encoding.all eight command encodings and identities match fixed format-3 vectors"
       ],
-      "reason": "The fixed canonical-vector test decodes and re-encodes each of the eight Domain commands byte-for-byte without adding fields."
+      "reason": "The canonical clean break moves commands to explicit canonicalCommandFormat 3 without changing snapshot-2 encoding or SHA-256 identity rules. Renamed fixed-vector and boundary tests verify the current exact bytes and fingerprints; separate negative tests reject historical shapes without re-encoding or automatically resubmitting them."
     },
     {
       "baselineId": "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.protocol and application boundary.command encoding.money is JSON string, not binary floating point",
@@ -1933,10 +1937,10 @@
       "baselineId": "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.protocol and application boundary.retention and failure rendering.retained snapshots round-trip all states",
       "status": "replaced",
       "replacementIds": [
-        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain validation.precision and round trips.all supported state views rehydrate",
-        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.stable identity and historical encoding.snapshot-2 encoding stays independent of advisory rendering metadata"
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.current identity and durable encoding.snapshot-2 encoding stays independent of advisory rendering metadata",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.domain validation.precision and round trips.all supported state views rehydrate"
       ],
-      "reason": "Domain round-trip tests rehydrate supported case states; the fixed snapshot-2 vector test confirms durable encoding remains byte-stable."
+      "reason": "The canonical clean break moves commands to explicit canonicalCommandFormat 3 without changing snapshot-2 encoding or SHA-256 identity rules. Renamed fixed-vector and boundary tests verify the current exact bytes and fingerprints; separate negative tests reject historical shapes without re-encoding or automatically resubmitting them."
     },
     {
       "baselineId": "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.protocol and application boundary.retention and failure rendering.store failure does not expose secrets",
@@ -2060,19 +2064,19 @@
     },
     {
       "baselineId": "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.stable identity and historical encoding.all eight command encodings and identities match fixed protocol-2 vectors",
-      "status": "retained",
+      "status": "replaced",
       "replacementIds": [
-        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.stable identity and historical encoding.all eight command encodings and identities match fixed protocol-2 vectors"
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.current identity and durable encoding.all eight command encodings and identities match fixed format-3 vectors"
       ],
-      "reason": "The current identity still directly verifies the same v0.1 behavior after the verified hard cutover."
+      "reason": "The canonical clean break moves commands to explicit canonicalCommandFormat 3 without changing snapshot-2 encoding or SHA-256 identity rules. Renamed fixed-vector and boundary tests verify the current exact bytes and fingerprints; separate negative tests reject historical shapes without re-encoding or automatically resubmitting them."
     },
     {
       "baselineId": "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.stable identity and historical encoding.snapshot-2 encoding stays independent of advisory rendering metadata",
-      "status": "retained",
+      "status": "replaced",
       "replacementIds": [
-        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.stable identity and historical encoding.snapshot-2 encoding stays independent of advisory rendering metadata"
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.current identity and durable encoding.snapshot-2 encoding stays independent of advisory rendering metadata"
       ],
-      "reason": "The current identity still directly verifies the same v0.1 behavior after the verified hard cutover."
+      "reason": "The canonical clean break moves commands to explicit canonicalCommandFormat 3 without changing snapshot-2 encoding or SHA-256 identity rules. Renamed fixed-vector and boundary tests verify the current exact bytes and fingerprints; separate negative tests reject historical shapes without re-encoding or automatically resubmitting them."
     },
     {
       "baselineId": "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.state guard and advertised actions.[CC-DOM-002] each state advertises and enforces the specified command set",

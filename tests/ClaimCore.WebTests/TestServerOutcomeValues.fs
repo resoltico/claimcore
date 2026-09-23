@@ -80,7 +80,7 @@ let preparationDetails =
             {
                 Items = []
                 NextCursor = None
-                LegacyUncertainty = false
+
             }
     }
 

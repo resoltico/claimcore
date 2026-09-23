@@ -50,7 +50,7 @@ module Stages =
                 "ClaimCore.ConcurrencyQualificationTests"
                 "ClaimCore.ConcurrencyQualificationTests.trx"
             report
-                "migration-upgrade-qualification"
+                "fresh-baseline-qualification"
                 "ClaimCore.MigrationQualificationTests"
                 "ClaimCore.MigrationQualificationTests.trx"
             report "acceptance-linux" "ClaimCore.AcceptanceTests" "ClaimCore.AcceptanceTests.trx"

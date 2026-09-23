@@ -62,10 +62,10 @@ module CliSchemas =
             false
             [
                 Schema.property "format" (Schema.constant (TextConstant "claimcore-recovery")) true
-                Schema.property "formatVersion" (Schema.constant (IntegerConstant 1L)) true
+                Schema.property "formatVersion" (Schema.constant (IntegerConstant 2L)) true
                 Schema.property "installationId" ScalarSchemas.uuid true
                 Schema.property "operationId" ScalarSchemas.uuid true
-                Schema.property "protocolVersion" (Schema.constant (IntegerConstant 2L)) true
+                Schema.property "canonicalCommandFormat" (Schema.constant (IntegerConstant 3L)) true
                 Schema.property
                     "requestFingerprintVersion"
                     (Schema.constant (IntegerConstant 1L))
@@ -77,8 +77,8 @@ module CliSchemas =
                     true
             ]
         |> render
-            "https://claimcore.local/contracts/recovery-envelope-v1.schema.json"
-            "ClaimCore recovery envelope v1"
+            "https://claimcore.local/contracts/recovery-envelope-v2.schema.json"
+            "ClaimCore recovery envelope v2"
 
     let endpoint (projection: ContractModel) identifier =
         projection.CliEndpoints

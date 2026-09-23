@@ -119,13 +119,13 @@ explanations, missing or extraneous arguments, cross-family IDs and contradictor
 variants. The CLI corpus also exercises every local failure on every runtime endpoint. The existing runtime and standalone validators must
 agree on these examples; missing or substituted test evidence is still refused by the common gate.
 
-The subsequent localization work establishes
+The localization layer provides
 presentation-owned catalogs with an explicit locale/fallback policy. UI language, display locale,
 installation business calendar, currency and jurisdiction are independent. Locale must not enter
 `CaseFields`, canonical records or operation authority. Language switching needs real-locale,
 pseudolocale, RTL and accessibility qualification without losing drafts, reminting operation IDs,
-rebasing revisions, changing authored content or triggering recovery. Database/recovery fresh-baseline
-work remains a separate coherent change, not a deletion of migration files in this PR.
+rebasing revisions, changing authored content or triggering recovery. The [database baseline](database.md) explicitly refuses old storage without changing it; current
+recovery formats reject older artifacts without conversion.
 
 ## Transport, host and administration boundaries
 
@@ -172,7 +172,8 @@ Postgres administration returns `AdministrationOutcome`: `Completed`, `NotStarte
 exception during commit cannot prove rollback. A confirmed checkpoint survives subsequent disposal
 or reporting failure. Each operation permits exactly one commit. Pruning dry-runs still write audit
 evidence, so they use the same completion discipline. Current-schema qualification no longer
-implicitly creates a journal; only explicit migration initializes it. Migration bytes are unchanged.
+implicitly initializes storage; only explicit fresh initialization may create an absent ClaimCore
+namespace. Existing unsupported schemas are refused untouched.
 
 Administration stdout/stderr is structured JSON. Completed maintenance and failed output are
 separate outcomes: output failure cannot claim the action failed. There is one bounded reporting
@@ -204,9 +205,9 @@ Native maintenance callers must handle every `AdministrationOutcome` case. Rebui
 host from matching contracts. Semantic business identity, case fields, request bytes, revisions,
 accepted history and recovery authority do not change. No case-data migration is introduced here.
 
-The remaining release packages are presentation catalogs with fully qualified language switching;
-fresh-baseline database/recovery reset; and owner-review enforcement. They remain three packages
-following this one, before the future 0.5.0 release.
+Presentation catalogs, owner-review enforcement and the fresh database/recovery boundary are
+separate owners of their contracts. The fresh boundary is non-destructive refusal, not a reset.
+The database reference owns installation policy; no release or merge is implied by these checks.
 
 ### Browser validation loading and size review
 

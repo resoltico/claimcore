@@ -69,22 +69,23 @@ Host=127.0.0.1;Port=54329;Database=claimcore;Username=claimcore_app;Password=<ru
 Both files must be mode `0600` and their directory mode `0700`. Do not place the
 passwords directly in a command line, terminal transcript, or source-controlled file.
 
-Apply every ordered schema migration with the owner connection:
+Initialize an absent ClaimCore namespace with an explicitly chosen business calendar. This is a
+fresh-installation operation; an existing old namespace or volume is not upgraded or deleted:
 
 ```sh
 CLAIMCORE_ADMIN_CONNECTION_FILE=/absolute/private/path/admin.connection \
-dotnet run --project src/ClaimCore.Database --configuration Release --no-build -- migrate
+dotnet run --project src/ClaimCore.Database --configuration Release --no-build -- initialize Etc/UTC
 ```
 
-Choose and persist the installation business time zone before opening either case-work application.
-The command accepts a canonical IANA ID available to this runtime; `Etc/UTC` is the portable
-synthetic walkthrough choice. The first value is immutable for that installation, and repeating the
-same value is safe. Production operators should choose their actual business calendar during planned
-downtime rather than inheriting a laptop or server setting.
+The initializer above accepts a canonical IANA ID available to this runtime; `Etc/UTC` is the explicit
+synthetic walkthrough choice. The first value is immutable for that installation. Operators must
+choose their actual business calendar before initialization rather than inheriting a host setting.
+The marker, lineage and calendar are committed together. Read-only verification can then confirm
+current installation readiness without repairing or creating anything:
 
 ```sh
 CLAIMCORE_ADMIN_CONNECTION_FILE=/absolute/private/path/admin.connection \
-dotnet run --project src/ClaimCore.Database --configuration Release --no-build -- set-business-zone Etc/UTC
+dotnet run --project src/ClaimCore.Database --configuration Release --no-build -- verify
 ```
 
 The Web and CLI applications must use `app.connection`, never the owner connection. Database
