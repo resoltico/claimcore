@@ -112,16 +112,6 @@ host_failure_summary() {
   fi
 }
 
-database_failure_summary() {
-  local phase="$1" report="$2" diagnostic
-  diagnostic="$(jq -r '.diagnostic.id // empty' "$report" 2>/dev/null || true)"
-  if [[ "$diagnostic" =~ ^DB_[A-Z_]+$ ]]; then
-    printf 'The published database %s failed: %s.\n' "$phase" "$diagnostic" >&2
-  else
-    printf 'The published database %s failed.\n' "$phase" >&2
-  fi
-}
-
 require_forbidden_probe() {
   local probe="$1"
   local actual="$2"
@@ -185,16 +175,8 @@ printf 'Host=127.0.0.1;Port=%s;Database=claimcore;Username=postgres;Password=%s\
 printf 'Host=127.0.0.1;Port=%s;Database=claimcore;Username=claimcore_app;Password=%s\n' "$port" "$app_secret" >"$app_connection"
 
 echo "Initializing the fresh baseline in the isolated synthetic database."
-if ! CLAIMCORE_ADMIN_CONNECTION_FILE="$owner_connection" \
-  dotnet "$database_dll" initialize Etc/UTC >"$state_dir/database-init.out" 2>"$state_dir/database-init.err"; then
-  database_failure_summary initialization "$state_dir/database-init.err"
-  exit 1
-fi
-if ! CLAIMCORE_ADMIN_CONNECTION_FILE="$owner_connection" \
-  dotnet "$database_dll" verify >"$state_dir/database-verify.out" 2>"$state_dir/database-verify.err"; then
-  database_failure_summary verification "$state_dir/database-verify.err"
-  exit 1
-fi
+bash "$repo_root/eng/Initialize-PublishedWebDatabase.sh" \
+  "$database_dll" "$owner_connection" "$state_dir"
 certificate="$state_dir/web.pfx"
 certificate_key="$state_dir/web.key"
 certificate_pem="$state_dir/web.pem"
