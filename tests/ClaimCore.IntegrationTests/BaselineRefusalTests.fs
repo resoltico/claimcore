@@ -51,7 +51,7 @@ let private occupied =
             withDatabase (fun admin app ->
                 execute
                     admin
-                    "CREATE SCHEMA claimcore; CREATE TABLE claimcore.sentinel (evidence bytea); INSERT INTO claimcore.sentinel VALUES ('\x000102ff')"
+                    "CREATE SCHEMA claimcore; CREATE TABLE claimcore.sentinel (evidence bytea); INSERT INTO claimcore.sentinel VALUES (decode('000102ff', 'hex'))"
 
                 assertUnsupported admin app))
 
