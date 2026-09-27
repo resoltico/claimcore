@@ -36,10 +36,11 @@ if [[ "$(node --version 2>/dev/null || true)" != "v$expected_node" ]] ||
   command -v mise >/dev/null || { printf 'Locked Node/npm is unavailable.\n' >&2; exit 64; }
   runtime_prefix=(mise exec "node@$expected_node" --)
 fi
-[[ "$("${runtime_prefix[@]}" node --version)" == "v$expected_node" ]] &&
-  [[ "$("${runtime_prefix[@]}" npm --version)" == "$expected_npm" ]] || {
-    printf 'Locked Node/npm could not be selected.\n' >&2; exit 64;
-  }
+if [[ "$("${runtime_prefix[@]}" node --version)" != "v$expected_node" ]] ||
+   [[ "$("${runtime_prefix[@]}" npm --version)" != "$expected_npm" ]]; then
+  printf 'Locked Node/npm could not be selected.\n' >&2
+  exit 64
+fi
 
 run_engine() (
   engine="$1"
@@ -204,15 +205,15 @@ run_engine() (
         2>"$state_dir/diagnostics/cli-before-grant.err"
     cli_before_status=$?
     set -e
-    [[ "$cli_before_status" == 2 ]] &&
-      jq -e '.protocolVersion == 4 and .kind == "result" and
+    if [[ "$cli_before_status" != 2 ]] ||
+      ! jq -e '.protocolVersion == 4 and .kind == "result" and
         .endpoint == "case.list" and .service.outcome.tag == "REJECTED" and
         (.service.outcome.data.items? == null)' \
-        "$state_dir/diagnostics/cli-before-grant.out" >/dev/null &&
-      [[ ! -s "$state_dir/diagnostics/cli-before-grant.err" ]] || {
-        printf 'Unregistered service principal was not denied without disclosure.\n' >&2
-        exit 1
-      }
+        "$state_dir/diagnostics/cli-before-grant.out" >/dev/null ||
+      [[ -s "$state_dir/diagnostics/cli-before-grant.err" ]]; then
+      printf 'Unregistered service principal was not denied without disclosure.\n' >&2
+      exit 1
+    fi
   fi
   progress_file="$state_dir/progress"
   if ! CLAIMCORE_WEB_BASE_URL="$origin" CLAIMCORE_WEB_E2E_ENGINE="$engine" \

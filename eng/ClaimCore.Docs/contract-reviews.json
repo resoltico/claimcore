@@ -175,7 +175,7 @@
       "reviewer": "Agent reviewed the exact current heading and listed implementation and assertion sources; this is source review of local synthetic boundaries, not execution evidence, independent owner approval, or live real-data qualification.",
       "reviewedOn": "2026-09-27",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "d5b901ffe34a8a41950e246ce6d76c1a719869770acfa892cbe1aa6ce2e3df81",
+      "reviewSubjectHash": "4c09cf95aaa84f8731da481f6594bffc452f9d29e536d003059902ff545e51a9",
       "wholeFiles": [
         "db/baseline.sql",
         "src/ClaimCore.Postgres/ManagedCopyVerifiedDeletion.fs",
@@ -185,6 +185,8 @@
         "src/ClaimCore.Database/DatabaseBackupHealthExecution.fs",
         "eng/backup/managed.py",
         "eng/backup/Capture-FencedBackup.py",
+        "eng/backup/Restore-AdvanceIsolatedPair.sh",
+        "eng/backup/Restore-IsolatedTestPair.sh",
         "tests/ClaimCore.IntegrationTests/ManagedCopyVerifiedDeletionTests.fs",
         "tests/ClaimCore.IntegrationTests/BackupCapturePhysicalTests.fs",
         "tests/ClaimCore.IntegrationTests/ManagedCopyPhysicalProcessTests.fs",
@@ -550,7 +552,7 @@
       "reviewer": "Agent reviewed the exact current heading and listed implementation and assertion sources; this is source review of local synthetic boundaries, not execution evidence, independent owner approval, or live real-data qualification.",
       "reviewedOn": "2026-09-27",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "a86509b1f8b48205adf86697261d8b231e00c5dcb2b9a839c16d54e6513e0498",
+      "reviewSubjectHash": "942142bf9ce59b8207d7f798de9e09e3de8ec32b7445b5b2e09496ca2fbaf90a",
       "wholeFiles": [
         "docs/diagnostics.md",
         "eng/ClaimCore.ContractGenerator/Artifacts.fs",

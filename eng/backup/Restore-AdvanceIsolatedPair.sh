@@ -74,10 +74,11 @@ start_one() {
     sed -nE 's/^(0\.0\.0\.0|127\.0\.0\.1):([0-9]+)$/\2/p')"
   [[ "$port" =~ ^[0-9]+$ ]]
   stage="${name}-ready"
-  for attempt in {1..10}; do
+  # The published Docker port may lag a successful PostgreSQL start under concurrent drills.
+  for attempt in {1..30}; do
     if pg_isready -q -h 127.0.0.1 -p "$port" -t 2; then break; fi
-    [[ "$attempt" != 10 ]]
-    sleep 0.2
+    [[ "$attempt" != 30 ]]
+    sleep 0.5
   done
   started_port="$port"
 }
