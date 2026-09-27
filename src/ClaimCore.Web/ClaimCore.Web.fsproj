@@ -9,12 +9,25 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="AuthFoundation.fs" />
+    <Compile Include="OidcTrustRoot.fs" />
+    <Compile Include="WebPrivateKeyPaths.fs" />
     <Compile Include="Configuration.fs" />
     <Compile Include="Security.fs" />
+    <Compile Include="AuthMiddleware.fs" />
     <Compile Include="JsonUnicode.fs" />
     <Compile Include="HttpInputSupport.fs" />
     <Compile Include="HttpCommandInput.fs" />
     <Compile Include="HttpRecoveryInput.fs" />
+    <Compile Include="HttpManagementInput.fs" />
+    <Compile Include="HttpSignerApprovalInput.fs" />
+    <Compile Include="HttpCopyDeletionApprovalInput.fs" />
+    <Compile Include="HttpCopyAdoptionApprovalInput.fs" />
+    <Compile Include="HttpWriterHandoffApprovalInput.fs" />
+    <Compile Include="HttpRealDataActivationInput.fs" />
+    <Compile Include="HttpLifecycleInput.fs" />
+    <Compile Include="HttpTombstoneInput.fs" />
+    <Compile Include="HttpTombstoneTerminalInput.fs" />
     <Compile Include="HttpInput.fs" />
     <Compile Include="WebContract.fs" />
     <Compile Include="WireOutcomes.fs" />
@@ -23,6 +36,13 @@
     <Compile Include="Admission.fs" />
     <Compile Include="RouteSupport.fs" />
     <Compile Include="Routes.fs" />
+    <Compile Include="LifecycleRoutes.fs" />
+    <Compile Include="TombstoneRoutes.fs" />
+    <Compile Include="SignerApprovalRoutes.fs" />
+    <Compile Include="CopyDeletionApprovalRoutes.fs" />
+    <Compile Include="CopyAdoptionApprovalRoutes.fs" />
+    <Compile Include="WriterHandoffApprovalRoutes.fs" />
+    <Compile Include="RealDataActivationRoutes.fs" />
     <Compile Include="ApiRoutes.fs" />
     <Compile Include="HostRoutes.fs" />
     <Compile Include="Program.fs" />
@@ -33,6 +53,10 @@
     <ProjectReference Include="../ClaimCore.Application/ClaimCore.Application.fsproj" />
     <ProjectReference Include="../ClaimCore.Contracts/ClaimCore.Contracts.fsproj" />
     <ProjectReference Include="../ClaimCore.Hosting/ClaimCore.Hosting.fsproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" />
   </ItemGroup>
   <Target Name="ConsumeFrontendAssets" BeforeTargets="ComputeFilesToPublish">
     <Exec Command="node &quot;$(WebClientDirectory)/scripts/verify-asset-manifest.mjs&quot;" />

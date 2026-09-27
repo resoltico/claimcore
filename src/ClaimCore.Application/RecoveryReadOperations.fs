@@ -73,6 +73,10 @@ module internal RecoveryReadOperations =
                     match! recovery.List(view, cursor, limit, cancellationToken) with
                     | Error RecoveryStoreFailure.ReadCancelled ->
                         return RecoveryQueryOutcome.RecoveryCancelled
+                    | Error RecoveryStoreFailure.ResourceUnavailable ->
+                        return
+                            RecoveryQueryOutcome.RecoveryRejected
+                                RecoveryRejection.ResourceUnavailable
                     | Error failure ->
                         return
                             RecoveryQueryOutcome.RecoveryFailed(
@@ -94,7 +98,7 @@ module internal RecoveryReadOperations =
         (authority: RecoveryAuthority)
         : Task<RecoveryQueryOutcome<Lookup<RecoveryInspection, Guid>>> =
         task {
-            let attemptPage =
+            let attemptPage: PreparationAttemptPage =
                 {
                     Items = attempts.Items
                     NextCursor = attempts.NextAfter |> Option.map RecoveryAttemptCursorCodec.encode
@@ -168,6 +172,8 @@ module internal RecoveryReadOperations =
             match! recovery.Inspect(operationId, cursor, limit, cancellationToken) with
             | Error RecoveryStoreFailure.ReadCancelled ->
                 return RecoveryQueryOutcome.RecoveryCancelled
+            | Error RecoveryStoreFailure.ResourceUnavailable ->
+                return RecoveryQueryOutcome.RecoveryRejected RecoveryRejection.ResourceUnavailable
             | Error failure ->
                 return RecoveryQueryOutcome.RecoveryFailed(TypedProjection.recoveryFault failure)
             | Ok inspected -> return! inspectStored store operationId cancellationToken inspected
@@ -221,6 +227,12 @@ module internal RecoveryReadOperations =
                     return ResolveOutcome.ResolveObservedAccepted(TypedProjection.receipt receipt)
                 | Error CoreFailure.IdempotencyConflict ->
                     return ResolveOutcome.RefusedBeforeAttempt(None, RecoverySupport.conflict)
+                | Error CoreFailure.ResourceUnavailable ->
+                    return
+                        ResolveOutcome.RefusedBeforeAttempt(
+                            None,
+                            RecoveryRejection.ResourceUnavailable
+                        )
                 | Error failure ->
                     return
                         ResolveOutcome.ResolveFailedBeforeAttempt(

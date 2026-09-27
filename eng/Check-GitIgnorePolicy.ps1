@@ -66,7 +66,7 @@ $mustRemainVisible = @(
     "src/ClaimCore.HostSecurity/PosixPrivateNative.fs",
     "web/.prettierignore", "web/package.json", "web/package-lock.json", "web/src/App.tsx",
     "web/src/generated/convergence/semantic-core-v1.contract.json",
-    "web/src/generated/convergence/web-v2.endpoint-catalog.ts"
+    "web/src/generated/convergence/web-v3.endpoint-catalog.ts"
 )
 
 if (-not [IO.Directory]::Exists($repoRoot)) {

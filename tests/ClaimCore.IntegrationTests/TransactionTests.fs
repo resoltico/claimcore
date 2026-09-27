@@ -137,7 +137,24 @@ let private absentCaseConcurrencyTests =
                             | Error(CoreFailure.Domain(DomainError.VersionConflict 1L)) -> Some()
                             | _ -> None)
 
-                    Expect.equal conflicts.Length 1 "The contender observes revision one"
+                    let categories =
+                        outcomes
+                        |> Array.map (function
+                            | Ok _ -> "ACCEPTED"
+                            | Error(CoreFailure.Domain(DomainError.VersionConflict _)) ->
+                                "REVISION_CONFLICT"
+                            | Error CoreFailure.ResourceUnavailable -> "RESOURCE_UNAVAILABLE"
+                            | Error(CoreFailure.Domain _) -> "DOMAIN_REJECTION"
+                            | Error CoreFailure.StoreUnavailable -> "STORE_UNAVAILABLE"
+                            | Error CoreFailure.StoreCorrupt -> "STORE_CORRUPT"
+                            | Error(CoreFailure.CommitOutcomeUnknown _) -> "COMMIT_UNKNOWN"
+                            | Error _ -> "OTHER_FAILURE")
+
+                    Expect.equal
+                        conflicts.Length
+                        1
+                        ("The contender observes revision one; safe categories: "
+                         + String.concat "," categories)
 
                     let history = service.History(first.CaseReference, 0L) |> await |> accepted
 

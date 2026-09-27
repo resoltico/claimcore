@@ -7,6 +7,9 @@ open ClaimCore.WebTests.RouteFixtures
 open ClaimCore.WebTests.TestServerFixture
 open ClaimCore.WebTests.TestServerOutcomeValues
 
+let private commandDraft =
+    """{"operationId":"40000000-0000-4000-8000-000000000001","caseReference":"WEB-V2-001","expectedRevision":"0","command":{"kind":"OPEN","values":{"incidentDate":"2026-09-01","incidentNotificationDate":"2026-09-02","incidentCountry":"Latvia","claimantName":"Synthetic claimant","insurerName":"Synthetic insurer","claimedAmount":"12.34","claimedCurrency":"EUR"}}}"""
+
 let private getOutcomes (host: Host) token =
     let invoke value tag lookup =
         host.Runtime.GetOutcome <- Some value
@@ -25,6 +28,43 @@ let private getOutcomes (host: Host) token =
     invoke (QueryOutcome.Failed fault) "FAILED" None
     invoke QueryOutcome.Cancelled "CANCELLED" None
 
+let private noExistenceResponseParity () =
+    use host = Host.Start()
+    Expect.equal (host.Login().Status) 200 "Synthetic session"
+    let token = host.SessionToken()
+    host.Runtime.GetOutcome <- Some(QueryOutcome.Rejected Rejection.ResourceUnavailable)
+    host.Runtime.ObserveOutcome <- Some(QueryOutcome.Rejected Rejection.ResourceUnavailable)
+
+    let sendCase reference =
+        host.Send(
+            System.Net.Http.HttpMethod.Post,
+            "/api/v3/cases/get",
+            Some($"""{{"caseReference":"{reference}"}}"""),
+            Some "application/json",
+            Some token
+        )
+
+    let sendOperation operation =
+        host.Send(
+            System.Net.Http.HttpMethod.Post,
+            "/api/v3/operations/observe",
+            Some($"""{{"operationId":"{operation}"}}"""),
+            Some "application/json",
+            Some token
+        )
+
+    for first, second in
+        [
+            sendCase caseReference, sendCase "NO-SUCH-CASE"
+            sendOperation (operationId.ToString("D")),
+            sendOperation "50000000-0000-4000-8000-000000000001"
+        ] do
+        Expect.equal first.Status second.Status "Identical public HTTP status"
+        Expect.equal first.Body second.Body "Identical non-disclosing body and guidance"
+        Expect.stringContains first.CacheControl "no-store" "Refusal is not cached"
+
+    Expect.equal host.Runtime.CoreCalls 4 "Both identity classes reached one typed core call"
+
 let private listOutcomes (host: Host) token =
     let success =
         QueryOutcome.Succeeded
@@ -37,7 +77,7 @@ let private listOutcomes (host: Host) token =
                             Status = current.Record.Fields.Status
                         }
                     ]
-                NextAfterReference = None
+                NextCursor = None
             }
 
     for value, expected in
@@ -119,8 +159,7 @@ let private queryRouteOutcomes () =
     Expect.equal host.Runtime.CoreCalls 19 "Every query branch traversed the typed core route"
 
 let private prepareOutcomes (host: Host) token =
-    let request =
-        """{"operationId":"40000000-0000-4000-8000-000000000001","caseReference":"WEB-V2-001","expectedRevision":"0","command":{"kind":"OPEN","values":{"incidentDate":"2026-09-01","incidentNotificationDate":"2026-09-02","incidentCountry":"Latvia","claimantName":"Synthetic claimant","insurerName":"Synthetic insurer","claimedAmount":"12.34","claimedCurrency":"EUR"}}}"""
+    let request = commandDraft
 
     for value, expected in
         [
@@ -170,31 +209,32 @@ let private prepareOutcomes (host: Host) token =
                 "Unknown preparation retains digest"
 
 let private submitOutcomes (host: Host) token =
-    let request = $"""{{"operationId":"{operationId:D}","requestSha256":"{digest}"}}"""
+    let request = commandDraft
 
     for value, expected in
         [
-            ResolveOutcome.ResolveObservedAccepted receipt, "OBSERVED_ACCEPTED"
-            ResolveOutcome.ResolveCompleted(
+            SubmissionOutcome.ObservedAccepted receipt, "OBSERVED_ACCEPTED"
+            SubmissionOutcome.Completed(
                 preparationSummary,
                 attemptId,
                 DefiniteExecution.Accepted receipt,
                 SettlementConfirmation.Unconfirmed
             ),
             "COMPLETED"
-            ResolveOutcome.RefusedBeforeAttempt(Some preparationSummary, recoveryRejection),
+            SubmissionOutcome.RejectedBeforeAttempt(Some preparationSummary, rejection),
             "REFUSED_BEFORE_ATTEMPT"
-            ResolveOutcome.ResolveFailedBeforeAttempt(Some preparationSummary, fault),
+            SubmissionOutcome.FailedBeforeAttempt(Some preparationSummary, fault),
             "FAILED_BEFORE_ATTEMPT"
-            ResolveOutcome.ResolveCancelledBeforeAdmission operationId, "CANCELLED_BEFORE_ADMISSION"
-            ResolveOutcome.ResolveCancelledBeforeAttempt preparationSummary,
-            "CANCELLED_BEFORE_ATTEMPT"
-            ResolveOutcome.ResolveAttemptAdmissionUnknown(preparationSummary, fault),
+            SubmissionOutcome.CancelledBeforeAdmission operationId, "CANCELLED_BEFORE_ADMISSION"
+            SubmissionOutcome.CancelledBeforeAttempt preparationSummary, "CANCELLED_BEFORE_ATTEMPT"
+            SubmissionOutcome.AttemptAdmissionUnknown(preparationSummary, fault),
             "ATTEMPT_ADMISSION_UNKNOWN"
-            ResolveOutcome.ResolveAttemptUnresolved(preparationSummary, attemptId, fault),
+            SubmissionOutcome.AttemptUnresolved(preparationSummary, attemptId, fault),
             "ATTEMPT_UNRESOLVED"
+            SubmissionOutcome.PreparationStateUnknown(operationId, digest, fault),
+            "PREPARATION_STATE_UNKNOWN"
         ] do
-        host.Runtime.ResolveOutcome <- Some value
+        host.Runtime.ExecuteOutcome <- Some value
 
         let data =
             postJson host token "command.execute" request
@@ -211,16 +251,19 @@ let private mutationRouteOutcomes () =
     let token = authenticated host
     prepareOutcomes host token
     submitOutcomes host token
-    Expect.equal host.Runtime.CoreCalls 7 "Prepare alone calls the core mutation facade"
-    Expect.equal host.Runtime.RecoveryCalls 8 "Submit delegates to recovery resolution"
+    Expect.equal host.Runtime.CoreCalls 16 "Prepare and submit use the actor-bound core"
+    Expect.equal host.Runtime.RecoveryCalls 0 "Ordinary submit does not borrow recovery authority"
 
 let tests =
     testList
-        "Web HTTP-v2 TestServer"
+        "Web HTTP-v3 TestServer"
         [
             testCase
                 "[CC-WEB-001] case and operation routes preserve found, absent, rejected, failed, and cancelled core outcomes"
                 queryRouteOutcomes
+            testCase
+                "[CC-WEB-001] inaccessible and absent case or operation have identical public responses"
+                noExistenceResponseParity
             testCase
                 "[CC-WEB-001] preparation and submission routes preserve definite, unknown, and exact-digest outcomes"
                 mutationRouteOutcomes

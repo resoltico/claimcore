@@ -16,6 +16,7 @@ module internal TypedProjection =
         match failure with
         | RecoveryStoreFailure.InvalidInput _ -> CoreFault.RecoveryResponseInvalid
         | RecoveryStoreFailure.IdempotencyConflict -> CoreFault.RecoveryContentConflict
+        | RecoveryStoreFailure.ResourceUnavailable -> CoreFault.RecoveryResponseInvalid
         | RecoveryStoreFailure.NotFound -> CoreFault.RecoveryPreparationMissing
         | RecoveryStoreFailure.CapacityExceeded -> CoreFault.RecoveryCapacityExhausted
         | RecoveryStoreFailure.SchemaMismatch -> CoreFault.RecoverySchemaMismatch
@@ -190,7 +191,8 @@ module internal TypedProjection =
                 }
         }
 
-    let private emptyAttemptPage = { Items = []; NextCursor = None }
+    let private emptyAttemptPage: PreparationAttemptPage =
+        { Items = []; NextCursor = None }
 
     let private detailsWithAuthority
         (preparation: RetainedPreparation)
@@ -214,7 +216,6 @@ module internal TypedProjection =
                     PreparingContractFingerprint = preparation.PreparingContractFingerprint
                     PreparingContractKind =
                         match preparation.PreparingContractKind with
-                        | PreparingContractKind.CanonicalRecordV3 -> "CANONICAL_RECORD_V3"
                         | PreparingContractKind.SemanticCoreV1 -> "SEMANTIC_CORE_V1"
                     Attempts = attempts
                 }

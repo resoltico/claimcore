@@ -33,14 +33,13 @@ module internal TypedQueries =
                                     Lookup.Found(TypedProjection.currentCase claim)
                                 )
                         | Ok None -> return QueryOutcome.Succeeded(Lookup.NotFound reference)
+                        | Error CoreFailure.ResourceUnavailable ->
+                            return QueryOutcome.Rejected Rejection.ResourceUnavailable
                         | Error failure ->
                             return QueryOutcome.Failed(TypedProjection.coreFault failure)
                 }
 
-    let private casePage
-        (request: CaseListRequest)
-        (page: ClaimCore.Application.CasePage)
-        : CaseSummaryPage =
+    let private casePage (page: ClaimCore.Application.CasePage) : CaseSummaryPage =
         let items =
             page.Items
             |> List.map (
@@ -53,17 +52,9 @@ module internal TypedQueries =
                     }
             )
 
-        let visible = items |> List.truncate request.Limit
-
-        let next =
-            if items.Length > visible.Length then
-                visible |> List.tryLast |> Option.map (fun item -> item.CaseReference)
-            else
-                page.NextAfter
-
         {
-            Items = visible
-            NextAfterReference = next
+            Items = items
+            NextCursor = page.NextCursor
         }
 
     let list
@@ -71,31 +62,25 @@ module internal TypedQueries =
         (request: CaseListRequest)
         (cancellationToken: CancellationToken)
         : Task<QueryOutcome<CaseSummaryPage>> =
-        let validAfter =
-            request.AfterReference
-            |> Option.map Claim.validateReference
-            |> Option.defaultValue (Ok())
-
         if cancellationToken.IsCancellationRequested then
             Task.FromResult(QueryOutcome.Cancelled)
         elif request.Limit < 1 || request.Limit > limit then
             Task.FromResult(QueryOutcome.Rejected(Rejection.PageLimitOutOfRange limit))
         else
-            match validAfter with
-            | Error rejection ->
-                Task.FromResult(QueryOutcome.Rejected(TypedProjection.rejection rejection))
-            | Ok() ->
-                task {
-                    let! result = store.List request.AfterReference
+            task {
+                let! result = store.List request
 
-                    if cancellationToken.IsCancellationRequested then
-                        return QueryOutcome.Cancelled
-                    else
-                        match result with
-                        | Error failure ->
-                            return QueryOutcome.Failed(TypedProjection.coreFault failure)
-                        | Ok page -> return QueryOutcome.Succeeded(casePage request page)
-                }
+                if cancellationToken.IsCancellationRequested then
+                    return QueryOutcome.Cancelled
+                else
+                    match result with
+                    | Error CoreFailure.InvalidCaseListCursor ->
+                        return QueryOutcome.Rejected Rejection.InvalidCaseListCursor
+                    | Error CoreFailure.ResourceUnavailable ->
+                        return QueryOutcome.Rejected Rejection.ResourceUnavailable
+                    | Error failure -> return QueryOutcome.Failed(TypedProjection.coreFault failure)
+                    | Ok page -> return QueryOutcome.Succeeded(casePage page)
+            }
 
     let private historyEntry (detail: HistoryDetail) (value: Receipt) : HistoryEntry =
         match detail with
@@ -153,6 +138,8 @@ module internal TypedQueries =
                 return QueryOutcome.Cancelled
             else
                 match current with
+                | Error CoreFailure.ResourceUnavailable ->
+                    return QueryOutcome.Rejected Rejection.ResourceUnavailable
                 | Error failure -> return QueryOutcome.Failed(TypedProjection.coreFault failure)
                 | Ok None -> return QueryOutcome.Succeeded(Lookup.NotFound request.CaseReference)
                 | Ok(Some _) ->
@@ -162,6 +149,8 @@ module internal TypedQueries =
                         return QueryOutcome.Cancelled
                     else
                         match result with
+                        | Error CoreFailure.ResourceUnavailable ->
+                            return QueryOutcome.Rejected Rejection.ResourceUnavailable
                         | Error failure ->
                             return QueryOutcome.Failed(TypedProjection.coreFault failure)
                         | Ok page ->
@@ -216,5 +205,7 @@ module internal TypedQueries =
                     return QueryOutcome.Succeeded(Lookup.Found(TypedProjection.receipt value))
                 | _ when cancellationToken.IsCancellationRequested -> return QueryOutcome.Cancelled
                 | Ok None -> return QueryOutcome.Succeeded(Lookup.NotFound operationId)
+                | Error CoreFailure.ResourceUnavailable ->
+                    return QueryOutcome.Rejected Rejection.ResourceUnavailable
                 | Error failure -> return QueryOutcome.Failed(TypedProjection.coreFault failure)
             }

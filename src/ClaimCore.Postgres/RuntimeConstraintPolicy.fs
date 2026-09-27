@@ -25,7 +25,7 @@ module internal RuntimeConstraintPolicy =
                 ('cases', 'paid_requires_decision', 'c'),
                 ('case_changes', 'case_changes_pkey', 'p'),
                 ('case_changes', 'case_changes_case_reference_revision_key', 'u'),
-                ('case_changes', 'case_changes_case_reference_fkey', 'f'),
+                ('case_changes', 'case_changes_case_id_case_reference_fkey', 'f'),
                 ('case_changes', 'case_changes_operation_id_check', 'c'),
                 ('case_changes', 'case_changes_revision_check', 'c'),
                 ('case_changes', 'case_changes_command_name_check', 'c'),

@@ -51,7 +51,7 @@ let private privateSource directory name bytes =
     stream.Flush(true)
     path
 
-let private invoke path =
+let private invokeCommand command path =
     let dll = Path.Combine(AppContext.BaseDirectory, "ClaimCore.Database.dll")
     Expect.isTrue (File.Exists(dll)) "Built Database application is available"
     let start = ProcessStartInfo("dotnet")
@@ -59,7 +59,7 @@ let private invoke path =
     start.RedirectStandardOutput <- true
     start.RedirectStandardError <- true
     start.ArgumentList.Add(dll)
-    start.ArgumentList.Add("verify")
+    command |> List.iter start.ArgumentList.Add
 
     start.Environment.Keys
     |> Seq.filter (fun key ->
@@ -79,6 +79,8 @@ let private invoke path =
         failtest "Database private-file rejection timed out"
 
     child.ExitCode, stdout.GetAwaiter().GetResult(), stderr.GetAwaiter().GetResult()
+
+let private invoke path = invokeCommand [ "verify" ] path
 
 let private expectRefused path =
     let exitCode, stdout, stderr = invoke path
@@ -132,6 +134,48 @@ let private boundary () =
 
             expectRefused oversized)
 
+let private witnessPruneProposalBoundary () =
+    withSandbox (fun directory ->
+        let admin =
+            privateSource
+                directory
+                "owner.connection"
+                (Encoding.UTF8.GetBytes(
+                    "Host=127.0.0.1;Port=1;Database=synthetic;Username=synthetic;Password=synthetic-admin-marker"
+                ))
+
+        let expectProposalRefused path =
+            let exitCode, stdout, stderr = invokeCommand [ "prune-witness-payload"; path ] admin
+
+            Expect.equal exitCode 3 "Invalid proposal is rejected before owner connection"
+            Expect.equal stdout "" "No success output on refused proposal"
+            use parsed = System.Text.Json.JsonDocument.Parse(stderr)
+
+            Expect.equal
+                (parsed.RootElement.GetProperty("diagnostic").GetProperty("id").GetString())
+                "DB_ERASURE_PROPOSAL_FILE_REFUSED"
+                "Private proposal refusal is typed"
+
+            Expect.isFalse (stderr.Contains(path, StringComparison.Ordinal)) "Path is not echoed"
+
+            Expect.isFalse
+                (stderr.Contains("synthetic-admin-marker", StringComparison.Ordinal))
+                "Owner credential is not echoed"
+
+        expectProposalRefused (Path.Combine(directory, "missing.proposal"))
+
+        if not (OperatingSystem.IsWindows()) then
+            let malformed =
+                privateSource
+                    directory
+                    "malformed.proposal"
+                    (Encoding.UTF8.GetBytes("{\"version\":1}"))
+
+            expectProposalRefused malformed
+            let link = Path.Combine(directory, "proposal-link")
+            File.CreateSymbolicLink(link, malformed) |> ignore
+            expectProposalRefused link)
+
 let tests =
     testList
         "Database admin private-file boundary"
@@ -139,4 +183,7 @@ let tests =
             testCase
                 "[CC-DB-002] schema-owner credential rejects unsafe mode, links, UTF-8, and size before database access"
                 boundary
+            testCase
+                "[CC-ERASE-001] owner witness prune rejects missing linked and malformed private proposals"
+                witnessPruneProposalBoundary
         ]

@@ -61,7 +61,7 @@ that builder's eligible cache records, not just ClaimCore's, and prompts before 
 ## Complete verification
 
 A complete result is conjunctive: locked restore, compiler build, repository policy, every required
-test project, generated semantic/CLI-v3/Web-v2 contract check, frontend assurance, documentation,
+test project, generated semantic/CLI-v4/Web-v3 contract check, frontend assurance, documentation,
 fresh-baseline creation/refusal database qualifications, published CLI acceptance, published browser
 lifecycle, coverage, and evidence must all succeed for the same source. Do not relabel one green
 family as the whole gate.
@@ -81,19 +81,23 @@ Run every project explicitly:
 ```sh
 dotnet test --project tests/ClaimCore.Tests/ClaimCore.Tests.fsproj \
   --configuration Release --no-build --no-restore \
-  --minimum-expected-tests=268 --zero-tests-policy=strict --timeout=10m -- \
+  --minimum-expected-tests=333 --zero-tests-policy=strict --timeout=10m -- \
   --settings="$PWD/eng/expecto.runsettings"
 dotnet test --project tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj \
   --configuration Release --no-build --no-restore \
-  --minimum-expected-tests=62 --zero-tests-policy=strict --timeout=10m -- \
+  --minimum-expected-tests=115 --zero-tests-policy=strict --timeout=10m -- \
   --settings="$PWD/eng/expecto.runsettings"
 dotnet test --project tests/ClaimCore.DocsTests/ClaimCore.DocsTests.fsproj \
   --configuration Release --no-build --no-restore \
-  --minimum-expected-tests=73 --zero-tests-policy=strict --timeout=10m -- \
+  --minimum-expected-tests=74 --zero-tests-policy=strict --timeout=10m -- \
   --settings="$PWD/eng/expecto.runsettings"
 dotnet test --project tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj \
   --configuration Release --no-build --no-restore \
-  --minimum-expected-tests=114 --zero-tests-policy=strict --timeout=30m -- \
+  --minimum-expected-tests=333 --zero-tests-policy=strict --timeout=90m -- \
+  --settings="$PWD/eng/expecto.runsettings"
+dotnet test --project tests/ClaimCore.WitnessTests/ClaimCore.WitnessTests.fsproj \
+  --configuration Release --no-build --no-restore \
+  --minimum-expected-tests=21 --zero-tests-policy=strict --timeout=20m -- \
   --settings="$PWD/eng/expecto.runsettings"
 dotnet test --project tests/ClaimCore.RecoveryQualificationTests/ClaimCore.RecoveryQualificationTests.fsproj \
   --configuration Release --no-build --no-restore \
@@ -106,6 +110,10 @@ dotnet test --project tests/ClaimCore.ConcurrencyQualificationTests/ClaimCore.Co
 dotnet test --project tests/ClaimCore.MigrationQualificationTests/ClaimCore.MigrationQualificationTests.fsproj \
   --configuration Release --no-build --no-restore \
   --minimum-expected-tests=15 --zero-tests-policy=strict --timeout=20m -- \
+  --settings="$PWD/eng/expecto.runsettings"
+dotnet test --project tests/ClaimCore.BackupQualificationTests/ClaimCore.BackupQualificationTests.fsproj \
+  --configuration Release --no-build --no-restore \
+  --minimum-expected-tests=2 --zero-tests-policy=strict --timeout=20m -- \
   --settings="$PWD/eng/expecto.runsettings"
 dotnet test --project tests/ClaimCore.FuzzQualificationTests/ClaimCore.FuzzQualificationTests.fsproj \
   --configuration Release --no-build --no-restore \
@@ -126,8 +134,8 @@ The integration and qualification processes create exactly labelled isolated Pos
 The separate qualification executables prevent a generic integration pass from being reported as
 recovery, concurrency, or fresh-baseline evidence.
 
-`ClaimCore.WebTests` includes production-route `TestServer` requests for all nineteen generated
-Web-v2 endpoints, real session cookies and antiforgery admission, retired-route 404 behavior, raw
+`ClaimCore.WebTests` includes production-route `TestServer` requests for all thirty-three generated
+Web-v3 endpoints, OIDC session cookies and antiforgery admission, retired-route 404 behavior, raw
 import bounds, and typed host failures. Its direct-context tests still cover narrower decoder and
 wire projection seams; those do not substitute for route execution.
 Windows CI builds and exercises fail-closed private-file branches, but the current private-file
@@ -140,7 +148,7 @@ runs 5,000 for both:
 CLAIMCORE_PROPERTY_PROFILE=extended CLAIMCORE_PROPERTY_BASE_SEED=<unsigned-seed> \
 dotnet test --project tests/ClaimCore.Tests/ClaimCore.Tests.fsproj \
   --configuration Release --no-build --no-restore \
-  --minimum-expected-tests=268 --zero-tests-policy=strict --timeout=20m -- \
+  --minimum-expected-tests=333 --zero-tests-policy=strict --timeout=20m -- \
   --settings="$PWD/eng/expecto.runsettings"
 ```
 
@@ -161,7 +169,7 @@ test ! -e "$claimcore_arch_results"
 CLAIMCORE_ARCHITECTURE_REPORT="$PWD/$claimcore_arch_results/architecture-report.json" \
 dotnet test --project tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj \
   --configuration Debug --no-build --no-restore --results-directory="$claimcore_arch_results" \
-  --minimum-expected-tests=86 --zero-tests-policy=strict --timeout=10m -- \
+  --minimum-expected-tests=88 --zero-tests-policy=strict --timeout=10m -- \
   --settings="$PWD/eng/expecto.runsettings"
 ```
 
@@ -231,7 +239,7 @@ npm --prefix web run build
 
 `npm run build` is the sole frontend asset producer. The native TypeScript compiler uses composite
 project references and the Vitest suite uses isolated, machine-scaled file workers. Publication
-requires the resulting manifest to match source, npm lock, generated semantic/CLI-v3/Web-v2 contract,
+requires the resulting manifest to match source, npm lock, generated semantic/CLI-v4/Web-v3 contract,
 Node/npm versions, notices, and asset bytes. See [`web/README.md`](../web/README.md) for frontend
 structure and the current compiler-API compatibility arrangement.
 
@@ -312,7 +320,7 @@ complexity, focused-test, contract-drift, and security-boundary rules are non-su
 `eng/test-baseline-v0.1.json` is immutable evidence of the pre-convergence test identity set.
 `eng/test-lineage.json` maps every baseline identity to a retained or stronger replacement test, and
 `eng/assurance-matrix.json` maps every typed endpoint, outcome, recovery transition, cancellation
-boundary, CLI-v3/Web-v2 transport branch, and GUI workflow to live tests. Run the convergence check
+boundary, CLI-v4/Web-v3 transport branch, and GUI workflow to live tests. Run the convergence check
 and its negative controls above after every test identity or matrix change. Each endpoint matrix row
 must list the exact outcome tags parsed from its generated response schema; deleting an endpoint,
 branch, outcome tag, or registered assurance subject fails policy. Test counts alone are not
@@ -347,9 +355,7 @@ quality or identity of the reviewer.
 
 ### Published acceptance
 
-The CLI acceptance harness builds fresh CLI and Database publish trees with their license, .NET SBOM,
-third-party notices, and immutable manifests, then runs the registered process tests against an
-isolated freshly initialized database:
+The CLI acceptance harness builds fresh CLI, Web, and Database publish trees with their license, .NET SBOM, third-party notices, and immutable manifests. It then runs the exact 16 registered CLI-v4 process tests against an isolated primary/witness pair and synthetic Keycloak over the published HTTPS service, including confidential automation and public-client PKCE. It never gives the CLI a database credential:
 
 ```text
 bash eng/Run-PublishedCliAcceptance.sh
@@ -361,6 +367,7 @@ assets, publish Web and Database into new ignored directories, then invoke the h
 ```sh
 npm --prefix web exec -- playwright install --with-deps chromium firefox webkit
 npm --prefix web run build
+bash eng/Test-HostSecurityNativePublishItems.sh
 claimcore_browser_publish="artifacts/browser-publish/run-$(date -u +%Y%m%dT%H%M%SZ)"
 test ! -e "$claimcore_browser_publish"
 dotnet publish src/ClaimCore.Web/ClaimCore.Web.fsproj --configuration Release --no-restore --output "$claimcore_browser_publish/web" -p:UseAppHost=false
@@ -368,12 +375,7 @@ dotnet publish src/ClaimCore.Database/ClaimCore.Database.fsproj --configuration 
 bash eng/Run-PublishedWebE2E.sh "$claimcore_browser_publish/web" "$claimcore_browser_publish/database" all
 ```
 
-The harness rejects a Vite server. It creates a separate database, HTTPS host, state directory,
-credential, case references, and operations per engine, then exercises login, every command,
-current/history reads, exact recovery submission/export/dismissal, downloads, and accessibility
-against published bytes. Frontend unit tests cover clipboard success and fallback behavior. The `all`
-scope runs the isolated engines concurrently. Private diagnostics are destroyed; only the sanitized
-versioned result is retained.
+The harness rejects a Vite server. It uses a disposable synthetic OIDC issuer and creates separate primary and witness PostgreSQL clusters, a published HTTPS host, owner-private state, synthetic actors, case references, and operations for each engine. It qualifies browser login, case work, recovery, downloads, and accessibility against published bytes only when every assertion passes. The `all` scope runs Chromium, Firefox, and WebKit serially with fresh isolated state per engine. Same-machine containers do not prove independent-host survival. Private diagnostics are removed after a bounded safe failure summary; only sanitized results are retained.
 
 ### Coverage and evidence
 

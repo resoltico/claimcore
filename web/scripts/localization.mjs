@@ -41,11 +41,11 @@ const semantic = JSON.parse(
   await readFile(resolve(generated, "semantic-core-v1.contract.json"), "utf8"),
 );
 const host = JSON.parse(
-  await readFile(resolve(generated, "web-v2.host-failure.schema.json"), "utf8"),
+  await readFile(resolve(generated, "web-v3.host-failure.schema.json"), "utf8"),
 );
 const requirements = diagnosticRequirements(semantic, host);
 validateCoverage(catalogs.en, semantic, requirements);
-const recoveryTypes = await readFile(resolve(generated, "web-v2.types.recovery.ts"), "utf8");
+const recoveryTypes = await readFile(resolve(generated, "web-v3.types.recovery.ts"), "utf8");
 validateTokens(catalogs.en, renderedTokens(semantic, recoveryTypes));
 await mkdir(output, { recursive: true });
 const expected = {};

@@ -2,7 +2,7 @@ import { expect, it } from "vitest";
 import { calendarDate, displayField, exactAmount, exactInteger } from "../src/presentation/format";
 import { createPresenter } from "../src/presentation/presenter";
 import { defaults, displayLocales } from "../src/presentation/preferences";
-import { definition } from "./v2-ui.fixtures";
+import { definition } from "./v3-ui.fixtures";
 
 it("preserves every permitted amount digit and trailing zero in independent display locales", () => {
   const value = "999999999999999999.0100";

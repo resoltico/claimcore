@@ -214,6 +214,7 @@ module Schema =
         | Some "uuid", _ -> "10000000-0000-4000-8000-000000000001"
         | Some "date-time", _ -> "2026-01-01T00:00:00.0000000+00:00"
         | Some "date", _ -> "2026-01-01"
+        | Some "uri", _ -> "https://identity.example.test"
         | _, Some pattern when pattern.Contains("[0-9a-f]{64}") -> String.replicate 64 "0"
         | _, Some pattern when pattern.Contains("[A-Z]{3}") -> "EUR"
         | _, Some pattern when pattern.Contains("[1-9][0-9]{0,") -> "0"

@@ -38,15 +38,11 @@ dismissal, and import outcomes. The outer outcome still owns commit knowledge. A
 alone does not prove non-commit or authorize retry. Defensive store-cancellation projections retain
 their existing meaning; ordinary cancellation paths still return their cancellation outcomes.
 
-Host/protocol admission failures and local adapter failures remain separate from the core. CLI
-runtime opening, endpoint-shape mismatches and private-export write failures use a closed
-`CliLocalFault` and distinct `localFailure` result (exit 3, stop-and-investigate), not a fabricated
-`CoreFault`. These eight local identities have no input-derived arguments. Raw protocol, Web host and owner-only administration diagnostics are described below; they remain
-separate from business and recovery outcomes.
+Host/protocol admission failures and client-local failures remain separate from the core. CLI-v4 configuration, authentication, invalid service replies, and private-file refusals produce a distinct `localFailure` (exit 3), not a fabricated `CoreFault`; uncertain delivery is preserved as such. Web host and owner-only administration diagnostics remain separate from business and recovery outcomes. No local failure proves that an already dispatched mutation did not commit.
 
 ## Machine contract
 
-Every ordinary CLI-v3/Web-v2 rejection includes `diagnostic.id` and the exact `diagnostic.parameters`
+Every ordinary Web-v3 service rejection includes `diagnostic.id` and the exact `diagnostic.parameters`
 object. For example, an invalid claimed-amount grammar has this cause:
 
 ```json
@@ -75,57 +71,13 @@ and recovery-refusal schemas additionally correlate identity, coarse code, and r
 A contradictory pair is invalid even when both values are separately known. CLI `localFailure` has
 its own exact schema; it cannot admit old core fault shapes as a compatibility fallback.
 
-Canonical request bytes, content-bound operation identity, accepted case fields, revisions, database
-schema and recovery authority are unchanged. No migration is required for this contract-only break.
+The diagnostic vocabulary is part of the current fresh-installation contract. It does not authorize reading an old database with this build or relabeling an old recovery artifact.
 
-## Design and review record
+## Presentation and qualification
 
-The design was reviewed against merged baseline `97a9f23` before implementation. The chosen unit of
-change was ordinary rejection meaning end-to-end, rather than a partial UI translation or a generic
-message dictionary. Design QA required preservation of coarse codes, recommended actions, admission
-ordering and all non-rejection outcomes; explicit tokens rather than source-name-derived identifiers;
-closed safe targets and parameters; and exact positive and negative wire examples.
+Generated service and CLI corpora exercise valid and hostile diagnostic shapes, including absent or extra parameters, cross-family identities, and contradictory code/action pairs. Browser validators and native codecs must agree on those shapes; an English sentence is never a machine identity. [Development](development.md) owns the exact current test commands and evidence inventory.
 
-Implementation QA additionally factored shared parameter metadata in Web schemas to preserve the
-existing standalone-validator size limit. Sharing changes representation, not the admitted data.
-Internal request admission is separated from accepted case state while remaining behind the public
-`Claim` facade. These are agent design and source reviews, not independent owner approval.
-
-The follow-up design was recorded against merged baseline `19d64a45` before product edits. It
-selected core faults and lifecycle refusals end-to-end, rather than a universal string dictionary.
-Separate design QA rejected merging faults into business rejection, interpreting English to find a
-cause, and retaining CLI-invented core faults. It required unchanged admission ordering: resolution
-checks identity and digest before cancellation, whereas recovery list, inspect, dismiss and export
-check cancellation first. Tests exercise both orders and prove no recovery attempt is started.
-
-Implementation QA separated discovery validation into its own lazy chunk instead of increasing the
-existing per-chunk, initial-load or aggregate-compressed size limits. Positive and negative controls
-qualify endpoint ownership, missing groups and lazy artifact loading; the same corpora exercise all
-runtime and standalone validators. This changes loading representation, not accepted wire data or
-editor/recovery state. Two synthetic browser refusal fixtures now use a typed, valid dismissed-
-preparation diagnostic; malformed responses remain rejected rather than tolerated by the UI.
-
-Before merging changes to this policy, the owner reviews the identities and parameters, privacy,
-unchanged outcome/authority semantics, and the deliberate wire/native break. Passing CI or a modified
-review hash is not a substitute for that decision. [Development](development.md) owns verification
-commands and evidence registration.
-
-## Qualification and next boundaries
-
-Native tests cover the closed vocabulary and targets, safe arguments, specific causes emitted by
-real Domain and Application admission, native/CLI/Web parity, fingerprint sensitivity and ambient
-culture independence. Generated CLI and Web corpora include every ordinary, fault, and recovery diagnostic, translated
-explanations, missing or extraneous arguments, cross-family IDs and contradictory code/action
-variants. The CLI corpus also exercises every local failure on every runtime endpoint. The existing runtime and standalone validators must
-agree on these examples; missing or substituted test evidence is still refused by the common gate.
-
-The localization layer provides
-presentation-owned catalogs with an explicit locale/fallback policy. UI language, display locale,
-installation business calendar, currency and jurisdiction are independent. Locale must not enter
-`CaseFields`, canonical records or operation authority. Language switching needs real-locale,
-pseudolocale, RTL and accessibility qualification without losing drafts, reminting operation IDs,
-rebasing revisions, changing authored content or triggering recovery. The [database baseline](database.md) explicitly refuses old storage without changing it; current
-recovery formats reject older artifacts without conversion.
+English, Latvian, and Arabic presentation catalogs are separate from semantic admission. UI language, display locale, installation business calendar, currency, and jurisdiction are independent. A language change cannot alter `CaseFields`, canonical records, an authored draft, a prepared operation ID, or recovery authority. The [database baseline](database.md) refuses old storage without changing it; current recovery formats refuse older artifacts without conversion.
 
 ## Transport, host and administration boundaries
 
@@ -147,13 +99,7 @@ a returned result. Only pre-dispatch failure claims `NOT_STARTED`. Once a respon
 host aborts instead of appending another JSON document. A stopped host or broken response is never
 proof that a command rolled back. Preserve exact authored operation identity for recovery.
 
-CLI endpoint execution returns an `EndpointReply` before it is encoded. Frame-local state records
-runtime acquisition, dispatch, native-result observation and completed output flushing separately.
-The state is reset before every input frame and after successful flushing; no later parse/read
-failure inherits a prior operation ID. A failed write or flush makes one bounded stderr attempt,
-never a second stdout frame or an implicit replay. Exact known operation context is separate from
-diagnostic arguments; retained import identity is captured from its typed result. A potentially
-state-changing frame with lost delivery exits 4, even if its returned result was confirmed.
+CLI-v4 frames are decoded before authentication or HTTPS dispatch. Frame-local state records the exact operation identity, whether remote dispatch may have begun, and whether a validated response was flushed. It is reset before each frame. A failed write or flush makes one bounded stderr attempt, never a second stdout frame or implicit replay; a potentially state-changing frame with lost delivery exits 4 even if the service may have committed.
 
 `HostSecurity` owns closed private-file failures and still has no transport dependency. Consumers
 map those causes into their own diagnostics. No-follow, owner-only, descriptor identity, bounded
@@ -181,43 +127,8 @@ attempt, no automatic maintenance retry. Large terminal counts and byte totals a
 nonnegative Int64 strings, not lossy JSON numbers. Owner-only administration remains isolated from
 case-work hosts, and a diagnostic does not grant permission to change stored state.
 
-## Transport design and separate QA record
+## Consumer compatibility and limits
 
-The transport design was reviewed against merged baseline `dd9fa2f` before product edits. It kept
-native cause ownership at each boundary, presentation outward, and locale out of canonical records.
-Separate design QA rejected arbitrary message/argument bags, English-based HTTP classification,
-previous-frame delivery state and the conflation of maintenance execution with reporting. The
-complete transport/host/administration work is one package, not deferred slices.
+Protocol and host failures use structured diagnostics; old string constructors, writable message records, CLI-v3 envelopes, and the retired Web-v2 route are not supported. Rebuild browser, CLI, and service from matching generated contracts. Native maintenance callers must handle every `AdministrationOutcome` case. These diagnostics describe known categories without exposing claimant payloads, tokens, private paths, or provider exceptions; they do not certify recovery, authorization, backup freshness, or erasure completion.
 
-Implementation QA added real emitted-cause and hostile-schema controls, secret canaries, per-frame
-write/flush/read failures, serialization after native-result observation, and administrative failure
-injection before work, before commit, during commit and after confirmation. Positive controls prove
-successful operation and changed display copy; negative controls prove refusal and no implicit
-replay. Every added test is registered in the same reviewed evidence inventory as its producer.
-These records describe agent design/source review, not independent owner approval.
-
-## Deliberate consumer break
-
-Protocol and host failure objects require structured diagnostics. Host objects also require exact
-status correlation. Process stderr and owner-only administration use their published JSON schemas;
-old string constructors, writable message records and old response shapes are not retained.
-Native maintenance callers must handle every `AdministrationOutcome` case. Rebuild CLI, browser and
-host from matching contracts. Semantic business identity, case fields, request bytes, revisions,
-accepted history and recovery authority do not change. No case-data migration is introduced here.
-
-Presentation catalogs, owner-review enforcement and the fresh database/recovery boundary are
-separate owners of their contracts. The fresh boundary is non-destructive refusal, not a reset.
-The database reference owns installation policy; no release or merge is implied by these checks.
-
-### Browser validation loading and size review
-
-Host-failure validation is emitted once in a separate lazy module, not duplicated in
-each discovery, core and recovery module. The existing runtime and standalone
-corpora qualify the same strict schemas; this changes loading, not admission.
-
-The expanded product diagnostics increase the aggregate compressed JavaScript
-budget from 192 KiB to 200 KiB. The measured candidate is 197,683 bytes at gzip
-level 9, including the shared host validator (5,141 bytes). The per-chunk 600 KiB,
-initial-load 900 KiB and CSS 64 KiB limits are unchanged. This is an explicit
-feature-size budget revision for owner review, not a claim of unchanged budgets
-or a relaxation of diagnostic, coverage or evidence validation.
+The browser loads its strict host, discovery, core, and recovery validator groups on demand. Generated schema and validator checks, size limits, and complete tests are owned by [Development](development.md). The fresh database boundary is non-destructive refusal of old storage, not an automatic migration or reset.

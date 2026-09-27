@@ -1,11 +1,11 @@
-import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { readFile, writeFile } from "node:fs/promises";
+import { isAbsolute, resolve } from "node:path";
 
 import { AxeBuilder } from "@axe-core/playwright";
 import { expect, type BrowserContext, type Page } from "@playwright/test";
 
-import { isHostFailure, isWebV2Response } from "../src/generated/convergence/web-v2.validation";
-import type { HostFailure, WebV2Response } from "../src/generated/convergence/web-v2.types";
+import { isHostFailure, isWebV3Response } from "../src/generated/convergence/web-v3.validation";
+import type { HostFailure, WebV3Response } from "../src/generated/convergence/web-v3.types";
 
 type BrowserReply = Readonly<{
   status: number;
@@ -13,8 +13,30 @@ type BrowserReply = Readonly<{
   payload: unknown;
 }>;
 
-const credentialFile = process.env["CLAIMCORE_WEB_BOOTSTRAP_CREDENTIAL_FILE"];
-if (credentialFile === undefined) throw new Error("Browser credential file was not configured.");
+const oidcCredentialsFile = process.env["CLAIMCORE_TEST_OIDC_CREDENTIALS"];
+if (oidcCredentialsFile === undefined)
+  throw new Error("Synthetic OIDC credentials were not configured.");
+
+const syntheticOwner = async (): Promise<{ username: string; password: string }> => {
+  const source: unknown = JSON.parse(await readFile(oidcCredentialsFile, "utf8"));
+  if (typeof source !== "object" || source === null || !("users" in source)) {
+    throw new Error("Synthetic OIDC user inventory is invalid.");
+  }
+  const users = source.users;
+  if (!Array.isArray(users)) throw new Error("Synthetic OIDC user inventory is invalid.");
+  const owner: unknown = users[0];
+  if (
+    typeof owner !== "object" ||
+    owner === null ||
+    !("username" in owner) ||
+    typeof owner.username !== "string" ||
+    !("password" in owner) ||
+    typeof owner.password !== "string"
+  ) {
+    throw new Error("Synthetic OIDC owner is invalid.");
+  }
+  return { username: owner.username, password: owner.password };
+};
 type Cookies = Awaited<ReturnType<BrowserContext["cookies"]>>;
 
 export const openAuthenticated = async (page: Page): Promise<void> => {
@@ -72,11 +94,11 @@ export const browserRequest = async (
   );
 
 export const sessionToken = async (page: Page): Promise<string> => {
-  const reply = await browserRequest(page, "/api/v2/session");
-  if (!(await isWebV2Response("session", reply.payload))) {
+  const reply = await browserRequest(page, "/api/v3/session");
+  if (!(await isWebV3Response("session", reply.payload))) {
     throw new Error("Invalid session response.");
   }
-  const snapshot = (reply.payload as WebV2Response<"session">).outcome.data;
+  const snapshot = (reply.payload as WebV3Response<"session">).outcome.data;
   if (reply.status !== 200 || snapshot.antiforgeryToken === null) {
     throw new Error("Session response did not provide an antiforgery token.");
   }
@@ -98,6 +120,33 @@ export const expectHostFailure = async (
   expect((reply.payload as HostFailure).code).toBe(code);
 };
 
+const awaitOidcReturn = async (
+  page: Page,
+  applicationOrigin: string,
+  callbackStatus: () => number,
+): Promise<void> => {
+  try {
+    await page.waitForURL((url) => url.origin === applicationOrigin && url.pathname === "/", {
+      timeout: 10_000,
+    });
+  } catch {
+    const current = new URL(page.url());
+    const safeFile = process.env["CLAIMCORE_WEB_E2E_SAFE_FAILURE_FILE"];
+    if (safeFile !== undefined) {
+      if (!isAbsolute(safeFile)) throw new Error("Safe failure path must be absolute.");
+      await writeFile(
+        safeFile,
+        `${JSON.stringify({ callbackStatus: callbackStatus(), origin: current.origin, pathname: current.pathname })}\n`,
+        { mode: 0o600 },
+      );
+    }
+    const originClass = current.origin === applicationOrigin ? "app" : "issuer";
+    const pathClass = current.pathname.replace(/[^a-z0-9]+/giu, "-").slice(0, 80);
+    await progress(`oidc-return-failed-${callbackStatus()}-${originClass}-${pathClass}`);
+    throw new Error(`E2E_OIDC_RETURN_${callbackStatus()}_${current.origin}${current.pathname}`);
+  }
+};
+
 export const login = async (page: Page): Promise<void> => {
   await progress("login-start");
   const cases = page.getByRole("heading", { name: "Cases" });
@@ -117,48 +166,43 @@ export const login = async (page: Page): Promise<void> => {
     return;
   }
   await progress("login-anon");
-  const credential = (await readFile(credentialFile, "utf8")).trim();
-  await page.getByLabel("Bootstrap credential").fill(credential);
-  const responseEvent = page.waitForResponse(
-    (response) => new URL(response.url()).pathname === "/api/v2/session/login",
-    { timeout: 5_000 },
-  );
-  await page.getByRole("button", { name: "Sign in" }).click();
-  const response = await responseEvent;
-  if (response.status() === 429) throw new Error("E2E_LOGIN_HTTP_THROTTLED");
-  if (response.status() !== 200) throw new Error("E2E_LOGIN_HTTP_REJECTED");
+  const applicationOrigin = new URL(page.url()).origin;
+  const owner = await syntheticOwner();
+  await page.getByRole("link", { name: "Sign in" }).click();
+  await progress("oidc-navigation");
+  await page.locator('input[name="username"]').fill(owner.username);
+  await progress("oidc-username-filled");
+  await page.locator('input[name="password"]').fill(owner.password);
+  await progress("oidc-password-filled");
+  let callbackStatus = 0;
+  page.on("response", (response) => {
+    if (new URL(response.url()).pathname === "/signin-oidc") {
+      callbackStatus = response.status();
+    }
+  });
+  await page.locator('input[type="submit"], button[type="submit"]').first().click();
+  await progress("oidc-submitted");
+  await awaitOidcReturn(page, applicationOrigin, () => callbackStatus);
+  await progress("oidc-callback-returned");
   await expect(cases).toBeVisible();
   await progress("login-ready");
 };
 
 export const logout = async (page: Page): Promise<void> => {
   const responseEvent = page.waitForResponse(
-    (response) => new URL(response.url()).pathname === "/api/v2/session/logout",
+    (response) => new URL(response.url()).pathname === "/api/v3/session/logout",
   );
   await page.getByRole("button", { name: "Sign out" }).click();
   const response = await responseEvent;
   expect(response.status()).toBe(200);
   await expect(page.getByRole("heading", { name: "ClaimCore" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
-  const reply = await browserRequest(page, "/api/v2/session");
-  if (!(await isWebV2Response("session", reply.payload))) {
+  await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
+  const reply = await browserRequest(page, "/api/v3/session");
+  if (!(await isWebV3Response("session", reply.payload))) {
     throw new Error("Invalid logout response.");
   }
-  expect((reply.payload as WebV2Response<"session">).outcome.data.authenticated).toBe(false);
+  expect((reply.payload as WebV3Response<"session">).outcome.data.authenticated).toBe(false);
 };
-
-export const rejectedLogin = (page: Page, token: string): Promise<BrowserReply> =>
-  browserRequest(page, "/api/v2/session/login", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-ClaimCore-Antiforgery": token,
-    },
-    body: JSON.stringify({
-      credential: "invalid-bootstrap-credential",
-      antiforgeryToken: token,
-    }),
-  });
 
 export const progress = async (stage: string): Promise<void> => {
   const file = process.env["CLAIMCORE_WEB_E2E_PROGRESS_FILE"];

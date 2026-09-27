@@ -10,6 +10,7 @@ open ClaimCore.Hosting
 open ClaimCore.Postgres
 open ClaimCore.IntegrationTests.Fixtures
 open ClaimCore.IntegrationTests.FreshBaselineSupport
+open ClaimCore.IntegrationTests.ActorGrantTestSupport
 
 let private installed =
     testCase
@@ -51,45 +52,87 @@ let private installed =
                         admin
                         "SELECT count(*) FROM information_schema.tables WHERE table_schema='claimcore' AND table_type='BASE TABLE'"
                     :?> int64)
-                    10L
-                    "Current storage only, including owner-only prune journal"))
+                    55L
+                    "Current baseline includes actor authority, physical backup, copy custody, and erasure evidence"))
 
-let private seedRetainedCase app =
-    use runtime = Runtime.OpenPostgres(app, CancellationToken.None) |> await |> accepted
-    let core = runtime.Core
-    let operationId = Guid.NewGuid()
+let private grantSeedRoles admin app witness principal =
+    provision admin witness principal |> applied
+    use source = RuntimeDataSource.create app
+    let grants = new ActorGrantStore(source)
+    let registry = new ActorGrantRegistry(source, witness)
 
-    let request =
-        openRequest operationId ("BASELINE-REPEAT-" + operationId.ToString("N"))
+    for role in [ Role.CaseEditor; Role.RecoveryOperator ] do
+        registry.SetGrant(
+            principal,
+            actorId grants principal,
+            {
+                Role = role
+                Scope = GrantScope.Installation
+            },
+            true
+        )
+        |> await
+        |> applied
 
-    let digest =
-        match core.Prepare(request, CancellationToken.None) |> await with
-        | PrepareOutcome.Prepared(details, _) ->
-            details.Summary.RequestSha256
-            |> Option.defaultWith (fun () -> failtest "Expected retained digest.")
-        | _ -> failtest "Expected current preparation."
+let private seedRetainedCase admin app writer witness =
+    let principal = human "baseline-owner"
+    grantSeedRoles admin app witness principal
 
-    match core.Recovery.Resolve(operationId, digest, CancellationToken.None) |> await with
-    | ResolveOutcome.ResolveCompleted(_, _, DefiniteExecution.Accepted _, _) -> operationId
-    | _ -> failtest "Expected accepted retained operation."
+    let result =
+        use runtime =
+            Runtime.OpenPostgres(
+                app,
+                writer,
+                witnessKey (),
+                suppressionKeyFile (),
+                artifactKeyRingFile (),
+                CancellationToken.None
+            )
+            |> await
+            |> accepted
+
+        let core = runtime.ForActor principal
+        let operationId = Guid.NewGuid()
+
+        let request =
+            openRequest operationId ("BASELINE-REPEAT-" + operationId.ToString("N"))
+
+        let digest =
+            match core.Prepare(request, CancellationToken.None) |> await with
+            | PrepareOutcome.Prepared(details, _) ->
+                details.Summary.RequestSha256
+                |> Option.defaultWith (fun () -> failtest "Expected retained digest.")
+            | _ -> failtest "Expected current preparation."
+
+        match core.Recovery.Resolve(operationId, digest, CancellationToken.None) |> await with
+        | ResolveOutcome.ResolveCompleted(_, _, DefiniteExecution.Accepted _, _) -> ()
+        | _ -> failtest "Expected accepted retained operation."
+
+        let revokedId = Guid.NewGuid()
+        let revoked = openRequest revokedId ("BASELINE-REVOKED-" + revokedId.ToString("N"))
+
+        let revokedDigest =
+            match core.Prepare(revoked, CancellationToken.None) |> await with
+            | PrepareOutcome.Prepared(details, _) ->
+                details.Summary.RequestSha256
+                |> Option.defaultWith (fun () -> failtest "Expected retained revocation digest.")
+            | _ -> failtest "Expected revocable preparation."
+
+        match
+            core.Recovery.Dismiss(revokedId, revokedDigest, true, CancellationToken.None)
+            |> await
+        with
+        | RecoveryDismissOutcome.DismissedPreparation _ -> operationId
+        | _ -> failtest "Expected witnessed revocation."
+
+    result
 
 let private repeat =
     testCase
         "[CC-DB-001] identical initialization and read-only verification preserve every stored byte"
         (fun () ->
-            withDatabase (fun admin app ->
-                initialize admin
-                let acceptedOperation = seedRetainedCase app
-
-                execute
-                    admin
-                    ("INSERT INTO claimcore.request_submission_attempts (attempt_id, operation_id) VALUES (gen_random_uuid(), '"
-                     + acceptedOperation.ToString("D")
-                     + "')")
-
-                execute
-                    admin
-                    "INSERT INTO claimcore.operation_revocations VALUES ('00000000-0000-4000-8000-000000000001',3,repeat('a',64),TIMESTAMPTZ '2020-01-01 00:00:00+00','OPERATOR_DISMISSAL')"
+            withAuthorityRuntimeDatabase (fun admin app writer witness ->
+                seedRetainedCase admin app writer witness |> ignore
 
                 let before = snapshot admin
                 initialize admin
@@ -124,10 +167,12 @@ let private calendar =
         "[CC-DB-001] a different calendar is refused without rewriting installation identity"
         (fun () ->
             withDatabase (fun admin _ ->
-                SchemaBaseline.initialize admin "Europe/Riga" |> completedAdministration
+                SchemaBaseline.initialize admin "Europe/Riga" syntheticSuppressionCheck
+                |> completedAdministration
+
                 let before = snapshot admin
 
-                SchemaBaseline.initialize admin "Etc/UTC"
+                SchemaBaseline.initialize admin "Etc/UTC" syntheticSuppressionCheck
                 |> refusedAdministration AdministrationFailure.BusinessZoneAlreadyConfigured
 
                 Expect.equal (snapshot admin) before "First valid calendar remains immutable"))
@@ -140,7 +185,11 @@ let private concurrentSame =
                 let tasks =
                     [|
                         for _ in 1..4 ->
-                            Task.Run(fun () -> SchemaBaseline.initialize admin "Etc/UTC")
+                            Task.Run(fun () ->
+                                SchemaBaseline.initialize
+                                    admin
+                                    "Etc/UTC"
+                                    syntheticSuppressionCheck)
                     |]
 
                 Task.WhenAll(tasks) |> await |> Array.iter completedAdministration
@@ -162,7 +211,8 @@ let private concurrentDifferent =
             let tasks =
                 [|
                     for zone in [ "Etc/UTC"; "Europe/Riga" ] ->
-                        Task.Run(fun () -> SchemaBaseline.initialize admin zone)
+                        Task.Run(fun () ->
+                            SchemaBaseline.initialize admin zone syntheticSuppressionCheck)
                 |]
 
             let outcomes = Task.WhenAll(tasks) |> await
@@ -204,7 +254,7 @@ let private rollback =
                     WHEN TAG IN ('CREATE TABLE') EXECUTE FUNCTION public.reject_baseline_end();
                 """
 
-                SchemaBaseline.initialize admin "Etc/UTC"
+                SchemaBaseline.initialize admin "Etc/UTC" syntheticSuppressionCheck
                 |> refusedAdministration AdministrationFailure.DatabaseUnavailable
 
                 Expect.equal

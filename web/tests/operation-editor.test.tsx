@@ -1,11 +1,11 @@
-import type { RecoveryRejection } from "../src/generated/convergence/web-v2.types";
+import { preparedForRequest } from "./prepared-request.fixtures";
 import { render, screen, waitFor } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { CurrentCase, PreparationDetails, Rejection } from "../src/api/v2";
+import type { CurrentCase, PreparationDetails, Rejection } from "../src/api/v3";
 import { OperationEditor } from "../src/views/OperationEditor";
 import { generatedResponse } from "./contract-corpus.fixtures";
-import { definition, fields, operationId, preparation, response } from "./v2-ui.fixtures";
+import { definition, fields, operationId, preparation, response } from "./v3-ui.fixtures";
 
 const current: CurrentCase = {
   case: { fields, revision: "1" },
@@ -117,7 +117,9 @@ const uncertainPrepareDelivery = async (): Promise<void> => {
 const missingDigest = async (): Promise<void> => {
   const user = userEvent.setup();
   const digestless = { ...preparation, summary: { ...preparation.summary, requestSha256: null } };
-  vi.mocked(globalThis.fetch).mockResolvedValueOnce(preparedResponse(digestless));
+  vi.mocked(globalThis.fetch).mockImplementationOnce(
+    preparedForRequest(preparedResponse(digestless)),
+  );
   renderEditor();
   await openReview(user);
   await selectConfirmedSubmit(user);
@@ -128,30 +130,32 @@ const missingDigest = async (): Promise<void> => {
 const definiteSubmitRejection = async (): Promise<void> => {
   const user = userEvent.setup();
   vi.mocked(globalThis.fetch)
-    .mockResolvedValueOnce(preparedResponse())
+    .mockImplementationOnce(preparedForRequest(preparedResponse()))
     .mockResolvedValueOnce(
       response("command.execute", "REFUSED_BEFORE_ATTEMPT", {
         preparation: null,
         rejection: {
-          code: "PREPARATION_DISMISSED",
-          diagnostic: { id: "RECOVERY_PREPARATION_DISMISSED", parameters: {} },
-          message: "The exact preparation was refused.",
+          code: "OPERATION_REVOKED",
+          diagnostic: { id: "OPERATION_REVOKED", parameters: {} },
+          message: "The exact operation was revoked.",
+          field: null,
+          actualRevision: null,
           recommendedAction: "READ_CURRENT",
-        } satisfies RecoveryRejection,
+        } satisfies Rejection,
       }),
     );
   renderEditor();
   await openReview(user);
   await selectConfirmedSubmit(user);
   expect(await screen.findByRole("alert")).toHaveTextContent(
-    "A dismissed preparation cannot be submitted.",
+    "This exact operation was durably revoked before execution.",
   );
 };
 
 const uncertainSubmitDelivery = async (): Promise<void> => {
   const user = userEvent.setup();
   vi.mocked(globalThis.fetch)
-    .mockResolvedValueOnce(preparedResponse())
+    .mockImplementationOnce(preparedForRequest(preparedResponse()))
     .mockRejectedValueOnce(new Error("Lost"));
   renderEditor();
   await openReview(user);
@@ -166,7 +170,7 @@ const acceptedSubmission = async (): Promise<void> => {
   const user = userEvent.setup();
   const committed = vi.fn();
   vi.mocked(globalThis.fetch)
-    .mockResolvedValueOnce(preparedResponse())
+    .mockImplementationOnce(preparedForRequest(preparedResponse()))
     .mockResolvedValueOnce(acceptedResponse());
   renderEditor({ onCommitted: committed });
   await openReview(user);
@@ -182,7 +186,7 @@ const submittingState = async (): Promise<void> => {
     resolveResponse = resolve;
   });
   vi.mocked(globalThis.fetch)
-    .mockResolvedValueOnce(preparedResponse())
+    .mockImplementationOnce(preparedForRequest(preparedResponse()))
     .mockReturnValueOnce(pending);
   renderEditor();
   await openReview(user);
@@ -226,7 +230,7 @@ const openDiscardDialog = async (user: ReturnType<typeof userEvent.setup>): Prom
 
 const cancelReview = async (): Promise<void> => {
   const user = userEvent.setup();
-  vi.mocked(globalThis.fetch).mockResolvedValueOnce(preparedResponse());
+  vi.mocked(globalThis.fetch).mockImplementationOnce(preparedForRequest(preparedResponse()));
   renderEditor();
   await openReview(user);
   await user.click(screen.getByRole("button", { name: "Cancel" }));
@@ -259,7 +263,7 @@ const cancelCommandDiscard = async (): Promise<void> => {
 
 const retainPreparedCommand = async (): Promise<void> => {
   const user = userEvent.setup();
-  vi.mocked(globalThis.fetch).mockResolvedValueOnce(preparedResponse());
+  vi.mocked(globalThis.fetch).mockImplementationOnce(preparedForRequest(preparedResponse()));
   renderEditor();
   await openReview(user);
   await user.click(screen.getByRole("button", { name: "Keep for Recovery" }));

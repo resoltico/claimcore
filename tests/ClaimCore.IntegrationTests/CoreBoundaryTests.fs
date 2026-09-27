@@ -1,9 +1,7 @@
 module ClaimCore.IntegrationTests.CoreBoundaryTests
 
 open System
-open System.Diagnostics
 open System.Threading
-open System.Threading.Tasks
 open Npgsql
 open Expecto
 open ClaimCore.Domain
@@ -11,6 +9,7 @@ open ClaimCore.Application
 open ClaimCore.Postgres
 open ClaimCore.Hosting
 open ClaimCore.IntegrationTests.Fixtures
+open ClaimCore.IntegrationTests.CoreRuntimeLifecycleTests
 
 let private executeOwner sql =
     use connection = new NpgsqlConnection(adminConnection ())
@@ -22,17 +21,17 @@ let private expectAclRejected grantSql revokeSql =
     executeOwner grantSql
 
     try
-        use database = new PostgresStore(appConnection ())
+        use source = RuntimeDataSource.create (appConnection ())
 
-        Expect.equal
-            (database.CheckSchema() |> await)
-            (Error CoreFailure.SchemaMismatch)
+        Expect.throwsT<RuntimeDatabaseMismatch>
+            (fun () -> use _connection = RuntimeDatabase.openConnection source in ())
             "Runtime rejects the expanded ACL"
     finally
         executeOwner revokeSql
 
-    use restored = new PostgresStore(appConnection ())
-    Expect.equal (restored.CheckSchema() |> await) (Ok()) "The exact runtime ACL is restored"
+    use restored = RuntimeDataSource.create (appConnection ())
+    use _connection = RuntimeDatabase.openConnection restored
+    ()
 
 let private quotedDatabase () =
     let value =
@@ -49,16 +48,15 @@ let private runtimeTests =
         [
             testCase "host exposes the same core API used by a native renderer" (fun () ->
                 let runtime =
-                    Runtime.OpenPostgres(appConnection (), CancellationToken.None)
-                    |> await
-                    |> accepted
+                    witnessedOpen (appConnection ()) CancellationToken.None |> await |> accepted
 
                 use lifetime = runtime
+                let core = lifetime.ForActor(ActorBoundStoreFixture.actorPrincipal ())
 
                 let request =
                     openRequest (Guid.NewGuid()) ("RUNTIME-" + Guid.NewGuid().ToString("N"))
 
-                let response = lifetime.Core.Execute(request, CancellationToken.None) |> await
+                let response = core.Execute(request, CancellationToken.None) |> await
 
                 match response with
                 | SubmissionOutcome.Completed(_, _, DefiniteExecution.Accepted receipt, _) ->
@@ -72,9 +70,7 @@ let private runtimeTests =
                         "Historical snapshot"
                 | _ -> failtest "Expected an accepted core receipt."
 
-                match
-                    lifetime.Core.Get(request.CaseReference, CancellationToken.None) |> await
-                with
+                match core.Get(request.CaseReference, CancellationToken.None) |> await with
                 | QueryOutcome.Succeeded(Lookup.Found view) ->
                     Expect.contains
                         view.AvailableCommands
@@ -83,111 +79,6 @@ let private runtimeTests =
                 | _ -> failtest "Current core query failed")
         ]
 
-type private DisposeCounter() =
-    let mutable value = 0
-    member _.Increment() = Interlocked.Increment(&value) |> ignore
-    member _.Value = Volatile.Read(&value)
-
-let private countedSource (disposeCount: DisposeCounter) =
-    { new IDisposable with
-        member _.Dispose() = disposeCount.Increment()
-    }
-
-let private disposalClosesAdmission () =
-    let disposeCount = DisposeCounter()
-
-    let admission =
-        new RuntimeAdmission(countedSource disposeCount, TimeSpan.FromSeconds 2.)
-
-    use held = admission.Admit()
-    let disposing = Task.Run(fun () -> (admission :> IDisposable).Dispose())
-
-    Expect.isTrue
-        (SpinWait.SpinUntil(
-            (fun () ->
-                try
-                    use _unexpected = admission.Admit()
-                    false
-                with :? ObjectDisposedException ->
-                    true),
-            2000
-        ))
-        "Disposal must close admission"
-
-    Expect.equal disposeCount.Value 0 "Admitted work still owns the source"
-    Expect.isFalse disposing.IsCompleted "Disposal waits for the held operation"
-    held.Dispose()
-    Expect.isTrue (disposing.Wait(2000)) "Disposal finishes after the lease"
-    Expect.equal disposeCount.Value 1 "One owner disposes the source exactly once"
-
-let private boundedDisposalDefersCleanup () =
-    let disposeCount = DisposeCounter()
-
-    let admission =
-        new RuntimeAdmission(countedSource disposeCount, TimeSpan.FromMilliseconds 50.)
-
-    use held = admission.Admit()
-    let timer = Stopwatch.StartNew()
-    (admission :> IDisposable).Dispose()
-    timer.Stop()
-    Expect.isTrue (timer.Elapsed < TimeSpan.FromSeconds 2.) "Drain is bounded"
-    Expect.equal disposeCount.Value 0 "Timed-out disposal cannot close an admitted source"
-    held.Dispose()
-
-    Expect.isTrue
-        (SpinWait.SpinUntil((fun () -> disposeCount.Value = 1), 2000))
-        "Final lease performs deferred cleanup"
-
-let private disposedRuntimeRefusesRetainedFacades () =
-    let runtime =
-        Runtime.OpenPostgres(appConnection (), CancellationToken.None)
-        |> await
-        |> accepted
-
-    let core = runtime.Core
-    let recovery = core.Recovery
-    (runtime :> IDisposable).Dispose()
-
-    Expect.throwsT<ObjectDisposedException>
-        (fun () -> core.Describe() |> ignore)
-        "Describe refuses a disposed runtime"
-
-    Expect.throwsT<ObjectDisposedException>
-        (fun () -> core.Get("NO-SUCH-SYNTHETIC-CASE", CancellationToken.None) |> await |> ignore)
-        "Queries refuse a disposed runtime"
-
-    Expect.throwsT<ObjectDisposedException>
-        (fun () ->
-            recovery.List(RecoveryListView.Pending, None, 1, CancellationToken.None)
-            |> await
-            |> ignore)
-        "Retained recovery facade also refuses admission"
-
-let private cancelledOpeningReturnsTypedFault () =
-    use cancellation = new CancellationTokenSource()
-    cancellation.Cancel()
-
-    match Runtime.OpenPostgres(appConnection (), cancellation.Token) |> await with
-    | Error RuntimeOpenFault.RuntimeCancelled -> ()
-    | _ -> failtest "Pre-cancelled opening must return RuntimeCancelled"
-
-let private runtimeAdmissionTests =
-    testList
-        "runtime lifecycle"
-        [
-            testCase
-                "[CC-RUN-001] disposal closes admission and drains a held operation"
-                disposalClosesAdmission
-            testCase
-                "[CC-RUN-001] bounded disposal defers source cleanup until the final lease"
-                boundedDisposalDefersCleanup
-            testCase
-                "[CC-RUN-001] disposed runtime refuses retained normal and recovery facades"
-                disposedRuntimeRefusesRetainedFacades
-            testCase
-                "[CC-RUN-001] cancelled opening returns a safe typed fault"
-                cancelledOpeningReturnsTypedFault
-        ]
 
 let private dangerousConnectionSwitches () =
     let expectRejected (change: NpgsqlConnectionStringBuilder -> unit) =
@@ -195,7 +86,7 @@ let private dangerousConnectionSwitches () =
         change builder
 
         Expect.throwsT<ArgumentException>
-            (fun () -> new PostgresStore(builder.ConnectionString) |> ignore)
+            (fun () -> use _source = RuntimeDataSource.create builder.ConnectionString in ())
             "Connection policy"
 
     expectRejected (fun builder -> builder.Options <- "-c role=claimcore_app")
@@ -211,7 +102,7 @@ let private dangerousConnectionSwitches () =
     let verified = NpgsqlConnectionStringBuilder(appConnection ())
     verified.Host <- "database.example.invalid"
     verified.SslMode <- SslMode.VerifyFull
-    use accepted = new PostgresStore(verified.ConnectionString)
+    use accepted = RuntimeDataSource.create verified.ConnectionString
 
     Expect.isNotNull
         (box accepted)
@@ -221,12 +112,10 @@ let private admissionTests =
     testList
         "connection admission"
         [
-            testCase
-                "direct store call cannot bypass runtime role verification by omitting CheckSchema"
-                (fun () ->
-                    Expect.throwsT<ArgumentException>
-                        (fun () -> new PostgresStore(adminConnection ()) |> ignore)
-                        "The adapter rejects a configured owner identity before creating its pool")
+            testCase "runtime data source rejects an owner login before database access" (fun () ->
+                Expect.throwsT<ArgumentException>
+                    (fun () -> use _source = RuntimeDataSource.create (adminConnection ()) in ())
+                    "Runtime rejects a configured owner identity before creating its pool")
             testCase "an elevated session cannot impersonate the runtime role" (fun () ->
                 use connection = new Npgsql.NpgsqlConnection(adminConnection ())
                 connection.Open()
@@ -248,14 +137,11 @@ let private admissionTests =
             testCase
                 "host rejects elevated connection rather than handing a renderer a store"
                 (fun () ->
-                    match
-                        Runtime.OpenPostgres(adminConnection (), CancellationToken.None) |> await
-                    with
+                    match witnessedOpen (adminConnection ()) CancellationToken.None |> await with
                     | Error RuntimeOpenFault.RuntimeConfigurationInvalid -> ()
                     | Error _ -> failtest "Owner runtime must fail connection admission."
                     | Ok runtime ->
                         use lifetime = runtime
-                        lifetime.Core.Describe() |> ignore
                         failtest "Unexpected elevated runtime")
         ]
 
@@ -275,12 +161,12 @@ let private aclTests =
                     $"REVOKE TEMPORARY ON DATABASE {database} FROM claimcore_app")
             testCase "column UPDATE is rejected even without table UPDATE" (fun () ->
                 expectAclRejected
-                    "GRANT UPDATE (recorded_by) ON claimcore.case_changes TO claimcore_app"
-                    "REVOKE UPDATE (recorded_by) ON claimcore.case_changes FROM claimcore_app")
+                    "GRANT UPDATE (accepted_actor_id) ON claimcore.case_changes TO claimcore_app"
+                    "REVOKE UPDATE (accepted_actor_id) ON claimcore.case_changes FROM claimcore_app")
             testCase "PUBLIC column grants are rejected" (fun () ->
                 expectAclRejected
-                    "GRANT UPDATE (recorded_by) ON claimcore.case_changes TO PUBLIC"
-                    "REVOKE UPDATE (recorded_by) ON claimcore.case_changes FROM PUBLIC")
+                    "GRANT UPDATE (accepted_actor_id) ON claimcore.case_changes TO PUBLIC"
+                    "REVOKE UPDATE (accepted_actor_id) ON claimcore.case_changes FROM PUBLIC")
             testCase "grant options are rejected on otherwise required privileges" (fun () ->
                 expectAclRejected
                     "GRANT SELECT ON claimcore.case_changes TO claimcore_app WITH GRANT OPTION"

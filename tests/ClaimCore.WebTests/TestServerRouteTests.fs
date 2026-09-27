@@ -4,27 +4,7 @@ open System.Net.Http
 open Expecto
 open ClaimCore.Contracts
 open ClaimCore.WebTests.TestServerFixture
-
-let private operation = "40000000-0000-4000-8000-000000000001"
-
-let private draft =
-    """{"operationId":"40000000-0000-4000-8000-000000000001","caseReference":"WEB-V2-001","expectedRevision":"0","command":{"kind":"OPEN","values":{"incidentDate":"2026-09-01","incidentNotificationDate":"2026-09-02","incidentCountry":"Latvia","claimantName":"Synthetic claimant","insurerName":"Synthetic insurer","claimedAmount":"12.34","claimedCurrency":"EUR"}}}"""
-
-let private input identifier =
-    match identifier with
-    | "case.get" -> """{"caseReference":"WEB-V2-001"}"""
-    | "case.list" -> """{"limit":10}"""
-    | "recovery.list" -> """{"view":"PENDING","limit":10}"""
-    | "case.history" -> """{"caseReference":"WEB-V2-001","limit":10,"detail":"FULL"}"""
-    | "operation.observe" -> $"""{{"operationId":"{operation}"}}"""
-    | "recovery.inspect" -> $"""{{"operationId":"{operation}","attemptLimit":10}}"""
-    | "command.prepare" -> draft
-    | "command.execute"
-    | "recovery.resolve" -> $"""{{"operationId":"{operation}","requestSha256":"{digest}"}}"""
-    | "recovery.dismiss" ->
-        $"""{{"operationId":"{operation}","requestSha256":"{digest}","confirmed":true}}"""
-    | "recovery.export" -> $"""{{"operationId":"{operation}","requestSha256":"{digest}"}}"""
-    | _ -> failtest "Every generated JSON endpoint needs a synthetic valid request."
+open ClaimCore.WebTests.TestServerRouteInputs
 
 let private snapshotAuthenticated (reply: Reply) expected =
     use body = document reply
@@ -37,6 +17,38 @@ let private snapshotAuthenticated (reply: Reply) expected =
             .GetBoolean()
 
     Expect.equal actual expected "Session snapshot uses the actual authenticated principal"
+
+let private requireTypedRouteOutcome (endpoint: WebEndpoint) (body: System.Text.Json.JsonDocument) =
+    let outcome = body.RootElement.GetProperty("outcome")
+
+    if endpoint.Identifier.StartsWith("lifecycle.", System.StringComparison.Ordinal) then
+        Expect.equal
+            (outcome.GetProperty("tag").GetString())
+            "RESOURCE_UNAVAILABLE"
+            "The route reaches the typed lifecycle workflow stub"
+
+    if endpoint.Identifier.StartsWith("authority.", System.StringComparison.Ordinal) then
+        if
+            endpoint.Identifier = "authority.approveCopySigner"
+            || endpoint.Identifier = "authority.approveCopyDeletion"
+            || endpoint.Identifier = "authority.approveCopyAdoption"
+            || endpoint.Identifier = "authority.approveWriterHandoff"
+            || endpoint.Identifier = "authority.approveRealDataActivation"
+        then
+            Expect.equal
+                (outcome.GetProperty("tag").GetString())
+                "STARTED_UNCONFIRMED"
+                "Actor approval preserves the typed uncertain result"
+        else
+            Expect.equal
+                (outcome.GetProperty("tag").GetString())
+                "RESOURCE_UNAVAILABLE"
+                "Inaccessible authority remains non-disclosing"
+
+            Expect.equal
+                (outcome.GetProperty("data").ValueKind)
+                System.Text.Json.JsonValueKind.Null
+                "The refusal contains no actor or event payload"
 
 let private exerciseEndpoint (host: Host) token (endpoint: WebEndpoint) =
     if
@@ -81,10 +93,71 @@ let private exerciseEndpoint (host: Host) token (endpoint: WebEndpoint) =
                 endpoint.Identifier
                 "The actual route returns its generated endpoint identity"
 
+            requireTypedRouteOutcome endpoint body
+
+let private managementAndLifecycleRoutes =
+    ContractProjection.current().WebEndpoints
+    |> List.filter (fun endpoint ->
+        endpoint.Identifier.StartsWith("authority.", System.StringComparison.Ordinal)
+        || endpoint.Identifier.StartsWith("lifecycle.", System.StringComparison.Ordinal))
+    |> List.map (fun endpoint ->
+        testCase
+            $"[CC-WEB-001] endpoint {endpoint.Identifier} dispatches authenticated route"
+            (fun () ->
+                use unauthorized = Host.Start()
+
+                let denied =
+                    unauthorized.Send(
+                        HttpMethod.Post,
+                        endpoint.Path,
+                        Some "{}",
+                        Some "application/json",
+                        None
+                    )
+
+                Expect.equal denied.Status 401 "A caller without a session cannot reach the route"
+                Expect.stringContains denied.CacheControl "no-store" "Denial is not cached"
+                use denial = document denied
+
+                Expect.equal
+                    (denial.RootElement.GetProperty("code").GetString())
+                    "WEB_SESSION_REJECTED"
+                    "The refusal is typed and does not identify a resource"
+
+                Expect.equal
+                    unauthorized.Runtime.ManagementCalls
+                    0
+                    "Denied calls never reach management"
+
+                Expect.equal unauthorized.Runtime.CoreCalls 0 "Denied calls never reach core"
+
+                Expect.equal
+                    unauthorized.Runtime.RecoveryCalls
+                    0
+                    "Denied calls never reach recovery"
+
+                use host = Host.Start()
+                Expect.equal (host.Login().Status) 200 "Synthetic session starts"
+                exerciseEndpoint host (host.SessionToken()) endpoint
+
+                if
+                    endpoint.Identifier.StartsWith("authority.", System.StringComparison.Ordinal)
+                    && endpoint.Identifier <> "authority.approveCopySigner"
+                    && endpoint.Identifier <> "authority.approveCopyDeletion"
+                    && endpoint.Identifier <> "authority.approveCopyAdoption"
+                    && endpoint.Identifier <> "authority.approveWriterHandoff"
+                    && endpoint.Identifier <> "authority.approveRealDataActivation"
+                    && endpoint.Identifier <> "authority.reviewRealDataActivation"
+                then
+                    Expect.equal
+                        host.Runtime.ManagementCalls
+                        1
+                        "Only this authority endpoint reached the management facade"))
+
 let private routeCatalog () =
     use host = Host.Start()
     let projection = ContractProjection.current ()
-    Expect.equal projection.WebEndpoints.Length 19 "Exact generated HTTP-v2 route count"
+    Expect.equal projection.WebEndpoints.Length 33 "Exact generated HTTP-v3 route count"
     let login = host.Login()
     Expect.equal login.Status 200 "Synthetic TestServer login succeeds"
     let token = host.SessionToken()
@@ -93,13 +166,13 @@ let private routeCatalog () =
     let logout =
         host.Send(
             HttpMethod.Post,
-            "/api/v2/session/logout",
+            "/api/v3/session/logout",
             Some "{}",
             Some "application/json",
             Some token
         )
 
-    Expect.equal logout.Status 200 "The nineteenth production endpoint admits logout"
+    Expect.equal logout.Status 200 "The session logout endpoint admits the request"
 
     use logoutBody = document logout
 
@@ -118,10 +191,15 @@ let private routeCatalog () =
         0
         "Recovery routes reached the typed recovery facade"
 
+    Expect.isGreaterThan
+        host.Runtime.ManagementCalls
+        0
+        "Authority routes reached only the authenticated management facade"
+
 let private unknownRoutes () =
     use host = Host.Start()
 
-    for path in [ "/api/v1/query"; "/api/v2/not-a-route"; "/api/extra" ] do
+    for path in [ "/api/v1/query"; "/api/v2/cases/get"; "/api/v3/not-a-route"; "/api/extra" ] do
         let reply = host.Send(HttpMethod.Get, path, None, None, None)
         Expect.equal reply.Status 404 "Retired and unknown API paths do not use the SPA fallback"
         Expect.stringContains reply.CacheControl "no-store" "API absence is private and uncached"
@@ -142,19 +220,20 @@ let private unknownRoutes () =
 
 let private sessionLifecycle () =
     use host = Host.Start()
-    let anonymous = host.Send(HttpMethod.Get, "/api/v2/session", None, None, None)
+    let anonymous = host.Send(HttpMethod.Get, "/api/v3/session", None, None, None)
     snapshotAuthenticated anonymous false
     let login = host.Login()
     Expect.equal login.Status 200 "Real cookie and antiforgery login succeeds"
-    snapshotAuthenticated login true
-    let definition = host.Send(HttpMethod.Get, "/api/v2/definition", None, None, None)
+    let authenticated = host.Send(HttpMethod.Get, "/api/v3/session", None, None, None)
+    snapshotAuthenticated authenticated true
+    let definition = host.Send(HttpMethod.Get, "/api/v3/definition", None, None, None)
     Expect.equal definition.Status 200 "Authenticated definition is reachable"
     let token = host.SessionToken()
 
     let logout =
         host.Send(
             HttpMethod.Post,
-            "/api/v2/session/logout",
+            "/api/v3/session/logout",
             Some "{}",
             Some "application/json",
             Some token
@@ -162,17 +241,17 @@ let private sessionLifecycle () =
 
     Expect.equal logout.Status 200 "Real logout succeeds"
     snapshotAuthenticated logout false
-    let rejected = host.Send(HttpMethod.Get, "/api/v2/definition", None, None, None)
+    let rejected = host.Send(HttpMethod.Get, "/api/v3/definition", None, None, None)
     Expect.equal rejected.Status 401 "Revoked session cannot read a definition"
-    let finalSnapshot = host.Send(HttpMethod.Get, "/api/v2/session", None, None, None)
+    let finalSnapshot = host.Send(HttpMethod.Get, "/api/v3/session", None, None, None)
     snapshotAuthenticated finalSnapshot false
 
 let tests =
     testList
-        "Web HTTP-v2 TestServer"
+        "Web HTTP-v3 TestServer"
         [
             testCase
-                "[CC-WEB-001] production route map dispatches all nineteen v2 endpoints"
+                "[CC-WEB-001] production route map dispatches the exact v3 endpoints"
                 routeCatalog
             testCase
                 "[CC-WEB-001] retired and unknown API routes return typed no-store 404"
@@ -180,4 +259,5 @@ let tests =
             testCase
                 "[CC-WEB-001] session login and logout revoke admission through real cookies and antiforgery"
                 sessionLifecycle
+            yield! managementAndLifecycleRoutes
         ]

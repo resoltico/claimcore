@@ -2,76 +2,91 @@ module ClaimCore.AcceptanceTests.Configuration
 
 open System
 open System.IO
-open ClaimCore.TestSupport
 
 [<NoEquality; NoComparison>]
 type Inputs =
     {
-        RepositoryRoot: string
-        CliDirectory: string
-        DatabaseDirectory: string
-        CliManifest: string
-        DatabaseManifest: string
+        CliDll: string
+        PrivateDirectory: string
+        ServiceUrl: string
+        Issuer: string
+        OidcCa: string
+        WebCertificate: string
+        ClientId: string
+        SecretFile: string
+        PublicClientId: string
+        OidcCredentialsFile: string
+        BrowserDirectory: string
+        BrowserDriver: string
     }
 
 let private required name =
     match Environment.GetEnvironmentVariable(name) |> Option.ofObj with
     | Some value when not (String.IsNullOrWhiteSpace(value)) -> value
-    | _ -> invalidOp ($"Acceptance prerequisite {name} is missing.")
+    | _ -> invalidOp ($"Published CLI acceptance prerequisite {name} is missing.")
 
-let private regularDirectory (name: string) (raw: string) =
-    if not (Path.IsPathFullyQualified(raw)) then
-        invalidOp ($"Acceptance prerequisite {name} must be an absolute directory.")
+let private directory name =
+    let path = required name
 
-    let path = Path.GetFullPath(raw)
-    let info = DirectoryInfo(path)
-    let attributes = info.Attributes
+    if not (Path.IsPathFullyQualified(path)) then
+        invalidOp ($"Published CLI acceptance prerequisite {name} is not absolute.")
 
-    if not info.Exists || attributes.HasFlag(FileAttributes.ReparsePoint) then
-        invalidOp ($"Acceptance prerequisite {name} is not a regular directory.")
+    let information = DirectoryInfo(path)
+    let attributes = information.Attributes
+
+    if not information.Exists || attributes.HasFlag(FileAttributes.ReparsePoint) then
+        invalidOp ($"Published CLI acceptance prerequisite {name} is not a regular directory.")
 
     path
 
-let private regularFile (name: string) (raw: string) =
-    if not (Path.IsPathFullyQualified(raw)) then
-        invalidOp ($"Acceptance prerequisite {name} must be an absolute file.")
+let private file name =
+    let path = required name
 
-    let path = Path.GetFullPath(raw)
-    let info = FileInfo(path)
-    let attributes = info.Attributes
+    if not (Path.IsPathFullyQualified(path)) then
+        invalidOp ($"Published CLI acceptance prerequisite {name} is not absolute.")
+
+    let information = FileInfo(path)
+    let attributes = information.Attributes
 
     if
-        not info.Exists
+        not information.Exists
         || attributes.HasFlag(FileAttributes.Directory)
         || attributes.HasFlag(FileAttributes.ReparsePoint)
     then
-        invalidOp ($"Acceptance prerequisite {name} is not a regular file.")
+        invalidOp ($"Published CLI acceptance prerequisite {name} is not a regular file.")
 
     path
 
-let private repositoryRoot = RepositoryRoot.find ()
-
 let load () =
-    let cliDirectory =
-        required "CLAIMCORE_ACCEPTANCE_CLI_DIR"
-        |> regularDirectory "CLAIMCORE_ACCEPTANCE_CLI_DIR"
+    let cliDirectory = directory "CLAIMCORE_ACCEPTANCE_CLI_DIR"
+    let manifest = file "CLAIMCORE_ACCEPTANCE_CLI_MANIFEST"
+    PublishManifest.verify "publish-cli" cliDirectory manifest |> ignore
 
-    let databaseDirectory =
-        required "CLAIMCORE_ACCEPTANCE_DATABASE_DIR"
-        |> regularDirectory "CLAIMCORE_ACCEPTANCE_DATABASE_DIR"
+    let cliDll = Path.Combine(cliDirectory, "ClaimCore.Cli.dll")
 
-    let cliManifest =
-        required "CLAIMCORE_ACCEPTANCE_CLI_MANIFEST"
-        |> regularFile "CLAIMCORE_ACCEPTANCE_CLI_MANIFEST"
+    if not (File.Exists(cliDll)) then
+        invalidOp "Verified published CLI assembly is missing."
 
-    let databaseManifest =
-        required "CLAIMCORE_ACCEPTANCE_DATABASE_MANIFEST"
-        |> regularFile "CLAIMCORE_ACCEPTANCE_DATABASE_MANIFEST"
+    let service = required "CLAIMCORE_ACCEPTANCE_SERVICE_URL"
+    let issuer = required "CLAIMCORE_ACCEPTANCE_ISSUER"
+
+    if not (service.StartsWith("https://", StringComparison.Ordinal)) then
+        invalidOp "Published service URL is not HTTPS."
+
+    if not (issuer.StartsWith("https://", StringComparison.Ordinal)) then
+        invalidOp "Published issuer URL is not HTTPS."
 
     {
-        RepositoryRoot = repositoryRoot
-        CliDirectory = cliDirectory
-        DatabaseDirectory = databaseDirectory
-        CliManifest = cliManifest
-        DatabaseManifest = databaseManifest
+        CliDll = cliDll
+        PrivateDirectory = directory "CLAIMCORE_ACCEPTANCE_PRIVATE_DIR"
+        ServiceUrl = service
+        Issuer = issuer
+        OidcCa = file "CLAIMCORE_ACCEPTANCE_OIDC_CA_FILE"
+        WebCertificate = file "CLAIMCORE_ACCEPTANCE_WEB_CERT_FILE"
+        ClientId = required "CLAIMCORE_ACCEPTANCE_SERVICE_CLIENT_ID"
+        SecretFile = file "CLAIMCORE_ACCEPTANCE_SERVICE_SECRET_FILE"
+        PublicClientId = required "CLAIMCORE_ACCEPTANCE_PUBLIC_CLIENT_ID"
+        OidcCredentialsFile = file "CLAIMCORE_ACCEPTANCE_OIDC_CREDENTIALS_FILE"
+        BrowserDirectory = directory "CLAIMCORE_ACCEPTANCE_BROWSER_DIR"
+        BrowserDriver = file "CLAIMCORE_ACCEPTANCE_DRIVER_PATH"
     }

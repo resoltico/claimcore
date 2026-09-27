@@ -5,9 +5,9 @@ import {
   type ApiResult,
   resultNotice,
   type SessionSnapshot,
-  v2,
-  type WebV2Response,
-} from "../api/v2";
+  v3,
+  type WebV3Response,
+} from "../api/v3";
 
 export type SessionState =
   | { kind: "loading"; epoch: number }
@@ -15,8 +15,7 @@ export type SessionState =
   | { kind: "authenticated"; token: string; epoch: number }
   | { kind: "failure"; message: Notice; epoch: number };
 
-type SessionResponse =
-  WebV2Response<"session"> | WebV2Response<"session.login"> | WebV2Response<"session.logout">;
+type SessionResponse = WebV3Response<"session"> | WebV3Response<"session.logout">;
 
 const snapshot = (result: ApiResult<SessionResponse>): SessionSnapshot | null =>
   result.kind === "outcome" && result.value.outcome.tag === "SNAPSHOT"
@@ -50,7 +49,7 @@ export const useSession = () => {
   };
 
   const refresh = useCallback(async (): Promise<void> => {
-    const result = await v2.session();
+    const result = await v3.session();
     const value = snapshot(result);
     setState(stateFor(value, value === null ? resultNotice(result) : null, nextEpoch()));
   }, []);
@@ -59,29 +58,13 @@ export const useSession = () => {
     void refresh();
   }, [refresh]);
 
-  const login = async (credential: string): Promise<void> => {
-    if (state.kind !== "anonymous" || state.token === null) return;
-    const result = await v2.login(credential, state.token);
-    if (result.kind === "hostFailure" && result.failure.code === "WEB_LOGIN_REJECTED") {
-      setState({
-        kind: "anonymous",
-        token: state.token,
-        message: resultNotice(result),
-        epoch: nextEpoch(),
-      });
-      return;
-    }
-    const value = snapshot(result);
-    setState(stateFor(value, value === null ? resultNotice(result) : null, nextEpoch()));
-  };
-
   const logout = async (): Promise<void> => {
     if (state.kind !== "authenticated") return;
-    const result = await v2.logout(state.token);
+    const result = await v3.logout(state.token);
     const value = snapshot(result);
     // A successful logout response is an anonymous snapshot. No claimant-bearing state survives its epoch.
     setState(stateFor(value, value === null ? resultNotice(result) : null, nextEpoch()));
   };
 
-  return { state, login, logout, refresh };
+  return { state, logout, refresh };
 };

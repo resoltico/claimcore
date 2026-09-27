@@ -9,14 +9,13 @@ import type {
   RecoveryInspection,
   RecoveryListItem,
   RecoveryPage,
-  WebV2Response,
-} from "../../api/v2";
-import { isMutationUncertain, resultNotice, v2 } from "../../api/v2";
+  WebV3Response,
+} from "../../api/v3";
+import { isMutationUncertain, resultNotice, v3 } from "../../api/v3";
 
 export type Inspection = RecoveryInspection;
 export type RecoveryViewKind = RecoveryPage["view"];
-export type ImportKind = "ENVELOPE" | "RECORD";
-export type ImportState = { file: File; kind: ImportKind; preview: RecoveryImportPreview };
+export type ImportState = { file: File; preview: RecoveryImportPreview };
 export type ConfirmState = { action: "RESOLVE" | "DISMISS" | "EXPORT"; item: PreparationSummary };
 
 type Setter<T> = Dispatch<SetStateAction<T>>;
@@ -43,19 +42,19 @@ export type RecoveryActions = {
   choose: (action: ConfirmState["action"], item: PreparationSummary) => void;
   act: () => Promise<void>;
   exportItem: (item: PreparationSummary) => void;
-  preview: (kind: ImportKind, file: File) => void;
+  preview: (file: File) => void;
   retain: () => Promise<void>;
 };
 
-export const page = (response: WebV2Response<"recovery.list">): RecoveryPage | null =>
+export const page = (response: WebV3Response<"recovery.list">): RecoveryPage | null =>
   response.outcome.tag === "SUCCEEDED" ? response.outcome.data : null;
 
-const inspection = (response: WebV2Response<"recovery.inspect">): Inspection | null =>
+const inspection = (response: WebV3Response<"recovery.inspect">): Inspection | null =>
   response.outcome.tag === "SUCCEEDED" && response.outcome.data.tag === "FOUND"
     ? response.outcome.data.value
     : null;
 
-const accepted = (response: WebV2Response<"recovery.resolve">): Receipt | null => {
+const accepted = (response: WebV3Response<"recovery.resolve">): Receipt | null => {
   const outcome = response.outcome;
   if (outcome.tag === "OBSERVED_ACCEPTED") return outcome.data.receipt;
   if (outcome.tag === "COMPLETED" && outcome.data.execution.tag === "ACCEPTED") {
@@ -81,7 +80,7 @@ const inspectOperation = async (
   ui: RecoveryUi,
 ): Promise<void> => {
   ui.setBusy(id);
-  const result = await v2.recoveryInspect(id, attemptCursor, 50, token);
+  const result = await v3.recoveryInspect(id, attemptCursor, 50, token);
   const details = result.kind === "outcome" ? inspection(result.value) : null;
   ui.setBusy(null);
   if (details === null) ui.setMessage(resultNotice(result));
@@ -100,14 +99,14 @@ const performAction = async (token: string, listing: Listing, ui: RecoveryUi): P
   if (typeof digest !== "string") return;
   ui.setBusy(choice.item.operationId);
   if (choice.action === "DISMISS") {
-    const result = await v2.recoveryDismiss(choice.item.operationId, digest, token);
+    const result = await v3.recoveryDismiss(choice.item.operationId, digest, token);
     ui.setBusy(null);
     ui.setConfirm(null);
     ui.setMessage(resultNotice(result));
     void listing.load(null);
     return;
   }
-  const result = await v2.recoveryResolve(choice.item.operationId, digest, token);
+  const result = await v3.recoveryResolve(choice.item.operationId, digest, token);
   ui.setBusy(null);
   ui.setConfirm(null);
   const receipt = result.kind === "outcome" ? accepted(result.value) : null;
@@ -138,7 +137,7 @@ const download = async (item: PreparationSummary, token: string, ui: RecoveryUi)
     return;
   }
   ui.setBusy(item.operationId);
-  const result = await v2.recoveryExport(item.operationId, item.requestSha256, token);
+  const result = await v3.recoveryExport(item.operationId, item.requestSha256, token);
   ui.setBusy(null);
   if (result.kind !== "outcome" || !("blob" in result.value)) {
     ui.setMessage(resultNotice(result));
@@ -155,34 +154,23 @@ const download = async (item: PreparationSummary, token: string, ui: RecoveryUi)
   ui.setMessage(localNotice("exportStarted"));
 };
 
-const previewImport = async (
-  kind: ImportKind,
-  file: File,
-  token: string,
-  ui: RecoveryUi,
-): Promise<void> => {
-  ui.setBusy(`import-${kind}`);
-  const result =
-    kind === "ENVELOPE"
-      ? await v2.importEnvelopePreview(file, token)
-      : await v2.importRecordPreview(file, token);
+const previewImport = async (file: File, token: string, ui: RecoveryUi): Promise<void> => {
+  ui.setBusy("import-ENVELOPE");
+  const result = await v3.importEnvelopePreview(file, token);
   ui.setBusy(null);
   const data =
     result.kind === "outcome" && result.value.outcome.tag === "SUCCEEDED"
       ? result.value.outcome.data
       : null;
   if (data === null) ui.setMessage(resultNotice(result));
-  else ui.setImporting({ file, kind, preview: data });
+  else ui.setImporting({ file, preview: data });
 };
 
 const retainImport = async (token: string, listing: Listing, ui: RecoveryUi): Promise<void> => {
   const value = ui.importing;
   if (value === null) return;
-  ui.setBusy(`import-${value.kind}`);
-  const result =
-    value.kind === "ENVELOPE"
-      ? await v2.importEnvelopeRetain(value.file, value.preview.sourceSha256, token)
-      : await v2.importRecordRetain(value.file, value.preview.sourceSha256, token);
+  ui.setBusy("import-ENVELOPE");
+  const result = await v3.importEnvelopeRetain(value.file, value.preview.sourceSha256, token);
   ui.setBusy(null);
   ui.setImporting(null);
   ui.setMessage(resultNotice(result));
@@ -199,6 +187,6 @@ export const recoveryActions = (
   choose: (action, item) => ui.setConfirm({ action, item }),
   act: () => performAction(token, listing, ui),
   exportItem: (item) => ui.setConfirm({ action: "EXPORT", item }),
-  preview: (kind, file) => void previewImport(kind, file, token, ui),
+  preview: (file) => void previewImport(file, token, ui),
   retain: () => retainImport(token, listing, ui),
 });

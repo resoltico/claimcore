@@ -189,6 +189,7 @@ module internal CliCorpusValues =
 
     let importPreview =
         {
+            CaseId = Guid.Parse("00000000-0000-0000-0000-000000000024")
             ArtifactKind = RecoveryArtifactKind.Envelope
             SourceSha256 = digest
             DecodedEffect =

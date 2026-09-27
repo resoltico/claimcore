@@ -7,6 +7,10 @@ open ClaimCore.Application
 [<RequireQualifiedAccess>]
 type WebSetting =
     | ConnectionFile
+    | WitnessConnectionFile
+    | WitnessKeyFile
+    | SuppressionKeyFile
+    | RecoveryArtifactKeyFile
     | CertificatePath
     | StateDirectory
     | Origin
@@ -16,11 +20,16 @@ type WebSetting =
     | LoginPermits
     | SessionIdle
     | SessionAbsolute
+    | OidcCaCertFile
 
 module WebSettings =
     let private entries =
         [
             WebSetting.ConnectionFile, "CLAIMCORE_CONNECTION_FILE"
+            WebSetting.WitnessConnectionFile, "CLAIMCORE_WITNESS_CONNECTION_FILE"
+            WebSetting.WitnessKeyFile, "CLAIMCORE_WITNESS_KEY_FILE"
+            WebSetting.SuppressionKeyFile, "CLAIMCORE_SUPPRESSION_KEY_FILE"
+            WebSetting.RecoveryArtifactKeyFile, "CLAIMCORE_RECOVERY_ARTIFACT_KEY_FILE"
             WebSetting.CertificatePath, "CLAIMCORE_WEB_CERTIFICATE_PATH"
             WebSetting.StateDirectory, "CLAIMCORE_WEB_STATE_DIR"
             WebSetting.Origin, "CLAIMCORE_WEB_ORIGIN"
@@ -30,6 +39,7 @@ module WebSettings =
             WebSetting.LoginPermits, "CLAIMCORE_WEB_LOGIN_PERMITS"
             WebSetting.SessionIdle, "CLAIMCORE_WEB_SESSION_IDLE_MINUTES"
             WebSetting.SessionAbsolute, "CLAIMCORE_WEB_SESSION_ABSOLUTE_MINUTES"
+            WebSetting.OidcCaCertFile, "CLAIMCORE_OIDC_CA_CERT_FILE"
         ]
 
     let all = entries |> List.map fst
@@ -44,15 +54,19 @@ type WebStartupProblem =
     | RuntimeOpen of RuntimeOpenFault
     | OriginInvalid
     | SessionLifetimeInvalid
+    | OidcConfigurationInvalid
     | StateDirectoryRefused
     | StateLockRefused
-    | BootstrapRemovalFailed
-    | BootstrapWriteFailed
     | CertificateAccessRefused
     | CertificateInvalid
     | CertificateKeyMissing
     | ConnectionFileRefused
     | ConnectionFileEmpty
+    | WitnessConnectionFileRefused
+    | WitnessConnectionFileEmpty
+    | WitnessKeyFileRefused
+    | SuppressionKeyFileRefused
+    | RecoveryArtifactKeyFileRefused
     | AssetsMissing
     | UnsupportedInvocation
     | UnexpectedFailure
@@ -69,20 +83,18 @@ module WebStartupDiagnostics =
              "Configure one HTTPS localhost origin without a path.")
             WebStartupProblem.SessionLifetimeInvalid,
             ("WEB_SESSION_LIFETIME_INVALID", "Session lifetimes must be positive and ordered.")
+            WebStartupProblem.OidcConfigurationInvalid,
+            ("WEB_OIDC_CONFIGURATION_INVALID",
+             "Configure one valid HTTPS OIDC issuer and private client credentials.")
             WebStartupProblem.StateDirectoryRefused,
             ("WEB_STATE_DIRECTORY_REFUSED",
              "The state directory must be an owner-private absolute directory without links.")
             WebStartupProblem.StateLockRefused,
             ("WEB_STATE_LOCK_REFUSED", "The owner-private Web state lock could not be acquired.")
-            WebStartupProblem.BootstrapRemovalFailed,
-            ("WEB_BOOTSTRAP_REMOVAL_FAILED",
-             "The previous bootstrap credential could not be removed securely.")
         ]
 
     let private group1 =
         [
-            WebStartupProblem.BootstrapWriteFailed,
-            ("WEB_BOOTSTRAP_WRITE_FAILED", "The bootstrap credential could not be written securely.")
             WebStartupProblem.CertificateAccessRefused,
             ("WEB_CERTIFICATE_ACCESS_REFUSED",
              "The certificate must be a bounded private PKCS#12 file.")
@@ -93,12 +105,26 @@ module WebStartupDiagnostics =
             WebStartupProblem.ConnectionFileRefused,
             ("WEB_CONNECTION_FILE_REFUSED",
              "The application connection must be in a bounded private UTF-8 file.")
+            WebStartupProblem.WitnessConnectionFileRefused,
+            ("WEB_WITNESS_CONNECTION_FILE_REFUSED",
+             "The witness connection must be in a bounded private UTF-8 file.")
+            WebStartupProblem.WitnessKeyFileRefused,
+            ("WEB_WITNESS_KEY_FILE_REFUSED",
+             "Configure an absolute owner-private witness key-ring file; the runtime validates its bounded contents.")
+            WebStartupProblem.SuppressionKeyFileRefused,
+            ("WEB_SUPPRESSION_KEY_FILE_REFUSED",
+             "Configure an absolute owner-private suppression key file; the runtime verifies it against the installation marker.")
+            WebStartupProblem.RecoveryArtifactKeyFileRefused,
+            ("WEB_RECOVERY_ARTIFACT_KEY_FILE_REFUSED",
+             "Configure an absolute owner-private recovery artifact key-ring file.")
         ]
 
     let private group2 =
         [
             WebStartupProblem.ConnectionFileEmpty,
             ("WEB_CONNECTION_FILE_EMPTY", "The application connection file is empty.")
+            WebStartupProblem.WitnessConnectionFileEmpty,
+            ("WEB_WITNESS_CONNECTION_FILE_EMPTY", "The witness connection file is empty.")
             WebStartupProblem.AssetsMissing,
             ("WEB_ASSETS_MISSING", "Publish the verified Web assets before starting the host.")
             WebStartupProblem.UnsupportedInvocation,

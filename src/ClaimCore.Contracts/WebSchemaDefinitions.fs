@@ -105,7 +105,7 @@ module WebSchemaDefinitions =
                 WireSchema.property "preparingContractFingerprint" WireSchema.digest
                 WireSchema.property
                     "preparingContractKind"
-                    (WireSchema.enumeration [ "CANONICAL_RECORD_V3"; "SEMANTIC_CORE_V1" ])
+                    (WireSchema.enumeration [ "SEMANTIC_CORE_V1" ])
                 WireSchema.property "attempts" attemptPage
             ]
 
@@ -136,9 +136,7 @@ module WebSchemaDefinitions =
     let private importPreview semantic =
         WireSchema.objectOf
             [
-                WireSchema.property
-                    "artifactKind"
-                    (WireSchema.enumeration [ "ENVELOPE"; "UNBOUND_CANONICAL_RECORD" ])
+                WireSchema.property "artifactKind" (WireSchema.enumeration [ "ENVELOPE" ])
                 WireSchema.property "sourceSha256" WireSchema.digest
                 WireSchema.property "decodedEffect" (importEffect semantic)
                 WireSchema.property

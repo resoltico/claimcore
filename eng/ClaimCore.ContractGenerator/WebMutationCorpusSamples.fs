@@ -291,4 +291,4 @@ module internal WebMutationCorpusSamples =
 
     let dismiss = dismissDefinite @ dismissFailures
 
-    let all = prepare @ resolve "command.execute" @ resolve "recovery.resolve" @ dismiss
+    let all = prepare @ resolve "recovery.resolve" @ dismiss

@@ -24,24 +24,87 @@ type IClaimsCore =
 
     abstract Recovery: IRecoveryWorkflow
 
+type IActorClaimsCore =
+    abstract Definition: CancellationToken -> Task<QueryOutcome<CoreDescription>>
+    abstract Prepare: CommandRequest * CancellationToken -> Task<PrepareOutcome>
+    abstract Execute: CommandRequest * CancellationToken -> Task<SubmissionOutcome>
+    abstract Get: string * CancellationToken -> Task<QueryOutcome<Lookup<CurrentCase, string>>>
+    abstract List: CaseListRequest * CancellationToken -> Task<QueryOutcome<CaseSummaryPage>>
+
+    abstract History:
+        HistoryRequest * CancellationToken -> Task<QueryOutcome<Lookup<HistoryResultPage, string>>>
+
+    abstract ObserveOperation:
+        Guid * CancellationToken -> Task<QueryOutcome<Lookup<OperationReceipt, Guid>>>
+
+    abstract Recovery: IRecoveryWorkflow
+    abstract Management: IActorManagement
+    abstract Lifecycle: ICaseLifecycleWorkflow
+    abstract Tombstones: ITombstoneWorkflow
+
+    abstract ApproveCopySigner:
+        CopySignerApprovalRequest * CancellationToken -> Task<CopySignerApprovalOutcome>
+
+    abstract ApproveCopyDeletion:
+        CopyDeletionApprovalRequest * CancellationToken -> Task<CopyDeletionApprovalOutcome>
+
+    abstract ApproveCopyAdoption:
+        CopyAdoptionApprovalRequest * CancellationToken -> Task<CopyAdoptionApprovalOutcome>
+
+    abstract ApproveWriterHandoff:
+        WriterHandoffApprovalRequest * CancellationToken -> Task<WriterHandoffApprovalOutcome>
+
+    abstract ApproveRealDataActivation:
+        RealDataActivationApprovalRequest * CancellationToken ->
+            Task<RealDataActivationApprovalOutcome>
+
+    abstract ReviewRealDataActivation:
+        planId: Guid * CancellationToken -> Task<RealDataActivationPlanReviewOutcome>
+
 module internal CoreApi =
-    let create
+    let private prepareForActor store recovery clock commandAuthority request cancellationToken =
+        match commandAuthority with
+        | Some authority ->
+            TypedPreparation.prepare store recovery clock authority request cancellationToken
+        | None ->
+            Task.FromResult(
+                PrepareOutcome.PrepareRejected(request.OperationId, Rejection.ResourceUnavailable)
+            )
+
+    let createActor
         (store: IClaimStore)
         (recovery: IRecoveryStore)
         (clock: IBusinessTime)
+        (context: ActorCallContext)
+        (artifactAuthority: IRecoveryArtifactAuthority)
         : IClaimsCore =
         BuildIdentity.requireCompatibleAssembly typeof<Claim>.Assembly
 
-        let recoveryWorkflow = RecoveryCoordinator.create store recovery clock
+        let recoveryWorkflow =
+            RecoveryCoordinator.create store recovery clock context.Binding artifactAuthority
+
+        let commandAuthority =
+            context.CaseId
+            |> Option.map (fun caseId ->
+                {
+                    Actor = context.Binding
+                    CaseId = caseId
+                })
 
         { new IClaimsCore with
             member _.Describe() = TypedProjection.description clock
 
             member _.Prepare(request, cancellationToken) =
-                TypedPreparation.prepare store recovery clock request cancellationToken
+                prepareForActor store recovery clock commandAuthority request cancellationToken
 
             member _.Execute(request, cancellationToken) =
-                TypedSubmission.execute store recovery clock request cancellationToken
+                match commandAuthority with
+                | Some authority ->
+                    TypedSubmission.execute store recovery clock authority request cancellationToken
+                | None ->
+                    Task.FromResult(
+                        SubmissionOutcome.RejectedBeforeAttempt(None, Rejection.ResourceUnavailable)
+                    )
 
             member _.Get(reference, cancellationToken) =
                 TypedQueries.get store reference cancellationToken

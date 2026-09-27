@@ -11,7 +11,6 @@
   "token.ERROR": "خطأ في التنفيذ",
   "token.REVOKED_BEFORE_EXECUTION": "أُلغي قبل التنفيذ",
   "token.ENVELOPE": "حافظة",
-  "token.UNBOUND_CANONICAL_RECORD": "سجل معياري غير مرتبط",
   "token.FOUND": "موجودة",
   "token.NOT_FOUND": "غير موجودة"
 }

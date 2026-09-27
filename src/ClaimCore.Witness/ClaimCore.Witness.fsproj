@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="PostgresTransport.fs" />
+    <Compile Include="Cipher.fs" />
+    <Compile Include="WitnessIdentity.fs" />
+    <Compile Include="WitnessInstallationUse.fs" />
+    <Compile Include="WitnessTypes.fs" />
+    <Compile Include="WitnessKeyRotation.fs" />
+    <Compile Include="WitnessAdmission.fs" />
+    <Compile Include="WitnessAuditAdmission.fs" />
+    <Compile Include="WitnessJournal.fs" />
+    <Compile Include="WitnessStoreRead.fs" />
+    <Compile Include="WitnessStoreSnapshot.fs" />
+    <Compile Include="WitnessDataUseActivation.fs" />
+    <Compile Include="WitnessStoreReadLease.fs" />
+    <Compile Include="WitnessStoreAppend.fs" />
+    <Compile Include="WitnessSubjectOperations.fs" />
+    <Compile Include="WitnessStoreMetadata.fs" />
+    <Compile Include="WitnessStorePayloadPage.fs" />
+    <Compile Include="WitnessStoreHandoff.fs" />
+    <Compile Include="WitnessStore.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="../../db/witness-baseline.sql" LogicalName="ClaimCore.Witness.Baseline.sql" />
+    <EmbeddedResource Include="../../db/witness-baseline.json" LogicalName="ClaimCore.Witness.Baseline.json" />
+    <EmbeddedResource Include="../../db/witness-catalog.sql" LogicalName="ClaimCore.Witness.Catalog.sql" />
+    <EmbeddedResource Include="../../db/witness-catalog.pg18.6.json" LogicalName="ClaimCore.Witness.Catalog.json" />
+    <EmbeddedResource Include="../../db/witness-admission.sql" LogicalName="ClaimCore.Witness.Admission.sql" />
+    <EmbeddedResource Include="../../db/witness-audit-admission.sql" LogicalName="ClaimCore.Witness.AuditAdmission.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Npgsql" />
+  </ItemGroup>
+</Project>

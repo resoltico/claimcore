@@ -130,6 +130,10 @@ module StageCatalog =
     let private behavior =
         [
             linux
+                "witness-qualification"
+                [ "dotnet"; "test"; "ClaimCore.WitnessTests" ]
+                [ OutputRequirement.Suffix "ClaimCore.WitnessTests.trx" ]
+            linux
                 "recovery-qualification"
                 [ "dotnet"; "test"; "ClaimCore.RecoveryQualificationTests" ]
                 [ OutputRequirement.Suffix "ClaimCore.RecoveryQualificationTests.trx" ]
@@ -141,6 +145,10 @@ module StageCatalog =
                 "fresh-baseline-qualification"
                 [ "dotnet"; "test"; "ClaimCore.MigrationQualificationTests" ]
                 [ OutputRequirement.Suffix "ClaimCore.MigrationQualificationTests.trx" ]
+            linux
+                "backup-qualification"
+                [ "dotnet"; "test"; "ClaimCore.BackupQualificationTests" ]
+                [ OutputRequirement.Suffix "ClaimCore.BackupQualificationTests.trx" ]
             linux
                 "coverage"
                 [ "reportgenerator"; "coverage" ]

@@ -160,6 +160,23 @@ let private negativeControls () =
 
     Expect.isNonEmpty granted "The manifest reviews at least one internals grant"
 
+let private restorePublicationIsTestOnly () =
+    let assembly =
+        ProductModel.assemblies.Value
+        |> Array.find (fun candidate -> candidate.GetName().Name = "ClaimCore.Database")
+
+    let trusted =
+        match assembly.GetType("ClaimCore.Database.TrustedRestorePublication", false) with
+        | null -> failtest "Database's trusted-publication seam must exist for this control."
+        | value -> value
+
+    Expect.isFalse trusted.IsPublic "An ordinary consumer cannot inject publication trust."
+
+    Expect.equal
+        (internalsGrants assembly)
+        (Set.singleton "ClaimCore.IntegrationTests")
+        "Only the reviewed isolated test assembly receives Database internals."
+
 let tests =
     testList
         "architecture manifest"
@@ -182,4 +199,7 @@ let tests =
                 "internals grants follow declared project edges"
                 internalsGrantsFollowDeclaredEdges
             testCase "stale permissions and empty grant sets are detected" negativeControls
+            testCase
+                "[CC-ARCH-001] restore publication trust is invisible to ordinary consumers"
+                restorePublicationIsTestOnly
         ]

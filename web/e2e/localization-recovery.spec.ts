@@ -12,6 +12,16 @@ import {
   ui,
 } from "./localization-support";
 
+const observePreparedBytes = (page: Page): (() => Buffer | null) => {
+  let bytes: Buffer | null = null;
+  page.on("request", (request) => {
+    if (new URL(request.url()).pathname === "/api/v3/operations/prepare") {
+      bytes = Buffer.from(request.postData() ?? "");
+    }
+  });
+  return () => bytes;
+};
+
 const returnToRecovery = async (page: Page): Promise<void> => {
   await progress("localized-recovery-reload");
   await page.reload();
@@ -32,6 +42,7 @@ test("preserves a committed operation and exact recovery identity when its local
   await openAuthenticated(page);
   await openCase(page, `LOCALE-LOSS-${randomUUID()}`);
   await startCommand(page, "Close the case");
+  const preparedBytes = observePreparedBytes(page);
   const identity = await prepare(page);
   await confirmPrepared(page);
   const requests = trackRequests(page);
@@ -41,7 +52,9 @@ test("preserves a committed operation and exact recovery identity when its local
     const captured = await pending.ready;
     const outcome = captured.reply.outcome;
     expect(outcome.tag === "COMPLETED" && outcome.data.execution.tag === "ACCEPTED").toBe(true);
-    expect(captured.bytes.equals(Buffer.from(JSON.stringify(identity)))).toBe(true);
+    const original = preparedBytes();
+    if (original === null) throw new Error("E2E_PREPARE_REQUEST_MISSING");
+    expect(captured.bytes.equals(original)).toBe(true);
     await selectLanguage(page, "ar");
     await selectFormat(page, "lv-LV");
     await page.keyboard.press("Escape");

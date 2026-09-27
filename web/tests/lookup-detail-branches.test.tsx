@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import { CaseDetail } from "../src/views/CaseDetail";
 import { OperationLookup } from "../src/views/OperationLookup";
-import { definition, fields, operationId, response } from "./v2-ui.fixtures";
+import { definition, fields, operationId, response } from "./v3-ui.fixtures";
 
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 
@@ -19,6 +19,7 @@ it("keeps missing case lookup and non-full history entries out of case presentat
       nextCursor: null,
     }),
   );
+  fetch.mockResolvedValueOnce(response("lifecycle.review", "RESOURCE_UNAVAILABLE", null));
   render(
     <CaseDetail
       token="token"
@@ -45,6 +46,7 @@ it("keeps a failed history page request-local without erasing current case data"
   fetch.mockResolvedValueOnce(
     new Response("invalid", { headers: { "content-type": "application/json" } }),
   );
+  fetch.mockResolvedValueOnce(response("lifecycle.review", "RESOURCE_UNAVAILABLE", null));
   render(
     <CaseDetail
       token="token"
@@ -70,6 +72,7 @@ it("treats a typed missing history as an empty read rather than a transport erro
   fetch.mockResolvedValueOnce(
     response("case.history", "SUCCEEDED", { tag: "NOT_FOUND", caseReference: "CASE-1" }),
   );
+  fetch.mockResolvedValueOnce(response("lifecycle.review", "RESOURCE_UNAVAILABLE", null));
   render(
     <CaseDetail
       token="token"

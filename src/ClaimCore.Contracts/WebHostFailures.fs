@@ -11,7 +11,6 @@ type WebHostFailure =
     | SessionForbidden
     | MethodRejected
     | AntiforgeryRejected
-    | LoginRejected
     | EndpointMissing
     | Busy
     | ExportMetadataInvalid
@@ -59,12 +58,6 @@ module WebHostFailures =
              403,
              None,
              "Request verification was refused.")
-            WebHostFailure.LoginRejected,
-            ("WEB_HOST_LOGIN_REJECTED",
-             "WEB_LOGIN_REJECTED",
-             401,
-             Some "NOT_STARTED",
-             "Login was refused.")
             WebHostFailure.EndpointMissing,
             ("WEB_HOST_ENDPOINT_MISSING", "WEB_NOT_FOUND", 404, None, "Endpoint was not found.")
             WebHostFailure.Busy,

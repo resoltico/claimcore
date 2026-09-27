@@ -18,7 +18,7 @@ const json = (path) => JSON.parse(readFileSync(resolve(root, path), "utf8"));
 const semantic = json("generated/convergence/semantic-core-v1.contract.json");
 const requirements = diagnosticRequirements(
   semantic,
-  json("generated/convergence/web-v2.host-failure.schema.json"),
+  json("generated/convergence/web-v3.host-failure.schema.json"),
 );
 const catalog = (language) =>
   Object.assign(
@@ -36,7 +36,7 @@ test("every shipped real catalog covers the native metadata and diagnostic param
   validateCoverage(en, semantic, requirements);
   const tokens = renderedTokens(
     semantic,
-    readFileSync(resolve(root, "generated/convergence/web-v2.types.recovery.ts"), "utf8"),
+    readFileSync(resolve(root, "generated/convergence/web-v3.types.recovery.ts"), "utf8"),
   );
   validateTokens(en, tokens);
 });

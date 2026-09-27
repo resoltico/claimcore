@@ -1,70 +1,69 @@
 module ClaimCore.WebTests.HostRouteTests
 
-open ClaimCore.Contracts
-open System
-open System.Security.Cryptography
-open System.Text
+open System.Net.Http
 open Expecto
-open Microsoft.AspNetCore.Http
 open ClaimCore.Web
-open ClaimCore.WebTests.RouteFixtures
+open ClaimCore.WebTests.TestServerFixture
 
-let private bootstrap (secret: string) =
-    {
-        Path = "synthetic-private-path"
-        Digest = secret |> Encoding.UTF8.GetBytes |> SHA256.HashData
-    }
-
-let private inputFailureTests () =
-    let oversized = context "{}"
-
-    let oversizedBody =
-        HostRoutes.invalidLoginBody oversized HttpInputProblem.BodyTooLarge
-
-    execute oversized oversizedBody |> ignore
-    Expect.equal oversized.Response.StatusCode 413 "Login keeps its smaller independent body limit"
-
-    let malformed = context "{}"
-
-    let malformedBody =
-        HostRoutes.invalidLoginBody malformed HttpInputProblem.InvalidJson
-
-    execute malformed malformedBody |> ignore
-
-    Expect.equal
-        malformed.Response.StatusCode
-        400
-        "Invalid login JSON is a typed not-started host failure"
-
-let private credentialTests () =
-    let sessions = SessionRegistry(TimeSpan.FromMinutes(1.), TimeSpan.FromMinutes(2.))
-    let request = context "{}"
-    request.Request.Headers["X-ClaimCore-Antiforgery"] <- "header-token"
+let private obsoleteBootstrapRoute () =
+    use host = Host.Start()
 
     let rejected =
-        HostRoutes.authenticateLogin
-            (bootstrap "synthetic-valid-credential")
-            sessions
-            request
-            {
-                Credential = "synthetic-wrong-credential"
-                AntiforgeryToken = "header-token"
-            }
-        |> readResult
+        host.Send(
+            HttpMethod.Post,
+            "/api/v3/session/login",
+            Some "{}",
+            Some "application/json",
+            None
+        )
 
-    execute request rejected |> ignore
+    Expect.equal rejected.Status 404 "Old shared-credential login route is absent"
+    Expect.equal host.Runtime.CoreCalls 0 "Old route cannot reach case work"
 
+let private oidcSessionLogout () =
+    use host = Host.Start()
+    Expect.equal (host.Login()).Status 200 "Synthetic OIDC cookie is issued by the test fixture"
+    let token = host.SessionToken()
+    let current = host.Send(HttpMethod.Get, "/api/v3/session", None, None, None)
+    use currentBody = document current
+
+    Expect.isTrue
+        (currentBody.RootElement
+            .GetProperty("outcome")
+            .GetProperty("data")
+            .GetProperty("authenticated")
+            .GetBoolean())
+        "Browser session derives from the authenticated cookie"
+
+    let logout =
+        host.Send(
+            HttpMethod.Post,
+            "/api/v3/session/logout",
+            Some "{}",
+            Some "application/json",
+            Some token
+        )
+
+    Expect.equal logout.Status 200 "CSRF-protected logout succeeds"
+
+let private oidcReturnTarget () =
     Expect.equal
-        request.Response.StatusCode
-        401
-        "Incorrect credentials never create a browser session"
+        (HostRoutes.loginReturnProperties ()).RedirectUri
+        "/"
+        "Successful OIDC callback returns to the application, never its challenge URL"
 
+[<Tests>]
 let tests =
     testList
-        "Web session route boundaries"
+        "OIDC session route boundaries"
         [
-            testCase "[CC-WEB-001] applies exact login body-limit classifications" inputFailureTests
             testCase
-                "[CC-WEB-001] requires matching CSRF and bootstrap credentials before session issue"
-                credentialTests
+                "[CC-WEB-001] shared bootstrap route is physically absent"
+                obsoleteBootstrapRoute
+            testCase
+                "[CC-WEB-001] OIDC cookie session logs out through CSRF admission"
+                oidcSessionLogout
+            testCase
+                "[CC-WEB-001] OIDC challenge returns locally after PKCE callback"
+                oidcReturnTarget
         ]

@@ -3,7 +3,7 @@ namespace ClaimCore.Contracts
 open ClaimCore.Application
 
 [<RequireQualifiedAccess>]
-module WebResponseSchemas =
+module internal WebResponseSchemas =
     let private reference = Schema.reference
 
     let private outcome tag data =
@@ -69,7 +69,7 @@ module WebResponseSchemas =
                     (WireSchema.enumeration [ "CONFIRMED"; "UNCONFIRMED" ])
             ]
 
-    let private resolveCases =
+    let private resolveCases rejection =
         [
             "OBSERVED_ACCEPTED",
             WireSchema.objectOf [ WireSchema.property "receipt" (reference "Receipt") ]
@@ -78,7 +78,7 @@ module WebResponseSchemas =
             WireSchema.objectOf
                 [
                     WireSchema.property "preparation" nullablePreparation
-                    WireSchema.property "rejection" (reference "RecoveryRejection")
+                    WireSchema.property "rejection" (reference rejection)
                 ]
             "FAILED_BEFORE_ATTEMPT",
             WireSchema.objectOf
@@ -105,19 +105,19 @@ module WebResponseSchemas =
                 ]
         ]
 
-    let private session endpoint =
+    let session endpoint =
         outcomes endpoint [ "SNAPSHOT", reference "SessionSnapshot" ]
 
-    let private definition =
+    let definition =
         outcomes "definition" [ "DESCRIBED", reference "DefinitionPayload" ]
 
-    let private caseGet =
+    let caseGet =
         let succeeded =
             lookup "caseReference" WireSchema.text "current" (reference "CurrentCase")
 
         query "case.get" succeeded (reference "Rejection")
 
-    let private caseList =
+    let caseList =
         let page =
             WireSchema.objectOf
                 [
@@ -127,7 +127,7 @@ module WebResponseSchemas =
 
         query "case.list" page (reference "Rejection")
 
-    let private history =
+    let history =
         let succeeded =
             Schema.oneOf
                 [
@@ -146,12 +146,12 @@ module WebResponseSchemas =
 
         query "case.history" succeeded (reference "Rejection")
 
-    let private observe =
+    let observe =
         let succeeded = lookup "operationId" WireSchema.uuid "receipt" (reference "Receipt")
 
         query "operation.observe" succeeded (reference "Rejection")
 
-    let private prepare =
+    let prepare =
         outcomes
             "command.prepare"
             [
@@ -181,18 +181,33 @@ module WebResponseSchemas =
                     ]
             ]
 
-    let private recoveryList =
+    let recoveryList =
         query "recovery.list" (reference "RecoveryPage") (reference "RecoveryRejection")
 
-    let private recoveryInspect =
+    let recoveryInspect =
         let succeeded =
             lookup "identity" WireSchema.uuid "value" (reference "RecoveryInspection")
 
         query "recovery.inspect" succeeded (reference "RecoveryRejection")
 
-    let private resolve endpoint = outcomes endpoint resolveCases
+    let resolve endpoint =
+        outcomes endpoint (resolveCases "RecoveryRejection")
 
-    let private dismiss =
+    let submission =
+        outcomes
+            "command.execute"
+            (resolveCases "Rejection"
+             @ [
+                 "PREPARATION_STATE_UNKNOWN",
+                 WireSchema.objectOf
+                     [
+                         WireSchema.property "operationId" WireSchema.uuid
+                         WireSchema.property "requestSha256" WireSchema.digest
+                         WireSchema.property "fault" (reference "Fault")
+                     ]
+             ])
+
+    let dismiss =
         outcomes
             "recovery.dismiss"
             [
@@ -219,7 +234,7 @@ module WebResponseSchemas =
                     ]
             ]
 
-    let private export =
+    let export =
         outcomes
             "recovery.export"
             [
@@ -229,10 +244,10 @@ module WebResponseSchemas =
                 "CANCELLED", Schema.nullValue
             ]
 
-    let private importPreview endpoint =
+    let importPreview endpoint =
         query endpoint (reference "RecoveryImportPreview") (reference "RecoveryRejection")
 
-    let private importRetain endpoint =
+    let importRetain endpoint =
         outcomes
             endpoint
             [
@@ -246,34 +261,9 @@ module WebResponseSchemas =
                 "RETAIN_STATE_UNKNOWN",
                 WireSchema.objectOf
                     [
-                        WireSchema.property
-                            "artifactKind"
-                            (WireSchema.enumeration [ "ENVELOPE"; "UNBOUND_CANONICAL_RECORD" ])
+                        WireSchema.property "artifactKind" (WireSchema.enumeration [ "ENVELOPE" ])
                         WireSchema.property "sourceSha256" WireSchema.digest
                         WireSchema.property "operationId" (Schema.nullable WireSchema.uuid)
                         WireSchema.property "fault" (reference "Fault")
                     ]
             ]
-
-    let all () =
-        [
-            "session", session "session"
-            "session.login", session "session.login"
-            "session.logout", session "session.logout"
-            "definition", definition
-            "case.get", caseGet
-            "case.list", caseList
-            "case.history", history
-            "operation.observe", observe
-            "command.prepare", prepare
-            "command.execute", resolve "command.execute"
-            "recovery.list", recoveryList
-            "recovery.inspect", recoveryInspect
-            "recovery.resolve", resolve "recovery.resolve"
-            "recovery.dismiss", dismiss
-            "recovery.export", export
-            "recovery.importEnvelopePreview", importPreview "recovery.importEnvelopePreview"
-            "recovery.importEnvelopeRetain", importRetain "recovery.importEnvelopeRetain"
-            "recovery.importRecordPreview", importPreview "recovery.importRecordPreview"
-            "recovery.importRecordRetain", importRetain "recovery.importRecordRetain"
-        ]

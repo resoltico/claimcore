@@ -119,8 +119,6 @@ module internal WebRecoveryQueryCorpusSamples =
         ]
         @ WebCorpusSamples.recoveryFailures endpoint endpoint encode
 
-    let imports =
-        preview "recovery.importEnvelopePreview" CliCorpusValues.importPreview
-        @ preview "recovery.importRecordPreview" WebCorpusSamples.importPreviewWithoutExisting
+    let imports = preview "recovery.importEnvelopePreview" CliCorpusValues.importPreview
 
     let all = list @ inspect @ export @ imports

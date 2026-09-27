@@ -1,8 +1,6 @@
 # PostgreSQL storage and administration
 
-PostgreSQL owns durable transactions and structural integrity. Domain and Application remain the
-authority for claims decisions. `ClaimCore.Database` is the schema-owner administration executable;
-normal case work uses Web or CLI with a separate runtime credential.
+PostgreSQL owns durable transactions and structural integrity. Domain and Application remain the authority for claims decisions. `ClaimCore.Database` is the owner-only administration executable; `ClaimCore.Web` alone composes ordinary case work with separately credentialed primary and witness stores. The browser and CLI call its authenticated HTTPS API and receive no database credential.
 
 ## Database executable
 
@@ -14,7 +12,40 @@ private file selected by `CLAIMCORE_ADMIN_CONNECTION_FILE`.
 ```text
 ClaimCore.Database 0.5.0 — schema and recovery-retention administration
   ClaimCore.Database initialize <canonical-IANA-ID>
+  ClaimCore.Database initialize-real-data <canonical-IANA-ID>
+  ClaimCore.Database publish-real-data-activation-plan <private-policy-file> <private-evidence-file> <private-review-output-file>
+  ClaimCore.Database activate-real-data <private-policy-file> <original-evidence-file> <fresh-evidence-file> <plan-id> <first-approval-id> <second-approval-id>
+  ClaimCore.Database reconcile-real-data-activation
+  ClaimCore.Database initialize-witness
+  ClaimCore.Database provision-initial-owner
+  ClaimCore.Database register-copy-signer <purpose> <event-id> <key-id> <raw-public-key-file> <owner-approval-id> <holder-approval-id>
+  ClaimCore.Database retire-copy-signer <purpose> <event-id> <key-id> <owner-approval-id> <holder-approval-id>
+  ClaimCore.Database ingest-managed-copy <attestation-file> <signature-file>
+  ClaimCore.Database transition-managed-copy <attestation-file> <signature-file>
+  ClaimCore.Database verify-delete-managed-copy <attestation-file> <signature-file>
+  ClaimCore.Database verify-managed-copy <attestation-file> <signature-file>
+  ClaimCore.Database adopt-managed-copy <private-proposal-file>
+  ClaimCore.Database publish-external-copy <private-proposal-file>
+  ClaimCore.Database transition-adopted-copy <canonical-file> <signature-file>
+  ClaimCore.Database verify-delete-adopted-copy <canonical-file> <signature-file>
+  ClaimCore.Database certify-managed-payload-absence <private-proposal-file>
+  ClaimCore.Database complete-suppression-horizon <private-proposal-file>
+  ClaimCore.Database prepare-writer-handoff <canonical-file> <signature-file>
+  ClaimCore.Database settle-writer-handoff <canonical-file> <signature-file>
+  ClaimCore.Database activate-writer-handoff <report> <report-signature> <evidence-index> <fence> <fence-signature> <supplement> <supplement-signature>
+  ClaimCore.Database abort-writer-handoff <candidate-file> <owner-one-signature-file> <owner-two-signature-file>
+  ClaimCore.Database draft-writer-handoff-abort <handoff-id> <abort-key-one-id> <abort-key-two-id> <new-private-candidate-file>
+  ClaimCore.Database purge-live <private-proposal-file>
+  ClaimCore.Database inspect-managed-copy <copy-id>
+  ClaimCore.Database reconcile-lifecycle-event <event-id>
+  ClaimCore.Database verify-restore-report <report> <signature> <evidence-index> <nonce>
+  ClaimCore.Database verify-fenced-tail <report> <report-signature> <evidence-index> <fence> <fence-signature> <supplement> <supplement-signature> <nonce>
   ClaimCore.Database verify
+  ClaimCore.Database verify-data
+  ClaimCore.Database hold-backup-capture (private inherited control descriptor)
+  ClaimCore.Database reconcile-backup-capture <lease-id>
+  ClaimCore.Database issue-backup-health <private-policy-file> <private-independent-evidence-file> <private-certificate-output-file>
+  ClaimCore.Database reconcile-backup-health <private-policy-file> <original-independent-evidence-file> <private-certificate-output-file>
   ClaimCore.Database prune [--dry-run] [--settled-retention-days <1-3650>]
                            [--abandoned-retention-days <1-3650>] [--limit <1-1000>]
   ClaimCore.Database describe diagnostics
@@ -22,8 +53,12 @@ ClaimCore.Database 0.5.0 — schema and recovery-retention administration
   ClaimCore.Database version [--json]
 Prune defaults: accepted 30 days; revoked 30 days; batch limit 100; deletion enabled.
 Set CLAIMCORE_ADMIN_CONNECTION_FILE to an owner-private schema-owner connection file.
+Witness commands also require separate owner-private witness connection and key-ring files.
+Initial ownership requires a private HTTPS issuer and immutable subject file.
 ```
 <!-- generated:end database-help -->
+
+`initialize` creates an immutable `SYNTHETIC_ONLY` installation. `initialize-real-data` exists only for an operator-reviewed build with a source-pinned independent publication root and backup-health policy; the generic checkout refuses it before creating either schema. A fresh `REAL_DATA` pair starts in `BOOTSTRAP_NO_CASES`, where claimant case work is unavailable. After a witnessed `publish-real-data-activation-plan` from owner-private signed health evidence, two distinct authenticated human installation owners must review and approve that exact stable plan. The owner-only `activate-real-data` command then requires fresh signed health evidence satisfying the published plan and consumes both approvals under the authority lock; primary and witness must agree on the settled activation before case work opens. If its result is uncertain, `reconcile-real-data-activation` repairs only the exact already-settled witness event, including after the short-lived health certificate expires; it cannot initiate another activation. The generic checkout has no reviewed root and cannot complete this real-data path. Keep policy/evidence files and the private plan-review receipt out of Web, CLI, logs and source control.
 
 <a id="cc-db-002"></a>
 ### CC-DB-002 — Schema-owner credential admission precedes database access
@@ -36,10 +71,22 @@ supports macOS and Linux and fails closed on Windows. Database-free discovery re
 every build host. The file contains an Npgsql connection string for the schema owner and must never
 be passed to CLI or Web as their runtime credential. Startup-option overrides and application-role
 credentials are refused by owner administration; no credential is elevated through `SET ROLE`.
-Both owner and case-work connections refuse a non-loopback host unless its connection string selects
+Witness initialization and owner operations that append authority also require
+`CLAIMCORE_WRITER_CAPABILITY_FILE`: an independent owner-private regular file containing exactly
+32 random nonzero raw bytes, mode `0600` on macOS/Linux. It is not the witness encryption key and
+must not be copied into an argument, log, browser response, or case-work CLI configuration.
+Primary runtime/schema-owner and witness writer/auditor/schema-owner connections refuse a non-loopback host unless its connection string selects
 `SSL Mode=VerifyFull`. Remote admission disables GSS encryption fallback so TLS verifies the server
 certificate and requested hostname. Loopback development connections may disable TLS; an omitted
 SSL mode is not sufficient for a remote host.
+
+Restored-pair audit uses `CLAIMCORE_WITNESS_AUDIT_CONNECTION_FILE`, an owner-private connection file
+for the separate `claimcore_witness_auditor` role. That role has audited SELECT access and no witness
+append, handoff, or writer-capability authority. It is not the case-work witness writer credential;
+the restored pair is audited before a replacement writer is activated. Set
+`CLAIMCORE_RESTORE_ARCHIVE_ROOT` to the exact owner-private archive directory named by the signed
+evidence index. Report verification reopens and hashes each listed encrypted BASE/WAL object under
+that root through nofollow handles; a missing, linked, changed, or unregistered copy refuses.
 
 Runtime connection admission checks the supported server, durability/session settings, confined
 application identity, exact current baseline identity, required structural checks and least-privilege
@@ -53,8 +100,36 @@ before queries assume the current relation layout.
 or database access. Results distinguish `NOT_STARTED`, `NOT_COMMITTED`, `COMPLETION_UNKNOWN`,
 `COMPLETED` and `COMPLETED_CLEANUP_FAILED`. An unconfirmed commit exits 4 and requires reconciliation,
 not an inferred rollback or automatic mutation retry. Definite admission/action failures exit 3.
-Use read-only `verify` after reconnecting to inspect installation readiness; verification is not a
-historical operation receipt and cannot prove which caller created an installation.
+Use read-only `verify` after reconnecting for schema/role admission and `verify-data` for the full current primary-and-witness row/authority audit. Neither is a historical operation receipt, independently retained freshness checkpoint, or restored-pair certificate; neither can prove which caller created an installation. `verify-data` reports bounded safe counts (including witnessed terminal approvals/events, individual physical-copy verifications, copy-deletion approvals, and writer-handoff approvals, preparations, settlements, activations, and aborts), cutoff and hash, and distinguishes pending witness intents from a clean audit. A failed audit quarantines case-work admission until reconciled.
+
+`verify-restore-report` is a separate read-only exact signed-report recheck. Its pre-handoff report
+binds the truthful `unfenced-capture` source cutoff, a later complete quiescent audit cutoff, and a registered WAL prefix; the source label alone does not prove a common cross-cluster cutoff. It
+explicitly leaves an open recovery tail and returns `realDataReady:false`. A separately signed W1
+tail/fence supplement and independent publication root are required before cutover review. Local
+two-container restore tests prove only synthetic mechanics, not separate-host custody or production
+recoverability.
+
+Keep the exact independently published Database verifier package and its pinned publication root with every retained historical writer-activation record. Historical W2 reconciliation uses that package's original binary/root binding; a newer binary or rotated root must refuse an old publication rather than reinterpret it. Preserve both packages until the older activation and its evidence are no longer needed. This is historical readback, not permission to activate a new writer with expired proof.
+
+An orphaned writer-handoff PREPARE is not cleared by a timeout. The owner may run `draft-writer-handoff-abort <handoff-id> <abort-key-one-id> <abort-key-two-id> <new-private-candidate-file>` to create exact owner-private canonical bytes with a ten-minute database-clock expiry; it derives the pending W1 ticket, current owner-holder grants, and old writer capability hash under lock, and refuses a pre-existing or linked output file. Two distinct registered `WRITER_HANDOFF_ABORT` human owner key holders must sign those exact LF-terminated bytes independently. `abort-writer-handoff <candidate-file> <owner-one-signature-file> <owner-two-signature-file>` then performs witnessed A1, primary A2, and witness A3 release with exact reconciliation across interruptions. It keeps case work quarantined until the primary and witness abort tickets and full audit agree; consumed approvals cannot be reused. Both commands require separately private primary owner/application, witness owner/auditor, key-ring, suppression-key, and writer-capability files. Do not put private keys, actor IDs, claimant data, or signatures in shell arguments; local synthetic signatures do not prove independent human custody.
+
+`verify-delete-managed-copy <attestation-file> <signature-file>` is an owner-only, exact-copy action after a witnessed individual verifier approval. The private signed transition must match the fresh all-known-location ABSENT inspection, current copy revision, elapsed retention and holds, and registered verifier key; a missing, linked, malformed or divergent private file is refused. Completion means only that one managed copy reached audited `VERIFIED_DELETED`, not that a case or an installation has finished erasure. Never pass a raw case reference, claimant content or database credential as an argument.
+
+`verify-managed-copy <attestation-file> <signature-file>` is an owner-only BASE/WAL verification, not restored-pair qualification. First use the fixed `eng/backup/Verify-ManagedCopy.sh` with a separate custodian's registered `RESTORE_COPY_VERIFIER` key to produce a short-lived, detached-signed physical-check proof for the exact encrypted copy and prospective VERIFY event. Set `CLAIMCORE_COPY_PHYSICAL_INPUT_FILE` to an owner-private `0600` JSON file with format `claimcore-managed-copy-physical-input-1` and exactly `copyId`, `objectPath`, `maximumObjectBytes`, `proofFile`, `signatureFile`, and `commitmentKeyFile`; keep paths and key material out of argv, logs, Web and case-work CLI. The owner command reopens the encrypted object through a nofollow private handle, rehashes its bytes, recomputes the separate HMAC location commitment, checks current distinct human signer authority and DB-clock expiry, then co-commits one witnessed `VERIFY→RETAINED` event and immutable signed report receipt. Missing, changed, linked, wrong-copy or wrong-location proof refuses without claiming verification. `RETAINED` means that one managed copy passed its physical/custody check; it remains an erasure liability and does not establish WAL freshness, a complete restored pair, old-writer isolation, independent off-host custody, or `realDataReady`.
+
+`hold-backup-capture` accepts no command-line paths or credentials. The fixed `eng/backup/Capture-FencedBackup.py` sends canonical BEGIN/FINISH/OBSERVE frames through an inherited private duplex descriptor. Before the two encrypted BASE streams, the owner holds a witness authority read fence, completes a full primary/witness audit and issues a bounded lease with the exact installation, writer generation and witness cutoff. It reopens the resulting ciphertext, checkpoint, and signed cycle files through nofollow private handles, checks active distinct COPY_ATTESTOR and CHECKPOINT human holders and exact file/lease bindings, and keeps the fence through sealing. `CAPTURED_UNVERIFIED` is only a captured-byte receipt; separate witnessed REGISTER/VERIFY→RETAINED events, WAL coverage, independent checkpoint custody and an isolated full restored-pair audit remain required. A failed or interrupted FINISH is uncertain and the exact private files must be retained for owner reconciliation. Configure the owner process with private primary/application and witness owner/writer/auditor connection files, witness key ring, writer capability and suppression key, plus `CLAIMCORE_BACKUP_ARCHIVE_ROOT` and `CLAIMCORE_BACKUP_CHECKPOINT_ROOT` owner-private directories. The generic checkout does not certify independent off-host custody or real-data readiness.
+
+If the pipe response is lost after FINISH, `reconcile-backup-capture <lease-id>` reads only the exact private cycle named by that opaque lease. It rehashes the ciphertext, checkpoint, manifest and signatures, checks historical COPY_ATTESTOR/CHECKPOINT registrations and the original witness cutoff, then compares the persisted receipt byte-for-byte. A missing or changed receipt stays unknown; neither this readback nor a sealed capture marks a copy `RETAINED` or a restore admissible. Do not rerun capture with a new identity to guess whether the first one completed.
+
+`adopt-managed-copy <private-proposal-file>` is an owner-only adoption after an actor-bound approval. The private file contains exact custody, registry, and PRESENT inspection documents with detached signatures, not paths; the owner process independently opens and hashes the mapped ciphertext and checks keyed location and custodian commitments before recording the witnessed ADOPT event. Supply owner-private `CLAIMCORE_COPY_LOCATION_MAPPING_FILE` (one exact copy/case/custodian/location mapping) and `CLAIMCORE_COPY_COMMITMENT_KEY_FILE` (the installation's raw 32-byte commitment key). Missing, changed, inaccessible, or mismatched bytes leave the copy unresolved, not retained. Keep the proposal, mapping, connection files, key, and ciphertext out of CLI/Web requests and command output.
+
+`publish-external-copy <private-proposal-file>` records an externally held copy before a case's erasure fence. The owner-private proposal carries signed registry and independent PRESENT-inspection documents, while `CLAIMCORE_COPY_LOCATION_MAPPING_FILE` and `CLAIMCORE_COPY_COMMITMENT_KEY_FILE` let the owner recheck the actual private ciphertext and keyed custody commitments. The witnessed publication is evidence that this exact copy was known before the request; it is not an adoption, a retained backup, or proof of deletion. A later external-copy adoption must refer to its exact pre-fence publication and obtain fresh custody evidence. A copy lacking that historical receipt remains an unresolved liability.
+
+`transition-adopted-copy <canonical-file> <signature-file>` records an exact signed `UNKNOWN` or `DELETE_REQUEST` transition after verified adoption, preserving the product-export or external-publication origin. `verify-delete-adopted-copy <canonical-file> <signature-file>` completes `VERIFIED_DELETED` only after current signed all-known-location ABSENT evidence, the required deletion approval, retention and hold checks, and witnessed chain verification. Both are owner-private copy actions, not a case-erasure certificate. A copy that is merely unknown, pending deletion, or absent from one location remains an erasure liability.
+
+`certify-managed-payload-absence <private-proposal-file>` is an owner-only case transition after live and witness payload pruning. It rechecks a fresh, signed complete copy-location registry and independently signed all-location ABSENT inspection against every current managed-copy row, its witnessed deletion and consumed approval, current signer authority, holds, retention and writer generation. The private proposal and configured registry, inspection, commitment and suppression keys never enter a case-work client. Confirmed completion reports `PAYLOAD_ERASED_SUPPRESSION_RETAINED`, not `ERASURE_FINAL`; missing or divergent copy evidence remains pending, and an uncertain owner commit requires exact reconciliation.
+
+`complete-suppression-horizon <private-proposal-file>` is a distinct owner-only final transition after the explicit suppression horizon. It requires a fresh all-copy absence certificate, two action-specific steward approvals, no hold or live claimant payload, and a previously witnessed W2 writer activation whose independent six-host evidence is reverified from the exact retained verifier package. Set `CLAIMCORE_TERMINAL_FENCE_EVIDENCE_DIR` to an owner-private directory containing `report.json`, `report.sig`, `index.json`, `fence.json`, `fence.sig`, `supplement.json`, and `supplement.sig`; the independent deployment evidence directory is still required. All case recovery exports must have expired and lost their retained payload before W2's settled sequence. The generic checkout has no reviewed publication root and refuses this final action. Keep historical signed W2 evidence separately from managed payload copies; an absent or divergent proof leaves the case suppression-retained, not final. This certifies known managed-location absence and old-operation denial, not forensic media erasure or undiscovered human-held copies.
 
 Output failure after confirmed administration does not relabel the database action as uncommitted.
 It emits one bounded stderr delivery diagnostic and returns a nonzero exit. Terminal preparation
@@ -63,30 +138,22 @@ rather than assuming an exception or returned unit expresses every completion st
 
 ## Stored data
 
-`cases` retains exactly thirteen business columns plus technical revision. `case_changes` retains
-append-only accepted-operation receipts, request fingerprints and snapshots; exact accepted replay
-does not depend on optional preparation retention. These accepted facts remain independent of
-technical attempt evidence.
+`cases` holds the current projection of exactly thirteen business fields plus technical revision, disposition, and privacy state. `case_changes` retains ordered accepted-operation evidence with canonical requests, witnessed tickets, actor attribution, and snapshots; accepted replay does not depend on optional preparation retention. A row is a projection, not an independent authority: full audit replays accepted decisions and lifecycle changes against witnessed evidence before comparing the current row. Voiding a data-entry-error case preserves its business history; a privacy erasure request instead fences ordinary access and requires a separate, evidence-bound purge lifecycle.
 
-`request_preparations` stores exact format-3 canonical request bytes and digest, application version,
-preparing fingerprint/kind and timestamp. `SEMANTIC_CORE_V1` denotes a semantic preparation;
-`CANONICAL_RECORD_V3` denotes validation and retention of an unbound current canonical record, not an
-invented original producer. An exact-byte replay preserves the first retained metadata. The
-append-only lifecycle records submission start only. Actual identified attempts and their independent
-definite settlements remain available through bounded operation-specific inspection.
+`request_preparations` stores exact format-3 canonical request bytes and digest with the first preparer's actor/grant provenance and timestamp. An exact-byte replay preserves that first retained metadata. Raw canonical-record import is not an entry point; signed current recovery-artifact import is rechecked against case privacy, current grant, stored export/copy identity, and settled witness evidence. Identified attempts and their independent definite settlements remain available through bounded operation-specific inspection while technical material is retained.
 
-`operation_revocations` contains durable operation ID, format, digest, timestamp and
-`OPERATOR_DISMISSAL` reason. It deliberately has no foreign key to the optional preparation; deleting
-a terminal preparation cannot resurrect execution authority. `installation_lineage` contains one
-nonempty installation UUID and its mandatory business time zone. `schema_baseline` contains one
-baseline identity/digest and installation audit metadata. `request_preparation_prunes` is owner-only
-maintenance audit. No old migration ledger, unidentified-start table, legacy provenance or legacy
-dismissal reason is part of this installation.
+`operation_revocations` retains durable witnessed authority even if a terminal preparation is pruned. Actor/grant history, lifecycle events and approvals, legal holds, erasure fences, managed-copy inventory, and keyed operation/reference suppression live outside `CaseFields`. `installation_lineage` binds the installation UUID, witness epoch, suppression-key check, and mandatory business time zone; `schema_baseline` binds this fresh schema's identity/digest. `request_preparation_prunes` is owner-only maintenance audit. No old migration ledger or compatibility view is part of this installation.
 
 Scalar bounds, exact numeric precision, complete decision tuples, chronology, payment prerequisites,
 keys and references remain enforced in the final CREATE definitions. These are defense in depth,
-not a replacement for the Domain state machine. Runtime credentials permit some direct SQL and
-therefore belong only to trusted infrastructure.
+not a replacement for the Domain state machine. Runtime credentials permit some direct SQL and therefore belong only to trusted infrastructure. The witness has a separate PostgreSQL role, catalog, append protocol, and key custody. Its journal proves the recorded authority sequence within the stated retention horizon; a principal controlling both clusters and all independent checkpoints remains trusted rather than cryptographically defeated.
+
+## Current-pair data audit
+
+<a id="cc-audit-001"></a>
+### CC-AUDIT-001 — Accepted, authority, and suppression evidence agree with the witness
+
+`verify-data` traverses the current primary's accepted history, lifecycle, actor/grant authority, activation plans and approvals, revocations, managed and adopted/external-copy events, erasure tombstones, and witness journal under a bounded cutoff. It replays recorded transitions and compares current projections, exact event identity, sequence, hashes, and available ciphertext evidence; missing or divergent rows quarantine the runtime rather than being counted as an empty or successful audit. Pending witness intents are reported separately, not treated as accepted work or runtime admission. A clean audit of one current primary/witness pair does not prove that an older independent backup contains every acknowledged operation or that unknown copies were deleted; restore promotion additionally needs externally retained freshness and copy evidence.
 
 ## Fresh installation boundary
 
@@ -98,7 +165,7 @@ frozen identity and SHA-256 digest in [`db/schema-baseline.json`](../db/schema-b
 `initialize <canonical-IANA-ID>` validates an explicitly chosen calendar before connecting. Under a
 transaction-scoped schema lock it inspects the namespace before executing DDL. Only an absent
 `claimcore` namespace may be created. Schema, grants, baseline marker, new lineage UUID and non-null
-calendar commit in one transaction. A pre-commit DDL failure rolls all of them back; loss of commit
+calendar commit in one primary-schema transaction; separate witness initialization has its own admission and transaction. A pre-commit DDL failure rolls the primary installation back; loss of commit
 confirmation remains explicitly unknown.
 
 A repeated initialization of the exact current baseline with the identical calendar validates it
@@ -109,9 +176,7 @@ initialize, repair or upgrade. Required runtime-role ACLs are additionally check
 Both runtime opening and read-only verification require the critical business-record and accepted-
 history constraints to be present, validated and enforced, including primary, unique and reference
 keys. A matching baseline marker does not admit a schema whose protections have been removed or
-declared `NOT ENFORCED`. This catalog check does not prove that a schema owner has not changed a
-constraint expression under the same name; schema-owner authority remains trusted. It is not a
-full case/history row audit or proof that a restored database contains every prior acceptance.
+declared `NOT ENFORCED`. The current catalog comparison is not a full case/history row audit or proof that a restored database contains every prior acceptance; run `verify-data` and compare independent witness/checkpoint evidence before any restore is promoted. The schema owner remains a trusted authority.
 
 Every pre-existing unsupported `claimcore` namespace is refused untouched, including an empty
 namespace, a partial installation, old migration-ledger schemas 001–006, mixed old/current metadata,
@@ -185,8 +250,4 @@ reuse the persistent developer database or repository connection files.
 
 ## Operational limits
 
-An installed checksum identifies the baseline source that was recorded; it does not attest every live DDL
-object against administrator tampering. ClaimCore has no automatic repair, downgrade, backup, or
-restore implementation. The composed application runtime owns one `NpgsqlDataSource` shared by its
-private claim and recovery stores; opening a second product process creates a separate runtime and
-connection pool. See [Security and operations](operations.md) before considering real data.
+An installed checksum identifies recorded baseline source; current catalog checks and full data audit add separate evidence but do not defeat an administrator controlling primary, witness, keys, and checkpoints together. ClaimCore has no automatic repair, downgrade, or active-active failover. The owner-only managed backup tool and isolated two-cluster restore drill are functional synthetic qualification, not off-host custody, live admission, or a production cutover certificate. The service runtime owns its primary data-source lifetime and separately credentialed witness protocol; a second case-work process is not an authorized concurrent writer merely because it can connect. See [Security and operations](operations.md) before considering real data.

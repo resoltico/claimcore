@@ -20,18 +20,32 @@ function Get-SecretVariants {
         throw "Sensitive-output scan input exceeds its bounded size."
     }
 
-    $value = [IO.File]::ReadAllText($info.FullName, [Text.UTF8Encoding]::new($false, $true)).Trim()
-    if ($value.Length -lt 8) {
+    $bytes = [IO.File]::ReadAllBytes($info.FullName)
+    if ($bytes.Length -lt 8) {
         throw "Sensitive-output scan inputs must be at least eight characters."
     }
 
-    $json = ConvertTo-Json -InputObject $value -Compress
-    @(
-        $value,
-        [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($value)),
-        [Uri]::EscapeDataString($value),
-        $json.Substring(1, $json.Length - 2)
-    ) | Select-Object -Unique
+    $variants = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+    [void] $variants.Add([Convert]::ToBase64String($bytes))
+    [void] $variants.Add([Convert]::ToHexString($bytes).ToLowerInvariant())
+    [void] $variants.Add([Convert]::ToHexString($bytes))
+
+    try {
+        $value = [Text.UTF8Encoding]::new($false, $true).GetString($bytes).Trim()
+        if ($value.Length -lt 8) {
+            throw "Sensitive-output scan text inputs must be at least eight characters."
+        }
+        $json = ConvertTo-Json -InputObject $value -Compress
+        [void] $variants.Add($value)
+        [void] $variants.Add([Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($value)))
+        [void] $variants.Add([Uri]::EscapeDataString($value))
+        [void] $variants.Add($json.Substring(1, $json.Length - 2))
+    }
+    catch [Text.DecoderFallbackException] {
+        # Raw capability files are binary; only their encoded forms can appear in text reports.
+    }
+
+    return $variants
 }
 
 $variants = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)

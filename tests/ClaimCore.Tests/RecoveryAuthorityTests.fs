@@ -34,7 +34,10 @@ let private create () =
     let recovery = new CoreRecoveryStore.Store()
     recovery.AttachClaimStore(claims :> IClaimStore)
 
-    CoreApi.create (claims :> IClaimStore) (recovery :> IRecoveryStore) (businessTime today),
+    ActorCoreFixture.create
+        (claims :> IClaimStore)
+        (recovery :> IRecoveryStore)
+        (businessTime today),
     recovery
 
 let private durableRevocationClosesExactIdentity =
@@ -97,6 +100,9 @@ let private viewMismatchIsRejected (core: IClaimsCore) operationId =
                 View = RecoveryListView.Pending
                 OccurredAt = DateTimeOffset(2026, 9, 7, 0, 0, 0, TimeSpan.Zero)
                 OperationId = operationId
+                ActorId = Guid.Parse("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa")
+                GrantRevision = 1L
+                ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(5.0)
             }
 
     match

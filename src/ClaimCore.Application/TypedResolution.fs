@@ -86,7 +86,7 @@ module internal TypedResolution =
                         recovery.ExecuteAdmitted(
                             operation,
                             attemptId,
-                            (fun () -> (clock.Capture()).EffectiveBusinessDate),
+                            clock.Capture,
                             (fun today current -> Claim.decide today request current),
                             CancellationToken.None
                         )

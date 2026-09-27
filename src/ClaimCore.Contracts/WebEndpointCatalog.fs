@@ -3,14 +3,6 @@ namespace ClaimCore.Contracts
 open ClaimCore.Application
 
 module internal WebEndpointCatalog =
-    let private loginInput =
-        Schema.objectOf
-            false
-            [
-                Schema.property "credential" (Schema.string None None (Some 1) None) true
-                Schema.property "antiforgeryToken" (Schema.string None None (Some 1) None) true
-            ]
-
     let private sourceDigestHeader =
         [ "X-ClaimCore-Source-Sha256", EndpointInputs.digest ]
 
@@ -31,16 +23,15 @@ module internal WebEndpointCatalog =
 
     let private sessions responses =
         [
-            endpoint responses "session" "GET" "/api/v2/session" None None
-            endpoint responses "session.login" "POST" "/api/v2/session/login" (json loginInput) None
+            endpoint responses "session" "GET" "/api/v3/session" None None
             endpoint
                 responses
                 "session.logout"
                 "POST"
-                "/api/v2/session/logout"
+                "/api/v3/session/logout"
                 (json (Schema.objectOf false []))
                 None
-            endpoint responses "definition" "GET" "/api/v2/definition" None None
+            endpoint responses "definition" "GET" "/api/v3/definition" None None
         ]
 
     let private cases responses (semantic: SemanticCoreContract) =
@@ -49,43 +40,43 @@ module internal WebEndpointCatalog =
                 responses
                 "case.get"
                 "POST"
-                "/api/v2/cases/get"
+                "/api/v3/cases/get"
                 (json (EndpointInputs.caseReference semantic))
                 None
             endpoint
                 responses
                 "case.list"
                 "POST"
-                "/api/v2/cases/list"
+                "/api/v3/cases/list"
                 (json (EndpointInputs.cursor semantic.MaximumPageSize))
                 None
             endpoint
                 responses
                 "case.history"
                 "POST"
-                "/api/v2/cases/history"
+                "/api/v3/cases/history"
                 (json (EndpointInputs.history semantic))
                 None
             endpoint
                 responses
                 "operation.observe"
                 "POST"
-                "/api/v2/operations/observe"
+                "/api/v3/operations/observe"
                 (json EndpointInputs.operation)
                 None
             endpoint
                 responses
                 "command.prepare"
                 "POST"
-                "/api/v2/operations/prepare"
+                "/api/v3/operations/prepare"
                 (json (ProjectionSchema.commandDraft semantic))
                 None
             endpoint
                 responses
                 "command.execute"
                 "POST"
-                "/api/v2/operations/submit"
-                (json EndpointInputs.recoveryResolution)
+                "/api/v3/operations/submit"
+                (json (ProjectionSchema.commandDraft semantic))
                 None
         ]
 
@@ -95,35 +86,35 @@ module internal WebEndpointCatalog =
                 responses
                 "recovery.list"
                 "POST"
-                "/api/v2/recovery/list"
+                "/api/v3/recovery/list"
                 (json (EndpointInputs.recoveryList semantic.MaximumPageSize))
                 None
             endpoint
                 responses
                 "recovery.inspect"
                 "POST"
-                "/api/v2/recovery/inspect"
+                "/api/v3/recovery/inspect"
                 (json (EndpointInputs.recoveryInspect semantic.MaximumPageSize))
                 None
             endpoint
                 responses
                 "recovery.resolve"
                 "POST"
-                "/api/v2/recovery/resolve"
+                "/api/v3/recovery/resolve"
                 (json EndpointInputs.recoveryResolution)
                 None
             endpoint
                 responses
                 "recovery.dismiss"
                 "POST"
-                "/api/v2/recovery/dismiss"
+                "/api/v3/recovery/dismiss"
                 (json EndpointInputs.recoveryDismiss)
                 None
             endpoint
                 responses
                 "recovery.export"
                 "POST"
-                "/api/v2/recovery/export"
+                "/api/v3/recovery/export"
                 (json EndpointInputs.recoveryExportTarget)
                 (Some "application/vnd.claimcore.recovery+json")
         ]
@@ -134,36 +125,163 @@ module internal WebEndpointCatalog =
                 responses
                 "recovery.importEnvelopePreview"
                 "POST"
-                "/api/v2/recovery/import-envelope/preview"
+                "/api/v3/recovery/import-envelope/preview"
                 (raw "application/vnd.claimcore.recovery+json" 131072 [])
                 None
             endpoint
                 responses
                 "recovery.importEnvelopeRetain"
                 "POST"
-                "/api/v2/recovery/import-envelope/retain"
+                "/api/v3/recovery/import-envelope/retain"
                 (raw "application/vnd.claimcore.recovery+json" 131072 sourceDigestHeader)
                 None
+        ]
+
+    let private authorityManagement responses =
+        [
             endpoint
                 responses
-                "recovery.importRecordPreview"
+                "authority.register"
                 "POST"
-                "/api/v2/recovery/import-record/preview"
-                (raw "application/vnd.claimcore.canonical-command+json" 65536 [])
+                "/api/v3/authority/register"
+                (json WebManagementSchemas.register)
                 None
             endpoint
                 responses
-                "recovery.importRecordRetain"
+                "authority.setGrant"
                 "POST"
-                "/api/v2/recovery/import-record/retain"
-                (raw "application/vnd.claimcore.canonical-command+json" 65536 sourceDigestHeader)
+                "/api/v3/authority/grants/set"
+                (json WebManagementSchemas.setGrant)
+                None
+            endpoint
+                responses
+                "authority.setEnabled"
+                "POST"
+                "/api/v3/authority/actors/enable"
+                (json WebManagementSchemas.setEnabled)
+                None
+            endpoint
+                responses
+                "authority.observe"
+                "POST"
+                "/api/v3/authority/observe"
+                (json WebManagementSchemas.observe)
+                None
+        ]
+
+    let private authorityApprovals responses =
+        [
+            endpoint
+                responses
+                "authority.approveCopySigner"
+                "POST"
+                "/api/v3/authority/copy-signers/approve"
+                (json WebSignerApprovalSchemas.request)
+                None
+            endpoint
+                responses
+                "authority.approveCopyDeletion"
+                "POST"
+                "/api/v3/authority/copies/deletion/approve"
+                (json WebCopyDeletionApprovalSchemas.request)
+                None
+            endpoint
+                responses
+                "authority.approveCopyAdoption"
+                "POST"
+                "/api/v3/authority/copies/adoption/approve"
+                (json WebCopyAdoptionApprovalSchemas.request)
+                None
+            endpoint
+                responses
+                "authority.approveWriterHandoff"
+                "POST"
+                "/api/v3/authority/writer-handoffs/approve"
+                (json WebWriterHandoffApprovalSchemas.request)
+                None
+            endpoint
+                responses
+                "authority.reviewRealDataActivation"
+                "POST"
+                "/api/v3/authority/real-data-activation/review"
+                (json WebRealDataActivationSchemas.reviewRequest)
+                None
+            endpoint
+                responses
+                "authority.approveRealDataActivation"
+                "POST"
+                "/api/v3/authority/real-data-activation/approve"
+                (json WebRealDataActivationSchemas.approvalRequest)
+                None
+        ]
+
+    let private authority responses =
+        authorityManagement responses @ authorityApprovals responses
+
+    let private lifecycle responses =
+        [
+            endpoint
+                responses
+                "lifecycle.review"
+                "POST"
+                "/api/v3/lifecycle/review"
+                (json WebLifecycleSchemas.reviewInput)
+                None
+            endpoint
+                responses
+                "lifecycle.apply"
+                "POST"
+                "/api/v3/lifecycle/apply"
+                (json WebLifecycleSchemas.applyInput)
+                None
+            endpoint
+                responses
+                "lifecycle.approve"
+                "POST"
+                "/api/v3/lifecycle/approve"
+                (json WebLifecycleSchemas.approveInput)
+                None
+        ]
+
+    let private tombstones responses =
+        [
+            endpoint
+                responses
+                "tombstone.review"
+                "POST"
+                "/api/v3/tombstones/review"
+                (json WebTombstoneSchemas.reviewInput)
+                None
+            endpoint
+                responses
+                "tombstone.approvePrune"
+                "POST"
+                "/api/v3/tombstones/prune/approve"
+                (json WebTombstoneSchemas.approveInput)
+                None
+            endpoint
+                responses
+                "tombstone.approveTerminal"
+                "POST"
+                "/api/v3/tombstones/terminal/approve"
+                (json WebTerminalApprovalSchemas.request)
+                None
+            endpoint
+                responses
+                "tombstone.changeHold"
+                "POST"
+                "/api/v3/tombstones/holds/change"
+                (json WebTombstoneSchemas.holdInput)
                 None
         ]
 
     let all (semantic: SemanticCoreContract) =
-        let responses = WebResponseSchemas.all () |> Map.ofList
+        let responses = WebResponseCatalog.all () |> Map.ofList
 
         sessions responses
         @ cases responses semantic
         @ recoveryJson responses semantic
         @ recoveryRaw responses
+        @ authority responses
+        @ lifecycle responses
+        @ tombstones responses

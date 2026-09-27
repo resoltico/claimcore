@@ -1,284 +1,263 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# One disposable Keycloak fixture encloses serial, independent two-cluster browser runs.
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
-publish_dir="${1:?Pass the published Web directory.}"
-database_dir="${2:?Pass the published Database directory.}"
+web_dll="${1:?Pass published Web directory.}/ClaimCore.Web.dll"
+database_dll="${2:?Pass published Database directory.}/ClaimCore.Database.dll"
 engine_scope="${3:-all}"
 if [[ "$engine_scope" == all && -n "${CLAIMCORE_TEST_RUN_LABEL:-}" ]]; then
-  echo "All-engine qualification requires separate generated browser test-run labels." >&2
+  printf 'All-engine qualification requires independently labeled runs.\n' >&2
   exit 64
 fi
-web_dll="$publish_dir/ClaimCore.Web.dll"
-database_dll="$database_dir/ClaimCore.Database.dll"
-expected_node="$(tr -d '\r\n' <"$repo_root/.node-version")"
-expected_npm="$(jq --raw-output '.engines.npm' "$repo_root/web/package.json")"
-runtime_prefix=()
+[[ -f "$web_dll" && -f "$database_dll" ]] || {
+  printf 'Published Web and Database assemblies are required.\n' >&2; exit 64;
+}
+case "$engine_scope" in
+  all) engines=(chromium firefox webkit) ;;
+  chromium|firefox|webkit) engines=("$engine_scope") ;;
+  *) printf 'Use all, chromium, firefox, or webkit.\n' >&2; exit 64 ;;
+esac
+if [[ -z "${CLAIMCORE_TEST_OIDC_ISSUER:-}" ]]; then
+  exec bash "$repo_root/eng/oidc/Run-SyntheticOidc.sh" -- bash "$0" "$@"
+fi
+[[ -f "${CLAIMCORE_TEST_OIDC_CA_CERT:-}" &&
+   -f "${CLAIMCORE_TEST_OIDC_CREDENTIALS:-}" ]] || {
+  printf 'Synthetic OIDC files are missing.\n' >&2; exit 64;
+}
+oidc_ca_dir="$(cd -P "$(dirname "$CLAIMCORE_TEST_OIDC_CA_CERT")" && pwd -P)"
+oidc_ca="$oidc_ca_dir/$(basename "$CLAIMCORE_TEST_OIDC_CA_CERT")"
 
+expected_node="$(tr -d '\r\n' <"$repo_root/.node-version")"
+expected_npm="$(jq -r '.engines.npm' "$repo_root/web/package.json")"
+runtime_prefix=()
 if [[ "$(node --version 2>/dev/null || true)" != "v$expected_node" ]] ||
-  [[ "$(npm --version 2>/dev/null || true)" != "$expected_npm" ]]; then
-  if ! command -v mise >/dev/null 2>&1; then
-    echo "Browser qualification requires Node $expected_node and npm $expected_npm." >&2
-    exit 64
-  fi
+   [[ "$(npm --version 2>/dev/null || true)" != "$expected_npm" ]]; then
+  command -v mise >/dev/null || { printf 'Locked Node/npm is unavailable.\n' >&2; exit 64; }
   runtime_prefix=(mise exec "node@$expected_node" --)
 fi
-
-if [[ "$("${runtime_prefix[@]}" node --version)" != "v$expected_node" ]] ||
-  [[ "$("${runtime_prefix[@]}" npm --version)" != "$expected_npm" ]]; then
-  echo "Browser qualification could not select Node $expected_node and npm $expected_npm." >&2
-  exit 64
-fi
-
-if [[ ! -f "$web_dll" || ! -f "$database_dll" ]]; then
-  echo "Published Web and Database assemblies are required." >&2
-  exit 64
-fi
+[[ "$("${runtime_prefix[@]}" node --version)" == "v$expected_node" ]] &&
+  [[ "$("${runtime_prefix[@]}" npm --version)" == "$expected_npm" ]] || {
+    printf 'Locked Node/npm could not be selected.\n' >&2; exit 64;
+  }
 
 run_engine() (
-engine="$1"
-web_port="$2"
-test_run_label="${CLAIMCORE_TEST_RUN_LABEL:-claimcore-browser-${engine}-$$-$RANDOM}"
-if [[ ! "$test_run_label" =~ ^claimcore-browser-[A-Za-z0-9][A-Za-z0-9_.-]*$ ]] ||
-  [[ "${#test_run_label}" -gt 100 ]]; then
-  echo "CLAIMCORE_TEST_RUN_LABEL must be a bounded claimcore-browser label." >&2
-  exit 64
-fi
-created_state_dir="$(mktemp -d "${TMPDIR:-/tmp}/claimcore-web-e2e-${engine}.XXXXXX")"
-if ! state_dir="$(cd -P "$created_state_dir" && pwd -P)"; then
-  rmdir "$created_state_dir" 2>/dev/null || true
-  echo "The isolated browser state directory could not be resolved." >&2
-  exit 64
-fi
-container_name="claimcore-web-e2e-${engine}-$RANDOM-$RANDOM"
-host_pid=""
-credential_file=""
-browser_artifacts="$repo_root/artifacts/browser"
-owner_secret_file="$state_dir/owner.secret"
-app_secret_file="$state_dir/application.secret"
-claimant_canary_file="$state_dir/claimant.canary"
-
-scan_sensitive_output() {
-  local bootstrap_file secret_file
-  local -a secret_files=("$owner_secret_file" "$app_secret_file" "$claimant_canary_file")
-
-  if [[ -d "$state_dir/web-state" ]]; then
-    bootstrap_file="$(find "$state_dir/web-state" -maxdepth 1 -type f \
-      -name 'bootstrap-credential-*' -print -quit 2>/dev/null || true)"
-    if [[ -n "$bootstrap_file" ]]; then secret_files+=("$bootstrap_file"); fi
+  engine="$1"
+  umask 077
+  run_label="claimcore-browser-$engine-$(openssl rand -hex 8)"
+  created_dir="$(mktemp -d "${TMPDIR:-/tmp}/claimcore-web-e2e.$engine.XXXXXXXX")"
+  if ! state_dir="$(cd -P "$created_dir" && pwd -P)"; then
+    rmdir "$created_dir" 2>/dev/null || true
+    printf 'The private browser state path could not be resolved.\n' >&2
+    exit 64
   fi
-
-  for secret_file in "${secret_files[@]}"; do
-    if [[ -f "$secret_file" ]] && ! pwsh -NoProfile -File eng/Assert-NoSensitiveOutput.ps1 \
-      -ScanRoot "$browser_artifacts" -SecretFile "$secret_file" >/dev/null 2>&1; then
-      return 1
+  primary="claimcore-primary-$(openssl rand -hex 8)"
+  witness="claimcore-witness-$(openssl rand -hex 8)"
+  host_pid=''
+  cli_results=''
+  mkdir -p "$repo_root/artifacts/browser"
+  mkdir -p "$state_dir/diagnostics"
+  diagnostic() { jq -r '.diagnostic.id // empty' "$1" 2>/dev/null || true; }
+  web_failure() {
+    local code
+    code="$(rg --only-matching 'WEB_[A-Z_]+' "$state_dir/diagnostics/web-host.log" \
+      2>/dev/null | head -n 1 || true)"
+    if [[ "$code" =~ ^WEB_[A-Z_]+$ ]]; then
+      printf 'Published Web host exited before liveness: %s.\n' "$code" >&2
+    else
+      printf 'Published Web host exited before liveness.\n' >&2
     fi
+  }
+  browser_failure() {
+    local category callback_status callback_path
+    if [[ -f "$repo_root/artifacts/browser/$engine.json" ]]; then
+      category="$(jq -r '.failureCodes[0] // empty' "$repo_root/artifacts/browser/$engine.json" 2>/dev/null || true)"
+      if [[ "$category" =~ ^E2E_[A-Z_0-9]+$ ]]; then
+        printf 'Safe browser failure category: %s.\n' "$category" >&2
+      fi
+    fi
+    if [[ -f "$state_dir/diagnostics/safe-browser-failure.json" ]] &&
+       jq -e --arg app 'https://localhost:5443' --arg idp "$issuer_base" \
+         'keys == ["callbackStatus","origin","pathname"] and
+          (.callbackStatus | type == "number" and . >= 0 and . <= 599) and
+          (.origin == $app or .origin == $idp) and
+          (.pathname | type == "string" and test("^/[A-Za-z0-9/_-]{0,255}$"))' \
+         "$state_dir/diagnostics/safe-browser-failure.json" >/dev/null 2>&1; then
+      callback_status="$(jq -r '.callbackStatus' "$state_dir/diagnostics/safe-browser-failure.json")"
+      callback_path="$(jq -r '.pathname' "$state_dir/diagnostics/safe-browser-failure.json")"
+      printf 'Safe OIDC return diagnostic: callback HTTP %s, path %s.\n' \
+        "$callback_status" "$callback_path" >&2
+    fi
+    category="$(rg --only-matching \
+      'E2E_OIDC_RETURN_[0-9]+_https://[A-Za-z0-9.:-]+(/[A-Za-z0-9/_-]*)?|E2E_[A-Z_0-9]+|TimeoutError|net::ERR_[A-Z_]+|NS_ERROR_[A-Z_]+' \
+      "$state_dir/diagnostics/playwright.log" 2>/dev/null | head -n 1 || true)"
+    if [[ "$category" =~ ^E2E_OIDC_RETURN_[0-9]+_https://[A-Za-z0-9.:-]+(/[A-Za-z0-9/_-]*)?$ ]] ||
+       [[ "$category" =~ ^(E2E_[A-Z_0-9]+|TimeoutError|net::ERR_[A-Z_]+|NS_ERROR_[A-Z_]+)$ ]]; then
+      printf 'Safe browser failure category: %s.\n' "$category" >&2
+    fi
+  }
+  scan_output() {
+    local secret
+    for secret in "$state_dir"/*.password "$state_dir"/*.subject \
+      "$state_dir"/*.secret \
+      "$state_dir"/primary.env "$state_dir"/witness.env \
+      "$state_dir"/witness-key.json "$state_dir"/writer.capability \
+      "$state_dir"/suppression-key.json \
+      "$state_dir"/recovery-artifact-key.json \
+      "$state_dir"/oidc-client.secret \
+      "$state_dir"/service-client.secret \
+      "$state_dir"/initial-owner.json "$state_dir"/principals.json \
+      "$state_dir"/claimant.canary \
+      "$CLAIMCORE_TEST_OIDC_CREDENTIALS"; do
+      [[ -f "$secret" ]] || continue
+      pwsh -NoProfile -File "$repo_root/eng/Assert-NoSensitiveOutput.ps1" \
+        -ScanRoot "$repo_root/artifacts/browser" -SecretFile "$secret" \
+        >/dev/null 2>&1 || return 1
+      pwsh -NoProfile -File "$repo_root/eng/Assert-NoSensitiveOutput.ps1" \
+        -ScanRoot "$state_dir/diagnostics" -SecretFile "$secret" >/dev/null 2>&1 ||
+        return 1
+      if [[ -n "$cli_results" && -d "$cli_results" ]]; then
+        pwsh -NoProfile -File "$repo_root/eng/Assert-NoSensitiveOutput.ps1" \
+          -ScanRoot "$cli_results" -SecretFile "$secret" \
+          >/dev/null 2>&1 || return 1
+      fi
+    done
+  }
+  cleanup() {
+    local status=$?
+    trap - EXIT
+    set +e
+    if [[ -n "$host_pid" ]]; then kill "$host_pid" 2>/dev/null; wait "$host_pid" 2>/dev/null; fi
+    scan_output || { printf 'Sensitive browser output was rejected.\n' >&2; status=1; }
+    bash "$repo_root/eng/Remove-LabeledTestContainers.sh" "$run_label" || status=1
+    if [[ "$state_dir" == */claimcore-web-e2e."$engine".* && -d "$state_dir" ]]; then
+      rm -r -- "$state_dir" || status=1
+    else
+      status=1
+    fi
+    exit "$status"
+  }
+  trap cleanup EXIT
+
+  # shellcheck source=eng/PublishedWebE2E-Setup.sh
+  source "$repo_root/eng/PublishedWebE2E-Setup.sh"
+
+  jq -r '.webClientSecret' "$CLAIMCORE_TEST_OIDC_CREDENTIALS" \
+    >"$state_dir/oidc-client.secret"
+  printf '%s\n' 'Synthetic claimant canary' >"$state_dir/claimant.canary"
+  openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj /CN=localhost \
+    -addext 'subjectAltName=DNS:localhost' -addext 'extendedKeyUsage=serverAuth' \
+    -keyout "$state_dir/web.key" -out "$state_dir/web.pem" >/dev/null 2>&1
+  openssl pkcs12 -export -out "$state_dir/web.pfx" \
+    -inkey "$state_dir/web.key" -in "$state_dir/web.pem" -passout pass: >/dev/null 2>&1
+  origin='https://localhost:5443'
+  CLAIMCORE_CONNECTION_FILE="$state_dir/primary-app.connection" \
+  CLAIMCORE_WITNESS_CONNECTION_FILE="$state_dir/witness-writer.connection" \
+  CLAIMCORE_WITNESS_KEY_FILE="$state_dir/witness-key.json" \
+  CLAIMCORE_WRITER_CAPABILITY_FILE="$state_dir/writer.capability" \
+  CLAIMCORE_SUPPRESSION_KEY_FILE="$state_dir/suppression-key.json" \
+  CLAIMCORE_RECOVERY_ARTIFACT_KEY_FILE="$state_dir/recovery-artifact-key.json" \
+  CLAIMCORE_WEB_CERTIFICATE_PATH="$state_dir/web.pfx" \
+  CLAIMCORE_WEB_ORIGIN="$origin" CLAIMCORE_WEB_STATE_DIR="$state_dir/web-state" \
+  CLAIMCORE_OIDC_ISSUER="$CLAIMCORE_TEST_OIDC_ISSUER" \
+  CLAIMCORE_OIDC_CA_CERT_FILE="$oidc_ca" \
+  CLAIMCORE_OIDC_CLIENT_ID="$(jq -r '.webClientId' "$CLAIMCORE_TEST_OIDC_CREDENTIALS")" \
+  CLAIMCORE_OIDC_CLIENT_SECRET_FILE="$state_dir/oidc-client.secret" \
+  CLAIMCORE_OIDC_API_AUDIENCE="$(jq -r '.apiAudience' "$CLAIMCORE_TEST_OIDC_CREDENTIALS")" \
+  CLAIMCORE_OIDC_CLI_CLIENT_ID="$(jq -r '.publicClientId' "$CLAIMCORE_TEST_OIDC_CREDENTIALS")" \
+  CLAIMCORE_OIDC_SERVICE_CLIENT_ID="$(jq -r '.serviceClientId' "$CLAIMCORE_TEST_OIDC_CREDENTIALS")" \
+    dotnet "$web_dll" >"$state_dir/diagnostics/web-host.log" 2>&1 &
+  host_pid=$!
+  for _ in $(seq 1 45); do
+    curl --cacert "$state_dir/web.pem" --fail --silent "$origin/health/live" \
+      >/dev/null 2>&1 && break
+    kill -0 "$host_pid" 2>/dev/null || {
+      web_failure; exit 1;
+    }
+    sleep 1
   done
-}
-
-cleanup() {
-  local status=$?
-  trap - EXIT
-  set +e
-  if [[ -n "$host_pid" ]]; then
-    kill "$host_pid" 2>/dev/null || true
-    wait "$host_pid" 2>/dev/null || true
+  curl --cacert "$state_dir/web.pem" --fail --silent "$origin/health/live" \
+    >/dev/null || { printf 'Published Web host was not live.\n' >&2; exit 1; }
+  status="$(curl --cacert "$state_dir/web.pem" --silent --output /dev/null \
+    --write-out '%{http_code}' -H 'Host: example.invalid' "$origin/health/live")"
+  [[ "$status" == 403 ]] || { printf 'Foreign Host was not refused.\n' >&2; exit 1; }
+  if [[ -n "${CLAIMCORE_PUBLISHED_CLI_DIR:-}" ]]; then
+    cli_dll="$CLAIMCORE_PUBLISHED_CLI_DIR/ClaimCore.Cli.dll"
+    [[ -f "$cli_dll" ]] || { printf 'Published CLI assembly is missing.\n' >&2; exit 64; }
+    jq -r '.serviceClientSecret' "$CLAIMCORE_TEST_OIDC_CREDENTIALS" \
+      >"$state_dir/service-client.secret"
+    mkdir "$state_dir/cli-browser"
+    cp "$repo_root/eng/oidc/Run-CliBrowserDriver.sh" "$state_dir/cli-browser/open"
+    cp "$repo_root/eng/oidc/Run-CliBrowserDriver.sh" "$state_dir/cli-browser/xdg-open"
+    chmod 700 "$state_dir/cli-browser/open" "$state_dir/cli-browser/xdg-open"
+    printf '%s\n' '{"protocolVersion":4,"endpoint":"case.list","input":{"limit":1}}' \
+      >"$state_dir/cli-before-grant.json"
+    set +e
+    CLAIMCORE_SERVICE_URL="$origin/" CLAIMCORE_OIDC_ISSUER="$CLAIMCORE_TEST_OIDC_ISSUER" \
+    CLAIMCORE_OIDC_CLIENT_ID="$(jq -r '.serviceClientId' "$CLAIMCORE_TEST_OIDC_CREDENTIALS")" \
+    CLAIMCORE_CLI_AUTH_MODE=automation \
+    CLAIMCORE_OIDC_CLIENT_SECRET_FILE="$state_dir/service-client.secret" \
+    CLAIMCORE_CLI_OIDC_TRUST_ROOT_FILE="$oidc_ca" \
+    CLAIMCORE_CLI_SERVICE_TRUST_ROOT_FILE="$state_dir/web.pem" \
+      dotnet "$cli_dll" call <"$state_dir/cli-before-grant.json" \
+        >"$state_dir/diagnostics/cli-before-grant.out" \
+        2>"$state_dir/diagnostics/cli-before-grant.err"
+    cli_before_status=$?
+    set -e
+    [[ "$cli_before_status" == 2 ]] &&
+      jq -e '.protocolVersion == 4 and .kind == "result" and
+        .endpoint == "case.list" and .service.outcome.tag == "REJECTED" and
+        (.service.outcome.data.items? == null)' \
+        "$state_dir/diagnostics/cli-before-grant.out" >/dev/null &&
+      [[ ! -s "$state_dir/diagnostics/cli-before-grant.err" ]] || {
+        printf 'Unregistered service principal was not denied without disclosure.\n' >&2
+        exit 1
+      }
   fi
-  if ! scan_sensitive_output; then
-    echo "Sensitive-output scanning rejected the browser diagnostics." >&2
-    status=1
-  fi
-  if ! bash "$repo_root/eng/Remove-LabeledTestContainers.sh" "$test_run_label"; then
-    echo "Exact-label browser container cleanup failed." >&2
-    status=1
-  fi
-  if ! rm -rf -- "$state_dir"; then
-    echo "Private browser state cleanup failed." >&2
-    status=1
-  fi
-  exit "$status"
-}
-trap cleanup EXIT
-
-host_failure_summary() {
-  if rg --quiet "could not open the configured application runtime" "$state_dir/web-host.log"; then
-    echo "The published Web host could not open its application runtime." >&2
-  elif rg --quiet "asset manifest" "$state_dir/web-host.log"; then
-    echo "The published Web host rejected its asset manifest." >&2
-  elif rg --quiet "certificate" "$state_dir/web-host.log"; then
-    echo "The published Web host rejected its configured certificate." >&2
-  else
-    echo "The published Web host exited before readiness." >&2
-  fi
-}
-
-require_forbidden_probe() {
-  local probe="$1"
-  local actual="$2"
-  if [[ "$actual" != "403" ]]; then
-    printf 'The published Web host did not reject the %s probe.\n' "$probe" >&2
-    return 1
-  fi
-}
-
-mkdir -p "$browser_artifacts"
-umask 077
-owner_secret="$(openssl rand -hex 32)"
-app_secret="$(openssl rand -hex 32)"
-printf '%s\n' "$owner_secret" >"$owner_secret_file"
-printf '%s\n' "$app_secret" >"$app_secret_file"
-printf '%s\n' 'Synthetic amended claimant' >"$claimant_canary_file"
-image="$(jq --raw-output .containerImage db/postgresql-baseline.json)"
-container_environment="$state_dir/postgres.env"
-printf 'POSTGRES_DB=claimcore\nPOSTGRES_PASSWORD=%s\n' "$owner_secret" >"$container_environment"
-docker run --detach --rm --name "$container_name" \
-  --label "org.claimcore.test-run=$test_run_label" \
-  --env-file "$container_environment" \
-  --publish 127.0.0.1::5432 \
-  "$image" >/dev/null
-
-echo "Started isolated PostgreSQL for $engine browser qualification."
-
-ready=""
-for _ in $(seq 1 60); do
-  ready="$(docker exec "$container_name" bash -c \
-    'PGPASSWORD="$POSTGRES_PASSWORD" psql --host=127.0.0.1 --username=postgres --dbname=claimcore --tuples-only --no-align --command="SELECT 1"' \
-    2>/dev/null || true)"
-  if [[ "$ready" == "1" ]]; then
-    break
-  fi
-  sleep 1
-done
-
-if [[ "$ready" != "1" ]]; then
-  printf '%s\n' 'The isolated PostgreSQL service did not become ready.' >&2
-  exit 1
-fi
-
-port="$(docker port "$container_name" 5432/tcp | sed -E 's/.*:([0-9]+)$/\1/')"
-if ! docker exec --interactive "$container_name" psql --username postgres --dbname claimcore \
-  --set ON_ERROR_STOP=1 >/dev/null 2>&1 <<SQL
-CREATE ROLE claimcore_app LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE
-  NOREPLICATION NOBYPASSRLS NOINHERIT PASSWORD '$app_secret';
-REVOKE ALL ON DATABASE claimcore FROM PUBLIC;
-GRANT CONNECT ON DATABASE claimcore TO claimcore_app;
-REVOKE CREATE ON SCHEMA public FROM PUBLIC;
-SQL
-then
-  echo "The isolated PostgreSQL roles could not be provisioned." >&2
-  exit 1
-fi
-
-owner_connection="$state_dir/owner.connection"
-app_connection="$state_dir/application.connection"
-printf 'Host=127.0.0.1;Port=%s;Database=claimcore;Username=postgres;Password=%s\n' "$port" "$owner_secret" >"$owner_connection"
-printf 'Host=127.0.0.1;Port=%s;Database=claimcore;Username=claimcore_app;Password=%s\n' "$port" "$app_secret" >"$app_connection"
-
-echo "Initializing the fresh baseline in the isolated synthetic database."
-bash "$repo_root/eng/Initialize-PublishedWebDatabase.sh" \
-  "$database_dll" "$owner_connection" "$state_dir"
-certificate="$state_dir/web.pfx"
-certificate_key="$state_dir/web.key"
-certificate_pem="$state_dir/web.pem"
-openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
-  -subj /CN=localhost \
-  -addext 'subjectAltName=DNS:localhost' \
-  -addext 'extendedKeyUsage=serverAuth' \
-  -keyout "$certificate_key" \
-  -out "$certificate_pem" >/dev/null 2>&1
-openssl pkcs12 -export -out "$certificate" -inkey "$certificate_key" -in "$certificate_pem" \
-  -passout pass: >/dev/null 2>&1
-rm -f "$certificate_key" "$certificate_pem"
-
-CLAIMCORE_CONNECTION_FILE="$app_connection" \
-CLAIMCORE_WEB_CERTIFICATE_PATH="$certificate" \
-CLAIMCORE_WEB_ORIGIN="https://localhost:$web_port" \
-CLAIMCORE_WEB_STATE_DIR="$state_dir/web-state" \
-  dotnet "$web_dll" >"$state_dir/web-host.log" 2>&1 &
-host_pid=$!
-
-origin="https://localhost:$web_port"
-echo "Started the $engine published local HTTPS host."
-
-for _ in $(seq 1 30); do
-  if curl --fail --silent --insecure "$origin/health/live" >/dev/null 2>&1; then
-    break
-  fi
-  if ! kill -0 "$host_pid" 2>/dev/null; then
-    host_failure_summary
+  progress_file="$state_dir/progress"
+  if ! CLAIMCORE_WEB_BASE_URL="$origin" CLAIMCORE_WEB_E2E_ENGINE="$engine" \
+    CLAIMCORE_WEB_E2E_PRINCIPALS_FILE="$state_dir/principals.json" \
+    CLAIMCORE_WEB_E2E_SAFE_FAILURE_FILE="$state_dir/diagnostics/safe-browser-failure.json" \
+    CLAIMCORE_WEB_E2E_PRIVATE_OUTPUT_DIR="$state_dir/playwright-private" \
+    CLAIMCORE_WEB_E2E_PROGRESS_FILE="$progress_file" \
+    "${runtime_prefix[@]}" npm --prefix "$repo_root/web" run test:e2e -- --project "$engine" \
+      >"$state_dir/diagnostics/playwright.log" 2>&1; then
+    stage='not-started'
+    [[ -f "$progress_file" ]] &&
+      stage="$(tr -cd 'a-z0-9-\n' <"$progress_file" | head -n 1)"
+    printf 'The %s browser run stopped after safe stage: %s.\n' "$engine" "$stage" >&2
+    browser_failure
     exit 1
   fi
-  sleep 1
-done
-
-if ! curl --fail --silent --insecure "$origin/health/live" >/dev/null 2>&1; then
-  printf '%s\n' 'The published Web host did not become ready.' >&2
-  exit 1
-fi
-
-status="$(curl --silent --insecure --output /dev/null --write-out '%{http_code}' \
-  --header 'Host: example.invalid' "$origin/health/live")"
-require_forbidden_probe "foreign Host" "$status"
-status="$(curl --silent --insecure --output /dev/null --write-out '%{http_code}' \
-  --header "Origin: https://localhost:1" --header 'Content-Type: application/json' \
-  --data '{"limit":1}' "$origin/api/v2/cases/list")"
-require_forbidden_probe "foreign Origin" "$status"
-status="$(curl --silent --insecure --output /dev/null --write-out '%{http_code}' \
-  --header "Origin: $origin" --header 'Sec-Fetch-Site: cross-site' \
-  --header 'Content-Type: application/json' --data '{"limit":1}' "$origin/api/v2/cases/list")"
-require_forbidden_probe "cross-site fetch metadata" "$status"
-
-credential_file="$(find "$state_dir/web-state" -maxdepth 1 -type f -name 'bootstrap-credential-*' -print -quit)"
-if [[ ! -f "$credential_file" ]]; then
-  echo "The published host did not create a bootstrap credential file." >&2
-  exit 1
-fi
-
-echo "Running $engine against its isolated published same-origin host."
-progress_file="$state_dir/progress"
-
-if ! CLAIMCORE_WEB_BASE_URL="$origin" \
-  CLAIMCORE_WEB_BOOTSTRAP_CREDENTIAL_FILE="$credential_file" \
-  CLAIMCORE_WEB_E2E_ENGINE="$engine" \
-  CLAIMCORE_WEB_E2E_PRIVATE_OUTPUT_DIR="$state_dir/playwright-private" \
-  CLAIMCORE_WEB_E2E_PROGRESS_FILE="$progress_file" \
-  "${runtime_prefix[@]}" npm --prefix "$repo_root/web" run test:e2e -- --project "$engine" \
-    >"$state_dir/playwright.log" 2>&1; then
-  stage="not-started"
-  if [[ -f "$progress_file" ]]; then
-    stage="$(tr -cd 'a-z0-9-\n' <"$progress_file" | head -n 1)"
+  if [[ -n "${CLAIMCORE_PUBLISHED_CLI_DIR:-}" ]]; then
+    cli_results="${CLAIMCORE_ACCEPTANCE_RESULTS_DIR:-$repo_root/artifacts/test-results/acceptance-local-$run_label}"
+    [[ ! -e "$cli_results" ]] || { printf 'CLI result path must start absent.\n' >&2; exit 64; }
+    CLAIMCORE_ACCEPTANCE_CLI_DIR="$CLAIMCORE_PUBLISHED_CLI_DIR" \
+    CLAIMCORE_ACCEPTANCE_PRIVATE_DIR="$state_dir" \
+    CLAIMCORE_ACCEPTANCE_SERVICE_URL="$origin/" \
+    CLAIMCORE_ACCEPTANCE_ISSUER="$CLAIMCORE_TEST_OIDC_ISSUER" \
+    CLAIMCORE_ACCEPTANCE_OIDC_CA_FILE="$oidc_ca" \
+    CLAIMCORE_ACCEPTANCE_WEB_CERT_FILE="$state_dir/web.pem" \
+    CLAIMCORE_ACCEPTANCE_SERVICE_CLIENT_ID="$(jq -r '.serviceClientId' "$CLAIMCORE_TEST_OIDC_CREDENTIALS")" \
+    CLAIMCORE_ACCEPTANCE_SERVICE_SECRET_FILE="$state_dir/service-client.secret" \
+    CLAIMCORE_ACCEPTANCE_PUBLIC_CLIENT_ID="$(jq -r '.publicClientId' "$CLAIMCORE_TEST_OIDC_CREDENTIALS")" \
+    CLAIMCORE_ACCEPTANCE_OIDC_CREDENTIALS_FILE="$CLAIMCORE_TEST_OIDC_CREDENTIALS" \
+    CLAIMCORE_ACCEPTANCE_BROWSER_DIR="$state_dir/cli-browser" \
+    CLAIMCORE_ACCEPTANCE_DRIVER_PATH="$repo_root/web/e2e/cli-pkce-driver.mjs" \
+      dotnet test --project "$repo_root/tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj" \
+        --configuration Release --no-build --no-restore \
+        --results-directory="$cli_results" --minimum-expected-tests=16 \
+        --zero-tests-policy=strict --timeout=20m -- \
+        --settings="$repo_root/eng/expecto.runsettings" --report-trx \
+        --report-trx-filename=ClaimCore.AcceptanceTests.trx \
+        >"$state_dir/diagnostics/cli-acceptance.log" 2>&1 || {
+          printf 'Published authenticated CLI acceptance failed.\n' >&2
+          exit 1
+        }
+    printf 'Published authenticated CLI acceptance passed in isolated %s fixture.\n' "$engine"
   fi
-  printf 'The %s browser qualification stopped after safe stage: %s.\n' "$engine" "$stage" >&2
-  exit 1
-fi
-
-cleanup
+  printf 'Published %s OIDC browser qualification passed with two isolated clusters.\n' "$engine"
+  cleanup
 )
 
-run_all_engines() {
-  local status=0
-  local chromium_pid firefox_pid webkit_pid
-
-  run_engine chromium 5443 &
-  chromium_pid=$!
-  run_engine firefox 5444 &
-  firefox_pid=$!
-  run_engine webkit 5445 &
-  webkit_pid=$!
-
-  if ! wait "$chromium_pid"; then status=1; fi
-  if ! wait "$firefox_pid"; then status=1; fi
-  if ! wait "$webkit_pid"; then status=1; fi
-  return "$status"
-}
-
-case "$engine_scope" in
-  all) run_all_engines ;;
-  chromium) run_engine chromium 5443 ;;
-  firefox) run_engine firefox 5444 ;;
-  webkit) run_engine webkit 5445 ;;
-  *)
-    printf '%s\n' 'Use browser engine all, chromium, firefox, or webkit.' >&2
-    exit 64
-    ;;
-esac
+for engine in "${engines[@]}"; do run_engine "$engine"; done

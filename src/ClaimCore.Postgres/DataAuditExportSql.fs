@@ -1,0 +1,27 @@
+namespace ClaimCore.Postgres
+
+module internal DataAuditExportSql =
+    let query =
+        "SELECT e.export_id,e.case_id,e.key_id,e.issued_at,e.expires_at,"
+        + "e.installation_id AS export_installation,e.operation_id,e.preparer_actor_id,"
+        + "e.preparer_grant_revision,e.importer_actor_id,e.exporter_actor_id,"
+        + "e.exporter_grant_revision,e.nonce,e.key_issuance_ordinal,e.key_max_exports,"
+        + "e.artifact_sha256,p.artifact_bytes,p.canonical_action,e.witness_sequence,"
+        + "e.witness_epoch,e.witness_entry_hash,e.witness_candidate_sha256,"
+        + "c.copy_id,c.installation_id,c.lineage_id,c.witness_epoch AS copy_epoch,"
+        + "c.producer_kind,c.cluster_name,c.copy_kind,c.source_case_id,c.ciphertext_sha256,"
+        + "c.ciphertext_bytes,c.encryption_key_id,c.captured_at,c.retain_until,c.state,"
+        + "c.revision AS copy_revision,c.event_hash AS copy_hash,c.product_export_id,"
+        + "c.last_verified_at,c.verification_proof_sha256,c.deletion_proof_sha256,"
+        + "m.event_id,m.copy_id AS event_copy_id,m.revision AS event_revision,"
+        + "m.event_kind,m.producer_kind AS event_producer,m.canonical_attestation,"
+        + "m.signing_key_id,m.ed25519_signature,m.candidate_sha256 AS event_candidate,"
+        + "m.previous_hash,m.event_hash AS event_hash,m.witness_sequence AS event_sequence,"
+        + "m.witness_epoch AS event_epoch,m.witness_entry_hash AS event_entry_hash,"
+        + "t.phase AS erasure_phase,t.purge_event_id,t.purge_witness_cutoff_sequence "
+        + "FROM claimcore.recovery_artifact_exports e "
+        + "LEFT JOIN claimcore.recovery_artifact_payloads p ON p.export_id=e.export_id "
+        + "LEFT JOIN claimcore.managed_copies c ON c.copy_id=e.export_id "
+        + "LEFT JOIN claimcore.managed_copy_events m ON m.copy_id=e.export_id AND m.revision=1 "
+        + "LEFT JOIN claimcore.case_erasure_tombstones t ON t.case_id=e.case_id "
+        + "WHERE e.export_id>@after ORDER BY e.export_id,m.revision LIMIT 51"

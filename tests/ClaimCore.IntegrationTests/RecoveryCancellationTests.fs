@@ -1,34 +1,14 @@
 module ClaimCore.IntegrationTests.RecoveryCancellationTests
 
 open System
-open System.Security.Cryptography
 open System.Threading
 open System.Threading.Tasks
 open Npgsql
 open Expecto
 open ClaimCore.Application
 open ClaimCore.Postgres
-open ClaimCore.RecordFormat
 open ClaimCore.IntegrationTests.Fixtures
-
-let private draft () =
-    let request = newRequest ()
-    let canonical = RequestRecord.encode request
-
-    {
-        OperationId = request.OperationId
-        CanonicalRequestFormat = RecordVersions.CanonicalCommandFormat
-        RequestSha256 = canonical |> SHA256.HashData |> Convert.ToHexStringLower
-        CanonicalRequest = canonical
-        PreparingApplicationVersion = BuildIdentity.current.Version
-        PreparingContractFingerprint =
-            SemanticContract.fingerprint SemanticContract.current
-            |> SemanticCoreFingerprint.value
-        PreparingContractKind = PreparingContractKind.SemanticCoreV1
-    }
-
-let private recovery source =
-    PostgresRecoveryStore(source, PreparationLimits.defaults) :> IRecoveryStore
+open ClaimCore.IntegrationTests.RecoveryCancellationFixture
 
 let private cancelled () =
     let cancellation = new CancellationTokenSource()
@@ -64,8 +44,8 @@ let private inspect (recovery: IRecoveryStore) operationId =
 let private retainCancellation =
     testCase "[CC-REC-001] cancelled retain has no durable preparation" (fun () ->
         use source = NpgsqlDataSource.Create(appConnection ())
-        let port = recovery source
-        let material = draft ()
+        let material, context = draft source
+        let port = recovery source context
         use cancellation = cancelled ()
 
         match port.Retain(material, cancellation.Token) |> await with
@@ -78,9 +58,10 @@ let private retainCancellation =
 let private attemptCancellation =
     testCase "[CC-REC-001] cancelled attempt admission creates no marker or attempt" (fun () ->
         use source = NpgsqlDataSource.Create(appConnection ())
-        let port = recovery source
-        let material = draft ()
-        retained port material |> ignore
+        let material, context = draft source
+        let preparer = recovery source context
+        retained preparer material |> ignore
+        let port = operationPort source EndpointAction.RecoveryResolve material.OperationId
         use cancellation = cancelled ()
 
         match port.Start(material.OperationId, cancellation.Token) |> await with
@@ -95,9 +76,10 @@ let private attemptCancellation =
 let private dismissalCancellation =
     testCase "[CC-REC-001] cancelled dismissal leaves preparation actionable" (fun () ->
         use source = NpgsqlDataSource.Create(appConnection ())
-        let port = recovery source
-        let material = draft ()
-        retained port material |> ignore
+        let material, context = draft source
+        let preparer = recovery source context
+        retained preparer material |> ignore
+        let port = operationPort source EndpointAction.RecoveryDismiss material.OperationId
         use cancellation = cancelled ()
 
         match
@@ -114,9 +96,10 @@ let private dismissalCancellation =
 let private settlementCancellation =
     testCase "[CC-REC-001] cancelled settlement leaves admitted attempt unsettled" (fun () ->
         use source = NpgsqlDataSource.Create(appConnection ())
-        let port = recovery source
-        let material = draft ()
-        retained port material |> ignore
+        let material, context = draft source
+        let preparer = recovery source context
+        retained preparer material |> ignore
+        let port = operationPort source EndpointAction.RecoveryResolve material.OperationId
 
         let attemptId =
             match port.Start(material.OperationId, CancellationToken.None) |> await with
@@ -139,11 +122,10 @@ let private settlementCancellation =
 
 let private cancellationAtCommitBoundary =
     testCase
-        "[CC-REC-001] cancellation immediately before technical commit rolls back insertion"
+        "[CC-REC-001] cancellation immediately before technical commit rolls back synthetic marker"
         (fun () ->
             use source = NpgsqlDataSource.Create(appConnection ())
             use connection = RuntimeDatabase.openConnection source
-            let material = draft ()
             use cancellation = new CancellationTokenSource()
             let commitStarted = ref false
 
@@ -154,9 +136,14 @@ let private cancellationAtCommitBoundary =
                     commitStarted
                     (fun transaction ->
                         task {
-                            let! _ =
-                                PreparationData.insertPreparation connection transaction material
+                            use marker =
+                                new NpgsqlCommand(
+                                    "CREATE TEMP TABLE claimcore_precommit_rollback(token uuid)",
+                                    connection,
+                                    transaction
+                                )
 
+                            let! _ = marker.ExecuteNonQueryAsync(cancellation.Token)
                             cancellation.Cancel()
                             return ()
                         })
@@ -166,22 +153,44 @@ let private cancellationAtCommitBoundary =
                 "Pre-commit cancellation must fail the transaction"
 
             Expect.isFalse commitStarted.Value "Commit boundary was not crossed"
-            let port = recovery source
-            Expect.isNone (read port material.OperationId) "Inserted row was rolled back")
+
+            use query =
+                new NpgsqlCommand(
+                    "SELECT to_regclass('pg_temp.claimcore_precommit_rollback') IS NULL",
+                    connection
+                )
+
+            Expect.isTrue
+                (query.ExecuteScalar() :?> bool)
+                "Synthetic transaction-local marker was rolled back")
 
 let private cancelledReads =
     testCase
         "[CC-REC-001] cancelled recovery reads return cancellation without disclosure"
         (fun () ->
             use source = NpgsqlDataSource.Create(appConnection ())
-            let port = recovery source
+            let material, context = draft source
+            let port = recovery source context
             use cancellation = cancelled ()
 
-            match port.Get(Guid.NewGuid(), cancellation.Token) |> await with
+            match port.Get(material.OperationId, cancellation.Token) |> await with
             | Error RecoveryStoreFailure.ReadCancelled -> ()
             | _ -> failtest "Cancelled detail read must remain cancellation."
 
-            match port.List(RecoveryListView.Pending, None, 1, cancellation.Token) |> await with
+            let listContext =
+                (gate source)
+                    .Installation(
+                        ActorBoundStoreFixture.actorPrincipal (),
+                        EndpointAction.RecoveryList,
+                        CancellationToken.None
+                    )
+                |> await
+                |> Option.defaultWith (fun () ->
+                    failtest "Synthetic recovery list was not admitted.")
+
+            let listing = recovery source listContext
+
+            match listing.List(RecoveryListView.Pending, None, 1, cancellation.Token) |> await with
             | Error RecoveryStoreFailure.ReadCancelled -> ()
             | _ -> failtest "Cancelled page read must remain cancellation."
 

@@ -16,7 +16,7 @@ open ClaimCore.IntegrationTests.Fixtures
 let private request operationId reference = openRequest operationId reference
 
 let private openRuntime () =
-    Runtime.OpenPostgres(appConnection (), CancellationToken.None)
+    witnessedOpen (appConnection ()) CancellationToken.None
     |> await
     |> Result.defaultWith (fun _ -> failtest "Synthetic runtime must open.")
 
@@ -52,31 +52,49 @@ let private snapshot operationId =
 
     use command =
         new NpgsqlCommand(
-            "SELECT snapshot::text FROM claimcore.case_changes WHERE operation_id = @operation",
+            "SELECT snapshot FROM claimcore.case_changes WHERE operation_id = @operation",
             connection
         )
 
     Sql.uuid command "operation" operationId
 
     match command.ExecuteScalar() with
-    | :? string as value -> value
+    | :? (byte array) as value -> value
     | _ -> failtest "Synthetic receipt snapshot must exist."
 
-let private replaceSnapshot operationId value =
+let private acceptedEvidence operationId =
     use connection = new NpgsqlConnection(adminConnection ())
     connection.Open()
 
     use command =
         new NpgsqlCommand(
-            "UPDATE claimcore.case_changes SET snapshot = @snapshot::jsonb WHERE operation_id = @operation",
+            "SELECT canonical_request, effective_business_date - DATE '2000-01-01', observed_utc_instant FROM claimcore.case_changes WHERE operation_id = @operation",
             connection
         )
 
     Sql.uuid command "operation" operationId
-    Sql.text command "snapshot" value
+    use reader = command.ExecuteReader()
+
+    if not (reader.Read()) then
+        failtest "Synthetic accepted evidence must exist."
+
+    reader.GetFieldValue<byte array>(0), reader.GetInt32(1), reader.GetFieldValue<DateTimeOffset>(2)
+
+let private replaceSnapshot operationId (value: byte array) =
+    use connection = new NpgsqlConnection(adminConnection ())
+    connection.Open()
+
+    use command =
+        new NpgsqlCommand(
+            "UPDATE claimcore.case_changes SET snapshot = @snapshot WHERE operation_id = @operation",
+            connection
+        )
+
+    Sql.uuid command "operation" operationId
+    Sql.add command "snapshot" NpgsqlTypes.NpgsqlDbType.Bytea (box value)
     Expect.equal (command.ExecuteNonQuery()) 1 "Only this synthetic snapshot is changed"
 
-let private expectAccepted (core: IClaimsCore) input =
+let private expectAccepted (core: IActorClaimsCore) input =
     match core.Prepare(input, CancellationToken.None) |> await with
     | PrepareOutcome.ObservedAccepted receipt ->
         Expect.equal receipt.OperationId input.OperationId "Prepare observes exact receipt"
@@ -92,10 +110,14 @@ let private withPrunedAcceptedCase action =
     let input = request (Guid.NewGuid()) ("PRUNED-" + Guid.NewGuid().ToString("N"))
 
     let digest =
-        match runtime.Core.Execute(input, CancellationToken.None) |> await with
+        match (actorCore runtime).Execute(input, CancellationToken.None) |> await with
         | SubmissionOutcome.Completed(summary, _, DefiniteExecution.Accepted _, _) ->
             summary.RequestSha256
             |> Option.defaultWith (fun () -> failtest "Synthetic digest is required.")
+        | SubmissionOutcome.RejectedBeforeAttempt _ ->
+            failtest "The synthetic operation was rejected before attempt."
+        | SubmissionOutcome.Completed(_, _, DefiniteExecution.FailedBeforeCommit _, _) ->
+            failtest "The synthetic operation failed before commit."
         | _ -> failtest "The synthetic operation must accept."
 
     Expect.equal (rowCount "request_preparations" input.OperationId) 1L "Preparation exists"
@@ -111,13 +133,28 @@ let private withPrunedAcceptedCase action =
 
     Expect.equal (rowCount "request_preparations" input.OperationId) 0L "Preparation pruned"
     Expect.equal (rowCount "case_changes" input.OperationId) 1L "Accepted history retained"
-    action runtime.Core input digest
+    action (actorCore runtime) input digest
 
 let private pruneAcceptedPreparation =
     testCase
         "[CC-APP-002] PostgreSQL accepted replay survives owner pruning of preparation"
         (fun () ->
             withPrunedAcceptedCase (fun core input digest ->
+                let bytes, businessDays, observedAt = acceptedEvidence input.OperationId
+
+                Expect.sequenceEqual
+                    bytes
+                    (RequestRecord.encode input)
+                    "Accepted history retains exact canonical request bytes"
+
+                Expect.equal
+                    businessDays
+                    (DateOnly.FromDateTime(observedAt.UtcDateTime).DayNumber
+                     - DateOnly(2000, 1, 1).DayNumber)
+                    "Accepted event retains execution business date"
+
+                Expect.equal observedAt.Offset TimeSpan.Zero "Accepted instant is UTC"
+
                 expectAccepted core input
 
                 match
@@ -189,8 +226,25 @@ let private acceptedWithoutTechnicalPreparation =
             | Error _ -> failtest "Synthetic direct history write must accept."
 
             Expect.equal (rowCount "request_preparations" input.OperationId) 0L "No preparation"
+            let bytes, businessDays, observedAt = acceptedEvidence input.OperationId
+
+            Expect.sequenceEqual
+                bytes
+                (RequestRecord.encode input)
+                "Direct commit retains request bytes"
+
+            Expect.equal
+                businessDays
+                (DateOnly(2026, 9, 7).DayNumber - DateOnly(2000, 1, 1).DayNumber)
+                "Direct commit retains business date"
+
+            Expect.equal
+                observedAt
+                (DateTimeOffset(2026, 9, 7, 12, 0, 0, TimeSpan.Zero))
+                "Direct commit retains capture instant"
+
             use runtime = openRuntime ()
-            expectAccepted runtime.Core input
+            expectAccepted (actorCore runtime) input
             Expect.equal (rowCount "case_changes" input.OperationId) 1L "Accepted history retained")
 
 let private conflictPrecedesSnapshotProjection =
@@ -213,7 +267,7 @@ let private conflictPrecedesSnapshotProjection =
             let original = snapshot input.OperationId
 
             try
-                replaceSnapshot input.OperationId "{}"
+                replaceSnapshot input.OperationId [| 123uy; 125uy |]
 
                 match
                     (claims :> IClaimStore).Accepted(input.OperationId, wrongDigest) |> await
@@ -224,6 +278,12 @@ let private conflictPrecedesSnapshotProjection =
                 match (claims :> IClaimStore).Accepted(input.OperationId, digest) |> await with
                 | Error CoreFailure.StoreCorrupt -> ()
                 | _ -> failtest "Exact digest must still fail closed on corrupt snapshot."
+
+                replaceSnapshot input.OperationId (Array.append original [| 32uy |])
+
+                match (claims :> IClaimStore).Accepted(input.OperationId, digest) |> await with
+                | Error CoreFailure.StoreCorrupt -> ()
+                | _ -> failtest "Semantically valid noncanonical snapshot bytes must fail closed."
             finally
                 replaceSnapshot input.OperationId original)
 

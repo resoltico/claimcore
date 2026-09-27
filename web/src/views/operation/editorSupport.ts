@@ -1,4 +1,4 @@
-import type { AdvisoryReview, PreparationDetails, Receipt, WebV2Response } from "../../api/v2";
+import type { AdvisoryReview, PreparationDetails, Receipt, WebV3Response } from "../../api/v3";
 import type { DeliveryState } from "../../domain/operationReducer";
 
 export const nextOperationId = (): string => crypto.randomUUID();
@@ -11,11 +11,11 @@ export const isLocked = (delivery: DeliveryState): boolean =>
   delivery === "OUTCOME_UNKNOWN";
 
 export const prepared = (
-  response: WebV2Response<"command.prepare">,
+  response: WebV3Response<"command.prepare">,
 ): { details: PreparationDetails; review: AdvisoryReview } | null =>
   response.outcome.tag === "PREPARED" ? response.outcome.data : null;
 
-export const acceptedReceipt = (response: WebV2Response<"command.execute">): Receipt | null => {
+export const acceptedReceipt = (response: WebV3Response<"command.execute">): Receipt | null => {
   const outcome = response.outcome;
   if (outcome.tag === "OBSERVED_ACCEPTED") return outcome.data.receipt;
   if (outcome.tag === "COMPLETED" && outcome.data.execution.tag === "ACCEPTED") {

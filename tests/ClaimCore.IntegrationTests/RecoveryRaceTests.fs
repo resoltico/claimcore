@@ -11,11 +11,11 @@ open ClaimCore.Hosting
 open ClaimCore.IntegrationTests.Fixtures
 
 let private openRuntime () =
-    Runtime.OpenPostgres(appConnection (), CancellationToken.None)
+    witnessedOpen (appConnection ()) CancellationToken.None
     |> await
     |> Result.defaultWith (fun _ -> failtest "Synthetic recovery runtime must open.")
 
-let private prepare (core: IClaimsCore) operationId =
+let private prepare (core: IActorClaimsCore) operationId =
     let request = openRequest operationId ("RACE-" + operationId.ToString("N"))
 
     match core.Prepare(request, CancellationToken.None) |> await with
@@ -69,12 +69,12 @@ let private acceptedReceipt outcome =
 let private dualResolve =
     testCase "[CC-REC-001] simultaneous exact resolves retain one accepted revision" (fun () ->
         use runtime = openRuntime ()
+        let core = runtime.ForActor(ActorBoundStoreFixture.actorPrincipal ())
         let operationId = Guid.NewGuid()
-        let digest = prepare runtime.Core operationId
+        let digest = prepare core operationId
 
         let resolve () =
-            runtime.Core.Recovery.Resolve(operationId, digest, CancellationToken.None)
-            |> await
+            core.Recovery.Resolve(operationId, digest, CancellationToken.None) |> await
 
         let first, second = simultaneous resolve resolve
         let left = acceptedReceipt first
@@ -91,15 +91,15 @@ let private dualResolve =
 let private resolveDismiss =
     testCase "[CC-REC-001] simultaneous resolve and dismiss have one lifecycle winner" (fun () ->
         use runtime = openRuntime ()
+        let core = runtime.ForActor(ActorBoundStoreFixture.actorPrincipal ())
         let operationId = Guid.NewGuid()
-        let digest = prepare runtime.Core operationId
+        let digest = prepare core operationId
 
         let resolve () =
-            runtime.Core.Recovery.Resolve(operationId, digest, CancellationToken.None)
-            |> await
+            core.Recovery.Resolve(operationId, digest, CancellationToken.None) |> await
 
         let dismiss () =
-            runtime.Core.Recovery.Dismiss(operationId, digest, true, CancellationToken.None)
+            core.Recovery.Dismiss(operationId, digest, true, CancellationToken.None)
             |> await
 
         let resolution, dismissal = simultaneous resolve dismiss

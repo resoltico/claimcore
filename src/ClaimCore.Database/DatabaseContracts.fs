@@ -3,7 +3,6 @@ namespace ClaimCore.Database
 open System
 open System.Text
 open System.Text.Json.Nodes
-open System.Security.Cryptography
 open ClaimCore.Postgres
 
 /// Owner-only administration has its own exact response grammar, with no case-work dependency.
@@ -55,7 +54,13 @@ module DatabaseContracts =
         exact [ "id", constant id; "parameters", exact parameters ]
 
     let private action value = "recommendedAction", constant value
-    let private commands = [ "INITIALIZE"; "VERIFY"; "PRUNE" ]
+
+    let private commands = DatabaseCommandCatalogue.values
+
+    let private ordinaryCommands =
+        commands
+        |> List.filter (fun command ->
+            command <> "VERIFY_DATA" && command <> "RECONCILE_BACKUP_HEALTH")
 
     let private inputParameters =
         function
@@ -88,6 +93,13 @@ module DatabaseContracts =
                 "pattern",
                 text
                     "^(?:0|[1-9][0-9]{0,17}|[1-8][0-9]{18}|9[0-1][0-9]{17}|92[0-1][0-9]{16}|922[0-2][0-9]{15}|9223[0-2][0-9]{14}|92233[0-6][0-9]{13}|922337[0-1][0-9]{12}|92233720[0-2][0-9]{10}|922337203[0-5][0-9]{9}|9223372036[0-7][0-9]{8}|92233720368[0-4][0-9]{7}|922337203685[0-3][0-9]{6}|9223372036854[0-6][0-9]{5}|92233720368547[0-6][0-9]{4}|922337203685477[0-4][0-9]{3}|9223372036854775[0-7][0-9]{2}|922337203685477580[0-6]|9223372036854775807)$"
+            ]
+
+    let private uuid () =
+        obj
+            [
+                "type", text "string"
+                "pattern", text "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
             ]
 
     let private maintenance command =
@@ -125,11 +137,66 @@ module DatabaseContracts =
             @ details
         )
 
+    let private dataAuditCounts () =
+        [
+            "cases"
+            "acceptedOperations"
+            "lifecycleEvents"
+            "erasureFences"
+            "terminalApprovals"
+            "terminalEvents"
+            "revocations"
+            "authorityEvents"
+            "actors"
+            "grants"
+            "signerApprovals"
+            "signerKeys"
+            "signerEvents"
+            "ownerManagedCopies"
+            "copyPhysicalVerifications"
+            "copyDeletionApprovals"
+            "writerHandoffApprovals"
+            "writerHandoffPreparations"
+            "writerHandoffs"
+            "writerActivations"
+            "writerHandoffAborts"
+            "managedExports"
+            "witnessEntries"
+            "pendingIntents"
+        ]
+        |> List.map (fun name -> name, count ())
+        |> exact
+
+    let private dataAuditVerified () =
+        exact
+            [
+                "kind", constant "dataAuditResult"
+                "command", constant "VERIFY_DATA"
+                "scope", constant "CURRENT_PRIMARY_AND_WITNESS"
+                "status", enumeration [ "VERIFIED"; "VERIFIED_WITH_PENDING_INTENTS" ]
+                "installationId", uuid ()
+                "lineageId", uuid ()
+                "epoch", count ()
+                "witnessCutoff", count ()
+                "witnessTipHash", obj [ "type", text "string"; "pattern", text "^[0-9a-f]{64}$" ]
+                "counts", dataAuditCounts ()
+            ]
+
+    let private dataAuditQuarantined () =
+        exact
+            [
+                "kind", constant "dataAuditResult"
+                "command", constant "VERIFY_DATA"
+                "status", constant "QUARANTINED"
+                "diagnostic", diagnostic "DB_DATA_AUDIT_FAILED" []
+                action "INSPECT_AND_RECONCILE"
+            ]
+
     let private failed phase reasons =
         exact
             [
                 "kind", constant "administrationResult"
-                "command", enumeration commands
+                "command", enumeration ordinaryCommands
                 "operationOutcome", constant phase
                 "diagnostic",
                 exact
@@ -173,13 +240,18 @@ module DatabaseContracts =
     let private responseSchema () =
         let definite =
             DatabaseDiagnostics.nativeReasons
-            |> List.filter ((<>) AdministrationFailure.CommitUnconfirmed)
+            |> List.filter (fun reason ->
+                reason <> AdministrationFailure.CommitUnconfirmed
+                && reason <> AdministrationFailure.DataAuditFailed)
 
         let variants =
             (DatabaseDiagnostics.inputReasons |> List.map input)
-            @ (commands
+            @ (ordinaryCommands
                |> List.collect (fun command -> [ completed command false; completed command true ]))
             @ [
+                DatabaseBackupHealthContract.schema ()
+                dataAuditVerified ()
+                dataAuditQuarantined ()
                 failed "NOT_STARTED" definite
                 failed "NOT_COMMITTED" definite
                 failed "COMPLETION_UNKNOWN" [ AdministrationFailure.CommitUnconfirmed ]
@@ -199,19 +271,4 @@ module DatabaseContracts =
         responseSchema().ToJsonString() + "\n" |> Encoding.UTF8.GetBytes
 
     let catalogue () =
-        let schemaValue = responseSchema ()
-
-        let fingerprint =
-            schemaValue.ToJsonString()
-            |> Encoding.UTF8.GetBytes
-            |> SHA256.HashData
-            |> Convert.ToHexStringLower
-
-        obj
-            [
-                "contractKind", text "ADMINISTRATION_DIAGNOSTICS_V1"
-                "fingerprint", text fingerprint
-                "responseSchema", schemaValue
-            ]
-        |> _.ToJsonString()
-        |> fun value -> Encoding.UTF8.GetBytes(value + "\n")
+        DatabaseContractCatalogue.render (responseSchema ())

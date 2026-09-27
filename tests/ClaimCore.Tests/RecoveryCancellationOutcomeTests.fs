@@ -8,6 +8,7 @@ open ClaimCore.Application
 open ClaimCore.Domain
 open ClaimCore.RecordFormat
 open ClaimCore.Tests.Fixtures
+open ClaimCore.Tests.SignedRecoveryTestSupport
 
 let private clock = businessTime today
 
@@ -34,7 +35,7 @@ let private draft operationId : CommandDraft =
 let private coreWith (recovery: CoreRecoveryStore.Store) =
     let claims = new CoreStore.Store()
     recovery.AttachClaimStore(claims :> IClaimStore)
-    CoreApi.create (claims :> IClaimStore) (recovery :> IRecoveryStore) clock, claims
+    ActorCoreFixture.create (claims :> IClaimStore) (recovery :> IRecoveryStore) clock, claims
 
 let private prepared (core: IClaimsCore) operationId =
     match core.Prepare(boundRequest (draft operationId), CancellationToken.None).Result with
@@ -107,25 +108,28 @@ let private cancelledImport =
         let recovery =
             new CoreRecoveryStore.Store(retainFailure = RecoveryStoreFailure.CancelledBeforeCommit)
 
-        let core, claims = coreWith recovery
         let command = draft (Guid.NewGuid())
 
         let request =
             Drafts.bind command
             |> Result.defaultWith (fun _ -> failtest "Synthetic import command must bind.")
 
-        let source = RequestRecord.encode request
-        let digest = source |> SHA256.HashData |> Convert.ToHexStringLower
+        let source, digest = SignedRecoveryTestSupport.source request
 
         match
-            core.Recovery
-                .RetainCanonicalRecordImport(source, digest, CancellationToken.None)
-                .Result
+            RecoveryImports.retainEnvelope
+                (recovery :> IRecoveryStore)
+                authority
+                importer
+                source
+                digest
+                CancellationToken.None
+            |> fun pending -> pending.Result
         with
         | RecoveryImportRetainOutcome.ImportCancelledBeforeAdmission -> ()
         | _ -> failtest "Definite import cancellation must not be retention unknown."
 
-        Expect.equal claims.TransactionCalls 0 "Import never executes a claim")
+        Expect.equal recovery.StartCalls 0 "Import never starts a claim attempt")
 
 let private cancelledCombinedCommit =
     testCase "[CC-REC-001] cancelled combined execution is definite before commit" (fun () ->
@@ -173,29 +177,32 @@ let private unknownImport =
                 retainFailure = RecoveryStoreFailure.TechnicalMutationUnknown
             )
 
-        let core, claims = coreWith recovery
         let command = draft (Guid.NewGuid())
 
         let request =
             Drafts.bind command
             |> Result.defaultWith (fun _ -> failtest "Synthetic import command must bind.")
 
-        let source = RequestRecord.encode request
-        let digest = source |> SHA256.HashData |> Convert.ToHexStringLower
+        let source, digest = SignedRecoveryTestSupport.source request
 
         match
-            core.Recovery
-                .RetainCanonicalRecordImport(source, digest, CancellationToken.None)
-                .Result
+            RecoveryImports.retainEnvelope
+                (recovery :> IRecoveryStore)
+                authority
+                importer
+                source
+                digest
+                CancellationToken.None
+            |> fun pending -> pending.Result
         with
         | RecoveryImportRetainOutcome.RetainStateUnknown(kind, actual, operation, fault) ->
-            Expect.equal kind RecoveryArtifactKind.UnboundCanonicalRecord "Artifact kind"
+            Expect.equal kind RecoveryArtifactKind.Envelope "Signed artifact kind"
             Expect.equal actual digest "Exact source digest"
             Expect.equal operation (Some command.OperationId) "Retained operation identity"
             Expect.equal fault.Code FaultCode.TechnicalMutationUnknown "No inferred non-retention"
         | _ -> failtest "Commit-start import loss must be explicit uncertainty."
 
-        Expect.equal claims.TransactionCalls 0 "Import never submits a claim")
+        Expect.equal recovery.StartCalls 0 "Import never starts a claim attempt")
 
 let private cancelledObservation =
     testCase
@@ -205,7 +212,7 @@ let private cancelledObservation =
             let claims = new CoreStore.Store(onOperation = cancellation.Cancel)
 
             let core =
-                CoreApi.create
+                ActorCoreFixture.create
                     (claims :> IClaimStore)
                     (new CoreRecoveryStore.Store() :> IRecoveryStore)
                     clock
@@ -220,7 +227,7 @@ let private cancelledInspectObservation =
         let claims = new CoreStore.Store(onOperation = cancellation.Cancel)
 
         let core =
-            CoreApi.create
+            ActorCoreFixture.create
                 (claims :> IClaimStore)
                 (new CoreRecoveryStore.Store() :> IRecoveryStore)
                 clock
@@ -239,7 +246,8 @@ let private cancelledResolveObservation =
         let recovery = new CoreRecoveryStore.Store()
         recovery.AttachClaimStore(claims :> IClaimStore)
 
-        let core = CoreApi.create (claims :> IClaimStore) (recovery :> IRecoveryStore) clock
+        let core =
+            ActorCoreFixture.create (claims :> IClaimStore) (recovery :> IRecoveryStore) clock
 
         let operationId = Guid.NewGuid()
         let digest = prepared core operationId

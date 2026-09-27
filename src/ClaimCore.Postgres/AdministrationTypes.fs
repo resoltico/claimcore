@@ -18,6 +18,7 @@ type AdministrationFailure =
     | PruneOptionsInvalid
     | PruneAuditFailed
     | RecoveryFootprintUnreadable
+    | DataAuditFailed
     | SchemaDefinitionInvalid
     | DatabaseUnavailable
     | OperationFailed

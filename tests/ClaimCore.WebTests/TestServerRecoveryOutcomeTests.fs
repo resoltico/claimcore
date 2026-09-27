@@ -233,9 +233,6 @@ let private importRouteOutcomes () =
     previewOutcomes host token "recovery.importEnvelopePreview" (fun value ->
         host.Runtime.EnvelopePreviewOutcome <- Some value)
 
-    previewOutcomes host token "recovery.importRecordPreview" (fun value ->
-        host.Runtime.RecordPreviewOutcome <- Some value)
-
     retainOutcomes
         host
         token
@@ -243,21 +240,14 @@ let private importRouteOutcomes () =
         RecoveryArtifactKind.Envelope
         (fun value -> host.Runtime.EnvelopeRetainOutcome <- Some value)
 
-    retainOutcomes
-        host
-        token
-        "recovery.importRecordRetain"
-        RecoveryArtifactKind.UnboundCanonicalRecord
-        (fun value -> host.Runtime.RecordRetainOutcome <- Some value)
-
     Expect.equal
         host.Runtime.RecoveryCalls
-        20
-        "Both raw artifact formats traverse only typed recovery"
+        10
+        "Signed-envelope imports traverse only typed recovery"
 
 let tests =
     testList
-        "Web HTTP-v2 TestServer"
+        "Web HTTP-v3 TestServer"
         [
             testCase
                 "[CC-WEB-001] recovery list, inspect, resolve, dismiss, and export preserve typed lifecycle outcomes"

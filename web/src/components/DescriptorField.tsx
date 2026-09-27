@@ -3,7 +3,7 @@ import { Input } from "react-aria-components/Input";
 import { Label } from "react-aria-components/Label";
 import { Text } from "react-aria-components/Text";
 import { TextField } from "react-aria-components/TextField";
-import type { FieldDescriptor } from "../api/v2";
+import type { FieldDescriptor } from "../api/v3";
 import type { Notice } from "../api/notices";
 import { usePresentation } from "../presentation/context";
 

@@ -176,6 +176,12 @@
     { "type": 1, "value": "maximumPageSize" },
     { "type": 0, "value": "." }
   ],
+  "diagnostic.QUERY_CASE_LIST_CURSOR_INVALID": [
+    {
+      "type": 0,
+      "value": "Start a new case list. The cursor is invalid, expired, or belongs to another account or page size."
+    }
+  ],
   "diagnostic.QUERY_HISTORY_CURSOR_INVALID": [
     { "type": 0, "value": "Use one opaque history cursor returned by ClaimCore." }
   ],
@@ -193,6 +199,12 @@
       "type": 0,
       "value": "This operation has reached its recovery attempt limit. Read the current case and author a new operation only after review."
     }
+  ],
+  "diagnostic.ACCESS_RESOURCE_UNAVAILABLE": [
+    { "type": 0, "value": "This resource is unavailable." }
+  ],
+  "diagnostic.RESOURCE_UNAVAILABLE": [
+    { "type": 0, "value": "This recovery resource is unavailable." }
   ],
   "diagnostic.CORE_OPERATION_CONTENT_CONFLICT": [
     { "type": 0, "value": "The operation ID belongs to different request content." }
@@ -320,12 +332,6 @@
   "diagnostic.RECOVERY_ENVELOPE_INVALID_OR_UNSUPPORTED": [
     { "type": 0, "value": "The recovery envelope is unsupported or failed canonical decoding." }
   ],
-  "diagnostic.RECOVERY_CANONICAL_RECORD_INVALID_OR_UNSUPPORTED": [
-    {
-      "type": 0,
-      "value": "The canonical recovery record is unsupported or failed canonical decoding."
-    }
-  ],
   "diagnostic.RECOVERY_OPERATION_REVOKED": [
     { "type": 0, "value": "This exact operation was durably revoked before execution." }
   ],
@@ -355,9 +361,6 @@
   ],
   "diagnostic.WEB_HOST_ANTIFORGERY_REJECTED": [
     { "type": 0, "value": "The antiforgery check failed." }
-  ],
-  "diagnostic.WEB_HOST_LOGIN_REJECTED": [
-    { "type": 0, "value": "The bootstrap credential was refused." }
   ],
   "diagnostic.WEB_HOST_ENDPOINT_MISSING": [
     { "type": 0, "value": "The requested endpoint was not found." }
@@ -629,7 +632,6 @@
   "token.ERROR": [{ "type": 0, "value": "Execution error" }],
   "token.REVOKED_BEFORE_EXECUTION": [{ "type": 0, "value": "Revoked before execution" }],
   "token.ENVELOPE": [{ "type": 0, "value": "ENVELOPE" }],
-  "token.UNBOUND_CANONICAL_RECORD": [{ "type": 0, "value": "Unbound canonical record" }],
   "token.FOUND": [{ "type": 0, "value": "FOUND" }],
   "token.NOT_FOUND": [{ "type": 0, "value": "NOT_FOUND" }],
   "ui.language": [{ "type": 0, "value": "Interface language" }],
@@ -658,13 +660,8 @@
   "ui.operations": [{ "type": 0, "value": "Operations" }],
   "ui.loadingDefinition": [{ "type": 0, "value": "Loading core definition…" }],
   "ui.loginInstructions": [
-    {
-      "type": 0,
-      "value": "Enter the bootstrap credential from the owner-private file printed when the local Web host started."
-    }
+    { "type": 0, "value": "Sign in with your organization's identity provider." }
   ],
-  "ui.credential": [{ "type": 0, "value": "Bootstrap credential" }],
-  "ui.signingIn": [{ "type": 0, "value": "Signing in…" }],
   "ui.signIn": [{ "type": 0, "value": "Sign in" }],
   "ui.caseReference": [{ "type": 0, "value": "case reference" }],
   "ui.caseRow": [
@@ -719,6 +716,41 @@
   "ui.caseNotFound": [{ "type": 0, "value": "Case was not found." }],
   "ui.currentCase": [{ "type": 0, "value": "current case" }],
   "ui.caseDetail": [{ "type": 0, "value": "Case detail" }],
+  "ui.lifecycleStatus": [{ "type": 0, "value": "Disposition and privacy status" }],
+  "ui.loadingLifecycle": [{ "type": 0, "value": "Loading lifecycle status…" }],
+  "ui.lifecycleUnavailable": [
+    { "type": 0, "value": "Lifecycle status is unavailable for this case." }
+  ],
+  "ui.lifecycleDisposition": [
+    { "type": 0, "value": "Disposition: " },
+    { "type": 1, "value": "value" }
+  ],
+  "ui.lifecyclePrivacy": [
+    { "type": 0, "value": "Privacy phase: " },
+    { "type": 1, "value": "value" }
+  ],
+  "ui.lifecycleActive": [{ "type": 0, "value": "Active" }],
+  "ui.lifecycleVoided": [{ "type": 0, "value": "Voided as a data-entry error" }],
+  "ui.lifecycleErasureRequested": [{ "type": 0, "value": "Erasure requested" }],
+  "ui.lifecycleErasurePending": [{ "type": 0, "value": "Erasure pending" }],
+  "ui.lifecycleSuppressionRetained": [
+    { "type": 0, "value": "Live payload erased; suppression evidence retained" }
+  ],
+  "ui.lifecycleErasureFinal": [
+    { "type": 0, "value": "Managed payload erasure complete; suppression evidence retained" }
+  ],
+  "ui.lifecycleNoHolds": [{ "type": 0, "value": "No active hold is recorded." }],
+  "ui.lifecycleHeld": [{ "type": 0, "value": "HELD: active holds block payload erasure." }],
+  "ui.lifecycleHoldReview": [
+    { "type": 0, "value": "Hold review due " },
+    { "type": 1, "value": "date" }
+  ],
+  "ui.lifecycleVoidApproval": [
+    {
+      "type": 0,
+      "value": "Voiding this case requires two distinct approvals and does not reverse a payment."
+    }
+  ],
   "ui.backToCases": [{ "type": 0, "value": "Back to cases" }],
   "ui.exactReference": [
     { "type": 0, "value": "Exact reference: " },

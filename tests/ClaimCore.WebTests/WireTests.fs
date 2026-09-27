@@ -97,18 +97,18 @@ let private failureEnvelope () =
 let private contractOwnedTransport () =
     Expect.equal
         (WebContract.path "session")
-        "/api/v2/session"
+        "/api/v3/session"
         "Session routing comes from ClaimCore.Contracts"
 
     Expect.equal
         (WebContract.jsonPath "command.execute")
-        "/api/v2/operations/submit"
+        "/api/v3/operations/submit"
         "The submit path follows the generated endpoint ID"
 
     let path, mediaType, maximumBytes, headers =
         WebContract.raw "recovery.importEnvelopeRetain"
 
-    Expect.equal path "/api/v2/recovery/import-envelope/retain" "Raw endpoint path is generated"
+    Expect.equal path "/api/v3/recovery/import-envelope/retain" "Raw endpoint path is generated"
 
     Expect.equal
         mediaType
@@ -157,11 +157,7 @@ let private coreHostWrappers () =
     same "Case wrapper" (WebWireCodec.get missingCase) (WebWire.get missingCase)
 
     let casePage: QueryOutcome<CaseSummaryPage> =
-        QueryOutcome.Succeeded
-            {
-                Items = []
-                NextAfterReference = None
-            }
+        QueryOutcome.Succeeded { Items = []; NextCursor = None }
 
     same "List wrapper" (WebWireCodec.list casePage) (WebWire.list casePage)
     same "History wrapper" (WebWireCodec.history missingHistory) (WebWire.history missingHistory)
@@ -258,7 +254,7 @@ let private allHostWrappersUseContractBytes () =
 
 let tests =
     testList
-        "Web HTTP-v2 wire projection"
+        "Web HTTP-v3 wire projection"
         [
             testCase
                 "[CC-WEB-001] serializes logout as an anonymous session snapshot"

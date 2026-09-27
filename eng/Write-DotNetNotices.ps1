@@ -29,6 +29,10 @@ foreach ($component in $components) {
     $licensePath = switch ($licenses[0]) {
         "MIT" { Join-Path $PSScriptRoot "licenses/MIT-DOTNET.txt" }
         "PostgreSQL" { Join-Path $PSScriptRoot "licenses/PostgreSQL-NPGSQL.txt" }
+        "ISC" {
+            if ($component.name -ne "libsodium") { throw "Unreviewed ISC package identity." }
+            Join-Path $PSScriptRoot "licenses/ISC-LIBSODIUM.txt"
+        }
         default { throw "$($component.name) uses an unreviewed .NET redistribution license." }
     }
     $licenseText = [IO.File]::ReadAllText($licensePath).Trim()

@@ -10,7 +10,7 @@ import {
   languageControl,
   preparedReply,
 } from "./presentation-state.fixtures";
-import { response } from "./v2-ui.fixtures";
+import { response } from "./v3-ui.fixtures";
 
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 afterEach(() => vi.restoreAllMocks());
@@ -97,10 +97,7 @@ it("keeps an in-flight submission and its exact recovery identity through langua
   );
   expect(screen.getByRole("button", { name: "Back without preparing" })).toBeDisabled();
   expect(fetch).toHaveBeenCalledTimes(2);
-  expect(JSON.parse(typeof submitted?.body === "string" ? submitted.body : "")).toEqual({
-    operationId: draftAt(0).operationId,
-    requestSha256: "a".repeat(64),
-  });
+  expect(JSON.parse(typeof submitted?.body === "string" ? submitted.body : "")).toEqual(draftAt(0));
 });
 
 it("does not rebase a frozen preparation after language switching and an external revision change", async () => {

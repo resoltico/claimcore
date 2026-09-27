@@ -8,11 +8,11 @@ open ClaimCore.Hosting
 open ClaimCore.IntegrationTests.Fixtures
 
 let private openRuntime () =
-    Runtime.OpenPostgres(appConnection (), CancellationToken.None)
+    witnessedOpen (appConnection ()) CancellationToken.None
     |> await
     |> Result.defaultWith (fun _ -> failtest "Synthetic capacity runtime must open.")
 
-let private acceptOne (core: IClaimsCore) sequence =
+let private acceptOne (core: IActorClaimsCore) sequence =
     let request =
         openRequest (Guid.NewGuid()) ($"TERMINAL-CAPACITY-{sequence:D4}-{Guid.NewGuid():N}")
 
@@ -27,11 +27,11 @@ let private acceptOne (core: IClaimsCore) sequence =
             "Each synthetic terminal operation is exact"
     | _ -> failtest "Every synthetic terminal operation must accept with a co-committed settlement."
 
-let private acceptTerminalHistory (core: IClaimsCore) =
+let private acceptTerminalHistory (core: IActorClaimsCore) =
     for sequence in 1..1024 do
         acceptOne core sequence
 
-let private assertFreshPreparation (core: IClaimsCore) =
+let private assertFreshPreparation (core: IActorClaimsCore) =
     let request =
         openRequest (Guid.NewGuid()) ("POST-TERMINAL-CAPACITY-" + Guid.NewGuid().ToString("N"))
 
@@ -53,8 +53,8 @@ let private terminalHistoryDoesNotConsumePendingCapacity =
         "[CC-REC-001] 1,024 recent accepted operations leave capacity for a distinct fresh preparation"
         (fun () ->
             use runtime = openRuntime ()
-            acceptTerminalHistory runtime.Core
-            assertFreshPreparation runtime.Core)
+            acceptTerminalHistory (actorCore runtime)
+            assertFreshPreparation (actorCore runtime))
 
 let tests =
     testList "PostgreSQL terminal capacity" [ terminalHistoryDoesNotConsumePendingCapacity ]

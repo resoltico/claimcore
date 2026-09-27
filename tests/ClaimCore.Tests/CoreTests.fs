@@ -41,7 +41,7 @@ let private createWithClock businessClock =
     let recovery = new CoreRecoveryStore.Store()
     recovery.AttachClaimStore(claims :> IClaimStore)
 
-    CoreApi.create (claims :> IClaimStore) (recovery :> IRecoveryStore) businessClock
+    ActorCoreFixture.create (claims :> IClaimStore) (recovery :> IRecoveryStore) businessClock
 
 let private create () = createWithClock clock
 
@@ -205,7 +205,7 @@ let private unknownPreparationState =
             new CoreRecoveryStore.Store(RecoveryStoreFailure.TechnicalMutationUnknown)
 
         let core =
-            CoreApi.create
+            ActorCoreFixture.create
                 (new CoreStore.Store() :> IClaimStore)
                 (recovery :> IRecoveryStore)
                 clock

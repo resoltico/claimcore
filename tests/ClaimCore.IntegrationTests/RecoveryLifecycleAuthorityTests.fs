@@ -11,11 +11,11 @@ open ClaimCore.Postgres
 open ClaimCore.IntegrationTests.Fixtures
 
 let private openRuntime () =
-    Runtime.OpenPostgres(appConnection (), CancellationToken.None)
+    witnessedOpen (appConnection ()) CancellationToken.None
     |> await
     |> Result.defaultWith (fun _ -> failtest "Synthetic lifecycle runtime must open.")
 
-let private prepared (core: IClaimsCore) operationId reference =
+let private prepared (core: IActorClaimsCore) operationId reference =
     let request = openRequest operationId reference
 
     let digest =
@@ -33,9 +33,26 @@ let private prepared (core: IClaimsCore) operationId reference =
 
     request, digest, operation
 
-let private recovery () =
+let private recovery operationId =
     let source = NpgsqlDataSource.Create(appConnection ())
-    source, (PostgresRecoveryStore(source, PreparationLimits.defaults) :> IRecoveryStore)
+    let witness = witnessProtocol ()
+
+    let gate =
+        new PostgresActorGate(source, FixturePrivateFiles.syntheticCommitments witness.Identity)
+        :> IActorGate
+
+    let context =
+        gate.Operation(
+            ActorBoundStoreFixture.actorPrincipal (),
+            EndpointAction.RecoveryResolve,
+            operationId,
+            CancellationToken.None
+        )
+        |> await
+        |> Option.defaultWith (fun () -> failtest "Synthetic recovery actor was not admitted.")
+
+    source,
+    (PostgresRecoveryStore(source, PreparationLimits.defaults, witness, context) :> IRecoveryStore)
 
 let private ageRevokedPreparation operationId =
     use connection = new NpgsqlConnection(adminConnection ())
@@ -64,7 +81,7 @@ let private assertRevokedExecution
         port.ExecuteAdmitted(
             operation,
             attemptId,
-            (fun () -> clock.Capture().EffectiveBusinessDate),
+            clock.Capture,
             (fun today current -> Claim.decide today request current),
             CancellationToken.None
         )
@@ -73,10 +90,22 @@ let private assertRevokedExecution
     | Ok(AdmittedExecution.RevokedBeforeExecution _) -> ()
     | _ -> failtest message
 
-let private assertNoCase (core: IClaimsCore) request =
+let private assertNoCase (core: IActorClaimsCore) request =
     match core.Get(request.CaseReference, CancellationToken.None) |> await with
-    | QueryOutcome.Succeeded(Lookup.NotFound _) -> ()
-    | _ -> failtest "Revocation before execution must leave the case absent."
+    | QueryOutcome.Rejected Rejection.ResourceUnavailable -> ()
+    | _ -> failtest "An absent case must use the non-disclosing public refusal."
+
+    use connection = new NpgsqlConnection(adminConnection ())
+    connection.Open()
+
+    use command =
+        new NpgsqlCommand(
+            "SELECT EXISTS (SELECT 1 FROM claimcore.cases WHERE case_reference=@reference)",
+            connection
+        )
+
+    Sql.text command "reference" request.CaseReference
+    Expect.isFalse (command.ExecuteScalar() :?> bool) "Revocation before execution leaves no case."
 
 let private pruneRevoked operationId =
     ageRevokedPreparation operationId
@@ -91,17 +120,16 @@ let private pruneRevoked operationId =
 
     Expect.equal result.DeletedCount 1 "The aged terminal preparation is owner-prunable"
 
-let private assertTombstone (core: IClaimsCore) operationId =
+let private assertTombstone (core: IActorClaimsCore) operationId =
     match core.Recovery.Inspect(operationId, None, 8, CancellationToken.None) |> await with
     | RecoveryQueryOutcome.RecoverySucceeded(Lookup.Found(RecoveryInspection.RevokedInspection tombstone)) ->
         Expect.equal tombstone.OperationId operationId "Tombstone preserves only terminal identity"
     | _ -> failtest "Pruned revocation must remain inspectable without request payload."
 
-let private assertExactRevocation (core: IClaimsCore) request =
+let private assertExactRevocation (core: IActorClaimsCore) request =
     match core.Execute(request, CancellationToken.None) |> await with
-    | SubmissionOutcome.RejectedBeforeAttempt(_, rejection) ->
-        Expect.equal rejection.Code RejectionCode.OperationRevoked "Exact retry remains terminal"
-    | _ -> failtest "The pruned revocation must still refuse the exact native request."
+    | SubmissionOutcome.RejectedBeforeAttempt(_, Rejection.ResourceUnavailable) -> ()
+    | _ -> failtest "A pruned revocation must refuse exact retry without disclosing identity."
 
 let private startThenRevokeThenPrune =
     testCase
@@ -111,9 +139,9 @@ let private startThenRevokeThenPrune =
             let operationId = Guid.NewGuid()
 
             let request, digest, operation =
-                prepared runtime.Core operationId ("REVOKED-" + operationId.ToString("N"))
+                prepared (actorCore runtime) operationId ("REVOKED-" + operationId.ToString("N"))
 
-            let source, port = recovery ()
+            let source, port = recovery operationId
             use source = source
 
             let attemptId =
@@ -122,7 +150,8 @@ let private startThenRevokeThenPrune =
                 | _ -> failtest "A single synthetic worker must receive one admitted attempt."
 
             match
-                runtime.Core.Recovery.Dismiss(operationId, digest, true, CancellationToken.None)
+                (actorCore runtime)
+                    .Recovery.Dismiss(operationId, digest, true, CancellationToken.None)
                 |> await
             with
             | RecoveryDismissOutcome.DismissedPreparation _ -> ()
@@ -135,7 +164,7 @@ let private startThenRevokeThenPrune =
                 attemptId
                 "The delayed worker must settle as revoked without a business write."
 
-            assertNoCase runtime.Core request
+            assertNoCase (actorCore runtime) request
             pruneRevoked operationId
 
             assertRevokedExecution
@@ -145,8 +174,8 @@ let private startThenRevokeThenPrune =
                 attemptId
                 "A delayed worker remains revoked after the optional preparation is gone."
 
-            assertTombstone runtime.Core operationId
-            assertExactRevocation runtime.Core request)
+            assertTombstone (actorCore runtime) operationId
+            assertExactRevocation (actorCore runtime) request)
 
 let private attemptsUntilLimit (port: IRecoveryStore) operationId =
     [ 1..64 ]
@@ -157,7 +186,7 @@ let private attemptsUntilLimit (port: IRecoveryStore) operationId =
         | _ -> failtest "Every attempt through the configured limit must be admitted.")
 
 let private assertAttemptLimit
-    (core: IClaimsCore)
+    (core: IActorClaimsCore)
     (request: CommandRequest)
     digest
     (port: IRecoveryStore)
@@ -183,13 +212,13 @@ let private assertAttemptLimit
             "Normal exact retry exposes the same core-owned attempt limit"
     | _ -> failtest "The native retry boundary must preserve actionable attempt exhaustion."
 
-let private attemptPage (core: IClaimsCore) operationId cursor =
+let private attemptPage (core: IActorClaimsCore) operationId cursor =
     match core.Recovery.Inspect(operationId, cursor, 16, CancellationToken.None) |> await with
     | RecoveryQueryOutcome.RecoverySucceeded(Lookup.Found(RecoveryInspection.RetainedInspection value)) ->
         value.Preparation.Attempts
     | _ -> failtest "Bounded attempt evidence page must be readable."
 
-let private assertKeysetPages (core: IClaimsCore) operationId =
+let private assertKeysetPages (core: IActorClaimsCore) operationId =
     let first = attemptPage core operationId None
     Expect.equal first.Items.Length 16 "Inspection obeys the requested page limit"
 
@@ -203,7 +232,7 @@ let private assertKeysetPages (core: IClaimsCore) operationId =
     let secondIds = second.Items |> List.map _.AttemptId |> Set.ofList
     Expect.isEmpty (Set.intersect firstIds secondIds) "Keyset pages do not duplicate attempts"
 
-let private assertTerminalAccess (core: IClaimsCore) operationId digest =
+let private assertTerminalAccess (core: IActorClaimsCore) operationId digest =
     match
         core.Recovery.ExportEnvelope(operationId, digest, CancellationToken.None)
         |> await
@@ -226,14 +255,14 @@ let private attemptLimitAndPaging =
             let operationId = Guid.NewGuid()
 
             let request, digest, _ =
-                prepared runtime.Core operationId ("ATTEMPTS-" + operationId.ToString("N"))
+                prepared (actorCore runtime) operationId ("ATTEMPTS-" + operationId.ToString("N"))
 
-            let source, port = recovery ()
+            let source, port = recovery operationId
             use source = source
             attemptsUntilLimit port operationId
-            assertAttemptLimit runtime.Core request digest port operationId
-            assertKeysetPages runtime.Core operationId
-            assertTerminalAccess runtime.Core operationId digest)
+            assertAttemptLimit (actorCore runtime) request digest port operationId
+            assertKeysetPages (actorCore runtime) operationId
+            assertTerminalAccess (actorCore runtime) operationId digest)
 
 let tests =
     testList

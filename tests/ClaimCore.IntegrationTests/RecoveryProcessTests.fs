@@ -14,14 +14,14 @@ open ClaimCore.RecordFormat
 open ClaimCore.IntegrationTests.Fixtures
 
 let private openRuntime () =
-    Runtime.OpenPostgres(appConnection (), CancellationToken.None)
+    witnessedOpen (appConnection ()) CancellationToken.None
     |> await
     |> Result.defaultWith (fun _ ->
         failtest "Runtime must open for synthetic recovery qualification.")
 
 let private request operationId reference = openRequest operationId reference
 
-let private prepare (core: IClaimsCore) operationId reference =
+let private prepare (core: IActorClaimsCore) operationId reference =
     match core.Prepare(request operationId reference, CancellationToken.None) |> await with
     | PrepareOutcome.Prepared(details, _) ->
         let digest =
@@ -32,7 +32,7 @@ let private prepare (core: IClaimsCore) operationId reference =
         details, digest
     | _ -> failtest "Expected retained typed preparation."
 
-let private exportedEnvelope (core: IClaimsCore) operationId digest =
+let private exportedEnvelope (core: IActorClaimsCore) operationId digest =
     match
         core.Recovery.ExportEnvelope(operationId, digest, CancellationToken.None)
         |> await
@@ -43,7 +43,22 @@ let private exportedEnvelope (core: IClaimsCore) operationId digest =
 let private validateEnvelope operationId digest (artifact: RecoveryExport) =
     use document = JsonDocument.Parse(ReadOnlyMemory<byte>(artifact.Bytes))
     let root = document.RootElement
-    let requestBytes = root.GetProperty("canonicalRequestBase64").GetBytesFromBase64()
+    use ring = RecoveryArtifactKeyCustody.load (artifactKeyRingFile ())
+    let now = DateTimeOffset.UtcNow
+
+    let resolve id =
+        ring.Resolve(id, now) |> Option.map (fun key -> key.Encryption, key.Mac)
+
+    let decoded =
+        RecoveryEnvelopeV3.decode
+            65536
+            resolve
+            (witnessProtocol ()).Identity.InstallationId
+            (witnessProtocol ()).Identity.Epoch
+            now
+            ring.Lifetime
+            artifact.Bytes
+        |> Result.defaultWith (fun _ -> failtest "Signed v3 recovery artifact must decode.")
 
     Expect.equal
         artifact.FileName
@@ -53,14 +68,16 @@ let private validateEnvelope operationId digest (artifact: RecoveryExport) =
     Expect.equal artifact.MediaType "application/vnd.claimcore.recovery+json" "Recovery media type"
     Expect.equal artifact.RequestSha256 digest "Export digest"
     Expect.equal (root.GetProperty("operationId").GetGuid()) operationId "Operation identity"
-    Expect.equal (root.GetProperty("requestSha256").GetString()) digest "Envelope digest"
+    Expect.equal (root.GetProperty("formatVersion").GetInt32()) 3 "Signed format version"
 
     Expect.equal
-        (requestBytes |> SHA256.HashData |> Convert.ToHexStringLower)
+        (decoded.CanonicalRequest |> SHA256.HashData |> Convert.ToHexStringLower)
         digest
         "Exact canonical request bytes"
 
-let private assertUnsubmitted (core: IClaimsCore) operationId =
+    CryptographicOperations.ZeroMemory(decoded.CanonicalRequest)
+
+let private assertUnsubmitted (core: IActorClaimsCore) operationId =
     match
         core.Recovery.Inspect(operationId, None, recoveryPageLimit, CancellationToken.None)
         |> await
@@ -76,14 +93,11 @@ let private exactExportAndResolution () =
     use runtime = openRuntime ()
     let operationId = Guid.NewGuid()
     let reference = "RECOVERY-" + Guid.NewGuid().ToString("N")
-    let _, digest = prepare runtime.Core operationId reference
+    let _, digest = prepare (actorCore runtime) operationId reference
 
     match
-        runtime.Core.Recovery.ExportEnvelope(
-            operationId,
-            String.replicate 64 "b",
-            CancellationToken.None
-        )
+        (actorCore runtime)
+            .Recovery.ExportEnvelope(operationId, String.replicate 64 "b", CancellationToken.None)
         |> await
     with
     | RecoveryQueryOutcome.RecoveryRejected rejection ->
@@ -93,11 +107,11 @@ let private exactExportAndResolution () =
             "Digest mismatch is an Application-owned refusal"
     | _ -> failtest "Export must refuse a mismatched digest before yielding recovery bytes."
 
-    let artifact = exportedEnvelope runtime.Core operationId digest
+    let artifact = exportedEnvelope (actorCore runtime) operationId digest
     validateEnvelope operationId digest artifact
 
     match
-        runtime.Core.Recovery.Resolve(operationId, digest, CancellationToken.None)
+        (actorCore runtime).Recovery.Resolve(operationId, digest, CancellationToken.None)
         |> await
     with
     | ResolveOutcome.ResolveCompleted(_,
@@ -113,20 +127,20 @@ let private changedEnvelope mutation expectedCode =
     let operationId = Guid.NewGuid()
 
     let _, digest =
-        prepare runtime.Core operationId ("RECOVERY-" + Guid.NewGuid().ToString("N"))
+        prepare (actorCore runtime) operationId ("RECOVERY-" + Guid.NewGuid().ToString("N"))
 
-    let original = exportedEnvelope runtime.Core operationId digest
+    let original = exportedEnvelope (actorCore runtime) operationId digest
     let changed = mutation original.Bytes
 
     match
-        runtime.Core.Recovery.PreviewEnvelopeImport(changed, CancellationToken.None)
+        (actorCore runtime).Recovery.PreviewEnvelopeImport(changed, CancellationToken.None)
         |> await
     with
     | RecoveryQueryOutcome.RecoveryRejected rejection ->
         Expect.equal rejection.Code expectedCode "Typed import rejection"
     | _ -> failtest "Expected import preview rejection before retention or submission."
 
-    assertUnsubmitted runtime.Core operationId
+    assertUnsubmitted (actorCore runtime) operationId
 
 let private jsonObject (bytes: byte array) =
     match JsonNode.Parse(ReadOnlySpan<byte>(bytes)) with
@@ -139,7 +153,7 @@ let private foreignLineage () =
             let node = jsonObject bytes
             node["installationId"] <- JsonValue.Create(Guid.NewGuid().ToString("D"))
             Encoding.UTF8.GetBytes(node.ToJsonString()))
-        RecoveryRejectionCode.InstallationMismatch
+        RecoveryRejectionCode.UnsupportedRecoveryArtifact
 
 let private incompatibleFingerprint () =
     changedEnvelope
@@ -154,7 +168,7 @@ let private acceptedReceiptCannotBeDismissed () =
     let operationId = Guid.NewGuid()
     let reference = "RECOVERY-" + Guid.NewGuid().ToString("N")
     let command = request operationId reference
-    let _, digest = prepare runtime.Core operationId reference
+    let _, digest = prepare (actorCore runtime) operationId reference
 
     use database = store ()
 
@@ -164,7 +178,7 @@ let private acceptedReceiptCannotBeDismissed () =
     |> ignore
 
     match
-        runtime.Core.Recovery.Dismiss(operationId, digest, true, CancellationToken.None)
+        (actorCore runtime).Recovery.Dismiss(operationId, digest, true, CancellationToken.None)
         |> await
     with
     | RecoveryDismissOutcome.DismissRefused(Some _, rejection) ->
@@ -175,7 +189,8 @@ let private acceptedReceiptCannotBeDismissed () =
     | _ -> failtest "A retained accepted receipt must block dismissal."
 
     match
-        runtime.Core.Recovery.Inspect(operationId, None, recoveryPageLimit, CancellationToken.None)
+        (actorCore runtime)
+            .Recovery.Inspect(operationId, None, recoveryPageLimit, CancellationToken.None)
         |> await
     with
     | RecoveryQueryOutcome.RecoverySucceeded(Lookup.Found(RecoveryInspection.RetainedInspection details)) ->

@@ -2,38 +2,32 @@
 
 ## Current trust model
 
-ClaimCore assumes a single trusted local administrative boundary and one installation-wide,
-case-sensitive reference namespace. It has a shared bootstrap admission secret and in-memory browser
-sessions, but no individual operator identities, per-user authentication or authorization,
-multi-tenancy, remote-access design, approval workflow, or nonrepudiation.
+ClaimCore has one installation-wide, case-sensitive reference namespace and one HTTPS case-work service. Browser login uses OIDC Authorization Code/S256 PKCE; interactive CLI uses its own public client, while automation uses distinct client credentials. ClaimCore—not the identity provider—owns default-deny actor and case grants. The browser and CLI receive neither PostgreSQL credentials nor witness/key-custody material. Owner administration is a separate executable and credential boundary.
 
-The runtime database role can bypass some domain transitions through direct SQL. Internal F# types
-prevent accidental API bypass; they do not defend against hostile reflection, substituted assemblies,
-administrators, or anyone holding database credentials.
+The primary schema owner, witness superuser and host/storage administrators remain trusted authorities. Direct SQL by those actors can bypass application checks; internal F# types and a second witness cluster do not defeat a person who controls both authorities or all backups and keys. The current Web service is loopback-bound, not a qualified internet-facing or active-active deployment. Synthetic primary/witness containers on one Mac prove functionality, not physical or administrative independence. Do not place real or adopted data under this build until the separate-host, backup, restore, audit, and retention admission requirements below are fulfilled.
 
-Do not expose CLI, the native core, the loopback Web host, or database credentials to untrusted
-clients. Shared or remote use requires a separately designed authenticated service with command
-authorization and disclosure rules.
+Each fresh installation records an immutable `SYNTHETIC_ONLY` or `REAL_DATA` scope in both primary and witness. The generic build has no reviewed publication root and creates only synthetic installations. An operator-reviewed real-data build begins in `BOOTSTRAP_NO_CASES`: only the bounded owner/authority setup needed to establish independently verified backup health is allowed, never claimant case work or recovery. Activation is a one-way witnessed decision tied to a published, human-reviewed plan, two distinct current human owner approvals, and a fresh signed health certificate; mismatched primary/witness phase or an uncertain activation stays quarantined. A later stale health certificate stops claimant mutations while owner/custodian repair remains available under its separate authority lane. Do not treat local synthetic activation tests as real-data qualification.
 
 ## Credentials and sensitive surfaces
 
 - Application environment variables select private files rather than carrying raw connection strings
   or credentials. Local Compose initialization reads its two passwords from the ignored `.env` file;
   they remain secrets even though Compose passes them to the container environment.
-- Keep connection, certificate, Web state, recovery, download, and diagnostic files in ignored,
+- Keep primary and witness connections, OIDC secrets, certificates, key rings, Web state, recovery, download, and diagnostic files in ignored,
   owner-controlled locations.
+- Keep the active writer-generation capability in its own exact 32-byte, owner-private raw file;
+  a witness key ring or PostgreSQL password is not a substitute. Cutover must retire the old
+  capability under a witnessed handoff before another writer may serve case work.
 - Do not print or upload connection strings, passwords, request bodies, claimant data, cookies,
-  clipboard contents, downloaded recovery envelopes, canonical recovery records, or private terminal
-  captures. CLI delivery diagnostics may contain only an operation ID, a digest, and safe recovery
-  direction after mutation admission.
+  clipboard contents, downloaded recovery artifacts, canonical requests, or private terminal
+  captures. CLI delivery diagnostics may contain only bounded safe identity and recovery direction after mutation dispatch.
 - Local Compose database connections may disable TLS only while bound to its loopback development
-  port. Both runtime and schema-owner connection admission require `SSL Mode=VerifyFull` for a
+  port. Primary runtime/schema-owner and witness writer/auditor/schema-owner connections require `SSL Mode=VerifyFull` for a
   non-loopback PostgreSQL host and disable GSS encryption fallback; the server certificate and host
   name must validate. Supply a trusted root certificate where needed and keep credentials private.
-  ClaimCore still provides no supported remotely accessible application service.
-- Private-file runtime operations are supported on macOS and Linux only. Windows source builds,
-  tests, and database-free discovery work, but CLI, Web, and Database private-file operations fail
-  closed until an independently verified Windows handle/ACL implementation exists.
+  The current HTTPS case-work service remains loopback-bound; remote client access needs a separately qualified deployment design.
+- Handle-first private-file operations are supported on macOS and Linux only. Windows source builds,
+  tests, and configuration-free discovery work, but operations that need private credential or artifact files fail closed until an independently verified Windows handle/ACL implementation exists.
 - On macOS, use physical canonical paths; system aliases such as `/var` and `/tmp` have linked
   ancestors and are intentionally refused. An ignored repo-local `.local` under a physical `/Users`
   checkout is a suitable private location when its permissions and retention are controlled.
@@ -77,16 +71,18 @@ ClaimCore does not ship its own time-zone database and does not detect tzdata sk
 Nothing in the product weakens this by running with invariant globalization, which would remove IANA
 zone resolution altogether.
 
+## Independent witness authority
+
+<a id="cc-wit-001"></a>
+### CC-WIT-001 — Independent, ordered authority evidence
+
+The separate PostgreSQL witness serializes one installation's authority events through a gapless committed sequence and hash-linked journal. Case acceptance, technical attempt authority, grant and lifecycle changes use exact event identities, intent and settlement phases; a primary commit without confirmed external settlement remains uncertain until reconciliation. Runtime opening and the full current-pair audit replay the committed witness journal and refuse a missing, altered, duplicated, or divergent sequence; individual calls check the authoritative tip and generation under their locks, not the entire journal anew. Application and Web roles cannot rewrite journal rows or prune ciphertext; owner credentials and independent key custody remain trusted authorities. A witness on the same Mac as the primary is functional qualification, not protection against simultaneous host loss or an administrator who controls both stores.
+
 ## Data and recovery
 
-History preserves prior facts after corrections. There is no general deletion, redaction, backup, or
-restore workflow. The supplied `ClaimCore.Database prune` command removes only bounded accepted or
-durably revoked technical preparations; it never deletes accepted claim history or durable revocation
-authority.
-Schema owners retain unrestricted administrative power outside that command. Recovery files contain
-claimant data and do not prove that a command committed. Submission attempts and their definite
-technical settlements are recovery evidence, not accepted claim history; an accepted operation
-receipt independently proves acceptance.
+History preserves prior facts after corrections. `VOID_DATA_ENTRY_ERROR` is an audited business disposition, not deletion; authorized reinstatement creates another witnessed event. A privacy erasure request is a separate fence on ordinary reads and work. Live payload purge and managed-copy deletion require distinct steward approvals, holds and uncertain-attempt checks, inventory, and independent verification; a pending phase must not be called erased. Minimal keyed suppression evidence is pseudonymous data with its own retention purpose. There is no claim of physical-media sanitization or deletion of an undiscovered human-held copy.
+
+The owner-only `ClaimCore.Database prune` command removes bounded terminal technical preparations; it never erases accepted authority or resolves an unknown attempt. Recovery artifacts contain claimant data and do not prove that a command committed. Submission attempts and definite technical settlements remain separate from accepted history; a witnessed accepted receipt proves acceptance inside the stated recovery horizon. Schema owners retain broad administrative power outside the product command surface.
 
 Detailed recovery inspection pages actual identified attempts and definite settlements. An unsettled
 attempt stays unsettled even after a later definite attempt and excludes its preparation from
@@ -95,32 +91,53 @@ revocation prevents future unaccepted execution without rewriting earlier uncert
 unidentified-start and dismissal compatibility is absent because old installations are refused;
 there is no inferred or retroactively fabricated authority transfer.
 
-For an uncertain mutation, preserve and replay only the exact CLI-v3 operation identity and retained
-format-3 request or format-2 recovery-envelope bytes described in
+For an uncertain mutation, preserve and replay only the exact operation identity and retained
+format-3 request or signed format-3 recovery-artifact bytes described in
 [CLI and protocol](cli.md#canonical-request-identity-and-recovery). Do not infer failure from missing
-output, a delivery loss, or a momentarily absent receipt. A restored database keeps its installation
-lineage and retained preparations, so recovery exports remain installation-bound after restoration.
-Lineage is not a freshness proof: restoring an older backup can remove later accepted receipts.
-Exact replay can establish only the accepted history present in the current database. ClaimCore has
-no automatic backup/restore workflow or cross-restore rollback fence; an operator must reconcile a
-restore against independently kept backup and operation evidence before resuming case work.
+output, a delivery loss, or a momentarily absent receipt. Lineage and a matching marker do not prove freshness: an older primary backup can omit later accepted work, revoked authority, grants, holds, or erasure fences. The product's current-pair full audit does not replace a separately retained signed checkpoint and a complete test restore. The managed backup tool and local two-cluster drill are synthetic qualification components, not a production backup, cutover, or independent-host certificate. A restore remains quarantined until exact witness, catalog, row/authority, WAL, checkpoint, and newer-fence reconciliation has passed under a fenced writer handoff.
 
 The payment command records an operator assertion; ClaimCore does not transfer funds or contact a
 provider. Future external effects require durable intent, provider idempotency, acknowledgements, and
 reconciliation.
 
+## Privacy erasure and suppression
+
+<a id="cc-erase-001"></a>
+### CC-ERASE-001 — Fenced live purge and witnessed payload pruning
+
+An erasure request fences ordinary reads and writes before any deletion. Owner-only live purge requires two distinct witnessed data-steward approvals, no active hold, complete suppression-denial coverage and a full current-pair audit; it removes live claimant rows but leaves a keyed, pseudonymous tombstone that blocks stale operations, imports, and reference reuse. A separate owner-only witness-payload prune requires a fresh pair of steward approvals bound to the exact post-purge witness target set, cutoff, authority tip and expiry. Its owner transaction settles the prune event and removes only sealed CASE ciphertext while leaving immutable journal metadata; an interrupted settlement remains uncertain until exact reconciliation. The post-prune audit verifies the recorded target set and absence without reconstructing erased claimant bytes. A signed target-set marker preserves whether a pruned operation published an external copy, so its immutable publication receipt remains mandatory in full audit after ciphertext pruning. Neither step deletes backups, WAL, snapshots, keys, exports or undiscovered copies. Known liabilities and active holds keep the privacy state pending; no clock expiry or individual copy deletion silently certifies final erasure.
+
+Owner certification of `PAYLOAD_ERASED_SUPPRESSION_RETAINED` requires a fresh signed complete installation inventory and independent signed `ABSENT` inspection, with every current managed copy in witnessed `VERIFIED_DELETED` state through a consumed deletion approval. A known unmanaged or unadopted external copy, active hold, early retention, unsettled witness work, changed writer generation, or copy appearing after the signed inventory keeps certification pending. The issuer conservatively treats every current global backup, WAL, snapshot, replica and key copy as potentially case-bearing because this baseline does not encode proof that a particular copy cannot contain the case. A later copy can be included in a newer signed inventory after its verified deletion; source time alone does not clear it. This intermediate phase retains pseudonymous suppression evidence and is not total erasure. `ERASURE_FINAL` additionally requires a separately signed recovery-fence issuer proving the suppression horizon and old-writer isolation.
+
+## Managed-copy custody and restore
+
+<a id="cc-backup-001"></a>
+### CC-BACKUP-001 — Signed copy inventory, verified deletion, and restore evidence
+
+Managed primary, witness, WAL, snapshot, replica, key and product-export copies are tracked by opaque identity and separately purposed signers. A copy's `UNKNOWN` or `DELETE_REQUEST` state is not deletion. Owner-only `VERIFIED_DELETED` requires elapsed retention, no active hold, an exact current all-known-location registry and fresh signed ABSENT inspection by a distinct registered verifier, and a current individual approval bound to the report, copy revision and witness cutoff. The primary transaction co-commits the copy event and one-use approval consumption against a precommit witness intent; uncertain external settlement remains uncertain until reconciled. The full audit replays both the signed transition and approval use; changing the recorded verification time or dropping evidence is a refusal. One verified copy does not certify a case: known unmanaged exports, missing copy attestations, unavailable archives, and undiscovered human-held copies remain explicit liabilities. The local encrypted two-cluster backup and restored-pair drill is synthetic qualification only; a separate-host deployment needs independently retained signed freshness, WAL, complete restore and recovered-data checks before quarantine can be lifted.
+
+An owner-held, signed dual-BASE capture initially yields only `CAPTURED_UNVERIFIED`: its exact encrypted bytes and cutoff still need separate witnessed copy registration and physical `VERIFY→RETAINED`, WAL coverage, independent checkpoint custody, and a signed full restored-pair audit with W1 tail and writer fence. Neither the capture receipt nor the generic build's absent publication root establishes real-data readiness.
+
+Restored-pair verification uses a separate SELECT-only witness auditor from the owner-private
+`CLAIMCORE_WITNESS_AUDIT_CONNECTION_FILE`, not the old writer credential or capability. The
+owner-private `CLAIMCORE_RESTORE_ARCHIVE_ROOT` must equal the signed index root, and encrypted
+BASE/WAL files are rehashed at verification time. A pre-W1 audited report leaves its recovery tail
+unsealed and is not a recovery certificate; the independently signed W1 supplement must close that
+gap and prove permanent writer fencing before any cutover-ready conclusion. Same-Mac synthetic
+evidence never establishes independent host, storage, key, or administrator custody. Owner and
+verifier hosts need synchronized UTC clocks: a future-dated or expired report refuses rather than
+receiving a freshness allowance from the verifier.
+
+If a signed W1 writer handoff cannot complete, the schema owner may use the explicit two-owner abort workflow in [Database administration](database.md#administration-results-and-delivery). A1 records the exact abort while keeping the witness fence, A2 consumes the two distinct owner-held signatures in primary, and A3 releases only the reconciled pair; an interrupted step stays quarantined and is retried by exact bytes. Expiry does not silently roll back W1, and an already-open old runtime must not resume merely because the witness pending flag clears. The signatures used in local synthetic tests are not proof that two independent humans or hosts held the keys.
+
 ## Before real data
 
-Before processing personal or operational data, establish and test:
+Before processing personal or operational data, require a successful exact-revision CI and deployment gate, a separately hosted/administered witness, independently custodied encrypted primary and witness backups/WAL and signed checkpoints, a completed full restored-pair audit, a fenced single-writer handoff, and live OIDC/actor-grant qualification. Establish an explicit business calendar, backup interval and recovery horizon, retention/hold/deletion policy, private export custody, monitoring, and incident/loss decision process. These are installation choices; ClaimCore does not invent a jurisdiction's legal period or require a permanent AWS subscription.
 
-- successful CI and deployment qualification for the exact revision;
-- credential custody, host and network access, monitoring, and protected logs and exports;
-- a defined business timezone and operator-identity model;
-- encrypted backups, restoration drills, retention, deletion, and incident response;
-- recovery from a lost commit acknowledgement;
-- applicable legal, regulatory, and organizational controls.
+A reviewed real-data build must pin both the independent publication public key and the exact backup-health policy digest in source. A fresh `REAL_DATA` installation begins in witnessed `BOOTSTRAP_NO_CASES`: only typed actor, grant, signer and activation-approval setup is admitted; claimant casework, recovery and export remain closed. Two distinct HUMAN OWNER approvals bind a published stable physical activation plan, while activation separately requires fresh health evidence. The one-way witnessed `ACTIVE` transition cannot be inferred from an empty case table. The owner-only `issue-backup-health` path accepts only a current CHECKPOINT-holder-signed certificate bound to three distinct policy-pinned archive, checkpoint and test-restore signatures, actual witnessed `RETAINED` BASE/WAL rows, nofollow object hashes, contiguous WAL and a full current-pair audit. Its certificate is valid for at most 90 seconds; the runtime rechecks its signature, database-clock age, witness ancestors and current copy inventory before each new mutation. The generic source-preview build has no reviewed deployment root, cannot initialize `REAL_DATA`, cannot issue full health and never represents local synthetic activity as real-data readiness.
 
-ClaimCore supplies technical CI qualification and exact-request recovery, but not the surrounding
-identity, access, secret-custody, monitoring, backup, restoration, retention, deletion, legal, or
-incident-response processes. Passing tests does not establish those controls or constitute a
-security certification.
+After a lost `issue-backup-health` response, use owner-only `reconcile-backup-health <private-policy-file> <original-independent-evidence-file> <private-certificate-output-file>` for readback. It authenticates the original signed bytes and witnessed historical CHECKPOINT signer even after certificate expiry, then reports exact observed `COMPLETE`, `PARTIAL_CERTIFICATE`, `PARTIAL_SIGNATURE`, `MISSING` or `UNKNOWN`. It never writes an output file or makes stale bytes ready. Preserve partial/unknown files; issue a fresh certificate at a new private output path when recovery requires current health, and quarantine changed or unreadable bytes for owner review.
+
+Each owner first uses the authenticated `authority.reviewRealDataActivation` route to inspect typed nonclaimant plan facts, the exact canonical plan text and its SHA-256; an absent or inaccessible plan has the same refusal. `authority.approveRealDataActivation` then witnesses that plan ID/digest and the current approval-chain tip, with actor identity supplied only by the authenticated session. The two approvals require different enabled HUMAN installation OWNERs; each expires no later than 24 hours after its database-clock approval time. A lost response is retried with the same approval ID and request bytes, never a new candidate. Plan approval is not a health lease: the owner activation still checks current grants, the published plan and a newly issued short-lived health certificate against the current primary/witness pair.
+
+A local synthetic run cannot establish independence from loss or administration of the same machine. No design can guarantee recovery after coordinated rollback or simultaneous loss of primary, witness, independent checkpoints, backups, and keys; infer that an unacknowledged COMMIT failed; or destroy unknown unmanaged copies. Passing tests does not establish legal compliance or security certification. Keep the installation quarantined when required evidence is missing or divergent, rather than weakening a gate or relabeling uncertainty.

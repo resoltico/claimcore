@@ -8,7 +8,7 @@ type DiscoveryResponse =
     | Text of string
     | Json of byte array
 
-/// Database-free CLI-v3 discovery. Every payload is rendered by Contracts; this module selects the
+/// Database-free CLI-v4 discovery. Every payload is rendered by Contracts; this module selects the
 /// requested one and never composes wire bytes of its own.
 module Discovery =
     let private requiredOption message value =
@@ -23,7 +23,7 @@ module Discovery =
 
     let help () =
         DiscoveryResponse.Text
-            """ClaimCore CLI v3
+            """ClaimCore CLI v4
   help [topic]
   version
   version --json
@@ -38,7 +38,7 @@ module Discovery =
   call
   session
 
-Discovery commands do not open PostgreSQL. call reads one strict JSON invocation from stdin; session reads NDJSON."""
+Discovery commands do not connect to the service. call reads one strict JSON invocation from stdin; session reads NDJSON over authenticated HTTPS."""
 
     let versionJson () =
         BuildIdentityCodec.bytes BuildIdentity.current

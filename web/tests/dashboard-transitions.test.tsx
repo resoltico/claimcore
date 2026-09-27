@@ -1,10 +1,11 @@
 import { fireEvent, render, screen } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
-import type { CurrentCase } from "../src/api/v2";
+import type { CurrentCase } from "../src/api/v3";
 import { Dashboard } from "../src/views/Dashboard";
 import { generatedResponse } from "./contract-corpus.fixtures";
-import { definition, fields, preparation, response } from "./v2-ui.fixtures";
+import { preparedForRequest } from "./prepared-request.fixtures";
+import { definition, fields, preparation, response } from "./v3-ui.fixtures";
 
 const current: CurrentCase = { case: { fields, revision: "1" }, availableCommands: ["CLOSE"] };
 
@@ -27,6 +28,7 @@ const queueDetail = () => {
   fetch.mockResolvedValueOnce(
     response("case.history", "SUCCEEDED", { tag: "FOUND", entries: [], nextCursor: null }),
   );
+  fetch.mockResolvedValueOnce(response("lifecycle.review", "RESOURCE_UNAVAILABLE", null));
 };
 
 const renderDashboard = () =>
@@ -57,17 +59,19 @@ it("returns an accepted open operation to Dashboard through its committed transi
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
   queueDefinitionAndList();
-  fetch.mockResolvedValueOnce(
-    response("command.prepare", "PREPARED", {
-      details: preparation,
-      review: {
-        before: null,
-        proposed: { fields, revision: "1" },
-        changes: [],
-        context: definition.runtime,
-        advisory: true,
-      },
-    }),
+  fetch.mockImplementationOnce(
+    preparedForRequest(
+      response("command.prepare", "PREPARED", {
+        details: preparation,
+        review: {
+          before: null,
+          proposed: { fields, revision: "1" },
+          changes: [],
+          context: definition.runtime,
+          advisory: true,
+        },
+      }),
+    ),
   );
   fetch.mockResolvedValueOnce(generatedResponse("command.execute"));
   fetch.mockResolvedValueOnce(response("case.list", "SUCCEEDED", { items: [], nextCursor: null }));

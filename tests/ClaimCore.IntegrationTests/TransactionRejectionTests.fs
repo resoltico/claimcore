@@ -30,7 +30,7 @@ let private historyIdentity (page: HistoryPage) =
 
 let private requireTypedDecisionRejection (initial: CommandRequest) =
     use runtime =
-        Runtime.OpenPostgres(appConnection (), CancellationToken.None)
+        witnessedOpen (appConnection ()) CancellationToken.None
         |> await
         |> Result.defaultWith (fun _ -> failtest "Synthetic runtime must open.")
 
@@ -42,7 +42,9 @@ let private requireTypedDecisionRejection (initial: CommandRequest) =
             Command = Command.RecordPayment "2026-08-20"
         }
 
-    match runtime.Core.Execute(request, CancellationToken.None) |> await with
+    let core = runtime.ForActor(ActorBoundStoreFixture.actorPrincipal ())
+
+    match core.Execute(request, CancellationToken.None) |> await with
     | SubmissionOutcome.RejectedBeforeAttempt(None, rejection) when
         rejection.Code = RejectionCode.DecisionRequired
         ->

@@ -92,43 +92,6 @@ module internal OutcomeDiagnosticCorpus =
                 valid,
                 replace "outcome" (replace property item outcome) root))
 
-    let private cliFaults =
-        CoreFaults.all
-        |> List.collect (fun (fault, id) ->
-            let response = CliWireCodec.caseGet "case.get" (QueryOutcome.Failed fault)
-
-            cases "fault" ("fault-" + id) response.Bytes
-            |> List.map (fun (name, valid, value) ->
-                name, "case.get", response.ExitCode, valid, value))
-
-    let private cliRefusals =
-        RecoveryRejections.all
-        |> List.collect (fun (reason, id) ->
-            let response =
-                CliWireCodec.recoveryList
-                    "recovery.list"
-                    (RecoveryQueryOutcome.RecoveryRejected reason)
-
-            cases "rejection" ("recovery-diagnostic-" + id) response.Bytes
-            |> List.map (fun (name, valid, value) ->
-                name, "recovery.list", response.ExitCode, valid, value))
-
-    let private cliLocals =
-        (ContractProjection.current ()).CliEndpoints
-        |> List.collect (fun endpoint ->
-            CliLocalFaults.all
-            |> List.collect (fun fault ->
-                let response = CliWireCodec.localFailure endpoint.Identifier fault
-
-                cases
-                    "fault"
-                    ("local-" + endpoint.Identifier + "-" + CliLocalFaults.token fault)
-                    response.Bytes
-                |> List.map (fun (name, valid, value) ->
-                    name, endpoint.Identifier, response.ExitCode, valid, value)))
-
-    let cli = cliFaults @ cliRefusals @ cliLocals
-
     let web =
         (CoreFaults.all
          |> List.collect (fun (fault, id) ->

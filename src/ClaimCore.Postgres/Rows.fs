@@ -4,7 +4,7 @@ open System
 open System.Data.Common
 open System.Globalization
 open System.IO
-open System.Text
+open System.Security.Cryptography
 open Npgsql
 open NpgsqlTypes
 open ClaimCore.Domain
@@ -59,21 +59,52 @@ module internal Rows =
                 Version = reader.GetInt64(ordinal reader "revision")
             }
 
-    let receipt (reader: DbDataReader) replayed =
+    let private verifyAcceptedRequest (reader: DbDataReader) (identity: CaseView) commandName =
+        let canonicalRequest =
+            reader.GetFieldValue<byte array>(ordinal reader "canonical_request")
+
+        let decodedRequest =
+            match RequestRecord.decode 65536 canonicalRequest with
+            | Ok value when RequestRecord.encode value = canonicalRequest -> value
+            | _ -> raise (InvalidDataException("Stored canonical request encoding failed."))
+
+        let storedDigest = text reader "request_sha256"
+        let actualDigest = canonicalRequest |> SHA256.HashData |> Convert.ToHexStringLower
+
         if
-            reader.GetInt16(ordinal reader "request_format_version")
-            <> int16 RecordVersions.RequestFingerprint
+            storedDigest <> actualDigest
+            || decodedRequest.OperationId <> reader.GetGuid(ordinal reader "operation_id")
+            || decodedRequest.CaseReference <> identity.Fields.CaseReference
+            || decodedRequest.ExpectedVersion <> identity.Version - 1L
+            || Commands.name decodedRequest.Command <> commandName
+        then
+            raise (InvalidDataException("Stored canonical request identity failed."))
+
+        date reader "effective_business_date" |> ignore
+
+        reader.GetFieldValue<DateTimeOffset>(ordinal reader "observed_utc_instant")
+        |> ignore
+
+    let receipt (reader: DbDataReader) replayed =
+        if reader.GetGuid(ordinal reader "case_id") = Guid.Empty then
+            raise (InvalidDataException("Stored opaque case identity is absent."))
+
+        if
+            reader.GetInt16(ordinal reader "rule_revision") <> 1s
+            || reader.GetInt16(ordinal reader "request_format_version")
+               <> int16 RecordVersions.RequestFingerprint
             || reader.GetInt16(ordinal reader "snapshot_version")
                <> int16 RecordVersions.Snapshot
         then
             raise (InvalidDataException("Unsupported stored request or snapshot format version."))
 
-        let snapshot =
-            text reader "snapshot" |> Encoding.UTF8.GetBytes |> CaseRecord.decodeSnapshot
+        let snapshotBytes = reader.GetFieldValue<byte array>(ordinal reader "snapshot")
+        let snapshot = CaseRecord.decodeSnapshot snapshotBytes
 
         let claim =
             match snapshot with
-            | Ok value -> restore value
+            | Ok value when CaseRecord.encodeSnapshot value = snapshotBytes -> restore value
+            | Ok _ -> raise (InvalidDataException("Stored snapshot bytes are not canonical."))
             | Error _ -> raise (InvalidDataException("Stored snapshot encoding failed."))
 
         let identity = Claim.view claim
@@ -85,6 +116,7 @@ module internal Rows =
             raise (InvalidDataException("Stored snapshot identity disagrees with its receipt."))
 
         let commandName = text reader "command_name"
+        verifyAcceptedRequest reader identity commandName
 
         if
             not (

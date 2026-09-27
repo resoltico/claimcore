@@ -66,16 +66,13 @@ let private dispatch (stopped: CancellationToken) (arguments: string list) =
     match arguments with
     | [ "call" ]
     | [ "session" ] ->
-        use supplier = new RuntimeSupplier()
-
         let run =
             if arguments = [ "call" ] then
-                FrameProcessing.call
+                RemoteFrameProcessing.call
             else
-                FrameProcessing.session
+                RemoteFrameProcessing.session
 
         run
-            supplier
             (Console.OpenStandardInput())
             (Console.OpenStandardOutput())
             (Console.OpenStandardError())
@@ -91,7 +88,7 @@ let main argv =
         stopped.Cancel())
 
     try
-        BuildIdentity.requireCompatibleAssembly typeof<Endpoint>.Assembly
+        BuildIdentity.requireCompatibleAssembly typeof<CliEndpoint>.Assembly
         Console.OutputEncoding <- UTF8Encoding(false)
         dispatch stopped.Token (Array.toList argv)
     with _ ->

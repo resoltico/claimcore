@@ -2,6 +2,7 @@ module ClaimCore.Tests.OutcomeEmissionTests
 
 open System
 open System.Text
+open System.Text.Json
 open System.Threading
 open System.Threading.Tasks
 open Expecto
@@ -15,12 +16,16 @@ let private digest = String.replicate 64 "a"
 let private none = CancellationToken.None
 let private wait (value: Task<'value>) = value.GetAwaiter().GetResult()
 
+let private remote endpoint (bytes: byte array) =
+    use document = JsonDocument.Parse(ReadOnlyMemory bytes)
+    CliRemoteWireCodec.result endpoint document.RootElement
+
 let private create () =
     let store = new CoreStore.Store()
     let recovery = new CoreRecoveryStore.Store()
     recovery.AttachClaimStore(store :> IClaimStore)
 
-    CoreApi.create (store :> IClaimStore) (recovery :> IRecoveryStore) (businessTime today),
+    ActorCoreFixture.create (store :> IClaimStore) (recovery :> IRecoveryStore) (businessTime today),
     store,
     recovery
 
@@ -67,6 +72,9 @@ let private cursorCauses () =
                 View = RecoveryListView.Terminal
                 OccurredAt = timestamp
                 OperationId = operationId
+                ActorId = Guid.Parse("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa")
+                GrantRevision = 1L
+                ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(5.0)
             }
 
     let attemptCursor =
@@ -156,18 +164,23 @@ let private cancellationPrecedence () =
     Expect.equal recovery.StartCalls 0 "No cancelled call starts recovery"
 
 let private importCauses () =
-    let core, store, recovery = create ()
+    let recovery = new CoreRecoveryStore.Store()
     let source = Encoding.UTF8.GetBytes("private-invalid-source")
 
-    core.Recovery.PreviewEnvelopeImport(source, none)
+    RecoveryImports.previewEnvelope SignedRecoveryTestSupport.authority source none
     |> wait
     |> refusal RecoveryRejection.EnvelopeInvalidOrUnsupported
 
-    core.Recovery.PreviewCanonicalRecordImport(source, none)
-    |> wait
-    |> refusal RecoveryRejection.CanonicalRecordInvalidOrUnsupported
-
-    match core.Recovery.RetainCanonicalRecordImport(source, digest, none) |> wait with
+    match
+        RecoveryImports.retainEnvelope
+            (recovery :> IRecoveryStore)
+            SignedRecoveryTestSupport.authority
+            SignedRecoveryTestSupport.importer
+            source
+            digest
+            none
+        |> wait
+    with
     | RecoveryImportRetainOutcome.ImportRejected reason ->
         Expect.equal
             reason
@@ -175,7 +188,6 @@ let private importCauses () =
             "Source bytes and request digest remain distinct"
     | _ -> failtest "Mismatched source must not be retained."
 
-    Expect.equal store.TransactionCalls 0 "Import does not execute a case"
     Expect.equal recovery.StartCalls 0 "Import does not start recovery"
 
 let private providerPrivacy () =
@@ -189,7 +201,7 @@ let private providerPrivacy () =
         CoreFault.RecoveryResponseInvalid
         "Malformed store response remains an integrity fault"
 
-    let bytes = CliWireCodec.caseGet "case.get" (QueryOutcome.Failed reason)
+    let bytes = WebWireCodec.get (QueryOutcome.Failed reason) |> remote "case.get"
 
     Expect.isFalse
         (Encoding.UTF8.GetString(bytes.Bytes).Contains(canary))
@@ -209,7 +221,10 @@ let private unknownOutcome () =
     recovery.AttachClaimStore(source :> IClaimStore)
 
     let core =
-        CoreApi.create (source :> IClaimStore) (recovery :> IRecoveryStore) (businessTime today)
+        ActorCoreFixture.create
+            (source :> IClaimStore)
+            (recovery :> IRecoveryStore)
+            (businessTime today)
 
     let command = request 0L (ClaimCore.Domain.Command.Open registration)
 
@@ -226,7 +241,7 @@ let private unknownOutcome () =
         Expect.equal fault.Action RecommendedAction.RecoverExact "Exact recovery remains required"
 
         Expect.equal
-            (CliWireCodec.submission "command.execute" result).ExitCode
+            (WebWireCodec.submit result |> remote "command.execute").ExitCode
             4
             "Unknown exit retained"
     | _ -> failtest "Unknown technical commit must remain explicitly uncertain."

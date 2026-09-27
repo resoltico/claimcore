@@ -24,7 +24,7 @@ let private validDraft =
 
 let private flatDraftTests () =
     match HttpInput.draft (bytes validDraft) with
-    | Error _ -> failtest "Expected v2 draft acceptance."
+    | Error _ -> failtest "Expected v3 draft acceptance."
     | Ok draft ->
         match draft.Command with
         | DraftCommand.Flat(CommandKind.Open, values) ->
@@ -55,7 +55,7 @@ let private flatDraftTests () =
         """{"operationId":"40000000-0000-4000-8000-000000000001","caseReference":"WEB-V2-001","expectedRevision":"0","command":{"kind":"CLOSE","values":{"extra":"x"}}}"""
         """{"operationId":"40000000-0000-4000-8000-000000000001","caseReference":"WEB-V2-001","expectedRevision":"0","command":{"kind":"CLOSE","values":{}},"caseReference":"duplicate"}"""
     ]
-    |> List.iter (fun value -> expectError (HttpInput.draft (bytes value)) "Invalid v2 draft")
+    |> List.iter (fun value -> expectError (HttpInput.draft (bytes value)) "Invalid v3 draft")
 
 let private correctionDraftTests () =
     let correction =
@@ -124,8 +124,11 @@ let private unicodeInputTests () =
         expectError (HttpInput.caseReference (bytes source)) "Unpaired escape is rejected"
 
     expectError
-        (HttpInput.login (bytes """{"credential":"\uD800","antiforgeryToken":"token"}"""))
-        "Credentials cannot contain malformed Unicode"
+        (HttpManagementInput.register (
+            bytes
+                """{"eventId":"40000000-0000-4000-8000-000000000001","principal":{"kind":"HUMAN","issuer":"https://issuer.example/","subject":"\uD800"}}"""
+        ))
+        "Actor subjects cannot contain malformed Unicode"
 
     Expect.equal
         (HttpInput.caseReference (bytes """{"caseReference":"\uD83D\uDE00"}"""))
@@ -146,12 +149,6 @@ let private unicodeInputTests () =
     | Ok _ -> failtest "An unknown synthetic property must be refused."
 
 let private sessionInputTests () =
-    match HttpInput.login (bytes """{"credential":"synthetic","antiforgeryToken":"token"}""") with
-    | Ok input ->
-        Expect.equal input.Credential "synthetic" "Login keeps the submitted credential private"
-        Expect.equal input.AntiforgeryToken "token" "Login body declares the matching token"
-    | Error _ -> failtest "Expected login acceptance."
-
     Expect.isOk (HttpInput.logout (bytes "{}")) "Logout requires the explicit empty object"
     expectError (HttpInput.logout (bytes """{"unexpected":true}""")) "Logout rejects extra data"
 
@@ -242,7 +239,7 @@ let private transportTests () =
 
 let tests =
     testList
-        "Web HTTP-v2 input"
+        "Web HTTP-v3 input"
         [
             testCase "[CC-WEB-001] decodes one semantic command-draft shape" draftTests
             testCase "[CC-WEB-001] keeps endpoint request bodies exact and typed" (fun () ->

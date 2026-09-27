@@ -152,6 +152,9 @@ module internal RecoveryStoreRead =
                             View = view
                             OccurredAt = occurredAt
                             OperationId = operationId
+                            ActorId = Guid.Parse("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa")
+                            GrantRevision = 1L
+                            ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(5.0)
                         })
                 else
                     None

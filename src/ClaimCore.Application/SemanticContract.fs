@@ -109,7 +109,7 @@ module SemanticContract =
             RequestByteLimit = 65536
             CanonicalCommandFormat = RecordVersions.CanonicalCommandFormat
             RequestFingerprintVersion = RecordVersions.RequestFingerprint
-            RecoveryEnvelopeFormat = 1
+            RecoveryEnvelopeFormat = 3
         }
 
     let private diagnostic output (value: DiagnosticDefinition) =

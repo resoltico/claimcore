@@ -38,6 +38,7 @@ module WireTokens =
                 RejectionCode.IdempotencyConflict, "IDEMPOTENCY_CONFLICT"
                 RejectionCode.OperationRevoked, "OPERATION_REVOKED"
                 RejectionCode.RecoveryAttemptLimitReached, "RECOVERY_ATTEMPT_LIMIT_REACHED"
+                RejectionCode.ResourceUnavailable, "RESOURCE_UNAVAILABLE"
             ]
 
     let rejectionCode value = Map.find value rejectionCodeMap
@@ -65,6 +66,7 @@ module WireTokens =
         | RecoveryRejectionCode.UnsupportedRecoveryArtifact -> "UNSUPPORTED_RECOVERY_ARTIFACT"
         | RecoveryRejectionCode.OperationRevoked -> "OPERATION_REVOKED"
         | RecoveryRejectionCode.AttemptLimitReached -> "ATTEMPT_LIMIT_REACHED"
+        | RecoveryRejectionCode.ResourceUnavailable -> "RESOURCE_UNAVAILABLE"
 
     let preparationState =
         function
@@ -93,12 +95,10 @@ module WireTokens =
     let webArtifactKind =
         function
         | RecoveryArtifactKind.Envelope -> "ENVELOPE"
-        | RecoveryArtifactKind.UnboundCanonicalRecord -> "UNBOUND_CANONICAL_RECORD"
 
     let cliArtifactKind =
         function
         | RecoveryArtifactKind.Envelope -> "ENVELOPE"
-        | RecoveryArtifactKind.UnboundCanonicalRecord -> "CANONICAL_RECORD"
 
     let actions =
         [
@@ -130,6 +130,7 @@ module WireTokens =
             RejectionCode.IdempotencyConflict
             RejectionCode.OperationRevoked
             RejectionCode.RecoveryAttemptLimitReached
+            RejectionCode.ResourceUnavailable
         ]
         |> List.map rejectionCode
 
@@ -158,5 +159,6 @@ module WireTokens =
             RecoveryRejectionCode.UnsupportedRecoveryArtifact
             RecoveryRejectionCode.OperationRevoked
             RecoveryRejectionCode.AttemptLimitReached
+            RecoveryRejectionCode.ResourceUnavailable
         ]
         |> List.map recoveryRejectionCode

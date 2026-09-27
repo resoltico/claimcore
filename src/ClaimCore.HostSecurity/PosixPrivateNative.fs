@@ -51,6 +51,8 @@ module internal PosixPrivateNative =
             Inode: uint64
             Owner: uint32
             Mode: uint32
+            LinkCount: uint64
+            Size: int64
         }
 
     [<NoEquality; NoComparison>]
@@ -119,6 +121,18 @@ module internal PosixPrivateNative =
                     uint32 (BitConverter.ToUInt16(buffer, modeOffset))
                 else
                     BitConverter.ToUInt32(buffer, modeOffset)
+            LinkCount =
+                if OperatingSystem.IsMacOS() then
+                    uint64 (BitConverter.ToUInt16(buffer, 6))
+                elif RuntimeInformation.ProcessArchitecture = Architecture.X64 then
+                    BitConverter.ToUInt64(buffer, 16)
+                else
+                    uint64 (BitConverter.ToUInt32(buffer, 20))
+            Size =
+                if OperatingSystem.IsMacOS() then
+                    BitConverter.ToInt64(buffer, 96)
+                else
+                    BitConverter.ToInt64(buffer, 48)
         }
 
     let stat (descriptor: nativeint) =
@@ -157,6 +171,7 @@ module internal PosixPrivateNative =
         info.Mode &&& 0o170000u = 0o100000u
         && info.Owner = effectiveUserId ()
         && info.Mode &&& 0o077u = 0u
+        && info.LinkCount = 1UL
 
     let privateDirectory (descriptor: nativeint) =
         let info = stat descriptor

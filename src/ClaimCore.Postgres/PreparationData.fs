@@ -16,7 +16,8 @@ module internal PreparationData =
         """
         SELECT p.operation_id, p.canonical_request_format, p.request_sha256, p.canonical_request,
             p.prepared_at, p.prepared_application_version, p.preparing_contract_fingerprint,
-            p.preparing_contract_kind,
+            p.preparing_contract_kind, p.case_id, p.preparer_actor_id,
+            p.preparer_grant_revision, p.importer_actor_id,
             l.state, l.recorded_at
         FROM claimcore.request_preparations p
         LEFT JOIN claimcore.request_preparation_lifecycle l ON l.operation_id = p.operation_id
@@ -43,12 +44,12 @@ module internal PreparationData =
             | _ -> fail error
 
     let private lifecycle (reader: DbDataReader) =
-        if reader.IsDBNull(8) then
+        if reader.IsDBNull(12) then
             PreparationLifecycle.Unsubmitted
         else
-            let recordedAt = reader.GetFieldValue<DateTimeOffset>(9)
+            let recordedAt = reader.GetFieldValue<DateTimeOffset>(13)
 
-            match reader.GetString(8) with
+            match reader.GetString(12) with
             | "SUBMISSION_STARTED" -> PreparationLifecycle.SubmissionStarted recordedAt
             | _ -> raise (InvalidDataException("Stored preparation lifecycle is unknown."))
 
@@ -65,6 +66,14 @@ module internal PreparationData =
         let value =
             {
                 OperationId = reader.GetGuid(0)
+                CaseId = reader.GetGuid(8)
+                PreparerActorId = reader.GetGuid(9)
+                PreparerGrantRevision = reader.GetInt64(10)
+                ImporterActorId =
+                    if reader.IsDBNull(11) then
+                        None
+                    else
+                        Some(reader.GetGuid(11))
                 CanonicalRequestFormat = reader.GetInt16(1) |> int
                 RequestSha256 = reader.GetString(2)
                 CanonicalRequest = reader.GetFieldValue<byte array>(3) |> Array.copy
@@ -181,6 +190,10 @@ module internal PreparationData =
 
     let private bindPreparationInsert (command: NpgsqlCommand) (draft: RecoveryPreparationDraft) =
         Sql.uuid command "operation" draft.OperationId
+        Sql.uuid command "caseId" draft.CaseId
+        Sql.uuid command "preparer" draft.PreparerActorId
+        Sql.optional command "importer" NpgsqlDbType.Uuid draft.ImporterActorId
+        Sql.integer command "grantRevision" draft.PreparerGrantRevision
         let format = command.Parameters.Add("format", NpgsqlDbType.Smallint)
         format.Value <- int16 draft.CanonicalRequestFormat
         Sql.text command "digest" draft.RequestSha256
@@ -190,28 +203,40 @@ module internal PreparationData =
 
         Sql.text command "kind" (PreparingContractKindEncoding.token draft.PreparingContractKind)
 
+    let private insertPreparationSql =
+        """
+        INSERT INTO claimcore.request_preparations (
+            operation_id, witness_event_id, witness_sequence, witness_epoch,
+            witness_entry_hash, witness_candidate_sha256,
+            case_id, preparer_actor_id, importer_actor_id,
+            preparer_grant_revision,
+            canonical_request_format, request_sha256, canonical_request,
+            prepared_application_version, preparing_contract_fingerprint,
+            preparing_contract_kind
+        ) VALUES (
+            @operation, @witnessEvent, @witnessSequence, @witnessEpoch,
+            @witnessHash, @candidateHash,
+            @caseId, @preparer, @importer, @grantRevision,
+            @format, @digest, @request, @application, @fingerprint, @kind
+        ) RETURNING prepared_at
+        """
+
     let insertPreparation
         (connection: NpgsqlConnection)
         (transaction: NpgsqlTransaction)
         (draft: RecoveryPreparationDraft)
+        (witnessEventId: Guid)
+        (intent: WitnessIntent)
         : Task<RetainedPreparation> =
         task {
-            use command =
-                new NpgsqlCommand(
-                    """
-                    INSERT INTO claimcore.request_preparations (
-                        operation_id, canonical_request_format, request_sha256, canonical_request,
-                        prepared_application_version, preparing_contract_fingerprint,
-                        preparing_contract_kind
-                    ) VALUES (
-                        @operation, @format, @digest, @request, @application, @fingerprint, @kind
-                    ) RETURNING prepared_at
-                    """,
-                    connection,
-                    transaction
-                )
+            use command = new NpgsqlCommand(insertPreparationSql, connection, transaction)
 
             bindPreparationInsert command draft
+            Sql.uuid command "witnessEvent" witnessEventId
+            Sql.integer command "witnessSequence" intent.Ticket.Sequence
+            Sql.integer command "witnessEpoch" intent.Ticket.Epoch
+            Sql.add command "witnessHash" NpgsqlDbType.Bytea (box intent.Ticket.EntryHash)
+            Sql.add command "candidateHash" NpgsqlDbType.Bytea (box intent.CandidateHash)
 
             let! result = command.ExecuteReaderAsync()
             use reader = result
@@ -223,6 +248,10 @@ module internal PreparationData =
             return
                 ({
                     OperationId = draft.OperationId
+                    CaseId = draft.CaseId
+                    PreparerActorId = draft.PreparerActorId
+                    ImporterActorId = draft.ImporterActorId
+                    PreparerGrantRevision = draft.PreparerGrantRevision
                     CanonicalRequestFormat = draft.CanonicalRequestFormat
                     RequestSha256 = draft.RequestSha256
                     CanonicalRequest = Array.copy draft.CanonicalRequest

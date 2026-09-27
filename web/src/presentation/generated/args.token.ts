@@ -12,7 +12,6 @@ export type TokenArgs = {
   "token.ERROR": Readonly<Record<string, never>>;
   "token.REVOKED_BEFORE_EXECUTION": Readonly<Record<string, never>>;
   "token.ENVELOPE": Readonly<Record<string, never>>;
-  "token.UNBOUND_CANONICAL_RECORD": Readonly<Record<string, never>>;
   "token.FOUND": Readonly<Record<string, never>>;
   "token.NOT_FOUND": Readonly<Record<string, never>>;
 };

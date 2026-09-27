@@ -1,0 +1,57 @@
+namespace ClaimCore.Postgres
+
+open System
+open System.Security.Cryptography
+open Npgsql
+open ClaimCore.Application
+open WitnessProtocolReconciliation
+
+/// Rechecks custodian authority, signed bytes, retention and holds under owner locks.
+module internal ManagedCopyAdoptedTransitionChecks =
+    let eligible
+        connection
+        transaction
+        (witness: WitnessProtocol)
+        (value: AdoptedCopyTransition)
+        (origin: VerifiedCopyAdoptionOrigin)
+        (state: AdoptedCopyCurrent)
+        canonical
+        signature
+        =
+        task {
+            let! signer =
+                ManagedCopyOwnerRead.signer connection transaction origin.CustodianSigningKeyId
+
+            let! now = ManagedCopySignerPolicy.databaseNow connection transaction
+
+            let! held =
+                ManagedCopyTransitionAdministration.held connection transaction (Some origin.CaseId)
+
+            let historical =
+                try
+                    witness.VerifyHistoricalTip(
+                        value.ActionWitnessCutoffSequence,
+                        value.ActionWitnessCutoffHash
+                    )
+
+                    true
+                with _ ->
+                    false
+
+            match signer with
+            | Some(publicKey, digest, true, CopySignerPurpose.CopyAttestor) when
+                historical
+                && digest = SHA256.HashData(publicKey)
+                && ManagedCopySignature.verify publicKey canonical signature
+                && ManagedCopyAdoptedTransitionPolicy.allowed
+                    state.State
+                    state.VerificationProofSha256
+                    state.LastVerifiedAt
+                    state.RetainUntil
+                    value
+                    now
+                    held
+                ->
+                return Some now
+            | _ -> return None
+        }

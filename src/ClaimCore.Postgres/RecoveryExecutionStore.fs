@@ -10,217 +10,56 @@ open ClaimCore.Domain
 open OperationAuthorityStore
 open PreparationData
 open RecoveryExecutionSupport
+open RecoveryExecutionOutcomes
+open RecoveryExecutionDecision
 
-/// The one storage-owned transaction that rechecks authority, invokes the pure Domain callback,
-/// persists accepted state, and records a definite settlement together.
+/// Owns the operation/case lock and dispatches to witnessed outcomes.
 module internal RecoveryExecutionStore =
-    let private acceptExisting
-        (connection: NpgsqlConnection)
-        (transaction: NpgsqlTransaction)
-        (request: CommandRequest)
-        (attemptId: Guid)
+    let private completeExisting
+        connection
+        transaction
+        request
+        attemptId
         receipt
         cancellationToken
         commitStarted
+        witness
         =
-        task {
-            do!
-                settleExistingAttempt
-                    connection
-                    transaction
-                    request.OperationId
-                    attemptId
-                    RecoverySettlement.Accepted
+        acceptExisting
+            connection
+            transaction
+            request
+            attemptId
+            receipt
+            cancellationToken
+            commitStarted
+            witness
 
-            do! commit transaction cancellationToken commitStarted
-            return Ok(AdmittedExecution.Accepted receipt)
-        }
-
-    let private revokeExisting
-        (connection: NpgsqlConnection)
-        (transaction: NpgsqlTransaction)
-        (request: CommandRequest)
-        (attemptId: Guid)
-        cancellationToken
-        commitStarted
-        =
-        task {
-            do!
-                settleExistingAttempt
-                    connection
-                    transaction
-                    request.OperationId
-                    attemptId
-                    RecoverySettlement.RevokedBeforeExecution
-
-            do! commit transaction cancellationToken commitStarted
-
-            return Ok(AdmittedExecution.RevokedBeforeExecution SettlementConfirmation.Confirmed)
-        }
-
-    let private rejectPending
-        (connection: NpgsqlConnection)
-        (transaction: NpgsqlTransaction)
-        (attemptId: Guid)
-        rejection
-        cancellationToken
-        commitStarted
-        (knownRejection: DomainError option ref)
-        =
-        task {
-            knownRejection.Value <- Some rejection
-            do! settleRequired connection transaction attemptId RecoverySettlement.Rejected
-            do! commit transaction cancellationToken commitStarted
-            return Ok(AdmittedExecution.Rejected(rejection, SettlementConfirmation.Confirmed))
-        }
-
-    let private acceptPending
-        (connection: NpgsqlConnection)
-        (transaction: NpgsqlTransaction)
-        (request: CommandRequest)
-        (fingerprint: string)
-        current
-        claim
-        (attemptId: Guid)
-        cancellationToken
-        commitStarted
-        =
-        task {
-            let! receipt =
-                StoreTransaction.persistUnderCaseLock
-                    connection
-                    transaction
-                    request
-                    fingerprint
-                    current
-                    claim
-
-            do! settleRequired connection transaction attemptId RecoverySettlement.Accepted
-            do! commit transaction cancellationToken commitStarted
-            return Ok(AdmittedExecution.Accepted receipt)
-        }
-
-    let private executePending
-        (connection: NpgsqlConnection)
-        (transaction: NpgsqlTransaction)
-        (request: CommandRequest)
-        (fingerprint: string)
-        (attemptId: Guid)
-        (today: unit -> DateOnly)
-        decide
-        (cancellationToken: Threading.CancellationToken)
-        (commitStarted: bool ref)
-        (knownRejection: DomainError option ref)
-        =
-        task {
-            let! preparation = readHeader connection (Some transaction) request.OperationId
-
-            match preparation with
-            | None -> return Error RecoveryStoreFailure.NotFound
-            | Some retained when retained.RequestSha256 <> fingerprint ->
-                return Error RecoveryStoreFailure.IdempotencyConflict
-            | Some _ ->
-                let! admitted = attemptExists connection transaction request.OperationId attemptId
-
-                if not admitted then
-                    return Error RecoveryStoreFailure.NotFound
-                else
-                    do! Sql.lockKeyAsync connection transaction ("case:" + request.CaseReference)
-                    let! current = StoreData.readCase connection transaction request.CaseReference
-
-                    match decide (today ()) current with
-                    | Error rejection ->
-                        return!
-                            rejectPending
-                                connection
-                                transaction
-                                attemptId
-                                rejection
-                                cancellationToken
-                                commitStarted
-                                knownRejection
-                    | Ok claim ->
-                        return!
-                            acceptPending
-                                connection
-                                transaction
-                                request
-                                fingerprint
-                                current
-                                claim
-                                attemptId
-                                cancellationToken
-                                commitStarted
-        }
-
-    let private executeWithoutAccepted
-        (connection: NpgsqlConnection)
-        (transaction: NpgsqlTransaction)
-        (request: CommandRequest)
-        (fingerprint: string)
-        (attemptId: Guid)
-        (today: unit -> DateOnly)
-        decide
-        (cancellationToken: Threading.CancellationToken)
-        (commitStarted: bool ref)
-        (knownRejection: DomainError option ref)
-        (knownRevocation: bool ref)
-        =
-        task {
-            let! revoked = find connection transaction request.OperationId
-
-            match revoked with
-            | Some value when matches fingerprint value ->
-                knownRevocation.Value <- true
-
-                return!
-                    revokeExisting
-                        connection
-                        transaction
-                        request
-                        attemptId
-                        cancellationToken
-                        commitStarted
-            | Some _ -> return Error RecoveryStoreFailure.IdempotencyConflict
-            | None ->
-                return!
-                    executePending
-                        connection
-                        transaction
-                        request
-                        fingerprint
-                        attemptId
-                        today
-                        decide
-                        cancellationToken
-                        commitStarted
-                        knownRejection
-        }
-
-    let private executeInTransaction
+    let private executeKnown
         (connection: NpgsqlConnection)
         (transaction: NpgsqlTransaction)
         (operation: PreparedOperation)
         (attemptId: Guid)
-        (today: unit -> DateOnly)
+        (capture: unit -> BusinessContext)
         decide
         (cancellationToken: Threading.CancellationToken)
         (commitStarted: bool ref)
         (knownRejection: DomainError option ref)
         (knownRevocation: bool ref)
+        (actorContext: ActorCallContext)
+        revision
+        (witness: WitnessProtocol)
         =
         task {
             let request = Operation.request operation
-            let fingerprint = Operation.fingerprint operation
-            do! Sql.lockKeyAsync connection transaction (operationKey request.OperationId)
 
             let! accepted =
                 StoreData.readOperation connection (Some transaction) request.OperationId
 
             match accepted with
-            | Some(receipt, original) when original = fingerprint ->
+            | Some(receipt, original) when original = Operation.fingerprint operation ->
                 return!
-                    acceptExisting
+                    completeExisting
                         connection
                         transaction
                         request
@@ -228,72 +67,165 @@ module internal RecoveryExecutionStore =
                         receipt
                         cancellationToken
                         commitStarted
+                        witness
             | Some _ -> return Error RecoveryStoreFailure.IdempotencyConflict
             | None ->
                 return!
                     executeWithoutAccepted
                         connection
                         transaction
-                        request
-                        fingerprint
+                        operation
+                        (Operation.fingerprint operation)
                         attemptId
-                        today
+                        capture
                         decide
                         cancellationToken
                         commitStarted
                         knownRejection
                         knownRevocation
+                        actorContext
+                        revision
+                        witness
+        }
+
+    let private executeInTransaction
+        connection
+        transaction
+        (operation: PreparedOperation)
+        attemptId
+        capture
+        decide
+        cancellationToken
+        commitStarted
+        knownRejection
+        knownRevocation
+        (actorContext: ActorCallContext)
+        revision
+        witness
+        =
+        task {
+            let request = Operation.request operation
+            do! Sql.lockKeyAsync connection transaction (operationKey request.OperationId)
+
+            match actorContext.CaseId with
+            | None -> return Error RecoveryStoreFailure.ResourceUnavailable
+            | Some caseId ->
+                let! allowed =
+                    ActorMutationGuard.authorize
+                        connection
+                        transaction
+                        actorContext
+                        request
+                        caseId
+                        revision
+
+                if not allowed then
+                    return Error RecoveryStoreFailure.ResourceUnavailable
+                else
+                    return!
+                        executeKnown
+                            connection
+                            transaction
+                            operation
+                            attemptId
+                            capture
+                            decide
+                            cancellationToken
+                            commitStarted
+                            knownRejection
+                            knownRevocation
+                            actorContext
+                            revision
+                            witness
+        }
+
+    let private executeWithTransaction
+        (dataSource: NpgsqlDataSource)
+        operation
+        (attemptId: Guid)
+        (capture: unit -> BusinessContext)
+        decide
+        (cancellationToken: Threading.CancellationToken)
+        (active: WitnessProtocol)
+        (commitStarted: bool ref)
+        (knownRejection: DomainError option ref)
+        (knownRevocation: bool ref)
+        (actorContext: ActorCallContext)
+        : Task<Result<AdmittedExecution, RecoveryStoreFailure>> =
+        task {
+            let request = Operation.request operation
+            use! connection = RuntimeDatabase.openConnectionAsync dataSource
+
+            let! transaction =
+                connection.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken)
+
+            use _ = transaction
+
+            try
+                let! revision =
+                    ActorGrantRead.lockRevision connection transaction true cancellationToken
+
+                return!
+                    executeInTransaction
+                        connection
+                        transaction
+                        operation
+                        attemptId
+                        capture
+                        decide
+                        cancellationToken
+                        commitStarted
+                        knownRejection
+                        knownRevocation
+                        actorContext
+                        revision
+                        active
+            with error ->
+                do! rollback transaction
+                return unconfirmedOutcome request knownRejection knownRevocation commitStarted error
         }
 
     let executeAdmitted
         (dataSource: NpgsqlDataSource)
         operation
         (attemptId: Guid)
-        (today: unit -> DateOnly)
+        (capture: unit -> BusinessContext)
         decide
         (cancellationToken: Threading.CancellationToken)
+        (witness: WitnessProtocol option)
+        (actorContext: ActorCallContext option)
         : Task<Result<AdmittedExecution, RecoveryStoreFailure>> =
         task {
-            let request = Operation.request operation
             let commitStarted = ref false
             let knownRejection = ref None
             let knownRevocation = ref false
 
             try
                 cancellationToken.ThrowIfCancellationRequested()
-                use! connection = RuntimeDatabase.openConnectionAsync dataSource
 
-                let! transaction =
-                    connection.BeginTransactionAsync(
-                        IsolationLevel.ReadCommitted,
+                let active =
+                    witness
+                    |> Option.defaultWith (fun () -> invalidOp "Witness is required for mutation.")
+
+                active.Admit()
+
+                let actor =
+                    actorContext
+                    |> Option.defaultWith (fun () -> invalidOp "Actor is required for mutation.")
+
+                return!
+                    executeWithTransaction
+                        dataSource
+                        operation
+                        attemptId
+                        capture
+                        decide
                         cancellationToken
-                    )
-
-                use _ = transaction
-
-                try
-                    return!
-                        executeInTransaction
-                            connection
-                            transaction
-                            operation
-                            attemptId
-                            today
-                            decide
-                            cancellationToken
-                            commitStarted
-                            knownRejection
-                            knownRevocation
-                with error ->
-                    do! rollback transaction
-
-                    return
-                        unconfirmedOutcome
-                            request
-                            knownRejection
-                            knownRevocation
-                            commitStarted
-                            error
+                        active
+                        commitStarted
+                        knownRejection
+                        knownRevocation
+                        actor
             with error ->
                 return Error(mutationFailure commitStarted.Value error)
         }

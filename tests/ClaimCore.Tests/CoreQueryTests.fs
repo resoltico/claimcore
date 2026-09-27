@@ -28,7 +28,7 @@ let private createWithClock businessClock =
     let recovery = new CoreRecoveryStore.Store()
     recovery.AttachClaimStore(claims :> IClaimStore)
 
-    CoreApi.create (claims :> IClaimStore) (recovery :> IRecoveryStore) businessClock
+    ActorCoreFixture.create (claims :> IClaimStore) (recovery :> IRecoveryStore) businessClock
 
 let private create () = createWithClock clock
 
@@ -40,9 +40,13 @@ let private expectReferenceRejection outcome =
     | _ -> failtest "Expected a reference rejection."
 
 let private invalidReferenceQueries (core: IClaimsCore) =
-    core.List({ AfterReference = Some " "; Limit = 1 }, CancellationToken.None)
+    core.List({ AfterCursor = Some " "; Limit = 1 }, CancellationToken.None)
     |> waitFor
-    |> expectReferenceRejection
+    |> function
+        | QueryOutcome.Rejected rejection ->
+            Expect.equal rejection.Code RejectionCode.InvalidInput "Invalid cursor"
+            Expect.equal rejection.Field (Some "cursor") "Cursor field"
+        | _ -> failtest "Expected a typed case-list cursor rejection."
 
     core.History(
         {
@@ -146,7 +150,7 @@ let private validationTests =
                 cancellation.Cancel()
 
                 match
-                    (create ()).List({ AfterReference = None; Limit = 1 }, cancellation.Token)
+                    (create ()).List({ AfterCursor = None; Limit = 1 }, cancellation.Token)
                     |> waitFor
                 with
                 | QueryOutcome.Cancelled -> ()

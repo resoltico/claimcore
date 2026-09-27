@@ -5,7 +5,7 @@ import { browserRequest, expectHostFailure, login, sessionToken } from "./sessio
 test.use({ storageState: { cookies: [], origins: [] } });
 
 const rejectMalformedAuthenticatedPosts = async (page: Page, token: string): Promise<void> => {
-  const listPath = "/api/v2/cases/list";
+  const listPath = "/api/v3/cases/list";
   await expectHostFailure(
     await browserRequest(page, listPath, {
       method: "POST",
@@ -35,13 +35,13 @@ const rejectMalformedAuthenticatedPosts = async (page: Page, token: string): Pro
   );
 };
 
-test("rejects retired routes and malformed published Web v2 admission before mutation", async ({
+test("rejects retired routes and malformed published Web v3 admission before mutation", async ({
   page,
 }) => {
   await page.goto("/");
   await expectHostFailure(await browserRequest(page, "/api/v1/query"), 404, "WEB_NOT_FOUND");
   await expectHostFailure(
-    await browserRequest(page, "/api/v2/cases/list", {
+    await browserRequest(page, "/api/v3/cases/list", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: '{"limit":1}',
@@ -52,7 +52,7 @@ test("rejects retired routes and malformed published Web v2 admission before mut
   await login(page);
   const token = await sessionToken(page);
   await expectHostFailure(
-    await browserRequest(page, "/api/v2/cases/list", {
+    await browserRequest(page, "/api/v3/cases/list", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: '{"limit":1}',

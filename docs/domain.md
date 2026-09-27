@@ -81,6 +81,13 @@ Only the core derives available commands from current state, and execution reval
 against authoritative state and expected revision. An advertised command is advisory, not commit
 authority; adapters do not add another action policy.
 
+<a id="cc-life-001"></a>
+### CC-LIFE-001 — Disposition, holds, and privacy transitions
+
+Business disposition and privacy state are separate technical authority, not fourteenth or fifteenth business fields. `VOID_DATA_ENTRY_ERROR` records an audited mistake without deleting the case, its reference, accepted commands, or payment assertion; ordinary case work is blocked while voided. Voiding a case with a recorded payment requires two distinct witnessed data-steward approvals. A privileged `REINSTATE_VOIDED` is another witnessed transition, not a rewrite of the void or a reversal of an external payment. A privacy erasure request is a different workflow and dominates reinstatement. Holds are independently recorded and block irreversible purge while active; at most 256 may be active on one case, and their review date may be no more than 366 days after recording.
+
+An erasure request immediately fences ordinary access and work. The next pending transition requires proof of the exact settled external witness fence; neither step deletes all copies or means that erasure has completed. A later owner-only live purge requires two distinct witnessed data-steward approvals, complete operation-denial coverage, no active hold, and a full current data audit. Managed backup, WAL, witness-payload, replica, snapshot, key, and export copies remain part of the privacy status until each known custodian has independently verified deletion or inaccessibility. While keyed reference/operation suppression evidence remains, the truthful status is `PAYLOAD_ERASED_SUPPRESSION_RETAINED`, not total personal-data erasure; `ERASURE_FINAL` additionally needs its explicit horizon and an independently evidenced old-writer and recovery-artifact fence. A missing or unknown copy never counts as deleted. The generic checkout lacks a reviewed publication root and cannot certify the final phase for real data.
+
 The decision date, payable amount, and payable currency are all present or all absent. A payment date
 requires a complete decision, a positive payable amount, and a date on or after the decision. Zero is
 a valid decision amount but cannot be marked paid. The payable amount and currency need not match the

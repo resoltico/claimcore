@@ -161,13 +161,17 @@ let private mediaAndLengthBoundaries () =
         "Oversized Content-Length is refused before body reads"
 
 let private sessionTests () =
-    let sessions = SessionRegistry(TimeSpan.FromMinutes(1.), TimeSpan.FromMinutes(2.))
-    let now = DateTimeOffset.UtcNow
-    let id = sessions.Create(now)
+    let request = context ()
+    Expect.equal (Admission.credentialMode request) CredentialMode.Missing "No credential"
+    request.Request.Headers["Cookie"] <- "__Host-ClaimCoreSession=synthetic-opaque"
 
-    Expect.isTrue (sessions.IsCurrent(id, now.AddSeconds(1.))) "A live registry entry is current"
-    sessions.Revoke id
-    Expect.isFalse (sessions.IsCurrent(id, now)) "Logout revokes the registry entry"
+    Expect.equal
+        (Admission.credentialMode request)
+        CredentialMode.BrowserCookie
+        "One browser credential is recognized"
+
+    request.Request.Headers["Authorization"] <- "Bearer synthetic-token"
+    Expect.equal (Admission.credentialMode request) CredentialMode.Mixed "Mixed paths fail closed"
 
 let private antiforgeryTests () =
     let rejecting =
@@ -191,7 +195,7 @@ let private antiforgeryTests () =
 
 let tests =
     testList
-        "Web v2 admission"
+        "Web v3 admission"
         [
             testCase "[CC-WEB-001] admits only the exact local JSON shape" jsonShapeTests
             testCase

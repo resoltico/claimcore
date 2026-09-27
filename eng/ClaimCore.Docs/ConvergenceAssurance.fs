@@ -14,14 +14,14 @@ module ConvergenceAssurance =
             endpointEntries
                 root
                 "endpoint-cli:"
-                "web/src/generated/convergence/cli-v3.catalog.json"
-                "CLAIMCORE_CLI_V3"
+                "web/src/generated/convergence/cli-v4.catalog.json"
+                "CLAIMCORE_CLI_V4"
             |> Result.bind (fun cli ->
                 endpointEntries
                     root
                     "endpoint-web:"
-                    "web/src/generated/convergence/web-v2.catalog.json"
-                    "CLAIMCORE_WEB_HTTP_V2"
+                    "web/src/generated/convergence/web-v3.catalog.json"
+                    "CLAIMCORE_WEB_HTTP_V3"
                 |> Result.map (Set.union cli))
 
         let actualEndpoints =
@@ -33,7 +33,7 @@ module ConvergenceAssurance =
         | Error message -> Error message
         | Ok expected when actualEndpoints <> expected ->
             Error
-                "Every generated CLI-v3 and Web-v2 endpoint needs one exact assurance-matrix subject."
+                "Every generated CLI-v4 and Web-v3 endpoint needs one exact assurance-matrix subject."
         | Ok _ -> Ok()
 
     let private outcomeEntries root prefix relative kind variant =
@@ -48,15 +48,15 @@ module ConvergenceAssurance =
         outcomeEntries
             root
             "endpoint-cli:"
-            "web/src/generated/convergence/cli-v3.catalog.json"
-            "CLAIMCORE_CLI_V3"
+            "web/src/generated/convergence/cli-v4.catalog.json"
+            "CLAIMCORE_CLI_V4"
             "cli"
         |> Result.bind (fun cli ->
             outcomeEntries
                 root
                 "endpoint-web:"
-                "web/src/generated/convergence/web-v2.catalog.json"
-                "CLAIMCORE_WEB_HTTP_V2"
+                "web/src/generated/convergence/web-v3.catalog.json"
+                "CLAIMCORE_WEB_HTTP_V3"
                 "web"
             |> Result.map (fun web -> Map.fold (fun all id tags -> Map.add id tags all) cli web))
         |> Result.bind (fun expected ->
@@ -66,20 +66,20 @@ module ConvergenceAssurance =
                 Error
                     "Every endpoint needs its exact generated outcome-tag inventory in the assurance matrix.")
 
-    let private cliRuntime =
-        "dotnet:ClaimCore.AcceptanceTests::published CLI-v3 acceptance.[CC-CLI-001] published call and session qualify commands, queries, and recovery"
+    let private cliTransport =
+        "dotnet:ClaimCore.AcceptanceTests::published authenticated CLI v4 acceptance.NDJSON session preserves frame-local results"
 
     let private cliCorpus =
         "frontend:vitest::generated contract corpora > accepts every production CLI branch and rejects malformed or cross-endpoint values"
 
     let private webRuntime =
-        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer.[CC-WEB-001] production route map dispatches all nineteen v2 endpoints"
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v3 TestServer.[CC-WEB-001] production route map dispatches the exact v3 endpoints"
 
     let private webCorpus =
         "frontend:vitest::generated contract corpora > accepts generated Web host values and rejects every malformed or cross-endpoint value"
 
     let private webOutcomeTest identifier =
-        let prefix = "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v2 TestServer."
+        let prefix = "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v3 TestServer."
 
         if identifier = "command.prepare" || identifier = "command.execute" then
             prefix
@@ -98,9 +98,20 @@ module ConvergenceAssurance =
         elif identifier.StartsWith("recovery.") then
             prefix
             + "[CC-WEB-001] recovery list, inspect, resolve, dismiss, and export preserve typed lifecycle outcomes"
-        else
+        elif identifier.StartsWith("authority.") then
             prefix
-            + "[CC-WEB-001] session login and logout revoke admission through real cookies and antiforgery"
+            + "[CC-WEB-001] endpoint "
+            + identifier
+            + " dispatches authenticated route"
+        elif identifier.StartsWith("lifecycle.") then
+            prefix
+            + "[CC-WEB-001] endpoint "
+            + identifier
+            + " dispatches authenticated route"
+        elif identifier = "session.logout" then
+            prefix + "[CC-WEB-001] OIDC logout revokes the browser ticket before disclosure"
+        else
+            webRuntime
 
     let private endpointEvidence (matrix: MatrixAssessment) =
         let has required tests =
@@ -110,7 +121,7 @@ module ConvergenceAssurance =
             matrix.EntryTests
             |> Map.exists (fun id tests ->
                 if id.StartsWith("endpoint-cli:") then
-                    not (has [ cliRuntime; cliCorpus ] tests)
+                    not (has [ cliTransport; cliCorpus ] tests)
                 elif id.StartsWith("endpoint-web:") then
                     let identifier = id.Substring("endpoint-web:".Length)
                     not (has [ webRuntime; webCorpus; webOutcomeTest identifier ] tests)
@@ -145,7 +156,7 @@ module ConvergenceAssurance =
         | Ok(), Ok(), Ok() when
             not (Set.isSubset ConvergenceRequiredSubjects.branches matrix.EntryIds)
             ->
-            Error "Every registered CLI-v3 and Web-v2 protocol branch needs an assurance subject."
+            Error "Every registered CLI-v4 and Web-v3 protocol branch needs an assurance subject."
         | Ok(), Ok(), Ok() when
             lineage.BaselineSha256 <> ConvergenceBaseline.expectedSha256
             || matrix.BaselineSha256 <> ConvergenceBaseline.expectedSha256

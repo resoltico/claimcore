@@ -1,6 +1,9 @@
 module ClaimCore.Tests.ExampleContractTests
 
 open System.IO
+open System
+open System.Globalization
+open System.Text.Json
 open Expecto
 open ClaimCore.Application
 open ClaimCore.Cli
@@ -21,17 +24,44 @@ let private names =
 
 let private exampleDirectory = Path.Combine(RepositoryRoot.find (), "examples")
 
+let private text (value: JsonElement) =
+    value.GetString()
+    |> Option.ofObj
+    |> Option.defaultWith (fun () -> failtest "Example string value is missing.")
+
+let private draft (input: JsonElement) : CommandDraft =
+    let command = input.GetProperty("command")
+    let token = command.GetProperty("kind") |> text
+
+    let kind =
+        CommandKinds.all
+        |> List.tryFind (fun value -> CommandKinds.token value = token)
+        |> Option.defaultWith (fun () -> failtest "Example command kind is unknown.")
+
+    let values =
+        command.GetProperty("values").EnumerateObject()
+        |> Seq.map (fun item -> item.Name, text item.Value)
+        |> Seq.toList
+
+    {
+        OperationId = input.GetProperty("operationId").GetGuid()
+        CaseReference = input.GetProperty("caseReference") |> text
+        ExpectedVersion =
+            Int64.Parse(input.GetProperty("expectedRevision") |> text, CultureInfo.InvariantCulture)
+        Command = DraftCommand.Flat(kind, values)
+    }
+
 let private request filename =
     let bytes = File.ReadAllBytes(Path.Combine(exampleDirectory, filename))
 
     match StrictJson.parseDocument 131072 bytes with
-    | Error _ -> failtest "The checked example must be strict CLI-v3 JSON."
+    | Error _ -> failtest "The checked example must be strict CLI-v4 JSON."
     | Ok document ->
         use frame = document
 
-        match InvocationFraming.decode frame.RootElement with
-        | Ok(Endpoint.CommandExecute, EndpointInput.Draft draft, None) ->
-            Drafts.bind draft
+        match CliRemoteInvocation.decode frame.RootElement with
+        | Ok("command.execute", input, None) ->
+            Drafts.bind (draft input)
             |> Result.defaultWith (fun _ -> failtest "Example fields must form a Domain command.")
         | _ -> failtest "Every checked example must be a canonical command.execute frame."
 

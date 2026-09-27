@@ -8,108 +8,9 @@ open Expecto
 open ClaimCore.Web
 open ClaimCore.Contracts
 open ClaimCore.WebTests.PrivateTestPaths
+open ClaimCore.WebTests.WebConfigurationFixture
 
-let private variables =
-    [
-        "CLAIMCORE_WEB_ORIGIN"
-        "CLAIMCORE_WEB_STATE_DIR"
-        "CLAIMCORE_WEB_CERTIFICATE_PATH"
-        "CLAIMCORE_CONNECTION_FILE"
-        "CLAIMCORE_WEB_MAX_JSON_BYTES"
-        "CLAIMCORE_WEB_CORE_PERMITS"
-        "CLAIMCORE_WEB_CORE_QUEUE"
-        "CLAIMCORE_WEB_LOGIN_PERMITS"
-        "CLAIMCORE_WEB_SESSION_IDLE_MINUTES"
-        "CLAIMCORE_WEB_SESSION_ABSOLUTE_MINUTES"
-    ]
-
-let private certificateFor path includeKey dnsName notBefore notAfter (purpose: string) =
-    use rsa = RSA.Create(2048)
-
-    let request =
-        CertificateRequest("CN=localhost", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1)
-
-    let basic = X509BasicConstraintsExtension(false, false, 0, false)
-    request.CertificateExtensions.Add(basic)
-
-    if not (String.IsNullOrEmpty(dnsName)) then
-        let names = SubjectAlternativeNameBuilder()
-        names.AddDnsName(dnsName)
-        request.CertificateExtensions.Add(names.Build())
-
-    let usages = OidCollection()
-    usages.Add(Oid(purpose)) |> ignore
-    request.CertificateExtensions.Add(X509EnhancedKeyUsageExtension(usages, false))
-
-    use issued = request.CreateSelfSigned(notBefore, notAfter)
-
-    let bytes =
-        if includeKey then
-            issued.Export(X509ContentType.Pfx)
-        else
-            use publicOnly =
-                X509CertificateLoader.LoadCertificate(issued.Export(X509ContentType.Cert))
-
-            publicOnly.Export(X509ContentType.Pfx)
-
-    File.WriteAllBytes(path, bytes)
-
-let private certificate path includeKey =
-    certificateFor
-        path
-        includeKey
-        "localhost"
-        (DateTimeOffset.UtcNow.AddDays(-1))
-        (DateTimeOffset.UtcNow.AddDays(1))
-        "1.3.6.1.5.5.7.3.1"
-
-let private restore originals =
-    originals
-    |> List.iter (fun (name, value) -> Environment.SetEnvironmentVariable(name, value))
-
-let configured action =
-    let originals =
-        variables
-        |> List.map (fun name -> name, Environment.GetEnvironmentVariable(name))
-
-    let directory = newPrivateDirectory "claimcore-web-config-"
-    let state = Path.Combine(directory, "state")
-    let connection = Path.Combine(directory, "application.connection")
-    let certificatePath = Path.Combine(directory, "web.pfx")
-    File.WriteAllText(connection, "Host=127.0.0.1;Database=synthetic;Username=synthetic")
-    certificate certificatePath true
-
-    if not (OperatingSystem.IsWindows()) then
-        let privateMode = UnixFileMode.UserRead ||| UnixFileMode.UserWrite
-        File.SetUnixFileMode(connection, privateMode)
-        File.SetUnixFileMode(certificatePath, privateMode)
-
-    try
-        variables
-        |> List.iter (fun name -> Environment.SetEnvironmentVariable(name, null))
-
-        Environment.SetEnvironmentVariable("CLAIMCORE_WEB_STATE_DIR", state)
-        Environment.SetEnvironmentVariable("CLAIMCORE_WEB_CERTIFICATE_PATH", certificatePath)
-        Environment.SetEnvironmentVariable("CLAIMCORE_CONNECTION_FILE", connection)
-        action directory connection certificatePath
-    finally
-        restore originals
-        Directory.Delete(directory, true)
-
-let private originTests () =
-    let valid = Configuration.parseOrigin "https://LOCALHOST:5443"
-    Expect.equal valid.Port 5443 "Explicit loopback HTTPS origin"
-
-    for value in
-        [
-            "http://localhost:5443"
-            "https://example.test:5443"
-            "https://localhost:5443/path"
-            "https://user@localhost:5443"
-            "https://localhost:5443/#fragment"
-            "not a URI"
-        ] do
-        Expect.throws (fun () -> Configuration.parseOrigin value |> ignore) "Invalid origin"
+let configured = WebConfigurationFixture.configured
 
 let private validAndBoundedConfiguration () =
     configured (fun _ _ _ ->
@@ -273,7 +174,6 @@ let tests =
     testList
         "Web configuration boundaries"
         [
-            testCase "[CC-WEB-001] accepts only one exact local HTTPS origin" originTests
             testCase
                 "[CC-WEB-001] loads defaults and rejects every out-of-range admission limit"
                 validAndBoundedConfiguration

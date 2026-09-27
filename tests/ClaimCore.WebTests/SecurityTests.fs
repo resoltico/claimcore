@@ -4,8 +4,9 @@ open System
 open System.IO
 open System.Net
 open System.Security.Claims
-open System.Text
 open Expecto
+open Microsoft.AspNetCore.Authentication
+open Microsoft.AspNetCore.Authentication.Cookies
 open Microsoft.AspNetCore.Http
 open ClaimCore.Web
 open ClaimCore.WebTests.RouteFixtures
@@ -54,22 +55,30 @@ let private connectionTests () =
         "Declared body limits are enforced before allocation"
 
 let private sessionTests () =
-    let sessions = SessionRegistry(TimeSpan.FromMinutes(1.), TimeSpan.FromMinutes(2.))
-    let id = sessions.Create(DateTimeOffset.UtcNow)
-    let context = DefaultHttpContext()
-    context.User <- ClaimsPrincipal(ClaimsIdentity([ Claim("claimcore-session", id) ]))
+    let mutable now = DateTimeOffset(2026, 9, 23, 12, 0, 0, TimeSpan.Zero)
 
-    Expect.isTrue
-        (Admission.isCurrentSession sessions context)
-        "Registry-backed principal is current"
+    let store =
+        OidcTicketStore(TimeSpan.FromMinutes(1.), TimeSpan.FromMinutes(2.), clock = (fun () -> now))
+        :> ITicketStore
 
-    sessions.RevokeAll()
+    let identity = ClaimsIdentity([ Claim("sub", "synthetic-owner") ], "oidc")
+    let properties = AuthenticationProperties()
+    properties.ExpiresUtc <- Nullable(now.AddMinutes(10.))
 
-    Expect.isFalse
-        (Admission.isCurrentSession sessions context)
-        "Global shutdown invalidates sessions"
+    let ticket =
+        AuthenticationTicket(
+            ClaimsPrincipal(identity),
+            properties,
+            CookieAuthenticationDefaults.AuthenticationScheme
+        )
 
-let private bootstrapCredentialTests () =
+    let key = store.StoreAsync(ticket).Result
+    now <- now.AddSeconds(59.)
+    Expect.isNotNull (store.RetrieveAsync(key).Result) "Activity extends idle within absolute life"
+    now <- now.AddSeconds(61.)
+    Expect.isNull (store.RetrieveAsync(key).Result) "Absolute expiry revokes the server ticket"
+
+let private stateLeaseTests () =
     let directory = newPrivateDirectory "claimcore-web-tests-"
 
     try
@@ -79,17 +88,18 @@ let private bootstrapCredentialTests () =
                 "Windows lock fails closed"
         else
             use state = Security.acquireStateDirectory directory
-            use leased = Security.rotateBootstrapCredential directory
-            let credential = leased.Credential
-            let secret = File.ReadAllText(credential.Path).Trim()
 
-            Expect.isTrue
-                (Security.isBootstrapCredential credential secret)
-                "The private file verifies"
+            Expect.throws
+                (fun () -> Security.acquireStateDirectory directory |> ignore)
+                "A second host cannot share the private state lease"
 
             Expect.isFalse
-                (Security.isBootstrapCredential credential "wrong")
-                "A wrong secret is refused"
+                (Directory.GetFiles(directory)
+                 |> Array.exists (fun path ->
+                     Path.GetFileName(path)
+                     |> Option.ofObj
+                     |> Option.exists (fun name -> name.StartsWith("bootstrap-credential-"))))
+                "OIDC startup creates no shared bootstrap credential"
     finally
         Directory.Delete(directory, true)
 
@@ -101,10 +111,8 @@ let tests =
             testCase
                 "[CC-WEB-001] limits requests to exact loopback browser admission"
                 connectionTests
+            testCase "[CC-WEB-001] OIDC ticket enforces idle and absolute expiry" sessionTests
             testCase
-                "[CC-WEB-001] makes session validity a server-side registry concern"
-                sessionTests
-            testCase
-                "[CC-WEB-001] maintains a private rotating bootstrap credential"
-                bootstrapCredentialTests
+                "[CC-WEB-001] private host lease creates no bootstrap credential"
+                stateLeaseTests
         ]

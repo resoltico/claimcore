@@ -6,7 +6,7 @@ import { Form } from "react-aria-components/Form";
 import { Input } from "react-aria-components/Input";
 import { Label } from "react-aria-components/Label";
 import { TextField } from "react-aria-components/TextField";
-import type { DefinitionPayload, Receipt } from "../api/v2";
+import type { DefinitionPayload, Receipt } from "../api/v3";
 import { useOperationObservation } from "../hooks/useOperationObservation";
 import { CaseFieldsView } from "../components/CaseFieldsView";
 

@@ -24,6 +24,7 @@ module internal Sql =
             ScalarEncoding.dateColumn "payment_date"
             "c.status"
             "c.revision"
+            "c.case_id"
         ]
         |> String.concat ", "
 
@@ -41,9 +42,28 @@ module internal Sql =
         + " WHERE (@after IS NULL OR c.case_reference > @after COLLATE \"C\") ORDER BY c.case_reference COLLATE \"C\" LIMIT "
         + pageWindow
 
+    let listVisibleCases =
+        "SELECT "
+        + columns
+        + source
+        + " WHERE (@after IS NULL OR c.case_reference > @after COLLATE \"C\") "
+        + "AND c.disposition='ACTIVE' AND c.privacy_phase='ACTIVE' "
+        + "AND EXISTS (SELECT 1 FROM claimcore.actors a "
+        + "JOIN claimcore.actor_grants g ON g.actor_id=a.actor_id "
+        + "WHERE a.actor_id=@actor AND a.enabled AND a.principal_kind=@kind "
+        + "AND a.issuer=@issuer AND a.principal_value=@principal "
+        + "AND g.active AND g.role_name=ANY(@roles) "
+        + "AND (g.scope_kind='INSTALLATION' OR "
+        + "(g.scope_kind='CASE' AND g.scope_case_id=c.case_id))) "
+        + "ORDER BY c.case_reference COLLATE \"C\" LIMIT @window"
+
     let private receiptColumns =
-        "operation_id, case_reference, revision, command_name, request_format_version, request_sha256, "
-        + "snapshot_version, snapshot, recorded_at, recorded_by"
+        "operation_id, case_id, case_reference, preparer_actor_id, importer_actor_id, "
+        + "submitter_actor_id, resolver_actor_id, accepted_actor_id, grant_revision, "
+        + "revision, command_name, rule_revision, request_format_version, request_sha256, canonical_request, "
+        + "effective_business_date - DATE '2000-01-01' AS effective_business_date, observed_utc_instant, "
+        + "snapshot_version, snapshot, witness_sequence, witness_epoch, witness_entry_hash, "
+        + "recorded_at, accepted_actor_id::text AS recorded_by"
 
     let history =
         "SELECT "
@@ -70,10 +90,12 @@ module internal Sql =
     let insertCase =
         """
         INSERT INTO claimcore.cases (
+            case_id,
             incident_date, incident_notification_date, incident_country, claimant_name, insurer_name,
             claimed_amount, claimed_currency, case_reference, payment_decision_date,
             payable_amount, payable_currency, payment_date, status, revision
         ) VALUES (
+            @caseId,
             @incident, @notification, @country, @claimant, @insurer,
             @claimed, @claimedCurrency, @reference, @decision,
             @payable, @payableCurrency, @paid, @status, @revision
@@ -90,20 +112,29 @@ module internal Sql =
             payment_decision_date = @decision, payable_amount = @payable,
             payable_currency = @payableCurrency, payment_date = @paid, status = @status,
             revision = @revision
-        WHERE case_reference = @reference AND revision = @expected
+        WHERE case_id = @caseId AND case_reference = @reference AND revision = @expected
         """
         |> withDateOperands
 
     let insertChange =
         $"""
         INSERT INTO claimcore.case_changes (
-            operation_id, case_reference, revision, command_name, request_sha256,
-            request_format_version, snapshot_version, snapshot
+            operation_id, case_id, case_reference, preparer_actor_id, importer_actor_id,
+            submitter_actor_id, resolver_actor_id, accepted_actor_id, grant_revision,
+            revision, command_name, rule_revision, request_sha256,
+            request_format_version, canonical_request, effective_business_date,
+            observed_utc_instant, snapshot_version, snapshot,
+            witness_sequence, witness_epoch, witness_entry_hash
         ) VALUES (
-            @operation, @reference, @revision, @command, @fingerprint,
-            {RecordVersions.RequestFingerprint}, {RecordVersions.Snapshot}, @snapshot
+            @operation, @caseId, @reference, @preparer, @importer,
+            @submitter, @resolver, @acceptedActor, @grantRevision,
+            @revision, @command, 1, @fingerprint,
+            {RecordVersions.RequestFingerprint}, @canonicalRequest,
+            {ScalarEncoding.dateParameter "effectiveBusinessDate"}, @observedUtcInstant,
+            {RecordVersions.Snapshot}, @snapshot,
+            @witnessSequence, @witnessEpoch, @witnessHash
         )
-        RETURNING recorded_at, recorded_by
+        RETURNING recorded_at, accepted_actor_id::text
         """
 
     let add (command: NpgsqlCommand) (name: string) (kind: NpgsqlDbType) (value: objnull) =

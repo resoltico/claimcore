@@ -7,8 +7,11 @@ open ClaimCore.Postgres
 let private unreachable =
     "Host=127.0.0.1;Port=1;Username=claimcore_owner;Database=claimcore;Timeout=1"
 
+let private unusedKeyCheck _ _ =
+    failtest "Unreachable database must not request key custody."
+
 let private refuses label zoneId =
-    match SchemaBaseline.initialize unreachable zoneId with
+    match SchemaBaseline.initialize unreachable zoneId unusedKeyCheck with
     | AdministrationOutcome.NotStarted AdministrationFailure.BusinessZoneInvalid -> ()
     | _ -> failtest ("Expected calendar admission refusal for " + label + ".")
 
@@ -31,7 +34,7 @@ let tests =
                     refuses "traversal" "../Europe/Vilnius")
 
             testCase "a canonical zone passes validation and fails later, on the host" (fun () ->
-                match SchemaBaseline.initialize unreachable "Etc/UTC" with
+                match SchemaBaseline.initialize unreachable "Etc/UTC" unusedKeyCheck with
                 | AdministrationOutcome.NotStarted AdministrationFailure.DatabaseUnavailable -> ()
-                | _ -> failtest "A canonical zone must reach database admission.")
+                | _ -> failtest "A canonical zone did not reach database admission.")
         ]

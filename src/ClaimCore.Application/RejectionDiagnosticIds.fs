@@ -44,10 +44,12 @@ type RejectionDiagnosticId =
     | DecisionAlreadyPaid
     | ZeroDecisionCannotBePaid
     | PageLimitOutOfRange
+    | InvalidCaseListCursor
     | InvalidHistoryCursor
     | IdempotencyConflict
     | OperationRevoked
     | RecoveryAttemptLimitReached
+    | ResourceUnavailable
 
 /// Safe metadata only: these are constraint limits, not submitted data or arbitrary string values.
 type DiagnosticParameterDefinition =
@@ -135,10 +137,12 @@ module RejectionDiagnosticIds =
     let private operation =
         [
             RejectionDiagnosticId.PageLimitOutOfRange, "QUERY_PAGE_LIMIT_RANGE"
+            RejectionDiagnosticId.InvalidCaseListCursor, "QUERY_CASE_LIST_CURSOR_INVALID"
             RejectionDiagnosticId.InvalidHistoryCursor, "QUERY_HISTORY_CURSOR_INVALID"
             RejectionDiagnosticId.IdempotencyConflict, "OPERATION_CONTENT_CONFLICT"
             RejectionDiagnosticId.OperationRevoked, "OPERATION_REVOKED"
             RejectionDiagnosticId.RecoveryAttemptLimitReached, "OPERATION_RECOVERY_ATTEMPT_LIMIT"
+            RejectionDiagnosticId.ResourceUnavailable, "ACCESS_RESOURCE_UNAVAILABLE"
         ]
 
     let all = text @ scalar @ command @ correction @ case @ progress @ operation

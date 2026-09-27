@@ -8,11 +8,32 @@
     <Compile Include="RejectionDiagnostics.fs" />
     <Compile Include="CoreFaults.fs" />
     <Compile Include="RecoveryRejections.fs" />
+    <Compile Include="ActorIdentity.fs" />
+    <Compile Include="AuthorizationTypes.fs" />
+    <Compile Include="AuthorizationPolicy.fs" />
+    <Compile Include="CopySignerApprovalTypes.fs" />
+    <Compile Include="CopyDeletionApprovalTypes.fs" />
+    <Compile Include="CopyAdoptionApprovalTypes.fs" />
+    <Compile Include="WriterHandoffApprovalTypes.fs" />
+    <Compile Include="RealDataActivationApprovalTypes.fs" />
+    <Compile Include="ActorManagement.fs" />
+    <Compile Include="CaseErasurePort.fs" />
+    <Compile Include="ActorCorePort.fs" />
+    <Compile Include="CaseLifecyclePort.fs" />
+    <Compile Include="CaseTombstonePort.fs" />
+    <Compile Include="OwnerTerminalEvidenceData.fs" />
+    <Compile Include="OwnerTerminalEvidenceAuthority.fs" />
+    <Compile Include="OwnerTerminalDecisionData.fs" />
+    <Compile Include="OwnerTerminalDecisionKernel.fs" />
+    <Compile Include="CaseLifecycleDecisions.fs" />
+    <Compile Include="AuthorityHistory.fs" />
     <Compile Include="SemanticTypes.fs" />
     <Compile Include="SemanticContract.fs" />
     <Compile Include="RecoveryTypes.fs" />
     <Compile Include="Operation.fs" />
     <Compile Include="Ports.fs" />
+    <Compile Include="CaseListCursorCodec.fs" />
+    <Compile Include="AcceptedHistoryAudit.fs" />
     <Compile Include="RecoveryStorePort.fs" />
     <Compile Include="CoreConversions.fs" />
     <Compile Include="OperationRejection.fs" />
@@ -37,8 +58,14 @@
     <Compile Include="RecoveryReadOperations.fs" />
     <Compile Include="RecoveryExports.fs" />
     <Compile Include="RecoveryCoordinator.fs" />
+    <Compile Include="ActorLifecycleApi.fs" />
+    <Compile Include="ActorTombstoneApi.fs" />
     <Compile Include="Core.fsi" />
     <Compile Include="Core.fs" />
+    <Compile Include="ActorRecoveryApi.fs" />
+    <Compile Include="ActorCopyAdoptionApi.fs" />
+    <Compile Include="ActorRealDataActivationApi.fs" />
+    <Compile Include="ActorCoreApi.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../ClaimCore.Domain/ClaimCore.Domain.fsproj" />

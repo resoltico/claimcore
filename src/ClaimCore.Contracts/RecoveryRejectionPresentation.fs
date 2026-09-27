@@ -43,8 +43,6 @@ module RecoveryRejectionPresentation =
             "The recovery envelope belongs to a different ClaimCore installation."
             RecoveryRejection.EnvelopeInvalidOrUnsupported,
             "The recovery envelope is unsupported or failed canonical decoding."
-            RecoveryRejection.CanonicalRecordInvalidOrUnsupported,
-            "The canonical recovery record is unsupported or failed canonical decoding."
         ]
 
     let private group3 =
@@ -53,6 +51,7 @@ module RecoveryRejectionPresentation =
             "This exact operation was durably revoked before execution."
             RecoveryRejection.AttemptLimitReached,
             "This operation has reached its recovery attempt limit. Read the current case before authoring new work."
+            RecoveryRejection.ResourceUnavailable, "The requested resource is unavailable."
         ]
 
     let private explanations = group0 @ group1 @ group2 @ group3

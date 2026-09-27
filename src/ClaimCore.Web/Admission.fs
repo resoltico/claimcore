@@ -4,7 +4,10 @@ open System
 open System.Net
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Antiforgery
+open Microsoft.AspNetCore.Authentication
+open Microsoft.AspNetCore.Authentication.Cookies
 open Microsoft.AspNetCore.Http
+open ClaimCore.Application
 
 [<RequireQualifiedAccess>]
 type AdmissionFailure =
@@ -21,7 +24,75 @@ type RequestBody =
     | Json
     | Raw of mediaType: string
 
+[<RequireQualifiedAccess>]
+type internal CredentialMode =
+    | Missing
+    | BrowserCookie
+    | Bearer
+    | Mixed
+
 module Admission =
+    let private oidcHuman (configuration: OidcConfiguration) (context: HttpContext) =
+        task {
+            let! authentication =
+                context.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme)
+
+            if not authentication.Succeeded then
+                return Error AdmissionFailure.SessionRejected
+            else
+                match authentication.Principal |> Option.ofObj with
+                | None -> return Error AdmissionFailure.SessionRejected
+                | Some principal ->
+                    let subject =
+                        principal.FindFirst("sub")
+                        |> Option.ofObj
+                        |> Option.map _.Value
+                        |> Option.defaultValue ""
+
+                    match PrincipalIdentity.human configuration.Issuer subject with
+                    | Ok actor -> return Ok actor
+                    | Error _ -> return Error AdmissionFailure.SessionRejected
+        }
+
+    let bearerActor (configuration: OidcConfiguration) (context: HttpContext) =
+        task {
+            let! authentication = context.AuthenticateAsync(AuthMiddleware.BearerScheme)
+
+            if not authentication.Succeeded then
+                return Error AdmissionFailure.SessionRejected
+            else
+                match authentication.Principal |> Option.ofObj with
+                | None -> return Error AdmissionFailure.SessionRejected
+                | Some principal ->
+                    match
+                        PrincipalIdentity.fromAccessToken
+                            configuration.Issuer
+                            configuration.CliClientId
+                            configuration.ServiceClientId
+                            principal
+                    with
+                    | Ok actor -> return Ok actor
+                    | Error _ -> return Error AdmissionFailure.SessionRejected
+        }
+
+    /// One credential mode per request. A failed bearer never falls back to a browser cookie.
+    let internal credentialMode (context: HttpContext) =
+        let suppliedBearer = context.Request.Headers.ContainsKey("Authorization")
+        let suppliedCookie = context.Request.Cookies.ContainsKey("__Host-ClaimCoreSession")
+
+        match suppliedBearer, suppliedCookie with
+        | true, true -> CredentialMode.Mixed
+        | true, false -> CredentialMode.Bearer
+        | false, true -> CredentialMode.BrowserCookie
+        | false, false -> CredentialMode.Missing
+
+    let verifiedPrincipal (configuration: OidcConfiguration) (context: HttpContext) =
+        match credentialMode context with
+        | CredentialMode.Mixed
+        | CredentialMode.Missing -> Task.FromResult(Error AdmissionFailure.SessionRejected)
+        | CredentialMode.Bearer -> bearerActor configuration context
+        | CredentialMode.BrowserCookie -> oidcHuman configuration context
+
     let private oneHeader name (context: HttpContext) =
         match context.Request.Headers.TryGetValue(name) with
         | true, values when values.Count = 1 && not (String.IsNullOrWhiteSpace(values[0])) ->
@@ -96,10 +167,6 @@ module Admission =
                 return Error AdmissionFailure.AntiforgeryRejected
         }
 
-    let isCurrentSession (sessions: SessionRegistry) (context: HttpContext) =
-        Security.sessionId context.User.Claims
-        |> Option.exists (fun id -> sessions.IsCurrent(id, DateTimeOffset.UtcNow))
-
     let validatePost origin body maximumBytes antiforgery context =
         task {
             match postShape origin body maximumBytes context with
@@ -107,11 +174,49 @@ module Admission =
             | Ok() -> return! validateAntiforgery antiforgery context
         }
 
-    let admitAuthenticated origin body maximumBytes sessions antiforgery context =
+    let private bearerShape origin body maximumBytes (context: HttpContext) =
+        if not (trustedConnection origin context) || not context.Request.IsHttps then
+            Error AdmissionFailure.UntrustedConnection
+        elif context.Request.Headers.ContainsKey("Origin") then
+            Error AdmissionFailure.OriginRejected
+        elif not (contentType body context) then
+            Error AdmissionFailure.UnsupportedMediaType
+        elif
+            context.Request.ContentLength
+            |> Option.ofNullable
+            |> Option.exists (fun length -> length > int64 maximumBytes)
+        then
+            Error AdmissionFailure.BodyTooLarge
+        else
+            Ok()
+
+    let actorGet configuration origin (context: HttpContext) =
         task {
-            match postShape origin body maximumBytes context with
-            | Error failure -> return Error failure
-            | Ok() when not (isCurrentSession sessions context) ->
-                return Error AdmissionFailure.SessionRejected
-            | Ok() -> return! validateAntiforgery antiforgery context
+            if not (trustedConnection origin context) || not context.Request.IsHttps then
+                return Error AdmissionFailure.UntrustedConnection
+            elif
+                credentialMode context = CredentialMode.Bearer
+                && context.Request.Headers.ContainsKey("Origin")
+            then
+                return Error AdmissionFailure.OriginRejected
+            else
+                return! verifiedPrincipal configuration context
+        }
+
+    let actorPost configuration origin body maximumBytes antiforgery (context: HttpContext) =
+        task {
+            match credentialMode context with
+            | CredentialMode.Missing
+            | CredentialMode.Mixed -> return Error AdmissionFailure.SessionRejected
+            | CredentialMode.Bearer ->
+                match bearerShape origin body maximumBytes context with
+                | Error failure -> return Error failure
+                | Ok() -> return! verifiedPrincipal configuration context
+            | CredentialMode.BrowserCookie ->
+                if not context.Request.IsHttps then
+                    return Error AdmissionFailure.UntrustedConnection
+                else
+                    match! validatePost origin body maximumBytes antiforgery context with
+                    | Error failure -> return Error failure
+                    | Ok() -> return! verifiedPrincipal configuration context
         }

@@ -10,7 +10,7 @@ import {
 
 const catalogue = JSON.parse(
   readFileSync(
-    new URL("../src/generated/convergence/web-v2.catalog.json", import.meta.url),
+    new URL("../src/generated/convergence/web-v3.catalog.json", import.meta.url),
     "utf8",
   ),
 );
@@ -58,9 +58,9 @@ test("host validation is shared and all four chunks are lazily loaded", () => {
   assert.ok(wrapper.includes('(await loadHost())["validate_host_failure"]'));
   assert.ok(!wrapper.includes('(await validatorsFor(endpoint))["validate_host_failure"]'));
   for (const group of ["host", "discovery", "core", "recovery"]) {
-    assert.ok(standaloneValidatorArtifacts.includes(`web-v2.validators.${group}.mjs`));
-    assert.ok(standaloneValidatorArtifacts.includes(`web-v2.validators.${group}.d.mts`));
-    assert.ok(wrapper.includes(`import("./web-v2.validators.${group}.mjs")`));
-    assert.ok(!wrapper.includes(`from "./web-v2.validators.${group}.mjs"`));
+    assert.ok(standaloneValidatorArtifacts.includes(`web-v3.validators.${group}.mjs`));
+    assert.ok(standaloneValidatorArtifacts.includes(`web-v3.validators.${group}.d.mts`));
+    assert.ok(wrapper.includes(`import("./web-v3.validators.${group}.mjs")`));
+    assert.ok(!wrapper.includes(`from "./web-v3.validators.${group}.mjs"`));
   }
 });

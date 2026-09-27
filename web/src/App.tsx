@@ -5,7 +5,7 @@ import { Message, NoticeView } from "./presentation/Message";
 import { PresentationControls } from "./presentation/PresentationControls";
 
 const SessionContent = () => {
-  const { state, login, logout, refresh } = useSession();
+  const { state, logout, refresh } = useSession();
   if (state.kind === "loading")
     return (
       <main className="loading">
@@ -25,9 +25,7 @@ const SessionContent = () => {
     );
   if (state.kind === "authenticated")
     return <Dashboard token={state.token} sessionEpoch={state.epoch} onLogout={logout} />;
-  return (
-    <LoginScreen tokenAvailable={state.token !== null} message={state.message} onLogin={login} />
-  );
+  return <LoginScreen message={state.message} />;
 };
 export const App = () => (
   <>

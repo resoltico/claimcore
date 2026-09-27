@@ -47,11 +47,11 @@ const differs = async (output, file) => {
 const assertValidatorSizes = async (directory) => {
   const entries = await readdir(directory, { withFileTypes: true });
   const validators = entries
-    .filter((entry) => /^web-v2\.validators\.[a-z]+\.mjs$/u.test(entry.name))
+    .filter((entry) => /^web-v3\.validators\.[a-z]+\.mjs$/u.test(entry.name))
     .map((entry) => entry.name)
     .sort();
   const expected = standaloneValidatorArtifacts
-    .filter((name) => /^web-v2\.validators\.[a-z]+\.mjs$/u.test(name))
+    .filter((name) => /^web-v3\.validators\.[a-z]+\.mjs$/u.test(name))
     .sort();
   if (!sameInventory(validators, expected))
     throw new Error("Generated Web validators must match the declared group inventory.");

@@ -1,10 +1,10 @@
 import { render, screen } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
-import type { CurrentCase, Rejection } from "../src/api/v2";
-import { isWebV2Response } from "../src/generated/convergence/web-v2.validation";
+import type { CurrentCase, Rejection } from "../src/api/v3";
+import { isWebV3Response } from "../src/generated/convergence/web-v3.validation";
 import { OperationEditor } from "../src/views/OperationEditor";
-import { definition, fields, operationId, preparation, response } from "./v2-ui.fixtures";
+import { definition, fields, operationId, preparation, response } from "./v3-ui.fixtures";
 
 const current: CurrentCase = {
   case: { fields, revision: "1" },
@@ -79,9 +79,9 @@ it("rejects technical preparation details on an accepted Prepare replay", async 
     endpoint: "command.prepare",
     outcome: { tag: "OBSERVED_ACCEPTED", data: { receipt } },
   };
-  expect(await isWebV2Response("command.prepare", accepted)).toBe(true);
+  expect(await isWebV3Response("command.prepare", accepted)).toBe(true);
   expect(
-    await isWebV2Response("command.prepare", {
+    await isWebV3Response("command.prepare", {
       ...accepted,
       outcome: { ...accepted.outcome, data: { receipt, details: preparation } },
     }),

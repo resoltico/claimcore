@@ -1,10 +1,11 @@
 import { render, screen } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
-import type { CurrentCase } from "../src/api/v2";
+import type { CurrentCase } from "../src/api/v3";
 import { OperationEditor } from "../src/views/OperationEditor";
 import { generatedResponse } from "./contract-corpus.fixtures";
-import { definition, fields, preparation, response } from "./v2-ui.fixtures";
+import { preparedForRequest } from "./prepared-request.fixtures";
+import { definition, fields, preparation, response } from "./v3-ui.fixtures";
 
 const current: CurrentCase = {
   case: { fields, revision: "1" },
@@ -39,7 +40,9 @@ beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 it("rotates the retained operation ID when only an OPEN reference is changed", async () => {
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
-  fetch.mockResolvedValueOnce(prepared()).mockResolvedValueOnce(prepared());
+  fetch
+    .mockImplementationOnce(preparedForRequest(prepared()))
+    .mockImplementationOnce(preparedForRequest(prepared()));
   render(
     <OperationEditor
       token="token"
@@ -73,7 +76,7 @@ it("keeps existing references immutable and delegates a reviewed commit", async 
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
   fetch
-    .mockResolvedValueOnce(prepared())
+    .mockImplementationOnce(preparedForRequest(prepared()))
     .mockResolvedValueOnce(generatedResponse("command.execute"));
   const committed = vi.fn();
   render(

@@ -10,13 +10,6 @@ open System.Text.Json
 open ClaimCore.Application
 
 [<NoEquality; NoComparison>]
-type LoginInput =
-    {
-        Credential: string
-        AntiforgeryToken: string
-    }
-
-[<NoEquality; NoComparison>]
 type PageInput = { Cursor: string option; Limit: int }
 
 [<NoEquality; NoComparison>]
@@ -137,6 +130,25 @@ module HttpInputSupport =
 
         if value.Length <> 64 || not (value |> Seq.forall validCharacter) then
             fail HttpInputProblem.InvalidDigest
+
+        value
+
+    let utcTimestampValue (source: string) =
+        let mutable value = DateTimeOffset.MinValue
+
+        if
+            not (
+                DateTimeOffset.TryParseExact(
+                    source,
+                    "yyyy-MM-dd'T'HH:mm:ss.fffffffzzz",
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.None,
+                    &value
+                )
+            )
+            || value.Offset <> TimeSpan.Zero
+        then
+            fail HttpInputProblem.InvalidJson
 
         value
 

@@ -14,6 +14,9 @@ module internal AcceptedObservation =
                 return Some(PrepareOutcome.ObservedAccepted(TypedProjection.receipt receipt))
             | Error CoreFailure.IdempotencyConflict ->
                 return Some(PrepareOutcome.PrepareRejected(operationId, idempotencyConflict))
+            | Error CoreFailure.ResourceUnavailable ->
+                return
+                    Some(PrepareOutcome.PrepareRejected(operationId, Rejection.ResourceUnavailable))
             | Error failure ->
                 return
                     Some(

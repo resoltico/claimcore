@@ -6,10 +6,10 @@ import { Input } from "react-aria-components/Input";
 import { Label } from "react-aria-components/Label";
 import { TextField } from "react-aria-components/TextField";
 import { useCallback, useState } from "react";
-import type { CaseSummary, WebV2Response } from "../api/v2";
-import { v2 } from "../api/v2";
+import type { CaseSummary, WebV3Response } from "../api/v3";
+import { v3 } from "../api/v3";
 import { CopyValue } from "../components/CopyValue";
-import { useRetryablePage } from "../hooks/useV2Read";
+import { useRetryablePage } from "../hooks/useRead";
 
 type CaseListProps = {
   token: string;
@@ -17,7 +17,7 @@ type CaseListProps = {
   onOpen: () => void;
 };
 
-const casePage = (response: WebV2Response<"case.list">) =>
+const casePage = (response: WebV3Response<"case.list">) =>
   response.outcome.tag === "SUCCEEDED" ? response.outcome.data : null;
 
 const CaseRow = ({
@@ -82,11 +82,11 @@ export const CaseList = ({ token, onSelect, onOpen }: CaseListProps) => {
   const p = usePresentation();
   const [lookup, setLookup] = useState("");
   const request = useCallback(
-    (cursor: string | null, signal: AbortSignal) => v2.list(cursor, 50, token, signal),
+    (cursor: string | null, signal: AbortSignal) => v3.list(cursor, 50, token, signal),
     [token],
   );
   const { items, cursor, message, loading, load } = useRetryablePage<
-    WebV2Response<"case.list">,
+    WebV3Response<"case.list">,
     CaseSummary
   >(request, casePage);
 

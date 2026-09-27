@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { PreparationDetails } from "../../api/v2";
+import type { PreparationDetails } from "../../api/v3";
 
 type Consent = { subject: PreparationDetails; identity: string };
 /** Consent belongs to this review instance and exact identity, never to a language or a later draft. */

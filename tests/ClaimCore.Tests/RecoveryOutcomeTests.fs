@@ -78,7 +78,7 @@ let private resolve (core: IClaimsCore) operationId digest token =
 let private makeCore mode (recovery: CoreRecoveryStore.Store) =
     let claims = new ScriptedClaimStore(mode)
     recovery.AttachClaimStore(claims :> IClaimStore)
-    CoreApi.create (claims :> IClaimStore) (recovery :> IRecoveryStore) clock, claims
+    ActorCoreFixture.create (claims :> IClaimStore) (recovery :> IRecoveryStore) clock, claims
 
 let private beforeAttemptCancellation =
     testCase
@@ -215,7 +215,7 @@ let private rejectedSettlement =
         let recovery = new CoreRecoveryStore.Store()
         let claimPort = claims :> IClaimStore
         recovery.AttachClaimStore(claimPort)
-        let core = CoreApi.create claimPort (recovery :> IRecoveryStore) clock
+        let core = ActorCoreFixture.create claimPort (recovery :> IRecoveryStore) clock
         let operationId = Guid.NewGuid()
         let reference = "REC-STALE-" + operationId.ToString("N")
         let digest = prepared core operationId reference
@@ -258,7 +258,7 @@ let private receiptBetweenObservationAndAttempt =
 
         let recovery = new CoreRecoveryStore.Store(onStart = commitBetween)
         recovery.AttachClaimStore(claimPort)
-        let core = CoreApi.create claimPort (recovery :> IRecoveryStore) clock
+        let core = ActorCoreFixture.create claimPort (recovery :> IRecoveryStore) clock
         let digest = prepared core operationId command.CaseReference
 
         match resolve core operationId digest CancellationToken.None with

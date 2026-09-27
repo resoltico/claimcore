@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "assembly": "ClaimCore.BackupQualificationTests",
+  "tests": [
+    "ClaimCore managed backup qualification.[CC-BACKUP-001] deploy-time custody gate refuses same-host and self-certified evidence",
+    "ClaimCore managed backup qualification.[CC-BACKUP-001] encrypted dual-cluster backup is verified by isolated restores and rejects altered evidence"
+  ]
+}

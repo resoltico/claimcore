@@ -1,5 +1,5 @@
 import { useId } from "react";
-import type { CaseFields, CaseView, FieldDescriptor } from "../api/v2";
+import type { CaseFields, CaseView, FieldDescriptor } from "../api/v3";
 import { hasSuspiciousCharacters, suspiciousCodePoints } from "../utils/text";
 import { usePresentation } from "../presentation/context";
 import type { Presentation } from "../presentation/context";

@@ -1,6 +1,7 @@
 module ClaimCore.Tests.CoreStore
 
 open System
+open System.Collections.Generic
 open System.Threading.Tasks
 open ClaimCore.Domain
 open ClaimCore.Application
@@ -12,6 +13,7 @@ type internal Store
     let mutable cases: Map<string, Claim> = Map.empty
     let mutable receipts: Map<Guid, string * Receipt> = Map.empty
     let mutable transactions = 0
+    let continuations = Dictionary<string, string>()
     let gate = obj ()
     member _.TransactionCalls = transactions
 
@@ -30,7 +32,7 @@ type internal Store
                     | None ->
                         match decide (Map.tryFind request.CaseReference cases) with
                         | Error error -> Error(CoreFailure.Domain error)
-                        | Ok claim ->
+                        | Ok(claim, _) ->
                             let receipt: Receipt =
                                 {
                                     OperationId = request.OperationId
@@ -49,30 +51,47 @@ type internal Store
         member _.Get reference =
             Task.FromResult(lock gate (fun () -> Ok(Map.tryFind reference cases)))
 
-        member _.List after =
+        member _.List request =
             Task.FromResult(
                 lock gate (fun () ->
-                    let items =
-                        cases
-                        |> Map.toList
-                        |> List.filter (fun (reference, _) ->
-                            after
-                            |> Option.forall (fun cursor ->
-                                String.CompareOrdinal(reference, cursor) > 0))
-                        |> List.map snd
-                        |> List.truncate (pageSize + 1)
+                    let after =
+                        request.AfterCursor
+                        |> Option.map (fun token ->
+                            match continuations.TryGetValue token with
+                            | true, reference -> Ok(Some reference)
+                            | _ -> Error CoreFailure.InvalidCaseListCursor)
+                        |> Option.defaultValue (Ok None)
 
-                    let page = items |> List.truncate pageSize
+                    match after with
+                    | Error failure -> Error failure
+                    | Ok position ->
+                        let items =
+                            cases
+                            |> Map.toList
+                            |> List.filter (fun (reference, _) ->
+                                position
+                                |> Option.forall (fun cursor ->
+                                    String.CompareOrdinal(reference, cursor) > 0))
+                            |> List.map snd
+                            |> List.truncate (request.Limit + 1)
 
-                    let next =
-                        if items.Length > pageSize then
-                            page
-                            |> List.tryLast
-                            |> Option.map (fun claim -> (Claim.view claim).Fields.CaseReference)
-                        else
-                            None
+                        let page = items |> List.truncate request.Limit
 
-                    Ok { Items = page; NextAfter = next })
+                        let next =
+                            if items.Length > request.Limit then
+                                page
+                                |> List.tryLast
+                                |> Option.map (fun claim ->
+                                    let token = Guid.NewGuid().ToString("N")
+
+                                    continuations[token] <-
+                                        (Claim.view claim).Fields.CaseReference
+
+                                    token)
+                            else
+                                None
+
+                        Ok { Items = page; NextCursor = next })
             )
 
         member _.History(reference, afterVersion) =

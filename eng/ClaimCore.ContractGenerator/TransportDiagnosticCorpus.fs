@@ -54,27 +54,6 @@ module internal TransportDiagnosticCorpus =
             "wrong-code", false, replace "code" (text "UNKNOWN_CODE") value
         ]
 
-    let cli =
-        ProtocolProblems.all
-        |> List.collect (fun reason ->
-            let id = "transport-" + ProtocolProblems.token reason
-
-            let response =
-                CliWireCodec.protocolFailure
-                    2
-                    (ProtocolFailure.create reason ProtocolLocation.root)
-
-            let value = parsed response.Bytes
-
-            (id, true, value)
-            :: ((variants value
-                 @ [
-                     "unsafe-path",
-                     false,
-                     replace "path" (text "/PRIVATE-UNRECOGNIZED-INPUT") value
-                 ])
-                |> List.map (fun (suffix, valid, item) -> id + "-" + suffix, valid, item)))
-
     let web =
         WebHostFailures.all
         |> List.collect (fun reason ->

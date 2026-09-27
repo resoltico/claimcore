@@ -1,7 +1,7 @@
 import { usePresentation } from "../../presentation/context";
 import { Button } from "react-aria-components/Button";
 import { Checkbox } from "react-aria-components/Checkbox";
-import type { AdvisoryReview, PreparationDetails } from "../../api/v2";
+import type { AdvisoryReview, PreparationDetails } from "../../api/v3";
 import { AccessibleModal } from "../../components/AccessibleModal";
 import type { OperationEditorModel } from "./editorTypes";
 

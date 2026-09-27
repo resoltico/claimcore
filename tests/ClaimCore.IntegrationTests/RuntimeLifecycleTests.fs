@@ -28,11 +28,9 @@ let private exclusiveLock table =
 
 let private admittedQuerySurvivesDispose () =
     use runtime =
-        Runtime.OpenPostgres(appConnection (), CancellationToken.None)
-        |> await
-        |> accepted
+        witnessedOpen (appConnection ()) CancellationToken.None |> await |> accepted
 
-    let core = runtime.Core
+    let core = runtime.ForActor(ActorBoundStoreFixture.actorPrincipal ())
     let connection, lockedTransaction = exclusiveLock "cases"
     use connection = connection
     use transaction = lockedTransaction
@@ -49,7 +47,7 @@ let private admittedQuerySurvivesDispose () =
             (SpinWait.SpinUntil(
                 (fun () ->
                     try
-                        core.Describe() |> ignore
+                        core.Definition(CancellationToken.None) |> await |> ignore
                         false
                     with :? ObjectDisposedException ->
                         true),
@@ -61,7 +59,10 @@ let private admittedQuerySurvivesDispose () =
         transaction.Commit()
 
         match pending |> await with
+        | QueryOutcome.Rejected Rejection.ResourceUnavailable -> ()
         | QueryOutcome.Succeeded(Lookup.NotFound _) -> ()
+        | QueryOutcome.Failed _ -> failtest "Admitted query became a storage failure"
+        | QueryOutcome.Cancelled -> failtest "Admitted query was relabelled cancelled"
         | _ -> failtest "Disposal must not relabel an admitted query outcome"
 
         Expect.isTrue (disposing.Wait(2000)) "The runtime drains and disposes after completion"
@@ -74,7 +75,7 @@ let private cancellationInterruptsSchemaInspection () =
     use connection = connection
     use transaction = lockedTransaction
     use cancellation = new CancellationTokenSource()
-    let opening = Runtime.OpenPostgres(appConnection (), cancellation.Token)
+    let opening = witnessedOpen (appConnection ()) cancellation.Token
     Task.Delay(100).GetAwaiter().GetResult()
     Expect.isFalse opening.IsCompleted "Schema inspection must wait behind the test lock"
     cancellation.Cancel()
@@ -93,11 +94,9 @@ let private openingRequest () =
 
 let private admittedMutationSurvivesDispose () =
     use runtime =
-        Runtime.OpenPostgres(appConnection (), CancellationToken.None)
-        |> await
-        |> accepted
+        witnessedOpen (appConnection ()) CancellationToken.None |> await |> accepted
 
-    let core = runtime.Core
+    let core = runtime.ForActor(ActorBoundStoreFixture.actorPrincipal ())
     let connection, lockedTransaction = exclusiveLock "request_preparations"
     use connection = connection
     use transaction = lockedTransaction
@@ -111,7 +110,7 @@ let private admittedMutationSurvivesDispose () =
             (SpinWait.SpinUntil(
                 (fun () ->
                     try
-                        core.Describe() |> ignore
+                        core.Definition(CancellationToken.None) |> await |> ignore
                         false
                     with :? ObjectDisposedException ->
                         true),
@@ -123,7 +122,22 @@ let private admittedMutationSurvivesDispose () =
 
         match pending |> await with
         | SubmissionOutcome.Completed(_, _, DefiniteExecution.Accepted _, _) -> ()
-        | _ -> failtest "Disposal must not relabel an admitted accepted mutation"
+        | SubmissionOutcome.Completed _ -> failtest "Admitted mutation completed without acceptance"
+        | SubmissionOutcome.ObservedAccepted _ -> ()
+        | SubmissionOutcome.RejectedBeforeAttempt _ ->
+            failtest "Admitted mutation was rejected before its attempt"
+        | SubmissionOutcome.FailedBeforeAttempt _ ->
+            failtest "Admitted mutation failed before its attempt"
+        | SubmissionOutcome.PreparationStateUnknown _ ->
+            failtest "Admitted mutation left preparation state unknown"
+        | SubmissionOutcome.CancelledBeforeAdmission _ ->
+            failtest "Admitted mutation was cancelled before admission"
+        | SubmissionOutcome.CancelledBeforeAttempt _ ->
+            failtest "Admitted mutation was cancelled before its attempt"
+        | SubmissionOutcome.AttemptAdmissionUnknown _ ->
+            failtest "Admitted mutation left attempt admission unknown"
+        | SubmissionOutcome.AttemptUnresolved _ ->
+            failtest "Admitted mutation left its attempt unresolved"
 
         Expect.isTrue (disposing.Wait(10000)) "Disposal completes after mutation settlement"
     finally

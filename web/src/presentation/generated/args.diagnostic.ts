@@ -44,10 +44,13 @@ export type DiagnosticArgs = {
   "diagnostic.CASE_DECISION_ALREADY_PAID": Readonly<Record<string, never>>;
   "diagnostic.CASE_ZERO_DECISION_CANNOT_BE_PAID": Readonly<Record<string, never>>;
   "diagnostic.QUERY_PAGE_LIMIT_RANGE": { readonly maximumPageSize: string };
+  "diagnostic.QUERY_CASE_LIST_CURSOR_INVALID": Readonly<Record<string, never>>;
   "diagnostic.QUERY_HISTORY_CURSOR_INVALID": Readonly<Record<string, never>>;
   "diagnostic.OPERATION_CONTENT_CONFLICT": Readonly<Record<string, never>>;
   "diagnostic.OPERATION_REVOKED": Readonly<Record<string, never>>;
   "diagnostic.OPERATION_RECOVERY_ATTEMPT_LIMIT": Readonly<Record<string, never>>;
+  "diagnostic.ACCESS_RESOURCE_UNAVAILABLE": Readonly<Record<string, never>>;
+  "diagnostic.RESOURCE_UNAVAILABLE": Readonly<Record<string, never>>;
   "diagnostic.CORE_OPERATION_CONTENT_CONFLICT": Readonly<Record<string, never>>;
   "diagnostic.CORE_STORE_UNAVAILABLE": Readonly<Record<string, never>>;
   "diagnostic.CORE_COMMIT_OUTCOME_UNKNOWN": Readonly<Record<string, never>>;
@@ -87,7 +90,6 @@ export type DiagnosticArgs = {
   "diagnostic.RECOVERY_REQUEST_DIGEST_MISMATCH": Readonly<Record<string, never>>;
   "diagnostic.RECOVERY_INSTALLATION_MISMATCH": Readonly<Record<string, never>>;
   "diagnostic.RECOVERY_ENVELOPE_INVALID_OR_UNSUPPORTED": Readonly<Record<string, never>>;
-  "diagnostic.RECOVERY_CANONICAL_RECORD_INVALID_OR_UNSUPPORTED": Readonly<Record<string, never>>;
   "diagnostic.RECOVERY_OPERATION_REVOKED": Readonly<Record<string, never>>;
   "diagnostic.RECOVERY_ATTEMPT_LIMIT_REACHED": Readonly<Record<string, never>>;
   "diagnostic.WEB_HOST_CONNECTION_REJECTED": Readonly<Record<string, never>>;
@@ -97,7 +99,6 @@ export type DiagnosticArgs = {
   "diagnostic.WEB_INPUT_BODY_TOO_LARGE": Readonly<Record<string, never>>;
   "diagnostic.WEB_HOST_SESSION_REJECTED": Readonly<Record<string, never>>;
   "diagnostic.WEB_HOST_ANTIFORGERY_REJECTED": Readonly<Record<string, never>>;
-  "diagnostic.WEB_HOST_LOGIN_REJECTED": Readonly<Record<string, never>>;
   "diagnostic.WEB_HOST_ENDPOINT_MISSING": Readonly<Record<string, never>>;
   "diagnostic.WEB_HOST_BUSY": Readonly<Record<string, never>>;
   "diagnostic.WEB_HOST_EXPORT_METADATA_INVALID": Readonly<Record<string, never>>;

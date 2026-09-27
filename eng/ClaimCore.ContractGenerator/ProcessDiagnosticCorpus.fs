@@ -55,7 +55,7 @@ module internal ProcessDiagnosticCorpus =
             CliProcessProblem.UnsupportedInvocation, CliDeliveryPhase.Idle, false, None
             CliProcessProblem.UnexpectedFailure, CliDeliveryPhase.Idle, false, None
             CliProcessProblem.InputReadFailed, CliDeliveryPhase.Reading, false, None
-            CliProcessProblem.RuntimeAcquireFailed, CliDeliveryPhase.AcquiringRuntime, false, None
+            CliProcessProblem.ServiceAcquireFailed, CliDeliveryPhase.AcquiringService, false, None
             CliProcessProblem.DispatchFailed,
             CliDeliveryPhase.Dispatching,
             true,
@@ -82,6 +82,7 @@ module internal ProcessDiagnosticCorpus =
 
     let private adminFailures =
         DatabaseDiagnostics.nativeReasons
+        |> List.filter ((<>) AdministrationFailure.DataAuditFailed)
         |> List.collect (fun reason ->
             let outcomes: AdministrationOutcome<PreparationPruneResult option> list =
                 if reason = AdministrationFailure.CommitUnconfirmed then
@@ -141,6 +142,83 @@ module internal ProcessDiagnosticCorpus =
             @ (DatabaseDiagnostics.deliveryFailure command result
                |> samples "administration" (id + "-delivery")))
 
+    let private dataAuditCounts =
+        {|
+            cases = "1"
+            acceptedOperations = "1"
+            lifecycleEvents = "0"
+            erasureFences = "0"
+            terminalApprovals = "0"
+            terminalEvents = "0"
+            revocations = "0"
+            authorityEvents = "1"
+            actors = "1"
+            grants = "1"
+            signerApprovals = "0"
+            copyDeletionApprovals = "0"
+            writerHandoffApprovals = "0"
+            writerHandoffPreparations = "0"
+            writerHandoffs = "0"
+            writerActivations = "0"
+            writerHandoffAborts = "0"
+            signerKeys = "0"
+            signerEvents = "0"
+            ownerManagedCopies = "0"
+            copyPhysicalVerifications = "0"
+            managedExports = "0"
+            witnessEntries = "2"
+            pendingIntents = "0"
+        |}
+
+    let private adminDataAudit =
+        let verified =
+            JsonSerializer.SerializeToElement(
+                {|
+                    kind = "dataAuditResult"
+                    command = "VERIFY_DATA"
+                    scope = "CURRENT_PRIMARY_AND_WITNESS"
+                    status = "VERIFIED"
+                    installationId = "10000000-0000-4000-8000-000000000001"
+                    lineageId = "10000000-0000-4000-8000-000000000002"
+                    epoch = "1"
+                    witnessCutoff = "2"
+                    witnessTipHash = String.replicate 64 "a"
+                    counts = dataAuditCounts
+                |}
+            )
+
+        let quarantined =
+            JsonSerializer.SerializeToElement(
+                {|
+                    kind = "dataAuditResult"
+                    command = "VERIFY_DATA"
+                    status = "QUARANTINED"
+                    diagnostic =
+                        {|
+                            id = "DB_DATA_AUDIT_FAILED"
+                            parameters = Map.empty<string, int>
+                        |}
+                    recommendedAction = "INSPECT_AND_RECONCILE"
+                |}
+            )
+
+        [
+            "admin-verify-data", "administration", true, verified
+            "admin-verify-data-numeric-cutoff",
+            "administration",
+            false,
+            replace "witnessCutoff" (fun writer -> writer.WriteNumberValue(2)) verified
+            "admin-verify-data-extra",
+            "administration",
+            false,
+            CorpusJson.rewrite verified "" None true
+            "admin-verify-data-quarantined", "administration", true, quarantined
+            "admin-verify-data-forged",
+            "administration",
+            false,
+            replace "status" (fun writer -> writer.WriteStringValue("DELETED")) quarantined
+        ]
+
     let private writeCase (writer: Utf8JsonWriter) (id, surface, valid, value: JsonElement) =
         writer.WriteStartObject()
         writer.WriteString("id", (id: string))
@@ -157,7 +235,7 @@ module internal ProcessDiagnosticCorpus =
         writer.WriteNumber("schemaVersion", 1)
         writer.WriteStartArray("cases")
 
-        cli @ web @ adminFailures @ adminInputs @ adminCompletion
+        cli @ web @ adminFailures @ adminInputs @ adminCompletion @ adminDataAudit
         |> List.iter (writeCase writer)
 
         writer.WriteEndArray()
