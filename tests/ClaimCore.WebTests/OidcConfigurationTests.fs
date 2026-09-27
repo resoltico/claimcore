@@ -66,7 +66,13 @@ let private configurePrivateCa directory =
     Expect.throws (fun () -> Configuration.load () |> ignore) "Malformed CA is refused"
     caPath
 
-let private writeCandidateCa (caPath: string) isCa (usage: X509KeyUsageFlags option) notBefore notAfter =
+let private writeCandidateCa
+    (caPath: string)
+    isCa
+    (usage: X509KeyUsageFlags option)
+    notBefore
+    notAfter
+    =
     use rsa = RSA.Create(2048)
 
     let request =

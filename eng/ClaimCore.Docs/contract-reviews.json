@@ -552,7 +552,7 @@
       "reviewer": "Agent reviewed the exact current heading and listed implementation and assertion sources; this is source review of local synthetic boundaries, not execution evidence, independent owner approval, or live real-data qualification.",
       "reviewedOn": "2026-09-27",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "ebf7173450afe60cf5574a9eed6e4357ba72b47522218c0916daf295d7b02761",
+      "reviewSubjectHash": "a7015ff90690c276d887ac8f3e68b7f132848517d2b6869fb03c2f976dd416bb",
       "wholeFiles": [
         "docs/diagnostics.md",
         "eng/ClaimCore.ContractGenerator/Artifacts.fs",
