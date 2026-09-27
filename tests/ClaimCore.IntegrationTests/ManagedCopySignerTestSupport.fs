@@ -19,7 +19,11 @@ let appliedManagement eventId =
 let approved approvalId =
     function
     | CopySignerApprovalOutcome.Approved(id, revision) when id = approvalId && revision > 0L -> ()
-    | _ -> failtest "Authenticated signer approval was not witnessed."
+    | CopySignerApprovalOutcome.ResourceUnavailable ->
+        failtest "Authenticated signer approval was unavailable."
+    | CopySignerApprovalOutcome.StartedUnconfirmed _ ->
+        failtest "Authenticated signer approval remained unconfirmed."
+    | _ -> failtest "Authenticated signer approval identity or revision diverged."
 
 let appliedSigner eventId =
     function

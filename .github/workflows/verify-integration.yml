@@ -24,6 +24,13 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/toolchain
+      - name: Install PostgreSQL 18 backup qualification clients
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash eng/Install-BackupQualificationTools.sh
+          echo "CLAIMCORE_PG_BIN=/usr/lib/postgresql/18/bin" >> "$GITHUB_ENV"
+          echo "$RUNNER_TEMP/claimcore-age/bin" >> "$GITHUB_PATH"
       - name: Restore and build the locked source tree
         run: |
           dotnet restore ClaimCore.slnx --locked-mode

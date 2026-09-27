@@ -55,6 +55,11 @@ let tests =
                 "[CC-BACKUP-001] encrypted dual-cluster backup is verified by isolated restores and rejects altered evidence"
                 (fun _ ->
                     Expect.equal
+                        (runScript "python3" "Test-ToolVersions.py")
+                        0
+                        "Backup tool version boundaries must remain exact"
+
+                    Expect.equal
                         (runScript "bash" "Test-ManagedBackup.sh")
                         0
                         "Synthetic backup and restore qualification must complete")

@@ -10,6 +10,8 @@ import subprocess
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+from tool_versions import matches as matches_tool_version
+
 
 class VerificationFailure(Exception):
     def __init__(self, code):
@@ -206,7 +208,9 @@ def tool(name, version):
         )
         require(
             result.returncode == 0
-            and result.stdout.decode("utf-8", "replace").startswith(version),
+            and matches_tool_version(
+                name, version, result.stdout.decode("utf-8", "replace")
+            ),
             "TOOL_VERSION_REFUSED",
         )
     return found

@@ -133,6 +133,7 @@ scheduled extended run explores the same boundaries at 5,000 cases.
 The integration and qualification processes create exactly labelled isolated PostgreSQL containers.
 The separate qualification executables prevent a generic integration pass from being reported as
 recovery, concurrency, or fresh-baseline evidence.
+Linux CI installs PGDG-signed PostgreSQL 18.6 tools and checksum-pinned age 1.3.2 for the backup drills; it disables automatic creation of a host PostgreSQL cluster. A local backup qualification needs the same PostgreSQL 18.6 tools in `CLAIMCORE_PG_BIN` or `PATH` and age 1.3.2 in `PATH`.
 
 `ClaimCore.WebTests` includes production-route `TestServer` requests for all thirty-three generated
 Web-v3 endpoints, OIDC session cookies and antiforgery admission, retired-route 404 behavior, raw

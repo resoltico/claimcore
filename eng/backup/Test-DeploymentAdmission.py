@@ -10,6 +10,7 @@ import tempfile
 import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from unittest.mock import patch
 
 sys.dont_write_bytecode = True
 from deployment_common import (
@@ -21,7 +22,7 @@ from deployment_common import (
     verify,
 )
 from deployment_fenced_objects import final_objects_digest
-from deployment_probe import probe
+from deployment_probe import machine_id, probe
 from deployment_product import product_recheck
 from deployment_trust import ROLES, evaluate
 from deployment_verify import ssh_command, verify_deployment
@@ -665,7 +666,9 @@ def private_path_negative(root):
 def location_inventory_negative(root):
     registry_private, registry_public = keypair(root, "registry-signer")
     inspector_private, _ = keypair(root, "inspection-signer")
-    copy = root / "known-copy.age"
+    copy_root = root / "private-copy"
+    copy_root.mkdir(mode=0o700)
+    copy = copy_root / "known-copy.age"
     copy.write_bytes(b"synthetic ciphertext")
     copy.chmod(0o600)
     now = datetime.now(timezone.utc)
@@ -777,7 +780,13 @@ def main():
         config, qualified = exercise(root)
         product_report_negative(root, config, qualified)
         publication_recheck_synthetic(root)
-        local_probe_negative(root)
+        probe_root = root / "private-probe"
+        probe_root.mkdir(mode=0o700)
+        local_probe_negative(probe_root)
+        if sys.platform.startswith("linux"):
+            for failure in (OSError("synthetic"), UnicodeError("synthetic")):
+                with patch("deployment_probe.Path.read_text", side_effect=failure):
+                    refuses(machine_id, "machine-id-unavailable")
         ssh_pin_negative(root, config)
         private_path_negative(root)
         location_inventory_negative(root)

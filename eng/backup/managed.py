@@ -26,6 +26,7 @@ import inventory
 import promotion
 from checkpoint_signer_policy import socket_directory
 from pg_service_policy import validate as validate_pg_service
+from tool_versions import matches as matches_tool_version
 
 ROOT = Path(__file__).resolve().parents[2]
 CLUSTERS = ("primary", "witness")
@@ -225,7 +226,9 @@ def tool(name, version_prefix=None):
         result = subprocess.run([found, "--version"], capture_output=True, check=False)
         require(
             result.returncode == 0
-            and result.stdout.decode("utf-8", "replace").startswith(version_prefix),
+            and matches_tool_version(
+                name, version_prefix, result.stdout.decode("utf-8", "replace")
+            ),
             "wrong-tool-version-" + name,
         )
     return found

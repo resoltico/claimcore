@@ -21,6 +21,7 @@ from fenced_tail_io import (
     require,
     require_container_segment,
 )
+from tool_versions import matches as matches_tool_version
 
 __all__ = ["CaptureRefusal"]
 
@@ -39,7 +40,12 @@ def waldump_executable():
                 maximum=64,
                 stage="wal-inspection-tool",
             )
-            require(version == "pg_waldump (PostgreSQL) 18.6", "wal-inspection-version")
+            require(
+                matches_tool_version(
+                    "pg_waldump", "pg_waldump (PostgreSQL) 18.6", version
+                ),
+                "wal-inspection-version",
+            )
             return candidate
     raise CaptureRefusal("wal-inspection-tool-unavailable")
 

@@ -24,7 +24,10 @@ ROLES = ("primary", "witness", "archive", "checkpoint", "key")
 def machine_id():
     system = platform.system()
     if system == "Linux":
-        value = Path("/etc/machine-id").read_text("ascii").strip().lower()
+        try:
+            value = Path("/etc/machine-id").read_text("ascii").strip().lower()
+        except (OSError, UnicodeError):
+            raise DeploymentRefusal("machine-id-unavailable") from None
         require(
             re.fullmatch(r"[0-9a-f]{32}", value) is not None and value != "0" * 32,
             "machine-id-unavailable",
