@@ -122,7 +122,7 @@
       "reviewer": "Agent reviewed the exact current heading and listed implementation and assertion sources; this is source review of local synthetic boundaries, not execution evidence, independent owner approval, or live real-data qualification.",
       "reviewedOn": "2026-09-27",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "14427aad09ddfb5060e21d21327aadd9bd263ca0153fe65c8dfce62927a7669e",
+      "reviewSubjectHash": "9bb56e1e7b88f18073deb0b400d127fc14c10aaefbe40c7a682129a25b1733b8",
       "wholeFiles": [
         "src/ClaimCore.Postgres/DataAudit.fs",
         "src/ClaimCore.Postgres/DataAuditJournal.fs",
@@ -134,6 +134,7 @@
         "tests/ClaimCore.IntegrationTests/CaseErasurePurgeAuditTests.fs",
         "tests/ClaimCore.IntegrationTests/CaseTombstoneTerminalAuditTamperTests.fs",
         "tests/ClaimCore.IntegrationTests/ManagedCopyExternalPublicationPruneTests.fs",
+        "tests/ClaimCore.IntegrationTests/ManagedCopyExternalPublicationTests.fs",
         "src/ClaimCore.Postgres/DataAuditAuthority.fs",
         "src/ClaimCore.Postgres/DataAuditJournalCommands.fs"
       ],
@@ -175,7 +176,7 @@
       "reviewer": "Agent reviewed the exact current heading and listed implementation and assertion sources; this is source review of local synthetic boundaries, not execution evidence, independent owner approval, or live real-data qualification.",
       "reviewedOn": "2026-09-27",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "b468a0e2d556a96b30efe1c16b674f8e2760d8f1889879374d04e5a900df6ee3",
+      "reviewSubjectHash": "d8cd3a0b6b40301a3d780f5227e42e8922ca2b2132c5f96e8ea1a996aee471aa",
       "wholeFiles": [
         "db/baseline.sql",
         ".github/workflows/verify-integration.yml",
@@ -185,6 +186,7 @@
         "src/ClaimCore.Postgres/ManagedCopyAdoptionApprovalPolicy.fs",
         "src/ClaimCore.Postgres/ManagedCopyDeletionApprovalPolicy.fs",
         "src/ClaimCore.Postgres/ManagedCopySignerApproval.fs",
+        "src/ClaimCore.Postgres/ManagedCopyAdoptionDocumentCommon.fs",
         "src/ClaimCore.Postgres/RealDataActivationApprovalChecks.fs",
         "src/ClaimCore.Postgres/WriterHandoffApproval.fs",
         "src/ClaimCore.Postgres/BackupHealthRuntimeAdmission.fs",
@@ -205,6 +207,7 @@
         "tests/ClaimCore.IntegrationTests/ManagedCopyPhysicalProcessTests.fs",
         "tests/ClaimCore.IntegrationTests/ManagedCopySignerTestSupport.fs",
         "tests/ClaimCore.IntegrationTests/ManagedCopySignerTests.fs",
+        "tests/ClaimCore.IntegrationTests/ManagedCopyExternalPublicationTests.fs",
         "tests/ClaimCore.IntegrationTests/ManagedCopyAdoptionApprovalTests.fs",
         "tests/ClaimCore.IntegrationTests/RealDataActivationApprovalUncertaintyTests.fs",
         "tests/ClaimCore.IntegrationTests/WriterHandoffApprovalTests.fs",
@@ -426,7 +429,7 @@
       "reviewer": "Agent reviewed the exact current heading and listed implementation and assertion sources; this is source review of local synthetic boundaries, not execution evidence, independent owner approval, or live real-data qualification.",
       "reviewedOn": "2026-09-27",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "b0423c73ca7a0433003d8c24532049c8c7cf0cdcbdaadf4359f110fa461204ec",
+      "reviewSubjectHash": "4602f576d5d6465bd428cd5b1e959d7306cfddd7a683afae2da20bc5806e739d",
       "wholeFiles": [
         "src/ClaimCore.Postgres/CaseErasurePurgePreparation.fs",
         "src/ClaimCore.Postgres/CaseErasurePurgeExecution.fs",
@@ -443,6 +446,7 @@
         "tests/ClaimCore.IntegrationTests/DatabaseTerminalCopyAbsenceTests.fs",
         "src/ClaimCore.Postgres/CaseTombstonePruneApprovalPersistence.fs",
         "tests/ClaimCore.IntegrationTests/ManagedCopyAdoptionDocuments.fs",
+        "tests/ClaimCore.IntegrationTests/ManagedCopyExternalPublicationTests.fs",
         "tests/ClaimCore.IntegrationTests/ManagedCopyVerifiedDeletionCompletion.fs"
       ],
       "markedSpans": []

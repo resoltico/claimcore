@@ -3,6 +3,7 @@ module ClaimCore.IntegrationTests.ManagedCopyExternalPublicationTests
 open System
 open System.IO
 open System.Security.Cryptography
+open System.Text.Json
 open System.Threading
 open Expecto
 open Npgsql
@@ -18,6 +19,16 @@ open ClaimCore.IntegrationTests.CaseErasurePurgeTests
 open ClaimCore.IntegrationTests.ManagedCopyExternalPublicationFixture
 
 let private ct = CancellationToken.None
+
+let private refuseSubMicrosecondSignedTime () =
+    use document =
+        JsonDocument.Parse("{\"observedAt\":\"2026-10-01T00:00:00.0000001+00:00\"}")
+
+    Expect.throwsT<InvalidOperationException>
+        (fun () ->
+            ManagedCopyAdoptionDocumentCommon.instant document.RootElement "observedAt"
+            |> ignore)
+        "Sub-microsecond signed copy time cannot create unroundtrippable custody evidence."
 
 let private publish owner witness commitments (fixture: PublicationFixture) =
     ManagedCopyExternalPublicationOwner.publish
@@ -92,6 +103,7 @@ let private publication owner _ (witness: WitnessProtocol) (runtime: Runtime) pr
     Expect.equal (count.ExecuteScalar() :?> int64) 1L "Only the pre-fence copy was published"
 
 let private refusals owner _ (witness: WitnessProtocol) (runtime: Runtime) proposer _ _ _ _ =
+    refuseSubMicrosecondSignedTime ()
     let _, _, caseId = openSyntheticCase owner runtime proposer
     let fixture = create owner witness runtime proposer caseId
     let commitments = FixturePrivateFiles.syntheticCommitments witness.Identity

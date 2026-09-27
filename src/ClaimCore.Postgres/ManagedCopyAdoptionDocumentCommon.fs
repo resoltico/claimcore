@@ -35,7 +35,7 @@ module internal ManagedCopyAdoptionDocumentCommon =
         let value =
             DateTimeOffset.ParseExact(raw, "O", CultureInfo.InvariantCulture, DateTimeStyles.None)
 
-        if value.Offset <> TimeSpan.Zero || value.ToString("O") <> raw then
+        if not (Sql.isUtcMicrosecond value) || value.ToString("O") <> raw then
             invalidOp "Signed copy adoption time is noncanonical."
 
         value

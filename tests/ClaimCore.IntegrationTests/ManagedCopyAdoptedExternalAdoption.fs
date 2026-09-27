@@ -119,7 +119,7 @@ let private signedRequest
     use commitmentKey = ManagedCopyCommitmentKey.Load(publication.CommitmentKeyPath)
     let location = commitmentKey.Commit("location", publication.CiphertextPath)
     let custodian = commitmentKey.Commit("custodian", publication.CustodianId)
-    let now = DateTimeOffset.UtcNow
+    let now = utcMicrosecond DateTimeOffset.UtcNow
 
     let submission, _ =
         signedDocsForOrigin
