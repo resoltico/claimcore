@@ -113,7 +113,7 @@ regenerate and compare every checked artifact; do not hand edit generated contra
 During the pre-1.0 source preview, `/api/v3` identifies this route and admission family, not a
 promise that every response shape remains backward-compatible. The host and bundled browser must
 agree on the exact Web fingerprint before claimant-bearing responses are accepted.
-Signer, copy-deletion, copy-adoption, writer-handoff, and real-data-activation approval instants use UTC microsecond precision: the required seven fractional digits end in `0`. Sub-microsecond input is refused before it can create signed evidence that PostgreSQL cannot round-trip exactly.
+Signer, copy-deletion, copy-adoption, writer-handoff, and real-data-activation approval instants, plus an erasure-purge proposal's `validUntil`, use UTC microsecond precision: the required seven fractional digits end in `0`. Sub-microsecond input is refused before it can create signed evidence that PostgreSQL cannot round-trip exactly.
 
 Before the host admits requests, shared HostSecurity checks physical credential, certificate, state, and lock paths through opened handles. Existing broad-mode, extended-ACL, or linked files are refused without chmod or redirected creation. OIDC client secrets, witness keys, and suppression material remain server-side.
 Private-file startup fails closed on Windows rather than guessing an equivalent ACL check.

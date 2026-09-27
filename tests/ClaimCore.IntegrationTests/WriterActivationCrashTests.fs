@@ -18,7 +18,7 @@ open ClaimCore.IntegrationTests.WriterActivationTests
 let private witnessOnlyActivation (context: SettledW1Context) =
     let value =
         { evidence (syntheticTail context) with
-            ValidUntil = DateTimeOffset.UtcNow.AddSeconds(10.0)
+            ValidUntil = utcMicrosecond (DateTimeOffset.UtcNow.AddSeconds(10.0))
         }
 
     let activationId = WriterActivationCandidate.activationId context.HandoffId

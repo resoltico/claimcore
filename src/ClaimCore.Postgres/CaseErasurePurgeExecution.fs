@@ -248,7 +248,9 @@ module internal CaseErasurePurge =
                 let caseId, change = CaseLifecycleAuditCodec.decodeDraft canonicalDraft
 
                 match change.Action with
-                | LifecycleMutation.PurgeLivePayload _ ->
+                | LifecycleMutation.PurgeLivePayload(_, validUntil) when
+                    Sql.isUtcMicrosecond validUntil
+                    ->
                     return!
                         attempt
                             ownerConnectionString
@@ -260,5 +262,7 @@ module internal CaseErasurePurge =
                             ct
                             caseId
                             change
+                | LifecycleMutation.PurgeLivePayload _ ->
+                    return OwnerPurgeOutcome.Refused OwnerPurgeRefusal.ProposalMismatch
                 | _ -> return OwnerPurgeOutcome.Refused OwnerPurgeRefusal.ErasureNotPending
         }

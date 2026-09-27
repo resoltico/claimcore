@@ -3,7 +3,7 @@ import { webV3CaseworkEndpoints } from "./web-v3.endpoint-catalog.casework";
 import { webV3AuthorityEndpoints } from "./web-v3.endpoint-catalog.authority";
 
 export const webV3WireContractFingerprint =
-  "fc242df9cc0e882b825ad6a78d026efa58c48d335796aad9c6017c68cb5bb61c";
+  "c28a1543ea70d512d810fe5976b8e497e7494bfd8a66f1628a3630d103a0225a";
 
 export const webV3HostFailureStatuses = [400, 401, 403, 404, 405, 413, 415, 429, 500] as const;
 

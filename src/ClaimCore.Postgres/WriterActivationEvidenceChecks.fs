@@ -74,6 +74,7 @@ module internal WriterActivationEvidenceChecks =
         && value.IndependentProbeSha256.Length = 32
         && value.ProbeEvidenceSha256.Length = 32
         && value.W1Hash.Length = 32
+        && Sql.isUtcMicrosecond value.ValidUntil
 
     let private primary
         (connection: NpgsqlConnection)

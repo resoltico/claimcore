@@ -4,12 +4,12 @@ import hashlib
 import json
 import os
 import re
-import shutil
 import stat
 import subprocess
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+from tool_versions import locate as locate_tool
 from tool_versions import matches as matches_tool_version
 
 
@@ -200,7 +200,7 @@ def exact_json(raw):
 
 
 def tool(name, version):
-    found = shutil.which(name)
+    found = locate_tool(name)
     require(found is not None, "TOOL_UNAVAILABLE")
     if version:
         result = subprocess.run(

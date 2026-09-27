@@ -13,6 +13,8 @@ open ClaimCore.Postgres
 open ClaimCore.Hosting
 open ClaimCore.IntegrationTests.Fixtures
 open ClaimCore.IntegrationTests.CaseLifecycleStoreTests
+open ClaimCore.IntegrationTests.CaseErasurePurgeTimestampAssertions
+open ClaimCore.IntegrationTests.CaseErasurePurgeReviewAssertions
 
 let private cancellation = CancellationToken.None
 
@@ -61,7 +63,7 @@ let internal proposalWith
 
     actor.Lifecycle.Apply(pending, cancellation) |> await |> ignore
     let current = review actor input.CaseReference
-    let expiry = DateTimeOffset.UtcNow.AddHours 1.0
+    let expiry = utcMicrosecond (DateTimeOffset.UtcNow.AddHours 1.0)
 
     let purge =
         change
@@ -212,31 +214,6 @@ let private assertPostPurgeAudit
 
     Expect.equal report.ErasureFences 1L "Purged tombstone is read-only audited"
 
-let private assertOpaqueTombstone
-    (source: NpgsqlDataSource)
-    (runtime: Runtime)
-    first
-    id
-    (change: LifecycleChange)
-    (commitments: ISuppressionCommitments)
-    =
-    let gate = new PostgresActorGate(source, commitments) :> IActorGate
-
-    let context =
-        gate.Tombstone(first, EndpointAction.ReviewTombstone, id, cancellation) |> await
-
-    Expect.isSome context "Current steward must be admitted to the opaque tombstone"
-
-    match (runtime.ForActor first).Tombstones.Review(id, cancellation) |> await with
-    | TombstoneReviewOutcome.Available review when
-        review.CaseId = id
-        && review.PurgeEventId = change.EventId
-        && review.TargetCount > 0L
-        && review.RequiredDistinctStewardApprovals = 2
-        ->
-        ()
-    | _ -> failtest "Steward tombstone seal review was unavailable."
-
 let private runSynthetic
     (owner: string)
     (source: NpgsqlDataSource, _)
@@ -262,6 +239,16 @@ let private runSynthetic
     use connection = new NpgsqlConnection(owner)
     connection.Open()
 
+    assertUnalignedPurgeRefused
+        owner
+        connection
+        witness
+        commitments
+        (syntheticInventory id)
+        id
+        change
+        cancellation
+
     match
         CaseErasurePurge.execute
             owner
@@ -280,7 +267,7 @@ let private runSynthetic
 
     assertPostPurgeAudit auditConnection witness commitments
 
-    assertOpaqueTombstone source runtime first id change commitments
+    assertOpaqueTombstone source runtime first id change commitments cancellation
 
     ordinaryDenied actor input
     exactRetry owner connection witness commitments id change draft

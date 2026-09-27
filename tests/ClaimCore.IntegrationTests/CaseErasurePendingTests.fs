@@ -170,7 +170,7 @@ let private purgeApprovalsDoNotDelete =
                         current
                         (LifecycleMutation.PurgeLivePayload(
                             "Synthetic live purge proposal",
-                            DateTimeOffset.UtcNow.AddHours 2.0
+                            utcMicrosecond (DateTimeOffset.UtcNow.AddHours 2.0)
                         ))
 
                 match proposerActor.Lifecycle.Apply(purge, cancellation) |> await with

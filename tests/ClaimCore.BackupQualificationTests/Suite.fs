@@ -28,13 +28,18 @@ let private expectedRefusalStages =
     ]
 
 let private safeStage (diagnostics: string) =
+    let toolReason =
+        Regex.Match(diagnostics, "\"reason\"\\s*:\\s*\"([a-z0-9-]{1,70})\"")
+
     let shellStage =
         Regex.Match(
             diagnostics,
             "(?:backup-test-stage=line-[0-9]{1,4}|checkpoint-signer-stage=[a-z-]{1,70})"
         )
 
-    if shellStage.Success then
+    if toolReason.Success then
+        "backup-reason-" + toolReason.Groups[1].Value
+    elif shellStage.Success then
         shellStage.Value
     else
         expectedRefusalStages
@@ -107,6 +112,12 @@ let tests =
                         (safeStage "private fixture detail without a safe stage")
                         "stage-unavailable"
                         "Private script diagnostics are not emitted by the test."
+
+                    Expect.equal
+                        (safeStage
+                            "{\"status\":\"quarantined\",\"reason\":\"pg-verifybackup-failed\"}")
+                        "backup-reason-pg-verifybackup-failed"
+                        "A closed backup refusal category survives redaction."
 
                     Expect.equal
                         (runScript "python3" "Test-ToolVersions.py")

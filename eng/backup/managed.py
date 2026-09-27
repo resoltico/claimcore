@@ -26,6 +26,7 @@ import inventory
 import promotion
 from checkpoint_signer_policy import socket_directory
 from pg_service_policy import validate as validate_pg_service
+from tool_versions import locate as locate_tool
 from tool_versions import matches as matches_tool_version
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -220,7 +221,7 @@ def configuration(path, archiver=False):
 
 
 def tool(name, version_prefix=None):
-    found = shutil.which(name)
+    found = locate_tool(name)
     require(found is not None, "missing-tool-" + name)
     if version_prefix:
         result = subprocess.run([found, "--version"], capture_output=True, check=False)

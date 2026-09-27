@@ -55,6 +55,16 @@ let private purgeApproval () =
         | _ -> failtest "Wrong purge approval mutation decoded"
     | Error _ -> failtest "Exact owner-purge approval must decode"
 
+    let unaligned =
+        approved.Replace(
+            "\"validUntil\":\"2026-10-01T00:00:00.0000000+00:00\"",
+            "\"validUntil\":\"2026-10-01T00:00:00.0000001+00:00\""
+        )
+
+    match HttpLifecycleInput.approve (bytes unaligned) with
+    | Ok _ -> failtest "Sub-microsecond purge authority cannot be stored exactly."
+    | Error _ -> ()
+
 let private exactDraft () =
     match HttpLifecycleInput.apply (bytes change) with
     | Ok value ->

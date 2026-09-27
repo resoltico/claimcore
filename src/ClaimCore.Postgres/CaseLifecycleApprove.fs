@@ -157,7 +157,8 @@ module internal CaseLifecycleApprove =
         && expiresAt > approvalAt
         && expiresAt - approvalAt <= TimeSpan.FromHours 24.0
         && match change.Action with
-           | LifecycleMutation.PurgeLivePayload(_, validUntil) -> expiresAt <= validUntil
+           | LifecycleMutation.PurgeLivePayload(_, validUntil) ->
+               Sql.isUtcMicrosecond validUntil && expiresAt <= validUntil
            | _ -> true
 
     let private approvalIdentity (context: ActorCallContext) (change: LifecycleChange) approvalId =

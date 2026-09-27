@@ -182,6 +182,8 @@
     <Compile Include="CaseLifecycleCapacityTests.fs" />
     <Compile Include="CaseErasurePendingTests.fs" />
     <Compile Include="CaseErasureFencesTests.fs" />
+    <Compile Include="CaseErasurePurgeTimestampAssertions.fs" />
+    <Compile Include="CaseErasurePurgeReviewAssertions.fs" />
     <Compile Include="CaseErasurePurgeTests.fs" />
     <Compile Include="CaseTombstoneAuthorityTests.fs" />
     <Compile Include="CaseWitnessPayloadPruneEvidence.fs" />

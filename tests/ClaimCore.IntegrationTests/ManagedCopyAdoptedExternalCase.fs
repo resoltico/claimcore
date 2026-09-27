@@ -92,7 +92,7 @@ let fenceAndPurge
         "Synthetic external pending phase failed"
     |> ignore
 
-    let expires = DateTimeOffset.UtcNow.AddHours(1.0)
+    let expires = utcMicrosecond (DateTimeOffset.UtcNow.AddHours(1.0))
 
     let purgeRequest =
         change

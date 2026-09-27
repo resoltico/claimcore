@@ -59,7 +59,7 @@ module internal HttpLifecycleInput =
 
             LifecycleMutation.PurgeLivePayload(
                 required "reason" values |> stringValue,
-                required "validUntil" values |> timestamp
+                required "validUntil" values |> stringValue |> utcMicrosecondTimestampValue
             )
         | "RECORD_HOLD" ->
             exactProperties [ "kind"; "holdId"; "ground"; "reviewOn" ] values |> ignore

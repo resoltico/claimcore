@@ -1,6 +1,11 @@
 """Synthetic negative controls for exact backup tool versions."""
 
-from tool_versions import POSTGRES_TOOLS, matches
+import os
+import tempfile
+from pathlib import Path
+from unittest.mock import patch
+
+from tool_versions import POSTGRES_TOOLS, locate, matches
 
 
 def main():
@@ -20,6 +25,15 @@ def main():
     assert not matches("age", "v1.3.2", "v1.3.20")
     assert not matches("age", "v1.3.2", "v1.3.1")
     assert not matches("age", "v1.3.2", None)
+    with tempfile.TemporaryDirectory(prefix="claimcore-pg-tool-") as temporary:
+        selected = Path(temporary) / "pg_basebackup"
+        selected.write_text("synthetic executable path only", encoding="utf-8")
+        selected.chmod(0o700)
+        with patch.dict(os.environ, {"CLAIMCORE_PG_BIN": temporary}):
+            assert locate("pg_basebackup") == str(selected)
+            assert locate("psql") is None
+        with patch.dict(os.environ, {"CLAIMCORE_PG_BIN": "relative/path"}):
+            assert locate("pg_basebackup") is None
     print("Backup tool version boundaries passed.")
 
 

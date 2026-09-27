@@ -57,7 +57,7 @@ module internal WebLifecycleSchemas =
                             "PURGE_PAYLOAD"
                             [
                                 WireSchema.property "reason" reason
-                                WireSchema.property "validUntil" WireSchema.timestamp
+                                WireSchema.property "validUntil" WireSchema.microsecondTimestamp
                             ]
                     ]
                 )

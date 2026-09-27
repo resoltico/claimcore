@@ -196,7 +196,7 @@ let private activationFlow expireBeforeRetry (context: SettledW1Context) source 
 
         if expireBeforeRetry then
             { verified with
-                ValidUntil = DateTimeOffset.UtcNow.AddSeconds(30.0)
+                ValidUntil = utcMicrosecond (DateTimeOffset.UtcNow.AddSeconds(30.0))
             }
         else
             verified

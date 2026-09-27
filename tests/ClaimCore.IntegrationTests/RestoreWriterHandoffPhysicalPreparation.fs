@@ -76,7 +76,7 @@ let private approvedContext
     (produced: SignedRestoreProduction)
     =
     let checkedAt =
-        DateTimeOffset.FromUnixTimeSeconds(DateTimeOffset.UtcNow.ToUnixTimeSeconds() + 12L)
+        DateTimeOffset.FromUnixTimeSeconds(DateTimeOffset.UtcNow.ToUnixTimeSeconds())
 
     let validUntil = checkedAt.AddMinutes(9.)
     let fence = prospectiveFence report facts access input produced checkedAt validUntil
