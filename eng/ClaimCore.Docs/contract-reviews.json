@@ -321,7 +321,7 @@
       "reviewer": "Agent reviewed the exact current heading and listed implementation and assertion sources; this is source review of local synthetic boundaries, not execution evidence, independent owner approval, or live real-data qualification.",
       "reviewedOn": "2026-09-27",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "8d13683651d4d36adbe47587abe038331c82d733da773ba0115d9631cad19135",
+      "reviewSubjectHash": "d97043df0b79aabf0ea5717a2d31dc55c36077972d93c3c12abf8d9085e5a160",
       "wholeFiles": [
         "src/ClaimCore.HostSecurity/PrivateFileService.fs",
         "src/ClaimCore.HostSecurity/PosixPrivateFiles.fs",
@@ -550,7 +550,7 @@
       "reviewer": "Agent reviewed the exact current heading and listed implementation and assertion sources; this is source review of local synthetic boundaries, not execution evidence, independent owner approval, or live real-data qualification.",
       "reviewedOn": "2026-09-27",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "7ab0f20bc84a48f5624229bae402f969e2f7891584613b2fc69feb4c40b5784f",
+      "reviewSubjectHash": "a86509b1f8b48205adf86697261d8b231e00c5dcb2b9a839c16d54e6513e0498",
       "wholeFiles": [
         "docs/diagnostics.md",
         "eng/ClaimCore.ContractGenerator/Artifacts.fs",

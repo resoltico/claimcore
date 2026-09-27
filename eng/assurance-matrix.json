@@ -3412,7 +3412,7 @@
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Contracts foundation.endpoint inventories.projects every HTTP v3 endpoint in its stable order",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Contracts foundation.semantic projection.derives field, command, status, and rule inventories from the semantic core",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Database admin private-file boundary.[CC-DB-002] schema-owner credential rejects unsafe mode, links, UTF-8, and size before database access",
-        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Database admin private-file boundary.[CC-ERASE-001] owner witness prune rejects missing linked and malformed private proposals",
+        "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Database admin private-file boundary.[CC-ERASE-001] owner witness prune refuses unsafe private inputs before database access",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Domain semantic descriptors.numeric and status scalar descriptors.amount and currency descriptors own the existing exact grammars",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Domain semantic descriptors.numeric and status scalar descriptors.status descriptor is the closed Domain status vocabulary",
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.Domain semantic descriptors.ordered command inputs and prefill metadata.CORRECT_CASE describes required tagged groups and replacement fields",

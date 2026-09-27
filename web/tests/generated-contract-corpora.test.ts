@@ -65,7 +65,7 @@ const expectWebCoverage = (): void => {
 const expectCliShape = (): void => {
   const cases = parsedCliCases;
   const byId = new Map(cases.map((item) => [item.id, item]));
-  const endpointCount = cliValidators().endpoints.size;
+  const endpointCount = compiledCliValidators.endpoints.size;
   expect(crossCount(cases)).toBe(endpointCount * (endpointCount - 1));
   expect(cases.filter((value) => value.id.startsWith("pattern-"))).toHaveLength(8);
   expect(cases.filter((value) => value.id.startsWith("scalar-"))).toHaveLength(27);

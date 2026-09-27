@@ -144,17 +144,23 @@ let private witnessPruneProposalBoundary () =
                     "Host=127.0.0.1;Port=1;Database=synthetic;Username=synthetic;Password=synthetic-admin-marker"
                 ))
 
-        let expectProposalRefused path =
+        let expectPrivateInputRefused path =
             let exitCode, stdout, stderr = invokeCommand [ "prune-witness-payload"; path ] admin
 
-            Expect.equal exitCode 3 "Invalid proposal is rejected before owner connection"
-            Expect.equal stdout "" "No success output on refused proposal"
+            Expect.equal exitCode 3 "Unsafe private input is refused before database access"
+            Expect.equal stdout "" "No success output on refused private input"
             use parsed = System.Text.Json.JsonDocument.Parse(stderr)
+
+            let expectedDiagnostic =
+                if OperatingSystem.IsWindows() then
+                    "DB_CONNECTION_FILE_REFUSED"
+                else
+                    "DB_ERASURE_PROPOSAL_FILE_REFUSED"
 
             Expect.equal
                 (parsed.RootElement.GetProperty("diagnostic").GetProperty("id").GetString())
-                "DB_ERASURE_PROPOSAL_FILE_REFUSED"
-                "Private proposal refusal is typed"
+                expectedDiagnostic
+                "The first private-file admission refusal is typed"
 
             Expect.isFalse (stderr.Contains(path, StringComparison.Ordinal)) "Path is not echoed"
 
@@ -162,7 +168,7 @@ let private witnessPruneProposalBoundary () =
                 (stderr.Contains("synthetic-admin-marker", StringComparison.Ordinal))
                 "Owner credential is not echoed"
 
-        expectProposalRefused (Path.Combine(directory, "missing.proposal"))
+        expectPrivateInputRefused (Path.Combine(directory, "missing.proposal"))
 
         if not (OperatingSystem.IsWindows()) then
             let malformed =
@@ -171,10 +177,10 @@ let private witnessPruneProposalBoundary () =
                     "malformed.proposal"
                     (Encoding.UTF8.GetBytes("{\"version\":1}"))
 
-            expectProposalRefused malformed
+            expectPrivateInputRefused malformed
             let link = Path.Combine(directory, "proposal-link")
             File.CreateSymbolicLink(link, malformed) |> ignore
-            expectProposalRefused link)
+            expectPrivateInputRefused link)
 
 let tests =
     testList
@@ -184,6 +190,6 @@ let tests =
                 "[CC-DB-002] schema-owner credential rejects unsafe mode, links, UTF-8, and size before database access"
                 boundary
             testCase
-                "[CC-ERASE-001] owner witness prune rejects missing linked and malformed private proposals"
+                "[CC-ERASE-001] owner witness prune refuses unsafe private inputs before database access"
                 witnessPruneProposalBoundary
         ]
