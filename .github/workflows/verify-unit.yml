@@ -86,7 +86,7 @@ jobs:
             stage: web-linux
             assembly: ClaimCore.WebTests
             project: tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj
-            expected: 115
+            expected: 122
             prefix: web
             configuration: Release
             coverage: true
@@ -96,7 +96,7 @@ jobs:
             stage: web-macos
             assembly: ClaimCore.WebTests
             project: tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj
-            expected: 115
+            expected: 122
             prefix: web
             configuration: Release
             coverage: true
@@ -106,7 +106,7 @@ jobs:
             stage: web-windows
             assembly: ClaimCore.WebTests
             project: tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj
-            expected: 115
+            expected: 122
             prefix: web
             configuration: Release
             coverage: true

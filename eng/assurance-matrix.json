@@ -1074,9 +1074,9 @@
         "documentation",
         "recovery"
       ],
-      "subject": "The Integration inventory permits recovery leaves only beneath its sequenced root; a bare independently registered leaf fails the reviewed inventory assertion rather than running a second synthetic witness fixture.",
+      "subject": "Integration and Web inventories permit leaves only beneath their sequenced roots; bare independently registered leaves fail the reviewed inventory assertion rather than running duplicate fixtures.",
       "tests": [
-        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.convergence registration and evidence coverage.[CC-ARCH-001] integration inventory contains only sequenced root leaves"
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.convergence registration and evidence coverage.[CC-ARCH-001] Integration and Web inventories contain only sequenced root leaves"
       ]
     },
     {
@@ -1158,8 +1158,15 @@
         "protocol",
         "webHost"
       ],
-      "subject": "Web admission distinguishes absent or remote peers, exact browser origin and fetch metadata, and declared media/body-size boundaries before a core call.",
+      "subject": "Web admission distinguishes absent or remote peers, exact browser origin and fetch metadata, bearer transport, and declared media/body-size boundaries before a core call.",
       "tests": [
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web actor admission after synthetic authentication.[CC-WEB-001] bearer GET rejects unsafe transport before actor lookup",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web actor admission after synthetic authentication.[CC-WEB-001] bearer actor admission binds verified client and subject",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web actor admission after synthetic authentication.[CC-WEB-001] bearer transport refuses unsafe shapes before authentication",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web actor admission after synthetic authentication.[CC-WEB-001] browser cookie admission binds and rechecks a human actor",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web actor admission after synthetic authentication.[CC-WEB-001] browser cookie refuses unsafe transport before actor lookup",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web actor admission after synthetic authentication.[CC-WEB-001] failed or malformed bearer identities never select an actor",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web typed core routes.[CC-WEB-001] maps every admission refusal and bounded body before dispatch",
         "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web v3 admission.[CC-WEB-001] distinguishes media and exact declared body-size boundaries",
         "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web v3 admission.[CC-WEB-001] rejects absent and remote peers or wrong host authority",
         "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web v3 admission.[CC-WEB-001] requires one exact browser origin and same-origin metadata"
@@ -2918,7 +2925,7 @@
         "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Path and link safety.repository path confinement.rejects a symlink in an existing path",
         "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Path and link safety.repository path confinement.rejects rooted dot parent and backslash registered paths",
         "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.Path and link safety.repository path confinement.source provenance is closed, private-aware, and Git-worktree-safe",
-        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.convergence registration and evidence coverage.[CC-ARCH-001] integration inventory contains only sequenced root leaves",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.convergence registration and evidence coverage.[CC-ARCH-001] Integration and Web inventories contain only sequenced root leaves",
         "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.convergence registration and evidence coverage.every inventoried test assembly is required evidence in some stage",
         "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.convergence registration and evidence coverage.every required report names a registered stage",
         "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.convergence registration and evidence coverage.immutable source registrations.historical kind and inventory identity cannot change",
@@ -3723,8 +3730,10 @@
         "dotnet:ClaimCore.WebTests::ClaimCore.Web.OIDC authentication foundation.[CC-WEB-001] production issuer requires HTTPS and exact URI",
         "dotnet:ClaimCore.WebTests::ClaimCore.Web.OIDC configuration.[CC-WEB-001] OIDC configuration rejects HTTP issuer",
         "dotnet:ClaimCore.WebTests::ClaimCore.Web.OIDC configuration.[CC-WEB-001] private CA rejects malformed and broad-permission files",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.OIDC configuration.[CC-WEB-001] private issuer CA rejects wrong purpose and validity window",
         "dotnet:ClaimCore.WebTests::ClaimCore.Web.OIDC session route boundaries.[CC-WEB-001] OIDC challenge returns locally after PKCE callback",
         "dotnet:ClaimCore.WebTests::ClaimCore.Web.OIDC session route boundaries.[CC-WEB-001] OIDC cookie session logs out through CSRF admission",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.OIDC session route boundaries.[CC-WEB-001] definition refuses a core denial without disclosure",
         "dotnet:ClaimCore.WebTests::ClaimCore.Web.OIDC session route boundaries.[CC-WEB-001] shared bootstrap route is physically absent",
         "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v3 TestServer.[CC-WEB-001] HTTP failure statuses and execution phases use exact generated host bodies",
         "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v3 TestServer.[CC-WEB-001] OIDC logout revokes the browser ticket before disclosure",
@@ -3771,6 +3780,12 @@
         "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v3 wire projection.[CC-WEB-001] keeps host admission errors outside application outcomes",
         "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v3 wire projection.[CC-WEB-001] preserves command endpoint identities in typed outcome bodies",
         "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v3 wire projection.[CC-WEB-001] serializes logout as an anonymous session snapshot",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web actor admission after synthetic authentication.[CC-WEB-001] bearer GET rejects unsafe transport before actor lookup",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web actor admission after synthetic authentication.[CC-WEB-001] bearer actor admission binds verified client and subject",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web actor admission after synthetic authentication.[CC-WEB-001] bearer transport refuses unsafe shapes before authentication",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web actor admission after synthetic authentication.[CC-WEB-001] browser cookie admission binds and rechecks a human actor",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web actor admission after synthetic authentication.[CC-WEB-001] browser cookie refuses unsafe transport before actor lookup",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web actor admission after synthetic authentication.[CC-WEB-001] failed or malformed bearer identities never select an actor",
         "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web host private-file security.[CC-WEB-001] OIDC host preserves retained old credential evidence",
         "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web host private-file security.[CC-WEB-001] existing state mode and links fail without chmod or redirected creation",
         "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web host private-file security.[CC-WEB-001] state lock rejects linked or broad existing files without rewriting them",
@@ -3782,9 +3797,11 @@
         "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web session refusals through TestServer.[CC-WEB-001] logout rejects absent session and malformed or unverified bodies",
         "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web session refusals through TestServer.[CC-WEB-001] mixed bearer and browser credentials are refused",
         "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web session refusals through TestServer.[CC-WEB-001] retired bootstrap route refuses all request bodies",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web synthetic issuer transport trust.[CC-WEB-001] synthetic issuer TLS refuses absent wrong-host and unrelated certificates",
         "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web typed core routes.[CC-WEB-001] delegates case lookup to the endpoint-specific typed core method",
         "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web typed core routes.[CC-WEB-001] delegates recovery resolution only through IClaimsCore.Recovery",
         "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web typed core routes.[CC-WEB-001] keeps management refusal non-disclosing and uncertain event identity exact",
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web typed core routes.[CC-WEB-001] maps every admission refusal and bounded body before dispatch",
         "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web typed core routes.[CC-WEB-001] refuses raw retention without its exact source digest header",
         "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web typed core routes.[CC-WEB-001] rejects malformed transport before core invocation",
         "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web v3 admission.[CC-WEB-001] admits only the exact local JSON shape",
@@ -3824,10 +3841,7 @@
         "dotnet:ClaimCore.WebTests::ClaimCore.Web.transport and host diagnostics.strict HTTP readers emit specific closed causes",
         "dotnet:ClaimCore.WebTests::ClaimCore.Web.transport and host diagnostics.typed input classification binds diagnostic and HTTP status",
         "dotnet:ClaimCore.WebTests::ClaimCore.Web.writer handoff approval input.[CC-WEB-001] handoff approval binds exact fence candidate",
-        "dotnet:ClaimCore.WebTests::ClaimCore.Web.writer handoff approval input.[CC-WEB-001] handoff approval refuses forged or malformed metadata",
-        "dotnet:ClaimCore.WebTests::OIDC session route boundaries.[CC-WEB-001] OIDC challenge returns locally after PKCE callback",
-        "dotnet:ClaimCore.WebTests::OIDC session route boundaries.[CC-WEB-001] OIDC cookie session logs out through CSRF admission",
-        "dotnet:ClaimCore.WebTests::OIDC session route boundaries.[CC-WEB-001] shared bootstrap route is physically absent"
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.writer handoff approval input.[CC-WEB-001] handoff approval refuses forged or malformed metadata"
       ]
     },
     {

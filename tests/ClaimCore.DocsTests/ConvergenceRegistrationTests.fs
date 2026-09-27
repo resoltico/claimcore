@@ -48,20 +48,29 @@ let private inventoriedSuitesAreReconciled =
             (Set.difference reconciled inventoried)
             "A required TRX report names an assembly the manifest does not inventory")
 
-let private integrationHasOneSequencedRoot =
-    testCase "[CC-ARCH-001] integration inventory contains only sequenced root leaves" (fun () ->
-        let prefix = "ClaimCore PostgreSQL integration."
+let private sequencedRoots =
+    testCase
+        "[CC-ARCH-001] Integration and Web inventories contain only sequenced root leaves"
+        (fun () ->
+            for assembly, prefix, bare in
+                [
+                    "ClaimCore.IntegrationTests",
+                    "ClaimCore PostgreSQL integration.",
+                    "witnessed recovery artifact export.bare duplicate"
+                    "ClaimCore.WebTests",
+                    "ClaimCore.Web.",
+                    "OIDC session route boundaries.bare duplicate"
+                ] do
+                let belongsToRoot (name: string) =
+                    name.StartsWith(prefix, StringComparison.Ordinal)
 
-        let belongsToRoot (name: string) =
-            name.StartsWith(prefix, StringComparison.Ordinal)
+                Expect.isTrue
+                    (TestInventory.names assembly |> Set.forall belongsToRoot)
+                    "Every required leaf belongs to its sequenced root"
 
-        Expect.isTrue
-            (TestInventory.names "ClaimCore.IntegrationTests" |> Set.forall belongsToRoot)
-            "Every required integration leaf belongs to the sequenced root"
-
-        Expect.isFalse
-            (belongsToRoot "witnessed recovery artifact export.bare duplicate")
-            "An independently registered bare leaf cannot satisfy the root policy")
+                Expect.isFalse
+                    (belongsToRoot bare)
+                    "An independently registered bare leaf cannot satisfy the root policy")
 
 /// Every required report must also have a stage that actually produces it.
 let private requiredReportsHaveProducers =
@@ -79,6 +88,6 @@ let tests =
         [
             registrationTests
             inventoriedSuitesAreReconciled
-            integrationHasOneSequencedRoot
+            sequencedRoots
             requiredReportsHaveProducers
         ]

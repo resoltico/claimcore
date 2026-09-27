@@ -13,7 +13,7 @@ module Routes =
     let private requestToken (context: HttpContext) = context.RequestAborted
     let private mutationToken = CancellationToken.None
 
-    let private json admit maximumBytes decode invoke project context =
+    let internal json admit maximumBytes decode invoke project context =
         task {
             match! RouteSupport.admittedBody admit maximumBytes context with
             | Error result -> return result

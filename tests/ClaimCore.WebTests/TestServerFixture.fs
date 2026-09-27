@@ -238,7 +238,7 @@ type Host
     member this.Login() =
         this.Send(HttpMethod.Post, "/__test/oidc-login", Some "{}", Some "application/json", None)
 
-    static member Start(?loginPermits: int, ?invalidExportMetadata: bool) =
+    static member Start(?loginPermits: int, ?invalidExportMetadata: bool, ?oidcEnabled: bool) =
         let assets = Directory.CreateTempSubdirectory("claimcore-web-testserver-").FullName
 
         File.WriteAllText(
@@ -251,7 +251,12 @@ type Host
         let runtime =
             RuntimeStub(invalidExportMetadata = defaultArg invalidExportMetadata false)
 
-        let configuration = oidcConfiguration assets (defaultArg loginPermits 5)
+        let configuration =
+            if defaultArg oidcEnabled true then
+                oidcConfiguration assets (defaultArg loginPermits 5)
+            else
+                testConfiguration assets (defaultArg loginPermits 5)
+
         mapSyntheticLogin application
 
         HostRoutes.map

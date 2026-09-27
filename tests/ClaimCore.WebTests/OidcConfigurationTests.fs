@@ -66,7 +66,7 @@ let private configurePrivateCa directory =
     Expect.throws (fun () -> Configuration.load () |> ignore) "Malformed CA is refused"
     caPath
 
-let private writeValidCa (caPath: string) =
+let private writeCandidateCa (caPath: string) isCa (usage: X509KeyUsageFlags option) notBefore notAfter =
     use rsa = RSA.Create(2048)
 
     let request =
@@ -77,20 +77,26 @@ let private writeValidCa (caPath: string) =
             RSASignaturePadding.Pkcs1
         )
 
-    request.CertificateExtensions.Add(X509BasicConstraintsExtension(true, false, 0, true))
+    request.CertificateExtensions.Add(X509BasicConstraintsExtension(isCa, false, 0, true))
 
-    request.CertificateExtensions.Add(
-        X509KeyUsageExtension(X509KeyUsageFlags.KeyCertSign ||| X509KeyUsageFlags.CrlSign, true)
-    )
+    usage
+    |> Option.iter (fun flags ->
+        request.CertificateExtensions.Add(X509KeyUsageExtension(flags, true)))
 
-    use certificate =
-        request.CreateSelfSigned(
-            DateTimeOffset.UtcNow.AddDays(-1.),
-            DateTimeOffset.UtcNow.AddDays(1.)
-        )
+    use certificate = request.CreateSelfSigned(notBefore, notAfter)
 
     File.WriteAllText(caPath, certificate.ExportCertificatePem())
     File.SetUnixFileMode(caPath, UnixFileMode.UserRead ||| UnixFileMode.UserWrite)
+
+let private writeValidCa (caPath: string) =
+    let now = DateTimeOffset.UtcNow
+
+    writeCandidateCa
+        caPath
+        true
+        (Some(X509KeyUsageFlags.KeyCertSign ||| X509KeyUsageFlags.CrlSign))
+        (now.AddDays(-1.))
+        (now.AddDays(1.))
 
 let private assertPrivateCaPolicy (caPath: string) =
     let loaded = Configuration.load ()
@@ -121,6 +127,40 @@ let private privateCaPolicy () =
             writeValidCa caPath
             assertPrivateCaPolicy caPath)
 
+let private privateCaCertificateShape () =
+    configured (fun directory _ _ ->
+        let caPath = Path.Combine(directory, "issuer-shape.pem")
+        File.WriteAllText(caPath, "not-a-certificate")
+
+        if OperatingSystem.IsWindows() then
+            Expect.throws
+                (fun () -> OidcTrustRoot.load caPath |> ignore)
+                "Unsupported private-file access fails before certificate parsing"
+        else
+            let now = DateTimeOffset.UtcNow
+            let signing = Some X509KeyUsageFlags.KeyCertSign
+
+            for isCa, usage, fromDate, untilDate in
+                [
+                    false, signing, now.AddDays(-1.), now.AddDays(1.)
+                    true, None, now.AddDays(-1.), now.AddDays(1.)
+                    true,
+                    Some X509KeyUsageFlags.DigitalSignature,
+                    now.AddDays(-1.),
+                    now.AddDays(1.)
+                    true, signing, now.AddDays(-2.), now.AddDays(-1.)
+                    true, signing, now.AddDays(1.), now.AddDays(2.)
+                ] do
+                writeCandidateCa caPath isCa usage fromDate untilDate
+
+                Expect.throws
+                    (fun () -> OidcTrustRoot.load caPath |> ignore)
+                    "Only a current self-signed signing CA is an issuer trust root"
+
+            writeValidCa caPath
+            use accepted = OidcTrustRoot.load caPath
+            Expect.isTrue (accepted.Extensions.Count > 0) "A current signing CA remains available")
+
 let tests =
     testList
         "OIDC configuration"
@@ -129,4 +169,7 @@ let tests =
             testCase
                 "[CC-WEB-001] private CA rejects malformed and broad-permission files"
                 privateCaPolicy
+            testCase
+                "[CC-WEB-001] private issuer CA rejects wrong purpose and validity window"
+                privateCaCertificateShape
         ]

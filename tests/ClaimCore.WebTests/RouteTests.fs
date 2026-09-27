@@ -2,6 +2,7 @@ module ClaimCore.WebTests.RouteTests
 
 open System
 open System.Text.Json
+open System.Threading.Tasks
 open Expecto
 open ClaimCore.Application
 open ClaimCore.Web
@@ -58,6 +59,52 @@ let private refusalBeforeCore () =
 
     Expect.equal runtime.CoreCalls 0 "Malformed input does not call the core"
     Expect.equal runtime.RecoveryCalls 0 "Malformed input cannot trigger recovery"
+
+let private admissionAndBodyRefusals () =
+    for failure, code in
+        [
+            AdmissionFailure.UntrustedConnection, "WEB_CONNECTION_REJECTED"
+            AdmissionFailure.OriginRejected, "WEB_ORIGIN_REJECTED"
+            AdmissionFailure.FetchMetadataRejected, "WEB_ORIGIN_REJECTED"
+            AdmissionFailure.UnsupportedMediaType, "WEB_MEDIA_TYPE"
+            AdmissionFailure.BodyTooLarge, "WEB_BODY_TOO_LARGE"
+            AdmissionFailure.SessionRejected, "WEB_SESSION_REJECTED"
+            AdmissionFailure.AntiforgeryRejected, "WEB_CSRF_REJECTED"
+        ] do
+        let runtime = RuntimeStub()
+        let request = context validGet
+        let refused _ = Task.FromResult(Error failure)
+
+        let output =
+            Routes.get refused 65536 runtime.ActorCore request
+            |> readResult
+            |> execute request
+
+        use document = JsonDocument.Parse(output)
+
+        Expect.equal
+            (document.RootElement.GetProperty("code").GetString())
+            code
+            "Typed admission refusal"
+
+        Expect.equal runtime.CoreCalls 0 "Admission refusal cannot dispatch case work"
+
+    let runtime = RuntimeStub()
+    let oversized = context "abcd"
+
+    let output =
+        Routes.get admit 3 runtime.ActorCore oversized
+        |> readResult
+        |> execute oversized
+
+    use document = JsonDocument.Parse(output)
+
+    Expect.equal
+        (document.RootElement.GetProperty("code").GetString())
+        "WEB_BODY_TOO_LARGE"
+        "Streaming body bound is enforced after successful admission"
+
+    Expect.equal runtime.CoreCalls 0 "An oversized body cannot dispatch case work"
 
 let private rawRetainHeader () =
     let runtime = RuntimeStub()
@@ -142,6 +189,9 @@ let tests =
             testCase
                 "[CC-WEB-001] rejects malformed transport before core invocation"
                 refusalBeforeCore
+            testCase
+                "[CC-WEB-001] maps every admission refusal and bounded body before dispatch"
+                admissionAndBodyRefusals
             testCase
                 "[CC-WEB-001] refuses raw retention without its exact source digest header"
                 rawRetainHeader

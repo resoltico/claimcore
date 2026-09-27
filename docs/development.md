@@ -85,7 +85,7 @@ dotnet test --project tests/ClaimCore.Tests/ClaimCore.Tests.fsproj \
   --settings="$PWD/eng/expecto.runsettings"
 dotnet test --project tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj \
   --configuration Release --no-build --no-restore \
-  --minimum-expected-tests=115 --zero-tests-policy=strict --timeout=10m -- \
+  --minimum-expected-tests=122 --zero-tests-policy=strict --timeout=10m -- \
   --settings="$PWD/eng/expecto.runsettings"
 dotnet test --project tests/ClaimCore.DocsTests/ClaimCore.DocsTests.fsproj \
   --configuration Release --no-build --no-restore \

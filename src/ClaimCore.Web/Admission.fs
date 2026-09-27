@@ -168,11 +168,9 @@ module Admission =
         }
 
     let validatePost origin body maximumBytes antiforgery context =
-        task {
-            match postShape origin body maximumBytes context with
-            | Error failure -> return Error failure
-            | Ok() -> return! validateAntiforgery antiforgery context
-        }
+        match postShape origin body maximumBytes context with
+        | Error failure -> Task.FromResult(Error failure)
+        | Ok() -> validateAntiforgery antiforgery context
 
     let private bearerShape origin body maximumBytes (context: HttpContext) =
         if not (trustedConnection origin context) || not context.Request.IsHttps then
@@ -191,32 +189,33 @@ module Admission =
             Ok()
 
     let actorGet configuration origin (context: HttpContext) =
+        if not (trustedConnection origin context) || not context.Request.IsHttps then
+            Task.FromResult(Error AdmissionFailure.UntrustedConnection)
+        elif
+            credentialMode context = CredentialMode.Bearer
+            && context.Request.Headers.ContainsKey("Origin")
+        then
+            Task.FromResult(Error AdmissionFailure.OriginRejected)
+        else
+            verifiedPrincipal configuration context
+
+    let private browserPost configuration origin body maximumBytes antiforgery context =
         task {
-            if not (trustedConnection origin context) || not context.Request.IsHttps then
-                return Error AdmissionFailure.UntrustedConnection
-            elif
-                credentialMode context = CredentialMode.Bearer
-                && context.Request.Headers.ContainsKey("Origin")
-            then
-                return Error AdmissionFailure.OriginRejected
-            else
-                return! verifiedPrincipal configuration context
+            match! validatePost origin body maximumBytes antiforgery context with
+            | Error failure -> return Error failure
+            | Ok() -> return! verifiedPrincipal configuration context
         }
 
     let actorPost configuration origin body maximumBytes antiforgery (context: HttpContext) =
-        task {
-            match credentialMode context with
-            | CredentialMode.Missing
-            | CredentialMode.Mixed -> return Error AdmissionFailure.SessionRejected
-            | CredentialMode.Bearer ->
-                match bearerShape origin body maximumBytes context with
-                | Error failure -> return Error failure
-                | Ok() -> return! verifiedPrincipal configuration context
-            | CredentialMode.BrowserCookie ->
-                if not context.Request.IsHttps then
-                    return Error AdmissionFailure.UntrustedConnection
-                else
-                    match! validatePost origin body maximumBytes antiforgery context with
-                    | Error failure -> return Error failure
-                    | Ok() -> return! verifiedPrincipal configuration context
-        }
+        match credentialMode context with
+        | CredentialMode.Missing
+        | CredentialMode.Mixed -> Task.FromResult(Error AdmissionFailure.SessionRejected)
+        | CredentialMode.Bearer ->
+            match bearerShape origin body maximumBytes context with
+            | Error failure -> Task.FromResult(Error failure)
+            | Ok() -> verifiedPrincipal configuration context
+        | CredentialMode.BrowserCookie ->
+            if not context.Request.IsHttps then
+                Task.FromResult(Error AdmissionFailure.UntrustedConnection)
+            else
+                browserPost configuration origin body maximumBytes antiforgery context

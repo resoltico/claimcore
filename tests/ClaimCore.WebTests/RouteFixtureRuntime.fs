@@ -214,7 +214,9 @@ type RuntimeStub(?invalidExportMetadata: bool) as this =
     let actorCore =
         { new IActorClaimsCore with
             member _.Definition(_) =
-                Task.FromResult(QueryOutcome.Succeeded description)
+                Task.FromResult(
+                    defaultArg this.DefinitionOutcome (QueryOutcome.Succeeded description)
+                )
 
             member _.Prepare(request, token) = core.Prepare(request, token)
             member _.Execute(request, token) = core.Execute(request, token)
@@ -252,6 +254,7 @@ type RuntimeStub(?invalidExportMetadata: bool) as this =
         }
 
     member val CoreCalls = 0 with get, set
+    member val DefinitionOutcome: QueryOutcome<CoreDescription> option = None with get, set
     member val RecoveryCalls = 0 with get, set
     member val ManagementCalls = 0 with get, set
     member val TombstoneCalls = 0 with get, set

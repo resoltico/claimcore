@@ -7,12 +7,14 @@ open System.Text
 open System.Threading
 open System.Threading.Tasks
 open Expecto
+open Microsoft.AspNetCore.Http
 open ClaimCore.Application
 open ClaimCore.Contracts
 open ClaimCore.Domain
 open ClaimCore.Web
 
 let private bytes value = Encoding.UTF8.GetBytes(value: string)
+let private await (pending: Task<'value>) = pending.GetAwaiter().GetResult()
 
 let private expectError result message =
     match result with
@@ -211,31 +213,62 @@ let private recoveryAndDraftRefusals () =
 
     expectError (HttpInput.draft (bytes missingValue)) "Required Domain command values are present"
 
-type private BrokenStream() =
+type private FaultingStream(error: exn) =
     inherit MemoryStream()
 
     override _.ReadAsync(_: byte array, _: int, _: int, _: CancellationToken) =
-        Task.FromException<int>(IOException("Synthetic read failure."))
+        Task.FromException<int>(error)
 
 let private transportTests () =
     use accepted = new MemoryStream(bytes "abc")
 
     Expect.equal
-        (HttpInput.readBounded 3 accepted |> Async.AwaitTask |> Async.RunSynchronously)
+        (HttpInput.readBounded 3 accepted |> await)
         (Ok(bytes "abc"))
         "The exact endpoint byte bound is accepted"
 
     use rejected = new MemoryStream(bytes "abcd")
 
     expectError
-        (HttpInput.readBounded 3 rejected |> Async.AwaitTask |> Async.RunSynchronously)
+        (HttpInput.readBounded 3 rejected |> await)
         "Over-limit streaming input is rejected before JSON allocation"
 
-    use broken = new BrokenStream()
+    use broken = new FaultingStream(IOException("Synthetic read failure."))
 
-    expectError
-        (HttpInput.readBounded 8 broken |> Async.AwaitTask |> Async.RunSynchronously)
-        "Read failures have one safe transport classification"
+    Expect.equal
+        (HttpInput.readBounded 8 broken |> await)
+        (Error HttpInputProblem.BodyUnreadable)
+        "I/O failures have one safe transport classification"
+
+    use cancelled = new FaultingStream(OperationCanceledException())
+
+    Expect.equal
+        (HttpInput.readBounded 8 cancelled |> await)
+        (Error HttpInputProblem.BodyCancelled)
+        "Interrupted reads remain distinct from unreadable bodies"
+
+    use oversized = new FaultingStream(BadHttpRequestException("Synthetic 413", 413))
+
+    Expect.equal
+        (HttpInput.readBounded 8 oversized |> await)
+        (Error HttpInputProblem.BodyTooLarge)
+        "The host's streaming 413 maps to the bounded body refusal"
+
+    use otherHttpFailure =
+        new FaultingStream(BadHttpRequestException("Synthetic 400", 400))
+
+    Expect.equal
+        (HttpInput.readBounded 8 otherHttpFailure |> await)
+        (Error HttpInputProblem.BodyUnreadable)
+        "An unrelated host read failure is not mislabeled as body size"
+
+    use empty = new MemoryStream()
+
+    Expect.equal (HttpInput.readBounded 8 empty |> await) (Ok [||]) "An empty body is read exactly"
+
+    Expect.throwsT<ArgumentException>
+        (fun () -> HttpInput.readBounded 0 empty |> await |> ignore)
+        "A nonpositive endpoint limit is a programming error"
 
 let tests =
     testList

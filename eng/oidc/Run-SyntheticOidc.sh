@@ -164,16 +164,22 @@ jq -n \
 printf 'KC_BOOTSTRAP_ADMIN_USERNAME=synthetic-admin\nKC_BOOTSTRAP_ADMIN_PASSWORD=%s\n' \
   "$admin_password" >"$workdir/admin.env"
 
-container="$(docker run --detach --rm \
+# The host parent remains owner-private; the disposable container's UID 1000 must traverse this copy.
+mkdir -m 755 "$workdir/import"
+cp "$workdir/realm.json" "$workdir/import/realm.json"
+cp "$workdir/foreign.json" "$workdir/import/foreign.json"
+chmod 644 "$workdir/import/realm.json" "$workdir/import/foreign.json"
+
+container="$(docker create \
   --name "claimcore-oidc-$run_id" \
   --label "org.claimcore.test-run=$run_id" \
   --publish 127.0.0.1::8080 \
   --env-file "$workdir/admin.env" \
-  --mount "type=bind,src=$workdir/realm.json,dst=/opt/keycloak/data/import/realm.json,readonly" \
-  --mount "type=bind,src=$workdir/foreign.json,dst=/opt/keycloak/data/import/foreign.json,readonly" \
   "$image" start-dev --import-realm \
   --hostname "https://127.0.0.1:$proxy_port" --proxy-headers xforwarded)"
-[[ -n "$container" ]] || { printf 'Keycloak container did not start.\n' >&2; exit 1; }
+[[ "$container" =~ ^[0-9a-f]{64}$ ]] || { printf 'Keycloak container was not created.\n' >&2; exit 1; }
+docker cp "$workdir/import" "$container:/opt/keycloak/data/import" >/dev/null
+docker start "$container" >/dev/null
 
 port="$(docker port "$container" 8080/tcp | sed -n 's/^127\.0\.0\.1:\([0-9][0-9]*\)$/\1/p')"
 [[ "$port" =~ ^[0-9]+$ ]] || { printf 'Loopback port mapping unavailable.\n' >&2; exit 1; }

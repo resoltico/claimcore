@@ -2,6 +2,7 @@ module ClaimCore.WebTests.HostRouteTests
 
 open System.Net.Http
 open Expecto
+open ClaimCore.Application
 open ClaimCore.Web
 open ClaimCore.WebTests.TestServerFixture
 
@@ -52,7 +53,39 @@ let private oidcReturnTarget () =
         "/"
         "Successful OIDC callback returns to the application, never its challenge URL"
 
-[<Tests>]
+let private definitionRefusal () =
+    use noIssuer = Host.Start(oidcEnabled = false)
+
+    let unavailable =
+        noIssuer.Send(HttpMethod.Get, "/api/v3/definition", None, None, None)
+
+    Expect.equal unavailable.Status 401 "An unconfigured issuer cannot expose the definition"
+
+    use host = Host.Start()
+    let anonymous = host.Send(HttpMethod.Get, "/api/v3/definition", None, None, None)
+    Expect.equal anonymous.Status 401 "An anonymous definition is not disclosed"
+    use anonymousBody = document anonymous
+
+    Expect.equal
+        (anonymousBody.RootElement.GetProperty("code").GetString())
+        "WEB_SESSION_REJECTED"
+        "The anonymous refusal uses the closed host diagnostic"
+
+    Expect.equal (host.Login()).Status 200 "Synthetic browser identity is admitted"
+
+    let available = host.Send(HttpMethod.Get, "/api/v3/definition", None, None, None)
+    Expect.equal available.Status 200 "An authorized definition is available"
+
+    host.Runtime.DefinitionOutcome <- Some(QueryOutcome.Rejected Rejection.ResourceUnavailable)
+    let refused = host.Send(HttpMethod.Get, "/api/v3/definition", None, None, None)
+    Expect.equal refused.Status 403 "A refused core definition is not disclosed"
+    use body = document refused
+
+    Expect.equal
+        (body.RootElement.GetProperty("code").GetString())
+        "WEB_SESSION_REJECTED"
+        "Core refusal has a closed host diagnostic"
+
 let tests =
     testList
         "OIDC session route boundaries"
@@ -66,4 +99,7 @@ let tests =
             testCase
                 "[CC-WEB-001] OIDC challenge returns locally after PKCE callback"
                 oidcReturnTarget
+            testCase
+                "[CC-WEB-001] definition refuses a core denial without disclosure"
+                definitionRefusal
         ]
