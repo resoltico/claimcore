@@ -61,6 +61,9 @@ let internal clock =
 
 let internal recoveryPageLimit = SemanticContract.current.MaximumPageSize
 
+let utcMicrosecond (value: DateTimeOffset) =
+    DateTimeOffset(value.Ticks - value.Ticks % 10L, TimeSpan.Zero)
+
 let registration =
     {
         IncidentDate = "2026-08-01"

@@ -152,6 +152,14 @@ module HttpInputSupport =
 
         value
 
+    let utcMicrosecondTimestampValue source =
+        let value = utcTimestampValue source
+
+        if value.Ticks % 10L <> 0L then
+            fail HttpInputProblem.InvalidJson
+
+        value
+
     let parse (bytes: byte array) read =
         try
             UTF8Encoding(false, true).GetCharCount(bytes) |> ignore

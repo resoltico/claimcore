@@ -29,7 +29,7 @@ let private request planId activationId (plan: BackupHealthActivationPlan) (tip:
         ReviewWitnessHash = Array.copy tip.TipHash
         ExpectedWitnessSequence = tip.TipSequence
         ExpectedWitnessHash = Array.copy tip.TipHash
-        ExpiresAt = DateTimeOffset.UtcNow.AddHours(1.)
+        ExpiresAt = utcMicrosecond (DateTimeOffset.UtcNow.AddHours(1.))
     }
 
 let private actorContext app (witness: WitnessProtocol) principal =
@@ -115,6 +115,24 @@ let private retryBoundary primaryCommitted owner app _writer (witness: WitnessPr
     let action = request planId activationId plan (witness.Snapshot())
     let dataSource, context = actorContext app witness principal
     use source = dataSource
+
+    let unaligned =
+        { action with
+            ApprovalId = Guid.NewGuid()
+            ExpiresAt = action.ExpiresAt.AddTicks(1L)
+        }
+
+    let before = witness.Snapshot().TipSequence
+
+    Expect.equal
+        (RealDataActivationApproval.approve source witness context unaligned |> await)
+        RealDataActivationApprovalOutcome.ResourceUnavailable
+        "Sub-microsecond expiry cannot create unroundtrippable activation evidence."
+
+    Expect.equal
+        (witness.Snapshot().TipSequence)
+        before
+        "Invalid activation expiry creates no witness authority."
 
     let intent, originalCanonical =
         stagedAttempt owner witness context action primaryCommitted

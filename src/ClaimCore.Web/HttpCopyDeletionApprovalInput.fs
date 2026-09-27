@@ -42,5 +42,6 @@ module internal HttpCopyDeletionApprovalInput =
                 InspectionReportSha256 = digest "inspectionReportSha256"
                 WitnessCutoffSequence = revision "witnessCutoffSequence"
                 WitnessCutoffHash = digest "witnessCutoffHash"
-                ExpiresAt = required "expiresAt" values |> stringValue |> utcTimestampValue
+                ExpiresAt =
+                    required "expiresAt" values |> stringValue |> utcMicrosecondTimestampValue
             })

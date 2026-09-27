@@ -63,7 +63,7 @@ let private approval
         ReviewWitnessHash = Array.copy anchor.TipHash
         ExpectedWitnessSequence = prior.TipSequence
         ExpectedWitnessHash = Array.copy prior.TipHash
-        ExpiresAt = DateTimeOffset.UtcNow.AddHours(1.)
+        ExpiresAt = utcMicrosecond (DateTimeOffset.UtcNow.AddHours(1.))
     }
 
 let approvePair app writer (witness: WitnessProtocol) first second planId activationId plan =

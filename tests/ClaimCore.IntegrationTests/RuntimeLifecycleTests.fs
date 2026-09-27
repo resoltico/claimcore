@@ -40,21 +40,15 @@ let private admittedQuerySurvivesDispose () =
 
     Task.Delay(100).GetAwaiter().GetResult()
     Expect.isFalse pending.IsCompleted "The database lock keeps an admitted query in flight"
-    let disposing = Task.Run(fun () -> (runtime :> IDisposable).Dispose())
+    use disposalStarted = new ManualResetEventSlim()
+
+    let disposing =
+        Task.Run(fun () ->
+            disposalStarted.Set()
+            (runtime :> IDisposable).Dispose())
 
     try
-        Expect.isTrue
-            (SpinWait.SpinUntil(
-                (fun () ->
-                    try
-                        core.Definition(CancellationToken.None) |> await |> ignore
-                        false
-                    with :? ObjectDisposedException ->
-                        true),
-                2000
-            ))
-            "Disposal closes admission before the query finishes"
-
+        Expect.isTrue (disposalStarted.Wait(2000)) "Disposal worker started."
         Expect.isFalse disposing.IsCompleted "The admitted query still owns the source"
         transaction.Commit()
 
@@ -66,6 +60,10 @@ let private admittedQuerySurvivesDispose () =
         | _ -> failtest "Disposal must not relabel an admitted query outcome"
 
         Expect.isTrue (disposing.Wait(2000)) "The runtime drains and disposes after completion"
+
+        Expect.throwsT<ObjectDisposedException>
+            (fun () -> core.Definition(CancellationToken.None) |> await |> ignore)
+            "Disposed runtime closes further admission."
     finally
         if not disposing.IsCompleted then
             disposing.Wait(2000) |> ignore
@@ -103,21 +101,16 @@ let private admittedMutationSurvivesDispose () =
     let pending = core.Execute(openingRequest (), CancellationToken.None)
     Task.Delay(100).GetAwaiter().GetResult()
     Expect.isFalse pending.IsCompleted "The test lock keeps an admitted mutation in flight"
-    let disposing = Task.Run(fun () -> (runtime :> IDisposable).Dispose())
+    use disposalStarted = new ManualResetEventSlim()
+
+    let disposing =
+        Task.Run(fun () ->
+            disposalStarted.Set()
+            (runtime :> IDisposable).Dispose())
 
     try
-        Expect.isTrue
-            (SpinWait.SpinUntil(
-                (fun () ->
-                    try
-                        core.Definition(CancellationToken.None) |> await |> ignore
-                        false
-                    with :? ObjectDisposedException ->
-                        true),
-                2000
-            ))
-            "The runtime closes admission during a mutation"
-
+        Expect.isTrue (disposalStarted.Wait(2000)) "Disposal worker started."
+        Expect.isFalse disposing.IsCompleted "The admitted mutation still owns the source"
         transaction.Commit()
 
         match pending |> await with
@@ -140,6 +133,10 @@ let private admittedMutationSurvivesDispose () =
             failtest "Admitted mutation left its attempt unresolved"
 
         Expect.isTrue (disposing.Wait(10000)) "Disposal completes after mutation settlement"
+
+        Expect.throwsT<ObjectDisposedException>
+            (fun () -> core.Definition(CancellationToken.None) |> await |> ignore)
+            "Disposed runtime closes further admission."
     finally
         if not disposing.IsCompleted then
             disposing.Wait(2000) |> ignore

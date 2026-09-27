@@ -19,6 +19,14 @@ module internal WireSchema =
             (Some 33)
             (Some 33)
 
+    let microsecondTimestamp =
+        Schema.string
+            (Some "date-time")
+            (Some
+                "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}0\\+00:00$")
+            (Some 33)
+            (Some 33)
+
     let date = FieldDefinitions.scalar "incidentDate" |> ScalarSchemas.scalar
 
     let token value = Schema.constant (TextConstant value)

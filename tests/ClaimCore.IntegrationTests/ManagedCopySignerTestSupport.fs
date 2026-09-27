@@ -70,6 +70,8 @@ let grantCustodian (runtime: Runtime) owner custodian =
     |> appliedManagement grantId
 
 let approval keyId digest action purpose role =
+    let expiry = DateTimeOffset.UtcNow.AddMinutes(15.0)
+
     {
         ApprovalId = Guid.NewGuid()
         SigningKeyId = keyId
@@ -77,7 +79,7 @@ let approval keyId digest action purpose role =
         Purpose = purpose
         PublicKeySha256 = digest
         Role = role
-        ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(15.0)
+        ExpiresAt = utcMicrosecond expiry
     }
 
 let approvePair (runtime: Runtime) owner custodian keyId digest action purpose =

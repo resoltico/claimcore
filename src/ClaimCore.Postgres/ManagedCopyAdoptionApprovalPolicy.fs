@@ -40,9 +40,9 @@ module internal ManagedCopyAdoptionApprovalPolicy =
         && request.CustodianSigningKeyId <> request.RegistrySigningKeyId
         && request.CustodianSigningKeyId <> request.InspectorSigningKeyId
         && request.RegistrySigningKeyId <> request.InspectorSigningKeyId
-        && request.CapturedAt.Offset = TimeSpan.Zero
-        && request.RetainUntil.Offset = TimeSpan.Zero
-        && request.ExpiresAt.Offset = TimeSpan.Zero
+        && Sql.isUtcMicrosecond request.CapturedAt
+        && Sql.isUtcMicrosecond request.RetainUntil
+        && Sql.isUtcMicrosecond request.ExpiresAt
         && request.RetainUntil > request.CapturedAt
 
     let valid (context: ActorCallContext) (request: CopyAdoptionApprovalRequest) =

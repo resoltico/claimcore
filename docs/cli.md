@@ -113,6 +113,8 @@ The latter formats preserve exact recovery bytes; they are not earlier CLI proto
 | `lifecycle.review`, `lifecycle.apply`, `lifecycle.approve` | Audited disposition, erasure, hold, and approval workflow subject to service grants |
 | `tombstone.review`, `tombstone.approvePrune`, `tombstone.approveTerminal`, `tombstone.changeHold` | Opaque post-purge review, witnessed prune or terminal-evidence draft approval, and nonpayload holds; owner certification and execution are separate |
 
+For copy-signer, copy-deletion, copy-adoption, writer-handoff, and real-data-activation approvals, supply UTC instants with seven fractional digits ending in `0`; finer precision is refused because the signed value must survive PostgreSQL's microsecond timestamp storage unchanged.
+
 The generated service catalog defines exact paths, body media, and response schemas; the CLI never sends a database connection string. Every case-work endpoint checks the authenticated principal and current ClaimCore grants before disclosure or mutation. `command.execute` is the one-call typed command workflow. `recovery.resolve` reuses only an already
 retained operation ID and digest; it does not recreate or edit a draft. Import preview never submits,
 and retain never auto-submits.

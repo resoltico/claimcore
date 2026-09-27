@@ -20,7 +20,7 @@ module internal WebSignerApprovalSchemas =
                         "WRITER_HANDOFF_ABORT"
                     ])
             WireSchema.property "publicKeySha256" WireSchema.digest
-            WireSchema.property "expiresAt" WireSchema.timestamp
+            WireSchema.property "expiresAt" WireSchema.microsecondTimestamp
         ]
 
     let request =

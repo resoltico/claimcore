@@ -30,8 +30,8 @@ module internal WebCopyAdoptionApprovalSchemas =
                 WireSchema.property "origin" origin
                 WireSchema.property "ciphertextSha256" WireSchema.digest
                 WireSchema.property "ciphertextBytes" WireSchema.revision
-                WireSchema.property "capturedAt" WireSchema.timestamp
-                WireSchema.property "retainUntil" WireSchema.timestamp
+                WireSchema.property "capturedAt" WireSchema.microsecondTimestamp
+                WireSchema.property "retainUntil" WireSchema.microsecondTimestamp
                 WireSchema.property "locationCommitment" WireSchema.digest
                 WireSchema.property "custodianCommitment" WireSchema.digest
                 WireSchema.property "custodianSigningKeyId" WireSchema.uuid
@@ -40,7 +40,7 @@ module internal WebCopyAdoptionApprovalSchemas =
                 WireSchema.property "custodianCanonicalSha256" WireSchema.digest
                 WireSchema.property "registryCanonicalSha256" WireSchema.digest
                 WireSchema.property "inspectionReportSha256" WireSchema.digest
-                WireSchema.property "expiresAt" WireSchema.timestamp
+                WireSchema.property "expiresAt" WireSchema.microsecondTimestamp
             ]
 
     let private outcome tag data =

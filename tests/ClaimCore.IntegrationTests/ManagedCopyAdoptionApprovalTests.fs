@@ -77,7 +77,7 @@ let private request
         CustodianCanonicalSha256 = RandomNumberGenerator.GetBytes(32)
         RegistryCanonicalSha256 = RandomNumberGenerator.GetBytes(32)
         InspectionReportSha256 = RandomNumberGenerator.GetBytes(32)
-        ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(15.0)
+        ExpiresAt = utcMicrosecond (DateTimeOffset.UtcNow.AddMinutes(15.0))
     }
     : CopyAdoptionApprovalRequest)
 

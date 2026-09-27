@@ -27,7 +27,7 @@ module internal WriterHandoffApproval =
         && digest32 request.NewCapabilitySha256
         && digest32 request.FenceReportSha256
         && digest32 request.InventorySha256
-        && request.ExpiresAt.Offset = TimeSpan.Zero
+        && Sql.isUtcMicrosecond request.ExpiresAt
 
     let private currentOwner context (live: ActorAuthority) revision =
         let grant =

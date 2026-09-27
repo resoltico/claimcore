@@ -8,6 +8,9 @@ open ClaimCore.Application
 open ClaimCore.RecordFormat
 
 module internal Sql =
+    let isUtcMicrosecond (value: DateTimeOffset) =
+        value.Offset = TimeSpan.Zero && value.Ticks % 10L = 0L
+
     let private columns =
         [
             ScalarEncoding.dateColumn "incident_date"

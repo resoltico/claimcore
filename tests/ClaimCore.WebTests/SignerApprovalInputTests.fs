@@ -61,6 +61,7 @@ let private rejects () =
     refused (valid.Replace("\"holderApprovalId\":null", $"\"holderApprovalId\":\"{key}\""))
     refused (valid.Replace(digest, String.replicate 64 "A"))
     refused (valid.Replace("+00:00", "+02:00"))
+    refused (valid.Replace(".0000000+00:00", ".0000001+00:00"))
     refused (valid.Replace("\"approvalId\":", "\"actorId\":\"private\",\"approvalId\":"))
     refused (valid.Replace("\"approvalId\":", $"\"approvalId\":\"{approval}\",\"approvalId\":"))
 

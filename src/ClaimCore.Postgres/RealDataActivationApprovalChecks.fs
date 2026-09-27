@@ -27,7 +27,7 @@ module internal RealDataActivationApprovalChecks =
         && digest32 request.PolicySha256
         && digest32 request.ReviewWitnessHash
         && digest32 request.ExpectedWitnessHash
-        && request.ExpiresAt.Offset = TimeSpan.Zero
+        && Sql.isUtcMicrosecond request.ExpiresAt
         && request.ActivationId =
             InstallationUseActivationCandidate.eventIdFromPlan
                 request.InstallationId

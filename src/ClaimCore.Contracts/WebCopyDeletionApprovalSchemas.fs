@@ -14,7 +14,7 @@ module internal WebCopyDeletionApprovalSchemas =
                 WireSchema.property "inspectionReportSha256" WireSchema.digest
                 WireSchema.property "witnessCutoffSequence" WireSchema.revision
                 WireSchema.property "witnessCutoffHash" WireSchema.digest
-                WireSchema.property "expiresAt" WireSchema.timestamp
+                WireSchema.property "expiresAt" WireSchema.microsecondTimestamp
             ]
 
     let private outcome tag data =

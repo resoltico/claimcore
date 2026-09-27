@@ -62,5 +62,6 @@ module internal HttpSignerApprovalInput =
                     |> digestValue
                     |> Convert.FromHexString
                 Role = role values
-                ExpiresAt = required "expiresAt" values |> stringValue |> utcTimestampValue
+                ExpiresAt =
+                    required "expiresAt" values |> stringValue |> utcMicrosecondTimestampValue
             })

@@ -40,6 +40,39 @@ let private assertSignerAudit owner app witness keyId =
         (fun () -> DataAudit.run audit witness CancellationToken.None |> await |> ignore)
         "A primary-owner signer projection rewrite cannot pass the full audit."
 
+let private refuseSubMicrosecondApproval
+    (runtime: Runtime)
+    custodian
+    (witness: WitnessProtocol)
+    keyId
+    digest
+    =
+    let request =
+        approval
+            keyId
+            digest
+            CopySignerAction.Register
+            CopySignerPurpose.CopyAttestor
+            CopySignerApprovalRole.Custodian
+
+    let unaligned =
+        { request with
+            ExpiresAt = request.ExpiresAt.AddTicks(1L)
+        }
+
+    let before = witness.Snapshot().TipSequence
+
+    Expect.equal
+        ((runtime.ForActor custodian).ApproveCopySigner(unaligned, CancellationToken.None)
+         |> await)
+        CopySignerApprovalOutcome.ResourceUnavailable
+        "Sub-microsecond expiry cannot create an unusable witnessed approval."
+
+    Expect.equal
+        (witness.Snapshot().TipSequence)
+        before
+        "Invalid expiry creates no witness authority."
+
 let private dualHumanRoster =
     testCase
         "[CC-BACKUP-001] two authenticated human approvals register and retire one witnessed signer"
@@ -56,6 +89,8 @@ let private dualHumanRoster =
                 let raw = key.PublicKey.Export(KeyBlobFormat.RawPublicKey)
                 let digest = SHA256.HashData(raw)
                 let keyId = Guid.NewGuid()
+
+                refuseSubMicrosecondApproval runtime custodian witness keyId digest
 
                 let ownerApproval, custodianApproval =
                     approvePair

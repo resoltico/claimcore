@@ -55,5 +55,6 @@ module internal HttpRealDataActivationInput =
                 ReviewWitnessHash = digest "reviewWitnessHash"
                 ExpectedWitnessSequence = number "expectedWitnessSequence"
                 ExpectedWitnessHash = digest "expectedWitnessHash"
-                ExpiresAt = required "expiresAt" values |> stringValue |> utcTimestampValue
+                ExpiresAt =
+                    required "expiresAt" values |> stringValue |> utcMicrosecondTimestampValue
             })

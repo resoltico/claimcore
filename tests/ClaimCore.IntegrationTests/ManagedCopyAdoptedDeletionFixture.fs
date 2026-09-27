@@ -46,7 +46,7 @@ let private approval
             InspectionReportSha256 = SHA256.HashData report
             WitnessCutoffSequence = tip.TipSequence
             WitnessCutoffHash = tip.TipHash
-            ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(15.0)
+            ExpiresAt = utcMicrosecond (DateTimeOffset.UtcNow.AddMinutes(15.0))
         }
 
     match (runtime.ForActor verifierPrincipal).ApproveCopyDeletion(request, ct) |> await with

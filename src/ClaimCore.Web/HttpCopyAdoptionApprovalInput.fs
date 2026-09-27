@@ -17,7 +17,7 @@ module internal HttpCopyAdoptionApprovalInput =
         value |> stringValue |> digestValue |> Convert.FromHexString
 
     let private instant value =
-        value |> stringValue |> utcTimestampValue
+        value |> stringValue |> utcMicrosecondTimestampValue
 
     let private origin (element: JsonElement) =
         let values = properties element

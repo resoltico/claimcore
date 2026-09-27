@@ -21,7 +21,7 @@ module internal WebRealDataActivationSchemas =
                 WireSchema.property "reviewWitnessHash" WireSchema.digest
                 WireSchema.property "expectedWitnessSequence" WireSchema.revision
                 WireSchema.property "expectedWitnessHash" WireSchema.digest
-                WireSchema.property "expiresAt" WireSchema.timestamp
+                WireSchema.property "expiresAt" WireSchema.microsecondTimestamp
             ]
 
     let private outcome tag data =

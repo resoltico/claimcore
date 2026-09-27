@@ -189,7 +189,7 @@ let approve
             InspectionReportSha256 = SHA256.HashData(report)
             WitnessCutoffSequence = tip.TipSequence
             WitnessCutoffHash = tip.TipHash
-            ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(15.)
+            ExpiresAt = utcMicrosecond (DateTimeOffset.UtcNow.AddMinutes(15.))
         }
 
     match

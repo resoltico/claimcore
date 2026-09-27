@@ -26,7 +26,7 @@ let internal request keyId (tip: Snapshot) =
         CheckpointSigningKeyId = keyId
         FenceReportSha256 = SHA256.HashData(Array.create 32 0x72uy)
         InventorySha256 = SHA256.HashData(Array.create 32 0x73uy)
-        ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(15.)
+        ExpiresAt = utcMicrosecond (DateTimeOffset.UtcNow.AddMinutes(15.))
     }
 
 let private denyUntrusted
@@ -69,11 +69,11 @@ let private denyInvalid
         [
             { action with
                 ApprovalId = Guid.NewGuid()
-                ExpiresAt = DateTimeOffset.UtcNow.AddSeconds(-1.)
+                ExpiresAt = utcMicrosecond (DateTimeOffset.UtcNow.AddSeconds(-1.))
             }
             { action with
                 ApprovalId = Guid.NewGuid()
-                ExpiresAt = DateTimeOffset.UtcNow.AddHours(2.)
+                ExpiresAt = utcMicrosecond (DateTimeOffset.UtcNow.AddHours(2.))
             }
             { action with
                 ApprovalId = Guid.NewGuid()

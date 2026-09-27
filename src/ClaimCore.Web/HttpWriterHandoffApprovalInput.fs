@@ -42,5 +42,6 @@ module internal HttpWriterHandoffApprovalInput =
                 CheckpointSigningKeyId = uuid "checkpointSigningKeyId"
                 FenceReportSha256 = digest "fenceReportSha256"
                 InventorySha256 = digest "inventorySha256"
-                ExpiresAt = required "expiresAt" values |> stringValue |> utcTimestampValue
+                ExpiresAt =
+                    required "expiresAt" values |> stringValue |> utcMicrosecondTimestampValue
             })

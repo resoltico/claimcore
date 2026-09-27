@@ -14,7 +14,7 @@ module internal WebWriterHandoffApprovalSchemas =
                 WireSchema.property "checkpointSigningKeyId" WireSchema.uuid
                 WireSchema.property "fenceReportSha256" WireSchema.digest
                 WireSchema.property "inventorySha256" WireSchema.digest
-                WireSchema.property "expiresAt" WireSchema.timestamp
+                WireSchema.property "expiresAt" WireSchema.microsecondTimestamp
             ]
 
     let private outcome tag data =

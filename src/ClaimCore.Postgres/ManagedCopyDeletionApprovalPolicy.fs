@@ -38,7 +38,7 @@ module internal ManagedCopyDeletionApprovalPolicy =
         && request.WitnessCutoffSequence >= 0L
         && not (isNull (box request.WitnessCutoffHash))
         && request.WitnessCutoffHash.Length = 32
-        && request.ExpiresAt.Offset = TimeSpan.Zero
+        && Sql.isUtcMicrosecond request.ExpiresAt
         && context.Action = EndpointAction.ApproveCopyDeletion
         && context.CaseId.IsNone
         && PrincipalKey.isHuman context.Binding.Principal

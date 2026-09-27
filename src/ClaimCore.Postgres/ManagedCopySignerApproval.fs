@@ -131,7 +131,7 @@ module internal ManagedCopySignerApproval =
         && request.SigningKeyId <> Guid.Empty
         && not (obj.ReferenceEquals(request.PublicKeySha256, null))
         && request.PublicKeySha256.Length = 32
-        && request.ExpiresAt.Offset = TimeSpan.Zero
+        && Sql.isUtcMicrosecond request.ExpiresAt
         && context.Action = EndpointAction.ApproveCopySigner
         && context.CaseId.IsNone
         && PrincipalKey.isHuman context.Binding.Principal
