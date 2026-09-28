@@ -95,6 +95,7 @@
     <Compile Include="InstallationLossRetirementCommitFault.fs" />
     <Compile Include="InstallationLossRetirementDenialAudit.fs" />
     <Compile Include="InstallationLossRetirementTests.fs" />
+    <Compile Include="InstallationLossRetirementReadOrder.fs" />
     <Compile Include="InstallationLossRetirementCrashTests.fs" />
     <Compile Include="InstallationLossRetirementStalePairTests.fs" />
     <Compile Include="BackupCaptureEvidenceProcess.fs" />

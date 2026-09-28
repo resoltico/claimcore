@@ -16,6 +16,7 @@ open ClaimCore.IntegrationTests.Fixtures
 open ClaimCore.IntegrationTests.InstallationLossRetirementFixture
 open ClaimCore.IntegrationTests.InstallationLossRetirementCrashFixture
 open ClaimCore.IntegrationTests.InstallationLossRetirementCommitFault
+open ClaimCore.IntegrationTests.InstallationLossRetirementReadOrder
 
 let private checkPending (context: Context) =
     let tip = context.Witness.Snapshot()
@@ -149,7 +150,7 @@ let private auditSerializesW1 (context: Context) (decision: Decision) intent =
 
 let private committedBeforeW1 (context: Context) =
     let decision = prepare context Array.empty InstallationLossOperationSet.Unknown
-    let intent = w0 context decision
+    let intent = intentWhileReadWaits context decision
     commitPrimary context.Primary decision intent
 
     Expect.isTrue
@@ -187,8 +188,9 @@ let private interruptedCommit (context: Context) =
 let private lostW1Response (context: Context) =
     let decision = prepare context Array.empty InstallationLossOperationSet.Unknown
 
-    let completed =
-        InstallationLossRetirementAdministration.record
+    let observed =
+        InstallationLossRetirementCommit.recordWithSettlementObservation
+            (fun () -> raise (IOException("synthetic lost W1 response")))
             context.Primary
             (witnessOwnerFor context.Writer)
             context.Witness
@@ -200,16 +202,13 @@ let private lostW1Response (context: Context) =
             None
             None
 
-    match completed with
-    | InstallationLossRetirementOutcome.Retired _ -> ()
-    | _ -> failtest "Synthetic W1 did not settle before lost output."
+    match observed with
+    | InstallationLossRetirementOutcome.Unconfirmed id ->
+        Expect.equal id decision.Value.RetirementId "Lost W1 response is not called definite."
+    | _ -> failtest "Post-W1 response loss was not classified as uncertain."
 
     let tip = context.Witness.Snapshot()
-
-    try
-        raise (IOException("synthetic lost W1 response"))
-    with :? IOException ->
-        ()
+    Expect.isTrue tip.LossRetired "W1 durably settled before the response fault."
 
     checkReconciled context context.Primary decision
 

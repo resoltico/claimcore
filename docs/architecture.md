@@ -128,10 +128,10 @@ policy merely by making its own tests green. Commands and exact evidence registr
 `OpenPostgres` observes caller cancellation through connection, role, ACL, schema, lineage, and full-data audit admission; a cancelled opening returns a safe typed runtime fault and never hands out a live facade.
 An unexpected opener exception maps to a safe fault and closes the source it created, without
 disclosing provider detail.
-Once opened, the lifetime owns the data source and every actor-bound `IActorClaimsCore` and Recovery call enters
+Once opened, the lifetime owns the ordinary data source and separate bounded read-barrier source, and every actor-bound `IActorClaimsCore` and Recovery call enters
 through an admission lease. Disposal closes new admission, including through previously retained
 facade references. It drains admitted work for a bounded 30 seconds; if a call is still active, the
-data source remains owned until its final lease ends, then closes exactly once. An admitted query or
+sources remain owned until the final lease ends, then close exactly once. An admitted query or
 mutation keeps its original typed result, including a definite receipt, rather than being relabeled
 as cancellation or failure by concurrent disposal.
 
@@ -182,7 +182,7 @@ localization boundaries.
 <a id="cc-auth-001"></a>
 ### CC-AUTH-001 — Actor-bound disclosure and list continuation
 
-The OIDC principal maps to a ClaimCore actor whose grants are default-deny and scoped to the requested resource and action. Case and operation reads resolve a target and check current actor authority before returning claimant-bearing data; nonexistent, inaccessible, voided, and suppression-fenced identities use the same public refusal and guidance. Mutation and read stores recheck the authoritative grant revision under their data lock, so a revoked grant cannot authorize a later disclosure or commit through a previously admitted context. Case-list SQL filters inaccessible or disposition-blocked rows before pagination; its continuation is encrypted and authenticated for the exact principal, actor, grant revision, page size, and a 15-minute lifetime. A malformed, foreign, expired, changed-grant, or post-restart token is refused as one invalid cursor and must not be treated as a raw case reference. The paired synthetic timing tests check only a broad denial class, not constant-time behavior or resistance to privileged database observation.
+The OIDC principal maps to a ClaimCore actor whose grants are default-deny and scoped to the requested resource and action. Case and operation reads resolve a target and check current actor authority before returning claimant-bearing data; nonexistent, inaccessible, voided, and suppression-fenced identities use the same public refusal and guidance. Mutation and read stores recheck the authoritative grant revision under their data lock, so a revoked grant cannot authorize a later disclosure or commit through a previously admitted context. Disclosure leases take a primary shared authority lock before the independent witness read fence, matching the primary-first order of witness-writing mutations; a separate bounded barrier pool lets nested case reads use the ordinary pool without exhausting their own connections. Case-list SQL filters inaccessible or disposition-blocked rows before pagination; its continuation is encrypted and authenticated for the exact principal, actor, grant revision, page size, and a 15-minute lifetime. A malformed, foreign, expired, changed-grant, or post-restart token is refused as one invalid cursor and must not be treated as a raw case reference. The paired synthetic timing tests check only a broad denial class, not constant-time behavior or resistance to privileged database observation.
 
 ## Transaction and recovery path
 

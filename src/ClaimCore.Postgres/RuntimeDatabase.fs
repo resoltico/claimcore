@@ -121,3 +121,8 @@ module internal RuntimeDataSource =
             BuildIdentity.current.Product + "/" + BuildIdentity.current.Version
 
         NpgsqlDataSource.Create(builder.ConnectionString)
+
+    let createReadBarrier (connectionString: string) =
+        let builder = NpgsqlConnectionStringBuilder(connectionString)
+        builder.MaxPoolSize <- min builder.MaxPoolSize 32
+        create builder.ConnectionString

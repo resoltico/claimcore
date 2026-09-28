@@ -1,6 +1,8 @@
 namespace ClaimCore.Hosting
 
 open System
+open System.Data
+open System.Threading
 open Npgsql
 open ClaimCore.Postgres
 open ClaimCore.Witness
@@ -22,8 +24,24 @@ type private PrimaryWriterState =
         LossRetired: bool
     }
 
-/// Checks the current primary/witness cutover fence for each actor operation. Read leases
-/// hold the witness row lock until the core finishes producing its claimant-bearing outcome.
+type private OrderedReadFence
+    (primary: NpgsqlConnection, transaction: NpgsqlTransaction, witnessLease: IDisposable) =
+    let mutable disposed = 0
+
+    interface IDisposable with
+        member _.Dispose() =
+            if Interlocked.Exchange(&disposed, 1) = 0 then
+                try
+                    witnessLease.Dispose()
+                finally
+                    try
+                        transaction.Dispose()
+                    finally
+                        primary.Dispose()
+
+/// Checks the current primary/witness cutover fence for each actor operation. Disclosure
+/// leases take the primary shared authority lock before the witness read fence and hold both
+/// until the core finishes producing its outcome.
 type internal RuntimeSafetySupervisor(resources: RuntimeResources) =
     let witness = resources.Witness
 
@@ -194,11 +212,35 @@ type internal RuntimeSafetySupervisor(resources: RuntimeResources) =
         useState () |> ignore
 
     member _.AcquireReadFence() =
-        let lease = witness.AcquireReadFence(opening.Generation)
+        // Writers take primary authority before exclusive witness authority. A read
+        // must use that order too; its separate pool cannot strand nested core reads.
+        let primary = resources.ReadBarrierDataSource.OpenConnection()
 
         try
-            requirePair ()
-            lease
+            let transaction = primary.BeginTransaction(IsolationLevel.ReadCommitted)
+
+            try
+                use command =
+                    new NpgsqlCommand(
+                        "SELECT revision FROM claimcore.authority_tip WHERE singleton FOR SHARE",
+                        primary,
+                        transaction
+                    )
+
+                if not (command.ExecuteScalar() :? int64) then
+                    invalidOp "Primary read barrier is unavailable."
+
+                let lease = witness.AcquireReadFence(opening.Generation)
+
+                try
+                    requirePair ()
+                    new OrderedReadFence(primary, transaction, lease) :> IDisposable
+                with _ ->
+                    lease.Dispose()
+                    reraise ()
+            with _ ->
+                transaction.Dispose()
+                reraise ()
         with _ ->
-            lease.Dispose()
+            primary.Dispose()
             reraise ()

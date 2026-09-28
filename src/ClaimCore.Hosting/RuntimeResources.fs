@@ -5,9 +5,11 @@ open System.Security.Cryptography
 open ClaimCore.Application
 open ClaimCore.Postgres
 
-/// One runtime owns the verified primary pool, witness and owner-private key custody.
+/// One runtime owns the verified primary pool, a separate read-barrier pool,
+/// witness and owner-private key custody.
 type internal RuntimeResources(primaryConnection: string, artifactKeyRingPath: string) =
     let dataSource = RuntimeDataSource.create primaryConnection
+    let readBarrierDataSource = RuntimeDataSource.createReadBarrier primaryConnection
     let cursorKey = RandomNumberGenerator.GetBytes 32
     let cursorProtection = new CaseListCursorProtection(cursorKey)
     do CryptographicOperations.ZeroMemory cursorKey
@@ -15,6 +17,7 @@ type internal RuntimeResources(primaryConnection: string, artifactKeyRingPath: s
     let mutable clock: IBusinessTime option = None
     let mutable suppression: (IDisposable * ISuppressionCommitments) option = None
     member _.DataSource = dataSource
+    member _.ReadBarrierDataSource = readBarrierDataSource
     member _.CursorProtection = cursorProtection :> ICaseListCursorProtection
     member _.ArtifactKeyRingPath = artifactKeyRingPath
     member _.Attach(value: WitnessProtocol) = witness <- Some value
@@ -40,4 +43,5 @@ type internal RuntimeResources(primaryConnection: string, artifactKeyRingPath: s
             witness |> Option.iter (fun value -> (value :> IDisposable).Dispose())
             suppression |> Option.iter (fun (disposable, _) -> disposable.Dispose())
             (cursorProtection :> IDisposable).Dispose()
+            readBarrierDataSource.Dispose()
             dataSource.Dispose()

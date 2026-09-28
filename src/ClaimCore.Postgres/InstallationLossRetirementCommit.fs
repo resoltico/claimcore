@@ -31,7 +31,13 @@ module internal InstallationLossRetirementCommit =
 
             transaction.Commit()
 
-    let private settledOutcome ownerWitnessConnection (witness: WitnessProtocol) input intent =
+    let private settledOutcome
+        afterWitnessSettlement
+        ownerWitnessConnection
+        (witness: WitnessProtocol)
+        input
+        intent
+        =
         let value = input.Decision
 
         let settlement =
@@ -41,6 +47,8 @@ module internal InstallationLossRetirementCommit =
                 value
                 input.DecisionBytes
                 intent
+
+        afterWitnessSettlement ()
 
         if InstallationLossRetirementState.committedWitness witness value settlement then
             InstallationLossRetirementOutcome.Retired(
@@ -52,6 +60,7 @@ module internal InstallationLossRetirementCommit =
             InstallationLossRetirementOutcome.Unconfirmed value.RetirementId
 
     let private settleUnderBarrier
+        afterWitnessSettlement
         (primaryOwner: NpgsqlConnection)
         ownerWitnessConnection
         (witness: WitnessProtocol)
@@ -95,12 +104,13 @@ module internal InstallationLossRetirementCommit =
                     intent.EntryHash
                 )
             else
-                settledOutcome ownerWitnessConnection witness input intent
+                settledOutcome afterWitnessSettlement ownerWitnessConnection witness input intent
 
         barrier.Rollback()
         outcome
 
-    let internal finish
+    let private finishWith
+        afterWitnessSettlement
         primaryOwner
         ownerWitnessConnection
         (witness: WitnessProtocol)
@@ -108,9 +118,20 @@ module internal InstallationLossRetirementCommit =
         intent
         commitments
         =
-        settleUnderBarrier primaryOwner ownerWitnessConnection witness input intent commitments
+        settleUnderBarrier
+            afterWitnessSettlement
+            primaryOwner
+            ownerWitnessConnection
+            witness
+            input
+            intent
+            commitments
+
+    let internal finish primaryOwner ownerWitnessConnection witness input intent commitments =
+        finishWith ignore primaryOwner ownerWitnessConnection witness input intent commitments
 
     let private execute
+        afterWitnessSettlement
         (primaryOwner: NpgsqlConnection)
         ownerWitnessConnection
         (witness: WitnessProtocol)
@@ -143,9 +164,18 @@ module internal InstallationLossRetirementCommit =
                 input.OwnerSignatureTwo
 
         persistPrimary primaryOwner transaction alreadyRetired input intent commitments
-        finish primaryOwner ownerWitnessConnection witness input intent commitments
 
-    let record
+        finishWith
+            afterWitnessSettlement
+            primaryOwner
+            ownerWitnessConnection
+            witness
+            input
+            intent
+            commitments
+
+    let internal recordWithSettlementObservation
+        afterWitnessSettlement
         (primaryOwner: NpgsqlConnection)
         ownerWitnessConnection
         (witness: WitnessProtocol)
@@ -174,9 +204,41 @@ module internal InstallationLossRetirementCommit =
             let witnessStarted = ref false
 
             try
-                execute primaryOwner ownerWitnessConnection witness suppression input witnessStarted
+                execute
+                    afterWitnessSettlement
+                    primaryOwner
+                    ownerWitnessConnection
+                    witness
+                    suppression
+                    input
+                    witnessStarted
             with _ ->
                 if witnessStarted.Value then
                     InstallationLossRetirementOutcome.Unconfirmed value.RetirementId
                 else
                     InstallationLossRetirementOutcome.Refused
+
+    let record
+        primaryOwner
+        ownerWitnessConnection
+        witness
+        suppression
+        canonical
+        signatureOne
+        signatureTwo
+        knownOperations
+        evidenceReport
+        checkpoint
+        =
+        recordWithSettlementObservation
+            ignore
+            primaryOwner
+            ownerWitnessConnection
+            witness
+            suppression
+            canonical
+            signatureOne
+            signatureTwo
+            knownOperations
+            evidenceReport
+            checkpoint
