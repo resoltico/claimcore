@@ -588,9 +588,9 @@
       "contractId": "CC-WEB-001",
       "reviewerKind": "agent",
       "reviewer": "Agent reviewed the exact current heading and listed implementation and assertion sources; this is source review of local synthetic boundaries, not execution evidence, independent owner approval, or live real-data qualification.",
-      "reviewedOn": "2026-09-27",
+      "reviewedOn": "2026-09-28",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "2804a92256441694543c05588ba01e82a12bc58ebe7293fc292cf25263470227",
+      "reviewSubjectHash": "9dc16493b99b432dc4874ada7c3a0442df344260b399de72526a563127593dc0",
       "wholeFiles": [
         "docs/diagnostics.md",
         "eng/ClaimCore.ContractGenerator/Artifacts.fs",

@@ -5,13 +5,14 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 web_dll="${1:?Pass published Web directory.}/ClaimCore.Web.dll"
 database_dll="${2:?Pass published Database directory.}/ClaimCore.Database.dll"
+docs_dll="$repo_root/artifacts/bin/ClaimCore.Docs/release/ClaimCore.Docs.dll"
 engine_scope="${3:-all}"
 if [[ "$engine_scope" == all && -n "${CLAIMCORE_TEST_RUN_LABEL:-}" ]]; then
   printf 'All-engine qualification requires independently labeled runs.\n' >&2
   exit 64
 fi
-[[ -f "$web_dll" && -f "$database_dll" ]] || {
-  printf 'Published Web and Database assemblies are required.\n' >&2; exit 64;
+[[ -f "$web_dll" && -f "$database_dll" && -f "$docs_dll" ]] || {
+  printf 'Published Web, Database, and documentation assurance assemblies are required.\n' >&2; exit 64;
 }
 case "$engine_scope" in
   all) engines=(chromium firefox webkit) ;;
@@ -228,6 +229,10 @@ run_engine() (
       stage="$(tr -cd 'a-z0-9-\n' <"$progress_file" | head -n 1)"
     printf 'The %s browser run stopped after safe stage: %s.\n' "$engine" "$stage" >&2
     browser_failure
+    exit 1
+  fi
+  if ! dotnet "$docs_dll" verify-frontend-report browser "$engine"; then
+    printf 'Published %s browser report inventory differs from the reviewed catalog.\n' "$engine" >&2
     exit 1
   fi
   if [[ -n "${CLAIMCORE_PUBLISHED_CLI_DIR:-}" ]]; then

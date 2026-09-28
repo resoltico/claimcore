@@ -1296,7 +1296,11 @@
       "status": "replaced",
       "replacementIds": [
         "dotnet:ClaimCore.Tests::ClaimCore deterministic suite.typed core boundary parity.typed recovery storage failure and CLI wire response omit authored values",
-        "frontend:vitest::generated contract corpora > accepts every production CLI branch and rejects malformed or cross-endpoint values"
+        "frontend:vitest::generated contract corpora > covers CLI corpus families and sentinel outcomes",
+        "frontend:vitest::generated contract corpora > covers every reachable CLI response kind",
+        "frontend:vitest::generated contract corpora > rejects CLI lone surrogates and revision overflow",
+        "frontend:vitest::generated contract corpora > validates every endpoint and cross-endpoint CLI outcome",
+        "frontend:vitest::generated contract corpora > validates every local CLI protocol outcome"
       ],
       "reason": "The generated CLI corpus test validates every emitted response branch against endpoint schemas; the new typed failure test checks StoreUnavailable classification and safe CLI serialization."
     },
@@ -2452,7 +2456,7 @@
         "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v3 TestServer.[CC-WEB-001] session login and logout revoke admission through real cookies and antiforgery",
         "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v3 input.[CC-WEB-001] gives session mutations closed body schemas"
       ],
-      "reason": "The login decoder accepts only credential plus antiforgery token, and TestServer proves that exact body can create then revoke a real session."
+      "reason": "The bootstrap credential decoder is removed. Current closed session-mutation schemas and TestServer exercise OIDC-backed browser admission and CSRF-bound logout through real cookies, without accepting a password body."
     },
     {
       "baselineId": "dotnet:ClaimCore.WebTests::ClaimCore.Web.strict HTTP input.transport input.reads streaming bodies within an exact byte bound",
@@ -2469,7 +2473,7 @@
       "replacementIds": [
         "frontend:playwright::bounds repeated published login admission and recovers after its window"
       ],
-      "reason": "The published limiter test sends distinct bad credentials to observe 401 then 429 with no hidden retry, waits the real fixed window, and verifies a valid login afterward."
+      "reason": "The published OIDC admission test issues credential-free sign-in challenges until the host returns a bounded 429, waits for the real limiter window, and then completes an authorized sign-in without hidden retry."
     },
     {
       "baselineId": "frontend:playwright::executes every command and resolves two exact recovery preparations",
@@ -2494,9 +2498,9 @@
       "status": "replaced",
       "replacementIds": [
         "frontend:playwright::keeps published login, editor, review, receipt and history accessible at narrow and zoomed viewports",
-        "frontend:playwright::uses the published v2 login boundary and accessible case workspace"
+        "frontend:playwright::uses OIDC sign-in and the accessible actor-bound case workspace"
       ],
-      "reason": "The published login test covers anonymous token, rejected and accepted credentials, logout, and axe; the viewport test extends accessible login and case work across narrow and zoomed layouts."
+      "reason": "The published Web-v3 test follows OIDC sign-in into an actor-bound case workspace, checks the anonymous and authenticated session boundaries, logout, and accessibility; the viewport test extends that path across narrow and zoomed layouts. ClaimCore no longer collects login credentials."
     },
     {
       "baselineId": "frontend:vitest::accepts each closed core result shape with decimal revision text",
@@ -2510,27 +2514,27 @@
       "baselineId": "frontend:vitest::admits a returned session token and refreshes after logout",
       "status": "replaced",
       "replacementIds": [
-        "frontend:vitest::v2 session lifecycle > hydrates, signs in, renders v2 definition, and signs out through the anonymous snapshot"
+        "frontend:vitest::v3 session lifecycle > offers OIDC sign-in, then hydrates an authenticated return and signs out"
       ],
-      "reason": "The v2 session lifecycle test admits a returned authenticated snapshot, then signs out and requires a fresh anonymous snapshot rather than retaining the old token."
+      "reason": "The Web-v3 session lifecycle test offers OIDC sign-in, hydrates the returned authenticated BFF snapshot, then signs out without retaining authenticated browser access."
     },
     {
       "baselineId": "frontend:vitest::application session states > renders loading, recoverable failure, anonymous, and authenticated shells",
       "status": "replaced",
       "replacementIds": [
-        "frontend:vitest::renders anonymous login and authenticated dashboard paths",
+        "frontend:vitest::renders OIDC sign-in and authenticated dashboard paths",
         "frontend:vitest::renders loading and refreshable session failures"
       ],
-      "reason": "Separate shell tests cover loading/recoverable session failure and the anonymous login versus authenticated Dashboard branches under the v2 session model."
+      "reason": "Separate shell tests cover loading and recoverable session failure, the OIDC sign-in path, and the authenticated Dashboard without collecting a browser credential."
     },
     {
       "baselineId": "frontend:vitest::browser result rendering > preserves host, rejected, and uncertain failure meaning",
       "status": "replaced",
       "replacementIds": [
         "frontend:vitest::models definite rejection and unknown outcomes without allowing a dispatched mutation to regress",
-        "frontend:vitest::uses generated v2 paths and typed endpoint outcomes"
+        "frontend:vitest::uses generated v3 paths and typed endpoint outcomes"
       ],
-      "reason": "The v2 API and operation-state tests distinguish host/transport delivery failures, definite rejections, and unknown mutation outcomes without treating one as accepted."
+      "reason": "The v3 API and operation-state tests distinguish host/transport delivery failures, definite rejections, and unknown mutation outcomes without treating one as accepted."
     },
     {
       "baselineId": "frontend:vitest::browser result rendering > projects only context-appropriate successful core variants",
@@ -2555,7 +2559,7 @@
         "frontend:vitest::aborts a stale page load before appending a newer cursor page",
         "frontend:vitest::keeps a failed history page request-local without erasing current case data"
       ],
-      "reason": "The v2 history tests abort stale page loads and keep a failed page request local, so current case state and its retry cursor are not overwritten."
+      "reason": "The v3 history tests abort stale page loads and keep a failed page request local, so current case state and its retry cursor are not overwritten."
     },
     {
       "baselineId": "frontend:vitest::case data hooks > keys current state to the requested reference and renders exact failures",
@@ -2573,7 +2577,7 @@
         "frontend:vitest::keeps a failed history page request-local without erasing current case data",
         "frontend:vitest::shows current fields, server command labels, full expandable history and retryable history pages"
       ],
-      "reason": "The v2 detail tests page server history with retryable cursors and isolate a later page error from current case data when navigation changes."
+      "reason": "The v3 detail tests page server history with retryable cursors and isolate a later page error from current case data when navigation changes."
     },
     {
       "baselineId": "frontend:vitest::case detail > keeps current state, command affordances, and accepted history separate",
@@ -2581,7 +2585,7 @@
       "replacementIds": [
         "frontend:vitest::shows current fields, server command labels, full expandable history and retryable history pages"
       ],
-      "reason": "The v2 detail test renders current fields and server-described commands separately from full accepted-history entries, preserving their distinct meanings."
+      "reason": "The v3 detail test renders current fields and server-described commands separately from full accepted-history entries, preserving their distinct meanings."
     },
     {
       "baselineId": "frontend:vitest::case detail > renders and pages history without inventing an unavailable current case",
@@ -2623,7 +2627,7 @@
         "frontend:vitest::fails closed when the server definition is rejected or has a different Web fingerprint",
         "frontend:vitest::metadata-driven descriptor rendering > renders descriptor labels and all supplied field values without client-side normalization"
       ],
-      "reason": "The v2 design treats missing or mismatched descriptor metadata as invalid definition admission; valid descriptors are rendered verbatim, replacing the old partial-metadata fallback label."
+      "reason": "The v3 design treats missing or mismatched descriptor metadata as invalid definition admission; valid descriptors are rendered verbatim, replacing the old partial-metadata fallback label."
     },
     {
       "baselineId": "frontend:vitest::copy and attachment controls > announces copied values and provides a text fallback when clipboard access fails",
@@ -2631,15 +2635,15 @@
       "replacementIds": [
         "frontend:vitest::copies safe values and provides an accessible fallback when clipboard access is unavailable"
       ],
-      "reason": "The v2 clipboard test exercises both successful announcement and the accessible text fallback when browser clipboard access fails."
+      "reason": "The v3 clipboard test exercises both successful announcement and the accessible text fallback when browser clipboard access fails."
     },
     {
       "baselineId": "frontend:vitest::copy and attachment controls > uses a temporary same-document attachment link",
       "status": "replaced",
       "replacementIds": [
-        "frontend:vitest::v2 Recovery import and export > exports the validated filename then retains previewed envelope material without submission"
+        "frontend:vitest::v3 Recovery import and export > exports the validated filename then retains previewed envelope material without submission"
       ],
-      "reason": "The v2 recovery export test validates the server filename and initiates an attachment download from the received artifact without persisting it as application state."
+      "reason": "The v3 recovery export test validates the server filename and initiates an attachment download from the received artifact without persisting it as application state."
     },
     {
       "baselineId": "frontend:vitest::dashboard navigation > keeps core metadata visible while switching cases, recovery, and operations",
@@ -2656,7 +2660,7 @@
         "frontend:vitest::fails closed when the server definition is rejected or has a different Web fingerprint",
         "frontend:vitest::renders a neutral shell while definition admission is pending"
       ],
-      "reason": "The v2 shell remains neutral while definition admission is pending and renders a failure branch rather than a partial Dashboard if loading rejects."
+      "reason": "The v3 shell remains neutral while definition admission is pending and renders a failure branch rather than a partial Dashboard if loading rejects."
     },
     {
       "baselineId": "frontend:vitest::decision editing > writes decision fields through the reviewable operation state",
@@ -2681,25 +2685,26 @@
         "frontend:vitest::accepts the matching generated definition fingerprint",
         "frontend:vitest::clears claimant definition state when the server rejects or mismatches assets"
       ],
-      "reason": "The v2 definition tests accept only the matching generated fingerprint and clear claimant-bearing definition state on rejected or incompatible refresh."
+      "reason": "The v3 definition tests accept only the matching generated fingerprint and clear claimant-bearing definition state on rejected or incompatible refresh."
     },
     {
       "baselineId": "frontend:vitest::does not submit from an anonymous session without an antiforgery token",
       "status": "replaced",
       "replacementIds": [
-        "frontend:vitest::fails a malformed authenticated session and leaves invalid mutation calls inert",
-        "frontend:vitest::renders a login form with disabled submission until anonymous antiforgery is available"
+        "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web v3 admission.[CC-WEB-001] returns typed CSRF admission refusal",
+        "frontend:vitest::fails a malformed authenticated session and leaves logout inert",
+        "frontend:vitest::renders an OIDC sign-in link without collecting a credential"
       ],
-      "reason": "The v2 session and login tests keep mutation calls inert without a valid authenticated snapshot and keep login submission disabled before anonymous antiforgery is available."
+      "reason": "The Web host enforces a typed CSRF refusal for an invalid browser mutation, while the browser offers OIDC sign-in without a credential form; the old anonymous credential-submission path no longer exists."
     },
     {
       "baselineId": "frontend:vitest::does not update a session hook after its initial request is unmounted",
       "status": "replaced",
       "replacementIds": [
         "frontend:vitest::renders the loading shell before local session discovery completes",
-        "frontend:vitest::surfaces invalid snapshots after login and logout responses"
+        "frontend:vitest::surfaces invalid snapshots after session refresh and logout responses"
       ],
-      "reason": "The v2 session-read tests hold the loading shell until discovery settles and reject late invalid snapshots rather than updating a departed session view."
+      "reason": "The v3 session-read tests hold the loading shell until discovery settles and reject late invalid snapshots rather than updating a departed session view."
     },
     {
       "baselineId": "frontend:vitest::fails closed when the required browser root is absent",
@@ -2707,15 +2712,15 @@
       "replacementIds": [
         "frontend:vitest::fails immediately when the embedding document omits the application root"
       ],
-      "reason": "The v2 entrypoint test refuses to mount when the required browser root is absent, preserving the fail-closed embedding boundary."
+      "reason": "The v3 entrypoint test refuses to mount when the required browser root is absent, preserving the fail-closed embedding boundary."
     },
     {
       "baselineId": "frontend:vitest::keeps malformed authenticated sessions and API failures out of the dashboard",
       "status": "replaced",
       "replacementIds": [
-        "frontend:vitest::fails a malformed authenticated session and leaves invalid mutation calls inert"
+        "frontend:vitest::fails a malformed authenticated session and leaves logout inert"
       ],
-      "reason": "The v2 session test feeds a malformed authenticated snapshot and proves Dashboard and mutation dispatch stay unavailable."
+      "reason": "The Web-v3 session test feeds a malformed authenticated snapshot and leaves logout inert rather than treating the invalid session as authenticated."
     },
     {
       "baselineId": "frontend:vitest::keeps recovery preparation state separate from its observed core receipt",
@@ -2732,16 +2737,16 @@
       "replacementIds": [
         "frontend:vitest::associates optional field errors and supports password text input"
       ],
-      "reason": "The v2 form-field test associates validation errors with the password input using accessible field semantics."
+      "reason": "The reusable field-control test associates an optional validation error with its input using accessible field semantics; the application no longer provides a password sign-in form."
     },
     {
       "baselineId": "frontend:vitest::login screen > submits a credential only after the operator presses sign in",
       "status": "replaced",
       "replacementIds": [
-        "frontend:vitest::renders a login form with disabled submission until anonymous antiforgery is available",
-        "frontend:vitest::v2 session lifecycle > hydrates, signs in, renders v2 definition, and signs out through the anonymous snapshot"
+        "frontend:vitest::renders an OIDC sign-in link without collecting a credential",
+        "frontend:vitest::v3 session lifecycle > offers OIDC sign-in, then hydrates an authenticated return and signs out"
       ],
-      "reason": "The v2 login tests require an enabled, explicitly activated sign-in control and submit the credential only after anonymous antiforgery is available."
+      "reason": "The replacement tests require an explicit OIDC sign-in action and verify that the browser never collects or sends a credential from the anonymous session; authentication returns through the BFF session."
     },
     {
       "baselineId": "frontend:vitest::mounts the browser root and retains the generated closed command set",
@@ -2750,7 +2755,7 @@
         "frontend:vitest::metadata-driven drafts > derives command fields, prefill and a canonical draft without a browser command registry",
         "frontend:vitest::mounts the Web v3 browser root"
       ],
-      "reason": "The v2 entrypoint test mounts the browser root, while draft tests use the generated semantic command inventory rather than a copied UI registry."
+      "reason": "The v3 entrypoint test mounts the browser root, while draft tests use the generated semantic command inventory rather than a copied UI registry."
     },
     {
       "baselineId": "frontend:vitest::operation editor > collects core-described inputs before preparing an exact request",
@@ -2759,7 +2764,7 @@
         "frontend:vitest::metadata-driven drafts > derives command fields, prefill and a canonical draft without a browser command registry",
         "frontend:vitest::metadata-driven operation acceptance > prepares, reviews, and accepts an operation with React Aria modal semantics"
       ],
-      "reason": "The v2 draft and editor tests derive the command's input names from server descriptors and send an exact CommandDraft to prepare before opening review."
+      "reason": "The v3 draft and editor tests derive the command's input names from server descriptors and send an exact CommandDraft to prepare before opening review."
     },
     {
       "baselineId": "frontend:vitest::operation lifecycle > coalesces duplicate preparation activation while retention is pending",
@@ -2767,7 +2772,7 @@
       "replacementIds": [
         "frontend:vitest::coalesces duplicate preparation activation while retention is pending"
       ],
-      "reason": "The new v2 editor test fires rapid duplicate Prepare activations against a pending retention promise and asserts one HTTP mutation request."
+      "reason": "The new v3 editor test fires rapid duplicate Prepare activations against a pending retention promise and asserts one HTTP mutation request."
     },
     {
       "baselineId": "frontend:vitest::operation lifecycle > keeps rejected and uncertain commits in review with core-owned meaning",
@@ -2776,7 +2781,7 @@
         "frontend:vitest::operation editor transport outcomes > preserves only recovery direction after an uncertain submit delivery",
         "frontend:vitest::operation editor transport outcomes > shows a definite submit rejection after preserving the prepared identity"
       ],
-      "reason": "Separate v2 editor tests keep a definite rejected submission in review and retain explicit recovery direction after an uncertain delivery instead of claiming acceptance."
+      "reason": "Separate v3 editor tests keep a definite rejected submission in review and retain explicit recovery direction after an uncertain delivery instead of claiming acceptance."
     },
     {
       "baselineId": "frontend:vitest::operation lifecycle > prepares exact browser input and handles accepted, host, and transport commit outcomes",
@@ -2784,7 +2789,7 @@
       "replacementIds": [
         "frontend:vitest::metadata-driven operation acceptance > prepares, reviews, and accepts an operation with React Aria modal semantics",
         "frontend:vitest::operation editor transport outcomes > preserves only recovery direction after an uncertain submit delivery",
-        "frontend:vitest::uses generated v2 paths and typed endpoint outcomes"
+        "frontend:vitest::uses generated v3 paths and typed endpoint outcomes"
       ],
       "reason": "The metadata-driven editor submits the prepared identity, while API/transport tests distinguish accepted, validated host refusal, and lost-result recovery paths."
     },
@@ -2795,7 +2800,7 @@
         "frontend:vitest::operation editor transport outcomes > keeps review open when a malformed prepared result omits its exact digest",
         "frontend:vitest::operation editor transport outcomes > locks the editor and directs recovery after an uncertain prepare delivery"
       ],
-      "reason": "The v2 editor locks and directs recovery after uncertain prepare delivery, and refuses submit when a nominal Prepared result lacks its retained digest."
+      "reason": "The v3 editor locks and directs recovery after uncertain prepare delivery, and refuses submit when a nominal Prepared result lacks its retained digest."
     },
     {
       "baselineId": "frontend:vitest::paged case hook > appends pages and clears stale cases when a fresh load fails",
@@ -2804,7 +2809,7 @@
         "frontend:vitest::lists, reloads, pages, selects and opens cases through typed list outcomes",
         "frontend:vitest::reports a failed list as a request-local error without manufacturing rows"
       ],
-      "reason": "The v2 list tests append typed pages, then report a failed load locally without retaining or manufacturing stale rows."
+      "reason": "The v3 list tests append typed pages, then report a failed load locally without retaining or manufacturing stale rows."
     },
     {
       "baselineId": "frontend:vitest::paged case hook > coalesces duplicate load activation while one page is pending",
@@ -2820,7 +2825,7 @@
       "replacementIds": [
         "frontend:vitest::operation editor transport outcomes > makes the review modal non-dismissable while submission is dispatched"
       ],
-      "reason": "The v2 pending-submit test holds a response promise and requires review submission and Keep for Recovery controls disabled until it resolves."
+      "reason": "The v3 pending-submit test holds a response promise and requires review submission and Keep for Recovery controls disabled until it resolves."
     },
     {
       "baselineId": "frontend:vitest::picker admission > rejects unknown picker values while making absent core metadata explicit",
@@ -2829,26 +2834,26 @@
         "frontend:vitest::fails closed when the server definition is rejected or has a different Web fingerprint",
         "frontend:vitest::metadata-driven drafts > uses descriptor-only presentation hints"
       ],
-      "reason": "The v2 metadata helper throws for an unknown command descriptor, while definition admission fails closed when required server metadata is absent or incompatible."
+      "reason": "The v3 metadata helper throws for an unknown command descriptor, while definition admission fails closed when required server metadata is absent or incompatible."
     },
     {
       "baselineId": "frontend:vitest::recovery action failures > keeps failed recovery actions observable without claiming lifecycle progress",
       "status": "replaced",
       "replacementIds": [
         "frontend:vitest::reports malformed pages, malformed inspections, rejected imports, and invalid exports",
-        "frontend:vitest::v2 Recovery view > keeps a completed non-acceptance out of the accepted receipt path"
+        "frontend:vitest::v3 Recovery view > keeps a completed non-acceptance out of the accepted receipt path"
       ],
-      "reason": "The v2 recovery tests surface malformed or rejected server results as alerts and keep a completed non-acceptance out of the accepted receipt path."
+      "reason": "The v3 recovery tests surface malformed or rejected server results as alerts and keep a completed non-acceptance out of the accepted receipt path."
     },
     {
       "baselineId": "frontend:vitest::recovery actions > inspects, exports, dismisses, and reloads bounded recovery material",
       "status": "replaced",
       "replacementIds": [
         "frontend:vitest::renders recovery list state, invokes inspection, and pages through a cursor",
-        "frontend:vitest::v2 Recovery import and export > exports the validated filename then retains previewed envelope material without submission",
-        "frontend:vitest::v2 Recovery view > inspects and dismisses only a server-advertised unsubmitted preparation"
+        "frontend:vitest::v3 Recovery import and export > exports the validated filename then retains previewed envelope material without submission",
+        "frontend:vitest::v3 Recovery view > inspects and dismisses only a server-advertised unsubmitted preparation"
       ],
-      "reason": "The v2 recovery tests page and inspect server material, require explicit export confirmation and validated download, and dismiss only an advertised unsubmitted preparation."
+      "reason": "The v3 recovery tests page and inspect server material, require explicit export confirmation and validated download, and dismiss only an advertised unsubmitted preparation."
     },
     {
       "baselineId": "frontend:vitest::recovery retry > requires inspection before retrying a submission-started preparation",
@@ -2879,17 +2884,17 @@
       "status": "replaced",
       "replacementIds": [
         "frontend:vitest::renders direct observed-accepted recovery receipts",
-        "frontend:vitest::v2 Recovery view > renders a definite resolve receipt instead of treating it as transport uncertainty"
+        "frontend:vitest::v3 Recovery view > renders a definite resolve receipt instead of treating it as transport uncertainty"
       ],
-      "reason": "The v2 recovery view tests both definite ResolveCompleted acceptance and directly observed accepted replay as receipts, not unknown outcomes."
+      "reason": "The v3 recovery view tests both definite ResolveCompleted acceptance and directly observed accepted replay as receipts, not unknown outcomes."
     },
     {
       "baselineId": "frontend:vitest::rejected browser API calls > preserves a validated host failure returned with a non-success HTTP status",
       "status": "replaced",
       "replacementIds": [
-        "frontend:vitest::uses generated v2 paths and typed endpoint outcomes"
+        "frontend:vitest::uses generated v3 paths and typed endpoint outcomes"
       ],
-      "reason": "The v2 API test sends an HTTP 401 with a generated HOST_FAILURE body and keeps its validated code/status distinct from a malformed delivery."
+      "reason": "The v3 API test sends an HTTP 401 with a generated HOST_FAILURE body and keeps its validated code/status distinct from a malformed delivery."
     },
     {
       "baselineId": "frontend:vitest::rejected browser API calls > renders transport, decoding, and delivery failures without accepting malformed data",
@@ -2898,7 +2903,7 @@
         "frontend:vitest::fails closed on malformed delivery and validates recovery export",
         "frontend:vitest::rejects JSON-prefix spoofing and accepts an exact JSON media type with parameters"
       ],
-      "reason": "The v2 API tests reject malformed JSON/media and invalid export delivery, preserving deliveryFailure and mutation uncertainty rather than accepting malformed data."
+      "reason": "The v3 API tests reject malformed JSON/media and invalid export delivery, preserving deliveryFailure and mutation uncertainty rather than accepting malformed data."
     },
     {
       "baselineId": "frontend:vitest::rejects transport drift, invalid tokens, and incomplete values",
@@ -2913,9 +2918,9 @@
       "baselineId": "frontend:vitest::renders a failed credential admission without changing the submitted session token",
       "status": "replaced",
       "replacementIds": [
-        "frontend:vitest::keeps the anonymous token after a rejected credential so login can be retried"
+        "frontend:vitest::does not send a credential from an anonymous session"
       ],
-      "reason": "The new v2 session-hook test rejects a credential, preserves the anonymous antiforgery token, and permits a subsequent corrected login without a fabricated session."
+      "reason": "The current browser has no credential-admission form. Its successor test verifies that anonymous session handling never sends a credential to ClaimCore, rather than preserving a rejected password submission path."
     },
     {
       "baselineId": "frontend:vitest::renders a logout transport failure as a retriable session error",
@@ -2923,7 +2928,7 @@
       "replacementIds": [
         "frontend:vitest::shows logout transport failure as retriable and clears it after a session refresh"
       ],
-      "reason": "The new v2 session-hook test loses logout delivery, surfaces a retriable session error, and clears it only after explicit refresh establishes current state."
+      "reason": "The new v3 session-hook test loses logout delivery, surfaces a retriable session error, and clears it only after explicit refresh establishes current state."
     },
     {
       "baselineId": "frontend:vitest::review confirmation > requires confirmation and supports keyboard closure",
@@ -2948,16 +2953,16 @@
       "replacementIds": [
         "frontend:vitest::keeps existing references immutable and delegates a reviewed commit"
       ],
-      "reason": "The v2 editor test opens an existing case, keeps its top-level caseReference immutable while editing metadata-described values, and delegates the accepted reviewed commit back to the case view."
+      "reason": "The v3 editor test opens an existing case, keeps its top-level caseReference immutable while editing metadata-described values, and delegates the accepted reviewed commit back to the case view."
     },
     {
       "baselineId": "frontend:vitest::successful browser API calls > uses the closed HTTP-v1 operations and exact prepared identity",
       "status": "replaced",
       "replacementIds": [
-        "frontend:vitest::maps every JSON endpoint to v2 and preserves nullable cursors and mutation identity",
+        "frontend:vitest::maps every JSON endpoint to v3 and preserves nullable cursors and mutation identity",
         "frontend:vitest::metadata-driven operation acceptance > prepares, reviews, and accepts an operation with React Aria modal semantics"
       ],
-      "reason": "The old HTTP-v1 calls were removed; v2 API tests enumerate generated endpoint paths and exact identity-bearing bodies, and the editor test submits a reviewed preparation."
+      "reason": "The old HTTP-v1 calls were removed; v3 API tests enumerate generated endpoint paths and exact identity-bearing bodies, and the editor test submits a reviewed preparation."
     },
     {
       "baselineId": "frontend:vitest::text presentation > identifies each guarded code point range without normalizing claimant text",
@@ -2966,7 +2971,7 @@
         "frontend:vitest::keeps generated endpoint inventory callable and presents suspicious Unicode defensively",
         "frontend:vitest::renders absent and suspicious accepted values without changing the recorded text"
       ],
-      "reason": "The v2 Unicode tests enumerate suspicious code points such as U+202E and display a warning while retaining the accepted text unnormalized."
+      "reason": "The v3 Unicode tests enumerate suspicious code points such as U+202E and display a warning while retaining the accepted text unnormalized."
     },
     {
       "baselineId": "frontend:vitest::text presentation > renders case values as text and explicitly identifies null or unavailable values",
@@ -2974,7 +2979,7 @@
       "replacementIds": [
         "frontend:vitest::renders absent and suspicious accepted values without changing the recorded text"
       ],
-      "reason": "The v2 field-rendering test shows null business values as Not recorded and renders suspicious accepted text as text with an explicit warning."
+      "reason": "The v3 field-rendering test shows null business values as Not recorded and renders suspicious accepted text as text with an explicit warning."
     },
     {
       "baselineId": "frontend:vitest::validates core-owned field and command metadata without a UI registry",
@@ -2983,7 +2988,7 @@
         "frontend:vitest::accepts the matching generated definition fingerprint",
         "frontend:vitest::metadata-driven drafts > derives command fields, prefill and a canonical draft without a browser command registry"
       ],
-      "reason": "The v2 definition test checks the generated fingerprint, and draft tests derive field/command inputs from that admitted semantic metadata without a copied registry."
+      "reason": "The v3 definition test checks the generated fingerprint, and draft tests derive field/command inputs from that admitted semantic metadata without a copied registry."
     },
     {
       "baselineId": "frontend:vitest::validates immutable preparation and bounded recovery projections",

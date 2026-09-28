@@ -4,6 +4,7 @@ open System.Text.Json
 open System.Text
 open Expecto
 open ClaimCore.Docs
+open ClaimCore.DocsTests.Fixtures
 
 let private rows (names: Set<string>) =
     names
@@ -77,7 +78,39 @@ let private vitestInventory =
         Expect.equal
             (StructuredReports.validateVitestBytes (Encoding.UTF8.GetBytes fractional))
             (Error "Structured report counter 'durationMs' is invalid.")
-            "Fractional duration reports must fail with their actual reason")
+            "Fractional duration reports must fail with their actual reason"
+
+        use repository = new TempRepository()
+
+        repository.WriteBytes("artifacts/frontend/vitest-summary.json", vitestBytes actual names)
+        |> ignore
+
+        Expect.isOk
+            (LocalFrontendReports.verifyVitest repository.Root)
+            "The local gate validates a real report file against the compiled catalog"
+
+        repository.WriteBytes(
+            "artifacts/frontend/vitest-summary.json",
+            vitestBytes (actual - 1) names
+        )
+        |> ignore
+
+        Expect.isError
+            (LocalFrontendReports.verifyVitest repository.Root)
+            "The local gate rejects a stale producer count"
+
+        let changedNames =
+            names |> Set.remove (Set.minElement names) |> Set.add "unregistered identity"
+
+        repository.WriteBytes(
+            "artifacts/frontend/vitest-summary.json",
+            vitestBytes actual changedNames
+        )
+        |> ignore
+
+        Expect.isError
+            (LocalFrontendReports.verifyVitest repository.Root)
+            "The local gate rejects a changed identity even when the count is unchanged")
 
 let private browserInventory =
     testCase "Playwright report requires the exact current catalog count and identities" (fun () ->
@@ -100,7 +133,42 @@ let private browserInventory =
             (StructuredReports.validateBrowserBytes
                 "firefox"
                 (browserBytes "chromium" actual actual names))
-            "A different engine report cannot be reused")
+            "A different engine report cannot be reused"
+
+        use repository = new TempRepository()
+
+        for engine in [ "chromium"; "firefox"; "webkit" ] do
+            repository.WriteBytes(
+                $"artifacts/browser/{engine}.json",
+                browserBytes engine actual actual names
+            )
+            |> ignore
+
+            Expect.isOk
+                (LocalFrontendReports.verifyBrowser repository.Root engine)
+                "Each local browser report matches the exact catalog"
+
+        Expect.isError
+            (LocalFrontendReports.verifyBrowser repository.Root "other")
+            "An unregistered browser engine is refused"
+
+        repository.WriteBytes(
+            "artifacts/frontend/vitest-summary.json",
+            vitestBytes FrontendTestCatalog.vitest.Count FrontendTestCatalog.vitest
+        )
+        |> ignore
+
+        Expect.isOk (LocalFrontendReports.verifyAll repository.Root) "All local reports agree"
+
+        repository.WriteBytes(
+            "artifacts/browser/firefox.json",
+            browserBytes "firefox" actual (actual - 1) names
+        )
+        |> ignore
+
+        Expect.isError
+            (LocalFrontendReports.verifyAll repository.Root)
+            "A stale single-engine report fails the combined local gate")
 
 let tests =
     testList "Frontend report inventory" [ vitestInventory; browserInventory ]

@@ -7,7 +7,7 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { jsonProcess } from "./dependency-process.mjs";
 import {
   packageKey,
@@ -24,8 +24,12 @@ if (!["security", "health"].includes(mode) || process.argv.length > 4)
   throw new Error("Expected security or health and optional registry path.");
 const output =
   mode === "health"
-    ? "artifacts/dependency-health"
-    : "artifacts/diagnostics/quality";
+    ? process.env.GITHUB_ACTIONS === "true"
+      ? "artifacts/dependency-health"
+      : `artifacts/dependency-health/local-${randomUUID()}`
+    : process.env.GITHUB_ACTIONS === "true"
+      ? "artifacts/diagnostics/quality"
+      : `artifacts/diagnostics/local-dependency-security-${randomUUID()}`;
 const file =
   mode === "health" ? "report.json" : "dependency-security.details.json";
 const installed = new Map();

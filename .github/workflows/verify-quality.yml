@@ -177,7 +177,7 @@ jobs:
           run_stage workflow-toolchain pwsh -File eng/Check-WorkflowToolchainPolicy.ps1
           run_stage workflow-toolchain-negative-controls pwsh -File eng/Test-WorkflowToolchainPolicy.ps1
           mapfile -d "" scripts < <(find eng db -type f -name "*.sh" -print0)
-          run_stage shellcheck shellcheck "${scripts[@]}"
+          run_stage shellcheck shellcheck -x "${scripts[@]}"
           run_stage compose-config env CLAIMCORE_COMPOSE_PROJECT=claimcore-config-${{ github.run_id }} POSTGRES_PASSWORD=owner-policy-value CLAIMCORE_APP_PASSWORD=runtime-policy-value CLAIMCORE_POSTGRES_PORT=0 docker compose --file compose.yaml config --quiet
           run_stage compose-health bash eng/Test-ComposePolicy.sh
           run_stage docker-cleanup-assurance bash eng/Test-LabeledTestContainerCleanup.sh

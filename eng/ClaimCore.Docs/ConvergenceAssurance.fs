@@ -70,7 +70,13 @@ module ConvergenceAssurance =
         "dotnet:ClaimCore.AcceptanceTests::published authenticated CLI v4 acceptance.NDJSON session preserves frame-local results"
 
     let private cliCorpus =
-        "frontend:vitest::generated contract corpora > accepts every production CLI branch and rejects malformed or cross-endpoint values"
+        [
+            "frontend:vitest::generated contract corpora > covers CLI corpus families and sentinel outcomes"
+            "frontend:vitest::generated contract corpora > covers every reachable CLI response kind"
+            "frontend:vitest::generated contract corpora > rejects CLI lone surrogates and revision overflow"
+            "frontend:vitest::generated contract corpora > validates every endpoint and cross-endpoint CLI outcome"
+            "frontend:vitest::generated contract corpora > validates every local CLI protocol outcome"
+        ]
 
     let private webRuntime =
         "dotnet:ClaimCore.WebTests::ClaimCore.Web.Web HTTP-v3 TestServer.[CC-WEB-001] production route map dispatches the exact v3 endpoints"
@@ -121,7 +127,7 @@ module ConvergenceAssurance =
             matrix.EntryTests
             |> Map.exists (fun id tests ->
                 if id.StartsWith("endpoint-cli:") then
-                    not (has [ cliTransport; cliCorpus ] tests)
+                    not (has (cliTransport :: cliCorpus) tests)
                 elif id.StartsWith("endpoint-web:") then
                     let identifier = id.Substring("endpoint-web:".Length)
                     not (has [ webRuntime; webCorpus; webOutcomeTest identifier ] tests)

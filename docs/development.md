@@ -76,50 +76,13 @@ their outcomes must be reported separately from source inspection.
 runs through Microsoft's supported bridge. There is no `Microsoft.NET.Test.Sdk`, VSTest command path,
 manual test entry point, dual runner, or VSTest coverage collector.
 
-Run every project explicitly:
+Run the complete local .NET suite through the same native-MTP test counts, serial module setting, fresh TRX reports, exact compiled-name verifier, and Unit/Web/Integration Coverlet inputs used by CI. It also runs the non-optimized Debug architecture inspection and records a local stage manifest where the current platform permits one:
 
 ```sh
-dotnet test --project tests/ClaimCore.Tests/ClaimCore.Tests.fsproj \
-  --configuration Release --no-build --no-restore \
-  --minimum-expected-tests=333 --zero-tests-policy=strict --timeout=10m -- \
-  --settings="$PWD/eng/expecto.runsettings"
-dotnet test --project tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj \
-  --configuration Release --no-build --no-restore \
-  --minimum-expected-tests=122 --zero-tests-policy=strict --timeout=10m -- \
-  --settings="$PWD/eng/expecto.runsettings"
-dotnet test --project tests/ClaimCore.DocsTests/ClaimCore.DocsTests.fsproj \
-  --configuration Release --no-build --no-restore \
-  --minimum-expected-tests=74 --zero-tests-policy=strict --timeout=10m -- \
-  --settings="$PWD/eng/expecto.runsettings"
-dotnet test --project tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj \
-  --configuration Release --no-build --no-restore \
-  --minimum-expected-tests=333 --zero-tests-policy=strict --timeout=90m -- \
-  --settings="$PWD/eng/expecto.runsettings"
-dotnet test --project tests/ClaimCore.WitnessTests/ClaimCore.WitnessTests.fsproj \
-  --configuration Release --no-build --no-restore \
-  --minimum-expected-tests=21 --zero-tests-policy=strict --timeout=20m -- \
-  --settings="$PWD/eng/expecto.runsettings"
-dotnet test --project tests/ClaimCore.RecoveryQualificationTests/ClaimCore.RecoveryQualificationTests.fsproj \
-  --configuration Release --no-build --no-restore \
-  --minimum-expected-tests=19 --zero-tests-policy=strict --timeout=20m -- \
-  --settings="$PWD/eng/expecto.runsettings"
-dotnet test --project tests/ClaimCore.ConcurrencyQualificationTests/ClaimCore.ConcurrencyQualificationTests.fsproj \
-  --configuration Release --no-build --no-restore \
-  --minimum-expected-tests=5 --zero-tests-policy=strict --timeout=20m -- \
-  --settings="$PWD/eng/expecto.runsettings"
-dotnet test --project tests/ClaimCore.MigrationQualificationTests/ClaimCore.MigrationQualificationTests.fsproj \
-  --configuration Release --no-build --no-restore \
-  --minimum-expected-tests=15 --zero-tests-policy=strict --timeout=20m -- \
-  --settings="$PWD/eng/expecto.runsettings"
-dotnet test --project tests/ClaimCore.BackupQualificationTests/ClaimCore.BackupQualificationTests.fsproj \
-  --configuration Release --no-build --no-restore \
-  --minimum-expected-tests=2 --zero-tests-policy=strict --timeout=20m -- \
-  --settings="$PWD/eng/expecto.runsettings"
-dotnet test --project tests/ClaimCore.FuzzQualificationTests/ClaimCore.FuzzQualificationTests.fsproj \
-  --configuration Release --no-build --no-restore \
-  --minimum-expected-tests=5 --zero-tests-policy=strict --timeout=15m -- \
-  --settings="$PWD/eng/expecto.runsettings"
+pwsh -NoProfile -File eng/Run-LocalDotnetVerification.ps1
 ```
+
+The command retains its fresh synthetic reports under the ignored `artifacts/local-verification/` directory printed at completion. A selected `-Assembly ClaimCore.DocsTests` run is useful while editing that suite, but is explicitly partial; run the default full command before claiming local .NET verification. PostgreSQL integration and independent qualification stages are Linux-owned in CI; on macOS the same test executables and exact TRX inventories run locally, but their CI stage manifests cannot be forged for another platform. Published CLI process acceptance remains a separate required command below.
 
 `ClaimCore.FuzzQualificationTests` runs on all three platforms in CI and its TRX is reconciled in
 final evidence like every other required suite. It needs no database. It drives every boundary that turns externally
@@ -224,6 +187,7 @@ no allowance, and the manifest records only what the reviewed architecture permi
 Install the exact locked graph once, then run the frontend gates:
 
 ```text
+dotnet build eng/ClaimCore.Docs/ClaimCore.Docs.fsproj --configuration Release --no-restore
 npm --prefix web run format:check
 npm --prefix web run typecheck
 npm --prefix web run lint
@@ -239,7 +203,7 @@ npm --prefix web run build
 ```
 
 `npm run build` is the sole frontend asset producer. The native TypeScript compiler uses composite
-project references and the Vitest suite uses isolated, machine-scaled file workers. Publication
+project references and the Vitest suite uses isolated, machine-scaled file workers. `test:unit` now compares its actual sanitized report with the compiled reviewed test-name catalog; a stale count or renamed leaf fails locally immediately after Vitest, not only in final CI evidence. Rebuild the Docs executable after changing that catalog. Publication
 requires the resulting manifest to match source, npm lock, generated semantic/CLI-v4/Web-v3 contract,
 Node/npm versions, notices, and asset bytes. See [`web/README.md`](../web/README.md) for frontend
 structure and the current compiler-API compatibility arrangement.
@@ -277,9 +241,15 @@ pwsh -NoProfile -File eng/Test-ConvergenceAssurancePolicy.ps1
 pwsh -NoProfile -File eng/Check-DependencySecurity.ps1
 bash eng/Check-FSharpLint.sh
 actionlint -color
-shellcheck eng/*.sh db/*.sh
+find eng db -type f -name '*.sh' -exec shellcheck -x {} +
+env CLAIMCORE_COMPOSE_PROJECT=claimcore-config-local POSTGRES_PASSWORD=owner-policy-value CLAIMCORE_APP_PASSWORD=runtime-policy-value CLAIMCORE_POSTGRES_PORT=0 docker compose --file compose.yaml config --quiet
 bash eng/Test-LabeledTestContainerCleanup.sh
 bash eng/Test-ComposePolicy.sh
+bash eng/Test-PostgresImageAssurancePolicy.sh
+claimcore_sbom_output="$(mktemp -d "$PWD/artifacts/local-container-sbom.XXXXXXXX")"
+bash eng/Check-PostgresImageAssurance.sh sbom "$claimcore_sbom_output"
+claimcore_scan_output="$(mktemp -d "$PWD/artifacts/local-container-scan.XXXXXXXX")"
+bash eng/Check-PostgresImageAssurance.sh scan "$claimcore_scan_output"
 pwsh -NoProfile -File eng/Check-GitIgnorePolicy.ps1
 pwsh -NoProfile -File eng/Test-SourceSecretScanPolicy.ps1
 pwsh -NoProfile -File eng/Scan-SourceSecrets.ps1
@@ -342,14 +312,17 @@ volume at a newly selected image without the operator's backup and planned downt
 ### Documentation assurance
 
 Build the solution first, then check every Markdown file, generated help block, exact-case local link
-and anchor, contract declaration, and current hash-bound source review:
+and anchor, contract declaration, and current hash-bound source review. The local gate also runs two
+byte-idle writes and proves neither changed the source relative to its starting state, so unrelated
+working-tree edits are preserved:
 
 ```text
-dotnet artifacts/bin/ClaimCore.Docs/release/ClaimCore.Docs.dll check
+pwsh -NoProfile -File eng/Check-LocalDocumentation.ps1
 ```
 
-Maintainers use `ClaimCore.Docs write` only to refresh registered generated bodies. A second write
-must be byte-idle. Contract IDs remain in their registered owner documents, evidence-test leaf names
+Maintainers use `ClaimCore.Docs write` only to refresh registered generated bodies. A source change
+made by either write is a failed local preflight until reviewed and committed; CI additionally requires
+the clean checkout to have no diff. Contract IDs remain in their registered owner documents, evidence-test leaf names
 start with one matching `[CC-…]` token, and review hashes are refreshed only after reviewing the exact
 contract and assertion sources. The hash detects later drift; it does not independently prove the
 quality or identity of the reviewer.
@@ -362,21 +335,13 @@ The CLI acceptance harness builds fresh CLI, Web, and Database publish trees wit
 bash eng/Run-PublishedCliAcceptance.sh
 ```
 
-For a local three-engine Web lifecycle, first install the pinned browser revisions. Produce Web
-assets, publish Web and Database into new ignored directories, then invoke the harness:
+For a local three-engine Web lifecycle with the same measured Web-branch requirement as CI, first run the complete local .NET command above. Pass the fresh `artifacts/local-verification/...` directory it prints to this wrapper:
 
 ```sh
-npm --prefix web exec -- playwright install --with-deps chromium firefox webkit
-npm --prefix web run build
-bash eng/Test-HostSecurityNativePublishItems.sh
-claimcore_browser_publish="artifacts/browser-publish/run-$(date -u +%Y%m%dT%H%M%SZ)"
-test ! -e "$claimcore_browser_publish"
-dotnet publish src/ClaimCore.Web/ClaimCore.Web.fsproj --configuration Release --no-restore --output "$claimcore_browser_publish/web" -p:UseAppHost=false
-dotnet publish src/ClaimCore.Database/ClaimCore.Database.fsproj --configuration Release --no-restore --output "$claimcore_browser_publish/database" -p:UseAppHost=false
-bash eng/Run-PublishedWebE2E.sh "$claimcore_browser_publish/web" "$claimcore_browser_publish/database" all
+bash eng/Run-LocalBrowserCoverage.sh artifacts/local-verification/NAME_FROM_PREVIOUS_OUTPUT
 ```
 
-The harness rejects a Vite server. It uses a disposable synthetic OIDC issuer and creates separate primary and witness PostgreSQL clusters, a published HTTPS host, owner-private state, synthetic actors, case references, and operations for each engine. It qualifies browser login, case work, recovery, downloads, and accessibility against published bytes only when every assertion passes. The `all` scope runs Chromium, Firefox, and WebKit serially with fresh isolated state per engine. Same-machine containers do not prove independent-host survival. Private diagnostics are removed after a bounded safe failure summary; only sanitized results are retained.
+The wrapper requires the complete .NET run's source-fingerprint marker and refuses changed source or missing coverage inputs before publication. It locks and rebuilds the Web asset producer, creates fresh Web and Database publish trees with SBOMs and immutable manifests, verifies those manifests before and after published execution, and runs Chromium, Firefox, and WebKit separately under Coverlet. Each engine checks its actual sanitized test identities against the compiled catalog and must measure `ClaimCore.Web` branches. It then merges the three browser inputs with the full local .NET run's Unit, Web, and Integration inputs and enforces the same coverage floors as CI. The harness rejects a Vite server, uses a disposable synthetic OIDC issuer and separate primary and witness PostgreSQL clusters, and keeps private diagnostics out of retained sanitized results. Same-machine containers do not prove independent-host survival; GitHub artifact transfer and other operating-system runners remain separate CI evidence.
 
 ### Coverage and evidence
 
@@ -436,7 +401,9 @@ not delete selected locks, hand-edit generated locks, or let CI choose a new gra
 `eng/Check-DependencySecurity.ps1` keeps direct/transitive NuGet vulnerability and deprecation
 checks and approved hold governance in required CI. npm audit, signatures and license checks remain
 required. Upstream freshness is reported separately by the daily dependency-health workflow and
-`eng/Check-DependencyCurrency.ps1`; an available update does not block an unrelated PR. Holds remain
+`eng/Check-DependencyCurrency.ps1`; run the latter locally when claiming current dependencies. Local
+dependency reports use fresh ignored directories so repeated checks do not collide; GitHub retains
+its fixed per-job artifact paths. An available update does not block an unrelated PR. Holds remain
 exact for the installed graph, owned, justified and review-dated in
 [`dependency-holds.json`](../dependency-holds.json). A hold is not permission to ignore security
 findings or leave an update unexamined. [CI governance](ci-governance.md#safe-actionable-failures)

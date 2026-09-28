@@ -7,7 +7,7 @@
   <ItemGroup>
     <PackageVersion Include="Azure.Core" Version="1.63.0" />
     <PackageVersion Include="Azure.Monitor.OpenTelemetry.Exporter" Version="1.9.0" />
-    <PackageVersion Include="coverlet.MTP" Version="10.0.1" />
+    <PackageVersion Include="coverlet.MTP" Version="10.1.0" />
     <PackageVersion Include="TngTech.ArchUnitNET" Version="0.13.4" />
     <PackageVersion Include="Expecto" Version="11.1.0" />
     <PackageVersion Include="FSharp.Core" Version="10.1.401" />

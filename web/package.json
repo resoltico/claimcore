@@ -20,7 +20,7 @@
     "lint:styles": "stylelint \"src/**/*.css\" \"tests/**/*.css\" --max-warnings 0 && node scripts/check-css-size.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test:unit": "vitest run --coverage",
+    "test:unit": "vitest run --coverage && dotnet ../artifacts/bin/ClaimCore.Docs/release/ClaimCore.Docs.dll verify-frontend-report vitest",
     "test:unit:watch": "vitest",
     "test:e2e": "playwright test",
     "dead-code": "knip",
