@@ -17,10 +17,22 @@ cleanup() {
   done
 }
 trap cleanup EXIT
-primary_container="$(docker run --rm -d --label "claimcore.backup-restore=$$" \
-  --mount "type=bind,source=$primary_data,target=/var/lib/postgresql/18/docker" "$image")"
-witness_container="$(docker run --rm -d --label "claimcore.backup-restore=$$" \
-  --mount "type=bind,source=$witness_data,target=/var/lib/postgresql/18/docker" "$image")"
+start_restore() {
+  local data="$1" name="$2" container
+  container="$(docker run --rm -d --label "claimcore.backup-restore=$$" \
+    --entrypoint sleep "$image" 900)"
+  if [[ "$name" == primary ]]; then primary_container="$container"; else witness_container="$container"; fi
+  docker exec -u root "$container" mkdir -p /var/lib/postgresql/18/docker
+  docker cp "$data/." "$container:/var/lib/postgresql/18/docker" >/dev/null
+  docker exec -u root "$container" chown -R postgres:postgres /var/lib/postgresql/18/docker
+  docker exec -u root "$container" chmod 700 /var/lib/postgresql/18/docker
+  docker exec -u postgres "$container" pg_ctl -D /var/lib/postgresql/18/docker \
+    -l /tmp/claimcore-restore.log \
+    -o "-c fsync=on -c full_page_writes=on -c synchronous_commit=on" \
+    start >/dev/null
+}
+start_restore "$primary_data" primary
+start_restore "$witness_data" witness
 for current in "$primary_container" "$witness_container"; do
   for ((attempt=0; attempt<60; attempt++)); do
     if docker exec "$current" pg_isready -q -U postgres; then break; fi

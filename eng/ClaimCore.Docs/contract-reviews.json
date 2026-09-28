@@ -176,7 +176,7 @@
       "reviewer": "Agent reviewed the exact current heading and listed implementation and assertion sources; this is source review of local synthetic boundaries, not execution evidence, independent owner approval, or live real-data qualification.",
       "reviewedOn": "2026-09-27",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "101556ed9ff5f6b54efbf08adf975c0e715ccc7719a11d1aad7b6dd8a887cae8",
+      "reviewSubjectHash": "b0a1e4f49a58f8f9f52e648ae11b86dbc8f481eaa9ba4e7ab37063976079952a",
       "wholeFiles": [
         "db/baseline.sql",
         ".github/workflows/verify-integration.yml",
@@ -202,6 +202,7 @@
         "eng/backup/Test-ToolVersions.py",
         "eng/backup/Test-BackupFailureCategories.py",
         "eng/backup/Test-ManagedBackup.sh",
+        "eng/backup/Verify-BackupPrimitives.sh",
         "eng/backup/tool_versions.py",
         "eng/backup/Restore-AdvanceIsolatedPair.sh",
         "eng/backup/Restore-IsolatedTestPair.sh",
