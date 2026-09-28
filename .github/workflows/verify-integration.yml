@@ -138,6 +138,7 @@ jobs:
             if ($testExit -ne 0 -or $LASTEXITCODE -ne 0) { $script:overall = 1 }
           }
 
+          Invoke-RegisteredProject "backup-qualification" "tests/ClaimCore.BackupQualificationTests/ClaimCore.BackupQualificationTests.fsproj" "ClaimCore.BackupQualificationTests" 2 $false
           Invoke-RegisteredProject "integration-linux" "tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj" "ClaimCore.IntegrationTests" 333 $true
           $qualifications = @(
             Start-RegisteredProject "recovery-qualification" "tests/ClaimCore.RecoveryQualificationTests/ClaimCore.RecoveryQualificationTests.fsproj" "ClaimCore.RecoveryQualificationTests" 19
@@ -148,7 +149,6 @@ jobs:
             Complete-RegisteredProject $qualification
           }
           Invoke-RegisteredProject "witness-qualification" "tests/ClaimCore.WitnessTests/ClaimCore.WitnessTests.fsproj" "ClaimCore.WitnessTests" 21 $false
-          Invoke-RegisteredProject "backup-qualification" "tests/ClaimCore.BackupQualificationTests/ClaimCore.BackupQualificationTests.fsproj" "ClaimCore.BackupQualificationTests" 2 $false
           exit $overall
       - name: Remove only this run's labeled integration containers
         if: always()

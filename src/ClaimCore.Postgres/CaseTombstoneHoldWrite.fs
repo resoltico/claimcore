@@ -246,11 +246,16 @@ module internal CaseTombstoneHoldWrite =
         (instant: DateTimeOffset)
         =
         task {
+            let utcInstant = instant.Offset = TimeSpan.Zero
+            let instant = CaseLifecycleStoreSupport.microsecondInstant instant
+
             if
                 context.Action <> EndpointAction.ManageTombstoneHold
                 || context.CaseId <> Some request.CaseId
             then
                 return TombstoneWriteOutcome.ResourceUnavailable
+            elif not utcInstant then
+                return TombstoneWriteOutcome.Refused LifecycleRefusal.InvalidTime
             else
                 match basic request instant with
                 | Error refusal -> return TombstoneWriteOutcome.Refused refusal

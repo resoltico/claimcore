@@ -1454,12 +1454,29 @@ def main():
         archive_wal(config, args.cluster, args.source, args.segment)
 
 
+def failure_category(error):
+    if isinstance(error, (BackupFailure, promotion.ReviewFailure)):
+        candidate = error.args[0] if error.args else None
+        if isinstance(candidate, str) and re.fullmatch(r"[a-z0-9-]{1,70}", candidate):
+            return candidate
+        return "backup-refusal"
+    if isinstance(error, subprocess.TimeoutExpired):
+        return "backup-subprocess-timeout"
+    if isinstance(error, subprocess.CalledProcessError):
+        return "backup-subprocess-failed"
+    if isinstance(error, PermissionError):
+        return "backup-permission-denied"
+    if isinstance(error, FileNotFoundError):
+        return "backup-file-unavailable"
+    if isinstance(error, OSError):
+        return "backup-os-error"
+    if isinstance(error, (json.JSONDecodeError, KeyError, TypeError, ValueError)):
+        return "backup-data-invalid"
+    return "unexpected-backup-failure"
+
+
 def report_failure(_exception_type, error, _traceback):
-    category = (
-        error.args[0]
-        if isinstance(error, (BackupFailure, promotion.ReviewFailure))
-        else "unexpected-backup-failure"
-    )
+    category = failure_category(error)
     print(json.dumps({"status": "quarantined", "reason": category}), file=sys.stderr)
 
 

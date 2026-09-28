@@ -227,12 +227,15 @@ module internal CaseTombstonePruneApprovalWrite =
         (instant: DateTimeOffset)
         =
         task {
+            let utcInstant = instant.Offset = TimeSpan.Zero
+            let instant = CaseLifecycleStoreSupport.microsecondInstant instant
+
             if
                 context.Action <> EndpointAction.ApproveWitnessPrune
                 || context.CaseId <> Some value.CaseId
             then
                 return TombstoneWriteOutcome.ResourceUnavailable
-            elif not (valid value approvalId expiresAt instant) then
+            elif not utcInstant || not (valid value approvalId expiresAt instant) then
                 return TombstoneWriteOutcome.Refused LifecycleRefusal.InvalidTime
             else
                 try

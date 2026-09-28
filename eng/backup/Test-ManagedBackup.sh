@@ -8,6 +8,7 @@ image="$(jq -er '.containerImage' "$repo_root/db/postgresql-baseline.json")"
 export CLAIMCORE_BACKUP_TEST_IMAGE="$image"
 pg_bin="${CLAIMCORE_PG_BIN:-/opt/homebrew/opt/libpq/bin}"
 export PATH="$pg_bin:$PATH"
+PYTHONDONTWRITEBYTECODE=1 python3 -B "$repo_root/eng/backup/Test-BackupFailureCategories.py" >/dev/null
 scratch="$(mktemp -d "${TMPDIR:-/tmp}/claimcore-backup-test.XXXXXXXX")"
 scratch="$(cd "$scratch" && pwd -P)"
 chmod 700 "$scratch"

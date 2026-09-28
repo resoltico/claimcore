@@ -253,15 +253,21 @@ module internal CaseTombstoneTerminalApprovalWrite =
         proposal
         approvalId
         expiresAt
-        instant
+        (instant: DateTimeOffset)
         =
         task {
+            let utcInstant = instant.Offset = TimeSpan.Zero
+            let instant = CaseLifecycleStoreSupport.microsecondInstant instant
+
             if
                 context.Action <> EndpointAction.ApproveTerminalErasure
                 || context.CaseId <> Some(TombstoneTerminalProposal.caseId proposal)
             then
                 return TombstoneWriteOutcome.ResourceUnavailable
-            elif not (CaseTombstoneTerminalPolicy.valid proposal approvalId expiresAt instant) then
+            elif
+                not utcInstant
+                || not (CaseTombstoneTerminalPolicy.valid proposal approvalId expiresAt instant)
+            then
                 return TombstoneWriteOutcome.Refused LifecycleRefusal.InvalidTime
             else
                 try

@@ -161,12 +161,23 @@ let fullAudit (fixture: PruneFixture) =
     Expect.equal summary.ErasureFences 1L "Postprune full audit retains pending tombstone"
 
 let assertFirstPrune (fixture: PruneFixture) =
-    match execute fixture with
+    let outcome = execute fixture
+
+    match outcome with
     | OwnerWitnessPruneOutcome.WitnessPayloadPruned(id, count) when
         id = fixture.Action.EventId && count = fixture.Action.TargetCount
         ->
         ()
     | _ ->
+        let category =
+            match outcome with
+            | OwnerWitnessPruneOutcome.Refused _ -> "REFUSED"
+            | OwnerWitnessPruneOutcome.ResourceUnavailable -> "RESOURCE_UNAVAILABLE"
+            | OwnerWitnessPruneOutcome.InventoryUnknown -> "INVENTORY_UNKNOWN"
+            | OwnerWitnessPruneOutcome.AuditUnavailable stage -> stage
+            | OwnerWitnessPruneOutcome.Unconfirmed _ -> "UNCONFIRMED"
+            | OwnerWitnessPruneOutcome.WitnessPayloadPruned _ -> "WRONG_RECEIPT"
+
         use connection = new NpgsqlConnection(fixture.Owner)
         connection.Open()
 
@@ -188,7 +199,12 @@ let assertFirstPrune (fixture: PruneFixture) =
                 .TryReadEvidence(fixture.Action.EventId, SettledAuthority)
                 .IsSome
 
-        failtestf "Owner CASE prune failed (primary=%b,intent=%b,settled=%b)" primary intent settled
+        failtestf
+            "Owner CASE prune failed at %s (primary=%b,intent=%b,settled=%b)"
+            category
+            primary
+            intent
+            settled
 
 let assertExactRetry (fixture: PruneFixture) =
     match execute fixture with
