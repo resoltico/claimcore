@@ -19,6 +19,50 @@ type internal WitnessProtocol
     let settlementName = WitnessProof.settlementName
     let verifyEvidence = WitnessProof.verifyEvidence store custody identity
 
+    let verifySettlement operationId phase (intent: WitnessIntent) (evidence: Evidence) =
+        let ticket = evidence.Ticket
+        let aad = associatedData operationId (settlementName phase)
+        let plain = custody.Decrypt(ticket.KeyId, aad, evidence.EncryptedPayload)
+
+        try
+            if
+                ticket.OperationId <> operationId
+                || ticket.Phase <> phase
+                || ticket.Epoch <> intent.Ticket.Epoch
+                || ticket.KeyId <> intent.Ticket.KeyId
+                || ticket.ScopeKind <> intent.Ticket.ScopeKind
+                || ticket.SubjectCaseId <> intent.Ticket.SubjectCaseId
+                || ticket.Sequence <= intent.Ticket.Sequence
+                || plain <> intent.CandidateHash
+            then
+                raise WitnessPending
+
+            ticket
+        finally
+            CryptographicOperations.ZeroMemory(plain)
+
+    let settle operationId phase (intent: WitnessIntent) =
+        let existing = store.TryReadEvidence(operationId, phase)
+
+        match existing with
+        | Some evidence -> verifySettlement operationId phase intent evidence
+        | None ->
+            beforeSettlement ()
+            let aad = associatedData operationId (settlementName phase)
+            let encrypted = custody.Encrypt(intent.Ticket.KeyId, aad, intent.CandidateHash)
+
+            try
+                store.Append(operationId, None, phase, intent.Ticket.KeyId, encrypted)
+            with _ ->
+                // A concurrent exact settlement may have won after the initial read.
+                // Only an independent committed readback can turn this into a definite result.
+                try
+                    store.TryReadEvidence(operationId, phase)
+                    |> Option.defaultWith (fun () -> raise WitnessPending)
+                    |> verifySettlement operationId phase intent
+                with _ ->
+                    raise WitnessPending
+
     new(store: Store, custody: IKeyCustody, identity: Identity) =
         new WitnessProtocol(store, custody, identity, fun () -> ())
 
@@ -170,64 +214,13 @@ type internal WitnessProtocol
         }
 
     member _.SettleAccepted(operationId: Guid, intent: WitnessIntent) =
-        let phase = SettledAccepted
-        let aad = associatedData operationId "SETTLED_ACCEPTED"
-
-        match store.TryReadEvidence(operationId, phase) with
-        | Some evidence ->
-            let plain = custody.Decrypt(evidence.Ticket.KeyId, aad, evidence.EncryptedPayload)
-
-            try
-                if plain <> intent.CandidateHash then
-                    raise WitnessPending
-
-                evidence.Ticket
-            finally
-                CryptographicOperations.ZeroMemory(plain)
-        | None ->
-            beforeSettlement ()
-            let encrypted = custody.Encrypt(intent.Ticket.KeyId, aad, intent.CandidateHash)
-            store.Append(operationId, None, phase, intent.Ticket.KeyId, encrypted)
+        settle operationId SettledAccepted intent
 
     member _.SettleRevoked(operationId: Guid, intent: WitnessIntent) =
-        let phase = SettledRevoked
-        let aad = associatedData operationId "SETTLED_REVOKED"
-
-        match store.TryReadEvidence(operationId, phase) with
-        | Some evidence ->
-            let plain = custody.Decrypt(evidence.Ticket.KeyId, aad, evidence.EncryptedPayload)
-
-            try
-                if plain <> intent.CandidateHash then
-                    raise WitnessPending
-
-                evidence.Ticket
-            finally
-                CryptographicOperations.ZeroMemory(plain)
-        | None ->
-            beforeSettlement ()
-            let encrypted = custody.Encrypt(intent.Ticket.KeyId, aad, intent.CandidateHash)
-            store.Append(operationId, None, phase, intent.Ticket.KeyId, encrypted)
+        settle operationId SettledRevoked intent
 
     member _.SettleAuthority(operationId: Guid, intent: WitnessIntent) =
-        let phase = SettledAuthority
-        let aad = associatedData operationId (settlementName phase)
-
-        match store.TryReadEvidence(operationId, phase) with
-        | Some evidence ->
-            let plain = custody.Decrypt(evidence.Ticket.KeyId, aad, evidence.EncryptedPayload)
-
-            try
-                if plain <> intent.CandidateHash then
-                    raise WitnessPending
-
-                evidence.Ticket
-            finally
-                CryptographicOperations.ZeroMemory(plain)
-        | None ->
-            beforeSettlement ()
-            let encrypted = custody.Encrypt(intent.Ticket.KeyId, aad, intent.CandidateHash)
-            store.Append(operationId, None, phase, intent.Ticket.KeyId, encrypted)
+        settle operationId SettledAuthority intent
 
     member _.RequireSettled(operationId: Guid, settlement: Phase) =
         let intent =

@@ -46,9 +46,9 @@
       "contractId": "CC-APP-002",
       "reviewerKind": "agent",
       "reviewer": "Agent reviewed the exact current heading and listed implementation and assertion sources; this is source review of local synthetic boundaries, not execution evidence, independent owner approval, or live real-data qualification.",
-      "reviewedOn": "2026-09-27",
+      "reviewedOn": "2026-09-28",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "b64ed2fd0e6dd6cee4ac620c9f7d20b00660af3beef252e26391730ee6748139",
+      "reviewSubjectHash": "6f3fb1034ca00e99db07df894593cfff39a2b21aa8d0eb1aa14dbd29216a3168",
       "wholeFiles": [
         "src/ClaimCore.Application/AcceptedObservation.fs",
         "src/ClaimCore.Application/Core.fs",
@@ -90,6 +90,8 @@
         "src/ClaimCore.Postgres/ActorGrantGate.fs",
         "src/ClaimCore.Postgres/ActorReadStore.fs",
         "src/ClaimCore.Postgres/WitnessProtocolReconciliation.fs",
+        "src/ClaimCore.Postgres/WitnessProtocol.fs",
+        "tests/ClaimCore.IntegrationTests/WitnessProtocolTests.fs",
         "tests/ClaimCore.IntegrationTests/ActorBoundReplayTests.fs"
       ],
       "markedSpans": []
@@ -800,9 +802,9 @@
       "contractId": "CC-WIT-001",
       "reviewerKind": "agent",
       "reviewer": "Agent reviewed the exact current heading and listed implementation and assertion sources; this is source review of local synthetic boundaries, not execution evidence, independent owner approval, or live real-data qualification.",
-      "reviewedOn": "2026-09-27",
+      "reviewedOn": "2026-09-28",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "623a015f85cdf58c2d90813c9606b02d2af9eef000e15dc949f89a60a3436b18",
+      "reviewSubjectHash": "1202d116dcd37e200f221483630a782f2ac00e91dd8e69682e1de7e4ab78d890",
       "wholeFiles": [
         "db/witness-baseline.sql",
         "src/ClaimCore.Witness/PostgresTransport.fs",

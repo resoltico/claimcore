@@ -8,6 +8,7 @@ open Npgsql
 open ClaimCore.Application
 open ClaimCore.Domain
 open ClaimCore.Postgres
+open ClaimCore.Postgres.WitnessProtocolReconciliation
 open ClaimCore.Hosting
 open ClaimCore.Witness
 open ClaimCore.IntegrationTests.Fixtures
@@ -132,6 +133,47 @@ let private retryAccepted
         2L
         "Retry appends one settled proof"
 
+let private retryAfterCompetingSettlement
+    (source: NpgsqlDataSource)
+    (installation: Identity)
+    (operation: CommandRequest)
+    =
+    use competing = protocol installation (fun () -> ())
+
+    use racing =
+        protocol installation (fun () ->
+            use primary = new NpgsqlConnection(adminConnection ())
+            primary.Open()
+            use transaction = primary.BeginTransaction()
+            competing.ReconcileAccepted(primary, transaction, operation.OperationId)
+            transaction.Rollback())
+
+    let actor = openContext source racing operation
+
+    use store =
+        new PostgresStore(
+            source,
+            racing,
+            actor,
+            CaseListCursorTestSupport.protection,
+            CaseListCursorTestSupport.clock
+        )
+
+    match Service.executeAsync (store :> IClaimStore) clock operation |> await with
+    | Ok receipt ->
+        Expect.isTrue receipt.Replayed "Competing exact settlement returns the retained receipt"
+    | Error _ -> failtest "A competing exact settlement must be verified by readback."
+
+    Expect.equal
+        (count (adminConnection ()) "claimcore.case_changes" operation.OperationId)
+        1L
+        "Competing settlement cannot duplicate the primary effect"
+
+    Expect.equal
+        (count (witnessOwnerConnection ()) "claimcore_witness.journal" operation.OperationId)
+        2L
+        "Competing settlement retains one intent and one exact outcome"
+
 let private acceptanceAfterSettlementFailure =
     testCase
         "[CC-WIT-001] postcommit witness outage stays unknown then exact retry settles"
@@ -143,7 +185,14 @@ let private acceptanceAfterSettlementFailure =
             use source = RuntimeDataSource.create (appConnection ())
             executeWithSettlementFailure source installation operation
             assertAcceptedIntent operation
-            retryAccepted source installation operation)
+            retryAccepted source installation operation
+
+            let racingOperation =
+                openRequest (Guid.NewGuid()) ("WITNESS-RACE-" + Guid.NewGuid().ToString("N"))
+
+            executeWithSettlementFailure source installation racingOperation
+            assertAcceptedIntent racingOperation
+            retryAfterCompetingSettlement source installation racingOperation)
 
 let private beginOrphanIntent
     (witness: WitnessProtocol)
