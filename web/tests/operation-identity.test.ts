@@ -36,6 +36,18 @@ const reviewed = () =>
   });
 
 it("forks a new ID when an exposed request is edited after definite submit refusal", () => {
+  const unexposed = operationReducer(initial(), {
+    type: "EDIT",
+    field: "claimantName",
+    value: "Synthetic B",
+    nextOperationId: secondId,
+  });
+  expect(unexposed).toMatchObject({
+    operationId: firstId,
+    values: { claimantName: "Synthetic B" },
+    exposedRequest: null,
+  });
+
   const submitting = operationReducer(reviewed(), { type: "SUBMITTING", requestId: 2 });
   const rejected = refused(submitting, 2);
   const edited = operationReducer(rejected, {
@@ -87,6 +99,10 @@ it("retains the frozen exact request on unchanged retry after unknown preparatio
     requestId: 1,
     message: localNotice("unreachable"),
   });
+  const divergent = createDraft(firstId, "CASE-OTHER", "0", unknown.command, unknown.values);
+  expect(operationReducer(unknown, { type: "PREPARING", requestId: 3, draft: divergent })).toBe(
+    unknown,
+  );
   const retry = begin(unknown, 2);
   expect(retry.delivery).toBe("PREPARING");
   expect(retry.exposedRequest).toBe(first.exposedRequest);
@@ -212,10 +228,14 @@ it("models definite rejection and unknown outcomes without allowing a dispatched
 
 it("keeps invalid reducer transitions inert and records a completed receipt", () => {
   const fresh = initial();
+  const foreign = createDraft(secondId, fresh.caseReference, "0", fresh.command, fresh.values);
+  expect(operationReducer(fresh, { type: "PREPARING", requestId: 1, draft: foreign })).toBe(fresh);
   expect(operationReducer(fresh, { type: "SUBMITTING", requestId: 1 })).toBe(fresh);
   expect(operationReducer(fresh, { type: "PREPARED", requestId: 1, preparation, review })).toBe(
     fresh,
   );
+  const preparing = begin(fresh, 1);
+  expect(operationReducer(preparing, { type: "SUBMITTING", requestId: 2 })).toBe(preparing);
   const reviewing = reviewed();
   expect(begin(reviewing, 2)).toBe(reviewing);
   const accepted = operationReducer(

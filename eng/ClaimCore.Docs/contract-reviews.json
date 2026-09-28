@@ -313,9 +313,9 @@
       "contractId": "CC-DB-001",
       "reviewerKind": "agent",
       "reviewer": "Agent reviewed the exact current heading and listed implementation and assertion sources; this is source review of local synthetic boundaries, not execution evidence, independent owner approval, or live real-data qualification.",
-      "reviewedOn": "2026-09-27",
+      "reviewedOn": "2026-09-28",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "727b61a1e4d95fa8fcb3de693132549af53ff6cd5cea11a4e5232b5f7e9262ab",
+      "reviewSubjectHash": "cc7323a2a3b44a014ee570b1d5b672382f532926b03b233dec84719e4ed66aa6",
       "wholeFiles": [
         "src/ClaimCore.Hosting/Runtime.fs",
         "src/ClaimCore.Postgres/InstallationBusinessZone.fs",
@@ -590,7 +590,7 @@
       "reviewer": "Agent reviewed the exact current heading and listed implementation and assertion sources; this is source review of local synthetic boundaries, not execution evidence, independent owner approval, or live real-data qualification.",
       "reviewedOn": "2026-09-28",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "9dc16493b99b432dc4874ada7c3a0442df344260b399de72526a563127593dc0",
+      "reviewSubjectHash": "db347bc23a413e25140a0f3d6a29ad4d772874ad022801172d51870197416980",
       "wholeFiles": [
         "docs/diagnostics.md",
         "eng/ClaimCore.ContractGenerator/Artifacts.fs",
