@@ -48,7 +48,7 @@
       "reviewer": "Agent reviewed the exact current heading and listed implementation and assertion sources; this is source review of local synthetic boundaries, not execution evidence, independent owner approval, or live real-data qualification.",
       "reviewedOn": "2026-09-27",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "586c3b13f94eadae83d7f685700e645033b9f9d3ace3a98b27797e9a6a29fa2f",
+      "reviewSubjectHash": "b64ed2fd0e6dd6cee4ac620c9f7d20b00660af3beef252e26391730ee6748139",
       "wholeFiles": [
         "src/ClaimCore.Application/AcceptedObservation.fs",
         "src/ClaimCore.Application/Core.fs",
@@ -176,7 +176,7 @@
       "reviewer": "Agent reviewed the exact current heading and listed implementation and assertion sources; this is source review of local synthetic boundaries, not execution evidence, independent owner approval, or live real-data qualification.",
       "reviewedOn": "2026-09-27",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "01f818e763b55b4f4f37fa3f3525e1a6409388da78db865c2416146aef2762c3",
+      "reviewSubjectHash": "101556ed9ff5f6b54efbf08adf975c0e715ccc7719a11d1aad7b6dd8a887cae8",
       "wholeFiles": [
         "db/baseline.sql",
         ".github/workflows/verify-integration.yml",

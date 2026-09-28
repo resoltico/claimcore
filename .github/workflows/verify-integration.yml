@@ -43,7 +43,27 @@ jobs:
           cli_path="$(dotnet msbuild src/ClaimCore.Cli/ClaimCore.Cli.fsproj -nologo -verbosity:quiet -property:Configuration=Release -getProperty:TargetPath)"
           test -f "$cli_path"
           echo "CLAIMCORE_TEST_CLI_PATH=$cli_path" >> "$GITHUB_ENV"
-      - name: Run integration and three independent qualifications through native MTP
+      - name: Qualify isolated backup and restore through native MTP
+        shell: pwsh
+        run: |
+          Set-StrictMode -Version Latest
+          $results = Join-Path $PWD "artifacts/test-results/backup-qualification"
+          if (Test-Path -LiteralPath $results) { throw "The backup result directory must start absent." }
+          $started = (Get-Date).ToUniversalTime().ToString("O")
+          dotnet test --project tests/ClaimCore.BackupQualificationTests/ClaimCore.BackupQualificationTests.fsproj `
+            --configuration Release --no-build --no-restore --max-parallel-test-modules 1 `
+            "--results-directory=$results" --minimum-expected-tests=2 --zero-tests-policy=strict `
+            --timeout=90m -- "--settings=$PWD/eng/expecto.runsettings" --report-trx `
+            --report-trx-filename=ClaimCore.BackupQualificationTests.trx
+          $testExit = $LASTEXITCODE
+          $finished = (Get-Date).ToUniversalTime().ToString("O")
+          if (!(Test-Path -LiteralPath $results)) { New-Item -ItemType Directory -Path $results | Out-Null }
+          $outcome = if ($testExit -eq 0) { "success" } else { "failure" }
+          dotnet artifacts/bin/ClaimCore.Docs/release/ClaimCore.Docs.dll stage-manifest `
+            backup-qualification "${{ github.run_id }}" "${{ github.run_attempt }}" `
+            $outcome $started $finished $results
+          if ($testExit -ne 0 -or $LASTEXITCODE -ne 0) { exit 1 }
+      - name: Run integration, witness, and three other qualifications through native MTP
         shell: pwsh
         run: |
           Set-StrictMode -Version Latest
@@ -138,7 +158,6 @@ jobs:
             if ($testExit -ne 0 -or $LASTEXITCODE -ne 0) { $script:overall = 1 }
           }
 
-          Invoke-RegisteredProject "backup-qualification" "tests/ClaimCore.BackupQualificationTests/ClaimCore.BackupQualificationTests.fsproj" "ClaimCore.BackupQualificationTests" 2 $false
           Invoke-RegisteredProject "integration-linux" "tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj" "ClaimCore.IntegrationTests" 333 $true
           $qualifications = @(
             Start-RegisteredProject "recovery-qualification" "tests/ClaimCore.RecoveryQualificationTests/ClaimCore.RecoveryQualificationTests.fsproj" "ClaimCore.RecoveryQualificationTests" 19

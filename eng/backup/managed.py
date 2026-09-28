@@ -1475,8 +1475,21 @@ def failure_category(error):
     return "unexpected-backup-failure"
 
 
-def report_failure(_exception_type, error, _traceback):
+def _code_line(traceback):
+    line = None
+    while traceback is not None:
+        if traceback.tb_frame.f_code.co_filename == __file__:
+            line = traceback.tb_lineno
+        traceback = traceback.tb_next
+    return line if isinstance(line, int) and 1 <= line <= 9999 else None
+
+
+def report_failure(_exception_type, error, traceback):
     category = failure_category(error)
+    if category == "backup-permission-denied":
+        line = _code_line(traceback)
+        if line is not None:
+            category += f"-line-{line}"
     print(json.dumps({"status": "quarantined", "reason": category}), file=sys.stderr)
 
 
