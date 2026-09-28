@@ -19,6 +19,7 @@ type private PrimaryWriterState =
         LastAbortId: Guid option
         LastAbortSequence: int64 option
         LastAbortHash: byte array option
+        LossRetired: bool
     }
 
 /// Checks the current primary/witness cutover fence for each actor operation. Read leases
@@ -35,7 +36,8 @@ type internal RuntimeSafetySupervisor(resources: RuntimeResources) =
                 + "writer_handoff_event_id,writer_handoff_sequence,writer_handoff_hash,"
                 + "writer_activation_pending,writer_activation_event_id,"
                 + "writer_activation_sequence,writer_activation_hash,"
-                + "last_aborted_handoff_id,last_aborted_handoff_sequence,last_aborted_handoff_hash "
+                + "last_aborted_handoff_id,last_aborted_handoff_sequence,last_aborted_handoff_hash,"
+                + "loss_retired "
                 + "FROM claimcore.installation_lineage WHERE singleton",
                 connection
             )
@@ -70,6 +72,7 @@ type internal RuntimeSafetySupervisor(resources: RuntimeResources) =
                 LastAbortId = optional 11 reader.GetGuid
                 LastAbortSequence = optional 12 reader.GetInt64
                 LastAbortHash = optional 13 reader.GetFieldValue<byte array>
+                LossRetired = reader.GetBoolean(14)
             }
 
         if reader.Read() then
@@ -106,6 +109,9 @@ type internal RuntimeSafetySupervisor(resources: RuntimeResources) =
         let current = primaryState ()
         let snapshot = witness.Snapshot()
 
+        if current.LossRetired || snapshot.LossRetirementPending || snapshot.LossRetired then
+            invalidOp "Writer lineage is terminally quarantined."
+
         if
             not (sameGeneration current snapshot)
             || not (sameActivation current snapshot)
@@ -140,6 +146,7 @@ type internal RuntimeSafetySupervisor(resources: RuntimeResources) =
         InstallationUseScopeRead.requirePair connection witness
 
     let requireCaseRead () =
+        requirePair ()
         let state = useState ()
 
         if
@@ -149,6 +156,7 @@ type internal RuntimeSafetySupervisor(resources: RuntimeResources) =
             invalidOp "Real-data case access is not activated."
 
     let requireCaseMutation () =
+        requirePair ()
         let state = useState ()
 
         if
@@ -160,9 +168,8 @@ type internal RuntimeSafetySupervisor(resources: RuntimeResources) =
         RuntimeBackupHealthFiles.require resources state
 
     let requireAuthoritySetup () =
-        // This lane contains only typed authority setup, copy-adoption and writer-
-        // handoff approvals. It remains available to repair expired health without
-        // exposing claimant casework, recovery, export or lifecycle mutation.
+        // The terminal loss fence closes even the typed actor setup lane.
+        requirePair ()
         useState () |> ignore
 
     do
@@ -181,7 +188,10 @@ type internal RuntimeSafetySupervisor(resources: RuntimeResources) =
     member _.RequireCaseRead() = requireCaseRead ()
     member _.RequireCaseMutation() = requireCaseMutation ()
     member _.RequireAuthoritySetup() = requireAuthoritySetup ()
-    member _.RequireAuthorityRead() = useState () |> ignore
+
+    member _.RequireAuthorityRead() =
+        requirePair ()
+        useState () |> ignore
 
     member _.AcquireReadFence() =
         let lease = witness.AcquireReadFence(opening.Generation)

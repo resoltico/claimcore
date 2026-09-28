@@ -15,6 +15,7 @@ module DatabaseArguments =
         | "RESTORE_REPORT" -> Some CopySignerPurpose.RestoreReport
         | "CHECKPOINT" -> Some CopySignerPurpose.Checkpoint
         | "WRITER_HANDOFF_ABORT" -> Some CopySignerPurpose.WriterHandoffAbort
+        | "INSTALLATION_LOSS_RETIREMENT" -> Some CopySignerPurpose.InstallationLossRetirement
         | "RESTORE_COPY_VERIFIER" -> Some CopySignerPurpose.RestoreCopyVerifier
         | _ -> None
 
@@ -251,6 +252,7 @@ module DatabaseArguments =
     let private managed arguments =
         managedCopy arguments
         |> Option.orElseWith (fun () -> handoff arguments)
+        |> Option.orElseWith (fun () -> DatabaseLossArguments.parse arguments)
         |> Option.orElseWith (fun () -> adoptedCopy arguments)
         |> Option.orElseWith (fun () -> erasure arguments)
         |> Option.orElseWith (fun () -> otherManaged arguments)

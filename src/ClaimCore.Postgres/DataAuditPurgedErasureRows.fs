@@ -3,6 +3,7 @@ namespace ClaimCore.Postgres
 open System
 open System.Threading
 open Npgsql
+open DataAuditCommon
 
 [<NoEquality; NoComparison>]
 type internal PurgedErasureAuditRow =
@@ -64,7 +65,7 @@ module internal DataAuditPurgedErasureRows =
         let bytes index = reader.GetFieldValue<byte array>(index)
 
         if not (reader.IsDBNull(11)) then
-            invalidOp "Purged case retained a bare request digest."
+            corrupt ()
 
         {
             CaseId = reader.GetGuid(0)

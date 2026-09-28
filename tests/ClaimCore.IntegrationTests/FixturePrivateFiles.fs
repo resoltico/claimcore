@@ -69,7 +69,7 @@ let syntheticCommitments (identity: Identity) : ISuppressionCommitments =
                 canonicalApproval
     }
 
-let private canonicalRoot () =
+let canonicalRoot () =
     let root = Path.GetTempPath()
 
     if OperatingSystem.IsMacOS() && root.StartsWith("/var/", StringComparison.Ordinal) then

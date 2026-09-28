@@ -5,47 +5,48 @@ open System.Globalization
 open System.Security.Cryptography
 open System.Text.Json
 open ClaimCore.Application
+open DataAuditCommon
 
 /// Reconstructs the exact retained nonpayload canonical purge event from SQL projections and
 /// two minimal approvals. The raw claimant reference and reason cannot be reconstructed here.
 module internal DataAuditPurgedErasureCandidate =
-    let private invalid () : 'a =
-        invalidOp "Purged case candidate differs."
+    let private invalid () : 'a = corrupt ()
 
     let private observed (value: PurgedErasureAuditRow) =
-        use document = JsonDocument.Parse(ReadOnlyMemory<byte>(value.Canonical))
-        let root = document.RootElement
+        witnessProof (fun () ->
+            use document = JsonDocument.Parse(ReadOnlyMemory<byte>(value.Canonical))
+            let root = document.RootElement
 
-        let observedAt =
-            DateTimeOffset.ParseExact(
-                root.GetProperty("observedUtcInstant").GetString()
-                |> Option.ofObj
-                |> Option.defaultWith invalid,
-                "O",
-                CultureInfo.InvariantCulture
-            )
+            let observedAt =
+                DateTimeOffset.ParseExact(
+                    root.GetProperty("observedUtcInstant").GetString()
+                    |> Option.ofObj
+                    |> Option.defaultWith invalid,
+                    "O",
+                    CultureInfo.InvariantCulture
+                )
 
-        let copyCount = root.GetProperty("managedCopyCount").GetInt64()
+            let copyCount = root.GetProperty("managedCopyCount").GetInt64()
 
-        if
-            copyCount < 0L
-            || observedAt <> value.LivePurgedAt
-            || value.ExecutorKind <> "SCHEMA_OWNER_PROCESS"
-            || not (
-                [ "ERASURE_PENDING"; "PAYLOAD_ERASED_SUPPRESSION_RETAINED"; "ERASURE_FINAL" ]
-                |> List.contains value.Phase
-            )
-            || value.PurgeRevision < value.RequestRevision
-            || value.PurgeLifecycleSequence < value.RequestLifecycleSequence
-            || value.ValidUntil <= value.LivePurgedAt
-            || value.RequestCandidateCommitment.Length <> 32
-            || value.ProposalCommitment.Length <> 32
-            || value.CopyInventoryDigest.Length <> 32
-            || value.ReferenceCommitment.Length <> 32
-        then
-            invalid ()
+            if
+                copyCount < 0L
+                || observedAt <> value.LivePurgedAt
+                || value.ExecutorKind <> "SCHEMA_OWNER_PROCESS"
+                || not (
+                    [ "ERASURE_PENDING"; "PAYLOAD_ERASED_SUPPRESSION_RETAINED"; "ERASURE_FINAL" ]
+                    |> List.contains value.Phase
+                )
+                || value.PurgeRevision < value.RequestRevision
+                || value.PurgeLifecycleSequence < value.RequestLifecycleSequence
+                || value.ValidUntil <= value.LivePurgedAt
+                || value.RequestCandidateCommitment.Length <> 32
+                || value.ProposalCommitment.Length <> 32
+                || value.CopyInventoryDigest.Length <> 32
+                || value.ReferenceCommitment.Length <> 32
+            then
+                invalid ()
 
-        observedAt, copyCount
+            observedAt, copyCount)
 
     let private reconstruct (value: PurgedErasureAuditRow) approvals observedAt copyCount =
 
@@ -99,7 +100,9 @@ module internal DataAuditPurgedErasureCandidate =
 
     let verify (value: PurgedErasureAuditRow) approvals =
         let observedAt, copyCount = observed value
-        let expected = reconstruct value approvals observedAt copyCount
+
+        let expected =
+            witnessProof (fun () -> reconstruct value approvals observedAt copyCount)
 
         try
             if value.Canonical <> expected || value.CandidateHash <> SHA256.HashData(expected) then

@@ -55,13 +55,14 @@ module internal DataAuditInstallationUse =
 
             for planId in ids do
                 let published =
-                    InstallationUsePlanRead.verified
-                        connection
-                        transaction
-                        witness
-                        planId
-                        CancellationToken.None
-                    |> fun task -> task.GetAwaiter().GetResult()
+                    witnessProof (fun () ->
+                        InstallationUsePlanRead.verified
+                            connection
+                            transaction
+                            witness
+                            planId
+                            CancellationToken.None
+                        |> fun task -> task.GetAwaiter().GetResult())
                     |> Option.defaultWith (fun () -> corrupt ())
 
                 if published.SettlementSequence > cutoff then
@@ -185,16 +186,18 @@ module internal DataAuditInstallationUse =
         then
             corrupt ()
 
-        witness.VerifyHistoricalTip(record.ExpectedWitnessSequence, record.ExpectedWitnessHash)
+        witnessProof (fun () ->
+            witness.VerifyHistoricalTip(record.ExpectedWitnessSequence, record.ExpectedWitnessHash))
 
         let published =
-            InstallationUsePlanRead.verified
-                connection
-                transaction
-                witness
-                record.PlanId
-                CancellationToken.None
-            |> fun task -> task.GetAwaiter().GetResult()
+            witnessProof (fun () ->
+                InstallationUsePlanRead.verified
+                    connection
+                    transaction
+                    witness
+                    record.PlanId
+                    CancellationToken.None
+                |> fun task -> task.GetAwaiter().GetResult())
             |> Option.defaultWith (fun () -> corrupt ())
 
         if
@@ -203,22 +206,24 @@ module internal DataAuditInstallationUse =
         then
             corrupt ()
 
-        InstallationUseActivationApprovals.verifyHistorical
-            connection
-            transaction
-            witness
-            published
-            record
+        witnessProof (fun () ->
+            InstallationUseActivationApprovals.verifyHistorical
+                connection
+                transaction
+                witness
+                published
+                record)
         |> ignore
 
         approvalUses connection transaction row
 
-        WriterActivationWitness.verifyHistorical
-            witness
-            row.EventId
-            row.Canonical
-            (row.IntentSequence, row.IntentHash)
-            (row.SettlementSequence, row.SettlementHash)
+        witnessProof (fun () ->
+            WriterActivationWitness.verifyHistorical
+                witness
+                row.EventId
+                row.Canonical
+                (row.IntentSequence, row.IntentHash)
+                (row.SettlementSequence, row.SettlementHash))
         |> ignore
 
     let verify

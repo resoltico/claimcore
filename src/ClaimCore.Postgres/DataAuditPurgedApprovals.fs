@@ -3,6 +3,7 @@ namespace ClaimCore.Postgres
 open System
 open Npgsql
 open NpgsqlTypes
+open DataAuditCommon
 
 /// Minimal pseudonymous approval receipts remain after the raw draft and approval bytes are
 /// deleted. The later purge event binds these commitments to the independently witnessed act.
@@ -59,12 +60,12 @@ module internal DataAuditPurgedApprovals =
                     || approval.DraftCommitment.Length <> 32
                     || approval.ApprovalCommitment.Length <> 32
                 then
-                    invalidOp "Purged case approval receipt is invalid."
+                    corrupt ()
 
                 approvals.Add(approval)
 
             if approvals.Count <> 2 || approvals[0].ApproverId = approvals[1].ApproverId then
-                invalidOp "Purged case lacks two distinct human approvals."
+                corrupt ()
 
             return approvals |> Seq.toList
         }

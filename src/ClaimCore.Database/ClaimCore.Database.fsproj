@@ -3,6 +3,7 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="DatabaseCommandTypes.fs" />
+    <Compile Include="DatabaseLossArguments.fs" />
     <Compile Include="DatabaseRestoreArguments.fs" />
     <Compile Include="DatabaseCommandTokens.fs" />
     <Compile Include="DatabaseArguments.fs" />
@@ -121,6 +122,7 @@
     <Compile Include="DatabaseWriterHandoffAbortExecution.fs" />
     <Compile Include="DatabaseBackupCaptureExecution.fs" />
     <Compile Include="DatabaseWriterHandoffAbortDraftExecution.fs" />
+    <Compile Include="DatabaseInstallationLossExecution.fs" />
     <Compile Include="DatabaseWriterHandoffPrivate.fs" />
     <Compile Include="DatabaseWriterHandoffStages.fs" />
     <Compile Include="DatabaseWriterHandoffExecution.fs" />

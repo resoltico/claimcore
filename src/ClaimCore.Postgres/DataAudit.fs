@@ -22,6 +22,10 @@ module internal DataAudit =
             LineageId: Guid
             Epoch: int64
             Use: InstallationUseState
+            LossRetired: bool
+            LossRetirementId: Guid option
+            LossRetirementIntentSequence: int64 option
+            LossRetirementIntentHash: byte array option
         }
 
     let private readEvidence (reader: NpgsqlDataReader) =
@@ -46,7 +50,40 @@ module internal DataAudit =
                         else
                             Some(reader.GetFieldValue<byte array>(8))
                 }
+            LossRetired = reader.GetBoolean(9)
+            LossRetirementId =
+                if reader.IsDBNull(10) then
+                    None
+                else
+                    Some(reader.GetGuid(10))
+            LossRetirementIntentSequence =
+                if reader.IsDBNull(11) then
+                    None
+                else
+                    Some(reader.GetInt64(11))
+            LossRetirementIntentHash =
+                if reader.IsDBNull(12) then
+                    None
+                else
+                    Some(reader.GetFieldValue<byte array>(12))
         }
+
+    let private lossMatchesWitness (tip: Snapshot) (evidence: InstallationEvidence) =
+        if tip.LossRetirementPending || tip.LossRetired then
+            if evidence.LossRetired then
+                evidence.LossRetirementId = tip.LossRetirementId
+                && evidence.LossRetirementIntentSequence = tip.LossRetirementIntentSequence
+                && evidence.LossRetirementIntentHash = tip.LossRetirementIntentHash
+            else
+                tip.LossRetirementPending
+                && evidence.LossRetirementId.IsNone
+                && evidence.LossRetirementIntentSequence.IsNone
+                && evidence.LossRetirementIntentHash.IsNone
+        else
+            not evidence.LossRetired
+            && evidence.LossRetirementId.IsNone
+            && evidence.LossRetirementIntentSequence.IsNone
+            && evidence.LossRetirementIntentHash.IsNone
 
     let private matchesWitness (tip: Snapshot) (evidence: InstallationEvidence) =
         tip.Identity.InstallationId = evidence.InstallationId
@@ -57,6 +94,7 @@ module internal DataAudit =
         && tip.Use.ActivationEventId = evidence.Use.ActivationEventId
         && tip.Use.ActivationSequence = evidence.Use.ActivationSequence
         && tip.Use.ActivationHash = evidence.Use.ActivationHash
+        && lossMatchesWitness tip evidence
 
     let private installation
         (connection: NpgsqlConnection)
@@ -69,7 +107,9 @@ module internal DataAudit =
                 new NpgsqlCommand(
                     "SELECT business_time_zone,installation_id,lineage_id,witness_epoch,"
                     + "data_use_scope,data_use_phase,data_use_activation_event_id,"
-                    + "data_use_activation_sequence,data_use_activation_hash "
+                    + "data_use_activation_sequence,data_use_activation_hash,"
+                    + "loss_retired,loss_retirement_id,loss_retirement_intent_sequence,"
+                    + "loss_retirement_intent_hash "
                     + "FROM claimcore.installation_lineage WHERE singleton",
                     connection,
                     transaction
@@ -140,7 +180,7 @@ module internal DataAudit =
         (cancellationToken: CancellationToken)
         =
         task {
-            let! cases, operations, lifecycleEvents =
+            let! cases, operations, lifecycleEvents, verifiedCaseTipsSha256 =
                 DataAuditCaseReplay.replayCases
                     connection
                     transaction
@@ -175,6 +215,7 @@ module internal DataAudit =
                     Cases = cases
                     AcceptedOperations = operations
                     LifecycleEvents = lifecycleEvents
+                    VerifiedCaseTipsSha256 = verifiedCaseTipsSha256
                     ErasureFences = erasureFences
                     TerminalApprovals = terminalApprovals
                     TerminalEvents = terminalEvents

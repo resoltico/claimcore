@@ -255,6 +255,7 @@ module DatabaseDiagnostics =
             DatabaseInputProblem.RestoreEvidenceFileRefused
             DatabaseInputProblem.BackupHealthFileRefused
             DatabaseInputProblem.WriterHandoffFileRefused
+            DatabaseInputProblem.InstallationLossFileRefused
             DatabaseInputProblem.PhysicalCopyProofFileRefused
         ]
         @ (DatabaseOptions.all |> List.map DatabaseInputProblem.RepeatedOption)

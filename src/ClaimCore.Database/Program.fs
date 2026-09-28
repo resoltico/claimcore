@@ -111,6 +111,15 @@ let private help () =
     printfn
         "  ClaimCore.Database draft-writer-handoff-abort <handoff-id> <abort-key-one-id> <abort-key-two-id> <new-private-candidate-file>"
 
+    printfn
+        "  ClaimCore.Database draft-installation-loss-retirement <loss-key-one-id> <loss-key-two-id> <evidence-report-file|MISSING> <checkpoint-file|MISSING> <known-operations-file> <KNOWN_OPERATIONS|UNKNOWN_OPERATIONS> <new-private-candidate-file>"
+
+    printfn
+        "  ClaimCore.Database retire-installation-after-loss <candidate-file> <evidence-report-file|MISSING> <checkpoint-file|MISSING> <known-operations-file> <first-signature-file> <second-signature-file>"
+
+    printfn
+        "  ClaimCore.Database reconcile-installation-loss-retirement <candidate-file> <evidence-report-file|MISSING> <checkpoint-file|MISSING> <known-operations-file> <first-signature-file> <second-signature-file>"
+
     recoveryHelp ()
 
 let private writeVersion () =

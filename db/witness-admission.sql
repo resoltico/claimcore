@@ -27,6 +27,10 @@ AND NOT has_table_privilege(current_user,'claimcore_witness.journal_payloads','T
 AND has_table_privilege(current_user,'claimcore_witness.journal_payloads','SELECT')
 AND has_table_privilege(current_user,'claimcore_witness.installation','SELECT')
 AND has_table_privilege(current_user,'claimcore_witness.writer_handoffs','SELECT')
+AND has_table_privilege(current_user,'claimcore_witness.installation_loss_retirements','SELECT')
+AND NOT has_table_privilege(current_user,'claimcore_witness.installation_loss_retirements','INSERT')
+AND NOT has_table_privilege(current_user,'claimcore_witness.installation_loss_retirements','UPDATE')
+AND NOT has_table_privilege(current_user,'claimcore_witness.installation_loss_retirements','DELETE')
 AND NOT has_table_privilege(current_user,'claimcore_witness.writer_handoffs','INSERT')
 AND NOT has_table_privilege(current_user,'claimcore_witness.writer_handoffs','UPDATE')
 AND NOT has_table_privilege(current_user,'claimcore_witness.writer_handoffs','DELETE')
@@ -34,8 +38,8 @@ AND NOT has_table_privilege(current_user,'claimcore_witness.writer_handoffs','TR
 AND has_function_privilege(current_user,'claimcore_witness.append(uuid,uuid,bigint,uuid,text,uuid,text,uuid,bytea,bytea)','EXECUTE')
 AND has_function_privilege(current_user,'claimcore_witness.acquire_read_fence(uuid,uuid,bigint,bytea)','EXECUTE')
 AND (SELECT nspowner::regrole::text FROM pg_namespace WHERE nspname='claimcore_witness') = 'claimcore_witness_owner'
-AND (SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace   WHERE n.nspname='claimcore_witness') = 17
-AND (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace   WHERE n.nspname='claimcore_witness') = 10
+AND (SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace   WHERE n.nspname='claimcore_witness') = 21
+AND (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace   WHERE n.nspname='claimcore_witness') = 14
 AND NOT EXISTS (SELECT 1 FROM pg_policy pol JOIN pg_class c ON c.oid=pol.polrelid   JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='claimcore_witness')
 AND NOT EXISTS (SELECT 1 FROM pg_default_acl WHERE defaclnamespace='claimcore_witness'::regnamespace)
 AND NOT EXISTS (SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace   WHERE n.nspname='claimcore_witness'
@@ -47,7 +51,7 @@ AND acl.privilege_type <> 'SELECT')))
 AND NOT EXISTS (SELECT 1 FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid   JOIN pg_namespace n ON n.oid=c.relnamespace   WHERE n.nspname='claimcore_witness'
 AND a.attacl IS NOT NULL)
 AND (SELECT count(*) FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid   JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='claimcore_witness'
-AND NOT t.tgisinternal) = 0
+AND NOT t.tgisinternal) = 2
 AND EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace   WHERE n.nspname='claimcore_witness'
 AND p.proname='append'
 AND p.prosecdef
@@ -84,12 +88,13 @@ AND (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
   WHERE n.nspname='claimcore_witness'
   AND p.proname IN ('prepare_writer_handoff','commit_writer_handoff',
     'activate_writer_handoff','activate_data_use','abort_writer_handoff',
-    'release_aborted_writer_handoff')
+    'release_aborted_writer_handoff','prepare_installation_loss_retirement',
+    'settle_installation_loss_retirement','guard_loss_journal','guard_loss_installation')
   AND p.prosecdef AND p.proowner::regrole::text='claimcore_witness_owner'
   AND p.proconfig = ARRAY['search_path=pg_catalog, claimcore_witness, pg_temp']
   AND NOT has_function_privilege(current_user,p.oid,'EXECUTE')
   AND NOT EXISTS (SELECT 1 FROM aclexplode(p.proacl) acl WHERE acl.grantee=0
-    OR acl.grantee NOT IN ('claimcore_witness_owner'::regrole))) = 6
+    OR acl.grantee NOT IN ('claimcore_witness_owner'::regrole))) = 10
 AND EXISTS (SELECT 1 FROM claimcore_witness.installation WHERE singleton
 AND installation_id=@installation
 AND lineage_id=@lineage

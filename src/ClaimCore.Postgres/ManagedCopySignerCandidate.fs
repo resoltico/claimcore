@@ -31,6 +31,7 @@ module internal ManagedCopySignerCandidate =
         | CopySignerPurpose.Checkpoint -> "CHECKPOINT"
         | CopySignerPurpose.WriterHandoffAbort -> "WRITER_HANDOFF_ABORT"
         | CopySignerPurpose.RestoreCopyVerifier -> "RESTORE_COPY_VERIFIER"
+        | CopySignerPurpose.InstallationLossRetirement -> "INSTALLATION_LOSS_RETIREMENT"
 
     let purposeOfName =
         function
@@ -42,6 +43,7 @@ module internal ManagedCopySignerCandidate =
         | "CHECKPOINT" -> CopySignerPurpose.Checkpoint
         | "WRITER_HANDOFF_ABORT" -> CopySignerPurpose.WriterHandoffAbort
         | "RESTORE_COPY_VERIFIER" -> CopySignerPurpose.RestoreCopyVerifier
+        | "INSTALLATION_LOSS_RETIREMENT" -> CopySignerPurpose.InstallationLossRetirement
         | _ -> invalidOp "Signer purpose is invalid."
 
     let private writeBytes write =

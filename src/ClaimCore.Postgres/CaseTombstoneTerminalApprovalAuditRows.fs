@@ -3,6 +3,7 @@ namespace ClaimCore.Postgres
 open System
 open Npgsql
 open ClaimCore.Application
+open DataAuditCommon
 
 [<NoEquality; NoComparison>]
 type internal TerminalApprovalAuditRow =
@@ -71,7 +72,7 @@ module internal CaseTombstoneTerminalApprovalAuditRows =
                     OldWriterGeneration = reader.GetInt64(16)
                     NewWriterGeneration = reader.GetInt64(17)
                 }
-        | _ -> invalidOp "Terminal approval action projection is invalid."
+        | _ -> corrupt ()
 
     let private row (reader: Data.Common.DbDataReader) =
         {

@@ -1,6 +1,7 @@
 module ClaimCore.IntegrationTests.CaseErasurePurgeAuditTests
 
 open System
+open System.IO
 open System.Threading
 open Expecto
 open Npgsql
@@ -48,6 +49,17 @@ let private auditRefuses owner witness commitments =
             |> ignore)
         "A changed purged-state proof must quarantine full audit"
 
+let private auditDiverges owner witness commitments =
+    use connection = new NpgsqlConnection(owner)
+    connection.Open()
+
+    Expect.throwsT<InvalidDataException>
+        (fun () ->
+            DataAudit.runWithSuppression connection witness (Some commitments) ct
+            |> await
+            |> ignore)
+        "A changed retained approval is an evidence divergence, not an unexpected audit fault"
+
 let private changedDenialSeal =
     testCase "[CC-AUDIT-001] altered keyed denial root quarantines purged audit" (fun _ ->
         purged (fun owner _ witness commitments id _ _ _ ->
@@ -82,7 +94,7 @@ let private missingApproval =
 
             Sql.uuid remove "case" id
             Expect.equal (remove.ExecuteNonQuery()) 1 "One synthetic approval was removed"
-            auditRefuses owner witness commitments))
+            auditDiverges owner witness commitments))
 
 let private restoreSyntheticCase owner id reference =
     use connection = new NpgsqlConnection(owner)

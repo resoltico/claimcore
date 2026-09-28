@@ -6,6 +6,7 @@ type internal PrimaryAuditCounts =
         Cases: int64
         AcceptedOperations: int64
         LifecycleEvents: int64
+        VerifiedCaseTipsSha256: byte array
         ErasureFences: int64
         TerminalApprovals: int64
         TerminalEvents: int64
@@ -40,6 +41,7 @@ type internal DataAuditSummary =
         Cases: int64
         AcceptedOperations: int64
         LifecycleEvents: int64
+        VerifiedCaseTipsSha256: byte array
         ErasureFences: int64
         TerminalApprovals: int64
         TerminalEvents: int64
@@ -74,6 +76,7 @@ module internal DataAuditSummary =
             Cases = primary.Cases
             AcceptedOperations = primary.AcceptedOperations
             LifecycleEvents = primary.LifecycleEvents
+            VerifiedCaseTipsSha256 = primary.VerifiedCaseTipsSha256
             ErasureFences = primary.ErasureFences
             TerminalApprovals = primary.TerminalApprovals
             TerminalEvents = primary.TerminalEvents

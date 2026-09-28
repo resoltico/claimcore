@@ -1,6 +1,7 @@
 module ClaimCore.IntegrationTests.BackupCaptureFenceTests
 
 open System
+open System.Data
 open System.Threading
 open System.Threading.Tasks
 open Expecto
@@ -129,4 +130,79 @@ let private capturedAuthority =
 
                 Expect.equal summary.PendingIntents 0L "Released fence leaves no unknown intent."))
 
-let tests = testList "owner backup capture fence" [ capturedAuthority ]
+let private assertTicketBlocked
+    (witness: WitnessProtocol)
+    (release: TaskCompletionSource<unit>)
+    (audit: Task<DataAuditSummary>)
+    =
+    let cutoff = witness.Snapshot().TipSequence
+
+    let append =
+        Task.Run(fun () ->
+            witness.BeginAuthority(Guid.NewGuid(), [| 0x43uy; 0x43uy |], None) |> ignore)
+
+    Task.Delay(150).GetAwaiter().GetResult()
+    Expect.isFalse append.IsCompleted "New witness tickets wait for the full audit."
+    Expect.equal (witness.Snapshot().TipSequence) cutoff "Audit cutoff remains fixed."
+    release.SetResult()
+    let summary = audit.GetAwaiter().GetResult()
+    Expect.equal summary.WitnessCutoff cutoff "Complete snapshot used the fenced cutoff."
+    Expect.isTrue (append.Wait(5000)) "Ticket resumes after the audit releases its fence."
+
+let private verifyCompleteAuditBarrier resources owner witness =
+    use ownerConnection = new NpgsqlConnection(owner)
+    ownerConnection.Open()
+    use held = ownerConnection.BeginTransaction(IsolationLevel.ReadCommitted)
+
+    use lockCommand =
+        new NpgsqlCommand(
+            "SELECT revision FROM claimcore.authority_tip WHERE singleton FOR UPDATE",
+            ownerConnection,
+            held
+        )
+
+    lockCommand.ExecuteScalar() |> ignore
+
+    let fenced =
+        TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+
+    let release =
+        TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+
+    let audit =
+        RuntimeFullAudit.runWith
+            resources
+            (fun () ->
+                fenced.TrySetResult() |> ignore
+                release.Task :> Task)
+            CancellationToken.None
+
+    Task.Delay(100).GetAwaiter().GetResult()
+    Expect.isFalse fenced.Task.IsCompleted "The primary barrier drains an admitted writer."
+    held.Rollback()
+
+    try
+        Expect.isTrue (fenced.Task.Wait(5000)) "Audit acquired both global fences."
+        assertTicketBlocked witness release audit
+    finally
+        release.TrySetResult() |> ignore
+
+let private completeAuditDrainsAndFences =
+    testCase
+        "[CC-AUDIT-001] complete audit drains primary mutations and blocks new witness tickets"
+        (fun _ ->
+            withAuthorityRuntimeDatabase (fun owner app _ witness ->
+                use resources = new RuntimeResources(app, artifactKeyRingFile ())
+                resources.Attach witness
+
+                resources.AttachSuppression(
+                    { new IDisposable with
+                        member _.Dispose() = ()
+                    },
+                    FixturePrivateFiles.syntheticCommitments witness.Identity
+                )
+
+                verifyCompleteAuditBarrier resources owner witness))
+
+let tests =
+    testList "owner backup capture fence" [ capturedAuthority; completeAuditDrainsAndFences ]

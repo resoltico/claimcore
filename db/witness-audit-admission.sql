@@ -9,9 +9,9 @@ AND NOT has_schema_privilege(current_user,'claimcore_witness','CREATE')
 AND (SELECT nspowner::regrole::text FROM pg_namespace
     WHERE nspname='claimcore_witness')='claimcore_witness_owner'
 AND (SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
-    WHERE n.nspname='claimcore_witness')=17
+    WHERE n.nspname='claimcore_witness')=21
 AND (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
-    WHERE n.nspname='claimcore_witness')=10
+    WHERE n.nspname='claimcore_witness')=14
 AND NOT EXISTS (SELECT 1 FROM pg_policy pol JOIN pg_class c ON c.oid=pol.polrelid
     JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='claimcore_witness')
 AND NOT EXISTS (SELECT 1 FROM pg_default_acl
@@ -33,6 +33,10 @@ AND has_table_privilege(current_user,'claimcore_witness.installation','SELECT')
 AND has_table_privilege(current_user,'claimcore_witness.journal','SELECT')
 AND has_table_privilege(current_user,'claimcore_witness.journal_payloads','SELECT')
 AND has_table_privilege(current_user,'claimcore_witness.writer_handoffs','SELECT')
+AND has_table_privilege(current_user,'claimcore_witness.installation_loss_retirements','SELECT')
+AND NOT has_table_privilege(current_user,'claimcore_witness.installation_loss_retirements','INSERT')
+AND NOT has_table_privilege(current_user,'claimcore_witness.installation_loss_retirements','UPDATE')
+AND NOT has_table_privilege(current_user,'claimcore_witness.installation_loss_retirements','DELETE')
 AND NOT has_table_privilege(current_user,'claimcore_witness.installation','INSERT')
 AND NOT has_table_privilege(current_user,'claimcore_witness.installation','UPDATE')
 AND NOT has_table_privilege(current_user,'claimcore_witness.installation','DELETE')

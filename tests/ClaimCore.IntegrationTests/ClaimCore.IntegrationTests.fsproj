@@ -36,6 +36,7 @@
     <Compile Include="FreshBaselineSupport.fs" />
     <Compile Include="FixtureWitnessWriterStore.fs" />
     <Compile Include="ActorGrantTestSupport.fs" />
+    <Compile Include="RuntimeAuditCadenceTests.fs" />
     <Compile Include="WitnessAuditorTests.fs" />
     <Compile Include="RecoveryArtifactExportTestSupport.fs" />
     <Compile Include="RecoveryArtifactExportTests.fs" />
@@ -89,6 +90,13 @@
     <Compile Include="ManagedCopyAttestationFixture.fs" />
     <Compile Include="ManagedCopyAuditTestSupport.fs" />
     <Compile Include="ManagedCopyIngestTests.fs" />
+    <Compile Include="InstallationLossRetirementFixture.fs" />
+    <Compile Include="InstallationLossRetirementCrashFixture.fs" />
+    <Compile Include="InstallationLossRetirementCommitFault.fs" />
+    <Compile Include="InstallationLossRetirementDenialAudit.fs" />
+    <Compile Include="InstallationLossRetirementTests.fs" />
+    <Compile Include="InstallationLossRetirementCrashTests.fs" />
+    <Compile Include="InstallationLossRetirementStalePairTests.fs" />
     <Compile Include="BackupCaptureEvidenceProcess.fs" />
     <Compile Include="BackupCaptureEvidenceTests.fs" />
     <Compile Include="ManagedCopyTransitionRejectionTests.fs" />
@@ -104,6 +112,7 @@
     <Compile Include="WriterHandoffDocuments.fs" />
     <Compile Include="WriterHandoffPrimaryFixture.fs" />
     <Compile Include="ManagedCopyInventoryFixture.fs" />
+    <Compile Include="InstallationLossRetirementProcessTests.fs" />
     <Compile Include="ManagedCopyPhysicalProofFixture.fs" />
     <Compile Include="WriterHandoffProcessFixture.fs" />
     <Compile Include="WriterHandoffSyntheticVerifier.fs" />

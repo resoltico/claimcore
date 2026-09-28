@@ -3,6 +3,7 @@ namespace ClaimCore.Postgres
 open System
 open Npgsql
 open ClaimCore.Witness
+open DataAuditCommon
 
 [<NoEquality; NoComparison>]
 type internal StoredWitnessPruneTarget =
@@ -19,7 +20,7 @@ module internal CaseTombstonePruneTargetRows =
         | "SETTLED_REVOKED" -> SettledRevoked
         | "SETTLED_AUTHORITY" -> SettledAuthority
         | "ABORTED_BEFORE_COMMIT" -> AbortedBeforeCommit
-        | _ -> invalidOp "Prune target phase is unknown."
+        | _ -> corrupt ()
 
     let page (connection: NpgsqlConnection) (transaction: NpgsqlTransaction) caseId after =
         task {

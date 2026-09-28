@@ -5,6 +5,7 @@ open System.Diagnostics
 open System.IO
 open System.Security.Cryptography
 open System.Text.Json
+open System.Text.RegularExpressions
 open System.Threading
 open Expecto
 open Npgsql
@@ -14,6 +15,7 @@ open ClaimCore.Postgres
 open ClaimCore.IntegrationTests.Fixtures
 open ClaimCore.IntegrationTests.ActorGrantTestSupport
 open ClaimCore.IntegrationTests.FixtureEnvironment
+open ClaimCore.IntegrationTests.FixturePrivateFiles
 
 let private databaseDll () =
     let rec find (directory: DirectoryInfo | null) =
@@ -27,14 +29,6 @@ let private databaseDll () =
         | current -> find current.Parent
 
     find (DirectoryInfo AppContext.BaseDirectory)
-
-let private privateTemporaryRoot () =
-    let root = Path.GetTempPath()
-
-    if OperatingSystem.IsMacOS() && root.StartsWith("/var/", StringComparison.Ordinal) then
-        "/private" + root
-    else
-        root
 
 let internal runCommand command arguments files =
     let start = ProcessStartInfo("dotnet")
@@ -68,6 +62,33 @@ let internal runCommand command arguments files =
     runner.ExitCode, JsonDocument.Parse(output)
 
 let private run files = runCommand "verify-data" [] files
+
+let private assertTopologyRefused directory (owner: string) inputs =
+    let sameHost = NpgsqlConnectionStringBuilder(owner)
+    sameHost.Username <- "claimcore_witness_writer"
+    let file = Path.Combine(directory, "same-host-witness.connection")
+    privateFile directory file sameHost.ConnectionString
+
+    let replaced =
+        inputs
+        |> List.map (fun (name, path) ->
+            if name = "CLAIMCORE_WITNESS_CONNECTION_FILE" then
+                name, file
+            else
+                name, path)
+
+    let code, result = run replaced
+    use result = result
+    Expect.equal code 3 "A same-host witness is not admitted for an owner audit."
+
+    Expect.equal
+        (result.RootElement
+            .GetProperty("diagnostic")
+            .GetProperty("parameters")
+            .GetProperty("category")
+            .GetString())
+        "TOPOLOGY_REFUSED"
+        "Topology refusal is not mislabeled as corrupt accepted evidence."
 
 let internal files directory owner writer (witness: WitnessProtocol) =
     let ownerPath = Path.Combine(directory, "owner.connection")
@@ -158,7 +179,7 @@ let private tamper owner reference =
     command.Parameters.AddWithValue("reference", reference) |> ignore
     Expect.equal (command.ExecuteNonQuery()) 1 "One isolated projection changed."
 
-let private assertPendingIntent (witness: WitnessProtocol) inputs =
+let private assertPendingIntent (witness: WitnessProtocol) inputs expectedCaseTips =
     witness.BeginAuthority(Guid.NewGuid(), [| 0x43uy; 0x43uy; 0x50uy |], None)
     |> ignore
 
@@ -176,6 +197,11 @@ let private assertPendingIntent (witness: WitnessProtocol) inputs =
         (root.GetProperty("counts").GetProperty("pendingIntents").GetString())
         "1"
         "Uncertain authority remains counted."
+
+    Expect.equal
+        (root.GetProperty("verifiedCaseTipsSha256").GetString())
+        expectedCaseTips
+        "A pending intent does not change verified current-case tips."
 
 let private assertVerified (root: JsonElement) =
     Expect.equal (root.GetProperty("status").GetString()) "VERIFIED" "Exact safe status"
@@ -195,6 +221,17 @@ let private assertVerified (root: JsonElement) =
         "1"
         "One accepted event audited"
 
+    let digest =
+        root.GetProperty("verifiedCaseTipsSha256").GetString()
+        |> Option.ofObj
+        |> Option.defaultWith (fun () -> failtest "Verified case-tip digest is absent.")
+
+    Expect.isTrue
+        (Regex.IsMatch(digest, "^[0-9a-f]{64}$"))
+        "The complete verified-case-tip digest is bounded and payload-free."
+
+    digest
+
 let private verifiesAndQuarantines =
     testCase
         "[CC-AUDIT-001] owner verify-data reports full counts and quarantines a changed case"
@@ -204,7 +241,7 @@ let private verifiesAndQuarantines =
 
                 let directory =
                     Path.Combine(
-                        privateTemporaryRoot (),
+                        canonicalRoot (),
                         "claimcore-verify-data-" + Guid.NewGuid().ToString("N")
                     )
 
@@ -224,9 +261,14 @@ let private verifiesAndQuarantines =
 
                     Expect.equal code 0 "Owner full audit completed."
                     let root = verified.RootElement
-                    assertVerified root
+                    let caseTips = assertVerified root
 
-                    assertPendingIntent witness inputs
+                    Expect.isFalse
+                        (root.GetRawText().Contains(reference, StringComparison.Ordinal))
+                        "An audit report must not disclose the synthetic case reference."
+
+                    assertTopologyRefused directory owner inputs
+                    assertPendingIntent witness inputs caseTips
                     tamper owner reference
                     let deniedCode, denied = run inputs
                     use denied = denied
@@ -236,6 +278,15 @@ let private verifiesAndQuarantines =
                         (denied.RootElement.GetProperty("status").GetString())
                         "QUARANTINED"
                         "No false verified report"
+
+                    Expect.equal
+                        (denied.RootElement
+                            .GetProperty("diagnostic")
+                            .GetProperty("parameters")
+                            .GetProperty("category")
+                            .GetString())
+                        "EVIDENCE_DIVERGENCE"
+                        "A changed accepted projection is classified distinctly from unavailable infrastructure."
                 finally
                     if Directory.Exists(directory) then
                         Directory.Delete(directory, true)))

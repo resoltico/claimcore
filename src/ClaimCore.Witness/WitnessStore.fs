@@ -81,6 +81,9 @@ type Store private (writerConnection: string, identity: Identity, material: byte
         checkAdmission connection
         readEvidence connection operation phase
 
+    member internal _.TryReadLossRetirement(retirementId: Guid) =
+        WitnessStoreLossRetirement.read writerConnection identity retirementId
+
     interface IDisposable with
         member _.Dispose() =
             if not disposed then

@@ -18,6 +18,7 @@ module internal WebSignerApprovalSchemas =
                         "RESTORE_REPORT"
                         "CHECKPOINT"
                         "WRITER_HANDOFF_ABORT"
+                        "INSTALLATION_LOSS_RETIREMENT"
                     ])
             WireSchema.property "publicKeySha256" WireSchema.digest
             WireSchema.property "expiresAt" WireSchema.microsecondTimestamp

@@ -71,6 +71,35 @@ module internal InstallationUseActivationOwner =
             | _ -> return None
         }
 
+    let private currentPhase
+        primary
+        transaction
+        (witness: WitnessProtocol)
+        (proof: BackupHealthQualifiedEvidence)
+        (plan: BackupHealthActivationPlan)
+        =
+        let identity, generation, scope, phase, priorId, priorSequence, priorHash =
+            InstallationUseActivationPrimary.state primary transaction
+
+        let state =
+            InstallationUseActivationPreflight.state scope phase priorId priorSequence priorHash
+
+        let snapshot = witness.Snapshot()
+        let now = InstallationUseActivationPreflight.databaseNow primary transaction
+
+        let matches =
+            InstallationUseActivationPreflight.phaseMatches
+                proof
+                witness
+                plan
+                state
+                generation
+                identity
+                snapshot
+                now
+
+        matches, now, snapshot
+
     let private phaseUnderLock
         (primary: NpgsqlConnection)
         (transaction: NpgsqlTransaction)
@@ -86,30 +115,19 @@ module internal InstallationUseActivationOwner =
         task {
             let! _ = ActorGrantRead.lockRevision primary transaction true ct
 
-            let identity, generation, scope, phase, priorId, priorSequence, priorHash =
-                InstallationUseActivationPrimary.state primary transaction
+            let matches, now, snapshot = currentPhase primary transaction witness proof plan
 
-            let state =
-                InstallationUseActivationPreflight.state scope phase priorId priorSequence priorHash
-
-            let snapshot = witness.Snapshot()
-            let now = InstallationUseActivationPreflight.databaseNow primary transaction
-
-            if
-                not (
-                    InstallationUseActivationPreflight.phaseMatches
-                        proof
-                        witness
-                        plan
-                        state
-                        generation
-                        identity
-                        snapshot
-                        now
-                )
-            then
+            if not matches then
                 return None
             else
+                // A loss decision cannot be bootstrapped after a failed audit has closed
+                // actor authority. Require two independently held retirement keys now.
+                InstallationLossRetirementSigners.requireReady
+                    primary
+                    transaction
+                    witness
+                    snapshot.TipSequence
+
                 return!
                     approvedProof
                         primary

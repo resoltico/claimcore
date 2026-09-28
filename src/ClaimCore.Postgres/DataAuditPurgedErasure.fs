@@ -106,7 +106,7 @@ module internal DataAuditPurgedErasure =
                     value.CandidateHash
                     ClaimCore.Witness.SettledAuthority
 
-            try
+            witnessProof (fun () ->
                 CaseErasurePurgedDenialsAudit.verify
                     connection
                     transaction
@@ -119,9 +119,7 @@ module internal DataAuditPurgedErasure =
                     value.SubjectIntentDigest
                     value.DenialCount
                     value.DenialDigest
-                |> ignore
-            with _ ->
-                corrupt ()
+                |> ignore)
         }
 
     let private verifySubjectAuthority

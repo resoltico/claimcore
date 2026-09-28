@@ -12,6 +12,7 @@ open ClaimCore.IntegrationTests.ActorGrantTestSupport
 open ClaimCore.IntegrationTests.Fixtures
 open ClaimCore.IntegrationTests.RealDataActivationMechanicsSupport
 open ClaimCore.IntegrationTests.RealDataActivationPlanFixture
+open ClaimCore.IntegrationTests.ManagedCopyIngestTests
 
 let private outcome =
     function
@@ -22,6 +23,67 @@ let private refused =
     function
     | InstallationUseActivationOutcome.Refused -> ()
     | _ -> failtest "Rejected synthetic activation must have a definite refusal."
+
+let private registerLossOwners owner app writer witness first second =
+    use runtime =
+        ClaimCore.IntegrationTests.ManagedCopySignerTestSupport.openRuntime app writer
+
+    let management = (runtime.ForActor first).Management
+
+    for holder in [ first; second ] do
+        let eventId = Guid.NewGuid()
+
+        management.SetGrant(
+            eventId,
+            holder,
+            Role.AuditorCustodian,
+            GrantTarget.Installation,
+            true,
+            CancellationToken.None
+        )
+        |> await
+        |> ClaimCore.IntegrationTests.ManagedCopySignerTestSupport.appliedManagement eventId
+
+    use connection = new NpgsqlConnection(owner)
+    connection.Open()
+
+    let firstKey, _, _, _ =
+        registeredSigner
+            runtime
+            first
+            second
+            CopySignerPurpose.InstallationLossRetirement
+            witness
+            connection
+
+    use _firstKey = firstKey
+
+    let secondKey, _, _, _ =
+        registeredSigner
+            runtime
+            second
+            first
+            CopySignerPurpose.InstallationLossRetirement
+            witness
+            connection
+
+    use _secondKey = secondKey
+    ()
+
+let private requireLossOwnerPrerequisite
+    activate
+    qualified
+    profile
+    plan
+    (witness: WitnessProtocol)
+    =
+    let before = witness.Snapshot().TipSequence
+    activate qualified profile plan |> refused
+
+    Expect.equal
+        (witness.Snapshot().TipSequence)
+        before
+        "Real-data activation without prepositioned loss owners appended no authority."
 
 let private mechanics owner app writer (witness: WitnessProtocol) profile =
     let first = human "activation-mechanics-one"
@@ -52,6 +114,11 @@ let private mechanics owner app writer (witness: WitnessProtocol) profile =
             secondId
             CancellationToken.None
         |> await
+
+    requireLossOwnerPrerequisite activate qualified profile plan witness
+
+    registerLossOwners owner app writer witness first second
+    let qualified = proof plan (witness.Snapshot())
 
     let before = witness.Snapshot().TipSequence
 

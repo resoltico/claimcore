@@ -39,6 +39,18 @@ let private exact () =
 
     match
         HttpSignerApprovalInput.approve (
+            bytes (valid.Replace("COPY_ATTESTOR", "INSTALLATION_LOSS_RETIREMENT"))
+        )
+    with
+    | Ok value ->
+        Expect.equal
+            value.Purpose
+            CopySignerPurpose.InstallationLossRetirement
+            "Loss retirement signatures have a dedicated closed purpose"
+    | Error _ -> failtest "Exact loss-retirement signer purpose must decode"
+
+    match
+        HttpSignerApprovalInput.approve (
             bytes (valid.Replace("COPY_ATTESTOR", "RESTORE_COPY_VERIFIER"))
         )
     with
