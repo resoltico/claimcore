@@ -35,7 +35,7 @@ for (const filename of ["src/App.tsx", "src/domain/metadata.ts", "src/hooks/useS
 }
 
 test("only the validated API module may use browser networking", () => {
-  assert.equal(violations('fetch("/api");', "src/api/v2.ts").length, 0);
+  assert.equal(violations('fetch("/api");', "src/api/v3.ts").length, 0);
   assert.ok(violations('fetch("/api");', "src/api/outcomes.ts").length > 0);
 });
 

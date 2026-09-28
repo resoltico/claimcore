@@ -37,7 +37,7 @@ let private sourceIdentityTests =
                         SemanticContract.current.Application
                         identity.Product
                         "Shared semantic product name")
-            testCase "CLI v3 discovery renders compiled release identity" (fun () ->
+            testCase "CLI v4 discovery renders compiled release identity" (fun () ->
                 let bytes = Discovery.versionJson ()
 
                 use document = JsonDocument.Parse(ReadOnlyMemory<byte>(bytes))

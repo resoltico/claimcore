@@ -1,7 +1,7 @@
 import { usePreparedConsent } from "./usePreparedConsent";
 import { recoveryNotice } from "../../api/notices";
 import { useEffect, useReducer, useRef, useState } from "react";
-import { isMutationUncertain, resultNotice, v2 } from "../../api/v2";
+import { isMutationUncertain, resultNotice, v3 } from "../../api/v3";
 import {
   commandFor,
   commandInputs,
@@ -66,7 +66,7 @@ const draftForPrepare = (props: OperationEditorProps, state: EditorState) =>
 const dispatchPrepareResult = (
   state: EditorState,
   requestId: number,
-  result: Awaited<ReturnType<typeof v2.prepare>>,
+  result: Awaited<ReturnType<typeof v3.prepare>>,
 ): void => {
   const value = result.kind === "outcome" ? prepared(result.value) : null;
   if (value !== null) {
@@ -117,20 +117,27 @@ const sendPrepare = async (
 ): Promise<void> => {
   const draft = draftForPrepare(props, state);
   state.dispatch({ type: "PREPARING", requestId, draft });
-  const result = await v2.prepare(draft, props.token);
+  const result = await v3.prepare(draft, props.token);
   dispatchPrepareResult(state, requestId, result);
 };
 
 const sendSubmit = async ({
   preparation,
+  draft,
   token,
   dispatch,
   requestId,
 }: SubmissionRequest & { requestId: number }): Promise<void> => {
   const digest = preparation?.summary.requestSha256;
-  if (preparation === null || typeof digest !== "string") return;
+  if (
+    preparation === null ||
+    draft === null ||
+    draft.operationId !== preparation.summary.operationId ||
+    typeof digest !== "string"
+  )
+    return;
   dispatch({ type: "SUBMITTING", requestId });
-  const result = await v2.submit(preparation.summary.operationId, digest, token);
+  const result = await v3.submit(draft, token);
   const receipt = result.kind === "outcome" ? acceptedReceipt(result.value) : null;
   if (receipt !== null) dispatch({ type: "ACCEPTED", requestId, receipt });
   else if (isMutationUncertain(result))
@@ -227,6 +234,7 @@ const useEditorActions = (props: OperationEditorProps, state: EditorState): Edit
       try {
         await sendSubmit({
           preparation: state.state.preparation,
+          draft: state.state.exposedRequest,
           token: props.token,
           dispatch: state.dispatch,
           requestId: nextRequestId(),

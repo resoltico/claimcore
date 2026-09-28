@@ -72,7 +72,7 @@
       "rule": "prettier-ignore-file",
       "scope": "line:2",
       "owner": "project maintainers",
-      "rationale": "ClaimCore.Contracts emits canonical minified JSON whose exact bytes feed the generated CLI-v3 and Web-v2 wire-contract fingerprints.",
+      "rationale": "ClaimCore.Contracts emits canonical minified JSON whose exact bytes feed the generated CLI-v4 and Web-v3 wire-contract fingerprints.",
       "reviewOn": "2027-03-01"
     },
     {

@@ -36,17 +36,28 @@ let private verifyPagination () =
 
     expected |> List.chunkBySize insertBatchSize |> List.iter (openBatch service)
 
-    let first = service.List(Some prefix) |> await |> accepted
+    let first = service.List({ AfterCursor = None; Limit = 50 }) |> await |> accepted
     Expect.equal first.Items.Length 50 "Page size"
     Expect.equal (references first) (expected |> List.take 50) "C-collation order"
 
     let cursor =
-        first.NextAfter
+        first.NextCursor
         |> Option.defaultWith (fun () -> failtest "Expected continuation")
 
-    let second = service.List(Some cursor) |> await |> accepted
+    Expect.isFalse (cursor.Contains(prefix, StringComparison.Ordinal)) "The reference is encrypted"
+
+    let second =
+        service.List(
+            {
+                AfterCursor = Some cursor
+                Limit = 50
+            }
+        )
+        |> await
+        |> accepted
+
     Expect.equal (references second) [ expected[50] ] "No duplicate or skipped boundary item"
-    Expect.isNone second.NextAfter "Sequence ends"
+    Expect.isNone second.NextCursor "Sequence ends"
 
 let tests =
     testCase

@@ -31,14 +31,14 @@ const importsRule = [
 export const localeStateBoundaries = [
   {
     files: stateFiles,
-    ignores: ["src/api/v2.ts"],
+    ignores: ["src/api/v3.ts"],
     rules: {
       "no-restricted-imports": importsRule,
       "no-restricted-globals": globalsRule([...localeGlobals, ...networkGlobals]),
     },
   },
   {
-    files: ["src/api/v2.ts"],
+    files: ["src/api/v3.ts"],
     rules: {
       "no-restricted-imports": importsRule,
       "no-restricted-globals": globalsRule(localeGlobals),

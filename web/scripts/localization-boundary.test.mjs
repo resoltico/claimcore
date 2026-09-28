@@ -22,7 +22,7 @@ const violations = (code, filename) =>
     { filename },
   );
 for (const filename of [
-  "src/api/v2.ts",
+  "src/api/v3.ts",
   "src/domain/operationReducer.ts",
   "src/hooks/useOperation.ts",
   "src/views/recovery/RecoveryState.ts",
@@ -42,7 +42,7 @@ for (const filename of [
 }
 test("localization guard retains network ownership and permits presentation-only locale access", () => {
   assert.ok(violations('fetch("/api");', "src/hooks/useOperation.ts").length > 0);
-  assert.equal(violations('fetch("/api");', "src/api/v2.ts").length, 0);
+  assert.equal(violations('fetch("/api");', "src/api/v3.ts").length, 0);
   assert.equal(violations("new Intl.NumberFormat();", "src/presentation/format.ts").length, 0);
   assert.equal(
     violations("function local(Intl) { return Intl(); }", "src/hooks/useOperation.ts").length,

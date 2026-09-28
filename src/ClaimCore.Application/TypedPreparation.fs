@@ -22,12 +22,17 @@ module internal TypedPreparation =
         canonical, canonical |> SHA256.HashData |> Convert.ToHexStringLower
 
     let private preparationDraft
+        (authority: CommandAuthority)
         (request: CommandRequest)
         (canonical: byte array)
         (requestSha256: string)
         : RecoveryPreparationDraft =
         {
             OperationId = request.OperationId
+            CaseId = authority.CaseId
+            PreparerActorId = authority.Actor.ActorId
+            PreparerGrantRevision = authority.Actor.GrantRevision
+            ImporterActorId = None
             CanonicalRequestFormat = RecordVersions.CanonicalCommandFormat
             RequestSha256 = requestSha256
             CanonicalRequest = canonical
@@ -94,6 +99,14 @@ module internal TypedPreparation =
             match! recovery.Get(request.OperationId, cancellationToken) with
             | Error RecoveryStoreFailure.ReadCancelled ->
                 return Some(PrepareOutcome.CancelledBeforeAdmission request.OperationId)
+            | Error RecoveryStoreFailure.ResourceUnavailable ->
+                return
+                    Some(
+                        PrepareOutcome.PrepareRejected(
+                            request.OperationId,
+                            Rejection.ResourceUnavailable
+                        )
+                    )
             | Error failure ->
                 return
                     Some(
@@ -122,6 +135,8 @@ module internal TypedPreparation =
         match failure with
         | RecoveryStoreFailure.IdempotencyConflict ->
             PrepareOutcome.PrepareRejected(operationId, AcceptedObservation.idempotencyConflict)
+        | RecoveryStoreFailure.ResourceUnavailable ->
+            PrepareOutcome.PrepareRejected(operationId, Rejection.ResourceUnavailable)
         | RecoveryStoreFailure.TechnicalMutationUnknown ->
             PrepareOutcome.PreparationStateUnknown(
                 operationId,
@@ -136,6 +151,7 @@ module internal TypedPreparation =
         (store: IClaimStore)
         (recovery: IRecoveryStore)
         (clock: IBusinessTime)
+        (authority: CommandAuthority)
         (request: CommandRequest)
         (review: AdvisoryReview)
         (canonical: byte array)
@@ -144,7 +160,10 @@ module internal TypedPreparation =
         : Task<PrepareOutcome> =
         task {
             match!
-                recovery.Retain(preparationDraft request canonical requestSha256, cancellationToken)
+                recovery.Retain(
+                    preparationDraft authority request canonical requestSha256,
+                    cancellationToken
+                )
             with
             | Ok(RecoveryRetain.Created retained) ->
                 match TypedProjection.details retained with
@@ -178,6 +197,7 @@ module internal TypedPreparation =
         (store: IClaimStore)
         (recovery: IRecoveryStore)
         (clock: IBusinessTime)
+        (authority: CommandAuthority)
         (request: CommandRequest)
         (canonical: byte array)
         (digest: string)
@@ -203,6 +223,7 @@ module internal TypedPreparation =
                         store
                         recovery
                         clock
+                        authority
                         request
                         review
                         canonical
@@ -214,6 +235,7 @@ module internal TypedPreparation =
         (store: IClaimStore)
         (recovery: IRecoveryStore)
         (clock: IBusinessTime)
+        (authority: CommandAuthority)
         (request: CommandRequest)
         (cancellationToken: CancellationToken)
         : Task<PrepareOutcome> =
@@ -251,6 +273,7 @@ module internal TypedPreparation =
                                 store
                                 recovery
                                 clock
+                                authority
                                 request
                                 canonical
                                 digest

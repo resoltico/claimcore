@@ -92,9 +92,13 @@ let requireTypeNames assemblyName (reflectedNames: string seq) (inspectedNames: 
     let extra = Set.difference inspectedSet reflectedSet
 
     if not missing.IsEmpty || not extra.IsEmpty then
+        let examples values =
+            values |> Set.toList |> List.truncate 5 |> String.concat ", "
+
         invalidOp (
             $"Architecture inspection is incomplete in {assemblyName}: "
-            + $"{missing.Count} missing and {extra.Count} unexpected types."
+            + $"{missing.Count} missing and {extra.Count} unexpected types. "
+            + $"Missing: {examples missing}; unexpected: {examples extra}."
         )
 
 let requireCompleteTypes (architecture: Architecture) (assembly: System.Reflection.Assembly) =

@@ -29,6 +29,7 @@ $mustBeIgnored = @(
     "src/ClaimCore.Web/wwwroot/assets/app.js",
     "nested/node_modules/package/index.js", "nested/dist/index.js", "web/artifacts/report.json",
     "nested/.cache/state", "TestResults/result.trx", "nested/test-results/result.json",
+    "eng/backup/__pycache__/managed.cpython-314.pyc", "nested/module.pyc",
     "nested/.vitest/results.json", "nested/playwright-report/index.html", "nested/coverage/lcov.info",
     "src/Probe/bin/output.dll", "src/Probe/obj/project.assets.json", "trace.binlog",
     "package.nupkg", "package.snupkg", "test.coverage", "test.coveragexml", "test.trx",
@@ -66,7 +67,7 @@ $mustRemainVisible = @(
     "src/ClaimCore.HostSecurity/PosixPrivateNative.fs",
     "web/.prettierignore", "web/package.json", "web/package-lock.json", "web/src/App.tsx",
     "web/src/generated/convergence/semantic-core-v1.contract.json",
-    "web/src/generated/convergence/web-v2.endpoint-catalog.ts"
+    "web/src/generated/convergence/web-v3.endpoint-catalog.ts"
 )
 
 if (-not [IO.Directory]::Exists($repoRoot)) {

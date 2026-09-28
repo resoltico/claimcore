@@ -1,6 +1,6 @@
 import { usePresentation } from "../../presentation/context";
 import { Button } from "react-aria-components/Button";
-import type { DefinitionPayload, Receipt } from "../../api/v2";
+import type { DefinitionPayload, Receipt } from "../../api/v3";
 import { AccessibleModal } from "../../components/AccessibleModal";
 import { CaseFieldsView } from "../../components/CaseFieldsView";
 import type { OperationEditorModel } from "./editorTypes";

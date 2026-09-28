@@ -6,7 +6,7 @@ import {
   operationReducer,
   type OperationState,
 } from "../src/domain/operationReducer";
-import { caseFields, preparation, review } from "./v2-foundation.fixtures";
+import { caseFields, preparation, review } from "./v3-foundation.fixtures";
 
 const firstId = "00000000-0000-4000-8000-000000000001";
 const secondId = "00000000-0000-4000-8000-000000000002";

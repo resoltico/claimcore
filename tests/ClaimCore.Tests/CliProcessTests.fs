@@ -130,7 +130,7 @@ let private allDiscoveryVariants =
 
         discoveryArray [ "describe"; "fields" ] 13
         discoveryArray [ "describe"; "commands" ] 9
-        discoveryArray [ "describe"; "endpoints" ] 15
+        discoveryArray [ "describe"; "endpoints" ] 30
 
         for arguments in
             [
@@ -144,13 +144,13 @@ let private allDiscoveryVariants =
 
 let private discoveryTests =
     testList
-        "CLI v3 discovery processes"
+        "CLI v4 discovery processes"
         [
             testCase "help and plain version are configuration-free human text" (fun () ->
                 let help = invoke [ "help" ] ""
                 let version = invoke [ "version" ] ""
                 Expect.equal help.ExitCode 0 "Help exit"
-                Expect.stringContains help.StandardOutput "ClaimCore CLI v3" "Current grammar"
+                Expect.stringContains help.StandardOutput "ClaimCore CLI v4" "Current grammar"
                 Expect.equal version.ExitCode 0 "Version exit"
 
                 Expect.equal
@@ -166,7 +166,7 @@ let private discoveryTests =
                 expectJson summary.StandardOutput (fun root ->
                     Expect.equal
                         (root.GetProperty("cliProtocolVersion").GetInt32())
-                        3
+                        4
                         "CLI version"
 
                     Expect.equal
@@ -183,11 +183,11 @@ let private discoveryTests =
         ]
 
 let private callFrame =
-    """{"protocolVersion":3,"endpoint":"case.list","input":{"limit":1}}"""
+    """{"protocolVersion":4,"endpoint":"case.list","input":{"limit":1}}"""
 
 let private callTests =
     testList
-        "CLI v3 call"
+        "CLI v4 call"
         [
             testCase "call reports strict frame errors as one protocol JSON response" (fun () ->
                 let result = invoke [ "call" ] "{}"
@@ -202,29 +202,27 @@ let private callTests =
 
                     Expect.equal
                         (root.GetProperty("protocolVersion").GetInt32())
-                        3
+                        4
                         "Frame version"))
-            testCase
-                "call retains a valid runtime request as typed configuration failure"
-                (fun () ->
-                    let result = invoke [ "call" ] callFrame
-                    Expect.equal result.ExitCode 3 "Runtime configuration exit"
+            testCase "call refuses case work without authenticated service configuration" (fun () ->
+                let result = invoke [ "call" ] callFrame
+                Expect.equal result.ExitCode 3 "Runtime configuration exit"
 
-                    expectJson result.StandardOutput (fun root ->
-                        Expect.equal
-                            (root.GetProperty("kind").GetString())
-                            "protocolFailure"
-                            "Tagged configuration failure"
+                expectJson result.StandardOutput (fun root ->
+                    Expect.equal
+                        (root.GetProperty("kind").GetString())
+                        "localFailure"
+                        "Tagged configuration failure"
 
-                        Expect.equal
-                            (root.GetProperty("code").GetString())
-                            "CONFIGURATION_ERROR"
-                            "Safe code"))
+                    Expect.equal
+                        (root.GetProperty("code").GetString())
+                        "CLI_CONFIGURATION_INVALID"
+                        "Safe code"))
         ]
 
 let private sessionTests =
     testList
-        "CLI v3 session and hard break"
+        "CLI v4 session and hard break"
         [
             testCase
                 "session emits a local protocol frame for a blank line and exits cleanly"
@@ -255,7 +253,7 @@ let private sessionTests =
         ]
 
 let private invocationTests =
-    testList "CLI v3 call and session" [ callTests; sessionTests ]
+    testList "CLI v4 call and session" [ callTests; sessionTests ]
 
 let tests =
-    testList "CLI v3 child-process contract" [ discoveryTests; invocationTests ]
+    testList "CLI v4 child-process contract" [ discoveryTests; invocationTests ]

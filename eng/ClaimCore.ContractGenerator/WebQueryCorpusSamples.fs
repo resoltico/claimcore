@@ -18,10 +18,6 @@ module internal WebQueryCorpusSamples =
                 "session"
                 (WebWireCodec.session "session" true (Some "synthetic-token"))
             sample
-                "session-login"
-                "session.login"
-                (WebWireCodec.session "session.login" true (Some "synthetic-token"))
-            sample
                 "session-logout"
                 "session.logout"
                 (WebWireCodec.session "session.logout" false (Some "synthetic-token"))
@@ -83,19 +79,13 @@ module internal WebQueryCorpusSamples =
                     QueryOutcome.Succeeded
                         {
                             Items = [ CliCorpusValues.caseSummary ]
-                            NextAfterReference = Some CliCorpusValues.fields.CaseReference
+                            NextCursor = Some "synthetic-case-list-cursor"
                         }
                 ))
             sample
                 "case-list-empty-page"
                 endpoint
-                (encode (
-                    QueryOutcome.Succeeded
-                        {
-                            Items = []
-                            NextAfterReference = None
-                        }
-                ))
+                (encode (QueryOutcome.Succeeded { Items = []; NextCursor = None }))
         ]
         @ WebCorpusSamples.queryFailures
             "case-list"

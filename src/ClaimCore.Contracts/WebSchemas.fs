@@ -3,7 +3,7 @@ namespace ClaimCore.Contracts
 [<RequireQualifiedAccess>]
 module WebSchemas =
     let responseFileName identifier =
-        "web-v2.endpoint." + identifier + ".response.schema.json"
+        "web-v3.endpoint." + identifier + ".response.schema.json"
 
     let responseDefinitionName identifier = "Response_" + identifier
 
@@ -13,7 +13,7 @@ module WebSchemas =
     let responseDocument (projection: ContractModel) (endpoint: WebEndpoint) =
         {
             Identifier = "https://claimcore.local/contracts/" + responseFileName endpoint.Identifier
-            Title = "ClaimCore Web v2 " + endpoint.Identifier + " response"
+            Title = "ClaimCore Web v3 " + endpoint.Identifier + " response"
             Root = endpoint.Response
             Definitions = sharedDefinitions projection
         }
@@ -32,8 +32,8 @@ module WebSchemas =
 
         let document =
             {
-                Identifier = "https://claimcore.local/contracts/web-v2.responses.schema.json"
-                Title = "ClaimCore Web v2 endpoint responses"
+                Identifier = "https://claimcore.local/contracts/web-v3.responses.schema.json"
+                Title = "ClaimCore Web v3 endpoint responses"
                 Root = root
                 Definitions = sharedDefinitions projection @ endpointDefinitions
             }
@@ -43,8 +43,8 @@ module WebSchemas =
     let hostFailure =
         let document =
             {
-                Identifier = "https://claimcore.local/contracts/web-v2.host-failure.schema.json"
-                Title = "ClaimCore Web v2 host failure"
+                Identifier = "https://claimcore.local/contracts/web-v3.host-failure.schema.json"
+                Title = "ClaimCore Web v3 host failure"
                 Root = WebSchemaDefinitions.hostFailure
                 Definitions = []
             }

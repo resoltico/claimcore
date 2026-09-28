@@ -69,7 +69,6 @@ module internal PreparationIntegrity =
             Error "preparingContractFingerprint"
         else
             match kind with
-            | PreparingContractKind.CanonicalRecordV3
             | PreparingContractKind.SemanticCoreV1 when
                 requiresCurrentSemanticFingerprint
                 && contractFingerprint <> semanticFingerprint ()
@@ -88,6 +87,13 @@ module internal PreparationIntegrity =
     let validateDraft (draft: RecoveryPreparationDraft) =
         match validateIdentity draft with
         | Error failure -> Error failure
+        | Ok _ when draft.CaseId = Guid.Empty -> Error(RecoveryStoreFailure.InvalidInput "caseId")
+        | Ok _ when draft.PreparerActorId = Guid.Empty ->
+            Error(RecoveryStoreFailure.InvalidInput "preparerActorId")
+        | Ok _ when draft.ImporterActorId = Some Guid.Empty ->
+            Error(RecoveryStoreFailure.InvalidInput "importerActorId")
+        | Ok _ when draft.PreparerGrantRevision <= 0L ->
+            Error(RecoveryStoreFailure.InvalidInput "preparerGrantRevision")
         | Ok _ ->
             provenance
                 true
@@ -109,6 +115,11 @@ module internal PreparationIntegrity =
                 preparation.PreparingContractFingerprint
                 preparation.PreparingContractKind
         with
-        | Ok decoded, Ok() -> Ok decoded
-        | Error _, _
-        | _, Error _ -> Error RecoveryStoreFailure.StoreCorrupt
+        | Ok decoded, Ok() when
+            preparation.CaseId <> Guid.Empty
+            && preparation.PreparerActorId <> Guid.Empty
+            && preparation.ImporterActorId <> Some Guid.Empty
+            && preparation.PreparerGrantRevision > 0L
+            ->
+            Ok decoded
+        | _ -> Error RecoveryStoreFailure.StoreCorrupt

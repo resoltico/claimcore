@@ -1,6 +1,7 @@
 module ClaimCore.FuzzQualificationTests.Totality
 
 open System
+open System.Text
 open Expecto
 open Hedgehog
 open Hedgehog.FSharp
@@ -36,7 +37,7 @@ let private invocation (bytes: byte array) =
     | Error _ -> ()
     | Ok document ->
         use source = document
-        InvocationFraming.decode source.RootElement |> ignore
+        CliRemoteInvocation.decode source.RootElement |> ignore
 
 /// A valid canonical encoding, mutated one byte at a time, reaches decoder interiors that uniform
 /// noise almost never does.
@@ -47,6 +48,36 @@ let private validRecord =
 
 let private recordCorpus =
     Gen.choice [ Corpora.jsonLike; Corpora.mutated validRecord.Value ]
+
+let private caseListCursorBoundary =
+    let principal =
+        PrincipalKey.human "https://issuer.example.test/realms/fuzz" "synthetic-reader"
+        |> Result.defaultWith (fun _ -> invalidOp "Synthetic principal must be valid.")
+
+    let binding =
+        {
+            Principal = principal
+            ActorId = Guid.Parse("40000000-0000-4000-8000-000000000001")
+            GrantRevision = 1L
+        }
+
+    fun (payload: byte array) ->
+        let protection =
+            { new ICaseListCursorProtection with
+                member _.Seal(_) =
+                    invalidOp "Decode-only property boundary."
+
+                member _.Open(_) = Some(Array.copy payload)
+            }
+
+        CaseListCursorCodec.decode
+            protection
+            binding
+            1L
+            1
+            (DateTimeOffset(2026, 9, 24, 0, 0, 0, TimeSpan.Zero))
+            "synthetic-token"
+        |> ignore
 
 let tests =
     testList
@@ -69,7 +100,15 @@ let tests =
                 run
                     "CC-FUZZ-ENVELOPE-001"
                     (property recordCorpus (fun bytes ->
-                        RecoveryEnvelope.decode 131072 bytes |> ignore)))
+                        RecoveryEnvelopeV3.decode
+                            131072
+                            (fun _ -> None)
+                            (Guid.Parse("11111111-1111-4111-8111-111111111111"))
+                            1L
+                            (DateTimeOffset(2026, 9, 23, 0, 0, 0, TimeSpan.Zero))
+                            (TimeSpan.FromHours(24.0))
+                            bytes
+                        |> ignore)))
 
             testCase "opaque cursors refuse hostile tokens without throwing" (fun () ->
                 run
@@ -77,5 +116,10 @@ let tests =
                     (property Corpora.cursorText (fun token ->
                         HistoryCursor.decode token |> ignore
                         RecoveryCursorCodec.decode token |> ignore
-                        RecoveryAttemptCursorCodec.decode token |> ignore)))
+                        RecoveryAttemptCursorCodec.decode token |> ignore
+                        caseListCursorBoundary (Encoding.UTF8.GetBytes token)))
+
+                run
+                    "CC-FUZZ-CASE-LIST-CURSOR-001"
+                    (property Corpora.arbitraryBytes caseListCursorBoundary))
         ]

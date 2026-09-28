@@ -84,7 +84,7 @@ module internal WebCorpusSamples =
         { CliCorpusValues.preparationDetails with
             Summary = preparationWithoutDigest
             AuthoredValues = []
-            PreparingContractKind = "CANONICAL_RECORD_V3"
+            PreparingContractKind = "SEMANTIC_CORE_V1"
             Attempts =
                 {
                     Items =
@@ -120,12 +120,6 @@ module internal WebCorpusSamples =
                         After = Some "2026-08-11"
                     }
                 ]
-        }
-
-    let importPreviewWithoutExisting =
-        { CliCorpusValues.importPreview with
-            ArtifactKind = RecoveryArtifactKind.UnboundCanonicalRecord
-            ExistingPreparation = None
         }
 
     let recoveryDetails observation details =

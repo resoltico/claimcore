@@ -20,7 +20,8 @@ let private parsed (bytes: byte array) =
     document.RootElement.Clone()
 
 let private cli rejection =
-    CliWireCodec.caseGet "case.get" (QueryOutcome.Rejected rejection)
+    use service = JsonDocument.Parse(WebWireCodec.get (QueryOutcome.Rejected rejection))
+    CliRemoteWireCodec.result "case.get" service.RootElement
 
 let private web rejection =
     WebWireCodec.get (QueryOutcome.Rejected rejection)
@@ -103,7 +104,10 @@ let private targetCoverage () =
 let private wireParity () =
     for id, rejection in RejectionExamples.all do
         let result = cli rejection
-        let cliValue = (parsed result.Bytes).GetProperty("outcome").GetProperty("rejection")
+
+        let cliValue =
+            (parsed result.Bytes).GetProperty("service").GetProperty("outcome").GetProperty("data")
+
         let webValue = (parsed (web rejection)).GetProperty("outcome").GetProperty("data")
         Expect.equal result.ExitCode 2 "A rejection remains a definite refusal"
         Expect.equal (cliValue.GetRawText()) (webValue.GetRawText()) id

@@ -28,6 +28,7 @@ type RejectionCode =
     | IdempotencyConflict
     | OperationRevoked
     | RecoveryAttemptLimitReached
+    | ResourceUnavailable
 
 /// Ordinary refusal: never a store fault, cancellation, or unknown commit outcome.
 /// Every property below is derived from this closed reason; no text is accepted from a caller.
@@ -35,10 +36,12 @@ type RejectionCode =
 type Rejection =
     | Domain of DomainError
     | PageLimitOutOfRange of maximumPageSize: int
+    | InvalidCaseListCursor
     | InvalidHistoryCursor
     | IdempotencyConflict
     | OperationRevoked
     | RecoveryAttemptLimitReached
+    | ResourceUnavailable
 
 module Rejections =
     let private progressCode =
@@ -68,15 +71,18 @@ module Rejections =
         function
         | Rejection.Domain error -> domainCode error
         | Rejection.PageLimitOutOfRange _
+        | Rejection.InvalidCaseListCursor
         | Rejection.InvalidHistoryCursor -> RejectionCode.InvalidInput
         | Rejection.IdempotencyConflict -> RejectionCode.IdempotencyConflict
         | Rejection.OperationRevoked -> RejectionCode.OperationRevoked
         | Rejection.RecoveryAttemptLimitReached -> RejectionCode.RecoveryAttemptLimitReached
+        | Rejection.ResourceUnavailable -> RejectionCode.ResourceUnavailable
 
     let field =
         function
         | Rejection.Domain(DomainError.InvalidInput(target, _)) -> Some(InputTargets.token target)
         | Rejection.PageLimitOutOfRange _ -> Some "limit"
+        | Rejection.InvalidCaseListCursor
         | Rejection.InvalidHistoryCursor -> Some "cursor"
         | _ -> None
 
@@ -89,11 +95,13 @@ module Rejections =
         function
         | Rejection.Domain(DomainError.InvalidInput _)
         | Rejection.PageLimitOutOfRange _
+        | Rejection.InvalidCaseListCursor
         | Rejection.InvalidHistoryCursor -> RecommendedAction.CorrectInput
         | Rejection.Domain(DomainError.VersionConflict _)
         | Rejection.OperationRevoked
         | Rejection.RecoveryAttemptLimitReached -> RecommendedAction.ReadCurrent
         | Rejection.IdempotencyConflict -> RecommendedAction.StopAndInvestigate
+        | Rejection.ResourceUnavailable -> RecommendedAction.NoneRequired
         | Rejection.Domain _ -> RecommendedAction.NoneRequired
 
 type Rejection with

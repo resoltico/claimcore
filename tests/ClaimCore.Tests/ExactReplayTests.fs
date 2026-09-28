@@ -45,7 +45,7 @@ let private exactAcceptedReplay =
             let claims = new CoreStore.Store()
             let recovery = new CoreRecoveryStore.Store()
             recovery.AttachClaimStore(claims :> IClaimStore)
-            let core = CoreApi.create claims recovery clock
+            let core = ActorCoreFixture.create claims recovery clock
             let operationId = Guid.NewGuid()
             let input = draft operationId "REPLAY-ACCEPTED"
 
@@ -73,7 +73,9 @@ let private retainedAfterOtherChange =
             let claims = new CoreStore.Store()
             let recovery = new CoreRecoveryStore.Store()
             recovery.AttachClaimStore(claims :> IClaimStore)
-            let core = CoreApi.create (claims :> IClaimStore) (recovery :> IRecoveryStore) clock
+
+            let core =
+                ActorCoreFixture.create (claims :> IClaimStore) (recovery :> IRecoveryStore) clock
 
             let original = draft (Guid.NewGuid()) "REPLAY-STALE"
 
@@ -133,7 +135,7 @@ let private spoofedDigestCannotBypassBytes =
 
             let claims = new CoreStore.Store()
             recovery.AttachClaimStore(claims :> IClaimStore)
-            let core = CoreApi.create claims recovery clock
+            let core = ActorCoreFixture.create claims recovery clock
 
             core.Prepare(boundRequest original, CancellationToken.None)
             |> await
@@ -155,12 +157,9 @@ let private spoofedDigestCannotBypassBytes =
 
 let private atomicImportOutcome =
     testCase
-        "[CC-REC-001] concurrent canonical imports classify creator and existing replay"
+        "[CC-REC-001] concurrent exact retained admission classifies creator and replay"
         (fun () ->
-            let claims = new CoreStore.Store()
             let recovery = new CoreRecoveryStore.Store()
-            recovery.AttachClaimStore(claims :> IClaimStore)
-            let core = CoreApi.create (claims :> IClaimStore) (recovery :> IRecoveryStore) clock
 
             let canonical =
                 draft (Guid.NewGuid()) "IMPORT-ATOMIC"
@@ -170,18 +169,27 @@ let private atomicImportOutcome =
 
             let digest = canonical |> SHA256.HashData |> Convert.ToHexStringLower
 
+            let preparation: RecoveryPreparationDraft =
+                {
+                    OperationId = (RequestRecord.decode 65536 canonical |> accepted).OperationId
+                    CaseId = Guid.NewGuid()
+                    PreparerActorId = Guid.NewGuid()
+                    PreparerGrantRevision = 1L
+                    ImporterActorId = None
+                    CanonicalRequestFormat = RecordVersions.CanonicalCommandFormat
+                    RequestSha256 = digest
+                    CanonicalRequest = canonical
+                    PreparingApplicationVersion = BuildIdentity.current.Version
+                    PreparingContractFingerprint =
+                        SemanticContract.fingerprint SemanticContract.current
+                        |> SemanticCoreFingerprint.value
+                    PreparingContractKind = PreparingContractKind.SemanticCoreV1
+                }
+
             let outcomes =
                 [|
-                    core.Recovery.RetainCanonicalRecordImport(
-                        canonical,
-                        digest,
-                        CancellationToken.None
-                    )
-                    core.Recovery.RetainCanonicalRecordImport(
-                        canonical,
-                        digest,
-                        CancellationToken.None
-                    )
+                    (recovery :> IRecoveryStore).Retain(preparation, CancellationToken.None)
+                    (recovery :> IRecoveryStore).Retain(preparation, CancellationToken.None)
                 |]
                 |> System.Threading.Tasks.Task.WhenAll
                 |> await
@@ -189,17 +197,17 @@ let private atomicImportOutcome =
             let created =
                 outcomes
                 |> Array.filter (function
-                    | RecoveryImportRetainOutcome.RetainedPreparation _ -> true
+                    | Ok(RecoveryRetain.Created _) -> true
                     | _ -> false)
 
             let existing =
                 outcomes
                 |> Array.filter (function
-                    | RecoveryImportRetainOutcome.ExistingPreparation _ -> true
+                    | Ok(RecoveryRetain.Existing _) -> true
                     | _ -> false)
 
-            Expect.equal created.Length 1 "One import retained"
-            Expect.equal existing.Length 1 "The other import observed the exact retained bytes")
+            Expect.equal created.Length 1 "One operation retained"
+            Expect.equal existing.Length 1 "The other observed the exact retained bytes")
 
 let tests =
     testList

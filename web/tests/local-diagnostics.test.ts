@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 import Ajv2020, { type ValidateFunction } from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
 import { describe, expect, it } from "vitest";
-import { isHostFailure } from "../src/generated/convergence/web-v2.validation";
+import { isHostFailure } from "../src/generated/convergence/web-v3.validation";
 import { webCases } from "./contract-corpus.fixtures";
 
 const root = resolve(import.meta.dirname, "../src/generated/convergence");
@@ -17,8 +17,8 @@ const read = (name: string): Record<string, unknown> => {
   return value;
 };
 const schemas = [
-  ["cliProcess", "cli-v3.process-failure.schema.json"],
-  ["webProcess", "web-v2.process-failure.schema.json"],
+  ["cliProcess", "cli-v4.process-failure.schema.json"],
+  ["webProcess", "web-v3.process-failure.schema.json"],
   ["administration", "administration-v1.response.schema.json"],
 ] as const;
 const validators = (): ReadonlyMap<string, ValidateFunction> => {

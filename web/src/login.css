@@ -1,0 +1,14 @@
+.login-link {
+  display: inline-block;
+  border: 1px solid #075cac;
+  border-radius: 0.4rem;
+  padding: 0.5rem 0.75rem;
+  color: #fff;
+  background: #075cac;
+  text-decoration: none;
+}
+
+.login-link:focus-visible {
+  outline: 3px solid #06c;
+  outline-offset: 2px;
+}

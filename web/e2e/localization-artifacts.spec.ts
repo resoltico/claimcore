@@ -14,14 +14,14 @@ import {
   ui,
 } from "./localization-support";
 
-const previewRecord = async (page: Page, bytes: Buffer) => {
+const previewEnvelope = async (page: Page, bytes: Buffer) => {
   const requests = trackRequests(page);
-  const preview = await pauseJsonReply(page, "recovery.importRecordPreview");
+  const preview = await pauseJsonReply(page, "recovery.importEnvelopePreview");
 
   try {
-    await page.locator('input[type="file"]').nth(1).setInputFiles({
-      name: "exact-record.json",
-      mimeType: "application/vnd.claimcore.canonical-command+json",
+    await page.locator('input[type="file"]').nth(0).setInputFiles({
+      name: "encrypted-recovery.json",
+      mimeType: "application/vnd.claimcore.recovery+json",
       buffer: bytes,
     });
     const captured = await preview.ready;
@@ -43,7 +43,7 @@ const previewRecord = async (page: Page, bytes: Buffer) => {
   }
 };
 
-test("retains unchanged canonical file bytes and preview digest through localized import without automatic execution", async ({
+test("retains unchanged encrypted artifact bytes through localized import without automatic execution", async ({
   page,
 }) => {
   await openAuthenticated(page);
@@ -54,12 +54,12 @@ test("retains unchanged canonical file bytes and preview digest through localize
   await inspectPending(page, identity);
   const artifacts = await exportEnvelope(page, identity);
   await page.getByRole("dialog").getByRole("button", { name: "Cancel" }).click();
-  const { digest, requests } = await previewRecord(page, artifacts.canonicalRecord);
-  const retain = await pauseJsonReply(page, "recovery.importRecordRetain");
+  const { digest, requests } = await previewEnvelope(page, artifacts.envelope);
+  const retain = await pauseJsonReply(page, "recovery.importEnvelopeRetain");
   try {
     await page.getByRole("button", { name: ui("lv", "ui.retainForRecovery") }).click();
     const captured = await retain.ready;
-    expect(captured.bytes.equals(artifacts.canonicalRecord)).toBe(true);
+    expect(captured.bytes.equals(artifacts.envelope)).toBe(true);
     expect(captured.sourceDigest === digest).toBe(true);
     await selectLanguage(page, "ar");
     expect(requests).toHaveLength(2);

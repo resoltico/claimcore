@@ -63,6 +63,23 @@ let private acceptsPassingExecution () =
     |> requireOk
     |> ignore
 
+    use repository = new TempRepository()
+    let relative = "artifacts/test-results/local/ClaimCore.Tests.trx"
+
+    repository.Write(
+        relative,
+        trx "[CC-DOM-001] exact fields" "Passed" passingCounters "/tmp/ClaimCore.Tests.dll" testId
+    )
+    |> ignore
+
+    Expect.isOk
+        (LocalTestReports.verifyDefinition repository.Root expected relative)
+        "The local verifier reads a safe report and checks exact TRX identities"
+
+    Expect.isError
+        (LocalTestReports.verify repository.Root "ClaimCore.Tests" relative)
+        "The public local command cannot accept a one-leaf report as the registered suite"
+
 let private rejectsInvalidCounters () =
     let rejected counters =
         trx "plain" "Passed" counters "/tmp/ClaimCore.Tests.dll" testId

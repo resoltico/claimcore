@@ -98,6 +98,47 @@ module internal PosixPrivateFiles =
             finally
                 CryptographicOperations.ZeroMemory(Span<byte>(buffer)))
 
+    let hash maximum path =
+        withParent path (fun parent name ->
+            let native = PosixPrivateNative.flags ()
+            let openFlags = native.NoFollow ||| native.CloseOnExec ||| native.NonBlock
+
+            use handle =
+                PosixPrivateNative.openHandle (int (parent.DangerousGetHandle())) name openFlags
+
+            let opened = PosixPrivateNative.privateRegular (handle.DangerousGetHandle())
+            use stream = new FileStream(handle, FileAccess.Read)
+            use digest = IncrementalHash.CreateHash(HashAlgorithmName.SHA256)
+            let buffer = Array.zeroCreate<byte> 65536
+            let mutable total = 0L
+            let mutable count = 1
+
+            try
+                while count > 0 && total <= maximum do
+                    count <- stream.Read(buffer, 0, buffer.Length)
+                    total <- total + int64 count
+
+                    if count > 0 && total <= maximum then
+                        digest.AppendData(buffer, 0, count)
+
+                let finished =
+                    PosixPrivateNative.privateRegular (stream.SafeFileHandle.DangerousGetHandle())
+
+                if not (current parent name opened) then
+                    raise (IOException("Private source identity changed while hashing."))
+                elif
+                    not (PosixPrivateNative.sameFile opened finished)
+                    || opened.Size <> finished.Size
+                    || finished.Size <> total
+                then
+                    raise (IOException("Private source changed while hashing."))
+                elif total > maximum then
+                    Error PrivateFileFailure.TooLarge
+                else
+                    Ok(total, digest.GetHashAndReset())
+            finally
+                CryptographicOperations.ZeroMemory(buffer))
+
     let writeNew (path: string) (bytes: byte array) =
         withParent path (fun parent name ->
             let descriptor = int (parent.DangerousGetHandle())
@@ -157,6 +198,23 @@ module internal PosixPrivateFiles =
                     removeCreated parent name opened true
 
                 reraise ())
+
+    let requirePrivateDirectory (path: string) =
+        withParent path (fun parent name ->
+            let native = PosixPrivateNative.flags ()
+            let openFlags = native.Directory ||| native.NoFollow ||| native.CloseOnExec
+
+            use handle =
+                PosixPrivateNative.openHandle (int (parent.DangerousGetHandle())) name openFlags
+
+            let opened = PosixPrivateNative.privateDirectory (handle.DangerousGetHandle())
+
+            let current =
+                PosixPrivateNative.statEntry (int (parent.DangerousGetHandle())) name
+                |> Option.exists (PosixPrivateNative.sameFile opened)
+
+            if not current then
+                raise (IOException("Private directory changed during admission.")))
 
     let openExclusive (path: string) =
         withParent path (fun parent name ->

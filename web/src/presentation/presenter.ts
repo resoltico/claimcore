@@ -1,5 +1,5 @@
 import type { Notice } from "../api/notices";
-import type { FieldDescriptor } from "../api/v2";
+import type { FieldDescriptor } from "../api/v3";
 import { calendarDate, displayField, exactAmount, exactInteger } from "./format";
 import { hasMessage, renderKey, translate } from "./messages";
 import { renderNotice } from "./notice";

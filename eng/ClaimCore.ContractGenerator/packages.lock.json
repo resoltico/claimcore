@@ -8,27 +8,35 @@
         "resolved": "10.1.401",
         "contentHash": "/lvOK51KD8IangBYkfDVna3/HrE/r4VUnX3dI01KDspctoYXmind3POeoYkqWKeXHwiKlf6Hc9TxwSnoSCWcjw=="
       },
+      "libsodium": {
+        "type": "Transitive",
+        "resolved": "1.0.22",
+        "contentHash": "KPD9SloJFclrsjnhABu7dzWrcyYkwPbvx5l1gRSPAX/0n+OBtSiVCKtGFv4n+ecWUHU0tCG9LSSwoZZx673zBQ=="
+      },
       "claimcore.application": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Domain": "[0.4.0, )",
-          "ClaimCore.RecordFormat": "[0.4.0, )",
+          "ClaimCore.Domain": "[0.5.0, )",
+          "ClaimCore.RecordFormat": "[0.5.0, )",
           "FSharp.Core": "[10.1.401, )"
         }
       },
       "claimcore.contracts": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Application": "[0.4.0, )",
-          "ClaimCore.Domain": "[0.4.0, )",
+          "ClaimCore.Application": "[0.5.0, )",
+          "ClaimCore.Domain": "[0.5.0, )",
           "FSharp.Core": "[10.1.401, )"
         }
       },
       "claimcore.database": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.HostSecurity": "[0.4.0, )",
-          "ClaimCore.Postgres": "[0.4.0, )",
+          "ClaimCore.Application": "[0.5.0, )",
+          "ClaimCore.Domain": "[0.5.0, )",
+          "ClaimCore.HostSecurity": "[0.5.0, )",
+          "ClaimCore.Postgres": "[0.5.0, )",
+          "ClaimCore.Witness": "[0.5.0, )",
           "FSharp.Core": "[10.1.401, )"
         }
       },
@@ -47,18 +55,27 @@
       "claimcore.postgres": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Application": "[0.4.0, )",
-          "ClaimCore.Domain": "[0.4.0, )",
-          "ClaimCore.RecordFormat": "[0.4.0, )",
+          "ClaimCore.Application": "[0.5.0, )",
+          "ClaimCore.Domain": "[0.5.0, )",
+          "ClaimCore.RecordFormat": "[0.5.0, )",
+          "ClaimCore.Witness": "[0.5.0, )",
           "FSharp.Core": "[10.1.401, )",
+          "NSec.Cryptography": "[26.4.0, )",
           "Npgsql": "[10.0.3, )"
         }
       },
       "claimcore.recordformat": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Domain": "[0.4.0, )",
+          "ClaimCore.Domain": "[0.5.0, )",
           "FSharp.Core": "[10.1.401, )"
+        }
+      },
+      "claimcore.witness": {
+        "type": "Project",
+        "dependencies": {
+          "FSharp.Core": "[10.1.401, )",
+          "Npgsql": "[10.0.3, )"
         }
       },
       "Microsoft.Extensions.DependencyInjection.Abstractions": {
@@ -83,6 +100,15 @@
         "contentHash": "7nb5YzXuvWWJxB0J8DiyL3we+X4FOctZrt0fIBnucOIaIevFEEwGQVZKtiu9olXdlNAK1eNgqSral6r/jlhI4w==",
         "dependencies": {
           "Microsoft.Extensions.Logging.Abstractions": "10.0.0"
+        }
+      },
+      "NSec.Cryptography": {
+        "type": "CentralTransitive",
+        "requested": "[26.4.0, )",
+        "resolved": "26.4.0",
+        "contentHash": "0vsCtY5f+YgQROiWNqzgWp+l2pddfk9FkWoGV/bEo0MuEYPKlJWuoA8aOfO6qp3f+EnObKE3zSJhn1PspJeJVg==",
+        "dependencies": {
+          "libsodium": "[1.0.22, 1.0.23)"
         }
       }
     }

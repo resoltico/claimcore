@@ -1,10 +1,10 @@
-import type { RecoveryRejection } from "../src/generated/convergence/web-v2.types";
+import { preparedForRequest } from "./prepared-request.fixtures";
 import { render, screen, waitFor } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
-import type { CurrentCase, Rejection } from "../src/api/v2";
+import type { CurrentCase, Rejection } from "../src/api/v3";
 import { OperationEditor } from "../src/views/OperationEditor";
-import { definition, fields, preparation, response } from "./v2-ui.fixtures";
+import { definition, fields, preparation, response } from "./v3-ui.fixtures";
 
 type SentDraft = {
   operationId: string;
@@ -47,11 +47,13 @@ const refusedResponse = () =>
   response("command.execute", "REFUSED_BEFORE_ATTEMPT", {
     preparation: null,
     rejection: {
-      code: "PREPARATION_DISMISSED",
-      diagnostic: { id: "RECOVERY_PREPARATION_DISMISSED", parameters: {} },
-      message: "The exact preparation was refused.",
+      code: "OPERATION_REVOKED",
+      diagnostic: { id: "OPERATION_REVOKED", parameters: {} },
+      message: "The exact operation was revoked.",
+      field: null,
+      actualRevision: null,
       recommendedAction: "READ_CURRENT",
-    } satisfies RecoveryRejection,
+    } satisfies Rejection,
   });
 
 const validationRefusal: Rejection = {
@@ -83,7 +85,7 @@ beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 it("allocates a new ID when editing a definitely refused prepared request", async () => {
   const user = userEvent.setup();
   vi.mocked(globalThis.fetch)
-    .mockResolvedValueOnce(preparedResponse())
+    .mockImplementationOnce(preparedForRequest(preparedResponse()))
     .mockResolvedValueOnce(refusedResponse())
     .mockResolvedValueOnce(rejectedResponse(validationRefusal));
   render(editor(null, "OPEN"));
@@ -92,7 +94,7 @@ it("allocates a new ID when editing a definitely refused prepared request", asyn
     await screen.findByRole("checkbox", { name: "I will submit this exact prepared request." }),
   );
   await user.click(screen.getByRole("button", { name: "Submit exact request" }));
-  await screen.findByText("A dismissed preparation cannot be submitted.");
+  await screen.findByText("This exact operation was durably revoked before execution.");
   const claimant = screen.getByLabelText("Claimant name", { exact: true });
   await user.type(claimant, "Synthetic B");
   await user.click(screen.getByRole("button", { name: "Prepare exact request" }));

@@ -7,6 +7,8 @@ open ClaimCore.Domain
 [<RequireQualifiedAccess>]
 type internal CoreFailure =
     | Domain of error: DomainError
+    | ResourceUnavailable
+    | InvalidCaseListCursor
     | IdempotencyConflict
     | StoreUnavailable
     | CommitOutcomeUnknown of operationId: Guid
@@ -29,7 +31,7 @@ type internal Receipt =
 type internal CasePage =
     {
         Items: Claim list
-        NextAfter: string option
+        NextCursor: string option
     }
 
 [<NoEquality; NoComparison>]
@@ -39,14 +41,25 @@ type internal HistoryPage =
         NextAfterVersion: int64 option
     }
 
+/// One capture is an observed instant and the installation calendar derived from it. Keeping these
+/// together prevents a preview from pairing a decision date with a separately observed host zone.
+[<NoEquality; NoComparison>]
+type internal BusinessContext =
+    {
+        ObservedUtcInstant: DateTimeOffset
+        EffectiveBusinessDate: DateOnly
+        TimeZoneId: string
+    }
+
 /// Storage owns locks/commit, not business decisions. It invokes decide while holding the case lock.
 type internal IClaimStore =
     abstract Transact:
-        operation: PreparedOperation * decide: (Claim option -> Result<Claim, DomainError>) ->
+        operation: PreparedOperation *
+        decide: (Claim option -> Result<Claim * BusinessContext, DomainError>) ->
             Task<Result<Receipt, CoreFailure>>
 
     abstract Get: reference: string -> Task<Result<Claim option, CoreFailure>>
-    abstract List: after: string option -> Task<Result<CasePage, CoreFailure>>
+    abstract List: request: CaseListRequest -> Task<Result<CasePage, CoreFailure>>
 
     abstract History:
         reference: string * afterVersion: int64 -> Task<Result<HistoryPage, CoreFailure>>
@@ -58,15 +71,11 @@ type internal IClaimStore =
     abstract Accepted:
         operationId: Guid * requestSha256: string -> Task<Result<Receipt option, CoreFailure>>
 
-/// One capture is an observed instant and the installation calendar derived from it. Keeping these
-/// together prevents a preview from pairing a decision date with a separately observed host zone.
-[<NoEquality; NoComparison>]
-type internal BusinessContext =
-    {
-        ObservedUtcInstant: DateTimeOffset
-        EffectiveBusinessDate: DateOnly
-        TimeZoneId: string
-    }
+/// Runtime-owned authenticated encryption. Application defines what the token means; the runtime
+/// owns nonce generation and an ephemeral key that is discarded on restart.
+type internal ICaseListCursorProtection =
+    abstract Seal: payload: byte array -> string
+    abstract Open: token: string -> byte array option
 
 type internal IBusinessTime =
     abstract Capture: unit -> BusinessContext

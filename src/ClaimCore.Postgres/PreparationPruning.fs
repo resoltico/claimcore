@@ -1,5 +1,6 @@
 namespace ClaimCore.Postgres
 
+open System
 open System.Data
 open System.IO
 open Npgsql
@@ -8,29 +9,27 @@ open NpgsqlTypes
 /// Owner-only pruning of accepted or durably revoked technical preparations. A rejected attempt is
 /// evidence, not authority closure: it can become valid after later case or business-date changes.
 module PreparationPruning =
-    let private candidatesSql =
+    let private eligibleSql =
         """
-        WITH candidates AS (
-            SELECT p.operation_id
-            FROM claimcore.request_preparations p
-            LEFT JOIN claimcore.case_changes c ON c.operation_id = p.operation_id
-            WHERE (
-                (c.operation_id IS NOT NULL AND c.recorded_at < clock_timestamp() - make_interval(days => @settled))
-                OR (c.operation_id IS NULL AND EXISTS (
-                    SELECT 1
-                    FROM claimcore.operation_revocations r
-                    WHERE r.operation_id = p.operation_id
-                        AND r.revoked_at < clock_timestamp() - make_interval(days => @abandoned)
-                )))
-                AND NOT EXISTS (
-                    SELECT 1 FROM claimcore.request_submission_attempts a
-                    LEFT JOIN claimcore.request_submission_settlements s ON s.attempt_id = a.attempt_id
-                    WHERE a.operation_id = p.operation_id AND s.attempt_id IS NULL
-                )
-            ORDER BY p.prepared_at, p.operation_id
-            LIMIT @limit
-            FOR UPDATE OF p
-        )
+        FROM claimcore.request_preparations p
+        LEFT JOIN claimcore.case_changes c ON c.operation_id = p.operation_id
+        WHERE (
+            (c.operation_id IS NOT NULL AND c.recorded_at < clock_timestamp() - make_interval(days => @settled))
+            OR (c.operation_id IS NULL AND EXISTS (
+                SELECT 1
+                FROM claimcore.operation_revocations r
+                WHERE r.operation_id = p.operation_id
+                    AND r.revoked_at < clock_timestamp() - make_interval(days => @abandoned)
+            )))
+            AND NOT EXISTS (
+                SELECT 1 FROM claimcore.request_submission_attempts a
+                LEFT JOIN claimcore.request_submission_settlements s ON s.attempt_id = a.attempt_id
+                WHERE a.operation_id = p.operation_id AND s.attempt_id IS NULL
+            )
+            AND NOT EXISTS (
+                SELECT 1 FROM claimcore.recovery_artifact_exports e
+                WHERE e.operation_id = p.operation_id AND e.expires_at > clock_timestamp()
+            )
         """
 
     let private bind (command: NpgsqlCommand) (options: PreparationPruneOptions) =
@@ -45,25 +44,57 @@ module PreparationPruning =
     let private candidates connection transaction options =
         use command =
             new NpgsqlCommand(
-                candidatesSql + "SELECT count(*) FROM candidates",
+                "SELECT p.operation_id "
+                + eligibleSql
+                + " ORDER BY p.prepared_at,p.operation_id LIMIT @limit",
                 connection,
                 transaction
             )
 
         bind command options
-        command.ExecuteScalar() :?> int64 |> int
+        use reader = command.ExecuteReader()
+        let found = ResizeArray<Guid>()
 
-    let private delete connection transaction options =
+        while reader.Read() do
+            found.Add(reader.GetGuid(0))
+
+        found |> Seq.toList
+
+    let private eligibleUnderLock connection transaction options operationId =
         use command =
             new NpgsqlCommand(
-                candidatesSql
-                + "DELETE FROM claimcore.request_preparations p USING candidates c WHERE p.operation_id = c.operation_id",
+                "SELECT p.operation_id "
+                + eligibleSql
+                + " AND p.operation_id=@operation FOR UPDATE OF p",
                 connection,
                 transaction
             )
 
         bind command options
+        Sql.uuid command "operation" operationId
+        command.ExecuteScalar() :? Guid
+
+    let private deleteOne connection transaction operationId =
+        use command =
+            new NpgsqlCommand(
+                "DELETE FROM claimcore.request_preparations WHERE operation_id=@operation",
+                connection,
+                transaction
+            )
+
+        Sql.uuid command "operation" operationId
         command.ExecuteNonQuery()
+
+    let private deleteCandidates connection transaction options (operationIds: Guid list) =
+        operationIds
+        |> List.sumBy (fun operationId ->
+            // Export and all normal recovery mutations take this advisory key before rows.
+            Sql.lockKey connection transaction ("operation:" + operationId.ToString("D"))
+
+            if eligibleUnderLock connection transaction options operationId then
+                deleteOne connection transaction operationId
+            else
+                0)
 
     let private record
         connection
@@ -125,13 +156,14 @@ module PreparationPruning =
         use transaction = connection.BeginTransaction(IsolationLevel.ReadCommitted)
         progress.BeginWork()
         Sql.lockKey connection transaction "claimcore:request-preparation-prune"
-        let candidateCount = candidates connection transaction options
+        let candidateIds = candidates connection transaction options
+        let candidateCount = candidateIds.Length
 
         let deletedCount =
             if options.DryRun then
                 0
             else
-                delete connection transaction options
+                deleteCandidates connection transaction options candidateIds
 
         record connection transaction options candidateCount deletedCount
         let terminalCount, terminalBytes = terminalFootprint connection transaction

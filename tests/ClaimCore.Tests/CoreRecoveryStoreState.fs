@@ -58,6 +58,10 @@ module internal RecoveryStoreState =
     let materialize state (draft: RecoveryPreparationDraft) lifecycle : RetainedPreparation =
         {
             OperationId = draft.OperationId
+            CaseId = draft.CaseId
+            PreparerActorId = draft.PreparerActorId
+            PreparerGrantRevision = draft.PreparerGrantRevision
+            ImporterActorId = draft.ImporterActorId
             CanonicalRequestFormat = draft.CanonicalRequestFormat
             RequestSha256 = draft.RequestSha256
             CanonicalRequest = Array.copy draft.CanonicalRequest

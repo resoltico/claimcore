@@ -53,8 +53,17 @@ module WebParsedCorpus =
 
     let private productionSamples =
         WebQueryCorpusSamples.all
+        @ WebManagementCorpusSamples.all
+        @ WebSignerApprovalCorpusSamples.all
+        @ WebCopyDeletionApprovalCorpusSamples.all
+        @ WebCopyAdoptionApprovalCorpusSamples.all
+        @ WebWriterHandoffApprovalCorpusSamples.all
+        @ WebRealDataActivationCorpusSamples.all
+        @ WebLifecycleCorpusSamples.all
+        @ WebTombstoneCorpusSamples.all
         @ WebRecoveryQueryCorpusSamples.all
         @ WebMutationCorpusSamples.all
+        @ WebSubmissionCorpusSamples.all
         @ WebImportRetainCorpusSamples.all
 
     let private representatives endpoints =
@@ -249,5 +258,5 @@ module WebParsedCorpus =
         writer.WriteEndObject()
         writer.Flush()
 
-        "web-v2.parsed-value-corpus.json",
+        "web-v3.parsed-value-corpus.json",
         Array.append (buffer.WrittenSpan.ToArray()) [| byte '\n' |]

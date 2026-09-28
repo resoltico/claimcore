@@ -5,6 +5,7 @@ open System.Threading
 open System.Threading.Tasks
 open Npgsql
 open ClaimCore.Application
+open ClaimCore.Domain
 open OperationAuthorityStore
 open PreparationData
 open PreparationLifecycleStore
@@ -12,11 +13,41 @@ open SubmissionAttemptStore
 
 /// Retention and attempt admission use the operation lock, with capacity acquired before it.
 module internal RecoveryRetentionStore =
+    let private matchesRetainActor
+        (draft: RecoveryPreparationDraft)
+        (actorContext: ActorCallContext)
+        =
+        draft.CaseId = (actorContext.CaseId |> Option.defaultValue Guid.Empty)
+        && draft.PreparerGrantRevision > 0L
+        && (if actorContext.Action = EndpointAction.RecoveryImportRetain then
+                draft.ImporterActorId = Some actorContext.Binding.ActorId
+            else
+                draft.ImporterActorId.IsNone
+                && draft.PreparerActorId = actorContext.Binding.ActorId
+                && draft.PreparerGrantRevision = actorContext.Binding.GrantRevision)
+
+    let private requireActorAndWitness
+        (actorContext: ActorCallContext option)
+        (witness: WitnessProtocol option)
+        =
+        let actor =
+            actorContext
+            |> Option.defaultWith (fun () -> invalidOp "Actor is required for preparation.")
+
+        let active =
+            witness
+            |> Option.defaultWith (fun () -> invalidOp "Witness is required for preparation.")
+
+        active.Admit()
+        actor, active
+
     let private retainAbsent
         (connection: NpgsqlConnection)
         (transaction: NpgsqlTransaction)
         (limits: PreparationLimits)
         (draft: RecoveryPreparationDraft)
+        (witness: WitnessProtocol)
+        (pending: (Guid * WitnessIntent) option ref)
         =
         task {
             match PreparationIntegrity.validateDraft draft with
@@ -31,7 +62,9 @@ module internal RecoveryRetentionStore =
                 then
                     return Error RecoveryStoreFailure.CapacityExceeded
                 else
-                    let! inserted = insertPreparation connection transaction draft
+                    let eventId, intent = WitnessTechnical.beginPrepare witness draft
+                    pending.Value <- Some(eventId, intent)
+                    let! inserted = insertPreparation connection transaction draft eventId intent
                     return Ok(RecoveryRetain.Created inserted)
         }
 
@@ -40,6 +73,9 @@ module internal RecoveryRetentionStore =
         (transaction: NpgsqlTransaction)
         (limits: PreparationLimits)
         (draft: RecoveryPreparationDraft)
+        (request: CommandRequest)
+        (witness: WitnessProtocol)
+        (pending: (Guid * WitnessIntent) option ref)
         =
         task {
             let! revoked = find connection transaction draft.OperationId
@@ -52,10 +88,19 @@ module internal RecoveryRetentionStore =
                 let! existing = readHeader connection (Some transaction) draft.OperationId
 
                 match existing with
+                | Some value when value.PreparerActorId <> draft.PreparerActorId ->
+                    return Error RecoveryStoreFailure.ResourceUnavailable
+                | Some value when
+                    (match request.Command with
+                     | Command.Open _ -> false
+                     | _ -> value.CaseId <> draft.CaseId)
+                    ->
+                    return Error RecoveryStoreFailure.ResourceUnavailable
                 | Some value when sameImmutable draft value ->
+                    WitnessTechnical.reconcilePrepare witness connection transaction value
                     return Ok(RecoveryRetain.Existing value)
                 | Some _ -> return Error RecoveryStoreFailure.IdempotencyConflict
-                | None -> return! retainAbsent connection transaction limits draft
+                | None -> return! retainAbsent connection transaction limits draft witness pending
         }
 
     let private retainInTransaction
@@ -63,8 +108,15 @@ module internal RecoveryRetentionStore =
         (transaction: NpgsqlTransaction)
         (limits: PreparationLimits)
         (draft: RecoveryPreparationDraft)
+        (request: CommandRequest)
+        (actorContext: ActorCallContext)
+        (witness: WitnessProtocol)
+        (pending: (Guid * WitnessIntent) option ref)
         =
         task {
+            let! revision =
+                ActorGrantRead.lockRevision connection transaction true CancellationToken.None
+
             do! Sql.lockKeyAsync connection transaction "claimcore:request-preparation-capacity"
 
             do!
@@ -73,14 +125,37 @@ module internal RecoveryRetentionStore =
                     transaction
                     ("operation:" + draft.OperationId.ToString("D"))
 
-            let! accepted =
-                StoreData.readOperation connection (Some transaction) draft.OperationId
+            do! Sql.lockKeyAsync connection transaction ("case:" + request.CaseReference)
 
-            match accepted with
-            | Some(receipt, original) when original = draft.RequestSha256 ->
-                return Ok(RecoveryRetain.ObservedAccepted receipt)
-            | Some _ -> return Error RecoveryStoreFailure.IdempotencyConflict
-            | None -> return! retainWithoutAccepted connection transaction limits draft
+            let! authorized =
+                ActorMutationGuard.authorize
+                    connection
+                    transaction
+                    actorContext
+                    request
+                    draft.CaseId
+                    revision
+
+            if not (matchesRetainActor draft actorContext) || not authorized then
+                return Error RecoveryStoreFailure.ResourceUnavailable
+            else
+                let! accepted =
+                    StoreData.readOperation connection (Some transaction) draft.OperationId
+
+                match accepted with
+                | Some(receipt, original) when original = draft.RequestSha256 ->
+                    return Ok(RecoveryRetain.ObservedAccepted receipt)
+                | Some _ -> return Error RecoveryStoreFailure.IdempotencyConflict
+                | None ->
+                    return!
+                        retainWithoutAccepted
+                            connection
+                            transaction
+                            limits
+                            draft
+                            request
+                            witness
+                            pending
         }
 
     let retain
@@ -88,142 +163,47 @@ module internal RecoveryRetentionStore =
         (limits: PreparationLimits)
         (draft: RecoveryPreparationDraft)
         (cancellationToken: CancellationToken)
+        (actorContext: ActorCallContext option)
+        (witness: WitnessProtocol option)
         : Task<Result<RecoveryRetain, RecoveryStoreFailure>> =
         task {
             match PreparationIntegrity.validateIdentity draft with
             | Error failure -> return Error failure
-            | Ok _ ->
+            | Ok request ->
                 let commitStarted = ref false
+                let pending: (Guid * WitnessIntent) option ref = ref None
 
                 try
+                    let actor, active = requireActorAndWitness actorContext witness
+
                     use! connection = RuntimeDatabase.openConnectionAsync dataSource
 
-                    return!
+                    let! result =
                         withTransaction
                             connection
                             cancellationToken
                             commitStarted
                             (fun transaction ->
-                                retainInTransaction connection transaction limits draft)
-                with error ->
-                    return Error(mutationFailure commitStarted.Value error)
-        }
-
-    let private startWithoutAccepted
-        (connection: NpgsqlConnection)
-        (transaction: NpgsqlTransaction)
-        maximumAttempts
-        (operationId: Guid)
-        (header: RetainedPreparation)
-        =
-        task {
-            let! revoked = find connection transaction operationId
-
-            match revoked with
-            | Some value when matches header.RequestSha256 value ->
-                return
-                    Ok(
-                        RecoveryStart.Dismissed
-                            { header with
-                                Lifecycle = PreparationLifecycle.Dismissed value.RevokedAt
-                            }
-                    )
-            | Some _ -> return Error RecoveryStoreFailure.IdempotencyConflict
-            | None ->
-                return!
-                    SubmissionAttemptStore.start
-                        maximumAttempts
-                        connection
-                        transaction
-                        operationId
-                        header
-        }
-
-    let private startInTransaction
-        (connection: NpgsqlConnection)
-        (transaction: NpgsqlTransaction)
-        maximumAttempts
-        (operationId: Guid)
-        =
-        task {
-            do! Sql.lockKeyAsync connection transaction ("operation:" + operationId.ToString("D"))
-            let! preparation = readHeader connection (Some transaction) operationId
-
-            match preparation with
-            | None -> return Error RecoveryStoreFailure.NotFound
-            | Some header ->
-                let! accepted = StoreData.readOperation connection (Some transaction) operationId
-
-                match accepted with
-                | Some(receipt, fingerprint) when fingerprint = header.RequestSha256 ->
-                    return Ok(RecoveryStart.ObservedAccepted receipt)
-                | Some _ -> return Error RecoveryStoreFailure.IdempotencyConflict
-                | None ->
-                    return!
-                        startWithoutAccepted
-                            connection
-                            transaction
-                            maximumAttempts
-                            operationId
-                            header
-        }
-
-    let start
-        (dataSource: NpgsqlDataSource)
-        (limits: PreparationLimits)
-        (operationId: Guid)
-        (cancellationToken: CancellationToken)
-        : Task<Result<RecoveryStart, RecoveryStoreFailure>> =
-        task {
-            if operationId = Guid.Empty then
-                return Error(RecoveryStoreFailure.InvalidInput "operationId")
-            else
-                let commitStarted = ref false
-
-                try
-                    use! connection = RuntimeDatabase.openConnectionAsync dataSource
-
-                    return!
-                        withTransaction
-                            connection
-                            cancellationToken
-                            commitStarted
-                            (fun transaction ->
-                                startInTransaction
+                                retainInTransaction
                                     connection
                                     transaction
-                                    limits.MaximumAttemptsPerOperation
-                                    operationId)
+                                    limits
+                                    draft
+                                    request
+                                    actor
+                                    active
+                                    pending)
+
+                    match pending.Value with
+                    | Some(eventId, intent) -> active.SettleAuthority(eventId, intent) |> ignore
+                    | None -> ()
+
+                    return result
                 with error ->
-                    return Error(mutationFailure commitStarted.Value error)
-        }
-
-    let settle
-        (dataSource: NpgsqlDataSource)
-        (attemptId: Guid)
-        outcome
-        (cancellationToken: CancellationToken)
-        : Task<Result<unit, RecoveryStoreFailure>> =
-        task {
-            if attemptId = Guid.Empty then
-                return Error(RecoveryStoreFailure.InvalidInput "attemptId")
-            else
-                let commitStarted = ref false
-
-                try
-                    use! connection = RuntimeDatabase.openConnectionAsync dataSource
-
-                    return!
-                        withTransaction
-                            connection
-                            cancellationToken
-                            commitStarted
-                            (fun transaction ->
-                                SubmissionAttemptStore.settle
-                                    connection
-                                    transaction
-                                    attemptId
-                                    outcome)
-                with error ->
-                    return Error(mutationFailure commitStarted.Value error)
+                    return
+                        match pending.Value, error with
+                        | Some _, _
+                        | _, :? WitnessPending ->
+                            Error RecoveryStoreFailure.TechnicalMutationUnknown
+                        | _ -> Error(mutationFailure commitStarted.Value error)
         }

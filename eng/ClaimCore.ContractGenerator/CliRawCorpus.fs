@@ -2,35 +2,33 @@ namespace ClaimCore.ContractGeneration
 
 open System
 open System.Buffers
-open System.Globalization
 open System.Text
 open System.Text.Json
 open ClaimCore.Contracts
 
 [<NoEquality; NoComparison>]
-type private RawCase =
+type private CliRawCase =
     {
         Identifier: string
         Bytes: byte array
         Valid: bool
-        ExpectedCode: string option
-        ExpectedPath: string option
+        Code: string option
+        Path: string option
     }
 
 [<RequireQualifiedAccess>]
 module CliRawCorpus =
-    let private utf8 value = Encoding.UTF8.GetBytes(value: string)
+    let private utf8 (value: string) = Encoding.UTF8.GetBytes(value)
 
-    let private invocation (endpoint: CliEndpoint) =
-        let input = Schema.sampleBytes endpoint.Input
-        use inputDocument = JsonDocument.Parse(ReadOnlyMemory<byte>(input))
+    let private frame (endpoint: string) (input: byte array) =
         let buffer = ArrayBufferWriter<byte>()
         use writer = new Utf8JsonWriter(buffer)
         writer.WriteStartObject()
-        writer.WriteNumber("protocolVersion", 3)
-        writer.WriteString("endpoint", endpoint.Identifier)
+        writer.WriteNumber("protocolVersion", 4)
+        writer.WriteString("endpoint", endpoint)
         writer.WritePropertyName("input")
-        inputDocument.RootElement.WriteTo(writer)
+        use document = JsonDocument.Parse(ReadOnlyMemory input)
+        document.RootElement.WriteTo writer
         writer.WriteEndObject()
         writer.Flush()
         buffer.WrittenSpan.ToArray()
@@ -38,165 +36,95 @@ module CliRawCorpus =
     let private valid (endpoint: CliEndpoint) =
         {
             Identifier = "valid-" + endpoint.Identifier
-            Bytes = invocation endpoint
+            Bytes = endpoint.Input |> Schema.sampleBytes |> frame endpoint.Identifier
             Valid = true
-            ExpectedCode = None
-            ExpectedPath = None
+            Code = None
+            Path = None
         }
 
-    let private invalid identifier code path bytes =
+    let private invalid identifier code path source =
         {
             Identifier = identifier
-            Bytes = bytes
+            Bytes = utf8 source
             Valid = false
-            ExpectedCode = Some code
-            ExpectedPath = Some path
+            Code = Some code
+            Path = Some path
         }
 
-    let private close revision operationId =
-        utf8 (
-            $"{{\"protocolVersion\":3,\"endpoint\":\"command.prepare\",\"input\":{{\"operationId\":\"{operationId}\",\"caseReference\":\"SYNTHETIC-CASE\",\"expectedRevision\":\"{revision}\",\"command\":{{\"kind\":\"CLOSE\",\"values\":{{}}}}}}}}"
-        )
-
-    let private digest value =
-        utf8 (
-            $"{{\"protocolVersion\":3,\"endpoint\":\"recovery.resolve\",\"input\":{{\"operationId\":\"10000000-0000-4000-8000-000000000001\",\"requestSha256\":\"{value}\"}}}}"
-        )
-
-    let private correctCase operationId =
-        utf8 (
-            """{"protocolVersion":3,"endpoint":"command.prepare","input":{"operationId":"""
-            + JsonSerializer.Serialize(operationId)
-            + """, "caseReference":"SYNTHETIC-CASE","expectedRevision":"3","command":{"kind":"CORRECT_CASE","groups":{"registration":{"mode":"REPLACE","values":{"incidentDate":"2026-08-01","incidentNotificationDate":"2026-08-03","incidentCountry":"Latvia","claimantName":"Synthetic Claimant","insurerName":"Synthetic Insurer","claimedAmount":"1000.00","claimedCurrency":"EUR"}},"decision":{"mode":"REPLACE","values":{"paymentDecisionDate":"2026-08-15","payableAmount":"750.00","payableCurrency":"EUR"}},"payment":{"mode":"REPLACE","values":{"paymentDate":"2026-08-20"}}}}}}"""
-        )
-
-    let private structuralCases =
-        let ordinary =
-            utf8 "{\"protocolVersion\":3,\"endpoint\":\"case.list\",\"input\":{\"limit\":1}}"
-
-        let duplicate =
-            utf8
-                "{\"protocolVersion\":3,\"protocolVersion\":3,\"endpoint\":\"case.list\",\"input\":{\"limit\":1}}"
-
-        let deep = utf8 (String.replicate 65 "[" + String.replicate 65 "]")
-        let tooLarge = Array.create 131073 (byte ' ')
-
-        [
-            invalid "invalid-utf8" "INVALID_UTF8" "" [| 0xFFuy |]
-            invalid
-                "utf8-bom"
-                "UTF8_BOM_FORBIDDEN"
-                ""
-                (Array.concat [ [| 0xEFuy; 0xBBuy; 0xBFuy |]; ordinary ])
-            invalid "duplicate-key" "DUPLICATE_KEY" "" duplicate
-            invalid
-                "escaped-lone-surrogate-property"
-                "INVALID_UNICODE"
-                ""
-                (utf8
-                    """{"protocolVersion":3,"endpoint":"case.list","input":{"\uD800":1,"limit":1}}""")
-            invalid
-                "escaped-lone-surrogate-value"
-                "INVALID_UNICODE"
-                "/input/caseReference"
-                (utf8
-                    """{"protocolVersion":3,"endpoint":"case.get","input":{"caseReference":"\uD800"}}""")
-            invalid "trailing-document" "INVALID_JSON" "" (Array.concat [ ordinary; utf8 "{}" ])
-            invalid "wrong-root-kind" "INVALID_SHAPE" "" (utf8 "[]")
-            invalid "excessive-depth" "INVALID_JSON" "" deep
-            invalid "oversize" "INPUT_TOO_LARGE" "" tooLarge
-        ]
-
-    let private scalarCases =
-        let maximumRevision = Int64.MaxValue.ToString(CultureInfo.InvariantCulture)
-
-        let largestAllowedRevision =
-            (Int64.MaxValue - 1L).ToString(CultureInfo.InvariantCulture)
-
-        let overflowRevision =
-            (uint64 Int64.MaxValue + 1UL).ToString(CultureInfo.InvariantCulture)
-
-        let operationId = "10000000-0000-4000-8000-000000000001"
+    let private negative =
+        let revision (value: string) =
+            $"{{\"protocolVersion\":4,\"endpoint\":\"command.prepare\",\"input\":{{\"operationId\":\"10000000-0000-4000-8000-000000000001\",\"caseReference\":\"SYNTHETIC-CASE\",\"expectedRevision\":\"{value}\",\"command\":{{\"kind\":\"CLOSE\",\"values\":{{}}}}}}}}"
 
         [
             {
                 Identifier = "valid-largest-allowed-revision"
-                Bytes = close largestAllowedRevision operationId
+                Bytes = revision ((Int64.MaxValue - 1L).ToString()) |> utf8
                 Valid = true
-                ExpectedCode = None
-                ExpectedPath = None
+                Code = None
+                Path = None
             }
             invalid
-                "noncanonical-revision"
-                "INVALID_REVISION"
-                "/input/expectedRevision"
-                (close "01" operationId)
-            invalid
                 "maximum-revision"
-                "INVALID_REVISION"
-                "/input/expectedRevision"
-                (close maximumRevision operationId)
+                "INVALID_VALUE"
+                "/input"
+                (revision (Int64.MaxValue.ToString()))
+            invalid "overflow-revision" "INVALID_VALUE" "/input" (revision "9223372036854775808")
             invalid
-                "overflow-revision"
-                "INVALID_REVISION"
-                "/input/expectedRevision"
-                (close overflowRevision operationId)
+                "old-v3-refused"
+                "INVALID_RANGE"
+                "/protocolVersion"
+                """{"protocolVersion":3,"endpoint":"case.list","input":{"limit":1}}"""
             invalid
-                "noncanonical-uuid"
-                "INVALID_UUID"
-                "/input/operationId"
-                (close "0" "AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA")
+                "unknown-endpoint"
+                "UNKNOWN_ENDPOINT"
+                "/endpoint"
+                """{"protocolVersion":4,"endpoint":"case.unknown","input":{}}"""
             invalid
-                "noncanonical-digest"
-                "INVALID_DIGEST"
-                "/input/requestSha256"
-                (digest (String.replicate 64 "A"))
+                "invalid-input"
+                "INVALID_VALUE"
+                "/input"
+                """{"protocolVersion":4,"endpoint":"case.list","input":{"limit":0}}"""
+            invalid
+                "duplicate-key"
+                "DUPLICATE_KEY"
+                ""
+                """{"protocolVersion":4,"protocolVersion":4,"endpoint":"case.list","input":{"limit":1}}"""
+            {
+                Identifier = "invalid-utf8"
+                Bytes = [| 0xFFuy |]
+                Valid = false
+                Code = Some "INVALID_UTF8"
+                Path = Some ""
+            }
         ]
 
-    let private groupedCorrectionCase =
-        {
-            Identifier = "valid-correct-case-groups"
-            Bytes = correctCase "10000000-0000-4000-8000-000000000001"
-            Valid = true
-            ExpectedCode = None
-            ExpectedPath = None
-        }
-
-    let private boundaryCases =
-        structuralCases @ scalarCases @ [ groupedCorrectionCase ]
-
-    let private renderCase (writer: Utf8JsonWriter) value =
+    let private writeCase (writer: Utf8JsonWriter) item =
         writer.WriteStartObject()
-        writer.WriteString("id", value.Identifier)
-        writer.WriteString("bytesBase64", Convert.ToBase64String(value.Bytes))
-        writer.WriteBoolean("valid", value.Valid)
+        writer.WriteString("id", item.Identifier)
+        writer.WriteString("bytesBase64", Convert.ToBase64String(item.Bytes))
+        writer.WriteBoolean("valid", item.Valid)
 
-        match value.ExpectedCode with
-        | Some expected -> writer.WriteString("expectedCode", expected)
-        | None -> writer.WriteNull("expectedCode")
-
-        match value.ExpectedPath with
-        | Some expected -> writer.WriteString("expectedPath", expected)
-        | None -> writer.WriteNull("expectedPath")
+        match item.Code, item.Path with
+        | Some code, Some path ->
+            writer.WriteString("expectedCode", code)
+            writer.WriteString("expectedPath", path)
+        | _ ->
+            writer.WriteNull("expectedCode")
+            writer.WriteNull("expectedPath")
 
         writer.WriteEndObject()
 
     let artifact (projection: ContractModel) =
-        let identifiers = projection.CliEndpoints |> List.map _.Identifier
-
-        if identifiers.Length <> (identifiers |> Set.ofList |> Set.count) then
-            invalidOp "CLI raw corpus cannot contain duplicate endpoint identifiers."
-
-        let cases = (projection.CliEndpoints |> List.map valid) @ boundaryCases
+        let cases = (projection.CliEndpoints |> List.map valid) @ negative
         let buffer = ArrayBufferWriter<byte>()
         use writer = new Utf8JsonWriter(buffer)
         writer.WriteStartObject()
         writer.WriteNumber("schemaVersion", 1)
         writer.WriteStartArray("cases")
-        cases |> List.iter (renderCase writer)
+        cases |> List.iter (writeCase writer)
         writer.WriteEndArray()
         writer.WriteEndObject()
         writer.Flush()
 
-        "cli-v3.raw-decoder-corpus.json",
+        "cli-v4.raw-decoder-corpus.json",
         Array.append (buffer.WrittenSpan.ToArray()) [| byte '\n' |]

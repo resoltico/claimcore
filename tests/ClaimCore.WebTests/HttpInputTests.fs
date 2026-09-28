@@ -7,12 +7,14 @@ open System.Text
 open System.Threading
 open System.Threading.Tasks
 open Expecto
+open Microsoft.AspNetCore.Http
 open ClaimCore.Application
 open ClaimCore.Contracts
 open ClaimCore.Domain
 open ClaimCore.Web
 
 let private bytes value = Encoding.UTF8.GetBytes(value: string)
+let private await (pending: Task<'value>) = pending.GetAwaiter().GetResult()
 
 let private expectError result message =
     match result with
@@ -24,7 +26,7 @@ let private validDraft =
 
 let private flatDraftTests () =
     match HttpInput.draft (bytes validDraft) with
-    | Error _ -> failtest "Expected v2 draft acceptance."
+    | Error _ -> failtest "Expected v3 draft acceptance."
     | Ok draft ->
         match draft.Command with
         | DraftCommand.Flat(CommandKind.Open, values) ->
@@ -55,7 +57,7 @@ let private flatDraftTests () =
         """{"operationId":"40000000-0000-4000-8000-000000000001","caseReference":"WEB-V2-001","expectedRevision":"0","command":{"kind":"CLOSE","values":{"extra":"x"}}}"""
         """{"operationId":"40000000-0000-4000-8000-000000000001","caseReference":"WEB-V2-001","expectedRevision":"0","command":{"kind":"CLOSE","values":{}},"caseReference":"duplicate"}"""
     ]
-    |> List.iter (fun value -> expectError (HttpInput.draft (bytes value)) "Invalid v2 draft")
+    |> List.iter (fun value -> expectError (HttpInput.draft (bytes value)) "Invalid v3 draft")
 
 let private correctionDraftTests () =
     let correction =
@@ -124,8 +126,11 @@ let private unicodeInputTests () =
         expectError (HttpInput.caseReference (bytes source)) "Unpaired escape is rejected"
 
     expectError
-        (HttpInput.login (bytes """{"credential":"\uD800","antiforgeryToken":"token"}"""))
-        "Credentials cannot contain malformed Unicode"
+        (HttpManagementInput.register (
+            bytes
+                """{"eventId":"40000000-0000-4000-8000-000000000001","principal":{"kind":"HUMAN","issuer":"https://issuer.example/","subject":"\uD800"}}"""
+        ))
+        "Actor subjects cannot contain malformed Unicode"
 
     Expect.equal
         (HttpInput.caseReference (bytes """{"caseReference":"\uD83D\uDE00"}"""))
@@ -146,12 +151,6 @@ let private unicodeInputTests () =
     | Ok _ -> failtest "An unknown synthetic property must be refused."
 
 let private sessionInputTests () =
-    match HttpInput.login (bytes """{"credential":"synthetic","antiforgeryToken":"token"}""") with
-    | Ok input ->
-        Expect.equal input.Credential "synthetic" "Login keeps the submitted credential private"
-        Expect.equal input.AntiforgeryToken "token" "Login body declares the matching token"
-    | Error _ -> failtest "Expected login acceptance."
-
     Expect.isOk (HttpInput.logout (bytes "{}")) "Logout requires the explicit empty object"
     expectError (HttpInput.logout (bytes """{"unexpected":true}""")) "Logout rejects extra data"
 
@@ -214,35 +213,66 @@ let private recoveryAndDraftRefusals () =
 
     expectError (HttpInput.draft (bytes missingValue)) "Required Domain command values are present"
 
-type private BrokenStream() =
+type private FaultingStream(error: exn) =
     inherit MemoryStream()
 
     override _.ReadAsync(_: byte array, _: int, _: int, _: CancellationToken) =
-        Task.FromException<int>(IOException("Synthetic read failure."))
+        Task.FromException<int>(error)
 
 let private transportTests () =
     use accepted = new MemoryStream(bytes "abc")
 
     Expect.equal
-        (HttpInput.readBounded 3 accepted |> Async.AwaitTask |> Async.RunSynchronously)
+        (HttpInput.readBounded 3 accepted |> await)
         (Ok(bytes "abc"))
         "The exact endpoint byte bound is accepted"
 
     use rejected = new MemoryStream(bytes "abcd")
 
     expectError
-        (HttpInput.readBounded 3 rejected |> Async.AwaitTask |> Async.RunSynchronously)
+        (HttpInput.readBounded 3 rejected |> await)
         "Over-limit streaming input is rejected before JSON allocation"
 
-    use broken = new BrokenStream()
+    use broken = new FaultingStream(IOException("Synthetic read failure."))
 
-    expectError
-        (HttpInput.readBounded 8 broken |> Async.AwaitTask |> Async.RunSynchronously)
-        "Read failures have one safe transport classification"
+    Expect.equal
+        (HttpInput.readBounded 8 broken |> await)
+        (Error HttpInputProblem.BodyUnreadable)
+        "I/O failures have one safe transport classification"
+
+    use cancelled = new FaultingStream(OperationCanceledException())
+
+    Expect.equal
+        (HttpInput.readBounded 8 cancelled |> await)
+        (Error HttpInputProblem.BodyCancelled)
+        "Interrupted reads remain distinct from unreadable bodies"
+
+    use oversized = new FaultingStream(BadHttpRequestException("Synthetic 413", 413))
+
+    Expect.equal
+        (HttpInput.readBounded 8 oversized |> await)
+        (Error HttpInputProblem.BodyTooLarge)
+        "The host's streaming 413 maps to the bounded body refusal"
+
+    use otherHttpFailure =
+        new FaultingStream(BadHttpRequestException("Synthetic 400", 400))
+
+    Expect.equal
+        (HttpInput.readBounded 8 otherHttpFailure |> await)
+        (Error HttpInputProblem.BodyUnreadable)
+        "An unrelated host read failure is not mislabeled as body size"
+
+    use empty = new MemoryStream()
+
+    Expect.equal (HttpInput.readBounded 8 empty |> await) (Ok [||]) "An empty body is read exactly"
+
+    Expect.throwsT<ArgumentException>
+        (fun () -> HttpInput.readBounded 0 empty |> await |> ignore)
+        "A nonpositive endpoint limit is a programming error"
 
 let tests =
     testList
-        "Web HTTP-v2 input"
+        "Web HTTP-v3 input"
         [
             testCase "[CC-WEB-001] decodes one semantic command-draft shape" draftTests
             testCase "[CC-WEB-001] keeps endpoint request bodies exact and typed" (fun () ->

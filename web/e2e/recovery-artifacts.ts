@@ -2,25 +2,30 @@ import { readFile, writeFile } from "node:fs/promises";
 
 import { expect, type Download, type Page } from "@playwright/test";
 
-import { isWebV2Response } from "../src/generated/convergence/web-v2.validation";
+import { isWebV3Response } from "../src/generated/convergence/web-v3.validation";
 import type { PreparedIdentity } from "./case-workflow";
 import { expectAccessible, progress } from "./session-helpers";
 
-type Exported = Readonly<{ envelope: Buffer; canonicalRecord: Buffer }>;
+type Exported = Readonly<{ envelope: Buffer }>;
 
-const assertEnvelope = (bytes: Buffer, identity: PreparedIdentity): Buffer => {
+const assertEnvelope = (bytes: Buffer, identity: PreparedIdentity): void => {
   const decoded: unknown = JSON.parse(bytes.toString("utf8"));
   if (typeof decoded !== "object" || decoded === null) throw new Error("Invalid envelope JSON.");
-  if (!("operationId" in decoded) || decoded.operationId !== identity.operationId) {
+  const artifact = decoded as Record<string, unknown>;
+  if (artifact["operationId"] !== identity.operationId) {
     throw new Error("Recovery envelope operation identity mismatch.");
   }
+  const hasEncryptedFields = ["ciphertextBase64", "macSha256"].every(
+    (key) => typeof artifact[key] === "string",
+  );
   if (
-    !("canonicalRequestBase64" in decoded) ||
-    typeof decoded.canonicalRequestBase64 !== "string"
+    artifact["format"] !== "claimcore-recovery-artifact" ||
+    artifact["formatVersion"] !== 3 ||
+    !hasEncryptedFields ||
+    "canonicalRequestBase64" in artifact
   ) {
-    throw new Error("Recovery envelope omitted canonical request bytes.");
+    throw new Error("Recovery envelope is not the encrypted v3 format.");
   }
-  return Buffer.from(decoded.canonicalRequestBase64, "base64");
 };
 
 const downloadBytes = async (download: Download): Promise<Buffer> => {
@@ -55,7 +60,7 @@ const captureDispositionShape = async (
 
 export const exportEnvelope = async (page: Page, identity: PreparedIdentity): Promise<Exported> => {
   let exportCalls = 0;
-  await page.route("**/api/v2/recovery/export", async (route) => {
+  await page.route("**/api/v3/recovery/export", async (route) => {
     exportCalls += 1;
     await route.continue();
   });
@@ -73,7 +78,7 @@ export const exportEnvelope = async (page: Page, identity: PreparedIdentity): Pr
   await exportButton.click();
   await progress("export-reconfirmed");
   const responseEvent = page.waitForResponse(
-    (response) => new URL(response.url()).pathname === "/api/v2/recovery/export",
+    (response) => new URL(response.url()).pathname === "/api/v3/recovery/export",
   );
   const event = page.waitForEvent("download");
   await warning.getByRole("button", { name: "Confirm export" }).click();
@@ -87,42 +92,27 @@ export const exportEnvelope = async (page: Page, identity: PreparedIdentity): Pr
   expect(exportCalls).toBe(1);
   expect(download.suggestedFilename()).toBe(`claimcore-recovery-${identity.operationId}.json`);
   const envelope = await downloadBytes(download);
-  await page.unroute("**/api/v2/recovery/export");
-  return { envelope, canonicalRecord: assertEnvelope(envelope, identity) };
+  await page.unroute("**/api/v3/recovery/export");
+  assertEnvelope(envelope, identity);
+  return { envelope };
 };
 
-export const previewAndRetain = async (
-  page: Page,
-  kind: "envelope" | "record",
-  bytes: Buffer,
-): Promise<void> => {
-  const index = kind === "envelope" ? 0 : 1;
-  const mimeType =
-    kind === "envelope"
-      ? "application/vnd.claimcore.recovery+json"
-      : "application/vnd.claimcore.canonical-command+json";
-  await page
-    .locator('input[type="file"]')
-    .nth(index)
-    .setInputFiles({
-      name: kind === "envelope" ? "synthetic-recovery.json" : "synthetic-record.json",
-      mimeType,
-      buffer: bytes,
-    });
+export const previewAndRetain = async (page: Page, bytes: Buffer): Promise<void> => {
+  await page.locator('input[type="file"]').nth(0).setInputFiles({
+    name: "synthetic-recovery.json",
+    mimeType: "application/vnd.claimcore.recovery+json",
+    buffer: bytes,
+  });
   const dialog = page.getByRole("dialog", { name: "Retain imported recovery material?" });
   await expect(dialog).toContainText("never submitted automatically");
   await expectAccessible(page);
-  const path =
-    kind === "envelope"
-      ? "/api/v2/recovery/import-envelope/retain"
-      : "/api/v2/recovery/import-record/retain";
+  const path = "/api/v3/recovery/import-envelope/retain";
   const responseEvent = page.waitForResponse((response) => response.url().endsWith(path));
   await dialog.getByRole("button", { name: "Retain for Recovery" }).click();
   const response = await responseEvent;
   const payload: unknown = await response.json();
-  const endpoint =
-    kind === "envelope" ? "recovery.importEnvelopeRetain" : "recovery.importRecordRetain";
-  if (!(await isWebV2Response(endpoint, payload))) {
+  const endpoint = "recovery.importEnvelopeRetain";
+  if (!(await isWebV3Response(endpoint, payload))) {
     throw new Error("Invalid import-retain response.");
   }
   expect(["RETAINED", "EXISTING"]).toContain((payload as { outcome: { tag: string } }).outcome.tag);

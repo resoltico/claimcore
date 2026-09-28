@@ -9,7 +9,7 @@ type CliProcessProblem =
     | UnsupportedInvocation
     | InputReadFailed
     | DispatchFailed
-    | RuntimeAcquireFailed
+    | ServiceAcquireFailed
     | SerializationFailed
     | OutputWriteFailed
     | UnexpectedFailure
@@ -18,7 +18,7 @@ type CliProcessProblem =
 type CliDeliveryPhase =
     | Idle
     | Reading
-    | AcquiringRuntime
+    | AcquiringService
     | ResultObserved
     | Dispatching
     | ResultAvailable of exitCode: int
@@ -46,9 +46,9 @@ module CliProcessDiagnostics =
 
     let private additional =
         [
-            CliProcessProblem.RuntimeAcquireFailed,
-            ("CLI_RUNTIME_ACQUIRE_FAILED",
-             "The runtime supplier failed before this frame was dispatched.")
+            CliProcessProblem.ServiceAcquireFailed,
+            ("CLI_SERVICE_ACQUIRE_FAILED",
+             "The authenticated service client failed before this frame was dispatched.")
             CliProcessProblem.SerializationFailed,
             ("CLI_RESULT_ENCODING_FAILED",
              "A typed result was observed but could not be encoded. Preserve the exact operation identity; no retry has been attempted.")
@@ -63,7 +63,7 @@ module CliProcessDiagnostics =
         function
         | CliDeliveryPhase.Idle -> "IDLE"
         | CliDeliveryPhase.Reading -> "READING"
-        | CliDeliveryPhase.AcquiringRuntime -> "ACQUIRING_RUNTIME"
+        | CliDeliveryPhase.AcquiringService -> "ACQUIRING_SERVICE"
         | CliDeliveryPhase.ResultObserved -> "RESULT_OBSERVED"
         | CliDeliveryPhase.Dispatching -> "DISPATCH_UNCONFIRMED"
         | CliDeliveryPhase.ResultAvailable _ -> "RESULT_AVAILABLE"

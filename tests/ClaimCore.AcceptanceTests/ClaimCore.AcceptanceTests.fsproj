@@ -7,16 +7,14 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../RepositoryRoot.fs" Link="RepositoryRoot.fs" />
-    <Compile Include="Configuration.fs" />
     <Compile Include="PublishManifest.fs" />
+    <Compile Include="Configuration.fs" />
     <Compile Include="ProcessRunner.fs" />
-    <Compile Include="DatabaseFixture.fs" />
-    <Compile Include="CliV3Fixtures.fs" />
-    <Compile Include="BoundaryTests.fs" />
-    <Compile Include="EndpointModeParityTests.fs" />
-    <Compile Include="PrivateFileTests.fs" />
-    <Compile Include="PublishedExampleWalkthrough.fs" />
-    <Compile Include="LifecycleTests.fs" />
+    <Compile Include="RemoteFixture.fs" />
+    <Compile Include="RemoteAuthAcceptance.fs" />
+    <Compile Include="RemoteProtocolWalkthroughTests.fs" />
+    <Compile Include="RemoteProtocolBoundaryTests.fs" />
+    <Compile Include="RemoteAcceptanceTests.fs" />
     <Compile Include="Suite.fs" />
   </ItemGroup>
   <ItemGroup>
@@ -24,8 +22,6 @@
     <PackageReference Include="coverlet.MTP" PrivateAssets="all" />
     <PackageReference Include="Expecto" />
     <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" PrivateAssets="all" />
-    <PackageReference Include="Npgsql" />
-    <PackageReference Include="Testcontainers.PostgreSql" />
     <PackageReference Include="YoloDev.Expecto.TestSdk" PrivateAssets="all" />
   </ItemGroup>
 </Project>

@@ -50,6 +50,17 @@ module PrivateFileService =
                 CryptographicOperations.ZeroMemory(Span<byte>(bytes))
                 Error PrivateFileFailure.InvalidUtf8
 
+    /// Hashes a private regular file through a nofollow handle without retaining its contents.
+    let hashPrivateFile maximum path =
+        if not (supported ()) then
+            Error PrivateFileFailure.UnsupportedPlatform
+        elif maximum < 1L then
+            Error PrivateFileFailure.InvalidLimit
+        else
+            match safeCall (fun () -> PosixPrivateFiles.hash maximum path) with
+            | Error error -> Error error
+            | Ok outcome -> outcome
+
     let readUtf8Text maximum path =
         match readUtf8Bytes maximum path with
         | Error error -> Error error
@@ -76,6 +87,12 @@ module PrivateFileService =
             Error PrivateFileFailure.UnsupportedPlatform
         else
             safeCall (fun () -> PosixPrivateFiles.ensureDirectory path)
+
+    let requirePrivateDirectory path =
+        if not (supported ()) then
+            Error PrivateFileFailure.UnsupportedPlatform
+        else
+            safeCall (fun () -> PosixPrivateFiles.requirePrivateDirectory path)
 
     let openExclusive path =
         if not (supported ()) then

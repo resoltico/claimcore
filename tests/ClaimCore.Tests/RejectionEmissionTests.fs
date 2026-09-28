@@ -2,6 +2,7 @@ module ClaimCore.Tests.RejectionEmissionTests
 
 open System
 open System.Text
+open System.Text.Json
 open System.Threading
 open System.Threading.Tasks
 open Expecto
@@ -26,7 +27,7 @@ let private create () =
     let store = new CoreStore.Store()
     let recovery = new CoreRecoveryStore.Store()
     recovery.AttachClaimStore(store :> IClaimStore)
-    CoreApi.create (store :> IClaimStore) (recovery :> IRecoveryStore) (businessTime today)
+    ActorCoreFixture.create (store :> IClaimStore) (recovery :> IRecoveryStore) (businessTime today)
 
 let private queryRejection outcome =
     match outcome with
@@ -90,7 +91,8 @@ let private privacy () =
             None
         |> rejected
 
-    let wire = CliWireCodec.caseGet "case.get" (QueryOutcome.Rejected result)
+    use service = JsonDocument.Parse(WebWireCodec.get (QueryOutcome.Rejected result))
+    let wire = CliRemoteWireCodec.result "case.get" service.RootElement
 
     Expect.isFalse
         (Encoding.UTF8.GetString(wire.Bytes).Contains(secret.Trim()))
@@ -139,7 +141,7 @@ let private queryReasons () =
     let core = create ()
 
     let limit =
-        core.List({ AfterReference = None; Limit = 0 }, CancellationToken.None)
+        core.List({ AfterCursor = None; Limit = 0 }, CancellationToken.None)
         |> wait
         |> queryRejection
 

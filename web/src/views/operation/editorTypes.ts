@@ -1,6 +1,12 @@
 import type { Dispatch, SetStateAction } from "react";
-import type { CurrentCase, DefinitionPayload, PreparationDetails, Receipt } from "../../api/v2";
-import type { CommandDescriptor, CorrectionGroupDescriptor, FieldDescriptor } from "../../api/v2";
+import type {
+  CommandDraft,
+  CurrentCase,
+  DefinitionPayload,
+  PreparationDetails,
+  Receipt,
+} from "../../api/v3";
+import type { CommandDescriptor, CorrectionGroupDescriptor, FieldDescriptor } from "../../api/v3";
 import type { OperationAction, OperationState } from "../../domain/operationReducer";
 import type { CommandKind } from "../../domain/metadata";
 
@@ -52,6 +58,7 @@ export type OperationEditorModel = EditorState & EditorMetadata & EditorActions;
 
 export type SubmissionRequest = {
   preparation: PreparationDetails | null;
+  draft: CommandDraft | null;
   token: string;
   dispatch: Dispatch<OperationAction>;
 };

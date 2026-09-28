@@ -11,17 +11,21 @@ type internal PreparedOperation =
         {
             RequestValue: CommandRequest
             FingerprintValue: string
+            CanonicalRequestValue: byte array
         }
 
 module internal Operation =
     let prepare request =
         Claim.validateRequest request
         |> Result.map (fun () ->
+            let canonicalRequest = RequestRecord.encode request
+
             {
                 RequestValue = request
-                FingerprintValue =
-                    request |> RequestRecord.encode |> SHA256.HashData |> Convert.ToHexStringLower
+                CanonicalRequestValue = canonicalRequest
+                FingerprintValue = canonicalRequest |> SHA256.HashData |> Convert.ToHexStringLower
             })
 
     let request operation = operation.RequestValue
     let fingerprint operation = operation.FingerprintValue
+    let canonicalRequest operation = operation.CanonicalRequestValue

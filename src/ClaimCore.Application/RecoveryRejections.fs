@@ -12,6 +12,7 @@ type RecoveryRejectionCode =
     | UnsupportedRecoveryArtifact
     | OperationRevoked
     | AttemptLimitReached
+    | ResourceUnavailable
 
 /// Closed, language-independent reason. Display text belongs to Contracts.
 [<RequireQualifiedAccess>]
@@ -33,9 +34,9 @@ type RecoveryRejection =
     | RequestDigestMismatch
     | InstallationMismatch
     | EnvelopeInvalidOrUnsupported
-    | CanonicalRecordInvalidOrUnsupported
     | OperationRevoked
     | AttemptLimitReached
+    | ResourceUnavailable
 
 /// One reviewed policy table owns identity and guidance together; presentation is external.
 module RecoveryRejections =
@@ -117,10 +118,6 @@ module RecoveryRejections =
             "RECOVERY_ENVELOPE_INVALID_OR_UNSUPPORTED",
             RecoveryRejectionCode.UnsupportedRecoveryArtifact,
             RecommendedAction.CorrectInput
-            RecoveryRejection.CanonicalRecordInvalidOrUnsupported,
-            "RECOVERY_CANONICAL_RECORD_INVALID_OR_UNSUPPORTED",
-            RecoveryRejectionCode.UnsupportedRecoveryArtifact,
-            RecommendedAction.CorrectInput
         ]
 
     let private policy3 =
@@ -133,6 +130,10 @@ module RecoveryRejections =
             "RECOVERY_ATTEMPT_LIMIT_REACHED",
             RecoveryRejectionCode.AttemptLimitReached,
             RecommendedAction.ReadCurrent
+            RecoveryRejection.ResourceUnavailable,
+            "RESOURCE_UNAVAILABLE",
+            RecoveryRejectionCode.ResourceUnavailable,
+            RecommendedAction.NoneRequired
         ]
 
     let private policies = policy0 @ policy1 @ policy2 @ policy3

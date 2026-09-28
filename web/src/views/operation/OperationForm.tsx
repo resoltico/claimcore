@@ -3,7 +3,7 @@ import { usePresentation } from "../../presentation/context";
 import { Button } from "react-aria-components/Button";
 import { Form } from "react-aria-components/Form";
 import type { RefObject } from "react";
-import type { CurrentCase, DefinitionPayload } from "../../api/v2";
+import type { CurrentCase, DefinitionPayload } from "../../api/v3";
 import { DescriptorField } from "../../components/DescriptorField";
 import { isCorrectionValues, type CorrectionGroupName } from "../../domain/metadata";
 import type { OperationEditorModel } from "./editorTypes";

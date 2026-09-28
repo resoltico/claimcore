@@ -33,9 +33,9 @@ type ProtocolProblem =
     | SourceLimit
     | SourceEncoding
     | SourcePlatform
-    | ConnectionMissing
-    | ConnectionAccess
-    | ConnectionEmpty
+    | ServiceConfigurationMissing
+    | ServiceConfigurationInvalid
+    | ServiceApiUnavailable
     | UnsupportedInvocation
 
 /// Closed protocol vocabulary. No submitted text or provider detail is retained.
@@ -150,24 +150,26 @@ module ProtocolProblems =
             ("CLI_SOURCE_PLATFORM",
              "PRIVATE_FILE_ERROR",
              "Private source access is unsupported on this platform.")
-            ProtocolProblem.ConnectionMissing,
-            ("CLI_CONNECTION_MISSING",
+            ProtocolProblem.ServiceConfigurationMissing,
+            ("CLI_SERVICE_CONFIGURATION_MISSING",
              "CONFIGURATION_ERROR",
-             "Set CLAIMCORE_CONNECTION_FILE to a private application connection file.")
+             "Configure the authenticated HTTPS service and OIDC client before case work.")
         ]
 
     let private group4 =
         [
-            ProtocolProblem.ConnectionAccess,
-            ("CLI_CONNECTION_ACCESS",
+            ProtocolProblem.ServiceConfigurationInvalid,
+            ("CLI_SERVICE_CONFIGURATION_INVALID",
              "CONFIGURATION_ERROR",
-             "The connection file must be an owner-only regular UTF-8 file at a safe absolute path.")
-            ProtocolProblem.ConnectionEmpty,
-            ("CLI_CONNECTION_EMPTY", "CONFIGURATION_ERROR", "The connection file is empty.")
+             "The HTTPS service or OIDC client configuration is invalid.")
+            ProtocolProblem.ServiceApiUnavailable,
+            ("CLI_SERVICE_API_UNAVAILABLE",
+             "CONFIGURATION_ERROR",
+             "This build does not yet contain the authenticated service API client.")
             ProtocolProblem.UnsupportedInvocation,
             ("CLI_UNSUPPORTED_INVOCATION",
              "UNSUPPORTED_INVOCATION",
-             "Unsupported invocation. Run 'claimcore help' for the CLI v3 grammar.")
+             "Unsupported invocation. Run 'claimcore help' for the CLI v4 grammar.")
         ]
 
     let private entries = group0 @ group1 @ group2 @ group3 @ group4

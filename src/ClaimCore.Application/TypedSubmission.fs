@@ -83,11 +83,14 @@ module internal TypedSubmission =
         (store: IClaimStore)
         (recovery: IRecoveryStore)
         (clock: IBusinessTime)
+        (authority: CommandAuthority)
         (request: CommandRequest)
         (cancellationToken: CancellationToken)
         : Task<SubmissionOutcome> =
         task {
-            match! TypedPreparation.prepare store recovery clock request cancellationToken with
+            match!
+                TypedPreparation.prepare store recovery clock authority request cancellationToken
+            with
             | PrepareOutcome.Prepared(details, _) ->
                 // The authoritative digest, not the summary's: a recovery view may withhold that
                 // one, and resolving under a substituted value would bind the wrong preparation.
@@ -171,6 +174,11 @@ module internal TypedSubmission =
         =
         task {
             match! recovery.Get(request.OperationId, cancellationToken) with
+            | Error RecoveryStoreFailure.ResourceUnavailable ->
+                return
+                    Some(
+                        SubmissionOutcome.RejectedBeforeAttempt(None, Rejection.ResourceUnavailable)
+                    )
             | Error _ -> return None
             | Ok stored ->
                 match retainedRetryDisposition canonical digest stored with
@@ -190,6 +198,23 @@ module internal TypedSubmission =
                     return Some(resolvedOutcome knownPreparation result)
         }
 
+    let private acceptedRetryResult =
+        function
+        | Ok(Some receipt) ->
+            Some(SubmissionOutcome.ObservedAccepted(TypedProjection.receipt receipt))
+        | Error CoreFailure.IdempotencyConflict ->
+            Some(
+                SubmissionOutcome.RejectedBeforeAttempt(
+                    None,
+                    AcceptedObservation.idempotencyConflict
+                )
+            )
+        | Error CoreFailure.ResourceUnavailable ->
+            Some(SubmissionOutcome.RejectedBeforeAttempt(None, Rejection.ResourceUnavailable))
+        | Error failure ->
+            Some(SubmissionOutcome.FailedBeforeAttempt(None, TypedProjection.coreFault failure))
+        | Ok None -> None
+
     let private retryOutcome
         (store: IClaimStore)
         (recovery: IRecoveryStore)
@@ -204,26 +229,11 @@ module internal TypedSubmission =
                 let canonical = RequestRecord.encode request
                 let digest = canonical |> SHA256.HashData |> System.Convert.ToHexStringLower
 
-                match! store.Accepted(request.OperationId, digest) with
-                | Ok(Some receipt) ->
-                    return Some(SubmissionOutcome.ObservedAccepted(TypedProjection.receipt receipt))
-                | Error CoreFailure.IdempotencyConflict ->
-                    return
-                        Some(
-                            SubmissionOutcome.RejectedBeforeAttempt(
-                                None,
-                                AcceptedObservation.idempotencyConflict
-                            )
-                        )
-                | Error failure ->
-                    return
-                        Some(
-                            SubmissionOutcome.FailedBeforeAttempt(
-                                None,
-                                TypedProjection.coreFault failure
-                            )
-                        )
-                | Ok None ->
+                let! accepted = store.Accepted(request.OperationId, digest)
+
+                match acceptedRetryResult accepted with
+                | Some outcome -> return Some outcome
+                | None ->
                     return!
                         retainedRetry
                             store
@@ -239,14 +249,17 @@ module internal TypedSubmission =
         (store: IClaimStore)
         (recovery: IRecoveryStore)
         (clock: IBusinessTime)
+        (authority: CommandAuthority)
         (request: CommandRequest)
         (cancellationToken: CancellationToken)
         : Task<SubmissionOutcome> =
         task {
             if cancellationToken.IsCancellationRequested then
-                return! completePrepared store recovery clock request cancellationToken
+                return! completePrepared store recovery clock authority request cancellationToken
             else
                 match! retryOutcome store recovery clock request cancellationToken with
                 | Some outcome -> return outcome
-                | None -> return! completePrepared store recovery clock request cancellationToken
+                | None ->
+                    return!
+                        completePrepared store recovery clock authority request cancellationToken
         }

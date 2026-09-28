@@ -48,6 +48,8 @@ jobs:
           dotnet restore ClaimCore.slnx --locked-mode
           dotnet tool restore
           dotnet build ClaimCore.slnx --configuration Release --no-restore
+      - name: Verify native publish item ownership
+        run: bash eng/Test-HostSecurityNativePublishItems.sh
       - name: Publish and describe all three applications
         shell: bash
         run: |

@@ -86,10 +86,15 @@ let testConfiguration assets loginPermits =
     {
         Origin = origin
         ConnectionString = "synthetic-not-opened"
+        WitnessConnectionString = "synthetic-not-opened"
+        WitnessKeyRingPath = "synthetic-not-opened"
+        SuppressionKeyPath = "synthetic-not-opened"
+        RecoveryArtifactKeyPath = "synthetic-not-opened"
         StateDirectory = assets
         Certificate = certificate ()
         SessionIdle = TimeSpan.FromMinutes(30.)
         SessionAbsolute = TimeSpan.FromHours(8.)
+        Oidc = None
         Admission =
             {
                 MaximumJsonBytes = 65536

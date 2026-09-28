@@ -123,7 +123,7 @@ let private deterministic subject =
 /// than by a project edge. The selector is anchored to the `Program` module the author declared,
 /// and the positive assertion keeps the rule from passing merely because composition moved out of
 /// the selector's reach.
-/// Contracts owns every CLI-v3 and Web-v2 codec, including the database-free discovery payloads.
+/// Contracts owns every CLI-v3 and Web-v3 codec, including the database-free discovery payloads.
 /// A renderer that authored wire JSON itself would fork the generated contract without its schema,
 /// corpus, or fingerprint noticing, so no wire-contract renderer may reach a JSON writer at all.
 /// `Database` is deliberately outside this set: it publishes no wire contract and references no

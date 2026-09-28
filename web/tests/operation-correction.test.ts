@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 import { commandInputs, createDraft, prefilledValues } from "../src/domain/metadata";
-import { definition } from "./v2-foundation.fixtures";
+import { definition } from "./v3-foundation.fixtures";
 
 const operationId = "00000000-0000-4000-8000-000000000001";
 

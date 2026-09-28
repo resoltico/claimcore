@@ -20,15 +20,32 @@ type WebAdmissionLimits =
     }
 
 [<NoEquality; NoComparison>]
+type OidcConfiguration =
+    {
+        Issuer: Uri
+        TrustRoot: X509Certificate2 option
+        ClientId: string
+        ClientSecret: string
+        ApiAudience: string
+        ServiceClientId: string
+        CliClientId: string
+    }
+
+[<NoEquality; NoComparison>]
 type WebConfiguration =
     {
         Origin: Uri
         ConnectionString: string
+        WitnessConnectionString: string
+        WitnessKeyRingPath: string
+        SuppressionKeyPath: string
+        RecoveryArtifactKeyPath: string
         StateDirectory: string
         Certificate: X509Certificate2
         SessionIdle: TimeSpan
         SessionAbsolute: TimeSpan
         Admission: WebAdmissionLimits
+        Oidc: OidcConfiguration option
     }
 
 module Configuration =
@@ -156,18 +173,67 @@ module Configuration =
 
         loaded
 
-    let private connectionString () =
-        let path = required WebSetting.ConnectionFile
+    let private privateConnection setting refused empty =
+        let path = required setting
 
         let value =
             match PrivateFileService.readUtf8Text 8192 path with
             | Ok text -> text.Trim()
-            | Error _ -> WebStartupDiagnostics.refuse WebStartupProblem.ConnectionFileRefused
+            | Error _ -> WebStartupDiagnostics.refuse refused
 
         if String.IsNullOrWhiteSpace(value) then
-            WebStartupDiagnostics.refuse WebStartupProblem.ConnectionFileEmpty
+            WebStartupDiagnostics.refuse empty
 
         value
+
+    let private oidc () =
+        match environment "CLAIMCORE_OIDC_ISSUER" with
+        | None -> None
+        | Some source ->
+            let invalid () =
+                WebStartupDiagnostics.refuse WebStartupProblem.OidcConfigurationInvalid
+
+            let issuer =
+                match OidcAuthority.parse source with
+                | Ok value -> value
+                | Error _ -> invalid ()
+
+            let trustRoot =
+                match environment "CLAIMCORE_OIDC_CA_CERT_FILE" with
+                | None -> None
+                | Some path when issuer.IsLoopback -> Some(OidcTrustRoot.load path)
+                | Some _ -> invalid ()
+
+            let requiredName name =
+                match environment name with
+                | Some value when value.Length <= 256 -> value
+                | _ -> invalid ()
+
+            let secretPath = requiredName "CLAIMCORE_OIDC_CLIENT_SECRET_FILE"
+
+            let clientSecret =
+                match PrivateFileService.readUtf8Text 8192 secretPath with
+                | Ok value when not (String.IsNullOrWhiteSpace value) -> value.Trim()
+                | _ -> invalid ()
+
+            let clientId = requiredName "CLAIMCORE_OIDC_CLIENT_ID"
+            let audience = requiredName "CLAIMCORE_OIDC_API_AUDIENCE"
+            let serviceClient = requiredName "CLAIMCORE_OIDC_SERVICE_CLIENT_ID"
+            let cliClient = requiredName "CLAIMCORE_OIDC_CLI_CLIENT_ID"
+
+            if [ clientId; audience; serviceClient; cliClient ] |> Set.ofList |> Set.count <> 4 then
+                invalid ()
+
+            Some
+                {
+                    Issuer = issuer
+                    TrustRoot = trustRoot
+                    ClientId = clientId
+                    ClientSecret = clientSecret
+                    ApiAudience = audience
+                    ServiceClientId = serviceClient
+                    CliClientId = cliClient
+                }
 
     let load () =
         let sessionIdle = minutes WebSetting.SessionIdle 30 30
@@ -177,18 +243,54 @@ module Configuration =
             WebStartupDiagnostics.refuse WebStartupProblem.SessionLifetimeInvalid
 
         let configuredOrigin = origin ()
-        let configuredConnection = connectionString ()
+
+        let configuredConnection =
+            privateConnection
+                WebSetting.ConnectionFile
+                WebStartupProblem.ConnectionFileRefused
+                WebStartupProblem.ConnectionFileEmpty
+
+        let configuredWitnessConnection =
+            privateConnection
+                WebSetting.WitnessConnectionFile
+                WebStartupProblem.WitnessConnectionFileRefused
+                WebStartupProblem.WitnessConnectionFileEmpty
+
         let configuredState = stateDirectory ()
         let configuredAdmission = admission ()
-        // Load the private key only after every other fallible setting has been validated.
+        let configuredOidc = oidc ()
+
+        let configuredWitnessKeyPath =
+            WebPrivateKeyPaths.requireAbsolute
+                required
+                WebSetting.WitnessKeyFile
+                WebStartupProblem.WitnessKeyFileRefused
+
+        let configuredSuppressionKeyPath =
+            WebPrivateKeyPaths.requireAbsolute
+                required
+                WebSetting.SuppressionKeyFile
+                WebStartupProblem.SuppressionKeyFileRefused
+
+        let configuredArtifactKeyPath =
+            WebPrivateKeyPaths.requireAbsolute
+                required
+                WebSetting.RecoveryArtifactKeyFile
+                WebStartupProblem.RecoveryArtifactKeyFileRefused
+        // The Hosting key custodian opens and validates the private key-ring file.
         let configuredCertificate = certificate ()
 
         {
             Origin = configuredOrigin
             ConnectionString = configuredConnection
+            WitnessConnectionString = configuredWitnessConnection
+            WitnessKeyRingPath = configuredWitnessKeyPath
+            SuppressionKeyPath = configuredSuppressionKeyPath
+            RecoveryArtifactKeyPath = configuredArtifactKeyPath
             StateDirectory = configuredState
             Certificate = configuredCertificate
             SessionIdle = sessionIdle
             SessionAbsolute = sessionAbsolute
             Admission = configuredAdmission
+            Oidc = configuredOidc
         }

@@ -18,5 +18,7 @@ module internal Service =
                 operation,
                 fun current ->
                     let context = clock.Capture()
+
                     Claim.decide context.EffectiveBusinessDate request current
+                    |> Result.map (fun claim -> claim, context)
             )

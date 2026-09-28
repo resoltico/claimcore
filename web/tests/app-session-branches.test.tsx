@@ -9,7 +9,7 @@ vi.mock("../src/hooks/useSession", () => ({ useSession }));
 
 import { App } from "../src/App";
 
-const actions = () => ({ login: vi.fn(), logout: vi.fn(), refresh: vi.fn() });
+const actions = () => ({ logout: vi.fn(), refresh: vi.fn() });
 
 it("renders the loading shell before local session discovery completes", () => {
   useSession.mockReturnValue({ state: { kind: "loading", epoch: 0 }, ...actions() });
@@ -30,12 +30,13 @@ it("renders a recoverable session failure and invokes its refresh action", async
   expect(state.refresh).toHaveBeenCalledOnce();
 });
 
-it("renders a login form with disabled submission until anonymous antiforgery is available", () => {
+it("renders an OIDC sign-in link without collecting a credential", () => {
   useSession.mockReturnValue({
     state: { kind: "anonymous", token: null, message: null, epoch: 2 },
     ...actions(),
   });
   render(<App />);
   expect(screen.getByRole("heading", { name: "ClaimCore" })).toBeVisible();
-  expect(screen.getByRole("button", { name: "Sign in" })).toBeDisabled();
+  expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/auth/login");
+  expect(screen.queryByLabelText("Bootstrap credential")).toBeNull();
 });

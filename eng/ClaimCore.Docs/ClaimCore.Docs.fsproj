@@ -47,6 +47,8 @@
     <Compile Include="ConvergenceRequiredSubjects.fs" />
     <Compile Include="ConvergenceAssurance.fs" />
     <Compile Include="StructuredReports.fs" />
+    <Compile Include="LocalFrontendReports.fs" />
+    <Compile Include="LocalTestReports.fs" />
     <Compile Include="EvidenceCommands.fs" />
     <Compile Include="Commands.fs" />
     <Compile Include="Program.fs" />

@@ -52,11 +52,13 @@ let private dependencyTests =
                     [ "ClaimCore.Postgres"; "ClaimCore.Cli"; "Npgsql"; "Microsoft.AspNetCore.App" ])
             testCase "the CLI protocol cannot reach storage or composition" (fun () ->
                 Expect.isTrue
-                    (Set.contains "ClaimCore.Application" (references typeof<Endpoint>.Assembly))
-                    "The protocol layer renders outcomes of the typed core"
+                    (Set.contains
+                        "ClaimCore.Contracts"
+                        (references typeof<RemoteAccessSession>.Assembly))
+                    "The protocol layer consumes the generated service contract"
 
                 expectAbsent
-                    typeof<Endpoint>.Assembly
+                    typeof<RemoteAccessSession>.Assembly
                     [ "ClaimCore.Hosting"; "ClaimCore.Postgres"; "Npgsql" ])
         ]
 
@@ -78,19 +80,21 @@ let private transportCodecsAreSingular () =
         (webSource.Contains("Results.Json", StringComparison.Ordinal))
         "No adapter JSON codec"
 
-    let dispatch = File.ReadAllText(Path.Combine(cli, "EndpointDispatch.fs"))
+    let dispatch = File.ReadAllText(Path.Combine(cli, "RemoteServiceCall.fs"))
 
     Expect.stringContains
         dispatch
-        "EndpointReply"
-        "Dispatch retains typed outcomes before presentation"
+        "SchemaValueValidation.verify"
+        "Remote service responses are checked against generated schemas"
 
     Expect.isFalse
         (dispatch.Contains("CliWireCodec", StringComparison.Ordinal))
-        "Dispatch does not encode before recording its result"
+        "Remote dispatch does not use the removed native CLI codec"
 
-    let replies = File.ReadAllText(Path.Combine(cli, "EndpointReply.fs"))
-    Expect.stringContains replies "CliWireCodec" "The reply encoder delegates to Contracts"
+    let replies =
+        File.ReadAllText(Path.Combine(root, "src/ClaimCore.Contracts/CliRemoteWireCodec.fs"))
+
+    Expect.stringContains replies "Utf8JsonWriter" "Contracts owns the v4 reply encoder"
 
     Expect.isFalse
         (replies.Contains("JsonSerializer", StringComparison.Ordinal))

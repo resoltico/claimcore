@@ -4,7 +4,7 @@ open System.Buffers
 open System.Text.Json
 open ClaimCore.Application
 
-/// Pure deterministic HTTP-v2 JSON codec. Web supplies status/content type and never constructs
+/// Pure deterministic HTTP-v3 JSON codec. Web supplies status/content type and never constructs
 /// response objects independently from these bytes.
 [<RequireQualifiedAccess>]
 module WebWireCodec =
@@ -71,6 +71,9 @@ module WebWireCodec =
     let prepare value =
         result "command.prepare" (fun writer -> WebWireMutations.prepare writer value)
 
+    let submit value =
+        result "command.execute" (fun writer -> WebWireSubmission.write writer value)
+
     let resolve endpoint value =
         result endpoint (fun writer -> WebWireMutations.resolve writer value)
 
@@ -91,3 +94,42 @@ module WebWireCodec =
 
     let importRetain endpoint value =
         result endpoint (fun writer -> WebWireMutations.importRetain writer value)
+
+    let management endpoint value =
+        result endpoint (fun writer -> WebWireManagement.write writer value)
+
+    let signerApproval value =
+        result "authority.approveCopySigner" (fun writer ->
+            WebWireSignerApproval.write writer value)
+
+    let copyDeletionApproval value =
+        result "authority.approveCopyDeletion" (fun writer ->
+            WebWireCopyDeletionApproval.write writer value)
+
+    let copyAdoptionApproval value =
+        result "authority.approveCopyAdoption" (fun writer ->
+            WebWireCopyAdoptionApproval.write writer value)
+
+    let writerHandoffApproval value =
+        result "authority.approveWriterHandoff" (fun writer ->
+            WebWireWriterHandoffApproval.write writer value)
+
+    let realDataActivationReview value =
+        result "authority.reviewRealDataActivation" (fun writer ->
+            WebWireRealDataActivation.review writer value)
+
+    let realDataActivationApproval value =
+        result "authority.approveRealDataActivation" (fun writer ->
+            WebWireRealDataActivation.approval writer value)
+
+    let lifecycleReview value =
+        result "lifecycle.review" (fun writer -> WebWireLifecycle.review writer value)
+
+    let lifecycleWrite endpoint value =
+        result endpoint (fun writer -> WebWireLifecycle.write writer value)
+
+    let tombstoneReview value =
+        result "tombstone.review" (fun writer -> WebWireTombstone.review writer value)
+
+    let tombstoneWrite endpoint value =
+        result endpoint (fun writer -> WebWireTombstone.write writer value)

@@ -8,7 +8,7 @@ import type {
   CorrectionGroupDescriptor,
   FieldDescriptor,
   SemanticDefinition,
-} from "../api/v2";
+} from "../api/v3";
 
 type FlatDraftValues = Record<string, string>;
 export type CorrectionGroupName = "registration" | "decision" | "payment";

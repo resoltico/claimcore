@@ -28,7 +28,10 @@ let private expectedBusinessColumns =
 let private actualBusinessColumns (connection: NpgsqlConnection) =
     use command =
         new NpgsqlCommand(
-            "SELECT column_name, data_type, is_nullable FROM information_schema.columns WHERE table_schema = 'claimcore' AND table_name = 'cases' AND column_name <> 'revision' ORDER BY ordinal_position",
+            "SELECT column_name, data_type, is_nullable FROM information_schema.columns "
+            + "WHERE table_schema = 'claimcore' AND table_name = 'cases' "
+            + "AND column_name NOT IN ('revision','case_id','disposition','privacy_phase',"
+            + "'lifecycle_sequence','lifecycle_event_hash') ORDER BY ordinal_position",
             connection
         )
 
@@ -53,6 +56,55 @@ let private revisionColumn (connection: NpgsqlConnection) =
     else
         None
 
+let private caseIdColumn (connection: NpgsqlConnection) =
+    use command =
+        new NpgsqlCommand(
+            "SELECT data_type, is_nullable FROM information_schema.columns WHERE table_schema = 'claimcore' AND table_name = 'cases' AND column_name = 'case_id'",
+            connection
+        )
+
+    use reader = command.ExecuteReader()
+
+    if reader.Read() then
+        Some(reader.GetString(0), reader.GetString(1))
+    else
+        None
+
+let private lifecycleColumns (connection: NpgsqlConnection) =
+    use command =
+        new NpgsqlCommand(
+            "SELECT column_name,data_type,is_nullable FROM information_schema.columns "
+            + "WHERE table_schema='claimcore' AND table_name='cases' "
+            + "AND column_name IN ('disposition','privacy_phase','lifecycle_sequence',"
+            + "'lifecycle_event_hash') ORDER BY ordinal_position",
+            connection
+        )
+
+    use reader = command.ExecuteReader()
+
+    [
+        while reader.Read() do
+            reader.GetString(0), reader.GetString(1), reader.GetString(2)
+    ]
+
+let private lifecycleConstraints (connection: NpgsqlConnection) =
+    use command =
+        new NpgsqlCommand(
+            "SELECT conname,contype::text,convalidated,conenforced FROM pg_catalog.pg_constraint "
+            + "WHERE conrelid='claimcore.cases'::regclass AND conname IN ("
+            + "'cases_disposition_check','cases_privacy_phase_check',"
+            + "'cases_lifecycle_sequence_check','cases_lifecycle_event_hash_check') "
+            + "ORDER BY conname",
+            connection
+        )
+
+    use reader = command.ExecuteReader()
+
+    [
+        while reader.Read() do
+            reader.GetString(0), reader.GetString(1), reader.GetBoolean(2), reader.GetBoolean(3)
+    ]
+
 let private verifyCurrentSchema () =
     use connection = new NpgsqlConnection(appConnection ())
     connection.Open()
@@ -64,6 +116,27 @@ let private verifyCurrentSchema () =
         "Real PostgreSQL business columns"
 
     Expect.equal (revisionColumn connection) (Some("bigint", "NO")) "Atomic revision metadata"
+    Expect.equal (caseIdColumn connection) (Some("uuid", "NO")) "Opaque case identity metadata"
+
+    Expect.equal
+        (lifecycleColumns connection)
+        [
+            "disposition", "text", "NO"
+            "privacy_phase", "text", "NO"
+            "lifecycle_sequence", "bigint", "NO"
+            "lifecycle_event_hash", "bytea", "NO"
+        ]
+        "Lifecycle authority remains technical metadata outside the thirteen business fields"
+
+    Expect.equal
+        (lifecycleConstraints connection)
+        [
+            "cases_disposition_check", "c", true, true
+            "cases_lifecycle_event_hash_check", "c", true, true
+            "cases_lifecycle_sequence_check", "c", true, true
+            "cases_privacy_phase_check", "c", true, true
+        ]
+        "Every lifecycle shape constraint is validated and enforced"
 
 let private expectedFields reference : CaseFields =
     {
@@ -170,7 +243,7 @@ let private persistenceTests =
                 "all fields survive decision, payment and closure without currency coercion"
                 verifyLifecycle
             testCase "baseline marker exactly matches the embedded baseline identity" (fun () ->
-                SchemaBaseline.initialize (adminConnection ()) "Etc/UTC"
+                SchemaBaseline.initialize (adminConnection ()) "Etc/UTC" syntheticSuppressionCheck
                 |> completedAdministration
 
                 let baseline = SchemaDefinition.current ()

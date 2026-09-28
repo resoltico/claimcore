@@ -1,5 +1,5 @@
 import type { Notice } from "../api/notices";
-import type { AdvisoryReview, CommandDraft, PreparationDetails, Receipt } from "../api/v2";
+import type { AdvisoryReview, CommandDraft, PreparationDetails, Receipt } from "../api/v3";
 import type { CommandKind, CorrectionGroupName, CorrectionMode, DraftValues } from "./metadata";
 import { isCorrectionValues } from "./metadata";
 import { freezeRequest } from "./operationRequest";

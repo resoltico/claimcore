@@ -1,7 +1,10 @@
 module ClaimCore.WebTests.RouteTests
 
+open System
 open System.Text.Json
+open System.Threading.Tasks
 open Expecto
+open ClaimCore.Application
 open ClaimCore.Web
 open ClaimCore.WebTests.RouteFixtures
 
@@ -10,7 +13,9 @@ let private getDelegation () =
     let request = context validGet
 
     let output =
-        Routes.get admit 65536 runtime.Core request |> readResult |> execute request
+        Routes.get admit 65536 runtime.ActorCore request
+        |> readResult
+        |> execute request
 
     use document = JsonDocument.Parse(output)
 
@@ -27,7 +32,7 @@ let private recoveryDelegation () =
     let request = context validResolve
 
     let output =
-        Routes.recoveryResolve admit 65536 runtime.Core request
+        Routes.recoveryResolve admit 65536 runtime.ActorCore request
         |> readResult
         |> execute request
 
@@ -44,7 +49,7 @@ let private recoveryDelegation () =
 let private refusalBeforeCore () =
     let runtime = RuntimeStub()
     let request = context "{}"
-    let result = Routes.get admit 65536 runtime.Core request |> readResult
+    let result = Routes.get admit 65536 runtime.ActorCore request |> readResult
     execute request result |> ignore
 
     Expect.equal
@@ -55,19 +60,121 @@ let private refusalBeforeCore () =
     Expect.equal runtime.CoreCalls 0 "Malformed input does not call the core"
     Expect.equal runtime.RecoveryCalls 0 "Malformed input cannot trigger recovery"
 
+let private admissionAndBodyRefusals () =
+    for failure, code in
+        [
+            AdmissionFailure.UntrustedConnection, "WEB_CONNECTION_REJECTED"
+            AdmissionFailure.OriginRejected, "WEB_ORIGIN_REJECTED"
+            AdmissionFailure.FetchMetadataRejected, "WEB_ORIGIN_REJECTED"
+            AdmissionFailure.UnsupportedMediaType, "WEB_MEDIA_TYPE"
+            AdmissionFailure.BodyTooLarge, "WEB_BODY_TOO_LARGE"
+            AdmissionFailure.SessionRejected, "WEB_SESSION_REJECTED"
+            AdmissionFailure.AntiforgeryRejected, "WEB_CSRF_REJECTED"
+        ] do
+        let runtime = RuntimeStub()
+        let request = context validGet
+        let refused _ = Task.FromResult(Error failure)
+
+        let output =
+            Routes.get refused 65536 runtime.ActorCore request
+            |> readResult
+            |> execute request
+
+        use document = JsonDocument.Parse(output)
+
+        Expect.equal
+            (document.RootElement.GetProperty("code").GetString())
+            code
+            "Typed admission refusal"
+
+        Expect.equal runtime.CoreCalls 0 "Admission refusal cannot dispatch case work"
+
+    let runtime = RuntimeStub()
+    let oversized = context "abcd"
+
+    let output =
+        Routes.get admit 3 runtime.ActorCore oversized
+        |> readResult
+        |> execute oversized
+
+    use document = JsonDocument.Parse(output)
+
+    Expect.equal
+        (document.RootElement.GetProperty("code").GetString())
+        "WEB_BODY_TOO_LARGE"
+        "Streaming body bound is enforced after successful admission"
+
+    Expect.equal runtime.CoreCalls 0 "An oversized body cannot dispatch case work"
+
 let private rawRetainHeader () =
     let runtime = RuntimeStub()
     let request = context "synthetic raw bytes"
     let _, _, maximumBytes, headers = WebContract.raw "recovery.importEnvelopeRetain"
 
     let result =
-        Routes.envelopeRetain admit maximumBytes (List.exactlyOne headers) runtime.Core request
+        Routes.envelopeRetain admit maximumBytes (List.exactlyOne headers) runtime.ActorCore request
         |> readResult
 
     execute request result |> ignore
 
     Expect.equal request.Response.StatusCode 400 "Retain requires the generated exact digest header"
     Expect.equal runtime.RecoveryCalls 0 "Missing source proof never reaches retention"
+
+let private managementOutcomes () =
+    let eventId = Guid.Parse("40000000-0000-4000-8000-000000000001")
+    let target = Guid.Parse("50000000-0000-4000-8000-000000000001")
+    let runtime = RuntimeStub()
+    let input = $"""{{"eventId":"{eventId:D}"}}"""
+
+    let outcome selected =
+        runtime.ManagementOutcome <- Some selected
+        let request = context input
+
+        let output =
+            Routes.managementObserve admit 65536 runtime.ActorCore request
+            |> readResult
+            |> execute request
+
+        use document = JsonDocument.Parse(output)
+        document.RootElement.GetProperty("outcome").Clone()
+
+    let unavailable = outcome ActorManagementOutcome.ResourceUnavailable
+
+    Expect.equal
+        (unavailable.GetProperty("tag").GetString())
+        "RESOURCE_UNAVAILABLE"
+        "Unknown actor and inaccessible event are indistinguishable"
+
+    Expect.equal
+        (unavailable.GetProperty("data").ValueKind)
+        JsonValueKind.Null
+        "Refusal does not identify an actor"
+
+    let unconfirmed = outcome (ActorManagementOutcome.Unconfirmed eventId)
+
+    Expect.equal
+        (unconfirmed.GetProperty("tag").GetString())
+        "UNCONFIRMED"
+        "Attempt uncertainty is explicit"
+
+    Expect.equal
+        (unconfirmed.GetProperty("data").GetProperty("eventId").GetGuid())
+        eventId
+        "Original caller event ID survives"
+
+    let applied = outcome (ActorManagementOutcome.Applied(eventId, 3L, target))
+
+    Expect.equal
+        (applied.GetProperty("tag").GetString())
+        "APPLIED"
+        "Confirmed witnessed action is distinct"
+
+    Expect.equal
+        (applied.GetProperty("data").GetProperty("grantRevision").GetString())
+        "3"
+        "Revision is exact text"
+
+    Expect.equal runtime.ManagementCalls 3 "One management call per admitted request"
 
 let tests =
     testList
@@ -83,6 +190,12 @@ let tests =
                 "[CC-WEB-001] rejects malformed transport before core invocation"
                 refusalBeforeCore
             testCase
+                "[CC-WEB-001] maps every admission refusal and bounded body before dispatch"
+                admissionAndBodyRefusals
+            testCase
                 "[CC-WEB-001] refuses raw retention without its exact source digest header"
                 rawRetainHeader
+            testCase
+                "[CC-WEB-001] keeps management refusal non-disclosing and uncertain event identity exact"
+                managementOutcomes
         ]

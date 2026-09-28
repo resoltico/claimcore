@@ -12,13 +12,13 @@ open ClaimCore.Postgres
 open ClaimCore.IntegrationTests.Fixtures
 
 let private openRuntime () =
-    Runtime.OpenPostgres(appConnection (), CancellationToken.None)
+    witnessedOpen (appConnection ()) CancellationToken.None
     |> await
     |> Result.defaultWith (fun _ -> failtest "Runtime must open for recovery tests.")
 
 let private request operationId reference = openRequest operationId reference
 
-let private prepared (core: IClaimsCore) operationId reference =
+let private prepared (core: IActorClaimsCore) operationId reference =
     match core.Prepare(request operationId reference, CancellationToken.None) |> await with
     | PrepareOutcome.Prepared(details, review) -> details, review
     | _ -> failtest "Expected a retained typed preparation."
@@ -117,8 +117,8 @@ let private exactPreparationReplay =
             use runtime = openRuntime ()
             let operationId = Guid.NewGuid()
             let reference = "PREP-" + Guid.NewGuid().ToString("N")
-            let first, review = prepared runtime.Core operationId reference
-            let second, _ = prepared runtime.Core operationId reference
+            let first, review = prepared (actorCore runtime) operationId reference
+            let second, _ = prepared (actorCore runtime) operationId reference
             Expect.equal first.Summary.OperationId operationId "Retained operation"
 
             Expect.equal
@@ -138,7 +138,8 @@ let private exactPreparationReplay =
                 |> Option.defaultWith (fun () -> failtest "Preparation digest is required.")
 
             match
-                runtime.Core.Recovery.ExportEnvelope(operationId, digest, CancellationToken.None)
+                (actorCore runtime)
+                    .Recovery.ExportEnvelope(operationId, digest, CancellationToken.None)
                 |> await
             with
             | RecoveryQueryOutcome.RecoverySucceeded(Lookup.Found artifact) ->
@@ -151,7 +152,7 @@ let private corruptedIdentity =
         let operationId = Guid.NewGuid()
 
         let details, _ =
-            prepared runtime.Core operationId ("PREP-" + Guid.NewGuid().ToString("N"))
+            prepared (actorCore runtime) operationId ("PREP-" + Guid.NewGuid().ToString("N"))
 
         let original =
             details.Summary.RequestSha256
@@ -161,12 +162,8 @@ let private corruptedIdentity =
 
         try
             match
-                runtime.Core.Recovery.Inspect(
-                    operationId,
-                    None,
-                    recoveryPageLimit,
-                    CancellationToken.None
-                )
+                (actorCore runtime)
+                    .Recovery.Inspect(operationId, None, recoveryPageLimit, CancellationToken.None)
                 |> await
             with
             | RecoveryQueryOutcome.RecoveryFailed fault ->
@@ -184,21 +181,21 @@ let private durableDismissal =
         let operationId = Guid.NewGuid()
 
         let details, _ =
-            prepared runtime.Core operationId ("PREP-" + Guid.NewGuid().ToString("N"))
+            prepared (actorCore runtime) operationId ("PREP-" + Guid.NewGuid().ToString("N"))
 
         let digest =
             details.Summary.RequestSha256
             |> Option.defaultWith (fun () -> failtest "Preparation digest is required.")
 
         match
-            runtime.Core.Recovery.Dismiss(operationId, digest, true, CancellationToken.None)
+            (actorCore runtime).Recovery.Dismiss(operationId, digest, true, CancellationToken.None)
             |> await
         with
         | RecoveryDismissOutcome.DismissedPreparation _ -> ()
         | _ -> failtest "Expected a durable preparation dismissal."
 
         match
-            runtime.Core.Recovery.Resolve(operationId, digest, CancellationToken.None)
+            (actorCore runtime).Recovery.Resolve(operationId, digest, CancellationToken.None)
             |> await
         with
         | ResolveOutcome.RefusedBeforeAttempt(_, rejection) ->

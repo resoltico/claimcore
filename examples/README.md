@@ -1,10 +1,9 @@
-# Synthetic CLI-v3 walkthrough
+# Synthetic CLI-v4 walkthrough
 
-All names and facts in this directory are fictional. Complete [Getting
-started](../docs/getting-started.md) and its fresh database initialization before submitting the requests.
+All names and facts in this directory are fictional. [Getting started](../docs/getting-started.md) runs a disposable first-case qualification; it does not leave a service running for manual commands. To submit these checked examples yourself, first provision a separate synthetic primary/witness installation and authenticated HTTPS service as described in the [CLI reference](../docs/cli.md) and [Web reference](../docs/web.md). Never use an adopted case database or the fixture's temporary credentials.
 
-The files form one deterministic CLI-v3 `command.execute` sequence for `DEMO-0001`. Each invocation
-has a fixed operation ID and expected revision, so use a dedicated synthetic database without that
+The files form one deterministic CLI-v4 `command.execute` sequence for `DEMO-0001`. Each invocation
+has a fixed operation ID and expected revision, so use a dedicated synthetic installation without that
 reference. The host's business date must be on or after 2026-08-20.
 
 ## Expected sequence
@@ -29,17 +28,7 @@ case-reference spelling `DEMO-0001` is the immutable top-level target of all six
 
 ## Run the sequence
 
-Select the private runtime connection file created during setup, then run from the repository root:
-
-```sh
-export CLAIMCORE_CONNECTION_FILE="/absolute/private/path/app.connection"
-```
-
-PowerShell:
-
-```powershell
-$env:CLAIMCORE_CONNECTION_FILE = 'C:\absolute\private\path\app.connection'
-```
+Configure the CLI's HTTPS service URL, validated OIDC issuer, client ID and authentication mode as described in [CLI and protocol](../docs/cli.md#contracts-and-invocation). A confidential automation client reads its secret only from an owner-private file; an interactive client uses a public PKCE flow. Do not pass a database connection string to the CLI.
 
 Submit the strict JSON invocations in order and stop after any failure:
 
@@ -71,8 +60,7 @@ an insurance coverage rule.
 <a id="cc-cli-001"></a>
 ## CC-CLI-001 — Published synthetic walkthrough
 
-The published CLI must accept this exact six-invocation CLI-v3 sequence through `call` against an
-isolated database initialized with the current baseline. The resulting current view is version 6 and `OPENED`, retains
+The published CLI-v4 client must accept this exact six-invocation sequence through the authenticated service in an isolated fresh installation. The resulting current view is version 6 and `OPENED`, retains
 the decision, clears the payment date, exposes exactly the thirteen documented business fields, and
 has exactly six ordered accepted-history entries. Exact replay of the final invocation returns its
 retained receipt and creates no seventh entry.

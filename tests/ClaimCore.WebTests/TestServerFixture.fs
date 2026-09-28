@@ -6,13 +6,17 @@ open System.Net
 open System.Net.Http
 open System.Net.Http.Headers
 open System.Security.Cryptography
+open System.Security.Claims
 open System.Security.Cryptography.X509Certificates
 open System.Text
 open System.Text.Json
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Builder
+open Microsoft.AspNetCore.Authentication
+open Microsoft.AspNetCore.Authentication.Cookies
 open Microsoft.AspNetCore.Hosting
 open Microsoft.AspNetCore.Http
+open Microsoft.AspNetCore.RateLimiting
 open Microsoft.AspNetCore.TestHost
 open Microsoft.Extensions.Logging
 open ClaimCore.Web
@@ -29,9 +33,76 @@ type Reply =
         Body: string
         CacheControl: string
         ContentType: string
+        DataUseScope: string option
+        DataUsePhase: string option
+        RealDataReady: string option
     }
 
 let document (reply: Reply) = JsonDocument.Parse(reply.Body)
+
+let private testApplication assets loginPermits =
+    let builder =
+        WebApplication.CreateBuilder(WebApplicationOptions(WebRootPath = assets))
+
+    builder.Logging.ClearProviders() |> ignore
+    builder.WebHost.UseTestServer() |> ignore
+    configureServices loginPermits builder.Services
+    let application = builder.Build()
+
+    application.Use(Func<HttpContext, RequestDelegate, Task>(RouteSupport.handleFailures))
+    |> ignore
+
+    application.Use(
+        Func<HttpContext, RequestDelegate, Task>(fun context next ->
+            context.Connection.RemoteIpAddress <- IPAddress.Loopback
+            HttpHeaders.apply context
+            next.Invoke(context))
+    )
+    |> ignore
+
+    application.UseAuthentication() |> ignore
+    application.UseRateLimiter() |> ignore
+    application.UseAuthorization() |> ignore
+    application
+
+let private oidcConfiguration assets loginPermits =
+    let baseConfiguration = testConfiguration assets loginPermits
+
+    { baseConfiguration with
+        Oidc =
+            Some
+                {
+                    Issuer = Uri("https://issuer.example.test/realms/synthetic")
+                    TrustRoot = None
+                    ClientId = "claimcore-web"
+                    ClientSecret = "synthetic-secret"
+                    ApiAudience = "claimcore-api"
+                    ServiceClientId = "claimcore-service"
+                    CliClientId = "claimcore-cli"
+                }
+    }
+
+let private mapSyntheticLogin (application: WebApplication) =
+    (application.MapPost(
+        "/__test/oidc-login",
+        Func<HttpContext, Task<IResult>>(fun context ->
+            task {
+                let identity = ClaimsIdentity(CookieAuthenticationDefaults.AuthenticationScheme)
+
+                identity.AddClaim(Claim("sub", "synthetic-owner"))
+                let principal = ClaimsPrincipal(identity)
+
+                do!
+                    context.SignInAsync(
+                        CookieAuthenticationDefaults.AuthenticationScheme,
+                        principal
+                    )
+
+                return Results.Ok()
+            })
+    ))
+        .RequireRateLimiting("login")
+    |> ignore
 
 type Host
     private
@@ -39,7 +110,6 @@ type Host
         application: WebApplication,
         client: HttpClient,
         runtime: RuntimeStub,
-        sessions: SessionRegistry,
         assets: string,
         certificate: X509Certificate2
     ) =
@@ -103,6 +173,11 @@ type Host
     let readReply (response: HttpResponseMessage) =
         acceptCookies response
 
+        let header name =
+            match response.Headers.TryGetValues(name) with
+            | true, values -> values |> Option.ofObj |> Option.bind Seq.tryHead
+            | _ -> None
+
         {
             Status = int response.StatusCode
             Body = response.Content.ReadAsStringAsync().GetAwaiter().GetResult()
@@ -116,10 +191,12 @@ type Host
                 |> Option.ofObj
                 |> Option.map string
                 |> Option.defaultValue ""
+            DataUseScope = header "X-ClaimCore-Data-Use-Scope"
+            DataUsePhase = header "X-ClaimCore-Data-Use-Phase"
+            RealDataReady = header "X-ClaimCore-Real-Data-Ready"
         }
 
     member _.Runtime = runtime
-    member _.Sessions = sessions
 
     member _.SendWithHeaders
         (
@@ -148,7 +225,7 @@ type Host
 
     member this.SessionToken() =
         use snapshot =
-            this.Send(HttpMethod.Get, "/api/v2/session", None, None, None) |> document
+            this.Send(HttpMethod.Get, "/api/v3/session", None, None, None) |> document
 
         snapshot.RootElement
             .GetProperty("outcome")
@@ -159,18 +236,9 @@ type Host
         |> Option.defaultWith (fun () -> invalidOp "Synthetic session token is required.")
 
     member this.Login() =
-        let token = this.SessionToken()
-        let body = $"""{{"credential":"{credential}","antiforgeryToken":"{token}"}}"""
+        this.Send(HttpMethod.Post, "/__test/oidc-login", Some "{}", Some "application/json", None)
 
-        this.Send(
-            HttpMethod.Post,
-            "/api/v2/session/login",
-            Some body,
-            Some "application/json",
-            Some token
-        )
-
-    static member Start(?loginPermits: int, ?invalidExportMetadata: bool) =
+    static member Start(?loginPermits: int, ?invalidExportMetadata: bool, ?oidcEnabled: bool) =
         let assets = Directory.CreateTempSubdirectory("claimcore-web-testserver-").FullName
 
         File.WriteAllText(
@@ -178,47 +246,30 @@ type Host
             "<!doctype html><title>Synthetic ClaimCore</title>"
         )
 
-        let builder =
-            WebApplication.CreateBuilder(WebApplicationOptions(WebRootPath = assets))
-
-        builder.Logging.ClearProviders() |> ignore
-        builder.WebHost.UseTestServer() |> ignore
-        configureServices (defaultArg loginPermits 5) builder.Services
-        let application = builder.Build()
-
-        application.Use(Func<HttpContext, RequestDelegate, Task>(RouteSupport.handleFailures))
-        |> ignore
-
-        application.Use(
-            Func<HttpContext, RequestDelegate, Task>(fun context next ->
-                context.Connection.RemoteIpAddress <- IPAddress.Loopback
-                HttpHeaders.apply context
-                next.Invoke(context))
-        )
-        |> ignore
-
-        application.UseAuthentication() |> ignore
-        application.UseRateLimiter() |> ignore
-        application.UseAuthorization() |> ignore
+        let application = testApplication assets (defaultArg loginPermits 5)
 
         let runtime =
             RuntimeStub(invalidExportMetadata = defaultArg invalidExportMetadata false)
 
-        let sessions = SessionRegistry(TimeSpan.FromMinutes(30.), TimeSpan.FromHours(8.))
+        let configuration =
+            if defaultArg oidcEnabled true then
+                oidcConfiguration assets (defaultArg loginPermits 5)
+            else
+                testConfiguration assets (defaultArg loginPermits 5)
 
-        let configuration = testConfiguration assets (defaultArg loginPermits 5)
+        mapSyntheticLogin application
 
-        let bootstrap =
-            {
-                Path = "synthetic-not-written"
-                Digest = credential |> Encoding.UTF8.GetBytes |> SHA256.HashData
-            }
+        HostRoutes.map
+            assets
+            configuration
+            (fun _ -> runtime.ActorCore)
+            (fun () -> "SYNTHETIC_ONLY", "ACTIVE", false)
+            application
 
-        HostRoutes.map assets configuration bootstrap sessions runtime.Core application
         application.StartAsync().GetAwaiter().GetResult()
         let client = application.GetTestClient()
         client.BaseAddress <- origin
-        new Host(application, client, runtime, sessions, assets, configuration.Certificate)
+        new Host(application, client, runtime, assets, configuration.Certificate)
 
     interface IDisposable with
         member _.Dispose() =

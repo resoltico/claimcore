@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest";
 
 import semantic from "../src/generated/convergence/semantic-core-v1.contract.json";
 
-import { isHostFailure, isWebV2Response } from "../src/generated/convergence/web-v2.validation";
-import { webV2HostFailureStatuses } from "../src/generated/convergence/web-v2.endpoint-catalog";
+import { isHostFailure, isWebV3Response } from "../src/generated/convergence/web-v3.validation";
+import { webV3HostFailureStatuses } from "../src/generated/convergence/web-v3.endpoint-catalog";
 import {
   cliCases,
   cliKindCoverage,
@@ -33,17 +33,17 @@ const replaceText = (value: unknown, expected: string, replacement: string): unk
 const loneSurrogates = ["\ud800", "\udfff"] as const;
 
 const validHostFailure = async (status: number, value: unknown): Promise<boolean> =>
-  webV2HostFailureStatuses.some((candidate) => candidate === status) &&
+  webV3HostFailureStatuses.some((candidate) => candidate === status) &&
   (await isHostFailure(value, status));
 
 const compiledCliValidators = cliValidators();
+const parsedCliCases = cliCases();
 const emittedHostCodes = [
   "WEB_BODY_TOO_LARGE",
   "WEB_BUSY",
   "WEB_CONNECTION_REJECTED",
   "WEB_CSRF_REJECTED",
   "WEB_INVALID_REQUEST",
-  "WEB_LOGIN_REJECTED",
   "WEB_MEDIA_TYPE",
   "WEB_NOT_FOUND",
   "WEB_ORIGIN_REJECTED",
@@ -57,35 +57,43 @@ const expectWebCoverage = (): void => {
     expect(coverage.expected.length, coverage.endpoint).toBeGreaterThan(0);
   }
   const host = webHostCoverage();
-  expect(host.statuses).toEqual([...webV2HostFailureStatuses].sort((left, right) => left - right));
+  expect(host.statuses).toEqual([...webV3HostFailureStatuses].sort((left, right) => left - right));
   expect(host.phases).toEqual(["NOT_STARTED", "STARTED_UNCONFIRMED", "null"]);
   expect(host.codes).toEqual(expect.arrayContaining([...emittedHostCodes]));
 };
 
-const expectCliCases = (): void => {
-  const cases = cliCases();
-  expect(crossCount(cases)).toBe(15 * 14);
+const expectCliShape = (): void => {
+  const cases = parsedCliCases;
+  const byId = new Map(cases.map((item) => [item.id, item]));
+  const endpointCount = compiledCliValidators.endpoints.size;
+  expect(crossCount(cases)).toBe(endpointCount * (endpointCount - 1));
   expect(cases.filter((value) => value.id.startsWith("pattern-"))).toHaveLength(8);
   expect(cases.filter((value) => value.id.startsWith("scalar-"))).toHaveLength(27);
-  expect(cases).toContainEqual(
+  expect(byId.get("valid-case-get-found-scalar-boundaries")).toEqual(
     expect.objectContaining({ id: "valid-case-get-found-scalar-boundaries", valid: true }),
   );
-  expect(cases).toContainEqual(
+  expect(byId.get("valid-command.execute-preparation-state-unknown")).toEqual(
     expect.objectContaining({
-      id: "valid-command-execute-preparation-state-unknown",
+      id: "valid-command.execute-preparation-state-unknown",
       exitCode: 4,
       valid: true,
     }),
   );
-  expect(cases).toContainEqual(
+  expect(byId.get("valid-recovery.resolve-cancelled-before-admission")).toEqual(
     expect.objectContaining({
-      id: "valid-recovery-resolve-cancelled-before-admission",
+      id: "valid-recovery.resolve-cancelled-before-admission",
       exitCode: 130,
       valid: true,
     }),
   );
+};
 
+const expectCliCases = (localOutcomes: boolean): void => {
+  const cases = parsedCliCases;
+  let checked = 0;
   for (const item of cases) {
+    if (item.id.startsWith("local-") !== localOutcomes) continue;
+    checked += 1;
     if (item.endpoint === null) {
       expect(compiledCliValidators.aggregate(item.value), item.id).toBe(item.valid);
       continue;
@@ -96,6 +104,7 @@ const expectCliCases = (): void => {
     expect(validator(item.value), item.id).toBe(item.valid);
     if (item.valid) expect(compiledCliValidators.aggregate(item.value), item.id).toBe(true);
   }
+  expect(checked).toBeGreaterThan(0);
 };
 
 const expectCliCoverage = (): void => {
@@ -106,7 +115,7 @@ const expectCliCoverage = (): void => {
 };
 
 const expectCliLoneSurrogates = (): void => {
-  const source = cliCases().find((value) => value.id === "valid-case-get-found");
+  const source = parsedCliCases.find((value) => value.id === "valid-case-get-found");
   const validate = compiledCliValidators.endpoints.get("case.get");
   if (source === undefined || validate === undefined)
     throw new Error("CLI scalar source and validator are required.");
@@ -129,10 +138,11 @@ const expectCliRevisionBounds = (): void => {
 
 const expectWebCases = async (): Promise<void> => {
   const cases = webCases();
+  const byId = new Map(cases.map((item) => [item.id, item]));
   expect(crossCount(cases)).toBe(endpointInventory.length * (endpointInventory.length - 1));
   expect(cases.filter((value) => value.id.startsWith("pattern-"))).toHaveLength(8);
   expect(cases.filter((value) => value.id.startsWith("scalar-"))).toHaveLength(27);
-  expect(cases).toContainEqual(
+  expect(byId.get("valid-case-get-found-scalar-boundaries")).toEqual(
     expect.objectContaining({ id: "valid-case-get-found-scalar-boundaries", valid: true }),
   );
   expectWebCoverage();
@@ -141,7 +151,7 @@ const expectWebCases = async (): Promise<void> => {
     const actual =
       item.endpoint === null
         ? await validHostFailure(item.status, item.value)
-        : await isWebV2Response(requiredWebEndpoint(item.endpoint), item.value);
+        : await isWebV3Response(requiredWebEndpoint(item.endpoint), item.value);
     expect(actual, item.id).toBe(item.valid);
   }
 };
@@ -152,14 +162,14 @@ const expectWebLoneSurrogates = async (): Promise<void> => {
   for (const value of loneSurrogates) {
     const malformed = replaceText(source.value, "SYNTHETIC-001", value);
     expect(
-      await isWebV2Response("case.get", malformed),
+      await isWebV3Response("case.get", malformed),
       `Web lone surrogate ${value.charCodeAt(0)}`,
     ).toBe(false);
   }
 };
 
 const expectDiagnosticCoverage = (): void => {
-  for (const cases of [cliCases(), webCases()]) {
+  for (const cases of [parsedCliCases, webCases()]) {
     const required = (id: string, valid: boolean): void => {
       expect(
         cases.find((item) => item.id === id),
@@ -190,7 +200,7 @@ const expectDiagnosticCoverage = (): void => {
 };
 
 const expectOutcomeDiagnostics = (): void => {
-  for (const cases of [cliCases(), webCases()]) {
+  for (const cases of [parsedCliCases, webCases()]) {
     for (const [prefix, inventory] of [
       ["fault-", semantic.faultDiagnostics],
       ["recovery-diagnostic-", semantic.recoveryDiagnostics],
@@ -236,11 +246,25 @@ describe("generated contract corpora", () => {
     expectDiagnosticCoverage();
   });
 
-  it("accepts every production CLI branch and rejects malformed or cross-endpoint values", () => {
-    expectCliCases();
+  it("covers CLI corpus families and sentinel outcomes", () => {
+    expectCliShape();
+  });
+
+  it("covers every reachable CLI response kind", () => {
     expectCliCoverage();
+  });
+
+  it("rejects CLI lone surrogates and revision overflow", () => {
     expectCliLoneSurrogates();
     expectCliRevisionBounds();
+  });
+
+  it("validates every local CLI protocol outcome", () => {
+    expectCliCases(true);
+  });
+
+  it("validates every endpoint and cross-endpoint CLI outcome", () => {
+    expectCliCases(false);
   });
 
   it("accepts generated Web host values and rejects every malformed or cross-endpoint value", async () => {

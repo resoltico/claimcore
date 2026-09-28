@@ -1,10 +1,10 @@
 import { writeFile } from "node:fs/promises";
 
 import { expect, type Page, type Locator } from "@playwright/test";
-import type { WebV2EndpointId } from "../src/generated/convergence/web-v2.endpoint-catalog";
-import { webV2Endpoints } from "../src/generated/convergence/web-v2.endpoint-catalog";
-import type { WebV2Response } from "../src/generated/convergence/web-v2.types";
-import { isWebV2Response } from "../src/generated/convergence/web-v2.validation";
+import type { WebV3EndpointId } from "../src/generated/convergence/web-v3.endpoint-catalog";
+import { webV3Endpoints } from "../src/generated/convergence/web-v3.endpoint-catalog";
+import type { WebV3Response } from "../src/generated/convergence/web-v3.types";
+import { isWebV3Response } from "../src/generated/convergence/web-v3.validation";
 import type { Language, DisplayLocale } from "../src/presentation/preferences";
 import en from "../src/presentation/catalogs/en.ui.json" with { type: "json" };
 import lv from "../src/presentation/catalogs/lv.ui.json" with { type: "json" };
@@ -41,11 +41,11 @@ export const trackRequests = (page: Page) => {
   const requests: string[] = [];
   page.on("request", (request) => {
     const path = new URL(request.url()).pathname;
-    if (path.startsWith("/api/v2/")) requests.push(`${request.method()} ${path}`);
+    if (path.startsWith("/api/v3/")) requests.push(`${request.method()} ${path}`);
   });
   return requests;
 };
-export const preparedFrom = (value: WebV2Response<"command.prepare">): PreparedIdentity => {
+export const preparedFrom = (value: WebV3Response<"command.prepare">): PreparedIdentity => {
   if (value.outcome.tag !== "PREPARED") throw new Error("E2E_LOCALIZATION_PREPARATION_REFUSED");
   const { operationId, requestSha256 } = value.outcome.data.details.summary;
   if (requestSha256 === null) throw new Error("E2E_LOCALIZATION_EXACT_DIGEST_MISSING");
@@ -60,17 +60,17 @@ const deferred = <T>() => {
   });
   return { promise, resolve, reject };
 };
-type Captured<K extends WebV2EndpointId> = {
-  reply: WebV2Response<K>;
+type Captured<K extends WebV3EndpointId> = {
+  reply: WebV3Response<K>;
   bytes: Buffer;
   sourceDigest: string | undefined;
 };
-export const pauseJsonReply = async <K extends WebV2EndpointId>(
+export const pauseJsonReply = async <K extends WebV3EndpointId>(
   page: Page,
   endpoint: K,
   drop = false,
 ) => {
-  const path = webV2Endpoints.find((entry) => entry.id === endpoint)?.path;
+  const path = webV3Endpoints.find((entry) => entry.id === endpoint)?.path;
   if (path === undefined) throw new Error("E2E_LOCALIZATION_ENDPOINT_MISSING");
   const ready = deferred<Captured<K>>();
   const released = deferred<void>();
@@ -80,12 +80,12 @@ export const pauseJsonReply = async <K extends WebV2EndpointId>(
       try {
         const response = await route.fetch();
         const payload: unknown = await response.json();
-        if (response.status() !== 200 || !(await isWebV2Response(endpoint, payload)))
+        if (response.status() !== 200 || !(await isWebV3Response(endpoint, payload)))
           throw new Error("E2E_LOCALIZATION_NATIVE_REPLY_INVALID");
         const bytes = route.request().postDataBuffer();
         if (bytes === null) throw new Error("E2E_LOCALIZATION_REQUEST_BYTES_MISSING");
         ready.resolve({
-          reply: payload as WebV2Response<K>,
+          reply: payload as WebV3Response<K>,
           bytes,
           sourceDigest: route.request().headers()["x-claimcore-source-sha256"],
         });

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Notice } from "../api/notices";
-import { resultNotice, v2, type Receipt } from "../api/v2";
+import { resultNotice, v3, type Receipt } from "../api/v3";
 
 export const useOperationObservation = (token: string) => {
   const [operationId, setOperationId] = useState("");
@@ -13,7 +13,7 @@ export const useOperationObservation = (token: string) => {
     setNotObserved(false);
     setReceipt(null);
     setMessage(null);
-    const result = await v2.observe(operationId, token);
+    const result = await v3.observe(operationId, token);
     const found =
       result.kind === "outcome" &&
       result.value.outcome.tag === "SUCCEEDED" &&

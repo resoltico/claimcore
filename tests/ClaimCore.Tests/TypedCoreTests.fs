@@ -33,7 +33,7 @@ let private create () =
     let recovery = new CoreRecoveryStore.Store()
     recovery.AttachClaimStore(claims :> IClaimStore)
 
-    CoreApi.create (claims :> IClaimStore) (recovery :> IRecoveryStore) clock
+    ActorCoreFixture.create (claims :> IClaimStore) (recovery :> IRecoveryStore) clock
 
 let private waitFor (task: System.Threading.Tasks.Task<'value>) = task.GetAwaiter().GetResult()
 
@@ -224,7 +224,7 @@ let private observedIdentityConflict =
             let recovery = new CoreRecoveryStore.Store()
             let claimPort = claims :> IClaimStore
             recovery.AttachClaimStore(claimPort)
-            let core = CoreApi.create claimPort (recovery :> IRecoveryStore) clock
+            let core = ActorCoreFixture.create claimPort (recovery :> IRecoveryStore) clock
             let operationId = Guid.NewGuid()
 
             let details, _ =

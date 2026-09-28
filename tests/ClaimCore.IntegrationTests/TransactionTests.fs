@@ -82,6 +82,23 @@ let private replayTests =
         "persistence and replay"
         [ reopenPersistenceTest; exactReplayTest; idempotencyConflictTest ]
 
+let private concurrentAccepted =
+    function
+    | Ok receipt -> receipt
+    | Error failure ->
+        let category =
+            match failure with
+            | CoreFailure.Domain _ -> "DOMAIN"
+            | CoreFailure.ResourceUnavailable -> "RESOURCE_UNAVAILABLE"
+            | CoreFailure.InvalidCaseListCursor -> "INVALID_CURSOR"
+            | CoreFailure.IdempotencyConflict -> "IDENTITY_CONFLICT"
+            | CoreFailure.StoreUnavailable -> "STORE_UNAVAILABLE"
+            | CoreFailure.CommitOutcomeUnknown _ -> "COMMIT_OUTCOME_UNKNOWN"
+            | CoreFailure.StoreCorrupt -> "STORE_CORRUPT"
+            | CoreFailure.SchemaMismatch -> "SCHEMA_MISMATCH"
+
+        failtestf "Concurrent exact operation was not accepted: %s." category
+
 let private sameIdConcurrencyTests =
     testList
         "same operation concurrency"
@@ -93,7 +110,7 @@ let private sameIdConcurrencyTests =
 
                 let attempts = [| for _ in 1..8 -> Service.executeAsync service clock request |]
 
-                let results = Task.WhenAll(attempts) |> await |> Array.map accepted
+                let results = Task.WhenAll(attempts) |> await |> Array.map concurrentAccepted
 
                 Expect.equal
                     (results |> Array.filter (fun item -> not item.Replayed) |> Array.length)
@@ -137,7 +154,24 @@ let private absentCaseConcurrencyTests =
                             | Error(CoreFailure.Domain(DomainError.VersionConflict 1L)) -> Some()
                             | _ -> None)
 
-                    Expect.equal conflicts.Length 1 "The contender observes revision one"
+                    let categories =
+                        outcomes
+                        |> Array.map (function
+                            | Ok _ -> "ACCEPTED"
+                            | Error(CoreFailure.Domain(DomainError.VersionConflict _)) ->
+                                "REVISION_CONFLICT"
+                            | Error CoreFailure.ResourceUnavailable -> "RESOURCE_UNAVAILABLE"
+                            | Error(CoreFailure.Domain _) -> "DOMAIN_REJECTION"
+                            | Error CoreFailure.StoreUnavailable -> "STORE_UNAVAILABLE"
+                            | Error CoreFailure.StoreCorrupt -> "STORE_CORRUPT"
+                            | Error(CoreFailure.CommitOutcomeUnknown _) -> "COMMIT_UNKNOWN"
+                            | Error _ -> "OTHER_FAILURE")
+
+                    Expect.equal
+                        conflicts.Length
+                        1
+                        ("The contender observes revision one; safe categories: "
+                         + String.concat "," categories)
 
                     let history = service.History(first.CaseReference, 0L) |> await |> accepted
 

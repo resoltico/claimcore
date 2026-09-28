@@ -28,8 +28,12 @@ let private constraintTests =
         [
             testCase "initialization is repeatable only with identical baseline identity" (fun () ->
                 let admin = adminConnection ()
-                SchemaBaseline.initialize admin "Etc/UTC" |> completedAdministration
-                SchemaBaseline.initialize admin "Etc/UTC" |> completedAdministration)
+
+                SchemaBaseline.initialize admin "Etc/UTC" syntheticSuppressionCheck
+                |> completedAdministration
+
+                SchemaBaseline.initialize admin "Etc/UTC" syntheticSuppressionCheck
+                |> completedAdministration)
             testCase "database rejects excessive precision instead of rounding it" (fun () ->
                 use database = store ()
                 let request = newRequest ()
@@ -82,7 +86,7 @@ let private privilegeTests =
                 expectSqlState "42501" (fun () ->
                     runSql
                         (appConnection ())
-                        "UPDATE claimcore.case_changes SET recorded_by = 'forged' WHERE case_reference = @reference"
+                        "UPDATE claimcore.case_changes SET accepted_actor_id = gen_random_uuid() WHERE case_reference = @reference"
                         "NO-SUCH-CASE"))
             testCase "runtime role cannot mutate the baseline marker" (fun () ->
                 expectSqlState "42501" (fun () ->
@@ -126,54 +130,87 @@ let private privilegeTests =
                         "Independent formats")
         ]
 
+let private withFailureTrigger (admin: NpgsqlConnection) reference action =
+    let token = "test_fault_" + Guid.NewGuid().ToString("N")
+    // Interpolated identifiers/reference are generated ASCII test values, never external input.
+    let ddl =
+        $"CREATE FUNCTION claimcore.{token}() RETURNS trigger LANGUAGE plpgsql AS $body$ BEGIN IF NEW.case_reference = '{reference}' THEN RAISE EXCEPTION 'injected test failure'; END IF; RETURN NEW; END; $body$; CREATE TRIGGER {token} BEFORE INSERT ON claimcore.case_changes FOR EACH ROW EXECUTE FUNCTION claimcore.{token}();"
+
+    use install = new NpgsqlCommand(ddl, admin)
+    install.ExecuteNonQuery() |> ignore
+
+    try
+        action ()
+    finally
+        use remove =
+            new NpgsqlCommand(
+                $"DROP TRIGGER {token} ON claimcore.case_changes; DROP FUNCTION claimcore.{token}();",
+                admin
+            )
+
+        remove.ExecuteNonQuery() |> ignore
+
+let private requireOwnerRollback (admin: NpgsqlConnection) reference =
+    use transaction = admin.BeginTransaction()
+
+    try
+        use update =
+            new NpgsqlCommand(
+                "UPDATE claimcore.cases SET status = 'CLOSED', revision = 2 WHERE case_reference = @reference",
+                admin,
+                transaction
+            )
+
+        update.Parameters.AddWithValue("reference", reference) |> ignore
+        Expect.equal (update.ExecuteNonQuery()) 1 "The synthetic case was updated"
+
+        expectSqlState "P0001" (fun () ->
+            use insert =
+                new NpgsqlCommand(
+                    "INSERT INTO claimcore.case_changes (operation_id, case_reference) VALUES (gen_random_uuid(), @reference)",
+                    admin,
+                    transaction
+                )
+
+            insert.Parameters.AddWithValue("reference", reference) |> ignore
+            insert.ExecuteNonQuery() |> ignore)
+    finally
+        transaction.Rollback()
+
+let private requireOriginalState (service: IClaimStore) reference =
+    let current = service.Get(reference) |> await |> accepted |> Option.map Claim.view
+
+    Expect.equal
+        (current |> Option.map (fun value -> value.Version, value.Fields.Status))
+        (Some(1L, CaseStatus.Opened))
+        "The failed update transaction rolled back"
+
+    let history = service.History(reference, 0L) |> await |> accepted
+    Expect.equal history.Items.Length 1 "No partial history; normal reads resumed"
+
 let private atomicityTests =
     testList
         "atomic persistence"
         [
-            testCase "failure after case update rolls back case and audit together" (fun () ->
+            testCase "schema drift is refused and failed owner transaction rolls back" (fun () ->
                 use database = store ()
                 let service = database :> IClaimStore
                 let request = newRequest ()
                 Service.executeAsync service clock request |> await |> accepted |> ignore
-                let token = "test_fault_" + Guid.NewGuid().ToString("N")
-                // All interpolated SQL tokens below are test-generated ASCII identifiers/UUID references,
-                // never user input. DDL identifiers cannot be ordinary SQL parameters.
-                let ddl =
-                    $"CREATE FUNCTION claimcore.{token}() RETURNS trigger LANGUAGE plpgsql AS $body$ BEGIN IF NEW.case_reference = '{request.CaseReference}' THEN RAISE EXCEPTION 'injected test failure'; END IF; RETURN NEW; END; $body$; CREATE TRIGGER {token} BEFORE INSERT ON claimcore.case_changes FOR EACH ROW EXECUTE FUNCTION claimcore.{token}();"
-
                 use admin = new NpgsqlConnection(adminConnection ())
                 admin.Open()
-                use install = new NpgsqlCommand(ddl, admin)
-                install.ExecuteNonQuery() |> ignore
 
-                try
-                    let result =
-                        Service.executeAsync service clock (next request 1L Command.Close) |> await
+                withFailureTrigger admin request.CaseReference (fun () ->
+                    Expect.throwsT<RuntimeDatabaseMismatch>
+                        (fun () ->
+                            Service.executeAsync service clock (next request 1L Command.Close)
+                            |> await
+                            |> ignore)
+                        "An unregistered trigger refuses runtime admission"
 
-                    Expect.isError result "Injected insert failure"
+                    requireOwnerRollback admin request.CaseReference)
 
-                    let current =
-                        service.Get(request.CaseReference)
-                        |> await
-                        |> accepted
-                        |> Option.map Claim.view
-
-                    Expect.equal
-                        (current |> Option.map (fun value -> value.Version, value.Fields.Status))
-                        (Some(1L, CaseStatus.Opened))
-                        "UPDATE rolled back"
-
-                    let history = service.History(request.CaseReference, 0L) |> await |> accepted
-
-                    Expect.equal history.Items.Length 1 "No partial history"
-                finally
-                    use remove =
-                        new NpgsqlCommand(
-                            $"DROP TRIGGER {token} ON claimcore.case_changes; DROP FUNCTION claimcore.{token}();",
-                            admin
-                        )
-
-                    remove.ExecuteNonQuery() |> ignore)
+                requireOriginalState service request.CaseReference)
         ]
 
 let tests =

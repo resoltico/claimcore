@@ -26,7 +26,7 @@ let private assemblyDirectory () =
 
 let private references =
     lazy
-        (let directory = assemblyDirectory ()
+        (let directory = AppContext.BaseDirectory
 
          [
              "ClaimCore.Domain"
@@ -83,9 +83,10 @@ let private inaccessible name symbol source =
         Expect.stringContains diagnostics symbol "Diagnostic identifies intended symbol")
 
 /// Inspect the actual compiler references, not just the declared ProjectReference graph.
-/// Runtime storage dependencies must still be published, but must not be usable by host source.
+/// The CLI process is a service client: storage must be absent from both its compiler inputs and
+/// its published dependency closure. The service host has a separate composition boundary.
 let private hostCompileClosures () =
-    for name in [ "Cli"; "Web" ] do
+    for name in [ "Cli" ] do
         let project =
             Path.Combine(RepositoryRoot.find (), $"src/ClaimCore.{name}/ClaimCore.{name}.fsproj")
 
@@ -117,19 +118,25 @@ let private hostCompileClosures () =
                 (names.Contains forbidden)
                 (name + " cannot compile against " + forbidden)
 
-    for required in [ "ClaimCore.Postgres.dll"; "Npgsql.dll" ] do
-        Expect.isTrue
-            (File.Exists(Path.Combine(assemblyDirectory (), required)))
-            ("Runtime dependency is still delivered: " + required)
+    let manifest = Path.Combine(assemblyDirectory (), "ClaimCore.Cli.deps.json")
+    use dependencies = JsonDocument.Parse(File.ReadAllBytes(manifest))
+
+    let libraries =
+        dependencies.RootElement.GetProperty("libraries").EnumerateObject()
+        |> Seq.map (fun item -> item.Name)
+        |> Set.ofSeq
+
+    for forbidden in [ "ClaimCore.Postgres/"; "Npgsql/" ] do
+        Expect.isFalse
+            (libraries |> Seq.exists (_.StartsWith(forbidden, StringComparison.Ordinal)))
+            ("CLI dependency manifest must exclude storage: " + forbidden)
 
 let tests =
     testList
         "compiler-enforced core boundary"
         [
             testCase "ordinary caller can use IClaimsCore" requirePositive
-            testCase
-                "case-work hosts exclude storage from compilation, not deployment"
-                hostCompileClosures
+            testCase "CLI excludes storage from compilation and deployment" hostCompileClosures
             inaccessible
                 "ordinary caller cannot see the store port"
                 "IClaimStore"
@@ -137,7 +144,7 @@ let tests =
             inaccessible
                 "ordinary caller cannot create the core callback"
                 "CoreApi"
-                "let value = ClaimCore.Application.CoreApi.create"
+                "let value = ClaimCore.Application.CoreApi.createActor"
             inaccessible
                 "ordinary caller cannot instantiate PostgreSQL storage"
                 "PostgresStore"

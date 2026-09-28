@@ -1,8 +1,8 @@
 import { localNotice } from "../api/notices";
 import type { Notice } from "../api/notices";
 import { useEffect, useState } from "react";
-import { resultNotice, type DefinitionPayload, v2 } from "../api/v2";
-import { webV2WireContractFingerprint } from "../generated/convergence/web-v2.endpoint-catalog";
+import { resultNotice, type DefinitionPayload, v3 } from "../api/v3";
+import { webV3WireContractFingerprint } from "../generated/convergence/web-v3.endpoint-catalog";
 
 export const useDefinition = (sessionEpoch: number) => {
   const [definition, setDefinition] = useState<DefinitionPayload | null>(null);
@@ -10,7 +10,7 @@ export const useDefinition = (sessionEpoch: number) => {
 
   useEffect(() => {
     const controller = new AbortController();
-    void v2.definition(controller.signal).then((result) => {
+    void v3.definition(controller.signal).then((result) => {
       if (controller.signal.aborted) return;
       const payload =
         result.kind === "outcome" && result.value.outcome.tag === "DESCRIBED"
@@ -19,7 +19,7 @@ export const useDefinition = (sessionEpoch: number) => {
       if (payload === null) {
         setDefinition(null);
         setMessage(resultNotice(result));
-      } else if (payload.webFingerprint !== webV2WireContractFingerprint) {
+      } else if (payload.webFingerprint !== webV3WireContractFingerprint) {
         setDefinition(null);
         setMessage(localNotice("definitionMismatch"));
       } else {

@@ -97,7 +97,7 @@ module RecoveryValueSchemas =
                 WireSchema.property "preparingContractFingerprint" WireSchema.digest
                 WireSchema.property
                     "preparingContractKind"
-                    (WireSchema.enumeration [ "CANONICAL_RECORD_V3"; "SEMANTIC_CORE_V1" ])
+                    (WireSchema.enumeration [ "SEMANTIC_CORE_V1" ])
                 WireSchema.property "attempts" attemptPage
             ]
 
@@ -128,10 +128,10 @@ module RecoveryValueSchemas =
             ]
 
     let importPreviewWeb semantic =
-        importPreview semantic [ "ENVELOPE"; "UNBOUND_CANONICAL_RECORD" ] authoredValuesWeb
+        importPreview semantic [ "ENVELOPE" ] authoredValuesWeb
 
     let importPreviewCli semantic =
-        importPreview semantic [ "ENVELOPE"; "CANONICAL_RECORD" ] authoredValuesCli
+        importPreview semantic [ "ENVELOPE" ] authoredValuesCli
 
     let webObservation semantic =
         Schema.oneOf

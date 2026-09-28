@@ -5,25 +5,30 @@
   <ItemGroup>
     <Compile Include="../RejectionExamples.fs" Link="RejectionExamples.fs" />
     <Compile Include="CliCorpusValues.fs" />
-    <Compile Include="CliQueryCorpusSamples.fs" />
-    <Compile Include="CliPrepareCorpusSamples.fs" />
-    <Compile Include="CliMutationCorpusSamples.fs" />
-    <Compile Include="CliRecoveryCorpusSamples.fs" />
     <Compile Include="CorpusJson.fs" />
     <Compile Include="DiagnosticCorpus.fs" />
     <Compile Include="OutcomeDiagnosticCorpus.fs" />
     <Compile Include="TransportDiagnosticCorpus.fs" />
     <Compile Include="ProcessDiagnosticCorpus.fs" />
     <Compile Include="ScalarCorpus.fs" />
-    <Compile Include="CliResponseCorpus.fs" />
     <Compile Include="CliRawCorpus.fs" />
     <Compile Include="WebCorpusSamples.fs" />
     <Compile Include="WebQueryCorpusSamples.fs" />
+    <Compile Include="WebManagementCorpusSamples.fs" />
+    <Compile Include="WebSignerApprovalCorpusSamples.fs" />
+    <Compile Include="WebCopyDeletionApprovalCorpusSamples.fs" />
+    <Compile Include="WebCopyAdoptionApprovalCorpusSamples.fs" />
+    <Compile Include="WebWriterHandoffApprovalCorpusSamples.fs" />
+    <Compile Include="WebRealDataActivationCorpusSamples.fs" />
+    <Compile Include="WebLifecycleCorpusSamples.fs" />
+    <Compile Include="WebTombstoneCorpusSamples.fs" />
     <Compile Include="WebRecoveryQueryCorpusSamples.fs" />
     <Compile Include="WebMutationCorpusSamples.fs" />
+    <Compile Include="WebSubmissionCorpusSamples.fs" />
     <Compile Include="WebImportRetainCorpusSamples.fs" />
     <Compile Include="WebHostCorpusSamples.fs" />
     <Compile Include="WebParsedCorpus.fs" />
+    <Compile Include="CliResponseCorpus.fs" />
     <Compile Include="Artifacts.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>

@@ -8,13 +8,14 @@ import type {
   FieldDescriptor,
   Receipt,
   SemanticDefinition,
-  WebV2Response,
-} from "../api/v2";
-import { v2 } from "../api/v2";
+  WebV3Response,
+} from "../api/v3";
+import { v3 } from "../api/v3";
 import { CaseFieldsView } from "../components/CaseFieldsView";
 import { CopyValue } from "../components/CopyValue";
 import { type CommandKind } from "../domain/metadata";
-import { useRetryablePage, useV2Read } from "../hooks/useV2Read";
+import { useRetryablePage, useRead } from "../hooks/useRead";
+import { LifecycleStatus } from "./LifecycleStatus";
 
 type CaseDetailProps = {
   token: string;
@@ -25,7 +26,7 @@ type CaseDetailProps = {
   onCommand: (current: CurrentCase, command: CommandKind) => void;
 };
 
-const fullHistory = (response: WebV2Response<"case.history">) => {
+const fullHistory = (response: WebV3Response<"case.history">) => {
   const outcome = response.outcome;
   if (outcome.tag !== "SUCCEEDED") return null;
   if (outcome.data.tag === "NOT_FOUND") return { items: [], nextCursor: null };
@@ -35,7 +36,7 @@ const fullHistory = (response: WebV2Response<"case.history">) => {
   return { items: entries, nextCursor: outcome.data.nextCursor };
 };
 
-const caseLookup = (response: WebV2Response<"case.get">) =>
+const caseLookup = (response: WebV3Response<"case.get">) =>
   response.outcome.tag === "SUCCEEDED" ? response.outcome.data : null;
 
 const HistoryReceipt = ({
@@ -80,7 +81,7 @@ const AcceptedHistory = ({
   loading,
   load,
   fields,
-}: ReturnType<typeof useRetryablePage<WebV2Response<"case.history">, Receipt>> & {
+}: ReturnType<typeof useRetryablePage<WebV3Response<"case.history">, Receipt>> & {
   fields: ReadonlyArray<FieldDescriptor>;
 }) => {
   const p = usePresentation();
@@ -199,16 +200,16 @@ export const CaseDetail = ({
 }: CaseDetailProps) => {
   const p = usePresentation();
   const get = useCallback(
-    (signal: AbortSignal) => v2.get(caseReference, token, signal),
+    (signal: AbortSignal) => v3.get(caseReference, token, signal),
     [caseReference, token],
   );
-  const current = useV2Read(get, caseLookup, `${caseReference}:${reloadSignal}`);
+  const current = useRead(get, caseLookup, `${caseReference}:${reloadSignal}`);
   const historyRequest = useCallback(
     (cursor: string | null, signal: AbortSignal) =>
-      v2.history(caseReference, cursor, 50, token, signal),
+      v3.history(caseReference, cursor, 50, token, signal),
     [caseReference, token],
   );
-  const history = useRetryablePage<WebV2Response<"case.history">, Receipt>(
+  const history = useRetryablePage<WebV3Response<"case.history">, Receipt>(
     historyRequest,
     fullHistory,
   );
@@ -230,6 +231,9 @@ export const CaseDetail = ({
       />
       {lookup === null ? null : (
         <CurrentPresentation current={lookup} definition={definition} onCommand={onCommand} />
+      )}
+      {current.loading ? null : (
+        <LifecycleStatus caseReference={caseReference} token={token} reloadSignal={reloadSignal} />
       )}
       <AcceptedHistory {...history} fields={definition.fields} />
     </section>

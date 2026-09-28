@@ -33,6 +33,7 @@ let private propertyIds =
             "CC-FUZZ-RECORD-001"
             "CC-FUZZ-ENVELOPE-001"
             "CC-FUZZ-CURSOR-001"
+            "CC-FUZZ-CASE-LIST-CURSOR-001"
         ]
 
 let private fixedBaseSeed = 0x434C41494D434F52UL

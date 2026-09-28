@@ -19,7 +19,7 @@ Choose the shortest path for the work you are doing:
 | Exercise one synthetic CLI lifecycle | [Synthetic walkthrough](../examples/README.md) |
 
 Repository-local references explain the [frontend source](../web/README.md), generated semantic,
-CLI-v3, and Web-v2 contract artifacts, and [engineering tooling](../eng/README.md). Contributor
+CLI-v4, and Web-v3 contract artifacts, and [engineering tooling](../eng/README.md). Contributor
 policy is in [CONTRIBUTING.md](../CONTRIBUTING.md); support routing is in [SUPPORT.md](../SUPPORT.md);
 sensitive reports follow [SECURITY.md](../SECURITY.md).
 

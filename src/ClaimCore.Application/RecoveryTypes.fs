@@ -164,9 +164,7 @@ type RecoveryDismissOutcome =
     | DismissCancelledBeforeAdmission of Guid
     | DismissStateUnknown of operationId: Guid * requestSha256: string * fault: CoreFault
 
-type RecoveryArtifactKind =
-    | Envelope
-    | UnboundCanonicalRecord
+type RecoveryArtifactKind = | Envelope
 
 type RecoveryExport =
     {
@@ -189,6 +187,7 @@ type RecoveryImportEffect =
 
 type RecoveryImportPreview =
     {
+        CaseId: Guid
         ArtifactKind: RecoveryArtifactKind
         SourceSha256: string
         DecodedEffect: RecoveryImportEffect
@@ -243,13 +242,5 @@ type IRecoveryWorkflow =
             Task<RecoveryQueryOutcome<RecoveryImportPreview>>
 
     abstract RetainEnvelopeImport:
-        source: byte array * sourceSha256: string * cancellationToken: CancellationToken ->
-            Task<RecoveryImportRetainOutcome>
-
-    abstract PreviewCanonicalRecordImport:
-        source: byte array * cancellationToken: CancellationToken ->
-            Task<RecoveryQueryOutcome<RecoveryImportPreview>>
-
-    abstract RetainCanonicalRecordImport:
         source: byte array * sourceSha256: string * cancellationToken: CancellationToken ->
             Task<RecoveryImportRetainOutcome>

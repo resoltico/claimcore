@@ -41,6 +41,8 @@ module internal RecoveryDismissOperations =
             RecoveryDismissOutcome.DismissCancelledBeforeAdmission operationId
         | Error RecoveryStoreFailure.IdempotencyConflict ->
             RecoveryDismissOutcome.DismissRefused(None, RecoverySupport.conflict)
+        | Error RecoveryStoreFailure.ResourceUnavailable ->
+            RecoveryDismissOutcome.DismissRefused(None, RecoveryRejection.ResourceUnavailable)
         | Error failure ->
             RecoveryDismissOutcome.DismissFailed(TypedProjection.recoveryFault failure)
 
@@ -90,6 +92,41 @@ module internal RecoveryDismissOperations =
                             afterObservation recovery operationId requestSha256 cancellationToken
         }
 
+    let private dismissStored
+        (store: IClaimStore)
+        (recovery: IRecoveryStore)
+        (operationId: Guid)
+        (requestSha256: string)
+        (cancellationToken: CancellationToken)
+        =
+        task {
+            match! recovery.Get(operationId, cancellationToken) with
+            | Error RecoveryStoreFailure.ReadCancelled ->
+                return RecoveryDismissOutcome.DismissCancelledBeforeAdmission operationId
+            | Error RecoveryStoreFailure.ResourceUnavailable ->
+                return
+                    RecoveryDismissOutcome.DismissRefused(
+                        None,
+                        RecoveryRejection.ResourceUnavailable
+                    )
+            | Error failure ->
+                return RecoveryDismissOutcome.DismissFailed(TypedProjection.recoveryFault failure)
+            | Ok None -> return RecoveryDismissOutcome.DismissNotFound operationId
+            | Ok(Some _) when cancellationToken.IsCancellationRequested ->
+                return RecoveryDismissOutcome.DismissCancelledBeforeAdmission operationId
+            | Ok(Some(RecoveryStoredOperation.RevokedTombstone _)) ->
+                return! afterObservation recovery operationId requestSha256 cancellationToken
+            | Ok(Some(RecoveryStoredOperation.Retained(retained, _))) ->
+                return!
+                    dismissRetained
+                        store
+                        recovery
+                        operationId
+                        requestSha256
+                        cancellationToken
+                        retained
+        }
+
     let dismiss
         (store: IClaimStore)
         (recovery: IRecoveryStore)
@@ -116,25 +153,4 @@ module internal RecoveryDismissOperations =
                 )
             )
         else
-            task {
-                match! recovery.Get(operationId, cancellationToken) with
-                | Error RecoveryStoreFailure.ReadCancelled ->
-                    return RecoveryDismissOutcome.DismissCancelledBeforeAdmission operationId
-                | Error failure ->
-                    return
-                        RecoveryDismissOutcome.DismissFailed(TypedProjection.recoveryFault failure)
-                | Ok None -> return RecoveryDismissOutcome.DismissNotFound operationId
-                | Ok(Some _) when cancellationToken.IsCancellationRequested ->
-                    return RecoveryDismissOutcome.DismissCancelledBeforeAdmission operationId
-                | Ok(Some(RecoveryStoredOperation.RevokedTombstone _)) ->
-                    return! afterObservation recovery operationId requestSha256 cancellationToken
-                | Ok(Some(RecoveryStoredOperation.Retained(retained, _))) ->
-                    return!
-                        dismissRetained
-                            store
-                            recovery
-                            operationId
-                            requestSha256
-                            cancellationToken
-                            retained
-            }
+            dismissStored store recovery operationId requestSha256 cancellationToken

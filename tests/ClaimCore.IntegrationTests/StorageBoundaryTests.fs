@@ -167,7 +167,7 @@ let private environmentTests =
         [
             testCase "DateStyle cannot change date persistence" (fun () ->
                 withRoleSetting "DateStyle" "'SQL, DMY'" (fun () ->
-                    use database = new PostgresStore(appConnection ())
+                    use database = store ()
                     let service = database :> IClaimStore
                     let request = newRequest ()
                     let original = Service.executeAsync service clock request |> await |> accepted
@@ -185,17 +185,20 @@ let private environmentTests =
                 for setting, value in
                     [ "synchronous_commit", "off"; "default_transaction_read_only", "on" ] do
                     withRoleSetting setting value (fun () ->
-                        use database = new PostgresStore(appConnection ())
+                        use source = RuntimeDataSource.create (appConnection ())
 
-                        Expect.equal
-                            (database.CheckSchema() |> await)
-                            (Error CoreFailure.SchemaMismatch)
+                        Expect.throwsT<RuntimeDatabaseMismatch>
+                            (fun () ->
+                                use _connection = RuntimeDatabase.openConnection source in ())
                             "Connection settings must meet baseline"))
             testCase "initializer refuses startup-option overrides" (fun () ->
                 let builder = NpgsqlConnectionStringBuilder(adminConnection ())
                 builder.Options <- "-c synchronous_commit=off"
 
-                SchemaBaseline.initialize builder.ConnectionString "Etc/UTC"
+                SchemaBaseline.initialize
+                    builder.ConnectionString
+                    "Etc/UTC"
+                    syntheticSuppressionCheck
                 |> refusedAdministration AdministrationFailure.OwnerConnectionInvalid
 
                 builder.Options <- ""
@@ -260,14 +263,16 @@ let private transactionTests =
                 try
                     set (String.replicate 64 "0")
 
-                    SchemaBaseline.initialize (adminConnection ()) "Etc/UTC"
+                    SchemaBaseline.initialize
+                        (adminConnection ())
+                        "Etc/UTC"
+                        syntheticSuppressionCheck
                     |> refusedAdministration AdministrationFailure.BaselineIdentityMismatch
 
-                    use database = new PostgresStore(appConnection ())
+                    use source = RuntimeDataSource.create (appConnection ())
 
-                    Expect.equal
-                        (database.CheckSchema() |> await)
-                        (Error CoreFailure.SchemaMismatch)
+                    Expect.throwsT<RuntimeDatabaseMismatch>
+                        (fun () -> use _connection = RuntimeDatabase.openConnection source in ())
                         "A marker with the wrong digest is not a supported baseline"
                 finally
                     set original)
@@ -276,4 +281,10 @@ let private transactionTests =
 let tests =
     testList
         "Storage boundary qualification"
-        [ StorageDateTests.tests; scalarTests; environmentTests; transactionTests ]
+        [
+            StorageDateTests.tests
+            scalarTests
+            environmentTests
+            transactionTests
+            CatalogAdmissionTests.tests
+        ]

@@ -9,13 +9,17 @@ trust boundaries. [Development](docs/development.md) owns commands and gates.
 
 - `CaseFields` has exactly thirteen business fields. Revisions, operation IDs, timestamps,
   attribution, and available commands remain outside it.
-- Domain and Application own business rules, transitions, available commands, outcomes, and
-  recovery decisions. Normal callers use typed `IClaimsCore`, with recovery only through its
-  `Recovery` member. CLI and Web render core outcomes; they do not invent rules or receive stores,
-  retained preparations, recovery ports, or transition callbacks. `ClaimCore.Hosting` is the only
-  runtime composition root, and `ClaimCore.Cli` is the only CLI code that names it; a case-work host
-  never links `ClaimCore.Postgres` or reaches schema administration. Put a new CLI decision in
-  `ClaimCore.CliProtocol` over the supplied core, never in the entry point.
+- Domain and Application own business rules, transitions, available commands, outcomes, actor
+  authorization, and recovery decisions. Normal service callers use actor-bound `IActorClaimsCore`;
+  recovery, lifecycle, tombstone and management work stays behind its typed members. Web binds an
+  OIDC principal to that facade and renders its outcomes; the browser and CLI are authenticated
+  HTTPS clients, not database peers. They do not invent rules or receive stores, retained
+  preparations, recovery ports, witness credentials, or transition callbacks.
+- `ClaimCore.Hosting` is the only case-work runtime composition root. A case-work host never links
+  `ClaimCore.Postgres` or reaches schema administration. `ClaimCore.CliProtocol` owns CLI-v4
+  framing, OIDC delivery, and response classification over the generated service contract;
+  `ClaimCore.Cli` is only the process entry point. `ClaimCore.Database` is the separate owner-only
+  administration surface, not a CLI or Web backdoor.
 - RecordFormat owns canonical operation and snapshot encoding. An uncertain retry must preserve the
   exact operation ID and request bytes; never rebase it or infer that a commit failed.
 - Operation identity, authority, and knowledge are separate. Accepted history proves acceptance;
@@ -24,6 +28,15 @@ trust boundaries. [Development](docs/development.md) owns commands and gates.
   pruned revoked preparation may expose only its tombstone.
 - Native `IClaimsCore.Prepare` and `Execute` accept Domain `CommandRequest`. CLI and Web bind their
   generated form shape once through `Drafts.bind`; do not add another public raw-field boundary.
+- The separate witness owns ordered authority evidence and exact settlement/readback; primary
+  rows alone do not prove freshness or a definite accepted outcome. Actor grants are default-deny,
+  rechecked under authoritative locks, and cannot be inferred from a database role. An inaccessible
+  case or operation has the same public refusal as an absent one. Case-list cursors are opaque,
+  principal/grant/query-bound and short-lived.
+- A data-entry-error void preserves history and is not erasure. Live purge, witness-payload prune,
+  managed-copy deletion, and terminal privacy certification are distinct owner/evidence-bound
+  steps. Active holds, unknown copies, unsettled attempts or missing independent verification keep
+  the state pending; keyed suppression evidence remains pseudonymous data.
 - `CORRECT_CASE` has three explicit tagged groups. Keep reads current accepted state; never add a
   business field, broaden historical `AMEND_REGISTRATION`, or accept an adapter-only correction rule.
 - The fresh initializer atomically stores the installation's immutable canonical IANA business time zone. Runtime
@@ -39,7 +52,6 @@ trust boundaries. [Development](docs/development.md) owns commands and gates.
   Publish a branch/PR and report its exact revisions; do not approve, merge, enable auto-merge or
   change native protections unless separately and explicitly authorized. Do not use shared owner
   credentials as evidence of independent human review.
-
 - Test only with synthetic data in isolated databases. Preserve adopted cases, database volumes,
   private `.local` state, and retained old installation evidence. Never print secrets, connection strings,
   recovery bytes, or claimant payloads.
@@ -60,3 +72,9 @@ trust boundaries. [Development](docs/development.md) owns commands and gates.
   bytes matching its source, lock, contract, and toolchain manifest.
 - Report commands actually executed and their outcomes separately from source inspection. Keep
   generated reports and private local state in ignored paths, never tracked source.
+
+## Name by meaning, not development history
+
+Name files, directories, and all identifiers—including functions, types, variables, tests, and configuration keys—for what they actually represent or do. Use precise, consistent domain terminology and idiomatic project conventions. Do not encode product maturity, implementation-plan stages, task provenance, temporary development status, or replacement history. Distinguish alternatives by meaningful differences, not vague labels or unsupported quality claims.
+Apply this semantically, not as a word blacklist. States, stages, versions, and ordering are valid when intrinsic to the domain, algorithm, contract, or artifact. Planning and historical records may identify the work they document.
+Review names you introduce or change. Keep renames within scope, update affected references, and honor external naming and compatibility requirements.

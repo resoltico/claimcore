@@ -9,7 +9,7 @@ afterEach(() => vi.resetModules());
 const renderState = async (state: SessionState) => {
   vi.resetModules();
   vi.doMock("../src/hooks/useSession", () => ({
-    useSession: () => ({ state, login: vi.fn(), logout: vi.fn(), refresh: vi.fn() }),
+    useSession: () => ({ state, logout: vi.fn(), refresh: vi.fn() }),
   }));
   const { App } = await import("../src/App");
   const { PresentationProvider } = await import("../src/presentation/PresentationProvider");
@@ -29,9 +29,9 @@ it("renders loading and refreshable session failures", async () => {
   await userEvent.setup().click(screen.getByRole("button", { name: "Try again" }));
 });
 
-it("renders anonymous login and authenticated dashboard paths", async () => {
+it("renders OIDC sign-in and authenticated dashboard paths", async () => {
   const anonymous = await renderState({ kind: "anonymous", token: null, message: null, epoch: 2 });
-  expect(screen.getByRole("button", { name: "Sign in" })).toBeDisabled();
+  expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/auth/login");
   anonymous.unmount();
   const rejected = await renderState({
     kind: "anonymous",
@@ -40,7 +40,7 @@ it("renders anonymous login and authenticated dashboard paths", async () => {
     epoch: 3,
   });
   expect(screen.getByRole("alert")).toHaveTextContent("Invalid session response.");
-  expect(screen.getByRole("button", { name: "Sign in" })).not.toBeDisabled();
+  expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/auth/login");
   rejected.unmount();
   await renderState({ kind: "authenticated", token: "token", epoch: 4 });
   expect(screen.getByText("Loading core definition…")).toBeVisible();

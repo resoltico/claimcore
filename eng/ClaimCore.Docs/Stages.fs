@@ -41,6 +41,7 @@ module Stages =
         @ platformReports "docs" "ClaimCore.DocsTests" "ClaimCore.DocsTests.trx"
         @ [
             report "integration-linux" "ClaimCore.IntegrationTests" "ClaimCore.IntegrationTests.trx"
+            report "witness-qualification" "ClaimCore.WitnessTests" "ClaimCore.WitnessTests.trx"
             report
                 "recovery-qualification"
                 "ClaimCore.RecoveryQualificationTests"
@@ -53,6 +54,10 @@ module Stages =
                 "fresh-baseline-qualification"
                 "ClaimCore.MigrationQualificationTests"
                 "ClaimCore.MigrationQualificationTests.trx"
+            report
+                "backup-qualification"
+                "ClaimCore.BackupQualificationTests"
+                "ClaimCore.BackupQualificationTests.trx"
             report "acceptance-linux" "ClaimCore.AcceptanceTests" "ClaimCore.AcceptanceTests.trx"
         ]
 

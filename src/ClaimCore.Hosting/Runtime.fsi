@@ -8,10 +8,29 @@ open ClaimCore.Application
 /// Local runtime composition. This is not a remote authentication or hostile-code sandbox.
 [<Sealed>]
 type Runtime =
-    member Core: IClaimsCore
+    member ForActor: principal: PrincipalKey -> IActorClaimsCore
+
+    member internal ForActorWithAdmission:
+        principal: PrincipalKey * selectedAdmission: RuntimeAdmission -> IActorClaimsCore
+
+    member DataUseReadiness: unit -> string * string * bool
+
+    static member internal OpenPostgres:
+        connectionString: string *
+        witnessConnection: string *
+        witnessKey: byte array *
+        suppressionKeyFilePath: string *
+        artifactKeyRingPath: string *
+        cancellationToken: CancellationToken ->
+            Task<Result<Runtime, RuntimeOpenFault>>
 
     static member OpenPostgres:
-        connectionString: string * cancellationToken: CancellationToken ->
+        connectionString: string *
+        witnessConnection: string *
+        witnessKeyRingFilePath: string *
+        suppressionKeyFilePath: string *
+        artifactKeyRingPath: string *
+        cancellationToken: CancellationToken ->
             Task<Result<Runtime, RuntimeOpenFault>>
 
     interface IDisposable

@@ -1,8 +1,8 @@
 import { act, renderHook } from "@testing-library/react";
 import { expect, it } from "vitest";
 import { usePreparedConsent } from "../src/hooks/operation/usePreparedConsent";
-import type { PreparationDetails } from "../src/api/v2";
-import { preparation } from "./v2-ui.fixtures";
+import type { PreparationDetails } from "../src/api/v3";
+import { preparation } from "./v3-ui.fixtures";
 
 it("binds consent to one reviewed preparation and exact identity rather than an editor-wide boolean", () => {
   const { result, rerender } = renderHook<

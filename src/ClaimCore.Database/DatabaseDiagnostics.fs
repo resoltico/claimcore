@@ -61,6 +61,9 @@ module DatabaseDiagnostics =
             AdministrationFailure.RecoveryFootprintUnreadable,
             ("DB_RECOVERY_FOOTPRINT_UNREADABLE",
              "The terminal recovery footprint could not be read.")
+            AdministrationFailure.DataAuditFailed,
+            ("DB_DATA_AUDIT_FAILED",
+             "The full data and witness audit failed. Keep case work quarantined and inspect evidence.")
             AdministrationFailure.SchemaDefinitionInvalid,
             ("DB_SCHEMA_DEFINITION_INVALID",
              "The current schema definition or required installed structure is invalid or unavailable. No repair was attempted.")
@@ -74,32 +77,6 @@ module DatabaseDiagnostics =
         ]
 
     let private native = group0 @ group1 @ group2 @ group3
-
-    let private inputPolicy =
-        function
-        | DatabaseInputProblem.UnsupportedInvocation ->
-            "DB_INVOCATION_UNSUPPORTED", "Run ClaimCore.Database help for supported arguments."
-        | DatabaseInputProblem.UnknownOption -> "DB_OPTION_UNKNOWN", "An option is not supported."
-        | DatabaseInputProblem.MissingOptionValue _ ->
-            "DB_OPTION_VALUE_MISSING", "A known option requires a value."
-        | DatabaseInputProblem.RepeatedOption _ ->
-            "DB_OPTION_REPEATED", "A known option was supplied more than once."
-        | DatabaseInputProblem.OptionOutOfRange _ ->
-            "DB_OPTION_OUT_OF_RANGE", "An option value is outside its supported range."
-        | DatabaseInputProblem.ConnectionSettingMissing ->
-            "DB_CONNECTION_SETTING_MISSING",
-            "Set CLAIMCORE_ADMIN_CONNECTION_FILE to the private schema-owner connection file."
-        | DatabaseInputProblem.ConnectionFileRefused ->
-            "DB_CONNECTION_FILE_REFUSED",
-            "The schema-owner connection file could not be read securely."
-        | DatabaseInputProblem.ConnectionFileEmpty ->
-            "DB_CONNECTION_FILE_EMPTY", "The schema-owner connection file is empty."
-        | DatabaseInputProblem.ProcessFailed ->
-            "DB_PROCESS_FAILED",
-            "The administration process failed. Inspect state before continuing."
-        | DatabaseInputProblem.OutputDeliveryFailed ->
-            "DB_OUTPUT_DELIVERY_FAILED",
-            "The administration result could not be delivered completely. The operation outcome below remains authoritative for this process."
 
     let private encode write =
         let buffer = ArrayBufferWriter<byte>()
@@ -130,7 +107,7 @@ module DatabaseDiagnostics =
         | _ -> ()
 
     let inputFailure reason =
-        let id, message = inputPolicy reason
+        let id, message = DatabaseInputPolicy.policy reason
 
         encode (fun writer ->
             writer.WriteStartObject()
@@ -240,7 +217,9 @@ module DatabaseDiagnostics =
 
     let deliveryFailure command result =
         encode (fun writer ->
-            let id, message = inputPolicy DatabaseInputProblem.OutputDeliveryFailed
+            let id, message =
+                DatabaseInputPolicy.policy DatabaseInputProblem.OutputDeliveryFailed
+
             writer.WriteStartObject()
             writer.WriteString("kind", "administrationDeliveryFailure")
             writer.WriteString("command", DatabaseArguments.commandToken command)
@@ -255,7 +234,8 @@ module DatabaseDiagnostics =
     let nativeToken reason =
         native |> List.find (fst >> (=) reason) |> snd |> fst
 
-    let inputToken reason = inputPolicy reason |> fst
+    let inputToken reason =
+        DatabaseInputPolicy.policy reason |> fst
 
     let inputReasons =
         [
@@ -264,6 +244,18 @@ module DatabaseDiagnostics =
             DatabaseInputProblem.ConnectionSettingMissing
             DatabaseInputProblem.ConnectionFileRefused
             DatabaseInputProblem.ConnectionFileEmpty
+            DatabaseInputProblem.WitnessSettingMissing
+            DatabaseInputProblem.WitnessFileRefused
+            DatabaseInputProblem.WitnessFileInvalid
+            DatabaseInputProblem.PrincipalFileRefused
+            DatabaseInputProblem.PrincipalFileInvalid
+            DatabaseInputProblem.ManagedCopyFileRefused
+            DatabaseInputProblem.ErasureProposalFileRefused
+            DatabaseInputProblem.SuppressionKeyFileRefused
+            DatabaseInputProblem.RestoreEvidenceFileRefused
+            DatabaseInputProblem.BackupHealthFileRefused
+            DatabaseInputProblem.WriterHandoffFileRefused
+            DatabaseInputProblem.PhysicalCopyProofFileRefused
         ]
         @ (DatabaseOptions.all |> List.map DatabaseInputProblem.RepeatedOption)
         @ (DatabaseOptions.all

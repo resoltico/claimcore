@@ -2,7 +2,7 @@ import { render, screen, waitFor } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import { Dashboard } from "../src/views/Dashboard";
-import { definition, response } from "./v2-ui.fixtures";
+import { definition, response } from "./v3-ui.fixtures";
 
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 

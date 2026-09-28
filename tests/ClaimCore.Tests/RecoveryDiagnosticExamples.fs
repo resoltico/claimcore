@@ -81,10 +81,10 @@ let private group2 =
         "RECOVERY_ENVELOPE_INVALID_OR_UNSUPPORTED",
         RecoveryRejectionCode.UnsupportedRecoveryArtifact,
         RecommendedAction.CorrectInput
-        RecoveryRejection.CanonicalRecordInvalidOrUnsupported,
-        "RECOVERY_CANONICAL_RECORD_INVALID_OR_UNSUPPORTED",
-        RecoveryRejectionCode.UnsupportedRecoveryArtifact,
-        RecommendedAction.CorrectInput
+        RecoveryRejection.ResourceUnavailable,
+        "RESOURCE_UNAVAILABLE",
+        RecoveryRejectionCode.ResourceUnavailable,
+        RecommendedAction.NoneRequired
     ]
 
 let private group3 =

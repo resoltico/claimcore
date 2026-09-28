@@ -9,9 +9,7 @@ open ClaimCore.Domain
 /// the composed PostgreSQL runtime through InternalsVisibleTo). `IRecoveryWorkflow` remains the
 /// sole public recovery capability.
 [<RequireQualifiedAccess>]
-type internal PreparingContractKind =
-    | CanonicalRecordV3
-    | SemanticCoreV1
+type internal PreparingContractKind = | SemanticCoreV1
 
 [<RequireQualifiedAccess>]
 type internal PreparationLifecycle =
@@ -23,6 +21,10 @@ type internal PreparationLifecycle =
 type internal RecoveryPreparationDraft =
     {
         OperationId: Guid
+        CaseId: Guid
+        PreparerActorId: Guid
+        ImporterActorId: Guid option
+        PreparerGrantRevision: int64
         CanonicalRequestFormat: int
         RequestSha256: string
         CanonicalRequest: byte array
@@ -35,6 +37,10 @@ type internal RecoveryPreparationDraft =
 type internal RetainedPreparation =
     {
         OperationId: Guid
+        CaseId: Guid
+        PreparerActorId: Guid
+        ImporterActorId: Guid option
+        PreparerGrantRevision: int64
         CanonicalRequestFormat: int
         RequestSha256: string
         CanonicalRequest: byte array
@@ -44,6 +50,26 @@ type internal RetainedPreparation =
         PreparingContractKind: PreparingContractKind
         Lifecycle: PreparationLifecycle
     }
+
+type internal VerifiedRecoveryArtifact =
+    {
+        OperationId: Guid
+        CaseId: Guid
+        PreparerActorId: Guid
+        PreparerGrantRevision: int64
+        CanonicalRequest: byte array
+    }
+
+/// Hosting supplies separately custodied recovery encryption/MAC keys, a CSPRNG nonce and
+/// installation/epoch/clock policy. Application never sees keys or accepts old plaintext envelopes.
+type internal IRecoveryArtifactAuthority =
+    abstract Sign:
+        retained: RetainedPreparation * cancellationToken: CancellationToken ->
+            Task<Result<byte array, CoreFault>>
+
+    abstract Verify:
+        source: byte array * cancellationToken: CancellationToken ->
+            Task<Result<VerifiedRecoveryArtifact, RecoveryRejection>>
 
 [<NoEquality; NoComparison>]
 type internal RecoveryAttemptCursor =
@@ -67,6 +93,9 @@ type internal RecoveryAttemptPage =
 type internal OperationRevocation =
     {
         OperationId: Guid
+        CaseId: Guid
+        RevokingActorId: Guid
+        GrantRevision: int64
         CanonicalRequestFormat: int
         RequestSha256: string
         RevokedAt: DateTimeOffset
@@ -94,6 +123,9 @@ type internal RecoveryCursor =
         View: RecoveryListView
         OccurredAt: DateTimeOffset
         OperationId: Guid
+        ActorId: Guid
+        GrantRevision: int64
+        ExpiresAt: DateTimeOffset
     }
 
 [<RequireQualifiedAccess; NoEquality; NoComparison>]
@@ -161,6 +193,7 @@ type internal RecoveryStoreFailure =
     | InvalidInput of field: string
     | IdempotencyConflict
     | NotFound
+    | ResourceUnavailable
     | CapacityExceeded
     | SchemaMismatch
     | StoreUnavailable
@@ -212,7 +245,7 @@ type internal IRecoveryStore =
     abstract ExecuteAdmitted:
         operation: PreparedOperation *
         attemptId: Guid *
-        today: (unit -> DateOnly) *
+        capture: (unit -> BusinessContext) *
         decide: (DateOnly -> Claim option -> Result<Claim, DomainError>) *
         cancellationToken: CancellationToken ->
             Task<Result<AdmittedExecution, RecoveryStoreFailure>>

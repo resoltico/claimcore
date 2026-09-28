@@ -1,7 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <Compile Include="AssemblyInfo.fs" />
     <Compile Include="InputProblems.fs" />
     <Compile Include="Contracts.fs" />
+    <Compile Include="CaseLifecycleTypes.fs" />
+    <Compile Include="OwnerErasureTypes.fs" />
+    <Compile Include="OwnerErasureEvidence.fs" />
+    <Compile Include="TombstoneHoldPolicy.fs" />
+    <Compile Include="CaseLifecycleValidation.fs" />
+    <Compile Include="CaseLifecycle.fs" />
+    <Compile Include="CaseLifecycleOwnerErasure.fs" />
     <Compile Include="Vocabulary.fs" />
     <Compile Include="Descriptors.fs" />
     <Compile Include="FieldDefinitions.fs" />

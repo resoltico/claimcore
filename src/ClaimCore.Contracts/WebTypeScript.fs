@@ -235,7 +235,7 @@ module WebTypeScript =
             @ [ "CommandDraft", ProjectionSchema.commandDraft projection.Semantic ]
 
         moduleBytes
-            [ "import type { SemanticDefinition } from \"./web-v2.types.semantic\";" ]
+            [ "import type { SemanticDefinition } from \"./web-v3.types.semantic\";" ]
             aliases
             []
 
@@ -259,8 +259,8 @@ module WebTypeScript =
 
         moduleBytes
             [
-                "import type { Rejection } from \"./web-v2.types.diagnostics\";"
-                "import type { CaseView, FieldDiff, Fault, Receipt, RuntimeContext } from \"./web-v2.types.core\";"
+                "import type { Rejection } from \"./web-v3.types.diagnostics\";"
+                "import type { CaseView, FieldDiff, Fault, Receipt, RuntimeContext } from \"./web-v3.types.core\";"
             ]
             aliases
             []
@@ -268,12 +268,12 @@ module WebTypeScript =
     let private barrel =
         [
             "/* Generated from ClaimCore.Contracts. Do not edit. */"
-            "export type * from \"./web-v2.types.semantic\";"
-            "export type * from \"./web-v2.types.core\";"
-            "export type * from \"./web-v2.types.transport\";"
-            "export type * from \"./web-v2.types.diagnostics\";"
-            "export type * from \"./web-v2.types.recovery\";"
-            "export type * from \"./web-v2.types.responses\";"
+            "export type * from \"./web-v3.types.semantic\";"
+            "export type * from \"./web-v3.types.core\";"
+            "export type * from \"./web-v3.types.transport\";"
+            "export type * from \"./web-v3.types.diagnostics\";"
+            "export type * from \"./web-v3.types.recovery\";"
+            "export type * from \"./web-v3.types.responses\";"
             ""
         ]
         |> String.concat "\n"
@@ -283,13 +283,13 @@ module WebTypeScript =
         let values = definitions projection
 
         [
-            "web-v2.types.semantic.ts", semanticModule projection
-            "web-v2.types.core.ts", coreModule projection values
-            "web-v2.types.transport.ts",
+            "web-v3.types.semantic.ts", semanticModule projection
+            "web-v3.types.core.ts", coreModule projection values
+            "web-v3.types.transport.ts",
             moduleBytes [] (fromDefinitions [ "HostFailure" ] values) []
-            "web-v2.types.diagnostics.ts",
+            "web-v3.types.diagnostics.ts",
             moduleBytes [] (fromDefinitions [ "Rejection" ] values) []
-            "web-v2.types.recovery.ts", recoveryModule values
-            "web-v2.types.ts", barrel
+            "web-v3.types.recovery.ts", recoveryModule values
+            "web-v3.types.ts", barrel
         ]
         @ WebTypeScriptResponses.artifacts projection

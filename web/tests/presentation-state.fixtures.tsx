@@ -1,10 +1,10 @@
 import { screen } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import { vi } from "vitest";
-import type { CommandDraft, CurrentCase } from "../src/api/v2";
+import type { CommandDraft, CurrentCase } from "../src/api/v3";
 import { PresentationControls } from "../src/presentation/PresentationControls";
 import { OperationEditor } from "../src/views/OperationEditor";
-import { definition, fields, preparation, response } from "./v2-ui.fixtures";
+import { definition, fields, preparation, response } from "./v3-ui.fixtures";
 
 export const current: CurrentCase = {
   case: { fields, revision: "1" },

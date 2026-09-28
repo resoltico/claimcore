@@ -124,10 +124,12 @@ let private state =
 let private application =
     [
         "QUERY_PAGE_LIMIT_RANGE", Rejection.PageLimitOutOfRange 50
+        "QUERY_CASE_LIST_CURSOR_INVALID", Rejection.InvalidCaseListCursor
         "QUERY_HISTORY_CURSOR_INVALID", Rejection.InvalidHistoryCursor
         "OPERATION_CONTENT_CONFLICT", Rejection.IdempotencyConflict
         "OPERATION_REVOKED", Rejection.OperationRevoked
         "OPERATION_RECOVERY_ATTEMPT_LIMIT", Rejection.RecoveryAttemptLimitReached
+        "ACCESS_RESOURCE_UNAVAILABLE", Rejection.ResourceUnavailable
     ]
 
 let all = text @ date @ amount @ command @ correction @ state @ application

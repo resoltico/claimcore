@@ -6,6 +6,7 @@ open System.Text
 open System.Text.Json
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Http
+open Microsoft.AspNetCore.Http.Features
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.FSharp.Reflection
 open Expecto
@@ -112,6 +113,67 @@ let private invokeFailure phase =
     use document = JsonDocument.Parse output
     document.RootElement.Clone()
 
+let private startedResponseFailure () =
+    let request = context ""
+
+    let original =
+        request.Features.Get<IHttpResponseFeature>()
+        |> Option.ofObj
+        |> Option.defaultWith (fun () -> invalidOp "The synthetic response feature is missing.")
+
+    let mutable responseBody = request.Response.Body
+
+    let started =
+        { new IHttpResponseFeature with
+            member _.StatusCode
+                with get () = original.StatusCode
+                and set value = original.StatusCode <- value
+
+            member _.ReasonPhrase
+                with get () = original.ReasonPhrase
+                and set value = original.ReasonPhrase <- value
+
+            member _.Headers
+                with get () = original.Headers
+                and set value = original.Headers <- value
+
+            member _.Body
+                with get () = responseBody
+                and set value = responseBody <- value
+
+            member _.HasStarted = true
+            member _.OnStarting(callback, state) = original.OnStarting(callback, state)
+            member _.OnCompleted(callback, state) = original.OnCompleted(callback, state)
+        }
+
+    request.Features.Set<IHttpResponseFeature>(started)
+
+    let next =
+        RequestDelegate(fun value ->
+            task {
+                do! value.Response.WriteAsync("PARTIAL")
+                return raise (IOException("PRIVATE-PROVIDER-PATH"))
+            }
+            :> Task)
+
+    RouteSupport.handleFailures request next |> _.GetAwaiter().GetResult()
+
+    let output =
+        Encoding.UTF8.GetString((request.Response.Body :?> MemoryStream).ToArray())
+
+    Expect.equal output "PARTIAL" "A started response is aborted without a second JSON body"
+
+let private failedResponseDelivery () =
+    let request = context ""
+    use output = new FaultingWriteStream()
+    request.Response.Body <- output
+
+    let next =
+        RequestDelegate(fun _ -> Task.FromException(IOException("PRIVATE-PROVIDER-PATH")))
+
+    RouteSupport.handleFailures request next |> _.GetAwaiter().GetResult()
+    Expect.equal output.Length 0L "A failed host-error write does not expose a partial second body"
+
 let private dispatchKnowledge () =
     for phase, expected, knowledge in
         [
@@ -126,6 +188,9 @@ let private dispatchKnowledge () =
             (value.GetProperty("executionPhase").GetString() |> Option.ofObj)
             knowledge
             "No false non-commit or retry guarantee"
+
+    startedResponseFailure ()
+    failedResponseDelivery ()
 
 let private methodFailure () =
     let request = context ""

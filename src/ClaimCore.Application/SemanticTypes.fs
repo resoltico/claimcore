@@ -78,14 +78,14 @@ type CaseSummary =
 
 type CaseListRequest =
     {
-        AfterReference: string option
+        AfterCursor: string option
         Limit: int
     }
 
 type CaseSummaryPage =
     {
         Items: CaseSummary list
-        NextAfterReference: string option
+        NextCursor: string option
     }
 
 type HistoryDetail =

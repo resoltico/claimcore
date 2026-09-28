@@ -8,6 +8,7 @@ open Npgsql
 open NpgsqlTypes
 open ClaimCore.Application
 open ClaimCore.RecordFormat
+open ClaimCore.Witness
 
 /// Durable operation revocations outlive optional technical preparation rows. This module owns no
 /// business decision; it only reads and appends exact operation authority evidence.
@@ -19,6 +20,9 @@ module internal OperationAuthorityStore =
     type Revocation =
         {
             OperationId: Guid
+            CaseId: Guid
+            RevokingActorId: Guid
+            GrantRevision: int64
             CanonicalRequestFormat: int
             RequestSha256: string
             RevokedAt: DateTimeOffset
@@ -42,11 +46,17 @@ module internal OperationAuthorityStore =
             reader.GetGuid(0) = Guid.Empty
             || format <> int RecordVersions.CanonicalCommandFormat
             || digest.Length <> 64
+            || reader.GetGuid(5) = Guid.Empty
+            || reader.GetInt64(6) <= 0L
+            || reader.GetGuid(7) = Guid.Empty
         then
             raise (InvalidDataException("Stored operation revocation failed integrity checks."))
 
         {
             OperationId = reader.GetGuid(0)
+            CaseId = reader.GetGuid(7)
+            RevokingActorId = reader.GetGuid(5)
+            GrantRevision = reader.GetInt64(6)
             CanonicalRequestFormat = format
             RequestSha256 = digest
             RevokedAt = reader.GetFieldValue<DateTimeOffset>(3)
@@ -61,7 +71,8 @@ module internal OperationAuthorityStore =
         task {
             use command =
                 new NpgsqlCommand(
-                    "SELECT operation_id, canonical_request_format, request_sha256, revoked_at, reason "
+                    "SELECT operation_id, canonical_request_format, request_sha256, revoked_at, reason, "
+                    + "revoking_actor_id,grant_revision,case_id "
                     + "FROM claimcore.operation_revocations WHERE operation_id = @operation",
                     connection,
                     transaction
@@ -78,7 +89,8 @@ module internal OperationAuthorityStore =
         task {
             use command =
                 new NpgsqlCommand(
-                    "SELECT operation_id, canonical_request_format, request_sha256, revoked_at, reason "
+                    "SELECT operation_id, canonical_request_format, request_sha256, revoked_at, reason, "
+                    + "revoking_actor_id,grant_revision,case_id "
                     + "FROM claimcore.operation_revocations WHERE operation_id = @operation",
                     connection
                 )
@@ -97,6 +109,9 @@ module internal OperationAuthorityStore =
     let project (revocation: Revocation) : OperationRevocation =
         {
             OperationId = revocation.OperationId
+            CaseId = revocation.CaseId
+            RevokingActorId = revocation.RevokingActorId
+            GrantRevision = revocation.GrantRevision
             CanonicalRequestFormat = revocation.CanonicalRequestFormat
             RequestSha256 = revocation.RequestSha256
             RevokedAt = revocation.RevokedAt
@@ -109,10 +124,16 @@ module internal OperationAuthorityStore =
         requestSha256
         revokedAt
         reasonValue
+        revokingActorId
+        grantRevision
+        caseId
         : OperationRevocation =
         let revocation =
             {
                 OperationId = operationId
+                CaseId = caseId
+                RevokingActorId = revokingActorId
+                GrantRevision = grantRevision
                 CanonicalRequestFormat = canonicalRequestFormat
                 RequestSha256 = requestSha256
                 RevokedAt = revokedAt
@@ -123,6 +144,9 @@ module internal OperationAuthorityStore =
             revocation.OperationId = Guid.Empty
             || revocation.CanonicalRequestFormat <> int RecordVersions.CanonicalCommandFormat
             || revocation.RequestSha256.Length <> 64
+            || revocation.RevokingActorId = Guid.Empty
+            || revocation.GrantRevision <= 0L
+            || revocation.CaseId = Guid.Empty
         then
             raise (InvalidDataException("Stored operation revocation failed integrity checks."))
 
@@ -133,21 +157,28 @@ module internal OperationAuthorityStore =
         (transaction: NpgsqlTransaction)
         (operationId: Guid)
         (requestSha256: string)
+        (actorEvidence: RevocationActorEvidence)
         (reasonValue: RevocationReason)
+        (ticket: Ticket)
         : Task<Revocation option> =
         task {
             use command =
                 new NpgsqlCommand(
                     "INSERT INTO claimcore.operation_revocations ("
-                    + "operation_id, canonical_request_format, request_sha256, reason"
-                    + ") VALUES (@operation, @format, @digest, @reason) "
+                    + "operation_id, case_id, canonical_request_format, request_sha256, "
+                    + "revoking_actor_id,grant_revision,reason, "
+                    + "witness_sequence, witness_epoch, witness_entry_hash"
+                    + ") VALUES (@operation, @caseId, @format, @digest, @actor, @grantRevision, "
+                    + "@reason, @sequence, @epoch, @hash) "
                     + "ON CONFLICT (operation_id) DO NOTHING "
-                    + "RETURNING operation_id, canonical_request_format, request_sha256, revoked_at, reason",
+                    + "RETURNING operation_id, canonical_request_format, request_sha256, "
+                    + "revoked_at, reason, revoking_actor_id, grant_revision, case_id",
                     connection,
                     transaction
                 )
 
             Sql.uuid command "operation" operationId
+            Sql.uuid command "caseId" actorEvidence.CaseId
 
             Sql.add
                 command
@@ -156,7 +187,12 @@ module internal OperationAuthorityStore =
                 (box (int16 RecordVersions.CanonicalCommandFormat))
 
             Sql.text command "digest" requestSha256
+            Sql.uuid command "actor" actorEvidence.RevokingActorId
+            Sql.integer command "grantRevision" actorEvidence.GrantRevision
             Sql.text command "reason" (reason reasonValue)
+            Sql.integer command "sequence" ticket.Sequence
+            Sql.integer command "epoch" ticket.Epoch
+            Sql.add command "hash" NpgsqlDbType.Bytea (box ticket.EntryHash)
             let! result = command.ExecuteReaderAsync()
             use reader = result
             let! inserted = reader.ReadAsync()

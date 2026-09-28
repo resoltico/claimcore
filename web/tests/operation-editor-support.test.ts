@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import type { Receipt } from "../src/api/v2";
+import type { Receipt } from "../src/api/v3";
 import { acceptedReceipt, isLocked, prepared } from "../src/views/operation/editorSupport";
-import { fields, operationId, preparation } from "./v2-ui.fixtures";
-import { review } from "./v2-foundation.fixtures";
+import { fields, operationId, preparation } from "./v3-ui.fixtures";
+import { review } from "./v3-foundation.fixtures";
 
 const receipt: Receipt = {
   operationId,

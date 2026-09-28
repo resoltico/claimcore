@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
-import type { PreparationDetails } from "../src/api/v2";
+import type { PreparationDetails } from "../src/api/v3";
 import { RecoveryView } from "../src/views/RecoveryView";
 import {
   onceWhilePending,
@@ -9,7 +9,7 @@ import {
   type RecoveryUi,
 } from "../src/views/recovery/RecoveryState";
 import { generatedWebValue } from "./contract-corpus.fixtures";
-import { fields, operationId, preparation, recoveryPage, response } from "./v2-ui.fixtures";
+import { fields, operationId, preparation, recoveryPage, response } from "./v3-ui.fixtures";
 
 const list = (items: unknown[] = [preparation.summary]) =>
   response("recovery.list", "SUCCEEDED", recoveryPage(items));
@@ -128,7 +128,7 @@ it("coalesces duplicate recovery retention for the same previewed bytes", async 
   });
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockReturnValueOnce(pending);
-  const ui = recoveryUi({ importing: { file, kind: "ENVELOPE", preview: preview.outcome.data } });
+  const ui = recoveryUi({ importing: { file, preview: preview.outcome.data } });
   const actions = recoveryActions("token", { load: vi.fn(() => Promise.resolve()) }, ui);
   const pendingAction = { current: false };
   void onceWhilePending(pendingAction, actions.retain);
@@ -139,6 +139,14 @@ it("coalesces duplicate recovery retention for the same previewed bytes", async 
   });
   fail?.(new Error("Synthetic delivery loss"));
   await waitFor(() => expect(ui.setMessage).toHaveBeenCalledOnce());
+});
+
+it("does not retain recovery material without a preview", async () => {
+  const ui = recoveryUi({ importing: null });
+  const actions = recoveryActions("token", { load: vi.fn(() => Promise.resolve()) }, ui);
+  await actions.retain();
+  expect(globalThis.fetch).not.toHaveBeenCalled();
+  expect(ui.setMessage).not.toHaveBeenCalled();
 });
 
 it("keeps an unknown recovery result explicit and directs inspection", async () => {

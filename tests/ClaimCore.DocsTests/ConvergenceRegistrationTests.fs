@@ -1,5 +1,6 @@
 module ClaimCore.DocsTests.ConvergenceRegistrationTests
 
+open System
 open ClaimCore.Docs
 open Expecto
 
@@ -47,6 +48,30 @@ let private inventoriedSuitesAreReconciled =
             (Set.difference reconciled inventoried)
             "A required TRX report names an assembly the manifest does not inventory")
 
+let private sequencedRoots =
+    testCase
+        "[CC-ARCH-001] Integration and Web inventories contain only sequenced root leaves"
+        (fun () ->
+            for assembly, prefix, bare in
+                [
+                    "ClaimCore.IntegrationTests",
+                    "ClaimCore PostgreSQL integration.",
+                    "witnessed recovery artifact export.bare duplicate"
+                    "ClaimCore.WebTests",
+                    "ClaimCore.Web.",
+                    "OIDC session route boundaries.bare duplicate"
+                ] do
+                let belongsToRoot (name: string) =
+                    name.StartsWith(prefix, StringComparison.Ordinal)
+
+                Expect.isTrue
+                    (TestInventory.names assembly |> Set.forall belongsToRoot)
+                    "Every required leaf belongs to its sequenced root"
+
+                Expect.isFalse
+                    (belongsToRoot bare)
+                    "An independently registered bare leaf cannot satisfy the root policy")
+
 /// Every required report must also have a stage that actually produces it.
 let private requiredReportsHaveProducers =
     testCase "every required report names a registered stage" (fun () ->
@@ -63,5 +88,6 @@ let tests =
         [
             registrationTests
             inventoriedSuitesAreReconciled
+            sequencedRoots
             requiredReportsHaveProducers
         ]

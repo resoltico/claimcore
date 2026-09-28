@@ -9,12 +9,12 @@ open ClaimCore.Domain
 
 let private cliEndpointIds =
     [
-        "command.prepare"
-        "command.execute"
         "case.get"
         "case.list"
         "case.history"
         "operation.observe"
+        "command.prepare"
+        "command.execute"
         "recovery.list"
         "recovery.inspect"
         "recovery.resolve"
@@ -22,14 +22,28 @@ let private cliEndpointIds =
         "recovery.export"
         "recovery.importEnvelopePreview"
         "recovery.importEnvelopeRetain"
-        "recovery.importRecordPreview"
-        "recovery.importRecordRetain"
+        "authority.register"
+        "authority.setGrant"
+        "authority.setEnabled"
+        "authority.observe"
+        "authority.approveCopySigner"
+        "authority.approveCopyDeletion"
+        "authority.approveCopyAdoption"
+        "authority.approveWriterHandoff"
+        "authority.reviewRealDataActivation"
+        "authority.approveRealDataActivation"
+        "lifecycle.review"
+        "lifecycle.apply"
+        "lifecycle.approve"
+        "tombstone.review"
+        "tombstone.approvePrune"
+        "tombstone.approveTerminal"
+        "tombstone.changeHold"
     ]
 
 let private webEndpointIds =
     [
         "session"
-        "session.login"
         "session.logout"
         "definition"
         "case.get"
@@ -45,8 +59,23 @@ let private webEndpointIds =
         "recovery.export"
         "recovery.importEnvelopePreview"
         "recovery.importEnvelopeRetain"
-        "recovery.importRecordPreview"
-        "recovery.importRecordRetain"
+        "authority.register"
+        "authority.setGrant"
+        "authority.setEnabled"
+        "authority.observe"
+        "authority.approveCopySigner"
+        "authority.approveCopyDeletion"
+        "authority.approveCopyAdoption"
+        "authority.approveWriterHandoff"
+        "authority.reviewRealDataActivation"
+        "authority.approveRealDataActivation"
+        "lifecycle.review"
+        "lifecycle.apply"
+        "lifecycle.approve"
+        "tombstone.review"
+        "tombstone.approvePrune"
+        "tombstone.approveTerminal"
+        "tombstone.changeHold"
     ]
 
 let private projection () = ContractProjection.current ()
@@ -81,7 +110,15 @@ let private expectCanonicalJson (contract: CanonicalContract) =
 let private expectFingerprintSensitivity model cli web =
     let changedCli =
         { model with
-            CliResponses = model.CliResponses |> Map.add "case.list" Schema.nullValue
+            CliEndpoints =
+                model.CliEndpoints
+                |> List.map (fun endpoint ->
+                    if endpoint.Identifier = "case.list" then
+                        { endpoint with
+                            Input = Schema.nullValue
+                        }
+                    else
+                        endpoint)
         }
         |> ContractRenderers.cliFingerprint
         |> CliWireContractFingerprint.value
@@ -99,19 +136,29 @@ let private expectFingerprintSensitivity model cli web =
         |> ContractRenderers.webFingerprint
         |> WebWireContractFingerprint.value
 
-    Expect.notEqual changedCli cli "CLI response schema participates in its fingerprint"
+    Expect.notEqual changedCli cli "CLI invocation schema participates in its fingerprint"
     Expect.notEqual changedWeb web "Web response schema participates in its fingerprint"
 
 let private endpointCatalogTests =
     testList
         "endpoint inventories"
         [
-            testCase "projects every CLI v3 endpoint in its stable order" (fun () ->
+            testCase "projects every CLI v4 endpoint in its stable order" (fun () ->
                 let actual = (projection ()).CliEndpoints |> List.map _.Identifier
                 Expect.equal actual cliEndpointIds "Complete CLI endpoint catalog")
-            testCase "projects every HTTP v2 endpoint in its stable order" (fun () ->
+            testCase "projects every HTTP v3 endpoint in its stable order" (fun () ->
                 let actual = (projection ()).WebEndpoints |> List.map _.Identifier
                 Expect.equal actual webEndpointIds "Complete HTTP endpoint catalog")
+            testCase "classifies every CLI mutation as noncancellable" (fun () ->
+                for endpoint in (projection ()).CliEndpoints do
+                    Expect.equal
+                        (CliMutationCatalog.isMutation endpoint.Identifier)
+                        (not endpoint.Cancellable)
+                        $"Mutation delivery and cancellation agree for {endpoint.Identifier}"
+
+                Expect.isTrue
+                    (CliMutationCatalog.isMutation "future.unclassified")
+                    "An unreviewed future endpoint cannot get definite delivery semantics")
             testCase
                 "models Web imports as raw media and keeps browser export free of CLI paths"
                 (fun () ->

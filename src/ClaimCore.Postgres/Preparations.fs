@@ -16,12 +16,10 @@ type internal PreparationLimits =
 module internal PreparingContractKindEncoding =
     let token value =
         match value with
-        | PreparingContractKind.CanonicalRecordV3 -> "CANONICAL_RECORD_V3"
         | PreparingContractKind.SemanticCoreV1 -> "SEMANTIC_CORE_V1"
 
     let parse value =
         match value with
-        | "CANONICAL_RECORD_V3" -> Some PreparingContractKind.CanonicalRecordV3
         | "SEMANTIC_CORE_V1" -> Some PreparingContractKind.SemanticCoreV1
         | _ -> None
 

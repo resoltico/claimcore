@@ -16,6 +16,7 @@ type Component =
         Project: string
         Role: string
         DependsOn: string list
+        CompileOnlyDependsOn: string list
         Packages: string list
         FrameworkReferences: string list
         InternalsVisibleTo: string list
@@ -60,6 +61,11 @@ let private requireNames (element: JsonElement) name =
         items
     | _ -> invalidOp ("Architecture manifest entry is missing '" + name + "'.")
 
+let private optionalNames (element: JsonElement) name =
+    match element.TryGetProperty(name: string) with
+    | false, _ -> []
+    | true, _ -> requireNames element name
+
 let manifestPath () =
     Path.Combine(RepositoryRoot.find (), "architecture.json")
 
@@ -85,6 +91,7 @@ let private read () =
                 Project = requireText element "project"
                 Role = requireText element "role"
                 DependsOn = requireNames element "dependsOn"
+                CompileOnlyDependsOn = optionalNames element "compileOnlyDependsOn"
                 Packages = requireNames element "packages"
                 FrameworkReferences = requireNames element "frameworkReferences"
                 InternalsVisibleTo = requireNames element "internalsVisibleTo"
@@ -114,6 +121,10 @@ let private read () =
 
             if not (known.Contains target) then
                 invalidOp (item.Name + " depends on an unclassified component: " + target)
+
+        for target in item.CompileOnlyDependsOn do
+            if item.Tier <> "product" || not (List.contains target item.DependsOn) then
+                invalidOp (item.Name + " has an undeclared compile-only dependency: " + target)
 
     parsed
 

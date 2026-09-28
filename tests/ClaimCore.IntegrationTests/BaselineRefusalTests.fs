@@ -105,7 +105,7 @@ let private corruptIdentity =
                     execute admin mutation
                     let before = snapshot admin
 
-                    SchemaBaseline.initialize admin "Etc/UTC"
+                    SchemaBaseline.initialize admin "Etc/UTC" syntheticSuppressionCheck
                     |> refusedAdministration AdministrationFailure.BaselineIdentityMismatch
 
                     SchemaBaseline.verify admin
@@ -130,7 +130,7 @@ let private incomplete =
 
                 let before = snapshot admin
 
-                SchemaBaseline.initialize admin "Etc/UTC"
+                SchemaBaseline.initialize admin "Etc/UTC" syntheticSuppressionCheck
                 |> refusedAdministration AdministrationFailure.SchemaDefinitionInvalid
 
                 runtimeRefuses app

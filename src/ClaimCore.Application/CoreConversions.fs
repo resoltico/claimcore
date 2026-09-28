@@ -13,6 +13,8 @@ module internal CoreConversions =
             invalidArg "error" ($"Domain failure is not a core fault: {domain}.")
         | CoreFailure.IdempotencyConflict -> CoreFault.OperationContentConflict
         | CoreFailure.StoreUnavailable -> CoreFault.StoreUnavailable
+        | CoreFailure.InvalidCaseListCursor -> CoreFault.StoreUnavailable
+        | CoreFailure.ResourceUnavailable -> CoreFault.StoreUnavailable
         | CoreFailure.CommitOutcomeUnknown _ -> CoreFault.CommitOutcomeUnknown
         | CoreFailure.StoreCorrupt -> CoreFault.StoreIntegrityError
         | CoreFailure.SchemaMismatch -> CoreFault.SchemaMismatch

@@ -73,8 +73,16 @@ module private TypeScriptCatalog =
             ]
             |> String.concat "\n"
 
-    let render fingerprint (endpoints: WebEndpoint list) =
+    let renderGroup name (endpoints: WebEndpoint list) =
         let body = endpoints |> List.map endpoint |> String.concat "\n"
+
+        $"""/* Generated from ClaimCore.Contracts. Do not edit. */
+export const {name} = [
+{body}
+] as const;
+"""
+
+    let renderIndex fingerprint =
 
         let statuses =
             WebSchemaDefinitions.hostFailureStatuses
@@ -82,19 +90,20 @@ module private TypeScriptCatalog =
             |> String.concat ", "
 
         $"""/* Generated from ClaimCore.Contracts. Do not edit. */
-export const webV2WireContractFingerprint =
+import {{ webV3CaseworkEndpoints }} from "./web-v3.endpoint-catalog.casework";
+import {{ webV3AuthorityEndpoints }} from "./web-v3.endpoint-catalog.authority";
+
+export const webV3WireContractFingerprint =
   {stringLiteral fingerprint};
 
-export const webV2HostFailureStatuses = [{statuses}] as const;
+export const webV3HostFailureStatuses = [{statuses}] as const;
 
-export const webV2Endpoints = [
-{body}
-] as const;
+export const webV3Endpoints = [...webV3CaseworkEndpoints, ...webV3AuthorityEndpoints] as const;
 
-export type WebV2EndpointId = (typeof webV2Endpoints)[number]["id"];
+export type WebV3EndpointId = (typeof webV3Endpoints)[number]["id"];
 
-export const isWebV2EndpointId = (value: string): value is WebV2EndpointId =>
-  webV2Endpoints.some((endpoint) => endpoint.id === value);
+export const isWebV3EndpointId = (value: string): value is WebV3EndpointId =>
+  webV3Endpoints.some((endpoint) => endpoint.id === value);
 """
 
 module ContractArtifacts =
@@ -104,13 +113,41 @@ module ContractArtifacts =
             Bytes = CanonicalContract.bytes contract
         }
 
-    let private typeScriptArtifact projection fingerprint =
-        let text = TypeScriptCatalog.render fingerprint projection.WebEndpoints
+    let private typeScriptArtifacts projection fingerprint =
+        let authority (endpoint: WebEndpoint) =
+            endpoint.Identifier.StartsWith("authority.", StringComparison.Ordinal)
+            || endpoint.Identifier.StartsWith("lifecycle.", StringComparison.Ordinal)
+            || endpoint.Identifier.StartsWith("tombstone.", StringComparison.Ordinal)
 
-        {
-            Name = "web-v2.endpoint-catalog.ts"
-            Bytes = Encoding.UTF8.GetBytes(text)
-        }
+        let casework, administration =
+            projection.WebEndpoints |> List.partition (authority >> not)
+
+        if
+            casework.IsEmpty
+            || administration.IsEmpty
+            || (casework @ administration |> List.map _.Identifier)
+               <> (projection.WebEndpoints |> List.map _.Identifier)
+        then
+            invalidOp "Web endpoint catalog groups must preserve exact endpoint order."
+
+        [
+            {
+                Name = "web-v3.endpoint-catalog.ts"
+                Bytes = TypeScriptCatalog.renderIndex fingerprint |> Encoding.UTF8.GetBytes
+            }
+            {
+                Name = "web-v3.endpoint-catalog.casework.ts"
+                Bytes =
+                    TypeScriptCatalog.renderGroup "webV3CaseworkEndpoints" casework
+                    |> Encoding.UTF8.GetBytes
+            }
+            {
+                Name = "web-v3.endpoint-catalog.authority.ts"
+                Bytes =
+                    TypeScriptCatalog.renderGroup "webV3AuthorityEndpoints" administration
+                    |> Encoding.UTF8.GetBytes
+            }
+        ]
 
     let private webTypesArtifacts projection =
         WebTypeScript.artifacts projection
@@ -120,11 +157,11 @@ module ContractArtifacts =
         [
             artifact "semantic-core-v1.contract.json" (ContractRenderers.semantic projection)
             artifact "semantic-core-v1.schema.json" (ContractRenderers.semanticSchema projection)
-            artifact "cli-v3.catalog.json" (ContractRenderers.cli projection)
-            artifact "cli-v3.invocation.schema.json" (CliSchemas.invocation projection)
-            artifact "cli-v3.response.schema.json" (CliSchemas.response projection)
-            artifact "cli-v3.definition.schema.json" (CliSchemas.definition projection)
-            artifact "recovery-envelope-v2.schema.json" (CliSchemas.recoveryEnvelope projection)
+            artifact "cli-v4.catalog.json" (ContractRenderers.cli projection)
+            artifact "cli-v4.invocation.schema.json" (CliSchemas.invocation projection)
+            artifact "cli-v4.response.schema.json" (CliSchemas.response projection)
+            artifact "cli-v4.definition.schema.json" (CliSchemas.definition projection)
+            artifact "recovery-artifact-v3.schema.json" (CliSchemas.recoveryEnvelope projection)
         ]
 
     let private cliEndpointArtifacts projection =
@@ -134,7 +171,7 @@ module ContractArtifacts =
                 CliSchemas.endpoint projection endpoint.Identifier
                 |> Option.defaultWith (fun () -> invalidOp "CLI endpoint schema is missing.")
 
-            artifact ("cli-v3.endpoint." + endpoint.Identifier + ".schema.json") schema)
+            artifact ("cli-v4.endpoint." + endpoint.Identifier + ".schema.json") schema)
 
     let private cliEndpointResponseArtifacts projection =
         projection.CliEndpoints
@@ -144,7 +181,7 @@ module ContractArtifacts =
                 |> Option.defaultWith (fun () ->
                     invalidOp "CLI endpoint response schema is missing.")
 
-            artifact ("cli-v3.endpoint." + endpoint.Identifier + ".response.schema.json") schema)
+            artifact ("cli-v4.endpoint." + endpoint.Identifier + ".response.schema.json") schema)
 
     let private webResponseArtifacts projection =
         projection.WebEndpoints
@@ -169,12 +206,12 @@ module ContractArtifacts =
         @ cliEndpointArtifacts projection
         @ cliEndpointResponseArtifacts projection
         @ [
-            artifact "web-v2.catalog.json" web
+            artifact "web-v3.catalog.json" web
             artifact
-                "cli-v3.process-failure.schema.json"
+                "cli-v4.process-failure.schema.json"
                 TransportDiagnosticSchemas.cliProcessDocument
             artifact
-                "web-v2.process-failure.schema.json"
+                "web-v3.process-failure.schema.json"
                 TransportDiagnosticSchemas.webStartupDocument
             {
                 Name = "administration-v1.response.schema.json"
@@ -184,12 +221,12 @@ module ContractArtifacts =
                 Name = "administration-v1.catalog.json"
                 Bytes = ClaimCore.Database.DatabaseContracts.catalogue ()
             }
-            artifact "web-v2.host-failure.schema.json" WebSchemas.hostFailure
-            artifact "web-v2.responses.schema.json" (WebSchemas.responses projection)
-            typeScriptArtifact
-                projection
-                (ContractRenderers.webFingerprint projection |> WebWireContractFingerprint.value)
+            artifact "web-v3.host-failure.schema.json" WebSchemas.hostFailure
+            artifact "web-v3.responses.schema.json" (WebSchemas.responses projection)
         ]
+        @ typeScriptArtifacts
+            projection
+            (ContractRenderers.webFingerprint projection |> WebWireContractFingerprint.value)
         @ webTypesArtifacts projection
         @ webResponseArtifacts projection
         @ corpusArtifacts projection

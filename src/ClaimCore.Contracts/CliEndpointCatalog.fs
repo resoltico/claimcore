@@ -2,97 +2,36 @@ namespace ClaimCore.Contracts
 
 open ClaimCore.Application
 
+/// CLI-specific private-file inputs are the only deviation from the generated service API body.
+/// Every routable identifier and its normal JSON input comes from the service catalog.
 module internal CliEndpointCatalog =
-    let private commandEndpoints draft =
-        [
-            {
-                Identifier = "command.prepare"
-                Input = draft
-                Cancellable = false
-            }
-            {
-                Identifier = "command.execute"
-                Input = draft
-                Cancellable = false
-            }
-        ]
+    let private input identifier body =
+        match identifier with
+        | "recovery.export" -> Some EndpointInputs.recoveryExport
+        | "recovery.importEnvelopePreview" -> Some EndpointInputs.importPreview
+        | "recovery.importEnvelopeRetain" -> Some EndpointInputs.importRetain
+        | _ ->
+            match body with
+            | Some(JsonBody value) -> Some value
+            | _ -> None
 
-    let private caseEndpoints (semantic: SemanticCoreContract) =
-        let cursor = EndpointInputs.cursor semantic.MaximumPageSize
-
-        [
-            {
-                Identifier = "case.get"
-                Input = EndpointInputs.caseReference semantic
-                Cancellable = true
-            }
-            {
-                Identifier = "case.list"
-                Input = cursor
-                Cancellable = true
-            }
-            {
-                Identifier = "case.history"
-                Input = EndpointInputs.history semantic
-                Cancellable = true
-            }
-            {
-                Identifier = "operation.observe"
-                Input = EndpointInputs.operation
-                Cancellable = true
-            }
-            {
-                Identifier = "recovery.list"
-                Input = EndpointInputs.recoveryList semantic.MaximumPageSize
-                Cancellable = true
-            }
-            {
-                Identifier = "recovery.inspect"
-                Input = EndpointInputs.recoveryInspect semantic.MaximumPageSize
-                Cancellable = true
-            }
-        ]
-
-    let private recoveryEndpoints =
-        [
-            {
-                Identifier = "recovery.resolve"
-                Input = EndpointInputs.recoveryResolution
-                Cancellable = false
-            }
-            {
-                Identifier = "recovery.dismiss"
-                Input = EndpointInputs.recoveryDismiss
-                Cancellable = false
-            }
-            {
-                Identifier = "recovery.export"
-                Input = EndpointInputs.recoveryExport
-                Cancellable = true
-            }
-            {
-                Identifier = "recovery.importEnvelopePreview"
-                Input = EndpointInputs.importPreview
-                Cancellable = true
-            }
-            {
-                Identifier = "recovery.importEnvelopeRetain"
-                Input = EndpointInputs.importRetain
-                Cancellable = false
-            }
-            {
-                Identifier = "recovery.importRecordPreview"
-                Input = EndpointInputs.importPreview
-                Cancellable = true
-            }
-            {
-                Identifier = "recovery.importRecordRetain"
-                Input = EndpointInputs.importRetain
-                Cancellable = false
-            }
-        ]
+    let private cancellable identifier =
+        not (CliMutationCatalog.isMutation identifier)
 
     let all (semantic: SemanticCoreContract) =
-        let commands = ProjectionSchema.commandDraft semantic |> commandEndpoints
-        let cases = caseEndpoints semantic
-        commands @ cases @ recoveryEndpoints
+        WebEndpointCatalog.all semantic
+        |> List.choose (fun endpoint ->
+            if
+                Set.contains
+                    endpoint.Identifier
+                    (Set.ofList [ "session"; "session.logout"; "definition" ])
+            then
+                None
+            else
+                input endpoint.Identifier endpoint.Body
+                |> Option.map (fun value ->
+                    {
+                        Identifier = endpoint.Identifier
+                        Input = value
+                        Cancellable = cancellable endpoint.Identifier
+                    }))

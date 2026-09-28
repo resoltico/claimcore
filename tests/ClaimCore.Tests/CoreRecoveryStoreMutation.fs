@@ -121,13 +121,20 @@ module internal RecoveryStoreMutation =
         settleConfirmed state operationId attemptId "FAILED_BEFORE_COMMIT"
         Ok(AdmittedExecution.FailedBeforeCommit(failure, SettlementConfirmation.Confirmed))
 
-    let private decideAndPersist state operation attemptId today decide =
+    let private decideAndPersist state operation attemptId (today: unit -> BusinessContext) decide =
         let request = Operation.request operation
 
         match state.ClaimStore with
         | Some store ->
             match
-                store.Transact(operation, fun current -> decide (today ()) current)
+                store.Transact(
+                    operation,
+                    fun current ->
+                        let context = today ()
+
+                        decide context.EffectiveBusinessDate current
+                        |> Result.map (fun claim -> claim, context)
+                )
                 |> fun result -> result.GetAwaiter().GetResult()
             with
             | Ok receipt -> accepted state attemptId receipt
@@ -137,7 +144,7 @@ module internal RecoveryStoreMutation =
                 Ok(AdmittedExecution.CommitOutcomeUnknown request.OperationId)
             | Error failure -> failedBeforeCommit state request.OperationId attemptId failure
         | None ->
-            match decide (today ()) None with
+            match decide (today ()).EffectiveBusinessDate None with
             | Ok claim ->
                 RecoveryStoreState.receipt state request.OperationId request.Command claim
                 |> accepted state attemptId
@@ -197,6 +204,10 @@ module internal RecoveryStoreMutation =
                                 let revoked =
                                     {
                                         OperationId = operationId
+                                        CaseId = value.CaseId
+                                        RevokingActorId =
+                                            Guid.Parse("10000000-0000-4000-8000-000000000030")
+                                        GrantRevision = 1L
                                         CanonicalRequestFormat = value.CanonicalRequestFormat
                                         RequestSha256 = value.RequestSha256
                                         RevokedAt = DateTimeOffset.UtcNow

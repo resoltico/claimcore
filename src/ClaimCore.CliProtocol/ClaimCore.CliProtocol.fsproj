@@ -1,25 +1,24 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <Compile Include="ProtocolTypes.fs" />
     <Compile Include="StrictJson.fs" />
-    <Compile Include="InvocationTypes.fs" />
-    <Compile Include="CliCommandInput.fs" />
     <Compile Include="PrivateFiles.fs" />
     <Compile Include="FrameReader.fs" />
     <Compile Include="Discovery.fs" />
-    <Compile Include="InvocationDecoder.fs" />
-    <Compile Include="InvocationFraming.fs" />
-    <Compile Include="JsonResponse.fs" />
-    <Compile Include="CoreSupply.fs" />
-    <Compile Include="EndpointReply.fs" />
-    <Compile Include="ReplyRecoveryContext.fs" />
-    <Compile Include="EndpointDispatch.fs" />
-    <Compile Include="InvocationSession.fs" />
+    <Compile Include="CliRemoteInvocation.fs" />
+    <Compile Include="RemoteConfiguration.fs" />
+    <Compile Include="RemoteTls.fs" />
+    <Compile Include="OidcClient.fs" />
+    <Compile Include="LoopbackCallback.fs" />
+    <Compile Include="InteractiveAuthorization.fs" />
+    <Compile Include="OAuthTokenClient.fs" />
+    <Compile Include="RemoteAccessSession.fs" />
+    <Compile Include="RemoteRequest.fs" />
+    <Compile Include="RemoteServiceCall.fs" />
     <Compile Include="FrameDelivery.fs" />
+    <Compile Include="RemoteFrameProcessing.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />
-    <ProjectReference Include="../ClaimCore.Domain/ClaimCore.Domain.fsproj" />
     <ProjectReference Include="../ClaimCore.Application/ClaimCore.Application.fsproj" />
     <ProjectReference Include="../ClaimCore.Contracts/ClaimCore.Contracts.fsproj" />
   </ItemGroup>

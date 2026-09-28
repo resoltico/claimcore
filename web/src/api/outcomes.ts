@@ -1,4 +1,4 @@
-import type { EndpointOutcome } from "../generated/convergence/web-v2.types";
+import type { EndpointOutcome } from "../generated/convergence/web-v3.types";
 import type { ApiResult } from "./types";
 import { localNotice, type Notice } from "./notices";
 

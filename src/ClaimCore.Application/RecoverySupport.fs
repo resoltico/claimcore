@@ -11,7 +11,7 @@ module internal RecoverySupport =
     let revoked = RecoveryRejection.OperationRevoked
 
     type ImportDecoding =
-        | Imported of RecoveryImportPreview
+        | Imported of RecoveryImportPreview * VerifiedRecoveryArtifact
         | ImportRefused of RecoveryRejection
         | ImportFailed of CoreFault
         | ImportCancelled
@@ -33,20 +33,20 @@ module internal RecoverySupport =
                ('0' <= character && character <= '9') || ('a' <= character && character <= 'f'))
 
     let importEffect
-        (kind: RecoveryArtifactKind)
         (digest: string)
         (canonical: byte array)
         : Result<RecoveryImportPreview, RecoveryRejection> =
         match RequestRecord.decode SemanticContract.current.RequestByteLimit canonical with
-        | Error _ -> Error RecoveryRejection.CanonicalRecordInvalidOrUnsupported
+        | Error _ -> Error RecoveryRejection.EnvelopeInvalidOrUnsupported
         | Ok request when
             not (CryptographicOperations.FixedTimeEquals(RequestRecord.encode request, canonical))
             ->
-            Error RecoveryRejection.CanonicalRecordInvalidOrUnsupported
+            Error RecoveryRejection.EnvelopeInvalidOrUnsupported
         | Ok request ->
             Ok
                 {
-                    ArtifactKind = kind
+                    ArtifactKind = RecoveryArtifactKind.Envelope
+                    CaseId = Guid.Empty
                     SourceSha256 = digest
                     DecodedEffect =
                         {
@@ -62,24 +62,24 @@ module internal RecoverySupport =
                 }
 
     let preparationDraft
-        (kind: RecoveryArtifactKind)
-        (effect: RecoveryImportEffect)
+        (verified: VerifiedRecoveryArtifact)
+        (importer: ActorBinding)
         (canonical: byte array)
         : RecoveryPreparationDraft =
         {
-            OperationId = effect.OperationId
-            CanonicalRequestFormat = effect.CanonicalCommandFormat
-            RequestSha256 = effect.RequestSha256
+            OperationId = verified.OperationId
+            CaseId = verified.CaseId
+            PreparerActorId = verified.PreparerActorId
+            PreparerGrantRevision = verified.PreparerGrantRevision
+            ImporterActorId = Some importer.ActorId
+            CanonicalRequestFormat = RecordVersions.CanonicalCommandFormat
+            RequestSha256 = canonical |> SHA256.HashData |> Convert.ToHexStringLower
             CanonicalRequest = canonical
             PreparingApplicationVersion = BuildIdentity.current.Version
             PreparingContractFingerprint =
                 SemanticContract.fingerprint SemanticContract.current
                 |> SemanticCoreFingerprint.value
-            PreparingContractKind =
-                match kind with
-                | RecoveryArtifactKind.Envelope -> PreparingContractKind.SemanticCoreV1
-                | RecoveryArtifactKind.UnboundCanonicalRecord ->
-                    PreparingContractKind.CanonicalRecordV3
+            PreparingContractKind = PreparingContractKind.SemanticCoreV1
         }
 
     let existing
@@ -93,6 +93,8 @@ module internal RecoverySupport =
                 return RecoveryQueryOutcome.RecoveryCancelled
             | Error RecoveryStoreFailure.ReadCancelled ->
                 return RecoveryQueryOutcome.RecoveryCancelled
+            | Error RecoveryStoreFailure.ResourceUnavailable ->
+                return RecoveryQueryOutcome.RecoveryRejected RecoveryRejection.ResourceUnavailable
             | Error failure ->
                 return RecoveryQueryOutcome.RecoveryFailed(TypedProjection.recoveryFault failure)
             | Ok None
@@ -127,47 +129,36 @@ module internal RecoverySupport =
         }
 
     let decodeEnvelope
-        (recovery: IRecoveryStore)
+        (authority: IRecoveryArtifactAuthority)
         (source: byte array)
         (cancellationToken: CancellationToken)
         : Task<ImportDecoding> =
         task {
-            match RecoveryEnvelope.decode SemanticContract.current.RequestByteLimit source with
-            | Error _ -> return ImportRefused RecoveryRejection.EnvelopeInvalidOrUnsupported
-            | Ok envelope ->
-                match! recovery.InstallationLineage cancellationToken with
-                | _ when cancellationToken.IsCancellationRequested -> return ImportCancelled
-                | Error RecoveryStoreFailure.ReadCancelled -> return ImportCancelled
-                | Error failure -> return ImportFailed(TypedProjection.recoveryFault failure)
-                | Ok lineage when lineage <> envelope.InstallationId ->
-                    return ImportRefused installationMismatch
-                | Ok _ ->
+            if cancellationToken.IsCancellationRequested then
+                return ImportCancelled
+            else
+                match! authority.Verify(source, cancellationToken) with
+                | Error rejection -> return ImportRefused rejection
+                | Ok verified when
+                    verified.OperationId = Guid.Empty
+                    || verified.CaseId = Guid.Empty
+                    || verified.PreparerActorId = Guid.Empty
+                    || verified.PreparerGrantRevision < 0L
+                    ->
+                    CryptographicOperations.ZeroMemory(verified.CanonicalRequest)
+                    return ImportRefused RecoveryRejection.EnvelopeInvalidOrUnsupported
+                | Ok verified ->
                     match
                         importEffect
-                            RecoveryArtifactKind.Envelope
                             (source |> SHA256.HashData |> Convert.ToHexStringLower)
-                            envelope.CanonicalRequest
+                            verified.CanonicalRequest
                     with
-                    | Ok value -> return Imported value
-                    | Error value -> return ImportRefused value
+                    | Ok value when value.DecodedEffect.OperationId = verified.OperationId ->
+                        return Imported({ value with CaseId = verified.CaseId }, verified)
+                    | _ ->
+                        CryptographicOperations.ZeroMemory(verified.CanonicalRequest)
+                        return ImportRefused RecoveryRejection.EnvelopeInvalidOrUnsupported
         }
-
-    let decodeCanonical (source: byte array) : Result<RecoveryImportPreview, RecoveryRejection> =
-        importEffect
-            RecoveryArtifactKind.UnboundCanonicalRecord
-            (source |> SHA256.HashData |> Convert.ToHexStringLower)
-            source
-
-    let importedCanonical
-        (kind: RecoveryArtifactKind)
-        (source: byte array)
-        : Result<byte array, RecoveryRejection> =
-        match kind with
-        | RecoveryArtifactKind.Envelope ->
-            match RecoveryEnvelope.decode SemanticContract.current.RequestByteLimit source with
-            | Ok envelope -> Ok envelope.CanonicalRequest
-            | Error _ -> Error RecoveryRejection.EnvelopeInvalidOrUnsupported
-        | RecoveryArtifactKind.UnboundCanonicalRecord -> Ok source
 
     let private completedOutcome =
         function

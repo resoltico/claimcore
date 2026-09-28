@@ -23,7 +23,7 @@ module StrictJson =
         | JsonValueKind.String -> "string"
         | _ -> "invalid JSON"
 
-    let private checkDuplicates root =
+    let private checkKeysAndUnicode root =
         let rec visit path (element: JsonElement) =
             match element.ValueKind with
             | JsonValueKind.Object ->
@@ -45,6 +45,16 @@ module StrictJson =
                 element.EnumerateArray()
                 |> Seq.map (fun item -> visit path item)
                 |> Seq.tryPick id
+            | JsonValueKind.String ->
+                try
+                    element.GetString() |> ignore
+                    None
+                with :? InvalidOperationException ->
+                    Some(
+                        ProtocolFailure.create
+                            ProtocolProblem.InvalidUnicode
+                            (ProtocolLocation.fromPath path)
+                    )
             | _ -> None
 
         visit "" root
@@ -67,14 +77,14 @@ module StrictJson =
 
                 let document = JsonDocument.Parse(ReadOnlyMemory<byte>(bytes), options)
 
-                let duplicate =
+                let structuralFailure =
                     try
-                        checkDuplicates document.RootElement
+                        checkKeysAndUnicode document.RootElement
                     with _ ->
                         document.Dispose()
                         reraise ()
 
-                match duplicate with
+                match structuralFailure with
                 | Some problem ->
                     document.Dispose()
                     Error problem

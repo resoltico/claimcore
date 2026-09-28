@@ -110,7 +110,7 @@ module internal WebWireQueries =
                 page.Items |> List.iter (CliWireValues.summary writer)
                 writer.WriteEndArray()
 
-                match page.NextAfterReference with
+                match page.NextCursor with
                 | Some cursor -> writer.WriteString("nextCursor", cursor)
                 | None -> writer.WriteNull("nextCursor")
 

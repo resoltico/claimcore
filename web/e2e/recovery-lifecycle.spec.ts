@@ -2,8 +2,8 @@ import { randomUUID } from "node:crypto";
 
 import { expect, test, type Page } from "@playwright/test";
 
-import { isWebV2Response } from "../src/generated/convergence/web-v2.validation";
-import type { WebV2Response } from "../src/generated/convergence/web-v2.types";
+import { isWebV3Response } from "../src/generated/convergence/web-v3.validation";
+import type { WebV3Response } from "../src/generated/convergence/web-v3.types";
 import {
   droppedSubmission,
   keepForRecovery,
@@ -98,7 +98,7 @@ const resolveAndObserve = async (page: Page, identity: PreparedIdentity): Promis
   await selectRecoveryView(page, "PENDING");
 };
 
-test("exports and retains both exact recovery artifact formats through published Web", async ({
+test("exports and retains the encrypted recovery artifact through published Web", async ({
   page,
 }) => {
   const caseReference = `RECOVERY-${randomUUID()}`;
@@ -111,10 +111,8 @@ test("exports and retains both exact recovery artifact formats through published
     .getByRole("dialog", { name: "Recovery details" })
     .getByRole("button", { name: "Cancel" })
     .click();
-  await previewAndRetain(page, "envelope", artifacts.envelope);
+  await previewAndRetain(page, artifacts.envelope);
   await progress("recovery-envelope-retained");
-  await previewAndRetain(page, "record", artifacts.canonicalRecord);
-  await progress("recovery-record-retained");
   await inspect(page, prepared);
   await expect(page.getByRole("button", { name: "Resolve exact preparation" })).toBeVisible();
 });
@@ -173,7 +171,7 @@ const retryExactPrepare = async (
 ): Promise<void> => {
   let calls = 0;
   let sameBody = false;
-  await page.route("**/api/v2/operations/prepare", async (route) => {
+  await page.route("**/api/v3/operations/prepare", async (route) => {
     calls += 1;
     sameBody = route.request().postData() === originalBody;
     await route.continue();
@@ -183,7 +181,7 @@ const retryExactPrepare = async (
   await expect(review).toContainText(operationId);
   expect(calls).toBe(1);
   expect(sameBody).toBe(true);
-  await page.unroute("**/api/v2/operations/prepare");
+  await page.unroute("**/api/v3/operations/prepare");
   await review.getByRole("button", { name: "Keep for Recovery" }).click();
 };
 
@@ -193,16 +191,16 @@ const observeAcceptedPrepareReplay = async (
   originalBody: string,
 ): Promise<void> => {
   const token = await sessionToken(page);
-  const reply = await browserRequest(page, "/api/v2/operations/prepare", {
+  const reply = await browserRequest(page, "/api/v3/operations/prepare", {
     method: "POST",
     headers: { "Content-Type": "application/json", "X-ClaimCore-Antiforgery": token },
     body: originalBody,
   });
   expect(reply.status).toBe(200);
-  if (!(await isWebV2Response("command.prepare", reply.payload))) {
+  if (!(await isWebV3Response("command.prepare", reply.payload))) {
     throw new Error("E2E_PREPARE_REPLAY_PROTOCOL");
   }
-  const response = reply.payload as WebV2Response<"command.prepare">;
+  const response = reply.payload as WebV3Response<"command.prepare">;
   expect(response.outcome.tag).toBe("OBSERVED_ACCEPTED");
   if (response.outcome.tag === "OBSERVED_ACCEPTED") {
     expect(response.outcome.data.receipt.operationId).toBe(operationId);
@@ -215,7 +213,7 @@ test("recovers an exact preparation after its published response is dropped", as
   let originalBody: string | null = null;
   let forwarded = false;
   let calls = 0;
-  await page.route("**/api/v2/operations/prepare", async (route) => {
+  await page.route("**/api/v3/operations/prepare", async (route) => {
     calls += 1;
     originalBody = route.request().postData();
     const request: unknown = route.request().postDataJSON();
@@ -234,7 +232,7 @@ test("recovers an exact preparation after its published response is dropped", as
   if (operationId === null || originalBody === null) {
     throw new Error("E2E_PREPARE_IDENTITY_MISSING");
   }
-  await page.unroute("**/api/v2/operations/prepare");
+  await page.unroute("**/api/v3/operations/prepare");
   await expect(page.getByRole("button", { name: "Sign out" })).toBeDisabled();
   await retryExactPrepare(page, operationId, originalBody);
   await page.reload();

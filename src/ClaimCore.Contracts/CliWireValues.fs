@@ -75,14 +75,6 @@ module internal CliWireValues =
         writer.WriteString("recommendedAction", action value.Action)
         writer.WriteEndObject()
 
-    let localFault (writer: Utf8JsonWriter) (value: CliLocalFault) =
-        writer.WriteStartObject()
-        writer.WriteString("code", faultCode (CliLocalFaults.code value))
-        parameterlessDiagnostic writer (CliLocalFaults.token value)
-        writer.WriteString("message", CliLocalFaults.render value)
-        writer.WriteString("recommendedAction", action RecommendedAction.StopAndInvestigate)
-        writer.WriteEndObject()
-
     let caseView (writer: Utf8JsonWriter) (value: CaseView) =
         writer.WriteStartObject()
         writer.WritePropertyName("fields")

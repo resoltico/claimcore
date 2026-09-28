@@ -2,13 +2,11 @@ module ClaimCore.Web.Program
 
 open System
 open System.IO
-open System.Security.Claims
+open System.Net.Http
 open System.Threading
 open System.Threading.RateLimiting
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Antiforgery
-open Microsoft.AspNetCore.Authentication
-open Microsoft.AspNetCore.Authentication.Cookies
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.DataProtection
 open Microsoft.AspNetCore.Http
@@ -30,8 +28,18 @@ let private help () =
     printfn "  ClaimCore.Web version --json  Show compiled release identity as JSON"
     printfn "Required private paths:"
     printfn "  CLAIMCORE_CONNECTION_FILE"
+    printfn "  CLAIMCORE_WITNESS_CONNECTION_FILE"
+    printfn "  CLAIMCORE_WITNESS_KEY_FILE"
+    printfn "  CLAIMCORE_SUPPRESSION_KEY_FILE"
+    printfn "  CLAIMCORE_RECOVERY_ARTIFACT_KEY_FILE"
     printfn "  CLAIMCORE_WEB_CERTIFICATE_PATH"
     printfn "  CLAIMCORE_WEB_STATE_DIR"
+    printfn "  CLAIMCORE_OIDC_ISSUER"
+    printfn "  CLAIMCORE_OIDC_CLIENT_ID"
+    printfn "  CLAIMCORE_OIDC_CLIENT_SECRET_FILE"
+    printfn "  CLAIMCORE_OIDC_API_AUDIENCE"
+    printfn "  CLAIMCORE_OIDC_CLI_CLIENT_ID"
+    printfn "  CLAIMCORE_OIDC_SERVICE_CLIENT_ID"
     printfn "Optional tightening settings:"
 
     printfn
@@ -121,28 +129,39 @@ let private configureAntiforgery (services: IServiceCollection) =
         options.Cookie.SameSite <- SameSiteMode.Strict)
     |> ignore
 
-let private configureAuthentication (services: IServiceCollection) =
-    services
-        .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-        .AddCookie(fun options ->
-            options.Cookie.Name <- "__Host-ClaimCoreSession"
-            options.Cookie.HttpOnly <- true
-            options.Cookie.IsEssential <- true
-            options.Cookie.SecurePolicy <- CookieSecurePolicy.Always
-            options.Cookie.SameSite <- SameSiteMode.Strict
-            options.Cookie.Path <- "/"
-            options.SlidingExpiration <- false
+let private verifyOidcMetadata (configuration: OidcConfiguration) =
+    try
+        use handler =
+            configuration.TrustRoot
+            |> Option.map AuthMiddleware.syntheticTrustHandler
+            |> Option.defaultWith (fun () -> new HttpClientHandler())
 
-            options.Events.OnRedirectToLogin <-
-                Func<RedirectContext<CookieAuthenticationOptions>, Task>(fun context ->
-                    (WebWire.hostFailure WebHostFailure.SessionRejected)
-                        .ExecuteAsync(context.HttpContext))
+        handler.AllowAutoRedirect <- false
+        use client = new HttpClient(handler, Timeout = TimeSpan.FromSeconds(10.))
 
-            options.Events.OnRedirectToAccessDenied <-
-                Func<RedirectContext<CookieAuthenticationOptions>, Task>(fun context ->
-                    (WebWire.hostFailure WebHostFailure.SessionForbidden)
-                        .ExecuteAsync(context.HttpContext)))
-    |> ignore
+        let location =
+            configuration.Issuer.AbsoluteUri + "/.well-known/openid-configuration"
+
+        use response =
+            client
+                .GetAsync(location, HttpCompletionOption.ResponseHeadersRead)
+                .GetAwaiter()
+                .GetResult()
+
+        if not response.IsSuccessStatusCode then
+            WebStartupDiagnostics.refuse WebStartupProblem.OidcConfigurationInvalid
+
+        response.Content.LoadIntoBufferAsync(65536L).GetAwaiter().GetResult()
+        let bytes = response.Content.ReadAsByteArrayAsync().GetAwaiter().GetResult()
+
+        match OidcAuthority.validateMetadata configuration.Issuer (ReadOnlyMemory bytes) with
+        | Ok() -> ()
+        | Error _ -> WebStartupDiagnostics.refuse WebStartupProblem.OidcConfigurationInvalid
+    with
+    | :? HttpRequestException
+    | :? TaskCanceledException
+    | :? InvalidOperationException ->
+        WebStartupDiagnostics.refuse WebStartupProblem.OidcConfigurationInvalid
 
 let private requireTrustedConnection
     (configuration: WebConfiguration)
@@ -159,26 +178,44 @@ let private requireTrustedConnection
     }
     :> Task)
 
+let private openRuntime (configuration: WebConfiguration) =
+    match
+        Runtime
+            .OpenPostgres(
+                configuration.ConnectionString,
+                configuration.WitnessConnectionString,
+                configuration.WitnessKeyRingPath,
+                configuration.SuppressionKeyPath,
+                configuration.RecoveryArtifactKeyPath,
+                CancellationToken.None
+            )
+            .GetAwaiter()
+            .GetResult()
+    with
+    | Ok value -> value
+    | Error reason -> WebStartupDiagnostics.refuse (WebStartupProblem.RuntimeOpen reason)
+
 let private run () =
     let configuration = Configuration.load ()
+
+    let oidc =
+        configuration.Oidc
+        |> Option.defaultWith (fun () ->
+            WebStartupDiagnostics.refuse WebStartupProblem.OidcConfigurationInvalid)
+
+    verifyOidcMetadata oidc
     use _certificate = configuration.Certificate
+
+    use _issuerTrust =
+        { new IDisposable with
+            member _.Dispose() =
+                oidc.TrustRoot |> Option.iter (fun root -> root.Dispose())
+        }
+
     use _stateLease = Security.acquireStateDirectory configuration.StateDirectory
-    use bootstrapLease = Security.rotateBootstrapCredential configuration.StateDirectory
-    let bootstrap = bootstrapLease.Credential
     let assets = assetDirectory ()
 
-    let sessions =
-        SessionRegistry(configuration.SessionIdle, configuration.SessionAbsolute)
-
-    use runtime =
-        match
-            Runtime
-                .OpenPostgres(configuration.ConnectionString, CancellationToken.None)
-                .GetAwaiter()
-                .GetResult()
-        with
-        | Ok value -> value
-        | Error reason -> WebStartupDiagnostics.refuse (WebStartupProblem.RuntimeOpen reason)
+    use runtime = openRuntime configuration
 
     let builder =
         WebApplication.CreateBuilder(WebApplicationOptions(WebRootPath = assets))
@@ -186,15 +223,18 @@ let private run () =
     builder.Logging.ClearProviders() |> ignore
     configureKestrel configuration builder
     configureAntiforgery builder.Services
-    configureAuthentication builder.Services
+
+    AuthMiddleware.configure
+        oidc
+        configuration.SessionIdle
+        configuration.SessionAbsolute
+        builder.Services
+
     configureRateLimits configuration builder.Services
     builder.Services.AddAuthorization() |> ignore
     let application = builder.Build()
 
     application.Use(Func<HttpContext, RequestDelegate, Task>(RouteSupport.handleFailures))
-    |> ignore
-
-    application.Lifetime.ApplicationStopping.Register(Action(fun () -> sessions.RevokeAll()))
     |> ignore
 
     application.Use(
@@ -205,14 +245,19 @@ let private run () =
     application.UseAuthentication() |> ignore
     application.UseRateLimiter() |> ignore
     application.UseAuthorization() |> ignore
-    HostRoutes.map assets configuration bootstrap sessions runtime.Core application
+
+    HostRoutes.map
+        assets
+        configuration
+        (fun principal -> runtime.ForActor principal)
+        (fun () -> runtime.DataUseReadiness())
+        application
 
     Console.WriteLine(
         "ClaimCore Web login URL: "
         + configuration.Origin.GetLeftPart(UriPartial.Authority)
     )
 
-    Console.WriteLine("ClaimCore Web credential file: " + bootstrap.Path)
     application.Run()
     0
 

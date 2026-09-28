@@ -8,87 +8,135 @@ open Npgsql
 open ClaimCore.Application
 open ClaimCore.Domain
 open ClaimCore.RecordFormat
+open WitnessProtocolReconciliation
+open StoreTransactionPersistence
 
 /// Owns the PostgreSQL transaction protocol around the application's domain decision.
 module internal StoreTransaction =
-    let private commit (transaction: NpgsqlTransaction) (commitStarted: bool ref) receipt =
-        task {
-            commitStarted.Value <- true
-            do! transaction.CommitAsync()
-            return Ok receipt
+    let private attribution (actorContext: ActorCallContext) caseId =
+        {
+            Command =
+                {
+                    Actor = actorContext.Binding
+                    CaseId = caseId
+                }
+            PreparerActorId = actorContext.Binding.ActorId
+            ImporterActorId = None
+            Phase = AttemptActorPhase.NormalSubmit
         }
 
-    /// Persist one Domain-approved transition while the caller already holds the case lock. The
-    /// caller owns the surrounding operation authority and commit protocol.
-    let persistUnderCaseLock
-        (connection: NpgsqlConnection)
-        (transaction: NpgsqlTransaction)
-        request
-        fingerprint
+    let private decideAndPersist
+        connection
+        transaction
+        operation
+        decide
         current
-        claim
-        =
-        task {
-            let snapshot = Claim.view claim
-
-            let previous =
-                current
-                |> Option.map (fun value -> (Claim.view value).Version)
-                |> Option.defaultValue 0L
-
-            if
-                snapshot.Fields.CaseReference <> request.CaseReference
-                || snapshot.Version <> previous + 1L
-            then
-                raise (
-                    InvalidDataException(
-                        "The domain result did not satisfy the persistence contract."
-                    )
-                )
-
-            let! receipt = StoreData.persist connection transaction request claim fingerprint
-            return receipt
-        }
-
-    let private persistDecision
-        (connection: NpgsqlConnection)
-        (transaction: NpgsqlTransaction)
-        request
-        fingerprint
-        current
-        claim
+        caseId
+        actorContext
+        witness
         commitStarted
         =
         task {
-            let! receipt =
-                persistUnderCaseLock connection transaction request fingerprint current claim
-
-            return! commit transaction commitStarted receipt
+            match decide current with
+            | Error error -> return Error(CoreFailure.Domain error)
+            | Ok(claim, context) ->
+                return!
+                    persistDecision
+                        connection
+                        transaction
+                        operation
+                        context
+                        current
+                        caseId
+                        (attribution actorContext caseId)
+                        claim
+                        witness
+                        commitStarted
         }
 
     let private applyDecision
         (connection: NpgsqlConnection)
         (transaction: NpgsqlTransaction)
-        request
-        fingerprint
+        operation
         decide
+        (actorContext: ActorCallContext)
+        revision
+        (witness: WitnessProtocol)
         commitStarted
         =
         task {
+            let request = Operation.request operation
             do! Sql.lockKeyAsync connection transaction ("case:" + request.CaseReference)
             let! current = StoreData.readCase connection transaction request.CaseReference
 
-            match decide current with
-            | Error error -> return Error(CoreFailure.Domain error)
-            | Ok claim ->
+            let! caseId =
+                StoreData.caseIdForDecision
+                    connection
+                    transaction
+                    request.CaseReference
+                    current
+                    actorContext.CaseId
+                    (match request.Command with
+                     | Command.Open _ -> true
+                     | _ -> false)
+
+            let! allowed =
+                ActorMutationGuard.authorize
+                    connection
+                    transaction
+                    actorContext
+                    request
+                    caseId
+                    revision
+
+            if not allowed then
+                return Error CoreFailure.ResourceUnavailable
+            else
                 return!
-                    persistDecision
+                    decideAndPersist
                         connection
                         transaction
-                        request
-                        fingerprint
+                        operation
+                        decide
                         current
-                        claim
+                        caseId
+                        actorContext
+                        witness
+                        commitStarted
+        }
+
+    let private observeOrApply
+        connection
+        transaction
+        operation
+        decide
+        actorContext
+        revision
+        (witness: WitnessProtocol)
+        commitStarted
+        =
+        task {
+            let request = Operation.request operation
+            let fingerprint = Operation.fingerprint operation
+
+            let! observed =
+                StoreData.readOperation connection (Some transaction) request.OperationId
+
+            match observed with
+            | Some(receipt, original) when original = fingerprint ->
+                witness.ReconcileAccepted(connection, transaction, request.OperationId)
+                return Ok receipt
+            | Some _ -> return Error CoreFailure.IdempotencyConflict
+            | None ->
+                return!
+                    applyDecision
+                        connection
+                        transaction
+                        operation
+                        decide
+                        actorContext
+                        revision
+                        witness
                         commitStarted
         }
 
@@ -97,10 +145,19 @@ module internal StoreTransaction =
         (transaction: NpgsqlTransaction)
         operation
         decide
+        (actorContext: ActorCallContext)
+        (witness: WitnessProtocol)
         commitStarted
         =
         task {
             let request = Operation.request operation
+
+            let! revision =
+                ActorGrantRead.lockRevision
+                    connection
+                    transaction
+                    true
+                    Threading.CancellationToken.None
 
             do!
                 Sql.lockKeyAsync
@@ -108,29 +165,59 @@ module internal StoreTransaction =
                     transaction
                     ("operation:" + request.OperationId.ToString("D"))
 
-            let fingerprint = Operation.fingerprint operation
+            match actorContext.CaseId with
+            | None -> return Error CoreFailure.ResourceUnavailable
+            | Some id ->
+                let! allowed =
+                    ActorMutationGuard.authorize
+                        connection
+                        transaction
+                        actorContext
+                        request
+                        id
+                        revision
 
-            let! observed =
-                StoreData.readOperation connection (Some transaction) request.OperationId
-
-            match observed with
-            | Some(receipt, original) when original = fingerprint -> return Ok receipt
-            | Some _ -> return Error CoreFailure.IdempotencyConflict
-            | None ->
-                return!
-                    applyDecision connection transaction request fingerprint decide commitStarted
+                if not allowed then
+                    return Error CoreFailure.ResourceUnavailable
+                else
+                    return!
+                        observeOrApply
+                            connection
+                            transaction
+                            operation
+                            decide
+                            actorContext
+                            revision
+                            witness
+                            commitStarted
         }
 
-    let transact (dataSource: NpgsqlDataSource) operation decide =
+    let transact
+        (dataSource: NpgsqlDataSource)
+        (witness: WitnessProtocol option)
+        (actorContext: ActorCallContext option)
+        operation
+        decide
+        =
         task {
             let request = Operation.request operation
             let commitStarted = ref false
 
             try
-                use! connection = RuntimeDatabase.openConnectionAsync dataSource
-                let! transaction = connection.BeginTransactionAsync(IsolationLevel.ReadCommitted)
-                use _ = transaction
-                return! execute connection transaction operation decide commitStarted
+                match witness, actorContext with
+                | None, _ -> return Error CoreFailure.StoreUnavailable
+                | _, None -> return Error CoreFailure.ResourceUnavailable
+                | Some active, Some actor ->
+                    active.Admit()
+                    use! connection = RuntimeDatabase.openConnectionAsync dataSource
+
+                    let! transaction =
+                        connection.BeginTransactionAsync(IsolationLevel.ReadCommitted)
+
+                    use _ = transaction
+
+                    return!
+                        execute connection transaction operation decide actor active commitStarted
             with
             | UnsupportedPostgresVersion
             | RuntimeDatabaseMismatch -> return Error CoreFailure.SchemaMismatch
@@ -141,5 +228,8 @@ module internal StoreTransaction =
             | :? InvalidDataException as error ->
                 return Error(StoreData.failure commitStarted.Value request.OperationId error)
             | :? InvalidCastException as error ->
+                return Error(StoreData.failure commitStarted.Value request.OperationId error)
+            | WitnessPending -> return Error(CoreFailure.CommitOutcomeUnknown request.OperationId)
+            | :? InvalidOperationException as error ->
                 return Error(StoreData.failure commitStarted.Value request.OperationId error)
         }

@@ -5,11 +5,11 @@ import Ajv2020, { type AnySchema, type ValidateFunction } from "ajv/dist/2020.js
 import addFormats from "ajv-formats";
 
 import {
-  isWebV2EndpointId,
-  type WebV2EndpointId,
-  webV2Endpoints,
-} from "../src/generated/convergence/web-v2.endpoint-catalog";
-import type { WebV2Response } from "../src/generated/convergence/web-v2.types";
+  isWebV3EndpointId,
+  type WebV3EndpointId,
+  webV3Endpoints,
+} from "../src/generated/convergence/web-v3.endpoint-catalog";
+import type { WebV3Response } from "../src/generated/convergence/web-v3.types";
 
 type ParsedCase = {
   readonly id: string;
@@ -70,14 +70,14 @@ const integer = (value: unknown, name: string): number => {
 };
 
 export const cliCases = (): readonly CliParsedCase[] =>
-  corpusCases("cli-v3.parsed-value-corpus.json").map((item) => {
+  corpusCases("cli-v4.parsed-value-corpus.json").map((item) => {
     const common = commonCase(item);
     if (!isObject(item)) throw new Error("CLI corpus case must remain an object.");
     return { ...common, exitCode: integer(item["exitCode"], "exitCode") };
   });
 
 export const rawCliInput = (identifier: string): unknown => {
-  const item = corpusCases("cli-v3.raw-decoder-corpus.json").find(
+  const item = corpusCases("cli-v4.raw-decoder-corpus.json").find(
     (candidate) => isObject(candidate) && candidate["id"] === identifier,
   );
   if (!isObject(item) || typeof item["bytesBase64"] !== "string")
@@ -88,7 +88,7 @@ export const rawCliInput = (identifier: string): unknown => {
 };
 
 export const webCases = (): readonly WebParsedCase[] =>
-  corpusCases("web-v2.parsed-value-corpus.json").map((item) => {
+  corpusCases("web-v3.parsed-value-corpus.json").map((item) => {
     const common = commonCase(item);
     if (!isObject(item)) throw new Error("Web corpus case must remain an object.");
     return { ...common, status: integer(item["status"], "status") };
@@ -116,27 +116,39 @@ const compiler = () => {
 };
 
 export const cliCommandPrepareInputValidator = (): ValidateFunction =>
-  compiler().compile(schema("cli-v3.endpoint.command.prepare.schema.json"));
+  compiler().compile(schema("cli-v4.endpoint.command.prepare.schema.json"));
+
+const cliEndpointInventory = (): readonly string[] => {
+  const catalog = readUnknown("cli-v4.catalog.json");
+  if (!isObject(catalog) || !Array.isArray(catalog["endpoints"])) {
+    throw new Error("CLI endpoint catalog is invalid.");
+  }
+  return catalog["endpoints"].map((item: unknown) => {
+    if (!isObject(item) || typeof item["id"] !== "string") {
+      throw new Error("CLI endpoint identity is invalid.");
+    }
+    return item["id"];
+  });
+};
 
 export const cliValidators = (): {
   readonly aggregate: ValidateFunction;
-  readonly endpoints: ReadonlyMap<WebV2EndpointId, ValidateFunction>;
+  readonly endpoints: ReadonlyMap<string, ValidateFunction>;
 } => {
   const ajv = compiler();
-  const aggregate = ajv.compile(schema("cli-v3.response.schema.json"));
-  const validators = webV2Endpoints
-    .map((value) => value.id)
-    .filter((id) => !id.startsWith("session") && id !== "definition")
-    .map((id) => [id, ajv.compile(schema(`cli-v3.endpoint.${id}.response.schema.json`))] as const);
+  const aggregate = ajv.compile(schema("cli-v4.response.schema.json"));
+  const validators = cliEndpointInventory().map(
+    (id) => [id, ajv.compile(schema(`cli-v4.endpoint.${id}.response.schema.json`))] as const,
+  );
   return { aggregate, endpoints: new Map(validators) };
 };
 
-export const requiredWebEndpoint = (value: string): WebV2EndpointId => {
-  if (!isWebV2EndpointId(value)) throw new Error(`Unknown corpus endpoint ${value}.`);
+export const requiredWebEndpoint = (value: string): WebV3EndpointId => {
+  if (!isWebV3EndpointId(value)) throw new Error(`Unknown corpus endpoint ${value}.`);
   return value;
 };
 
-export const endpointInventory = webV2Endpoints.map((value) => value.id);
+export const endpointInventory = webV3Endpoints.map((value) => value.id);
 
 const localReference = (document: Record<string, unknown>, reference: string): unknown => {
   if (!reference.startsWith("#/"))
@@ -200,7 +212,7 @@ export const webTagCoverage = () => {
     return {
       endpoint,
       expected: reachableSchemaDiscriminators(
-        `web-v2.endpoint.${endpoint}.response.schema.json`,
+        `web-v3.endpoint.${endpoint}.response.schema.json`,
         "tag",
       ),
       actual: [...actual].sort(),
@@ -210,17 +222,14 @@ export const webTagCoverage = () => {
 
 export const cliKindCoverage = () => {
   const cases = cliCases().filter((item) => item.valid);
-  const endpoints = endpointInventory.filter(
-    (id) => !id.startsWith("session") && id !== "definition",
-  );
-  return endpoints.map((endpoint) => {
+  return cliEndpointInventory().map((endpoint) => {
     const actual = new Set<string>();
     for (const item of cases)
       if (item.endpoint === endpoint) valueDiscriminators(item.value, "kind", actual);
     return {
       endpoint,
       expected: reachableSchemaDiscriminators(
-        `cli-v3.endpoint.${endpoint}.response.schema.json`,
+        `cli-v4.endpoint.${endpoint}.response.schema.json`,
         "kind",
       ),
       actual: [...actual].sort(),
@@ -247,7 +256,7 @@ export const webHostCoverage = () => {
   };
 };
 
-export const generatedResponse = (endpoint: WebV2EndpointId, status = 200): Response => {
+export const generatedResponse = (endpoint: WebV3EndpointId, status = 200): Response => {
   const item = webCases().find((value) => value.valid && value.endpoint === endpoint);
   if (item === undefined) throw new Error(`Missing generated response fixture ${endpoint}.`);
   return new Response(JSON.stringify(item.value), {
@@ -256,11 +265,11 @@ export const generatedResponse = (endpoint: WebV2EndpointId, status = 200): Resp
   });
 };
 
-export const generatedWebValue = <K extends WebV2EndpointId>(endpoint: K): WebV2Response<K> => {
+export const generatedWebValue = <K extends WebV3EndpointId>(endpoint: K): WebV3Response<K> => {
   const item = webCases().find((value) => value.valid && value.endpoint === endpoint);
   if (item === undefined)
     throw new Error(`Missing validated generated response fixture ${endpoint}.`);
   // The generated-contract-corpora suite validates every corpus value through the async browser
   // delivery selector. This helper only turns that checked-in positive corpus fixture into test data.
-  return item.value as WebV2Response<K>;
+  return item.value as WebV3Response<K>;
 };

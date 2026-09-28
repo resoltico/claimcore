@@ -1,11 +1,15 @@
 module ClaimCore.IntegrationTests.FreshBaselineSupport
 
 open System
+open System.IO
+open System.Security.Cryptography
 open Npgsql
 open Expecto
 open ClaimCore.Application
 open ClaimCore.Postgres
+open ClaimCore.Witness
 open ClaimCore.IntegrationTests.Fixtures
+open ClaimCore.IntegrationTests.FixtureEnvironment
 
 let execute connectionString sql =
     use connection = new NpgsqlConnection(connectionString)
@@ -55,15 +59,94 @@ let withDatabase action =
         NpgsqlConnection.ClearAllPools()
         execute root ("DROP DATABASE " + quoted)
 
+let private installationIdentity primaryOwner =
+    use connection = new NpgsqlConnection(primaryOwner)
+    connection.Open()
+
+    use command =
+        new NpgsqlCommand(
+            "SELECT installation_id,lineage_id,witness_epoch "
+            + "FROM claimcore.installation_lineage WHERE singleton",
+            connection
+        )
+
+    use reader = command.ExecuteReader()
+
+    if not (reader.Read()) then
+        failtest "Synthetic primary identity is required."
+
+    let identity: Identity =
+        {
+            InstallationId = reader.GetGuid(0)
+            LineageId = reader.GetGuid(1)
+            Epoch = reader.GetInt64(2)
+        }
+
+    identity
+
+let withWitnessForScope scope primaryOwner action =
+    let database = "witness_" + Guid.NewGuid().ToString("N") + "_test"
+    let root = witnessOwnerConnection ()
+    let owner = connectionFor database root
+    let writer = connectionFor database (witnessConnection ())
+    let quoted = quoteIdentifier database
+    execute root ("CREATE DATABASE " + quoted)
+
+    try
+        execute
+            root
+            ("REVOKE ALL ON DATABASE "
+             + quoted
+             + " FROM PUBLIC; GRANT CONNECT ON DATABASE "
+             + quoted
+             + " TO claimcore_witness_writer, claimcore_witness_auditor")
+
+        let identity = installationIdentity primaryOwner
+        let keyId = Guid.NewGuid()
+        let key = witnessKey ()
+        let capability = RandomNumberGenerator.GetBytes(32)
+
+        let directory =
+            Path.GetDirectoryName(writerCapabilityFile ())
+            |> Option.ofObj
+            |> Option.defaultWith (fun () -> invalidOp "Synthetic writer directory is missing.")
+
+        let capabilityPath =
+            Path.Combine(directory, "separate-writer-" + Guid.NewGuid().ToString("N") + ".cap")
+
+        let previous =
+            Environment.GetEnvironmentVariable("CLAIMCORE_WRITER_CAPABILITY_FILE")
+
+        try
+            privateBytes directory capabilityPath capability
+            Environment.SetEnvironmentVariable("CLAIMCORE_WRITER_CAPABILITY_FILE", capabilityPath)
+            use custody = new KeyRing(keyId, [ keyId, key ]) :> IKeyCustody
+            let check = KeyCheck.create custody identity.InstallationId identity.LineageId
+            ClaimCore.Witness.Baseline.initialize owner identity scope keyId check capability
+            action writer capability
+        finally
+            try
+                Environment.SetEnvironmentVariable("CLAIMCORE_WRITER_CAPABILITY_FILE", previous)
+                File.Delete(capabilityPath)
+            finally
+                CryptographicOperations.ZeroMemory(key)
+                CryptographicOperations.ZeroMemory(capability)
+    finally
+        NpgsqlConnection.ClearAllPools()
+        execute root ("DROP DATABASE " + quoted)
+
+let withWitnessFor primaryOwner action =
+    withWitnessForScope InstallationUseScope.SyntheticOnly primaryOwner action
+
 let initialize admin =
-    SchemaBaseline.initialize admin "Etc/UTC" |> completedAdministration
+    SchemaBaseline.initialize admin "Etc/UTC" syntheticSuppressionCheck
+    |> completedAdministration
 
 let runtimeRefuses (app: string) =
-    use database = new PostgresStore(app)
+    use source = RuntimeDataSource.create app
 
-    Expect.equal
-        (database.CheckSchema() |> await)
-        (Error CoreFailure.SchemaMismatch)
+    Expect.throwsT<RuntimeDatabaseMismatch>
+        (fun () -> use _connection = RuntimeDatabase.openConnection source in ())
         "The runtime refuses unsupported storage before serving case work"
 
 let private tableNames connectionString =
@@ -113,7 +196,7 @@ let snapshot admin =
 let assertUnsupported admin app =
     let before = snapshot admin
 
-    SchemaBaseline.initialize admin "Etc/UTC"
+    SchemaBaseline.initialize admin "Etc/UTC" syntheticSuppressionCheck
     |> refusedAdministration AdministrationFailure.UnsupportedInstallation
 
     SchemaBaseline.verify admin

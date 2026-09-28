@@ -6,7 +6,7 @@ open System.Text
 open System.Text.Json
 open ClaimCore.Application
 
-/// Database-free CLI-v3 discovery payloads. These are wire shapes, so Contracts owns them for the
+/// Database-free CLI-v4 discovery payloads. These are wire shapes, so Contracts owns them for the
 /// same reason it owns every endpoint codec: an adapter that composed them itself would fork the
 /// generated contract without the schema, corpus, or fingerprint noticing.
 [<RequireQualifiedAccess>]
@@ -51,7 +51,7 @@ module CliDiscovery =
             writer.WriteString("productVersion", BuildIdentity.current.Version)
             writer.WriteString("scope", projection.Semantic.Scope)
             writer.WriteNumber("businessFieldCount", projection.Semantic.Fields.Length)
-            writer.WriteNumber("cliProtocolVersion", 3)
+            writer.WriteNumber("cliProtocolVersion", 4)
             writer.WriteString("semanticCoreFingerprint", semanticFingerprint)
             writer.WriteString("cliWireContractFingerprint", cliFingerprint)
             writer.WriteNumber("maximumPageSize", projection.Semantic.MaximumPageSize)

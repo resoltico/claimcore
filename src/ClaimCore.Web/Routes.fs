@@ -7,13 +7,13 @@ open Microsoft.AspNetCore.Http
 open ClaimCore.Application
 open ClaimCore.Contracts
 
-/// Thin HTTP-v2 endpoint bindings. The host validates transport admission and exact input shapes,
+/// Thin HTTP-v3 endpoint bindings. The host validates transport admission and exact input shapes,
 /// then calls one typed core endpoint. It contains no recovery lifecycle or claims business logic.
 module Routes =
     let private requestToken (context: HttpContext) = context.RequestAborted
     let private mutationToken = CancellationToken.None
 
-    let private json admit maximumBytes decode invoke project context =
+    let internal json admit maximumBytes decode invoke project context =
         task {
             match! RouteSupport.admittedBody admit maximumBytes context with
             | Error result -> return result
@@ -27,7 +27,7 @@ module Routes =
                     return project outcome
         }
 
-    let get admit maximumBytes (core: IClaimsCore) context =
+    let get admit maximumBytes (core: IActorClaimsCore) context =
         json
             admit
             maximumBytes
@@ -36,15 +36,15 @@ module Routes =
             WebWire.get
             context
 
-    let list admit maximumBytes (core: IClaimsCore) context =
+    let list admit maximumBytes (core: IActorClaimsCore) context =
         json
             admit
             maximumBytes
-            (HttpInput.page (core.Describe()).Contract.MaximumPageSize)
+            (HttpInput.page SemanticContract.current.MaximumPageSize)
             (fun input ->
                 core.List(
                     {
-                        AfterReference = input.Cursor
+                        AfterCursor = input.Cursor
                         Limit = input.Limit
                     },
                     requestToken context
@@ -52,11 +52,11 @@ module Routes =
             WebWire.list
             context
 
-    let history admit maximumBytes (core: IClaimsCore) context =
+    let history admit maximumBytes (core: IActorClaimsCore) context =
         json
             admit
             maximumBytes
-            (HttpInput.history (core.Describe()).Contract.MaximumPageSize)
+            (HttpInput.history SemanticContract.current.MaximumPageSize)
             (fun input ->
                 core.History(
                     {
@@ -70,7 +70,7 @@ module Routes =
             WebWire.history
             context
 
-    let observe admit maximumBytes (core: IClaimsCore) context =
+    let observe admit maximumBytes (core: IActorClaimsCore) context =
         json
             admit
             maximumBytes
@@ -79,7 +79,58 @@ module Routes =
             WebWire.observe
             context
 
-    let prepare admit maximumBytes (core: IClaimsCore) context =
+    let managementRegister admit maximumBytes (core: IActorClaimsCore) context =
+        json
+            admit
+            maximumBytes
+            HttpManagementInput.register
+            (fun input ->
+                core.Management.RegisterActor(input.EventId, input.Principal, mutationToken))
+            (WebWire.management "authority.register")
+            context
+
+    let managementSetGrant admit maximumBytes (core: IActorClaimsCore) context =
+        json
+            admit
+            maximumBytes
+            HttpManagementInput.setGrant
+            (fun input ->
+                core.Management.SetGrant(
+                    input.EventId,
+                    input.Principal,
+                    input.Role,
+                    input.Scope,
+                    input.Active,
+                    mutationToken
+                ))
+            (WebWire.management "authority.setGrant")
+            context
+
+    let managementSetEnabled admit maximumBytes (core: IActorClaimsCore) context =
+        json
+            admit
+            maximumBytes
+            HttpManagementInput.setEnabled
+            (fun input ->
+                core.Management.SetEnabled(
+                    input.EventId,
+                    input.Principal,
+                    input.Enabled,
+                    mutationToken
+                ))
+            (WebWire.management "authority.setEnabled")
+            context
+
+    let managementObserve admit maximumBytes (core: IActorClaimsCore) context =
+        json
+            admit
+            maximumBytes
+            HttpManagementInput.observe
+            (fun eventId -> core.Management.Observe(eventId, requestToken context))
+            (WebWire.management "authority.observe")
+            context
+
+    let prepare admit maximumBytes (core: IActorClaimsCore) context =
         json
             admit
             maximumBytes
@@ -92,31 +143,34 @@ module Routes =
             (WebWire.prepare "command.prepare")
             context
 
-    let submit admit maximumBytes (core: IClaimsCore) context =
+    let submit admit maximumBytes (core: IActorClaimsCore) context =
         json
             admit
             maximumBytes
-            HttpInput.resolve
-            (fun input ->
-                core.Recovery.Resolve(input.OperationId, input.RequestSha256, mutationToken))
-            (WebRecoveryWire.resolve "command.execute")
+            HttpInput.draft
+            (fun draft ->
+                match Drafts.bindForEndpoint draft with
+                | Ok request -> core.Execute(request, mutationToken)
+                | Error rejection ->
+                    Task.FromResult(SubmissionOutcome.RejectedBeforeAttempt(None, rejection)))
+            WebWire.submit
             context
 
-    let recoveryList admit maximumBytes (core: IClaimsCore) context =
+    let recoveryList admit maximumBytes (core: IActorClaimsCore) context =
         json
             admit
             maximumBytes
-            (HttpInput.recoveryPage (core.Describe()).Contract.MaximumPageSize)
+            (HttpInput.recoveryPage SemanticContract.current.MaximumPageSize)
             (fun input ->
                 core.Recovery.List(input.View, input.Cursor, input.Limit, requestToken context))
             WebRecoveryWire.list
             context
 
-    let recoveryInspect admit maximumBytes (core: IClaimsCore) context =
+    let recoveryInspect admit maximumBytes (core: IActorClaimsCore) context =
         json
             admit
             maximumBytes
-            (HttpInput.recoveryInspect (core.Describe()).Contract.MaximumPageSize)
+            (HttpInput.recoveryInspect SemanticContract.current.MaximumPageSize)
             (fun input ->
                 core.Recovery.Inspect(
                     input.OperationId,
@@ -127,7 +181,7 @@ module Routes =
             WebRecoveryWire.inspect
             context
 
-    let recoveryResolve admit maximumBytes (core: IClaimsCore) context =
+    let recoveryResolve admit maximumBytes (core: IActorClaimsCore) context =
         json
             admit
             maximumBytes
@@ -137,7 +191,7 @@ module Routes =
             (WebRecoveryWire.resolve "recovery.resolve")
             context
 
-    let recoveryDismiss admit maximumBytes (core: IClaimsCore) context =
+    let recoveryDismiss admit maximumBytes (core: IActorClaimsCore) context =
         json
             admit
             maximumBytes
@@ -152,7 +206,7 @@ module Routes =
             WebRecoveryWire.dismiss
             context
 
-    let recoveryExport admit maximumBytes (core: IClaimsCore) context =
+    let recoveryExport admit maximumBytes (core: IActorClaimsCore) context =
         task {
             match! RouteSupport.admittedBody admit maximumBytes context with
             | Error result -> return result
@@ -215,7 +269,7 @@ module Routes =
                     return WebRecoveryWire.importRetain endpoint outcome
         }
 
-    let envelopePreview admit maximumBytes (core: IClaimsCore) context =
+    let envelopePreview admit maximumBytes (core: IActorClaimsCore) context =
         raw
             admit
             maximumBytes
@@ -223,29 +277,11 @@ module Routes =
             (WebRecoveryWire.importQuery "recovery.importEnvelopePreview")
             context
 
-    let envelopeRetain admit maximumBytes sourceDigestHeader (core: IClaimsCore) context =
+    let envelopeRetain admit maximumBytes sourceDigestHeader (core: IActorClaimsCore) context =
         retain
             admit
             maximumBytes
             sourceDigestHeader
             (fun source digest -> core.Recovery.RetainEnvelopeImport(source, digest, mutationToken))
             "recovery.importEnvelopeRetain"
-            context
-
-    let recordPreview admit maximumBytes (core: IClaimsCore) context =
-        raw
-            admit
-            maximumBytes
-            (fun source -> core.Recovery.PreviewCanonicalRecordImport(source, requestToken context))
-            (WebRecoveryWire.importQuery "recovery.importRecordPreview")
-            context
-
-    let recordRetain admit maximumBytes sourceDigestHeader (core: IClaimsCore) context =
-        retain
-            admit
-            maximumBytes
-            sourceDigestHeader
-            (fun source digest ->
-                core.Recovery.RetainCanonicalRecordImport(source, digest, mutationToken))
-            "recovery.importRecordRetain"
             context

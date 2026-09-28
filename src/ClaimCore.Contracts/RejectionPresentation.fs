@@ -95,6 +95,8 @@ module RejectionPresentation =
 
     let private operation =
         [
+            RejectionDiagnosticId.InvalidCaseListCursor,
+            "Use one current opaque case-list cursor returned for this account and page size."
             RejectionDiagnosticId.InvalidHistoryCursor,
             "Use one opaque history cursor returned by ClaimCore."
             RejectionDiagnosticId.IdempotencyConflict,
@@ -103,6 +105,7 @@ module RejectionPresentation =
             "This exact operation was durably revoked before execution."
             RejectionDiagnosticId.RecoveryAttemptLimitReached,
             "This operation has reached its recovery attempt limit. Read the current case and author a new operation only after review."
+            RejectionDiagnosticId.ResourceUnavailable, "The requested resource is unavailable."
         ]
 
     let private messages =

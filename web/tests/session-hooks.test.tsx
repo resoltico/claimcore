@@ -9,23 +9,22 @@ const session = (data: unknown) =>
 
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 
-it("fails a malformed authenticated session and leaves invalid mutation calls inert", async () => {
+it("fails a malformed authenticated session and leaves logout inert", async () => {
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockResolvedValueOnce(session({ authenticated: true, antiforgeryToken: null }));
   const { result } = renderHook(() => useSession());
   await waitFor(() => expect(result.current.state.kind).toBe("failure"));
-  await result.current.login("ignored");
   await result.current.logout();
   expect(fetch).toHaveBeenCalledTimes(1);
 });
 
-it("surfaces invalid snapshots after login and logout responses", async () => {
+it("surfaces invalid snapshots after session refresh and logout responses", async () => {
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockResolvedValueOnce(session({ authenticated: false, antiforgeryToken: "anonymous" }));
   const { result } = renderHook(() => useSession());
   await waitFor(() => expect(result.current.state.kind).toBe("anonymous"));
   fetch.mockResolvedValueOnce(session({ authenticated: true, antiforgeryToken: null }));
-  await result.current.login("credential");
+  await result.current.refresh();
   await waitFor(() => expect(result.current.state.kind).toBe("failure"));
   fetch.mockResolvedValueOnce(session({ authenticated: true, antiforgeryToken: "token" }));
   await result.current.refresh();
@@ -35,45 +34,22 @@ it("surfaces invalid snapshots after login and logout responses", async () => {
   await waitFor(() => expect(result.current.state.kind).toBe("failure"));
 });
 
-it("keeps the anonymous token after a rejected credential so login can be retried", async () => {
+it("does not send a credential from an anonymous session", async () => {
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockResolvedValueOnce(session({ authenticated: false, antiforgeryToken: "anonymous" }));
   const { result } = renderHook(() => useSession());
   await waitFor(() => expect(result.current.state.kind).toBe("anonymous"));
+  expect(fetch).toHaveBeenCalledTimes(1);
   fetch.mockResolvedValueOnce(
     new Response(
       JSON.stringify({
-        kind: "HOST_FAILURE",
-        code: "WEB_LOGIN_REJECTED",
-        status: 401,
-        diagnostic: { id: "WEB_HOST_LOGIN_REJECTED", parameters: {} },
-        message: "Credential was rejected.",
-        executionPhase: "NOT_STARTED",
-      }),
-      { status: 401, headers: { "content-type": "application/json" } },
-    ),
-  );
-  await result.current.login("invalid");
-  await waitFor(() =>
-    expect(result.current.state).toMatchObject({
-      kind: "anonymous",
-      token: "anonymous",
-      message: {
-        kind: "diagnostic",
-        diagnostic: { id: "WEB_HOST_LOGIN_REJECTED", parameters: {} },
-      },
-    }),
-  );
-  fetch.mockResolvedValueOnce(
-    new Response(
-      JSON.stringify({
-        endpoint: "session.login",
+        endpoint: "session",
         outcome: { tag: "SNAPSHOT", data: { authenticated: true, antiforgeryToken: "new" } },
       }),
       { headers: { "content-type": "application/json" } },
     ),
   );
-  await result.current.login("valid");
+  await result.current.refresh();
   await waitFor(() =>
     expect(result.current.state).toMatchObject({ kind: "authenticated", token: "new" }),
   );

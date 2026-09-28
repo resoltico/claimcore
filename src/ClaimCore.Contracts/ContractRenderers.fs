@@ -10,7 +10,7 @@ module ContractRenderers =
     let semanticSchema (projection: ContractModel) =
         CanonicalJson.renderSchema projection.DefinitionSchema projection.DefinitionSchema.Root
 
-    let cli (projection: ContractModel) = ContractJson.cliContract projection
+    let cli (projection: ContractModel) = CliContractJson.cliContract projection
     let web (projection: ContractModel) = ContractJson.webContract projection
 
     let semanticFingerprint projection =

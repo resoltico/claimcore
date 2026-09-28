@@ -3,7 +3,7 @@ import type {
   HostFailure,
   RecoveryRejection,
   Rejection,
-} from "../generated/convergence/web-v2.types";
+} from "../generated/convergence/web-v3.types";
 
 /** Inert presentation data, never an outcome, retry decision or locale preference. */
 export type Diagnostic =

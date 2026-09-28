@@ -12,7 +12,6 @@ module ContractProjection =
             Semantic = semantic
             DefinitionSchema = definitionSchema
             CliEndpoints = cliEndpoints
-            CliResponses = CliResponseSchemas.all semantic |> Map.ofList
             WebEndpoints = WebEndpointCatalog.all semantic
         }
 

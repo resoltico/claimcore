@@ -40,7 +40,7 @@ const sourceRules = { ...baseRules, ...typescriptRules };
 
 export default tseslint.config(
   // rationale: AJV/Rolldown outputs bounded generated code; suppression-registry: web/eslint.config.mjs|eslint-config-ignore|line:43
-  { ignores: ["src/generated/convergence/web-v2.validators.*.mjs"] },
+  { ignores: ["src/generated/convergence/web-v3.validators.*.mjs"] },
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked.map((config) => ({
     ...config,

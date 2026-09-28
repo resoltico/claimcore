@@ -28,7 +28,7 @@ let private create () =
     let recovery = new CoreRecoveryStore.Store()
     recovery.AttachClaimStore(claims :> IClaimStore)
 
-    CoreApi.create (claims :> IClaimStore) (recovery :> IRecoveryStore) clock
+    ActorCoreFixture.create (claims :> IClaimStore) (recovery :> IRecoveryStore) clock
 
 let private openCase (core: IClaimsCore) operationId reference =
     let command: CommandDraft =
@@ -63,8 +63,7 @@ let private casePages =
                 $"PAGE-{index:D3}"
 
         let first =
-            core.List({ AfterReference = None; Limit = 2 }, CancellationToken.None)
-            |> waitFor
+            core.List({ AfterCursor = None; Limit = 2 }, CancellationToken.None) |> waitFor
 
         match first with
         | QueryOutcome.Succeeded page ->
@@ -73,12 +72,17 @@ let private casePages =
                 [ "PAGE-000"; "PAGE-001" ]
                 "First page"
 
-            Expect.equal page.NextAfterReference (Some "PAGE-001") "Opaque continuation source"
+            Expect.isSome page.NextCursor "An opaque continuation is returned"
+
+            Expect.notEqual
+                page.NextCursor
+                (Some "PAGE-001")
+                "The visible reference is not a token"
 
             match
                 core.List(
                     {
-                        AfterReference = page.NextAfterReference
+                        AfterCursor = page.NextCursor
                         Limit = 2
                     },
                     CancellationToken.None
@@ -87,7 +91,7 @@ let private casePages =
             with
             | QueryOutcome.Succeeded next ->
                 Expect.equal (next.Items |> List.map _.CaseReference) [ "PAGE-002" ] "No overlap"
-                Expect.isNone next.NextAfterReference "Completed page"
+                Expect.isNone next.NextCursor "Completed page"
             | _ -> failtest "Expected second case page."
         | _ -> failtest "Expected first case page.")
 

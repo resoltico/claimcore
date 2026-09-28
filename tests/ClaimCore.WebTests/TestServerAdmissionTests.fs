@@ -28,7 +28,7 @@ let private failure (reply: Reply) status code =
 
 let private allRouteAdmission () =
     let routes = authenticatedRoutes ()
-    Expect.equal routes.Length 15 "All generated authenticated application routes are covered"
+    Expect.equal routes.Length 30 "All generated authenticated application routes are covered"
     use anonymous = Host.Start()
     use authenticated = Host.Start()
     let login = authenticated.Login()
@@ -65,6 +65,7 @@ let private allRouteAdmission () =
 
     Expect.equal anonymous.Runtime.CoreCalls 0 "Anonymous requests never reach core"
     Expect.equal anonymous.Runtime.RecoveryCalls 0 "Anonymous requests never reach recovery"
+    Expect.equal anonymous.Runtime.ManagementCalls 0 "Anonymous requests never reach management"
 
     Expect.equal
         authenticated.Runtime.CoreCalls
@@ -75,6 +76,11 @@ let private allRouteAdmission () =
         authenticated.Runtime.RecoveryCalls
         0
         "Rejected authenticated requests never reach recovery"
+
+    Expect.equal
+        authenticated.Runtime.ManagementCalls
+        0
+        "Rejected authenticated requests never reach management"
 
 let private rawAdmission () =
     use host = Host.Start()
@@ -89,7 +95,7 @@ let private rawAdmission () =
                 Some(endpoint, mediaType, maximumBytes, headers)
             | _ -> None)
 
-    Expect.equal routes.Length 4 "Envelope and canonical-record preview/retain are separate routes"
+    Expect.equal routes.Length 2 "Only signed-envelope preview and retain are raw routes"
 
     for endpoint, mediaType, maximumBytes, headers in routes do
         let wrongMedia =
@@ -141,7 +147,7 @@ let private malformedExportStatus () =
     let invalidAttachment =
         malformedExport.Send(
             HttpMethod.Post,
-            "/api/v2/recovery/export",
+            "/api/v3/recovery/export",
             Some(
                 $"""{{"operationId":"40000000-0000-4000-8000-000000000001","requestSha256":"{digest}"}}"""
             ),
@@ -153,11 +159,11 @@ let private malformedExportStatus () =
 
 let private observedFailureStatuses () =
     use host = Host.Start(loginPermits = 1)
-    let unknown = host.Send(HttpMethod.Get, "/api/v2/absent", None, None, None)
+    let unknown = host.Send(HttpMethod.Get, "/api/v3/absent", None, None, None)
     failure unknown 404 "WEB_NOT_FOUND"
 
     let anonymous =
-        host.Send(HttpMethod.Post, "/api/v2/cases/list", Some "{}", Some "application/json", None)
+        host.Send(HttpMethod.Post, "/api/v3/cases/list", Some "{}", Some "application/json", None)
 
     failure anonymous 401 "WEB_SESSION_REJECTED"
     let login = host.Login()
@@ -169,7 +175,7 @@ let private observedFailureStatuses () =
     let malformed =
         host.Send(
             HttpMethod.Post,
-            "/api/v2/cases/list",
+            "/api/v3/cases/list",
             Some "{",
             Some "application/json",
             Some token
@@ -184,14 +190,14 @@ let private observedFailureStatuses () =
         "Malformed mutation input proves no core invocation"
 
     let wrongMedia =
-        host.Send(HttpMethod.Post, "/api/v2/cases/list", Some "{}", Some "text/plain", Some token)
+        host.Send(HttpMethod.Post, "/api/v3/cases/list", Some "{}", Some "text/plain", Some token)
 
     failure wrongMedia 415 "WEB_MEDIA_TYPE"
 
     let oversized =
         host.Send(
             HttpMethod.Post,
-            "/api/v2/cases/list",
+            "/api/v3/cases/list",
             Some(String.replicate 65537 "x"),
             Some "application/json",
             Some token
@@ -200,14 +206,14 @@ let private observedFailureStatuses () =
     failure oversized 413 "WEB_BODY_TOO_LARGE"
 
     let noCsrf =
-        host.Send(HttpMethod.Post, "/api/v2/cases/list", Some "{}", Some "application/json", None)
+        host.Send(HttpMethod.Post, "/api/v3/cases/list", Some "{}", Some "application/json", None)
 
     failure noCsrf 403 "WEB_CSRF_REJECTED"
     malformedExportStatus ()
 
 let tests =
     testList
-        "Web HTTP-v2 TestServer"
+        "Web HTTP-v3 TestServer"
         [
             testCase
                 "[CC-WEB-001] every authenticated route rejects absent session, origin, and antiforgery before core dispatch"

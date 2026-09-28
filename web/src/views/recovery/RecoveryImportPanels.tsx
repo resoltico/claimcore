@@ -1,9 +1,9 @@
 import { usePresentation } from "../../presentation/context";
 import { Button } from "react-aria-components/Button";
 import { FileTrigger } from "react-aria-components/FileTrigger";
-import type { RecoveryImportPreview } from "../../api/v2";
+import type { RecoveryImportPreview } from "../../api/v3";
 import { AccessibleModal } from "../../components/AccessibleModal";
-import type { ImportKind, ImportState, RecoveryActions } from "./RecoveryState";
+import type { ImportState, RecoveryActions } from "./RecoveryState";
 
 const ImportPreview = ({ value }: { value: RecoveryImportPreview }) => {
   const p = usePresentation();
@@ -24,27 +24,16 @@ const ImportPreview = ({ value }: { value: RecoveryImportPreview }) => {
   );
 };
 
-const ImportButton = ({
-  kind,
-  busy,
-  onFile,
-}: {
-  kind: ImportKind;
-  busy: boolean;
-  onFile: (kind: ImportKind, file: File) => void;
-}) => {
+const ImportButton = ({ busy, onFile }: { busy: boolean; onFile: (file: File) => void }) => {
   const p = usePresentation();
-  const envelope = kind === "ENVELOPE";
-  const mediaType = envelope
-    ? "application/vnd.claimcore.recovery+json"
-    : "application/vnd.claimcore.canonical-command+json";
-  const label = p.text(envelope ? "ui.importEnvelope" : "ui.importRecord");
+  const mediaType = "application/vnd.claimcore.recovery+json";
+  const label = p.text("ui.importEnvelope");
   return (
     <FileTrigger
       acceptedFileTypes={[mediaType]}
       onSelect={(files) => {
-        const file = files?.item(0);
-        if (file !== null && file !== undefined) onFile(kind, file);
+        const file = Array.from(files ?? [])[0];
+        if (file !== undefined) onFile(file);
       }}
     >
       <Button isDisabled={busy}>{label}</Button>
@@ -60,8 +49,7 @@ export const RecoveryImports = ({
   actions: RecoveryActions;
 }) => (
   <div className="actions">
-    <ImportButton kind="ENVELOPE" busy={busy === "import-ENVELOPE"} onFile={actions.preview} />
-    <ImportButton kind="RECORD" busy={busy === "import-RECORD"} onFile={actions.preview} />
+    <ImportButton busy={busy === "import-ENVELOPE"} onFile={actions.preview} />
   </div>
 );
 

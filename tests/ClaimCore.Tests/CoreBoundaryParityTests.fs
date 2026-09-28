@@ -2,10 +2,12 @@ module ClaimCore.Tests.CoreBoundaryParityTests
 
 open System
 open System.Text
+open System.Text.Json
 open System.Threading
 open Expecto
 open ClaimCore.Application
 open ClaimCore.Cli
+open ClaimCore.Contracts
 open ClaimCore.Domain
 open ClaimCore.RecordFormat
 open ClaimCore.Tests.Fixtures
@@ -37,10 +39,10 @@ let private core () =
     let recovery = new CoreRecoveryStore.Store()
     recovery.AttachClaimStore(claims :> IClaimStore)
 
-    CoreApi.create (claims :> IClaimStore) (recovery :> IRecoveryStore) clock
+    ActorCoreFixture.create (claims :> IClaimStore) (recovery :> IRecoveryStore) clock
 
-let private v3Frame claimant =
-    $"""{{"protocolVersion":3,"endpoint":"command.execute","input":{{"operationId":"{operationId:D}","caseReference":"BOUNDARY-PARITY-001","expectedRevision":"0","command":{{"kind":"OPEN","values":{{"incidentDate":"2026-08-01","incidentNotificationDate":"2026-08-03","incidentCountry":"Lithuania","claimantName":"{claimant}","insurerName":"Example Alleged Insurer","claimedAmount":"1000.00","claimedCurrency":"EUR"}}}}}}}}"""
+let private v4Frame claimant =
+    $"""{{"protocolVersion":4,"endpoint":"command.execute","input":{{"operationId":"{operationId:D}","caseReference":"BOUNDARY-PARITY-001","expectedRevision":"0","command":{{"kind":"OPEN","values":{{"incidentDate":"2026-08-01","incidentNotificationDate":"2026-08-03","incidentCountry":"Lithuania","claimantName":"{claimant}","insurerName":"Example Alleged Insurer","claimedAmount":"1000.00","claimedCurrency":"EUR"}}}}}}}}"""
 
 let private decodeFrame (source: string) =
     match StrictJson.parseDocument 131072 (Encoding.UTF8.GetBytes(source)) with
@@ -48,8 +50,20 @@ let private decodeFrame (source: string) =
     | Ok document ->
         use frame = document
 
-        match InvocationFraming.decode frame.RootElement with
-        | Ok(Endpoint.CommandExecute, EndpointInput.Draft parsed, None) -> Ok parsed
+        match CliRemoteInvocation.decode frame.RootElement with
+        | Ok("command.execute", input, None) ->
+            let source = input.GetProperty("command").GetProperty("values")
+
+            let authored =
+                values
+                |> List.map (fun (name, _) ->
+                    name,
+                    source.GetProperty(name).GetString() |> Option.ofObj |> Option.defaultValue "")
+
+            Ok
+                { draft with
+                    Command = DraftCommand.Flat(CommandKind.Open, authored)
+                }
         | _ -> Error()
 
 let private receipt outcome =
@@ -58,11 +72,11 @@ let private receipt outcome =
     | _ -> failtest "Expected accepted typed core execution."
 
 let private decodedParity =
-    testCase "typed and CLI-v3 decoded drafts receive the same core decision" (fun () ->
+    testCase "typed and CLI-v4 validated drafts receive the same core decision" (fun () ->
         let decoded =
-            v3Frame registration.ClaimantName
+            v4Frame registration.ClaimantName
             |> decodeFrame
-            |> Result.defaultWith (fun _ -> failtest "The strict v3 frame must decode.")
+            |> Result.defaultWith (fun _ -> failtest "The strict v4 frame must decode.")
 
         let runtime = core ()
 
@@ -119,17 +133,17 @@ let private advisoryNonAuthority =
 
 let private malformedUnicode =
     testCase "unpaired escaped Unicode cannot alias a valid claimant request" (fun () ->
-        let valid = v3Frame registration.ClaimantName |> decodeFrame
+        let valid = v4Frame registration.ClaimantName |> decodeFrame
         Expect.isOk valid "A valid comparison request decodes"
 
-        let malformed = v3Frame "\\uD800"
+        let malformed = v4Frame "\\uD800"
 
         Expect.isError
             (decodeFrame malformed)
             "Malformed escape cannot become a replacement scalar"
 
         let malformedProperty =
-            v3Frame registration.ClaimantName
+            v4Frame registration.ClaimantName
             |> _.Replace("\"claimantName\"", "\"\\uD800\"")
 
         Expect.isError (decodeFrame malformedProperty) "Malformed property name cannot be decoded"
@@ -175,7 +189,7 @@ let private storageFailurePrivacy =
         let clock = businessTime today
 
         let runtime =
-            CoreApi.create
+            ActorCoreFixture.create
                 (new CoreStore.Store() :> IClaimStore)
                 (new CoreRecoveryStore.Store(RecoveryStoreFailure.StoreUnavailable)
                 :> IRecoveryStore)
@@ -193,7 +207,8 @@ let private storageFailurePrivacy =
                 "Core fault omits claimant text"
         | _ -> failtest "Expected a definite technical preparation failure."
 
-        let response = ClaimCore.Contracts.CliWireCodec.prepare "command.prepare" outcome
+        use service = JsonDocument.Parse(ReadOnlyMemory<byte>(WebWireCodec.prepare outcome))
+        let response = CliRemoteWireCodec.result "command.prepare" service.RootElement
 
         let rendered = response.Bytes |> Encoding.UTF8.GetString
 

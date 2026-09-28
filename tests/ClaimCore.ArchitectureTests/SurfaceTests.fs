@@ -61,18 +61,32 @@ let private applicationSurfaceIsClosed () =
         ] do
         Expect.isFalse (Set.contains forbidden surface) ("Public bypass: " + forbidden)
 
-/// The protocol layer declares the seam the composition root fills, so the seam itself must stay
-/// public while no runtime factory reaches it.
-let private protocolDeclaresItsOwnSeam () =
+/// The CLI protocol exposes the authenticated remote session, never a core supplier or runtime.
+let private protocolUsesRemoteSeam () =
     let surface = exported "ClaimCore.CliProtocol"
+    let contractSurface = exported "ClaimCore.Contracts"
 
-    for required in [ "ClaimCore.Cli.ICoreSupplier"; "ClaimCore.Cli.CoreUnavailable" ] do
-        Expect.isTrue (Set.contains required surface) ("Protocol seam is public: " + required)
+    Expect.isTrue
+        (Set.contains "ClaimCore.Cli.RemoteAccessSession" surface)
+        "Authenticated remote session is public"
+
+    Expect.isTrue
+        (Set.contains "ClaimCore.Contracts.CliRemoteWireCodec" contractSurface)
+        "The v4 response encoder is contract-owned"
+
+    for forbidden in [ "ClaimCore.Cli.ICoreSupplier"; "ClaimCore.Cli.CoreUnavailable" ] do
+        Expect.isFalse (Set.contains forbidden surface) ("Obsolete core seam: " + forbidden)
+
+    for forbidden in
+        [ "ClaimCore.Contracts.CliWireCodec"; "ClaimCore.Contracts.CliResponseSchemas" ] do
+        Expect.isFalse
+            (Set.contains forbidden contractSurface)
+            ("Obsolete v3 wire surface: " + forbidden)
 
     Expect.isFalse
         (surface
          |> Set.exists (fun name -> name.StartsWith("ClaimCore.Hosting", StringComparison.Ordinal)))
-        "No runtime factory type reaches the protocol surface"
+        "No runtime factory reaches the protocol surface"
 
 let tests =
     testList
@@ -83,5 +97,5 @@ let tests =
                 "storage exports only schema-owner administration"
                 storageSurfaceIsAdministrationOnly
             testCase "application storage ports stay private" applicationSurfaceIsClosed
-            testCase "the CLI protocol declares its own core seam" protocolDeclaresItsOwnSeam
+            testCase "the CLI protocol exposes only remote service seams" protocolUsesRemoteSeam
         ]

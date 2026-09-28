@@ -25,10 +25,10 @@ export type {
   RevokedOperation,
   SemanticDefinition,
   SessionSnapshot,
-  WebV2Response,
-} from "../generated/convergence/web-v2.types";
+  WebV3Response,
+} from "../generated/convergence/web-v3.types";
 
-import type { HostFailure } from "../generated/convergence/web-v2.types";
+import type { HostFailure } from "../generated/convergence/web-v3.types";
 import type { Notice } from "./notices";
 /** Local delivery facts belong to the browser adapter, not generated server DTOs. */
 export type ApiResult<T> =

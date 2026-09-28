@@ -4,10 +4,10 @@ import type {
   PreparationSummary,
   RecoveryListItem,
   RecoveryPage as RecoveryPageResult,
-  WebV2Response,
-} from "../api/v2";
-import { v2 } from "../api/v2";
-import { useRetryablePage } from "../hooks/useV2Read";
+  WebV3Response,
+} from "../api/v3";
+import { v3 } from "../api/v3";
+import { useRetryablePage } from "../hooks/useRead";
 import { RecoveryPage } from "./recovery/RecoveryPage";
 import {
   page,
@@ -71,11 +71,11 @@ export const RecoveryView = ({ token }: RecoveryViewProps) => {
   const [view, setView] = useState<RecoveryViewKind>("PENDING");
   const request = useCallback(
     (cursor: string | null, signal: AbortSignal) =>
-      v2.recoveryList(view, cursor, 50, token, signal),
+      v3.recoveryList(view, cursor, 50, token, signal),
     [token, view],
   );
   const recoveryPage = useRetryablePage<
-    WebV2Response<"recovery.list">,
+    WebV3Response<"recovery.list">,
     RecoveryListItem,
     RecoveryPageResult
   >(request, page);

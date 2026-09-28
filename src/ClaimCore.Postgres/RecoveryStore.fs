@@ -9,7 +9,13 @@ open ClaimCore.Application
 /// PostgreSQL implementation of Application's private technical recovery port. The composed
 /// runtime owns the shared data source; focused collaborators own reads, retention, dismissal,
 /// and the combined execution transaction.
-type internal PostgresRecoveryStore(dataSource: NpgsqlDataSource, limits: PreparationLimits) =
+type internal PostgresRecoveryStore
+    (
+        dataSource: NpgsqlDataSource,
+        limits: PreparationLimits,
+        witness: WitnessProtocol,
+        actorContext: ActorCallContext
+    ) =
     do PreparationLimits.validate limits
 
     interface IRecoveryStore with
@@ -17,22 +23,48 @@ type internal PostgresRecoveryStore(dataSource: NpgsqlDataSource, limits: Prepar
             RecoveryStoreQueries.installationLineage dataSource cancellationToken
 
         member _.Retain(draft, cancellationToken) =
-            RecoveryRetentionStore.retain dataSource limits draft cancellationToken
+            RecoveryRetentionStore.retain
+                dataSource
+                limits
+                draft
+                cancellationToken
+                (Some actorContext)
+                (Some witness)
 
         member _.Get(operationId, cancellationToken) =
-            RecoveryReadStore.get dataSource operationId cancellationToken
+            RecoveryReadStore.get dataSource operationId cancellationToken (Some actorContext)
 
         member _.Inspect(operationId, after, pageSize, cancellationToken) =
-            RecoveryReadStore.inspect dataSource limits operationId after pageSize cancellationToken
+            RecoveryReadStore.inspect
+                dataSource
+                limits
+                operationId
+                after
+                pageSize
+                cancellationToken
+                (Some actorContext)
 
         member _.List(view, after, pageSize, cancellationToken) =
-            RecoveryReadStore.list dataSource limits view after pageSize cancellationToken
+            RecoveryReadStore.list
+                dataSource
+                limits
+                view
+                after
+                pageSize
+                cancellationToken
+                (Some actorContext)
 
         member _.Start(operationId, cancellationToken) =
-            RecoveryRetentionStore.start dataSource limits operationId cancellationToken
+            RecoveryStartStore.start
+                dataSource
+                limits
+                operationId
+                cancellationToken
+                (Some actorContext)
+                (Some witness)
 
         member _.Settle(attemptId, outcome, cancellationToken) =
-            RecoveryRetentionStore.settle dataSource attemptId outcome cancellationToken
+            RecoveryStartStore.settle dataSource attemptId outcome cancellationToken
 
         member _.ExecuteAdmitted(operation, attemptId, today, decide, cancellationToken) =
             if attemptId = Guid.Empty then
@@ -45,6 +77,14 @@ type internal PostgresRecoveryStore(dataSource: NpgsqlDataSource, limits: Prepar
                     today
                     decide
                     cancellationToken
+                    (Some witness)
+                    (Some actorContext)
 
         member _.Dismiss(operationId, requestSha256, cancellationToken) =
-            RecoveryDismissalStore.dismiss dataSource operationId requestSha256 cancellationToken
+            RecoveryDismissalStore.dismiss
+                dataSource
+                operationId
+                requestSha256
+                cancellationToken
+                (Some witness)
+                (Some actorContext)

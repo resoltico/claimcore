@@ -1,4 +1,4 @@
-import type { CommandDraft } from "../api/v2";
+import type { CommandDraft } from "../api/v3";
 
 type FlatCommand = Exclude<CommandDraft["command"], { readonly kind: "CORRECT_CASE" }>;
 type CorrectionGroup =

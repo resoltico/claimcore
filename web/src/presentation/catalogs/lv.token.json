@@ -11,7 +11,6 @@
   "token.ERROR": "Izpildes kļūda",
   "token.REVOKED_BEFORE_EXECUTION": "Atsaukts pirms izpildes",
   "token.ENVELOPE": "APLOKSNE",
-  "token.UNBOUND_CANONICAL_RECORD": "Nesaistīts kanoniskais ieraksts",
   "token.FOUND": "ATRASTA",
   "token.NOT_FOUND": "NAV ATRASTA"
 }

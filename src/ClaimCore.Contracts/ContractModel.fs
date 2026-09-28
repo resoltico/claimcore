@@ -29,6 +29,5 @@ type ContractModel =
         Semantic: SemanticCoreContract
         DefinitionSchema: SchemaDocument
         CliEndpoints: CliEndpoint list
-        CliResponses: Map<string, Schema>
         WebEndpoints: WebEndpoint list
     }

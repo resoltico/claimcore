@@ -83,8 +83,4 @@ module internal WebImportRetainCorpusSamples =
         retain
             "recovery.importEnvelopeRetain"
             RecoveryArtifactKind.Envelope
-            RecoveryArtifactKind.UnboundCanonicalRecord
-        @ retain
-            "recovery.importRecordRetain"
-            RecoveryArtifactKind.UnboundCanonicalRecord
             RecoveryArtifactKind.Envelope

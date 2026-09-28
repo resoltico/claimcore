@@ -1,11 +1,6 @@
 # CLI and protocol
 
-`ClaimCore.Cli` is ClaimCore's strict JSON CLI-v3 automation interface. `ClaimCore.Web` is the
-human interface; `ClaimCore.Database` is the separate schema-owner administration program. The CLI
-is local process automation, not a remote API, and it has no labelled-text, legacy-verb, or
-protocol-v2 compatibility mode.
-Private-file runtime endpoints are supported on macOS and Linux; Windows discovery commands remain
-available, but private-file operations fail closed there.
+`ClaimCore.Cli` is ClaimCore's strict JSON CLI-v4 client of the authenticated HTTPS service. `ClaimCore.Web` hosts case work and browser sessions; `ClaimCore.Database` is a separately credentialed owner administration program. The CLI has no PostgreSQL driver, runtime database credential, or direct store path. Old CLI-v3 frames and direct-database case work are not compatibility modes. Private source, destination, and automation-secret files use handle-first admission; unsupported host file security fails closed.
 
 After a Release build, use the executable directly:
 
@@ -14,8 +9,7 @@ dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- hel
 dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- describe summary
 ```
 
-Discovery commands do not open PostgreSQL. Runtime endpoints read the Npgsql connection string from
-the owner-private file selected by `CLAIMCORE_CONNECTION_FILE`.
+Discovery commands require no service or credentials. Case-work calls require `CLAIMCORE_SERVICE_URL`, `CLAIMCORE_OIDC_ISSUER`, `CLAIMCORE_OIDC_CLIENT_ID`, and `CLAIMCORE_CLI_AUTH_MODE` (`interactive` or `automation`). Automation also requires an owner-private `CLAIMCORE_OIDC_CLIENT_SECRET_FILE` for its distinct client-credentials principal. Interactive login uses an authorization-code/S256 PKCE loopback callback. The service and issuer URLs must be HTTPS; system certificate trust is the default. The optional private `CLAIMCORE_CLI_OIDC_TRUST_ROOT_FILE` and `CLAIMCORE_CLI_SERVICE_TRUST_ROOT_FILE` are restricted to loopback qualification and do not disable hostname validation. No bearer token or client secret belongs in a frame, log, or repository file.
 
 ## Commands
 
@@ -24,7 +18,7 @@ correctness; process and contract tests provide separate behavioral evidence.
 
 <!-- generated:begin cli-help -->
 ```text
-ClaimCore CLI v3
+ClaimCore CLI v4
   help [topic]
   version
   version --json
@@ -39,24 +33,18 @@ ClaimCore CLI v3
   call
   session
 
-Discovery commands do not open PostgreSQL. call reads one strict JSON invocation from stdin; session reads NDJSON.
+Discovery commands do not connect to the service. call reads one strict JSON invocation from stdin; session reads NDJSON over authenticated HTTPS.
 ```
 <!-- generated:end cli-help -->
 
 `call` reads exactly one invocation from standard input and emits exactly one JSON response.
 `session` reads one newline-delimited JSON invocation per line and emits one response per accepted
-input line while retaining a retryable runtime session. It does not accept positional command verbs,
+input line while retaining an authenticated client session. It does not accept positional command verbs,
 paths containing claimant data, aliases, text output, or protocol selection flags.
 
 ## Local failures and core outcomes
 
-Runtime-opening, endpoint-input mismatches, and private-export write failures return
-`outcome.kind: "localFailure"` with a typed adapter diagnostic, exit code 3, and
-`STOP_AND_INVESTIGATE`. They are not IClaimsCore faults and never imply a claim did not commit.
-Ordinary core failures and recovery refusals retain their outer result/uncertainty categories and
-now require `diagnostic.id` and exact `diagnostic.parameters`. Consumers must rebuild against the
-matching contract; old fault shapes and the former adapter-as-core `failed` representation are not
-supported. [Core outcome diagnostics](diagnostics.md) defines ownership and the native/wire break.
+Configuration, authentication, invalid service replies, and private-file refusals return a CLI-v4 `localFailure` with a safe code and exit 3. A service host refusal is a distinct `serviceFailure`; a service outcome is nested under `result.service` and validated against the generated endpoint response schema before delivery. An uncertain outbound mutation or delivery returns a typed unconfirmed result and exit 4. Neither transport failure nor a temporarily absent receipt proves that a mutation failed. [Core outcome diagnostics](diagnostics.md) defines the service's safe diagnostic identities.
 
 Protocol failures now require `diagnostic.id`, exact parameters and a known-member path. Use
 `claimcore describe diagnostics` for protocol and process schemas. A process delivery failure uses
@@ -67,18 +55,11 @@ not a manufactured core rejection. See [Product diagnostics](diagnostics.md).
 
 ## Contracts and invocation
 
-The pure `ClaimCore.Contracts` projection owns the semantic description, CLI-v3 catalog, invocation
-schema, exact aggregate and per-endpoint request/response schemas, recovery-envelope schema, pure
-response codec, conformance corpora, and CLI wire fingerprint. Use `describe` to discover semantic
-fields, commands, endpoints, and recovery methods; use `schema` to obtain exact machine-readable
-schemas. Checked artifacts in the Web workspace are projections of the same source, not another
-authority.
-During the pre-1.0 source preview, `protocolVersion: 3` identifies this CLI framing and endpoint
-family, not a promise that every response shape remains backward-compatible. The exact wire
+The pure `ClaimCore.Contracts` projection owns the semantic description, CLI-v4 invocation/response schemas, the generated Web-v3 service endpoint catalog and response schemas, recovery-artifact schema, conformance corpora, and wire fingerprints. Use `describe` to discover fields, commands, endpoints, and recovery methods; use `schema` for exact machine-readable shapes. Checked browser and CLI artifacts are projections of this source, not separate authorities. `protocolVersion: 4` identifies the CLI framing, not a compatibility guarantee. The exact wire
 fingerprint identifies the current schema; automation must use the matching contract rather than
 assuming the number alone establishes compatibility.
 
-Every invocation is an exact JSON object with `protocolVersion: 3`, an endpoint ID, and that
+Every invocation is an exact JSON object with `protocolVersion: 4`, an endpoint ID, and that
 endpoint's `input`. Only descriptors marked cancellable accept optional `timeoutMs`; mutation
 endpoints do not accept a browser-style cancellation timeout. Duplicate or unknown properties,
 malformed UTF-8, unpaired escaped Unicode, comments, trailing documents, wrong scalar/container
@@ -90,7 +71,7 @@ file:
 
 ```json
 {
-  "protocolVersion": 3,
+  "protocolVersion": 4,
   "endpoint": "command.execute",
   "input": {
     "operationId": "10000000-0000-4000-8000-000000000001",
@@ -116,63 +97,63 @@ file:
 orders the authored values by Domain command definition before canonical encoding. The case reference
 remains the immutable top-level target, not a command value.
 
-CLI-v3 is distinct from durable canonical command-record format 3 and recovery-envelope format 2.
+CLI-v4 is distinct from durable canonical command-record format 3 and signed recovery-artifact format 3.
 The latter formats preserve exact recovery bytes; they are not earlier CLI protocols.
 
 ## Endpoint inventory
 
-| Endpoint ID | Core operation |
+| Endpoint ID | Service operation |
 |---|---|
-| `command.prepare`, `command.execute` | `Prepare`, `Execute` |
-| `case.get`, `case.list`, `case.history`, `operation.observe` | Typed case and receipt queries |
-| `recovery.list`, `recovery.inspect`, `recovery.resolve`, `recovery.dismiss` | `IClaimsCore.Recovery` lifecycle work |
-| `recovery.export` | Export to an absolute owner-private destination through the CLI private-file service |
-| `recovery.importEnvelopePreview`, `recovery.importEnvelopeRetain` | Preview or retain an envelope from an absolute private source path |
-| `recovery.importRecordPreview`, `recovery.importRecordRetain` | Preview or retain a canonical command record from an absolute private source path |
+| `command.prepare`, `command.execute` | Actor-bound preparation and execution |
+| `case.get`, `case.list`, `case.history`, `operation.observe` | Authorized case and operation reads |
+| `recovery.list`, `recovery.inspect`, `recovery.resolve`, `recovery.dismiss` | Authorized recovery work |
+| `recovery.export` | Obtain an authorized envelope and create an exclusive owner-private local file |
+| `recovery.importEnvelopePreview`, `recovery.importEnvelopeRetain` | Read a private local envelope and preview or retain its exact bytes through the service |
+| `authority.register`, `authority.setGrant`, `authority.setEnabled`, `authority.observe`, `authority.approveCopySigner`, `authority.approveCopyDeletion`, `authority.approveCopyAdoption`, `authority.approveWriterHandoff` | Installation/case authority and exact copy-signer, deletion, adoption, or writer-handoff approval subject to service grants; owner custody and execution are separate |
+| `lifecycle.review`, `lifecycle.apply`, `lifecycle.approve` | Audited disposition, erasure, hold, and approval workflow subject to service grants |
+| `tombstone.review`, `tombstone.approvePrune`, `tombstone.approveTerminal`, `tombstone.changeHold` | Opaque post-purge review, witnessed prune or terminal-evidence draft approval, and nonpayload holds; owner certification and execution are separate |
 
-`command.execute` is the one-call typed command workflow. `recovery.resolve` reuses only an already
+For copy-signer, copy-deletion, copy-adoption, writer-handoff, and real-data-activation approvals, and the `validUntil` of an erasure-purge proposal, supply UTC instants with seven fractional digits ending in `0`; finer precision is refused because the signed value must survive PostgreSQL's microsecond timestamp storage unchanged.
+
+The generated service catalog defines exact paths, body media, and response schemas; the CLI never sends a database connection string. Every case-work endpoint checks the authenticated principal and current ClaimCore grants before disclosure or mutation. `command.execute` is the one-call typed command workflow. `recovery.resolve` reuses only an already
 retained operation ID and digest; it does not recreate or edit a draft. Import preview never submits,
 and retain never auto-submits.
 
+`case.list` continuations are opaque and bound to the authenticated principal, current grant
+revision, exact page size, and a 15-minute lifetime. A changed grant, different page size, expired
+token, or service restart requires a fresh first page. Do not save a cursor as a case reference or
+assume it is portable between sessions or installations.
+
 ## Responses and exit codes
 
-Every ordinary response is one JSON object. A completed invocation uses:
+Every ordinary response is one JSON object. A successful case-list response has the CLI envelope around the validated service outcome:
 
 ```json
-{"protocolVersion":3,"kind":"result","endpoint":"case.list","outcome":{"kind":"succeeded","items":[],"nextCursor":null}}
+{"protocolVersion":4,"kind":"result","endpoint":"case.list","service":{"endpoint":"case.list","outcome":{"tag":"SUCCEEDED","data":{"items":[],"nextCursor":null}}}}
 ```
 
-An intake or framing failure uses `kind: "protocolFailure"` with a stable code, safe message, and
-JSON pointer path. Endpoint outcomes remain typed body data: business rejection, not found, failure,
-cancellation, definite execution, settlement confirmation, and recovery refusal are never inferred
-solely from an exit code.
+An intake or framing failure uses `kind: "protocolFailure"` with a stable code, safe diagnostic identity, and structural JSON-pointer path. Authentication/configuration and private-file refusals use `localFailure`; an admitted HTTP host refusal uses `serviceFailure`. Endpoint outcomes remain typed service data: business rejection, not found, cancellation, witnessed settlement, and recovery refusal are not inferred solely from an exit code.
 
-If one-call `command.execute` cannot establish whether preparation retention committed, it returns
-`preparationStateUnknown` with the exact operation ID and request digest and exits 4; it never
-relabels that uncertainty as a pre-attempt failure. A `recovery.resolve` cancelled before storage
-admission returns `cancelledBeforeAdmission` with the operation ID and exits 130, rather than claiming
-that the preparation was absent.
+If one-call `command.execute` cannot establish whether preparation or attempt admission committed, its service outcome preserves the exact operation ID and request digest and the CLI exits 4. A timeout, lost response, or other unconfirmed delivery after dispatch must be reconciled through the same identity; the client cannot infer that a service mutation failed. Cancellation proved before admission exits 130.
 
-An exact `command.prepare` retry after acceptance returns `observedAccepted` with the authoritative
-receipt (exit 0), not technical preparation details or a fabricated current-state review. It remains
-available after the accepted preparation is pruned. If an exact retained request is no longer
-reviewable against current state, it returns
-`retainedForRecovery` with the retained details and typed reason (exit 2); inspect or resolve the
-same identity rather than auto-submitting a stale review.
+An exact prepare or execute retry after acceptance may return `OBSERVED_ACCEPTED` with the authoritative receipt (exit 0), not a fabricated current-state review. A retained request no longer reviewable against current state remains `RETAINED_FOR_RECOVERY` (exit 2); inspect or resolve that same identity rather than auto-submitting a stale review. A current grant or erasure fence can still deny disclosure of an older receipt.
 
 | Exit | Meaning |
 |---:|---|
-| 0 | Successful endpoint result, including prepared or observed-accepted work. |
+| 0 | Successful endpoint result, including prepared, accepted, and observed-accepted work. |
 | 2 | Protocol failure, business rejection, conflict, not found, or refused recovery action. |
-| 3 | Configuration, schema, storage, or definite non-mutating failure. |
-| 4 | Attempt, commit, retention, or result-delivery outcome remains uncertain. |
+| 3 | Configuration/authentication, private-file, invalid service-reply, or definite service failure. |
+| 4 | Mutation, settlement, or result delivery remains uncertain. |
 | 64 | Unsupported CLI invocation. |
 | 70 | Unexpected pre-admission process failure. |
 | 130 | Cancellation completed before mutation admission or attempt. |
 
-On a broken output stream after mutation admission, stderr reports only the operation ID, optional
-digest, and safe recovery direction. It never reports case payloads, recovery bytes, paths,
-credentials, or connection strings.
+On a broken output stream after mutation dispatch, stderr carries only a bounded safe process diagnostic and known frame identity/recovery direction. It never reports case payloads, recovery bytes, private paths, tokens, or credentials.
+
+<a id="cc-cli-003"></a>
+### CC-CLI-003 — Remote mutation delivery remains uncertain after dispatch
+
+Every generated mutating CLI endpoint is noncancellable after admission. A timeout, malformed service reply, lost HTTP response, or failed stdout delivery after dispatch exits 4 when the mutation may have started; it is not evidence that the service did not commit. Preserve the exact approval, event, or operation identity and inspect the relevant service or owner evidence before retrying. Read-only endpoints retain definite failure classification because they cannot create authority or change case data.
 
 ## Canonical request identity and recovery
 
@@ -180,12 +161,7 @@ Canonical format-3 request identity preserves authored string content. Thus amou
 `"1"` and `"1.00"` identify different request content even though accepted views render the same
 decimal canonically. Case references retain exact Unicode content and casing.
 
-Current recovery imports require canonical format 3 (`canonicalCommandFormat: 3`) and envelope
-format 2. Older property/version layouts, including protocol-2 canonical records and envelope-v1,
-are refused even when their hashes are internally correct. No compatibility rewrite or relabeling
-is performed. Snapshot format 2 and SHA-256 fingerprint algorithm version 1 remain separate current
-formats. An unbound current canonical import records `CANONICAL_RECORD_V3` retention context, not a
-claim about an original producer; it neither imports old database authority nor submits a command.
+Current recovery import accepts only the signed, installation-bound recovery artifact v3 carrying canonical command format 3. Raw canonical-record import and older unsigned/plaintext envelopes are not supported. No compatibility rewrite or relabeling is performed. Snapshot format 2 and SHA-256 fingerprint algorithm version 1 are separate internal format identities; an import neither adopts an old database nor submits a command.
 
 For an uncertain result, preserve the exact operation ID and original request bytes. First use
 `operation.observe`; then inspect recovery as necessary. Never create a replacement operation ID,
@@ -202,7 +178,7 @@ definite settlements with an opaque cursor bound to that operation. Unsettled id
 remain independent of later acceptance and prevent pruning of their preparation. `recovery.list` defaults to pending work and takes an explicit
 terminal view for retained accepted/revoked evidence and payload-free revocation tombstones. A bounded
 recovery list deliberately omits authored values, provenance, and attempt detail.
-An accepted receipt remains observable even if its technical preparation has been pruned. While a
+An accepted receipt remains observable to a currently authorized actor even if its technical preparation has been pruned. While a
 preparation is retained, exact replay preserves its original producer provenance and timestamp; a
 newer binary's semantic fingerprint does not rewrite those first-writer facts or become part of
 operation identity. An exact `recovery.resolve` identity can observe the accepted receipt after
@@ -212,8 +188,7 @@ replacing the first retained bytes.
 
 Resolve, dismiss, and export require the exact operation ID and SHA-256 digest. A started or unknown
 attempt is not a license to regenerate a request. A mismatched identity refuses a mutation without
-returning the other preparation's metadata or authored values. `recovery.inspect` remains an
-intentional trusted-operator read by operation ID. Cancellation proved before a technical COMMIT does
+returning the other preparation's metadata or authored values. `recovery.inspect` is actor- and resource-scoped; an inaccessible operation must not become an existence oracle. Cancellation proved before a technical COMMIT does
 not imply that write committed and does not erase earlier attempt or receipt evidence. A lost result
 once COMMIT starts remains explicitly uncertain. A definite business execution remains visible even
 if its technical settlement cannot be confirmed; unknown and unresolved outcomes remain recoverable.
@@ -225,7 +200,7 @@ inspect, dismiss, export, or accepted replay.
 <a id="cc-cli-002"></a>
 ### CC-CLI-002 — Private CLI recovery artifacts stay inside handle-first paths
 
-`recovery.export` writes only through the handle-first private-file service to an absolute destination
+After the service authorizes an export, `recovery.export` writes only through the handle-first private-file service to an absolute destination
 with exclusive creation, owner-private mode without extended ACLs, flush, and post-write validation.
 It will not follow a leaf or ancestor link or overwrite an existing file; a failed write removes only
 the partial file this call created. Imports require an absolute, owner-private regular source without
@@ -233,6 +208,6 @@ link traversal; handle identity checks also reject a pathname replaced during in
 reject invalid UTF-8 and oversized bytes before decoding. Refusal responses and
 diagnostics do not echo the private path, artifact bytes, credentials, or claimant data. An envelope
 is installation-bound and contains claimant data. Preview hashes exact import-source bytes; retain
-requires the same digest and never submits. Envelope and canonical-record imports have separate
-preview and retain endpoints, limits, and artifact semantics. On Windows these private-file endpoints
+requires the same digest and never submits. Only the signed current recovery-artifact envelope has
+preview and retain endpoints. On Windows these private-file endpoints
 refuse before access until equivalent handle and ACL verification is implemented.

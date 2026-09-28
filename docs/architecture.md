@@ -1,16 +1,10 @@
 # Architecture
 
-ClaimCore is one local product, not a distributed system. An F#/.NET core, local HTTPS host,
-React/TypeScript browser client, and PostgreSQL form the runtime. Repository engineering programs
-and tests qualify that runtime; they are not product services.
+ClaimCore's case-work boundary is one authenticated HTTPS service over a primary PostgreSQL store and a separately credentialed PostgreSQL witness. The React browser and CLI call that service; neither carries a database credential or storage assembly. The local two-cluster qualification proves protocol behavior on one machine, not independent-host survival or production readiness. Repository engineering programs and tests qualify parts of the runtime; they are not additional case-work services.
 
 ## Modular-monolith boundary
 
-The CLI and Web host are separate local process adapters over the same typed `IClaimsCore` facade.
-Each asks the composition root for its own runtime; the React client uses only the local Web host.
-The CLI need not start or call the Web host, and the browser does not load native domain or storage
-code. The Database executable retains separate schema-owner authority and is not a case-work client.
-No remote service or additional business field is introduced by this structure.
+`ClaimCore.Web` is the only ordinary case-work host. It opens the actor-bound runtime through `ClaimCore.Hosting`, authenticates browser OIDC sessions or CLI/automation bearer tokens, and obtains a fresh actor-scoped core for each request. `ClaimCore.Cli` uses the generated service contract over HTTPS; it never composes a local core or opens PostgreSQL. The browser loads no native Domain or storage code. `ClaimCore.Database` retains separate schema-owner authority and cannot serve case work. Actor, witness, disposition, and privacy metadata remain outside the thirteen `CaseFields`.
 
 ## The component contract
 
@@ -27,27 +21,22 @@ allowance. Adding one is a reviewed change to the architecture, not an implement
 | Component | Layer | Responsibility | Direct dependencies |
 |---|---|---|---|
 | `Domain` | core | Accepted values, field metadata, validation, available transitions, and case state. | none |
-| `RecordFormat` | core | Byte-stable canonical command-record format 3, historical snapshots, and recovery-envelope format 2. | `Domain` |
+| `RecordFormat` | core | Byte-stable canonical command-record format 3, historical snapshots, and signed recovery-artifact format 3. | `Domain` |
 | `Application` | core | The typed IClaimsCore facade, request admission, operation identity, endpoint outcomes, and the sole public recovery workflow. | `Domain`, `RecordFormat` |
-| `Contracts` | contract | Pure projection of Application's semantic description into CLI-v3 and Web-v2 wire contracts, schemas, codecs, and generated browser DTOs. | `Application`, `Domain` |
+| `Contracts` | contract | Pure projection of Application's semantic description into CLI-v4 and Web-v3 wire contracts, schemas, codecs, and generated browser DTOs. | `Application`, `Domain` |
 | `HostSecurity` | infrastructure | Handle-first local private-file and directory admission. No claims or transport decision authority. | none |
-| `Postgres` | infrastructure | Durable storage, atomic fresh-baseline initialization and admission, transaction boundaries, the private technical recovery store, and schema-owner administration. | `Application`, `Domain`, `RecordFormat` |
-| `Hosting` | composition | The sole composition root. Owns runtime opening, the data-source lifetime, and the admission lease; the only component that binds a store to the core. | `Application`, `Domain`, `Postgres` |
-| `CliProtocol` | transport | CLI-v3 framing, strict JSON decoding, discovery, and endpoint dispatch over a supplied core. It declares the core-supplier abstraction and cannot name a runtime factory. | `Application`, `Contracts`, `Domain`, `HostSecurity` |
-| `Cli` | entry point | The CLI composition root and process entry point. It owns the runtime lifetime and stdin/stdout delivery; every protocol decision belongs to CliProtocol. | `Application`, `CliProtocol`, `Contracts`, `Hosting` |
-| `Web` | entry point | Loopback HTTPS admission, Web-v2 transport, session handling, and browser interaction over a composed runtime. Never reaches storage or schema administration. | `Application`, `Contracts`, `Domain`, `HostSecurity`, `Hosting` |
-| `Database` | entry point | Schema-owner administration for atomic baseline initialization, read-only verification, and bounded technical-preparation pruning. Not a case-work client, so it never composes a runtime. | `HostSecurity`, `Postgres` |
+| `Postgres` | infrastructure | Durable actor-bound storage, exact fresh-schema admission, witnessed authority and recovery transactions, lifecycle and managed-copy evidence, and schema-owner administration. | `Application`, `Domain`, `RecordFormat`, `Witness` |
+| `Witness` | infrastructure | Independent PostgreSQL witness baseline and append-only authority journal; a separate service role can append through a narrow definer function and read back committed evidence. | none |
+| `Hosting` | composition | The sole composition root. Owns actor-bound runtime opening, witness/key custody, data-source lifetime, and admission leases; the only component that binds stores to the core. | `Application`, `Domain`, `HostSecurity`, `Postgres`, `RecordFormat`, `Witness` |
+| `CliProtocol` | transport | CLI framing, strict JSON decoding, discovery, and typed HTTPS/OIDC client seams. It cannot name a runtime factory or read a database credential. | `Application`, `Contracts`, `HostSecurity` |
+| `Cli` | entry point | The CLI process entry point owns stdin/stdout delivery and fail-closed remote-service configuration; it never composes a database runtime. | `Application`, `CliProtocol`, `Contracts` |
+| `Web` | entry point | HTTPS OIDC/OAuth admission, actor-bound Web transport, server-side browser sessions, and bearer service requests. Never reaches storage or schema administration. | `Application`, `Contracts`, `Domain`, `HostSecurity`, `Hosting` |
+| `Database` | entry point | Owner-private baseline, witness, backup and restore, copy custody, erasure, and activation administration. Never composes case work. | `Application`, `Domain`, `HostSecurity`, `Postgres`, `Witness` |
 <!-- generated:end architecture-components -->
 
-Dependency direction points toward Domain and Application. CLI and Web may collect and render data,
-but they do not decide transitions, settle recovery attempts, or write database rows. PostgreSQL
-enforces durable structural integrity but does not become a second claims workflow.
+Dependency direction points toward Domain and Application. CLI and Web transport code collect and render data but do not decide transitions, settle recovery attempts, or invent authorization rules. Application owns those decisions; PostgreSQL enforces durable structural integrity without becoming a second claims workflow.
 
-`Hosting` is the only component that binds a store to the core, so it is the only one that sees
-Application's internal ports. Because a case-work host links `Hosting` rather than `Postgres`, no
-CLI or Web code can reach a connection, a row, a baseline initializer, or the bounded pruning entry point even
-by mistake: those types are not in its compile closure at all. `Database` keeps the opposite
-arrangement — it links `Postgres` for schema-owner administration and never composes a runtime.
+`Hosting` alone binds stores and witness/key custody to the actor-bound core. Web links `Hosting` but cannot compile against PostgreSQL administration or its internal ports through undeclared transitive references. CLI links neither `Hosting` nor `Postgres`, and its published tree has no storage driver; only authenticated service requests can reach case work. `Database` links owner administration and never composes the case-work runtime.
 
 ### Direct compilation boundaries
 
@@ -55,9 +44,7 @@ arrangement — it links `Postgres` for schema-owner administration and never co
 compile against only the project references it declares. PostgreSQL's Npgsql dependency keeps its
 runtime assets transitive but does not expose compile/build/analyzer assets to case-work hosts.
 The evaluated-project rules reject a configuration or imported property that re-enables implicit
-transitive project references. Compiler-reference tests independently verify that CLI and Web can
-see the public facade but not PostgreSQL administration or Npgsql, while the CLI runtime still
-contains its storage dependencies. This is source encapsulation, not a substitute for database roles.
+transitive project references. Compiler-reference and published-tree tests verify that CLI cannot see or deploy PostgreSQL administration/Npgsql, while Web transport code cannot compile a direct owner-administration call. This is source encapsulation, not a substitute for separate database roles, actor grants, or independent witness custody.
 
 ### Machine identity and presentation
 
@@ -76,28 +63,14 @@ sandbox for dynamically constructed JavaScript.
 
 ### Composition roots
 
-A composition root is the one place that knows how a runtime is wired. Nothing depends on it, it
-depends on everything it wires, and it is small enough that "every type here may compose" is true by
-construction. The CLI follows that shape exactly: `CliProtocol` holds all CLI-v3 framing, decoding,
-discovery and dispatch and declares an `ICoreSupplier` seam, while `Cli` is the process entry point
-that implements the seam by opening a runtime. `CliProtocol` does not reference `Hosting`, so a
-decoder cannot open a second runtime — the compiler rejects it before any rule runs.
+A composition root is the one place that knows how a case-work runtime is wired. `ClaimCore.Hosting` owns that wiring and its data-source lifetime; `ClaimCore.Web.Program` opens one runtime and supplies only an authenticated principal-to-`IActorClaimsCore` factory to HTTP routes. Route code receives no store, schema owner, retained preparation, or unbound recovery port. Compiled rules name `Program` positively as the sole Web opener so moving composition to another source type fails review.
 
-`Web` keeps a single assembly. Its ASP.NET composition is already eager and singular: `Program`
-opens one runtime and hands the typed core to the route map, and every other Web type receives the
-core rather than a factory. That confinement is held by a compiled rule rather than a project edge,
-so the rule also asserts positively that `Program` *is* the type that opens the runtime; it cannot
-pass merely because composition moved out of the selector's reach.
-
-The two hosts differ deliberately. A compiled rule is acceptable when its selector names something
-the author declared, as `ClaimCore.Web.Program` does. It is not acceptable when the only way to name
-the composition point is through compiler-generated closure names, which encode the source file and
-its line numbers: the CLI's composition lived in a class whose `task` members F# hoists into
-`<StartupCode$…>`, so renaming a file or moving a member silently changed what the rule selected.
-That is the debt the CLI split removed. Splitting `Web` as well would scatter its `InternalsVisibleTo`
-grants across two assemblies for no structural gain, so it keeps one assembly and a stable rule.
+`ClaimCore.CliProtocol` owns CLI-v4 framing, discovery, OIDC/PKCE and authenticated HTTPS delivery, while `ClaimCore.Cli` owns only the process entry point and standard streams. Neither project references `Hosting` or `Postgres`; a CLI frame cannot open a database runtime. `ClaimCore.Database` is a separate owner-only administration entry point with no case-work facade. These boundaries keep a service credential and an individual actor grant from being mistaken for schema-owner authority.
 
 ## Compiled architecture enforcement
+
+<a id="cc-arch-001"></a>
+### CC-ARCH-001 — Exact component graph and selected compiled boundaries
 
 The dedicated `ClaimCore.ArchitectureTests` project uses ArchUnitNET only as a test dependency. Its
 F# fixtures qualify selected type dependencies and direct method calls through functions, closures,
@@ -105,16 +78,20 @@ generic/nested types, tasks, async workflows, sequences, records, unions, and in
 counterparts prove that permitted code is not rejected indiscriminately. Missing assemblies, empty
 selectors, and omitted reflected types fail rather than appearing to contain no violations.
 
-The suite checks the manifest from four independent directions:
+The suite checks the manifest from five independent directions:
 
 - **Classification.** Every `.fsproj` under `src/`, `eng/`, and `tests/` is classified exactly once,
   and the manifest never names a project that does not exist.
 - **Declared, evaluated, and observed edges.** Raw project XML is compared for every tier, and
   MSBuild-evaluated Debug and Release project, package, and shared-framework items are compared for
   product and tooling components. Every comparison is exact in both directions, so a surplus edge
-  and a stale permission each fail. For the product tier the compiled model is compared too, so a
-  permitted edge that nothing actually uses fails as a stale permission rather than lingering until
-  someone happens to notice. An imported conditional forbidden reference and an unused literal
+  and a stale permission each fail. For the product tier the compiled model's cross-assembly edges
+  are corroborated by CLR assembly references, so a framework generic attributed to another product
+  assembly is not mistaken for an actual dependency. A permitted runtime edge with no observed use
+  fails as stale. The one explicit `compileOnlyDependsOn` edge from Database to Domain is instead
+  checked against its direct project reference and the Domain types in Postgres owner outcomes that
+  Database consumes; the compiler needs that type closure even though the emitted Database assembly
+  has no Domain reference. An imported conditional forbidden reference and an unused literal
   reference fail their negative controls.
 - **Compiled internals grants.** `internal` is this architecture's primary encapsulation mechanism,
   so every `InternalsVisibleToAttribute` on a product assembly must match the manifest exactly, must
@@ -122,7 +99,7 @@ The suite checks the manifest from four independent directions:
   not in the manifest fails.
 - **Published surface.** The composition root exports exactly one entry point, storage exports
   only its schema-owner administration surface, Application's storage ports never become public, and
-  the CLI protocol publishes its own core seam with no runtime factory type in reach.
+  the CLI protocol exposes no runtime factory or store and publishes only client transport seams.
 - **Compiled type and call rules.** The suite inspects non-optimised Debug implementation
   assemblies, including F# generated types, and compares ArchUnitNET's loaded type set to reflection
   for every product assembly on that same run. Domain, RecordFormat, Application, and Contracts must
@@ -148,11 +125,10 @@ policy merely by making its own tests green. Commands and exact evidence registr
 <a id="cc-run-001"></a>
 ### CC-RUN-001 — Runtime lifetime closes admission without relabeling admitted work
 
-`OpenPostgres` observes caller cancellation through connection, role, ACL, schema, and lineage
-admission; a cancelled opening returns a safe typed runtime fault and never hands out a live facade.
+`OpenPostgres` observes caller cancellation through connection, role, ACL, schema, lineage, and full-data audit admission; a cancelled opening returns a safe typed runtime fault and never hands out a live facade.
 An unexpected opener exception maps to a safe fault and closes the source it created, without
 disclosing provider detail.
-Once opened, the lifetime owns the data source and every `IClaimsCore` and Recovery call enters
+Once opened, the lifetime owns the data source and every actor-bound `IActorClaimsCore` and Recovery call enters
 through an admission lease. Disposal closes new admission, including through previously retained
 facade references. It drains admitted work for a bounded 30 seconds; if a call is still active, the
 data source remains owned until its final lease ends, then closes exactly once. An admitted query or
@@ -161,7 +137,7 @@ as cancellation or failure by concurrent disposal.
 
 ## Public boundary
 
-Normal native callers use the endpoint-typed facade:
+Inside the service, Application exposes this endpoint-typed native facade; browser and CLI callers use the generated authenticated HTTP API instead:
 
 ```fsharp
 type IClaimsCore =
@@ -201,11 +177,16 @@ changes preserve validation, cancellation, commit-uncertainty and recovery seman
 [Core outcome diagnostics](diagnostics.md) owns the scope, schema, privacy rules and remaining
 localization boundaries.
 
+## Actor authority and disclosure
+
+<a id="cc-auth-001"></a>
+### CC-AUTH-001 — Actor-bound disclosure and list continuation
+
+The OIDC principal maps to a ClaimCore actor whose grants are default-deny and scoped to the requested resource and action. Case and operation reads resolve a target and check current actor authority before returning claimant-bearing data; nonexistent, inaccessible, voided, and suppression-fenced identities use the same public refusal and guidance. Mutation and read stores recheck the authoritative grant revision under their data lock, so a revoked grant cannot authorize a later disclosure or commit through a previously admitted context. Case-list SQL filters inaccessible or disposition-blocked rows before pagination; its continuation is encrypted and authenticated for the exact principal, actor, grant revision, page size, and a 15-minute lifetime. A malformed, foreign, expired, changed-grant, or post-restart token is refused as one invalid cursor and must not be treated as a raw case reference. The paired synthetic timing tests check only a broad denial class, not constant-time behavior or resistance to privileged database observation.
+
 ## Transaction and recovery path
 
-1. A CLI or Web adapter decodes an exact endpoint body into its form shape and uses the one pure
-   Application binder to create the closed Domain `CommandRequest`. Native callers supply that
-   closed request directly.
+1. The CLI validates the generated endpoint body and sends it over authenticated HTTPS. Web decodes the exact body into its form shape and uses the one pure Application binder to create the closed Domain `CommandRequest`; native callers supply that closed request directly.
 2. Application revalidates the request, preserves its operation ID and authored values, and derives
    canonical format-3 request bytes and their SHA-256 identity.
 3. `Prepare` checks accepted operation identity and stored request fingerprint first. An exact
@@ -242,14 +223,17 @@ zone, or fresh identity of its own.
 ### CC-APP-001 — Business rejection preserves durable business state
 
 A typed `Rejection` result changes neither the current case nor accepted case history in PostgreSQL.
-It is not a commit-uncertainty result. Bounded technical preparations, attempts, dismissals, and
-settlements are recovery evidence, not claim state or accepted history.
+It is not a commit-uncertainty result. Bounded technical preparations, attempts, and settlements
+record recovery evidence rather than claim state or accepted history. A durable dismissal or
+revocation also ends future authority for the exact unaccepted operation; it does not rewrite an
+earlier uncertain attempt.
 
 <a id="cc-app-002"></a>
 ### CC-APP-002 — Exact operation replay is idempotent and content-bound
 
-An exact operation ID and canonical request-content replay returns the retained receipt without a
-second revision, independently of technical preparation retention. Different request content under
+For a currently authorized actor with read access to the case, an exact operation ID and canonical
+request-content replay returns the retained receipt without a second revision, independently of
+technical preparation retention. Different request content under
 the same operation ID is rejected as an identity conflict without disclosing the accepted receipt or
 another preparation's details.
 If commit completion cannot be confirmed, the typed outcome remains uncertain. No adapter may
@@ -295,10 +279,6 @@ cannot silently encode a zero operation ID.
 
 ## Trust boundary
 
-F# access control protects ordinary callers from accidental bypass; it is not authentication or a
-sandbox. The runtime assumes one trusted local administrative boundary. The Web credential admits a
-browser session but supplies no individual identity or per-user authorization. Anyone holding
-database credentials may issue SQL outside the core.
+F# access control protects ordinary callers from accidental bypass; it is not authentication or a sandbox. The HTTPS host authenticates browser sessions and CLI bearer principals through OIDC, then ClaimCore applies current actor grants to each requested action and resource. The browser and CLI receive no database credential. Host, primary schema-owner, witness schema-owner, and storage administrators remain trusted; direct SQL by those authorities can bypass application checks.
 
-Shared or remote use requires a separately designed authenticated host with explicit authorization
-and disclosure controls. None is supplied here; see [Security and operations](operations.md).
+The current host is loopback-bound. A remote or real-data deployment additionally requires separate-host witness and key custody, signed backup/checkpoint publication, restored-pair qualification, and a reviewed single-writer handoff; local synthetic containers do not supply that evidence. See [Security and operations](operations.md).

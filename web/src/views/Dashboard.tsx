@@ -2,7 +2,7 @@ import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
 import { Button } from "react-aria-components/Button";
 import { useState } from "react";
-import type { CurrentCase, DefinitionPayload } from "../api/v2";
+import type { CurrentCase, DefinitionPayload } from "../api/v3";
 import type { CommandKind } from "../domain/metadata";
 import { useDefinition } from "../hooks/useDefinition";
 import { CaseDetail } from "./CaseDetail";
@@ -35,7 +35,7 @@ const Header = ({
         </h1>
         {definition === null ? null : (
           <small>
-            Semantic {definition.semanticFingerprint} · Web v2 {definition.webFingerprint}
+            Semantic {definition.semanticFingerprint} · Web v3 {definition.webFingerprint}
           </small>
         )}
       </div>

@@ -43,11 +43,3 @@ module OutcomeDiagnosticSchemas =
         |> List.map (fun (reason, id) ->
             WireTokens.recoveryRejectionCode reason.Code, WireTokens.action reason.Action, id)
         |> variants
-
-    let localFault =
-        CliLocalFaults.all
-        |> List.map (fun reason ->
-            WireTokens.faultCode (CliLocalFaults.code reason),
-            WireTokens.action RecommendedAction.StopAndInvestigate,
-            CliLocalFaults.token reason)
-        |> variants

@@ -43,7 +43,7 @@ let private acceptDirectly (claims: CoreStore.Store) input =
 
 let private core (claims: IClaimStore) (recovery: CoreRecoveryStore.Store) =
     recovery.AttachClaimStore claims
-    CoreApi.create claims (recovery :> IRecoveryStore) clock
+    ActorCoreFixture.create claims (recovery :> IRecoveryStore) clock
 
 type private LostConfirmationStore() =
     let inner = new CoreStore.Store()
@@ -167,7 +167,7 @@ let private lostCommitConfirmation =
             let claims = new LostConfirmationStore()
             let recovery = new CoreRecoveryStore.Store()
             recovery.AttachClaimStore(claims :> IClaimStore)
-            let runtime = CoreApi.create claims recovery clock
+            let runtime = ActorCoreFixture.create claims recovery clock
             let input = draft (Guid.NewGuid()) "RECEIPT-UNCERTAIN"
 
             match runtime.Execute(boundRequest input, CancellationToken.None) |> await with

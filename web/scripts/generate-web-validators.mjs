@@ -13,8 +13,8 @@ import {
   validatorName,
 } from "./validator-groups.mjs";
 
-const hostSchema = "web-v2.host-failure.schema.json";
-const responsesSchema = "web-v2.responses.schema.json";
+const hostSchema = "web-v3.host-failure.schema.json";
+const responsesSchema = "web-v3.responses.schema.json";
 const safeName = /^[A-Za-z0-9][A-Za-z0-9._-]*$/u;
 export const maximumStandaloneValidatorGroupBytes = 600 * 1024;
 
@@ -32,7 +32,7 @@ const formatTypeScript = async (source, filepath) => {
 
 const endpointInventory = (catalog, provisional) => {
   if (!Array.isArray(catalog.endpoints) || catalog.endpoints.length === 0) {
-    throw new Error("The Web v2 catalog has no endpoint inventory.");
+    throw new Error("The Web v3 catalog has no endpoint inventory.");
   }
   const seen = new Set();
   return catalog.endpoints.map((endpoint) => {
@@ -43,15 +43,15 @@ const endpointInventory = (catalog, provisional) => {
       typeof responseDefinition !== "string" ||
       !safeName.test(responseDefinition)
     ) {
-      throw new Error("The Web v2 endpoint inventory is invalid.");
+      throw new Error("The Web v3 endpoint inventory is invalid.");
     }
-    const responseSchema = `web-v2.endpoint.${id}.response.schema.json`;
+    const responseSchema = `web-v3.endpoint.${id}.response.schema.json`;
     if (
       !safeName.test(responseSchema) ||
       basename(responseSchema) !== responseSchema ||
       !provisional.has(responseSchema)
     ) {
-      throw new Error("The Web v2 response-schema inventory is invalid.");
+      throw new Error("The Web v3 response-schema inventory is invalid.");
     }
     seen.add(id);
     return { endpoint: id, exportName: validatorName(id), responseDefinition };
@@ -127,7 +127,8 @@ const formatTypeScriptArtifacts = async (directory, provisional) => {
   const names = [...provisional]
     .filter(
       (name) =>
-        name === "web-v2.endpoint-catalog.ts" || /^web-v2\.types(?:\.[a-z]+)*\.ts$/u.test(name),
+        /^web-v3\.endpoint-catalog(?:\.[a-z]+)?\.ts$/u.test(name) ||
+        /^web-v3\.types(?:\.[a-z]+)*\.ts$/u.test(name),
     )
     .sort();
   if (names.length < 2) throw new Error("Generated Web TypeScript artifacts are missing.");
@@ -173,8 +174,8 @@ const packageNotice = async (webDirectory, lock, name) => {
 const validatorNotice = async (webDirectory, lock, names) => {
   const notices = await Promise.all(names.map((name) => packageNotice(webDirectory, lock, name)));
   const header =
-    "ClaimCore Web v2 standalone-validator third-party notices\n\n" +
-    "Generated from the exact locked packages whose code is embedded in the split Web-v2 validator modules.";
+    "ClaimCore Web v3 standalone-validator third-party notices\n\n" +
+    "Generated from the exact locked packages whose code is embedded in the split Web-v3 validator modules.";
   const separator = `\n\n${"-".repeat(80)}\n\n`;
   return `${header}\n\n${notices.join(separator)}\n`;
 };
@@ -239,13 +240,13 @@ const compileGroups = async (output, groups, webDirectory) =>
 const writeValidatorGroups = async (output, groups, compiledGroups) => {
   await Promise.all(
     compiledGroups.map(async ({ group, compiled }) => {
-      const declarationFile = join(output, `web-v2.validators.${group}.d.mts`);
+      const declarationFile = join(output, `web-v3.validators.${group}.d.mts`);
       const declarationSource = await formatTypeScript(
         validatorDeclarations(groups[group]),
         declarationFile,
       );
       await atomicWrite(declarationFile, declarationSource);
-      await atomicWrite(join(output, `web-v2.validators.${group}.mjs`), compiled.source);
+      await atomicWrite(join(output, `web-v3.validators.${group}.mjs`), compiled.source);
     }),
   );
 };
@@ -258,7 +259,7 @@ export const generateWebValidators = async (directory) => {
     obsoleteStandaloneValidatorArtifacts.map((name) => rm(join(output, name), { force: true })),
   );
   await formatTypeScriptArtifacts(output, provisional);
-  const catalog = await readJson(join(output, "web-v2.catalog.json"));
+  const catalog = await readJson(join(output, "web-v3.catalog.json"));
   const endpoints = endpointInventory(catalog, provisional);
   const groups = validatorGroups(endpoints);
   const webDirectory = resolve(import.meta.dirname, "..");
@@ -271,10 +272,10 @@ export const generateWebValidators = async (directory) => {
   }
   const lock = await readJson(resolve(webDirectory, "package-lock.json"));
   const noticeSource = await validatorNotice(webDirectory, lock, embeddedPackages);
-  const wrapperFile = join(output, "web-v2.validation.ts");
+  const wrapperFile = join(output, "web-v3.validation.ts");
   const wrapperSource = await formatTypeScript(validationWrapper(groups), wrapperFile);
   await writeValidatorGroups(output, groups, compiledGroups);
-  await atomicWrite(join(output, "web-v2.validators.NOTICE.txt"), noticeSource);
+  await atomicWrite(join(output, "web-v3.validators.NOTICE.txt"), noticeSource);
   await atomicWrite(wrapperFile, wrapperSource);
   const combined = combinedManifest(manifest, provisional, lock, embeddedPackages);
   await atomicWrite(manifestPath, `${JSON.stringify(combined)}\n`);

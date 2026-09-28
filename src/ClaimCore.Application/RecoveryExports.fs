@@ -1,6 +1,7 @@
 namespace ClaimCore.Application
 
 open System
+open System.Security.Cryptography
 open System.Threading
 open System.Threading.Tasks
 open ClaimCore.RecordFormat
@@ -9,57 +10,89 @@ open ClaimCore.RecordFormat
 /// while ordinary recovery list and inspection stay metadata-only.
 module internal RecoveryExports =
     let private encode
+        (artifactAuthority: IRecoveryArtifactAuthority)
         (operationId: Guid)
-        (lineage: Guid)
         (retained: RetainedPreparation)
-        : Result<RecoveryExport, CoreFault> =
-        match
-            RequestRecord.decode SemanticContract.current.RequestByteLimit retained.CanonicalRequest
-        with
-        | Error _ -> Error(CoreFault.RetainedCanonicalInvalid)
-        | Ok _ ->
-            let bytes =
-                RecoveryEnvelope.encode
-                    {
-                        InstallationId = lineage
-                        OperationId = retained.OperationId
-                        CanonicalCommandFormat = retained.CanonicalRequestFormat
-                        RequestFingerprintVersion = RecordVersions.RequestFingerprint
-                        RequestSha256 = retained.RequestSha256
-                        CanonicalRequest = retained.CanonicalRequest
-                    }
+        (cancellationToken: CancellationToken)
+        : Task<Result<RecoveryExport, CoreFault>> =
+        task {
+            match
+                RequestRecord.decode
+                    SemanticContract.current.RequestByteLimit
+                    retained.CanonicalRequest
+            with
+            | Error _ -> return Error(CoreFault.RetainedCanonicalInvalid)
+            | Ok request when
+                request.OperationId <> retained.OperationId
+                || not (
+                    CryptographicOperations.FixedTimeEquals(
+                        RequestRecord.encode request,
+                        retained.CanonicalRequest
+                    )
+                )
+                ->
+                return Error(CoreFault.RetainedCanonicalInvalid)
+            | Ok _ ->
+                let! signed = artifactAuthority.Sign(retained, cancellationToken)
 
-            Ok
-                {
-                    Bytes = bytes
-                    FileName = "claimcore-recovery-" + operationId.ToString("D") + ".json"
-                    MediaType = "application/vnd.claimcore.recovery+json"
-                    RequestSha256 = retained.RequestSha256
-                }
+                return
+                    signed
+                    |> Result.map (fun bytes ->
+                        {
+                            Bytes = bytes
+                            FileName = "claimcore-recovery-" + operationId.ToString("D") + ".json"
+                            MediaType = "application/vnd.claimcore.recovery+json"
+                            RequestSha256 = retained.RequestSha256
+                        })
+        }
 
     let private exportRetained
-        (recovery: IRecoveryStore)
+        (artifactAuthority: IRecoveryArtifactAuthority)
         (operationId: Guid)
         (cancellationToken: CancellationToken)
         (retained: RetainedPreparation)
         : Task<RecoveryQueryOutcome<Lookup<RecoveryExport, Guid>>> =
         task {
-            match! recovery.InstallationLineage cancellationToken with
-            | Error RecoveryStoreFailure.ReadCancelled ->
+            match! encode artifactAuthority operationId retained cancellationToken with
+            | Error fault -> return RecoveryQueryOutcome.RecoveryFailed fault
+            | Ok _ when cancellationToken.IsCancellationRequested ->
                 return RecoveryQueryOutcome.RecoveryCancelled
-            | Error failure ->
-                return RecoveryQueryOutcome.RecoveryFailed(TypedProjection.recoveryFault failure)
-            | Ok lineage ->
-                match encode operationId lineage retained with
-                | Error fault -> return RecoveryQueryOutcome.RecoveryFailed fault
-                | Ok _ when cancellationToken.IsCancellationRequested ->
-                    return RecoveryQueryOutcome.RecoveryCancelled
-                | Ok artifact ->
-                    return RecoveryQueryOutcome.RecoverySucceeded(Lookup.Found artifact)
+            | Ok artifact -> return RecoveryQueryOutcome.RecoverySucceeded(Lookup.Found artifact)
+        }
+
+    let private fromStored
+        artifactAuthority
+        operationId
+        requestSha256
+        (cancellationToken: CancellationToken)
+        (stored: RecoveryStoredOperation option)
+        =
+        task {
+            match stored with
+            | None -> return RecoveryQueryOutcome.RecoverySucceeded(Lookup.NotFound operationId)
+            | Some(RecoveryStoredOperation.RevokedTombstone revocation) when
+                revocation.RequestSha256 = requestSha256
+                ->
+                return RecoveryQueryOutcome.RecoveryRejected RecoverySupport.revoked
+            | Some(RecoveryStoredOperation.RevokedTombstone _) ->
+                return RecoveryQueryOutcome.RecoveryRejected RecoverySupport.conflict
+            | Some(RecoveryStoredOperation.Retained(retained, _)) when
+                retained.RequestSha256 <> requestSha256
+                ->
+                return RecoveryQueryOutcome.RecoveryRejected RecoverySupport.conflict
+            | Some(RecoveryStoredOperation.Retained(_, RecoveryAuthority.RevokedAuthority)) ->
+                return RecoveryQueryOutcome.RecoveryRejected RecoverySupport.revoked
+            | Some(RecoveryStoredOperation.Retained(_, _)) when
+                cancellationToken.IsCancellationRequested
+                ->
+                return RecoveryQueryOutcome.RecoveryCancelled
+            | Some(RecoveryStoredOperation.Retained(retained, _)) ->
+                return! exportRetained artifactAuthority operationId cancellationToken retained
         }
 
     let export
         (recovery: IRecoveryStore)
+        (artifactAuthority: IRecoveryArtifactAuthority)
         (operationId: Guid)
         (requestSha256: string)
         (cancellationToken: CancellationToken)
@@ -79,25 +112,18 @@ module internal RecoveryExports =
                 match! recovery.Get(operationId, cancellationToken) with
                 | Error RecoveryStoreFailure.ReadCancelled ->
                     return RecoveryQueryOutcome.RecoveryCancelled
+                | Error RecoveryStoreFailure.ResourceUnavailable ->
+                    return
+                        RecoveryQueryOutcome.RecoveryRejected RecoveryRejection.ResourceUnavailable
                 | Error failure ->
                     return
                         RecoveryQueryOutcome.RecoveryFailed(TypedProjection.recoveryFault failure)
-                | Ok None ->
-                    return RecoveryQueryOutcome.RecoverySucceeded(Lookup.NotFound operationId)
-                | Ok(Some(RecoveryStoredOperation.RevokedTombstone revocation)) when
-                    revocation.RequestSha256 = requestSha256
-                    ->
-                    return RecoveryQueryOutcome.RecoveryRejected RecoverySupport.revoked
-                | Ok(Some(RecoveryStoredOperation.RevokedTombstone _)) ->
-                    return RecoveryQueryOutcome.RecoveryRejected RecoverySupport.conflict
-                | Ok(Some(RecoveryStoredOperation.Retained(retained, _))) when
-                    retained.RequestSha256 <> requestSha256
-                    ->
-                    return RecoveryQueryOutcome.RecoveryRejected RecoverySupport.conflict
-                | Ok(Some(RecoveryStoredOperation.Retained(_, _))) when
-                    cancellationToken.IsCancellationRequested
-                    ->
-                    return RecoveryQueryOutcome.RecoveryCancelled
-                | Ok(Some(RecoveryStoredOperation.Retained(retained, _))) ->
-                    return! exportRetained recovery operationId cancellationToken retained
+                | Ok stored ->
+                    return!
+                        fromStored
+                            artifactAuthority
+                            operationId
+                            requestSha256
+                            cancellationToken
+                            stored
             }

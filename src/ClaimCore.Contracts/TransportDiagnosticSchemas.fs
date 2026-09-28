@@ -89,8 +89,8 @@ module TransportDiagnosticSchemas =
             Schema.nullValue,
             Schema.constant (BooleanConstant false),
             false
-            CliProcessProblem.RuntimeAcquireFailed,
-            "ACQUIRING_RUNTIME",
+            CliProcessProblem.ServiceAcquireFailed,
+            "ACQUIRING_SERVICE",
             Schema.nullValue,
             Schema.constant (BooleanConstant false),
             false
@@ -127,5 +127,5 @@ module TransportDiagnosticSchemas =
 
         CanonicalJson.renderSchema document schema
 
-    let cliProcessDocument = render "cli-v3.process-failure.schema.json" cliProcess
-    let webStartupDocument = render "web-v2.process-failure.schema.json" webStartup
+    let cliProcessDocument = render "cli-v4.process-failure.schema.json" cliProcess
+    let webStartupDocument = render "web-v3.process-failure.schema.json" webStartup

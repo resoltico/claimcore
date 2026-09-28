@@ -12,21 +12,42 @@ open ClaimCore.Postgres
 open ClaimCore.RecordFormat
 open ClaimCore.IntegrationTests.Fixtures
 
-let private draft () =
+let private draft (source: NpgsqlDataSource) (witness: WitnessProtocol) =
     let request = newRequest ()
     let canonical = RequestRecord.encode request
 
-    {
-        OperationId = request.OperationId
-        CanonicalRequestFormat = RecordVersions.CanonicalCommandFormat
-        RequestSha256 = canonical |> SHA256.HashData |> Convert.ToHexStringLower
-        CanonicalRequest = canonical
-        PreparingApplicationVersion = BuildIdentity.current.Version
-        PreparingContractFingerprint =
-            SemanticContract.fingerprint SemanticContract.current
-            |> SemanticCoreFingerprint.value
-        PreparingContractKind = PreparingContractKind.SemanticCoreV1
-    }
+    let gate =
+        new PostgresActorGate(source, FixturePrivateFiles.syntheticCommitments witness.Identity)
+        :> IActorGate
+
+    let context =
+        gate.Command(
+            ActorBoundStoreFixture.actorPrincipal (),
+            EndpointAction.PrepareNewCase,
+            request,
+            CancellationToken.None
+        )
+        |> await
+        |> Option.defaultWith (fun () -> failtest "Synthetic preparer was not admitted.")
+
+    let material =
+        {
+            OperationId = request.OperationId
+            CaseId = context.CaseId |> Option.defaultWith (fun () -> failtest "Case ID is absent.")
+            PreparerActorId = context.Binding.ActorId
+            ImporterActorId = None
+            PreparerGrantRevision = context.Binding.GrantRevision
+            CanonicalRequestFormat = RecordVersions.CanonicalCommandFormat
+            RequestSha256 = canonical |> SHA256.HashData |> Convert.ToHexStringLower
+            CanonicalRequest = canonical
+            PreparingApplicationVersion = BuildIdentity.current.Version
+            PreparingContractFingerprint =
+                SemanticContract.fingerprint SemanticContract.current
+                |> SemanticCoreFingerprint.value
+            PreparingContractKind = PreparingContractKind.SemanticCoreV1
+        }
+
+    material, context
 
 let private currentPendingPreparationCount () =
     use connection = new NpgsqlConnection(appConnection ())
@@ -51,16 +72,22 @@ let private capacityRefusal =
                 MaximumPreparations = int (currentPendingPreparationCount ()) + 1
             }
 
-        let recovery = PostgresRecoveryStore(source, limits) :> IRecoveryStore
-        let first = draft ()
-        let second = draft ()
+        let witness = witnessProtocol ()
+        let first, firstContext = draft source witness
+        let second, secondContext = draft source witness
+
+        let recovery =
+            PostgresRecoveryStore(source, limits, witness, firstContext) :> IRecoveryStore
+
+        let secondRecovery =
+            PostgresRecoveryStore(source, limits, witness, secondContext) :> IRecoveryStore
 
         match recovery.Retain(first, CancellationToken.None) |> await with
         | Ok(RecoveryRetain.Created retained) ->
             Expect.equal retained.CanonicalRequest first.CanonicalRequest "Exact retained bytes"
         | _ -> failtest "The first preparation must fit the final available slot."
 
-        match recovery.Retain(second, CancellationToken.None) |> await with
+        match secondRecovery.Retain(second, CancellationToken.None) |> await with
         | Error RecoveryStoreFailure.CapacityExceeded -> ()
         | _ -> failtest "A distinct preparation must be refused at the configured capacity."
 
@@ -80,10 +107,12 @@ let private atomicRetainClassification =
         (fun () ->
             use source = NpgsqlDataSource.Create(appConnection ())
 
-            let recovery =
-                PostgresRecoveryStore(source, PreparationLimits.defaults) :> IRecoveryStore
+            let witness = witnessProtocol ()
+            let material, context = draft source witness
 
-            let material = draft ()
+            let recovery =
+                PostgresRecoveryStore(source, PreparationLimits.defaults, witness, context)
+                :> IRecoveryStore
 
             let results =
                 [|
@@ -112,11 +141,8 @@ let private stableInstallationLineage =
     testCase "installation lineage remains stable and non-empty" (fun () ->
         use source = NpgsqlDataSource.Create(appConnection ())
 
-        let recovery =
-            PostgresRecoveryStore(source, PreparationLimits.defaults) :> IRecoveryStore
-
         let read () =
-            recovery.InstallationLineage CancellationToken.None
+            RecoveryStoreQueries.installationLineage source CancellationToken.None
             |> await
             |> Result.defaultWith (fun _ -> failtest "Installation lineage must be readable.")
 
@@ -126,15 +152,16 @@ let private stableInstallationLineage =
 
 let private startedPreparation () =
     use runtime =
-        Runtime.OpenPostgres(appConnection (), CancellationToken.None)
+        witnessedOpen (appConnection ()) CancellationToken.None
         |> await
         |> Result.defaultWith (fun _ -> failtest "Runtime must open for lifecycle qualification.")
 
     let operationId = Guid.NewGuid()
+    let core = runtime.ForActor(ActorBoundStoreFixture.actorPrincipal ())
 
     let digest =
         match
-            runtime.Core.Prepare(
+            core.Prepare(
                 openRequest operationId ("BOUNDARY-" + Guid.NewGuid().ToString("N")),
                 CancellationToken.None
             )
@@ -147,8 +174,26 @@ let private startedPreparation () =
 
     use source = NpgsqlDataSource.Create(appConnection ())
 
+    let gate =
+        new PostgresActorGate(
+            source,
+            FixturePrivateFiles.syntheticCommitments (witnessProtocol ()).Identity
+        )
+        :> IActorGate
+
+    let context =
+        gate.Operation(
+            ActorBoundStoreFixture.actorPrincipal (),
+            EndpointAction.RecoveryResolve,
+            operationId,
+            CancellationToken.None
+        )
+        |> await
+        |> Option.defaultWith (fun () -> failtest "Synthetic recovery actor is unavailable.")
+
     let recovery =
-        PostgresRecoveryStore(source, PreparationLimits.defaults) :> IRecoveryStore
+        PostgresRecoveryStore(source, PreparationLimits.defaults, witnessProtocol (), context)
+        :> IRecoveryStore
 
     match recovery.Start(operationId, CancellationToken.None) |> await with
     | Ok(RecoveryStart.Started _) -> operationId
@@ -199,7 +244,7 @@ let private addedGrant =
         executeOwner "GRANT UPDATE ON claimcore.request_preparations TO claimcore_app"
 
         try
-            match Runtime.OpenPostgres(appConnection (), CancellationToken.None) |> await with
+            match witnessedOpen (appConnection ()) CancellationToken.None |> await with
             | Error RuntimeOpenFault.RuntimeSchemaMismatch -> ()
             | Error _ -> failtest "Expanded recovery ACL must be classified as schema mismatch."
             | Ok runtime ->
@@ -209,12 +254,12 @@ let private addedGrant =
             executeOwner "REVOKE UPDATE ON claimcore.request_preparations FROM claimcore_app"
 
         use restored =
-            Runtime.OpenPostgres(appConnection (), CancellationToken.None)
+            witnessedOpen (appConnection ()) CancellationToken.None
             |> await
             |> Result.defaultWith (fun _ ->
                 failtest "The exact ACL must remain usable after restore.")
 
-        restored.Core.Describe() |> ignore)
+        (actorCore restored).Definition(CancellationToken.None) |> await |> ignore)
 
 let private ownerOnlyPruneAudit =
     testCase "runtime cannot inspect the owner-only preparation prune audit" (fun () ->

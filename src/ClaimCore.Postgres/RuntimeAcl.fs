@@ -8,7 +8,7 @@ open Npgsql
 module internal RuntimeAcl =
     let private expected =
         let databaseAndSchema = [ true; false; true; false ]
-        let tables = List.replicate 9 [ true; false ] |> List.concat
+        let tables = List.replicate 54 [ true; false ] |> List.concat
         databaseAndSchema @ tables @ [ false; false ]
 
     let requireRole (connection: NpgsqlConnection) =
@@ -49,7 +49,7 @@ module internal RuntimeAcl =
         use command = new NpgsqlCommand(RuntimeAccessPolicy.aclSql, connection)
         use reader = command.ExecuteReader()
 
-        if not (reader.Read()) then
+        if not (reader.Read()) || reader.FieldCount <> expected.Length then
             raise RuntimeDatabaseMismatch
 
         let actual = [ for index in 0 .. expected.Length - 1 -> reader.GetBoolean(index) ]
@@ -67,7 +67,7 @@ module internal RuntimeAcl =
             use reader = result
             let! hasRow = reader.ReadAsync(cancellationToken)
 
-            if not hasRow then
+            if not hasRow || reader.FieldCount <> expected.Length then
                 return raise RuntimeDatabaseMismatch
 
             let actual = [ for index in 0 .. expected.Length - 1 -> reader.GetBoolean(index) ]

@@ -20,9 +20,9 @@ tests are policy failures.
 - Preserve the thirteen-field contract unless the change explicitly revises product scope.
 - Put business decisions in Domain/Application, durable encoding in RecordFormat, wire schemas and
   codecs in Contracts, persistence and schema-owner administration in Postgres, runtime composition
-  in Hosting, CLI-v3 framing and dispatch in CliProtocol, and process/HTTP presentation in Cli/Web.
+  in Hosting, CLI-v4 framing and authenticated HTTPS delivery in CliProtocol, and process/HTTP presentation in Cli/Web.
   `architecture.json` is the authority on which component may reference which.
-- Contracts owns every CLI-v3 and Web-v2 payload, including database-free discovery. A renderer
+- Contracts owns every CLI-v4 and Web-v3 payload, including database-free discovery. A renderer
   that composed wire JSON itself would fork the generated contract, so add the payload to Contracts
   and select it from the adapter.
 - Add tests at the narrowest useful layer. Include PostgreSQL tests for SQL, schema changes,

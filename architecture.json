@@ -10,7 +10,10 @@
       "role": "Accepted values, field metadata, validation, available transitions, and case state.",
       "dependsOn": [],
       "packages": [],
-      "internalsVisibleTo": [],
+      "internalsVisibleTo": [
+        "ClaimCore.Application",
+        "ClaimCore.Tests"
+      ],
       "frameworkReferences": [],
       "testInventory": false
     },
@@ -19,7 +22,7 @@
       "tier": "product",
       "layer": "core",
       "project": "src/ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj",
-      "role": "Byte-stable canonical command-record format 3, historical snapshots, and recovery-envelope format 2.",
+      "role": "Byte-stable canonical command-record format 3, historical snapshots, and signed recovery-artifact format 3.",
       "dependsOn": [
         "ClaimCore.Domain"
       ],
@@ -54,7 +57,7 @@
       "tier": "product",
       "layer": "contract",
       "project": "src/ClaimCore.Contracts/ClaimCore.Contracts.fsproj",
-      "role": "Pure projection of Application's semantic description into CLI-v3 and Web-v2 wire contracts, schemas, codecs, and generated browser DTOs.",
+      "role": "Pure projection of Application's semantic description into CLI-v4 and Web-v3 wire contracts, schemas, codecs, and generated browser DTOs.",
       "dependsOn": [
         "ClaimCore.Application",
         "ClaimCore.Domain"
@@ -83,18 +86,39 @@
       "tier": "product",
       "layer": "infrastructure",
       "project": "src/ClaimCore.Postgres/ClaimCore.Postgres.fsproj",
-      "role": "Durable storage, atomic fresh-baseline initialization and admission, transaction boundaries, the private technical recovery store, and schema-owner administration.",
+      "role": "Durable actor-bound storage, exact fresh-schema admission, witnessed authority and recovery transactions, lifecycle and managed-copy evidence, and schema-owner administration.",
       "dependsOn": [
         "ClaimCore.Application",
         "ClaimCore.Domain",
-        "ClaimCore.RecordFormat"
+        "ClaimCore.RecordFormat",
+        "ClaimCore.Witness"
       ],
+      "packages": [
+        "NSec.Cryptography",
+        "Npgsql"
+      ],
+      "internalsVisibleTo": [
+        "ClaimCore.Database",
+        "ClaimCore.Hosting",
+        "ClaimCore.IntegrationTests"
+      ],
+      "frameworkReferences": [],
+      "testInventory": false
+    },
+    {
+      "name": "ClaimCore.Witness",
+      "tier": "product",
+      "layer": "infrastructure",
+      "project": "src/ClaimCore.Witness/ClaimCore.Witness.fsproj",
+      "role": "Independent PostgreSQL witness baseline and append-only authority journal; a separate service role can append through a narrow definer function and read back committed evidence.",
+      "dependsOn": [],
       "packages": [
         "Npgsql"
       ],
       "internalsVisibleTo": [
-        "ClaimCore.Hosting",
-        "ClaimCore.IntegrationTests"
+        "ClaimCore.Database",
+        "ClaimCore.IntegrationTests",
+        "ClaimCore.Postgres"
       ],
       "frameworkReferences": [],
       "testInventory": false
@@ -104,11 +128,14 @@
       "tier": "product",
       "layer": "composition",
       "project": "src/ClaimCore.Hosting/ClaimCore.Hosting.fsproj",
-      "role": "The sole composition root. Owns runtime opening, the data-source lifetime, and the admission lease; the only component that binds a store to the core.",
+      "role": "The sole composition root. Owns actor-bound runtime opening, witness/key custody, data-source lifetime, and admission leases; the only component that binds stores to the core.",
       "dependsOn": [
         "ClaimCore.Application",
         "ClaimCore.Domain",
-        "ClaimCore.Postgres"
+        "ClaimCore.HostSecurity",
+        "ClaimCore.Postgres",
+        "ClaimCore.RecordFormat",
+        "ClaimCore.Witness"
       ],
       "packages": [
         "Npgsql"
@@ -124,11 +151,10 @@
       "tier": "product",
       "layer": "transport",
       "project": "src/ClaimCore.CliProtocol/ClaimCore.CliProtocol.fsproj",
-      "role": "CLI-v3 framing, strict JSON decoding, discovery, and endpoint dispatch over a supplied core. It declares the core-supplier abstraction and cannot name a runtime factory.",
+      "role": "CLI framing, strict JSON decoding, discovery, and typed HTTPS/OIDC client seams. It cannot name a runtime factory or read a database credential.",
       "dependsOn": [
         "ClaimCore.Application",
         "ClaimCore.Contracts",
-        "ClaimCore.Domain",
         "ClaimCore.HostSecurity"
       ],
       "packages": [],
@@ -141,12 +167,11 @@
       "tier": "product",
       "layer": "entry point",
       "project": "src/ClaimCore.Cli/ClaimCore.Cli.fsproj",
-      "role": "The CLI composition root and process entry point. It owns the runtime lifetime and stdin/stdout delivery; every protocol decision belongs to CliProtocol.",
+      "role": "The CLI process entry point owns stdin/stdout delivery and fail-closed remote-service configuration; it never composes a database runtime.",
       "dependsOn": [
         "ClaimCore.Application",
         "ClaimCore.CliProtocol",
-        "ClaimCore.Contracts",
-        "ClaimCore.Hosting"
+        "ClaimCore.Contracts"
       ],
       "packages": [],
       "internalsVisibleTo": [],
@@ -158,7 +183,7 @@
       "tier": "product",
       "layer": "entry point",
       "project": "src/ClaimCore.Web/ClaimCore.Web.fsproj",
-      "role": "Loopback HTTPS admission, Web-v2 transport, session handling, and browser interaction over a composed runtime. Never reaches storage or schema administration.",
+      "role": "HTTPS OIDC/OAuth admission, actor-bound Web transport, server-side browser sessions, and bearer service requests. Never reaches storage or schema administration.",
       "dependsOn": [
         "ClaimCore.Application",
         "ClaimCore.Contracts",
@@ -166,7 +191,10 @@
         "ClaimCore.HostSecurity",
         "ClaimCore.Hosting"
       ],
-      "packages": [],
+      "packages": [
+        "Microsoft.AspNetCore.Authentication.JwtBearer",
+        "Microsoft.AspNetCore.Authentication.OpenIdConnect"
+      ],
       "internalsVisibleTo": [
         "ClaimCore.WebTests"
       ],
@@ -180,13 +208,21 @@
       "tier": "product",
       "layer": "entry point",
       "project": "src/ClaimCore.Database/ClaimCore.Database.fsproj",
-      "role": "Schema-owner administration for atomic baseline initialization, read-only verification, and bounded technical-preparation pruning. Not a case-work client, so it never composes a runtime.",
+      "role": "Owner-private baseline, witness, backup and restore, copy custody, erasure, and activation administration. Never composes case work.",
       "dependsOn": [
+        "ClaimCore.Application",
+        "ClaimCore.Domain",
         "ClaimCore.HostSecurity",
-        "ClaimCore.Postgres"
+        "ClaimCore.Postgres",
+        "ClaimCore.Witness"
+      ],
+      "compileOnlyDependsOn": [
+        "ClaimCore.Domain"
       ],
       "packages": [],
-      "internalsVisibleTo": [],
+      "internalsVisibleTo": [
+        "ClaimCore.IntegrationTests"
+      ],
       "frameworkReferences": [],
       "testInventory": false
     },
@@ -222,6 +258,22 @@
       "packages": [],
       "internalsVisibleTo": [],
       "frameworkReferences": [],
+      "testInventory": false
+    },
+    {
+      "name": "ClaimCore.OidcQualification",
+      "tier": "tooling",
+      "layer": "tooling",
+      "project": "eng/oidc/ClaimCore.OidcQualification.fsproj",
+      "role": "Isolated live synthetic OIDC qualification harness for the Web authentication boundary.",
+      "dependsOn": [
+        "ClaimCore.WebTests"
+      ],
+      "packages": [],
+      "internalsVisibleTo": [],
+      "frameworkReferences": [
+        "Microsoft.AspNetCore.App"
+      ],
       "testInventory": false
     },
     {
@@ -304,15 +356,56 @@
       "tier": "test",
       "layer": "test",
       "project": "tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj",
-      "role": "Real PostgreSQL storage, transaction, fresh-baseline refusal, and composed-runtime tests.",
+      "role": "Isolated two-cluster PostgreSQL actor, transaction, lifecycle, witness, backup signer, audit, and fresh-baseline qualification.",
       "dependsOn": [
         "ClaimCore.Application",
+        "ClaimCore.Database",
         "ClaimCore.Domain",
+        "ClaimCore.HostSecurity",
         "ClaimCore.Hosting",
         "ClaimCore.Postgres",
-        "ClaimCore.RecordFormat"
+        "ClaimCore.RecordFormat",
+        "ClaimCore.Witness"
       ],
-      "packages": [],
+      "packages": [
+        "NSec.Cryptography"
+      ],
+      "internalsVisibleTo": [],
+      "frameworkReferences": [],
+      "testInventory": true
+    },
+    {
+      "name": "ClaimCore.WitnessTests",
+      "tier": "test",
+      "layer": "test",
+      "project": "tests/ClaimCore.WitnessTests/ClaimCore.WitnessTests.fsproj",
+      "role": "Isolated live PostgreSQL 18.6 witness append, retry, durability, ACL, and corruption controls.",
+      "dependsOn": [
+        "ClaimCore.Witness"
+      ],
+      "packages": [
+        "Expecto",
+        "Microsoft.Testing.Extensions.TrxReport",
+        "Npgsql",
+        "Testcontainers.PostgreSql",
+        "YoloDev.Expecto.TestSdk"
+      ],
+      "internalsVisibleTo": [],
+      "frameworkReferences": [],
+      "testInventory": true
+    },
+    {
+      "name": "ClaimCore.BackupQualificationTests",
+      "tier": "test",
+      "layer": "test",
+      "project": "tests/ClaimCore.BackupQualificationTests/ClaimCore.BackupQualificationTests.fsproj",
+      "role": "Disposable two-cluster encrypted backup and restore qualification with recovered-data checks.",
+      "dependsOn": [],
+      "packages": [
+        "Expecto",
+        "Microsoft.Testing.Extensions.TrxReport",
+        "YoloDev.Expecto.TestSdk"
+      ],
       "internalsVisibleTo": [],
       "frameworkReferences": [],
       "testInventory": true

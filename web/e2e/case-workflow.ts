@@ -1,7 +1,7 @@
 import { expect, type Page } from "@playwright/test";
 
-import { isWebV2Response } from "../src/generated/convergence/web-v2.validation";
-import type { WebV2Response } from "../src/generated/convergence/web-v2.types";
+import { isWebV3Response } from "../src/generated/convergence/web-v3.validation";
+import type { WebV3Response } from "../src/generated/convergence/web-v3.types";
 import { progress } from "./session-helpers";
 
 export type PreparedIdentity = Readonly<{ operationId: string; requestSha256: string }>;
@@ -32,7 +32,7 @@ const submitReview = async (page: Page): Promise<void> => {
   if (!(await confirmed.isChecked())) throw new Error("E2E_REVIEW_CHECKBOX_NOT_CHECKED");
   await progress("confirm-checked");
   const responseEvent = page.waitForResponse(
-    (response) => new URL(response.url()).pathname === "/api/v2/operations/submit",
+    (response) => new URL(response.url()).pathname === "/api/v3/operations/submit",
     { timeout: 10_000 },
   );
   await progress("submit-dispatch");
@@ -40,15 +40,22 @@ const submitReview = async (page: Page): Promise<void> => {
   const response = await responseEvent;
   if (response.status() !== 200) throw new Error("E2E_SUBMIT_HTTP_FAILURE");
   const payload: unknown = await response.json();
-  if (!(await isWebV2Response("command.execute", payload))) {
+  if (!(await isWebV3Response("command.execute", payload))) {
     throw new Error("E2E_SUBMIT_PROTOCOL_FAILURE");
   }
-  const outcome = (payload as WebV2Response<"command.execute">).outcome;
+  const outcome = (payload as WebV3Response<"command.execute">).outcome;
   if (
     outcome.tag !== "OBSERVED_ACCEPTED" &&
     !(outcome.tag === "COMPLETED" && outcome.data.execution.tag === "ACCEPTED")
-  )
-    throw new Error("E2E_SUBMIT_BUSINESS_FAILURE");
+  ) {
+    const category =
+      outcome.tag === "COMPLETED"
+        ? `COMPLETED_${outcome.data.execution.tag}`
+        : outcome.tag === "REFUSED_BEFORE_ATTEMPT"
+          ? `REFUSED_BEFORE_ATTEMPT_${outcome.data.rejection.code}_${outcome.data.preparation === null ? "NO_PREP" : "WITH_PREP"}`
+          : outcome.tag;
+    throw new Error(`E2E_SUBMIT_${category}`);
+  }
   await expect(
     page.getByRole("heading", { name: "Accepted operation", exact: true }),
   ).toBeVisible();
@@ -84,14 +91,14 @@ export const prepare = async (
   await fill(page, values);
   await progress("prepare-dispatch");
   const event = page.waitForResponse((response) =>
-    response.url().endsWith("/api/v2/operations/prepare"),
+    response.url().endsWith("/api/v3/operations/prepare"),
   );
   await page.getByRole("button", { name: "Prepare exact request" }).click();
   const response = await event;
   const payload: unknown = await response.json();
-  if (response.status() !== 200 || !(await isWebV2Response("command.prepare", payload)))
+  if (response.status() !== 200 || !(await isWebV3Response("command.prepare", payload)))
     throw new Error("E2E_PREPARE_PROTOCOL_FAILURE");
-  const outcome = (payload as WebV2Response<"command.prepare">).outcome;
+  const outcome = (payload as WebV3Response<"command.prepare">).outcome;
   if (outcome.tag !== "PREPARED") throw new Error("E2E_PREPARE_REVIEW_UNAVAILABLE");
   const { operationId, requestSha256 } = outcome.data.details.summary;
   if (requestSha256 === null) throw new Error("E2E_PREPARE_EXACT_IDENTITY_UNAVAILABLE");
@@ -142,7 +149,7 @@ export const droppedSubmission = async (page: Page): Promise<PreparedIdentity> =
   await startCommand(page, "Close the case");
   const identity = await prepare(page);
   let committed = false;
-  await page.route("**/api/v2/operations/submit", async (route) => {
+  await page.route("**/api/v3/operations/submit", async (route) => {
     const response = await route.fetch();
     committed = response.status() === 200;
     await route.abort("connectionfailed");
@@ -155,7 +162,7 @@ export const droppedSubmission = async (page: Page): Promise<PreparedIdentity> =
   await progress("drop-confirm-checked");
   await page.getByRole("button", { name: "Submit exact request" }).click();
   await expect(page.getByRole("alert")).toContainText("Recovery");
-  await page.unroute("**/api/v2/operations/submit");
+  await page.unroute("**/api/v3/operations/submit");
   expect(committed).toBe(true);
   return identity;
 };

@@ -367,6 +367,14 @@
     { "type": 0, "value": "." },
     { "type": 0, "value": "⟧" }
   ],
+  "diagnostic.QUERY_CASE_LIST_CURSOR_INVALID": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Stààrt àà nëëw cààsëë lïïst. Thëë cüürsöör ïïs ïïnvààlïïd, ëëxpïïrëëd, öör bëëlööngs töö àànööthëër ààccööüünt öör pààgëë sïïzëë."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
   "diagnostic.QUERY_HISTORY_CURSOR_INVALID": [
     { "type": 0, "value": "⟦" },
     {
@@ -397,6 +405,16 @@
       "type": 0,
       "value": "Thïïs ööpëërààtïïöön hààs rëëààchëëd ïïts rëëcöövëëry ààttëëmpt lïïmïït. Rëëààd thëë cüürrëënt cààsëë àànd ààüüthöör àà nëëw ööpëërààtïïöön öönly ààftëër rëëvïïëëw."
     },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.ACCESS_RESOURCE_UNAVAILABLE": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thïïs rëësööüürcëë ïïs üünààvààïïlààblëë." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RESOURCE_UNAVAILABLE": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thïïs rëëcöövëëry rëësööüürcëë ïïs üünààvààïïlààblëë." },
     { "type": 0, "value": "⟧" }
   ],
   "diagnostic.CORE_OPERATION_CONTENT_CONFLICT": [
@@ -663,14 +681,6 @@
     },
     { "type": 0, "value": "⟧" }
   ],
-  "diagnostic.RECOVERY_CANONICAL_RECORD_INVALID_OR_UNSUPPORTED": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thëë càànöönïïcààl rëëcöövëëry rëëcöörd ïïs üünsüüppöörtëëd öör fààïïlëëd càànöönïïcààl dëëcöödïïng."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
   "diagnostic.RECOVERY_OPERATION_REVOKED": [
     { "type": 0, "value": "⟦" },
     {
@@ -723,11 +733,6 @@
   "diagnostic.WEB_HOST_ANTIFORGERY_REJECTED": [
     { "type": 0, "value": "⟦" },
     { "type": 0, "value": "Thëë ààntïïföörgëëry chëëck fààïïlëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_HOST_LOGIN_REJECTED": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë böööötstrààp crëëdëëntïïààl wààs rëëfüüsëëd." },
     { "type": 0, "value": "⟧" }
   ],
   "diagnostic.WEB_HOST_ENDPOINT_MISSING": [
@@ -1297,11 +1302,6 @@
     { "type": 0, "value": "ËËNVËËLÖÖPËË" },
     { "type": 0, "value": "⟧" }
   ],
-  "token.UNBOUND_CANONICAL_RECORD": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÜÜnbööüünd càànöönïïcààl rëëcöörd" },
-    { "type": 0, "value": "⟧" }
-  ],
   "token.FOUND": [
     { "type": 0, "value": "⟦" },
     { "type": 0, "value": "FÖÖÜÜND" },
@@ -1395,20 +1395,7 @@
   ],
   "ui.loginInstructions": [
     { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "ËËntëër thëë böööötstrààp crëëdëëntïïààl frööm thëë ööwnëër-prïïvààtëë fïïlëë prïïntëëd whëën thëë lööcààl Wëëb hööst stààrtëëd."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "ui.credential": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Böööötstrààp crëëdëëntïïààl" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "ui.signingIn": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Sïïgnïïng ïïn…" },
+    { "type": 0, "value": "Sïïgn ïïn wïïth yööüür öörgàànïïzààtïïöön's ïïdëëntïïty pröövïïdëër." },
     { "type": 0, "value": "⟧" }
   ],
   "ui.signIn": [
@@ -1551,6 +1538,93 @@
   "ui.caseDetail": [
     { "type": 0, "value": "⟦" },
     { "type": 0, "value": "Cààsëë dëëtààïïl" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.lifecycleStatus": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Dïïspöösïïtïïöön àànd prïïvààcy stààtüüs" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.loadingLifecycle": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Lööààdïïng lïïfëëcyclëë stààtüüs…" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.lifecycleUnavailable": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Lïïfëëcyclëë stààtüüs ïïs üünààvààïïlààblëë föör thïïs cààsëë." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.lifecycleDisposition": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Dïïspöösïïtïïöön: " },
+    { "type": 1, "value": "value" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.lifecyclePrivacy": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Prïïvààcy phààsëë: " },
+    { "type": 1, "value": "value" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.lifecycleActive": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÀÀctïïvëë" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.lifecycleVoided": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Vööïïdëëd ààs àà dààtàà-ëëntry ëërröör" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.lifecycleErasureRequested": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ËËrààsüürëë rëëqüüëëstëëd" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.lifecycleErasurePending": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ËËrààsüürëë pëëndïïng" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.lifecycleSuppressionRetained": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Lïïvëë pààylööààd ëërààsëëd; süüpprëëssïïöön ëëvïïdëëncëë rëëtààïïnëëd"
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.lifecycleErasureFinal": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Màànààgëëd pààylööààd ëërààsüürëë cöömplëëtëë; süüpprëëssïïöön ëëvïïdëëncëë rëëtààïïnëëd"
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.lifecycleNoHolds": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Nöö ààctïïvëë hööld ïïs rëëcöördëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.lifecycleHeld": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "HËËLD: ààctïïvëë höölds blööck pààylööààd ëërààsüürëë." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.lifecycleHoldReview": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Hööld rëëvïïëëw düüëë " },
+    { "type": 1, "value": "date" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.lifecycleVoidApproval": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Vööïïdïïng thïïs cààsëë rëëqüüïïrëës twöö dïïstïïnct ààppröövààls àànd dööëës nööt rëëvëërsëë àà pààymëënt."
+    },
     { "type": 0, "value": "⟧" }
   ],
   "ui.backToCases": [

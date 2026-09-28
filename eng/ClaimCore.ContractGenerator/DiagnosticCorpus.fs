@@ -83,9 +83,5 @@ module internal DiagnosticCorpus =
                 |> List.map (fun (suffix, valid, item) ->
                     "diagnostic-" + id + "-" + suffix, valid, item)))
 
-    let cli =
-        cases "rejection" (fun rejection ->
-            (CliWireCodec.caseGet "case.get" (QueryOutcome.Rejected rejection)).Bytes)
-
     let web =
         cases "data" (fun rejection -> WebWireCodec.get (QueryOutcome.Rejected rejection))

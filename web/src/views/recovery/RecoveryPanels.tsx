@@ -8,7 +8,7 @@ import type {
   RecoveryListItem,
   RecoveryPage as RecoveryPageResult,
   RevokedOperation,
-} from "../../api/v2";
+} from "../../api/v3";
 import { AccessibleModal } from "../../components/AccessibleModal";
 import type { Inspection, RecoveryActions, RecoveryViewKind } from "./RecoveryState";
 

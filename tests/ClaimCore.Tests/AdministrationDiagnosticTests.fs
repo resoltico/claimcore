@@ -39,6 +39,18 @@ let private inputCauses () =
                 "Unknown options and values are never echoed"
         | Ok _ -> failtest "Malformed invocation was admitted"
 
+    match DatabaseArguments.parse [ "initialize-witness" ] with
+    | Ok DatabaseCommand.InitializeWitness -> ()
+    | _ -> failtest "Witness bootstrap must be an explicit separate command"
+
+    match DatabaseArguments.parse [ "provision-initial-owner" ] with
+    | Ok DatabaseCommand.ProvisionInitialOwner -> ()
+    | _ -> failtest "First ownership must be an explicit owner-private command"
+
+    match DatabaseArguments.parse [ "register-actor" ] with
+    | Error DatabaseInputProblem.UnsupportedInvocation -> ()
+    | _ -> failtest "Owner CLI cannot bypass authenticated actor management"
+
 let private closedNativeReasons () =
     let cases = FSharpType.GetUnionCases typeof<AdministrationFailure>
 
@@ -55,6 +67,70 @@ let private closedNativeReasons () =
         DatabaseDiagnostics.nativeReasons |> List.map DatabaseDiagnostics.nativeToken
 
     Expect.equal ids.Length (Set.ofList ids |> Set.count) "No duplicate native identity"
+
+let private malformedRealData path (plan: Guid) (first: Guid) (second: Guid) =
+    for bad in
+        [
+            [
+                "activate-real-data"
+                path
+                path
+                path
+                first.ToString("D")
+                second.ToString("D")
+            ]
+            [
+                "activate-real-data"
+                path
+                path
+                path
+                "CASE-REFERENCE"
+                first.ToString("D")
+                second.ToString("D")
+            ]
+            [
+                "activate-real-data"
+                path
+                path
+                path
+                plan.ToString("D")
+                first.ToString("D")
+                first.ToString("D")
+            ]
+        ] do
+        match DatabaseArguments.parse bad with
+        | Error DatabaseInputProblem.UnsupportedInvocation -> ()
+        | _ -> failtest "Real-data activation refused malformed or duplicate authority."
+
+let private realDataOwnerCommands () =
+    let plan = Guid.NewGuid()
+    let first = Guid.NewGuid()
+    let second = Guid.NewGuid()
+    let path = "/private/evidence"
+
+    match
+        DatabaseArguments.parse
+            [
+                "activate-real-data"
+                path
+                path
+                path
+                plan.ToString("D")
+                first.ToString("D")
+                second.ToString("D")
+            ]
+    with
+    | Ok(DatabaseCommand.ActivateRealData(_, _, _, id, a, b)) when
+        id = plan && a = first && b = second
+        ->
+        ()
+    | _ -> failtest "Owner activation requires one published plan and two exact approvals."
+
+    malformedRealData path plan first second
+
+    match DatabaseArguments.parse [ "reconcile-real-data-activation" ] with
+    | Ok DatabaseCommand.ReconcileRealDataActivation -> ()
+    | _ -> failtest "Exact owner activation repair has one closed command."
 
 let private completedDelivery () =
     use output = new BrokenOutput(false)
@@ -143,7 +219,7 @@ let private exactCounters () =
 let tests =
     testList
         "administration diagnostic boundaries"
-        [
+        ([
             testCase "argument causes are precise without echoing unknown input" inputCauses
             testCase
                 "native administrative reasons have a complete closed vocabulary"
@@ -154,4 +230,8 @@ let tests =
                 unknownDelivery
             testCase "unexpected process failure makes no not-started claim" processKnowledge
             testCase "administration counters retain exact 64-bit values" exactCounters
-        ]
+            testCase
+                "[CC-DB-001] real-data owner commands require exact plan and approvals"
+                realDataOwnerCommands
+         ]
+         @ AdministrationPrivateCommandTests.cases)

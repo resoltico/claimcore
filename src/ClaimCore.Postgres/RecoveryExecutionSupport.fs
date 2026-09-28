@@ -93,6 +93,7 @@ module internal RecoveryExecutionSupport =
         | None, false, true -> Ok(AdmittedExecution.CommitOutcomeUnknown request.OperationId)
         | None, false, false ->
             match error with
+            | :? WitnessPending -> Ok(AdmittedExecution.CommitOutcomeUnknown request.OperationId)
             | :? OperationCanceledException -> Error RecoveryStoreFailure.CancelledBeforeCommit
             | _ ->
                 Ok(

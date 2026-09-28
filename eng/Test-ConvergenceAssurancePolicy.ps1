@@ -79,13 +79,13 @@ try {
     $matrix = Get-Content -Raw -LiteralPath $matrixProbePath | ConvertFrom-Json
     $matrix.entries = @($matrix.entries | Where-Object { $_.id -ne "endpoint-cli:case.get" })
     Write-Json $matrixProbePath $matrix
-    Invoke-Probe "Every generated CLI-v3 and Web-v2 endpoint"
+    Invoke-Probe "Every generated CLI-v4 and Web-v3 endpoint"
 
     [IO.File]::Copy((Join-Path $repoRoot "eng/assurance-matrix.json"), $matrixProbePath, $true)
     $matrix = Get-Content -Raw -LiteralPath $matrixProbePath | ConvertFrom-Json
     $matrix.entries = @($matrix.entries | Where-Object { $_.id -ne "branch-cli:invalid-unicode" })
     Write-Json $matrixProbePath $matrix
-    Invoke-Probe "Every registered CLI-v3 and Web-v2 protocol branch"
+    Invoke-Probe "Every registered CLI-v4 and Web-v3 protocol branch"
 
     [IO.File]::Copy((Join-Path $repoRoot "eng/assurance-matrix.json"), $matrixProbePath, $true)
     $matrix = Get-Content -Raw -LiteralPath $matrixProbePath | ConvertFrom-Json
@@ -112,6 +112,16 @@ try {
     $endpoint = @($matrix.entries | Where-Object { $_.id -eq "endpoint-cli:case.get" })
     if ($endpoint.Count -ne 1) { throw "Expected one CLI case.get evidence subject." }
     $endpoint[0].tests = @($endpoint[0].tests | Where-Object { $_ -notlike "dotnet:ClaimCore.AcceptanceTests::*" })
+    Write-Json $matrixProbePath $matrix
+    Invoke-Probe "Endpoint assurance must retain its exact published or TestServer runtime"
+
+    [IO.File]::Copy((Join-Path $repoRoot "eng/assurance-matrix.json"), $matrixProbePath, $true)
+    $matrix = Get-Content -Raw -LiteralPath $matrixProbePath | ConvertFrom-Json
+    $management = @($matrix.entries | Where-Object { $_.id -eq "endpoint-web:authority.register" })
+    if ($management.Count -ne 1) { throw "Expected one Web authority.register evidence subject." }
+    $management[0].tests = @($management[0].tests | Where-Object {
+        $_ -notlike "*endpoint authority.register dispatches authenticated route"
+    })
     Write-Json $matrixProbePath $matrix
     Invoke-Probe "Endpoint assurance must retain its exact published or TestServer runtime"
 }

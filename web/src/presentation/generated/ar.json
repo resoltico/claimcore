@@ -153,6 +153,12 @@
     { "type": 1, "value": "maximumPageSize" },
     { "type": 0, "value": "." }
   ],
+  "diagnostic.QUERY_CASE_LIST_CURSOR_INVALID": [
+    {
+      "type": 0,
+      "value": "ابدأ قائمة ملفات جديدة. المؤشر غير صالح أو منتهي الصلاحية أو يخص حسابًا آخر أو حجم صفحة مختلفًا."
+    }
+  ],
   "diagnostic.QUERY_HISTORY_CURSOR_INVALID": [
     { "type": 0, "value": "استخدم مؤشر سجل معتمًا واحدًا أعاده ClaimCore." }
   ],
@@ -168,6 +174,8 @@
       "value": "بلغت هذه العملية حد محاولات الاسترداد. اقرأ الملف الحالي وأنشئ عملية جديدة بعد المراجعة فقط."
     }
   ],
+  "diagnostic.ACCESS_RESOURCE_UNAVAILABLE": [{ "type": 0, "value": "هذا المورد غير متاح." }],
+  "diagnostic.RESOURCE_UNAVAILABLE": [{ "type": 0, "value": "مورد الاسترداد هذا غير متاح." }],
   "diagnostic.CORE_OPERATION_CONTENT_CONFLICT": [
     { "type": 0, "value": "يخص معرّف العملية محتوى طلب مختلفًا." }
   ],
@@ -281,9 +289,6 @@
   "diagnostic.RECOVERY_ENVELOPE_INVALID_OR_UNSUPPORTED": [
     { "type": 0, "value": "حافظة الاسترداد غير مدعومة أو أخفقت في فك الترميز المعياري." }
   ],
-  "diagnostic.RECOVERY_CANONICAL_RECORD_INVALID_OR_UNSUPPORTED": [
-    { "type": 0, "value": "سجل الاسترداد المعياري غير مدعوم أو أخفق في فك الترميز المعياري." }
-  ],
   "diagnostic.RECOVERY_OPERATION_REVOKED": [
     { "type": 0, "value": "سُحبت صلاحية هذه العملية نفسها بصورة دائمة قبل التنفيذ." }
   ],
@@ -308,7 +313,6 @@
   "diagnostic.WEB_HOST_ANTIFORGERY_REJECTED": [
     { "type": 0, "value": "فشل التحقق من الحماية من تزوير الطلبات." }
   ],
-  "diagnostic.WEB_HOST_LOGIN_REJECTED": [{ "type": 0, "value": "رُفضت بيانات اعتماد التهيئة." }],
   "diagnostic.WEB_HOST_ENDPOINT_MISSING": [
     { "type": 0, "value": "لم يتم العثور على نقطة النهاية المطلوبة." }
   ],
@@ -554,7 +558,6 @@
   "token.ERROR": [{ "type": 0, "value": "خطأ في التنفيذ" }],
   "token.REVOKED_BEFORE_EXECUTION": [{ "type": 0, "value": "أُلغي قبل التنفيذ" }],
   "token.ENVELOPE": [{ "type": 0, "value": "حافظة" }],
-  "token.UNBOUND_CANONICAL_RECORD": [{ "type": 0, "value": "سجل معياري غير مرتبط" }],
   "token.FOUND": [{ "type": 0, "value": "موجودة" }],
   "token.NOT_FOUND": [{ "type": 0, "value": "غير موجودة" }],
   "ui.language": [{ "type": 0, "value": "لغة الواجهة" }],
@@ -577,13 +580,8 @@
   "ui.operations": [{ "type": 0, "value": "العمليات" }],
   "ui.loadingDefinition": [{ "type": 0, "value": "جارٍ تحميل تعريف النواة…" }],
   "ui.loginInstructions": [
-    {
-      "type": 0,
-      "value": "أدخل بيانات اعتماد التهيئة من الملف الخاص بالمالك المشار إليه عند بدء خادم الويب المحلي."
-    }
+    { "type": 0, "value": "سجّل الدخول باستخدام موفر الهوية التابع لمؤسستك." }
   ],
-  "ui.credential": [{ "type": 0, "value": "بيانات اعتماد التهيئة" }],
-  "ui.signingIn": [{ "type": 0, "value": "جارٍ تسجيل الدخول…" }],
   "ui.signIn": [{ "type": 0, "value": "تسجيل الدخول" }],
   "ui.caseReference": [{ "type": 0, "value": "مرجع الملف" }],
   "ui.caseRow": [
@@ -638,6 +636,36 @@
   "ui.caseNotFound": [{ "type": 0, "value": "لم يتم العثور على الملف." }],
   "ui.currentCase": [{ "type": 0, "value": "الملف الحالي" }],
   "ui.caseDetail": [{ "type": 0, "value": "تفاصيل الملف" }],
+  "ui.lifecycleStatus": [{ "type": 0, "value": "الحالة ومرحلة الخصوصية" }],
+  "ui.loadingLifecycle": [{ "type": 0, "value": "جارٍ تحميل حالة دورة الحياة…" }],
+  "ui.lifecycleUnavailable": [{ "type": 0, "value": "حالة دورة الحياة غير متاحة لهذا الملف." }],
+  "ui.lifecycleDisposition": [
+    { "type": 0, "value": "الحالة: " },
+    { "type": 1, "value": "value" }
+  ],
+  "ui.lifecyclePrivacy": [
+    { "type": 0, "value": "مرحلة الخصوصية: " },
+    { "type": 1, "value": "value" }
+  ],
+  "ui.lifecycleActive": [{ "type": 0, "value": "نشط" }],
+  "ui.lifecycleVoided": [{ "type": 0, "value": "أُبطل بسبب خطأ في إدخال البيانات" }],
+  "ui.lifecycleErasureRequested": [{ "type": 0, "value": "طُلب المحو" }],
+  "ui.lifecycleErasurePending": [{ "type": 0, "value": "المحو قيد الانتظار" }],
+  "ui.lifecycleSuppressionRetained": [
+    { "type": 0, "value": "مُحيت البيانات الحية مع الاحتفاظ بدليل منع الاستعادة" }
+  ],
+  "ui.lifecycleErasureFinal": [
+    { "type": 0, "value": "اكتمل محو النسخ المُدارة مع الاحتفاظ بدليل منع الاستعادة" }
+  ],
+  "ui.lifecycleNoHolds": [{ "type": 0, "value": "لا يوجد تعليق نشط مسجّل." }],
+  "ui.lifecycleHeld": [{ "type": 0, "value": "معلّق: تمنع التعليقات النشطة محو البيانات." }],
+  "ui.lifecycleHoldReview": [
+    { "type": 0, "value": "مراجعة التعليق بحلول " },
+    { "type": 1, "value": "date" }
+  ],
+  "ui.lifecycleVoidApproval": [
+    { "type": 0, "value": "يتطلب إبطال هذا الملف موافقتين من شخصين مختلفين، ولا يعكس دفعة مالية." }
+  ],
   "ui.backToCases": [{ "type": 0, "value": "العودة إلى الملفات" }],
   "ui.exactReference": [
     { "type": 0, "value": "المرجع الدقيق: " },

@@ -1,7 +1,7 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 import { useDefinition } from "../src/hooks/useDefinition";
-import { definition, response } from "./v2-ui.fixtures";
+import { definition, response } from "./v3-ui.fixtures";
 
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 

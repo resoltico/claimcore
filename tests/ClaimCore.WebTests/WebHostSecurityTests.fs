@@ -102,17 +102,12 @@ let private lockBoundaries () =
                 (fun () -> Security.acquireStateDirectory directory |> ignore)
                 "Lock excludes second host")
 
-let private staleCredentialBoundaries () =
+let private legacyEvidencePreserved () =
     withSandbox (fun directory ->
         if OperatingSystem.IsWindows() then
             Expect.throws
-                (fun () -> Security.rotateBootstrapCredential directory |> ignore)
-                "Windows credential fails closed"
-
-            Expect.equal
-                (Directory.GetFiles(directory).Length)
-                0
-                "Unsupported rotation creates no file"
+                (fun () -> Security.acquireStateDirectory directory |> ignore)
+                "Windows private state fails closed"
         else
             let target = Path.Combine(directory, "synthetic-target")
             File.WriteAllText(target, "synthetic")
@@ -122,27 +117,14 @@ let private staleCredentialBoundaries () =
                 Path.Combine(directory, "bootstrap-credential-" + Guid.NewGuid().ToString("N"))
 
             File.CreateSymbolicLink(stale, target) |> ignore
-
-            Expect.throws
-                (fun () -> Security.rotateBootstrapCredential directory |> ignore)
-                "Linked stale credential is refused"
-
-            Expect.isTrue (File.Exists(target)) "Noncredential target remains"
-            File.Delete(stale)
-            File.WriteAllText(stale, "synthetic")
-            File.SetUnixFileMode(stale, ownerFile)
-            let lease = Security.rotateBootstrapCredential directory
-            let current = lease.Credential.Path
-            Expect.isFalse (File.Exists(stale)) "Validated stale credential is removed"
-            Expect.isTrue (File.Exists(current)) "New private credential exists"
+            use _lease = Security.acquireStateDirectory directory
+            Expect.isTrue (File.Exists(stale)) "Old linked credential evidence is untouched"
+            Expect.equal (File.ReadAllText(target)) "synthetic" "Linked target is unchanged"
 
             Expect.equal
-                (File.GetUnixFileMode(current))
-                ownerFile
-                "New credential has private mode"
-
-            (lease :> IDisposable).Dispose()
-            Expect.isFalse (File.Exists(current)) "Lease removes only its own credential")
+                (Directory.GetFiles(directory).Length)
+                3
+                "Only the host lock was added beside retained evidence")
 
 let tests =
     testList
@@ -155,6 +137,6 @@ let tests =
                 "[CC-WEB-001] state lock rejects linked or broad existing files without rewriting them"
                 lockBoundaries
             testCase
-                "[CC-WEB-001] bootstrap rotation removes only validated private generated files"
-                staleCredentialBoundaries
+                "[CC-WEB-001] OIDC host preserves retained old credential evidence"
+                legacyEvidencePreserved
         ]

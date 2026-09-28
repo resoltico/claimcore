@@ -46,6 +46,7 @@
     "ClaimCore documentation assurance.Path and link safety.repository path confinement.rejects a symlink in an existing path",
     "ClaimCore documentation assurance.Path and link safety.repository path confinement.rejects rooted dot parent and backslash registered paths",
     "ClaimCore documentation assurance.Path and link safety.repository path confinement.source provenance is closed, private-aware, and Git-worktree-safe",
+    "ClaimCore documentation assurance.convergence registration and evidence coverage.[CC-ARCH-001] Integration and Web inventories contain only sequenced root leaves",
     "ClaimCore documentation assurance.convergence registration and evidence coverage.every inventoried test assembly is required evidence in some stage",
     "ClaimCore documentation assurance.convergence registration and evidence coverage.every required report names a registered stage",
     "ClaimCore documentation assurance.convergence registration and evidence coverage.immutable source registrations.historical kind and inventory identity cannot change",

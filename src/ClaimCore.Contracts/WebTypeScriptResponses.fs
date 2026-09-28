@@ -29,71 +29,135 @@ module internal WebTypeScriptResponses =
         projection.WebEndpoints
         |> List.filter (fun endpoint -> identifiers |> Set.contains endpoint.Identifier)
 
+    let private readIdentifiers =
+        Set.ofList
+            [
+                "session"
+                "session.logout"
+                "definition"
+                "case.get"
+                "case.list"
+                "case.history"
+                "operation.observe"
+            ]
+
+    let private authorityIdentifiers =
+        Set.ofList
+            [
+                "authority.register"
+                "authority.setGrant"
+                "authority.setEnabled"
+                "authority.observe"
+                "authority.approveCopySigner"
+                "authority.approveCopyDeletion"
+                "authority.approveCopyAdoption"
+                "authority.approveWriterHandoff"
+                "authority.reviewRealDataActivation"
+                "authority.approveRealDataActivation"
+            ]
+
+    let private lifecycleIdentifiers =
+        Set.ofList
+            [
+                "lifecycle.review"
+                "lifecycle.apply"
+                "lifecycle.approve"
+                "tombstone.review"
+                "tombstone.approvePrune"
+                "tombstone.approveTerminal"
+                "tombstone.changeHold"
+            ]
+
+    let private commandIdentifiers = Set.ofList [ "command.prepare"; "command.execute" ]
+
+    let private recoveryIdentifiers (projection: ContractModel) =
+        projection.WebEndpoints
+        |> List.map _.Identifier
+        |> List.filter (fun identifier -> identifier.StartsWith("recovery."))
+        |> Set.ofList
+
     let private readModule projection =
-        let endpoints =
-            endpointGroup
-                (Set.ofList
-                    [
-                        "session"
-                        "session.login"
-                        "session.logout"
-                        "definition"
-                        "case.get"
-                        "case.list"
-                        "case.history"
-                        "operation.observe"
-                    ])
-                projection
+        let endpoints = endpointGroup readIdentifiers projection
 
         moduleBytes
             [
-                "import type { Rejection } from \"./web-v2.types.diagnostics\";"
-                "import type { CaseSummary, CurrentCase, DefinitionPayload, Fault, HistoryEntry, Receipt, SessionSnapshot } from \"./web-v2.types.core\";"
+                "import type { Rejection } from \"./web-v3.types.diagnostics\";"
+                "import type { CaseSummary, CurrentCase, DefinitionPayload, Fault, HistoryEntry, Receipt, SessionSnapshot } from \"./web-v3.types.core\";"
             ]
-            (responseMap "WebV2ReadResponseByEndpoint" endpoints)
+            (responseMap "WebV3ReadResponseByEndpoint" endpoints)
 
     let private commandModule projection =
-        let endpoints =
-            endpointGroup (Set.ofList [ "command.prepare"; "command.execute" ]) projection
+        let endpoints = endpointGroup commandIdentifiers projection
 
         moduleBytes
             [
-                "import type { Rejection } from \"./web-v2.types.diagnostics\";"
-                "import type { Fault, Receipt } from \"./web-v2.types.core\";"
-                "import type { AdvisoryReview, DefiniteExecution, PreparationDetails, PreparationSummary, RecoveryRejection } from \"./web-v2.types.recovery\";"
+                "import type { Rejection } from \"./web-v3.types.diagnostics\";"
+                "import type { Fault, Receipt } from \"./web-v3.types.core\";"
+                "import type { AdvisoryReview, DefiniteExecution, PreparationDetails, PreparationSummary } from \"./web-v3.types.recovery\";"
             ]
-            (responseMap "WebV2CommandResponseByEndpoint" endpoints)
+            (responseMap "WebV3CommandResponseByEndpoint" endpoints)
+
+    let private authorityModule projection =
+        let endpoints = endpointGroup authorityIdentifiers projection
+
+        moduleBytes [] (responseMap "WebV3AuthorityResponseByEndpoint" endpoints)
+
+    let private lifecycleModule projection =
+        let endpoints = endpointGroup lifecycleIdentifiers projection
+
+        moduleBytes
+            [ "import type { Fault } from \"./web-v3.types.core\";" ]
+            (responseMap "WebV3LifecycleResponseByEndpoint" endpoints)
 
     let private recoveryModule projection =
-        let endpoints =
-            projection.WebEndpoints
-            |> List.filter (fun endpoint -> endpoint.Identifier.StartsWith("recovery."))
+        let endpoints = endpointGroup (recoveryIdentifiers projection) projection
 
         moduleBytes
             [
-                "import type { Fault, Receipt } from \"./web-v2.types.core\";"
-                "import type { DefiniteExecution, PreparationDetails, PreparationSummary, RecoveryImportPreview, RecoveryInspection, RecoveryPage, RecoveryRejection, RevokedOperation } from \"./web-v2.types.recovery\";"
+                "import type { Fault, Receipt } from \"./web-v3.types.core\";"
+                "import type { DefiniteExecution, PreparationDetails, PreparationSummary, RecoveryImportPreview, RecoveryInspection, RecoveryPage, RecoveryRejection, RevokedOperation } from \"./web-v3.types.recovery\";"
             ]
-            (responseMap "WebV2RecoveryResponseByEndpoint" endpoints)
+            (responseMap "WebV3RecoveryResponseByEndpoint" endpoints)
 
     let private indexModule =
         moduleBytes
             [
-                "import type { WebV2EndpointId } from \"./web-v2.endpoint-catalog\";"
-                "import type { WebV2ReadResponseByEndpoint } from \"./web-v2.types.responses.read\";"
-                "import type { WebV2CommandResponseByEndpoint } from \"./web-v2.types.responses.command\";"
-                "import type { WebV2RecoveryResponseByEndpoint } from \"./web-v2.types.responses.recovery\";"
+                "import type { WebV3EndpointId } from \"./web-v3.endpoint-catalog\";"
+                "import type { WebV3ReadResponseByEndpoint } from \"./web-v3.types.responses.read\";"
+                "import type { WebV3AuthorityResponseByEndpoint } from \"./web-v3.types.responses.authority\";"
+                "import type { WebV3LifecycleResponseByEndpoint } from \"./web-v3.types.responses.lifecycle\";"
+                "import type { WebV3CommandResponseByEndpoint } from \"./web-v3.types.responses.command\";"
+                "import type { WebV3RecoveryResponseByEndpoint } from \"./web-v3.types.responses.recovery\";"
             ]
             [
-                "export type WebV2ResponseByEndpoint = WebV2ReadResponseByEndpoint & WebV2CommandResponseByEndpoint & WebV2RecoveryResponseByEndpoint;"
-                "export type WebV2Response<K extends WebV2EndpointId> = WebV2ResponseByEndpoint[K];"
-                "export type EndpointOutcome = WebV2Response<WebV2EndpointId>;"
+                "export type WebV3ResponseByEndpoint = WebV3ReadResponseByEndpoint & WebV3AuthorityResponseByEndpoint & WebV3LifecycleResponseByEndpoint & WebV3CommandResponseByEndpoint & WebV3RecoveryResponseByEndpoint;"
+                "export type WebV3Response<K extends WebV3EndpointId> = WebV3ResponseByEndpoint[K];"
+                "export type EndpointOutcome = WebV3Response<WebV3EndpointId>;"
             ]
 
     let artifacts projection =
+        let expected = projection.WebEndpoints |> List.map _.Identifier |> Set.ofList
+
+        let groups =
+            [
+                readIdentifiers
+                authorityIdentifiers
+                lifecycleIdentifiers
+                commandIdentifiers
+                recoveryIdentifiers projection
+            ]
+
+        let covered = groups |> List.fold Set.union Set.empty
+        let counted = groups |> List.sumBy Set.count
+
+        if covered <> expected || counted <> expected.Count then
+            invalidOp "Every Web endpoint must belong to exactly one generated response group."
+
         [
-            "web-v2.types.responses.read.ts", readModule projection
-            "web-v2.types.responses.command.ts", commandModule projection
-            "web-v2.types.responses.recovery.ts", recoveryModule projection
-            "web-v2.types.responses.ts", indexModule
+            "web-v3.types.responses.read.ts", readModule projection
+            "web-v3.types.responses.authority.ts", authorityModule projection
+            "web-v3.types.responses.lifecycle.ts", lifecycleModule projection
+            "web-v3.types.responses.command.ts", commandModule projection
+            "web-v3.types.responses.recovery.ts", recoveryModule projection
+            "web-v3.types.responses.ts", indexModule
         ]

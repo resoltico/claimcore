@@ -11,44 +11,22 @@ open ClaimCore.WebTests.TestServerFixture
 open ClaimCore.WebTests.TestServerOutcomeValues
 
 let private sessionExpiry () =
-    let now = DateTimeOffset(2026, 9, 9, 0, 0, 0, TimeSpan.Zero)
-    let registry = SessionRegistry(TimeSpan.FromMinutes(10.), TimeSpan.FromMinutes(25.))
-    let idle = registry.Create(now)
-    Expect.isTrue (registry.IsCurrent(idle, now.AddMinutes(9.))) "Activity extends idle expiry"
-
-    Expect.isFalse
-        (registry.IsCurrent(idle, now.AddMinutes(20.)))
-        "Idle expiry revokes a quiet session"
-
-    let absolute = registry.Create(now)
-
-    for minute in [ 9.; 18.; 24. ] do
-        Expect.isTrue
-            (registry.IsCurrent(absolute, now.AddMinutes(minute)))
-            "Activity may extend idle only within the absolute lifetime"
-
-    Expect.isFalse
-        (registry.IsCurrent(absolute, now.AddMinutes(25.)))
-        "Absolute expiry cannot be extended by activity"
-
-    let untouched = registry.Create(now)
-    Expect.equal registry.StoredCount 1 "An untouched session is retained until expiration"
-    let replacement = registry.Create(now.AddMinutes(26.))
-    Expect.equal registry.StoredCount 1 "A new login sweeps expired session entries"
-
-    Expect.isFalse
-        (registry.IsCurrent(untouched, now.AddMinutes(26.)))
-        "Expired authority stays revoked"
-
-    Expect.isTrue
-        (registry.IsCurrent(replacement, now.AddMinutes(26.)))
-        "New authority remains live"
-
     use host = Host.Start()
     authenticated host |> ignore
-    host.Sessions.RevokeAll()
-    let denied = host.Send(HttpMethod.Get, "/api/v2/definition", None, None, None)
-    Expect.equal denied.Status 401 "Definition route trusts only current registry membership"
+    let token = host.SessionToken()
+
+    let logout =
+        host.Send(
+            HttpMethod.Post,
+            "/api/v3/session/logout",
+            Some "{}",
+            Some "application/json",
+            Some token
+        )
+
+    Expect.equal logout.Status 200 "Explicit logout revokes the server-side ticket"
+    let denied = host.Send(HttpMethod.Get, "/api/v3/definition", None, None, None)
+    Expect.equal denied.Status 401 "Definition route rejects the revoked cookie"
 
 let private commandDraft kind values =
     $"""{{"operationId":"{operationId:D}","caseReference":"WEB-V2-001","expectedRevision":"0","command":{{"kind":"{kind}","values":{values}}}}}"""
@@ -169,10 +147,10 @@ let private recoveryCursor () =
 
 let tests =
     testList
-        "Web HTTP-v2 TestServer"
+        "Web HTTP-v3 TestServer"
         [
             testCase
-                "[CC-WEB-001] session registry enforces idle and absolute expiry with deterministic time"
+                "[CC-WEB-001] OIDC logout revokes the browser ticket before disclosure"
                 sessionExpiry
             testCase
                 "[CC-WEB-001] exact command draft transport accepts all eight semantic command variants"

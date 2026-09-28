@@ -3,6 +3,7 @@ namespace ClaimCore.Postgres
 open System
 open Npgsql
 open ClaimCore.Application
+open ClaimCore.Witness
 
 /// Schema administration is separate from case-work admission and cannot use the runtime role.
 module internal OwnerConnection =
@@ -16,7 +17,7 @@ module internal OwnerConnection =
             || builder.NoResetOnClose
             || builder.LogParameters
             || builder.PersistSecurityInfo
-            || not (ConnectionTransport.requireAuthenticatedRemote builder)
+            || not (PostgresTransport.requireAuthenticatedRemote builder)
         then
             AdministrationFailures.refuse AdministrationFailure.OwnerConnectionInvalid
 

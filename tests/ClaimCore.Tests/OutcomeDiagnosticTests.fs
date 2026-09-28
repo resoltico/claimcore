@@ -12,6 +12,10 @@ let private parsed (bytes: byte array) =
     use document = JsonDocument.Parse(ReadOnlyMemory<byte>(bytes))
     document.RootElement.Clone()
 
+let private remote endpoint (bytes: byte array) =
+    use document = JsonDocument.Parse(ReadOnlyMemory bytes)
+    CliRemoteWireCodec.result endpoint document.RootElement
+
 let private outcome name bytes =
     (parsed bytes).GetProperty("outcome").GetProperty(name: string)
 
@@ -86,8 +90,10 @@ let private catalogueSeparation () =
             (inventory |> List.forall (fun item -> item.Parameters.IsEmpty))
             "Exact parameterless inventory"
 
-let private comparePayload id (response: CliWireResponse) web cliProperty =
-    let native = outcome cliProperty response.Bytes
+let private comparePayload id (response: CliWireResponse) web =
+    let native =
+        (parsed response.Bytes).GetProperty("service").GetProperty("outcome").GetProperty("data")
+
     let browser = outcome "data" web
 
     Expect.equal
@@ -105,40 +111,51 @@ let private comparePayload id (response: CliWireResponse) web cliProperty =
 
 let private faultParity () =
     for fault, id in CoreFaults.all do
-        let response = CliWireCodec.caseGet "case.get" (QueryOutcome.Failed fault)
+        let response = WebWireCodec.get (QueryOutcome.Failed fault) |> remote "case.get"
         Expect.equal response.ExitCode 3 "Query failure exit remains three"
-        comparePayload id response (WebWireCodec.get (QueryOutcome.Failed fault)) "fault"
+        comparePayload id response (WebWireCodec.get (QueryOutcome.Failed fault))
 
 let private recoveryParity () =
     for reason, id in RecoveryRejections.all do
         let value = RecoveryQueryOutcome.RecoveryRejected reason
-        let response = CliWireCodec.recoveryList "recovery.list" value
+        let response = WebWireCodec.recoveryList value |> remote "recovery.list"
         Expect.equal response.ExitCode 2 "Lifecycle refusal is not a fault or unknown commit"
-        comparePayload id response (WebWireCodec.recoveryList value) "rejection"
+        comparePayload id response (WebWireCodec.recoveryList value)
 
 let private localSeparation () =
     let coreIds = CoreFaults.all |> List.map snd |> Set.ofList
 
+    let problems =
+        [
+            CliRemoteProblem.Configuration
+            CliRemoteProblem.Authentication
+            CliRemoteProblem.ServiceUnavailable
+            CliRemoteProblem.ServiceReplyInvalid
+            CliRemoteProblem.PrivateSource
+            CliRemoteProblem.PrivateDestination
+            CliRemoteProblem.DeliveryUnconfirmed
+        ]
+
     for endpoint in (ContractProjection.current ()).CliEndpoints do
-        for local in CliLocalFaults.all do
-            let response = CliWireCodec.localFailure endpoint.Identifier local
-            Expect.equal response.ExitCode 3 "Adapter exit preserved"
+        for problem in problems do
+            let response = CliRemoteWireCodec.localFailure endpoint.Identifier problem
+            let root = parsed response.Bytes
+            Expect.equal (root.GetProperty("kind").GetString()) "localFailure" "Adapter-only result"
+
+            let uncertain = problem = CliRemoteProblem.DeliveryUnconfirmed
+            Expect.equal response.ExitCode (if uncertain then 4 else 3) "Exact local exit"
 
             Expect.equal
-                (outcome "kind" response.Bytes |> _.GetString())
-                "localFailure"
-                "Never a fabricated core result"
-
-            let fault = outcome "fault" response.Bytes
-
-            Expect.equal
-                (fault.GetProperty("recommendedAction").GetString())
-                "STOP_AND_INVESTIGATE"
-                "Local failure is not replay authority"
+                (root.GetProperty("action").GetString())
+                (if uncertain then
+                     "RECOVER_EXACT"
+                 else
+                     "STOP_AND_INVESTIGATE")
+                "Local failure does not invent a core outcome"
 
             Expect.isFalse
-                (Set.contains (CliLocalFaults.token local) coreIds)
-                "Separate transport vocabulary"
+                (Set.contains (root.GetProperty("code").GetString()) coreIds)
+                "Separate vocabulary"
 
 let private fingerprintChanges () =
     let baseline = SemanticContract.current
@@ -171,7 +188,7 @@ let private cultures () =
     let values () =
         (CoreFaults.all
          |> List.map (fun (fault, _) ->
-             (CliWireCodec.caseGet "case.get" (QueryOutcome.Failed fault)).Bytes))
+             (WebWireCodec.get (QueryOutcome.Failed fault) |> remote "case.get").Bytes))
         @ (RecoveryRejections.all
            |> List.map (fun (reason, _) ->
                WebWireCodec.recoveryList (RecoveryQueryOutcome.RecoveryRejected reason)))

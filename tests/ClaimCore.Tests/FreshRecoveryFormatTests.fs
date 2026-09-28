@@ -1,13 +1,13 @@
 module ClaimCore.Tests.FreshRecoveryFormatTests
 
 open System
-open System.Security.Cryptography
 open System.Text
 open Expecto
 open ClaimCore.Application
 open ClaimCore.Domain
 open ClaimCore.RecordFormat
 open ClaimCore.Tests.Fixtures
+open ClaimCore.Tests.SignedRecoveryTestSupport
 
 let private request =
     {
@@ -17,133 +17,86 @@ let private request =
         Command = Command.Open registration
     }
 
-let private digest (bytes: byte array) =
-    bytes |> SHA256.HashData |> Convert.ToHexStringLower
+let private canonical () = RequestRecord.encode request
+let private text () = canonical () |> Encoding.UTF8.GetString
 
-let private encoded () = RequestRecord.encode request
-let private sourceText () = encoded () |> Encoding.UTF8.GetString
-let private decode bytes = RequestRecord.decode 65536 bytes
+let private freshRoundTrip () =
+    let bytes = canonical ()
 
-let private envelope bytes =
-    {
-        InstallationId = Guid.Parse("10000000-0000-4000-8000-000000000001")
-        OperationId = request.OperationId
-        CanonicalCommandFormat = RecordVersions.CanonicalCommandFormat
-        RequestFingerprintVersion = RecordVersions.RequestFingerprint
-        RequestSha256 = digest bytes
-        CanonicalRequest = bytes
-    }
+    Expect.equal
+        (RequestRecord.decode 65536 bytes)
+        (Ok request)
+        "Current request bytes decode exactly"
 
-let private roundTrip =
-    testCase
-        "[CC-REC-001] fresh canonical and envelope formats preserve exact request identity"
-        (fun () ->
-            let bytes = encoded ()
-            Expect.equal (decode bytes) (Ok request) "Current canonical request"
-            let original = envelope bytes
+    let artifact, _ = SignedRecoveryTestSupport.source request
 
-            let restored =
-                RecoveryEnvelope.encode original |> RecoveryEnvelope.decode 65536 |> accepted
+    match verify artifact with
+    | Error _ -> failtest "Current signed envelope must verify"
+    | Ok verified ->
+        Expect.equal verified.OperationId request.OperationId "Operation identity is bound"
+        Expect.equal verified.CanonicalRequest bytes "Exact request bytes are recovered"
+        Expect.notEqual verified.CaseId Guid.Empty "Reserved case identity is required"
 
-            Expect.equal restored.CanonicalRequest bytes "No request-byte conversion"
-            Expect.equal restored.RequestSha256 original.RequestSha256 "Exact digest"
-            Expect.equal restored.InstallationId original.InstallationId "Installation binding"
-            Expect.equal restored.CanonicalCommandFormat 3 "Fresh canonical format"
-            Expect.equal RecordVersions.Snapshot 2 "Snapshot format is independent"
+let private oldCanonical () =
+    for replacement in
+        [
+            "\"protocolVersion\":2"
+            "\"canonicalCommandFormat\":2"
+            "\"canonicalCommandFormat\":4"
+        ] do
+        let bytes =
+            (text ()).Replace("\"canonicalCommandFormat\":3", replacement)
+            |> Encoding.UTF8.GetBytes
 
-            Expect.equal
-                restored.RequestFingerprintVersion
-                1
-                "Fingerprint algorithm is independent")
+        let before = Array.copy bytes
+        Expect.isError (RequestRecord.decode 65536 bytes) "Unsupported canonical request is refused"
+        Expect.isError (verify bytes) "Raw request cannot be promoted into signed import"
+        Expect.equal bytes before "No compatibility rewrite occurs"
 
-let private oldCanonical =
-    testCase
-        "[CC-REC-001] historical canonical records are refused rather than re-encoded"
-        (fun () ->
-            for header in
-                [
-                    "\"protocolVersion\":2"
-                    "\"canonicalCommandFormat\":2"
-                    "\"canonicalCommandFormat\":4"
-                ] do
-                let bytes =
-                    (sourceText ()).Replace("\"canonicalCommandFormat\":3", header)
-                    |> Encoding.UTF8.GetBytes
+let private oldEnvelope () =
+    let old =
+        """{"format":"claimcore-recovery","formatVersion":2,"installationId":"10000000-0000-4000-8000-000000000001"}"""
+        |> Encoding.UTF8.GetBytes
 
-                let before = Array.copy bytes
-                Expect.isError (decode bytes) "Old and future layouts are unsupported"
+    Expect.isError (verify old) "Plaintext v2 artifact is refused"
+    Expect.isError (verify (canonical ())) "Unsigned canonical record is refused"
 
-                Expect.isError
-                    (RecoverySupport.decodeCanonical bytes)
-                    "Import refuses the unsupported source"
+let private noncanonical () =
+    let spaced = Encoding.UTF8.GetBytes(" " + text ())
 
-                Expect.equal bytes before "No compatibility rewrite")
+    Expect.equal
+        (RequestRecord.decode 65536 spaced)
+        (Ok request)
+        "Semantic decoder can inspect input"
 
-let private oldEnvelope =
-    testCase
-        "[CC-REC-001] old envelopes and forged new envelopes cannot import old requests"
-        (fun () ->
-            let current =
-                encoded () |> envelope |> RecoveryEnvelope.encode |> Encoding.UTF8.GetString
+    Expect.isError (verify spaced) "Import never silently signs equivalent raw bytes"
 
-            for mutation in
-                [
-                    current.Replace("\"formatVersion\":2", "\"formatVersion\":1")
-                    current.Replace("\"canonicalCommandFormat\":3", "\"protocolVersion\":2")
-                ] do
-                Expect.isError
-                    (Encoding.UTF8.GetBytes(mutation) |> RecoveryEnvelope.decode 65536)
-                    "Old envelope metadata is refused"
+let private tampering () =
+    let source, _ = SignedRecoveryTestSupport.source request
+    let original = Encoding.UTF8.GetString(source)
 
-            let old =
-                (sourceText ()).Replace("\"canonicalCommandFormat\":3", "\"protocolVersion\":2")
-                |> Encoding.UTF8.GetBytes
+    for changed in
+        [
+            original.Replace("\"epoch\":8", "\"epoch\":9")
+            original.Replace("\"formatVersion\":3", "\"formatVersion\":2")
+            original + " "
+        ] do
+        Expect.isError
+            (verify (Encoding.UTF8.GetBytes changed))
+            "Metadata or byte-layout tampering is refused"
 
-            let forged = envelope old |> RecoveryEnvelope.encode
-
-            Expect.isError
-                (RecoveryEnvelope.decode 65536 forged)
-                "A correct SHA-256 and current wrapper cannot authorize old canonical bytes")
-
-let private exactImport =
-    testCase
-        "[CC-REC-001] noncanonical layouts may decode but cannot enter exact recovery retention"
-        (fun () ->
-            let spaced = Encoding.UTF8.GetBytes(" " + sourceText ())
-
-            Expect.equal
-                (decode spaced)
-                (Ok request)
-                "Decoder can describe semantically valid input"
-
-            Expect.isError
-                (RecoverySupport.decodeCanonical spaced)
-                "Recovery does not silently canonicalize"
-
-            Expect.isError
-                (envelope spaced |> RecoveryEnvelope.encode |> RecoveryEnvelope.decode 65536)
-                "Envelope must preserve canonical rather than merely equivalent bytes")
-
-let private tampering =
-    testCase
-        "[CC-REC-001] fresh envelopes reject digest tampering and operation substitution"
-        (fun () ->
-            let original = encoded () |> envelope
-
-            for changed in
-                [
-                    { original with
-                        RequestSha256 = String.replicate 64 "0"
-                    }
-                    { original with
-                        OperationId = Guid.NewGuid()
-                    }
-                ] do
-                Expect.isError
-                    (RecoveryEnvelope.encode changed |> RecoveryEnvelope.decode 65536)
-                    "Identity validation remains mandatory after the clean break")
-
+[<Tests>]
 let tests =
     testList
         "fresh recovery format boundary"
-        [ roundTrip; oldCanonical; oldEnvelope; exactImport; tampering ]
+        [
+            testCase
+                "[CC-REC-001] current request and signed artifact preserve exact identity"
+                freshRoundTrip
+            testCase "[CC-REC-001] historical canonical requests are refused" oldCanonical
+            testCase "[CC-REC-001] plaintext v2 and unsigned records are refused" oldEnvelope
+            testCase "[CC-REC-001] raw noncanonical bytes are not imported" noncanonical
+            testCase
+                "[CC-REC-001] signed envelope metadata and layout tampering are refused"
+                tampering
+        ]

@@ -111,7 +111,7 @@ module internal WebWireMutations =
             writer.WriteString("settlement", settlement settled)
             writer.WriteEndObject())
 
-    let private beforeAttempt
+    let beforeAttempt
         (writer: Utf8JsonWriter)
         (tag: string)
         (preparation: PreparationSummary option)

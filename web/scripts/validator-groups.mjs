@@ -2,18 +2,18 @@ const endpointGroupNames = ["discovery", "core", "recovery"];
 const groupNames = ["host", ...endpointGroupNames];
 
 export const standaloneValidatorArtifacts = [
-  "web-v2.validation.ts",
+  "web-v3.validation.ts",
   ...groupNames.flatMap((group) => [
-    `web-v2.validators.${group}.d.mts`,
-    `web-v2.validators.${group}.mjs`,
+    `web-v3.validators.${group}.d.mts`,
+    `web-v3.validators.${group}.mjs`,
   ]),
-  "web-v2.validators.NOTICE.txt",
+  "web-v3.validators.NOTICE.txt",
 ];
 
 export const obsoleteStandaloneValidatorArtifacts = [
-  "web-v2.validators.d.mts",
-  "web-v2.validators.mjs",
-  "web-v2.validators.ts",
+  "web-v3.validators.d.mts",
+  "web-v3.validators.mjs",
+  "web-v3.validators.ts",
 ];
 
 export const validatorName = (endpoint) =>
@@ -37,27 +37,27 @@ const declarations = (endpoints) =>
   endpoints
     .map(
       ({ endpoint, exportName }) =>
-        `export const ${exportName}: WebV2Validator<WebV2ResponseByEndpoint[${JSON.stringify(endpoint)}]>;`,
+        `export const ${exportName}: WebV3Validator<WebV3ResponseByEndpoint[${JSON.stringify(endpoint)}]>;`,
     )
     .join("\n");
 
 export const validatorDeclarations = (
   endpoints,
 ) => `/* Generated from ClaimCore.Contracts schemas. Do not edit. */
-${endpoints.length === 0 ? 'import type { HostFailure } from "./web-v2.types";' : 'import type { WebV2ResponseByEndpoint } from "./web-v2.types";'}
+${endpoints.length === 0 ? 'import type { HostFailure } from "./web-v3.types";' : 'import type { WebV3ResponseByEndpoint } from "./web-v3.types";'}
 
-export type WebV2ValidationError = Readonly<{
+export type WebV3ValidationError = Readonly<{
   instancePath: string;
   schemaPath: string;
   keyword: string;
 }>;
 
-export interface WebV2Validator<T> {
+export interface WebV3Validator<T> {
   (value: unknown): value is T;
-  readonly errors: ReadonlyArray<WebV2ValidationError> | null | undefined;
+  readonly errors: ReadonlyArray<WebV3ValidationError> | null | undefined;
 }
 
-${endpoints.length === 0 ? "export const validate_host_failure: WebV2Validator<HostFailure>;" : ""}
+${endpoints.length === 0 ? "export const validate_host_failure: WebV3Validator<HostFailure>;" : ""}
 ${declarations(endpoints)}
 `;
 
@@ -78,32 +78,32 @@ const endpointGroups = (groups) =>
 export const validationWrapper = (
   groups,
 ) => `/* Generated from ClaimCore.Contracts schemas. Do not edit. */
-import type { WebV2EndpointId } from "./web-v2.endpoint-catalog";
-import type { WebV2ResponseByEndpoint } from "./web-v2.types";
+import type { WebV3EndpointId } from "./web-v3.endpoint-catalog";
+import type { WebV3ResponseByEndpoint } from "./web-v3.types";
 
-type ResponseValidator<K extends WebV2EndpointId> =
-  (value: unknown) => value is WebV2ResponseByEndpoint[K];
+type ResponseValidator<K extends WebV3EndpointId> =
+  (value: unknown) => value is WebV3ResponseByEndpoint[K];
 type ValidatorModule = Readonly<Record<string, (value: unknown) => boolean>>;
 type ValidatorGroup = "discovery" | "core" | "recovery";
 
 const endpointValidators = {
 ${endpointValidators(Object.values(groups).flat())}
-} as const satisfies Readonly<Record<WebV2EndpointId, string>>;
+} as const satisfies Readonly<Record<WebV3EndpointId, string>>;
 
 const endpointGroups = {
 ${endpointGroups(groups)}
-} as const satisfies Readonly<Record<WebV2EndpointId, ValidatorGroup>>;
+} as const satisfies Readonly<Record<WebV3EndpointId, ValidatorGroup>>;
 
-const loadHost = (): Promise<ValidatorModule> => import("./web-v2.validators.host.mjs");
-const loadDiscovery = (): Promise<ValidatorModule> => import("./web-v2.validators.discovery.mjs");
-const loadCore = (): Promise<ValidatorModule> => import("./web-v2.validators.core.mjs");
-const loadRecovery = (): Promise<ValidatorModule> => import("./web-v2.validators.recovery.mjs");
+const loadHost = (): Promise<ValidatorModule> => import("./web-v3.validators.host.mjs");
+const loadDiscovery = (): Promise<ValidatorModule> => import("./web-v3.validators.discovery.mjs");
+const loadCore = (): Promise<ValidatorModule> => import("./web-v3.validators.core.mjs");
+const loadRecovery = (): Promise<ValidatorModule> => import("./web-v3.validators.recovery.mjs");
 
 const loaders = { discovery: loadDiscovery, core: loadCore, recovery: loadRecovery };
-const validatorsFor = (endpoint: WebV2EndpointId): Promise<ValidatorModule> =>
+const validatorsFor = (endpoint: WebV3EndpointId): Promise<ValidatorModule> =>
   loaders[endpointGroups[endpoint]]();
 
-const requiredValidator = async <K extends WebV2EndpointId>(
+const requiredValidator = async <K extends WebV3EndpointId>(
   endpoint: K,
 ): Promise<ResponseValidator<K>> =>
   (await validatorsFor(endpoint))[endpointValidators[endpoint]] as ResponseValidator<K>;
@@ -116,7 +116,7 @@ export const isHostFailure = async (
   return validator(value) && (value as { readonly status: number }).status === status;
 };
 
-export const isWebV2Response = async <K extends WebV2EndpointId>(
+export const isWebV3Response = async <K extends WebV3EndpointId>(
   endpoint: K,
   value: unknown,
 ): Promise<boolean> => (await requiredValidator(endpoint))(value);

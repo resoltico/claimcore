@@ -6,6 +6,7 @@ open System.Threading
 open System.Threading.Tasks
 open Npgsql
 open ClaimCore.Application
+open ClaimCore.Witness
 
 /// Verified on every checkout; this validates infrastructure admission, not authentication.
 module internal RuntimeDatabase =
@@ -90,9 +91,8 @@ module internal RuntimeDatabase =
     let openConnectionAsync (dataSource: NpgsqlDataSource) =
         openConnectionAsyncWithCancellation dataSource CancellationToken.None
 
-/// One configured data source is created by Runtime and borrowed by its private stores.  Test-only
-/// direct adapter construction may still own an isolated source, but product Runtime never creates
-/// a second pool for recovery bookkeeping.
+/// One configured data source is created by Runtime and borrowed by its actor-bound stores.
+/// Isolated tests may create their own source only for diagnostics or synthetic case work.
 module internal RuntimeDataSource =
     let create (connectionString: string) =
         let builder = NpgsqlConnectionStringBuilder(connectionString)
@@ -103,7 +103,7 @@ module internal RuntimeDataSource =
             || builder.NoResetOnClose
             || builder.LogParameters
             || builder.PersistSecurityInfo
-            || not (ConnectionTransport.requireAuthenticatedRemote builder)
+            || not (PostgresTransport.requireAuthenticatedRemote builder)
         then
             invalidArg
                 (nameof connectionString)

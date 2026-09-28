@@ -2,219 +2,186 @@ namespace ClaimCore.ContractGeneration
 
 open System
 open System.Buffers
-open System.Text
 open System.Text.Json
-open ClaimCore.Application
 open ClaimCore.Contracts
 
 [<NoEquality; NoComparison>]
-type private CliParsedCase =
+type private CliV4Case =
     {
         Identifier: string
         Endpoint: string option
         ExitCode: int
         Valid: bool
-        Value: string
+        Value: JsonElement
     }
 
 [<RequireQualifiedAccess>]
 module CliResponseCorpus =
-    let private parsed (response: CliWireResponse) =
-        use document = JsonDocument.Parse(ReadOnlyMemory<byte>(response.Bytes))
+    let private decoded (response: CliWireResponse) =
+        use document = JsonDocument.Parse(ReadOnlyMemory response.Bytes)
         document.RootElement.Clone()
 
-    let private valid (sample: CliEncodedSample) =
-        {
-            Identifier = "valid-" + sample.Identifier
-            Endpoint = sample.Endpoint
-            ExitCode = sample.Response.ExitCode
-            Valid = true
-            Value = Encoding.UTF8.GetString(sample.Response.Bytes)
-        }
+    let private webCases projection =
+        let _, bytes = WebParsedCorpus.artifact projection
+        use document = JsonDocument.Parse(ReadOnlyMemory bytes)
 
-    let private invalid identifier endpoint (value: JsonElement) =
-        {
-            Identifier = identifier
-            Endpoint = Some endpoint
-            ExitCode = 2
-            Valid = false
-            Value = value.GetRawText()
-        }
+        document.RootElement.GetProperty("cases").EnumerateArray()
+        |> Seq.map _.Clone()
+        |> Seq.toList
 
-    let private json text =
-        use document = JsonDocument.Parse(text: string)
-        document.RootElement.Clone()
-
-    let private withExtra (value: JsonElement) =
+    let private wrap (kind: string) (endpoint: string) (service: JsonElement) =
         let buffer = ArrayBufferWriter<byte>()
         use writer = new Utf8JsonWriter(buffer)
         writer.WriteStartObject()
-
-        value.EnumerateObject()
-        |> Seq.iter (fun property ->
-            writer.WritePropertyName(property.Name)
-            property.Value.WriteTo(writer))
-
-        writer.WriteBoolean("extra", true)
+        writer.WriteNumber("protocolVersion", 4)
+        writer.WriteString("kind", kind)
+        writer.WriteString("endpoint", endpoint)
+        writer.WritePropertyName("service")
+        service.WriteTo(writer)
         writer.WriteEndObject()
         writer.Flush()
         use document = JsonDocument.Parse(buffer.WrittenMemory)
         document.RootElement.Clone()
 
-    let private malformed (endpoint, representative) =
-        let prefix = "{\"protocolVersion\":3,\"kind\":\"result\",\"endpoint\":\"" + endpoint
+    let private sourceEndpoint (identifier: string) =
+        if not (identifier.StartsWith("cross-", StringComparison.Ordinal)) then
+            None
+        else
+            identifier.Substring(6).Split("-as-", 2) |> Array.tryHead
 
-        [
-            invalid ("missing-outcome-" + endpoint) endpoint (json (prefix + "\"}"))
-            invalid ("extra-property-" + endpoint) endpoint (withExtra representative)
-            invalid
-                ("wrong-outcome-type-" + endpoint)
-                endpoint
-                (json (prefix + "\",\"outcome\":42}"))
-            invalid
-                ("wrong-outcome-tag-" + endpoint)
-                endpoint
-                (json (prefix + "\",\"outcome\":{\"kind\":\"NOT_A_TAG\"}}"))
-        ]
+    let private fromWeb endpoints (item: JsonElement) =
+        let identifier =
+            item.GetProperty("id").GetString() |> Option.ofObj |> Option.defaultValue ""
 
-    let private representatives (endpoints: string list) (samples: CliEncodedSample list) =
+        let target = item.GetProperty("endpoint")
+        let valid = item.GetProperty("valid").GetBoolean()
+        let service = item.GetProperty("value")
+
+        if
+            target.ValueKind = JsonValueKind.Null
+            && identifier.EndsWith("-wrong-http-status", StringComparison.Ordinal)
+        then
+            None
+        elif target.ValueKind = JsonValueKind.Null then
+            Some
+                {
+                    Identifier = identifier
+                    Endpoint = Some "case.list"
+                    ExitCode = 3
+                    Valid = valid
+                    Value = wrap "serviceFailure" "case.list" service
+                }
+        else
+            let endpoint = target.GetString() |> Option.ofObj |> Option.defaultValue ""
+
+            if
+                not (Set.contains endpoint endpoints)
+                || (sourceEndpoint identifier
+                    |> Option.exists (fun source -> not (Set.contains source endpoints)))
+            then
+                None
+            else
+                let response =
+                    if valid then
+                        CliRemoteWireCodec.result endpoint service
+                    else
+                        { ExitCode = 2; Bytes = [||] }
+
+                Some
+                    {
+                        Identifier = identifier
+                        Endpoint = Some endpoint
+                        ExitCode = response.ExitCode
+                        Valid = valid
+                        Value =
+                            if valid then
+                                decoded response
+                            else
+                                wrap "result" endpoint service
+                    }
+
+    let private localCases endpoints =
         endpoints
+        |> Set.toList
         |> List.map (fun endpoint ->
-            let sample =
-                samples
-                |> List.tryFind (fun value -> value.Endpoint = Some endpoint)
-                |> Option.defaultWith (fun () ->
-                    invalidOp ("CLI response corpus lacks endpoint " + endpoint + "."))
+            let response =
+                CliRemoteWireCodec.localFailure endpoint CliRemoteProblem.Authentication
 
-            endpoint, parsed sample.Response)
-
-    let private patternBoundaries representatives =
-        let representative endpoint =
-            representatives
-            |> List.find (fun (identifier, _) -> identifier = endpoint)
-            |> snd
-
-        [
-            "revision", "case.get", "1"
-            "amount", "case.get", CliCorpusValues.fields.ClaimedAmount
-            "currency", "case.get", CliCorpusValues.fields.ClaimedCurrency
-            "digest", "command.prepare", CliCorpusValues.digest
-        ]
-        |> List.collect (fun (identifier, endpoint, expected) ->
-            CorpusJson.prefixedAndSuffixed identifier (representative endpoint) expected
-            |> List.map (fun (suffix, value) ->
-                invalid ("pattern-" + suffix + "-" + endpoint) endpoint value))
-
-    let private scalarBoundaries representatives =
-        let representative endpoint =
-            representatives
-            |> List.find (fun (identifier, _) -> identifier = endpoint)
-            |> snd
-
-        let alpha = Guid.Parse("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa")
-
-        let uuidSource =
-            CliWireCodec.prepare "command.prepare" (PrepareOutcome.CancelledBeforeAdmission alpha)
-            |> parsed
-
-        ScalarCorpus.all
-            (representative "case.get")
-            (representative "command.prepare")
-            uuidSource
-            alpha
-            SemanticContract.current.CanonicalCommandFormat
-        |> List.map (fun item -> invalid item.Identifier item.Endpoint item.Value)
-
-    let private crossEndpoint (representatives: (string * JsonElement) list) =
-        [
-            for target, _ in representatives do
-                for source, value in representatives do
-                    if target <> source then
-                        yield invalid ("cross-" + source + "-as-" + target) target value
-        ]
-
-    let private writeCase (writer: Utf8JsonWriter) (value: CliParsedCase) =
-        writer.WriteStartObject()
-        writer.WriteString("id", value.Identifier)
-
-        match value.Endpoint with
-        | Some endpoint -> writer.WriteString("endpoint", endpoint)
-        | None -> writer.WriteNull("endpoint")
-
-        writer.WriteNumber("exitCode", value.ExitCode)
-        writer.WriteBoolean("valid", value.Valid)
-        writer.WritePropertyName("value")
-        writer.WriteRawValue(value.Value, true)
-        writer.WriteEndObject()
-
-    let private productionSamples: CliEncodedSample list =
-        CliQueryCorpusSamples.all
-        @ CliPrepareCorpusSamples.all
-        @ CliMutationCorpusSamples.all
-        @ CliRecoveryCorpusSamples.all
-
-    let private outcomeDiagnostics =
-        OutcomeDiagnosticCorpus.cli
-        |> List.map (fun (id, endpoint, exitCode, valid, value) ->
             {
-                Identifier = id
+                Identifier = "local-valid-" + endpoint
                 Endpoint = Some endpoint
-                ExitCode = exitCode
-                Valid = valid
-                Value = value.GetRawText()
+                ExitCode = response.ExitCode
+                Valid = true
+                Value = decoded response
             })
 
-    let private protocolFailure =
-        CliWireCodec.protocolFailure
-            2
-            (ProtocolFailure.create
-                ProtocolProblem.ExpectedObject
-                (ProtocolLocation.fromPath "/input"))
+    let private serviceFailureCases endpoints =
+        let host = WebWireCodec.hostFailure WebHostFailure.SessionRejected
+        use document = JsonDocument.Parse(ReadOnlyMemory host)
 
-    let private protocolCase =
-        {
-            Identifier = "valid-protocol-failure"
-            Endpoint = None
-            ExitCode = protocolFailure.ExitCode
-            Valid = true
-            Value = Encoding.UTF8.GetString(protocolFailure.Bytes)
-        }
+        endpoints
+        |> Set.toList
+        |> List.map (fun endpoint ->
+            let response = CliRemoteWireCodec.hostFailure endpoint document.RootElement
+
+            {
+                Identifier = "valid-service-failure-" + endpoint
+                Endpoint = Some endpoint
+                ExitCode = response.ExitCode
+                Valid = true
+                Value = decoded response
+            })
+
+    let private specialCases () =
+        let exported =
+            CliRemoteWireCodec.exported
+                "recovery.export"
+                (Guid.Parse("10000000-0000-4000-8000-000000000001"))
+                "application/vnd.claimcore.recovery+json"
+
+        let protocol =
+            ProtocolFailure.create ProtocolProblem.ExpectedObject ProtocolLocation.root
+            |> CliRemoteWireCodec.protocolFailure 2
+
+        [
+            {
+                Identifier = "valid-exported"
+                Endpoint = Some "recovery.export"
+                ExitCode = exported.ExitCode
+                Valid = true
+                Value = decoded exported
+            }
+            {
+                Identifier = "valid-protocol-failure"
+                Endpoint = None
+                ExitCode = protocol.ExitCode
+                Valid = true
+                Value = decoded protocol
+            }
+        ]
+
+    let private writeCase (writer: Utf8JsonWriter) item =
+        writer.WriteStartObject()
+        writer.WriteString("id", item.Identifier)
+
+        match item.Endpoint with
+        | Some value -> writer.WriteString("endpoint", value)
+        | None -> writer.WriteNull("endpoint")
+
+        writer.WriteNumber("exitCode", item.ExitCode)
+        writer.WriteBoolean("valid", item.Valid)
+        writer.WritePropertyName("value")
+        item.Value.WriteTo(writer)
+        writer.WriteEndObject()
 
     let artifact (projection: ContractModel) =
-        let endpoints = projection.CliEndpoints |> List.map _.Identifier
-        let representatives = representatives endpoints productionSamples
+        let endpoints = projection.CliEndpoints |> List.map _.Identifier |> Set.ofList
 
         let cases =
-            protocolCase
-            :: ((productionSamples |> List.map valid)
-                @ (representatives |> List.collect malformed)
-                @ patternBoundaries representatives
-                @ scalarBoundaries representatives
-                @ crossEndpoint representatives
-                @ outcomeDiagnostics
-                @ (TransportDiagnosticCorpus.cli
-                   |> List.map (fun (id, valid, value) ->
-                       {
-                           Identifier = id
-                           Endpoint = None
-                           ExitCode = 2
-                           Valid = valid
-                           Value = value.GetRawText()
-                       }))
-                @ (DiagnosticCorpus.cli
-                   |> List.map (fun (id, valid, value) ->
-                       {
-                           Identifier = id
-                           Endpoint = Some "case.get"
-                           ExitCode = 2
-                           Valid = valid
-                           Value = value.GetRawText()
-                       })))
-
-        let identifiers = cases |> List.map _.Identifier
-
-        if identifiers.Length <> (identifiers |> Set.ofList |> Set.count) then
-            invalidOp "CLI parsed response corpus identifiers must be unique."
+            webCases projection
+            |> List.choose (fromWeb endpoints)
+            |> fun value ->
+                value @ localCases endpoints @ serviceFailureCases endpoints @ specialCases ()
 
         let buffer = ArrayBufferWriter<byte>()
         use writer = new Utf8JsonWriter(buffer)
@@ -226,5 +193,5 @@ module CliResponseCorpus =
         writer.WriteEndObject()
         writer.Flush()
 
-        "cli-v3.parsed-value-corpus.json",
+        "cli-v4.parsed-value-corpus.json",
         Array.append (buffer.WrittenSpan.ToArray()) [| byte '\n' |]

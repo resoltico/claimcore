@@ -16,7 +16,7 @@ env:
 
 jobs:
   acceptance:
-    name: Published CLI and PostgreSQL acceptance
+    name: Published authenticated CLI acceptance
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
@@ -34,13 +34,17 @@ jobs:
           dotnet restore ClaimCore.slnx --locked-mode
           dotnet build tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj --configuration Release --no-restore
           dotnet build eng/ClaimCore.Docs/ClaimCore.Docs.fsproj --configuration Release --no-restore
+      - name: Install locked browser qualification dependencies
+        run: |
+          npm --prefix web ci
+          npm --prefix web exec -- playwright install --with-deps chromium
       - name: Run all published-boundary acceptance tests
         shell: pwsh
         env:
           CLAIMCORE_ACCEPTANCE_CLI_DIR: ${{ github.workspace }}/artifacts/publish-input/cli
-          CLAIMCORE_ACCEPTANCE_DATABASE_DIR: ${{ github.workspace }}/artifacts/publish-input/database
+          CLAIMCORE_PUBLISHED_CLI_DIR: ${{ github.workspace }}/artifacts/publish-input/cli
           CLAIMCORE_ACCEPTANCE_CLI_MANIFEST: ${{ github.workspace }}/artifacts/publish-input/manifests/publish-cli.json
-          CLAIMCORE_ACCEPTANCE_DATABASE_MANIFEST: ${{ github.workspace }}/artifacts/publish-input/manifests/publish-database.json
+          CLAIMCORE_ACCEPTANCE_RESULTS_DIR: ${{ github.workspace }}/artifacts/test-results/acceptance-linux
         run: |
           Set-StrictMode -Version Latest
           $docs = Join-Path $PWD "artifacts/bin/ClaimCore.Docs/release/ClaimCore.Docs.dll"
@@ -50,18 +54,14 @@ jobs:
           & dotnet $docs verify-publish-manifest publish-database `
             artifacts/publish-input/database artifacts/publish-input/manifests/publish-database.json
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & dotnet $docs verify-publish-manifest publish-web `
+            artifacts/publish-input/web artifacts/publish-input/manifests/publish-web.json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $results = Join-Path $PWD "artifacts/test-results/acceptance-linux"
           if (Test-Path -LiteralPath $results) { throw "The test result directory must start absent." }
           $started = (Get-Date).ToUniversalTime().ToString("O")
-          $arguments = @(
-            "test", "--project", "tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj",
-            "--configuration", "Release", "--no-build", "--no-restore",
-            "--max-parallel-test-modules", "1", "--results-directory=$results",
-            "--minimum-expected-tests=9", "--zero-tests-policy=strict", "--timeout=30m",
-            "--", "--settings=$PWD/eng/expecto.runsettings", "--report-trx",
-            "--report-trx-filename=ClaimCore.AcceptanceTests.trx"
-          )
-          & dotnet @arguments
+          & bash eng/Run-PublishedWebE2E.sh `
+            artifacts/publish-input/web artifacts/publish-input/database chromium
           $testExit = $LASTEXITCODE
           $finished = (Get-Date).ToUniversalTime().ToString("O")
           if (!(Test-Path -LiteralPath $results)) { New-Item -ItemType Directory -Path $results | Out-Null }

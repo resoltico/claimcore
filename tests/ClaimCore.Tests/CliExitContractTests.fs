@@ -9,13 +9,18 @@ open ClaimCore.Contracts
 open ClaimCore.Domain
 open ClaimCore.Tests.Fixtures
 
+let private remote endpoint (bytes: byte array) =
+    use document = JsonDocument.Parse(ReadOnlyMemory bytes)
+    CliRemoteWireCodec.result endpoint document.RootElement
+
 let private wireFixtures () =
     let clock = businessTime today
     let claims = new CoreStore.Store()
     let recovery = new CoreRecoveryStore.Store()
     recovery.AttachClaimStore(claims :> IClaimStore)
 
-    let core = CoreApi.create (claims :> IClaimStore) (recovery :> IRecoveryStore) clock
+    let core =
+        ActorCoreFixture.create (claims :> IClaimStore) (recovery :> IRecoveryStore) clock
 
     let draft: CommandDraft =
         {
@@ -73,19 +78,40 @@ let private lookupAbsence =
                 }
 
         Expect.equal
-            (CliWireCodec.recoveryInspect "recovery.inspect" inspection).ExitCode
+            (WebWireCodec.recoveryInspect inspection |> remote "recovery.inspect").ExitCode
             2
             "Unobserved retained material is an explicit not-found result"
 
         Expect.equal
-            (CliWireCodec.recoveryExport "recovery.export" operationId export).ExitCode
+            (WebWireCodec.recoveryExport export |> remote "recovery.export").ExitCode
             2
             "Absent export identity has the same not-found exit"
 
         Expect.equal
-            (CliWireCodec.recoveryList "recovery.list" page).ExitCode
+            (WebWireCodec.recoveryList page |> remote "recovery.list").ExitCode
             0
-            "An empty successful recovery page is not absence")
+            "An empty successful recovery page is not absence"
+
+        Expect.equal
+            (WebWireCodec.get (QueryOutcome.Succeeded(Lookup.NotFound "MISSING"))
+             |> remote "case.get")
+                .ExitCode
+            2
+            "A case lookup miss is not an empty success"
+
+        Expect.equal
+            (WebWireCodec.history (QueryOutcome.Succeeded(Lookup.NotFound "MISSING"))
+             |> remote "case.history")
+                .ExitCode
+            2
+            "A history lookup miss is an explicit refusal"
+
+        Expect.equal
+            (WebWireCodec.observe (QueryOutcome.Succeeded(Lookup.NotFound operationId))
+             |> remote "operation.observe")
+                .ExitCode
+            2
+            "An operation lookup miss cannot be misread as acceptance")
 
 let private prepareReplayWire =
     testCase
@@ -94,41 +120,55 @@ let private prepareReplayWire =
             let details, receipt = wireFixtures ()
 
             let accepted =
-                CliWireCodec.prepare "command.prepare" (PrepareOutcome.ObservedAccepted receipt)
+                WebWireCodec.prepare (PrepareOutcome.ObservedAccepted receipt)
+                |> remote "command.prepare"
 
             Expect.equal accepted.ExitCode 0 "Accepted observation is a definite success"
             use acceptedJson = JsonDocument.Parse(accepted.Bytes)
-            let acceptedValue = acceptedJson.RootElement.GetProperty("outcome")
-            Expect.equal (acceptedValue.GetProperty("kind").GetString()) "observedAccepted" "Kind"
+
+            let acceptedValue =
+                acceptedJson.RootElement.GetProperty("service").GetProperty("outcome")
+
+            Expect.equal (acceptedValue.GetProperty("tag").GetString()) "OBSERVED_ACCEPTED" "Tag"
 
             Expect.equal
-                (acceptedValue.GetProperty("receipt").GetProperty("operationId").GetString())
+                (acceptedValue
+                    .GetProperty("data")
+                    .GetProperty("receipt")
+                    .GetProperty("operationId")
+                    .GetString())
                 (receipt.OperationId.ToString("D"))
                 "Accepted receipt identity"
 
             let reason: Rejection = Rejection.Domain(DomainError.VersionConflict 1L)
 
             let retained =
-                CliWireCodec.prepare
-                    "command.prepare"
-                    (PrepareOutcome.RetainedForRecovery(details, reason))
+                WebWireCodec.prepare (PrepareOutcome.RetainedForRecovery(details, reason))
+                |> remote "command.prepare"
 
             Expect.equal retained.ExitCode 2 "Non-reviewable exact retention is a refusal"
             use retainedJson = JsonDocument.Parse(retained.Bytes)
-            let retainedValue = retainedJson.RootElement.GetProperty("outcome")
+
+            let retainedValue =
+                retainedJson.RootElement.GetProperty("service").GetProperty("outcome")
 
             Expect.equal
-                (retainedValue.GetProperty("kind").GetString())
-                "retainedForRecovery"
-                "Recovery kind"
+                (retainedValue.GetProperty("tag").GetString())
+                "RETAINED_FOR_RECOVERY"
+                "Recovery tag"
 
             Expect.equal
-                (retainedValue.GetProperty("rejection").GetProperty("code").GetString())
+                (retainedValue
+                    .GetProperty("data")
+                    .GetProperty("rejection")
+                    .GetProperty("code")
+                    .GetString())
                 "VERSION_CONFLICT"
                 "Typed reason"
 
             Expect.equal
                 (retainedValue
+                    .GetProperty("data")
                     .GetProperty("details")
                     .GetProperty("summary")
                     .GetProperty("operationId")
@@ -136,4 +176,5 @@ let private prepareReplayWire =
                 (receipt.OperationId.ToString("D"))
                 "Original preparation identity")
 
-let tests = testList "CLI-v3 exit contract" [ lookupAbsence; prepareReplayWire ]
+let tests =
+    testList "CLI-v4 service exit contract" [ lookupAbsence; prepareReplayWire ]
