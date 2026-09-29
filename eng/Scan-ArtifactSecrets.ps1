@@ -166,7 +166,20 @@ function Install-VerifiedGitleaks {
         [IO.File]::Copy([IO.Path]::GetFullPath($GitleaksArchivePath), $archive, $false)
     }
     else {
-        Invoke-WebRequest -Uri ($releaseBase + $Asset[0]) -OutFile $archive -MaximumRedirection 5 | Out-Null
+        for ($attempt = 1; $attempt -le 4; $attempt++) {
+            $partial = Join-Path $TemporaryRoot ("scanner-download-$attempt")
+            try {
+                Invoke-WebRequest -Uri ($releaseBase + $Asset[0]) -OutFile $partial `
+                    -MaximumRedirection 5 -TimeoutSec 45 -ErrorAction Stop | Out-Null
+                [IO.File]::Move($partial, $archive)
+                break
+            }
+            catch {
+                if ([IO.File]::Exists($partial)) { [IO.File]::Delete($partial) }
+                if ($attempt -eq 4) { throw "Pinned scanner archive is unavailable." }
+                Start-Sleep -Milliseconds (2000 * $attempt + [Random]::Shared.Next(0, 1000))
+            }
+        }
     }
     $actual = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash
     if (-not [string]::Equals($actual, $Asset[1], [StringComparison]::OrdinalIgnoreCase)) {
@@ -205,6 +218,7 @@ function Install-VerifiedGitleaks {
 
 $exitCode = 1
 $temporaryRoot = $null
+$failureStage = "INPUT"
 try {
     if ($null -eq $ArtifactPaths -or $ArtifactPaths.Count -eq 0) {
         throw "No artifact paths supplied."
@@ -227,7 +241,9 @@ try {
     }
     $emptyIgnore = Join-Path $temporaryRoot "empty.gitleaksignore"
     [IO.File]::WriteAllText($emptyIgnore, "", [Text.UTF8Encoding]::new($false))
+    $failureStage = "SCANNER_ACQUISITION"
     $binary = Install-VerifiedGitleaks -TemporaryRoot $temporaryRoot -Asset $assets[$key]
+    $failureStage = "SCANNER_EXECUTION"
     $exitCode = 0
     foreach ($target in $targets) {
         $result = Invoke-QuietProcess -FileName $binary -WorkingDirectory $temporaryRoot -Arguments @(
@@ -239,6 +255,7 @@ try {
             $exitCode = 1
         }
     }
+    $failureStage = "POST_SCAN_FINGERPRINT"
     for ($index = 0; $index -lt $targets.Count; $index++) {
         if ((Get-ArtifactFingerprint $targets[$index]) -ne $fingerprints[$index]) {
             $exitCode = 1
@@ -255,7 +272,7 @@ catch {
     # Do not emit exception details, target paths, tool logs, or matched bytes. The message still
     # distinguishes a scanner that could not run from a scan that completed and found something,
     # because a fail-closed gate that cannot tell an operator which one happened is not actionable.
-    [Console]::Error.WriteLine("Artifact secret scan could not complete; the scanner did not run.")
+    [Console]::Error.WriteLine("Artifact secret scan could not complete at $failureStage.")
     $exitCode = 1
 }
 finally {
