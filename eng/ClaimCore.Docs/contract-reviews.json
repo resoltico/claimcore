@@ -7,7 +7,7 @@
       "reviewer": "Agent reviewed the exact current heading and listed implementation and assertion sources; this is source review of local synthetic boundaries, not execution evidence, independent owner approval, or live real-data qualification.",
       "reviewedOn": "2026-09-27",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "7cffa4e46622fda56fa6590e0dfd196d35653a87a7ddc6da5b9ecb412d4a0157",
+      "reviewSubjectHash": "0cd17e3634c4faaf8035a23be6915dd596c90e642e25113ca1e80245298969ff",
       "wholeFiles": [
         "src/ClaimCore.Application/Core.fs",
         "src/ClaimCore.Application/Service.fs",
@@ -37,6 +37,7 @@
         "docs/diagnostics.md",
         "src/ClaimCore.Postgres/StoreTransactionPersistence.fs",
         "src/ClaimCore.Postgres/ActorMutationGuard.fs",
+        "src/ClaimCore.Postgres/ActorManagementStore.fs",
         "src/ClaimCore.Postgres/RecoveryDismissalStore.fs",
         "tests/ClaimCore.AcceptanceTests/RemoteProtocolBoundaryTests.fs"
       ],
@@ -162,7 +163,7 @@
       "reviewer": "Agent reviewed the exact current heading and listed implementation and assertion sources; this is source review of local synthetic boundaries, not execution evidence, independent owner approval, or live real-data qualification.",
       "reviewedOn": "2026-09-27",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "49b9598cc85bd85d38a232e16677d5d2c42c0ed11ecc60d08ea800057c46f317",
+      "reviewSubjectHash": "e7ba144677a280dc5d502b27dda8c0eb3308519a85f11da91a1ad23347e9c1ae",
       "wholeFiles": [
         "src/ClaimCore.Application/AuthorizationPolicy.fs",
         "src/ClaimCore.Application/AuthorizationTypes.fs",
@@ -183,6 +184,7 @@
         "tests/ClaimCore.Tests/CaseListCursorTests.fs",
         "tests/ClaimCore.IntegrationTests/ActorBoundCoreTests.fs",
         "tests/ClaimCore.IntegrationTests/ActorBoundRecoveryTests.fs",
+        "tests/ClaimCore.IntegrationTests/ActorManagementTests.fs",
         "tests/ClaimCore.IntegrationTests/CaseListAuthorityTests.fs",
         "tests/ClaimCore.IntegrationTests/CaseListCursorProtectionTests.fs",
         "tests/ClaimCore.IntegrationTests/CaseListBlockedTimingTests.fs",
@@ -615,7 +617,7 @@
       "reviewer": "Agent reviewed the exact current heading and listed implementation and assertion sources; this is source review of local synthetic boundaries, not execution evidence, independent owner approval, or live real-data qualification.",
       "reviewedOn": "2026-09-28",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "91268e59901cefc0e922ce2ea43a65d139b135e719695b976a5ddfe2cc6f2754",
+      "reviewSubjectHash": "72d7a5baf864d5c987e9527f8720c81a8afd71ea8f7e5e690b5e1c86be33559a",
       "wholeFiles": [
         "src/ClaimCore.Hosting/Runtime.fsi",
         "src/ClaimCore.Hosting/Runtime.fs",

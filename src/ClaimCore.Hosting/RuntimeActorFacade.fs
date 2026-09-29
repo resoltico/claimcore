@@ -47,7 +47,7 @@ module internal RuntimeActorFacade =
                     inner.SetEnabled(eventId, target, enabled, ct))
 
             member _.Observe(eventId, ct) =
-                admission.RunAuthorityRead(fun () -> inner.Observe(eventId, ct))
+                admission.RunAuthoritySetup(fun () -> inner.Observe(eventId, ct))
         }
 
     let private wrapLifecycle (admission: RuntimeAdmission) (inner: ICaseLifecycleWorkflow) =
