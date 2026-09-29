@@ -36,6 +36,16 @@ jobs:
         run: |
           dotnet restore ClaimCore.slnx --locked-mode
           dotnet build ClaimCore.slnx --configuration Release --no-restore
+      - name: Verify built test discovery before database qualification
+        shell: pwsh
+        run: |
+          foreach ($assembly in @(
+            'ClaimCore.IntegrationTests', 'ClaimCore.WitnessTests',
+            'ClaimCore.RecoveryQualificationTests', 'ClaimCore.ConcurrencyQualificationTests',
+            'ClaimCore.MigrationQualificationTests', 'ClaimCore.BackupQualificationTests'
+          )) {
+            & ./eng/Check-TestDiscovery.ps1 -Assembly $assembly
+          }
       - name: Resolve the exact built CLI
         shell: bash
         run: |

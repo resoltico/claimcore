@@ -103,7 +103,7 @@
       "reviewer": "Agent reviewed the exact current heading and listed implementation and assertion sources; this is source review of local synthetic boundaries, not execution evidence, independent owner approval, or live real-data qualification.",
       "reviewedOn": "2026-09-28",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "082d771ff26b33d73da784f508dbe1f3a5476bfec145289b0f017d09bfd6069d",
+      "reviewSubjectHash": "b9d76a639611d75ecb227526353be31805b874512683000e98363720c0ef0eb7",
       "wholeFiles": [
         "architecture.json",
         "tests/ClaimCore.ArchitectureTests/ManifestTests.fs",
@@ -115,6 +115,8 @@
         "tests/ClaimCore.ArchitectureTests/FixtureTests.fs",
         "eng/ClaimCore.Docs/ArchitectureInspectionReport.fs",
         ".github/workflows/verify-unit.yml",
+        "eng/Check-TestDiscovery.ps1",
+        "eng/Run-LocalDotnetVerification.ps1",
         "tests/ClaimCore.DocsTests/ConvergenceRegistrationTests.fs"
       ],
       "markedSpans": []
@@ -201,11 +203,13 @@
       "reviewer": "Agent reviewed the exact current heading and listed implementation and assertion sources; this is source review of local synthetic boundaries, not execution evidence, independent owner approval, or live real-data qualification.",
       "reviewedOn": "2026-09-28",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "12d493e85acd7c81d7a11567d31de37ff09e31cb80ecffc08038d815919f5269",
+      "reviewSubjectHash": "2d32fb29b15bb497761835e1a4a20aa527be66a692a8365382a8094095d9925a",
       "wholeFiles": [
         "db/baseline.sql",
         "db/witness-baseline.sql",
         ".github/workflows/verify-integration.yml",
+        "eng/Check-TestDiscovery.ps1",
+        "eng/Run-LocalDotnetVerification.ps1",
         "eng/Install-BackupQualificationTools.sh",
         "src/ClaimCore.Postgres/ManagedCopyVerifiedDeletion.fs",
         "src/ClaimCore.Postgres/ManagedCopyVerifiedRestore.fs",

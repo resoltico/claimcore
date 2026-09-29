@@ -173,6 +173,7 @@ jobs:
           COVERAGE_PREFIX: ${{ matrix.prefix }}
         run: |
           Set-StrictMode -Version Latest
+          & ./eng/Check-TestDiscovery.ps1 -Assembly $env:ASSEMBLY -Configuration $env:CONFIGURATION
           $results = Join-Path $PWD "artifacts/test-results/$env:STAGE_ID"
           if (Test-Path -LiteralPath $results) { throw "The test result directory must start absent." }
           $started = (Get-Date).ToUniversalTime().ToString("O")

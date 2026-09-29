@@ -60,6 +60,12 @@ dotnet restore ClaimCore.slnx --locked-mode
 if ($LASTEXITCODE -ne 0) { throw "Locked .NET restore failed." }
 dotnet build ClaimCore.slnx --configuration Release --no-restore
 if ($LASTEXITCODE -ne 0) { throw "Release build failed." }
+$discoveryCheck = Join-Path $PSScriptRoot "Check-TestDiscovery.ps1"
+foreach ($suite in $selected) {
+    if ($suite.Configuration -ne "Debug") {
+        & $discoveryCheck -Assembly $suite.Assembly -Configuration $suite.Configuration
+    }
+}
 [IO.Directory]::CreateDirectory($resolved) | Out-Null
 $docs = Join-Path $repository "artifacts/bin/ClaimCore.Docs/release/ClaimCore.Docs.dll"
 $sourceFingerprint = (& dotnet $docs source-fingerprint)
@@ -73,6 +79,7 @@ foreach ($suite in $selected) {
     if ($suite.Configuration -eq "Debug") {
         dotnet build $project --configuration Debug --no-restore -p:Optimize=false
         if ($LASTEXITCODE -ne 0) { throw "The Debug architecture build failed." }
+        & $discoveryCheck -Assembly $suite.Assembly -Configuration $suite.Configuration
     }
     $results = if ($suite.Coverage -ne "") {
         Join-Path $resolved "coverage-input/$($suite.Coverage)"
