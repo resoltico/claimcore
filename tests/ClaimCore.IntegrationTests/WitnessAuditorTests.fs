@@ -14,7 +14,7 @@ let internal auditorFor (writer: string) =
     builder.Database <- NpgsqlConnectionStringBuilder(writer).Database
     builder.ConnectionString
 
-let private checkConstrainedReadPool writer (witness: WitnessProtocol) raw =
+let private checkConstrainedReadPool (writer: string) (witness: WitnessProtocol) raw =
     let constrained = NpgsqlConnectionStringBuilder(writer)
     constrained.MaxPoolSize <- 1
     use limited = new Store(constrained.ConnectionString, witness.Identity, raw)

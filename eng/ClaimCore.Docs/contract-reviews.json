@@ -162,7 +162,7 @@
       "reviewer": "Agent reviewed the exact current heading and listed implementation and assertion sources; this is source review of local synthetic boundaries, not execution evidence, independent owner approval, or live real-data qualification.",
       "reviewedOn": "2026-09-27",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "dbf7ad5a19756bfed8a25b175b4e745e4aa30029b2f4eebb9e87ffb492aa319d",
+      "reviewSubjectHash": "49b9598cc85bd85d38a232e16677d5d2c42c0ed11ecc60d08ea800057c46f317",
       "wholeFiles": [
         "src/ClaimCore.Application/AuthorizationPolicy.fs",
         "src/ClaimCore.Application/AuthorizationTypes.fs",
@@ -403,7 +403,7 @@
       "reviewer": "Agent reviewed the exact current heading and listed implementation and assertion sources; this is source review of local synthetic boundaries, not execution evidence, independent owner approval, or live real-data qualification.",
       "reviewedOn": "2026-09-28",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "84aa75f3ae9f3ba51f6b70de3accf0e56b56abf52f894089d77d5c02efa58fb3",
+      "reviewSubjectHash": "bd6046ba3b3f6afe3a6fe57cb48e027709a6e3831917ab3d650181f5dfef9360",
       "wholeFiles": [
         "src/ClaimCore.HostSecurity/PrivateFileService.fs",
         "src/ClaimCore.HostSecurity/PosixPrivateFiles.fs",
@@ -615,7 +615,7 @@
       "reviewer": "Agent reviewed the exact current heading and listed implementation and assertion sources; this is source review of local synthetic boundaries, not execution evidence, independent owner approval, or live real-data qualification.",
       "reviewedOn": "2026-09-28",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "3c14385d25dfd664b3fb3ff52725ff118e51d51b8eb30d6767a2d64a0c37b337",
+      "reviewSubjectHash": "91268e59901cefc0e922ce2ea43a65d139b135e719695b976a5ddfe2cc6f2754",
       "wholeFiles": [
         "src/ClaimCore.Hosting/Runtime.fsi",
         "src/ClaimCore.Hosting/Runtime.fs",
@@ -863,7 +863,7 @@
       "reviewer": "Agent reviewed the exact current heading and listed implementation and assertion sources; this is source review of local synthetic boundaries, not execution evidence, independent owner approval, or live real-data qualification.",
       "reviewedOn": "2026-09-28",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "fea1895a19c9fd553868fe9393fc706716836383183de02e2022b2cf989ff1f5",
+      "reviewSubjectHash": "b75c60c0dbd8cf83595f411d58ef50b7341d5f32c258dfdfe42118d30452d9da",
       "wholeFiles": [
         "db/witness-baseline.sql",
         "src/ClaimCore.Witness/PostgresTransport.fs",
