@@ -125,4 +125,5 @@ module internal RuntimeDataSource =
     let createReadBarrier (connectionString: string) =
         let builder = NpgsqlConnectionStringBuilder(connectionString)
         builder.MaxPoolSize <- min builder.MaxPoolSize 32
+        builder.MinPoolSize <- 0
         create builder.ConnectionString

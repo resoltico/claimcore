@@ -9,7 +9,14 @@ open ClaimCore.Postgres
 /// witness and owner-private key custody.
 type internal RuntimeResources(primaryConnection: string, artifactKeyRingPath: string) =
     let dataSource = RuntimeDataSource.create primaryConnection
-    let readBarrierDataSource = RuntimeDataSource.createReadBarrier primaryConnection
+
+    let readBarrierDataSource =
+        try
+            RuntimeDataSource.createReadBarrier primaryConnection
+        with _ ->
+            dataSource.Dispose()
+            reraise ()
+
     let cursorKey = RandomNumberGenerator.GetBytes 32
     let cursorProtection = new CaseListCursorProtection(cursorKey)
     do CryptographicOperations.ZeroMemory cursorKey

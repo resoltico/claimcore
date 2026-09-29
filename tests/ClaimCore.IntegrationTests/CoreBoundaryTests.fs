@@ -108,6 +108,14 @@ let private dangerousConnectionSwitches () =
         (box accepted)
         "A hostname-verified remote transport passes configuration admission"
 
+    let oversizedMinimum = NpgsqlConnectionStringBuilder(appConnection ())
+    oversizedMinimum.MinPoolSize <- 48
+    oversizedMinimum.MaxPoolSize <- 64
+    use barrier = RuntimeDataSource.createReadBarrier oversizedMinimum.ConnectionString
+    let bounded = NpgsqlConnectionStringBuilder(barrier.ConnectionString)
+    Expect.equal bounded.MaxPoolSize 32 "The independent barrier pool is bounded."
+    Expect.equal bounded.MinPoolSize 0 "The auxiliary pool does not reserve idle connections."
+
 let private admissionTests =
     testList
         "connection admission"
