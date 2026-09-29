@@ -199,6 +199,7 @@ npm --prefix web audit signatures
 npm --prefix web run licenses:check
 npm --prefix web run sbom
 npm --prefix web run test:unit
+npm --prefix web run test:mutation
 npm --prefix web run build
 ```
 
@@ -207,6 +208,8 @@ project references and the Vitest suite uses isolated, machine-scaled file worke
 requires the resulting manifest to match source, npm lock, generated semantic/CLI-v4/Web-v3 contract,
 Node/npm versions, notices, and asset bytes. See [`web/README.md`](../web/README.md) for frontend
 structure and the current compiler-API compatibility arrangement.
+
+The locked StrykerJS/Vitest mutation gate targets the operation reducer only. It requires at least 92% killed mutants, refuses ignored or incomplete mutant results, and checks the exact source, tool version and target in an ignored local report. It does not exercise F# or PostgreSQL and cannot replace the full tests, catalog checks or restored-data audit.
 
 Contract generation is two deterministic stages: the F# generator writes canonical schemas, pure
 codec corpora, and split DTO modules; the locked Node stage compiles the aggregate Web response graph

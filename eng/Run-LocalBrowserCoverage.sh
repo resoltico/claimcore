@@ -65,6 +65,7 @@ if [[ "$(node --version 2>/dev/null || true)" != "v$expected_node" ||
 fi
 npm --prefix web ci
 npm --prefix web run test:unit
+npm --prefix web run test:mutation
 npm --prefix web run build
 npm --prefix web run sbom
 npm --prefix web exec -- playwright install chromium firefox webkit

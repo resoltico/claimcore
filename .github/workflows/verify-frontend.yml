@@ -70,6 +70,7 @@ jobs:
           run_stage dependency-licenses artifacts/stages/dependency-licenses npm --prefix web run licenses:check
           run_stage sbom artifacts/sbom npm --prefix web run sbom
           run_stage frontend-unit artifacts/frontend npm --prefix web run test:unit
+          run_stage frontend-mutation artifacts/stages/frontend-mutation npm --prefix web run test:mutation
           run_stage frontend-build artifacts/frontend-product bash -c 'npm --prefix web run build && mkdir -p artifacts/frontend-product/dist && cp -R web/dist/. artifacts/frontend-product/dist/'
           exit "$overall"
       - name: Scan artifacts before upload

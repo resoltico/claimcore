@@ -27,7 +27,7 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Internal
 
-- Expanded component, generated-contract, source-review and test-inventory enforcement for the new service and evidence boundaries; local synthetic qualifications and green checks are verification evidence, not independent-host or production certification. Updated the locked .NET, frontend and repository-tool dependency graph without changing the stated coverage floors.
+- Expanded component, generated-contract, source-review, test-inventory and targeted Web operation-reducer mutation enforcement for the new service and evidence boundaries; local synthetic qualifications and green checks are verification evidence, not independent-host or production certification. Updated the locked .NET, frontend and repository-tool dependency graph without changing the stated coverage floors.
 
 ## [0.5.0] - 2026-09-23
 

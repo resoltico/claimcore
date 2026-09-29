@@ -1,7 +1,7 @@
 # ClaimCore Web frontend
 
 This directory contains the React/TypeScript client served by `ClaimCore.Web`. It is a renderer for
-the generated HTTP-v2 contract; business validation, available commands, operation identity, and
+the generated Web-v3 contract; business validation, available commands, operation identity, and
 failure meaning remain in the F# Domain and Application projects.
 
 ## Source layout
@@ -23,7 +23,9 @@ The exact Node and npm versions are declared by [`.node-version`](../.node-versi
 The `tsc` command is the native TypeScript 7 compiler used for typechecking and builds. The separately
 aliased `@typescript/typescript6` package supplies the compiler API currently required by
 `typescript-eslint`; it does not compile ClaimCore. Composite project references retain incremental
-state in ignored files, and Vitest uses isolated, machine-scaled file workers.
+state in ignored files, and Vitest uses isolated, machine-scaled file workers. The locked StrykerJS
+gate mutates only `src/domain/operationReducer.ts` and checks a 92% minimum against exact-source
+local evidence; it is not F# or PostgreSQL mutation coverage.
 
 [`package.json`](package.json) defines the individual npm scripts. Their canonical ordered use,
 including formatting, typechecking, linting, dependency assurance, tests, and asset production, is in
@@ -32,7 +34,7 @@ including formatting, typechecking, linting, dependency assurance, tests, and as
 
 ## Generated contract and publish boundary
 
-The contract check first regenerates semantic, CLI-v3, and Web-v2 catalogs, exact endpoint response
+The contract check first regenerates semantic, CLI-v4, and Web-v3 catalogs, exact endpoint response
 schemas, pure-codec corpora, and split TypeScript DTO modules from F#. A deterministic Node
 postprocess compiles the aggregate Web response graph into typed AJV standalone core and recovery
 validator groups, formats generated TypeScript, and binds the complete inventory in one manifest. The
