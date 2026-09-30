@@ -1,8 +1,14 @@
 """Pinned independent old-writer fence observation; five new-host probes are insufficient."""
 
-from datetime import datetime, timedelta, timezone
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
+from backup_types import JsonObject
 from deployment_common import require, timestamp, verify
+
+MAX_SKEW_SECONDS = 30
+MAX_VALIDITY_SECONDS = 90
 
 FIELDS = {
     "format",
@@ -38,6 +44,20 @@ FIELDS = {
     "checkedAt",
     "validUntil",
 }
+PINNED = (
+    "machineHash",
+    "storageHash",
+    "adminActorId",
+    "hostKeyId",
+    "oldEndpointId",
+    "oldEndpointAddressSha256",
+    "oldPrimaryRoleOid",
+    "oldWitnessRoleOid",
+    "oldPrimaryCredentialSha256",
+    "oldWitnessCredentialSha256",
+    "primarySessionSetSha256",
+    "witnessSessionSetSha256",
+)
 CHECKS = (
     "routeClosed",
     "primarySessionsZero",
@@ -47,36 +67,27 @@ CHECKS = (
 )
 
 
-def verify_observer(
-    envelope, public_key, pinned, nonce, report_sha, fence_sha, tail, fence, *, now=None
-):
-    observed, digest = verify(envelope, public_key)
-    require(set(observed) == FIELDS, "old-writer-observation-shape")
-    require(
-        observed["format"] == "claimcore-old-writer-fence-observation-1"
-        and observed["role"] == "old-writer-fence"
-        and observed["nonce"] == nonce
-        and observed["containerized"] is False
-        and all(observed[name] is True for name in CHECKS),
-        "old-writer-not-fenced",
-    )
-    for name in (
-        "machineHash",
-        "storageHash",
-        "adminActorId",
-        "hostKeyId",
-        "oldEndpointId",
-        "oldEndpointAddressSha256",
-        "oldPrimaryRoleOid",
-        "oldWitnessRoleOid",
-        "oldPrimaryCredentialSha256",
-        "oldWitnessCredentialSha256",
-        "primarySessionSetSha256",
-        "witnessSessionSetSha256",
-    ):
-        require(observed[name] == pinned[name], "old-writer-observer-pin")
-        if name in fence:
-            require(observed[name] == fence[name], "old-writer-fence-identity")
+@dataclass(frozen=True)
+class ObserverExpectation:
+    """What an old-writer fence observation must bind to."""
+
+    pinned: JsonObject
+    nonce: str
+    report_sha: str
+    fence_sha: str
+    tail: JsonObject
+    fence: JsonObject
+
+
+def _check_pins(observed: JsonObject, expected: ObserverExpectation) -> None:
+    for name in PINNED:
+        require(observed[name] == expected.pinned[name], "old-writer-observer-pin")
+        if name in expected.fence:
+            require(observed[name] == expected.fence[name], "old-writer-fence-identity")
+
+
+def _check_links(observed: JsonObject, expected: ObserverExpectation) -> None:
+    tail = expected.tail
     require(
         observed["installationId"] == tail["installationId"]
         and observed["lineageId"] == tail["lineageId"]
@@ -85,15 +96,43 @@ def verify_observer(
         and observed["newGeneration"] == tail["newGeneration"]
         and observed["w1Sequence"] == tail["w1Sequence"]
         and observed["w1Hash"] == tail["w1Hash"]
-        and observed["reportSha256"] == report_sha
-        and observed["fenceReportSha256"] == fence_sha,
+        and observed["reportSha256"] == expected.report_sha
+        and observed["fenceReportSha256"] == expected.fence_sha,
         "old-writer-observation-link",
     )
+
+
+def _check_freshness(observed: JsonObject, now: datetime | None) -> None:
     checked, until = timestamp(observed["checkedAt"]), timestamp(observed["validUntil"])
-    now = now or datetime.now(timezone.utc)
-    require(abs((now - checked).total_seconds()) <= 30, "old-writer-observation-stale")
+    current = now or datetime.now(UTC)
     require(
-        checked < until <= checked + timedelta(seconds=90) and now < until,
+        abs((current - checked).total_seconds()) <= MAX_SKEW_SECONDS, "old-writer-observation-stale"
+    )
+    require(
+        checked < until <= checked + timedelta(seconds=MAX_VALIDITY_SECONDS) and current < until,
         "old-writer-observation-expired",
     )
+
+
+def verify_observer(
+    envelope: JsonObject,
+    public_key: str | Path,
+    expected: ObserverExpectation,
+    *,
+    now: datetime | None = None,
+) -> tuple[JsonObject, str]:
+    """Verify the observer's signed observation against the expected pins and links."""
+    observed, digest = verify(envelope, public_key)
+    require(set(observed) == FIELDS, "old-writer-observation-shape")
+    require(
+        observed["format"] == "claimcore-old-writer-fence-observation-1"
+        and observed["role"] == "old-writer-fence"
+        and observed["nonce"] == expected.nonce
+        and observed["containerized"] is False
+        and all(observed[name] is True for name in CHECKS),
+        "old-writer-not-fenced",
+    )
+    _check_pins(observed, expected)
+    _check_links(observed, expected)
+    _check_freshness(observed, now)
     return observed, digest

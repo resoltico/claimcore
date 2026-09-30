@@ -1,6 +1,7 @@
 """Synthetic negative controls for exact backup tool versions."""
 
 import os
+import sys
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
@@ -8,7 +9,7 @@ from unittest.mock import patch
 from tool_versions import POSTGRES_TOOLS, locate, matches
 
 
-def main():
+def main() -> None:
     for name in sorted(POSTGRES_TOOLS):
         expected = f"{name} (PostgreSQL) 18.6"
         assert matches(name, expected, expected)
@@ -34,7 +35,7 @@ def main():
             assert locate("psql") is None
         with patch.dict(os.environ, {"CLAIMCORE_PG_BIN": "relative/path"}):
             assert locate("pg_basebackup") is None
-    print("Backup tool version boundaries passed.")
+    sys.stdout.write("Backup tool version boundaries passed." + "\n")
 
 
 if __name__ == "__main__":

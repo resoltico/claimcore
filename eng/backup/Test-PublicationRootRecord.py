@@ -8,29 +8,29 @@ import sys
 import tempfile
 import unittest
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 sys.dont_write_bytecode = True
-from deployment_common import DeploymentRefusal, canonical, utc
+from backup_types import JsonObject
+from deployment_common import DeploymentRefusalError, canonical, utc
 from publication_root_record import parse_root_record
 
+RAW_KEY_BYTES = 32
 
-def run(arguments):
+
+def run(arguments: list[str]) -> bytes:
     result = subprocess.run(
         arguments, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=False
     )
-    assert result.returncode == 0
+    if result.returncode != 0:
+        msg = "openssl failed"
+        raise RuntimeError(msg)
     return result.stdout
 
 
-def fixture(root, now):
-    private, public_der, candidate_file, signature_file = (
-        root / "root.key",
-        root / "root.der",
-        root / "candidate.json",
-        root / "candidate.sig",
-    )
+def _make_key(root: Path) -> tuple[Path, bytes]:
+    private, public_der = root / "root.key", root / "root.der"
     run(["openssl", "genpkey", "-algorithm", "ED25519", "-out", str(private)])
     run(
         [
@@ -45,14 +45,11 @@ def fixture(root, now):
             str(public_der),
         ]
     )
-    key = public_der.read_bytes()[-32:]
-    identity = {
-        "installationId": str(uuid.uuid4()),
-        "lineageId": str(uuid.uuid4()),
-        "epoch": 1,
-    }
-    custodian = str(uuid.uuid4())
-    approvals = [
+    return private, public_der.read_bytes()[-RAW_KEY_BYTES:]
+
+
+def _approvals(now: datetime) -> list[JsonObject]:
+    return [
         {
             "approvalId": str(uuid.uuid4()),
             "actorId": str(uuid.uuid4()),
@@ -67,21 +64,10 @@ def fixture(root, now):
         }
         for number in (1, 2)
     ]
-    registered_event = str(uuid.uuid4())
-    candidate = {
-        "format": "claimcore-publication-root-registration-1",
-        **identity,
-        "rootId": str(uuid.uuid4()),
-        "publicKeySha256": hashlib.sha256(key).hexdigest(),
-        "custodianActorId": custodian,
-        "registeredEventId": registered_event,
-        "challengeNonce": "a" * 64,
-        "expectedAuthorityRevision": 2,
-        "approvalOneId": approvals[0]["approvalId"],
-        "approvalTwoId": approvals[1]["approvalId"],
-        "validUntil": utc(now + timedelta(minutes=2)),
-    }
-    candidate_bytes = canonical(candidate)
+
+
+def _sign_candidate(root: Path, private: Path, candidate_bytes: bytes) -> bytes:
+    candidate_file, signature_file = root / "candidate.json", root / "candidate.sig"
     candidate_file.write_bytes(candidate_bytes)
     run(
         [
@@ -97,6 +83,29 @@ def fixture(root, now):
             str(signature_file),
         ]
     )
+    return signature_file.read_bytes()
+
+
+def fixture(root: Path, now: datetime) -> tuple[JsonObject, str, JsonObject]:
+    private, key = _make_key(root)
+    identity = {"installationId": str(uuid.uuid4()), "lineageId": str(uuid.uuid4()), "epoch": 1}
+    custodian, registered_event = str(uuid.uuid4()), str(uuid.uuid4())
+    approvals = _approvals(now)
+    candidate = {
+        "format": "claimcore-publication-root-registration-1",
+        **identity,
+        "rootId": str(uuid.uuid4()),
+        "publicKeySha256": hashlib.sha256(key).hexdigest(),
+        "custodianActorId": custodian,
+        "registeredEventId": registered_event,
+        "challengeNonce": "a" * 64,
+        "expectedAuthorityRevision": 2,
+        "approvalOneId": approvals[0]["approvalId"],
+        "approvalTwoId": approvals[1]["approvalId"],
+        "validUntil": utc(now + timedelta(minutes=2)),
+    }
+    candidate_bytes = canonical(candidate)
+    signature = _sign_candidate(root, private, candidate_bytes)
     candidate_sha = hashlib.sha256(candidate_bytes).hexdigest()
     for approval in approvals:
         approval["candidateSha256"] = candidate_sha
@@ -110,13 +119,9 @@ def fixture(root, now):
         "publicKeyBase64": base64.b64encode(key).decode("ascii"),
         "publicKeySha256": candidate["publicKeySha256"],
         "custodianActorId": custodian,
-        "registrationCandidateBase64": base64.b64encode(candidate_bytes).decode(
-            "ascii"
-        ),
+        "registrationCandidateBase64": base64.b64encode(candidate_bytes).decode("ascii"),
         "registrationCandidateSha256": candidate_sha,
-        "proofOfPossessionSignatureBase64": base64.b64encode(
-            signature_file.read_bytes()
-        ).decode("ascii"),
+        "proofOfPossessionSignatureBase64": base64.b64encode(signature).decode("ascii"),
         "registeredEventId": registered_event,
         "registeredWitnessSequence": 3,
         "registeredWitnessEpoch": 1,
@@ -133,11 +138,11 @@ def fixture(root, now):
 
 
 class PublicationRootRecordTests(unittest.TestCase):
-    def test_exact_root_and_approval_refusals(self):
+    def test_exact_root_and_approval_refusals(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
             root = Path(raw).resolve()
             root.chmod(0o700)
-            now = datetime.now(timezone.utc).replace(microsecond=0)
+            now = datetime.now(UTC).replace(microsecond=0)
             record, nonce, identity = fixture(root, now)
             parsed, pem = parse_root_record(canonical(record), nonce, identity, now=now)
             self.assertEqual(parsed["rootId"], record["rootId"])
@@ -151,28 +156,24 @@ class PublicationRootRecordTests(unittest.TestCase):
                 ),
                 ({**record, "retiredSequence": 4}, "root-record-authority"),
             ):
-                with self.assertRaisesRegex(DeploymentRefusal, category):
+                with self.assertRaisesRegex(DeploymentRefusalError, category):
                     parse_root_record(canonical(changed), nonce, identity, now=now)
             reused = [dict(item) for item in record["approvals"]]
             reused[1]["actorId"] = reused[0]["actorId"]
-            with self.assertRaisesRegex(
-                DeploymentRefusal, "root-approval-independence"
-            ):
+            with self.assertRaisesRegex(DeploymentRefusalError, "root-approval-independence"):
                 parse_root_record(
                     canonical({**record, "approvals": reused}), nonce, identity, now=now
                 )
-            altered = bytearray(
-                base64.b64decode(record["proofOfPossessionSignatureBase64"])
-            )
+            altered = bytearray(base64.b64decode(record["proofOfPossessionSignatureBase64"]))
             altered[0] ^= 1
-            with self.assertRaisesRegex(DeploymentRefusal, "root-proof-of-possession"):
+            with self.assertRaisesRegex(DeploymentRefusalError, "root-proof-of-possession"):
                 parse_root_record(
                     canonical(
                         {
                             **record,
-                            "proofOfPossessionSignatureBase64": base64.b64encode(
-                                altered
-                            ).decode("ascii"),
+                            "proofOfPossessionSignatureBase64": base64.b64encode(altered).decode(
+                                "ascii"
+                            ),
                         }
                     ),
                     nonce,

@@ -1,0 +1,62 @@
+[project]
+name = "claimcore-backup-tooling"
+version = "0.0.0"
+description = "Python tooling for the ClaimCore backup and recovery drills; never distributed."
+requires-python = ">=3.12"
+dependencies = []
+
+[dependency-groups]
+dev = ["mypy==2.3.1", "ruff==0.16.9"]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["eng/backup"]
+namespace-packages = ["eng/lint"]
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+  "COM812",
+  "CPY001",
+  "D203",
+  "D213",
+  "E402",
+  "ISC001",
+  "S603",
+  "S607",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"eng/backup/Test-*.py" = [
+  "D101",
+  "D102",
+  "D103",
+  "D107",
+  "PLR2004",
+  "PT009",
+  "PT017",
+  "PT018",
+  "PT027",
+  "S101",
+]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 12
+
+[tool.ruff.lint.pylint]
+max-args = 8
+max-positional-args = 5
+max-statements = 50
+
+[tool.mypy]
+python_version = "3.12"
+platform = "linux"
+strict = true
+cache_dir = "/dev/null"
+files = ["eng/backup", "eng/lint/check_python_limits.py"]
+mypy_path = "eng/backup"
+explicit_package_bases = true

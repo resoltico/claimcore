@@ -3,10 +3,12 @@
 import os
 from pathlib import Path
 
-from deployment_common import DeploymentRefusal, private_path, require
+from backup_types import JsonObject
+from deployment_common import DeploymentRefusalError, private_path, require
 
 
-def write_aggregate(config, raw, signature):
+def write_aggregate(config: JsonObject, raw: bytes, signature: bytes) -> None:
+    """Write the aggregate and its signature, refusing to replace either file."""
     outputs = (config["aggregateOutputFile"], config["aggregateSignatureFile"])
     require(outputs[0] != outputs[1], "aggregate-output-path")
     for path, data in zip(outputs, (raw, signature), strict=True):
@@ -18,7 +20,8 @@ def write_aggregate(config, raw, signature):
                 target, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600
             )
         except OSError:
-            raise DeploymentRefusal("aggregate-output-exists") from None
+            msg = "aggregate-output-exists"
+            raise DeploymentRefusalError(msg) from None
         with os.fdopen(descriptor, "wb") as destination:
             destination.write(data)
             destination.flush()

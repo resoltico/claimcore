@@ -1,19 +1,18 @@
 #!/usr/bin/env python3
 """Synthetic malformed tar negative controls for managed backup extraction."""
 
-import importlib.util
 import io
+import sys
 import tarfile
 import tempfile
 from pathlib import Path
 
-path = Path(__file__).with_name("managed.py")
-spec = importlib.util.spec_from_file_location("managed_backup_under_test", path)
-managed = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(managed)
+sys.dont_write_bytecode = True
+from managed_common import BackupFailureError
+from managed_restore import safe_extract
 
 
-def refuses(name, size, entry_limit, byte_limit):
+def refuses(name: str, size: int, entry_limit: int, byte_limit: int) -> None:
     with tempfile.TemporaryDirectory(prefix="claimcore-malformed-tar-") as directory:
         root = Path(directory)
         source = root / "bad.tar"
@@ -25,13 +24,14 @@ def refuses(name, size, entry_limit, byte_limit):
         output = root / "extracted"
         output.mkdir()
         try:
-            managed.safe_extract(source, output, byte_limit, entry_limit)
-        except managed.BackupFailure:
+            safe_extract(source, output, byte_limit, entry_limit)
+        except BackupFailureError:
             return
-        raise AssertionError("Hostile tar was accepted")
+        msg = "Hostile tar was accepted"
+        raise AssertionError(msg)
 
 
 refuses("../escape", 1, 2, 1024)
 refuses("safe", 2, 2, 1)
 refuses("safe", 0, 1, 1024)
-print("Unsafe member, expansion limit and entry-count limit refused.")
+sys.stdout.write("Unsafe member, expansion limit and entry-count limit refused." + "\n")

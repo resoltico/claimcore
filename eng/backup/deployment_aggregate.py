@@ -2,156 +2,71 @@
 
 import base64
 import hashlib
-import json
-import re
-from datetime import datetime, timedelta, timezone
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
-from deployment_common import (
-    canonical,
-    private_path,
-    require,
-    sign,
-    utc,
-    verify,
-)
-from deployment_observer import verify_observer
+from backup_types import JsonObject
+from deployment_aggregate_model import AggregateContext, raw_entry
+from deployment_aggregate_verify import verify_aggregate
+from deployment_common import canonical, is_sha256, private_path, require, sign, utc, verify
+from deployment_observer import ObserverExpectation, verify_observer
 from deployment_topology import ROLES
 
-FIELDS = {
-    "format",
-    "source",
-    "scope",
-    "installationId",
-    "lineageId",
-    "epoch",
-    "writerGeneration",
-    "nonce",
-    "reportSha256",
-    "fenceReportSha256",
-    "supplementSha256",
-    "finalWalObjectSha256",
-    "w1Sequence",
-    "w1Hash",
-    "publicationManifestSha256",
-    "topologyManifestSha256",
-    "verifierBinarySha256",
-    "probeSetSha256",
-    "probes",
-    "oldWriterFenceObservation",
-    "checkedAt",
-    "validUntil",
-    "signingKeyId",
-    "signerHolderActorId",
-    "realDataReady",
-}
-PROBE_FIELDS = {
-    "role",
-    "canonicalBase64",
-    "signatureBase64",
-    "probeSha256",
-    "machineHash",
-    "storageHash",
-    "adminActorId",
-    "hostKeyId",
-    "checkedAt",
-    "validUntil",
-}
-OBSERVER_FIELDS = PROBE_FIELDS - {"probeSha256"} | {"observationSha256"}
+PROOF_SECONDS = 60
 
 
-def _digest(value):
-    return isinstance(value, str) and re.fullmatch(r"[0-9a-f]{64}", value) is not None
+@dataclass(frozen=True)
+class AggregateSubmission:
+    """The signed probe reports and observation an aggregate is built from."""
+
+    nonce: str
+    envelopes: dict[str, JsonObject]
+    observer_envelope: JsonObject
+    verifier_binary_sha: str
 
 
-def _raw_entry(role, envelope, hash_name):
-    body = canonical(envelope["report"])
-    signature = base64.b64decode(envelope["signatureBase64"], validate=True)
-    require(len(signature) == 64 and len(body) <= 16384, "aggregate-probe-size")
-    report = envelope["report"]
-    return {
-        "role": role,
-        "canonicalBase64": base64.b64encode(body).decode("ascii"),
-        "signatureBase64": envelope["signatureBase64"],
-        hash_name: hashlib.sha256(body).hexdigest(),
-        "machineHash": report["machineHash"],
-        "storageHash": report["storageHash"],
-        "adminActorId": report["adminActorId"],
-        "hostKeyId": report["hostKeyId"],
-        "checkedAt": report.get("checkedAt", report.get("issuedAt")),
-        "validUntil": report.get("validUntil", report.get("expiresAt")),
-    }
-
-
-def _decode_entry(entry, fields, hash_name):
-    require(isinstance(entry, dict) and set(entry) == fields, "aggregate-probe-shape")
-    raw = base64.b64decode(entry["canonicalBase64"], validate=True)
-    signed = base64.b64decode(entry["signatureBase64"], validate=True)
-    require(0 < len(raw) <= 16384 and len(signed) == 64, "aggregate-probe-size")
-    document = json.loads(raw)
-    require(
-        isinstance(document, dict) and raw == canonical(document),
-        "aggregate-probe-canonical",
-    )
-    require(
-        hashlib.sha256(raw).hexdigest() == entry[hash_name], "aggregate-probe-digest"
-    )
-    for name in ("machineHash", "storageHash", "adminActorId", "hostKeyId"):
-        require(document.get(name) == entry[name], "aggregate-probe-summary")
-    return {"report": document, "signatureBase64": entry["signatureBase64"]}
-
-
-def make_aggregate(
-    publication_sha,
-    topology_sha,
-    report_sha,
-    fenced,
-    nonce,
-    envelopes,
-    observer_envelope,
-    topology,
-    role_keys,
-    observer_key,
-    signing_key,
-    signing_public_key,
-    verifier_binary_sha,
-    *,
-    scope="synthetic-only",
-    now=None,
-):
-    """Construct signed evidence only after raw role signatures are independently checked."""
-    require(scope in ("full", "synthetic-only") and _digest(nonce), "aggregate-scope")
-    public = private_path(signing_public_key)
-    require(
-        hashlib.sha256(public.read_bytes()).hexdigest()
-        == topology["deploymentVerifierPublicKeySha256"],
-        "aggregate-signer-pin",
-    )
-    tail = fenced["tail"]
-    require(set(envelopes) == set(ROLES), "aggregate-roles")
+def _role_entries(context: AggregateContext, submission: AggregateSubmission) -> list[JsonObject]:
+    require(set(submission.envelopes) == set(ROLES), "aggregate-roles")
     entries = []
     for role in ROLES:
-        report, _ = verify(envelopes[role], role_keys[role])
+        report, _ = verify(submission.envelopes[role], context.role_keys[role])
         require(
             report["role"] == role
-            and report["nonce"] == nonce
-            and report["qualificationSha256"] == fenced["tailSha256"],
+            and report["nonce"] == submission.nonce
+            and report["qualificationSha256"] == context.fenced["tailSha256"],
             "aggregate-probe-link",
         )
-        entries.append(_raw_entry(role, envelopes[role], "probeSha256"))
+        entries.append(raw_entry(role, submission.envelopes[role], "probeSha256"))
+    return entries
+
+
+def _observer_entry(context: AggregateContext, submission: AggregateSubmission) -> JsonObject:
     observed, _ = verify_observer(
-        observer_envelope,
-        observer_key,
-        topology["fenceObserverPin"],
-        nonce,
-        report_sha,
-        fenced["fenceSha256"],
-        tail,
-        fenced["fence"],
+        submission.observer_envelope,
+        context.observer_key,
+        ObserverExpectation(
+            context.topology["fenceObserverPin"],
+            submission.nonce,
+            context.report_sha,
+            context.fenced["fenceSha256"],
+            context.fenced["tail"],
+            context.fenced["fence"],
+        ),
     )
     require(observed["role"] == "old-writer-fence", "aggregate-observer")
-    old_entry = _raw_entry("old-writer-fence", observer_envelope, "observationSha256")
-    checked = now or datetime.now(timezone.utc)
-    proof = {
+    return raw_entry("old-writer-fence", submission.observer_envelope, "observationSha256")
+
+
+def _proof(
+    context: AggregateContext,
+    submission: AggregateSubmission,
+    entries: list[JsonObject],
+    scope: str,
+    checked: datetime,
+) -> JsonObject:
+    tail, fenced, topology = context.fenced["tail"], context.fenced, context.topology
+    return {
         "format": "claimcore-independent-host-proof-1",
         "source": "ClaimCore.DeploymentVerifier",
         "scope": scope,
@@ -159,41 +74,48 @@ def make_aggregate(
         "lineageId": tail["lineageId"],
         "epoch": tail["epoch"],
         "writerGeneration": tail["newGeneration"],
-        "nonce": nonce,
-        "reportSha256": report_sha,
+        "nonce": submission.nonce,
+        "reportSha256": context.report_sha,
         "fenceReportSha256": fenced["fenceSha256"],
         "supplementSha256": fenced["tailSha256"],
         "finalWalObjectSha256": fenced["finalWalObjectSha256"],
         "w1Sequence": tail["w1Sequence"],
         "w1Hash": tail["w1Hash"],
-        "publicationManifestSha256": publication_sha,
-        "topologyManifestSha256": topology_sha,
-        "verifierBinarySha256": verifier_binary_sha,
+        "publicationManifestSha256": context.publication_sha,
+        "topologyManifestSha256": context.topology_sha,
+        "verifierBinarySha256": submission.verifier_binary_sha,
         "probeSetSha256": hashlib.sha256(canonical(entries)).hexdigest(),
         "probes": entries,
-        "oldWriterFenceObservation": old_entry,
+        "oldWriterFenceObservation": _observer_entry(context, submission),
         "checkedAt": utc(checked),
-        "validUntil": utc(checked + timedelta(seconds=60)),
+        "validUntil": utc(checked + timedelta(seconds=PROOF_SECONDS)),
         "signingKeyId": topology["deploymentVerifierSigningKeyId"],
         "signerHolderActorId": topology["deploymentVerifierHolderActorId"],
         "realDataReady": False,
     }
+
+
+def make_aggregate(
+    context: AggregateContext,
+    submission: AggregateSubmission,
+    signing_key: str | Path,
+    signing_public_key: str | Path,
+    *,
+    scope: str = "synthetic-only",
+    now: datetime | None = None,
+) -> tuple[bytes, bytes]:
+    """Construct signed evidence only after raw role signatures are independently checked."""
+    require(scope in ("full", "synthetic-only") and is_sha256(submission.nonce), "aggregate-scope")
+    public = private_path(signing_public_key)
+    require(
+        hashlib.sha256(public.read_bytes()).hexdigest()
+        == context.topology["deploymentVerifierPublicKeySha256"],
+        "aggregate-signer-pin",
+    )
+    entries = _role_entries(context, submission)
+    checked = now or datetime.now(UTC)
+    proof = _proof(context, submission, entries, scope, checked)
     envelope = sign(proof, signing_key)
     raw, signature = canonical(proof), base64.b64decode(envelope["signatureBase64"])
-    from deployment_aggregate_verify import verify_aggregate
-
-    verify_aggregate(
-        raw,
-        signature,
-        public,
-        topology,
-        topology_sha,
-        publication_sha,
-        report_sha,
-        fenced,
-        role_keys,
-        observer_key,
-        now=checked,
-        required_scope=scope,
-    )
+    verify_aggregate(raw, signature, public, context, now=checked, required_scope=scope)
     return raw, signature

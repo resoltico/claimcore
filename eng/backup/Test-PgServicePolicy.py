@@ -2,28 +2,31 @@
 
 import hashlib
 import os
+import sys
 import tempfile
 from pathlib import Path
 
-from deployment_common import DeploymentRefusal
-from managed import pg_env
+from backup_types import JsonObject
+from deployment_common import DeploymentRefusalError
+from managed_common import pg_env
 from pg_service_policy import validate
 
 
-def profile(host, database=None, tls=""):
+def profile(host: str, database: str | None = None, tls: str = "") -> str:
     values = f"host={host}\nport=5432\nuser=backup_role\npassword=test-only\n"
     if database is not None:
         values += f"dbname={database}\n"
     return values + tls
 
 
-def expect_refusal(config, reason):
+def expect_refusal(config: JsonObject, reason: str) -> None:
     try:
         validate(config)
-    except DeploymentRefusal as failure:
+    except DeploymentRefusalError as failure:
         assert str(failure) == reason, (str(failure), reason)
     else:
-        raise AssertionError(f"expected {reason}")
+        msg = f"expected {reason}"
+        raise AssertionError(msg)
 
 
 with tempfile.TemporaryDirectory(
@@ -111,7 +114,7 @@ with tempfile.TemporaryDirectory(
                 **remote,
                 "pgTlsRootSha256": {
                     "primary": "0" * 64,
-                    "witness": remote["pgTlsRootSha256"]["witness"],
+                    "witness": hashlib.sha256(ca.read_bytes()).hexdigest(),
                 },
             },
             "pgservice-ca-pin",
@@ -128,4 +131,4 @@ with tempfile.TemporaryDirectory(
         else:
             os.environ["PGSERVICEFILE"] = previous
 
-print("pg-service-policy=passed")
+sys.stdout.write("pg-service-policy=passed" + "\n")

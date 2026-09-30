@@ -10,23 +10,40 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-from deployment_common import canonical, private_path, require
+from backup_types import JsonObject
+from checkpoint_signer_remote import request_remote
+from deployment_common import SIGNATURE_BYTES, canonical, private_path, refuse, require
+
+RESPONSE_LIMIT = 32768
+REQUEST_LIMIT = 32768
+CANDIDATE_LIMIT = 16384
+RECEIVE_BLOCK = 4096
+SOCKET_TIMEOUT_SECONDS = 10
+NONCE_BYTES = 32
+RESPONSE_FIELDS = {
+    "format",
+    "status",
+    "nonce",
+    "candidateSha256",
+    "checkpointSigningKeyId",
+    "signatureBase64",
+}
 
 
-def _response(connection):
+def _response(connection: socket.socket) -> JsonObject:
     value = bytearray()
-    while len(value) < 32768:
-        block = connection.recv(min(4096, 32768 - len(value)))
+    while len(value) < RESPONSE_LIMIT:
+        block = connection.recv(min(RECEIVE_BLOCK, RESPONSE_LIMIT - len(value)))
         require(block, "checkpoint-signer-unavailable")
         value.extend(block)
         if value.endswith(b"\n"):
-            document = json.loads(value)
+            document: JsonObject = json.loads(value)
             require(bytes(value) == canonical(document), "checkpoint-signer-response")
             return document
-    require(False, "checkpoint-signer-response-limit")
+    return refuse("checkpoint-signer-response-limit")
 
 
-def _verify_signature(public_key, candidate, signed):
+def _verify_signature(public_key: str | Path, candidate: bytes, signed: bytes) -> None:
     with tempfile.TemporaryDirectory(prefix="claimcore-checkpoint-verify-") as raw:
         root = Path(raw).resolve()
         root.chmod(0o700)
@@ -56,82 +73,77 @@ def _verify_signature(public_key, candidate, signed):
         require(result.returncode == 0, "checkpoint-signer-signature")
 
 
-def _local_response(sock, payload):
+def _local_response(sock: Path, payload: bytes) -> JsonObject:
     try:
         info = sock.lstat()
     except OSError:
-        require(False, "checkpoint-signer-unavailable")
+        refuse("checkpoint-signer-unavailable")
     require(
-        stat.S_ISSOCK(info.st_mode)
-        and info.st_uid == os.geteuid()
-        and info.st_mode & 0o077 == 0,
+        stat.S_ISSOCK(info.st_mode) and info.st_uid == os.geteuid() and info.st_mode & 0o077 == 0,
         "checkpoint-signer-socket",
     )
     try:
         with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as connection:
-            connection.settimeout(10)
+            connection.settimeout(SOCKET_TIMEOUT_SECONDS)
             connection.connect(str(sock))
             connection.sendall(payload)
             return _response(connection)
     except (OSError, TimeoutError):
-        require(False, "checkpoint-signer-unavailable")
+        refuse("checkpoint-signer-unavailable")
 
 
-def sign_checkpoint(config, source, target):
-    source = private_path(source)
-    raw = source.read_bytes()
-    require(0 < len(raw) <= 16384, "checkpoint-candidate-size")
-    document = json.loads(raw)
-    require(
-        isinstance(document, dict) and raw == canonical(document),
-        "checkpoint-candidate-canonical",
-    )
-    nonce = os.urandom(32).hex()
-    request = {
-        "format": "claimcore-checkpoint-sign-request-1",
-        "nonce": nonce,
-        "checkpointSigningKeyId": config["checkpointSigningKeyId"],
-        "candidateSha256": hashlib.sha256(raw).hexdigest(),
-        "candidateBase64": base64.b64encode(raw).decode("ascii"),
-    }
-    payload = canonical(request)
-    require(len(payload) <= 32768, "checkpoint-sign-request-limit")
-    if config["checkpointSignerMode"] == "LOCAL_SYNTHETIC":
-        response = _local_response(config["checkpointSignerSocket"], payload)
-    else:
-        from checkpoint_signer_remote import request_remote
-
-        response = request_remote(config, payload, document)
+def _check_response(response: JsonObject, config: JsonObject, request: JsonObject) -> bytes:
     require(
         isinstance(response, dict)
-        and set(response)
-        == {
-            "format",
-            "status",
-            "nonce",
-            "candidateSha256",
-            "checkpointSigningKeyId",
-            "signatureBase64",
-        }
+        and set(response) == RESPONSE_FIELDS
         and response["format"] == "claimcore-checkpoint-sign-response-1"
         and response["status"] == "SIGNED"
-        and response["nonce"] == nonce
+        and response["nonce"] == request["nonce"]
         and response["candidateSha256"] == request["candidateSha256"]
         and response["checkpointSigningKeyId"] == config["checkpointSigningKeyId"],
         "checkpoint-signer-response",
     )
     signature = base64.b64decode(response["signatureBase64"], validate=True)
-    require(len(signature) == 64, "checkpoint-signer-signature")
-    _verify_signature(config["checkpointVerificationKey"], raw, signature)
-    target = Path(target)
+    require(len(signature) == SIGNATURE_BYTES, "checkpoint-signer-signature")
+    return signature
+
+
+def _write_signature(source: Path, target: str | Path, signature: bytes) -> None:
+    destination = Path(target)
     require(
-        target.parent == source.parent and not target.exists(),
+        destination.parent == source.parent and not destination.exists(),
         "checkpoint-signature-target",
     )
-    descriptor = os.open(
-        target, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600
-    )
+    descriptor = os.open(destination, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
     with os.fdopen(descriptor, "wb") as output:
         output.write(signature)
         output.flush()
         os.fsync(output.fileno())
+
+
+def sign_checkpoint(config: JsonObject, source: str | Path, target: str | Path) -> None:
+    """Have the isolated signer sign the exact candidate and store the verified signature."""
+    origin = private_path(source)
+    raw = origin.read_bytes()
+    require(0 < len(raw) <= CANDIDATE_LIMIT, "checkpoint-candidate-size")
+    document = json.loads(raw)
+    require(
+        isinstance(document, dict) and raw == canonical(document),
+        "checkpoint-candidate-canonical",
+    )
+    request = {
+        "format": "claimcore-checkpoint-sign-request-1",
+        "nonce": os.urandom(NONCE_BYTES).hex(),
+        "checkpointSigningKeyId": config["checkpointSigningKeyId"],
+        "candidateSha256": hashlib.sha256(raw).hexdigest(),
+        "candidateBase64": base64.b64encode(raw).decode("ascii"),
+    }
+    payload = canonical(request)
+    require(len(payload) <= REQUEST_LIMIT, "checkpoint-sign-request-limit")
+    if config["checkpointSignerMode"] == "LOCAL_SYNTHETIC":
+        response = _local_response(config["checkpointSignerSocket"], payload)
+    else:
+        response = request_remote(config, payload, document)
+    signature = _check_response(response, config, request)
+    _verify_signature(config["checkpointVerificationKey"], raw, signature)
+    _write_signature(origin, target, signature)
