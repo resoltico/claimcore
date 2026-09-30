@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["eslint", "typescript", "react", "jsx-a11y", "oxc"],
+  "plugins": ["eslint", "react", "jsx-a11y", "oxc"],
   "jsPlugins": [
     "./lint/claimcore-plugin.mjs",
     {
@@ -9,7 +9,11 @@
     }
   ],
   "categories": {
-    "correctness": "off"
+    "correctness": "error",
+    "suspicious": "error",
+    "pedantic": "error",
+    "perf": "error",
+    "style": "error"
   },
   "options": {
     "typeAware": true,
@@ -23,6 +27,7 @@
   },
   "ignorePatterns": ["src/generated/convergence/web-v3.validators.*.mjs"],
   "rules": {
+    "capitalized-comments": "off",
     "complexity": [
       "error",
       {
@@ -30,6 +35,9 @@
       }
     ],
     "for-direction": "error",
+    "func-style": "off",
+    "id-length": "off",
+    "init-declarations": "off",
     "max-lines": [
       "error",
       {
@@ -47,6 +55,19 @@
         "IIFEs": true
       }
     ],
+    "max-params": [
+      "error",
+      {
+        "max": 5
+      }
+    ],
+    "max-statements": [
+      "error",
+      {
+        "max": 50
+      }
+    ],
+    "no-alert": "error",
     "no-async-promise-executor": "error",
     "no-case-declarations": "error",
     "no-compare-neg-zero": "error",
@@ -54,22 +75,34 @@
     "no-console": "error",
     "no-constant-binary-expression": "error",
     "no-constant-condition": "error",
+    "no-continue": "off",
     "no-control-regex": "error",
     "no-debugger": "error",
     "no-delete-var": "error",
     "no-dupe-else-if": "error",
     "no-duplicate-case": "error",
+    "no-duplicate-imports": [
+      "error",
+      {
+        "allowSeparateTypeImports": true
+      }
+    ],
     "no-empty": "error",
     "no-empty-character-class": "error",
+    "no-empty-function": "error",
     "no-empty-pattern": "error",
     "no-empty-static-block": "error",
+    "no-eq-null": "error",
+    "no-eval": "error",
     "no-ex-assign": "error",
     "no-extra-boolean-cast": "error",
     "no-fallthrough": "error",
     "no-global-assign": "error",
+    "no-inline-comments": "off",
     "no-invalid-regexp": "error",
     "no-irregular-whitespace": "error",
     "no-loss-of-precision": "error",
+    "no-magic-numbers": "off",
     "no-misleading-character-class": "error",
     "no-nonoctal-decimal-escape": "error",
     "no-prototype-builtins": "error",
@@ -77,21 +110,39 @@
     "no-self-assign": "error",
     "no-shadow-restricted-names": "error",
     "no-sparse-arrays": "error",
+    "no-ternary": "off",
     "no-unassigned-vars": "error",
     "no-unsafe-finally": "error",
     "no-unsafe-optional-chaining": "error",
     "no-unused-labels": "error",
     "no-unused-private-class-members": "error",
+    "no-use-before-define": [
+      "error",
+      {
+        "functions": false,
+        "classes": true,
+        "variables": true
+      }
+    ],
     "no-useless-assignment": "error",
     "no-useless-backreference": "error",
     "no-useless-catch": "error",
     "no-useless-escape": "error",
     "no-var": "error",
+    "one-var": ["error", "never"],
     "prefer-const": "error",
+    "prefer-named-capture-group": "off",
     "prefer-rest-params": "error",
     "prefer-spread": "error",
     "preserve-caught-error": "error",
+    "react/function-component-definition": "off",
+    "react/jsx-handler-names": "off",
+    "react/jsx-max-depth": "off",
+    "react/jsx-props-no-spreading": "off",
+    "react/react-in-jsx-scope": "off",
     "require-yield": "error",
+    "sort-imports": "off",
+    "sort-keys": "off",
     "use-isnan": "error",
     "valid-typeof": "error"
   },
@@ -126,6 +177,7 @@
         "jsx-a11y/no-noninteractive-tabindex": "error",
         "jsx-a11y/no-redundant-roles": "error",
         "jsx-a11y/no-static-element-interactions": "error",
+        "jsx-a11y/prefer-tag-over-role": "off",
         "jsx-a11y/role-has-required-aria-props": "error",
         "jsx-a11y/role-supports-aria-props": "error",
         "jsx-a11y/scope": "error",
@@ -147,8 +199,17 @@
         "react-hooks-js/unsupported-syntax": "error",
         "react-hooks-js/use-memo": "error",
         "react/no-danger": "error",
+        "typescript/array-type": [
+          "error",
+          {
+            "default": "array",
+            "readonly": "generic"
+          }
+        ],
         "typescript/await-thenable": "error",
         "typescript/ban-ts-comment": "error",
+        "typescript/consistent-return": "off",
+        "typescript/consistent-type-definitions": "off",
         "typescript/no-array-constructor": "error",
         "typescript/no-array-delete": "error",
         "typescript/no-base-to-string": "error",
@@ -185,12 +246,20 @@
         "typescript/prefer-as-const": "error",
         "typescript/prefer-namespace-keyword": "error",
         "typescript/prefer-promise-reject-errors": "error",
+        "typescript/prefer-readonly-parameter-types": "off",
         "typescript/require-await": "error",
         "typescript/restrict-plus-operands": "error",
         "typescript/restrict-template-expressions": "error",
         "typescript/triple-slash-reference": "error",
-        "typescript/unbound-method": "error"
-      }
+        "typescript/unbound-method": "error",
+        "typescript/switch-exhaustiveness-check": [
+          "error",
+          {
+            "considerDefaultExhaustiveForUnions": true
+          }
+        ]
+      },
+      "plugins": ["typescript"]
     },
     {
       "files": ["src/**/*.ts", "src/**/*.tsx"],
@@ -334,6 +403,29 @@
       "env": {
         "vitest": true
       }
+    },
+    {
+      "files": ["tests/**/*.ts", "tests/**/*.tsx", "e2e/**/*.ts", "e2e/**/*.tsx"],
+      "rules": {
+        "typescript/strict-void-return": "off",
+        "typescript/no-unsafe-type-assertion": "off"
+      },
+      "plugins": ["typescript"]
+    },
+    {
+      "files": ["tests/**", "e2e/**", "scripts/**"],
+      "rules": {
+        "no-await-in-loop": "off"
+      }
+    },
+    {
+      "files": ["src/generated/**/*.ts", "src/generated/**/*.mts", "src/api/v3.ts"],
+      "rules": {
+        "typescript/no-unsafe-type-assertion": "off",
+        "typescript/no-unnecessary-type-parameters": "off",
+        "typescript/array-type": "off"
+      },
+      "plugins": ["typescript"]
     }
   ]
 }

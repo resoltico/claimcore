@@ -27,9 +27,13 @@ type CaseDetailProps = {
 };
 
 const fullHistory = (response: WebV3Response<"case.history">) => {
-  const outcome = response.outcome;
-  if (outcome.tag !== "SUCCEEDED") return null;
-  if (outcome.data.tag === "NOT_FOUND") return { items: [], nextCursor: null };
+  const { outcome } = response;
+  if (outcome.tag !== "SUCCEEDED") {
+    return null;
+  }
+  if (outcome.data.tag === "NOT_FOUND") {
+    return { items: [], nextCursor: null };
+  }
   const entries = outcome.data.entries.flatMap((entry) =>
     entry.tag === "FULL" ? [entry.receipt] : [],
   );
@@ -122,20 +126,20 @@ const AvailableCommands = ({
     <section aria-labelledby="commands-title">
       <h2 id="commands-title">{p.text("ui.availableCommands")}</h2>
       <div className="actions">
-        {current.availableCommands.map((command) => {
-          return (
-            <Button
-              key={command}
-              onPress={() => onCommand(command)}
-              aria-label={p.text("ui.commandDescription", {
-                label: p.commandLabel(command),
-                meaning: p.commandMeaning(command),
-              })}
-            >
-              {p.commandLabel(command)}
-            </Button>
-          );
-        })}
+        {current.availableCommands.map((command) => (
+          <Button
+            key={command}
+            onPress={() => {
+              onCommand(command);
+            }}
+            aria-label={p.text("ui.commandDescription", {
+              label: p.commandLabel(command),
+              meaning: p.commandMeaning(command),
+            })}
+          >
+            {p.commandLabel(command)}
+          </Button>
+        ))}
       </div>
     </section>
   );
@@ -184,7 +188,9 @@ const CurrentPresentation = ({
       <AvailableCommands
         current={current}
         definition={definition}
-        onCommand={(command) => onCommand(current, command)}
+        onCommand={(command) => {
+          onCommand(current, command);
+        }}
       />
     </>
   );

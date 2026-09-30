@@ -39,14 +39,17 @@ export function ownerMergeOperation(snapshot) {
     ),
     "Existing update or merge-queue policy requires explicit owner reconciliation.",
   );
-  if (!candidates.length) return { path: "rulesets", method: "POST", json: desired };
-  const current = candidates[0];
+  if (!candidates.length) {
+    return { path: "rulesets", method: "POST", json: desired };
+  }
+  const [current] = candidates;
   assert(Number.isSafeInteger(current.id) && current.id > 0, "Owner ruleset identity is missing.");
-  for (const key of ["target", "conditions", "bypass_actors", "rules"])
+  for (const key of ["target", "conditions", "bypass_actors", "rules"]) {
     assert(
       isDeepStrictEqual(current[key], desired[key]),
       "Existing owner-merge scope or authority requires explicit owner reconciliation.",
     );
+  }
   assert(["active", "disabled", "evaluate"].includes(current.enforcement), "Unknown enforcement.");
   return current.enforcement === "active"
     ? null

@@ -2,12 +2,11 @@ import { localNotice } from "../src/api/notices";
 import { render, screen } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
+import { App } from "../src/App";
 
 const useSession = vi.hoisted(() => vi.fn());
 
 vi.mock("../src/hooks/useSession", () => ({ useSession }));
-
-import { App } from "../src/App";
 
 const actions = () => ({ logout: vi.fn(), refresh: vi.fn() });
 

@@ -59,8 +59,11 @@ function checkExternalAction(reference, comment, { path, composite }) {
  */
 function checkActions(parsed, path, sources, composite) {
   for (const { reference, comment } of parsed.actions) {
-    if (reference.startsWith("./")) checkLocalAction(reference, sources);
-    else checkExternalAction(reference, comment, { path, composite });
+    if (reference.startsWith("./")) {
+      checkLocalAction(reference, sources);
+    } else {
+      checkExternalAction(reference, comment, { path, composite });
+    }
   }
 }
 
@@ -84,7 +87,9 @@ function checkSteps(steps) {
  */
 function checkWrite(permission, level, job, publisher) {
   assert(["read", "none", "write"].includes(level), "Job permissions must be literal.");
-  if (level !== "write") return;
+  if (level !== "write") {
+    return;
+  }
   assert(publisher, "Verification and health jobs cannot acquire write authority.");
   assert(
     ["contents", "packages", "id-token", "attestations"].includes(permission),
@@ -108,8 +113,9 @@ function checkJob(job, publisher) {
   );
   if (job["permissions"]) {
     assert(typeof job["permissions"] === "object", "Use explicit job permissions.");
-    for (const [permission, level] of Object.entries(job["permissions"]))
+    for (const [permission, level] of Object.entries(job["permissions"])) {
       checkWrite(permission, String(level), job, publisher);
+    }
   }
   checkSteps(job["steps"]);
   checkUploads(job["steps"] ?? []);
@@ -120,7 +126,7 @@ function checkJob(job, publisher) {
  * @param {boolean} publisher
  */
 function checkPermissions(value, publisher) {
-  const permissions = value["permissions"];
+  const { permissions } = value;
   assert(
     permissions && typeof permissions === "object",
     "Explicit workflow permissions are required.",
@@ -129,7 +135,9 @@ function checkPermissions(value, publisher) {
     Object.values(permissions).every((level) => level === "read" || level === "none"),
     "Workflow defaults may not grant writes.",
   );
-  for (const job of Object.values(value["jobs"] ?? {})) checkJob(job, publisher);
+  for (const job of Object.values(value["jobs"] ?? {})) {
+    checkJob(job, publisher);
+  }
 }
 
 /**
@@ -197,7 +205,9 @@ export function validateWorkflowSources(sources, { graph = true } = {}) {
   for (const [path, source] of sources) {
     const workflow = /^\.github\/workflows\/[^/]+\.ya?ml$/u.test(path);
     const composite = /^\.github\/actions\/.+\/action\.ya?ml$/u.test(path);
-    if (!workflow && !composite) continue;
+    if (!workflow && !composite) {
+      continue;
+    }
     const parsed = parseWorkflow(source);
     checkActions(parsed, path, known, composite);
     if (composite) {
@@ -207,7 +217,7 @@ export function validateWorkflowSources(sources, { graph = true } = {}) {
     }
     workflowCount += 1;
     const name = path.split("/").at(-1) ?? path;
-    const value = parsed.value;
+    const { value } = parsed;
     assert(
       !names(value["on"]).some((event) => deniedEvents.has(event)),
       "Privileged event requires a separate reviewed trust design.",

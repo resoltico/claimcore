@@ -1,11 +1,12 @@
 import { createPresenter } from "../src/presentation/presenter";
 import { defaults } from "../src/presentation/preferences";
-const fieldHint = createPresenter(defaults).hint;
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { isMutationUncertain, resultNotice, v3 } from "../src/api/v3";
 import { commandFor, commandInputs, createDraft, prefilledValues } from "../src/domain/metadata";
 import { generatedResponse, generatedWebValue } from "./contract-corpus.fixtures";
 import { caseFields, definition } from "./v3-foundation.fixtures";
+
+const fieldHint = createPresenter(defaults).hint;
 
 describe("metadata-driven drafts", () => {
   it("derives command fields, prefill and a canonical draft without a browser command registry", () => {
@@ -113,7 +114,9 @@ it("uses generated v3 paths and typed endpoint outcomes", async () => {
     json(outcome("session", "SNAPSHOT", { authenticated: false, antiforgeryToken: "token" })),
   );
   const session = await v3.session();
-  if (session.kind !== "outcome") throw new Error("Expected a validated session response.");
+  if (session.kind !== "outcome") {
+    throw new Error("Expected a validated session response.");
+  }
   expect(session.value.outcome.data).toEqual({
     authenticated: false,
     antiforgeryToken: "token",
@@ -144,7 +147,9 @@ it("uses generated v3 paths and typed endpoint outcomes", async () => {
 
 it("maps every JSON endpoint to v3 and preserves nullable cursors and mutation identity", async () => {
   const fetch = vi.mocked(globalThis.fetch);
-  for (const [, , endpoint] of jsonCalls) fetch.mockResolvedValueOnce(generatedResponse(endpoint));
+  for (const [, , endpoint] of jsonCalls) {
+    fetch.mockResolvedValueOnce(generatedResponse(endpoint));
+  }
   for (const [call, path] of jsonCalls) {
     await call();
     expect(fetch.mock.calls.at(-1)?.[0]).toBe(path);

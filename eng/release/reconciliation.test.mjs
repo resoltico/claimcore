@@ -7,9 +7,11 @@ import { createFixture, sha, tag } from "./test-support.mjs";
 test("blocks when CI is rerun during Gate verification", async () => {
   const fixture = createFixture();
   /** @type {import("../ci/types.mjs").GithubApi} */
-  const api = async (path = "", options) => {
+  const api = async (path, options) => {
     const result = await fixture.api(path, options);
-    if (path.includes("/jobs?")) fixture.state.runs[0].run_attempt += 1;
+    if (path?.includes("/jobs?")) {
+      fixture.state.runs[0].run_attempt += 1;
+    }
     return result;
   };
   await assert.rejects(releaseClaimCore({ ...fixture.options, api, publish: true }));
@@ -19,9 +21,11 @@ test("blocks when CI is rerun during Gate verification", async () => {
 test("leaves a draft alone when the tag changes after draft creation", async () => {
   const fixture = createFixture();
   /** @type {import("../ci/types.mjs").GithubApi} */
-  const api = async (path = "", options) => {
+  const api = async (path, options) => {
     const result = await fixture.api(path, options);
-    if (options?.method === "POST") fixture.state.tagSha = "4".repeat(40);
+    if (options?.method === "POST") {
+      fixture.state.tagSha = "4".repeat(40);
+    }
     return result;
   };
   await assert.rejects(releaseClaimCore({ ...fixture.options, api, publish: true }));
@@ -49,9 +53,11 @@ for (const operation of ["Post", "Patch"]) {
 test("reports a post-publication edit without rollback or silent repair", async () => {
   const fixture = createFixture();
   /** @type {import("../ci/types.mjs").GithubApi} */
-  const api = async (path = "", options) => {
+  const api = async (path, options) => {
     const result = await fixture.api(path, options);
-    if (options?.method === "PATCH") fixture.state.release.body += "\nUnexpected change.";
+    if (options?.method === "PATCH") {
+      fixture.state.release.body += "\nUnexpected change.";
+    }
     return result;
   };
   await assert.rejects(

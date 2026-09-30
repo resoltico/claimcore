@@ -27,10 +27,12 @@ const stateFor = (
   failed: Notice | null,
   epoch: number,
 ): SessionState => {
-  if (failed !== null || value === null)
+  if (failed !== null || value === null) {
     return { kind: "failure", message: failed ?? localNotice("invalidSession"), epoch };
-  if (!value.authenticated)
+  }
+  if (!value.authenticated) {
     return { kind: "anonymous", token: value.antiforgeryToken, message: null, epoch };
+  }
   return value.antiforgeryToken === null
     ? {
         kind: "failure",
@@ -40,18 +42,19 @@ const stateFor = (
     : { kind: "authenticated", token: value.antiforgeryToken, epoch };
 };
 
+const nextEpoch = (epoch: { current: number }): number => {
+  epoch.current += 1;
+  return epoch.current;
+};
+
 export const useSession = () => {
   const [state, setState] = useState<SessionState>({ kind: "loading", epoch: 0 });
   const epoch = useRef(0);
-  const nextEpoch = (): number => {
-    epoch.current += 1;
-    return epoch.current;
-  };
 
   const refresh = useCallback(async (): Promise<void> => {
     const result = await v3.session();
     const value = snapshot(result);
-    setState(stateFor(value, value === null ? resultNotice(result) : null, nextEpoch()));
+    setState(stateFor(value, value === null ? resultNotice(result) : null, nextEpoch(epoch)));
   }, []);
 
   useEffect(() => {
@@ -59,11 +62,13 @@ export const useSession = () => {
   }, [refresh]);
 
   const logout = async (): Promise<void> => {
-    if (state.kind !== "authenticated") return;
+    if (state.kind !== "authenticated") {
+      return;
+    }
     const result = await v3.logout(state.token);
     const value = snapshot(result);
     // A successful logout response is an anonymous snapshot. No claimant-bearing state survives its epoch.
-    setState(stateFor(value, value === null ? resultNotice(result) : null, nextEpoch()));
+    setState(stateFor(value, value === null ? resultNotice(result) : null, nextEpoch(epoch)));
   };
 
   return { state, logout, refresh };

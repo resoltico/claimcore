@@ -63,18 +63,22 @@ const environmentFrom = (json) => ({
  * @param {() => number} nextId
  */
 function applyWrite(state, path, json, nextId) {
-  if (path === "") Object.assign(state["repository"], json);
-  else if (path === "rulesets")
+  if (path === "") {
+    Object.assign(state["repository"], json);
+  } else if (path === "rulesets") {
     state["rules"].push({ ...structuredClone(json), id: nextId(), source_type: "Repository" });
-  else if (path.startsWith("rulesets/"))
+  } else if (path.startsWith("rulesets/")) {
     Object.assign(
       state["rules"].find((/** @type {Json} */ rule) => rule["id"] === Number(path.split("/")[1])),
       structuredClone(json),
     );
-  else if (path === "environments/release") state["environment"] = environmentFrom(json);
-  else if (path === "environments/release/deployment-branch-policies")
+  } else if (path === "environments/release") {
+    state["environment"] = environmentFrom(json);
+  } else if (path === "environments/release/deployment-branch-policies") {
     state["branches"].push({ ...json, id: nextId() });
-  else throw new Error("Unexpected write.");
+  } else {
+    throw new Error("Unexpected write.");
+  }
 }
 
 /**
@@ -83,16 +87,23 @@ function applyWrite(state, path, json, nextId) {
  * @param {string} path
  */
 function answerRead(state, path) {
-  if (path === "") return structuredClone(state["repository"]);
-  if (path.startsWith("rulesets?")) return structuredClone(state["rules"]);
-  if (path.startsWith("rulesets/"))
+  if (path === "") {
+    return structuredClone(state["repository"]);
+  }
+  if (path.startsWith("rulesets?")) {
+    return structuredClone(state["rules"]);
+  }
+  if (path.startsWith("rulesets/")) {
     return structuredClone(
       state["rules"].find((/** @type {Json} */ rule) => rule["id"] === Number(path.split("/")[1])),
     );
-  if (path.startsWith("environments/release/deployment-branch-policies?"))
+  }
+  if (path.startsWith("environments/release/deployment-branch-policies?")) {
     return { branch_policies: structuredClone(state["branches"]) };
-  if (path === "environments/release" && state["environment"])
+  }
+  if (path === "environments/release" && state["environment"]) {
     return structuredClone(state["environment"]);
+  }
   throw Object.assign(new Error("absent"), { status: 404 });
 }
 

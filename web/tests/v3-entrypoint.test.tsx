@@ -20,7 +20,9 @@ it("mounts the Web v3 browser root", async () => {
     ),
   );
   await import("../src/main");
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  await new Promise((resolve) => {
+    setTimeout(resolve, 0);
+  });
   expect(document.querySelector("#root")?.innerHTML).not.toBe("");
 });
 

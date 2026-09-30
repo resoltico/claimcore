@@ -5,7 +5,9 @@ import { validateWorkflowSources } from "./workflow-policy.mjs";
 
 const root = process.argv[2] ?? fileURLToPath(new URL("../..", import.meta.url));
 try {
-  if (process.argv.length > 3) throw new Error("Expected at most one repository root.");
+  if (process.argv.length > 3) {
+    throw new Error("Expected at most one repository root.");
+  }
   const result = validateWorkflowSources(workflowSources(resolve(root)));
   console.log(
     `Workflow policy passed: ${result.workflows} workflows, ${result.compositeActions} composite actions.`,

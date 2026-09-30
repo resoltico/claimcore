@@ -2,11 +2,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { ownerReview } from "./owner-review-service.mjs";
-const head = "a".repeat(40),
-  base = "b".repeat(40),
-  merge = "c".repeat(40);
-const baseTree = "d".repeat(40),
-  mergeTree = "e".repeat(40);
+const head = "a".repeat(40);
+const base = "b".repeat(40);
+const merge = "c".repeat(40);
+const baseTree = "d".repeat(40);
+const mergeTree = "e".repeat(40);
 const source = { commit: "f".repeat(40), sha256: "f".repeat(64) };
 const repository = () => ({
   id: 1,
@@ -87,11 +87,12 @@ function fixture() {
   /** @type {string[]} */
   const requests = [];
   /** @type {import("./types.mjs").GithubApi} */
-  const api = async (path = "", options) => {
+  const api = (path, options) => {
+    const key = path ?? "";
     assert.equal(options, undefined, "Reporter must not write.");
-    requests.push(path);
-    assert(Object.hasOwn(documents, path), `Unexpected request ${path}`);
-    return structuredClone(documents[path]);
+    requests.push(key);
+    assert(Object.hasOwn(documents, key), `Unexpected request ${key}`);
+    return Promise.resolve(structuredClone(documents[key]));
   };
   return { documents, requests, api, pr, run, repo };
 }
@@ -175,18 +176,21 @@ const refusals = [
     },
   ],
 ];
-for (const [label, mutate] of refusals)
+for (const [label, mutate] of refusals) {
   test(`owner report refuses ${label}`, async () => {
     const f = fixture();
     mutate(f);
     await assert.rejects(ownerReview(f.api, 3, head, source));
   });
+}
 test("concurrent head changes invalidate the entire report", async () => {
   const f = fixture();
   let reads = 0;
   /** @param {string} path */
   const api = async (path = "") => {
-    if (path === "pulls/3" && ++reads === 2) f.pr.head.sha = base;
+    if (path === "pulls/3" && ++reads === 2) {
+      f.pr.head.sha = base;
+    }
     return f.api(path);
   };
   await assert.rejects(ownerReview(api, 3, head, source));
@@ -196,7 +200,9 @@ test("owner change after inspection invalidates the report", async () => {
   let reads = 0;
   /** @param {string} path */
   const api = async (path = "") => {
-    if (path === "" && ++reads === 2) f.repo.owner.id = 99;
+    if (path === "" && ++reads === 2) {
+      f.repo.owner.id = 99;
+    }
     return f.api(path);
   };
   await assert.rejects(ownerReview(api, 3, head, source), /owner changed/u);

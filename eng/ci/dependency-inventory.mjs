@@ -28,15 +28,26 @@ function add(installed, ecosystem, name, resolved) {
  */
 export function readNuGetLocks(directory, installed) {
   for (const entry of readdirSync(directory, { withFileTypes: true })) {
-    if (entry.isDirectory() && !skipped.has(entry.name))
+    if (entry.isDirectory() && !skipped.has(entry.name)) {
       readNuGetLocks(join(directory, entry.name), installed);
+    }
     if (entry.isFile() && entry.name === "packages.lock.json") {
-      const lock = JSON.parse(readFileSync(join(directory, entry.name), "utf8"));
-      for (const framework of Object.values(
-        /** @type {Record<string, Record<string, { resolved?: string }>>} */ (lock.dependencies),
-      ))
-        for (const [name, value] of Object.entries(framework))
-          if (value.resolved) add(installed, "nuget", name, value.resolved);
+      addNuGetLock(JSON.parse(readFileSync(join(directory, entry.name), "utf8")), installed);
+    }
+  }
+}
+
+/**
+ * The resolved packages of every target framework in one parsed lock file.
+ * @param {{ dependencies: Record<string, Record<string, { resolved?: string }>> }} lock
+ * @param {Installed} installed
+ */
+function addNuGetLock(lock, installed) {
+  for (const framework of Object.values(lock.dependencies)) {
+    for (const [name, value] of Object.entries(framework)) {
+      if (value.resolved) {
+        add(installed, "nuget", name, value.resolved);
+      }
     }
   }
 }
@@ -52,8 +63,10 @@ export function readNpmLock(path, installed) {
   const lock = JSON.parse(bytes.toString("utf8"));
   for (const [key, value] of Object.entries(
     /** @type {Record<string, { version?: string }>} */ (lock.packages),
-  ))
-    if (key && value.version)
+  )) {
+    if (key && value.version) {
       add(installed, "npm", key.split("node_modules/").at(-1) ?? key, value.version);
+    }
+  }
   return createHash("sha256").update(bytes).digest("hex");
 }

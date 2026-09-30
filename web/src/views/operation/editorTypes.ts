@@ -1,12 +1,14 @@
 import type { Dispatch, SetStateAction } from "react";
 import type {
+  CommandDescriptor,
   CommandDraft,
+  CorrectionGroupDescriptor,
   CurrentCase,
   DefinitionPayload,
+  FieldDescriptor,
   PreparationDetails,
   Receipt,
 } from "../../api/v3";
-import type { CommandDescriptor, CorrectionGroupDescriptor, FieldDescriptor } from "../../api/v3";
 import type { OperationAction, OperationState } from "../../domain/operationReducer";
 import type { CommandKind } from "../../domain/metadata";
 

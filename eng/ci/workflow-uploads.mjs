@@ -27,7 +27,9 @@ function safePath(value, glob) {
     ),
     "Unreviewed artifact expression.",
   );
-  if (!glob) assert(!/[*?[]/u.test(path), "Scan paths cannot be globs.");
+  if (!glob) {
+    assert(!/[*?[]/u.test(path), "Scan paths cannot be globs.");
+  }
   return path;
 }
 /** @param {import("./types.mjs").Json} step */
@@ -40,7 +42,7 @@ function scanPaths(step) {
     .filter(Boolean);
   const prefix = "pwsh -NoProfile -File eng/Scan-ArtifactSecrets.ps1";
   assert(
-    lines[0] === prefix || lines[0].startsWith(prefix + " "),
+    lines[0] === prefix || lines[0].startsWith(`${prefix} `),
     "Scan must invoke the private-output policy directly.",
   );
   const values = lines[0] === prefix ? lines.slice(1) : [lines[0].slice(prefix.length)];
@@ -53,10 +55,12 @@ function scanPaths(step) {
  */
 export function checkUploads(steps) {
   const uploaded = steps.filter(upload);
-  if (!uploaded.length) return;
+  if (!uploaded.length) {
+    return;
+  }
   const scans = steps.filter((step) => step.id === "artifact_scan");
   assert.equal(scans.length, 1, "Uploads require one artifact scan.");
-  const scan = scans[0];
+  const [scan] = scans;
   assert(scan, "Uploads require one artifact scan.");
   assert(
     scan["continue-on-error"] === undefined || scan["continue-on-error"] === false,
@@ -81,7 +85,7 @@ export function checkUploads(steps) {
       const base = glob < 0 ? path : path.slice(0, path.lastIndexOf("/", glob));
       assert(
         paths.some(
-          (/** @type {string} */ prefix) => base === prefix || base.startsWith(prefix + "/"),
+          (/** @type {string} */ prefix) => base === prefix || base.startsWith(`${prefix}/`),
         ),
         "Upload is not covered by the scan.",
       );

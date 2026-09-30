@@ -9,21 +9,34 @@ type CommandChangeProps = { model: OperationEditorModel };
 
 export const CommandChangeDialog = ({ model }: CommandChangeProps) => {
   const p = usePresentation();
-  if (model.pendingCommand === null) return null;
-  const pendingCommand = model.pendingCommand;
+  if (model.pendingCommand === null) {
+    return null;
+  }
+  const { pendingCommand } = model;
   return (
     <AccessibleModal
       title={p.text("ui.changeCommandTitle")}
       description={p.text("ui.changeCommandDescription")}
       isOpen
       isDismissable
-      onOpenChange={() => model.setPendingCommand(null)}
+      onOpenChange={() => {
+        model.setPendingCommand(null);
+      }}
     >
       <div className="dialog-actions">
-        <Button className="secondary-button" onPress={() => model.setPendingCommand(null)}>
+        <Button
+          className="secondary-button"
+          onPress={() => {
+            model.setPendingCommand(null);
+          }}
+        >
           {p.text("ui.keepEditing")}
         </Button>
-        <Button onPress={() => model.applyCommand(pendingCommand)}>
+        <Button
+          onPress={() => {
+            model.applyCommand(pendingCommand);
+          }}
+        >
           {p.text("ui.discardAndChange")}
         </Button>
       </div>
@@ -39,7 +52,9 @@ type AcceptedOperationProps = {
 
 export const AcceptedOperation = ({ definition, receipt, onCommitted }: AcceptedOperationProps) => {
   const p = usePresentation();
-  if (receipt === null) return null;
+  if (receipt === null) {
+    return null;
+  }
   return (
     <section aria-labelledby="accepted-title" className="receipt">
       <h2 id="accepted-title">{p.text("ui.acceptedOperation")}</h2>

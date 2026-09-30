@@ -26,7 +26,9 @@ export async function readSettings(api) {
   try {
     environment = await api("environments/release");
   } catch (error) {
-    if (/** @type {import("./types.mjs").StatusError} */ (error).status !== 404) throw error;
+    if (/** @type {import("./types.mjs").StatusError} */ (error).status !== 404) {
+      throw error;
+    }
     environment = null;
   }
   const branches = environment?.["deployment_branch_policy"]?.custom_branch_policies
@@ -59,7 +61,7 @@ async function applyOne(api, initial, remaining) {
     remaining,
     "Concurrent configuration change; stopping without rollback.",
   );
-  const operation = /** @type {import("./settings-rules.mjs").Operation} */ (remaining[0]);
+  const [operation] = /** @type {[import("./settings-rules.mjs").Operation]} */ (remaining);
   await api(operation.path, operation);
   const after = settingsPlan(await readSettings(api));
   assertSameIdentity(after, initial);
@@ -77,7 +79,13 @@ async function applyOne(api, initial, remaining) {
  * @param {string} expectedPlanSha
  * @param {(entry: { path: string, method: string, verified: boolean }) => void} [progress]
  */
-export async function configureSettings(api, expectedPlanSha, progress = () => {}) {
+export async function configureSettings(
+  api,
+  expectedPlanSha,
+  progress = () => {
+    /* empty */
+  },
+) {
   const initial = settingsPlan(await readSettings(api));
   assert.equal(
     initial.planSha256,

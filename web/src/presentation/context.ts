@@ -9,6 +9,8 @@ export type Presentation = ReturnType<typeof createPresenter> & {
 export const PresentationContext = createContext<Presentation | null>(null);
 export const usePresentation = (): Presentation => {
   const value = useContext(PresentationContext);
-  if (value === null) throw new Error("A stable presentation provider is required.");
+  if (value === null) {
+    throw new Error("A stable presentation provider is required.");
+  }
   return value;
 };

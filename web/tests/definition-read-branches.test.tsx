@@ -10,7 +10,9 @@ it("accepts the matching generated definition fingerprint", async () => {
     response("definition", "DESCRIBED", definition),
   );
   const { result } = renderHook(() => useDefinition(1));
-  await waitFor(() => expect(result.current.definition).toEqual(definition));
+  await waitFor(() => {
+    expect(result.current.definition).toEqual(definition);
+  });
   expect(result.current.message).toBeNull();
 });
 
@@ -32,19 +34,19 @@ it("clears claimant definition state when the server rejects or mismatches asset
   const { result, rerender } = renderHook(({ epoch }) => useDefinition(epoch), {
     initialProps: { epoch: 1 },
   });
-  await waitFor(() =>
+  await waitFor(() => {
     expect(result.current.message).toEqual({
       kind: "diagnostic",
       diagnostic: { id: "WEB_HOST_BUSY", parameters: {} },
-    }),
-  );
+    });
+  });
   fetch.mockResolvedValueOnce(
     response("definition", "DESCRIBED", { ...definition, webFingerprint: "0".repeat(64) }),
   );
   rerender({ epoch: 2 });
-  await waitFor(() =>
-    expect(result.current.message).toEqual({ kind: "local", reason: "definitionMismatch" }),
-  );
+  await waitFor(() => {
+    expect(result.current.message).toEqual({ kind: "local", reason: "definitionMismatch" });
+  });
   expect(result.current.definition).toBeNull();
 });
 
@@ -63,6 +65,8 @@ it("discards an aborted definition response when session epoch changes", async (
   completeFirst?.(
     response("definition", "DESCRIBED", { ...definition, webFingerprint: "0".repeat(64) }),
   );
-  await waitFor(() => expect(result.current.definition).toEqual(definition));
+  await waitFor(() => {
+    expect(result.current.definition).toEqual(definition);
+  });
   expect(result.current.message).toBeNull();
 });

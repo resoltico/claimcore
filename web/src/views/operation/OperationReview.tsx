@@ -52,7 +52,9 @@ const ReviewActions = ({ model }: { model: OperationEditorModel }) => {
     <div className="dialog-actions">
       <Button
         className="secondary-button"
-        onPress={() => model.dispatch({ type: "KEEP_FOR_RECOVERY" })}
+        onPress={() => {
+          model.dispatch({ type: "KEEP_FOR_RECOVERY" });
+        }}
         isDisabled={model.state.delivery === "SUBMITTING"}
       >
         {p.text("ui.keepForRecovery")}
@@ -70,6 +72,8 @@ const ReviewActions = ({ model }: { model: OperationEditorModel }) => {
 const ReviewConfirmation = ({ model }: { model: OperationEditorModel }) => {
   const p = usePresentation();
   return (
+    // lint-exception: LX-0018
+    // oxlint-disable-next-line typescript/no-deprecated
     <Checkbox
       className="review-confirmation"
       isDisabled={model.state.delivery === "SUBMITTING"}
@@ -90,14 +94,18 @@ const ReviewConfirmation = ({ model }: { model: OperationEditorModel }) => {
 
 export const OperationReview = ({ model }: { model: OperationEditorModel }) => {
   const p = usePresentation();
-  if (model.state.preparation === null) return null;
+  if (model.state.preparation === null) {
+    return null;
+  }
   return (
     <AccessibleModal
       title={p.text("ui.reviewTitle")}
       description={p.text("ui.reviewDescription")}
       isOpen={model.state.delivery === "REVIEWING" || model.state.delivery === "SUBMITTING"}
       isDismissable={model.state.delivery === "REVIEWING"}
-      onOpenChange={() => model.dispatch({ type: "KEEP_FOR_RECOVERY" })}
+      onOpenChange={() => {
+        model.dispatch({ type: "KEEP_FOR_RECOVERY" });
+      }}
     >
       <>
         <PreparedIdentity preparation={model.state.preparation} />

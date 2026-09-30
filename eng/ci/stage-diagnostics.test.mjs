@@ -36,7 +36,7 @@ test("reporting refuses unknown stage identities and invalid statuses", () => {
 test("reporting is bounded and never publishes raw diagnostic text", () => {
   const report = stageDiagnostic({
     ...base,
-    log: "x".repeat(3 * 1024 * 1024) + "\n[warn] src/Test.fs\nPRIVATE-CANARY",
+    log: `${"x".repeat(3 * 1024 * 1024)}\n[warn] src/Test.fs\nPRIVATE-CANARY`,
   });
   assert.deepEqual(report.findings, [{ file: "src/Test.fs" }]);
   assert.equal(report.rawLogPublished, false);

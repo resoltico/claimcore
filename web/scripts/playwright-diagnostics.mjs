@@ -60,9 +60,15 @@ export const browserSources = (root) => {
  */
 const sourceLocation = (location, sources) => {
   const source = sources.get(location?.file ?? "");
-  if (location === undefined || source === undefined) return null;
-  if (!positive(location.line) || location.line > source.lines) return null;
-  if (!positive(location.column) || location.column > 10_000) return null;
+  if (location === undefined || source === undefined) {
+    return null;
+  }
+  if (!positive(location.line) || location.line > source.lines) {
+    return null;
+  }
+  if (!positive(location.column) || location.column > 10_000) {
+    return null;
+  }
   return { file: source.file, line: location.line, column: location.column };
 };
 
@@ -80,16 +86,24 @@ export class BrowserStepDiagnostic {
 
   /** @param {Step} step */
   begin(step) {
-    if (!categories.has(step.category)) return;
+    if (!categories.has(step.category)) {
+      return;
+    }
     const location = sourceLocation(step.location, this.sources);
-    if (location !== null) this.latest = { category: step.category, ...location };
+    if (location !== null) {
+      this.latest = { category: step.category, ...location };
+    }
   }
 
   /** @param {Step} step */
   end(step) {
-    if (this.failed !== null || step.error === undefined || !categories.has(step.category)) return;
+    if (this.failed !== null || step.error === undefined || !categories.has(step.category)) {
+      return;
+    }
     const location = sourceLocation(step.location, this.sources);
-    if (location !== null) this.failed = { category: step.category, ...location };
+    if (location !== null) {
+      this.failed = { category: step.category, ...location };
+    }
   }
 
   snapshot() {

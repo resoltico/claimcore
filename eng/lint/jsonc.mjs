@@ -5,7 +5,9 @@
  */
 function endOfString(text, start) {
   let index = start + 1;
-  while (index < text.length && text[index] !== '"') index += text[index] === "\\" ? 2 : 1;
+  while (index < text.length && text[index] !== '"') {
+    index += text[index] === "\\" ? 2 : 1;
+  }
   return index + 1;
 }
 
@@ -41,9 +43,11 @@ export function parseJsonc(text) {
       output += text[index];
       index += 1;
     } else {
-      if (text[index] === '"') output += text.slice(index, end);
+      if (text[index] === '"') {
+        output += text.slice(index, end);
+      }
       index = end;
     }
   }
-  return JSON.parse(output.replace(/,(\s*[\]}])/g, "$1"));
+  return JSON.parse(output.replace(/,(\s*[\]}])/gu, "$1"));
 }

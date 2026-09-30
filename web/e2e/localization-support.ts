@@ -41,14 +41,20 @@ export const trackRequests = (page: Page) => {
   const requests: string[] = [];
   page.on("request", (request) => {
     const path = new URL(request.url()).pathname;
-    if (path.startsWith("/api/v3/")) requests.push(`${request.method()} ${path}`);
+    if (path.startsWith("/api/v3/")) {
+      requests.push(`${request.method()} ${path}`);
+    }
   });
   return requests;
 };
 export const preparedFrom = (value: WebV3Response<"command.prepare">): PreparedIdentity => {
-  if (value.outcome.tag !== "PREPARED") throw new Error("E2E_LOCALIZATION_PREPARATION_REFUSED");
+  if (value.outcome.tag !== "PREPARED") {
+    throw new Error("E2E_LOCALIZATION_PREPARATION_REFUSED");
+  }
   const { operationId, requestSha256 } = value.outcome.data.details.summary;
-  if (requestSha256 === null) throw new Error("E2E_LOCALIZATION_EXACT_DIGEST_MISSING");
+  if (requestSha256 === null) {
+    throw new Error("E2E_LOCALIZATION_EXACT_DIGEST_MISSING");
+  }
   return { operationId, requestSha256 };
 };
 const deferred = <T>() => {
@@ -71,7 +77,9 @@ export const pauseJsonReply = async <K extends WebV3EndpointId>(
   drop = false,
 ) => {
   const path = webV3Endpoints.find((entry) => entry.id === endpoint)?.path;
-  if (path === undefined) throw new Error("E2E_LOCALIZATION_ENDPOINT_MISSING");
+  if (path === undefined) {
+    throw new Error("E2E_LOCALIZATION_ENDPOINT_MISSING");
+  }
   const ready = deferred<Captured<K>>();
   const released = deferred<void>();
   await page.route(
@@ -80,25 +88,36 @@ export const pauseJsonReply = async <K extends WebV3EndpointId>(
       try {
         const response = await route.fetch();
         const payload: unknown = await response.json();
-        if (response.status() !== 200 || !(await isWebV3Response(endpoint, payload)))
+        if (response.status() !== 200 || !(await isWebV3Response(endpoint, payload))) {
           throw new Error("E2E_LOCALIZATION_NATIVE_REPLY_INVALID");
+        }
         const bytes = route.request().postDataBuffer();
-        if (bytes === null) throw new Error("E2E_LOCALIZATION_REQUEST_BYTES_MISSING");
+        if (bytes === null) {
+          throw new Error("E2E_LOCALIZATION_REQUEST_BYTES_MISSING");
+        }
         ready.resolve({
           reply: payload as WebV3Response<K>,
           bytes,
           sourceDigest: route.request().headers()["x-claimcore-source-sha256"],
         });
         await released.promise;
-        if (drop) await route.abort("connectionfailed");
-        else await route.fulfill({ response });
+        if (drop) {
+          await route.abort("connectionfailed");
+        } else {
+          await route.fulfill({ response });
+        }
       } catch {
         ready.reject(new Error("E2E_LOCALIZATION_PAUSED_REQUEST_FAILED"));
       }
     },
     { times: 1 },
   );
-  return { ready: ready.promise, release: () => released.resolve() };
+  return {
+    ready: ready.promise,
+    release: () => {
+      released.resolve();
+    },
+  };
 };
 export const inspectPending = async (page: Page, identity: PreparedIdentity): Promise<void> => {
   await page.getByRole("button", { name: "Recovery", exact: true }).click();
@@ -108,7 +127,7 @@ export const inspectPending = async (page: Page, identity: PreparedIdentity): Pr
   await expect(page.getByRole("dialog")).toContainText(identity.requestSha256);
 };
 const collectLayoutMetrics = () => {
-  const clientWidth = document.documentElement.clientWidth;
+  const { clientWidth } = document.documentElement;
   const offenders = [...document.querySelectorAll("*")]
     .map((element) => ({ element, rect: element.getBoundingClientRect() }))
     .filter(({ rect }) => rect.left < -1 || rect.right > clientWidth + 1)
@@ -144,7 +163,9 @@ const collectLayoutMetrics = () => {
 };
 export const noHorizontalOverflow = async (page: Page, stage: "narrow" | "zoom"): Promise<void> => {
   const metrics = await page.evaluate(collectLayoutMetrics);
-  if (metrics.scrollWidth <= metrics.clientWidth + 1) return;
+  if (metrics.scrollWidth <= metrics.clientWidth + 1) {
+    return;
+  }
   const engine = process.env["CLAIMCORE_WEB_E2E_ENGINE"];
   if (engine !== undefined && ["chromium", "firefox", "webkit"].includes(engine)) {
     const report = new URL(

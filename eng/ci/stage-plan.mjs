@@ -7,35 +7,43 @@
 // the requested concurrency. Every stage runs to completion whether or not another failed: a
 // verification run reports all findings, not the first.
 
-const stageId = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+const stageId = /^[a-z0-9]+(-[a-z0-9]+)*$/u;
 
 /** @param {import("./types.mjs").Stage[]} stages @returns {Set<string>} */
 function checkStages(stages) {
   const ids = new Set();
   for (const stage of stages) {
-    if (typeof stage.id !== "string" || !stageId.test(stage.id))
+    if (typeof stage.id !== "string" || !stageId.test(stage.id)) {
       throw new Error("Stage ids are lowercase kebab-case.");
-    if (ids.has(stage.id)) throw new Error(`Stage '${stage.id}' is listed twice.`);
+    }
+    if (ids.has(stage.id)) {
+      throw new Error(`Stage '${stage.id}' is listed twice.`);
+    }
     ids.add(stage.id);
     const command = stage.argv;
     if (
       !Array.isArray(command) ||
       command.length === 0 ||
       command.some((part) => typeof part !== "string")
-    )
+    ) {
       throw new Error(`Stage '${stage.id}' needs a command.`);
+    }
   }
   return ids;
 }
 
 /** @param {import("./types.mjs").Stage[]} stages @param {Set<string>} ids */
 function checkPredecessors(stages, ids) {
-  for (const stage of stages)
+  for (const stage of stages) {
     for (const predecessor of stage.after ?? []) {
-      if (!ids.has(predecessor))
+      if (!ids.has(predecessor)) {
         throw new Error(`Stage '${stage.id}' follows unknown stage '${predecessor}'.`);
-      if (predecessor === stage.id) throw new Error(`Stage '${stage.id}' follows itself.`);
+      }
+      if (predecessor === stage.id) {
+        throw new Error(`Stage '${stage.id}' follows itself.`);
+      }
     }
+  }
 }
 
 /** Reject cycles: repeatedly remove stages whose predecessors are gone. @param {import("./types.mjs").Stage[]} stages */
@@ -43,9 +51,17 @@ function checkAcyclic(stages) {
   const remaining = new Map(stages.map((stage) => [stage.id, new Set(stage.after ?? [])]));
   while (remaining.size > 0) {
     const free = [...remaining].filter(([, needs]) => needs.size === 0).map(([id]) => id);
-    if (free.length === 0) throw new Error("Stage predecessors form a cycle.");
-    for (const id of free) remaining.delete(id);
-    for (const needs of remaining.values()) for (const id of free) needs.delete(id);
+    if (free.length === 0) {
+      throw new Error("Stage predecessors form a cycle.");
+    }
+    for (const id of free) {
+      remaining.delete(id);
+    }
+    for (const needs of remaining.values()) {
+      for (const id of free) {
+        needs.delete(id);
+      }
+    }
   }
 }
 
@@ -55,8 +71,9 @@ function checkAcyclic(stages) {
  */
 export function validatePlan(candidate) {
   const plan = /** @type {import("./types.mjs").Plan} */ (candidate);
-  if (!plan || typeof plan.producer !== "string" || !Array.isArray(plan.stages))
+  if (!plan || typeof plan.producer !== "string" || !Array.isArray(plan.stages)) {
     throw new Error("A stage plan needs a producer and a stage list.");
+  }
   const ids = checkStages(plan.stages);
   checkPredecessors(plan.stages, ids);
   checkAcyclic(plan.stages);
@@ -85,7 +102,9 @@ class Schedule {
 
   /** @returns {import("./types.mjs").Stage | undefined} */
   next() {
-    if (this.exclusiveRunning || (this.failFast && this.failed)) return undefined;
+    if (this.exclusiveRunning || (this.failFast && this.failed)) {
+      return undefined;
+    }
     return this.pending.find(
       (stage) =>
         (stage.after ?? []).every((id) => this.finished.has(id)) &&
@@ -97,9 +116,13 @@ class Schedule {
 
   /** @param {import("./types.mjs").Stage} stage */
   start(stage) {
-    if (stage.exclusive === true) this.exclusiveRunning = true;
+    if (stage.exclusive === true) {
+      this.exclusiveRunning = true;
+    }
     this.pending.splice(this.pending.indexOf(stage), 1);
-    if (stage.group !== undefined) this.busyGroups.add(stage.group);
+    if (stage.group !== undefined) {
+      this.busyGroups.add(stage.group);
+    }
     this.running += 1;
   }
 
@@ -107,16 +130,23 @@ class Schedule {
   finish({ stage, value }) {
     this.running -= 1;
     this.finished.add(stage.id);
-    if (stage.exclusive === true) this.exclusiveRunning = false;
-    if (stage.group !== undefined) this.busyGroups.delete(stage.group);
-    if (value.failed) this.failed = true;
+    if (stage.exclusive === true) {
+      this.exclusiveRunning = false;
+    }
+    if (stage.group !== undefined) {
+      this.busyGroups.delete(stage.group);
+    }
+    if (value.failed) {
+      this.failed = true;
+    }
   }
 }
 
 /** @param {number} parallel */
 function checkConcurrency(parallel) {
-  if (!Number.isInteger(parallel) || parallel < 1)
+  if (!Number.isInteger(parallel) || parallel < 1) {
     throw new Error("Concurrency must be a positive integer.");
+  }
 }
 
 /**
@@ -164,7 +194,9 @@ export async function runPlan(plan, parallel, runStage, { failFast = false } = {
   while (schedule.pending.length > 0 || running.size > 0) {
     launch(schedule, running, parallel, runStage);
     if (running.size === 0) {
-      if (failFast && schedule.failed) break;
+      if (failFast && schedule.failed) {
+        break;
+      }
       throw new Error("No stage can start; the plan is stuck.");
     }
     const done = await Promise.race(running.values());

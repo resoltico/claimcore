@@ -67,12 +67,13 @@ export function treeFiles(document, expectedSha) {
       Object.hasOwn(modes, entry.type) && modes[entry.type]?.includes(entry.mode),
       "Unknown review object mode.",
     );
-    if (entry.type !== "tree")
+    if (entry.type !== "tree") {
       files.set(entry.path, {
         type: entry.type,
         mode: entry.mode,
         sha: entry.sha,
       });
+    }
   }
   return files;
 }
@@ -84,8 +85,9 @@ export function reviewScopes(path) {
     /^(src\/|config\/architecture\.json$|Directory\.|ClaimCore\.slnx$)/u.test(path) ||
     /\.(?:fsproj|props|targets)$/u.test(path) ||
     path === "docs/architecture.md"
-  )
+  ) {
     scopes.push("architecture");
+  }
   if (
     !path.includes("/") ||
     /^(?:\.github\/|config\/|eng\/|db\/|src\/|web\/src\/(?:api|hooks)\/|SECURITY\.md$)/u.test(
@@ -94,8 +96,9 @@ export function reviewScopes(path) {
     /(?:package|packages|lock|vulnerability|dependenc|suppression|NuGet|Docker|compose)/iu.test(
       path,
     )
-  )
+  ) {
     scopes.push("security");
+  }
   if (
     !path.includes("/") ||
     /^(?:\.github\/|config\/|eng\/|tests\/|db\/|docs\/|src\/|web\/(?:tests|e2e|scripts|src\/generated)\/)/u.test(
@@ -104,9 +107,22 @@ export function reviewScopes(path) {
     /(?:AGENTS|CONTRIBUTING|architecture|baseline|manifest|suppression|vulnerability|dependenc|\.config|lint|coverage|vitest|playwright|tsconfig|package)/iu.test(
       path,
     )
-  )
+  ) {
     scopes.push("contract-policy");
+  }
   return scopes;
+}
+
+/**
+ * @param {unknown} old
+ * @param {unknown} current
+ * @returns {"added" | "removed" | "modified"}
+ */
+function changeStatus(old, current) {
+  if (old === null) {
+    return "added";
+  }
+  return current === null ? "removed" : "modified";
 }
 
 /**
@@ -120,10 +136,10 @@ export function changedFiles(before, after) {
   for (const path of [...new Set([...before.keys(), ...after.keys()])].sort()) {
     const old = before.get(path) ?? null;
     const current = after.get(path) ?? null;
-    if (JSON.stringify(old) !== JSON.stringify(current))
+    if (JSON.stringify(old) !== JSON.stringify(current)) {
       changes.push({
         path,
-        status: old === null ? "added" : current === null ? "removed" : "modified",
+        status: changeStatus(old, current),
         before: old,
         after: current,
         scopes: [
@@ -136,6 +152,7 @@ export function changedFiles(before, after) {
         ],
         ownerReviewRequired: true,
       });
+    }
   }
   return changes;
 }

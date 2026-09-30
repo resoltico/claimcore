@@ -13,18 +13,22 @@ const diagnosticText = (
 ): string => {
   const expected = Object.hasOwn(limits, diagnostic.id) ? limits[diagnostic.id] : undefined;
   const supplied: Readonly<Record<string, number>> = diagnostic.parameters;
-  if (typeof supplied !== "object" || supplied === null || Array.isArray(supplied))
+  if (typeof supplied !== "object" || supplied === null || Array.isArray(supplied)) {
     return translate(preferences, "notice.unknownDiagnostic");
+  }
   const keys = Object.keys(supplied).sort().join(",");
-  if (expected === undefined || keys !== Object.keys(expected).sort().join(","))
+  if (expected === undefined || keys !== Object.keys(expected).sort().join(",")) {
     return translate(preferences, "notice.unknownDiagnostic");
+  }
   const valid = Object.entries(supplied).every(
     ([key, value]) =>
       Number.isSafeInteger(value) &&
       value >= (expected[key]?.minimum ?? 0) &&
       value <= (expected[key]?.maximum ?? 2147483647),
   );
-  if (!valid) return translate(preferences, "notice.unknownDiagnostic");
+  if (!valid) {
+    return translate(preferences, "notice.unknownDiagnostic");
+  }
   const parameters = Object.fromEntries(
     Object.entries(supplied).map(([k, v]) => [
       k,

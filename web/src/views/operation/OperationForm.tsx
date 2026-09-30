@@ -5,7 +5,11 @@ import { Form } from "react-aria-components/Form";
 import type { RefObject } from "react";
 import type { CurrentCase, DefinitionPayload } from "../../api/v3";
 import { DescriptorField } from "../../components/DescriptorField";
-import { isCorrectionValues, type CorrectionGroupName } from "../../domain/metadata";
+import {
+  correctionGroupName,
+  isCorrectionValues,
+  type CorrectionGroupName,
+} from "../../domain/metadata";
 import type { OperationEditorModel } from "./editorTypes";
 
 type OperationFormProps = {
@@ -18,12 +22,19 @@ type OperationFormProps = {
 
 const CommandPicker = ({ model }: Pick<OperationFormProps, "model">) => {
   const p = usePresentation();
-  if (model.available.length < 2) return null;
+  if (model.available.length < 2) {
+    return null;
+  }
   const change = (next: string): void => {
     const command = model.available.find((candidate) => candidate === next);
-    if (command === undefined || command === model.state.command) return;
-    if (model.dirty) model.setPendingCommand(command);
-    else model.applyCommand(command);
+    if (command === undefined || command === model.state.command) {
+      return;
+    }
+    if (model.dirty) {
+      model.setPendingCommand(command);
+    } else {
+      model.applyCommand(command);
+    }
   };
   return (
     <>
@@ -32,7 +43,9 @@ const CommandPicker = ({ model }: Pick<OperationFormProps, "model">) => {
         id="command-picker"
         value={model.state.command}
         disabled={model.locked}
-        onChange={(event) => change(event.target.value)}
+        onChange={(event) => {
+          change(event.target.value);
+        }}
       >
         {model.available.map((kind) => (
           <option key={kind} value={kind}>
@@ -46,7 +59,7 @@ const CommandPicker = ({ model }: Pick<OperationFormProps, "model">) => {
 
 const Reference = ({ current, model }: Pick<OperationFormProps, "current" | "model">) => {
   const p = usePresentation();
-  if (current === null && model.referenceField !== undefined)
+  if (current === null && model.referenceField !== undefined) {
     return (
       <DescriptorField
         field={model.referenceField}
@@ -59,6 +72,7 @@ const Reference = ({ current, model }: Pick<OperationFormProps, "current" | "mod
         onChange={model.editReference}
       />
     );
+  }
   return current === null ? null : (
     <p>{p.text("ui.reference", { reference: model.state.caseReference })}</p>
   );
@@ -66,8 +80,10 @@ const Reference = ({ current, model }: Pick<OperationFormProps, "current" | "mod
 
 const AuthoringFields = ({ model }: Pick<OperationFormProps, "model">) => {
   const p = usePresentation();
-  if (isCorrectionValues(model.state.values)) return null;
-  const values = model.state.values;
+  if (isCorrectionValues(model.state.values)) {
+    return null;
+  }
+  const { values } = model.state;
   return (
     <>
       {model.fields.map(({ field }) => (
@@ -78,7 +94,9 @@ const AuthoringFields = ({ model }: Pick<OperationFormProps, "model">) => {
           error={
             model.state.fieldError?.name === field.name ? model.state.fieldError.message : undefined
           }
-          onChange={(value) => model.edit(field.name, value)}
+          onChange={(value) => {
+            model.edit(field.name, value);
+          }}
         />
       ))}
       {model.fields.length === 0 ? <p>{p.text("ui.noAuthoredValues")}</p> : null}
@@ -107,7 +125,9 @@ const CorrectionMode = ({
         id={`correction-${name}-mode`}
         value={mode}
         disabled={locked}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={(event) => {
+          onChange(event.target.value);
+        }}
       >
         {actions.map((action) => (
           <option key={p.token(action)} value={p.token(action)}>
@@ -118,6 +138,35 @@ const CorrectionMode = ({
     </>
   );
 };
+
+const ReplacementFields = ({
+  model,
+  name,
+  values,
+  fields,
+}: {
+  model: OperationEditorModel;
+  name: CorrectionGroupName;
+  values: Record<string, string>;
+  fields: ReadonlyArray<OperationEditorModel["groups"][number]["fields"][number]>;
+}) =>
+  fields.map((field) => (
+    <DescriptorField
+      key={field.name}
+      field={field}
+      inputName={`${name}.${field.name}`}
+      value={values[field.name] ?? ""}
+      error={
+        model.state.fieldError?.name === field.name ||
+        model.state.fieldError?.name === `${name}.${field.name}`
+          ? model.state.fieldError.message
+          : undefined
+      }
+      onChange={(next) => {
+        model.editCorrection(name, field.name, next);
+      }}
+    />
+  ));
 
 const CorrectionGroup = ({
   model,
@@ -134,8 +183,10 @@ const CorrectionGroup = ({
   actions: ReadonlyArray<"KEEP" | "REPLACE" | "CLEAR">;
   fields: ReadonlyArray<OperationEditorModel["groups"][number]["fields"][number]>;
 }) => {
-  if (!isCorrectionValues(model.state.values)) return null;
-  const values = model.state.values;
+  if (!isCorrectionValues(model.state.values)) {
+    return null;
+  }
+  const { values } = model.state;
   const value = values[name];
   return (
     <fieldset>
@@ -146,25 +197,13 @@ const CorrectionGroup = ({
         mode={value.mode}
         actions={actions}
         locked={model.locked}
-        onChange={(next) => model.setCorrectionMode(name, next)}
+        onChange={(next) => {
+          model.setCorrectionMode(name, next);
+        }}
       />
-      {value.mode !== "REPLACE"
-        ? null
-        : fields.map((field) => (
-            <DescriptorField
-              key={field.name}
-              field={field}
-              inputName={`${name}.${field.name}`}
-              value={value.values[field.name] ?? ""}
-              error={
-                model.state.fieldError?.name === field.name ||
-                model.state.fieldError?.name === `${name}.${field.name}`
-                  ? model.state.fieldError.message
-                  : undefined
-              }
-              onChange={(next) => model.editCorrection(name, field.name, next)}
-            />
-          ))}
+      {value.mode === "REPLACE" ? (
+        <ReplacementFields model={model} name={name} values={value.values} fields={fields} />
+      ) : null}
     </fieldset>
   );
 };
@@ -178,7 +217,7 @@ const CorrectionFields = ({ model }: Pick<OperationFormProps, "model">) => {
         <CorrectionGroup
           key={group.name}
           model={model}
-          name={group.name as CorrectionGroupName}
+          name={correctionGroupName(group.name)}
           label={p.groupLabel(group.name)}
           meaning={p.groupMeaning(group.name)}
           actions={group.actions}

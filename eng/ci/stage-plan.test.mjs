@@ -8,12 +8,15 @@ const plan = (stages) => ({
   stages: stages.map((stage) => ({ argv: ["true"], ...stage })),
 });
 /** @param {number} milliseconds */
-const pause = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+const pause = (milliseconds) =>
+  new Promise((resolve) => {
+    setTimeout(resolve, milliseconds);
+  });
 
 test("a plan must name unique, known, acyclic stages", () => {
-  assert.throws(() => validatePlan(plan([{ id: "one" }, { id: "one" }])), /twice/);
-  assert.throws(() => validatePlan(plan([{ id: "one", after: ["missing"] }])), /unknown/);
-  assert.throws(() => validatePlan(plan([{ id: "one", after: ["one"] }])), /itself/);
+  assert.throws(() => validatePlan(plan([{ id: "one" }, { id: "one" }])), /twice/u);
+  assert.throws(() => validatePlan(plan([{ id: "one", after: ["missing"] }])), /unknown/u);
+  assert.throws(() => validatePlan(plan([{ id: "one", after: ["one"] }])), /itself/u);
   assert.throws(
     () =>
       validatePlan(
@@ -22,12 +25,12 @@ test("a plan must name unique, known, acyclic stages", () => {
           { id: "two", after: ["one"] },
         ]),
       ),
-    /cycle/,
+    /cycle/u,
   );
-  assert.throws(() => validatePlan(plan([{ id: "Bad Id" }])), /kebab/);
+  assert.throws(() => validatePlan(plan([{ id: "Bad Id" }])), /kebab/u);
   assert.throws(
     () => validatePlan({ producer: "test", stages: [{ id: "one", argv: [] }] }),
-    /command/,
+    /command/u,
   );
   validatePlan(plan([{ id: "one" }, { id: "two", after: ["one"] }]));
 });
@@ -78,7 +81,9 @@ test("stages sharing a group never overlap while others do", async () => {
       if (stage.group === "docker") {
         overlapped ||= [...active].some((id) => id !== stage.id);
         active.add(stage.id);
-      } else free += active.size;
+      } else {
+        free += active.size;
+      }
       await pause(15);
       active.delete(stage.id);
       return { failed: false };
@@ -96,8 +101,11 @@ test("an exclusive stage runs alone and nothing starts while it runs", async () 
     plan([{ id: "a" }, { id: "b" }, { id: "solo", exclusive: true }, { id: "c" }, { id: "d" }]),
     4,
     async (stage) => {
-      if (stage.id === "solo") exclusiveSawOthers = active.size > 0;
-      else othersSawExclusive ||= active.has("solo");
+      if (stage.id === "solo") {
+        exclusiveSawOthers = active.size > 0;
+      } else {
+        othersSawExclusive ||= active.has("solo");
+      }
       active.add(stage.id);
       await pause(15);
       active.delete(stage.id);
@@ -113,7 +121,9 @@ test("a failing or throwing stage is reported and does not stop the others", asy
     plan([{ id: "bad" }, { id: "thrower" }, { id: "good" }]),
     2,
     async (stage) => {
-      if (stage.id === "thrower") throw new Error("boom");
+      if (stage.id === "thrower") {
+        throw new Error("boom");
+      }
       return { failed: stage.id === "bad" };
     },
   );
@@ -158,6 +168,6 @@ test("without fail-fast every stage still runs after a failure", async () => {
 test("concurrency must be a positive integer", async () => {
   await assert.rejects(
     runPlan(plan([{ id: "one" }]), 0, async () => ({})),
-    /positive/,
+    /positive/u,
   );
 });

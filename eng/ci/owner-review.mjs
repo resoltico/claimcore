@@ -15,7 +15,9 @@ async function main() {
     strict: true,
     allowPositionals: false,
   });
-  if (!/^[1-9]\d*$/u.test(values.pr ?? "")) throw new Error("Require a canonical PR number.");
+  if (!/^[1-9]\d*$/u.test(values.pr ?? "")) {
+    throw new Error("Require a canonical PR number.");
+  }
   const root = fileURLToPath(new URL("../../", import.meta.url));
   const source = toolProvenance(root);
   const report = await ownerReview(
@@ -30,8 +32,9 @@ async function main() {
     "Reporting-tool source changed during inspection.",
   );
   console.log(JSON.stringify(report, null, 2));
-  if (report.ci.qualification !== "verified-current-head-ci" || report.ci.draft)
+  if (report.ci.qualification !== "verified-current-head-ci" || report.ci.draft) {
     process.exitCode = 2;
+  }
 }
 main().catch(() => {
   console.error(

@@ -48,31 +48,37 @@ it("lists, reloads, pages, selects and opens cases through typed list outcomes",
   await user.click(screen.getByRole("button", { name: "Reload cases" }));
 });
 
+const historyWithReplayedReceipt = () => {
+  const history = generatedWebValue("case.history");
+  if (history.outcome.tag !== "SUCCEEDED" || history.outcome.data.tag !== "FOUND") {
+    throw new Error("Generated history fixture must be found.");
+  }
+  const full = history.outcome.data.entries.find((entry) => entry.tag === "FULL");
+  if (full === undefined) {
+    throw new Error("Generated history fixture must include a full receipt.");
+  }
+  return {
+    ...history.outcome.data,
+    entries: [
+      ...history.outcome.data.entries,
+      {
+        tag: "FULL",
+        receipt: {
+          ...full.receipt,
+          operationId: "20000000-0000-4000-8000-000000000002",
+          replayed: true,
+        },
+      },
+    ],
+  };
+};
+
 it("shows current fields, server command labels, full expandable history and retryable history pages", async () => {
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
-  const history = generatedWebValue("case.history");
-  if (history.outcome.tag !== "SUCCEEDED" || history.outcome.data.tag !== "FOUND")
-    throw new Error("Generated history fixture must be found.");
-  const full = history.outcome.data.entries.find((entry) => entry.tag === "FULL");
-  if (full === undefined) throw new Error("Generated history fixture must include a full receipt.");
+  const extendedHistory = historyWithReplayedReceipt();
   fetch.mockResolvedValueOnce(response("case.get", "SUCCEEDED", { tag: "FOUND", current }));
-  fetch.mockResolvedValueOnce(
-    response("case.history", "SUCCEEDED", {
-      ...history.outcome.data,
-      entries: [
-        ...history.outcome.data.entries,
-        {
-          tag: "FULL",
-          receipt: {
-            ...full.receipt,
-            operationId: "20000000-0000-4000-8000-000000000002",
-            replayed: true,
-          },
-        },
-      ],
-    }),
-  );
+  fetch.mockResolvedValueOnce(response("case.history", "SUCCEEDED", extendedHistory));
   fetch.mockResolvedValueOnce(response("lifecycle.review", "RESOURCE_UNAVAILABLE", null));
   fetch.mockResolvedValueOnce(
     response("case.history", "SUCCEEDED", { tag: "FOUND", entries: [], nextCursor: null }),

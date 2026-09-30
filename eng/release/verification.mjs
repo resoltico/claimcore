@@ -22,7 +22,9 @@ export const paginated = async (api, path, field) => {
     const items = field === undefined ? response : response[field];
     assert(Array.isArray(items), "Malformed paginated GitHub response.");
     values.push(...items);
-    if (items.length < 100) return values;
+    if (items.length < 100) {
+      return values;
+    }
   }
   throw new Error("Pagination limit reached; refusing an incomplete result.");
 };
@@ -66,7 +68,7 @@ const assertRun = (run, workflow, { repository, tag, expectedSha }) => {
 const assertGate = (jobs, expectedSha) => {
   const gates = jobs.filter((job) => job["name"] === "Gate");
   assert.equal(gates.length, 1, "Expected exactly one aggregate Gate job.");
-  const gate = /** @type {Json} */ (gates[0]);
+  const [gate] = /** @type {[Json]} */ (gates);
   assert.equal(gate["head_sha"], expectedSha);
   assert.equal(gate["status"], "completed");
   assert.equal(gate["conclusion"], "success", "Aggregate Gate did not succeed.");

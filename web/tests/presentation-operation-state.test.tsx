@@ -28,7 +28,9 @@ it("preserves authored content, DOM selection and operation identity across lang
   name.setSelectionRange(1, 3);
   const before = ids.mock.calls.length;
   const selector = languageControl();
-  for (const language of ["ar", "en-XA", "lv", "en"]) await user.selectOptions(selector, language);
+  for (const language of ["ar", "en-XA", "lv", "en"]) {
+    await user.selectOptions(selector, language);
+  }
   expect(ids.mock.calls.length).toBe(before);
   expect(name.selectionStart).toBe(1);
   expect(name.selectionEnd).toBe(3);
@@ -113,7 +115,9 @@ it("does not rebase a frozen preparation after language switching and an externa
   await user.selectOptions(languageControl(), "en");
   fetch.mockRejectedValueOnce(new Error("lost-again"));
   await user.click(screen.getByRole("button", { name: "Retry exact prepare" }));
-  await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
+  await waitFor(() => {
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
   expect(fetch.mock.calls[1]?.[1]?.body).toBe(initialBody);
   expect(draftAt(1).expectedRevision).toBe("1");
 });
@@ -139,7 +143,9 @@ it("localizes late validation by diagnostic identity and focuses the unchanged a
       },
     }),
   );
-  await waitFor(() => expect(name).toHaveFocus());
+  await waitFor(() => {
+    expect(name).toHaveFocus();
+  });
   expect(name).toHaveAttribute("aria-invalid", "true");
   expect(document.body).not.toHaveTextContent("UNTRUSTED_ENGLISH_CANARY");
   const alert = screen.getByRole("alert").textContent;

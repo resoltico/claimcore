@@ -55,7 +55,7 @@ export class Report {
 }
 
 /** A `lint-exception: LX-0000` reference. */
-export const referencePattern = /lint-exception\s*:\s*(LX-\d{4})\b/i;
+export const referencePattern = /lint-exception\s*:\s*(LX-\d{4})\b/iu;
 
 /**
  * The reference beside a suppression: on its own line or on the line above it.
@@ -65,7 +65,9 @@ export const referencePattern = /lint-exception\s*:\s*(LX-\d{4})\b/i;
  */
 export function referenceNear(lines, index) {
   const current = referencePattern.exec(lines[index] ?? "");
-  if (current) return (current[1] ?? "").toUpperCase();
+  if (current) {
+    return (current[1] ?? "").toUpperCase();
+  }
   const above = referencePattern.exec(lines[index - 1] ?? "");
   return above ? (above[1] ?? "").toUpperCase() : null;
 }
@@ -76,7 +78,7 @@ export function referenceNear(lines, index) {
  * @returns {string[]}
  */
 export function ruleList(text) {
-  const rules = (text ?? "").split(/[\s,;]+/).filter((part) => part !== "");
+  const rules = (text ?? "").split(/[\s,;]+/u).filter((part) => part !== "");
   return rules.length === 0 ? ["*"] : rules;
 }
 

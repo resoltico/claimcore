@@ -44,9 +44,9 @@ test("settings preserve stronger existing controls and unrelated required checks
     context: "External review",
     integration_id: 777,
   });
-  const rules = must(
+  const { rules } = must(
     settingsPlan(state).operations.find((/** @type {Json} */ op) => op.path === "rulesets/7"),
-  ).json["rules"];
+  ).json;
   assert(rules.some((/** @type {Json} */ rule) => rule.type === "required_signatures"));
   assert.equal(
     rules.find((/** @type {Json} */ rule) => rule.type === "pull_request").parameters
@@ -111,15 +111,16 @@ test("approved configuration plans cannot be transplanted to a different reposit
 test("concurrent settings changes stop publication instead of overwriting stronger policy", async () => {
   const state = snapshot();
   const plan = settingsPlan(state).planSha256;
-  let reads = 0,
-    writes = 0;
+  let reads = 0;
+  let writes = 0;
   const api = fakeApi(state, {
     read(path) {
-      if (path === "" && ++reads === 2)
+      if (path === "" && ++reads === 2) {
         state.rules[0].bypass_actors.push({
           actor_type: "User",
           actor_id: 999,
         });
+      }
     },
     write() {
       writes++;

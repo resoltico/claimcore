@@ -9,8 +9,9 @@
  * @param {{ method: string, json?: unknown }} options
  */
 async function send(repository, token, request, path, { method, json }) {
-  if (path.startsWith("/") || path.includes("..") || path.includes("://"))
+  if (path.startsWith("/") || path.includes("..") || path.includes("://")) {
     throw new Error("GITHUB_PATH_REFUSED");
+  }
   try {
     return await request(`https://api.github.com/repos/${repository}${path ? `/${path}` : ""}`, {
       method,
@@ -37,13 +38,17 @@ async function send(repository, token, request, path, { method, json }) {
  * @returns {GithubApi}
  */
 export function githubApi(repository, token, request = fetch) {
-  if (!/^[A-Za-z0-9][A-Za-z0-9-]*\/[A-Za-z0-9_.-]+$/u.test(repository) || !token)
+  if (!/^[A-Za-z0-9][A-Za-z0-9-]*\/[A-Za-z0-9_.-]+$/u.test(repository) || !token) {
     throw new Error("GITHUB_IDENTITY_REQUIRED");
+  }
   return async (path = "", { method = "GET", json } = {}) => {
     const response = await send(repository, token, request, path, { method, json });
-    if (!response.ok)
+    if (!response.ok) {
       throw Object.assign(new Error(`GITHUB_HTTP_${response.status}`), { status: response.status });
-    if (response.status === 204) return null;
+    }
+    if (response.status === 204) {
+      return null;
+    }
     try {
       return await response.json();
     } catch {
@@ -69,8 +74,9 @@ function declaredTotal(document, field, previous) {
     count < 0 ||
     count > ceiling ||
     (previous !== undefined && count !== previous)
-  )
+  ) {
     throw new Error("GITHUB_PAGINATION_INCOMPLETE");
+  }
   return count;
 }
 
@@ -80,8 +86,9 @@ function declaredTotal(document, field, previous) {
  */
 function recordIds(rows, ids) {
   for (const row of rows) {
-    if (!Number.isSafeInteger(row["id"]) || row["id"] <= 0 || ids.has(row["id"]))
+    if (!Number.isSafeInteger(row["id"]) || row["id"] <= 0 || ids.has(row["id"])) {
       throw new Error("GITHUB_PAGINATION_DUPLICATE_OR_INVALID_ID");
+    }
     ids.add(row["id"]);
   }
 }
@@ -102,13 +109,21 @@ export async function pages(api, path, field) {
   const isCounted = field !== undefined && Object.hasOwn(counted, field);
   for (let page = 1; page <= 100; page += 1) {
     const document = await api(`${path}${path.includes("?") ? "&" : "?"}per_page=100&page=${page}`);
-    if (isCounted) total = declaredTotal(document, field, total);
+    if (isCounted) {
+      total = declaredTotal(document, field, total);
+    }
     const rows = field === undefined ? document : /** @type {unknown} */ (document[field]);
-    if (!Array.isArray(rows) || rows.length > 100) throw new Error("GITHUB_PAGINATION_INVALID");
-    if (isCounted) recordIds(rows, ids);
+    if (!Array.isArray(rows) || rows.length > 100) {
+      throw new Error("GITHUB_PAGINATION_INVALID");
+    }
+    if (isCounted) {
+      recordIds(rows, ids);
+    }
     values.push(...rows);
     if (rows.length < 100) {
-      if (isCounted && values.length !== total) throw new Error("GITHUB_PAGINATION_INCOMPLETE");
+      if (isCounted && values.length !== total) {
+        throw new Error("GITHUB_PAGINATION_INCOMPLETE");
+      }
       return values;
     }
   }
@@ -131,8 +146,11 @@ export async function pullMergeRevision(api, pr) {
     response.object?.type !== "commit" ||
     typeof sha !== "string" ||
     !/^[0-9a-f]{40}$/u.test(sha) ||
-    (pr["merge_commit_sha"] != null && pr["merge_commit_sha"] !== sha)
-  )
+    (pr["merge_commit_sha"] !== null &&
+      pr["merge_commit_sha"] !== undefined &&
+      pr["merge_commit_sha"] !== sha)
+  ) {
     throw new Error("GITHUB_PR_MERGE_REVISION_MISMATCH");
+  }
   return sha;
 }

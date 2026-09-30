@@ -30,7 +30,11 @@ const CaseRow = ({
   const p = usePresentation();
   return (
     <li>
-      <Button onPress={() => onSelect(caseView.caseReference)}>
+      <Button
+        onPress={() => {
+          onSelect(caseView.caseReference);
+        }}
+      >
         <bdi>{caseView.caseReference}</bdi>
       </Button>
       <span>
@@ -101,7 +105,9 @@ export const CaseList = ({ token, onSelect, onOpen }: CaseListProps) => {
         loading={loading}
         onChange={setLookup}
         onFind={() => {
-          if (lookup !== "") onSelect(lookup);
+          if (lookup !== "") {
+            onSelect(lookup);
+          }
         }}
         onReload={() => void load(null)}
       />

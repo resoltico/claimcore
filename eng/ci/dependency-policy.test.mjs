@@ -45,18 +45,29 @@ test("security retains top-level and transitive findings", () => {
   );
   assert.equal(rows.length, 2);
   assert.equal(
-    safeFinding("nuget", "Example", "1.2.3", undefined, graph, "vulnerable").kind,
+    safeFinding("nuget", "Example", { current: "1.2.3", latest: undefined }, graph, "vulnerable")
+      .kind,
     "vulnerable",
   );
 });
 test("safe dependency reports reject unknown package or graph versions", () => {
-  assert.throws(() => safeFinding("nuget", "PRIVATE-canary", "1.2.3", "2.0.0", graph, "update"));
-  assert.throws(() => safeFinding("nuget", "Example", "0.0.0", "2.0.0", graph, "update"));
+  assert.throws(() =>
+    safeFinding("nuget", "PRIVATE-canary", { current: "1.2.3", latest: "2.0.0" }, graph, "update"),
+  );
+  assert.throws(() =>
+    safeFinding("nuget", "Example", { current: "0.0.0", latest: "2.0.0" }, graph, "update"),
+  );
   assert.throws(() => packageRows({}, []));
 });
 test("approved current holds remain valid without querying upstream latest", () => {
   const holds = validateHolds(registry(), graph, "2026-09-22");
-  const finding = safeFinding("nuget", "Example", "1.2.3", "2.0.0", graph, "update");
+  const finding = safeFinding(
+    "nuget",
+    "Example",
+    { current: "1.2.3", latest: "2.0.0" },
+    graph,
+    "update",
+  );
   assert.equal(classifyUpdates([finding], holds)[0]?.held, true);
   assert.equal(classifyUpdates([{ ...finding, latest: "2.0.1" }], holds)[0]?.held, false);
 });
@@ -67,9 +78,10 @@ const refused = [
   ["absent current dependency", { current: "1.0.0" }],
   ["missing rationale", { rationale: "short" }],
 ];
-for (const [label, change] of refused)
+for (const [label, change] of refused) {
   test(`refuses ${label}`, () =>
     assert.throws(() => validateHolds(registry({ ...hold, ...change }), graph, "2026-09-22")));
+}
 
 test("metadata retries only transient failures with bounded attempt count", () => {
   let calls = 0;
@@ -77,10 +89,7 @@ test("metadata retries only transient failures with bounded attempt count", () =
   const pauses = [];
   const execute = () =>
     ++calls < 3 ? { status: 1, stderr: "EAI_AGAIN private-host" } : { status: 0, stdout: "{}" };
-  assert.deepEqual(
-    jsonProcess("npm", [], ".", [0], execute, (ms) => pauses.push(ms)),
-    {},
-  );
+  assert.deepEqual(jsonProcess("npm", [], ".", { execute, pause: (ms) => pauses.push(ms) }), {});
   assert.equal(calls, 3);
   assert.deepEqual(pauses, [1000, 2000]);
 });
@@ -88,31 +97,35 @@ test("metadata exhaustion and nontransient failures never disclose provider outp
   let calls = 0;
   assert.throws(
     () =>
-      jsonProcess("npm", [], ".", [0], () => {
-        calls += 1;
-        return { status: 1, stderr: "credentials PRIVATE" };
+      jsonProcess("npm", [], ".", {
+        execute: () => {
+          calls += 1;
+          return { status: 1, stderr: "credentials PRIVATE" };
+        },
       }),
     /^Error: DEPENDENCY_COMMAND_FAILED$/u,
   );
   assert.equal(calls, 1);
   assert.throws(
     () =>
-      jsonProcess(
-        "npm",
-        [],
-        ".",
-        [0],
-        () => ({ status: 1, stderr: "EAI_AGAIN PRIVATE" }),
-        () => {},
-      ),
+      jsonProcess("npm", [], ".", {
+        execute: () => ({ status: 1, stderr: "EAI_AGAIN PRIVATE" }),
+        pause: () => {
+          /* empty */
+        },
+      }),
     /DEPENDENCY_METADATA_UNAVAILABLE/u,
   );
 });
 test("successful but malformed or empty metadata is never treated as current", () => {
-  for (const stdout of ["", "not-json"])
-    assert.throws(() => jsonProcess("npm", [], ".", [0], () => ({ status: 0, stdout })));
+  for (const stdout of ["", "not-json"]) {
+    assert.throws(() => jsonProcess("npm", [], ".", { execute: () => ({ status: 0, stdout }) }));
+  }
   assert.deepEqual(
-    jsonProcess("npm", [], ".", [0, 1], () => ({ status: 1, stdout: "{}" })),
+    jsonProcess("npm", [], ".", {
+      allowed: [0, 1],
+      execute: () => ({ status: 1, stdout: "{}" }),
+    }),
     {},
   );
 });

@@ -17,10 +17,25 @@ const fill = async (page: Page, values: Readonly<Record<string, string>>): Promi
   }
 };
 
+type SubmitOutcome = WebV3Response<"command.execute">["outcome"];
+
+const submitFailureCategory = (outcome: SubmitOutcome): string => {
+  if (outcome.tag === "COMPLETED") {
+    return `COMPLETED_${outcome.data.execution.tag}`;
+  }
+  if (outcome.tag === "REFUSED_BEFORE_ATTEMPT") {
+    const preparation = outcome.data.preparation === null ? "NO_PREP" : "WITH_PREP";
+    return `REFUSED_BEFORE_ATTEMPT_${outcome.data.rejection.code}_${preparation}`;
+  }
+  return outcome.tag;
+};
+
 const submitReview = async (page: Page): Promise<void> => {
   const confirmed = page.getByRole("checkbox", { name: /submit this exact prepared request/u });
   await progress("confirm-click-start");
-  if ((await confirmed.count()) !== 1) throw new Error("E2E_REVIEW_CHECKBOX_CARDINALITY");
+  if ((await confirmed.count()) !== 1) {
+    throw new Error("E2E_REVIEW_CHECKBOX_CARDINALITY");
+  }
   try {
     await page
       .getByText("I will submit this exact prepared request.", { exact: true })
@@ -29,7 +44,9 @@ const submitReview = async (page: Page): Promise<void> => {
     throw new Error("E2E_REVIEW_LABEL_CLICK_FAILED");
   }
   await progress("confirm-clicked");
-  if (!(await confirmed.isChecked())) throw new Error("E2E_REVIEW_CHECKBOX_NOT_CHECKED");
+  if (!(await confirmed.isChecked())) {
+    throw new Error("E2E_REVIEW_CHECKBOX_NOT_CHECKED");
+  }
   await progress("confirm-checked");
   const responseEvent = page.waitForResponse(
     (response) => new URL(response.url()).pathname === "/api/v3/operations/submit",
@@ -38,23 +55,19 @@ const submitReview = async (page: Page): Promise<void> => {
   await progress("submit-dispatch");
   await page.getByRole("button", { name: "Submit exact request" }).click();
   const response = await responseEvent;
-  if (response.status() !== 200) throw new Error("E2E_SUBMIT_HTTP_FAILURE");
+  if (response.status() !== 200) {
+    throw new Error("E2E_SUBMIT_HTTP_FAILURE");
+  }
   const payload: unknown = await response.json();
   if (!(await isWebV3Response("command.execute", payload))) {
     throw new Error("E2E_SUBMIT_PROTOCOL_FAILURE");
   }
-  const outcome = (payload as WebV3Response<"command.execute">).outcome;
+  const { outcome } = payload as WebV3Response<"command.execute">;
   if (
     outcome.tag !== "OBSERVED_ACCEPTED" &&
     !(outcome.tag === "COMPLETED" && outcome.data.execution.tag === "ACCEPTED")
   ) {
-    const category =
-      outcome.tag === "COMPLETED"
-        ? `COMPLETED_${outcome.data.execution.tag}`
-        : outcome.tag === "REFUSED_BEFORE_ATTEMPT"
-          ? `REFUSED_BEFORE_ATTEMPT_${outcome.data.rejection.code}_${outcome.data.preparation === null ? "NO_PREP" : "WITH_PREP"}`
-          : outcome.tag;
-    throw new Error(`E2E_SUBMIT_${category}`);
+    throw new Error(`E2E_SUBMIT_${submitFailureCategory(outcome)}`);
   }
   await expect(
     page.getByRole("heading", { name: "Accepted operation", exact: true }),
@@ -96,12 +109,17 @@ export const prepare = async (
   await page.getByRole("button", { name: "Prepare exact request" }).click();
   const response = await event;
   const payload: unknown = await response.json();
-  if (response.status() !== 200 || !(await isWebV3Response("command.prepare", payload)))
+  if (response.status() !== 200 || !(await isWebV3Response("command.prepare", payload))) {
     throw new Error("E2E_PREPARE_PROTOCOL_FAILURE");
-  const outcome = (payload as WebV3Response<"command.prepare">).outcome;
-  if (outcome.tag !== "PREPARED") throw new Error("E2E_PREPARE_REVIEW_UNAVAILABLE");
+  }
+  const { outcome } = payload as WebV3Response<"command.prepare">;
+  if (outcome.tag !== "PREPARED") {
+    throw new Error("E2E_PREPARE_REVIEW_UNAVAILABLE");
+  }
   const { operationId, requestSha256 } = outcome.data.details.summary;
-  if (requestSha256 === null) throw new Error("E2E_PREPARE_EXACT_IDENTITY_UNAVAILABLE");
+  if (requestSha256 === null) {
+    throw new Error("E2E_PREPARE_EXACT_IDENTITY_UNAVAILABLE");
+  }
   const identity = { operationId, requestSha256 };
   const dialog = page.getByRole("dialog", { name: "Review prepared operation" });
   await expect(dialog).toContainText(operationId);

@@ -21,7 +21,9 @@ export function tagOperation(snapshot) {
         rule.rules.some((/** @type {Json} */ item) => item.type === type),
       ),
   );
-  if (protectedTags) return null;
+  if (protectedTags) {
+    return null;
+  }
   assert(
     !snapshot["rules"].some(
       (/** @type {Json} */ rule) => rule.name === "Immutable ClaimCore version tags",

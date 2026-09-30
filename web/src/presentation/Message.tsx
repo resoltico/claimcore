@@ -10,6 +10,8 @@ type Props<K extends MessageKey> = { id: K } & (MessageArgs[K] extends Readonly<
 export const Message = <K extends MessageKey>({ id, values }: Props<K>) => {
   const p = usePresentation();
   // The prop union is checked at call sites; rendering uses the same catalog shape validator.
+  // lint-exception: LX-0013
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion
   return <>{p.text(id, ...([values] as Values<K>))}</>;
 };
 export const NoticeView = ({ value }: { value: Notice }) => {

@@ -45,7 +45,9 @@ it("discards an aborted keyed read instead of replacing its newer response", asy
   });
   rerender({ key: "second" });
   completeFirst?.(result("old"));
-  await waitFor(() => expect(hook.current.value).toEqual({ value: "new" }));
+  await waitFor(() => {
+    expect(hook.current.value).toEqual({ value: "new" });
+  });
 });
 
 it("aborts a stale page load before appending a newer cursor page", async () => {
@@ -55,10 +57,16 @@ it("aborts a stale page load before appending a newer cursor page", async () => 
   });
   const request = vi.fn().mockReturnValueOnce(first).mockResolvedValueOnce(result("new"));
   const { result: hook } = renderHook(() => useRetryablePage(request, selectPage));
-  await waitFor(() => expect(request).toHaveBeenCalledOnce());
-  await act(async () => hook.current.load("next"));
+  await waitFor(() => {
+    expect(request).toHaveBeenCalledOnce();
+  });
+  await act(async () => {
+    await hook.current.load("next");
+  });
   completeFirst?.(result("old"));
-  await waitFor(() => expect(hook.current.items).toEqual(["new"]));
+  await waitFor(() => {
+    expect(hook.current.items).toEqual(["new"]);
+  });
 });
 
 it("coalesces duplicate page loads for one in-flight cursor", async () => {
@@ -68,7 +76,9 @@ it("coalesces duplicate page loads for one in-flight cursor", async () => {
   });
   const request = vi.fn(() => pending);
   const { result: hook } = renderHook(() => useRetryablePage(request, selectPage));
-  await waitFor(() => expect(request).toHaveBeenCalledOnce());
+  await waitFor(() => {
+    expect(request).toHaveBeenCalledOnce();
+  });
   let first: Promise<void> = Promise.resolve();
   let second: Promise<void> = Promise.resolve();
   act(() => {

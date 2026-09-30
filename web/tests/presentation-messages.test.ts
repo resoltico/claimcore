@@ -32,8 +32,9 @@ it("renders every catalog key in every language and preserves typed interpolatio
 
 it("keeps ICU plural grammar independent from the number-display locale", () => {
   const p = { language: "ar" as const, displayLocale: "en-GB" as const };
-  for (const count of [0, 1, 2, 3, 11, 100])
+  for (const count of [0, 1, 2, 3, 11, 100]) {
     expect(translate(p, "ui.attemptCount", { count })).not.toBe("");
+  }
   expect(translate(p, "ui.attemptCount", { count: 11 })).toContain("11");
   expect(translate({ ...p, displayLocale: "ar-EG" }, "ui.attemptCount", { count: 11 })).toContain(
     "١١",
@@ -46,12 +47,15 @@ it("keeps ICU plural grammar independent from the number-display locale", () => 
 
 it("refuses unknown or malformed message arguments without echoing the supplied material", () => {
   const fallback = translate(defaults, "notice.unknownDiagnostic");
-  for (const args of [{}, { operationId: 1 }, { operationId: "secret", extra: "secret" }])
+  for (const args of [{}, { operationId: 1 }, { operationId: "secret", extra: "secret" }]) {
     expect(renderKey(defaults, "ui.operationAccepted", args)).toBe(fallback);
-  for (const count of [-1, 1.2, Infinity, NaN, Number.MAX_SAFE_INTEGER + 1])
+  }
+  for (const count of [-1, 1.2, Infinity, NaN, Number.MAX_SAFE_INTEGER + 1]) {
     expect(renderKey(defaults, "ui.attemptCount", { count })).toBe(fallback);
-  for (const key of ["unexpected-secret-key", "constructor", "toString", "__proto__"])
+  }
+  for (const key of ["unexpected-secret-key", "constructor", "toString", "__proto__"]) {
     expect(renderKey(defaults, key)).toBe(fallback);
+  }
   const canonical = "<unsafe>\u0308-CANONICAL";
   expect(
     translate({ ...defaults, language: "ar" }, "ui.reference", { reference: canonical }),
@@ -110,7 +114,9 @@ it("retains local, accepted and uncertain notices as language-neutral data", () 
     "exportStarted",
     "keptForRecovery",
   ];
-  for (const reason of reasons) expect(renderNotice(defaults, localNotice(reason))).not.toBe("");
+  for (const reason of reasons) {
+    expect(renderNotice(defaults, localNotice(reason))).not.toBe("");
+  }
   const notice = recoveryNotice(localNotice("unreachable"), "inspectBeforeAction");
   const original = JSON.stringify(notice);
   expect(renderNotice(defaults, notice)).toContain(

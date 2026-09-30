@@ -29,7 +29,9 @@ test("bounds repeated published login admission and recovers after its window", 
       bounded = true;
       break;
     }
-    if (response.status() !== 302) throw new Error(`E2E_RATE_STATUS_${response.status()}`);
+    if (response.status() !== 302) {
+      throw new Error(`E2E_RATE_STATUS_${response.status()}`);
+    }
     challenges += 1;
   }
   expect(challenges).toBeGreaterThanOrEqual(2);

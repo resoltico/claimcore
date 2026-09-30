@@ -16,7 +16,9 @@ export function newer(left, right) {
   const a = version(left);
   const b = version(right);
   for (let i = 0; i < 3; i += 1) {
-    if (a[i] !== b[i]) return (a[i] ?? 0n) > (b[i] ?? 0n);
+    if (a[i] !== b[i]) {
+      return (a[i] ?? 0n) > (b[i] ?? 0n);
+    }
   }
   return false;
 }
@@ -33,7 +35,9 @@ export const packageKey = (ecosystem, name) =>
 function projectRows(project, collections) {
   assert(project && typeof project === "object", "Malformed NuGet project metadata.");
   assert(!project.errors?.length && !project.problems?.length, "NuGet project metadata failed.");
-  if (project.frameworks === undefined) return [];
+  if (project.frameworks === undefined) {
+    return [];
+  }
   assert(Array.isArray(project.frameworks), "Malformed framework metadata.");
   return project.frameworks.flatMap((/** @type {import("./types.mjs").Json} */ framework) =>
     collections.flatMap((collection) => {
@@ -73,13 +77,12 @@ export function packageRows(document, collections) {
 /**
  * @param {string} ecosystem
  * @param {unknown} name
- * @param {string} current
- * @param {string | undefined} latest
+ * @param {{ current: string, latest: string | undefined }} versions
  * @param {Map<string, Set<string>>} installed
  * @param {string} kind
  * @returns {Finding}
  */
-export function safeFinding(ecosystem, name, current, latest, installed, kind) {
+export function safeFinding(ecosystem, name, { current, latest }, installed, kind) {
   assert(
     typeof name === "string" && name.length <= 200 && /^@?[A-Za-z0-9][A-Za-z0-9_./-]*$/u.test(name),
     "Invalid package identity.",
@@ -89,7 +92,9 @@ export function safeFinding(ecosystem, name, current, latest, installed, kind) {
     "Package metadata does not match the locked graph.",
   );
   version(current);
-  if (latest !== undefined) version(latest);
+  if (latest !== undefined) {
+    version(latest);
+  }
   return {
     ecosystem,
     package: name,
@@ -113,7 +118,13 @@ export function validateHolds(document, installed, today = new Date().toISOStrin
   const keys = new Set();
   for (const hold of document.holds) {
     assert(["nuget", "npm"].includes(hold.ecosystem), "Invalid hold ecosystem.");
-    safeFinding(hold.ecosystem, hold.package, hold.current, hold.latest, installed, "hold");
+    safeFinding(
+      hold.ecosystem,
+      hold.package,
+      { current: hold.current, latest: hold.latest },
+      installed,
+      "hold",
+    );
     assert(hold.current !== hold.latest, "A hold must identify an available alternative.");
     assert(
       typeof hold.owner === "string" && hold.owner.trim().length >= 3,

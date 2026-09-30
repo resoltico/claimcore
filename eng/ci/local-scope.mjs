@@ -17,10 +17,14 @@ const git = (root, args) =>
  */
 export function changedFiles(root, ref) {
   const base = ref ?? git(root, ["merge-base", "HEAD", "origin/main"]).stdout.trim();
-  if (!base) return null;
+  if (!base) {
+    return null;
+  }
   const tracked = git(root, ["diff", "--name-only", base]);
   const untracked = git(root, ["ls-files", "--others", "--exclude-standard"]);
-  if (tracked.status !== 0 || untracked.status !== 0) return null;
+  if (tracked.status !== 0 || untracked.status !== 0) {
+    return null;
+  }
   return [...tracked.stdout.split("\n"), ...untracked.stdout.split("\n")].filter(Boolean);
 }
 
@@ -30,7 +34,9 @@ export function changedFiles(root, ref) {
  * @param {string[] | null} changed
  */
 export function affected(job, changed) {
-  if (job.scope === null || job.scope === undefined || changed === null) return true;
-  const patterns = job.scope.map((pattern) => new RegExp(pattern));
+  if (job.scope === null || job.scope === undefined || changed === null) {
+    return true;
+  }
+  const patterns = job.scope.map((pattern) => new RegExp(pattern, "u"));
   return changed.some((file) => patterns.some((pattern) => pattern.test(file)));
 }

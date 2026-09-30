@@ -21,7 +21,7 @@ const localeCode = [
   "navigator.language;",
 ];
 const boundaryRules =
-  /no-restricted-globals|no-restricted-imports|no-presentation-import|no-danger/;
+  /no-restricted-globals|no-restricted-imports|no-presentation-import|no-danger/u;
 const stateFiles = [
   "src/api/outcomes.ts",
   "src/domain/operationReducer.ts",

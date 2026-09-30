@@ -80,7 +80,7 @@ const mutations = [
     },
   ],
 ];
-for (const [label, mutate] of mutations)
+for (const [label, mutate] of mutations) {
   test(`owner settings refuse ${label} without narrowing unknown existing policy`, () => {
     const state = snapshot();
     const rule = { ...ownerMergeRule(123), id: 8 };
@@ -88,6 +88,7 @@ for (const [label, mutate] of mutations)
     state["rules"].push(rule);
     assert.throws(() => settingsPlan(state));
   });
+}
 
 test("a disabled exact owner rule is reactivated without replacing its authority", () => {
   const state = snapshot();
@@ -97,12 +98,13 @@ test("a disabled exact owner rule is reactivated without replacing its authority
   );
   assert.deepEqual(op.json, ownerMergeRule(123));
 });
-for (const type of ["merge_queue", "update"])
+for (const type of ["merge_queue", "update"]) {
   test(`conflicting ${type} needs explicit owner reconciliation`, () => {
     const state = snapshot();
     must(state["rules"][0]).rules.push({ type });
     assert.throws(() => settingsPlan(state), /owner reconciliation/u);
   });
+}
 test("missing owner identity is not converted into a broad admin exception", () => {
   const state = snapshot();
   state["repository"].owner.id = 0;

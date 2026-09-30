@@ -1,27 +1,27 @@
 import { inline, inlineRules, withoutStrings } from "./comments.mjs";
 
-const noqa = /#\s*noqa\b(?::\s*(?<rules>[A-Za-z0-9,\s]+))?/i;
-const ruffFile = /#\s*ruff\s*:\s*(?:noqa|disable)\b(?:\s*[:[]\s*(?<rules>[A-Za-z0-9,\s]+)\]?)?/i;
-const typeIgnore = /#\s*type\s*:\s*ignore\b(?:\[(?<rules>[^\]]*)\])?/i;
+const noqa = /#\s*noqa\b(?::\s*(?<rules>[A-Za-z0-9,\s]+))?/iu;
+const ruffFile = /#\s*ruff\s*:\s*(?:noqa|disable)\b(?:\s*[:[]\s*(?<rules>[A-Za-z0-9,\s]+)\]?)?/iu;
+const typeIgnore = /#\s*type\s*:\s*ignore\b(?:\[(?<rules>[^\]]*)\])?/iu;
 const listedRules = [
   { pattern: noqa, tool: "ruff" },
   { pattern: ruffFile, tool: "ruff" },
   { pattern: typeIgnore, tool: "mypy" },
 ];
 const otherTools = [
-  { tool: "mypy", pattern: /#\s*mypy\s*:/i, rule: "mypy-inline-config" },
+  { tool: "mypy", pattern: /#\s*mypy\s*:/iu, rule: "mypy-inline-config" },
   {
     tool: "mypy",
-    pattern: /#\s*pyright\s*:|#\s*pyrefly\s*:|#\s*ty\s*:/i,
+    pattern: /#\s*pyright\s*:|#\s*pyrefly\s*:|#\s*ty\s*:/iu,
     rule: "type-checker-inline-config",
   },
-  { tool: "ruff", pattern: /#\s*(?:fmt|yapf)\s*:\s*(?:off|skip)\b/i, rule: "format-off" },
+  { tool: "ruff", pattern: /#\s*(?:fmt|yapf)\s*:\s*(?:off|skip)\b/iu, rule: "format-off" },
   {
     tool: "ruff",
-    pattern: /#\s*(?:pylint\s*:|nosec\b|isort\s*:)/i,
+    pattern: /#\s*(?:pylint\s*:|nosec\b|isort\s*:)/iu,
     rule: "foreign-linter-directive",
   },
-  { tool: "coverage", pattern: /#\s*pragma\s*:\s*no\s+cover\b/i, rule: "pragma-no-cover" },
+  { tool: "coverage", pattern: /#\s*pragma\s*:\s*no\s+cover\b/iu, rule: "pragma-no-cover" },
 ];
 
 /**
@@ -34,11 +34,13 @@ function codeOf(raw, state) {
   let line = raw;
   if (state.triple !== "") {
     const end = line.indexOf(state.triple);
-    if (end < 0) return null;
+    if (end < 0) {
+      return null;
+    }
     line = line.slice(end + 3);
     state.triple = "";
   }
-  const opening = /("""|''')/.exec(line);
+  const opening = /("""|''')/u.exec(line);
   if (opening && !line.slice((opening.index ?? 0) + 3).includes(opening[1] ?? "")) {
     state.triple = opening[1] ?? "";
     line = line.slice(0, opening.index);
@@ -56,7 +58,9 @@ export function scanPython(file, lines) {
   const state = { triple: "" };
   return lines.flatMap((raw, index) => {
     const code = codeOf(raw, state);
-    if (code === null) return [];
+    if (code === null) {
+      return [];
+    }
     const listed = listedRules.flatMap(({ pattern, tool }) => {
       const match = pattern.exec(code);
       return match ? inlineRules(file, tool, match.groups?.["rules"], lines, index) : [];

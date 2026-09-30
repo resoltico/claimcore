@@ -72,12 +72,13 @@ const refusals = [
   ["duplicate Gate", ({ jobs }) => jobs.push({ ...jobs[0] })],
   ["skipped family", ({ jobs }) => jobs.push({ ...jobs[0], name: "Unit", conclusion: "skipped" })],
 ];
-for (const [label, mutate] of refusals)
+for (const [label, mutate] of refusals) {
   test(`PR qualification rejects ${label}`, () => {
     const value = example();
     mutate(value);
     assert.throws(() => qualifyRun(value.pr, value.run, value.jobs, value.workflow));
   });
+}
 test("pending and failed PR verification are distinct from qualified CI", () => {
   const { pr, run, jobs, workflow } = example();
   assert.equal(qualifyRun(pr, run, jobs, workflow), "verified-current-head-ci");
@@ -92,21 +93,33 @@ test("PR read-back rejects a changed attempt and never fabricates approval", asy
   let reads = 0;
   /** @type {import("./types.mjs").GithubApi} */
   const api = async (path = "") => {
-    if (path === "pulls/9") return structuredClone(pr);
-    if (path === "git/ref/pull/9/merge")
+    if (path === "pulls/9") {
+      return structuredClone(pr);
+    }
+    if (path === "git/ref/pull/9/merge") {
       return {
         ref: "refs/pull/9/merge",
         object: { type: "commit", sha: pr.merge_commit_sha },
       };
-    if (path === `git/commits/${pr.merge_commit_sha}`)
+    }
+    if (path === `git/commits/${pr.merge_commit_sha}`) {
       return {
         sha: pr.merge_commit_sha,
         parents: [{ sha: pr.base.sha }, { sha: pr.head.sha }],
       };
-    if (path === "actions/workflows/ci.yml") return workflow;
-    if (path.includes("/runs?")) return { total_count: 1, workflow_runs: [run] };
-    if (path.includes("/jobs?")) return { total_count: jobs.length, jobs };
-    if (path === "actions/runs/12") return { ...run, run_attempt: ++reads > 1 ? 2 : 1 };
+    }
+    if (path === "actions/workflows/ci.yml") {
+      return workflow;
+    }
+    if (path.includes("/runs?")) {
+      return { total_count: 1, workflow_runs: [run] };
+    }
+    if (path.includes("/jobs?")) {
+      return { total_count: jobs.length, jobs };
+    }
+    if (path === "actions/runs/12") {
+      return { ...run, run_attempt: ++reads > 1 ? 2 : 1 };
+    }
     throw new Error("Unexpected read.");
   };
   await assert.rejects(inspectPr(api, 9, pr.head.sha), /attempt changed/u);
@@ -117,21 +130,33 @@ test("PR read-back uses a verified merge ref when the PR response omits its SHA"
   pr["merge_commit_sha"] = null;
   /** @type {import("./types.mjs").GithubApi} */
   const api = async (path = "") => {
-    if (path === "pulls/9") return structuredClone(pr);
-    if (path === "git/ref/pull/9/merge")
+    if (path === "pulls/9") {
+      return structuredClone(pr);
+    }
+    if (path === "git/ref/pull/9/merge") {
       return {
         ref: "refs/pull/9/merge",
         object: { type: "commit", sha: merge },
       };
-    if (path === `git/commits/${merge}`)
+    }
+    if (path === `git/commits/${merge}`) {
       return {
         sha: merge,
         parents: [{ sha: pr.base.sha }, { sha: pr.head.sha }],
       };
-    if (path === "actions/workflows/ci.yml") return workflow;
-    if (path.includes("/runs?")) return { total_count: 1, workflow_runs: [run] };
-    if (path.includes("/jobs?")) return { total_count: jobs.length, jobs };
-    if (path === "actions/runs/12") return run;
+    }
+    if (path === "actions/workflows/ci.yml") {
+      return workflow;
+    }
+    if (path.includes("/runs?")) {
+      return { total_count: 1, workflow_runs: [run] };
+    }
+    if (path.includes("/jobs?")) {
+      return { total_count: jobs.length, jobs };
+    }
+    if (path === "actions/runs/12") {
+      return run;
+    }
     throw new Error("Unexpected read.");
   };
   const result = await inspectPr(api, 9, pr.head.sha);
@@ -142,17 +167,21 @@ test("PR read-back refuses a merge ref with different parents", async () => {
   const { pr } = example();
   /** @type {import("./types.mjs").GithubApi} */
   const api = async (path = "") => {
-    if (path === "pulls/9") return structuredClone(pr);
-    if (path === "git/ref/pull/9/merge")
+    if (path === "pulls/9") {
+      return structuredClone(pr);
+    }
+    if (path === "git/ref/pull/9/merge") {
       return {
         ref: "refs/pull/9/merge",
         object: { type: "commit", sha: pr.merge_commit_sha },
       };
-    if (path === `git/commits/${pr.merge_commit_sha}`)
+    }
+    if (path === `git/commits/${pr.merge_commit_sha}`) {
       return {
         sha: pr.merge_commit_sha,
         parents: [{ sha: pr.base.sha }, { sha: "d".repeat(40) }],
       };
+    }
     throw new Error("Unexpected read.");
   };
   await assert.rejects(inspectPr(api, 9, pr.head.sha), /current base and head/u);

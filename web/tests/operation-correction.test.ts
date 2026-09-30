@@ -11,7 +11,9 @@ it("encodes every correction action explicitly and refuses an invalid registrati
     payment: { mode: "REPLACE" as const, values: {} },
   };
   const request = createDraft(operationId, "CASE-SYNTHETIC", "1", "CORRECT_CASE", values);
-  if (request.command.kind !== "CORRECT_CASE") throw new Error("Expected a correction request.");
+  if (request.command.kind !== "CORRECT_CASE") {
+    throw new Error("Expected a correction request.");
+  }
   expect(request.command.groups).toEqual({
     registration: { mode: "KEEP" },
     decision: {
@@ -76,7 +78,9 @@ it("retains authored replacement values for every grouped correction field", () 
     },
     payment: { mode: "REPLACE", values: { paymentDate: "2026-09-04" } },
   });
-  if (request.command.kind !== "CORRECT_CASE") throw new Error("Expected a correction request.");
+  if (request.command.kind !== "CORRECT_CASE") {
+    throw new Error("Expected a correction request.");
+  }
   expect(request.command.groups.decision).toEqual({
     mode: "REPLACE",
     values: { paymentDecisionDate: "2026-09-03", payableAmount: "2.00", payableCurrency: "EUR" },

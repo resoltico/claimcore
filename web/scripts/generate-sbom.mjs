@@ -13,7 +13,9 @@ const rootDirectory = resolve(webDirectory, "..");
 
 const productionRootReferences = (packageLock) => {
   const rootPackage = packageLock.packages?.[""];
-  if (rootPackage === undefined) throw new Error("npm lock root metadata is required.");
+  if (rootPackage === undefined) {
+    throw new Error("npm lock root metadata is required.");
+  }
   return Object.keys(rootPackage.dependencies ?? {})
     .map((name) => {
       const locked = packageLock.packages[`node_modules/${name}`];
@@ -30,7 +32,9 @@ const reachableReferences = (roots, components, dependencies) => {
   const pending = [...roots];
   while (pending.length > 0) {
     const reference = pending.pop();
-    if (retained.has(reference)) continue;
+    if (retained.has(reference)) {
+      continue;
+    }
     if (!components.has(reference)) {
       throw new Error(`npm SBOM omits production component ${reference}.`);
     }
@@ -44,7 +48,9 @@ const productionClosure = (document, packageLock) => {
   const rootGraph = document.dependencies?.find(
     (dependency) => dependency.ref === document.metadata?.component?.["bom-ref"],
   );
-  if (rootGraph === undefined) throw new Error("npm SBOM root metadata is required.");
+  if (rootGraph === undefined) {
+    throw new Error("npm SBOM root metadata is required.");
+  }
 
   const components = new Map(
     (document.components ?? []).map((component) => [component["bom-ref"], component]),
@@ -58,15 +64,16 @@ const productionClosure = (document, packageLock) => {
   document.components = document.components.filter((component) =>
     retained.has(component["bom-ref"]),
   );
-  document.dependencies = [
-    { ...rootGraph, dependsOn: roots },
-    ...document.dependencies
-      .filter((dependency) => retained.has(dependency.ref))
-      .map((dependency) => ({
+  const retainedDependencies = [];
+  for (const dependency of document.dependencies) {
+    if (retained.has(dependency.ref)) {
+      retainedDependencies.push({
         ...dependency,
         dependsOn: (dependency.dependsOn ?? []).filter((reference) => retained.has(reference)),
-      })),
-  ];
+      });
+    }
+  }
+  document.dependencies = [{ ...rootGraph, dependsOn: roots }, ...retainedDependencies];
   return document;
 };
 
@@ -78,8 +85,9 @@ mkdirSync(outputDirectory, { recursive: true });
 const props = readFileSync(resolve(rootDirectory, "Directory.Build.props"), "utf8");
 const version = props.match(/<Version>([^<]+)<\/Version>/u)?.[1];
 
-if (version === undefined)
+if (version === undefined) {
   throw new Error("Directory.Build.props must define the product version.");
+}
 
 const temporary = mkdtempSync(resolve(tmpdir(), "claimcore-sbom-"));
 try {

@@ -68,9 +68,9 @@ const AttemptEvidence = ({
       {value.attempts.nextCursor === null ? null : (
         <Button
           className="secondary-button"
-          onPress={() =>
-            actions.loadAttempts(value.summary.operationId, value.attempts.nextCursor!)
-          }
+          onPress={() => {
+            actions.loadAttempts(value.summary.operationId, value.attempts.nextCursor!);
+          }}
         >
           {p.text("ui.moreAttempts")}
         </Button>
@@ -163,7 +163,12 @@ export const RecoveryList = ({
           return (
             <li key={id}>
               <Summary item={item} />
-              <Button onPress={() => actions.inspect(item)} isDisabled={busy === id}>
+              <Button
+                onPress={() => {
+                  actions.inspect(item);
+                }}
+                isDisabled={busy === id}
+              >
                 {item.tag === "RETAINED" ? p.text("ui.inspect") : p.text("ui.inspectRevocation")}
               </Button>
             </li>
@@ -196,21 +201,70 @@ const ActionButtons = ({
   return (
     <div className="dialog-actions">
       {canResolve ? (
-        <Button onPress={() => actions.choose("RESOLVE", summary)}>
+        <Button
+          onPress={() => {
+            actions.choose("RESOLVE", summary);
+          }}
+        >
           {p.text("ui.resolveExact")}
         </Button>
       ) : null}
       {canDismiss ? (
-        <Button className="secondary-button" onPress={() => actions.choose("DISMISS", summary)}>
+        <Button
+          className="secondary-button"
+          onPress={() => {
+            actions.choose("DISMISS", summary);
+          }}
+        >
           {p.text("ui.dismissPreparation")}
         </Button>
       ) : null}
       {digestAvailable && summary.availableActions.includes("EXPORT") ? (
-        <Button className="secondary-button" onPress={() => actions.exportItem(summary)}>
+        <Button
+          className="secondary-button"
+          onPress={() => {
+            actions.exportItem(summary);
+          }}
+        >
           {p.text("ui.exportEnvelope")}
         </Button>
       ) : null}
     </div>
+  );
+};
+
+const DetailsBody = ({
+  selected,
+  summary,
+  actions,
+}: {
+  selected: Inspection | null;
+  summary: PreparationSummary | null;
+  actions: RecoveryActions;
+}) => {
+  const p = usePresentation();
+  if (selected === null) {
+    return null;
+  }
+  if (selected.tag === "REVOKED") {
+    return <RevocationDetails {...selected.revocation} />;
+  }
+  if (summary === null) {
+    return null;
+  }
+  return (
+    <>
+      <RetainedDetails value={selected.value.preparation} actions={actions} />
+      <p>{p.text("ui.observation", { state: p.token(selected.value.observation.tag) })}</p>
+      {selected.value.observation.tag === "FOUND" ? (
+        <p>
+          {p.text("ui.observedAccepted", {
+            operationId: selected.value.observation.value.operationId,
+          })}
+        </p>
+      ) : null}
+      <ActionButtons summary={summary} actions={actions} />
+    </>
   );
 };
 
@@ -233,25 +287,12 @@ export const RecoveryDetailsDialog = ({
       isOpen={selected !== null}
       isDismissable
       onOpenChange={(open) => {
-        if (!open) onClose();
+        if (!open) {
+          onClose();
+        }
       }}
     >
-      {selected === null ? null : selected.tag === "REVOKED" ? (
-        <RevocationDetails {...selected.revocation} />
-      ) : summary === null ? null : (
-        <>
-          <RetainedDetails value={selected.value.preparation} actions={actions} />
-          <p>{p.text("ui.observation", { state: p.token(selected.value.observation.tag) })}</p>
-          {selected.value.observation.tag !== "FOUND" ? null : (
-            <p>
-              {p.text("ui.observedAccepted", {
-                operationId: selected.value.observation.value.operationId,
-              })}
-            </p>
-          )}
-          <ActionButtons summary={summary} actions={actions} />
-        </>
-      )}
+      <DetailsBody selected={selected} summary={summary} actions={actions} />
     </AccessibleModal>
   );
 };

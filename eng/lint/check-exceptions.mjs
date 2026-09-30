@@ -8,7 +8,9 @@ const root = resolve(fileURLToPath(new URL("../..", import.meta.url)));
 const { report, registered, active } = checkRepository(root);
 
 if (report.errors.length > 0) {
-  for (const message of report.errors) console.error(message);
+  for (const message of report.errors) {
+    console.error(message);
+  }
   console.error(`${report.errors.length} lint exception finding(s).`);
   process.exitCode = 1;
 } else {

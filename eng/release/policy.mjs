@@ -38,7 +38,9 @@ const closesFence = (line, fence) => {
  */
 const opensFence = (line) => {
   const open = /^ {0,3}(`{3,}|~{3,})(.*)$/u.exec(line);
-  if (open === null) return null;
+  if (open === null) {
+    return null;
+  }
   const marker = open[1] ?? "";
   assert(marker[0] !== "`" || !(open[2] ?? "").includes("`"), "Malformed code fence.");
   return marker;
@@ -53,13 +55,19 @@ const headingsOutsideFences = (lines) => {
 
   for (const [index, line] of lines.entries()) {
     if (fence !== null) {
-      if (closesFence(line, fence)) fence = null;
+      if (closesFence(line, fence)) {
+        fence = null;
+      }
       continue;
     }
     fence = opensFence(line);
-    if (fence !== null) continue;
+    if (fence !== null) {
+      continue;
+    }
     assert(!line.includes("<!--"), "HTML comments outside fenced code are not supported.");
-    if (heading.test(line)) headings.push({ index, line });
+    if (heading.test(line)) {
+      headings.push({ index, line });
+    }
   }
 
   assert.equal(fence, null, "Unclosed code fence in CHANGELOG.md.");
@@ -109,7 +117,7 @@ export const extractReleaseBody = (changelog, version) => {
   const candidates = headingsOutsideFences(lines).filter(({ line }) => releaseHeading.test(line));
   assert.equal(candidates.length, 1, "Release section must exist exactly once.");
 
-  const selected = /** @type {{ index: number, line: string }} */ (candidates[0]);
+  const [selected] = /** @type {[{ index: number, line: string }]} */ (candidates);
   const date = /^ {0,3}## \[[^\]]+\] - (\d{4}-\d{2}-\d{2})$/u.exec(selected.line)?.[1];
   assert(date !== undefined, "Expected: ## [X.Y.Z] - YYYY-MM-DD");
   const parsed = new Date(`${date}T00:00:00Z`);
@@ -120,7 +128,9 @@ export const extractReleaseBody = (changelog, version) => {
 
   const next = headingsOutsideFences(lines).find(({ index }) => index > selected.index);
   const bodyLines = lines.slice(selected.index + 1, next?.index ?? lines.length);
-  while (bodyLines[0] === "") bodyLines.shift();
+  while (bodyLines[0] === "") {
+    bodyLines.shift();
+  }
   const body = canonicalNotes(bodyLines.join("\n"));
   assert(
     body.split("\n").some((line) => line.trim() && !/^\s*#|^ {0,3}\[[^\]]+\]:/u.test(line)),
@@ -148,7 +158,9 @@ export const extractReleaseBody = (changelog, version) => {
 function closeElement(clean, stack, name, tokenStart) {
   const element = stack.pop();
   assert(element !== undefined && element.name === name, "Unbalanced XML elements.");
-  if (element.name !== "Version") return null;
+  if (element.name !== "Version") {
+    return null;
+  }
   const value = clean.slice(element.contentStart, tokenStart).trim();
   assert(!value.includes("<") && isVersion(value), "Version must be a literal X.Y.Z.");
   return value;
@@ -188,25 +200,32 @@ export const declaredVersion = (xml) => {
   const stack = [];
 
   for (const token of clean.matchAll(/<(?:[^"'<>]|"[^"]*"|'[^']*')*>/gu)) {
-    const text = token[0];
-    if (text.startsWith("<?")) continue;
+    const [text] = token;
+    if (text.startsWith("<?")) {
+      continue;
+    }
     const close = /^<\/([A-Za-z_][\w:.-]*)\s*>$/u.exec(text);
     if (close !== null) {
       const value = closeElement(clean, stack, close[1] ?? "", token.index);
-      if (value !== null) versions.push(value);
+      if (value !== null) {
+        versions.push(value);
+      }
       continue;
     }
     const open = /^<([A-Za-z_][\w:.-]*)([\s\S]*?)(\/?)>$/u.exec(text);
     assert(open !== null, "Unsupported XML declaration.");
     const [, name = "", attributes = "", selfClosing = ""] = open;
-    if (name === "Version") assertVersionPlacement(stack, attributes, selfClosing);
-    if (selfClosing === "")
+    if (name === "Version") {
+      assertVersionPlacement(stack, attributes, selfClosing);
+    }
+    if (selfClosing === "") {
       stack.push({ name, attributes, contentStart: token.index + text.length });
+    }
   }
 
   assert.equal(stack.length, 0, "Unclosed XML elements.");
   assert.equal(versions.length, 1, "Expected one unconditional literal Version declaration.");
-  const version = versions[0];
+  const [version] = versions;
   assert(isVersion(version), "Version must be a literal X.Y.Z.");
   return version;
 };

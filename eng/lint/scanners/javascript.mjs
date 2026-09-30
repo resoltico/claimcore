@@ -2,20 +2,23 @@ import { parseSync } from "oxc-parser";
 import { ruleList } from "../model.mjs";
 import { inline } from "./comments.mjs";
 
-const comment = String.raw`(?:\/\/|\/\*+)\s*`;
+const commentStart = String.raw`(?:\/\/|\/\*+)\s*`;
 const disable = new RegExp(
-  `${comment}(?:oxlint|eslint)-disable(?:-(?:next-line|line))?\\s*(?<rules>[^*\\r\\n]*?)(?:\\s+--.*)?(?:\\*\\/)?\\s*$`,
-  "i",
+  `${commentStart}(?:oxlint|eslint)-disable(?:-(?:next-line|line))?\\s*(?<rules>[^*\\r\\n]*?)(?:\\s+--.*)?(?:\\*\\/)?\\s*$`,
+  "iu",
 );
-const typescript = new RegExp(`${comment}(?<rule>@ts-(?:ignore|nocheck|expect-error))\\b`, "i");
-const prettier = new RegExp(`${comment}(?<rule>prettier-ignore(?:-start|-end)?)\\b`, "i");
+const typescript = new RegExp(
+  `${commentStart}(?<rule>@ts-(?:ignore|nocheck|expect-error))\\b`,
+  "iu",
+);
+const prettier = new RegExp(`${commentStart}(?<rule>prettier-ignore(?:-start|-end)?)\\b`, "iu");
 const stylelint = new RegExp(
-  `${comment}stylelint-disable(?:-(?:next-line|line))?\\s*(?<rules>[^*\\r\\n]*?)(?:\\s+--.*)?(?:\\*\\/)?\\s*$`,
-  "i",
+  `${commentStart}stylelint-disable(?:-(?:next-line|line))?\\s*(?<rules>[^*\\r\\n]*?)(?:\\s+--.*)?(?:\\*\\/)?\\s*$`,
+  "iu",
 );
 const coverage = new RegExp(
-  `${comment}(?<tool>istanbul|c8|vitest|v8)\\s+ignore(?:\\s+(?<mode>next|if|else|file|start|stop))?\\b`,
-  "i",
+  `${commentStart}(?<tool>istanbul|c8|vitest|v8)\\s+ignore(?:\\s+(?<mode>next|if|else|file|start|stop))?\\b`,
+  "iu",
 );
 
 /**
@@ -70,7 +73,9 @@ function fromComment(file, comment, lines, index) {
  */
 export function scanScriptComments(file, text, lines) {
   const { comments, errors } = parseSync(file, text);
-  if (errors.length > 0) return scanStyleComments(file, lines);
+  if (errors.length > 0) {
+    return scanStyleComments(file, lines);
+  }
   return comments.flatMap((comment) => {
     const index = text.slice(0, comment.start).split("\n").length - 1;
     return fromComment(file, text.slice(comment.start, comment.end), lines, index);

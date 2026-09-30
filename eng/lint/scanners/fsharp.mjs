@@ -1,12 +1,13 @@
 import { inline, inlineRules } from "./comments.mjs";
 
-const lint = /fsharplint\s*:\s*disable(?:-next-line|-line)?(?:\s+(?<rules>[A-Za-z0-9_. -]+))?\s*$/i;
-const pragma = /#pragma\s+warning\s+disable\s*(?<rules>.*)$/i;
-const nowarn = /#nowarn\s+(?<rules>(?:"[0-9]+"\s*)+)/g;
-const suppress = /SuppressMessage\s*\(\s*"[^"]*"\s*,\s*"(?<rule>[^"]+)"/g;
+const lint =
+  /fsharplint\s*:\s*disable(?:-next-line|-line)?(?:\s+(?<rules>[A-Za-z0-9_. -]+))?\s*$/iu;
+const pragma = /#pragma\s+warning\s+disable\s*(?<rules>.*)$/iu;
+const nowarn = /#nowarn\s+(?<rules>(?:"[0-9]+"\s*)+)/gu;
+const suppress = /SuppressMessage\s*\(\s*"[^"]*"\s*,\s*"(?<rule>[^"]+)"/gu;
 
 /** @param {string} code */
-const compilerCode = (code) => (/^\d+$/.test(code) ? `FS${code}` : code);
+const compilerCode = (code) => (/^\d+$/u.test(code) ? `FS${code}` : code);
 
 /**
  * F# compiler, FSharpLint and .NET analyzer suppressions.
@@ -20,7 +21,9 @@ export function scanFSharp(file, lines, text) {
   const found = [];
   lines.forEach((line, index) => {
     const off = lint.exec(line);
-    if (off) found.push(...inlineRules(file, "fsharplint", off.groups?.["rules"], lines, index));
+    if (off) {
+      found.push(...inlineRules(file, "fsharplint", off.groups?.["rules"], lines, index));
+    }
     const disabled = pragma.exec(line);
     if (disabled) {
       for (const occurrence of inlineRules(file, "fsc", disabled.groups?.["rules"], lines, index)) {
@@ -30,7 +33,7 @@ export function scanFSharp(file, lines, text) {
   });
   for (const match of text.matchAll(nowarn)) {
     const line = text.slice(0, match.index).split("\n").length - 1;
-    for (const quoted of (match.groups?.["rules"] ?? "").matchAll(/"([0-9]+)"/g)) {
+    for (const quoted of (match.groups?.["rules"] ?? "").matchAll(/"([0-9]+)"/gu)) {
       found.push(inline(file, "fsc", compilerCode(quoted[1] ?? ""), lines, line));
     }
   }

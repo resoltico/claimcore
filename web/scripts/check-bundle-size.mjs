@@ -43,10 +43,13 @@ const initialEntrySources = (scripts) => {
   const initial = new Set();
   while (pending.length > 0) {
     const name = pending.pop();
-    if (name === undefined || initial.has(name)) continue;
+    if (name === undefined || initial.has(name)) {
+      continue;
+    }
     const source = sources.get(name);
-    if (source === undefined)
+    if (source === undefined) {
       throw new Error("The Web entry references an absent JavaScript chunk.");
+    }
     initial.add(name);
     pending.push(...staticImports(source));
   }
@@ -55,7 +58,9 @@ const initialEntrySources = (scripts) => {
 
 const html = await readFile(resolve(dist, "index.html"), "utf8");
 const initialSources = initialEntrySources(entryScripts(html));
-if (initialSources.size === 0) throw new Error("The Web build has no module entry script.");
+if (initialSources.size === 0) {
+  throw new Error("The Web build has no module entry script.");
+}
 
 const bytes = [...sources.values()].map((source) => Buffer.from(source));
 const initialBytes = [...initialSources].reduce(

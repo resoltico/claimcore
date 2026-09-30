@@ -8,7 +8,7 @@ import { scanFile } from "./scan.mjs";
  * @returns {string[]} `tool:rule:kind:id` for every occurrence.
  */
 function scan(path, text) {
-  return scanFile({ path, text, lines: text.split(/\r?\n/) }).map(
+  return scanFile({ path, text, lines: text.split(/\r?\n/u) }).map(
     (item) => `${item.tool}:${item.rule}:${item.kind}:${item.id ?? "-"}`,
   );
 }

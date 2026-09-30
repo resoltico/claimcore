@@ -13,7 +13,9 @@ const object = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 const read = (name: string): Record<string, unknown> => {
   const value: unknown = JSON.parse(readFileSync(resolve(root, name), "utf8"));
-  if (!object(value)) throw new Error(`Expected generated object ${name}.`);
+  if (!object(value)) {
+    throw new Error(`Expected generated object ${name}.`);
+  }
   return value;
 };
 const schemas = [
@@ -41,9 +43,38 @@ const parsedCase = (item: unknown) => {
     typeof item["id"] !== "string" ||
     typeof item["surface"] !== "string" ||
     typeof item["valid"] !== "boolean"
-  )
+  ) {
     throw new Error("Malformed diagnostic corpus item.");
+  }
   return { id: item["id"], surface: item["surface"], valid: item["valid"], value: item["value"] };
+};
+
+type SurfaceCounts = Map<string, { positive: number; negative: number }>;
+
+const countCases = (
+  cases: ReadonlyArray<unknown>,
+  compiled: ReadonlyMap<string, ValidateFunction>,
+): SurfaceCounts => {
+  const counts: SurfaceCounts = new Map();
+  for (const item of cases) {
+    const example = parsedCase(item);
+    const { surface } = example;
+    const validate = compiled.get(surface);
+    if (validate === undefined) {
+      throw new Error(`Unregistered surface ${surface}.`);
+    }
+    expect(validate(example.value), example.id + JSON.stringify(validate.errors)).toBe(
+      example.valid,
+    );
+    const count = counts.get(surface) ?? { positive: 0, negative: 0 };
+    if (example.valid) {
+      count.positive += 1;
+    } else {
+      count.negative += 1;
+    }
+    counts.set(surface, count);
+  }
+  return counts;
 };
 
 describe("local diagnostic contracts", () => {
@@ -51,21 +82,10 @@ describe("local diagnostic contracts", () => {
     const compiled = validators();
     const corpus = read("local-diagnostics.parsed-value-corpus.json");
     const cases: unknown = corpus["cases"];
-    if (!Array.isArray(cases)) throw new Error("Missing diagnostic cases.");
-    const counts = new Map<string, { positive: number; negative: number }>();
-    for (const item of cases) {
-      const example = parsedCase(item);
-      const surface = example.surface;
-      const validate = compiled.get(surface);
-      if (validate === undefined) throw new Error(`Unregistered surface ${surface}.`);
-      expect(validate(example.value), example.id + JSON.stringify(validate.errors)).toBe(
-        example.valid,
-      );
-      const count = counts.get(surface) ?? { positive: 0, negative: 0 };
-      if (example.valid) count.positive += 1;
-      else count.negative += 1;
-      counts.set(surface, count);
+    if (!Array.isArray(cases)) {
+      throw new Error("Missing diagnostic cases.");
     }
+    const counts = countCases(cases, compiled);
     for (const [surface] of schemas) {
       expect(counts.get(surface)?.positive, surface).toBeGreaterThan(5);
       expect(counts.get(surface)?.negative, surface).toBeGreaterThan(20);

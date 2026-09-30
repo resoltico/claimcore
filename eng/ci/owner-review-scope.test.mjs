@@ -35,10 +35,11 @@ for (const path of [
   "tests/new-suite.fs",
   "web/scripts/check-bundle-size.mjs",
   "config/lint-exceptions.json",
-])
+]) {
   test(`review scope highlights policy change ${path}`, () => {
     assert(reviewScopes(path).includes("contract-policy"));
   });
+}
 test("unknown paths still require owner review and object kind changes remain visible", () => {
   assert.deepEqual(reviewScopes("new-area/unknown.txt"), ["general"]);
   const changes = changedFiles(
@@ -120,12 +121,13 @@ const refusals = [
     },
   ],
 ];
-for (const [label, change] of refusals)
+for (const [label, change] of refusals) {
   test(`tree scope refuses ${label}`, () => {
     const value = tree(row("source"));
     change(value);
     assert.throws(() => treeFiles(value, sha));
   });
+}
 test("scope digest binds revisions and all changed modes", () => {
   assert.notEqual(digest({ base: sha, mode: "100644" }), digest({ base: sha, mode: "100755" }));
 });

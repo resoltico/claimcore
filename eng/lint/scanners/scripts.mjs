@@ -1,8 +1,8 @@
 import { inline, inlineRules } from "./comments.mjs";
 
-const shellcheck = /#\s*shellcheck\s+disable=(?<rules>[A-Za-z0-9,]+)/i;
-const powershell = /SuppressMessage(?:Attribute)?\s*\(\s*(?:'|")(?<rule>[^'"]+)(?:'|")/i;
-const yamllint = /#\s*yamllint\s+disable(?:-line)?(?<rules>[^\r\n]*)/i;
+const shellcheck = /#\s*shellcheck\s+disable=(?<rules>[A-Za-z0-9,]+)/iu;
+const powershell = /SuppressMessage(?:Attribute)?\s*\(\s*(?:'|")(?<rule>[^'"]+)(?:'|")/iu;
+const yamllint = /#\s*yamllint\s+disable(?:-line)?(?<rules>[^\r\n]*)/iu;
 
 /**
  * Shell, PowerShell and YAML suppression comments.
@@ -18,7 +18,7 @@ export function scanScripts(file, lines) {
   const yaml = file.endsWith(".yml") || file.endsWith(".yaml");
   lines.forEach((line, index) => {
     const check = shell ? shellcheck.exec(line) : null;
-    if (check)
+    if (check) {
       found.push(
         ...inlineRules(
           file,
@@ -28,11 +28,15 @@ export function scanScripts(file, lines) {
           index,
         ),
       );
+    }
     const attribute = pwsh ? powershell.exec(line) : null;
-    if (attribute)
+    if (attribute) {
       found.push(inline(file, "psscriptanalyzer", attribute.groups?.["rule"] ?? "", lines, index));
+    }
     const lint = yaml ? yamllint.exec(line) : null;
-    if (lint) found.push(...inlineRules(file, "yamllint", lint.groups?.["rules"], lines, index));
+    if (lint) {
+      found.push(...inlineRules(file, "yamllint", lint.groups?.["rules"], lines, index));
+    }
   });
   return found;
 }

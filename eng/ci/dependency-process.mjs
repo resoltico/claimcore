@@ -8,7 +8,9 @@ import { spawnSync } from "node:child_process";
 
 /** @param {string | null | undefined} stdout */
 function parseDocument(stdout) {
-  if (!stdout?.trim()) throw new Error("DEPENDENCY_METADATA_EMPTY");
+  if (!stdout?.trim()) {
+    throw new Error("DEPENDENCY_METADATA_EMPTY");
+  }
   try {
     return JSON.parse(stdout);
   } catch {
@@ -30,18 +32,21 @@ function isTransient(result) {
  * @param {string} file
  * @param {string[]} args
  * @param {string} cwd
- * @param {number[]} [allowed] Exit codes that still carry a document.
- * @param {Execute} [execute]
- * @param {(milliseconds: number) => void} [pause]
+ * @param {object} [options]
+ * @param {number[]} [options.allowed] Exit codes that still carry a document.
+ * @param {Execute} [options.execute]
+ * @param {(milliseconds: number) => void} [options.pause]
  * @returns {import("./types.mjs").Json}
  */
 export function jsonProcess(
   file,
   args,
   cwd,
-  allowed = [0],
-  execute = /** @type {Execute} */ (spawnSync),
-  pause = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms),
+  {
+    allowed = [0],
+    execute = /** @type {Execute} */ (spawnSync),
+    pause = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms),
+  } = {},
 ) {
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const result = execute(file, args, {
@@ -51,11 +56,13 @@ export function jsonProcess(
       maxBuffer: 16 * 1024 * 1024,
       shell: false,
     });
-    if (!result.error && result.status !== null && allowed.includes(result.status))
+    if (!result.error && result.status !== null && allowed.includes(result.status)) {
       return parseDocument(result.stdout);
+    }
     const transient = isTransient(result);
-    if (!transient || attempt === 2)
+    if (!transient || attempt === 2) {
       throw new Error(transient ? "DEPENDENCY_METADATA_UNAVAILABLE" : "DEPENDENCY_COMMAND_FAILED");
+    }
     pause((attempt + 1) * 1000);
   }
   throw new Error("DEPENDENCY_METADATA_UNAVAILABLE");

@@ -50,10 +50,12 @@ test("preserves a committed operation and exact recovery identity when its local
   try {
     await page.getByRole("button", { name: "Submit exact request" }).click();
     const captured = await pending.ready;
-    const outcome = captured.reply.outcome;
+    const { outcome } = captured.reply;
     expect(outcome.tag === "COMPLETED" && outcome.data.execution.tag === "ACCEPTED").toBe(true);
     const original = preparedBytes();
-    if (original === null) throw new Error("E2E_PREPARE_REQUEST_MISSING");
+    if (original === null) {
+      throw new Error("E2E_PREPARE_REQUEST_MISSING");
+    }
     expect(captured.bytes.equals(original)).toBe(true);
     await selectLanguage(page, "ar");
     await selectFormat(page, "lv-LV");
@@ -105,7 +107,7 @@ test("keeps inspected recovery authority and confirmation stable while language 
   try {
     await page.getByRole("button", { name: ui("lv", "ui.confirmResolve") }).click();
     const captured = await pending.ready;
-    const outcome = captured.reply.outcome;
+    const { outcome } = captured.reply;
     expect(outcome.tag === "COMPLETED" && outcome.data.execution.tag === "ACCEPTED").toBe(true);
     expect(captured.bytes.equals(Buffer.from(JSON.stringify(identity)))).toBe(true);
     await selectLanguage(page, "ar");

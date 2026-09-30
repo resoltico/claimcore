@@ -49,7 +49,7 @@ export function environmentOperations(snapshot) {
     !current ||
     reviewers.length === 0 ||
     current.deployment_branch_policy?.custom_branch_policies !== true
-  )
+  ) {
     changes.push({
       path: "environments/release",
       method: "PUT",
@@ -63,11 +63,13 @@ export function environmentOperations(snapshot) {
         deployment_branch_policy: { protected_branches: false, custom_branch_policies: true },
       },
     });
-  if (snapshot["branches"].length === 0)
+  }
+  if (snapshot["branches"].length === 0) {
     changes.push({
       path: "environments/release/deployment-branch-policies",
       method: "POST",
       json: { name: "main", type: "branch" },
     });
+  }
   return changes;
 }

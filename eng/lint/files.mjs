@@ -60,10 +60,14 @@ export function repositoryFiles(root, excluded) {
   const found = [];
   for (const name of roots) {
     const directory = join(root, name);
-    if (existsSync(directory)) walk(directory, root, excluded, found);
+    if (existsSync(directory)) {
+      walk(directory, root, excluded, found);
+    }
   }
   for (const entry of readdirSync(root, { withFileTypes: true })) {
-    if (entry.isFile()) found.push(entry.name);
+    if (entry.isFile()) {
+      found.push(entry.name);
+    }
   }
   return found.sort();
 }
@@ -75,5 +79,5 @@ export function repositoryFiles(root, excluded) {
  */
 export function readSource(root, path) {
   const text = readFileSync(join(root, path), "utf8");
-  return { path, text, lines: text.split(/\r?\n/) };
+  return { path, text, lines: text.split(/\r?\n/u) };
 }

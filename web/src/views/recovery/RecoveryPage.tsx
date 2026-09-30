@@ -38,9 +38,9 @@ const RecoveryHeading = ({ listing }: { listing: Listing }) => {
           aria-label={p.text("ui.recoveryView")}
           value={listing.view}
           disabled={listing.loading}
-          onChange={(event) =>
-            listing.setView(event.target.value === "TERMINAL" ? "TERMINAL" : "PENDING")
-          }
+          onChange={(event) => {
+            listing.setView(event.target.value === "TERMINAL" ? "TERMINAL" : "PENDING");
+          }}
         >
           <option value="PENDING">{p.text("ui.pending")}</option>
           <option value="TERMINAL">{p.text("ui.terminal")}</option>
@@ -55,8 +55,10 @@ const RecoveryHeading = ({ listing }: { listing: Listing }) => {
 
 const Capacity = ({ listing }: { listing: Listing }) => {
   const p = usePresentation();
-  const page = listing.page;
-  if (page === null) return null;
+  const { page } = listing;
+  if (page === null) {
+    return null;
+  }
   return (
     <p
       className={page.nearCapacity ? "notice" : undefined}

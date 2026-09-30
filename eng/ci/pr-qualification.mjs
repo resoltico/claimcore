@@ -81,8 +81,12 @@ function assertTestedMerge(pr, run, jobs) {
  */
 export function qualifyRun(pr, run, jobs, workflow) {
   assertRunIdentity(pr, run, workflow);
-  if (run["status"] !== "completed") return "checks-pending-or-approval-required";
-  if (run["conclusion"] !== "success") return "checks-not-successful";
+  if (run["status"] !== "completed") {
+    return "checks-pending-or-approval-required";
+  }
+  if (run["conclusion"] !== "success") {
+    return "checks-not-successful";
+  }
   assertTestedMerge(pr, run, jobs);
   return "verified-current-head-ci";
 }
@@ -94,7 +98,9 @@ export function qualifyRun(pr, run, jobs, workflow) {
  * @returns {Promise<string | null>}
  */
 async function testedMerge(api, pr) {
-  if (pr["state"] !== "open") return null;
+  if (pr["state"] !== "open") {
+    return null;
+  }
   const mergeSha = await pullMergeRevision(api, pr);
   const commit = await api(`git/commits/${mergeSha}`);
   assert(
@@ -171,13 +177,17 @@ export async function inspectPr(api, number, expectedHead) {
     state: pr.state,
     ownerAuthorization: "not-assessed-by-ci",
   };
-  if (pr.state !== "open") return { ...result, qualification: pr.merged ? "merged" : "closed" };
+  if (pr.state !== "open") {
+    return { ...result, qualification: pr.merged ? "merged" : "closed" };
+  }
   const workflow = await api("actions/workflows/ci.yml");
   assert.equal(workflow.path, ".github/workflows/ci.yml");
   const runs = await verificationRuns(api, expectedHead);
   runs.sort((left, right) => right["id"] - left["id"]);
-  const newest = runs[0];
-  if (!newest) return { ...result, qualification: "no-pr-verification-run" };
+  const [newest] = runs;
+  if (!newest) {
+    return { ...result, qualification: "no-pr-verification-run" };
+  }
   const run = await api(`actions/runs/${newest["id"]}`);
   assert(Number.isSafeInteger(run.run_attempt) && run.run_attempt > 0);
   const jobs =

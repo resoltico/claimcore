@@ -2,14 +2,16 @@ import type { CaseFields, DefinitionPayload, PreparationDetails } from "../src/a
 import { generatedWebValue } from "./contract-corpus.fixtures";
 
 const described = generatedWebValue("definition");
-if (described.outcome.tag !== "DESCRIBED")
+if (described.outcome.tag !== "DESCRIBED") {
   throw new Error("Generated definition fixture must be described.");
+}
 
 export const definition: DefinitionPayload = described.outcome.data;
 
 const foundCase = generatedWebValue("case.get");
-if (foundCase.outcome.tag !== "SUCCEEDED" || foundCase.outcome.data.tag !== "FOUND")
+if (foundCase.outcome.tag !== "SUCCEEDED" || foundCase.outcome.data.tag !== "FOUND") {
   throw new Error("Generated case fixture must be found.");
+}
 
 export const fields: CaseFields = {
   ...foundCase.outcome.data.current.case.fields,
@@ -29,10 +31,11 @@ export const fields: CaseFields = {
 };
 
 const prepared = generatedWebValue("command.prepare");
-if (prepared.outcome.tag !== "PREPARED")
+if (prepared.outcome.tag !== "PREPARED") {
   throw new Error("Generated preparation fixture must be prepared.");
+}
 
-export const operationId = prepared.outcome.data.details.summary.operationId;
+export const { operationId } = prepared.outcome.data.details.summary;
 
 export const preparation: PreparationDetails = {
   ...prepared.outcome.data.details,

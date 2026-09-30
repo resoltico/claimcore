@@ -30,5 +30,5 @@ export function inlineRules(file, tool, rules, lines, index) {
  * @param {string} line
  */
 export function withoutStrings(line) {
-  return line.replace(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/g, '""');
+  return line.replace(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/gu, '""');
 }

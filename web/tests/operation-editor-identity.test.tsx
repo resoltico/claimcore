@@ -15,7 +15,9 @@ type SentDraft = {
 
 const sentDraft = (call: number): SentDraft => {
   const body = vi.mocked(globalThis.fetch).mock.calls[call]?.[1]?.body;
-  if (typeof body !== "string") throw new Error("Expected a synthetic command request body.");
+  if (typeof body !== "string") {
+    throw new Error("Expected a synthetic command request body.");
+  }
   return JSON.parse(body) as SentDraft;
 };
 
@@ -118,7 +120,9 @@ it("retries the frozen request after delivery loss despite a changed current rev
   await screen.findByText(/Inspect Recovery before retrying this exact operation/u);
   view.rerender(editor({ ...current, case: { ...current.case, revision: "2" } }, "CLOSE"));
   await user.click(screen.getByRole("button", { name: "Retry exact prepare" }));
-  await waitFor(() => expect(vi.mocked(globalThis.fetch)).toHaveBeenCalledTimes(2));
+  await waitFor(() => {
+    expect(vi.mocked(globalThis.fetch)).toHaveBeenCalledTimes(2);
+  });
   expect(sentDraft(1)).toEqual(sentDraft(0));
   expect(sentDraft(1).expectedRevision).toBe("1");
   expect(
@@ -144,14 +148,18 @@ it("sends an explicit grouped correction and preserves all non-replaced groups",
   vi.mocked(globalThis.fetch).mockResolvedValueOnce(rejectedResponse(validationRefusal));
   render(editor(current, "CORRECT_CASE"));
   const registration = document.querySelector<HTMLSelectElement>("#correction-registration-mode");
-  if (registration === null) throw new Error("Expected a registration correction selector.");
+  if (registration === null) {
+    throw new Error("Expected a registration correction selector.");
+  }
   await user.selectOptions(registration, "REPLACE");
   const claimant = screen.getByLabelText("Claimant name", { exact: true });
   await user.clear(claimant);
   await user.type(claimant, "Corrected claimant");
   await user.click(screen.getByRole("button", { name: "Prepare exact request" }));
   const body = vi.mocked(globalThis.fetch).mock.calls[0]?.[1]?.body;
-  if (typeof body !== "string") throw new Error("Expected a grouped correction request body.");
+  if (typeof body !== "string") {
+    throw new Error("Expected a grouped correction request body.");
+  }
   const draft = JSON.parse(body) as {
     command: {
       kind: string;

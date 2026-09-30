@@ -13,13 +13,32 @@ const metadata = (
   part: "label" | "meaning",
 ): string => {
   const key = `${owner}.${name}.${part}`;
-  return hasMessage(key) ? renderKey(preferences, key) : part === "label" ? name : "";
+  if (hasMessage(key)) {
+    return renderKey(preferences, key);
+  }
+  return part === "label" ? name : "";
 };
 const token = (preferences: Preferences, value: string): string => {
   const key = `token.${value}`;
-  if (hasMessage(key)) return renderKey(preferences, key);
-  if (hasMessage(`command.${value}.label`)) return metadata(preferences, "command", value, "label");
+  if (hasMessage(key)) {
+    return renderKey(preferences, key);
+  }
+  if (hasMessage(`command.${value}.label`)) {
+    return metadata(preferences, "command", value, "label");
+  }
   return value;
+};
+const fieldValueText = (
+  preferences: Preferences,
+  value: string | null,
+  field: FieldDescriptor,
+): string => {
+  if (value === null) {
+    return translate(preferences, "ui.notRecorded");
+  }
+  return field.scalar.kind === "CASE_STATUS"
+    ? token(preferences, value)
+    : displayField(value, field, preferences.displayLocale);
 };
 const hint = (preferences: Preferences, field: FieldDescriptor): string => {
   const s = field.scalar;
@@ -60,9 +79,5 @@ export const createPresenter = (preferences: Preferences) => ({
   amount: (value: string) => exactAmount(value, preferences.displayLocale),
   date: (value: string) => calendarDate(value, preferences.displayLocale),
   fieldValue: (value: string | null, field: FieldDescriptor) =>
-    value === null
-      ? translate(preferences, "ui.notRecorded")
-      : field.scalar.kind === "CASE_STATUS"
-        ? token(preferences, value)
-        : displayField(value, field, preferences.displayLocale),
+    fieldValueText(preferences, value, field),
 });

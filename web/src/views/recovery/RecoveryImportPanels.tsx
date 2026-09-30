@@ -32,8 +32,10 @@ const ImportButton = ({ busy, onFile }: { busy: boolean; onFile: (file: File) =>
     <FileTrigger
       acceptedFileTypes={[mediaType]}
       onSelect={(files) => {
-        const file = Array.from(files ?? [])[0];
-        if (file !== undefined) onFile(file);
+        const [file] = Array.from(files ?? []);
+        if (file !== undefined) {
+          onFile(file);
+        }
       }}
     >
       <Button isDisabled={busy}>{label}</Button>
@@ -72,7 +74,9 @@ export const RecoveryImportDialog = ({
       isOpen={importing !== null}
       isDismissable={busy === null}
       onOpenChange={(open) => {
-        if (!open && busy === null) onClose();
+        if (!open && busy === null) {
+          onClose();
+        }
       }}
     >
       {importing === null ? null : (

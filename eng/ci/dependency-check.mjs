@@ -14,19 +14,20 @@ import {
 
 const root = fileURLToPath(new URL("../..", import.meta.url));
 const npmProjects = ["web", "eng"];
-const argv = process.argv;
-const mode = argv[2];
-if ((mode !== "security" && mode !== "health") || argv.length > 4)
+const { argv } = process;
+const [, , mode] = argv;
+if ((mode !== "security" && mode !== "health") || argv.length > 4) {
   throw new Error("Expected security or health and optional registry path.");
+}
 const inCi = process.env["GITHUB_ACTIONS"] === "true";
-const output =
+const [ciOutput, localOutput] =
   mode === "health"
-    ? inCi
-      ? "artifacts/dependency-health"
-      : `artifacts/dependency-health/local-${randomUUID()}`
-    : inCi
-      ? "artifacts/diagnostics/quality"
-      : `artifacts/diagnostics/local-dependency-security-${randomUUID()}`;
+    ? ["artifacts/dependency-health", `artifacts/dependency-health/local-${randomUUID()}`]
+    : [
+        "artifacts/diagnostics/quality",
+        `artifacts/diagnostics/local-dependency-security-${randomUUID()}`,
+      ];
+const output = inCi ? ciOutput : localOutput;
 const file = mode === "health" ? "report.json" : "dependency-security.details.json";
 
 /**
@@ -69,7 +70,9 @@ function evaluate(installed) {
 try {
   /** @type {import("./dependency-inventory.mjs").Installed} */
   const installed = new Map();
-  for (const directory of ["src", "tests", "eng"]) readNuGetLocks(join(root, directory), installed);
+  for (const directory of ["src", "tests", "eng"]) {
+    readNuGetLocks(join(root, directory), installed);
+  }
   result.npmLockSha256 = Object.fromEntries(
     npmProjects.map((project) => [
       project,
@@ -91,7 +94,7 @@ result.findings = [
 result.findingCount = result.findings.length;
 result.findings = result.findings.slice(0, 100);
 mkdirSync(join(root, output), { recursive: true });
-writeFileSync(join(root, output, file), JSON.stringify(result, null, 2) + "\n", { flag: "wx" });
+writeFileSync(join(root, output, file), `${JSON.stringify(result, null, 2)}\n`, { flag: "wx" });
 console.log(
   `Dependency ${mode}: ${result.outcome}; ${result.findingCount} findings. Report: ${output}/${file}`,
 );
@@ -103,15 +106,18 @@ if (summary) {
     "| Package | Current | Alternative | State |",
     "|---|---|---|---|",
   ];
-  for (const item of result.findings)
+  for (const item of result.findings) {
     lines.push(
       `| ${item.ecosystem}/${item.package} | ${item.current} | ${item.latest ?? "—"} | ${item.held ? "reviewed hold" : item.kind} |`,
     );
-  if (result.error)
+  }
+  if (result.error) {
     lines.push(
       "",
       `Metadata/policy failure: ${result.error}. Inspect the pinned graph and approved hold dates; no automatic updates or retries of security findings.`,
     );
-  appendFileSync(summary, lines.join("\n") + "\n");
+  }
+  appendFileSync(summary, `${lines.join("\n")}\n`);
 }
-process.exitCode = result.outcome === "passed" ? 0 : result.outcome === "metadata-error" ? 3 : 2;
+const exitCodes = /** @type {Record<string, number>} */ ({ passed: 0, "metadata-error": 3 });
+process.exitCode = exitCodes[result.outcome] ?? 2;

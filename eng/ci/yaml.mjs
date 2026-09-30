@@ -11,7 +11,9 @@ export function parseWorkflow(source) {
     uniqueKeys: true,
     strict: true,
   });
-  if (document.errors.length || document.warnings.length) throw new Error("Invalid workflow YAML.");
+  if (document.errors.length || document.warnings.length) {
+    throw new Error("Invalid workflow YAML.");
+  }
   /** @type {{ reference: string, comment: string }[]} */
   const actions = [];
   visit(document, {
@@ -20,8 +22,12 @@ export function parseWorkflow(source) {
     },
     Pair(_, pair) {
       const key = isScalar(pair.key) ? pair.key.value : undefined;
-      if (key === "<<") throw new Error("YAML merge keys are not supported.");
-      if (key !== "uses") return;
+      if (key === "<<") {
+        throw new Error("YAML merge keys are not supported.");
+      }
+      if (key !== "uses") {
+        return;
+      }
       if (!isScalar(pair.value) || typeof pair.value.value !== "string") {
         throw new Error("Action references must be literal strings.");
       }
@@ -32,7 +38,8 @@ export function parseWorkflow(source) {
     },
   });
   const value = document.toJS({ maxAliasCount: 0 });
-  if (!value || typeof value !== "object" || Array.isArray(value))
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("Expected workflow mapping.");
+  }
   return { value, actions };
 }

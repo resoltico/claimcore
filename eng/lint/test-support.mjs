@@ -3,6 +3,7 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { checkRepository } from "./engine.mjs";
 
 /** A registry entry that is valid until a test breaks it. */
 export const validEntry = {
@@ -43,4 +44,16 @@ export function withTree(files, action) {
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+}
+
+/**
+ * @param {Record<string, string>} files
+ * @param {Record<string, unknown>[]} exceptions
+ * @returns {string[]}
+ */
+export function findings(files, exceptions) {
+  return withTree(
+    { "config/lint-exceptions.json": registryText(exceptions), ...files },
+    (root) => checkRepository(root).report.errors,
+  );
 }

@@ -57,9 +57,11 @@ function strengthened(current) {
   );
   checks.parameters.strict_required_status_checks_policy = true;
   checks.parameters.do_not_enforce_on_create = false;
-  for (const rule of requiredRules())
-    if (!desired["rules"].some((/** @type {Json} */ item) => item.type === rule.type))
+  for (const rule of requiredRules()) {
+    if (!desired["rules"].some((/** @type {Json} */ item) => item.type === rule.type)) {
       desired["rules"].push(structuredClone(rule));
+    }
+  }
   // Preserve stronger pre-existing approval requirements, unrelated checks and rules.
   desired["rules"].find(
     (/** @type {Json} */ rule) => rule.type === "pull_request",
@@ -84,8 +86,10 @@ export function branchOperation(snapshot) {
     candidates.length <= 1,
     "Ambiguous main Gate rulesets require explicit owner reconciliation.",
   );
-  const current = candidates[0];
-  if (!current) return createGateRuleset();
+  const [current] = candidates;
+  if (!current) {
+    return createGateRuleset();
+  }
   const desired = strengthened(current);
   return isDeepStrictEqual(ruleBody(current), desired)
     ? null

@@ -41,11 +41,11 @@ const transforms = [
   ["direct SDK selector", (s) => s.replace("actions/checkout", "actions/setup-dotnet")],
   ["write-default permissions", (s) => s.replace("contents: read", "contents: write")],
   ["privileged PR event", (s) => s.replace("workflow_dispatch", "pull_request_target")],
-  ["duplicate mapping keys", (s) => s + "permissions: {}\n"],
+  ["duplicate mapping keys", (s) => `${s}permissions: {}\n`],
   [
     "alias configuration",
     (s) =>
-      "copy: &copy false\n" + s.replace("persist-credentials: false", "persist-credentials: *copy"),
+      `copy: &copy false\n${s.replace("persist-credentials: false", "persist-credentials: *copy")}`,
   ],
   ["fake aggregate name", (s) => s.replace("    runs-on:", "    name: Gate\n    runs-on:")],
 ];
@@ -92,7 +92,7 @@ const graphControls = [
   [
     "mandatory job outside Gate",
     "ci.yml",
-    (s) => s + "\n  forgotten:\n    uses: ./.github/workflows/verify-unit.yml\n",
+    (s) => `${s}\n  forgotten:\n    uses: ./.github/workflows/verify-unit.yml\n`,
   ],
   ["failure-permissive Gate", "ci.yml", (s) => s.replace('test "$result" = "success"', "true")],
   [
@@ -191,7 +191,7 @@ const executionControls = [
     "github.ref == 'refs/heads/main' || true",
   ],
 ];
-for (const [label, path, before, after] of executionControls)
+for (const [label, path, before, after] of executionControls) {
   test(`rejects ${label} in parsed execution settings`, () => {
     const values = workflowSources(root);
     const name = `.github/workflows/${path}`;
@@ -200,3 +200,4 @@ for (const [label, path, before, after] of executionControls)
     values.set(name, current.replaceAll(before, after));
     assert.throws(() => validateWorkflowSources(values));
   });
+}

@@ -18,9 +18,9 @@ import { scanScriptComments, scanStyleComments } from "./scanners/javascript.mjs
 import { scanPython } from "./scanners/python.mjs";
 import { scanScripts } from "./scanners/scripts.mjs";
 
-const javascript = /\.(?:ts|tsx|js|mjs|cjs)$/;
-const fsharp = /\.(?:fs|fsi|fsx)$/;
-const buildFiles = /(?:\.fsproj|\.props|\.targets)$|(?:^|\/)\.editorconfig$/;
+const javascript = /\.(?:ts|tsx|js|mjs|cjs)$/u;
+const fsharp = /\.(?:fs|fsi|fsx)$/u;
+const buildFiles = /(?:\.fsproj|\.props|\.targets)$|(?:^|\/)\.editorconfig$/u;
 
 /**
  * Which scanner reads which file. Each entry names the files it applies to by path and base name.
@@ -41,7 +41,7 @@ const scanners = [
   },
   { applies: (path) => path.endsWith(".py"), scan: ({ path, lines }) => scanPython(path, lines) },
   {
-    applies: (path) => /\.(?:sh|ps1|psm1|psd1|yml|yaml)$/.test(path),
+    applies: (path) => /\.(?:sh|ps1|psm1|psd1|yml|yaml)$/u.test(path),
     scan: ({ path, lines }) => scanScripts(path, lines),
   },
   {
@@ -49,11 +49,11 @@ const scanners = [
     scan: ({ path, text }) => scanBuildConfig(path, text),
   },
   {
-    applies: (_, name) => /^\.oxlintrc\.jsonc?$/.test(name),
+    applies: (_, name) => /^\.oxlintrc\.jsonc?$/u.test(name),
     scan: ({ path, text }) => scanOxlintConfig(path, text),
   },
   {
-    applies: (_, name) => /^tsconfig.*\.json$/.test(name),
+    applies: (_, name) => /^tsconfig.*\.json$/u.test(name),
     scan: ({ path, text }) => scanTypeScriptConfig(path, text),
   },
   {
@@ -69,12 +69,12 @@ const scanners = [
     scan: ({ path, lines }) => scanIgnoreFile(path, lines, "stylelint"),
   },
   {
-    applies: (_, name) => /^stylelint\.config\./.test(name),
+    applies: (_, name) => /^stylelint\.config\./u.test(name),
     scan: ({ path, lines }) => scanStylelintConfig(path, lines),
   },
   {
     applies: (path, name) =>
-      /^vite\.config\./.test(name) || (name === "package.json" && path.startsWith("web/")),
+      /^vite\.config\./u.test(name) || (name === "package.json" && path.startsWith("web/")),
     scan: ({ path, lines }) => scanCoverageConfig(path, lines),
   },
   {

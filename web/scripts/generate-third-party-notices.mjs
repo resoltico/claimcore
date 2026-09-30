@@ -41,7 +41,9 @@ const dependencies = Object.entries(inventory)
       throw new Error(`${name} does not provide reviewed redistribution license text.`);
     }
     const licenseText = readFileSync(licenseFile, "utf8").trim();
-    if (licenseText.length === 0) throw new Error(`${name} has empty redistribution license text.`);
+    if (licenseText.length === 0) {
+      throw new Error(`${name} has empty redistribution license text.`);
+    }
     const repository = metadata.repository === undefined ? "Not supplied" : metadata.repository;
     return { name, licenses: metadata.licenses, repository, licenseText };
   });

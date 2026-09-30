@@ -3,11 +3,11 @@ import { v3 } from "../src/api/v3";
 import { operationId } from "./v3-ui.fixtures";
 
 const filename = `claimcore-recovery-${operationId}.json`;
-const download = (disposition: string): Response =>
+const download = (disposition: string | null): Response =>
   new Response("{}", {
     headers: {
       "content-type": "application/vnd.claimcore.recovery+json",
-      "content-disposition": disposition,
+      ...(disposition === null ? {} : { "content-disposition": disposition }),
     },
   });
 
@@ -22,11 +22,13 @@ it("requires one exact attachment filename and matching UTF-8 filename parameter
     [`attachment; filename=${filename}; filename=${filename}`, false],
     [`attachment; filename=${filename}; filename*=UTF-8''${filename}.evil`, false],
     [`inline; filename=${filename}; filename*=UTF-8''${filename}`, false],
+    [`attachment; filename=${filename}`, false],
+    [`attachment; filename=${filename}; flag`, false],
+    [`attachment; filename=${filename}; name=${filename}`, false],
+    [null, false],
   ] as const) {
     fetch.mockResolvedValueOnce(download(header));
     const result = await v3.recoveryExport(operationId, "a".repeat(64), "token");
-    expect(result.kind === "outcome", header.includes(".evil") ? "suffix" : "attachment").toBe(
-      accepted,
-    );
+    expect(result.kind === "outcome", String(header)).toBe(accepted);
   }
 });

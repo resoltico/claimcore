@@ -13,18 +13,21 @@ export function reconcile(registry, occurrences, report) {
       occurrence.kind === "inline"
         ? inlineEntry(occurrence, byId, report)
         : configEntry(occurrence, registry, report);
-    if (entry) counts.set(entry.id, (counts.get(entry.id) ?? 0) + 1);
+    if (entry) {
+      counts.set(entry.id, (counts.get(entry.id) ?? 0) + 1);
+    }
   }
   for (const entry of registry.exceptions) {
     const seen = counts.get(entry.id) ?? 0;
-    if (seen === 0)
+    if (seen === 0) {
       report.add(
         `Stale exception ${entry.id}: no ${entry.tool} suppression of ${entry.rules.join(", ")} remains in ${entry.file}.`,
       );
-    else if (seen !== entry.count)
+    } else if (seen !== entry.count) {
       report.add(
         `Exception ${entry.id} covers ${entry.count} occurrence(s) but ${entry.file} has ${seen}.`,
       );
+    }
   }
 }
 
@@ -35,8 +38,9 @@ export function reconcile(registry, occurrences, report) {
  */
 function inlineEntry(occurrence, byId, report) {
   const where = `${occurrence.file}:${occurrence.line} ${occurrence.tool} suppression of ${occurrence.rule}`;
-  if (occurrence.rule === "*")
+  if (occurrence.rule === "*") {
     report.add(`${where} is a blanket suppression; name the exact rules.`);
+  }
   if (occurrence.id === null) {
     report.add(
       `${where} needs a nearby 'lint-exception: LX-0000' reference to a registered exception.`,
@@ -54,7 +58,9 @@ function inlineEntry(occurrence, byId, report) {
     [entry.tool !== occurrence.tool, `is registered for ${entry.tool}`],
     [!entry.rules.includes(occurrence.rule), `does not list ${occurrence.rule}`],
   ].filter(([failed]) => failed);
-  for (const [, message] of problems) report.add(`${where}: ${entry.id} ${String(message)}.`);
+  for (const [, message] of problems) {
+    report.add(`${where}: ${entry.id} ${String(message)}.`);
+  }
   return problems.length === 0 ? entry : null;
 }
 
@@ -71,9 +77,10 @@ function configEntry(occurrence, registry, report) {
       candidate.tool === occurrence.tool &&
       candidate.rules.includes(occurrence.rule),
   );
-  if (!entry)
+  if (!entry) {
     report.add(
       `${occurrence.file} configures an unregistered ${occurrence.tool} exception: ${occurrence.rule}.`,
     );
+  }
   return entry ?? null;
 }

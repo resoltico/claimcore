@@ -36,7 +36,7 @@ function checkTriggers(orchestrator) {
 
 /** @param {Json} gate */
 function checkGateStep(gate) {
-  const steps = gate["steps"];
+  const { steps } = gate;
   assert.equal(steps.length, 1, "Unexpected Gate steps.");
   same(
     Object.keys(steps[0]),
@@ -90,7 +90,9 @@ function checkGateAndEvidence(jobs) {
 function checkFamilies(jobs) {
   const called = new Set();
   for (const [id, job] of Object.entries(jobs)) {
-    if (id === "gate") continue;
+    if (id === "gate") {
+      continue;
+    }
     assert(
       /^\.\/\.github\/workflows\/verify-[a-z-]+\.ya?ml$/u.test(job.uses),
       "Verification family needs a local reusable workflow.",
@@ -114,7 +116,9 @@ function checkAcyclic(jobs) {
   function walk(id) {
     assert(jobs[id], "Unknown job dependency.");
     assert(!visiting.has(id), "Workflow dependency cycle.");
-    if (seen.has(id)) return;
+    if (seen.has(id)) {
+      return;
+    }
     visiting.add(id);
     dependencies(jobs[id]).forEach(walk);
     visiting.delete(id);
@@ -129,7 +133,9 @@ function checkAcyclic(jobs) {
  */
 function checkReusable(workflows, called) {
   for (const [path, value] of workflows) {
-    if (path === "ci.yml" || standalonePaths.has(path)) continue;
+    if (path === "ci.yml" || standalonePaths.has(path)) {
+      continue;
+    }
     assert(
       Object.values(value["jobs"]).every((job) => job.if === undefined),
       "Reusable verification jobs must not be conditionally omitted.",
@@ -149,7 +155,7 @@ function checkReusable(workflows, called) {
  */
 export function checkGraph(orchestrator, workflows) {
   checkTriggers(orchestrator);
-  const jobs = orchestrator["jobs"];
+  const { jobs } = orchestrator;
   checkGateAndEvidence(jobs);
   const called = checkFamilies(jobs);
   checkAcyclic(jobs);

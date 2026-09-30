@@ -25,8 +25,9 @@ const previewEnvelope = async (page: Page, bytes: Buffer) => {
       buffer: bytes,
     });
     const captured = await preview.ready;
-    if (captured.reply.outcome.tag !== "SUCCEEDED")
+    if (captured.reply.outcome.tag !== "SUCCEEDED") {
       throw new Error("E2E_LOCALIZATION_IMPORT_PREVIEW_REFUSED");
+    }
     const digest = captured.reply.outcome.data.sourceSha256;
     expect(captured.bytes.equals(bytes)).toBe(true);
     await selectLanguage(page, "ar");

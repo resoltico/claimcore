@@ -16,7 +16,7 @@ import { flag, logTailLines, onPath, option, runToLog } from "./process-support.
 import { runPlan } from "./stage-plan.mjs";
 
 const root = fileURLToPath(new URL("../..", import.meta.url));
-const argv = process.argv;
+const { argv } = process;
 
 /**
  * @typedef {object} LocalJob
@@ -48,10 +48,18 @@ const seconds = (started) => `${Math.round((Date.now() - started) / 1000)}s`;
  * @returns {string | null}
  */
 function reasonToSkip(job, { only, skip, includeOptional, changed }) {
-  if (only.length > 0 && !only.includes(job.id)) return "not selected";
-  if (skip.includes(job.id)) return "--skip";
-  if (job.optional && !includeOptional) return "optional; add --include published";
-  if (!affected(job, changed)) return "no changed file affects it";
+  if (only.length > 0 && !only.includes(job.id)) {
+    return "not selected";
+  }
+  if (skip.includes(job.id)) {
+    return "--skip";
+  }
+  if (job.optional && !includeOptional) {
+    return "optional; add --include published";
+  }
+  if (!affected(job, changed)) {
+    return "no changed file affects it";
+  }
   const missing = (job.tools ?? []).filter((tool) => !onPath(tool));
   return missing.length > 0 ? `needs ${missing.join(", ")} on PATH` : null;
 }
@@ -73,22 +81,26 @@ async function runJob(job, logs, outcomes) {
   console.log(
     `${passed ? "+" : "x"} ${job.id}: ${passed ? "passed" : "FAILED"} in ${seconds(started)} (${log})`,
   );
-  if (!passed)
+  if (!passed) {
     console.log(
       logTailLines(log, 40, 220)
         .map((line) => `    ${line}`)
         .join("\n"),
     );
+  }
   return { failed: !passed };
 }
 
 /** @param {LocalRegistry} registry @param {Map<string, string>} outcomes */
 function summarize(registry, outcomes) {
   console.log("\nLocal CI summary");
-  for (const job of registry.jobs)
+  for (const job of registry.jobs) {
     console.log(`  ${job.id.padEnd(18)} ${outcomes.get(job.id) ?? "not run"}`);
+  }
   console.log("Not run locally:");
-  for (const item of registry.notLocal) console.log(`  ${item.family.padEnd(18)} ${item.reason}`);
+  for (const item of registry.notLocal) {
+    console.log(`  ${item.family.padEnd(18)} ${item.reason}`);
+  }
 }
 
 /** @param {LocalRegistry} registry @returns {import("./types.mjs").Plan} */
@@ -104,6 +116,31 @@ function planOf(registry) {
   };
 }
 
+/** @param {string[] | null} changed */
+function selectionFor(changed) {
+  return {
+    only: option(argv, "only", "").split(",").filter(Boolean),
+    skip: option(argv, "skip", "").split(",").filter(Boolean),
+    includeOptional: option(argv, "include", "").split(",").includes("published"),
+    changed,
+  };
+}
+
+/**
+ * Create this run's log directory and remove the stage outputs of earlier runs.
+ * @param {LocalRegistry} registry
+ * @returns {string} The log directory.
+ */
+function prepareRun(registry) {
+  const logs = join(root, "artifacts/local-ci", new Date().toISOString().replace(/[:.]/gu, "-"));
+  mkdirSync(logs, { recursive: true });
+  // Stage outputs must start absent, as they do in a CI checkout; these are generated, never sources.
+  for (const path of registry.clean ?? []) {
+    rmSync(join(root, path), { recursive: true, force: true });
+  }
+  return logs;
+}
+
 async function main() {
   const registry = /** @type {LocalRegistry} */ (
     JSON.parse(readFileSync(join(root, "eng/ci/local-plan.json"), "utf8"))
@@ -111,17 +148,8 @@ async function main() {
   const changed = flag(argv, "all")
     ? null
     : changedFiles(root, option(argv, "changed-since", undefined));
-  const selection = {
-    only: option(argv, "only", "").split(",").filter(Boolean),
-    skip: option(argv, "skip", "").split(",").filter(Boolean),
-    includeOptional: option(argv, "include", "").split(",").includes("published"),
-    changed,
-  };
-  const logs = join(root, "artifacts/local-ci", new Date().toISOString().replace(/[:.]/g, "-"));
-  mkdirSync(logs, { recursive: true });
-  // Stage outputs must start absent, as they do in a CI checkout; these are generated, never sources.
-  for (const path of registry.clean ?? [])
-    rmSync(join(root, path), { recursive: true, force: true });
+  const selection = selectionFor(changed);
+  const logs = prepareRun(registry);
   // Jobs share this one working tree, and several read or write it as a whole: the documentation
   // assessment refuses a tree that changes under it, the convergence controls place probe files in
   // it, and the frontend build writes into it. In CI each job has its own checkout. Locally the jobs
@@ -136,20 +164,26 @@ async function main() {
   const plan = planOf(registry);
   const byId = new Map(registry.jobs.map((job) => [job.id, job]));
   /** @param {import("./types.mjs").Stage} stage */
-  const run = async (stage) => {
+  const run = (stage) => {
     const job = /** @type {LocalJob} */ (byId.get(stage.id));
     const why = reasonToSkip(job, selection);
-    if (why === null) return runJob(job, logs, outcomes);
+    if (why === null) {
+      return runJob(job, logs, outcomes);
+    }
     outcomes.set(job.id, `skipped (${why})`);
     console.log(`- ${job.id}: skipped (${why})`);
-    return { failed: false, skipped: true };
+    return Promise.resolve({ failed: false, skipped: true });
   };
   const results = await runPlan(plan, parallel, run, { failFast: !flag(argv, "no-fail-fast") });
-  for (const result of results)
-    if (result.value.notStarted)
+  for (const result of results) {
+    if (result.value.notStarted) {
       outcomes.set(result.stage.id, "not started (an earlier job failed)");
+    }
+  }
   summarize(registry, outcomes);
-  if (results.some((result) => result.value.failed)) process.exitCode = 1;
+  if (results.some((result) => result.value.failed)) {
+    process.exitCode = 1;
+  }
 }
 
 if (argv[1] === fileURLToPath(import.meta.url)) {

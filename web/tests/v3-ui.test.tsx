@@ -21,7 +21,9 @@ describe("metadata-driven descriptor rendering", () => {
   it("renders descriptor labels and all supplied field values without client-side normalization", () => {
     const changed = vi.fn();
     const incident = definition.definition.fields.find((field) => field.name === "incidentDate");
-    if (incident === undefined) throw new Error("Incident descriptor is required.");
+    if (incident === undefined) {
+      throw new Error("Incident descriptor is required.");
+    }
     render(
       <>
         <DescriptorField field={incident} value="2026-09-01" onChange={changed} />

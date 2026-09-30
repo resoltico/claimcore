@@ -61,7 +61,9 @@ const DashboardNav = ({
       {(["cases", "recovery", "operations"] as const).map((item) => (
         <Button
           key={item}
-          onPress={() => navigate(item)}
+          onPress={() => {
+            navigate(item);
+          }}
           isDisabled={locked}
           aria-pressed={active === item}
         >
@@ -85,6 +87,46 @@ type ContentProps = {
   committed: () => void;
 };
 
+type PaneProps = Pick<
+  ContentProps,
+  "token" | "selectedReference" | "refresh" | "setOperation" | "setSelectedReference"
+> & { definition: NonNullable<ContentProps["definition"]> };
+
+const CasesPane = ({
+  token,
+  definition,
+  selectedReference,
+  refresh,
+  setOperation,
+  setSelectedReference,
+}: PaneProps) => {
+  if (selectedReference === null) {
+    return (
+      <CaseList
+        token={token}
+        onSelect={setSelectedReference}
+        onOpen={() => {
+          setOperation({ current: null, command: "OPEN" });
+        }}
+      />
+    );
+  }
+  return (
+    <CaseDetail
+      token={token}
+      caseReference={selectedReference}
+      reloadSignal={refresh}
+      definition={definition.definition}
+      onBack={() => {
+        setSelectedReference(null);
+      }}
+      onCommand={(current, command) => {
+        setOperation({ current, command });
+      }}
+    />
+  );
+};
+
 const DashboardContent = ({
   token,
   definition,
@@ -98,37 +140,38 @@ const DashboardContent = ({
   committed,
 }: ContentProps) => {
   const p = usePresentation();
-  if (definition === null) return <p>{p.text("ui.loadingDefinition")}</p>;
-  if (operation !== null)
+  if (definition === null) {
+    return <p>{p.text("ui.loadingDefinition")}</p>;
+  }
+  if (operation !== null) {
     return (
       <OperationEditor
         token={token}
         definition={definition}
         current={operation.current}
         initialCommand={operation.command}
-        onClose={() => setOperation(null)}
+        onClose={() => {
+          setOperation(null);
+        }}
         onCommitted={committed}
         onMutationLockChange={setLocked}
       />
     );
-  if (active === "recovery") return <RecoveryView token={token} />;
-  if (active === "operations") return <OperationLookup token={token} definition={definition} />;
-  if (selectedReference === null)
-    return (
-      <CaseList
-        token={token}
-        onSelect={setSelectedReference}
-        onOpen={() => setOperation({ current: null, command: "OPEN" })}
-      />
-    );
+  }
+  if (active === "recovery") {
+    return <RecoveryView token={token} />;
+  }
+  if (active === "operations") {
+    return <OperationLookup token={token} definition={definition} />;
+  }
   return (
-    <CaseDetail
+    <CasesPane
       token={token}
-      caseReference={selectedReference}
-      reloadSignal={refresh}
-      definition={definition.definition}
-      onBack={() => setSelectedReference(null)}
-      onCommand={(current, command) => setOperation({ current, command })}
+      definition={definition}
+      selectedReference={selectedReference}
+      refresh={refresh}
+      setOperation={setOperation}
+      setSelectedReference={setSelectedReference}
     />
   );
 };
@@ -147,7 +190,7 @@ export const Dashboard = ({ token, sessionEpoch, onLogout }: DashboardProps) => 
     }
   };
   const committed = (): void => {
-    const reference = operation?.current?.case.fields["caseReference"] ?? null;
+    const reference = operation?.current?.case.fields.caseReference ?? null;
     setOperation(null);
     setSelectedReference(reference);
     setRefresh((value) => value + 1);

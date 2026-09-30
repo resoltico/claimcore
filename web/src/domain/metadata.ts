@@ -25,19 +25,30 @@ const correctionGroupNames: ReadonlyArray<CorrectionGroupName> = [
 ];
 
 export const isCorrectionGroupName = (value: string): value is CorrectionGroupName =>
-  correctionGroupNames.includes(value as CorrectionGroupName);
+  correctionGroupNames.some((name) => name === value);
+
+export const correctionGroupName = (value: string): CorrectionGroupName => {
+  if (!isCorrectionGroupName(value)) {
+    throw new Error(`Unknown correction group ${value}.`);
+  }
+  return value;
+};
 
 export const isCorrectionValues = (values: DraftValues): values is CorrectionDraftValues =>
   "registration" in values && "decision" in values && "payment" in values;
 
 const requiredField = (definition: SemanticDefinition, name: string): FieldDescriptor => {
   const field = definition.fields.find((candidate) => candidate.name === name);
-  if (field === undefined) throw new Error(`The core definition did not describe ${name}.`);
+  if (field === undefined) {
+    throw new Error(`The core definition did not describe ${name}.`);
+  }
   return field;
 };
 
 const currentValue = (fields: CaseFields | undefined, input: CommandInputDescriptor): string => {
-  if (input.prefill === "BLANK") return "";
+  if (input.prefill === "BLANK") {
+    return "";
+  }
   const value = fields?.[input.currentField];
   return value ?? "";
 };
@@ -47,7 +58,9 @@ export const commandFor = (
   kind: CommandKind,
 ): CommandDescriptor => {
   const command = definition.commands.find((candidate) => candidate.kind === kind);
-  if (command === undefined) throw new Error(`The core definition did not describe ${kind}.`);
+  if (command === undefined) {
+    throw new Error(`The core definition did not describe ${kind}.`);
+  }
   return command;
 };
 
@@ -68,12 +81,20 @@ export const correctionGroups = (
   kind: CommandKind,
 ): ReadonlyArray<{ group: CorrectionGroupDescriptor; fields: ReadonlyArray<FieldDescriptor> }> => {
   const shape = commandFor(definition, kind).inputs;
-  if (shape.kind !== "CORRECTION_GROUPS") return [];
+  if (shape.kind !== "CORRECTION_GROUPS") {
+    return [];
+  }
   return shape.groups.map((group) => ({
     group,
     fields: group.replaceFields.map((input) => requiredField(definition, input.fieldName)),
   }));
 };
+
+/** The definition names every correction group, so the entries cover the whole record. */
+const correctionValues = (entries: [string, CorrectionGroupValues][]): CorrectionDraftValues =>
+  // lint-exception: LX-0015
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion
+  Object.fromEntries(entries) as CorrectionDraftValues;
 
 export const prefilledValues = (
   definition: SemanticDefinition,
@@ -81,11 +102,12 @@ export const prefilledValues = (
   current: CaseView | null,
 ): DraftValues => {
   const shape = commandFor(definition, kind).inputs;
-  if (shape.kind === "FIELDS")
+  if (shape.kind === "FIELDS") {
     return Object.fromEntries(
       shape.fields.map((input) => [input.fieldName, currentValue(current?.fields, input)]),
     );
-  return Object.fromEntries(
+  }
+  return correctionValues(
     shape.groups.map((group) => [
       group.name,
       {
@@ -98,13 +120,17 @@ export const prefilledValues = (
         ),
       },
     ]),
-  ) as CorrectionDraftValues;
+  );
 };
 
 const registrationGroup = (value: CorrectionGroupValues) => {
-  if (value.mode === "KEEP") return { mode: "KEEP" as const };
-  if (value.mode === "CLEAR") throw new Error("Registration corrections cannot be cleared.");
-  const values = value.values;
+  if (value.mode === "KEEP") {
+    return { mode: "KEEP" as const };
+  }
+  if (value.mode === "CLEAR") {
+    throw new Error("Registration corrections cannot be cleared.");
+  }
+  const { values } = value;
   return {
     mode: "REPLACE" as const,
     values: {
@@ -120,8 +146,10 @@ const registrationGroup = (value: CorrectionGroupValues) => {
 };
 
 const decisionGroup = (value: CorrectionGroupValues) => {
-  if (value.mode !== "REPLACE") return { mode: value.mode };
-  const values = value.values;
+  if (value.mode !== "REPLACE") {
+    return { mode: value.mode };
+  }
+  const { values } = value;
   return {
     mode: "REPLACE" as const,
     values: {
@@ -133,7 +161,9 @@ const decisionGroup = (value: CorrectionGroupValues) => {
 };
 
 const paymentGroup = (value: CorrectionGroupValues) => {
-  if (value.mode !== "REPLACE") return { mode: value.mode };
+  if (value.mode !== "REPLACE") {
+    return { mode: value.mode };
+  }
   return {
     mode: "REPLACE" as const,
     values: { paymentDate: value.values["paymentDate"] ?? "" },
@@ -148,7 +178,9 @@ export const createDraft = (
   values: DraftValues,
 ): CommandDraft => {
   if (command === "CORRECT_CASE") {
-    if (!isCorrectionValues(values)) throw new Error("CORRECT_CASE requires grouped values.");
+    if (!isCorrectionValues(values)) {
+      throw new Error("CORRECT_CASE requires grouped values.");
+    }
     return {
       operationId,
       caseReference,
@@ -163,11 +195,15 @@ export const createDraft = (
       },
     };
   }
-  if (isCorrectionValues(values)) throw new Error(`${command} requires flat values.`);
+  if (isCorrectionValues(values)) {
+    throw new Error(`${command} requires flat values.`);
+  }
   return {
     operationId,
     caseReference,
     expectedRevision,
+    // lint-exception: LX-0015
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion
     command: { kind: command, values: { ...values } } as CommandDraft["command"],
   };
 };

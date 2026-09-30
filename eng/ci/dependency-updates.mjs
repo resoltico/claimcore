@@ -38,7 +38,13 @@ function nuget(root, flag) {
 export function nugetSecurityFindings(root, installed) {
   return ["--vulnerable", "--deprecated"].flatMap((flag) =>
     packageRows(nuget(root, flag), collections).map((item) =>
-      safeFinding("nuget", item.id, item.resolvedVersion, undefined, installed, flag.slice(2)),
+      safeFinding(
+        "nuget",
+        item.id,
+        { current: item.resolvedVersion, latest: undefined },
+        installed,
+        flag.slice(2),
+      ),
     ),
   );
 }
@@ -51,7 +57,13 @@ export function nugetSecurityFindings(root, installed) {
  */
 export function nugetUpdateFindings(root, installed) {
   return packageRows(nuget(root, "--outdated"), collections).map((item) =>
-    safeFinding("nuget", item.id, item.resolvedVersion, item.latestVersion, installed, "update"),
+    safeFinding(
+      "nuget",
+      item.id,
+      { current: item.resolvedVersion, latest: item.latestVersion },
+      installed,
+      "update",
+    ),
   );
 }
 
@@ -68,7 +80,9 @@ function newestInMajor(name, current, project) {
     project,
   );
   const versions = /** @type {string[]} */ (Array.isArray(published) ? published : [published]);
-  if (versions.length === 0) throw new Error("DEPENDENCY_METADATA_EMPTY");
+  if (versions.length === 0) {
+    throw new Error("DEPENDENCY_METADATA_EMPTY");
+  }
   return versions.reduce((a, b) => (newer(a, b) ? a : b));
 }
 
@@ -79,20 +93,24 @@ function newestInMajor(name, current, project) {
  * @returns {import("./dependency-policy.mjs").Finding[]}
  */
 export function npmUpdateFindings(project, installed) {
-  const outdated = jsonProcess("npm", ["outdated", "--json"], project, [0, 1]);
-  if (!outdated || typeof outdated !== "object" || Array.isArray(outdated))
+  const outdated = jsonProcess("npm", ["outdated", "--json"], project, { allowed: [0, 1] });
+  if (!outdated || typeof outdated !== "object" || Array.isArray(outdated)) {
     throw new Error("DEPENDENCY_METADATA_INVALID");
+  }
   /** @type {import("./dependency-policy.mjs").Finding[]} */
   const findings = [];
   for (const [name, value] of Object.entries(
     /** @type {Record<string, { current: string, latest: string }>} */ (outdated),
   )) {
     if (newer(value.latest, value.current)) {
-      findings.push(safeFinding("npm", name, value.current, value.latest, installed, "update"));
+      findings.push(safeFinding("npm", name, value, installed, "update"));
     } else if (newer(value.current, value.latest)) {
       const latest = newestInMajor(name, value.current, project);
-      if (newer(latest, value.current))
-        findings.push(safeFinding("npm", name, value.current, latest, installed, "update"));
+      if (newer(latest, value.current)) {
+        findings.push(
+          safeFinding("npm", name, { current: value.current, latest }, installed, "update"),
+        );
+      }
     }
   }
   return findings;

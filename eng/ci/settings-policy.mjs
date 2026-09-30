@@ -37,9 +37,15 @@ function assertReviewedRepository(repository) {
 function flagOperations(repository) {
   /** @type {Record<string, boolean>} */
   const flags = {};
-  if (repository.allow_auto_merge !== false) flags["allow_auto_merge"] = false;
-  if (!repository.delete_branch_on_merge) flags["delete_branch_on_merge"] = true;
-  if (!repository.allow_update_branch) flags["allow_update_branch"] = true;
+  if (repository.allow_auto_merge !== false) {
+    flags["allow_auto_merge"] = false;
+  }
+  if (!repository.delete_branch_on_merge) {
+    flags["delete_branch_on_merge"] = true;
+  }
+  if (!repository.allow_update_branch) {
+    flags["allow_update_branch"] = true;
+  }
   return Object.keys(flags).length > 0 ? [{ path: "", method: "PATCH", json: flags }] : [];
 }
 

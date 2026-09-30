@@ -108,8 +108,9 @@ async function assertUnchanged(api, { number, pr, mergeSha, repository }) {
   );
   assert.equal(await pullMergeRevision(api, pr), mergeSha, "Review merge revision changed.");
   const current = await api("");
-  for (const key of ["id", "full_name", "default_branch"])
+  for (const key of ["id", "full_name", "default_branch"]) {
     assert.equal(current[key], repository[key]);
+  }
   assert.equal(current.owner.id, repository["owner"].id, "Review owner changed.");
 }
 

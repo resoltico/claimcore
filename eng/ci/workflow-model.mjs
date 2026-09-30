@@ -9,12 +9,12 @@ export const standalonePaths = new Set([
 /** @param {unknown} value */
 export const falseInput = (value) => value === false || value === "false";
 /** @param {unknown} value @returns {string[]} */
-export const names = (value) =>
-  typeof value === "string"
-    ? [value]
-    : Array.isArray(value)
-      ? value
-      : Object.keys(/** @type {object} */ (value ?? {}));
+export const names = (value) => {
+  if (typeof value === "string") {
+    return [value];
+  }
+  return Array.isArray(value) ? value : Object.keys(/** @type {object} */ (value ?? {}));
+};
 /** @param {import("./types.mjs").Json} job */
 export const dependencies = (job) => names(job.needs);
 /** @template T @param {T} text */

@@ -30,9 +30,13 @@ const embeddedPackages = (moduleIds, webDirectory, temporary) => {
   const marker = `${sep}node_modules${sep}`;
   const names = new Set(["rolldown"]);
   for (const moduleId of moduleIds) {
-    if (resolve(moduleId).startsWith(`${temporary}${sep}`)) continue;
+    if (resolve(moduleId).startsWith(`${temporary}${sep}`)) {
+      continue;
+    }
     const markerIndex = moduleId.lastIndexOf(marker);
-    if (markerIndex < 0) continue;
+    if (markerIndex < 0) {
+      continue;
+    }
     const dependency = moduleId.slice(markerIndex + marker.length);
     const parts = dependency.split(sep);
     const name = parts[0]?.startsWith("@") ? `${parts[0]}/${parts[1]}` : parts[0];
@@ -53,7 +57,9 @@ const validateSchemas = (schemas) => {
     }
     identifiers.add(identifier);
   }
-  if (schemas.length === 0) throw new Error("At least one validator schema is required.");
+  if (schemas.length === 0) {
+    throw new Error("At least one validator schema is required.");
+  }
 };
 
 const validateExports = (validators) => {
@@ -74,7 +80,9 @@ const validateExports = (validators) => {
     names.add(validator.exportName);
     references.add(validator.schemaReference);
   }
-  if (validators.length === 0) throw new Error("At least one validator export is required.");
+  if (validators.length === 0) {
+    throw new Error("At least one validator export is required.");
+  }
 };
 
 const bundleOutput = async (temporary, entry, webDirectory) => {
@@ -115,7 +123,9 @@ export const compileStandaloneValidators = async (inventory, webDirectory) => {
   validateSchemas(inventory.schemas);
   validateExports(inventory.validators);
   const compiler = createCompiler();
-  for (const schema of inventory.schemas) compiler.addSchema(schema);
+  for (const schema of inventory.schemas) {
+    compiler.addSchema(schema);
+  }
   for (const validator of inventory.validators) {
     if (compiler.getSchema(validator.schemaReference) === undefined) {
       throw new Error(`Validator ${validator.exportName} refers to an unknown schema.`);
@@ -124,5 +134,5 @@ export const compileStandaloneValidators = async (inventory, webDirectory) => {
   const exports = Object.fromEntries(
     inventory.validators.map((validator) => [validator.exportName, validator.schemaReference]),
   );
-  return bundledCode(standaloneCode(compiler, exports), webDirectory);
+  return await bundledCode(standaloneCode(compiler, exports), webDirectory);
 };

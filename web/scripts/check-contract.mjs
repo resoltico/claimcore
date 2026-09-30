@@ -1,5 +1,4 @@
-import { readFile, readdir, rm } from "node:fs/promises";
-import { mkdtemp } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { generateConvergenceContracts } from "./contract-generation.mjs";
@@ -12,7 +11,7 @@ const generated = resolve(root, "web/src/generated/convergence");
 const manifestFiles = async (directory) => {
   const manifestPath = join(directory, "convergence-manifest.json");
   const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
-  const files = manifest.files;
+  const { files } = manifest;
   if (
     !Array.isArray(files) ||
     files.length === 0 ||
@@ -53,8 +52,9 @@ const assertValidatorSizes = async (directory) => {
   const expected = standaloneValidatorArtifacts
     .filter((name) => /^web-v3\.validators\.[a-z]+\.mjs$/u.test(name))
     .sort();
-  if (!sameInventory(validators, expected))
+  if (!sameInventory(validators, expected)) {
     throw new Error("Generated Web validators must match the declared group inventory.");
+  }
   for (const name of validators) {
     const source = await readFile(join(directory, name));
     if (source.byteLength > maximumStandaloneValidatorGroupBytes) {
@@ -76,8 +76,9 @@ try {
     expected.map(async (file) => ((await differs(output, file)) ? file : null)),
   );
   const stale = changed.filter((file) => file !== null);
-  if (stale.length > 0)
+  if (stale.length > 0) {
     throw new Error(`Generated convergence contract is stale: ${stale.join(", ")}.`);
+  }
 } finally {
   await rm(output, { force: true, recursive: true });
 }

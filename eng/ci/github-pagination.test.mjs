@@ -37,9 +37,10 @@ for (const field of ["workflow_runs", "jobs"]) {
       ],
     ],
   ];
-  for (const [label, documents] of refusals)
+  for (const [label, documents] of refusals) {
     test(`${field} enumeration rejects ${label}`, async () => {
       let index = 0;
       await assert.rejects(pages(async () => must(documents[index++]), "items", field));
     });
+  }
 }

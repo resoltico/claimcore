@@ -115,12 +115,16 @@ it("submits a retained operation ID and digest only once under duplicate confirm
     JSON.stringify({ operationId, requestSha256: preparation.summary.requestSha256 }),
   );
   fail?.(new Error("Synthetic delivery loss"));
-  await waitFor(() => expect(ui.setMessage).toHaveBeenCalledOnce());
+  await waitFor(() => {
+    expect(ui.setMessage).toHaveBeenCalledOnce();
+  });
 });
 
 it("coalesces duplicate recovery retention for the same previewed bytes", async () => {
   const preview = generatedWebValue("recovery.importEnvelopePreview");
-  if (preview.outcome.tag !== "SUCCEEDED") throw new Error("Expected a valid synthetic preview.");
+  if (preview.outcome.tag !== "SUCCEEDED") {
+    throw new Error("Expected a valid synthetic preview.");
+  }
   const file = new File(["{}"], "recovery.json");
   let fail: ((reason: Error) => void) | undefined;
   const pending = new Promise<Response>((_resolve, reject) => {
@@ -133,12 +137,16 @@ it("coalesces duplicate recovery retention for the same previewed bytes", async 
   const pendingAction = { current: false };
   void onceWhilePending(pendingAction, actions.retain);
   void onceWhilePending(pendingAction, actions.retain);
-  await waitFor(() => expect(fetch).toHaveBeenCalledOnce());
+  await waitFor(() => {
+    expect(fetch).toHaveBeenCalledOnce();
+  });
   expect(fetch.mock.calls[0]?.[1]?.headers).toMatchObject({
     "X-ClaimCore-Source-Sha256": preview.outcome.data.sourceSha256,
   });
   fail?.(new Error("Synthetic delivery loss"));
-  await waitFor(() => expect(ui.setMessage).toHaveBeenCalledOnce());
+  await waitFor(() => {
+    expect(ui.setMessage).toHaveBeenCalledOnce();
+  });
 });
 
 it("does not retain recovery material without a preview", async () => {
@@ -185,7 +193,9 @@ it("uses the supplied attempt cursor for the next inspected evidence page", asyn
   const ui = recoveryUi({});
   const actions = recoveryActions("token", { load: vi.fn(() => Promise.resolve()) }, ui);
   actions.loadAttempts(operationId, "next-attempt");
-  await waitFor(() => expect(fetch).toHaveBeenCalledOnce());
+  await waitFor(() => {
+    expect(fetch).toHaveBeenCalledOnce();
+  });
   expect(fetch.mock.calls[0]?.[1]?.body).toBe(
     JSON.stringify({ operationId, attemptCursor: "next-attempt", attemptLimit: 50 }),
   );

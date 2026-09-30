@@ -29,8 +29,9 @@ test("every CI verification family is mirrored locally or explained", () => {
   const known = new Set(families);
   const stale = [...covered].filter((family) => !known.has(family));
   assert.deepEqual(stale, [], "the local plan names a CI family that no longer exists");
-  for (const entry of registry.notLocal)
+  for (const entry of registry.notLocal) {
     assert.ok(entry.reason.length > 20, `${entry.family} needs a reason`);
+  }
 });
 
 test("the local jobs form a valid plan whose commands exist", () => {
@@ -43,9 +44,12 @@ test("the local jobs form a valid plan whose commands exist", () => {
     })),
   });
   for (const entry of registry.jobs) {
-    for (const pattern of entry.scope ?? []) new RegExp(pattern);
-    for (const part of entry.argv.filter((value) => /^eng\/.*\.(mjs|ps1|sh)$/.test(value)))
+    for (const pattern of entry.scope ?? []) {
+      assert.doesNotThrow(() => new RegExp(pattern, "u"));
+    }
+    for (const part of entry.argv.filter((value) => /^eng\/.*\.(mjs|ps1|sh)$/u.test(value))) {
       assert.ok(existsSync(join(root, part)), `${entry.id} runs ${part}, which does not exist`);
+    }
     assert.ok(entry.mirrors.length > 0, `${entry.id} must name the CI family it mirrors`);
   }
 });
@@ -76,14 +80,16 @@ test("changes select the jobs that can be affected by them", () => {
 });
 
 test("when the change set is unknown every job runs", () => {
-  for (const entry of registry.jobs) assert.equal(affected(entry, null), true);
+  for (const entry of registry.jobs) {
+    assert.equal(affected(entry, null), true);
+  }
 });
 
 test("only generated stage outputs are cleaned before a local run", () => {
   for (const path of registry.clean ?? []) {
     assert.match(
       path,
-      /^artifacts\/[a-z-]+$/,
+      /^artifacts\/[a-z-]+$/u,
       "clean paths are single directories under artifacts/",
     );
   }

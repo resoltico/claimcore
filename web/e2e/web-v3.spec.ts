@@ -1,5 +1,6 @@
 import { AxeBuilder } from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
 
 import { login, logout } from "./session-helpers";
 
@@ -13,7 +14,7 @@ type SessionEnvelope = {
 type HostFailure = { kind: "HOST_FAILURE"; code: string; executionPhase: string | null };
 type ApiReply<T> = { status: number; cacheControl: string | null; payload: T };
 
-const readSession = async (page: import("@playwright/test").Page) =>
+const readSession = (page: Page) =>
   page.evaluate(async () => {
     const response = await fetch("/api/v3/session", { credentials: "same-origin" });
     return {
@@ -23,7 +24,7 @@ const readSession = async (page: import("@playwright/test").Page) =>
     } satisfies ApiReply<SessionEnvelope>;
   });
 
-const readUnknownEndpoint = async (page: import("@playwright/test").Page) =>
+const readUnknownEndpoint = (page: Page) =>
   page.evaluate(async () => {
     const response = await fetch("/api/v3/not-present", { credentials: "same-origin" });
     return {
@@ -33,7 +34,7 @@ const readUnknownEndpoint = async (page: import("@playwright/test").Page) =>
     } satisfies ApiReply<HostFailure>;
   });
 
-const readProtectedList = async (page: import("@playwright/test").Page, token: string) =>
+const readProtectedList = (page: Page, token: string) =>
   page.evaluate(async (antiforgeryToken) => {
     const response = await fetch("/api/v3/cases/list", {
       method: "POST",
@@ -51,7 +52,7 @@ const readProtectedList = async (page: import("@playwright/test").Page, token: s
     } satisfies ApiReply<HostFailure>;
   }, token);
 
-const expectAnonymousV2Boundary = async (page: import("@playwright/test").Page) => {
+const expectAnonymousV2Boundary = async (page: Page) => {
   const missing = await readUnknownEndpoint(page);
   expect(missing).toMatchObject({
     status: 404,
@@ -67,7 +68,7 @@ const expectAnonymousV2Boundary = async (page: import("@playwright/test").Page) 
   return session.payload.outcome.data.antiforgeryToken;
 };
 
-const expectSessionRejection = async (page: import("@playwright/test").Page, token: string) => {
+const expectSessionRejection = async (page: Page, token: string) => {
   const rejected = await readProtectedList(page, token);
   expect(rejected).toMatchObject({
     status: 401,
@@ -76,13 +77,13 @@ const expectSessionRejection = async (page: import("@playwright/test").Page, tok
   });
 };
 
-const expectRetiredBootstrapRoute = async (page: import("@playwright/test").Page) => {
+const expectRetiredBootstrapRoute = async (page: Page) => {
   const response = await page.request.post("/api/v3/session/login", { data: {} });
   expect(response.status()).toBe(404);
   expect(response.headers()["cache-control"]).toContain("no-store");
 };
 
-const expectAnonymousSession = async (page: import("@playwright/test").Page) => {
+const expectAnonymousSession = async (page: Page) => {
   const session = await readSession(page);
   expect(session).toMatchObject({
     status: 200,

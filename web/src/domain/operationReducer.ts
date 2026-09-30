@@ -1,68 +1,13 @@
 import type { Notice } from "../api/notices";
-import type { AdvisoryReview, CommandDraft, PreparationDetails, Receipt } from "../api/v3";
-import type { CommandKind, CorrectionGroupName, CorrectionMode, DraftValues } from "./metadata";
+import type { CommandKind, DraftValues } from "./metadata";
 import { isCorrectionValues } from "./metadata";
 import { freezeRequest } from "./operationRequest";
 import type { CompletionResponse, EditingAction, PrepareResponse } from "./operationReducerTypes";
+import type { DeliveryState, OperationAction, OperationState } from "./operationState";
 
 export { initialOperation } from "./operationInitial";
 
-export type DeliveryState =
-  | "EDITING"
-  | "PREPARING"
-  | "PREPARATION_UNKNOWN"
-  | "RETAINED_FOR_RECOVERY"
-  | "REVIEWING"
-  | "SUBMITTING"
-  | "ACCEPTED"
-  | "DEFINITELY_REJECTED"
-  | "OUTCOME_UNKNOWN";
-export type OperationState = {
-  delivery: DeliveryState;
-  operationId: string;
-  caseReference: string;
-  command: CommandKind;
-  values: DraftValues;
-  preparation: PreparationDetails | null;
-  review: AdvisoryReview | null;
-  receipt: Receipt | null;
-  message: Notice | null;
-  fieldError: { name: string; message: Notice } | null;
-  exposedRequest: CommandDraft | null;
-  pending: { kind: "PREPARE" | "SUBMIT"; requestId: number } | null;
-};
-export type OperationAction =
-  | { type: "EDIT"; field: string; value: string; nextOperationId: string }
-  | {
-      type: "EDIT_CORRECTION";
-      group: CorrectionGroupName;
-      field: string;
-      value: string;
-      nextOperationId: string;
-    }
-  | {
-      type: "SET_CORRECTION_MODE";
-      group: CorrectionGroupName;
-      mode: CorrectionMode;
-      nextOperationId: string;
-    }
-  | { type: "EDIT_REFERENCE"; value: string; nextOperationId: string }
-  | { type: "CHANGE_COMMAND"; command: CommandKind; values: DraftValues; nextOperationId: string }
-  | { type: "PREPARING"; requestId: number; draft: CommandDraft }
-  | { type: "PREPARED"; requestId: number; preparation: PreparationDetails; review: AdvisoryReview }
-  | { type: "PREPARATION_UNKNOWN"; requestId: number; message: Notice }
-  | {
-      type: "RETAINED_FOR_RECOVERY";
-      requestId: number;
-      preparation: PreparationDetails;
-      message: Notice;
-    }
-  | { type: "DEFINITELY_REJECTED"; requestId: number; message: Notice; field: string | null }
-  | { type: "SUBMITTING"; requestId: number }
-  | { type: "ACCEPTED"; requestId: number; receipt: Receipt }
-  | { type: "OUTCOME_UNKNOWN"; requestId: number; message: Notice }
-  | { type: "KEEP_FOR_RECOVERY" }
-  | { type: "RESET_MESSAGE" };
+export type { DeliveryState, OperationAction, OperationState } from "./operationState";
 
 const editable = (state: OperationState) =>
   state.delivery === "EDITING" || state.delivery === "DEFINITELY_REJECTED";
@@ -99,9 +44,13 @@ const editCorrection = (
   state: OperationState,
   action: Extract<OperationAction, { type: "EDIT_CORRECTION" }>,
 ) => {
-  if (!editable(state) || !isCorrectionValues(state.values)) return state;
+  if (!editable(state) || !isCorrectionValues(state.values)) {
+    return state;
+  }
   const group = state.values[action.group];
-  if (group.mode !== "REPLACE" || group.values[action.field] === action.value) return state;
+  if (group.mode !== "REPLACE" || group.values[action.field] === action.value) {
+    return state;
+  }
   return reset(
     state,
     {
@@ -115,9 +64,13 @@ const setCorrectionMode = (
   state: OperationState,
   action: Extract<OperationAction, { type: "SET_CORRECTION_MODE" }>,
 ) => {
-  if (!editable(state) || !isCorrectionValues(state.values)) return state;
+  if (!editable(state) || !isCorrectionValues(state.values)) {
+    return state;
+  }
   const group = state.values[action.group];
-  if (group.mode === action.mode) return state;
+  if (group.mode === action.mode) {
+    return state;
+  }
   return reset(
     state,
     { ...state.values, [action.group]: { ...group, mode: action.mode } },
@@ -142,7 +95,7 @@ const change = (
   state: OperationState,
   action: Extract<OperationAction, { type: "CHANGE_COMMAND" }>,
 ) =>
-  !editable(state) ? state : reset(state, action.values, action.nextOperationId, action.command);
+  editable(state) ? reset(state, action.values, action.nextOperationId, action.command) : state;
 const only = (
   state: OperationState,
   delivery: DeliveryState,
@@ -152,9 +105,15 @@ const preparing = (
   state: OperationState,
   action: Extract<OperationAction, { type: "PREPARING" }>,
 ) => {
-  if (!editable(state) && state.delivery !== "PREPARATION_UNKNOWN") return state;
-  if (state.exposedRequest !== null && state.exposedRequest !== action.draft) return state;
-  if (action.draft.operationId !== state.operationId) return state;
+  if (!editable(state) && state.delivery !== "PREPARATION_UNKNOWN") {
+    return state;
+  }
+  if (state.exposedRequest !== null && state.exposedRequest !== action.draft) {
+    return state;
+  }
+  if (action.draft.operationId !== state.operationId) {
+    return state;
+  }
   return {
     ...only(state, "PREPARING", null),
     exposedRequest: state.exposedRequest ?? freezeRequest(action.draft),
@@ -172,15 +131,15 @@ const submitting = (
       }
     : state;
 const retain = (state: OperationState): OperationState =>
-  state.delivery !== "REVIEWING"
-    ? state
-    : {
+  state.delivery === "REVIEWING"
+    ? {
         ...state,
         delivery: "EDITING",
         preparation: null,
         review: null,
         pending: null,
-      };
+      }
+    : state;
 
 const reject = (
   state: OperationState,
@@ -210,7 +169,9 @@ const editingReducer = (state: OperationState, action: EditingAction): Operation
 };
 
 const prepareResponse = (state: OperationState, action: PrepareResponse): OperationState => {
-  if (!matchesPending(state, "PREPARE", action.requestId)) return state;
+  if (!matchesPending(state, "PREPARE", action.requestId)) {
+    return state;
+  }
   switch (action.type) {
     case "PREPARED":
       return {
@@ -234,7 +195,9 @@ const prepareResponse = (state: OperationState, action: PrepareResponse): Operat
 };
 
 const completionResponse = (state: OperationState, action: CompletionResponse): OperationState => {
-  if (state.pending?.requestId !== action.requestId) return state;
+  if (state.pending?.requestId !== action.requestId) {
+    return state;
+  }
   switch (action.type) {
     case "DEFINITELY_REJECTED":
       return reject(state, action);
@@ -287,7 +250,8 @@ export const operationReducer = (
     action.type === "SET_CORRECTION_MODE" ||
     action.type === "EDIT_REFERENCE" ||
     action.type === "CHANGE_COMMAND"
-  )
+  ) {
     return editingReducer(state, action);
+  }
   return transitionReducer(state, action);
 };

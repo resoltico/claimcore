@@ -14,7 +14,9 @@ function diskFiles(root, relative) {
   const path = join(root, relative);
   const stat = lstatSync(path);
   assert(!stat.isSymbolicLink(), "Reporting tools must not be symlinks.");
-  if (stat.isFile()) return [relative];
+  if (stat.isFile()) {
+    return [relative];
+  }
   assert(stat.isDirectory(), "Unexpected reporting-tool filesystem entry.");
   return readdirSync(path).flatMap((entry) => diskFiles(root, `${relative}/${entry}`));
 }
@@ -31,8 +33,9 @@ function verifyCommittedFile(root, path, mode, sha) {
   const bytes = readFileSync(join(root, path));
   const actual = createHash("sha1").update(`blob ${bytes.length}\0`).update(bytes).digest("hex");
   assert.equal(actual, sha, "Reporting-tool bytes differ from the committed revision.");
-  if (process.platform !== "win32")
+  if (process.platform !== "win32") {
     assert.equal(stat.mode & 0o111 ? "100755" : "100644", mode, "Reporting-tool mode differs.");
+  }
 }
 
 /**
@@ -63,7 +66,7 @@ export function toolProvenance(root) {
       verifyCommittedFile(root, path, mode, sha);
       return { path, mode, sha };
     })
-    .sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
+    .sort((a, b) => compareText(a.path, b.path));
   assert(entries.length > 0, "Reporting tools are missing.");
   assert.deepEqual(
     actualFiles,
@@ -72,4 +75,16 @@ export function toolProvenance(root) {
   );
   assert.equal(git("rev-parse", "HEAD").trim(), commit, "Reporting-tool revision changed.");
   return { commit, sha256: digest(entries), files: entries };
+}
+
+/**
+ * @param {string} left
+ * @param {string} right
+ * @returns {number}
+ */
+function compareText(left, right) {
+  if (left < right) {
+    return -1;
+  }
+  return left > right ? 1 : 0;
 }

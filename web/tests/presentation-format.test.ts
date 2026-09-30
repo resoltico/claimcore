@@ -31,8 +31,9 @@ it("leaves invalid authored decimal and integer text unchanged for core validati
   ]) {
     expect(exactAmount(value, "ar-EG")).toBe(value);
   }
-  for (const value of ["", "01", "-1", "1.5", "1e3", "10000000000000000000"])
+  for (const value of ["", "01", "-1", "1.5", "1e3", "10000000000000000000"]) {
     expect(exactInteger(value, "lv-LV")).toBe(value);
+  }
   expect(exactInteger("9223372036854775807", "en-GB")).toBe("9,223,372,036,854,775,807");
 });
 
@@ -53,12 +54,13 @@ it("formats Gregorian date-only values without shifting days or truncating early
     "2026-01-00",
     "1-01-01",
     "2026-01-01T00:00:00Z",
-  ])
+  ]) {
     expect(calendarDate(value, "ar-EG")).toBe(value);
+  }
 });
 
 it("formats only read-only scalar displays and leaves technical text and currency invariant", () => {
-  const fields = definition.definition.fields;
+  const { fields } = definition.definition;
   const field = (name: string) => fields.find((item) => item.name === name)!;
   expect(displayField("12.5000", field("claimedAmount"), "lv-LV")).toBe("12,5000");
   expect(displayField("2026-09-22", field("incidentDate"), "en-GB")).toBe("22/09/2026");
@@ -86,5 +88,7 @@ it("uses stable metadata identity rather than supplied English labels as catalog
   expect(p.integer("42")).toBe("42");
   expect(p.amount("42.0000")).toBe("42.0000");
   expect(p.date("2026-09-22")).toBe("22/09/2026");
-  for (const field of definition.definition.fields) expect(p.hint(field)).not.toBe("");
+  for (const field of definition.definition.fields) {
+    expect(p.hint(field)).not.toBe("");
+  }
 });

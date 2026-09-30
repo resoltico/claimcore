@@ -7,24 +7,28 @@ import { isHostFailure, isWebV3Response } from "../src/generated/convergence/web
 import { webV3HostFailureStatuses } from "../src/generated/convergence/web-v3.endpoint-catalog";
 import {
   cliCases,
-  cliKindCoverage,
   cliCommandPrepareInputValidator,
   cliValidators,
   endpointInventory,
   rawCliInput,
   requiredWebEndpoint,
   webCases,
-  webHostCoverage,
-  webTagCoverage,
 } from "./contract-corpus.fixtures";
+import { cliKindCoverage, webHostCoverage, webTagCoverage } from "./contract-corpus.coverage";
 
-const crossCount = (cases: readonly { readonly id: string }[]): number =>
+const crossCount = (cases: ReadonlyArray<{ readonly id: string }>): number =>
   cases.filter((value) => value.id.startsWith("cross-")).length;
 
 const replaceText = (value: unknown, expected: string, replacement: string): unknown => {
-  if (typeof value === "string") return value === expected ? replacement : value;
-  if (Array.isArray(value)) return value.map((item) => replaceText(item, expected, replacement));
-  if (typeof value !== "object" || value === null) return value;
+  if (typeof value === "string") {
+    return value === expected ? replacement : value;
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => replaceText(item, expected, replacement));
+  }
+  if (typeof value !== "object" || value === null) {
+    return value;
+  }
   return Object.fromEntries(
     Object.entries(value).map(([key, item]) => [key, replaceText(item, expected, replacement)]),
   );
@@ -92,7 +96,9 @@ const expectCliCases = (localOutcomes: boolean): void => {
   const cases = parsedCliCases;
   let checked = 0;
   for (const item of cases) {
-    if (item.id.startsWith("local-") !== localOutcomes) continue;
+    if (item.id.startsWith("local-") !== localOutcomes) {
+      continue;
+    }
     checked += 1;
     if (item.endpoint === null) {
       expect(compiledCliValidators.aggregate(item.value), item.id).toBe(item.valid);
@@ -100,9 +106,13 @@ const expectCliCases = (localOutcomes: boolean): void => {
     }
     const endpoint = requiredWebEndpoint(item.endpoint);
     const validator = compiledCliValidators.endpoints.get(endpoint);
-    if (validator === undefined) throw new Error(`Missing CLI validator ${endpoint}.`);
+    if (validator === undefined) {
+      throw new Error(`Missing CLI validator ${endpoint}.`);
+    }
     expect(validator(item.value), item.id).toBe(item.valid);
-    if (item.valid) expect(compiledCliValidators.aggregate(item.value), item.id).toBe(true);
+    if (item.valid) {
+      expect(compiledCliValidators.aggregate(item.value), item.id).toBe(true);
+    }
   }
   expect(checked).toBeGreaterThan(0);
 };
@@ -117,8 +127,9 @@ const expectCliCoverage = (): void => {
 const expectCliLoneSurrogates = (): void => {
   const source = parsedCliCases.find((value) => value.id === "valid-case-get-found");
   const validate = compiledCliValidators.endpoints.get("case.get");
-  if (source === undefined || validate === undefined)
+  if (source === undefined || validate === undefined) {
     throw new Error("CLI scalar source and validator are required.");
+  }
   for (const value of loneSurrogates) {
     const malformed = replaceText(source.value, "SYNTHETIC-001", value);
     expect(validate(malformed), `CLI lone surrogate ${value.charCodeAt(0)}`).toBe(false);
@@ -158,7 +169,9 @@ const expectWebCases = async (): Promise<void> => {
 
 const expectWebLoneSurrogates = async (): Promise<void> => {
   const source = webCases().find((value) => value.id === "valid-case-get-found");
-  if (source === undefined) throw new Error("Web scalar source is required.");
+  if (source === undefined) {
+    throw new Error("Web scalar source is required.");
+  }
   for (const value of loneSurrogates) {
     const malformed = replaceText(source.value, "SYNTHETIC-001", value);
     expect(

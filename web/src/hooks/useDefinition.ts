@@ -11,7 +11,9 @@ export const useDefinition = (sessionEpoch: number) => {
   useEffect(() => {
     const controller = new AbortController();
     void v3.definition(controller.signal).then((result) => {
-      if (controller.signal.aborted) return;
+      if (controller.signal.aborted) {
+        return;
+      }
       const payload =
         result.kind === "outcome" && result.value.outcome.tag === "DESCRIBED"
           ? result.value.outcome.data
@@ -19,15 +21,19 @@ export const useDefinition = (sessionEpoch: number) => {
       if (payload === null) {
         setDefinition(null);
         setMessage(resultNotice(result));
-      } else if (payload.webFingerprint !== webV3WireContractFingerprint) {
-        setDefinition(null);
-        setMessage(localNotice("definitionMismatch"));
-      } else {
+      } else if (payload.webFingerprint === webV3WireContractFingerprint) {
         setDefinition(payload);
         setMessage(null);
+      } else {
+        setDefinition(null);
+        setMessage(localNotice("definitionMismatch"));
       }
     });
-    return () => controller.abort();
+    return () => {
+      controller.abort();
+    };
+    // lint-exception: LX-0017
+    // oxlint-disable-next-line react/exhaustive-effect-dependencies
   }, [sessionEpoch]);
 
   return { definition, message };

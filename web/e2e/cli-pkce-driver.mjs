@@ -20,7 +20,9 @@ const progressFile = process.env.CLAIMCORE_CLI_TEST_PROGRESS_FILE;
 let currentStage = "start";
 const progress = (stage) => {
   currentStage = stage;
-  if (progressFile) writeFileSync(progressFile, `${stage}\n`, { mode: 0o600 });
+  if (progressFile) {
+    writeFileSync(progressFile, `${stage}\n`, { mode: 0o600 });
+  }
 };
 progress("driver-started");
 
@@ -53,19 +55,25 @@ try {
 } catch {
   process.exit(2);
 }
-if (!Array.isArray(credentials.users) || credentials.users.length < 1) process.exit(2);
+if (!Array.isArray(credentials.users) || credentials.users.length < 1) {
+  process.exit(2);
+}
+
+const requestWrongState = () => {
+  redirect.search = new URLSearchParams({ code: "synthetic", state: "wrong-state" }).toString();
+  return new Promise((resolve, reject) => {
+    const request = http.get(redirect, (response) => {
+      response.resume();
+      response.on("end", resolve);
+    });
+    request.on("error", reject);
+  });
+};
 
 const run = async () => {
   if (mode === "wrong-state") {
     progress("wrong-state-request");
-    redirect.search = new URLSearchParams({ code: "synthetic", state: "wrong-state" }).toString();
-    await new Promise((resolve, reject) => {
-      const request = http.get(redirect, (response) => {
-        response.resume();
-        response.on("end", resolve);
-      });
-      request.on("error", reject);
-    });
+    await requestWrongState();
     return;
   }
 
@@ -80,9 +88,13 @@ const run = async () => {
     progress("authorization-opened");
     if ((await page.locator('input[name="username"]').count()) !== 1) {
       const text = (await page.locator("body").innerText()).toLowerCase();
-      if (text.includes("redirect_uri")) progress("redirect-refused");
-      else if (text.includes("client")) progress("client-refused");
-      else progress("login-form-missing");
+      if (text.includes("redirect_uri")) {
+        progress("redirect-refused");
+      } else if (text.includes("client")) {
+        progress("client-refused");
+      } else {
+        progress("login-form-missing");
+      }
       throw new Error("Synthetic login form unavailable.");
     }
     await page.locator('input[name="username"]').fill(credentials.users[0].username);
@@ -107,17 +119,11 @@ const run = async () => {
 try {
   await run();
 } catch {
-  if (progressFile)
+  if (progressFile) {
     writeFileSync(progressFile, `driver-refused-after-${currentStage}\n`, { mode: 0o600 });
+  }
   try {
-    redirect.search = new URLSearchParams({ code: "synthetic", state: "wrong-state" }).toString();
-    await new Promise((resolve, reject) => {
-      const request = http.get(redirect, (response) => {
-        response.resume();
-        response.on("end", resolve);
-      });
-      request.on("error", reject);
-    });
+    await requestWrongState();
   } catch {
     // The CLI may already have closed its listener; keep the original safe stage category.
   }

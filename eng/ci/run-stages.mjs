@@ -17,7 +17,7 @@ import { runPlan, validatePlan } from "./stage-plan.mjs";
 
 const root = fileURLToPath(new URL("../..", import.meta.url));
 const docs = join(root, "artifacts/bin/ClaimCore.Docs/release/ClaimCore.Docs.dll");
-const argv = process.argv;
+const { argv } = process;
 
 // A failing stage may opt in to showing the end of its own log. Only stages whose output is tool
 // output about public artifacts opt in; the log is otherwise kept private (see stage-diagnostics).
@@ -25,7 +25,9 @@ const argv = process.argv;
 function echoTail(id, log, lines) {
   const text = logTailLines(log, lines, 240);
   console.log(`${id}: last ${text.length} log lines`);
-  for (const line of text) console.log(`  ${line}`);
+  for (const line of text) {
+    console.log(`  ${line}`);
+  }
 }
 
 const timestamp = () => new Date().toISOString().replace("Z", "0000+00:00");
@@ -59,7 +61,9 @@ function conclude({ stage, plan, runId, attempt }, { status, output, log, starte
         { cwd: root, stdio: "inherit" },
       )
     : { status: 0 };
-  if (status !== 0 && stage.echoTail) echoTail(stage.id, log, stage.echoTail);
+  if (status !== 0 && stage.echoTail) {
+    echoTail(stage.id, log, stage.echoTail);
+  }
   const report = spawnSync(
     "node",
     [
@@ -92,7 +96,9 @@ async function execute(stage, plan, runId, attempt) {
     return { failed: Boolean(process.env["CI"]), skipped: true };
   }
   const output = join(root, stage.output ?? `artifacts/stages/${stage.id}`);
-  if (existsSync(output)) return { failed: true, note: "output already exists" };
+  if (existsSync(output)) {
+    return { failed: true, note: "output already exists" };
+  }
   mkdirSync(output, { recursive: true });
   const log = join(process.env["RUNNER_TEMP"] ?? tmpdir(), `claimcore-${stage.id}.log`);
   const [command = "", ...args] = commandFor(stage, runId, root);
@@ -106,13 +112,16 @@ async function execute(stage, plan, runId, attempt) {
 }
 
 async function main() {
-  const name = argv[2];
-  if (!name || !/^[a-z0-9-]+$/.test(name)) throw new Error("Name a registered stage plan.");
+  const [, , name] = argv;
+  if (!name || !/^[a-z0-9-]+$/u.test(name)) {
+    throw new Error("Name a registered stage plan.");
+  }
   const plan = validatePlan(
     JSON.parse(readFileSync(join(root, `eng/ci/stage-plans/${name}.json`), "utf8")),
   );
-  if (recordEvidence() && !existsSync(docs))
+  if (recordEvidence() && !existsSync(docs)) {
     throw new Error("Build the Release evidence executable first.");
+  }
   const runId = option(
     argv,
     "run-id",

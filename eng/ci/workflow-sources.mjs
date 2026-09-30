@@ -14,10 +14,12 @@ export function workflowSources(repository) {
   function visit(directory) {
     for (const item of readdirSync(directory, { withFileTypes: true })) {
       const path = join(directory, item.name);
-      if (lstatSync(path).isSymbolicLink())
+      if (lstatSync(path).isSymbolicLink()) {
         throw new Error("Workflow sources may not use symlinks.");
-      if (item.isDirectory()) visit(path);
-      else if (item.isFile() && /\.ya?ml$/u.test(item.name)) {
+      }
+      if (item.isDirectory()) {
+        visit(path);
+      } else if (item.isFile() && /\.ya?ml$/u.test(item.name)) {
         result.set(relative(root, path).split("\\").join("/"), readFileSync(path, "utf8"));
       }
     }
@@ -27,9 +29,12 @@ export function workflowSources(repository) {
   const plans = join(root, "eng/ci/stage-plans");
   for (const item of readdirSync(plans, { withFileTypes: true })) {
     const path = join(plans, item.name);
-    if (lstatSync(path).isSymbolicLink()) throw new Error("Stage plans may not use symlinks.");
-    if (item.isFile() && /\.json$/u.test(item.name))
+    if (lstatSync(path).isSymbolicLink()) {
+      throw new Error("Stage plans may not use symlinks.");
+    }
+    if (item.isFile() && /\.json$/u.test(item.name)) {
       result.set(`eng/ci/stage-plans/${item.name}`, readFileSync(path, "utf8"));
+    }
   }
   return result;
 }

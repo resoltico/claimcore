@@ -12,21 +12,31 @@ it("binds consent to one reviewed preparation and exact identity rather than an 
     initialProps: { subject: preparation },
   });
   expect(result.current.confirmed).toBe(false);
-  act(() => result.current.setConfirmed(true));
+  act(() => {
+    result.current.setConfirmed(true);
+  });
   rerender({ subject: preparation });
   expect(result.current.confirmed).toBe(true);
   rerender({ subject: { ...preparation } });
   expect(result.current.confirmed).toBe(false);
-  act(() => result.current.setConfirmed(true));
+  act(() => {
+    result.current.setConfirmed(true);
+  });
   expect(result.current.confirmed).toBe(true);
-  act(() => result.current.setConfirmed(false));
+  act(() => {
+    result.current.setConfirmed(false);
+  });
   expect(result.current.confirmed).toBe(false);
   rerender({ subject: null });
-  act(() => result.current.setConfirmed(true));
+  act(() => {
+    result.current.setConfirmed(true);
+  });
   expect(result.current.confirmed).toBe(false);
   rerender({
     subject: { ...preparation, summary: { ...preparation.summary, requestSha256: null } },
   });
-  act(() => result.current.setConfirmed(true));
+  act(() => {
+    result.current.setConfirmed(true);
+  });
   expect(result.current.confirmed).toBe(false);
 });

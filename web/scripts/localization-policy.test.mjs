@@ -32,7 +32,9 @@ test("every shipped real catalog covers the native metadata and diagnostic param
   const en = catalog("en");
   assert.ok(Object.keys(en).length > 300);
   assert.ok(Object.keys(requirements).length > 100);
-  for (const language of ["en", "lv", "ar"]) validateCatalog(en, catalog(language), language);
+  for (const language of ["en", "lv", "ar"]) {
+    validateCatalog(en, catalog(language), language);
+  }
   validateCoverage(en, semantic, requirements);
   const tokens = renderedTokens(
     semantic,
@@ -42,8 +44,9 @@ test("every shipped real catalog covers the native metadata and diagnostic param
 });
 
 test("catalog admission refuses duplicate JSON keys, non-object inputs and cross-domain ownership", () => {
-  for (const value of ['{"a":"first","a":"second"}', "[]", "null", "42", "broken"])
+  for (const value of ['{"a":"first","a":"second"}', "[]", "null", "42", "broken"]) {
     assert.throws(() => readCatalog(value));
+  }
   assert.deepEqual(readCatalog('{"ui.a":"safe"}'), { "ui.a": "safe" });
   assert.throws(() => addDomain({}, { "notice.a": "wrong domain" }, "ui"));
   assert.throws(() => addDomain({ "ui.a": "existing" }, { "ui.a": "duplicate" }, "ui"));
@@ -59,8 +62,9 @@ test("catalog changes cannot silently lose keys, arguments or their closed roles
     { "ui.notice": "Request", "ui.extra": "extra" },
     { "ui.notice": "Request {other}" },
     { "ui.notice": "{identity, plural, one {one} other {many}}" },
-  ])
+  ]) {
     assert.throws(() => validateCatalog(en, altered, "en"));
+  }
   validateCatalog(en, { "ui.notice": "Pieprasījums {identity}" }, "lv");
 });
 
@@ -75,8 +79,9 @@ test("ICU admission rejects markup, raw value formatting and directional overrid
     "{x, time}",
     "{x, number, ::currency/USD}",
     "{constructor}",
-  ])
+  ]) {
     assert.throws(() => messageShape(value, "en"), value);
+  }
 });
 
 test("plural grammar is locale-complete while exact selectors and offsets remain semantic", () => {
@@ -101,10 +106,10 @@ test("plural grammar is locale-complete while exact selectors and offsets remain
 });
 
 test("pseudolocalization transforms only literal nodes and preserves exact interpolated identities", () => {
-  const ast = messageShape(
+  const { ast } = messageShape(
     "Operation {id}: {n, plural, one {one result} other {# results}}",
     "en",
-  ).ast;
+  );
   const before = structuredClone(ast);
   const changed = pseudolocalize(ast);
   assert.deepEqual(ast, before);

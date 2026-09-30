@@ -1,8 +1,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { isObject, Report } from "./model.mjs";
+import { isObject } from "./model.mjs";
 
-const identifier = /^LX-\d{4}$/;
+const identifier = /^LX-\d{4}$/u;
 const tools = new Set([
   "fsc",
   "fsharplint",
@@ -23,9 +23,9 @@ const tools = new Set([
   "msbuild",
 ]);
 const nonSuppressible =
-  /(^|[-_/.:])(max[-_]?lines|file[-_]?size|function[-_]?size|complexity|focused|skip(?:ped)?[-_]?test|test[-_]?filter|contract[-_]?drift|security[-_]?boundary)([-_/.:]|$)/i;
+  /(^|[-_/.:])(max[-_]?lines|file[-_]?size|function[-_]?size|complexity|focused|skip(?:ped)?[-_]?test|test[-_]?filter|contract[-_]?drift|security[-_]?boundary)([-_/.:]|$)/iu;
 const generatedPath =
-  /^(?:artifacts\/obj\/|src\/ClaimCore\.Web\/wwwroot\/|web\/(?:artifacts|coverage|dist|node_modules|playwright-report|test-results)\/)$/;
+  /^(?:artifacts\/obj\/|src\/ClaimCore\.Web\/wwwroot\/|web\/(?:artifacts|coverage|dist|node_modules|playwright-report|test-results)\/)$/u;
 
 /**
  * @param {Record<string, unknown>} entry
@@ -40,19 +40,25 @@ function text(entry, name) {
  * Owner, reason and a review or expiry date that has not passed.
  * @param {Record<string, unknown>} entry
  * @param {string} label
- * @param {Report} report
+ * @param {import("./model.mjs").Report} report
  * @param {Date} today
  * @returns {boolean} Whether the entry is governed.
  */
 function checkGovernance(entry, label, report, today) {
   const before = report.errors.length;
-  if (text(entry, "owner").length < 3) report.add(`${label} needs a named owner.`);
-  if (text(entry, "reason").length < 20) report.add(`${label} needs a substantive reason.`);
+  if (text(entry, "owner").length < 3) {
+    report.add(`${label} needs a named owner.`);
+  }
+  if (text(entry, "reason").length < 20) {
+    report.add(`${label} needs a substantive reason.`);
+  }
   const dates = ["reviewOn", "expiresOn"].filter((name) => text(entry, name) !== "");
-  if (dates.length === 0) report.add(`${label} requires reviewOn or expiresOn.`);
+  if (dates.length === 0) {
+    report.add(`${label} requires reviewOn or expiresOn.`);
+  }
   for (const name of dates) {
     const value = text(entry, name);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || Number.isNaN(Date.parse(value))) {
+    if (!/^\d{4}-\d{2}-\d{2}$/u.test(value) || Number.isNaN(Date.parse(value))) {
       report.add(`${label} ${name} must be an ISO yyyy-MM-dd date.`);
     } else if (new Date(`${value}T23:59:59Z`) < today) {
       report.add(`${label} passed its ${name} date ${value}.`);
@@ -73,7 +79,7 @@ function fieldProblems(entry, root, ids, rules) {
   const id = text(entry, "id");
   const file = text(entry, "file");
   const kind = text(entry, "kind");
-  const count = entry["count"];
+  const { count } = entry;
   const listed = Array.isArray(entry["rules"]) ? entry["rules"].length : -1;
   const duplicate = ids.has(id);
   ids.add(id);
@@ -88,12 +94,12 @@ function fieldProblems(entry, root, ids, rules) {
     [
       rules.every(
         (rule) =>
-          rule !== "*" && !nonSuppressible.test(rule) && (kind === "config" || !/[*?]/.test(rule)),
+          rule !== "*" && !nonSuppressible.test(rule) && (kind === "config" || !/[*?]/u.test(rule)),
       ),
       "names a blanket, wildcard or non-suppressible rule.",
     ],
     [
-      file !== "" && !/[*?]/.test(file) && !file.endsWith("/") && !file.startsWith("/"),
+      file !== "" && !/[*?]/u.test(file) && !file.endsWith("/") && !file.startsWith("/"),
       "must name one exact repository-relative file.",
     ],
     [existsSync(join(root, file)), `points to a file that does not exist: ${file}.`],
@@ -104,7 +110,7 @@ function fieldProblems(entry, root, ids, rules) {
 /**
  * @param {Record<string, unknown>} entry
  * @param {string} root
- * @param {Report} report
+ * @param {import("./model.mjs").Report} report
  * @param {Set<string>} ids
  * @returns {import("./model.mjs").LintException | null}
  */
@@ -115,9 +121,13 @@ function exceptionEntry(entry, root, report, ids) {
     ? entry["rules"].filter((rule) => typeof rule === "string")
     : [];
   const problems = fieldProblems(entry, root, ids, rules);
-  for (const message of problems) report.add(`${label} ${message}`);
+  for (const message of problems) {
+    report.add(`${label} ${message}`);
+  }
   const governed = checkGovernance(entry, label, report, new Date());
-  if (problems.length > 0 || !governed) return null;
+  if (problems.length > 0 || !governed) {
+    return null;
+  }
   return /** @type {import("./model.mjs").LintException} */ ({
     id,
     tool: text(entry, "tool"),
@@ -132,7 +142,7 @@ function exceptionEntry(entry, root, report, ids) {
 
 /**
  * @param {Record<string, unknown>} entry
- * @param {Report} report
+ * @param {import("./model.mjs").Report} report
  * @param {Set<string>} seen
  * @returns {import("./model.mjs").GeneratedExclusion | null}
  */
@@ -140,14 +150,20 @@ function generatedEntry(entry, report, seen) {
   const path = text(entry, "path");
   const label = `Generated exclusion ${path || "(no path)"}`;
   const before = report.errors.length;
-  if (!generatedPath.test(path))
+  if (!generatedPath.test(path)) {
     report.add(`${label} is not an exact recognized generated-output path.`);
-  if (text(entry, "generator").length < 8)
+  }
+  if (text(entry, "generator").length < 8) {
     report.add(`${label} must name its generator specifically.`);
-  if (seen.has(path)) report.add(`${label} is listed twice.`);
+  }
+  if (seen.has(path)) {
+    report.add(`${label} is listed twice.`);
+  }
   seen.add(path);
   checkGovernance(entry, label, report, new Date());
-  if (report.errors.length !== before) return null;
+  if (report.errors.length !== before) {
+    return null;
+  }
   return {
     path,
     generator: text(entry, "generator"),
@@ -160,7 +176,7 @@ function generatedEntry(entry, report, seen) {
  * Load and validate the registry; problems go to `report`.
  * @param {string} root Repository root.
  * @param {string} registryPath Absolute path to the registry file.
- * @param {Report} report
+ * @param {import("./model.mjs").Report} report
  * @returns {import("./model.mjs").Registry}
  */
 export function loadRegistry(root, registryPath, report) {

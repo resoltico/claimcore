@@ -36,7 +36,9 @@ const inspect = async (page: Page, identity: PreparedIdentity): Promise<void> =>
     );
   }
   await progress("recovery-row-found");
-  if (!(await row.isVisible())) throw new Error("E2E_RECOVERY_ROW_HIDDEN");
+  if (!(await row.isVisible())) {
+    throw new Error("E2E_RECOVERY_ROW_HIDDEN");
+  }
   await row.getByRole("button", { name: "Inspect" }).click();
   await progress("recovery-dialog-opened");
   const dialog = page.getByRole("dialog", { name: "Recovery details" });

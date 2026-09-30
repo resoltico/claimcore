@@ -16,11 +16,16 @@ function filesEndingWith(root, directories, suffix) {
   const walk = (directory) => {
     for (const entry of readdirSync(join(root, directory), { withFileTypes: true })) {
       const path = `${directory}/${entry.name}`;
-      if (entry.isDirectory()) walk(path);
-      else if (entry.name.endsWith(suffix)) found.push(path);
+      if (entry.isDirectory()) {
+        walk(path);
+      } else if (entry.name.endsWith(suffix)) {
+        found.push(path);
+      }
     }
   };
-  for (const directory of directories) walk(directory);
+  for (const directory of directories) {
+    walk(directory);
+  }
   return found.sort();
 }
 

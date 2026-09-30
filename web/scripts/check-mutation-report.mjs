@@ -33,7 +33,7 @@ function requireScope(report, source) {
 export function verifyMutationReport(report, source, version) {
   requireIdentity(report, version);
   requireScope(report, source);
-  const mutants = report.files[target].mutants;
+  const { mutants } = report.files[target];
   if (
     !Array.isArray(mutants) ||
     mutants.length === 0 ||
@@ -43,7 +43,9 @@ export function verifyMutationReport(report, source, version) {
   }
   const killed = mutants.filter((mutant) => mutant.status === "Killed").length;
   const score = (100 * killed) / mutants.length;
-  if (score < minimumScore) throw new Error("Mutation score is below the reviewed floor.");
+  if (score < minimumScore) {
+    throw new Error("Mutation score is below the reviewed floor.");
+  }
   return { killed, total: mutants.length, score };
 }
 

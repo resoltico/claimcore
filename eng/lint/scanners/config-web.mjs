@@ -17,7 +17,9 @@ export function configOccurrence(file, tool, rule) {
  * @returns {import("../model.mjs").Occurrence[]}
  */
 function disabledRules(file, rules) {
-  if (!isObject(rules)) return [];
+  if (!isObject(rules)) {
+    return [];
+  }
   return Object.entries(rules)
     .filter(([, setting]) => {
       const level = Array.isArray(setting) ? setting[0] : setting;
@@ -34,7 +36,9 @@ function disabledRules(file, rules) {
  */
 export function scanOxlintConfig(file, text) {
   const config = parseJsonc(text);
-  if (!isObject(config)) return [];
+  if (!isObject(config)) {
+    return [];
+  }
   const patterns = Array.isArray(config["ignorePatterns"]) ? config["ignorePatterns"] : [];
   const overrides = Array.isArray(config["overrides"]) ? config["overrides"] : [];
   return [
@@ -66,7 +70,9 @@ export function scanTypeScriptConfig(file, text) {
  */
 export function scanKnipConfig(file, text) {
   const config = parseJsonc(text);
-  if (!isObject(config)) return [];
+  if (!isObject(config)) {
+    return [];
+  }
   return Object.entries(config)
     .filter(([key]) => key.startsWith("ignore"))
     .flatMap(([key, value]) =>
@@ -100,10 +106,13 @@ export function scanStylelintConfig(file, lines) {
   /** @type {import("../model.mjs").Occurrence[]} */
   const found = [];
   for (const line of lines) {
-    const off = /["'](?<rule>[^"']+)["']\s*:\s*null\b/.exec(line);
-    if (off) found.push(configOccurrence(file, "stylelint", off.groups?.["rule"] ?? ""));
-    if (/\b(?:ignoreFiles|ignoreDisables)\b/.test(line))
+    const off = /["'](?<rule>[^"']+)["']\s*:\s*null\b/u.exec(line);
+    if (off) {
+      found.push(configOccurrence(file, "stylelint", off.groups?.["rule"] ?? ""));
+    }
+    if (/\b(?:ignoreFiles|ignoreDisables)\b/u.test(line)) {
       found.push(configOccurrence(file, "stylelint", "ignore-options"));
+    }
   }
   return found;
 }
@@ -116,7 +125,7 @@ export function scanStylelintConfig(file, lines) {
  */
 export function scanCoverageConfig(file, lines) {
   const pattern =
-    /(?:coveragePathIgnorePatterns|coverage.*--exclude|(?:istanbul|c8).*--exclude|^\s*["']?exclude(?:AfterRemap)?["']?\s*:)/i;
+    /(?:coveragePathIgnorePatterns|coverage.*--exclude|(?:istanbul|c8).*--exclude|^\s*["']?exclude(?:AfterRemap)?["']?\s*:)/iu;
   return lines
     .filter((line) => pattern.test(line))
     .map(() => configOccurrence(file, "coverage", "coverage-config-exclude"));

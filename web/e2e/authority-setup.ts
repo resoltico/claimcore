@@ -30,7 +30,9 @@ const validPrincipals = (value: Record<string, unknown>): value is Principals =>
 
 const principals = async (): Promise<Principals> => {
   const file = process.env["CLAIMCORE_WEB_E2E_PRINCIPALS_FILE"];
-  if (file === undefined) throw new Error("Synthetic principal inventory is missing.");
+  if (file === undefined) {
+    throw new Error("Synthetic principal inventory is missing.");
+  }
   const source: unknown = JSON.parse(await readFile(file, "utf8"));
   if (typeof source !== "object" || source === null) {
     throw new Error("Synthetic principal inventory is invalid.");
@@ -48,7 +50,9 @@ const isObject = (value: unknown): value is Record<string, unknown> =>
 
 const pathFor = (endpoint: ManagementEndpoint): string => {
   const descriptor = webV3Endpoints.find((item) => item.id === endpoint);
-  if (descriptor === undefined) throw new Error("Synthetic authority endpoint is missing.");
+  if (descriptor === undefined) {
+    throw new Error("Synthetic authority endpoint is missing.");
+  }
   return descriptor.path;
 };
 
@@ -62,7 +66,7 @@ const call = async (page: Page, endpoint: ManagementEndpoint, body: object) => {
     },
     body: JSON.stringify(body),
   });
-  const payload = reply.payload;
+  const { payload } = reply;
   if (reply.status !== 200 || !(await isWebV3Response(endpoint, payload))) {
     await progress(`authority-wire-${endpoint.replace(".", "-")}-${reply.status}`);
     throw new Error(`Synthetic authority ${endpoint} wire response is invalid.`);
@@ -87,12 +91,20 @@ const apply = async (
   body: Readonly<Record<string, unknown>> & { eventId: string },
 ) => {
   const tag = await call(page, endpoint, body);
-  if (tag === "APPLIED") return;
-  if (tag !== "UNCONFIRMED") throw new Error("Synthetic authority action was refused.");
+  if (tag === "APPLIED") {
+    return;
+  }
+  if (tag !== "UNCONFIRMED") {
+    throw new Error("Synthetic authority action was refused.");
+  }
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const observed = await call(page, "authority.observe", { eventId: body.eventId });
-    if (observed === "APPLIED") return;
-    if (observed !== "UNCONFIRMED") break;
+    if (observed === "APPLIED") {
+      return;
+    }
+    if (observed !== "UNCONFIRMED") {
+      break;
+    }
   }
   throw new Error("Synthetic authority completion remains unconfirmed.");
 };

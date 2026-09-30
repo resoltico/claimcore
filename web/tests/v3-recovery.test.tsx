@@ -1,95 +1,18 @@
-import { fireEvent, render, screen, waitFor } from "./presentation-test-support";
+import { render, screen, waitFor } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { Rejection } from "../src/api/v3";
 import { RecoveryView } from "../src/views/RecoveryView";
-import { fields, operationId, preparation, recoveryPage, response } from "./v3-ui.fixtures";
-
-const preview = {
-  artifactKind: "ENVELOPE",
-  sourceSha256: "c".repeat(64),
-  decodedEffect: {
-    operationId,
-    caseReference: "CASE-1",
-    command: "CLOSE",
-    expectedRevision: "1",
-    authoredValues: [],
-    canonicalCommandFormat: 3,
-    requestSha256: "b".repeat(64),
-  },
-  existingPreparation: null,
-};
-
-const list = (items: unknown[] = [preparation.summary]) =>
-  response("recovery.list", "SUCCEEDED", recoveryPage(items));
-
-const receipt = {
-  operationId,
-  snapshot: { fields, revision: "1" },
-  recordedAt: "2026-09-09T00:00:00.0000000+00:00",
-  recordedBy: "synthetic",
-  replayed: false,
-  command: "CLOSE",
-};
-
-const inspection = (tag = "NOT_FOUND") =>
-  response("recovery.inspect", "SUCCEEDED", {
-    tag: "FOUND",
-    value: {
-      tag: "RETAINED",
-      value: {
-        preparation,
-        observation:
-          tag === "FOUND"
-            ? { tag: "FOUND", value: receipt }
-            : { tag: "NOT_FOUND", identity: operationId },
-      },
-    },
-  });
-
-const accepted = () =>
-  response("recovery.resolve", "COMPLETED", {
-    preparation: preparation.summary,
-    attemptId: operationId,
-    execution: {
-      tag: "ACCEPTED",
-      receipt,
-    },
-    settlement: "CONFIRMED",
-  });
-
-const rejected = () =>
-  response("recovery.resolve", "COMPLETED", {
-    preparation: preparation.summary,
-    attemptId: operationId,
-    execution: {
-      tag: "REJECTED",
-      operationId,
-      rejection: {
-        code: "VERSION_CONFLICT",
-        message: "Synthetic version conflict.",
-        diagnostic: { id: "CASE_REVISION_CONFLICT", parameters: {} },
-        field: null,
-        actualRevision: "2",
-        recommendedAction: "READ_CURRENT",
-      } satisfies Rejection,
-    },
-    settlement: "CONFIRMED",
-  });
-
-const selectFile = (input: Element, file: File): void => {
-  Object.defineProperty(input, "files", {
-    configurable: true,
-    value: { 0: file, length: 1, item: (index: number) => (index === 0 ? file : null) },
-  });
-  fireEvent.change(input);
-};
-
-const importFile = (container: HTMLElement, index: number, type: string): File => {
-  const input = container.querySelectorAll('input[type="file"]')[index];
-  if (input === undefined) throw new Error("Recovery import control was not rendered.");
-  return new File(["{}"], "recovery.json", { type });
-};
+import { operationId, preparation, response } from "./v3-ui.fixtures";
+import {
+  accepted,
+  importFile,
+  inspection,
+  list,
+  preview,
+  receipt,
+  rejected,
+  selectFile,
+} from "./v3-recovery.fixtures";
 
 const inspectsAndDismisses = async (): Promise<void> => {
   const user = userEvent.setup();
@@ -182,7 +105,9 @@ const exportsAndRetainsEnvelope = async (): Promise<void> => {
     await screen.findByRole("dialog", { name: "Export recovery envelope?" }),
   ).toHaveTextContent("claimant data and recovery bytes");
   await user.click(screen.getByRole("button", { name: "Confirm export" }));
-  await waitFor(() => expect(createObjectURL).toHaveBeenCalledOnce());
+  await waitFor(() => {
+    expect(createObjectURL).toHaveBeenCalledOnce();
+  });
   expect(fetch.mock.calls[2]?.[1]?.body).toBe(
     JSON.stringify({ operationId, requestSha256: preparation.summary.requestSha256 }),
   );
@@ -192,7 +117,9 @@ const exportsAndRetainsEnvelope = async (): Promise<void> => {
   );
   await user.click(await screen.findByRole("button", { name: "Retain for Recovery" }));
   expect(await screen.findByText("Recovery material retained.")).toBeVisible();
-  await waitFor(() => expect(revokeObjectURL).toHaveBeenCalledWith("blob:synthetic"));
+  await waitFor(() => {
+    expect(revokeObjectURL).toHaveBeenCalledWith("blob:synthetic");
+  });
 };
 
 const retainsEnvelopeAfterListFailure = async (): Promise<void> => {
@@ -209,7 +136,9 @@ const retainsEnvelopeAfterListFailure = async (): Promise<void> => {
     importFile(view.container, 0, "application/vnd.claimcore.recovery+json"),
   );
   await user.click(await screen.findByRole("button", { name: "Retain for Recovery" }));
-  await waitFor(() => expect(document.querySelector('[role="status"]')).not.toBeNull());
+  await waitFor(() => {
+    expect(document.querySelector('[role="status"]')).not.toBeNull();
+  });
 };
 
 describe("v3 Recovery import and export", () => {
@@ -267,7 +196,9 @@ it("reports malformed pages, malformed inspections, rejected imports, and invali
   expect(await screen.findByRole("alert")).toBeVisible();
   await user.click(screen.getByRole("button", { name: "Reload" }));
   await user.click(await screen.findByRole("button", { name: "Inspect" }));
-  await waitFor(() => expect(document.querySelector('[role="status"]')).not.toBeNull());
+  await waitFor(() => {
+    expect(document.querySelector('[role="status"]')).not.toBeNull();
+  });
   await user.click(screen.getByRole("button", { name: "Inspect" }));
   await user.click(screen.getByRole("button", { name: "Export recovery envelope" }));
   await user.click(await screen.findByRole("button", { name: "Confirm export" }));

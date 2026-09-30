@@ -119,16 +119,21 @@ function write(state, method, route, json) {
  * @returns {Json | undefined}
  */
 function readGit(state, route, url) {
-  if (route === `git/ref/tags/${tag}`)
+  if (route === `git/ref/tags/${tag}`) {
     return {
       ref: `refs/tags/${tag}`,
       object: { type: state["annotated"] ? "tag" : "commit", sha: state["tagSha"] },
     };
-  if (route === `git/tags/${state["tagSha"]}`)
+  }
+  if (route === `git/tags/${state["tagSha"]}`) {
     return { tag, object: { type: "commit", sha: state["target"] } };
-  if (route === "git/ref/heads/main") return { object: { type: "commit", sha: mainSha } };
-  if (route === `compare/${sha}...${mainSha}`)
+  }
+  if (route === "git/ref/heads/main") {
+    return { object: { type: "commit", sha: mainSha } };
+  }
+  if (route === `compare/${sha}...${mainSha}`) {
     return { merge_base_commit: { sha: state["mergeBase"] } };
+  }
   if (route === "contents/Directory.Build.props" || route === "contents/CHANGELOG.md") {
     assert.equal(url.searchParams.get("ref"), sha);
     return source(state[route === "contents/CHANGELOG.md" ? "changelog" : "props"]);
@@ -144,23 +149,30 @@ function readGit(state, route, url) {
  * @returns {Json | undefined}
  */
 function readActions(state, route, url) {
-  if (route === "releases")
+  if (route === "releases") {
     return copy(
       page([...state["otherReleases"], ...(state["release"] ? [state["release"]] : [])], url),
     );
-  if (route === "releases/10") return copy(state["release"]);
-  if (route === "actions/workflows/ci.yml") return { id: 99, path: ".github/workflows/ci.yml" };
+  }
+  if (route === "releases/10") {
+    return copy(state["release"]);
+  }
+  if (route === "actions/workflows/ci.yml") {
+    return { id: 99, path: ".github/workflows/ci.yml" };
+  }
   if (route === "actions/workflows/ci.yml/runs") {
     assert.equal(url.searchParams.get("event"), "push");
     assert.equal(url.searchParams.get("head_sha"), sha);
     assert.equal(url.searchParams.get("branch"), tag);
     return { total_count: state["runs"].length, workflow_runs: copy(page(state["runs"], url)) };
   }
-  if (/^actions\/runs\/(\d+)\/attempts\/(\d+)\/jobs$/u.test(route))
+  if (/^actions\/runs\/(\d+)\/attempts\/(\d+)\/jobs$/u.test(route)) {
     return { jobs: copy(page(state["jobs"], url)) };
+  }
   const run = /^actions\/runs\/(\d+)$/u.exec(route);
-  if (run)
+  if (run) {
     return copy(state["runs"].find((/** @type {Json} */ item) => item["id"] === Number(run[1])));
+  }
   return undefined;
 }
 
@@ -172,10 +184,14 @@ export const createFixture = () => {
     const url = new URL(path, "https://example.invalid/");
     const route = url.pathname.slice(1);
     const written = write(state, method, route, json);
-    if (written !== undefined) return written;
+    if (written !== undefined) {
+      return written;
+    }
     assert.equal(method, "GET", `Unexpected write: ${method} ${path}`);
     const document = readGit(state, route, url) ?? readActions(state, route, url);
-    if (document === undefined) throw new Error(`Unexpected API request: ${method} ${path}`);
+    if (document === undefined) {
+      throw new Error(`Unexpected API request: ${method} ${path}`);
+    }
     return document;
   };
 

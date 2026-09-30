@@ -1,4 +1,5 @@
 import type { ApiResult } from "./types";
+import { exactDownloadDisposition } from "./downloadDisposition";
 import { localNotice } from "./notices";
 import {
   type WebV3EndpointId,
@@ -6,15 +7,15 @@ import {
   webV3HostFailureStatuses,
 } from "../generated/convergence/web-v3.endpoint-catalog";
 import { isHostFailure, isWebV3Response } from "../generated/convergence/web-v3.validation";
-
-/** The generated endpoint catalogue owns route, method, media type, and byte limits. */
-export type * from "./types";
-export { isMutationUncertain, resultNotice } from "./outcomes";
 import type {
   CommandDraft,
   HostFailure,
   WebV3Response,
 } from "../generated/convergence/web-v3.types";
+
+/** The generated endpoint catalogue owns route, method, media type, and byte limits. */
+export type * from "./types";
+export { isMutationUncertain, resultNotice } from "./outcomes";
 
 type Download = { blob: Blob; filename: string };
 
@@ -30,45 +31,27 @@ const isRawBody = (value: JsonBody | undefined): value is RawBody =>
 
 const endpoint = (id: WebV3EndpointId) => {
   const found = webV3Endpoints.find((candidate) => candidate.id === id);
-  if (found === undefined) throw new Error(`Generated Web endpoint ${id} is unavailable.`);
+  if (found === undefined) {
+    throw new Error(`Generated Web endpoint ${id} is unavailable.`);
+  }
   return found;
 };
 
 const jsonHeaders = (token: string | undefined): Record<string, string> => {
   const headers: Record<string, string> = { Accept: "application/json" };
-  if (token !== undefined) headers["X-ClaimCore-Antiforgery"] = token;
+  if (token !== undefined) {
+    headers["X-ClaimCore-Antiforgery"] = token;
+  }
   return headers;
 };
 
 const responseMediaType = (response: Response): string | null =>
   response.headers.get("content-type")?.split(";", 1)[0]?.trim().toLowerCase() ?? null;
 
-const exactFilenameParameter = (name: string, value: string, expected: string): boolean => {
-  if (name === "filename") return value === expected || value === `"${expected}"`;
-  if (name === "filename*") return value === `UTF-8''${encodeURIComponent(expected)}`;
-  return false;
-};
-
-/** ASP.NET FileResult emits both ASCII filename parameters; accept no competing suggestion. */
-const exactDownloadDisposition = (header: string | null, expected: string): boolean => {
-  if (header === null) return false;
-  const [kind, ...parameters] = header.split(";").map((part) => part.trim());
-  if (kind?.toLowerCase() !== "attachment" || parameters.length !== 2) return false;
-  const seen = new Set<string>();
-  for (const parameter of parameters) {
-    const equals = parameter.indexOf("=");
-    if (equals < 1) return false;
-    const name = parameter.slice(0, equals).toLowerCase();
-    const value = parameter.slice(equals + 1);
-    if (seen.has(name)) return false;
-    if (!exactFilenameParameter(name, value, expected)) return false;
-    seen.add(name);
-  }
-  return seen.has("filename") && seen.has("filename*");
-};
-
 const readJson = async (response: Response): Promise<unknown> => {
-  if (responseMediaType(response) !== "application/json") return null;
+  if (responseMediaType(response) !== "application/json") {
+    return null;
+  }
   try {
     return await response.json();
   } catch {
@@ -78,12 +61,6 @@ const readJson = async (response: Response): Promise<unknown> => {
 
 const hostFailureStatus = (status: number): boolean =>
   webV3HostFailureStatuses.some((candidate) => candidate === status);
-
-const decodeJsonResponse = <K extends WebV3EndpointId>(
-  id: K,
-  status: number,
-  value: unknown,
-): Promise<ApiResult<WebV3Response<K>>> => decodeValidatedJsonResponse(id, status, value);
 
 const decodeValidatedJsonResponse = async <K extends WebV3EndpointId>(
   id: K,
@@ -102,6 +79,12 @@ const decodeValidatedJsonResponse = async <K extends WebV3EndpointId>(
   };
 };
 
+const decodeJsonResponse = <K extends WebV3EndpointId>(
+  id: K,
+  status: number,
+  value: unknown,
+): Promise<ApiResult<WebV3Response<K>>> => decodeValidatedJsonResponse(id, status, value);
+
 const request = async <K extends WebV3EndpointId>(
   id: K,
   token: string | undefined,
@@ -113,7 +96,9 @@ const request = async <K extends WebV3EndpointId>(
   let requestBody: BodyInit | null = null;
   if (isRawBody(body)) {
     headers["Content-Type"] = body.mediaType;
-    if (body.headers !== undefined) Object.assign(headers, body.headers);
+    if (body.headers !== undefined) {
+      Object.assign(headers, body.headers);
+    }
     requestBody = new Uint8Array(body.bytes).buffer;
   } else if (body !== undefined) {
     headers["Content-Type"] = "application/json";
@@ -137,9 +122,10 @@ const request = async <K extends WebV3EndpointId>(
 type RawEndpointId = "recovery.importEnvelopePreview" | "recovery.importEnvelopeRetain";
 
 const rawMaximum = (id: RawEndpointId) => {
-  const body = endpoint(id).body;
-  if (body === null || body.kind !== "RAW")
+  const { body } = endpoint(id);
+  if (body === null || body.kind !== "RAW") {
     throw new Error(`Generated endpoint ${id} has no raw body.`);
+  }
   return body;
 };
 
@@ -151,16 +137,17 @@ const importRaw = async <K extends RawEndpointId>(
   signal?: AbortSignal,
 ): Promise<ApiResult<WebV3Response<K>>> => {
   const rule = rawMaximum(id);
-  if (source.size > rule.maximumBytes)
+  if (source.size > rule.maximumBytes) {
     return {
       kind: "deliveryFailure",
       notice: { kind: "fileTooLarge", maximumBytes: rule.maximumBytes },
     };
+  }
   try {
     const bytes = new Uint8Array(await source.arrayBuffer());
     const headers =
       sourceSha256 === undefined ? undefined : { "X-ClaimCore-Source-Sha256": sourceSha256 };
-    return request(id, token, { bytes, mediaType: rule.mediaType, headers }, signal);
+    return await request(id, token, { bytes, mediaType: rule.mediaType, headers }, signal);
   } catch {
     return { kind: "deliveryFailure", notice: localNotice("fileUnreadable") };
   }
@@ -190,11 +177,12 @@ const exportRecovery = async (
       descriptor.successMediaType === null ||
       type !== descriptor.successMediaType ||
       !exactDownloadDisposition(disposition, expected)
-    )
+    ) {
       return {
         kind: "deliveryFailure",
         notice: localNotice("exportInvalid"),
       };
+    }
     return {
       kind: "outcome",
       value: { blob: await response.blob(), filename: expected },

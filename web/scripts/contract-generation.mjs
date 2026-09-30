@@ -14,16 +14,18 @@ const generator = resolve(root, "eng/ClaimCore.ContractGenerator");
 const requiredSdk = async () => {
   const globalJson = JSON.parse(await readFile(resolve(root, "global.json"), "utf8"));
   const version = globalJson.sdk?.version;
-  if (typeof version !== "string" || version.length === 0)
+  if (typeof version !== "string" || version.length === 0) {
     throw new Error("The required .NET SDK version is missing.");
+  }
   return version;
 };
 
 const dotnetCandidates = () => {
   const executable = process.platform === "win32" ? "dotnet.exe" : "dotnet";
   const configured = process.env["CLAIMCORE_DOTNET"];
-  if (configured !== undefined && !isAbsolute(configured))
+  if (configured !== undefined && !isAbsolute(configured)) {
     throw new Error("CLAIMCORE_DOTNET must name one absolute executable.");
+  }
   return [configured, join(homedir(), ".dotnet", executable), executable].filter(
     (candidate) => candidate !== undefined && (!isAbsolute(candidate) || existsSync(candidate)),
   );
@@ -34,7 +36,9 @@ const resolveDotnet = async () => {
   for (const candidate of dotnetCandidates()) {
     try {
       const result = await execute(candidate, ["--version"], { cwd: root });
-      if (result.stdout.trim() === expected) return candidate;
+      if (result.stdout.trim() === expected) {
+        return candidate;
+      }
     } catch {
       // Try the next bounded candidate without exposing host-specific diagnostics.
     }

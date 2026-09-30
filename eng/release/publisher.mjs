@@ -163,7 +163,9 @@ const publishDraft = async (
         make_latest: "false",
       },
     }));
-  if (existing === undefined) assertRelease(release, plan, true);
+  if (existing === undefined) {
+    assertRelease(release, plan, true);
+  }
   const releasePath = `releases/${release["id"]}`;
   assertRelease(await api(releasePath), plan, true);
   const gate = await verifiedGate(api, repository, tag, expectedSha);
@@ -199,14 +201,17 @@ export const releaseClaimCore = async ({ repository, tag, expectedSha, api, publ
   const releases = await paginated(api, "releases");
   const matches = releases.filter((release) => release["tag_name"] === checked.tag);
   assert(matches.length <= 1, "Multiple releases use the requested tag.");
-  const existing = matches[0];
+  const [existing] = matches;
   if (existing !== undefined) {
     assertRelease(existing, plan, existing["draft"]);
-    if (!existing["draft"])
+    if (!existing["draft"]) {
       return { status: "already-published", ...plan, url: existing["html_url"] };
+    }
   }
   const gate = await verifiedGate(api, checked.repository, checked.tag, checked.expectedSha);
   await unchangedTag();
-  if (!publish) return { status: "validated", ...plan, gate };
+  if (!publish) {
+    return { status: "validated", ...plan, gate };
+  }
   return publishDraft({ api, ...checked }, plan, existing, unchangedTag);
 };

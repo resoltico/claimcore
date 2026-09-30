@@ -22,18 +22,21 @@ export function checkRepository(root, registryPath = join(root, "config/lint-exc
   const occurrences = [];
   for (const path of repositoryFiles(root, generated)) {
     if (
-      !/\.(?:fs|fsi|fsx|fsproj|props|targets|ts|tsx|js|mjs|cjs|css|json|jsonc|toml|py|sh|ps1|psm1|psd1|yml|yaml|editorconfig)$|(?:^|\/)(?:\.[a-z]+ignore|\.shellcheckrc|\.editorconfig)$/.test(
+      !/\.(?:fs|fsi|fsx|fsproj|props|targets|ts|tsx|js|mjs|cjs|css|json|jsonc|toml|py|sh|ps1|psm1|psd1|yml|yaml|editorconfig)$|(?:^|\/)(?:\.[a-z]+ignore|\.shellcheckrc|\.editorconfig)$/u.test(
         path,
       )
-    )
+    ) {
       continue;
+    }
     const source = readSource(root, path);
     checkSource(source, report);
     occurrences.push(...scanFile(source));
   }
   checkFSharpLint(root, generated, report);
   for (const path of ["web/.oxlintrc.json", "eng/.oxlintrc.json"]) {
-    if (existsSync(join(root, path))) checkOxlintLimits(root, path, report);
+    if (existsSync(join(root, path))) {
+      checkOxlintLimits(root, path, report);
+    }
   }
   checkPythonPolicy(root, report);
   reconcile(registry, occurrences, report);
