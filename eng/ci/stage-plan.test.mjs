@@ -147,6 +147,42 @@ test("a failing or throwing stage is reported and does not stop the others", asy
   assert.equal(results.length, 3);
 });
 
+test("with fail-fast nothing starts after a failure and the rest are reported as not started", async () => {
+  const started = [];
+  const results = await runPlan(
+    plan([
+      { id: "first" },
+      { id: "second", after: ["first"] },
+      { id: "third", after: ["second"] },
+    ]),
+    2,
+    async (stage) => {
+      started.push(stage.id);
+      return { failed: stage.id === "first" };
+    },
+    { failFast: true },
+  );
+  assert.deepEqual(started, ["first"]);
+  const notStarted = results
+    .filter((result) => result.value.notStarted)
+    .map((result) => result.stage.id)
+    .sort();
+  assert.deepEqual(notStarted, ["second", "third"]);
+});
+
+test("without fail-fast every stage still runs after a failure", async () => {
+  const started = [];
+  await runPlan(
+    plan([{ id: "first" }, { id: "second", after: ["first"] }]),
+    2,
+    async (stage) => {
+      started.push(stage.id);
+      return { failed: stage.id === "first" };
+    },
+  );
+  assert.deepEqual(started, ["first", "second"]);
+});
+
 test("concurrency must be a positive integer", async () => {
   await assert.rejects(
     runPlan(plan([{ id: "one" }]), 0, async () => ({})),

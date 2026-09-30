@@ -1,7 +1,13 @@
 [CmdletBinding()]
 param(
     [string] $Assembly = "",
-    [string] $RunRoot = ""
+    [string] $RunRoot = "",
+    # Use the Release build already in artifacts/ (the local CI runner builds it once with the strict
+    # compiler policy); otherwise the assemblies are rebuilt without incremental reuse.
+    [switch] $NoRebuild,
+    # Run only the PostgreSQL-backed suites, or everything else; both are partial runs.
+    [switch] $PostgresOnly,
+    [switch] $SkipPostgres
 )
 
 Set-StrictMode -Version Latest
@@ -52,16 +58,20 @@ $postgresStages = [ordered]@{
     "ClaimCore.MigrationQualificationTests" = "fresh-baseline-qualification"
     "ClaimCore.ConcurrencyQualificationTests" = "concurrency-qualification"
 }
-$everything = [string]::IsNullOrWhiteSpace($Assembly)
-$selected = @(if ($everything) { $suites } else { $suites | Where-Object { $_.Assembly -ceq $Assembly } })
-$postgresSelected = @($postgresStages.Keys | Where-Object { $everything -or $_ -ceq $Assembly })
+if ($PostgresOnly -and $SkipPostgres) { throw "PostgresOnly and SkipPostgres exclude each other." }
+$named = -not [string]::IsNullOrWhiteSpace($Assembly)
+$everything = -not $named -and -not $PostgresOnly -and -not $SkipPostgres
+$selected = @(if ($PostgresOnly) { } elseif ($named) { $suites | Where-Object { $_.Assembly -ceq $Assembly } } else { $suites })
+$postgresSelected = @(if ($SkipPostgres) { } else { $postgresStages.Keys | Where-Object { -not $named -or $_ -ceq $Assembly } })
 if ($selected.Count -eq 0 -and $postgresSelected.Count -eq 0) { throw "The requested .NET test assembly is not registered." }
 
 Set-Location $repository
-dotnet restore ClaimCore.slnx --locked-mode
-if ($LASTEXITCODE -ne 0) { throw "Locked .NET restore failed." }
-dotnet build ClaimCore.slnx --configuration Release --no-restore --no-incremental
-if ($LASTEXITCODE -ne 0) { throw "Release build failed." }
+if (-not $NoRebuild) {
+    dotnet restore ClaimCore.slnx --locked-mode
+    if ($LASTEXITCODE -ne 0) { throw "Locked .NET restore failed." }
+    dotnet build ClaimCore.slnx --configuration Release --no-restore --no-incremental
+    if ($LASTEXITCODE -ne 0) { throw "Release build failed." }
+}
 $discoveryCheck = Join-Path $PSScriptRoot "Check-TestDiscovery.ps1"
 foreach ($suite in $selected) {
     if ($suite.Configuration -ne "Debug") {

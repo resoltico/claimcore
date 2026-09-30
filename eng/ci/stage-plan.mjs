@@ -55,8 +55,15 @@ export function validatePlan(plan) {
 /**
  * Run every stage of `plan`, `parallel` at a time, through `runStage(stage)`, which returns a
  * promise. Resolves with the results in completion order. Never rejects for a failing stage.
+ * With `failFast`, no stage starts after one has failed: stages already running finish, and the
+ * rest are reported as not started (`notStarted` in the result).
  */
-export async function runPlan(plan, parallel, runStage) {
+export async function runPlan(
+  plan,
+  parallel,
+  runStage,
+  { failFast = false } = {},
+) {
   validatePlan(plan);
   if (!Number.isInteger(parallel) || parallel < 1)
     throw new Error("Concurrency must be a positive integer.");
@@ -67,8 +74,9 @@ export async function runPlan(plan, parallel, runStage) {
   const results = [];
 
   let exclusiveRunning = false;
+  let failed = false;
   const launchable = () => {
-    if (exclusiveRunning) return [];
+    if (exclusiveRunning || (failFast && failed)) return [];
     return pending.filter(
       (stage) =>
         (stage.after ?? []).every((id) => finished.has(id)) &&
@@ -95,14 +103,20 @@ export async function runPlan(plan, parallel, runStage) {
           ),
       );
     }
-    if (running.size === 0)
+    if (running.size === 0) {
+      if (failFast && failed) break;
       throw new Error("No stage can start; the plan is stuck.");
+    }
     const done = await Promise.race(running.values());
     running.delete(done.stage.id);
     finished.add(done.stage.id);
     if (done.stage.exclusive === true) exclusiveRunning = false;
     if (done.stage.group !== undefined) busyGroups.delete(done.stage.group);
     results.push(done);
+    if (done.value?.failed) failed = true;
   }
+  if (failFast && failed)
+    for (const stage of pending)
+      results.push({ stage, value: { notStarted: true } });
   return results;
 }

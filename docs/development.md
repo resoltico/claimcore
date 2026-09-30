@@ -72,6 +72,30 @@ registered partitioning of the PostgreSQL integration suite described below, who
 into exactly the registered inventory. Commands that actually ran and
 their outcomes must be reported separately from source inspection.
 
+### Running CI locally
+
+```sh
+node eng/ci/run-local.mjs
+```
+
+runs, in order and stopping before spending more time once a job has failed, the CI jobs that can run on
+one machine: the locked restore and strict-compiler build, the documentation check, the source and
+dependency gates, the frontend product and gates, the Unit/Web/documentation/fuzz/architecture suites, and
+the partitioned PostgreSQL suites. Each job runs the command CI runs. The jobs are registered in
+[`eng/ci/local-plan.json`](../eng/ci/local-plan.json), which also lists every CI family with no local
+equivalent (the macOS and Windows legs, the published-browser lifecycles, merged coverage and evidence
+reconciliation) with the reason, and a test holds that list to `ci.yml`. Jobs run one after another because
+they share one working tree, several of them read or write it as a whole and stage outputs must start absent;
+each uses the machine's cores internally. Generated stage outputs under `artifacts/` are removed first.
+
+By default a job runs only when a changed file, measured against the merge base with `origin/main` and
+including uncommitted and untracked files, could affect it, so a documentation-only change skips the frontend
+and database suites; `--changed-since REF` moves the base and `--all` runs everything. `--include published`
+adds the published CLI acceptance (it publishes the applications and uses Docker). `--only id,id` and
+`--skip id,id` select jobs, `--no-fail-fast` continues past a failure, and logs go to
+`artifacts/local-ci/<time>/<job>.log` with the tail of a failing log printed. A green local run is verification
+of what ran here, not of the platforms and evidence steps it lists as not run; use the summary it prints.
+
 ### .NET tests
 
 .NET 10 uses Microsoft Testing Platform v2 as the test driver. Expecto is the test DSL and its adapter

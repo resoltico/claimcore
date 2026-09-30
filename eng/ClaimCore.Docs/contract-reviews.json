@@ -103,7 +103,7 @@
       "reviewer": "Agent reviewed the exact current heading and listed implementation and assertion sources; this is source review of local synthetic boundaries, not execution evidence, independent owner approval, or live real-data qualification.",
       "reviewedOn": "2026-09-30",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "a4f4bf92b712f3b96fc7f10ebadb455494de851f7ac8c85bd54720ba1202714f",
+      "reviewSubjectHash": "b71178cc376182aa833755d90e9073e7b1e234eb22f38ef06b2d47a8b31e0bf8",
       "wholeFiles": [
         "architecture.json",
         "tests/ClaimCore.ArchitectureTests/ManifestTests.fs",
@@ -259,7 +259,7 @@
       "reviewer": "Agent reviewed the exact current heading and listed implementation and assertion sources; this is source review of local synthetic boundaries, not execution evidence, independent owner approval, or live real-data qualification.",
       "reviewedOn": "2026-09-30",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "ddcd150d7b38038d997f2b7fbce37c97ceac2085ad8b21dfcb2e98deb6276a9f",
+      "reviewSubjectHash": "1cc5b16dd3ce78642f8e491428929a92732d91cf38db0249d02f316aa1227d7a",
       "wholeFiles": [
         "db/baseline.sql",
         "db/witness-baseline.sql",
