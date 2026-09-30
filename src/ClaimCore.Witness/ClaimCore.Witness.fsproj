@@ -2,6 +2,8 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="PostgresTransport.fs" />
+    <Compile Include="PreparedCommand.fs" />
+    <Compile Include="CatalogEpoch.fs" />
     <Compile Include="Cipher.fs" />
     <Compile Include="WitnessIdentity.fs" />
     <Compile Include="WitnessInstallationUse.fs" />
@@ -28,8 +30,11 @@
     <EmbeddedResource Include="../../db/witness-baseline.json" LogicalName="ClaimCore.Witness.Baseline.json" />
     <EmbeddedResource Include="../../db/witness-catalog.sql" LogicalName="ClaimCore.Witness.Catalog.sql" />
     <EmbeddedResource Include="../../db/witness-catalog.pg18.6.json" LogicalName="ClaimCore.Witness.Catalog.json" />
-    <EmbeddedResource Include="../../db/witness-admission.sql" LogicalName="ClaimCore.Witness.Admission.sql" />
-    <EmbeddedResource Include="../../db/witness-audit-admission.sql" LogicalName="ClaimCore.Witness.AuditAdmission.sql" />
+    <EmbeddedResource Include="../../db/witness-admission-structure.sql" LogicalName="ClaimCore.Witness.Admission.Structure.sql" />
+    <EmbeddedResource Include="../../db/witness-admission-liveness.sql" LogicalName="ClaimCore.Witness.Admission.Liveness.sql" />
+    <EmbeddedResource Include="../../db/witness-audit-admission-structure.sql" LogicalName="ClaimCore.Witness.AuditAdmission.Structure.sql" />
+    <EmbeddedResource Include="../../db/witness-audit-admission-liveness.sql" LogicalName="ClaimCore.Witness.AuditAdmission.Liveness.sql" />
+    <EmbeddedResource Include="../../db/catalog-epoch.sql" LogicalName="ClaimCore.CatalogEpoch.sql" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Npgsql" />

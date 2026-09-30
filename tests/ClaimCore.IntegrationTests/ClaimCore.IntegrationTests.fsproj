@@ -26,6 +26,9 @@
     <Compile Include="RuntimeLifecycleTests.fs" />
     <Compile Include="StorageDateTests.fs" />
     <Compile Include="CatalogAdmissionTests.fs" />
+    <Compile Include="CatalogEpochChanges.fs" />
+    <Compile Include="CatalogEpochTokenTests.fs" />
+    <Compile Include="CatalogEpochTests.fs" />
     <Compile Include="StorageBoundaryTests.fs" />
     <Compile Include="PreparationTests.fs" />
     <Compile Include="AcceptedReplayStorageTests.fs" />

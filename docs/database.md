@@ -98,6 +98,17 @@ ACLs. Development and CI use the digest-pinned image in
 [`db/postgresql-baseline.json`](../db/postgresql-baseline.json). Unsupported old storage is classified
 before queries assume the current relation layout.
 
+Every checkout re-reads the live server settings, session role, role attributes, baseline marker and,
+for the witness, installation identity, epoch and tip. What only the catalog can answer (the pinned
+catalog projection, the constraint policy and every privilege result) is re-derived whenever a
+one-statement catalog change token differs from the one it last verified, and in any case at least
+once a minute. The token digests the row versions and identities of every catalog those checks read,
+plus the server start time and database, so any committed catalog write, including a direct
+superuser `UPDATE`, changes it (the schema's objects are located by object ids at or above PostgreSQL's first user id, 16384, so a row written straight into a catalog under a lower explicit id is the one change it cannot see, which the periodic verification bounds); a token that cannot be read, a different token or an elapsed
+interval runs the complete verification and raises exactly what it always raised, and a refused
+verification is never remembered. This proves the catalog unchanged, not correct: it does not
+weaken any check and does not replace `verify` or `verify-data`.
+
 ## Administration results and delivery
 
 `describe diagnostics` publishes the exact response schema and its fingerprint without configuration

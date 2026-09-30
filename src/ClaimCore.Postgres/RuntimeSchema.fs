@@ -191,10 +191,25 @@ module internal RuntimeSchema =
                     InvalidDataException($"Required recovery schema component {index} is absent.")
                 )
 
-    let requireCompatible (connection: NpgsqlConnection) =
+    /// The installed baseline is the current one: a cheap catalog classification and the marker row.
+    /// Checked on every checkout because the marker is data, not catalog structure.
+    let requireBaseline (connection: NpgsqlConnection) =
         if SchemaAdmission.inspect connection <> SchemaAdmissionState.Current then
             raise RuntimeDatabaseMismatch
 
+    let requireBaselineAsyncWithCancellation
+        (connection: NpgsqlConnection)
+        (cancellationToken: CancellationToken)
+        =
+        task {
+            let! installed = SchemaAdmission.inspectAsync connection cancellationToken
+
+            if installed <> SchemaAdmissionState.Current then
+                return raise RuntimeDatabaseMismatch
+        }
+
+    /// The pinned catalog projection and the preparation policy: functions of catalog state alone.
+    let requireStructure (connection: NpgsqlConnection) =
         CatalogManifest.requireCompatible connection
         use command = new NpgsqlCommand(preparationSql, connection)
         use reader = command.ExecuteReader()
@@ -204,16 +219,11 @@ module internal RuntimeSchema =
 
         requirePreparation reader
 
-    let requireCompatibleAsyncWithCancellation
+    let requireStructureAsyncWithCancellation
         (connection: NpgsqlConnection)
         (cancellationToken: CancellationToken)
         =
         task {
-            let! installed = SchemaAdmission.inspectAsync connection cancellationToken
-
-            if installed <> SchemaAdmissionState.Current then
-                return raise RuntimeDatabaseMismatch
-
             do! CatalogManifest.requireCompatibleAsyncWithCancellation connection cancellationToken
 
             use command = new NpgsqlCommand(preparationSql, connection)
@@ -225,6 +235,19 @@ module internal RuntimeSchema =
                 return raise RuntimeDatabaseMismatch
 
             requirePreparation reader
+        }
+
+    let requireCompatible (connection: NpgsqlConnection) =
+        requireBaseline connection
+        requireStructure connection
+
+    let requireCompatibleAsyncWithCancellation
+        (connection: NpgsqlConnection)
+        (cancellationToken: CancellationToken)
+        =
+        task {
+            do! requireBaselineAsyncWithCancellation connection cancellationToken
+            do! requireStructureAsyncWithCancellation connection cancellationToken
         }
 
     let requireCompatibleAsync (connection: NpgsqlConnection) =

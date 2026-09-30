@@ -9,12 +9,18 @@ open ClaimCore.Application
 open ClaimCore.Witness
 
 /// Verified on every checkout; this validates infrastructure admission, not authentication.
+/// Session settings, the role and the baseline marker are read every time. What only the catalog can
+/// answer (structure and privileges) is re-derived whenever the catalog changed, at least once a
+/// minute, and otherwise vouched for by the catalog change token (`CatalogEpoch`).
 module internal RuntimeDatabase =
     let requireCompatible (connection: NpgsqlConnection) =
         try
             RuntimeAcl.requireRole connection
-            RuntimeSchema.requireCompatible connection
-            RuntimeAcl.requireAcl connection
+            RuntimeSchema.requireBaseline connection
+
+            CatalogEpoch.admit "primary" "claimcore" connection (fun () ->
+                RuntimeSchema.requireStructure connection
+                RuntimeAcl.requireAcl connection)
         with
         | :? PostgresException as error when
             error.SqlState = "42P01"
@@ -35,12 +41,26 @@ module internal RuntimeDatabase =
             try
                 do! RuntimeAcl.requireRoleAsyncWithCancellation connection cancellationToken
 
+                do! RuntimeSchema.requireBaselineAsyncWithCancellation connection cancellationToken
+
                 do!
-                    RuntimeSchema.requireCompatibleAsyncWithCancellation
+                    CatalogEpoch.admitAsync
+                        "primary"
+                        "claimcore"
                         connection
                         cancellationToken
+                        (fun () ->
+                            task {
+                                do!
+                                    RuntimeSchema.requireStructureAsyncWithCancellation
+                                        connection
+                                        cancellationToken
 
-                do! RuntimeAcl.requireAclAsyncWithCancellation connection cancellationToken
+                                do!
+                                    RuntimeAcl.requireAclAsyncWithCancellation
+                                        connection
+                                        cancellationToken
+                            })
             with
             | :? PostgresException as error when
                 error.SqlState = "42P01"

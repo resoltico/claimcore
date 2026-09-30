@@ -60,7 +60,9 @@ module Baseline =
 
     let requireCompatible (connection: NpgsqlConnection) =
         use command =
-            new NpgsqlCommand("SELECT current_setting('server_version_num')::integer", connection)
+            ClaimCore.Witness.PreparedCommand.create
+                connection
+                "SELECT current_setting('server_version_num')::integer"
 
         if not (isSupported (command.ExecuteScalar() :?> int)) then
             raise UnsupportedPostgresVersion
@@ -70,11 +72,11 @@ module Baseline =
         (cancellationToken: CancellationToken)
         =
         task {
-            use command =
-                new NpgsqlCommand(
-                    "SELECT current_setting('server_version_num')::integer",
+            use! command =
+                ClaimCore.Witness.PreparedCommand.createAsync
                     connection
-                )
+                    "SELECT current_setting('server_version_num')::integer"
+                    cancellationToken
 
             let! version = command.ExecuteScalarAsync(cancellationToken)
 

@@ -1,18 +1,4 @@
-SELECT current_setting('fsync') = 'on'
-AND current_setting('full_page_writes') = 'on'
-AND current_setting('synchronous_commit') = 'on'
-AND current_setting('default_transaction_read_only') = 'off'
-AND current_setting('server_version_num')::integer BETWEEN 180006
-AND 189999
-AND NOT pg_is_in_recovery()
-AND current_user = 'claimcore_witness_writer'
-AND EXISTS (SELECT 1 FROM pg_roles WHERE rolname=current_user
-AND NOT rolsuper
-AND NOT rolcreatedb
-AND NOT rolcreaterole
-AND NOT rolreplication
-AND NOT rolbypassrls
-AND NOT rolinherit)
+SELECT true
 AND NOT has_database_privilege(current_user,current_database(),'CREATE')
 AND NOT has_schema_privilege(current_user,'claimcore_witness','CREATE')
 AND NOT has_table_privilege(current_user,'claimcore_witness.journal','INSERT')
@@ -95,14 +81,3 @@ AND (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
   AND NOT has_function_privilege(current_user,p.oid,'EXECUTE')
   AND NOT EXISTS (SELECT 1 FROM aclexplode(p.proacl) acl WHERE acl.grantee=0
     OR acl.grantee NOT IN ('claimcore_witness_owner'::regrole))) = 10
-AND EXISTS (SELECT 1 FROM claimcore_witness.installation WHERE singleton
-AND installation_id=@installation
-AND lineage_id=@lineage
-AND epoch=@epoch
-AND baseline_id='claimcore-witness-v1'
-AND baseline_sha256=@digest
-AND ((tip_sequence=0
-AND tip_hash=decode(repeat('00',32),'hex'))     OR (tip_sequence>0
-AND EXISTS (SELECT 1 FROM claimcore_witness.journal j       WHERE j.installation_id=@installation
-AND j.sequence=tip_sequence
-AND j.entry_hash=tip_hash))))

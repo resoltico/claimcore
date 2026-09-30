@@ -287,4 +287,5 @@ let tests =
             environmentTests
             transactionTests
             CatalogAdmissionTests.tests
+            CatalogEpochTests.tests
         ]

@@ -18,6 +18,10 @@ Notable changes to this project are documented in this file. The format is based
 - **Breaking for clients and operators:** CLI-v4 and Web-v3 use one authenticated HTTPS case-work service with individual OIDC identities and explicit actor grants. Direct CLI database case work and the shared bootstrap credential are removed; configure issuer/client identities, service TLS and grants, regenerate integrations from the current contracts, and deploy matching Web assets. See [Web admission](docs/web.md#cc-web-001) and [CLI protocol](docs/cli.md).
 - **Breaking for recovery integrations:** transfer now uses an encrypted, authenticated, installation-bound recovery artifact v3; v0.5.0 format-2 envelopes and raw canonical-record import are refused. Preserve old artifacts with v0.5.0 software, and retain the exact operation ID and request bytes after uncertain delivery rather than constructing a replacement. See [Recovery identity](docs/cli.md#cc-rec-001).
 
+### Performance
+
+- Runtime and witness connection admission no longer re-derives the catalog projection and privilege results on every checkout. Session settings, roles, the baseline marker and witness identity are still read every time; catalog-derived checks run again when a catalog change token differs and at least once a minute, so a case operation is several times faster and a changed catalog is refused as before. See [Runtime admission](docs/database.md#cc-db-002).
+
 ### Security
 
 - Actor grants are default-deny and rechecked for case and operation reads, mutations, management and recovery. Missing, inaccessible, voided and erasure-fenced resources share a non-disclosing public refusal; case-list continuations are short-lived and bound to the principal, grant revision and query. See [Actor authority](docs/architecture.md#cc-auth-001).
