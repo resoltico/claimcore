@@ -2,10 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { runPlan, validatePlan } from "./stage-plan.mjs";
 
+/** @param {Array<Partial<import("./types.mjs").Stage> & { id: string }>} stages */
 const plan = (stages) => ({
   producer: "test",
   stages: stages.map((stage) => ({ argv: ["true"], ...stage })),
 });
+/** @param {number} milliseconds */
 const pause = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
 test("a plan must name unique, known, acyclic stages", () => {
@@ -49,6 +51,7 @@ test("independent stages overlap up to the limit and no further", async () => {
 });
 
 test("a stage never starts before the stages it follows have finished", async () => {
+  /** @type {string[]} */
   const order = [];
   await runPlan(plan([{ id: "late", after: ["early"] }, { id: "early" }]), 4, async (stage) => {
     order.push(`start ${stage.id}`);
@@ -123,6 +126,7 @@ test("a failing or throwing stage is reported and does not stop the others", asy
 });
 
 test("with fail-fast nothing starts after a failure and the rest are reported as not started", async () => {
+  /** @type {string[]} */
   const started = [];
   const results = await runPlan(
     plan([{ id: "first" }, { id: "second", after: ["first"] }, { id: "third", after: ["second"] }]),
@@ -142,6 +146,7 @@ test("with fail-fast nothing starts after a failure and the rest are reported as
 });
 
 test("without fail-fast every stage still runs after a failure", async () => {
+  /** @type {string[]} */
   const started = [];
   await runPlan(plan([{ id: "first" }, { id: "second", after: ["first"] }]), 2, async (stage) => {
     started.push(stage.id);

@@ -57,20 +57,23 @@ test("safe dependency reports reject unknown package or graph versions", () => {
 test("approved current holds remain valid without querying upstream latest", () => {
   const holds = validateHolds(registry(), graph, "2026-09-22");
   const finding = safeFinding("nuget", "Example", "1.2.3", "2.0.0", graph, "update");
-  assert.equal(classifyUpdates([finding], holds)[0].held, true);
-  assert.equal(classifyUpdates([{ ...finding, latest: "2.0.1" }], holds)[0].held, false);
+  assert.equal(classifyUpdates([finding], holds)[0]?.held, true);
+  assert.equal(classifyUpdates([{ ...finding, latest: "2.0.1" }], holds)[0]?.held, false);
 });
-for (const [label, change] of [
+/** @type {Array<[string, Record<string, string>]>} */
+const refused = [
   ["expired hold", { reviewOn: "2026-09-21" }],
   ["invalid calendar date", { reviewOn: "2026-02-30" }],
   ["absent current dependency", { current: "1.0.0" }],
   ["missing rationale", { rationale: "short" }],
-])
+];
+for (const [label, change] of refused)
   test(`refuses ${label}`, () =>
     assert.throws(() => validateHolds(registry({ ...hold, ...change }), graph, "2026-09-22")));
 
 test("metadata retries only transient failures with bounded attempt count", () => {
   let calls = 0;
+  /** @type {number[]} */
   const pauses = [];
   const execute = () =>
     ++calls < 3 ? { status: 1, stderr: "EAI_AGAIN private-host" } : { status: 0, stdout: "{}" };

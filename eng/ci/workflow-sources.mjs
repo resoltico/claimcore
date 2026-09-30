@@ -1,9 +1,16 @@
 import { readdirSync, readFileSync, lstatSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 
-export function workflowSources(root) {
-  root = resolve(root);
+/**
+ * Workflow, composite-action and stage-plan sources by repository-relative path.
+ * @param {string} repository
+ * @returns {Map<string, string>}
+ */
+export function workflowSources(repository) {
+  const root = resolve(repository);
+  /** @type {Map<string, string>} */
   const result = new Map();
+  /** @param {string} directory */
   function visit(directory) {
     for (const item of readdirSync(directory, { withFileTypes: true })) {
       const path = join(directory, item.name);

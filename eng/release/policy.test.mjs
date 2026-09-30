@@ -10,7 +10,8 @@ test("extracts the section body without duplicating GitHub release metadata", ()
   assert(!extractReleaseBody(changelog, version).includes(`[${version}]`));
 });
 
-for (const [name, source] of [
+/** @type {Array<[string, string]>} */
+const refusals = [
   ["missing section", changelog.replaceAll("[0.3.0]", "[0.4.0]")],
   ["duplicate section", `${changelog}\n${section}`],
   ["bad date", changelog.replace("2026-09-19", "2026-02-30")],
@@ -21,7 +22,8 @@ for (const [name, source] of [
     "external reference",
     `${changelog.replace("Preserve this line.", "Read [guide].")}\n[guide]: https://example.com`,
   ],
-]) {
+];
+for (const [name, source] of refusals) {
   test(`refuses ${name}`, () => assert.throws(() => extractReleaseBody(source, version)));
 }
 

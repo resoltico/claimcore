@@ -41,7 +41,7 @@ test("browser diagnostics keep unfinished safe location without inheriting anoth
   const first = new BrowserStepDiagnostic(sources);
   first.begin(step);
   first.end(step);
-  assert.equal(first.snapshot().line, 12);
+  assert.equal(first.snapshot()?.line, 12);
   const second = new BrowserStepDiagnostic(sources);
   assert.equal(second.snapshot(), null);
 });

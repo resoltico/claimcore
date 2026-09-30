@@ -12,6 +12,6 @@ try {
   );
 } catch (error) {
   // Checker messages contain policy expectations, never parsed user payloads.
-  console.error(`Workflow policy refused: ${error.message}`);
+  console.error(`Workflow policy refused: ${error instanceof Error ? error.message : "unknown"}`);
   process.exitCode = 1;
 }

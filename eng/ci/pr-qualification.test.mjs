@@ -3,6 +3,9 @@ import assert from "node:assert/strict";
 import { qualifyRun, inspectPr } from "./pr-qualification.mjs";
 import { githubApi, pages } from "./github-api.mjs";
 
+/** @typedef {import("./types.mjs").Json} Json */
+
+/** @returns {{ pr: Json, workflow: Json, run: Json, jobs: Json[] }} */
 function example() {
   const repo = { full_name: "owner/repo" };
   const pr = {
@@ -45,7 +48,8 @@ function example() {
   ];
   return { pr, workflow, run, jobs };
 }
-for (const [label, mutate] of [
+/** @type {Array<[string, (value: ReturnType<typeof example>) => unknown]>} */
+const refusals = [
   [
     "manual run",
     ({ run }) => {
@@ -67,7 +71,8 @@ for (const [label, mutate] of [
   ["missing Gate", ({ jobs }) => jobs.pop()],
   ["duplicate Gate", ({ jobs }) => jobs.push({ ...jobs[0] })],
   ["skipped family", ({ jobs }) => jobs.push({ ...jobs[0], name: "Unit", conclusion: "skipped" })],
-])
+];
+for (const [label, mutate] of refusals)
   test(`PR qualification rejects ${label}`, () => {
     const value = example();
     mutate(value);
@@ -85,7 +90,8 @@ test("pending and failed PR verification are distinct from qualified CI", () => 
 test("PR read-back rejects a changed attempt and never fabricates approval", async () => {
   const { pr, run, jobs, workflow } = example();
   let reads = 0;
-  const api = async (path) => {
+  /** @type {import("./types.mjs").GithubApi} */
+  const api = async (path = "") => {
     if (path === "pulls/9") return structuredClone(pr);
     if (path === "git/ref/pull/9/merge")
       return {
@@ -108,8 +114,9 @@ test("PR read-back rejects a changed attempt and never fabricates approval", asy
 test("PR read-back uses a verified merge ref when the PR response omits its SHA", async () => {
   const { pr, run, jobs, workflow } = example();
   const merge = pr.merge_commit_sha;
-  pr.merge_commit_sha = null;
-  const api = async (path) => {
+  pr["merge_commit_sha"] = null;
+  /** @type {import("./types.mjs").GithubApi} */
+  const api = async (path = "") => {
     if (path === "pulls/9") return structuredClone(pr);
     if (path === "git/ref/pull/9/merge")
       return {
@@ -133,7 +140,8 @@ test("PR read-back uses a verified merge ref when the PR response omits its SHA"
 });
 test("PR read-back refuses a merge ref with different parents", async () => {
   const { pr } = example();
-  const api = async (path) => {
+  /** @type {import("./types.mjs").GithubApi} */
+  const api = async (path = "") => {
     if (path === "pulls/9") return structuredClone(pr);
     if (path === "git/ref/pull/9/merge")
       return {
@@ -150,7 +158,8 @@ test("PR read-back refuses a merge ref with different parents", async () => {
   await assert.rejects(inspectPr(api, 9, pr.head.sha), /current base and head/u);
 });
 test("GitHub requests use fixed authority and do not disclose denied response or token", async () => {
-  const request = async (url, options) => {
+  /** @param {string} url @param {{ redirect: string, headers: Record<string, string> }} options */
+  const fake = async (url, options) => {
     assert.equal(url, "https://api.github.com/repos/owner/repo/rulesets");
     assert.equal(options.redirect, "error");
     assert.equal(options.headers["X-GitHub-Api-Version"], "2026-03-10");
@@ -160,6 +169,7 @@ test("GitHub requests use fixed authority and do not disclose denied response or
       json: async () => ({ message: "PRIVATE" }),
     };
   };
+  const request = /** @type {typeof fetch} */ (/** @type {unknown} */ (fake));
   const api = githubApi("owner/repo", "PRIVATE-TOKEN", request);
   await assert.rejects(api("rulesets"), /^Error: GITHUB_HTTP_403$/u);
   await assert.rejects(api("../secrets"));

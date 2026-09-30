@@ -12,6 +12,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { stageDiagnostic } from "./stage-diagnostics.mjs";
 
+/** @param {string} path */
 function logTail(path) {
   const descriptor = openSync(path, "r");
   try {
@@ -25,7 +26,7 @@ function logTail(path) {
 }
 
 const root = fileURLToPath(new URL("../..", import.meta.url));
-const [producer, stage, exitCode, manifestExit, logPath] = process.argv.slice(2);
+const [producer = "", stage = "", exitCode, manifestExit, logPath = "-"] = process.argv.slice(2);
 try {
   if (process.argv.length !== 7) throw new Error("Invalid stage report invocation.");
   const inventory = spawnSync("git", ["ls-files", "-z"], {

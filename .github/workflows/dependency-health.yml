@@ -26,6 +26,7 @@ jobs:
         run: |
           dotnet restore ClaimCore.slnx --locked-mode
           npm --prefix web ci --ignore-scripts
+          npm --prefix eng ci --ignore-scripts
       - name: Report available updates without changing the graph
         shell: pwsh
         run: pwsh -NoProfile -File eng/Check-DependencyCurrency.ps1

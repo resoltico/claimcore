@@ -1,15 +1,54 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 
+/** @param {unknown} value @returns {value is string} */
 export const isSha = (value) => typeof value === "string" && /^[0-9a-f]{40}$/u.test(value);
+/** @param {unknown} value */
 export const digest = (value) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
+/**
+ * Whether a path character could disguise a path: a control character, a bidirectional override or
+ * isolate, or a backslash.
+ * @param {string} character
+ */
+function isDisguisingCharacter(character) {
+  const code = character.codePointAt(0) ?? 0;
+  return (
+    code <= 0x1f ||
+    code === 0x7f ||
+    (code >= 0x202a && code <= 0x202e) ||
+    (code >= 0x2066 && code <= 0x2069) ||
+    character === "\\"
+  );
+}
+
+/** @param {unknown} path */
 const pathValid = (path) =>
   typeof path === "string" &&
   path.length > 0 &&
   path.length <= 4096 &&
-  !/[\x00-\x1f\x7f\u202a-\u202e\u2066-\u2069\\]/u.test(path) &&
+  ![...path].some(isDisguisingCharacter) &&
   path.split("/").every((part) => part && part !== "." && part !== "..");
 
+/**
+ * @typedef {object} FileEntry
+ * @property {string} type
+ * @property {string} mode
+ * @property {string} sha
+ */
+
+/** @type {Record<string, string[]>} */
+const modes = {
+  tree: ["040000"],
+  blob: ["100644", "100755", "120000"],
+  commit: ["160000"],
+};
+
+/**
+ * The files of a complete, well-formed git tree document.
+ * @param {import("./types.mjs").Json} document
+ * @param {string} expectedSha
+ * @returns {Map<string, FileEntry>}
+ */
 export function treeFiles(document, expectedSha) {
   assert(isSha(expectedSha) && document.sha === expectedSha, "Review tree identity differs.");
   assert(
@@ -18,18 +57,14 @@ export function treeFiles(document, expectedSha) {
   );
   assert(document.tree.length <= 100000, "Review tree exceeds the supported bound.");
   const seen = new Set();
+  /** @type {Map<string, FileEntry>} */
   const files = new Map();
   for (const entry of document.tree) {
     assert(pathValid(entry.path) && !seen.has(entry.path), "Invalid or duplicate review path.");
     seen.add(entry.path);
     assert(isSha(entry.sha), "Missing review object identity.");
-    const modes = {
-      tree: ["040000"],
-      blob: ["100644", "100755", "120000"],
-      commit: ["160000"],
-    };
     assert(
-      Object.hasOwn(modes, entry.type) && modes[entry.type].includes(entry.mode),
+      Object.hasOwn(modes, entry.type) && modes[entry.type]?.includes(entry.mode),
       "Unknown review object mode.",
     );
     if (entry.type !== "tree")
@@ -42,17 +77,20 @@ export function treeFiles(document, expectedSha) {
   return files;
 }
 
+/** @param {string} path @returns {string[]} */
 export function reviewScopes(path) {
   const scopes = ["general"];
   if (
-    /^(src\/|architecture\.json$|Directory\.|ClaimCore\.slnx$)/u.test(path) ||
+    /^(src\/|config\/architecture\.json$|Directory\.|ClaimCore\.slnx$)/u.test(path) ||
     /\.(?:fsproj|props|targets)$/u.test(path) ||
     path === "docs/architecture.md"
   )
     scopes.push("architecture");
   if (
     !path.includes("/") ||
-    /^(?:\.github\/|eng\/|db\/|src\/|web\/src\/(?:api|hooks)\/|SECURITY\.md$)/u.test(path) ||
+    /^(?:\.github\/|config\/|eng\/|db\/|src\/|web\/src\/(?:api|hooks)\/|SECURITY\.md$)/u.test(
+      path,
+    ) ||
     /(?:package|packages|lock|vulnerability|dependenc|suppression|NuGet|Docker|compose)/iu.test(
       path,
     )
@@ -60,7 +98,7 @@ export function reviewScopes(path) {
     scopes.push("security");
   if (
     !path.includes("/") ||
-    /^(?:\.github\/|eng\/|tests\/|db\/|docs\/|src\/|web\/(?:tests|e2e|scripts|src\/generated)\/)/u.test(
+    /^(?:\.github\/|config\/|eng\/|tests\/|db\/|docs\/|src\/|web\/(?:tests|e2e|scripts|src\/generated)\/)/u.test(
       path,
     ) ||
     /(?:AGENTS|CONTRIBUTING|architecture|baseline|manifest|suppression|vulnerability|dependenc|\.config|lint|coverage|vitest|playwright|tsconfig|package)/iu.test(
@@ -71,7 +109,13 @@ export function reviewScopes(path) {
   return scopes;
 }
 
+/**
+ * The files added, removed or modified between two trees, each with the review scopes it touches.
+ * @param {Map<string, FileEntry>} before
+ * @param {Map<string, FileEntry>} after
+ */
 export function changedFiles(before, after) {
+  /** @type {import("./types.mjs").Json[]} */
   const changes = [];
   for (const path of [...new Set([...before.keys(), ...after.keys()])].sort()) {
     const old = before.get(path) ?? null;

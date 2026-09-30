@@ -730,7 +730,7 @@
       "reviewer": "Agent reviewed the exact current heading and listed implementation and assertion sources; this is source review of local synthetic boundaries, not execution evidence, independent owner approval, or live real-data qualification.",
       "reviewedOn": "2026-09-30",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "fac257e0f8c6b83b359c3a8c9b5d75344fe9e300b2cc2c977b456624909e499e",
+      "reviewSubjectHash": "d004744822479144eb4b34c20e7c71eb64fcc8dd2091808b3125e773cd95b6f5",
       "wholeFiles": [
         ".github/workflows/verify-frontend.yml",
         "docs/diagnostics.md",

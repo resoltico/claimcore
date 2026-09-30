@@ -1,3 +1,4 @@
+/** @typedef {import("./types.mjs").Json} Json */
 import test from "node:test";
 import assert from "node:assert/strict";
 import { ownerReview } from "./owner-review-service.mjs";
@@ -7,86 +8,86 @@ const head = "a".repeat(40),
 const baseTree = "d".repeat(40),
   mergeTree = "e".repeat(40);
 const source = { commit: "f".repeat(40), sha256: "f".repeat(64) };
+const repository = () => ({
+  id: 1,
+  full_name: "owner/repo",
+  default_branch: "main",
+  owner: { type: "User", id: 9 },
+});
+
+/** @param {Json} repo */
+const pullRequest = (repo) => ({
+  number: 3,
+  state: "open",
+  draft: false,
+  head: { sha: head, ref: "topic", repo },
+  base: { sha: base, ref: "main", repo },
+  merge_commit_sha: merge,
+  html_url: "https://github.com/owner/repo/pull/3",
+});
+
+/** @param {Json} repo */
+const workflowRun = (repo) => ({
+  id: 12,
+  workflow_id: 5,
+  path: ".github/workflows/ci.yml",
+  head_sha: head,
+  run_attempt: 1,
+  status: "completed",
+  conclusion: "success",
+  event: "pull_request",
+  repository: repo,
+  head_repository: repo,
+  referenced_workflows: [
+    { path: "owner/repo/.github/workflows/verify-unit.yml", ref: "refs/pull/3/merge", sha: merge },
+  ],
+});
+
+const gateJobs = () => [
+  { id: 21, run_id: 12, name: "Gate", status: "completed", conclusion: "success" },
+];
+
+/** The git objects of the tested merge, by API path. */
+const gitDocuments = () => ({
+  "git/ref/pull/3/merge": { ref: "refs/pull/3/merge", object: { type: "commit", sha: merge } },
+  [`git/commits/${base}`]: { sha: base, tree: { sha: baseTree } },
+  [`git/commits/${merge}`]: {
+    sha: merge,
+    tree: { sha: mergeTree },
+    parents: [{ sha: base }, { sha: head }],
+  },
+  [`git/trees/${baseTree}?recursive=1`]: { sha: baseTree, truncated: false, tree: [] },
+  [`git/trees/${mergeTree}?recursive=1`]: {
+    sha: mergeTree,
+    truncated: false,
+    tree: [{ path: "eng/ci/policy.mjs", type: "blob", mode: "100644", sha: head }],
+  },
+});
+
 function fixture() {
-  const repo = {
-    id: 1,
-    full_name: "owner/repo",
-    default_branch: "main",
-    owner: { type: "User", id: 9 },
-  };
-  const pr = {
-    number: 3,
-    state: "open",
-    draft: false,
-    head: { sha: head, ref: "topic", repo },
-    base: { sha: base, ref: "main", repo },
-    merge_commit_sha: merge,
-    html_url: "https://github.com/owner/repo/pull/3",
-  };
-  const run = {
-    id: 12,
-    workflow_id: 5,
-    path: ".github/workflows/ci.yml",
-    head_sha: head,
-    run_attempt: 1,
-    status: "completed",
-    conclusion: "success",
-    event: "pull_request",
-    repository: repo,
-    head_repository: repo,
-    referenced_workflows: [
-      {
-        path: "owner/repo/.github/workflows/verify-unit.yml",
-        ref: "refs/pull/3/merge",
-        sha: merge,
-      },
-    ],
-  };
-  const jobs = [
-    {
-      id: 21,
-      run_id: 12,
-      name: "Gate",
-      status: "completed",
-      conclusion: "success",
-    },
-  ];
+  /** @type {Json} */
+  const repo = repository();
+  /** @type {Json} */
+  const pr = pullRequest(repo);
+  /** @type {Json} */
+  const run = workflowRun(repo);
+  /** @type {Record<string, any>} */
   const documents = {
     "": repo,
     "pulls/3": pr,
-    "git/ref/pull/3/merge": {
-      ref: "refs/pull/3/merge",
-      object: { type: "commit", sha: merge },
-    },
-    [`git/commits/${base}`]: { sha: base, tree: { sha: baseTree } },
-    [`git/commits/${merge}`]: {
-      sha: merge,
-      tree: { sha: mergeTree },
-      parents: [{ sha: base }, { sha: head }],
-    },
-    [`git/trees/${baseTree}?recursive=1`]: {
-      sha: baseTree,
-      truncated: false,
-      tree: [],
-    },
-    [`git/trees/${mergeTree}?recursive=1`]: {
-      sha: mergeTree,
-      truncated: false,
-      tree: [{ path: "eng/ci/policy.mjs", type: "blob", mode: "100644", sha: head }],
-    },
+    ...gitDocuments(),
     "actions/workflows/ci.yml": { id: 5, path: ".github/workflows/ci.yml" },
     [`actions/workflows/ci.yml/runs?event=pull_request&head_sha=${head}&per_page=100&page=1`]: {
       total_count: 1,
       workflow_runs: [run],
     },
     "actions/runs/12": run,
-    "actions/runs/12/attempts/1/jobs?per_page=100&page=1": {
-      total_count: 1,
-      jobs,
-    },
+    "actions/runs/12/attempts/1/jobs?per_page=100&page=1": { total_count: 1, jobs: gateJobs() },
   };
+  /** @type {string[]} */
   const requests = [];
-  const api = async (path, options) => {
+  /** @type {import("./types.mjs").GithubApi} */
+  const api = async (path = "", options) => {
     assert.equal(options, undefined, "Reporter must not write.");
     requests.push(path);
     assert(Object.hasOwn(documents, path), `Unexpected request ${path}`);
@@ -102,7 +103,7 @@ test("owner report binds complete change scope and successful CI without grantin
   assert.equal(report.ownerId, 9);
   assert.equal(report.ci.qualification, "verified-current-head-ci");
   assert.equal(report.ownerAuthorization, "not-granted-by-this-report");
-  assert(report.changes[0].scopes.includes("contract-policy"));
+  assert(report.changes[0]?.["scopes"].includes("contract-policy"));
   assert.match(report.reportSha256, /^[0-9a-f]{64}$/u);
   assert(!requests.some((path) => path.includes("contents/")), "Candidate code is never loaded.");
 });
@@ -123,56 +124,58 @@ test("owner report accepts a null PR merge field only with the exact tested merg
   assert.equal(report.mergeSha, merge);
   assert.equal(report.ci.qualification, "verified-current-head-ci");
 });
-for (const [label, mutate] of [
+/** @type {Array<[string, (state: ReturnType<typeof fixture>) => void]>} */
+const refusals = [
   [
     "stale head",
-    (f) => {
+    (/** @type {ReturnType<typeof fixture>} */ f) => {
       f.pr.head.sha = base;
     },
   ],
   [
     "wrong repository",
-    (f) => {
+    (/** @type {ReturnType<typeof fixture>} */ f) => {
       f.pr.base.repo = { ...f.repo, id: 99 };
     },
   ],
   [
     "organization",
-    (f) => {
+    (/** @type {ReturnType<typeof fixture>} */ f) => {
       f.repo.owner.type = "Organization";
     },
   ],
   [
     "closed PR",
-    (f) => {
+    (/** @type {ReturnType<typeof fixture>} */ f) => {
       f.pr.state = "closed";
     },
   ],
   [
     "missing merge ref",
-    (f) => {
+    (/** @type {ReturnType<typeof fixture>} */ f) => {
       f.documents["git/ref/pull/3/merge"].object.sha = null;
     },
   ],
   [
     "wrong merge parent",
-    (f) => {
+    (/** @type {ReturnType<typeof fixture>} */ f) => {
       f.documents[`git/commits/${merge}`].parents[0].sha = head;
     },
   ],
   [
     "truncated tree",
-    (f) => {
+    (/** @type {ReturnType<typeof fixture>} */ f) => {
       f.documents[`git/trees/${mergeTree}?recursive=1`].truncated = true;
     },
   ],
   [
     "incomplete job listing",
-    (f) => {
+    (/** @type {ReturnType<typeof fixture>} */ f) => {
       f.documents["actions/runs/12/attempts/1/jobs?per_page=100&page=1"].total_count = 2;
     },
   ],
-])
+];
+for (const [label, mutate] of refusals)
   test(`owner report refuses ${label}`, async () => {
     const f = fixture();
     mutate(f);
@@ -181,7 +184,8 @@ for (const [label, mutate] of [
 test("concurrent head changes invalidate the entire report", async () => {
   const f = fixture();
   let reads = 0;
-  const api = async (path) => {
+  /** @param {string} path */
+  const api = async (path = "") => {
     if (path === "pulls/3" && ++reads === 2) f.pr.head.sha = base;
     return f.api(path);
   };
@@ -190,7 +194,8 @@ test("concurrent head changes invalidate the entire report", async () => {
 test("owner change after inspection invalidates the report", async () => {
   const f = fixture();
   let reads = 0;
-  const api = async (path) => {
+  /** @param {string} path */
+  const api = async (path = "") => {
     if (path === "" && ++reads === 2) f.repo.owner.id = 99;
     return f.api(path);
   };

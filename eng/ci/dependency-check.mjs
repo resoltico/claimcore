@@ -1,139 +1,88 @@
-import { readFileSync, readdirSync, mkdirSync, writeFileSync, appendFileSync } from "node:fs";
+// Reports the locked dependency graph's vulnerabilities (`security`) or available updates (`health`).
+//   node eng/ci/dependency-check.mjs security|health [holds registry path]
+import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createHash, randomUUID } from "node:crypto";
-import { jsonProcess } from "./dependency-process.mjs";
+import { readNpmLock, readNuGetLocks } from "./dependency-inventory.mjs";
+import { classifyUpdates, validateHolds } from "./dependency-policy.mjs";
 import {
-  packageKey,
-  packageRows,
-  safeFinding,
-  validateHolds,
-  classifyUpdates,
-  newer,
-} from "./dependency-policy.mjs";
+  nugetSecurityFindings,
+  nugetUpdateFindings,
+  npmUpdateFindings,
+} from "./dependency-updates.mjs";
 
 const root = fileURLToPath(new URL("../..", import.meta.url));
-const mode = process.argv[2];
-if (!["security", "health"].includes(mode) || process.argv.length > 4)
+const npmProjects = ["web", "eng"];
+const argv = process.argv;
+const mode = argv[2];
+if ((mode !== "security" && mode !== "health") || argv.length > 4)
   throw new Error("Expected security or health and optional registry path.");
+const inCi = process.env["GITHUB_ACTIONS"] === "true";
 const output =
   mode === "health"
-    ? process.env.GITHUB_ACTIONS === "true"
+    ? inCi
       ? "artifacts/dependency-health"
       : `artifacts/dependency-health/local-${randomUUID()}`
-    : process.env.GITHUB_ACTIONS === "true"
+    : inCi
       ? "artifacts/diagnostics/quality"
       : `artifacts/diagnostics/local-dependency-security-${randomUUID()}`;
 const file = mode === "health" ? "report.json" : "dependency-security.details.json";
-const installed = new Map();
-const add = (ecosystem, name, resolved) => {
-  const key = packageKey(ecosystem, name);
-  if (!installed.has(key)) installed.set(key, new Set());
-  installed.get(key).add(resolved);
-};
-function readLocks(directory) {
-  for (const entry of readdirSync(directory, { withFileTypes: true })) {
-    if (
-      entry.isDirectory() &&
-      !["bin", "obj", "node_modules", "artifacts", ".git"].includes(entry.name)
-    )
-      readLocks(join(directory, entry.name));
-    if (entry.isFile() && entry.name === "packages.lock.json") {
-      const lock = JSON.parse(readFileSync(join(directory, entry.name), "utf8"));
-      for (const framework of Object.values(lock.dependencies)) {
-        for (const [name, value] of Object.entries(framework))
-          if (value.resolved) add("nuget", name, value.resolved);
-      }
-    }
-  }
-}
-const common = [
-  "package",
-  "list",
-  "--project",
-  join(root, "ClaimCore.slnx"),
-  "--format",
-  "json",
-  "--output-version",
-  "1",
-  "--no-restore",
-];
-const nuget = (flag, transitive = true) =>
-  jsonProcess("dotnet", [...common, flag, ...(transitive ? ["--include-transitive"] : [])], root);
+
+/**
+ * @typedef {object} Result
+ * @property {number} schemaVersion
+ * @property {string} mode
+ * @property {string} outcome
+ * @property {import("./dependency-policy.mjs").Finding[]} findings
+ * @property {string} checkedUtc
+ * @property {Record<string, string>} [npmLockSha256] Lock file hash per npm project.
+ * @property {number} [findingCount]
+ * @property {string} [error]
+ */
+
+/** @type {Result} */
 const result = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   mode,
   outcome: "metadata-error",
   findings: [],
   checkedUtc: new Date().toISOString(),
 };
-try {
-  readLocks(join(root, "src"));
-  readLocks(join(root, "tests"));
-  readLocks(join(root, "eng"));
-  const bytes = readFileSync(join(root, "web/package-lock.json"));
-  const lock = JSON.parse(bytes);
-  for (const [path, value] of Object.entries(lock.packages))
-    if (path && value.version) add("npm", path.split("node_modules/").at(-1), value.version);
-  result.npmLockSha256 = createHash("sha256").update(bytes).digest("hex");
+
+/** @param {import("./dependency-inventory.mjs").Installed} installed */
+function evaluate(installed) {
   const holds = validateHolds(
-    JSON.parse(readFileSync(process.argv[3] ?? join(root, "config/dependency-holds.json"), "utf8")),
+    JSON.parse(readFileSync(argv[3] ?? join(root, "config/dependency-holds.json"), "utf8")),
     installed,
   );
   if (mode === "security") {
-    for (const flag of ["--vulnerable", "--deprecated"]) {
-      for (const item of packageRows(nuget(flag), ["topLevelPackages", "transitivePackages"])) {
-        result.findings.push(
-          safeFinding("nuget", item.id, item.resolvedVersion, undefined, installed, flag.slice(2)),
-        );
-      }
-    }
+    result.findings = nugetSecurityFindings(root, installed);
     result.outcome = result.findings.length ? "security-refused" : "passed";
-  } else {
-    for (const item of packageRows(nuget("--outdated"), [
-      "topLevelPackages",
-      "transitivePackages",
-    ])) {
-      result.findings.push(
-        safeFinding(
-          "nuget",
-          item.id,
-          item.resolvedVersion,
-          item.latestVersion,
-          installed,
-          "update",
-        ),
-      );
-    }
-    const npm = jsonProcess("npm", ["outdated", "--json"], join(root, "web"), [0, 1]);
-    if (!npm || typeof npm !== "object" || Array.isArray(npm))
-      throw new Error("DEPENDENCY_METADATA_INVALID");
-    for (const [name, value] of Object.entries(npm)) {
-      const candidate = safeFinding("npm", name, value.current, value.latest, installed, "update");
-      if (newer(value.latest, value.current)) result.findings.push(candidate);
-      else if (newer(value.current, value.latest)) {
-        const published = jsonProcess(
-          "npm",
-          ["view", `${name}@${value.current.split(".")[0]}`, "version", "--json"],
-          join(root, "web"),
-        );
-        const versions = Array.isArray(published) ? published : [published];
-        if (!versions.length) throw new Error("DEPENDENCY_METADATA_EMPTY");
-        const latest = versions.reduce((a, b) => (newer(a, b) ? a : b));
-        if (newer(latest, value.current))
-          result.findings.push(
-            safeFinding("npm", name, value.current, latest, installed, "update"),
-          );
-      }
-    }
-    result.findings = classifyUpdates(result.findings, holds);
-    result.outcome = result.findings.some((item) => !item.held) ? "updates-available" : "passed";
+    return;
   }
+  const npm = npmProjects.flatMap((project) => npmUpdateFindings(join(root, project), installed));
+  result.findings = classifyUpdates([...nugetUpdateFindings(root, installed), ...npm], holds);
+  result.outcome = result.findings.some((item) => !item.held) ? "updates-available" : "passed";
+}
+
+try {
+  /** @type {import("./dependency-inventory.mjs").Installed} */
+  const installed = new Map();
+  for (const directory of ["src", "tests", "eng"]) readNuGetLocks(join(root, directory), installed);
+  result.npmLockSha256 = Object.fromEntries(
+    npmProjects.map((project) => [
+      project,
+      readNpmLock(join(root, project, "package-lock.json"), installed),
+    ]),
+  );
+  evaluate(installed);
 } catch (error) {
   // No registry payload, credential, request URI or provider exception is published.
   result.outcome = "metadata-error";
-  result.error = /^DEPENDENCY_[A-Z_]+$/u.test(error.message)
-    ? error.message
+  const message = error instanceof Error ? error.message : "";
+  result.error = /^DEPENDENCY_[A-Z_]+$/u.test(message)
+    ? message
     : "DEPENDENCY_POLICY_OR_METADATA_INVALID";
 }
 result.findings = [
@@ -146,7 +95,8 @@ writeFileSync(join(root, output, file), JSON.stringify(result, null, 2) + "\n", 
 console.log(
   `Dependency ${mode}: ${result.outcome}; ${result.findingCount} findings. Report: ${output}/${file}`,
 );
-if (process.env.GITHUB_STEP_SUMMARY) {
+const summary = process.env["GITHUB_STEP_SUMMARY"];
+if (summary) {
   const lines = [
     `### Dependency ${mode}: ${result.outcome}`,
     "",
@@ -162,6 +112,6 @@ if (process.env.GITHUB_STEP_SUMMARY) {
       "",
       `Metadata/policy failure: ${result.error}. Inspect the pinned graph and approved hold dates; no automatic updates or retries of security findings.`,
     );
-  appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join("\n") + "\n");
+  appendFileSync(summary, lines.join("\n") + "\n");
 }
 process.exitCode = result.outcome === "passed" ? 0 : result.outcome === "metadata-error" ? 3 : 2;

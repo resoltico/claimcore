@@ -1,4 +1,5 @@
 import test from "node:test";
+import { must } from "./test-support.mjs";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
 import { validateWorkflowSources } from "./workflow-policy.mjs";
@@ -9,6 +10,7 @@ const pin = "1".repeat(40);
 const compliant = `on: workflow_dispatch\npermissions: {contents: read}\njobs:\n  probe:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@${pin} # v7.0.1\n        with:\n          persist-credentials: false\n`;
 const isolated = (text = compliant, path = ".github/workflows/probe.yml") =>
   new Map([[path, text]]);
+/** @param {string} text @param {string} [path] */
 const verify = (text, path) => validateWorkflowSources(isolated(text, path), { graph: false });
 
 for (const extension of ["yml", "yaml"]) {
@@ -27,7 +29,8 @@ for (const extension of ["yml", "yaml"]) {
     );
   });
 }
-for (const [label, transform] of [
+/** @type {Array<[string, (source: string) => string]>} */
+const transforms = [
   ["missing checkout setting", (s) => s.replace("persist-credentials: false", "fetch-depth: 1")],
   [
     "comment-only checkout setting",
@@ -45,7 +48,8 @@ for (const [label, transform] of [
       "copy: &copy false\n" + s.replace("persist-credentials: false", "persist-credentials: *copy"),
   ],
   ["fake aggregate name", (s) => s.replace("    runs-on:", "    name: Gate\n    runs-on:")],
-]) {
+];
+for (const [label, transform] of transforms) {
   test(`refuses ${label}`, () => assert.throws(() => verify(transform(compliant))));
 }
 
@@ -68,11 +72,12 @@ test("accepts quoted false and inspects action.yaml composite steps", () => {
   assert.throws(() => validateWorkflowSources(sources, { graph: false }));
 });
 
+/** @param {string} path @param {(source: string) => string} modify */
 function changed(path, modify) {
   const sources = workflowSources(root);
   const key = `.github/workflows/${path}`;
   assert(sources.has(key));
-  const old = sources.get(key);
+  const old = must(sources.get(key));
   const next = modify(old);
   assert.notEqual(old, next, "Control must actually alter its source.");
   sources.set(key, next);
@@ -82,7 +87,8 @@ function changed(path, modify) {
 test("validates the complete real workflow graph", () => {
   assert(validateWorkflowSources(workflowSources(root)).workflows >= 15);
 });
-for (const [name, path, modify] of [
+/** @type {Array<[string, string, (source: string) => string]>} */
+const graphControls = [
   [
     "mandatory job outside Gate",
     "ci.yml",
@@ -114,12 +120,14 @@ for (const [name, path, modify] of [
     "publish-postgres-image.yml",
     (s) => s.replace("    environment: release\n", ""),
   ],
-]) {
+];
+for (const [name, path, modify] of graphControls) {
   test(`real graph refuses ${name}`, () =>
     assert.throws(() => validateWorkflowSources(changed(path, modify))));
 }
 
-for (const [name, modify] of [
+/** @type {Array<[string, (source: string) => string]>} */
+const planControls = [
   [
     "duplicate security execution",
     (s) =>
@@ -136,12 +144,13 @@ for (const [name, modify] of [
         '"stages": [\n    { "id": "currency", "argv": ["pwsh", "-File", "eng/Check-DependencyCurrency.ps1"] },',
       ),
   ],
-]) {
+];
+for (const [name, modify] of planControls) {
   test(`real graph refuses ${name} in a stage plan`, () => {
     const sources = workflowSources(root);
     const key = "eng/ci/stage-plans/frontend.json";
     assert(sources.has(key));
-    sources.set(key, modify(sources.get(key)));
+    sources.set(key, modify(must(sources.get(key))));
     assert.throws(() => validateWorkflowSources(sources));
   });
 }
@@ -155,7 +164,8 @@ test("an orphan .yaml verifier cannot evade graph reachability", () => {
   assert.throws(() => validateWorkflowSources(sources), /disconnected/u);
 });
 
-for (const [label, path, before, after] of [
+/** @type {Array<[string, string, string, string]>} */
+const executionControls = [
   [
     "skipped Gate step",
     "ci.yml",
@@ -180,11 +190,13 @@ for (const [label, path, before, after] of [
     "github.ref == 'refs/heads/main'",
     "github.ref == 'refs/heads/main' || true",
   ],
-])
+];
+for (const [label, path, before, after] of executionControls)
   test(`rejects ${label} in parsed execution settings`, () => {
     const values = workflowSources(root);
     const name = `.github/workflows/${path}`;
-    assert(values.get(name).includes(before));
-    values.set(name, values.get(name).replaceAll(before, after));
+    const current = must(values.get(name));
+    assert(current.includes(before));
+    values.set(name, current.replaceAll(before, after));
     assert.throws(() => validateWorkflowSources(values));
   });

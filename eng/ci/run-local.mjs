@@ -8,155 +8,153 @@
 // local equivalent and why; a test holds that registry to ci.yml so it cannot drift. Each job runs
 // the same command CI runs. By default a job runs only when a changed file could affect it (against
 // the merge base with origin/main); when that cannot be decided, everything runs.
-import { spawn, spawnSync } from "node:child_process";
-import { closeSync, mkdirSync, openSync, readFileSync, rmSync } from "node:fs";
-import { delimiter, join } from "node:path";
-import { existsSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync } from "node:fs";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { affected, changedFiles } from "./local-scope.mjs";
+import { flag, logTailLines, onPath, option, runToLog } from "./process-support.mjs";
 import { runPlan } from "./stage-plan.mjs";
 
 const root = fileURLToPath(new URL("../..", import.meta.url));
+const argv = process.argv;
 
-function option(name, fallback) {
-  const at = process.argv.indexOf(`--${name}`);
-  return at >= 0 && process.argv[at + 1] !== undefined ? process.argv[at + 1] : fallback;
-}
-const flag = (name) => process.argv.includes(`--${name}`);
+/**
+ * @typedef {object} LocalJob
+ * @property {string} id
+ * @property {string} title
+ * @property {string[]} mirrors
+ * @property {string[]} argv
+ * @property {string[]} [after]
+ * @property {string} [group]
+ * @property {string[] | null} [scope]
+ * @property {string[]} [tools]
+ * @property {boolean} [optional]
+ */
 
-const git = (...args) =>
-  spawnSync("git", args, {
-    cwd: root,
-    encoding: "utf8",
-    maxBuffer: 16 * 1024 * 1024,
-  });
+/**
+ * @typedef {object} LocalRegistry
+ * @property {string[]} [clean]
+ * @property {LocalJob[]} jobs
+ * @property {{ family: string, reason: string }[]} notLocal
+ */
 
-/** Files changed against `ref`, including uncommitted and untracked ones; null when unknown. */
-export function changedFiles(ref) {
-  const base = ref ?? git("merge-base", "HEAD", "origin/main").stdout.trim();
-  if (!base) return null;
-  const tracked = git("diff", "--name-only", base);
-  const untracked = git("ls-files", "--others", "--exclude-standard");
-  if (tracked.status !== 0 || untracked.status !== 0) return null;
-  return [...tracked.stdout.split("\n"), ...untracked.stdout.split("\n")].filter(Boolean);
-}
-
-/** Whether `job` must run given the changed files (null means unknown, so it must). */
-export function affected(job, changed) {
-  if (job.scope === null || job.scope === undefined || changed === null) return true;
-  const patterns = job.scope.map((pattern) => new RegExp(pattern));
-  return changed.some((file) => patterns.some((pattern) => pattern.test(file)));
-}
-
-const onPath = (tool) =>
-  (process.env.PATH ?? "")
-    .split(delimiter)
-    .some((directory) => directory !== "" && existsSync(join(directory, tool)));
-
-function tail(path, lines) {
-  return readFileSync(path, "utf8")
-    .replace(/\u001b\[[0-9;]*m/g, "")
-    .split("\n")
-    .filter((line) => line.trim() !== "")
-    .slice(-lines)
-    .map((line) => `    ${line.slice(0, 220)}`)
-    .join("\n");
-}
-
+/** @param {number} started */
 const seconds = (started) => `${Math.round((Date.now() - started) / 1000)}s`;
 
-async function main() {
-  const registry = JSON.parse(readFileSync(join(root, "eng/ci/local-plan.json"), "utf8"));
-  const only = option("only", "").split(",").filter(Boolean);
-  const skip = option("skip", "").split(",").filter(Boolean);
-  const includeOptional = option("include", "").split(",").includes("published");
-  const changed = flag("all") ? null : changedFiles(option("changed-since", undefined));
-  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const logs = join(root, "artifacts/local-ci", stamp);
-  mkdirSync(logs, { recursive: true });
-  // Stage outputs must start absent, as they do in a CI checkout; these are generated, never sources.
-  for (const path of registry.clean ?? [])
-    rmSync(join(root, path), { recursive: true, force: true });
-  // Jobs share this one working tree, and several read or write it as a whole: the documentation
-  // assessment refuses a tree that changes under it, the analyzer and convergence controls place probe
-  // files in it, and the frontend build writes into it. In CI each job has its own checkout. Locally the
-  // jobs therefore run one after another, each using the machine's cores internally.
-  const parallel = Number(option("parallel", "1"));
-  const outcomes = new Map();
+/**
+ * Why a job is not run here, or null when it should run.
+ * @param {LocalJob} job
+ * @param {{ only: string[], skip: string[], includeOptional: boolean, changed: string[] | null }} selection
+ * @returns {string | null}
+ */
+function reasonToSkip(job, { only, skip, includeOptional, changed }) {
+  if (only.length > 0 && !only.includes(job.id)) return "not selected";
+  if (skip.includes(job.id)) return "--skip";
+  if (job.optional && !includeOptional) return "optional; add --include published";
+  if (!affected(job, changed)) return "no changed file affects it";
+  const missing = (job.tools ?? []).filter((tool) => !onPath(tool));
+  return missing.length > 0 ? `needs ${missing.join(", ")} on PATH` : null;
+}
 
+/**
+ * @param {LocalJob} job
+ * @param {string} logs Directory receiving the job's log.
+ * @param {Map<string, string>} outcomes
+ * @returns {Promise<import("./types.mjs").StageResult>}
+ */
+async function runJob(job, logs, outcomes) {
+  const log = join(logs, `${job.id}.log`);
+  const started = Date.now();
+  console.log(`> ${job.id}: ${job.title}`);
+  const [command = "", ...args] = job.argv;
+  const status = await runToLog(command, args, { cwd: root, log });
+  const passed = status === 0;
+  outcomes.set(job.id, `${passed ? "passed" : "FAILED"} in ${seconds(started)}`);
   console.log(
-    changed === null
-      ? "Running every job (no change scoping)."
-      : `Scoping to ${changed.length} changed file(s) against the merge base; --all runs everything.`,
+    `${passed ? "+" : "x"} ${job.id}: ${passed ? "passed" : "FAILED"} in ${seconds(started)} (${log})`,
   );
+  if (!passed)
+    console.log(
+      logTailLines(log, 40, 220)
+        .map((line) => `    ${line}`)
+        .join("\n"),
+    );
+  return { failed: !passed };
+}
 
-  const plan = {
-    producer: "local",
-    stages: registry.jobs.map((job) => ({
-      id: job.id,
-      argv: job.argv,
-      after: job.after,
-      group: job.group,
-    })),
-  };
-  const byId = new Map(registry.jobs.map((job) => [job.id, job]));
-
-  const run = (stage) => {
-    const job = byId.get(stage.id);
-    const skipped = (why) => {
-      outcomes.set(job.id, `skipped (${why})`);
-      console.log(`- ${job.id}: skipped (${why})`);
-      return { failed: false, skipped: true };
-    };
-    if (only.length > 0 && !only.includes(job.id)) return skipped("not selected");
-    if (skip.includes(job.id)) return skipped("--skip");
-    if (job.optional && !includeOptional) return skipped("optional; add --include published");
-    if (!affected(job, changed)) return skipped("no changed file affects it");
-    const missing = (job.tools ?? []).filter((tool) => !onPath(tool));
-    if (missing.length > 0) return skipped(`needs ${missing.join(", ")} on PATH`);
-
-    const log = join(logs, `${job.id}.log`);
-    const descriptor = openSync(log, "w");
-    const started = Date.now();
-    console.log(`> ${job.id}: ${job.title}`);
-    return new Promise((resolve) => {
-      const [command, ...args] = job.argv;
-      const child = spawn(command, args, {
-        cwd: root,
-        stdio: ["ignore", descriptor, descriptor],
-      });
-      const settle = (status) => {
-        closeSync(descriptor);
-        const passed = status === 0;
-        outcomes.set(job.id, `${passed ? "passed" : "FAILED"} in ${seconds(started)}`);
-        console.log(
-          `${passed ? "+" : "x"} ${job.id}: ${passed ? "passed" : "FAILED"} in ${seconds(started)} (${log})`,
-        );
-        if (!passed) console.log(tail(log, 40));
-        resolve({ failed: !passed });
-      };
-      child.on("error", () => settle(127));
-      child.on("close", (code, signal) => settle(code ?? (signal ? 128 : 1)));
-    });
-  };
-
-  const results = await runPlan(plan, parallel, run, {
-    failFast: !flag("no-fail-fast"),
-  });
-  for (const result of results)
-    if (result.value.notStarted)
-      outcomes.set(result.stage.id, "not started (an earlier job failed)");
-
+/** @param {LocalRegistry} registry @param {Map<string, string>} outcomes */
+function summarize(registry, outcomes) {
   console.log("\nLocal CI summary");
   for (const job of registry.jobs)
     console.log(`  ${job.id.padEnd(18)} ${outcomes.get(job.id) ?? "not run"}`);
   console.log("Not run locally:");
   for (const item of registry.notLocal) console.log(`  ${item.family.padEnd(18)} ${item.reason}`);
+}
+
+/** @param {LocalRegistry} registry @returns {import("./types.mjs").Plan} */
+function planOf(registry) {
+  return {
+    producer: "local",
+    stages: registry.jobs.map(({ id, argv: command, after, group }) => ({
+      id,
+      argv: command,
+      ...(after === undefined ? {} : { after }),
+      ...(group === undefined ? {} : { group }),
+    })),
+  };
+}
+
+async function main() {
+  const registry = /** @type {LocalRegistry} */ (
+    JSON.parse(readFileSync(join(root, "eng/ci/local-plan.json"), "utf8"))
+  );
+  const changed = flag(argv, "all")
+    ? null
+    : changedFiles(root, option(argv, "changed-since", undefined));
+  const selection = {
+    only: option(argv, "only", "").split(",").filter(Boolean),
+    skip: option(argv, "skip", "").split(",").filter(Boolean),
+    includeOptional: option(argv, "include", "").split(",").includes("published"),
+    changed,
+  };
+  const logs = join(root, "artifacts/local-ci", new Date().toISOString().replace(/[:.]/g, "-"));
+  mkdirSync(logs, { recursive: true });
+  // Stage outputs must start absent, as they do in a CI checkout; these are generated, never sources.
+  for (const path of registry.clean ?? [])
+    rmSync(join(root, path), { recursive: true, force: true });
+  // Jobs share this one working tree, and several read or write it as a whole: the documentation
+  // assessment refuses a tree that changes under it, the convergence controls place probe files in
+  // it, and the frontend build writes into it. In CI each job has its own checkout. Locally the jobs
+  // therefore run one after another, each using the machine's cores internally.
+  const parallel = Number(option(argv, "parallel", "1"));
+  const outcomes = new Map();
+  console.log(
+    changed === null
+      ? "Running every job (no change scoping)."
+      : `Scoping to ${changed.length} changed file(s) against the merge base; --all runs everything.`,
+  );
+  const plan = planOf(registry);
+  const byId = new Map(registry.jobs.map((job) => [job.id, job]));
+  /** @param {import("./types.mjs").Stage} stage */
+  const run = async (stage) => {
+    const job = /** @type {LocalJob} */ (byId.get(stage.id));
+    const why = reasonToSkip(job, selection);
+    if (why === null) return runJob(job, logs, outcomes);
+    outcomes.set(job.id, `skipped (${why})`);
+    console.log(`- ${job.id}: skipped (${why})`);
+    return { failed: false, skipped: true };
+  };
+  const results = await runPlan(plan, parallel, run, { failFast: !flag(argv, "no-fail-fast") });
+  for (const result of results)
+    if (result.value.notStarted)
+      outcomes.set(result.stage.id, "not started (an earlier job failed)");
+  summarize(registry, outcomes);
   if (results.some((result) => result.value.failed)) process.exitCode = 1;
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (argv[1] === fileURLToPath(import.meta.url)) {
   main().catch((error) => {
-    console.error(error.message);
+    console.error(error instanceof Error ? error.message : String(error));
     process.exitCode = 1;
   });
 }

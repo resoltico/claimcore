@@ -1,3 +1,4 @@
+/** @typedef {import("../ci/types.mjs").Json} Json */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { releaseClaimCore } from "./publisher.mjs";
@@ -17,7 +18,7 @@ test("publication creates a draft then publishes without rewriting release text"
   assert.equal(result.status, "published");
   assert.equal(fixture.state.release.body, body);
   assert.deepEqual(
-    fixture.writes().map((call) => call.method),
+    fixture.writes().map((/** @type {Json} */ call) => call.method),
     ["POST", "PATCH"],
   );
   assert.deepEqual(fixture.writes()[1].json, { draft: false, make_latest: "legacy" });
@@ -42,38 +43,44 @@ test("a matching draft on a later release page resumes without a second draft", 
   fixture.state.release = fixture.release(true);
   await releaseClaimCore({ ...fixture.options, publish: true });
   assert.deepEqual(
-    fixture.writes().map((call) => call.method),
+    fixture.writes().map((/** @type {Json} */ call) => call.method),
     ["PATCH"],
   );
-  assert(fixture.state.calls.some((call) => call.path === "releases?per_page=100&page=2"));
+  assert(
+    fixture.state.calls.some(
+      (/** @type {Json} */ call) => call.path === "releases?per_page=100&page=2",
+    ),
+  );
 });
 
-for (const [name, change] of [
+/** @type {Array<[string, (release: Json) => void]>} */
+const releaseDrifts = [
   [
     "body",
-    (release) => {
+    (/** @type {Json} */ release) => {
       release.body += "\nExtra prose.";
     },
   ],
   [
     "title",
-    (release) => {
+    (/** @type {Json} */ release) => {
       release.name = "Another title";
     },
   ],
   [
     "prerelease",
-    (release) => {
+    (/** @type {Json} */ release) => {
       release.prerelease = true;
     },
   ],
   [
     "assets",
-    (release) => {
+    (/** @type {Json} */ release) => {
       release.assets = [{ id: 123 }];
     },
   ],
-]) {
+];
+for (const [name, change] of releaseDrifts) {
   test(`never overwrites a mismatched ${name}`, async () => {
     const fixture = createFixture();
     fixture.state.release = fixture.release(true);
@@ -83,50 +90,52 @@ for (const [name, change] of [
   });
 }
 
-for (const [name, change] of [
+/** @type {Array<[string, (state: Json) => void]>} */
+const stateDrifts = [
   [
     "a lightweight tag",
-    (state) => {
+    (/** @type {Json} */ state) => {
       state.annotated = false;
     },
   ],
   [
     "a tag at another commit",
-    (state) => {
+    (/** @type {Json} */ state) => {
       state.target = "4".repeat(40);
     },
   ],
   [
     "a release commit outside main",
-    (state) => {
+    (/** @type {Json} */ state) => {
       state.mergeBase = "4".repeat(40);
     },
   ],
   [
     "a version mismatch",
-    (state) => {
+    (/** @type {Json} */ state) => {
       state.props = state.props.replace("0.3.0", "0.4.0");
     },
   ],
   [
     "missing tag CI",
-    (state) => {
+    (/** @type {Json} */ state) => {
       state.runs = [];
     },
   ],
   [
     "a failed Gate",
-    (state) => {
+    (/** @type {Json} */ state) => {
       state.jobs[0].conclusion = "failure";
     },
   ],
   [
     "a skipped Gate",
-    (state) => {
+    (/** @type {Json} */ state) => {
       state.jobs[0].conclusion = "skipped";
     },
   ],
-]) {
+];
+for (const [name, change] of stateDrifts) {
   test(`blocks publication for ${name}`, async () => {
     const fixture = createFixture();
     change(fixture.state);
@@ -155,7 +164,9 @@ test("uses one Gate from the current workflow attempt", async () => {
   );
   await releaseClaimCore(fixture.options);
   assert(
-    fixture.state.calls.some((call) => call.path.includes("/attempts/2/jobs?per_page=100&page=2")),
+    fixture.state.calls.some((/** @type {Json} */ call) =>
+      call.path.includes("/attempts/2/jobs?per_page=100&page=2"),
+    ),
   );
 });
 

@@ -10,7 +10,7 @@
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --pretty false",
-    "lint": "oxlint --config .oxlintrc.json --deny-warnings lint",
+    "lint": "oxlint --config .oxlintrc.json --deny-warnings ci lint release",
     "format": "prettier --write ci lint release package.json tsconfig.json .oxlintrc.json",
     "format:check": "prettier --check ci lint release package.json tsconfig.json .oxlintrc.json",
     "test": "node --test \"lint/**/*.test.mjs\" \"ci/**/*.test.mjs\" \"release/**/*.test.mjs\"",
@@ -18,7 +18,8 @@
   },
   "dependencies": {
     "oxc-parser": "0.152.0",
-    "smol-toml": "1.9.0"
+    "smol-toml": "1.9.0",
+    "yaml": "2.9.1"
   },
   "devDependencies": {
     "@types/node": "26.6.3",

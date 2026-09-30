@@ -2,14 +2,17 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
+import { must } from "./test-support.mjs";
 import { fileURLToPath } from "node:url";
-import { affected } from "./run-local.mjs";
+import { affected } from "./local-scope.mjs";
 import { validatePlan } from "./stage-plan.mjs";
 import { parseWorkflow } from "./yaml.mjs";
 
 const root = fileURLToPath(new URL("../..", import.meta.url));
+/** @type {import("./run-local.mjs").LocalRegistry} */
 const registry = JSON.parse(readFileSync(join(root, "eng/ci/local-plan.json"), "utf8"));
-const job = (id) => registry.jobs.find((candidate) => candidate.id === id);
+/** @param {string} id */
+const job = (id) => must(registry.jobs.find((candidate) => candidate.id === id));
 
 test("every CI verification family is mirrored locally or explained", () => {
   const ci = parseWorkflow(readFileSync(join(root, ".github/workflows/ci.yml"), "utf8")).value;
@@ -77,7 +80,7 @@ test("when the change set is unknown every job runs", () => {
 });
 
 test("only generated stage outputs are cleaned before a local run", () => {
-  for (const path of registry.clean) {
+  for (const path of registry.clean ?? []) {
     assert.match(
       path,
       /^artifacts\/[a-z-]+$/,

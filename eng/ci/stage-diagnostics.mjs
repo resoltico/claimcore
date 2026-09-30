@@ -1,5 +1,6 @@
 import { relative, resolve } from "node:path";
 
+/** @type {Record<string, string>} */
 const help = {
   "restore-frontend": "Reproduce npm --prefix web ci with the pinned toolchain.",
   "frontend-format": "Run npm --prefix web run format:check; inspect the reported tracked files.",
@@ -60,45 +61,83 @@ for (const stage of policyStages)
   help[stage] =
     "Reproduce the registered stage procedure with the pinned toolchain; do not waive a failed policy or evidence requirement.";
 
-export function stageDiagnostic({ producer, stage, exitCode, manifestExit, log, root, tracked }) {
+const escape = String.fromCharCode(27);
+const ansi = new RegExp(`${escape}\\[[0-9;]*m`, "gu");
+const location =
+  /^(.*?)(?:\((\d+),(\d+)\)|:(\d+):(\d+)):\s*(?:error|warning)?\s*((?:FS|TS)\d{3,6})?/u;
+
+/**
+ * @typedef {object} Finding
+ * @property {string} file Tracked repository-relative path.
+ * @property {number} [line]
+ * @property {number} [column]
+ * @property {string} [rule]
+ */
+
+/**
+ * @param {string} producer
+ * @param {string} stage
+ * @param {number[]} codes
+ */
+function assertIdentity(producer, stage, codes) {
   if (
     !["quality", "frontend", "frontend-product", "publish"].includes(producer) ||
     !Object.hasOwn(help, stage)
   )
     throw new Error("Unregistered reporting identity.");
-  for (const code of [exitCode, manifestExit])
+  for (const code of codes)
     if (!Number.isSafeInteger(code) || code < 0 || code > 255)
       throw new Error("Invalid stage exit status.");
+}
+
+/**
+ * The tracked source location one log line names, if any.
+ * @param {string} line
+ * @param {string} root
+ * @param {Set<string>} tracked
+ * @returns {Finding | null}
+ */
+function findingOf(line, root, tracked) {
+  const clean = line.replace(ansi, "");
+  const match = location.exec(clean);
+  const path = match ? (match[1] ?? "") : clean.replace(/^\[warn\]\s*/u, "").trim();
+  const file = relative(resolve(root), resolve(root, path)).split("\\").join("/");
+  if (!tracked.has(file)) return null;
+  /** @type {Finding} */
+  const finding = { file };
+  if (!match) return finding;
+  const lineNumber = Number(match[2] ?? match[4]);
+  const column = Number(match[3] ?? match[5]);
+  if (lineNumber > 0 && lineNumber <= 1000000 && column > 0 && column <= 1000000) {
+    finding.line = lineNumber;
+    finding.column = column;
+  }
+  if (match[6]) finding.rule = match[6];
+  return finding;
+}
+
+/**
+ * @param {{ producer: string, stage: string, exitCode: number, manifestExit: number, log: string, root: string, tracked: Set<string> }} input
+ */
+export function stageDiagnostic({ producer, stage, exitCode, manifestExit, log, root, tracked }) {
+  assertIdentity(producer, stage, [exitCode, manifestExit]);
+  /** @type {Finding[]} */
   const findings = [];
   for (const line of log.slice(-2 * 1024 * 1024).split(/\r?\n/u)) {
-    const clean = line.replace(/\u001b\[[0-9;]*m/gu, "");
-    const match =
-      /^(.*?)(?:\((\d+),(\d+)\)|:(\d+):(\d+)):\s*(?:error|warning)?\s*((?:FS|TS)\d{3,6})?/u.exec(
-        clean,
-      );
-    const path = match ? match[1] : clean.replace(/^\[warn\]\s*/u, "").trim();
-    const candidate = relative(resolve(root), resolve(root, path)).split("\\").join("/");
-    if (!tracked.has(candidate)) continue;
-    const finding = { file: candidate };
-    if (match) {
-      const lineNumber = Number(match[2] ?? match[4]);
-      const column = Number(match[3] ?? match[5]);
-      if (lineNumber > 0 && lineNumber <= 1000000 && column > 0 && column <= 1000000)
-        Object.assign(finding, { line: lineNumber, column });
-      if (match[6]) finding.rule = match[6];
-    }
+    const finding = findingOf(line, root, tracked);
+    if (finding === null) continue;
     if (!findings.some((item) => JSON.stringify(item) === JSON.stringify(finding)))
       findings.push(finding);
     if (findings.length === 30) break;
   }
+  const failure = manifestExit !== 0 ? "evidence-failed" : "passed";
   return {
     schemaVersion: 1,
     producer,
     stageId: stage,
     exitCode,
     manifestExit,
-    outcome:
-      exitCode !== 0 ? "procedure-failed" : manifestExit !== 0 ? "evidence-failed" : "passed",
+    outcome: exitCode !== 0 ? "procedure-failed" : failure,
     guidance:
       manifestExit !== 0
         ? "Stage evidence did not qualify. Check required outputs and exact reviewed test inventory; a passing subprocess is insufficient."

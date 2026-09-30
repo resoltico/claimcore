@@ -19,9 +19,9 @@ async function main() {
   const root = fileURLToPath(new URL("../../", import.meta.url));
   const source = toolProvenance(root);
   const report = await ownerReview(
-    githubApi(values.repository ?? "", process.env.GH_TOKEN),
+    githubApi(values.repository ?? "", process.env["GH_TOKEN"]),
     Number(values.pr),
-    values.head,
+    values.head ?? "",
     source,
   );
   assert.deepEqual(

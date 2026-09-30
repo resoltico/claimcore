@@ -1,3 +1,6 @@
+/** @typedef {import("./types.mjs").Json} Json */
+
+/** @returns {Json} */
 export function snapshot() {
   return {
     repository: {
@@ -35,54 +38,80 @@ export function snapshot() {
     branches: [],
   };
 }
+
+/** @param {Json} json */
+const environmentFrom = (json) => ({
+  deployment_branch_policy: json["deployment_branch_policy"],
+  protection_rules: [
+    {
+      type: "required_reviewers",
+      prevent_self_review: json["prevent_self_review"],
+      reviewers: json["reviewers"].map((/** @type {Json} */ { type, id }) => ({
+        type,
+        reviewer: { id },
+      })),
+    },
+    { type: "wait_timer", wait_timer: json["wait_timer"] },
+  ],
+});
+
+/**
+ * Record one write in the fake repository state.
+ * @param {Json} state
+ * @param {string} path
+ * @param {Json} json
+ * @param {() => number} nextId
+ */
+function applyWrite(state, path, json, nextId) {
+  if (path === "") Object.assign(state["repository"], json);
+  else if (path === "rulesets")
+    state["rules"].push({ ...structuredClone(json), id: nextId(), source_type: "Repository" });
+  else if (path.startsWith("rulesets/"))
+    Object.assign(
+      state["rules"].find((/** @type {Json} */ rule) => rule["id"] === Number(path.split("/")[1])),
+      structuredClone(json),
+    );
+  else if (path === "environments/release") state["environment"] = environmentFrom(json);
+  else if (path === "environments/release/deployment-branch-policies")
+    state["branches"].push({ ...json, id: nextId() });
+  else throw new Error("Unexpected write.");
+}
+
+/**
+ * Answer one read from the fake repository state.
+ * @param {Json} state
+ * @param {string} path
+ */
+function answerRead(state, path) {
+  if (path === "") return structuredClone(state["repository"]);
+  if (path.startsWith("rulesets?")) return structuredClone(state["rules"]);
+  if (path.startsWith("rulesets/"))
+    return structuredClone(
+      state["rules"].find((/** @type {Json} */ rule) => rule["id"] === Number(path.split("/")[1])),
+    );
+  if (path.startsWith("environments/release/deployment-branch-policies?"))
+    return { branch_policies: structuredClone(state["branches"]) };
+  if (path === "environments/release" && state["environment"])
+    return structuredClone(state["environment"]);
+  throw Object.assign(new Error("absent"), { status: 404 });
+}
+
+/**
+ * A fake repository API over `state`.
+ * @param {Json} state
+ * @param {{ write?: (path: string, method: string, json: unknown) => void, read?: (path: string) => void }} [hooks]
+ * @returns {import("./types.mjs").GithubApi}
+ */
 export function fakeApi(state, hooks = {}) {
-  let nextId = 8;
-  return async (path, { method = "GET", json } = {}) => {
-    if (method !== "GET") {
-      hooks.write?.(path, method, json);
-      if (path === "") Object.assign(state.repository, json);
-      else if (path === "rulesets")
-        state.rules.push({
-          ...structuredClone(json),
-          id: nextId++,
-          source_type: "Repository",
-        });
-      else if (path.startsWith("rulesets/"))
-        Object.assign(
-          state.rules.find((rule) => rule.id === Number(path.split("/")[1])),
-          structuredClone(json),
-        );
-      else if (path === "environments/release")
-        state.environment = {
-          deployment_branch_policy: json.deployment_branch_policy,
-          protection_rules: [
-            {
-              type: "required_reviewers",
-              prevent_self_review: json.prevent_self_review,
-              reviewers: json.reviewers.map(({ type, id }) => ({
-                type,
-                reviewer: { id },
-              })),
-            },
-            { type: "wait_timer", wait_timer: json.wait_timer },
-          ],
-        };
-      else if (path === "environments/release/deployment-branch-policies")
-        state.branches.push({ ...json, id: nextId++ });
-      else throw new Error("Unexpected write.");
-      return {};
+  let id = 8;
+  const nextId = () => id++;
+  return async (path = "", { method = "GET", json } = {}) => {
+    if (method === "GET") {
+      hooks.read?.(path);
+      return answerRead(state, path);
     }
-    hooks.read?.(path);
-    if (path === "") return structuredClone(state.repository);
-    if (path.startsWith("rulesets?")) return structuredClone(state.rules);
-    if (path.startsWith("rulesets/"))
-      return structuredClone(state.rules.find((rule) => rule.id === Number(path.split("/")[1])));
-    if (path.startsWith("environments/release/deployment-branch-policies?"))
-      return { branch_policies: structuredClone(state.branches) };
-    if (path === "environments/release" && state.environment)
-      return structuredClone(state.environment);
-    const error = new Error("absent");
-    error.status = 404;
-    throw error;
+    hooks.write?.(path, method, json);
+    applyWrite(state, path, /** @type {Json} */ (json), nextId);
+    return {};
   };
 }

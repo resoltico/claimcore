@@ -1,9 +1,10 @@
-import { createRequire } from "node:module";
+import { isScalar, parseDocument, visit } from "yaml";
 
-// One explicit locked tooling dependency; no parser installation during a gate.
-const require = createRequire(new URL("../../web/package.json", import.meta.url));
-const { parseDocument, visit, isScalar } = require("yaml");
-
+/**
+ * Parse a workflow with strict YAML 1.2, rejecting aliases, merge keys and non-literal action references.
+ * @param {string} source
+ * @returns {{ value: import("./types.mjs").Json, actions: { reference: string, comment: string }[] }}
+ */
 export function parseWorkflow(source) {
   const document = parseDocument(source, {
     version: "1.2",
@@ -11,14 +12,16 @@ export function parseWorkflow(source) {
     strict: true,
   });
   if (document.errors.length || document.warnings.length) throw new Error("Invalid workflow YAML.");
+  /** @type {{ reference: string, comment: string }[]} */
   const actions = [];
   visit(document, {
     Alias() {
       throw new Error("Workflow aliases require explicit policy support.");
     },
     Pair(_, pair) {
-      if (pair.key?.value === "<<") throw new Error("YAML merge keys are not supported.");
-      if (pair.key?.value !== "uses") return;
+      const key = isScalar(pair.key) ? pair.key.value : undefined;
+      if (key === "<<") throw new Error("YAML merge keys are not supported.");
+      if (key !== "uses") return;
       if (!isScalar(pair.value) || typeof pair.value.value !== "string") {
         throw new Error("Action references must be literal strings.");
       }

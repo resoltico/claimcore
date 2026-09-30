@@ -5,6 +5,11 @@ import { readdirSync, lstatSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { digest, isSha } from "./owner-review-scope.mjs";
 
+/**
+ * @param {string} root
+ * @param {string} relative
+ * @returns {string[]}
+ */
 function diskFiles(root, relative) {
   const path = join(root, relative);
   const stat = lstatSync(path);
@@ -14,7 +19,28 @@ function diskFiles(root, relative) {
   return readdirSync(path).flatMap((entry) => diskFiles(root, `${relative}/${entry}`));
 }
 
+/**
+ * @param {string} root
+ * @param {string} path Committed repository-relative path.
+ * @param {string} mode
+ * @param {string} sha
+ */
+function verifyCommittedFile(root, path, mode, sha) {
+  const stat = lstatSync(join(root, path));
+  assert(stat.isFile() && !stat.isSymbolicLink(), "Reporting tool is not a regular file.");
+  const bytes = readFileSync(join(root, path));
+  const actual = createHash("sha1").update(`blob ${bytes.length}\0`).update(bytes).digest("hex");
+  assert.equal(actual, sha, "Reporting-tool bytes differ from the committed revision.");
+  if (process.platform !== "win32")
+    assert.equal(stat.mode & 0o111 ? "100755" : "100644", mode, "Reporting-tool mode differs.");
+}
+
+/**
+ * The reporting tools' committed identity, proven equal to their bytes on disk.
+ * @param {string} root
+ */
 export function toolProvenance(root) {
+  /** @param {...string} args */
   const git = (...args) =>
     execFileSync("git", ["-C", root, ...args], {
       encoding: "utf8",
@@ -33,17 +59,8 @@ export function toolProvenance(root) {
     .map((row) => {
       const match = /^(100644|100755) blob ([0-9a-f]{40})\t(eng\/ci\/.+)$/u.exec(row);
       assert(match, "Reporting tools must be committed regular files.");
-      const [, mode, sha, path] = match;
-      const stat = lstatSync(join(root, path));
-      assert(stat.isFile() && !stat.isSymbolicLink(), "Reporting tool is not a regular file.");
-      const bytes = readFileSync(join(root, path));
-      const actual = createHash("sha1")
-        .update(`blob ${bytes.length}\0`)
-        .update(bytes)
-        .digest("hex");
-      assert.equal(actual, sha, "Reporting-tool bytes differ from the committed revision.");
-      if (process.platform !== "win32")
-        assert.equal(stat.mode & 0o111 ? "100755" : "100644", mode, "Reporting-tool mode differs.");
+      const [, mode = "", sha = "", path = ""] = match;
+      verifyCommittedFile(root, path, mode, sha);
       return { path, mode, sha };
     })
     .sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));

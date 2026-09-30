@@ -17,10 +17,9 @@
     "noImplicitOverride": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noPropertyAccessFromIndexSignature": true,
     "forceConsistentCasingInFileNames": true,
     "verbatimModuleSyntax": true,
     "skipLibCheck": false
   },
-  "include": ["lint/**/*.mjs"]
+  "include": ["ci/**/*.mjs", "lint/**/*.mjs", "release/**/*.mjs"]
 }

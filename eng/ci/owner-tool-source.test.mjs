@@ -7,6 +7,7 @@ import { execFileSync } from "node:child_process";
 import { toolProvenance } from "./owner-tool-source.mjs";
 function repository() {
   const root = mkdtempSync(join(tmpdir(), "claimcore-review-source-"));
+  /** @param {...string} args */
   const git = (...args) => execFileSync("git", ["-C", root, ...args], { stdio: "pipe" });
   git("init", "--quiet");
   git("config", "user.email", "synthetic@invalid.local");

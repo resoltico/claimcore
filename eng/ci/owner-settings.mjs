@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { isDeepStrictEqual } from "node:util";
 
 const name = "Owner-authorized ClaimCore PR merges";
+/** @param {number} ownerId */
 export function ownerMergeRule(ownerId) {
   assert(Number.isSafeInteger(ownerId) && ownerId > 0, "Owner identity is required.");
   return {
@@ -14,17 +15,27 @@ export function ownerMergeRule(ownerId) {
   };
 }
 
+/**
+ * The change that gives only the owner merge authority, or null when it is already in place.
+ * @param {import("./types.mjs").Json} snapshot
+ * @returns {import("./settings-rules.mjs").Operation | null}
+ */
 export function ownerMergeOperation(snapshot) {
+  /** @type {import("./types.mjs").Json} */
   const desired = ownerMergeRule(snapshot.repository.owner.id);
-  const candidates = snapshot.rules.filter((rule) => rule.name === name);
+  const candidates = snapshot.rules.filter(
+    (/** @type {import("./types.mjs").Json} */ rule) => rule.name === name,
+  );
   assert(candidates.length <= 1, "Duplicate owner-merge rules require owner reconciliation.");
   // Do not hide a conflicting update restriction behind a second nominally correct rule.
   assert(
     snapshot.rules.every(
-      (rule) =>
+      (/** @type {import("./types.mjs").Json} */ rule) =>
         rule.name === name ||
         rule.target !== "branch" ||
-        !rule.rules.some((item) => ["update", "merge_queue"].includes(item.type)),
+        !rule.rules.some((/** @type {import("./types.mjs").Json} */ item) =>
+          ["update", "merge_queue"].includes(item.type),
+        ),
     ),
     "Existing update or merge-queue policy requires explicit owner reconciliation.",
   );

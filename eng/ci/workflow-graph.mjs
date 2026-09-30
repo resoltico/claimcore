@@ -2,62 +2,50 @@ import assert from "node:assert/strict";
 
 import { standalonePaths, names, dependencies, expression, same } from "./workflow-model.mjs";
 
-export function checkGraph(orchestrator, workflows) {
+/** @typedef {import("./types.mjs").Json} Json */
+
+/** @param {Json} orchestrator */
+function checkTriggers(orchestrator) {
   same(
-    names(orchestrator.on),
+    names(orchestrator["on"]),
     ["push", "pull_request", "merge_group", "workflow_dispatch"],
     "CI event inventory changed.",
   );
   assert.deepEqual(
-    orchestrator.on.push,
+    orchestrator["on"].push,
     { branches: ["main"], tags: ["v*"] },
     "CI push coverage must remain complete.",
   );
   assert(
-    orchestrator.on.pull_request === null && orchestrator.on.merge_group === null,
+    orchestrator["on"].pull_request === null && orchestrator["on"].merge_group === null,
     "PR and merge-group checks must not be filtered.",
   );
   const group =
     "${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}";
-  assert.equal(orchestrator.concurrency?.group, group, "Concurrency must isolate events and PRs.");
   assert.equal(
-    expression(orchestrator.concurrency["cancel-in-progress"]),
+    orchestrator["concurrency"]?.group,
+    group,
+    "Concurrency must isolate events and PRs.",
+  );
+  assert.equal(
+    expression(orchestrator["concurrency"]["cancel-in-progress"]),
     "github.event_name == 'pull_request' || github.event_name == 'merge_group'",
     "Only superseded review work is cancelled.",
   );
-  const jobs = orchestrator.jobs;
-  assert(jobs?.gate && jobs?.evidence, "Gate and evidence jobs are required.");
-  assert.equal(jobs.gate.name, "Gate");
-  assert.equal(expression(jobs.gate.if), "always()");
-  assert.equal(expression(jobs.evidence.if), "always()");
+}
+
+/** @param {Json} gate */
+function checkGateStep(gate) {
+  const steps = gate["steps"];
+  assert.equal(steps.length, 1, "Unexpected Gate steps.");
   same(
-    dependencies(jobs.gate),
-    Object.keys(jobs).filter((id) => id !== "gate"),
-    "Gate omits a verification family.",
-  );
-  same(
-    dependencies(jobs.evidence),
-    Object.keys(jobs).filter((id) => !["gate", "evidence"].includes(id)),
-    "Evidence omits a producer.",
-  );
-  same(
-    Object.keys(jobs.gate),
-    ["name", "if", "needs", "runs-on", "timeout-minutes", "steps"],
-    "Gate must not alter execution through extra job settings.",
-  );
-  const gateSteps = jobs.gate.steps;
-  assert.equal(gateSteps.length, 1, "Unexpected Gate steps.");
-  same(
-    Object.keys(gateSteps[0]),
+    Object.keys(steps[0]),
     ["name", "env", "run"],
     "Gate step cannot be skipped, tolerate failure or substitute its shell.",
   );
-  assert.deepEqual(gateSteps[0].env, {
-    RESULTS: "${{ join(needs.*.result, ' ') }}",
-  });
-  assert.equal(gateSteps[0].env?.RESULTS, "${{ join(needs.*.result, ' ') }}");
+  assert.deepEqual(steps[0].env, { RESULTS: "${{ join(needs.*.result, ' ') }}" });
   assert.equal(
-    gateSteps[0].run.trim(),
+    steps[0].run.trim(),
     [
       "set -euo pipefail",
       'echo "Verification family results: $RESULTS"',
@@ -68,6 +56,38 @@ export function checkGraph(orchestrator, workflows) {
     ].join("\n"),
     "Gate must reject every non-success outcome.",
   );
+}
+
+/** @param {Json} jobs */
+function checkGateAndEvidence(jobs) {
+  assert(jobs["gate"] && jobs["evidence"], "Gate and evidence jobs are required.");
+  assert.equal(jobs["gate"].name, "Gate");
+  assert.equal(expression(jobs["gate"].if), "always()");
+  assert.equal(expression(jobs["evidence"].if), "always()");
+  same(
+    dependencies(jobs["gate"]),
+    Object.keys(jobs).filter((id) => id !== "gate"),
+    "Gate omits a verification family.",
+  );
+  same(
+    dependencies(jobs["evidence"]),
+    Object.keys(jobs).filter((id) => !["gate", "evidence"].includes(id)),
+    "Evidence omits a producer.",
+  );
+  same(
+    Object.keys(jobs["gate"]),
+    ["name", "if", "needs", "runs-on", "timeout-minutes", "steps"],
+    "Gate must not alter execution through extra job settings.",
+  );
+  checkGateStep(jobs["gate"]);
+}
+
+/**
+ * Every family is one unconditional local reusable workflow, called once.
+ * @param {Json} jobs
+ * @returns {Set<string>} The called workflows.
+ */
+function checkFamilies(jobs) {
   const called = new Set();
   for (const [id, job] of Object.entries(jobs)) {
     if (id === "gate") continue;
@@ -83,8 +103,14 @@ export function checkGraph(orchestrator, workflows) {
     called.add(job.uses);
     assert(!dependencies(job).includes(id), "Workflow dependency cycle.");
   }
+  return called;
+}
+
+/** @param {Json} jobs */
+function checkAcyclic(jobs) {
   const visiting = new Set();
   const seen = new Set();
+  /** @param {string} id */
   function walk(id) {
     assert(jobs[id], "Unknown job dependency.");
     assert(!visiting.has(id), "Workflow dependency cycle.");
@@ -95,16 +121,37 @@ export function checkGraph(orchestrator, workflows) {
     seen.add(id);
   }
   Object.keys(jobs).forEach(walk);
+}
+
+/**
+ * @param {Map<string, Json>} workflows
+ * @param {Set<string>} called
+ */
+function checkReusable(workflows, called) {
   for (const [path, value] of workflows) {
     if (path === "ci.yml" || standalonePaths.has(path)) continue;
     assert(
-      Object.values(value.jobs).every((job) => job.if === undefined),
+      Object.values(value["jobs"]).every((job) => job.if === undefined),
       "Reusable verification jobs must not be conditionally omitted.",
     );
-    same(names(value.on), ["workflow_call"], "Reusable verifier must not self-trigger.");
+    same(names(value["on"]), ["workflow_call"], "Reusable verifier must not self-trigger.");
     assert(
       called.has(`./.github/workflows/${path}`),
       "Reusable verifier is disconnected from Gate.",
     );
   }
+}
+
+/**
+ * The orchestrating workflow's event, gate, family and dependency structure.
+ * @param {Json} orchestrator
+ * @param {Map<string, Json>} workflows
+ */
+export function checkGraph(orchestrator, workflows) {
+  checkTriggers(orchestrator);
+  const jobs = orchestrator["jobs"];
+  checkGateAndEvidence(jobs);
+  const called = checkFamilies(jobs);
+  checkAcyclic(jobs);
+  checkReusable(workflows, called);
 }
