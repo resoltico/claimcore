@@ -122,7 +122,7 @@ module internal WitnessStoreRead =
             invalidOp "Witness database admission failed."
 
     let checkAdmission (identity: Identity) (connection: NpgsqlConnection) =
-        use roleCommand = new NpgsqlCommand("SELECT current_user", connection)
+        use roleCommand = PreparedCommand.create connection "SELECT current_user"
 
         let role: string | null =
             match roleCommand.ExecuteScalar() with
@@ -151,6 +151,8 @@ module internal WitnessStoreRead =
 
         command.Parameters.AddWithValue("digest", NpgsqlDbType.Text, baselineDigest.Value)
         |> ignore
+
+        command.Prepare()
 
         if command.ExecuteScalar() :?> bool |> not then
             invalidOp "Witness database admission failed."
