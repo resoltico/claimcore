@@ -4,6 +4,7 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open Npgsql
+open ClaimCore.Witness
 
 module internal RuntimeAcl =
     let private expected =
@@ -12,7 +13,7 @@ module internal RuntimeAcl =
         databaseAndSchema @ tables @ [ false; false ]
 
     let requireRole (connection: NpgsqlConnection) =
-        use command = new NpgsqlCommand(RuntimeAccessPolicy.roleSql, connection)
+        use command = PreparedCommand.create connection RuntimeAccessPolicy.roleSql
         use reader = command.ExecuteReader()
 
         if
@@ -28,7 +29,9 @@ module internal RuntimeAcl =
         (cancellationToken: CancellationToken)
         =
         task {
-            use command = new NpgsqlCommand(RuntimeAccessPolicy.roleSql, connection)
+            use! command =
+                PreparedCommand.createAsync connection RuntimeAccessPolicy.roleSql cancellationToken
+
             let! result = command.ExecuteReaderAsync(cancellationToken)
             use reader = result
             let! hasRow = reader.ReadAsync(cancellationToken)

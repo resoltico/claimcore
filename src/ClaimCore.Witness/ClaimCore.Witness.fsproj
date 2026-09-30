@@ -2,6 +2,7 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="PostgresTransport.fs" />
+    <Compile Include="PreparedCommand.fs" />
     <Compile Include="CatalogEpoch.fs" />
     <Compile Include="Cipher.fs" />
     <Compile Include="WitnessIdentity.fs" />

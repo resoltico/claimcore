@@ -3,6 +3,7 @@ namespace ClaimCore.Postgres
 open System.Data.Common
 open System.Threading
 open Npgsql
+open ClaimCore.Witness
 
 [<RequireQualifiedAccess>]
 type internal SchemaAdmissionState =
@@ -45,7 +46,7 @@ module internal SchemaAdmission =
         && reader.GetString(2) = expected.Digest
 
     let private marker (connection: NpgsqlConnection) =
-        use command = new NpgsqlCommand(markerSql, connection)
+        use command = PreparedCommand.create connection markerSql
         use reader = command.ExecuteReader()
 
         if reader.Read() && matches reader && not (reader.Read()) then
@@ -54,7 +55,7 @@ module internal SchemaAdmission =
             SchemaAdmissionState.IdentityMismatch
 
     let inspect (connection: NpgsqlConnection) =
-        use command = new NpgsqlCommand(catalogSql, connection)
+        use command = PreparedCommand.create connection catalogSql
 
         match command.ExecuteScalar() :?> int with
         | 0 -> SchemaAdmissionState.Absent
@@ -63,13 +64,13 @@ module internal SchemaAdmission =
 
     let inspectAsync (connection: NpgsqlConnection) (cancellationToken: CancellationToken) =
         task {
-            use command = new NpgsqlCommand(catalogSql, connection)
+            use! command = PreparedCommand.createAsync connection catalogSql cancellationToken
             let! catalog = command.ExecuteScalarAsync(cancellationToken)
 
             match catalog :?> int with
             | 0 -> return SchemaAdmissionState.Absent
             | 1 ->
-                use query = new NpgsqlCommand(markerSql, connection)
+                use! query = PreparedCommand.createAsync connection markerSql cancellationToken
                 let! result = query.ExecuteReaderAsync(cancellationToken)
                 use reader = result
                 let! first = reader.ReadAsync(cancellationToken)

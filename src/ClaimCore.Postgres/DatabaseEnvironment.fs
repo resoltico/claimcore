@@ -4,6 +4,7 @@ open System.Threading
 open System.Threading.Tasks
 open System.Data.Common
 open Npgsql
+open ClaimCore.Witness
 
 /// Every access requires the published UTF-8, primary-server and local-durability contract.
 module internal DatabaseEnvironment =
@@ -20,7 +21,7 @@ module internal DatabaseEnvironment =
 
     let requireCompatible (connection: NpgsqlConnection) =
         Baseline.requireCompatible connection
-        use command = new NpgsqlCommand(settings, connection)
+        use command = PreparedCommand.create connection settings
         use reader = command.ExecuteReader()
 
         if not (reader.Read()) then
@@ -34,7 +35,7 @@ module internal DatabaseEnvironment =
         =
         task {
             do! Baseline.requireCompatibleAsyncWithCancellation connection cancellationToken
-            use command = new NpgsqlCommand(settings, connection)
+            use! command = PreparedCommand.createAsync connection settings cancellationToken
             let! result = command.ExecuteReaderAsync(cancellationToken)
             use reader = result
             let! hasRow = reader.ReadAsync(cancellationToken)

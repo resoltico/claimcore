@@ -105,7 +105,7 @@ module internal CatalogEpoch =
     /// The token, or None when it cannot be read; a failed read means "unknown", never "unchanged".
     let readToken (connection: NpgsqlConnection) (schema: string) =
         try
-            use command = tokenCommand connection schema
+            use command = PreparedCommand.prepared (tokenCommand connection schema)
             asToken (command.ExecuteScalar())
         with
         | :? NpgsqlException
@@ -118,7 +118,9 @@ module internal CatalogEpoch =
         =
         task {
             try
-                use command = tokenCommand connection schema
+                use! command =
+                    PreparedCommand.preparedAsync (tokenCommand connection schema) cancellationToken
+
                 let! value = command.ExecuteScalarAsync(cancellationToken)
                 return asToken value
             with
