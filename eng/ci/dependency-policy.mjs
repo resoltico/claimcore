@@ -2,8 +2,7 @@ import assert from "node:assert/strict";
 
 export function version(value) {
   assert(
-    typeof value === "string" &&
-      /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)$/u.test(value),
+    typeof value === "string" && /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)$/u.test(value),
     "Unsupported dependency version metadata.",
   );
   return value.split(".").map(BigInt);
@@ -21,25 +20,14 @@ export const packageKey = (ecosystem, name) =>
 
 export function packageRows(document, collections) {
   assert(
-    document &&
-      Array.isArray(document.projects) &&
-      document.projects.length > 0,
+    document && Array.isArray(document.projects) && document.projects.length > 0,
     "Incomplete NuGet metadata response.",
   );
-  assert(
-    !document.errors?.length && !document.problems?.length,
-    "NuGet reported metadata errors.",
-  );
+  assert(!document.errors?.length && !document.problems?.length, "NuGet reported metadata errors.");
   const rows = [];
   for (const project of document.projects) {
-    assert(
-      project && typeof project === "object",
-      "Malformed NuGet project metadata.",
-    );
-    assert(
-      !project.errors?.length && !project.problems?.length,
-      "NuGet project metadata failed.",
-    );
+    assert(project && typeof project === "object", "Malformed NuGet project metadata.");
+    assert(!project.errors?.length && !project.problems?.length, "NuGet project metadata failed.");
     if (project.frameworks === undefined) continue;
     assert(Array.isArray(project.frameworks), "Malformed framework metadata.");
     for (const framework of project.frameworks) {
@@ -75,33 +63,16 @@ export function safeFinding(ecosystem, name, current, latest, installed, kind) {
   };
 }
 
-export function validateHolds(
-  document,
-  installed,
-  today = new Date().toISOString().slice(0, 10),
-) {
+export function validateHolds(document, installed, today = new Date().toISOString().slice(0, 10)) {
   assert(
     document?.version === 1 && Array.isArray(document.holds),
     "Invalid dependency-hold registry.",
   );
   const keys = new Set();
   for (const hold of document.holds) {
-    assert(
-      ["nuget", "npm"].includes(hold.ecosystem),
-      "Invalid hold ecosystem.",
-    );
-    safeFinding(
-      hold.ecosystem,
-      hold.package,
-      hold.current,
-      hold.latest,
-      installed,
-      "hold",
-    );
-    assert(
-      hold.current !== hold.latest,
-      "A hold must identify an available alternative.",
-    );
+    assert(["nuget", "npm"].includes(hold.ecosystem), "Invalid hold ecosystem.");
+    safeFinding(hold.ecosystem, hold.package, hold.current, hold.latest, installed, "hold");
+    assert(hold.current !== hold.latest, "A hold must identify an available alternative.");
     assert(
       typeof hold.owner === "string" && hold.owner.trim().length >= 3,
       "A hold requires its owner.",
@@ -110,9 +81,7 @@ export function validateHolds(
       typeof hold.rationale === "string" && hold.rationale.trim().length >= 20,
       "A hold requires substantive rationale.",
     );
-    const dates = [hold.reviewOn, hold.expiresOn].filter(
-      (date) => date !== undefined,
-    );
+    const dates = [hold.reviewOn, hold.expiresOn].filter((date) => date !== undefined);
     assert(dates.length > 0, "A hold requires a review or expiry date.");
     for (const date of dates) {
       assert(

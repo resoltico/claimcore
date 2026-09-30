@@ -11,19 +11,12 @@ import {
   expression,
 } from "./workflow-model.mjs";
 
-const deniedEvents = new Set([
-  "pull_request_target",
-  "workflow_run",
-  "issue_comment",
-]);
+const deniedEvents = new Set(["pull_request_target", "workflow_run", "issue_comment"]);
 
 function checkActions(parsed, path, sources, composite) {
   for (const { reference, comment } of parsed.actions) {
     if (reference.startsWith("./")) {
-      assert(
-        !reference.includes("..") && !reference.includes("\\"),
-        "Unsafe local action path.",
-      );
+      assert(!reference.includes("..") && !reference.includes("\\"), "Unsafe local action path.");
       const local = reference.slice(2);
       assert(
         sources.has(local) ||
@@ -36,14 +29,10 @@ function checkActions(parsed, path, sources, composite) {
         /^[A-Za-z0-9_.\/-]+@[0-9a-f]{40}$/u.test(reference),
         "External actions require a full commit pin.",
       );
-      assert(
-        /\bv?\d+\.\d+/u.test(comment),
-        "Action pin needs its reviewed version comment.",
-      );
+      assert(/\bv?\d+\.\d+/u.test(comment), "Action pin needs its reviewed version comment.");
       if (/^actions\/setup-(?:dotnet|node)@/u.test(reference)) {
         assert(
-          composite &&
-            /^\.github\/actions\/toolchain\/action\.ya?ml$/u.test(path),
+          composite && /^\.github\/actions\/toolchain\/action\.ya?ml$/u.test(path),
           "Toolchain selection belongs to the composite action.",
         );
       }
@@ -53,10 +42,7 @@ function checkActions(parsed, path, sources, composite) {
 
 function checkSteps(steps) {
   for (const step of steps ?? []) {
-    if (
-      typeof step.uses === "string" &&
-      step.uses.startsWith("actions/checkout@")
-    ) {
+    if (typeof step.uses === "string" && step.uses.startsWith("actions/checkout@")) {
       assert(
         falseInput(step.with?.["persist-credentials"]),
         "Checkout must not persist credentials.",
@@ -72,36 +58,22 @@ function checkPermissions(value, publisher) {
     "Explicit workflow permissions are required.",
   );
   assert(
-    Object.values(permissions).every(
-      (level) => level === "read" || level === "none",
-    ),
+    Object.values(permissions).every((level) => level === "read" || level === "none"),
     "Workflow defaults may not grant writes.",
   );
   for (const job of Object.values(value.jobs ?? {})) {
     assert(
-      job["continue-on-error"] === undefined ||
-        falseInput(job["continue-on-error"]),
+      job["continue-on-error"] === undefined || falseInput(job["continue-on-error"]),
       "Required jobs cannot tolerate failure.",
     );
     if (job.permissions) {
-      assert(
-        typeof job.permissions === "object",
-        "Use explicit job permissions.",
-      );
+      assert(typeof job.permissions === "object", "Use explicit job permissions.");
       for (const [permission, level] of Object.entries(job.permissions)) {
-        assert(
-          ["read", "none", "write"].includes(level),
-          "Job permissions must be literal.",
-        );
+        assert(["read", "none", "write"].includes(level), "Job permissions must be literal.");
         if (level !== "write") continue;
+        assert(publisher, "Verification and health jobs cannot acquire write authority.");
         assert(
-          publisher,
-          "Verification and health jobs cannot acquire write authority.",
-        );
-        assert(
-          ["contents", "packages", "id-token", "attestations"].includes(
-            permission,
-          ),
+          ["contents", "packages", "id-token", "attestations"].includes(permission),
           "Unreviewed publisher write scope.",
         );
         assert(
@@ -161,11 +133,7 @@ export function validateWorkflowSources(sources, { graph = true } = {}) {
     const collections = Object.values(evidence.jobs)
       .flatMap((job) => job.steps ?? [])
       .filter((step) => step.with?.pattern?.startsWith("claimcore-stage-"));
-    assert.equal(
-      collections.length,
-      1,
-      "Expected one producer-manifest collection.",
-    );
+    assert.equal(collections.length, 1, "Expected one producer-manifest collection.");
     assert.equal(collections[0].with.path, "artifacts/evidence-producers");
     assert(
       falseInput(collections[0].with["merge-multiple"]),

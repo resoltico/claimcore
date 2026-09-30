@@ -18,15 +18,12 @@ async function main() {
     throw new Error(
       "Run repository administration from the owner's authenticated workstation, not a product workflow.",
     );
-  if (values.check && values.apply)
-    throw new Error("Choose check or apply, not both.");
+  if (values.check && values.apply) throw new Error("Choose check or apply, not both.");
   const repository = values.repository ?? process.env.GITHUB_REPOSITORY;
   const api = githubApi(repository ?? "", process.env.GH_TOKEN);
   if (values.apply) {
     if (!/^[0-9a-f]{64}$/u.test(values["plan-sha"] ?? ""))
-      throw new Error(
-        "Apply requires the exact SHA from a reviewed fresh plan.",
-      );
+      throw new Error("Apply requires the exact SHA from a reviewed fresh plan.");
     const result = await configureSettings(api, values["plan-sha"], (entry) =>
       console.log(JSON.stringify(entry)),
     );
@@ -34,11 +31,7 @@ async function main() {
   } else {
     const plan = settingsPlan(await readSettings(api));
     console.log(
-      JSON.stringify(
-        { mode: values.check ? "check" : "plan", repository, ...plan },
-        null,
-        2,
-      ),
+      JSON.stringify({ mode: values.check ? "check" : "plan", repository, ...plan }, null, 2),
     );
     if (values.check && plan.operations.length) process.exitCode = 2;
   }

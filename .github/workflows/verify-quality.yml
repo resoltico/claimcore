@@ -27,8 +27,8 @@ jobs:
           dotnet-cache-path: |
             **/packages.lock.json
             .config/dotnet-tools.json
-      - name: Test release publishing policy
-        run: node --test eng/release/*.test.mjs
+      - name: Install the locked engineering npm graph
+        run: npm --prefix eng ci
       - name: Install checksum-verified source analyzers
         shell: bash
         run: |

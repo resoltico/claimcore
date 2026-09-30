@@ -19,9 +19,7 @@ const root = fileURLToPath(new URL("../..", import.meta.url));
 
 function option(name, fallback) {
   const at = process.argv.indexOf(`--${name}`);
-  return at >= 0 && process.argv[at + 1] !== undefined
-    ? process.argv[at + 1]
-    : fallback;
+  return at >= 0 && process.argv[at + 1] !== undefined ? process.argv[at + 1] : fallback;
 }
 const flag = (name) => process.argv.includes(`--${name}`);
 
@@ -39,16 +37,12 @@ export function changedFiles(ref) {
   const tracked = git("diff", "--name-only", base);
   const untracked = git("ls-files", "--others", "--exclude-standard");
   if (tracked.status !== 0 || untracked.status !== 0) return null;
-  return [
-    ...tracked.stdout.split("\n"),
-    ...untracked.stdout.split("\n"),
-  ].filter(Boolean);
+  return [...tracked.stdout.split("\n"), ...untracked.stdout.split("\n")].filter(Boolean);
 }
 
 /** Whether `job` must run given the changed files (null means unknown, so it must). */
 export function affected(job, changed) {
-  if (job.scope === null || job.scope === undefined || changed === null)
-    return true;
+  if (job.scope === null || job.scope === undefined || changed === null) return true;
   const patterns = job.scope.map((pattern) => new RegExp(pattern));
   return changed.some((file) => patterns.some((pattern) => pattern.test(file)));
 }
@@ -71,17 +65,11 @@ function tail(path, lines) {
 const seconds = (started) => `${Math.round((Date.now() - started) / 1000)}s`;
 
 async function main() {
-  const registry = JSON.parse(
-    readFileSync(join(root, "eng/ci/local-plan.json"), "utf8"),
-  );
+  const registry = JSON.parse(readFileSync(join(root, "eng/ci/local-plan.json"), "utf8"));
   const only = option("only", "").split(",").filter(Boolean);
   const skip = option("skip", "").split(",").filter(Boolean);
-  const includeOptional = option("include", "")
-    .split(",")
-    .includes("published");
-  const changed = flag("all")
-    ? null
-    : changedFiles(option("changed-since", undefined));
+  const includeOptional = option("include", "").split(",").includes("published");
+  const changed = flag("all") ? null : changedFiles(option("changed-since", undefined));
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
   const logs = join(root, "artifacts/local-ci", stamp);
   mkdirSync(logs, { recursive: true });
@@ -119,15 +107,12 @@ async function main() {
       console.log(`- ${job.id}: skipped (${why})`);
       return { failed: false, skipped: true };
     };
-    if (only.length > 0 && !only.includes(job.id))
-      return skipped("not selected");
+    if (only.length > 0 && !only.includes(job.id)) return skipped("not selected");
     if (skip.includes(job.id)) return skipped("--skip");
-    if (job.optional && !includeOptional)
-      return skipped("optional; add --include published");
+    if (job.optional && !includeOptional) return skipped("optional; add --include published");
     if (!affected(job, changed)) return skipped("no changed file affects it");
     const missing = (job.tools ?? []).filter((tool) => !onPath(tool));
-    if (missing.length > 0)
-      return skipped(`needs ${missing.join(", ")} on PATH`);
+    if (missing.length > 0) return skipped(`needs ${missing.join(", ")} on PATH`);
 
     const log = join(logs, `${job.id}.log`);
     const descriptor = openSync(log, "w");
@@ -142,10 +127,7 @@ async function main() {
       const settle = (status) => {
         closeSync(descriptor);
         const passed = status === 0;
-        outcomes.set(
-          job.id,
-          `${passed ? "passed" : "FAILED"} in ${seconds(started)}`,
-        );
+        outcomes.set(job.id, `${passed ? "passed" : "FAILED"} in ${seconds(started)}`);
         console.log(
           `${passed ? "+" : "x"} ${job.id}: ${passed ? "passed" : "FAILED"} in ${seconds(started)} (${log})`,
         );
@@ -168,8 +150,7 @@ async function main() {
   for (const job of registry.jobs)
     console.log(`  ${job.id.padEnd(18)} ${outcomes.get(job.id) ?? "not run"}`);
   console.log("Not run locally:");
-  for (const item of registry.notLocal)
-    console.log(`  ${item.family.padEnd(18)} ${item.reason}`);
+  for (const item of registry.notLocal) console.log(`  ${item.family.padEnd(18)} ${item.reason}`);
   if (results.some((result) => result.value.failed)) process.exitCode = 1;
 }
 

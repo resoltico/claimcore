@@ -108,7 +108,10 @@ export const extractReleaseBody = (changelog, version) => {
 /** Reads the one literal, unconditional Version directly owned by Directory.Build.props. */
 export const declaredVersion = (xml) => {
   assert.equal(typeof xml, "string", "Directory.Build.props must be text.");
-  assert(!/<!DOCTYPE|<!ENTITY|<!\[CDATA\[/iu.test(xml), "DTD, entities, and CDATA are not supported.");
+  assert(
+    !/<!DOCTYPE|<!ENTITY|<!\[CDATA\[/iu.test(xml),
+    "DTD, entities, and CDATA are not supported.",
+  );
   const clean = xml.replace(/<!--[\s\S]*?-->/gu, "");
   assert(!clean.includes("<!--"), "Unclosed XML comment.");
   const versions = [];
@@ -142,7 +145,11 @@ export const declaredVersion = (xml) => {
       );
     }
     if (open[3] === "") {
-      stack.push({ name: open[1], attributes: open[2], contentStart: token.index + token[0].length });
+      stack.push({
+        name: open[1],
+        attributes: open[2],
+        contentStart: token.index + token[0].length,
+      });
     }
   }
 

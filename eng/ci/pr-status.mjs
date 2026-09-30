@@ -12,8 +12,7 @@ async function main() {
     strict: true,
     allowPositionals: false,
   });
-  if (!/^[1-9]\d*$/u.test(values.pr ?? ""))
-    throw new Error("Require a canonical PR number.");
+  if (!/^[1-9]\d*$/u.test(values.pr ?? "")) throw new Error("Require a canonical PR number.");
   const result = await inspectPr(
     githubApi(values.repository ?? "", process.env.GH_TOKEN),
     Number(values.pr),

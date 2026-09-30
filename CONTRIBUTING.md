@@ -40,12 +40,12 @@ tests are policy failures.
 - Do not commit local connections, credentials, build output, test reports, container state, or real
   case data.
 
-FSharpLint, ESLint, and Stylelint own product/test file-size, function-size, complexity, nesting, and
+FSharpLint, oxlint, and Stylelint own product/test file-size, function-size, complexity, nesting, and
 specificity limits. A limit failure is a design prompt: split a real responsibility instead of
 adding wrappers or suppressing the rule.
 
-[`config/analyzer-suppressions.json`](config/analyzer-suppressions.json) is the sole authoritative source-code
-exception registry. Do not add an inline or project-level bypass merely to clear a gate; the exact
+[`config/lint-exceptions.json`](config/lint-exceptions.json) is the sole authoritative registry of lint, type,
+format and coverage exceptions for every language. Do not add an inline or project-level bypass merely to clear a gate; the exact
 registry schema and non-suppressible rules are owned by [Repository
 quality](docs/development.md#repository-quality).
 

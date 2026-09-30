@@ -71,12 +71,14 @@ trust boundaries. [Development](docs/development.md) owns commands and gates.
   unregistered sharded runs cannot satisfy complete verification; the PostgreSQL integration partitions
   registered in `eng/test-partitions.json` merge into one exact report and are the only sharding.
 - Enforce size, complexity, and lint limits across production and test code without grandfathering.
-  [`config/analyzer-suppressions.json`](config/analyzer-suppressions.json) is the sole source-code exception
-  registry.
-  Follow [repository quality](docs/development.md#repository-quality): entries need an owner,
-  exact file/rule/scope, substantive rationale, and an ISO review or expiry date. Directives need
-  nearby rationale and a `suppression-registry: file|rule|scope` reference. Unregistered bypasses
-  fail.
+  [`config/lint-exceptions.json`](config/lint-exceptions.json) is the sole registry of every lint, type,
+  format and coverage exception for every language (F#, TypeScript, JavaScript, CSS, Python,
+  PowerShell, shell, YAML, MSBuild). Follow [repository quality](docs/development.md#repository-quality):
+  each entry has a stable `LX-nnnn` id, tool, exact rules, one file, kind (`inline` or `config`), an exact
+  occurrence count, a substantive reason, an owner and an ISO review or expiry date. An inline
+  suppression carries `lint-exception: LX-nnnn` in its own comment or the line above; a config-level
+  ignore (ignore patterns, per-file ignores, disabled rules, `NoWarn`) is matched by file, tool and target.
+  `node eng/lint/check-exceptions.mjs` fails on any unregistered, stale, blanket or miscounted exception.
 - Ordinary .NET builds do not run npm. Produce Web assets with the locked frontend and publish only
   bytes matching its source, lock, contract, and toolchain manifest.
 - Report commands actually executed and their outcomes separately from source inspection. Keep

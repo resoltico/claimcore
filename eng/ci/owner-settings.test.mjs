@@ -7,19 +7,12 @@ import { configureSettings } from "./settings-service.mjs";
 
 test("owner restriction is separate from non-bypassable Gate and permits only PR merges", () => {
   const plan = settingsPlan(snapshot());
-  const owner = plan.operations.find(
-    (op) => op.json.name === ownerMergeRule(123).name,
-  );
+  const owner = plan.operations.find((op) => op.json.name === ownerMergeRule(123).name);
   assert.deepEqual(owner.json, ownerMergeRule(123));
   const gate = plan.operations.find((op) => op.path === "rulesets/7");
   assert.deepEqual(gate.json.bypass_actors, []);
-  assert(
-    !owner.json.rules.some((rule) => rule.type === "required_status_checks"),
-  );
-  assert.equal(
-    plan.operations.find((op) => op.path === "").json.allow_auto_merge,
-    false,
-  );
+  assert(!owner.json.rules.some((rule) => rule.type === "required_status_checks"));
+  assert.equal(plan.operations.find((op) => op.path === "").json.allow_auto_merge, false);
 });
 for (const [label, mutate] of [
   [
@@ -88,9 +81,7 @@ for (const [label, mutate] of [
 test("a disabled exact owner rule is reactivated without replacing its authority", () => {
   const state = snapshot();
   state.rules.push({ ...ownerMergeRule(123), id: 8, enforcement: "disabled" });
-  const op = settingsPlan(state).operations.find(
-    (entry) => entry.path === "rulesets/8",
-  );
+  const op = settingsPlan(state).operations.find((entry) => entry.path === "rulesets/8");
   assert.deepEqual(op.json, ownerMergeRule(123));
 });
 for (const type of ["merge_queue", "update"])
@@ -109,9 +100,8 @@ test("owner identity participates in plan binding even after policy converges", 
   await configureSettings(fakeApi(state), settingsPlan(state).planSha256);
   const previous = settingsPlan(state).planSha256;
   state.repository.owner.id = 789;
-  state.rules.find(
-    (rule) => rule.name === ownerMergeRule(123).name,
-  ).bypass_actors[0].actor_id = 789;
+  state.rules.find((rule) => rule.name === ownerMergeRule(123).name).bypass_actors[0].actor_id =
+    789;
   assert.equal(settingsPlan(state).operations.length, 0);
   assert.notEqual(settingsPlan(state).planSha256, previous);
 });
@@ -124,9 +114,6 @@ test("post-write owner changes abort without retrying or rolling back", async ()
       state.repository.owner.id = 789;
     },
   });
-  await assert.rejects(
-    configureSettings(api, settingsPlan(state).planSha256),
-    /Owner identity/u,
-  );
+  await assert.rejects(configureSettings(api, settingsPlan(state).planSha256), /Owner identity/u);
   assert.equal(writes, 1);
 });

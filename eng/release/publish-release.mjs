@@ -17,23 +17,25 @@ const assertWorkflowContext = () => {
   }
 };
 
-const githubApi = (repository, token) => async (path, { method = "GET", json } = {}) => {
-  const response = await fetch(`https://api.github.com/repos/${repository}/${path}`, {
-    method,
-    redirect: "error",
-    signal: AbortSignal.timeout(30_000),
-    headers: {
-      Accept: "application/vnd.github+json",
-      Authorization: `Bearer ${token}`,
-      "X-GitHub-Api-Version": "2026-03-10",
-      "User-Agent": "claimcore-release-publisher",
-      ...(json === undefined ? {} : { "Content-Type": "application/json" }),
-    },
-    body: json === undefined ? undefined : JSON.stringify(json),
-  });
-  if (!response.ok) throw new Error(`GitHub ${method} ${path}: HTTP ${response.status}.`);
-  return response.json();
-};
+const githubApi =
+  (repository, token) =>
+  async (path, { method = "GET", json } = {}) => {
+    const response = await fetch(`https://api.github.com/repos/${repository}/${path}`, {
+      method,
+      redirect: "error",
+      signal: AbortSignal.timeout(30_000),
+      headers: {
+        Accept: "application/vnd.github+json",
+        Authorization: `Bearer ${token}`,
+        "X-GitHub-Api-Version": "2026-03-10",
+        "User-Agent": "claimcore-release-publisher",
+        ...(json === undefined ? {} : { "Content-Type": "application/json" }),
+      },
+      body: json === undefined ? undefined : JSON.stringify(json),
+    });
+    if (!response.ok) throw new Error(`GitHub ${method} ${path}: HTTP ${response.status}.`);
+    return response.json();
+  };
 
 const main = async () => {
   const { values } = parseArgs({ options, strict: true, allowPositionals: false });
@@ -53,6 +55,8 @@ const main = async () => {
 
 main().catch((error) => {
   console.error(`Release stopped: ${error.message}`);
-  console.error("No automatic rollback or write retry was attempted. Inspect the release before retrying.");
+  console.error(
+    "No automatic rollback or write retry was attempted. Inspect the release before retrying.",
+  );
   process.exitCode = 1;
 });

@@ -23,14 +23,10 @@ const gateRule = {
 };
 const ruleBody = (rule) =>
   Object.fromEntries(
-    [
-      "name",
-      "target",
-      "enforcement",
-      "conditions",
-      "bypass_actors",
-      "rules",
-    ].map((key) => [key, structuredClone(rule[key])]),
+    ["name", "target", "enforcement", "conditions", "bypass_actors", "rules"].map((key) => [
+      key,
+      structuredClone(rule[key]),
+    ]),
   );
 const ref = (value, expected) =>
   value?.conditions?.ref_name?.include?.includes(expected) &&
@@ -45,9 +41,7 @@ function branchOperation(snapshot) {
       rule.rules.some(
         (item) =>
           item.type === "required_status_checks" &&
-          item.parameters.required_status_checks.some(
-            (check) => check.context === "Gate",
-          ),
+          item.parameters.required_status_checks.some((check) => check.context === "Gate"),
       ),
   );
   assert(
@@ -64,12 +58,7 @@ function branchOperation(snapshot) {
         enforcement: "active",
         conditions: { ref_name: { include: ["refs/heads/main"], exclude: [] } },
         bypass_actors: [],
-        rules: [
-          gateRule,
-          { type: "non_fast_forward" },
-          { type: "deletion" },
-          prRule,
-        ],
+        rules: [gateRule, { type: "non_fast_forward" }, { type: "deletion" }, prRule],
       },
     };
   const current = candidates[0];
@@ -79,23 +68,15 @@ function branchOperation(snapshot) {
     "Existing bypass policy requires explicit owner reconciliation.",
   );
   desired.enforcement = "active";
-  const checks = desired.rules.find(
-    (rule) => rule.type === "required_status_checks",
-  );
-  const gate = checks.parameters.required_status_checks.find(
-    (check) => check.context === "Gate",
-  );
+  const checks = desired.rules.find((rule) => rule.type === "required_status_checks");
+  const gate = checks.parameters.required_status_checks.find((check) => check.context === "Gate");
   assert(
     gate.integration_id === 15368,
     "Existing Gate provider differs from the reviewed Actions integration.",
   );
   checks.parameters.strict_required_status_checks_policy = true;
   checks.parameters.do_not_enforce_on_create = false;
-  for (const rule of [
-    { type: "non_fast_forward" },
-    { type: "deletion" },
-    prRule,
-  ]) {
+  for (const rule of [{ type: "non_fast_forward" }, { type: "deletion" }, prRule]) {
     if (!desired.rules.some((item) => item.type === rule.type))
       desired.rules.push(structuredClone(rule));
   }
@@ -117,16 +98,12 @@ function tagOperation(snapshot) {
       (rule) =>
         rule.enforcement === "active" &&
         rule.bypass_actors.length === 0 &&
-        ["update", "deletion"].every((type) =>
-          rule.rules.some((item) => item.type === type),
-        ),
+        ["update", "deletion"].every((type) => rule.rules.some((item) => item.type === type)),
     )
   )
     return null;
   assert(
-    !snapshot.rules.some(
-      (rule) => rule.name === "Immutable ClaimCore version tags",
-    ),
+    !snapshot.rules.some((rule) => rule.name === "Immutable ClaimCore version tags"),
     "Existing tag policy requires explicit owner reconciliation.",
   );
   return {
@@ -158,20 +135,15 @@ function environmentOperations(snapshot) {
     ),
     "Custom environment protections require explicit owner reconciliation.",
   );
-  const reviewersRule = rules.find(
-    (rule) => rule.type === "required_reviewers",
-  );
+  const reviewersRule = rules.find((rule) => rule.type === "required_reviewers");
   const reviewers =
     reviewersRule?.reviewers.map((item) => ({
       type: item.type,
       id: item.reviewer.id,
     })) ?? [];
-  const waitTimer =
-    rules.find((rule) => rule.type === "wait_timer")?.wait_timer ?? 0;
+  const waitTimer = rules.find((rule) => rule.type === "wait_timer")?.wait_timer ?? 0;
   assert(
-    snapshot.branches.every(
-      (branch) => branch.name === "main" && branch.type === "branch",
-    ),
+    snapshot.branches.every((branch) => branch.name === "main" && branch.type === "branch"),
     "Existing release deployment branches require explicit owner reconciliation.",
   );
   const changes = [];
@@ -223,14 +195,10 @@ export function settingsPlan(snapshot) {
   );
   const operations = [];
   const flags = {};
-  if (snapshot.repository.allow_auto_merge !== false)
-    flags.allow_auto_merge = false;
-  if (!snapshot.repository.delete_branch_on_merge)
-    flags.delete_branch_on_merge = true;
-  if (!snapshot.repository.allow_update_branch)
-    flags.allow_update_branch = true;
-  if (Object.keys(flags).length)
-    operations.push({ path: "", method: "PATCH", json: flags });
+  if (snapshot.repository.allow_auto_merge !== false) flags.allow_auto_merge = false;
+  if (!snapshot.repository.delete_branch_on_merge) flags.delete_branch_on_merge = true;
+  if (!snapshot.repository.allow_update_branch) flags.allow_update_branch = true;
+  if (Object.keys(flags).length) operations.push({ path: "", method: "PATCH", json: flags });
   for (const operation of [
     branchOperation(snapshot),
     ownerMergeOperation(snapshot),

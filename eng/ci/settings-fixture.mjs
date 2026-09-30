@@ -23,9 +23,7 @@ export function snapshot() {
             parameters: {
               strict_required_status_checks_policy: true,
               do_not_enforce_on_create: false,
-              required_status_checks: [
-                { context: "Gate", integration_id: 15368 },
-              ],
+              required_status_checks: [{ context: "Gate", integration_id: 15368 }],
             },
           },
           { type: "non_fast_forward" },
@@ -78,9 +76,7 @@ export function fakeApi(state, hooks = {}) {
     if (path === "") return structuredClone(state.repository);
     if (path.startsWith("rulesets?")) return structuredClone(state.rules);
     if (path.startsWith("rulesets/"))
-      return structuredClone(
-        state.rules.find((rule) => rule.id === Number(path.split("/")[1])),
-      );
+      return structuredClone(state.rules.find((rule) => rule.id === Number(path.split("/")[1])));
     if (path.startsWith("environments/release/deployment-branch-policies?"))
       return { branch_policies: structuredClone(state.branches) };
     if (path === "environments/release" && state.environment)

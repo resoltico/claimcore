@@ -128,8 +128,11 @@ let tests =
                 (fun _ -> manifest "fantomas")
             rejected "rejects a stale run identity" "quality" "config/fsharplint.json" (fun value ->
                 { value with RunId = "other-run" })
-            rejected "rejects a stale attempt identity" "quality" "config/fsharplint.json" (fun value ->
-                { value with Attempt = 2 })
+            rejected
+                "rejects a stale attempt identity"
+                "quality"
+                "config/fsharplint.json"
+                (fun value -> { value with Attempt = 2 })
             rejected "rejects unregistered stages" "quality" "unknown.json" (fun value ->
                 { value with StageId = "unknown" })
             rejected

@@ -1,8 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { pages } from "./github-api.mjs";
-const rows = (start, count) =>
-  Array.from({ length: count }, (_, i) => ({ id: start + i }));
+const rows = (start, count) => Array.from({ length: count }, (_, i) => ({ id: start + i }));
 for (const field of ["workflow_runs", "jobs"]) {
   test(`${field} enumeration verifies complete counts across pages`, async () => {
     let page = 0;
@@ -37,8 +36,6 @@ for (const field of ["workflow_runs", "jobs"]) {
   ])
     test(`${field} enumeration rejects ${label}`, async () => {
       let index = 0;
-      await assert.rejects(
-        pages(async () => documents[index++], "items", field),
-      );
+      await assert.rejects(pages(async () => documents[index++], "items", field));
     });
 }

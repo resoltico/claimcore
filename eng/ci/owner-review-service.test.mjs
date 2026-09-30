@@ -72,13 +72,13 @@ function fixture() {
     [`git/trees/${mergeTree}?recursive=1`]: {
       sha: mergeTree,
       truncated: false,
-      tree: [
-        { path: "eng/ci/policy.mjs", type: "blob", mode: "100644", sha: head },
-      ],
+      tree: [{ path: "eng/ci/policy.mjs", type: "blob", mode: "100644", sha: head }],
     },
     "actions/workflows/ci.yml": { id: 5, path: ".github/workflows/ci.yml" },
-    [`actions/workflows/ci.yml/runs?event=pull_request&head_sha=${head}&per_page=100&page=1`]:
-      { total_count: 1, workflow_runs: [run] },
+    [`actions/workflows/ci.yml/runs?event=pull_request&head_sha=${head}&per_page=100&page=1`]: {
+      total_count: 1,
+      workflow_runs: [run],
+    },
     "actions/runs/12": run,
     "actions/runs/12/attempts/1/jobs?per_page=100&page=1": {
       total_count: 1,
@@ -104,10 +104,7 @@ test("owner report binds complete change scope and successful CI without grantin
   assert.equal(report.ownerAuthorization, "not-granted-by-this-report");
   assert(report.changes[0].scopes.includes("contract-policy"));
   assert.match(report.reportSha256, /^[0-9a-f]{64}$/u);
-  assert(
-    !requests.some((path) => path.includes("contents/")),
-    "Candidate code is never loaded.",
-  );
+  assert(!requests.some((path) => path.includes("contents/")), "Candidate code is never loaded.");
 });
 test("draft and pending CI are reportable but are not approval", async () => {
   const f = fixture();
@@ -172,9 +169,7 @@ for (const [label, mutate] of [
   [
     "incomplete job listing",
     (f) => {
-      f.documents[
-        "actions/runs/12/attempts/1/jobs?per_page=100&page=1"
-      ].total_count = 2;
+      f.documents["actions/runs/12/attempts/1/jobs?per_page=100&page=1"].total_count = 2;
     },
   ],
 ])

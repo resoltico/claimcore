@@ -1,4 +1,4 @@
-# rationale: Canonical generated JSON is byte-checked by the contract gate; suppression-registry: web/.prettierignore|prettier-ignore-file|line:2
+# lint-exception: LX-0002 (config/lint-exceptions.json)
 src/generated/convergence/*.json
-# rationale: Generated AJV modules are byte-checked and size-capped by the contract gate; suppression-registry: web/.prettierignore|prettier-ignore-file|line:4
+# lint-exception: LX-0003 (config/lint-exceptions.json)
 src/generated/convergence/web-v3.validators.*.mjs

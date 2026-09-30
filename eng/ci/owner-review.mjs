@@ -15,8 +15,7 @@ async function main() {
     strict: true,
     allowPositionals: false,
   });
-  if (!/^[1-9]\d*$/u.test(values.pr ?? ""))
-    throw new Error("Require a canonical PR number.");
+  if (!/^[1-9]\d*$/u.test(values.pr ?? "")) throw new Error("Require a canonical PR number.");
   const root = fileURLToPath(new URL("../../", import.meta.url));
   const source = toolProvenance(root);
   const report = await ownerReview(

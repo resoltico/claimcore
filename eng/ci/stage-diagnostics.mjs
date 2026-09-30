@@ -1,14 +1,10 @@
 import { relative, resolve } from "node:path";
 
 const help = {
-  "restore-frontend":
-    "Reproduce npm --prefix web ci with the pinned toolchain.",
-  "frontend-format":
-    "Run npm --prefix web run format:check; inspect the reported tracked files.",
-  "frontend-types":
-    "Run npm --prefix web run typecheck; inspect the reported compiler locations.",
-  "frontend-eslint":
-    "Run npm --prefix web run lint; inspect the reported tracked files.",
+  "restore-frontend": "Reproduce npm --prefix web ci with the pinned toolchain.",
+  "frontend-format": "Run npm --prefix web run format:check; inspect the reported tracked files.",
+  "frontend-types": "Run npm --prefix web run typecheck; inspect the reported compiler locations.",
+  "frontend-lint": "Run npm --prefix web run lint; inspect the reported tracked files.",
   "frontend-stylelint": "Run npm --prefix web run lint:styles.",
   "frontend-dead-code": "Run npm --prefix web run dead-code.",
   "frontend-contract-inventory":
@@ -21,15 +17,13 @@ const help = {
     "Run npm --prefix web run build with the pinned tools; inspect its size and generated-asset policy.",
   "dependency-security":
     "Inspect dependency-security.details.json for locked package identities; distinguish a security finding from metadata unavailability.",
-  "npm-audit":
-    "Reproduce npm --prefix web audit --audit-level=low against the locked graph.",
+  "npm-audit": "Reproduce npm --prefix web audit --audit-level=low against the locked graph.",
   "npm-signatures":
     "Reproduce npm --prefix web audit signatures; do not bypass invalid signatures.",
   "dependency-licenses": "Run npm --prefix web run licenses:check.",
   sbom: "Run npm --prefix web run sbom.",
   fantomas: "Run bash eng/Check-Fantomas.sh; format the tracked F# sources.",
-  fsharplint:
-    "Run bash eng/Check-FSharpLint.sh; inspect the reported source locations.",
+  fsharplint: "Run bash eng/Check-FSharpLint.sh; inspect the reported source locations.",
   actionlint: "Run actionlint and inspect the workflow locations.",
   "workflow-toolchain":
     "Run pwsh -File eng/Check-WorkflowToolchainPolicy.ps1; inspect structural workflow policy.",
@@ -38,8 +32,13 @@ const help = {
   shellcheck: "Run shellcheck over tracked eng and db shell sources.",
 };
 const policyStages = [
-  "analyzer-suppressions",
-  "analyzer-suppression-negative-controls",
+  "lint-exceptions",
+  "eng-tests",
+  "eng-format",
+  "eng-types",
+  "eng-lint",
+  "eng-npm-audit",
+  "eng-npm-signatures",
   "sensitive-output-negative-controls",
   "coverage-input-negative-controls",
   "coverage-floor-negative-controls",
@@ -61,19 +60,9 @@ for (const stage of policyStages)
   help[stage] =
     "Reproduce the registered stage procedure with the pinned toolchain; do not waive a failed policy or evidence requirement.";
 
-export function stageDiagnostic({
-  producer,
-  stage,
-  exitCode,
-  manifestExit,
-  log,
-  root,
-  tracked,
-}) {
+export function stageDiagnostic({ producer, stage, exitCode, manifestExit, log, root, tracked }) {
   if (
-    !["quality", "frontend", "frontend-product", "publish"].includes(
-      producer,
-    ) ||
+    !["quality", "frontend", "frontend-product", "publish"].includes(producer) ||
     !Object.hasOwn(help, stage)
   )
     throw new Error("Unregistered reporting identity.");
@@ -88,26 +77,17 @@ export function stageDiagnostic({
         clean,
       );
     const path = match ? match[1] : clean.replace(/^\[warn\]\s*/u, "").trim();
-    const candidate = relative(resolve(root), resolve(root, path))
-      .split("\\")
-      .join("/");
+    const candidate = relative(resolve(root), resolve(root, path)).split("\\").join("/");
     if (!tracked.has(candidate)) continue;
     const finding = { file: candidate };
     if (match) {
       const lineNumber = Number(match[2] ?? match[4]);
       const column = Number(match[3] ?? match[5]);
-      if (
-        lineNumber > 0 &&
-        lineNumber <= 1000000 &&
-        column > 0 &&
-        column <= 1000000
-      )
+      if (lineNumber > 0 && lineNumber <= 1000000 && column > 0 && column <= 1000000)
         Object.assign(finding, { line: lineNumber, column });
       if (match[6]) finding.rule = match[6];
     }
-    if (
-      !findings.some((item) => JSON.stringify(item) === JSON.stringify(finding))
-    )
+    if (!findings.some((item) => JSON.stringify(item) === JSON.stringify(finding)))
       findings.push(finding);
     if (findings.length === 30) break;
   }
@@ -118,11 +98,7 @@ export function stageDiagnostic({
     exitCode,
     manifestExit,
     outcome:
-      exitCode !== 0
-        ? "procedure-failed"
-        : manifestExit !== 0
-          ? "evidence-failed"
-          : "passed",
+      exitCode !== 0 ? "procedure-failed" : manifestExit !== 0 ? "evidence-failed" : "passed",
     guidance:
       manifestExit !== 0
         ? "Stage evidence did not qualify. Check required outputs and exact reviewed test inventory; a passing subprocess is insufficient."

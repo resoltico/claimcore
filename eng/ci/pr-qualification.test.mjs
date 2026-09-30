@@ -66,27 +66,18 @@ for (const [label, mutate] of [
   ],
   ["missing Gate", ({ jobs }) => jobs.pop()],
   ["duplicate Gate", ({ jobs }) => jobs.push({ ...jobs[0] })],
-  [
-    "skipped family",
-    ({ jobs }) =>
-      jobs.push({ ...jobs[0], name: "Unit", conclusion: "skipped" }),
-  ],
+  ["skipped family", ({ jobs }) => jobs.push({ ...jobs[0], name: "Unit", conclusion: "skipped" })],
 ])
   test(`PR qualification rejects ${label}`, () => {
     const value = example();
     mutate(value);
-    assert.throws(() =>
-      qualifyRun(value.pr, value.run, value.jobs, value.workflow),
-    );
+    assert.throws(() => qualifyRun(value.pr, value.run, value.jobs, value.workflow));
   });
 test("pending and failed PR verification are distinct from qualified CI", () => {
   const { pr, run, jobs, workflow } = example();
   assert.equal(qualifyRun(pr, run, jobs, workflow), "verified-current-head-ci");
   run.status = "waiting";
-  assert.equal(
-    qualifyRun(pr, run, [], workflow),
-    "checks-pending-or-approval-required",
-  );
+  assert.equal(qualifyRun(pr, run, [], workflow), "checks-pending-or-approval-required");
   run.status = "completed";
   run.conclusion = "failure";
   assert.equal(qualifyRun(pr, run, jobs, workflow), "checks-not-successful");
@@ -107,11 +98,9 @@ test("PR read-back rejects a changed attempt and never fabricates approval", asy
         parents: [{ sha: pr.base.sha }, { sha: pr.head.sha }],
       };
     if (path === "actions/workflows/ci.yml") return workflow;
-    if (path.includes("/runs?"))
-      return { total_count: 1, workflow_runs: [run] };
+    if (path.includes("/runs?")) return { total_count: 1, workflow_runs: [run] };
     if (path.includes("/jobs?")) return { total_count: jobs.length, jobs };
-    if (path === "actions/runs/12")
-      return { ...run, run_attempt: ++reads > 1 ? 2 : 1 };
+    if (path === "actions/runs/12") return { ...run, run_attempt: ++reads > 1 ? 2 : 1 };
     throw new Error("Unexpected read.");
   };
   await assert.rejects(inspectPr(api, 9, pr.head.sha), /attempt changed/u);
@@ -133,8 +122,7 @@ test("PR read-back uses a verified merge ref when the PR response omits its SHA"
         parents: [{ sha: pr.base.sha }, { sha: pr.head.sha }],
       };
     if (path === "actions/workflows/ci.yml") return workflow;
-    if (path.includes("/runs?"))
-      return { total_count: 1, workflow_runs: [run] };
+    if (path.includes("/runs?")) return { total_count: 1, workflow_runs: [run] };
     if (path.includes("/jobs?")) return { total_count: jobs.length, jobs };
     if (path === "actions/runs/12") return run;
     throw new Error("Unexpected read.");
@@ -159,10 +147,7 @@ test("PR read-back refuses a merge ref with different parents", async () => {
       };
     throw new Error("Unexpected read.");
   };
-  await assert.rejects(
-    inspectPr(api, 9, pr.head.sha),
-    /current base and head/u,
-  );
+  await assert.rejects(inspectPr(api, 9, pr.head.sha), /current base and head/u);
 });
 test("GitHub requests use fixed authority and do not disclose denied response or token", async () => {
   const request = async (url, options) => {
@@ -181,10 +166,6 @@ test("GitHub requests use fixed authority and do not disclose denied response or
 });
 test("paginated workflow searches fail on truncated search scope", async () => {
   await assert.rejects(
-    pages(
-      async () => ({ total_count: 1001, workflow_runs: [] }),
-      "runs",
-      "workflow_runs",
-    ),
+    pages(async () => ({ total_count: 1001, workflow_runs: [] }), "runs", "workflow_runs"),
   );
 });

@@ -1,10 +1,4 @@
-import {
-  readFileSync,
-  readdirSync,
-  mkdirSync,
-  writeFileSync,
-  appendFileSync,
-} from "node:fs";
+import { readFileSync, readdirSync, mkdirSync, writeFileSync, appendFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash, randomUUID } from "node:crypto";
@@ -30,8 +24,7 @@ const output =
     : process.env.GITHUB_ACTIONS === "true"
       ? "artifacts/diagnostics/quality"
       : `artifacts/diagnostics/local-dependency-security-${randomUUID()}`;
-const file =
-  mode === "health" ? "report.json" : "dependency-security.details.json";
+const file = mode === "health" ? "report.json" : "dependency-security.details.json";
 const installed = new Map();
 const add = (ecosystem, name, resolved) => {
   const key = packageKey(ecosystem, name);
@@ -46,9 +39,7 @@ function readLocks(directory) {
     )
       readLocks(join(directory, entry.name));
     if (entry.isFile() && entry.name === "packages.lock.json") {
-      const lock = JSON.parse(
-        readFileSync(join(directory, entry.name), "utf8"),
-      );
+      const lock = JSON.parse(readFileSync(join(directory, entry.name), "utf8"));
       for (const framework of Object.values(lock.dependencies)) {
         for (const [name, value] of Object.entries(framework))
           if (value.resolved) add("nuget", name, value.resolved);
@@ -68,11 +59,7 @@ const common = [
   "--no-restore",
 ];
 const nuget = (flag, transitive = true) =>
-  jsonProcess(
-    "dotnet",
-    [...common, flag, ...(transitive ? ["--include-transitive"] : [])],
-    root,
-  );
+  jsonProcess("dotnet", [...common, flag, ...(transitive ? ["--include-transitive"] : [])], root);
 const result = {
   schemaVersion: 1,
   mode,
@@ -87,33 +74,17 @@ try {
   const bytes = readFileSync(join(root, "web/package-lock.json"));
   const lock = JSON.parse(bytes);
   for (const [path, value] of Object.entries(lock.packages))
-    if (path && value.version)
-      add("npm", path.split("node_modules/").at(-1), value.version);
+    if (path && value.version) add("npm", path.split("node_modules/").at(-1), value.version);
   result.npmLockSha256 = createHash("sha256").update(bytes).digest("hex");
   const holds = validateHolds(
-    JSON.parse(
-      readFileSync(
-        process.argv[3] ?? join(root, "config/dependency-holds.json"),
-        "utf8",
-      ),
-    ),
+    JSON.parse(readFileSync(process.argv[3] ?? join(root, "config/dependency-holds.json"), "utf8")),
     installed,
   );
   if (mode === "security") {
     for (const flag of ["--vulnerable", "--deprecated"]) {
-      for (const item of packageRows(nuget(flag), [
-        "topLevelPackages",
-        "transitivePackages",
-      ])) {
+      for (const item of packageRows(nuget(flag), ["topLevelPackages", "transitivePackages"])) {
         result.findings.push(
-          safeFinding(
-            "nuget",
-            item.id,
-            item.resolvedVersion,
-            undefined,
-            installed,
-            flag.slice(2),
-          ),
+          safeFinding("nuget", item.id, item.resolvedVersion, undefined, installed, flag.slice(2)),
         );
       }
     }
@@ -134,33 +105,16 @@ try {
         ),
       );
     }
-    const npm = jsonProcess(
-      "npm",
-      ["outdated", "--json"],
-      join(root, "web"),
-      [0, 1],
-    );
+    const npm = jsonProcess("npm", ["outdated", "--json"], join(root, "web"), [0, 1]);
     if (!npm || typeof npm !== "object" || Array.isArray(npm))
       throw new Error("DEPENDENCY_METADATA_INVALID");
     for (const [name, value] of Object.entries(npm)) {
-      const candidate = safeFinding(
-        "npm",
-        name,
-        value.current,
-        value.latest,
-        installed,
-        "update",
-      );
+      const candidate = safeFinding("npm", name, value.current, value.latest, installed, "update");
       if (newer(value.latest, value.current)) result.findings.push(candidate);
       else if (newer(value.current, value.latest)) {
         const published = jsonProcess(
           "npm",
-          [
-            "view",
-            `${name}@${value.current.split(".")[0]}`,
-            "version",
-            "--json",
-          ],
+          ["view", `${name}@${value.current.split(".")[0]}`, "version", "--json"],
           join(root, "web"),
         );
         const versions = Array.isArray(published) ? published : [published];
@@ -168,21 +122,12 @@ try {
         const latest = versions.reduce((a, b) => (newer(a, b) ? a : b));
         if (newer(latest, value.current))
           result.findings.push(
-            safeFinding(
-              "npm",
-              name,
-              value.current,
-              latest,
-              installed,
-              "update",
-            ),
+            safeFinding("npm", name, value.current, latest, installed, "update"),
           );
       }
     }
     result.findings = classifyUpdates(result.findings, holds);
-    result.outcome = result.findings.some((item) => !item.held)
-      ? "updates-available"
-      : "passed";
+    result.outcome = result.findings.some((item) => !item.held) ? "updates-available" : "passed";
   }
 } catch (error) {
   // No registry payload, credential, request URI or provider exception is published.
@@ -192,18 +137,12 @@ try {
     : "DEPENDENCY_POLICY_OR_METADATA_INVALID";
 }
 result.findings = [
-  ...new Map(
-    result.findings.map((item) => [JSON.stringify(item), item]),
-  ).values(),
+  ...new Map(result.findings.map((item) => [JSON.stringify(item), item])).values(),
 ];
 result.findingCount = result.findings.length;
 result.findings = result.findings.slice(0, 100);
 mkdirSync(join(root, output), { recursive: true });
-writeFileSync(
-  join(root, output, file),
-  JSON.stringify(result, null, 2) + "\n",
-  { flag: "wx" },
-);
+writeFileSync(join(root, output, file), JSON.stringify(result, null, 2) + "\n", { flag: "wx" });
 console.log(
   `Dependency ${mode}: ${result.outcome}; ${result.findingCount} findings. Report: ${output}/${file}`,
 );
@@ -225,5 +164,4 @@ if (process.env.GITHUB_STEP_SUMMARY) {
     );
   appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join("\n") + "\n");
 }
-process.exitCode =
-  result.outcome === "passed" ? 0 : result.outcome === "metadata-error" ? 3 : 2;
+process.exitCode = result.outcome === "passed" ? 0 : result.outcome === "metadata-error" ? 3 : 2;

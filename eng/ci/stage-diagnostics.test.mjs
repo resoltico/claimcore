@@ -16,9 +16,7 @@ test("safe failure reports retain only allowlisted source locations", () => {
     ...base,
     log: "/repo/src/Test.fs(12,3): error FS0001: PRIVATE-CANARY\n/private/credential(1,1): error FS0002: SECRET\nConnection=PRIVATE\n",
   });
-  assert.deepEqual(report.findings, [
-    { file: "src/Test.fs", line: 12, column: 3, rule: "FS0001" },
-  ]);
+  assert.deepEqual(report.findings, [{ file: "src/Test.fs", line: 12, column: 3, rule: "FS0001" }]);
   assert(!JSON.stringify(report).includes("PRIVATE"));
   assert(!JSON.stringify(report).includes("SECRET"));
 });

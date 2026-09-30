@@ -1,10 +1,8 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 
-export const isSha = (value) =>
-  typeof value === "string" && /^[0-9a-f]{40}$/u.test(value);
-export const digest = (value) =>
-  createHash("sha256").update(JSON.stringify(value)).digest("hex");
+export const isSha = (value) => typeof value === "string" && /^[0-9a-f]{40}$/u.test(value);
+export const digest = (value) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
 const pathValid = (path) =>
   typeof path === "string" &&
   path.length > 0 &&
@@ -13,25 +11,16 @@ const pathValid = (path) =>
   path.split("/").every((part) => part && part !== "." && part !== "..");
 
 export function treeFiles(document, expectedSha) {
-  assert(
-    isSha(expectedSha) && document.sha === expectedSha,
-    "Review tree identity differs.",
-  );
+  assert(isSha(expectedSha) && document.sha === expectedSha, "Review tree identity differs.");
   assert(
     document.truncated === false && Array.isArray(document.tree),
     "Review tree is incomplete.",
   );
-  assert(
-    document.tree.length <= 100000,
-    "Review tree exceeds the supported bound.",
-  );
+  assert(document.tree.length <= 100000, "Review tree exceeds the supported bound.");
   const seen = new Set();
   const files = new Map();
   for (const entry of document.tree) {
-    assert(
-      pathValid(entry.path) && !seen.has(entry.path),
-      "Invalid or duplicate review path.",
-    );
+    assert(pathValid(entry.path) && !seen.has(entry.path), "Invalid or duplicate review path.");
     seen.add(entry.path);
     assert(isSha(entry.sha), "Missing review object identity.");
     const modes = {
@@ -40,8 +29,7 @@ export function treeFiles(document, expectedSha) {
       commit: ["160000"],
     };
     assert(
-      Object.hasOwn(modes, entry.type) &&
-        modes[entry.type].includes(entry.mode),
+      Object.hasOwn(modes, entry.type) && modes[entry.type].includes(entry.mode),
       "Unknown review object mode.",
     );
     if (entry.type !== "tree")
@@ -64,9 +52,7 @@ export function reviewScopes(path) {
     scopes.push("architecture");
   if (
     !path.includes("/") ||
-    /^(?:\.github\/|eng\/|db\/|src\/|web\/src\/(?:api|hooks)\/|SECURITY\.md$)/u.test(
-      path,
-    ) ||
+    /^(?:\.github\/|eng\/|db\/|src\/|web\/src\/(?:api|hooks)\/|SECURITY\.md$)/u.test(path) ||
     /(?:package|packages|lock|vulnerability|dependenc|suppression|NuGet|Docker|compose)/iu.test(
       path,
     )
@@ -93,16 +79,13 @@ export function changedFiles(before, after) {
     if (JSON.stringify(old) !== JSON.stringify(current))
       changes.push({
         path,
-        status:
-          old === null ? "added" : current === null ? "removed" : "modified",
+        status: old === null ? "added" : current === null ? "removed" : "modified",
         before: old,
         after: current,
         scopes: [
           ...new Set([
             ...reviewScopes(path),
-            ...([old, current].some(
-              (entry) => entry?.type === "commit" || entry?.mode === "120000",
-            )
+            ...([old, current].some((entry) => entry?.type === "commit" || entry?.mode === "120000")
               ? ["security", "contract-policy"]
               : []),
           ]),
@@ -114,8 +97,7 @@ export function changedFiles(before, after) {
 }
 
 export const reviewQuestions = {
-  general:
-    "Review the full diff and intended behavior; unknown paths are not exemptions.",
+  general: "Review the full diff and intended behavior; unknown paths are not exemptions.",
   architecture:
     "Verify ownership, dependency edges and invariants against implementation, not only the manifest.",
   security:

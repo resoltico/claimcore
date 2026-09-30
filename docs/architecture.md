@@ -58,7 +58,7 @@ descriptors cannot automatically prove that arbitrary implementations behave ide
 
 The browser networking policy covers all handwritten browser source except the validated API
 adapter. Its positive and negative controls include root components, domain-view helpers, qualified
-global access, and alternative networking APIs. ESLint is a development boundary, not a security
+global access, and alternative networking APIs. oxlint is a development boundary, not a security
 sandbox for dynamically constructed JavaScript.
 
 ### Composition roots

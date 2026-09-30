@@ -1,11 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {
-  changedFiles,
-  treeFiles,
-  reviewScopes,
-  digest,
-} from "./owner-review-scope.mjs";
+import { changedFiles, treeFiles, reviewScopes, digest } from "./owner-review-scope.mjs";
 const sha = "a".repeat(40);
 const row = (path, mode = "100644", type = "blob") => ({
   path,
@@ -16,14 +11,8 @@ const row = (path, mode = "100644", type = "blob") => ({
 const tree = (...rows) => ({ sha, truncated: false, tree: rows });
 
 test("scope retains additions, deletions, renames-as-two-paths and executable-mode changes", () => {
-  const before = treeFiles(
-    tree(row("docs/architecture.md"), row("utility.sh")),
-    sha,
-  );
-  const after = treeFiles(
-    tree(row("renamed.md"), row("utility.sh", "100755")),
-    sha,
-  );
+  const before = treeFiles(tree(row("docs/architecture.md"), row("utility.sh")), sha);
+  const after = treeFiles(tree(row("renamed.md"), row("utility.sh", "100755")), sha);
   const changes = changedFiles(before, after);
   assert.deepEqual(
     changes.map((entry) => [entry.path, entry.status]),
@@ -42,7 +31,7 @@ for (const path of [
   "eng/ClaimCore.Docs/contract-reviews.json",
   "tests/new-suite.fs",
   "web/scripts/check-bundle-size.mjs",
-  "config/analyzer-suppressions.json",
+  "config/lint-exceptions.json",
 ])
   test(`review scope highlights policy change ${path}`, () => {
     assert(reviewScopes(path).includes("contract-policy"));
@@ -133,8 +122,5 @@ for (const [label, change] of [
     assert.throws(() => treeFiles(value, sha));
   });
 test("scope digest binds revisions and all changed modes", () => {
-  assert.notEqual(
-    digest({ base: sha, mode: "100644" }),
-    digest({ base: sha, mode: "100755" }),
-  );
+  assert.notEqual(digest({ base: sha, mode: "100644" }), digest({ base: sha, mode: "100755" }));
 });

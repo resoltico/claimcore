@@ -1,13 +1,7 @@
 import assert from "node:assert/strict";
 import { pullMergeRevision } from "./github-api.mjs";
 import { inspectPr } from "./pr-qualification.mjs";
-import {
-  changedFiles,
-  digest,
-  isSha,
-  reviewQuestions,
-  treeFiles,
-} from "./owner-review-scope.mjs";
+import { changedFiles, digest, isSha, reviewQuestions, treeFiles } from "./owner-review-scope.mjs";
 
 const refIdentity = (ref) => ({
   sha: ref.sha,
@@ -27,10 +21,7 @@ const identity = (pr) => ({
 async function readCommit(api, sha) {
   assert(isSha(sha), "A current tested merge commit is required.");
   const commit = await api(`git/commits/${sha}`);
-  assert(
-    commit.sha === sha && isSha(commit.tree?.sha),
-    "Review commit identity differs.",
-  );
+  assert(commit.sha === sha && isSha(commit.tree?.sha), "Review commit identity differs.");
   return commit;
 }
 
@@ -56,17 +47,10 @@ export async function ownerReview(api, number, expectedHead, toolSource) {
     "Repository identity is missing.",
   );
   const pr = await api(`pulls/${number}`);
+  assert(pr.number === number && pr.state === "open", "Review requires an open PR.");
+  assert(pr.head.sha === expectedHead && pr.base.ref === "main", "Review revisions differ.");
   assert(
-    pr.number === number && pr.state === "open",
-    "Review requires an open PR.",
-  );
-  assert(
-    pr.head.sha === expectedHead && pr.base.ref === "main",
-    "Review revisions differ.",
-  );
-  assert(
-    pr.base.repo.id === repository.id &&
-      pr.base.repo.full_name === repository.full_name,
+    pr.base.repo.id === repository.id && pr.base.repo.full_name === repository.full_name,
     "Review repository differs.",
   );
   const mergeSha = await pullMergeRevision(api, pr);
@@ -79,10 +63,7 @@ export async function ownerReview(api, number, expectedHead, toolSource) {
   );
   const trees = await Promise.all(
     [base, merge].map(async (commit) =>
-      treeFiles(
-        await api(`git/trees/${commit.tree.sha}?recursive=1`),
-        commit.tree.sha,
-      ),
+      treeFiles(await api(`git/trees/${commit.tree.sha}?recursive=1`), commit.tree.sha),
     ),
   );
   const changes = changedFiles(...trees);
@@ -100,19 +81,11 @@ export async function ownerReview(api, number, expectedHead, toolSource) {
     identity(pr),
     "Review revisions changed.",
   );
-  assert.equal(
-    await pullMergeRevision(api, pr),
-    mergeSha,
-    "Review merge revision changed.",
-  );
+  assert.equal(await pullMergeRevision(api, pr), mergeSha, "Review merge revision changed.");
   const currentRepository = await api("");
   for (const key of ["id", "full_name", "default_branch"])
     assert.equal(currentRepository[key], repository[key]);
-  assert.equal(
-    currentRepository.owner.id,
-    repository.owner.id,
-    "Review owner changed.",
-  );
+  assert.equal(currentRepository.owner.id, repository.owner.id, "Review owner changed.");
   const report = {
     schemaVersion: 1,
     repository: repository.full_name,
@@ -130,8 +103,7 @@ export async function ownerReview(api, number, expectedHead, toolSource) {
     ci,
     ownerAuthorization: "not-granted-by-this-report",
     nativeSettings: "not-assessed-by-this-report",
-    identitySeparation:
-      "owner-credentials-shared-with-an-agent-are-not-independent",
+    identitySeparation: "owner-credentials-shared-with-an-agent-are-not-independent",
   };
   return { ...report, reportSha256: digest(report) };
 }

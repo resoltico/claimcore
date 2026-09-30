@@ -41,10 +41,13 @@ module StageCatalog =
         [
             gate "fantomas" [ "bash"; "eng/Check-Fantomas.sh" ]
             gate "fsharplint" [ "bash"; "eng/Check-FSharpLint.sh" ]
-            gate "analyzer-suppressions" [ "pwsh"; "Check-AnalyzerSuppressions.ps1" ]
-            gate
-                "analyzer-suppression-negative-controls"
-                [ "pwsh"; "Test-AnalyzerSuppressionPolicy.ps1" ]
+            gate "lint-exceptions" [ "node"; "eng/lint/check-exceptions.mjs" ]
+            gate "eng-tests" [ "npm"; "test" ]
+            gate "eng-format" [ "npm"; "run"; "format:check" ]
+            gate "eng-types" [ "npm"; "run"; "typecheck" ]
+            gate "eng-lint" [ "npm"; "run"; "lint" ]
+            gate "eng-npm-audit" [ "npm"; "audit" ]
+            gate "eng-npm-signatures" [ "npm"; "audit"; "signatures" ]
             gate "actionlint" [ "actionlint" ]
             gate "workflow-toolchain" [ "pwsh"; "Check-WorkflowToolchainPolicy" ]
             gate "workflow-toolchain-negative-controls" [ "pwsh"; "Test-WorkflowToolchainPolicy" ]
@@ -104,7 +107,7 @@ module StageCatalog =
         [
             gate "frontend-format" [ "npm"; "run"; "format:check" ]
             gate "frontend-types" [ "npm"; "run"; "typecheck" ]
-            gate "frontend-eslint" [ "npm"; "run"; "lint" ]
+            gate "frontend-lint" [ "npm"; "run"; "lint" ]
             gate "frontend-stylelint" [ "npm"; "run"; "lint:styles" ]
             gate "frontend-dead-code" [ "npm"; "run"; "dead-code" ]
             gate "frontend-contract-inventory" [ "npm"; "run"; "contract:check" ]

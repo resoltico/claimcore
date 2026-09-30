@@ -1,9 +1,7 @@
 import assert from "node:assert/strict";
 
 const normalize = (value) =>
-  typeof value === "string"
-    ? value.replace(/^\$\{\{\s*|\s*\}\}$/gu, "").trim()
-    : value;
+  typeof value === "string" ? value.replace(/^\$\{\{\s*|\s*\}\}$/gu, "").trim() : value;
 const upload = (step) => step.uses?.startsWith("actions/upload-artifact@");
 function safePath(value, glob) {
   const path = value
@@ -38,12 +36,8 @@ function scanPaths(step) {
     lines[0] === prefix || lines[0].startsWith(prefix + " "),
     "Scan must invoke the private-output policy directly.",
   );
-  const values =
-    lines[0] === prefix ? lines.slice(1) : [lines[0].slice(prefix.length)];
-  assert(
-    values.length && (lines[0] === prefix || lines.length === 1),
-    "Unexpected scan command.",
-  );
+  const values = lines[0] === prefix ? lines.slice(1) : [lines[0].slice(prefix.length)];
+  assert(values.length && (lines[0] === prefix || lines.length === 1), "Unexpected scan command.");
   return values.map((path) => safePath(path, false));
 }
 export function checkUploads(steps) {
@@ -53,8 +47,7 @@ export function checkUploads(steps) {
   assert.equal(scans.length, 1, "Uploads require one artifact scan.");
   const scan = scans[0];
   assert(
-    scan["continue-on-error"] === undefined ||
-      scan["continue-on-error"] === false,
+    scan["continue-on-error"] === undefined || scan["continue-on-error"] === false,
     "A failed scan must fail its job.",
   );
   const paths = scanPaths(scan);
@@ -64,14 +57,10 @@ export function checkUploads(steps) {
     "No producer or other step may run after artifact scanning.",
   );
   for (const step of uploaded) {
-    assert.equal(
-      normalize(step.if),
-      "always() && steps.artifact_scan.outcome == 'success'",
-    );
+    assert.equal(normalize(step.if), "always() && steps.artifact_scan.outcome == 'success'");
     assert.equal(step.with?.["if-no-files-found"], "error");
     assert(
-      step.with["include-hidden-files"] !== true &&
-        step.with.overwrite !== true,
+      step.with["include-hidden-files"] !== true && step.with.overwrite !== true,
       "Unreviewed upload overwrite/hidden data.",
     );
     for (const raw of step.with.path.trim().split(/\r?\n/u)) {
@@ -79,9 +68,7 @@ export function checkUploads(steps) {
       const glob = path.search(/[*?\[]/u);
       const base = glob < 0 ? path : path.slice(0, path.lastIndexOf("/", glob));
       assert(
-        paths.some(
-          (prefix) => base === prefix || base.startsWith(prefix + "/"),
-        ),
+        paths.some((prefix) => base === prefix || base.startsWith(prefix + "/")),
         "Upload is not covered by the scan.",
       );
     }

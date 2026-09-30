@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { existsSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 import { verifyMutationReport } from "./check-mutation-report.mjs";
 
@@ -33,4 +34,15 @@ test("mutation evidence rejects empty, ignored, or below-floor mutants", () => {
   const below = evidence();
   below.files[target].mutants.push({ status: "Survived" });
   assert.throws(() => verifyMutationReport(below, "synthetic", "10.0.0"));
+});
+
+test("mutation testing never needs the TypeScript compiler API that TypeScript 7 does not ship", () => {
+  const config = JSON.parse(
+    readFileSync(new URL("../stryker.config.json", import.meta.url), "utf8"),
+  );
+  // StrykerJS rewrites an existing tsconfig through that API; Vitest transpiles without one, so the
+  // named file must stay absent for the sandbox rewrite to be skipped.
+  assert.equal(typeof config.tsconfigFile, "string");
+  assert.equal(existsSync(new URL(`../${config.tsconfigFile}`, import.meta.url)), false);
+  assert.notEqual(config.inPlace, true);
 });

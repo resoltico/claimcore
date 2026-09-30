@@ -12,13 +12,9 @@ export function validatePlan(plan) {
     throw new Error("A stage plan needs a producer and a stage list.");
   const ids = new Set();
   for (const stage of plan.stages) {
-    if (
-      typeof stage.id !== "string" ||
-      !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(stage.id)
-    )
+    if (typeof stage.id !== "string" || !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(stage.id))
       throw new Error("Stage ids are lowercase kebab-case.");
-    if (ids.has(stage.id))
-      throw new Error(`Stage '${stage.id}' is listed twice.`);
+    if (ids.has(stage.id)) throw new Error(`Stage '${stage.id}' is listed twice.`);
     ids.add(stage.id);
     if (
       !Array.isArray(stage.argv) ||
@@ -30,24 +26,16 @@ export function validatePlan(plan) {
   for (const stage of plan.stages)
     for (const predecessor of stage.after ?? []) {
       if (!ids.has(predecessor))
-        throw new Error(
-          `Stage '${stage.id}' follows unknown stage '${predecessor}'.`,
-        );
-      if (predecessor === stage.id)
-        throw new Error(`Stage '${stage.id}' follows itself.`);
+        throw new Error(`Stage '${stage.id}' follows unknown stage '${predecessor}'.`);
+      if (predecessor === stage.id) throw new Error(`Stage '${stage.id}' follows itself.`);
     }
   // Reject cycles: repeatedly remove stages whose predecessors are gone.
-  const remaining = new Map(
-    plan.stages.map((stage) => [stage.id, new Set(stage.after ?? [])]),
-  );
+  const remaining = new Map(plan.stages.map((stage) => [stage.id, new Set(stage.after ?? [])]));
   while (remaining.size > 0) {
-    const free = [...remaining]
-      .filter(([, needs]) => needs.size === 0)
-      .map(([id]) => id);
+    const free = [...remaining].filter(([, needs]) => needs.size === 0).map(([id]) => id);
     if (free.length === 0) throw new Error("Stage predecessors form a cycle.");
     for (const id of free) remaining.delete(id);
-    for (const needs of remaining.values())
-      for (const id of free) needs.delete(id);
+    for (const needs of remaining.values()) for (const id of free) needs.delete(id);
   }
   return plan;
 }
@@ -58,12 +46,7 @@ export function validatePlan(plan) {
  * With `failFast`, no stage starts after one has failed: stages already running finish, and the
  * rest are reported as not started (`notStarted` in the result).
  */
-export async function runPlan(
-  plan,
-  parallel,
-  runStage,
-  { failFast = false } = {},
-) {
+export async function runPlan(plan, parallel, runStage, { failFast = false } = {}) {
   validatePlan(plan);
   if (!Number.isInteger(parallel) || parallel < 1)
     throw new Error("Concurrency must be a positive integer.");
@@ -116,7 +99,6 @@ export async function runPlan(
     if (done.value?.failed) failed = true;
   }
   if (failFast && failed)
-    for (const stage of pending)
-      results.push({ stage, value: { notStarted: true } });
+    for (const stage of pending) results.push({ stage, value: { notStarted: true } });
   return results;
 }

@@ -1,15 +1,28 @@
 import assert from "node:assert/strict";
-import { canonicalNotes, declaredVersion, extractReleaseBody, isSha, isVersion } from "./policy.mjs";
+import {
+  canonicalNotes,
+  declaredVersion,
+  extractReleaseBody,
+  isSha,
+  isVersion,
+} from "./policy.mjs";
 
 const workflowPath = ".github/workflows/ci.yml";
 
 const assertRelease = (release, plan, draft) => {
   assert.equal(release.tag_name, plan.tag, "Release tag differs.");
   assert.equal(release.name, plan.title, "Release title differs; no overwrite permitted.");
-  assert.equal(canonicalNotes(release.body), plan.body, "Release body differs; no overwrite permitted.");
+  assert.equal(
+    canonicalNotes(release.body),
+    plan.body,
+    "Release body differs; no overwrite permitted.",
+  );
   assert.equal(release.prerelease, false, "Unexpected prerelease flag.");
   assert.equal(release.draft, draft, "Unexpected draft state.");
-  assert(Array.isArray(release.assets) && release.assets.length === 0, "Source-only release has assets.");
+  assert(
+    Array.isArray(release.assets) && release.assets.length === 0,
+    "Source-only release has assets.",
+  );
   assert(Number.isSafeInteger(release.id) && release.id > 0, "Invalid release ID.");
 };
 
@@ -58,7 +71,11 @@ const assertMainContains = async (api, expectedSha) => {
   assert.equal(main.object.type, "commit");
   assert(isSha(main.object.sha));
   const comparison = await api(`compare/${expectedSha}...${main.object.sha}`);
-  assert.equal(comparison.merge_base_commit.sha, expectedSha, "Release commit is not in main history.");
+  assert.equal(
+    comparison.merge_base_commit.sha,
+    expectedSha,
+    "Release commit is not in main history.",
+  );
 };
 
 const verifiedGate = async (api, repository, tag, expectedSha) => {
@@ -68,7 +85,10 @@ const verifiedGate = async (api, repository, tag, expectedSha) => {
   const query = new URLSearchParams({ event: "push", head_sha: expectedSha, branch: tag });
   const runs = await paginated(api, `actions/workflows/ci.yml/runs?${query}`, "workflow_runs");
   assert(runs.length > 0, "No tag-push verification run exists.");
-  runs.sort((left, right) => Date.parse(right.created_at) - Date.parse(left.created_at) || right.id - left.id);
+  runs.sort(
+    (left, right) =>
+      Date.parse(right.created_at) - Date.parse(left.created_at) || right.id - left.id,
+  );
   const runPath = `actions/runs/${runs[0].id}`;
   const run = await api(runPath);
   assert.equal(run.workflow_id, workflow.id, "Run belongs to a different workflow.");
@@ -111,14 +131,21 @@ export const releaseClaimCore = async ({ repository, tag, expectedSha, api, publ
       ![".", ".."].includes(repository.split("/")[1]),
     "Expected owner/repository.",
   );
-  assert(typeof tag === "string" && tag.startsWith("v") && isVersion(tag.slice(1)), "Expected vX.Y.Z.");
+  assert(
+    typeof tag === "string" && tag.startsWith("v") && isVersion(tag.slice(1)),
+    "Expected vX.Y.Z.",
+  );
   assert(isSha(expectedSha), "Expected a full lowercase 40-character commit SHA.");
   assert.equal(typeof publish, "boolean");
 
   const version = tag.slice(1);
   const tagObject = await tagCommit(api, tag, expectedSha);
   const unchangedTag = async () =>
-    assert.equal(await tagCommit(api, tag, expectedSha), tagObject, "Tag changed during publication.");
+    assert.equal(
+      await tagCommit(api, tag, expectedSha),
+      tagObject,
+      "Tag changed during publication.",
+    );
   await assertMainContains(api, expectedSha);
   const plan = {
     tag,
@@ -126,7 +153,10 @@ export const releaseClaimCore = async ({ repository, tag, expectedSha, api, publ
     title: `ClaimCore ${version} — source preview`,
     body: extractReleaseBody(await readSource(api, "CHANGELOG.md", expectedSha), version),
   };
-  assert.equal(declaredVersion(await readSource(api, "Directory.Build.props", expectedSha)), version);
+  assert.equal(
+    declaredVersion(await readSource(api, "Directory.Build.props", expectedSha)),
+    version,
+  );
 
   const releases = await paginated(api, "releases");
   const matches = releases.filter((release) => release.tag_name === tag);

@@ -7,14 +7,7 @@
 // command than the one that gates the merge. Without a run id the run is local.
 import { spawn, spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import {
-  closeSync,
-  existsSync,
-  mkdirSync,
-  openSync,
-  readFileSync,
-  readdirSync,
-} from "node:fs";
+import { closeSync, existsSync, mkdirSync, openSync, readFileSync, readdirSync } from "node:fs";
 import { delimiter } from "node:path";
 import { availableParallelism, tmpdir } from "node:os";
 import { join, relative } from "node:path";
@@ -22,16 +15,11 @@ import { fileURLToPath } from "node:url";
 import { runPlan, validatePlan } from "./stage-plan.mjs";
 
 const root = fileURLToPath(new URL("../..", import.meta.url));
-const docs = join(
-  root,
-  "artifacts/bin/ClaimCore.Docs/release/ClaimCore.Docs.dll",
-);
+const docs = join(root, "artifacts/bin/ClaimCore.Docs/release/ClaimCore.Docs.dll");
 
 function option(name, fallback) {
   const at = process.argv.indexOf(`--${name}`);
-  return at >= 0 && process.argv[at + 1] !== undefined
-    ? process.argv[at + 1]
-    : fallback;
+  return at >= 0 && process.argv[at + 1] !== undefined ? process.argv[at + 1] : fallback;
 }
 
 function trackedMatches(directories, pattern) {
@@ -56,8 +44,7 @@ function onPath(tool) {
 }
 
 function commandFor(stage, runId) {
-  const substitute = (part) =>
-    part.replaceAll("{runId}", runId).replaceAll("{root}", root);
+  const substitute = (part) => part.replaceAll("{runId}", runId).replaceAll("{root}", root);
   const argv = stage.argv.map(substitute);
   if (stage.appendFiles) {
     const { directories, suffix } = stage.appendFiles;
@@ -100,13 +87,9 @@ function execute(stage, plan, runId, attempt) {
     return Promise.resolve({ failed: Boolean(process.env.CI), skipped: true });
   }
   const output = join(root, stage.output ?? `artifacts/stages/${stage.id}`);
-  if (existsSync(output))
-    return Promise.resolve({ failed: true, note: "output already exists" });
+  if (existsSync(output)) return Promise.resolve({ failed: true, note: "output already exists" });
   mkdirSync(output, { recursive: true });
-  const log = join(
-    process.env.RUNNER_TEMP ?? tmpdir(),
-    `claimcore-${stage.id}.log`,
-  );
+  const log = join(process.env.RUNNER_TEMP ?? tmpdir(), `claimcore-${stage.id}.log`);
   const descriptor = openSync(log, "w");
   const [command, ...args] = commandFor(stage, runId);
   const started = timestamp();
@@ -145,8 +128,7 @@ function execute(stage, plan, runId, attempt) {
             { cwd: root, stdio: "inherit" },
           )
         : { status: 0 };
-      if (status !== 0 && stage.echoTail)
-        echoTail(stage.id, log, stage.echoTail);
+      if (status !== 0 && stage.echoTail) echoTail(stage.id, log, stage.echoTail);
       const report = spawnSync(
         "node",
         [
@@ -170,12 +152,9 @@ function execute(stage, plan, runId, attempt) {
 
 async function main() {
   const name = process.argv[2];
-  if (!name || !/^[a-z0-9-]+$/.test(name))
-    throw new Error("Name a registered stage plan.");
+  if (!name || !/^[a-z0-9-]+$/.test(name)) throw new Error("Name a registered stage plan.");
   const plan = validatePlan(
-    JSON.parse(
-      readFileSync(join(root, `eng/ci/stage-plans/${name}.json`), "utf8"),
-    ),
+    JSON.parse(readFileSync(join(root, `eng/ci/stage-plans/${name}.json`), "utf8")),
   );
   if (recordEvidence() && !existsSync(docs))
     throw new Error("Build the Release evidence executable first.");
@@ -184,25 +163,19 @@ async function main() {
     process.env.GITHUB_RUN_ID ?? `local-${randomUUID().replaceAll("-", "")}`,
   );
   const attempt = option("attempt", process.env.GITHUB_RUN_ATTEMPT ?? "1");
-  const parallel = Number(
-    option("parallel", String(Math.min(availableParallelism(), 4))),
-  );
+  const parallel = Number(option("parallel", String(Math.min(availableParallelism(), 4))));
   const only = option("only", "");
   const selected =
     only === ""
       ? plan
       : {
           ...plan,
-          stages: plan.stages.filter((stage) =>
-            only.split(",").includes(stage.id),
-          ),
+          stages: plan.stages.filter((stage) => only.split(",").includes(stage.id)),
         };
   const results = await runPlan(selected, parallel, (stage) =>
     execute(stage, plan, runId, attempt),
   );
-  const failed = results
-    .filter((result) => result.value.failed)
-    .map((result) => result.stage.id);
+  const failed = results.filter((result) => result.value.failed).map((result) => result.stage.id);
   console.log(
     `${plan.producer}: ${results.length - failed.length} of ${results.length} stages passed.`,
   );

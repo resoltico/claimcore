@@ -9,15 +9,11 @@ const pin = "1".repeat(40);
 const compliant = `on: workflow_dispatch\npermissions: {contents: read}\njobs:\n  probe:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@${pin} # v7.0.1\n        with:\n          persist-credentials: false\n`;
 const isolated = (text = compliant, path = ".github/workflows/probe.yml") =>
   new Map([[path, text]]);
-const verify = (text, path) =>
-  validateWorkflowSources(isolated(text, path), { graph: false });
+const verify = (text, path) => validateWorkflowSources(isolated(text, path), { graph: false });
 
 for (const extension of ["yml", "yaml"]) {
   test(`parses real credential settings in .${extension} workflows`, () => {
-    assert.equal(
-      verify(compliant, `.github/workflows/probe.${extension}`).workflows,
-      1,
-    );
+    assert.equal(verify(compliant, `.github/workflows/probe.${extension}`).workflows, 1);
     assert.throws(
       () =>
         verify(
@@ -32,53 +28,31 @@ for (const extension of ["yml", "yaml"]) {
   });
 }
 for (const [label, transform] of [
-  [
-    "missing checkout setting",
-    (s) => s.replace("persist-credentials: false", "fetch-depth: 1"),
-  ],
+  ["missing checkout setting", (s) => s.replace("persist-credentials: false", "fetch-depth: 1")],
   [
     "comment-only checkout setting",
-    (s) =>
-      s.replace("persist-credentials: false", "# persist-credentials: false"),
+    (s) => s.replace("persist-credentials: false", "# persist-credentials: false"),
   ],
   ["tag action reference", (s) => s.replace(pin, "v7")],
   ["missing reviewed pin comment", (s) => s.replace(" # v7.0.1", "")],
-  [
-    "direct SDK selector",
-    (s) => s.replace("actions/checkout", "actions/setup-dotnet"),
-  ],
-  [
-    "write-default permissions",
-    (s) => s.replace("contents: read", "contents: write"),
-  ],
-  [
-    "privileged PR event",
-    (s) => s.replace("workflow_dispatch", "pull_request_target"),
-  ],
+  ["direct SDK selector", (s) => s.replace("actions/checkout", "actions/setup-dotnet")],
+  ["write-default permissions", (s) => s.replace("contents: read", "contents: write")],
+  ["privileged PR event", (s) => s.replace("workflow_dispatch", "pull_request_target")],
   ["duplicate mapping keys", (s) => s + "permissions: {}\n"],
   [
     "alias configuration",
     (s) =>
-      "copy: &copy false\n" +
-      s.replace("persist-credentials: false", "persist-credentials: *copy"),
+      "copy: &copy false\n" + s.replace("persist-credentials: false", "persist-credentials: *copy"),
   ],
-  [
-    "fake aggregate name",
-    (s) => s.replace("    runs-on:", "    name: Gate\n    runs-on:"),
-  ],
+  ["fake aggregate name", (s) => s.replace("    runs-on:", "    name: Gate\n    runs-on:")],
 ]) {
-  test(`refuses ${label}`, () =>
-    assert.throws(() => verify(transform(compliant))));
+  test(`refuses ${label}`, () => assert.throws(() => verify(transform(compliant))));
 }
 
 test("accepts quoted false and inspects action.yaml composite steps", () => {
   assert.equal(
-    verify(
-      compliant.replace(
-        "persist-credentials: false",
-        'persist-credentials: "false"',
-      ),
-    ).workflows,
+    verify(compliant.replace("persist-credentials: false", 'persist-credentials: "false"'))
+      .workflows,
     1,
   );
   const sources = isolated();
@@ -86,10 +60,7 @@ test("accepts quoted false and inspects action.yaml composite steps", () => {
     ".github/actions/toolchain/action.yaml",
     `runs:\n  using: composite\n  steps:\n    - uses: actions/setup-node@${pin} # v7.0.0\n`,
   );
-  assert.equal(
-    validateWorkflowSources(sources, { graph: false }).compositeActions,
-    1,
-  );
+  assert.equal(validateWorkflowSources(sources, { graph: false }).compositeActions, 1);
   sources.set(
     ".github/actions/toolchain/action.yaml",
     "runs:\n  using: composite\n  steps:\n    - uses: actions/setup-node@main\n",
@@ -115,14 +86,9 @@ for (const [name, path, modify] of [
   [
     "mandatory job outside Gate",
     "ci.yml",
-    (s) =>
-      s + "\n  forgotten:\n    uses: ./.github/workflows/verify-unit.yml\n",
+    (s) => s + "\n  forgotten:\n    uses: ./.github/workflows/verify-unit.yml\n",
   ],
-  [
-    "failure-permissive Gate",
-    "ci.yml",
-    (s) => s.replace('test "$result" = "success"', "true"),
-  ],
+  ["failure-permissive Gate", "ci.yml", (s) => s.replace('test "$result" = "success"', "true")],
   [
     "shared manual and push concurrency",
     "ci.yml",

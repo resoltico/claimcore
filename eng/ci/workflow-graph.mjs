@@ -1,12 +1,6 @@
 import assert from "node:assert/strict";
 
-import {
-  standalonePaths,
-  names,
-  dependencies,
-  expression,
-  same,
-} from "./workflow-model.mjs";
+import { standalonePaths, names, dependencies, expression, same } from "./workflow-model.mjs";
 
 export function checkGraph(orchestrator, workflows) {
   same(
@@ -20,17 +14,12 @@ export function checkGraph(orchestrator, workflows) {
     "CI push coverage must remain complete.",
   );
   assert(
-    orchestrator.on.pull_request === null &&
-      orchestrator.on.merge_group === null,
+    orchestrator.on.pull_request === null && orchestrator.on.merge_group === null,
     "PR and merge-group checks must not be filtered.",
   );
   const group =
     "${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}";
-  assert.equal(
-    orchestrator.concurrency?.group,
-    group,
-    "Concurrency must isolate events and PRs.",
-  );
+  assert.equal(orchestrator.concurrency?.group, group, "Concurrency must isolate events and PRs.");
   assert.equal(
     expression(orchestrator.concurrency["cancel-in-progress"]),
     "github.event_name == 'pull_request' || github.event_name == 'merge_group'",
@@ -86,10 +75,7 @@ export function checkGraph(orchestrator, workflows) {
       /^\.\/\.github\/workflows\/verify-[a-z-]+\.ya?ml$/u.test(job.uses),
       "Verification family needs a local reusable workflow.",
     );
-    assert(
-      !called.has(job.uses),
-      "A reusable verification family is called twice.",
-    );
+    assert(!called.has(job.uses), "A reusable verification family is called twice.");
     assert(
       id === "evidence" || job.if === undefined,
       "Mandatory family must not be conditionally omitted.",
@@ -115,11 +101,7 @@ export function checkGraph(orchestrator, workflows) {
       Object.values(value.jobs).every((job) => job.if === undefined),
       "Reusable verification jobs must not be conditionally omitted.",
     );
-    same(
-      names(value.on),
-      ["workflow_call"],
-      "Reusable verifier must not self-trigger.",
-    );
+    same(names(value.on), ["workflow_call"], "Reusable verifier must not self-trigger.");
     assert(
       called.has(`./.github/workflows/${path}`),
       "Reusable verifier is disconnected from Gate.",

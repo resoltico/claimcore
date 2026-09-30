@@ -3,10 +3,7 @@ import assert from "node:assert/strict";
 import { BrowserStepDiagnostic } from "../../web/scripts/playwright-diagnostics.mjs";
 
 const sources = new Map([
-  [
-    "/repo/web/e2e/check.spec.ts",
-    { file: "web/e2e/check.spec.ts", lines: 100 },
-  ],
+  ["/repo/web/e2e/check.spec.ts", { file: "web/e2e/check.spec.ts", lines: 100 }],
 ]);
 const step = {
   category: "pw:api",

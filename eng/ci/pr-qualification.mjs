@@ -1,8 +1,7 @@
 import assert from "node:assert/strict";
 import { pages, pullMergeRevision } from "./github-api.mjs";
 
-const sha = (value) =>
-  typeof value === "string" && /^[0-9a-f]{40}$/u.test(value);
+const sha = (value) => typeof value === "string" && /^[0-9a-f]{40}$/u.test(value);
 const samePr = (left, right) =>
   left.head.sha === right.head.sha &&
   left.base.sha === right.base.sha &&
@@ -16,26 +15,16 @@ export function qualifyRun(pr, run, jobs, workflow) {
     "pull_request",
     "Manual or push runs cannot substitute for PR verification.",
   );
-  assert.equal(
-    run.workflow_id,
-    workflow.id,
-    "Verification workflow identity differs.",
-  );
+  assert.equal(run.workflow_id, workflow.id, "Verification workflow identity differs.");
   assert.equal(run.path.split("@")[0], ".github/workflows/ci.yml");
-  assert.equal(
-    run.head_sha,
-    pr.head.sha,
-    "CI head differs from the published PR head.",
-  );
+  assert.equal(run.head_sha, pr.head.sha, "CI head differs from the published PR head.");
   assert.equal(run.repository.full_name, pr.base.repo.full_name);
   assert.equal(run.head_repository.full_name, pr.head.repo.full_name);
   if (run.status !== "completed") return "checks-pending-or-approval-required";
   if (run.conclusion !== "success") return "checks-not-successful";
   const referenced = run.referenced_workflows;
   assert(
-    sha(pr.merge_commit_sha) &&
-      Array.isArray(referenced) &&
-      referenced.length > 0,
+    sha(pr.merge_commit_sha) && Array.isArray(referenced) && referenced.length > 0,
     "A successful run must identify its tested PR merge revision.",
   );
   assert(
@@ -51,10 +40,7 @@ export function qualifyRun(pr, run, jobs, workflow) {
   assert.equal(gates.length, 1, "Exactly one aggregate Gate is required.");
   assert(
     jobs.every(
-      (job) =>
-        job.run_id === run.id &&
-        job.status === "completed" &&
-        job.conclusion === "success",
+      (job) => job.run_id === run.id && job.status === "completed" && job.conclusion === "success",
     ),
     "Every current-attempt job must complete successfully.",
   );
@@ -73,8 +59,7 @@ export async function inspectPr(api, number, expectedHead) {
     expectedHead,
     "The PR has changed; inspect its actual head before reporting success.",
   );
-  const mergeSha =
-    pr.state === "open" ? await pullMergeRevision(api, pr) : null;
+  const mergeSha = pr.state === "open" ? await pullMergeRevision(api, pr) : null;
   if (mergeSha !== null) {
     const commit = await api(`git/commits/${mergeSha}`);
     assert(
@@ -97,8 +82,7 @@ export async function inspectPr(api, number, expectedHead) {
     state: pr.state,
     ownerAuthorization: "not-assessed-by-ci",
   };
-  if (pr.state !== "open")
-    return { ...result, qualification: pr.merged ? "merged" : "closed" };
+  if (pr.state !== "open") return { ...result, qualification: pr.merged ? "merged" : "closed" };
   const workflow = await api("actions/workflows/ci.yml");
   assert.equal(workflow.path, ".github/workflows/ci.yml");
   const runs = await pages(
@@ -107,35 +91,17 @@ export async function inspectPr(api, number, expectedHead) {
     "workflow_runs",
   );
   runs.sort((left, right) => right.id - left.id);
-  if (!runs.length)
-    return { ...result, qualification: "no-pr-verification-run" };
+  if (!runs.length) return { ...result, qualification: "no-pr-verification-run" };
   const run = await api(`actions/runs/${runs[0].id}`);
   assert(Number.isSafeInteger(run.run_attempt) && run.run_attempt > 0);
   const jobs =
     run.status === "completed"
-      ? await pages(
-          api,
-          `actions/runs/${run.id}/attempts/${run.run_attempt}/jobs`,
-          "jobs",
-        )
+      ? await pages(api, `actions/runs/${run.id}/attempts/${run.run_attempt}/jobs`, "jobs")
       : [];
-  const qualification = qualifyRun(
-    { ...pr, merge_commit_sha: mergeSha },
-    run,
-    jobs,
-    workflow,
-  );
+  const qualification = qualifyRun({ ...pr, merge_commit_sha: mergeSha }, run, jobs, workflow);
   const refreshed = await api(`actions/runs/${run.id}`);
-  assert.equal(
-    refreshed.run_attempt,
-    run.run_attempt,
-    "CI attempt changed during verification.",
-  );
-  assert.equal(
-    refreshed.status,
-    run.status,
-    "CI status changed; repeat the read-only check.",
-  );
+  assert.equal(refreshed.run_attempt, run.run_attempt, "CI attempt changed during verification.");
+  assert.equal(refreshed.status, run.status, "CI status changed; repeat the read-only check.");
   assert.equal(refreshed.conclusion, run.conclusion);
   const refreshedPr = await api(`pulls/${number}`);
   assert(samePr(pr, refreshedPr), "PR changed during verification.");

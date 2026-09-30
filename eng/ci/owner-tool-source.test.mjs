@@ -1,20 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {
-  mkdtempSync,
-  mkdirSync,
-  writeFileSync,
-  rmSync,
-  symlinkSync,
-} from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execFileSync } from "node:child_process";
 import { toolProvenance } from "./owner-tool-source.mjs";
 function repository() {
   const root = mkdtempSync(join(tmpdir(), "claimcore-review-source-"));
-  const git = (...args) =>
-    execFileSync("git", ["-C", root, ...args], { stdio: "pipe" });
+  const git = (...args) => execFileSync("git", ["-C", root, ...args], { stdio: "pipe" });
   git("init", "--quiet");
   git("config", "user.email", "synthetic@invalid.local");
   git("config", "user.name", "Synthetic review");
@@ -43,10 +36,7 @@ test("assume-unchanged cannot hide reporting-tool changes", () => {
   const f = repository();
   try {
     f.git("update-index", "--assume-unchanged", "eng/ci/policy.mjs");
-    writeFileSync(
-      join(f.root, "eng/ci/policy.mjs"),
-      "export const policy = 0;\n",
-    );
+    writeFileSync(join(f.root, "eng/ci/policy.mjs"), "export const policy = 0;\n");
     assert.equal(f.git("status", "--porcelain").toString(), "");
     assert.throws(() => toolProvenance(f.root), /bytes differ/u);
   } finally {

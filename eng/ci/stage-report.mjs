@@ -17,13 +17,7 @@ function logTail(path) {
   try {
     const size = fstatSync(descriptor).size;
     const buffer = Buffer.alloc(Math.min(size, 2 * 1024 * 1024));
-    const count = readSync(
-      descriptor,
-      buffer,
-      0,
-      buffer.length,
-      size - buffer.length,
-    );
+    const count = readSync(descriptor, buffer, 0, buffer.length, size - buffer.length);
     return buffer.subarray(0, count).toString("utf8");
   } finally {
     closeSync(descriptor);
@@ -31,18 +25,15 @@ function logTail(path) {
 }
 
 const root = fileURLToPath(new URL("../..", import.meta.url));
-const [producer, stage, exitCode, manifestExit, logPath] =
-  process.argv.slice(2);
+const [producer, stage, exitCode, manifestExit, logPath] = process.argv.slice(2);
 try {
-  if (process.argv.length !== 7)
-    throw new Error("Invalid stage report invocation.");
+  if (process.argv.length !== 7) throw new Error("Invalid stage report invocation.");
   const inventory = spawnSync("git", ["ls-files", "-z"], {
     cwd: root,
     encoding: "utf8",
     maxBuffer: 4 * 1024 * 1024,
   });
-  if (inventory.status !== 0)
-    throw new Error("Tracked source inventory unavailable.");
+  if (inventory.status !== 0) throw new Error("Tracked source inventory unavailable.");
   const report = stageDiagnostic({
     producer,
     stage,
@@ -54,11 +45,9 @@ try {
   });
   const output = join(root, "artifacts/diagnostics", producer);
   mkdirSync(output, { recursive: true });
-  writeFileSync(
-    join(output, `${stage}.json`),
-    JSON.stringify(report, null, 2) + "\n",
-    { flag: "wx" },
-  );
+  writeFileSync(join(output, `${stage}.json`), JSON.stringify(report, null, 2) + "\n", {
+    flag: "wx",
+  });
   console.log(
     `${stage}: ${report.outcome} (procedure ${report.exitCode}, evidence ${report.manifestExit}). ${report.guidance}`,
   );
@@ -72,10 +61,7 @@ try {
       lines.push(
         `\`${item.file}${item.line ? `:${item.line}:${item.column}` : ""}\`${item.rule ? ` (${item.rule})` : ""}`,
       );
-    appendFileSync(
-      process.env.GITHUB_STEP_SUMMARY,
-      lines.join("\n\n") + "\n\n",
-    );
+    appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join("\n\n") + "\n\n");
   }
 } catch {
   console.error("Safe stage reporting failed; raw output was not published.");

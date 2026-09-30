@@ -255,7 +255,7 @@ codec corpora, and split DTO modules; the locked Node stage compiles the aggrega
 to typed AJV standalone shared host, discovery, core, and recovery validator groups and finalizes the combined manifest. The
 generated minified validator groups are the only source-analyzer exception for that output, are each
 independently limited to 600 KiB, and are dynamically selected before response acceptance; their
-exact exclusions remain registered in `config/analyzer-suppressions.json`.
+exact exclusions remain registered in `config/lint-exceptions.json`.
 
 Frontend corpus tests compare every generated CLI endpoint outcome kind and Web endpoint outcome tag
 against the exact response schemas, in addition to validating positive, malformed, and cross-endpoint
@@ -272,9 +272,9 @@ fails in CI. The commands below are the same gates one at a time.
 
 ```text
 bash eng/Check-Fantomas.sh
-node --test eng/release/*.test.mjs
-pwsh -NoProfile -File eng/Check-AnalyzerSuppressions.ps1
-pwsh -NoProfile -File eng/Test-AnalyzerSuppressionPolicy.ps1
+node eng/lint/check-exceptions.mjs
+npm --prefix eng ci && npm --prefix eng test
+npm --prefix eng run typecheck && npm --prefix eng run lint && npm --prefix eng run format:check
 pwsh -NoProfile -File eng/Test-SensitiveOutputPolicy.ps1
 pwsh -NoProfile -File eng/Test-CoverageInputPolicy.ps1
 pwsh -NoProfile -File eng/Test-MergedCoveragePolicy.ps1
@@ -305,8 +305,8 @@ pwsh -NoProfile -File eng/Scan-SourceSecrets.ps1
 ```
 
 Use Fantomas without `--check` to format changed F# files. The FSharpLint gate applies its configured
-syntax-tree rules after the strict compiler has type-checked the solution. FSharpLint, ESLint,
-Stylelint, and the centralized physical-line policy enforce size and complexity limits across product
+syntax-tree rules after the strict compiler has type-checked the solution. FSharpLint, oxlint (type-aware,
+on the TypeScript 7 native toolchain), Stylelint, and the centralized physical-line policy enforce size and complexity limits across product
 and test code; repair findings instead of weakening a rule.
 
 Every workflow selects its toolchain through [`.github/actions/toolchain`](../.github/actions/toolchain/action.yml),
@@ -332,11 +332,19 @@ Pinned scanner downloads use bounded transport retries; a safe failure-stage lab
 workflows change. An artifact scan does not replace the source inventory or the browser harness's
 known-secret output checks.
 
-[`config/analyzer-suppressions.json`](../config/analyzer-suppressions.json) is the sole source-code exception
-registry. Every suppression or generated exclusion requires an owner, exact file/rule/scope,
-substantive rationale, and ISO `reviewOn` or `expiresOn` date. Exceptional directives require a
-nearby rationale and `suppression-registry: file|rule|scope` reference. File-size, function-size,
-complexity, focused-test, contract-drift, and security-boundary rules are non-suppressible.
+[`config/lint-exceptions.json`](../config/lint-exceptions.json) is the sole registry of lint, type, format and
+coverage exceptions for every language. Every entry has a stable `LX-nnnn` id, the tool, the exact rules (never a
+blanket), one exact file, a kind, an exact occurrence count, a substantive reason, an owner and an ISO `reviewOn`
+or `expiresOn` date; generated-output exclusions are a separate reviewed list of recognized paths. An inline
+suppression (`// oxlint-disable-next-line`, `# noqa`, `#nowarn`, `# shellcheck disable=`, `@ts-expect-error`,
+`prettier-ignore`, coverage ignores and their equivalents) must carry `lint-exception: LX-nnnn` in its own comment or
+the line above; no line numbers are recorded, so edits above a suppression never break it. Configuration-level
+ignores (ignore patterns, `per-file-ignores`, mypy overrides, disabled rules, `ExcludeRules`, knip ignores,
+`.prettierignore`, `NoWarn`, `dotnet_diagnostic` severities) are matched by file, tool and target. An entry with no
+remaining occurrence is stale and fails, as does any occurrence without an entry or a count that differs.
+`node eng/lint/check-exceptions.mjs` runs the check; its tests (`npm --prefix eng test`) build isolated repository
+trees for every scanner and policy. File-size, function-size, complexity, focused-test, skipped-test, test-filter,
+retry, contract-drift and security-boundary rules are non-suppressible and enforced by the same command.
 
 `eng/test-baseline-v0.1.json` is immutable evidence of the pre-convergence test identity set.
 `eng/test-lineage.json` maps every baseline identity to a retained or stronger replacement test, and

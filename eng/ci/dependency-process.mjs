@@ -6,8 +6,7 @@ export function jsonProcess(
   cwd,
   allowed = [0],
   execute = spawnSync,
-  pause = (ms) =>
-    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms),
+  pause = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms),
 ) {
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const result = execute(file, args, {
@@ -27,15 +26,9 @@ export function jsonProcess(
     }
     const transient =
       ["ETIMEDOUT", "EAI_AGAIN", "ECONNRESET"].includes(result.error?.code) ||
-      /\b(?:EAI_AGAIN|ETIMEDOUT|ECONNRESET|E429|E502|E503|E504)\b/u.test(
-        result.stderr ?? "",
-      );
+      /\b(?:EAI_AGAIN|ETIMEDOUT|ECONNRESET|E429|E502|E503|E504)\b/u.test(result.stderr ?? "");
     if (!transient || attempt === 2)
-      throw new Error(
-        transient
-          ? "DEPENDENCY_METADATA_UNAVAILABLE"
-          : "DEPENDENCY_COMMAND_FAILED",
-      );
+      throw new Error(transient ? "DEPENDENCY_METADATA_UNAVAILABLE" : "DEPENDENCY_COMMAND_FAILED");
     pause((attempt + 1) * 1000);
   }
   throw new Error("DEPENDENCY_METADATA_UNAVAILABLE");

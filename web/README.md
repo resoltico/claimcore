@@ -20,11 +20,16 @@ failure meaning remain in the F# Domain and Application projects.
 The exact Node and npm versions are declared by [`.node-version`](../.node-version) and
 [`package.json`](package.json). The package lock is authoritative for the installed graph.
 
-The `tsc` command is the native TypeScript 7 compiler used for typechecking and builds. The separately
-aliased `@typescript/typescript6` package supplies the compiler API currently required by
-`typescript-eslint`; it does not compile ClaimCore. Composite project references retain incremental
+The `tsc` command is the native TypeScript 7 compiler and the only TypeScript installed; it types and
+builds ClaimCore. Linting is oxlint with type-aware rules on the same native toolchain
+(`oxlint-tsgolint`), run by `scripts/lint.mjs` once per TypeScript project (`scripts/lint-projects.mjs`)
+because type-aware rules read one program at a time. `oxc-parser` reads the generated recovery types
+for the localization vocabulary, since TypeScript 7 ships no JavaScript compiler API. Boundary rules
+that no built-in rule expresses live in `lint/claimcore-plugin.mjs`. Every lint, type, format and
+coverage exception is registered in [`config/lint-exceptions.json`](../config/lint-exceptions.json).
+Composite project references retain incremental
 state in ignored files, and Vitest uses isolated, machine-scaled file workers. The locked StrykerJS
-gate mutates only `src/domain/operationReducer.ts` and checks a 92% minimum against exact-source
+gate (its sandbox tsconfig rewrite is disabled because it needs a compiler API TypeScript 7 does not ship; Vitest needs no tsconfig) mutates only `src/domain/operationReducer.ts` and checks a 92% minimum against exact-source
 local evidence; it is not F# or PostgreSQL mutation coverage.
 
 [`package.json`](package.json) defines the individual npm scripts. Their canonical ordered use,

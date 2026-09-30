@@ -8,19 +8,16 @@ import { snapshot, fakeApi } from "./settings-fixture.mjs";
 test("minimal owner policy requires PRs without impossible self-approval", () => {
   const plan = settingsPlan(snapshot());
   const branch = plan.operations.find((op) => op.path === "rulesets/7");
-  const pr = branch.json.rules.find(
-    (rule) => rule.type === "pull_request",
-  ).parameters;
+  const pr = branch.json.rules.find((rule) => rule.type === "pull_request").parameters;
   assert.equal(pr.required_approving_review_count, 0);
   assert.equal(pr.required_review_thread_resolution, true);
   assert.equal(
-    branch.json.rules.find((rule) => rule.type === "required_status_checks")
-      .parameters.strict_required_status_checks_policy,
+    branch.json.rules.find((rule) => rule.type === "required_status_checks").parameters
+      .strict_required_status_checks_policy,
     true,
   );
   assert.equal(
-    plan.operations.find((op) => op.path === "environments/release").json
-      .prevent_self_review,
+    plan.operations.find((op) => op.path === "environments/release").json.prevent_self_review,
     false,
   );
 });
@@ -41,13 +38,10 @@ test("settings preserve stronger existing controls and unrelated required checks
     context: "External review",
     integration_id: 777,
   });
-  const rules = settingsPlan(state).operations.find(
-    (op) => op.path === "rulesets/7",
-  ).json.rules;
+  const rules = settingsPlan(state).operations.find((op) => op.path === "rulesets/7").json.rules;
   assert(rules.some((rule) => rule.type === "required_signatures"));
   assert.equal(
-    rules.find((rule) => rule.type === "pull_request").parameters
-      .required_approving_review_count,
+    rules.find((rule) => rule.type === "pull_request").parameters.required_approving_review_count,
     2,
   );
   assert.equal(rules[0].parameters.required_status_checks.length, 2);
@@ -68,10 +62,7 @@ test("configuration applies the reviewed plan and verifies idempotent read-back"
   assert.equal(result.outcome, "verified-scoped-policy");
   assert.equal(writes.length, 6);
   assert.equal(settingsPlan(state).operations.length, 0);
-  assert.equal(
-    (await configureSettings(api, settingsPlan(state).planSha256)).applied,
-    0,
-  );
+  assert.equal((await configureSettings(api, settingsPlan(state).planSha256)).applied, 0);
   assert.equal(writes.length, 6);
 });
 test("a stale approved plan causes no configuration writes", async () => {

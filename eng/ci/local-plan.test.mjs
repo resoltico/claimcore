@@ -8,15 +8,11 @@ import { validatePlan } from "./stage-plan.mjs";
 import { parseWorkflow } from "./yaml.mjs";
 
 const root = fileURLToPath(new URL("../..", import.meta.url));
-const registry = JSON.parse(
-  readFileSync(join(root, "eng/ci/local-plan.json"), "utf8"),
-);
+const registry = JSON.parse(readFileSync(join(root, "eng/ci/local-plan.json"), "utf8"));
 const job = (id) => registry.jobs.find((candidate) => candidate.id === id);
 
 test("every CI verification family is mirrored locally or explained", () => {
-  const ci = parseWorkflow(
-    readFileSync(join(root, ".github/workflows/ci.yml"), "utf8"),
-  ).value;
+  const ci = parseWorkflow(readFileSync(join(root, ".github/workflows/ci.yml"), "utf8")).value;
   const families = Object.keys(ci.jobs).filter((name) => name !== "gate");
   const covered = new Set([
     ...registry.jobs.flatMap((entry) => entry.mirrors),
@@ -29,11 +25,7 @@ test("every CI verification family is mirrored locally or explained", () => {
   );
   const known = new Set(families);
   const stale = [...covered].filter((family) => !known.has(family));
-  assert.deepEqual(
-    stale,
-    [],
-    "the local plan names a CI family that no longer exists",
-  );
+  assert.deepEqual(stale, [], "the local plan names a CI family that no longer exists");
   for (const entry of registry.notLocal)
     assert.ok(entry.reason.length > 20, `${entry.family} needs a reason`);
 });
@@ -49,17 +41,9 @@ test("the local jobs form a valid plan whose commands exist", () => {
   });
   for (const entry of registry.jobs) {
     for (const pattern of entry.scope ?? []) new RegExp(pattern);
-    for (const part of entry.argv.filter((value) =>
-      /^eng\/.*\.(mjs|ps1|sh)$/.test(value),
-    ))
-      assert.ok(
-        existsSync(join(root, part)),
-        `${entry.id} runs ${part}, which does not exist`,
-      );
-    assert.ok(
-      entry.mirrors.length > 0,
-      `${entry.id} must name the CI family it mirrors`,
-    );
+    for (const part of entry.argv.filter((value) => /^eng\/.*\.(mjs|ps1|sh)$/.test(value)))
+      assert.ok(existsSync(join(root, part)), `${entry.id} runs ${part}, which does not exist`);
+    assert.ok(entry.mirrors.length > 0, `${entry.id} must name the CI family it mirrors`);
   }
 });
 
@@ -68,11 +52,7 @@ test("a documentation-only change runs neither the frontend nor the database sui
   assert.equal(affected(job("frontend-gates"), changed), false);
   assert.equal(affected(job("tests-postgres"), changed), false);
   assert.equal(affected(job("published-cli"), changed), false);
-  assert.equal(
-    affected(job("quality"), changed),
-    true,
-    "repository gates always run",
-  );
+  assert.equal(affected(job("quality"), changed), true, "repository gates always run");
   assert.equal(
     affected(job("tests-dotnet"), changed),
     true,
@@ -84,20 +64,12 @@ test("changes select the jobs that can be affected by them", () => {
   assert.equal(affected(job("frontend-gates"), ["web/src/App.tsx"]), true);
   assert.equal(affected(job("tests-postgres"), ["web/src/App.tsx"]), false);
   assert.equal(
-    affected(job("tests-postgres"), [
-      "src/ClaimCore.Postgres/RuntimeDatabase.fs",
-    ]),
+    affected(job("tests-postgres"), ["src/ClaimCore.Postgres/RuntimeDatabase.fs"]),
     true,
   );
   assert.equal(affected(job("tests-postgres"), ["db/baseline.sql"]), true);
-  assert.equal(
-    affected(job("frontend-gates"), ["src/ClaimCore.Contracts/Endpoints.fs"]),
-    true,
-  );
-  assert.equal(
-    affected(job("tests-dotnet"), ["eng/Run-LocalDotnetVerification.ps1"]),
-    true,
-  );
+  assert.equal(affected(job("frontend-gates"), ["src/ClaimCore.Contracts/Endpoints.fs"]), true);
+  assert.equal(affected(job("tests-dotnet"), ["eng/Run-LocalDotnetVerification.ps1"]), true);
 });
 
 test("when the change set is unknown every job runs", () => {

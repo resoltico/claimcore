@@ -10,62 +10,36 @@
     {
       "id": "setup",
       "title": "Locked restore, tools and the strict-compiler Release build",
-      "mirrors": [
-        "quality"
-      ],
+      "mirrors": ["quality"],
       "argv": [
         "bash",
         "-c",
-        "dotnet restore ClaimCore.slnx --locked-mode && dotnet tool restore && dotnet build ClaimCore.slnx --configuration Release --no-restore"
+        "dotnet restore ClaimCore.slnx --locked-mode && dotnet tool restore && npm --prefix eng ci && dotnet build ClaimCore.slnx --configuration Release --no-restore"
       ],
       "scope": null
     },
     {
       "id": "docs-check",
       "title": "Generated documentation, links and contracts",
-      "mirrors": [
-        "documentation"
-      ],
-      "after": [
-        "setup"
-      ],
-      "argv": [
-        "dotnet",
-        "artifacts/bin/ClaimCore.Docs/release/ClaimCore.Docs.dll",
-        "check"
-      ],
+      "mirrors": ["documentation"],
+      "after": ["setup"],
+      "argv": ["dotnet", "artifacts/bin/ClaimCore.Docs/release/ClaimCore.Docs.dll", "check"],
       "scope": null
     },
     {
       "id": "quality",
       "title": "Source, dependency and infrastructure gates (concurrent stage runner)",
-      "mirrors": [
-        "quality"
-      ],
-      "after": [
-        "setup"
-      ],
-      "argv": [
-        "node",
-        "eng/ci/run-stages.mjs",
-        "quality"
-      ],
+      "mirrors": ["quality"],
+      "after": ["setup"],
+      "argv": ["node", "eng/ci/run-stages.mjs", "quality"],
       "scope": null
     },
     {
       "id": "frontend-product",
       "title": "Locked frontend graph, SBOM and production build",
-      "mirrors": [
-        "frontend-product"
-      ],
-      "after": [
-        "setup"
-      ],
-      "argv": [
-        "node",
-        "eng/ci/run-stages.mjs",
-        "frontend-product"
-      ],
+      "mirrors": ["frontend-product"],
+      "after": ["setup"],
+      "argv": ["node", "eng/ci/run-stages.mjs", "frontend-product"],
       "scope": [
         "^web/",
         "^eng/ci/",
@@ -78,17 +52,9 @@
     {
       "id": "frontend-gates",
       "title": "Frontend format, types, lint, tests, mutation and dependency gates",
-      "mirrors": [
-        "frontend"
-      ],
-      "after": [
-        "frontend-product"
-      ],
-      "argv": [
-        "node",
-        "eng/ci/run-stages.mjs",
-        "frontend"
-      ],
+      "mirrors": ["frontend"],
+      "after": ["frontend-product"],
+      "argv": ["node", "eng/ci/run-stages.mjs", "frontend"],
       "scope": [
         "^web/",
         "^eng/ci/",
@@ -101,15 +67,8 @@
     {
       "id": "tests-dotnet",
       "title": "Unit, Web, documentation, fuzz and architecture suites",
-      "mirrors": [
-        "unit",
-        "documentation"
-      ],
-      "after": [
-        "quality",
-        "docs-check",
-        "frontend-gates"
-      ],
+      "mirrors": ["unit", "documentation"],
+      "after": ["quality", "docs-check", "frontend-gates"],
       "argv": [
         "pwsh",
         "-NoProfile",
@@ -129,19 +88,14 @@
         "^global\\.json$",
         "packages\\.lock\\.json$",
         "^compose\\.yaml$",
-        "^architecture\\.json$",
-        "^analyzer-suppressions\\.json$"
+        "^config/"
       ]
     },
     {
       "id": "tests-postgres",
       "title": "PostgreSQL integration, witness, recovery, concurrency, migration and backup suites (partitioned)",
-      "mirrors": [
-        "integration"
-      ],
-      "after": [
-        "tests-dotnet"
-      ],
+      "mirrors": ["integration"],
+      "after": ["tests-dotnet"],
       "argv": [
         "pwsh",
         "-NoProfile",
@@ -150,9 +104,7 @@
         "-NoRebuild",
         "-PostgresOnly"
       ],
-      "tools": [
-        "docker"
-      ],
+      "tools": ["docker"],
       "scope": [
         "^src/",
         "^tests/ClaimCore\\.(Integration|Witness|RecoveryQualification|ConcurrencyQualification|MigrationQualification|BackupQualification)Tests/",
@@ -169,20 +121,10 @@
     {
       "id": "published-cli",
       "title": "Published CLI acceptance (publishes the applications, uses Docker)",
-      "mirrors": [
-        "publish",
-        "acceptance"
-      ],
-      "after": [
-        "tests-postgres"
-      ],
-      "argv": [
-        "bash",
-        "eng/Run-PublishedCliAcceptance.sh"
-      ],
-      "tools": [
-        "docker"
-      ],
+      "mirrors": ["publish", "acceptance"],
+      "after": ["tests-postgres"],
+      "argv": ["bash", "eng/Run-PublishedCliAcceptance.sh"],
+      "tools": ["docker"],
       "optional": true,
       "scope": [
         "^src/",

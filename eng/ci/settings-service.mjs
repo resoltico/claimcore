@@ -21,20 +21,12 @@ export async function readSettings(api) {
     environment = null;
   }
   const branches = environment?.deployment_branch_policy?.custom_branch_policies
-    ? await pages(
-        api,
-        "environments/release/deployment-branch-policies",
-        "branch_policies",
-      )
+    ? await pages(api, "environments/release/deployment-branch-policies", "branch_policies")
     : [];
   return { repository, rules, environment, branches };
 }
 
-export async function configureSettings(
-  api,
-  expectedPlanSha,
-  progress = () => {},
-) {
+export async function configureSettings(api, expectedPlanSha, progress = () => {}) {
   const initial = settingsPlan(await readSettings(api));
   assert.equal(
     initial.planSha256,
@@ -45,11 +37,7 @@ export async function configureSettings(
     const remaining = initial.operations.slice(index);
     // Re-read and re-plan immediately before each write, preserving all unrelated/stronger policy.
     const current = settingsPlan(await readSettings(api));
-    assert.equal(
-      current.repositoryId,
-      initial.repositoryId,
-      "Repository identity changed.",
-    );
+    assert.equal(current.repositoryId, initial.repositoryId, "Repository identity changed.");
     assert.equal(current.ownerId, initial.ownerId, "Owner identity changed.");
     assert.deepEqual(
       current.operations,
@@ -59,11 +47,7 @@ export async function configureSettings(
     const operation = remaining[0];
     await api(operation.path, operation);
     const after = settingsPlan(await readSettings(api));
-    assert.equal(
-      after.repositoryId,
-      initial.repositoryId,
-      "Repository identity changed.",
-    );
+    assert.equal(after.repositoryId, initial.repositoryId, "Repository identity changed.");
     assert.equal(after.ownerId, initial.ownerId, "Owner identity changed.");
     assert.deepEqual(
       after.operations,

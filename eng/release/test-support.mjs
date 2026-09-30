@@ -41,7 +41,11 @@ export const createFixture = () => {
     repository: { full_name: repository },
     head_repository: { full_name: repository },
     referenced_workflows: [
-      { path: `${repository}/.github/workflows/verify-quality.yml@${sha}`, ref: `refs/tags/${tag}`, sha },
+      {
+        path: `${repository}/.github/workflows/verify-quality.yml@${sha}`,
+        ref: `refs/tags/${tag}`,
+        sha,
+      },
     ],
   };
   const state = {
@@ -94,11 +98,16 @@ export const createFixture = () => {
     }
     assert.equal(method, "GET", `Unexpected write: ${method} ${path}`);
     if (route === `git/ref/tags/${tag}`) {
-      return { ref: `refs/tags/${tag}`, object: { type: state.annotated ? "tag" : "commit", sha: state.tagSha } };
+      return {
+        ref: `refs/tags/${tag}`,
+        object: { type: state.annotated ? "tag" : "commit", sha: state.tagSha },
+      };
     }
-    if (route === `git/tags/${state.tagSha}`) return { tag, object: { type: "commit", sha: state.target } };
+    if (route === `git/tags/${state.tagSha}`)
+      return { tag, object: { type: "commit", sha: state.target } };
     if (route === "git/ref/heads/main") return { object: { type: "commit", sha: mainSha } };
-    if (route === `compare/${sha}...${mainSha}`) return { merge_base_commit: { sha: state.mergeBase } };
+    if (route === `compare/${sha}...${mainSha}`)
+      return { merge_base_commit: { sha: state.mergeBase } };
     if (route === "contents/Directory.Build.props") {
       assert.equal(url.searchParams.get("ref"), sha);
       return source(state.props);
@@ -107,7 +116,8 @@ export const createFixture = () => {
       assert.equal(url.searchParams.get("ref"), sha);
       return source(state.changelog);
     }
-    if (route === "releases") return copy(page([...state.otherReleases, ...(state.release ? [state.release] : [])], url));
+    if (route === "releases")
+      return copy(page([...state.otherReleases, ...(state.release ? [state.release] : [])], url));
     if (route === "releases/10") return copy(state.release);
     if (route === "actions/workflows/ci.yml") return { id: 99, path: ".github/workflows/ci.yml" };
     if (route === "actions/workflows/ci.yml/runs") {
