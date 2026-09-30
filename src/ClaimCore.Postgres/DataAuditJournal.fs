@@ -15,6 +15,8 @@ module internal DataAuditJournal =
             mutable Intents: int64
             mutable Settled: int64
             mutable CurrentKeyId: Guid
+            mutable LossIntentObserved: bool
+            mutable LossSettlementObserved: bool
         }
 
     let private requirePrimary
@@ -98,27 +100,43 @@ module internal DataAuditJournal =
                     do! requirePrimary queries.ExternalPublication ticket.OperationId ct
         }
 
-    let private verifyPhase
+    let private lossIntent connection transaction witness tip state (ticket: Ticket) ct =
+        state.Intents <- state.Intents + 1L
+
+        if tip.LossRetirementId = Some ticket.OperationId then
+            if state.LossIntentObserved then
+                corrupt ()
+
+            DataAuditInstallationLoss.verify connection transaction witness tip ticket ct
+            state.LossIntentObserved <- true
+
+    let private lossSettlement connection transaction witness tip state (ticket: Ticket) ct =
+        if tip.LossRetirementId = Some ticket.OperationId then
+            if state.LossSettlementObserved then
+                corrupt ()
+
+            DataAuditInstallationLoss.verify connection transaction witness tip ticket ct
+            state.LossSettlementObserved <- true
+            true
+        else
+            false
+
+    let private verifyPhaseKind
+        (connection: NpgsqlConnection)
+        (transaction: NpgsqlTransaction)
         (witness: WitnessProtocol)
         (tip: Snapshot)
         (state: ScanState)
         (queries: DataAuditJournalCommands)
         (item: MetadataRecord)
+        sealedCase
         (cancellationToken: CancellationToken)
         =
         task {
             let ticket = item.Ticket
 
-            if ticket.Epoch <> tip.Identity.Epoch then
-                corrupt ()
-
-            if ticket.Phase <> KeyRotated && ticket.KeyId <> state.CurrentKeyId then
-                corrupt ()
-
-            let! sealedCase = sealedBeforePurge queries.SealedCase ticket cancellationToken
-
             match ticket.Phase with
-            | Intent -> state.Intents <- state.Intents + 1L
+            | Intent -> lossIntent connection transaction witness tip state ticket cancellationToken
             | SettledAccepted ->
                 state.Settled <- state.Settled + 1L
 
@@ -135,10 +153,59 @@ module internal DataAuditJournal =
             | KeyRotated -> rotate witness state item
             | SettledAuthority ->
                 state.Settled <- state.Settled + 1L
-                do! verifyAuthorityPhase witness queries ticket sealedCase cancellationToken
+
+                if
+                    not (
+                        lossSettlement
+                            connection
+                            transaction
+                            witness
+                            tip
+                            state
+                            ticket
+                            cancellationToken
+                    )
+                then
+                    do! verifyAuthorityPhase witness queries ticket sealedCase cancellationToken
+        }
+
+    let private verifyPhase
+        connection
+        transaction
+        witness
+        tip
+        state
+        queries
+        (item: MetadataRecord)
+        cancellationToken
+        =
+        task {
+            let ticket = item.Ticket
+
+            if ticket.Epoch <> tip.Identity.Epoch then
+                corrupt ()
+
+            if ticket.Phase <> KeyRotated && ticket.KeyId <> state.CurrentKeyId then
+                corrupt ()
+
+            let! sealedCase = sealedBeforePurge queries.SealedCase ticket cancellationToken
+
+            do!
+                verifyPhaseKind
+                    connection
+                    transaction
+                    witness
+                    tip
+                    state
+                    queries
+                    item
+                    sealedCase
+                    cancellationToken
         }
 
     let private scanPage
+        (connection: NpgsqlConnection)
+        (transaction: NpgsqlTransaction)
         (witness: WitnessProtocol)
         (tip: Snapshot)
         (state: ScanState)
@@ -160,7 +227,18 @@ module internal DataAuditJournal =
 
             for item in page.Items do
                 do! DataAuditJournalPruned.require queries.Pruned item cancellationToken
-                do! verifyPhase witness tip state queries item cancellationToken
+
+                do!
+                    verifyPhase
+                        connection
+                        transaction
+                        witness
+                        tip
+                        state
+                        queries
+                        item
+                        cancellationToken
+
                 let ticket = item.Ticket
                 state.After <- ticket.Sequence
                 state.PreviousHash <- ticket.EntryHash
@@ -168,6 +246,8 @@ module internal DataAuditJournal =
         }
 
     let private scanPages
+        (connection: NpgsqlConnection)
+        (transaction: NpgsqlTransaction)
         (witness: WitnessProtocol)
         (tip: Snapshot)
         (queries: DataAuditJournalCommands)
@@ -182,16 +262,24 @@ module internal DataAuditJournal =
                     Intents = 0L
                     Settled = 0L
                     CurrentKeyId = tip.InitialKeyId
+                    LossIntentObserved = false
+                    LossSettlementObserved = false
                 }
 
             while state.After < tip.TipSequence do
-                do! scanPage witness tip state queries cancellationToken
+                do! scanPage connection transaction witness tip state queries cancellationToken
 
             if
                 state.After <> tip.TipSequence
                 || state.PreviousHash <> tip.TipHash
                 || state.CurrentKeyId <> tip.ActiveKeyId
                 || state.Settled > state.Intents
+                || (tip.LossRetirementPending
+                    && (not state.LossIntentObserved || state.LossSettlementObserved))
+                || (tip.LossRetired
+                    && (not state.LossIntentObserved || not state.LossSettlementObserved))
+                || (tip.LossRetirementId.IsNone
+                    && (state.LossIntentObserved || state.LossSettlementObserved))
             then
                 corrupt ()
 
@@ -208,5 +296,5 @@ module internal DataAuditJournal =
         =
         task {
             use queries = DataAuditJournalCommands.create connection transaction
-            return! scanPages witness tip queries cancellationToken
+            return! scanPages connection transaction witness tip queries cancellationToken
         }

@@ -26,7 +26,7 @@ jobs:
             stage: unit-linux
             assembly: ClaimCore.Tests
             project: tests/ClaimCore.Tests/ClaimCore.Tests.fsproj
-            expected: 333
+            expected: 334
             prefix: unit
             configuration: Release
             coverage: true
@@ -36,7 +36,7 @@ jobs:
             stage: unit-macos
             assembly: ClaimCore.Tests
             project: tests/ClaimCore.Tests/ClaimCore.Tests.fsproj
-            expected: 333
+            expected: 334
             prefix: unit
             configuration: Release
             coverage: true
@@ -46,7 +46,7 @@ jobs:
             stage: unit-windows
             assembly: ClaimCore.Tests
             project: tests/ClaimCore.Tests/ClaimCore.Tests.fsproj
-            expected: 333
+            expected: 334
             prefix: unit
             configuration: Release
             coverage: true
@@ -173,6 +173,7 @@ jobs:
           COVERAGE_PREFIX: ${{ matrix.prefix }}
         run: |
           Set-StrictMode -Version Latest
+          & ./eng/Check-TestDiscovery.ps1 -Assembly $env:ASSEMBLY -Configuration $env:CONFIGURATION
           $results = Join-Path $PWD "artifacts/test-results/$env:STAGE_ID"
           if (Test-Path -LiteralPath $results) { throw "The test result directory must start absent." }
           $started = (Get-Date).ToUniversalTime().ToString("O")

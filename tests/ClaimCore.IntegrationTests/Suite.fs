@@ -14,6 +14,8 @@ let private coreAndRecovery =
         FieldStorageTests.tests
         CoreBoundaryTests.tests
         RuntimeLifecycleTests.tests
+        RuntimeAuditCadenceTests.tests
+        AuthorityOperationFenceTests.tests
         StorageBoundaryTests.tests
         PreparationTests.tests
         AcceptedReplayStorageTests.tests
@@ -86,6 +88,10 @@ let private actorAndCustody =
         ManagedCopyEventHashTests.tests
         ManagedCopySignerTests.tests
         ManagedCopySignerPurposeTests.tests
+        InstallationLossRetirementTests.tests
+        InstallationLossRetirementCrashTests.tests
+        InstallationLossRetirementStalePairTests.tests
+        InstallationLossRetirementProcessTests.tests
         ManagedCopyIngestTests.tests
         ManagedCopyTransitionRejectionTests.tests
         WriterHandoffApprovalTests.tests

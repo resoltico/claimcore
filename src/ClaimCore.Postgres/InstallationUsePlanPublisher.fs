@@ -127,6 +127,7 @@ module internal InstallationUsePlanPublisher =
         (ct: CancellationToken)
         =
         task {
+            use! _authorityFence = AuthorityOperationFence.acquireShared None primaryOwner ct
             use transaction = primaryOwner.BeginTransaction(IsolationLevel.ReadCommitted)
             let! _ = ActorGrantRead.lockRevision primaryOwner transaction true ct
 

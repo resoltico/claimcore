@@ -234,4 +234,5 @@ let tests =
                 "[CC-DB-001] real-data owner commands require exact plan and approvals"
                 realDataOwnerCommands
          ]
-         @ AdministrationPrivateCommandTests.cases)
+         @ AdministrationPrivateCommandTests.cases
+         @ AdministrationLossCommandTests.cases)

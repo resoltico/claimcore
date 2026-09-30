@@ -21,6 +21,23 @@ export const caseFields: CaseFields = {
   status: "OPENED",
 };
 
+export const groupedCorrectionValues = {
+  registration: {
+    mode: "REPLACE" as const,
+    values: {
+      incidentDate: "2026-09-01",
+      incidentNotificationDate: "2026-09-02",
+      incidentCountry: "Latvia",
+      claimantName: "Synthetic A",
+      insurerName: "Synthetic insurer",
+      claimedAmount: "12.34",
+      claimedCurrency: "EUR",
+    },
+  },
+  decision: { mode: "KEEP" as const, values: {} },
+  payment: { mode: "KEEP" as const, values: {} },
+};
+
 export const definition: SemanticDefinition = {
   contractKind: "SEMANTIC_CORE_V1",
   ruleSetVersion: 1,

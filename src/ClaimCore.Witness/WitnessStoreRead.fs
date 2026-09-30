@@ -44,7 +44,8 @@ module internal WitnessStoreRead =
         =
         use command =
             new NpgsqlCommand(
-                "SELECT writer_generation,writer_capability_sha256,handoff_pending,activation_pending "
+                "SELECT writer_generation,writer_capability_sha256,handoff_pending,activation_pending,"
+                + "loss_retirement_pending,loss_retired "
                 + "FROM claimcore_witness.installation WHERE singleton "
                 + "AND installation_id=@installation AND lineage_id=@lineage AND epoch=@epoch "
                 + "AND current_user='claimcore_witness_writer'",
@@ -69,6 +70,8 @@ module internal WitnessStoreRead =
         let expected = reader.GetFieldValue<byte array>(1)
         let pending = reader.GetBoolean(2)
         let activationPending = reader.GetBoolean(3)
+        let lossPending = reader.GetBoolean(4)
+        let lossRetired = reader.GetBoolean(5)
         let actual = SHA256.HashData(capability)
 
         try
@@ -77,6 +80,8 @@ module internal WitnessStoreRead =
                 || generation < 1L
                 || pending
                 || activationPending
+                || lossPending
+                || lossRetired
                 || expected.Length <> 32
                 || not (CryptographicOperations.FixedTimeEquals(expected.AsSpan(), actual.AsSpan()))
             then

@@ -222,7 +222,7 @@ let private witnessCase8 =
 
             Expect.equal
                 digest
-                "3630d4a144db878fe98687da697b6e433673903354a33142a86675d37f3a21df"
+                "770a563cf040e29ba8868063c85df19829452b10af67dd2b908c3a2b15c72d02"
                 "Pinned PostgreSQL 18.6 deparsed function"))
 
 let private witnessCase9 =

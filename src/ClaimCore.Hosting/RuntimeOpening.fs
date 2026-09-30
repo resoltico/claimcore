@@ -127,12 +127,7 @@ module internal RuntimeOpening =
 
                 // Admission must prove the complete current primary projection against the
                 // independent witness before any actor-bound case work becomes available.
-                let! audit =
-                    DataAudit.runWithSuppression
-                        _connection
-                        witness
-                        (Some resources.Suppression)
-                        cancellationToken
+                let! audit = RuntimeFullAudit.run resources cancellationToken
 
                 let useState = InstallationUseScopeRead.requirePair _connection witness
                 requireBootstrapNoCases useState audit

@@ -128,6 +128,21 @@ CREATE TABLE claimcore.installation_lineage (
     created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
     witness_epoch bigint NOT NULL DEFAULT 1 CHECK (witness_epoch > 0),
     writer_generation bigint NOT NULL DEFAULT 1 CHECK (writer_generation > 0),
+    loss_retired boolean NOT NULL DEFAULT false,
+    loss_retirement_id uuid,
+    loss_retirement_intent_sequence bigint CHECK (
+        loss_retirement_intent_sequence IS NULL OR loss_retirement_intent_sequence > 0
+    ),
+    loss_retirement_intent_hash bytea CHECK (
+        loss_retirement_intent_hash IS NULL OR octet_length(loss_retirement_intent_hash) = 32
+    ),
+    CONSTRAINT installation_loss_retirement_shape CHECK (
+        (NOT loss_retired AND loss_retirement_id IS NULL
+            AND loss_retirement_intent_sequence IS NULL AND loss_retirement_intent_hash IS NULL)
+        OR (loss_retired AND loss_retirement_id IS NOT NULL
+            AND loss_retirement_intent_sequence IS NOT NULL
+            AND loss_retirement_intent_hash IS NOT NULL)
+    ),
     data_use_scope text NOT NULL CHECK (data_use_scope IN ('SYNTHETIC_ONLY','REAL_DATA')),
     data_use_phase text NOT NULL CHECK (data_use_phase IN ('BOOTSTRAP_NO_CASES','ACTIVE')),
     data_use_activation_event_id uuid,
@@ -1161,7 +1176,8 @@ CREATE TABLE claimcore.managed_copy_signers (
     signer_purpose text NOT NULL CHECK (signer_purpose IN (
         'COPY_ATTESTOR', 'LOCATION_REGISTRY', 'LOCATION_INSPECTOR',
         'DELETION_VERIFIER', 'RESTORE_REPORT', 'CHECKPOINT',
-        'WRITER_HANDOFF_ABORT', 'RESTORE_COPY_VERIFIER'
+        'WRITER_HANDOFF_ABORT', 'RESTORE_COPY_VERIFIER',
+        'INSTALLATION_LOSS_RETIREMENT'
     )),
     holder_actor_id uuid NOT NULL REFERENCES claimcore.actors(actor_id),
     ed25519_public_key bytea NOT NULL CHECK (octet_length(ed25519_public_key) = 32),
@@ -1189,7 +1205,8 @@ CREATE TABLE claimcore.managed_copy_signer_approvals (
     signer_purpose text NOT NULL CHECK (signer_purpose IN (
         'COPY_ATTESTOR', 'LOCATION_REGISTRY', 'LOCATION_INSPECTOR',
         'DELETION_VERIFIER', 'RESTORE_REPORT', 'CHECKPOINT',
-        'WRITER_HANDOFF_ABORT', 'RESTORE_COPY_VERIFIER'
+        'WRITER_HANDOFF_ABORT', 'RESTORE_COPY_VERIFIER',
+        'INSTALLATION_LOSS_RETIREMENT'
     )),
     holder_approval_id uuid REFERENCES claimcore.managed_copy_signer_approvals(approval_id),
     public_key_sha256 bytea NOT NULL CHECK (octet_length(public_key_sha256) = 32),
@@ -1221,7 +1238,8 @@ CREATE TABLE claimcore.managed_copy_signer_events (
     signer_purpose text NOT NULL CHECK (signer_purpose IN (
         'COPY_ATTESTOR', 'LOCATION_REGISTRY', 'LOCATION_INSPECTOR',
         'DELETION_VERIFIER', 'RESTORE_REPORT', 'CHECKPOINT',
-        'WRITER_HANDOFF_ABORT', 'RESTORE_COPY_VERIFIER'
+        'WRITER_HANDOFF_ABORT', 'RESTORE_COPY_VERIFIER',
+        'INSTALLATION_LOSS_RETIREMENT'
     )),
     holder_actor_id uuid NOT NULL REFERENCES claimcore.actors(actor_id),
     owner_actor_id uuid NOT NULL REFERENCES claimcore.actors(actor_id),
@@ -1251,6 +1269,54 @@ CREATE TABLE claimcore.managed_copy_signer_approval_uses (
     used_at timestamptz NOT NULL DEFAULT clock_timestamp(),
     UNIQUE (signer_event_id, actor_role)
 );
+
+-- A terminal loss decision never repairs missing evidence or resumes this installation.
+-- The two owner signatures bind a private, data-minimal decision; individual known operation
+-- identities are retained only as keyed commitments outside the signed document.
+CREATE TABLE claimcore.installation_loss_retirements (
+    retirement_id uuid PRIMARY KEY CHECK (retirement_id <> '00000000-0000-0000-0000-000000000000'),
+    installation_id uuid NOT NULL,
+    lineage_id uuid NOT NULL,
+    old_epoch bigint NOT NULL CHECK (old_epoch > 0),
+    previous_sequence bigint NOT NULL CHECK (previous_sequence >= 0),
+    previous_hash bytea NOT NULL CHECK (octet_length(previous_hash) = 32),
+    evidence_report_sha256 bytea CHECK (evidence_report_sha256 IS NULL OR octet_length(evidence_report_sha256) = 32),
+    independent_checkpoint_sha256 bytea CHECK (independent_checkpoint_sha256 IS NULL OR octet_length(independent_checkpoint_sha256) = 32),
+    operation_set_kind text NOT NULL CHECK (operation_set_kind IN ('KNOWN_OPERATIONS','UNKNOWN_OPERATIONS')),
+    known_operation_count integer NOT NULL CHECK (known_operation_count BETWEEN 0 AND 10000),
+    known_operation_digest bytea NOT NULL CHECK (octet_length(known_operation_digest) = 32),
+    signer_one_id uuid NOT NULL REFERENCES claimcore.managed_copy_signers(signing_key_id),
+    signer_two_id uuid NOT NULL REFERENCES claimcore.managed_copy_signers(signing_key_id),
+    owner_one_actor_id uuid NOT NULL REFERENCES claimcore.actors(actor_id),
+    owner_two_actor_id uuid NOT NULL REFERENCES claimcore.actors(actor_id),
+    owner_one_grant_revision bigint NOT NULL CHECK (owner_one_grant_revision > 0),
+    owner_two_grant_revision bigint NOT NULL CHECK (owner_two_grant_revision > 0),
+    authority_revision bigint NOT NULL CHECK (authority_revision > 0),
+    valid_until timestamptz NOT NULL,
+    canonical_decision bytea NOT NULL CHECK (octet_length(canonical_decision) BETWEEN 1 AND 16384),
+    canonical_sha256 bytea NOT NULL CHECK (octet_length(canonical_sha256) = 32),
+    signature_one bytea NOT NULL CHECK (octet_length(signature_one) = 64),
+    signature_two bytea NOT NULL CHECK (octet_length(signature_two) = 64),
+    witness_intent_sequence bigint NOT NULL UNIQUE CHECK (witness_intent_sequence > previous_sequence),
+    witness_intent_hash bytea NOT NULL CHECK (octet_length(witness_intent_hash) = 32),
+    recorded_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+    UNIQUE (installation_id, lineage_id),
+    CONSTRAINT loss_retirement_distinct_owners CHECK (
+        signer_one_id <> signer_two_id AND owner_one_actor_id <> owner_two_actor_id
+    ),
+    CONSTRAINT loss_retirement_unknown_set CHECK (
+        operation_set_kind <> 'UNKNOWN_OPERATIONS' OR known_operation_count = 0
+    )
+);
+
+CREATE TABLE claimcore.installation_loss_operation_denials (
+    operation_commitment bytea PRIMARY KEY CHECK (octet_length(operation_commitment) = 32),
+    retirement_id uuid NOT NULL REFERENCES claimcore.installation_loss_retirements(retirement_id)
+);
+
+ALTER TABLE claimcore.installation_lineage
+    ADD CONSTRAINT installation_loss_retirement_fk
+    FOREIGN KEY (loss_retirement_id) REFERENCES claimcore.installation_loss_retirements(retirement_id);
 
 -- Current projection and immutable event chain for every managed backup, WAL copy,
 -- snapshot, replica, key copy and product export. UNKNOWN never means deleted.

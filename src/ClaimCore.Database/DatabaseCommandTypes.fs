@@ -55,6 +55,7 @@ type DatabaseInputProblem =
     | RestoreEvidenceFileRefused
     | BackupHealthFileRefused
     | WriterHandoffFileRefused
+    | InstallationLossFileRefused
     | PhysicalCopyProofFileRefused
     | ProcessFailed
     | OutputDeliveryFailed
@@ -69,6 +70,17 @@ type FencedTailPaths =
         FenceSignature: string
         Supplement: string
         SupplementSignature: string
+    }
+
+[<NoEquality; NoComparison>]
+type InstallationLossPaths =
+    {
+        Candidate: string
+        EvidenceReport: string
+        IndependentCheckpoint: string
+        KnownOperations: string
+        SignatureOne: string
+        SignatureTwo: string
     }
 
 [<RequireQualifiedAccess; NoEquality; NoComparison>]
@@ -121,6 +133,16 @@ type DatabaseCommand =
         keyOneId: Guid *
         keyTwoId: Guid *
         outputFile: string
+    | DraftInstallationLossRetirement of
+        keyOneId: Guid *
+        keyTwoId: Guid *
+        evidenceReport: string *
+        independentCheckpoint: string *
+        knownOperations: string *
+        mode: string *
+        outputFile: string
+    | RetireInstallationAfterLoss of InstallationLossPaths
+    | ReconcileInstallationLossRetirement of InstallationLossPaths
     | PurgeLive of string
     | PruneWitnessPayload of string
     | InspectManagedCopy of Guid

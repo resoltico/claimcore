@@ -54,7 +54,8 @@ try {
     $safe = Join-Path $probeRoot "safe.txt"
     [IO.File]::WriteAllText($safe, "synthetic artifact without a credential`n")
 
-    if ((Invoke-Scanner @()).ExitCode -eq 0) {
+    $emptyInput = Invoke-Scanner @()
+    if ($emptyInput.ExitCode -eq 0 -or -not $emptyInput.Output.Contains("at INPUT")) {
         throw "An absent artifact path passed the scan."
     }
     $missing = Join-Path $probeRoot "missing.txt"
@@ -81,7 +82,7 @@ try {
         }
     }
     $discarded = @(& $pwsh -NoProfile -File $scanner -GitleaksArchivePath $safe $safe 2>&1)
-    if ($LASTEXITCODE -eq 0) {
+    if ($LASTEXITCODE -eq 0 -or -not (($discarded -join "`n").Contains("at SCANNER_ACQUISITION"))) {
         throw "An unverified scanner archive was accepted."
     }
 

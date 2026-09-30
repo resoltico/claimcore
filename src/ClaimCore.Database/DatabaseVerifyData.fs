@@ -10,12 +10,6 @@ open ClaimCore.HostSecurity
 open ClaimCore.Postgres
 open ClaimCore.Witness
 
-[<RequireQualifiedAccess; NoEquality; NoComparison>]
-type internal VerifyDataOutcome =
-    | Verified of DataAuditSummary * Snapshot
-    | InputRefused of DatabaseInputProblem
-    | AuditFailed
-
 /// Owner-only, read-only full audit. A held primary authority row prevents product mutations
 /// while the stable primary snapshot is reconciled with one independent witness cutoff.
 module internal DatabaseVerifyData =
@@ -118,11 +112,62 @@ module internal DatabaseVerifyData =
             member _.Dispose() = ()
         }
 
+    let private auditSnapshot
+        (connectionString: string)
+        (witness: WitnessProtocol)
+        (commitments: ISuppressionCommitments)
+        (before: Snapshot)
+        =
+        use auditConnection = new NpgsqlConnection(connectionString)
+        auditConnection.Open()
+        OwnerConnection.requireIdentity auditConnection
+        SchemaBaseline.requireCurrent auditConnection
+        DatabaseEnvironment.requireCompatible auditConnection
+
+        let summary =
+            DataAudit.runWithSuppression
+                auditConnection
+                witness
+                (Some commitments)
+                CancellationToken.None
+            |> fun work -> work.GetAwaiter().GetResult()
+
+        let tip = witness.Snapshot()
+
+        if
+            tip.TipSequence <> summary.WitnessCutoff
+            || tip.TipSequence <> before.TipSequence
+        then
+            invalidOp "Witness tip moved during the audit."
+
+        summary, tip
+
+    let private witnessFence (witness: WitnessProtocol) requireWriterFence =
+        let before = witness.Snapshot()
+
+        // Pending owner phases already fence ordinary appends. The outer session and
+        // primary row locks drain allowed owner transitions before the cutoff is captured.
+        if
+            requireWriterFence
+            && not (
+                before.HandoffPending
+                || before.ActivationPending
+                || before.LossRetirementPending
+                || before.LossRetired
+            )
+        then
+            witness.AcquireReadFence(before.WriterGeneration)
+        else
+            { new IDisposable with
+                member _.Dispose() = ()
+            }
+
     let private auditedUsing
         (ownerConnection: string)
         (custody: IKeyCustody)
         (key: SuppressionKeyFile)
         (openStore: Identity -> Store)
+        requireWriterFence
         inspect
         =
         let builder = OwnerConnection.builder ownerConnection
@@ -130,6 +175,11 @@ module internal DatabaseVerifyData =
         barrier.Open()
         OwnerConnection.requireIdentity barrier
         SchemaBaseline.requireCurrent barrier
+
+        use _operationFence =
+            AuthorityOperationFence.acquireExclusive None barrier CancellationToken.None
+            |> fun work -> work.GetAwaiter().GetResult()
+
         let installation, keyId, check = identity barrier
         use transaction = barrier.BeginTransaction(IsolationLevel.ReadCommitted)
 
@@ -151,21 +201,10 @@ module internal DatabaseVerifyData =
             new WitnessProtocol(witnessStore, borrowedCustody custody, installation)
 
         witness.AdmitReadOnly()
-        use auditConnection = new NpgsqlConnection(builder.ConnectionString)
-        auditConnection.Open()
-        OwnerConnection.requireIdentity auditConnection
-        SchemaBaseline.requireCurrent auditConnection
-        DatabaseEnvironment.requireCompatible auditConnection
+        use _fence = witnessFence witness requireWriterFence
 
-        let summary =
-            DataAudit.runWithSuppression auditConnection witness (Some port) CancellationToken.None
-            |> fun work -> work.GetAwaiter().GetResult()
-
-        let tip = witness.Snapshot()
-
-        if tip.TipSequence <> summary.WitnessCutoff then
-            invalidOp "Witness tip moved during the audit."
-
+        let cutoff = witness.Snapshot()
+        let summary, tip = auditSnapshot builder.ConnectionString witness port cutoff
         let inspected = inspect barrier transaction witness summary tip
         transaction.Rollback()
         summary, tip, inspected
@@ -182,6 +221,7 @@ module internal DatabaseVerifyData =
             (fun installation ->
                 capability.Use(fun material ->
                     new Store(witnessConnection, installation, material)))
+            true
             inspect
 
     let internal auditedRestoredWith
@@ -201,6 +241,7 @@ module internal DatabaseVerifyData =
             custody
             key
             (fun installation -> Store.OpenAudit(witnessAuditConnection, installation))
+            false
             inspect
 
     let private audited ownerConnection witnessConnection custody key =
@@ -238,11 +279,16 @@ module internal DatabaseVerifyData =
 
                         try
                             if not (separate ownerConnection witnessConnection) then
-                                VerifyDataOutcome.AuditFailed
+                                VerifyDataOutcome.AuditFailed VerifyDataFailure.TopologyRefused
                             else
                                 let summary, tip =
                                     audited ownerConnection witnessConnection custody key
 
                                 VerifyDataOutcome.Verified(summary, tip)
-                        with _ ->
-                            VerifyDataOutcome.AuditFailed
+                        with
+                        | :? IO.InvalidDataException ->
+                            VerifyDataOutcome.AuditFailed VerifyDataFailure.EvidenceDivergence
+                        | :? NpgsqlException
+                        | :? TimeoutException ->
+                            VerifyDataOutcome.AuditFailed VerifyDataFailure.AuditUnavailable
+                        | _ -> VerifyDataOutcome.AuditFailed VerifyDataFailure.AuditFault

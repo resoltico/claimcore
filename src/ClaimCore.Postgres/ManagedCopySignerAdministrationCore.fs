@@ -240,6 +240,10 @@ module internal ManagedCopySignerAdministration =
                     OwnerConnection.requireIdentity connection
                     SchemaBaseline.requireCurrent connection
                     witness.Admit()
+
+                    use! _authorityFence =
+                        AuthorityOperationFence.acquireShared None connection CancellationToken.None
+
                     use transaction = connection.BeginTransaction(IsolationLevel.ReadCommitted)
 
                     let! _ =

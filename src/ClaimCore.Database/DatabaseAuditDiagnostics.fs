@@ -40,6 +40,12 @@ module internal DatabaseAuditDiagnostics =
             count writer "epoch" tip.Identity.Epoch
             count writer "witnessCutoff" summary.WitnessCutoff
             writer.WriteString("witnessTipHash", Convert.ToHexStringLower tip.TipHash)
+
+            writer.WriteString(
+                "verifiedCaseTipsSha256",
+                Convert.ToHexStringLower summary.VerifiedCaseTipsSha256
+            )
+
             writer.WritePropertyName("counts")
             writer.WriteStartObject()
             count writer "cases" summary.Cases
@@ -69,7 +75,14 @@ module internal DatabaseAuditDiagnostics =
             writer.WriteEndObject()
             writer.WriteEndObject())
 
-    let private quarantined () =
+    let private category =
+        function
+        | VerifyDataFailure.EvidenceDivergence -> "EVIDENCE_DIVERGENCE"
+        | VerifyDataFailure.AuditUnavailable -> "AUDIT_UNAVAILABLE"
+        | VerifyDataFailure.AuditFault -> "AUDIT_FAULT"
+        | VerifyDataFailure.TopologyRefused -> "TOPOLOGY_REFUSED"
+
+    let private quarantined failure =
         encoded (fun writer ->
             writer.WriteStartObject()
             writer.WriteString("kind", "dataAuditResult")
@@ -80,6 +93,7 @@ module internal DatabaseAuditDiagnostics =
             writer.WriteString("id", "DB_DATA_AUDIT_FAILED")
             writer.WritePropertyName("parameters")
             writer.WriteStartObject()
+            writer.WriteString("category", category failure)
             writer.WriteEndObject()
             writer.WriteEndObject()
             writer.WriteString("recommendedAction", "INSPECT_AND_RECONCILE")
@@ -98,9 +112,9 @@ module internal DatabaseAuditDiagnostics =
                 ()
 
             3
-        | VerifyDataOutcome.AuditFailed ->
+        | VerifyDataOutcome.AuditFailed failure ->
             try
-                write errors (quarantined ())
+                write errors (quarantined failure)
             with _ ->
                 ()
 

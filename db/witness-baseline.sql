@@ -15,6 +15,33 @@ CREATE TABLE claimcore_witness.installation (
     key_check_envelope bytea NOT NULL CHECK (octet_length(key_check_envelope) BETWEEN 32 AND 4096),
     epoch bigint NOT NULL CHECK (epoch > 0),
     writer_generation bigint NOT NULL DEFAULT 1 CHECK (writer_generation > 0),
+    loss_retirement_pending boolean NOT NULL DEFAULT false,
+    loss_retired boolean NOT NULL DEFAULT false,
+    loss_retirement_id uuid,
+    loss_retirement_intent_sequence bigint CHECK (
+        loss_retirement_intent_sequence IS NULL OR loss_retirement_intent_sequence > 0
+    ),
+    loss_retirement_intent_hash bytea CHECK (
+        loss_retirement_intent_hash IS NULL OR octet_length(loss_retirement_intent_hash) = 32
+    ),
+    loss_retirement_sequence bigint CHECK (
+        loss_retirement_sequence IS NULL OR loss_retirement_sequence > 0
+    ),
+    loss_retirement_hash bytea CHECK (
+        loss_retirement_hash IS NULL OR octet_length(loss_retirement_hash) = 32
+    ),
+    CONSTRAINT installation_loss_retirement_shape CHECK (
+        (NOT loss_retirement_pending AND NOT loss_retired AND loss_retirement_id IS NULL
+            AND loss_retirement_intent_sequence IS NULL AND loss_retirement_intent_hash IS NULL
+            AND loss_retirement_sequence IS NULL AND loss_retirement_hash IS NULL)
+        OR (loss_retirement_pending AND NOT loss_retired AND loss_retirement_id IS NOT NULL
+            AND loss_retirement_intent_sequence IS NOT NULL AND loss_retirement_intent_hash IS NOT NULL
+            AND loss_retirement_sequence IS NULL AND loss_retirement_hash IS NULL)
+        OR (NOT loss_retirement_pending AND loss_retired AND loss_retirement_id IS NOT NULL
+            AND loss_retirement_intent_sequence IS NOT NULL AND loss_retirement_intent_hash IS NOT NULL
+            AND loss_retirement_sequence = loss_retirement_intent_sequence + 1
+            AND loss_retirement_hash IS NOT NULL)
+    ),
     data_use_scope text NOT NULL CHECK (data_use_scope IN ('SYNTHETIC_ONLY','REAL_DATA')),
     data_use_phase text NOT NULL CHECK (data_use_phase IN ('BOOTSTRAP_NO_CASES','ACTIVE')),
     data_use_activation_event_id uuid,
@@ -221,6 +248,92 @@ CREATE TABLE claimcore_witness.writer_handoffs (
     )
 );
 
+-- This owner-only row and its two journal tickets are retained even when primary recovery
+-- evidence is incomplete. A pending ticket already fences all ordinary writer authority.
+CREATE TABLE claimcore_witness.installation_loss_retirements (
+    retirement_id uuid PRIMARY KEY CHECK (retirement_id <> '00000000-0000-0000-0000-000000000000'),
+    installation_id uuid NOT NULL,
+    lineage_id uuid NOT NULL,
+    old_epoch bigint NOT NULL CHECK (old_epoch > 0),
+    previous_sequence bigint NOT NULL CHECK (previous_sequence >= 0),
+    previous_hash bytea NOT NULL CHECK (octet_length(previous_hash) = 32),
+    canonical_decision bytea NOT NULL CHECK (octet_length(canonical_decision) BETWEEN 1 AND 16384),
+    canonical_sha256 bytea NOT NULL CHECK (octet_length(canonical_sha256) = 32),
+    signature_one bytea NOT NULL CHECK (octet_length(signature_one) = 64),
+    signature_two bytea NOT NULL CHECK (octet_length(signature_two) = 64),
+    signer_one_id uuid NOT NULL,
+    signer_two_id uuid NOT NULL,
+    owner_one_actor_id uuid NOT NULL,
+    owner_two_actor_id uuid NOT NULL,
+    operation_set_kind text NOT NULL CHECK (operation_set_kind IN ('KNOWN_OPERATIONS','UNKNOWN_OPERATIONS')),
+    known_operation_count integer NOT NULL CHECK (known_operation_count BETWEEN 0 AND 10000),
+    known_operation_digest bytea NOT NULL CHECK (octet_length(known_operation_digest) = 32),
+    intent_sequence bigint NOT NULL UNIQUE CHECK (intent_sequence = previous_sequence + 1),
+    intent_hash bytea NOT NULL CHECK (octet_length(intent_hash) = 32),
+    settlement_sequence bigint UNIQUE CHECK (settlement_sequence IS NULL OR settlement_sequence = intent_sequence + 1),
+    settlement_hash bytea CHECK (settlement_hash IS NULL OR octet_length(settlement_hash) = 32),
+    recorded_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+    CONSTRAINT loss_retirement_distinct_signers CHECK (
+        signer_one_id <> signer_two_id AND owner_one_actor_id <> owner_two_actor_id
+    ),
+    CONSTRAINT loss_retirement_settlement_shape CHECK (
+        (settlement_sequence IS NULL AND settlement_hash IS NULL)
+        OR (settlement_sequence IS NOT NULL AND settlement_hash IS NOT NULL)
+    ),
+    CONSTRAINT loss_retirement_unknown_set CHECK (
+        operation_set_kind <> 'UNKNOWN_OPERATIONS' OR known_operation_count = 0
+    )
+);
+
+-- A pending incident ticket closes every existing owner and runtime writer lane. The
+-- sole allowed later journal insert is that ticket's exact terminal settlement.
+CREATE FUNCTION claimcore_witness.guard_loss_journal() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = pg_catalog, claimcore_witness, pg_temp
+AS $loss_journal_guard$
+DECLARE
+    v_installation claimcore_witness.installation%ROWTYPE;
+BEGIN
+    SELECT * INTO STRICT v_installation FROM claimcore_witness.installation WHERE singleton;
+    IF v_installation.loss_retired
+       OR (v_installation.loss_retirement_pending AND NOT (
+           NEW.operation_id=v_installation.loss_retirement_id
+           AND NEW.phase='SETTLED_AUTHORITY'
+           AND NEW.scope_kind='INSTALLATION'
+           AND NEW.subject_case_id IS NULL
+           AND NEW.sequence=v_installation.loss_retirement_intent_sequence + 1
+       )) THEN
+        RAISE EXCEPTION 'installation loss retirement fences witness journal';
+    END IF;
+    RETURN NEW;
+END
+$loss_journal_guard$;
+
+CREATE TRIGGER guard_loss_journal BEFORE INSERT ON claimcore_witness.journal
+FOR EACH ROW EXECUTE FUNCTION claimcore_witness.guard_loss_journal();
+
+CREATE FUNCTION claimcore_witness.guard_loss_installation() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = pg_catalog, claimcore_witness, pg_temp
+AS $loss_installation_guard$
+BEGIN
+    IF OLD.loss_retired OR (OLD.loss_retirement_pending AND NOT (
+        NEW.loss_retired AND NOT NEW.loss_retirement_pending
+        AND NEW.loss_retirement_id=OLD.loss_retirement_id
+        AND NEW.loss_retirement_intent_sequence=OLD.loss_retirement_intent_sequence
+        AND NEW.loss_retirement_intent_hash=OLD.loss_retirement_intent_hash
+        AND NEW.loss_retirement_sequence=OLD.loss_retirement_intent_sequence + 1
+        AND NEW.tip_sequence=OLD.tip_sequence + 1
+    )) THEN
+        RAISE EXCEPTION 'installation loss retirement is terminal';
+    END IF;
+    RETURN NEW;
+END
+$loss_installation_guard$;
+
+CREATE TRIGGER guard_loss_installation BEFORE UPDATE ON claimcore_witness.installation
+FOR EACH ROW EXECUTE FUNCTION claimcore_witness.guard_loss_installation();
+
 -- A read-only writer can hold a row-share lock only through this narrow definer function.
 -- The caller's transaction retains the lock until its claimant-bearing core read completes.
 CREATE FUNCTION claimcore_witness.acquire_read_fence(
@@ -246,6 +359,8 @@ BEGIN
        OR v_installation.epoch <> p_epoch
        OR v_installation.handoff_pending
        OR v_installation.activation_pending
+       OR v_installation.loss_retirement_pending
+       OR v_installation.loss_retired
        OR v_installation.writer_capability_sha256 <> pg_catalog.sha256(p_writer_capability) THEN
         RAISE EXCEPTION 'writer read fence is unavailable';
     END IF;
@@ -313,6 +428,7 @@ BEGIN
         RAISE EXCEPTION 'witness identity or epoch mismatch';
     END IF;
     IF v_installation.handoff_pending OR v_installation.activation_pending
+       OR v_installation.loss_retirement_pending OR v_installation.loss_retired
        OR v_installation.writer_capability_sha256 <> pg_catalog.sha256(p_writer_capability) THEN
         RAISE EXCEPTION 'witness writer generation is fenced';
     END IF;
@@ -1451,15 +1567,254 @@ BEGIN
 END
 $rotation$;
 
+-- W0 is an irreversible quarantine fence, not a declaration that missing data was
+-- recovered. Its exact retry returns the same ticket; any divergent retry refuses.
+CREATE FUNCTION claimcore_witness.prepare_installation_loss_retirement(
+    p_installation_id uuid,
+    p_lineage_id uuid,
+    p_epoch bigint,
+    p_retirement_id uuid,
+    p_expected_sequence bigint,
+    p_expected_hash bytea,
+    p_canonical bytea,
+    p_signature_one bytea,
+    p_signature_two bytea,
+    p_signer_one_id uuid,
+    p_signer_two_id uuid,
+    p_owner_one_actor_id uuid,
+    p_owner_two_actor_id uuid,
+    p_operation_set_kind text,
+    p_known_operation_count integer,
+    p_known_operation_digest bytea,
+    p_key_id uuid,
+    p_encrypted_intent bytea
+) RETURNS TABLE(sequence bigint, entry_hash bytea, payload_sha256 bytea)
+LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = pg_catalog, claimcore_witness, pg_temp
+AS $loss_prepare$
+DECLARE
+    v_installation claimcore_witness.installation%ROWTYPE;
+    v_existing claimcore_witness.installation_loss_retirements%ROWTYPE;
+    v_digest bytea;
+    v_hash bytea;
+BEGIN
+    IF session_user <> 'claimcore_witness_owner'
+       OR p_installation_id IS NULL OR p_lineage_id IS NULL OR p_epoch IS NULL OR p_epoch < 1
+       OR p_retirement_id IS NULL OR p_retirement_id='00000000-0000-0000-0000-000000000000'::uuid
+       OR p_expected_sequence IS NULL OR p_expected_sequence < 0
+       OR p_expected_hash IS NULL OR octet_length(p_expected_hash) <> 32
+       OR p_canonical IS NULL OR octet_length(p_canonical) NOT BETWEEN 1 AND 16384
+       OR p_signature_one IS NULL OR octet_length(p_signature_one) <> 64
+       OR p_signature_two IS NULL OR octet_length(p_signature_two) <> 64
+       OR p_signer_one_id IS NULL OR p_signer_two_id IS NULL OR p_signer_one_id=p_signer_two_id
+       OR p_owner_one_actor_id IS NULL OR p_owner_two_actor_id IS NULL
+       OR p_owner_one_actor_id=p_owner_two_actor_id
+       OR p_operation_set_kind NOT IN ('KNOWN_OPERATIONS','UNKNOWN_OPERATIONS')
+       OR p_known_operation_count IS NULL OR p_known_operation_count NOT BETWEEN 0 AND 10000
+       OR (p_operation_set_kind='UNKNOWN_OPERATIONS' AND p_known_operation_count<>0)
+       OR p_known_operation_digest IS NULL OR octet_length(p_known_operation_digest)<>32
+       OR p_key_id IS NULL OR p_encrypted_intent IS NULL
+       OR octet_length(p_encrypted_intent) NOT BETWEEN 1 AND 1048576
+    THEN
+        RAISE EXCEPTION 'invalid installation loss retirement intent';
+    END IF;
+    SELECT * INTO STRICT v_installation
+      FROM claimcore_witness.installation WHERE singleton FOR UPDATE;
+    IF v_installation.installation_id<>p_installation_id
+       OR v_installation.lineage_id<>p_lineage_id
+       OR v_installation.epoch<>p_epoch
+       OR v_installation.active_key_id<>p_key_id THEN
+        RAISE EXCEPTION 'installation loss identity diverged';
+    END IF;
+    v_digest:=pg_catalog.sha256(p_encrypted_intent);
+    SELECT * INTO v_existing FROM claimcore_witness.installation_loss_retirements
+      WHERE retirement_id=p_retirement_id;
+    IF FOUND THEN
+        IF v_installation.loss_retirement_id<>p_retirement_id
+           OR NOT (v_installation.loss_retirement_pending OR v_installation.loss_retired)
+           OR v_installation.loss_retirement_intent_sequence<>v_existing.intent_sequence
+           OR v_installation.loss_retirement_intent_hash<>v_existing.intent_hash
+           OR v_existing.installation_id<>p_installation_id
+           OR v_existing.lineage_id<>p_lineage_id
+           OR v_existing.old_epoch<>p_epoch
+           OR v_existing.previous_sequence<>p_expected_sequence
+           OR v_existing.previous_hash<>p_expected_hash
+           OR v_existing.canonical_decision<>p_canonical
+           OR v_existing.signature_one<>p_signature_one
+           OR v_existing.signature_two<>p_signature_two
+           OR v_existing.signer_one_id<>p_signer_one_id
+           OR v_existing.signer_two_id<>p_signer_two_id
+           OR v_existing.owner_one_actor_id<>p_owner_one_actor_id
+           OR v_existing.owner_two_actor_id<>p_owner_two_actor_id
+           OR v_existing.operation_set_kind<>p_operation_set_kind
+           OR v_existing.known_operation_count<>p_known_operation_count
+           OR v_existing.known_operation_digest<>p_known_operation_digest
+           OR NOT EXISTS (
+               SELECT 1 FROM claimcore_witness.journal j
+               JOIN claimcore_witness.journal_payloads p
+                 ON p.installation_id=j.installation_id AND p.sequence=j.sequence
+               WHERE j.installation_id=p_installation_id AND j.operation_id=p_retirement_id
+                 AND j.phase='INTENT' AND j.sequence=v_existing.intent_sequence
+                 AND j.entry_hash=v_existing.intent_hash AND j.payload_sha256=v_digest
+                 AND p.encrypted_payload=p_encrypted_intent
+           ) THEN
+            RAISE EXCEPTION 'divergent installation loss retirement retry';
+        END IF;
+        sequence:=v_existing.intent_sequence;
+        entry_hash:=v_existing.intent_hash;
+        payload_sha256:=v_digest;
+        RETURN NEXT;
+        RETURN;
+    END IF;
+    IF v_installation.loss_retirement_pending OR v_installation.loss_retired
+       OR v_installation.tip_sequence<>p_expected_sequence
+       OR v_installation.tip_hash<>p_expected_hash
+       OR EXISTS (SELECT 1 FROM claimcore_witness.journal
+                  WHERE installation_id=p_installation_id AND operation_id=p_retirement_id) THEN
+        RAISE EXCEPTION 'installation loss retirement cutoff diverged';
+    END IF;
+    sequence:=p_expected_sequence+1;
+    entry_hash:=pg_catalog.sha256(
+        p_expected_hash || pg_catalog.convert_to(
+            p_installation_id::text || ':' || p_lineage_id::text || ':' ||
+            p_epoch::text || ':' || sequence::text || ':' || p_retirement_id::text ||
+            ':INTENT:' || p_key_id::text || ':INSTALLATION:-', 'UTF8') || v_digest);
+    INSERT INTO claimcore_witness.journal
+      (installation_id,lineage_id,epoch,sequence,operation_id,scope_kind,subject_case_id,
+       key_id,phase,payload_sha256,previous_hash,entry_hash)
+    VALUES (p_installation_id,p_lineage_id,p_epoch,sequence,p_retirement_id,'INSTALLATION',NULL,
+            p_key_id,'INTENT',v_digest,p_expected_hash,entry_hash);
+    INSERT INTO claimcore_witness.journal_payloads
+      (installation_id,sequence,subject_case_id,encrypted_payload)
+    VALUES (p_installation_id,sequence,NULL,p_encrypted_intent);
+    INSERT INTO claimcore_witness.installation_loss_retirements
+      (retirement_id,installation_id,lineage_id,old_epoch,previous_sequence,previous_hash,
+       canonical_decision,canonical_sha256,signature_one,signature_two,signer_one_id,
+       signer_two_id,owner_one_actor_id,owner_two_actor_id,operation_set_kind,
+       known_operation_count,known_operation_digest,intent_sequence,intent_hash)
+    VALUES (p_retirement_id,p_installation_id,p_lineage_id,p_epoch,p_expected_sequence,
+            p_expected_hash,p_canonical,pg_catalog.sha256(p_canonical),p_signature_one,
+            p_signature_two,p_signer_one_id,p_signer_two_id,p_owner_one_actor_id,
+            p_owner_two_actor_id,p_operation_set_kind,p_known_operation_count,
+            p_known_operation_digest,sequence,entry_hash);
+    UPDATE claimcore_witness.installation SET
+        loss_retirement_pending=true,loss_retirement_id=p_retirement_id,
+        loss_retirement_intent_sequence=sequence,loss_retirement_intent_hash=entry_hash,
+        tip_sequence=sequence,tip_hash=entry_hash WHERE singleton;
+    payload_sha256:=v_digest;
+    RETURN NEXT;
+END
+$loss_prepare$;
+
+-- W1 follows exact primary readback. The witness owner remains a trusted authority;
+-- the product adapter refuses W1 without the co-committed primary receipt.
+CREATE FUNCTION claimcore_witness.settle_installation_loss_retirement(
+    p_installation_id uuid,
+    p_lineage_id uuid,
+    p_epoch bigint,
+    p_retirement_id uuid,
+    p_intent_sequence bigint,
+    p_intent_hash bytea,
+    p_primary_candidate_sha256 bytea,
+    p_key_id uuid,
+    p_encrypted_settlement bytea
+) RETURNS TABLE(sequence bigint, entry_hash bytea, payload_sha256 bytea)
+LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = pg_catalog, claimcore_witness, pg_temp
+AS $loss_settle$
+DECLARE
+    v_installation claimcore_witness.installation%ROWTYPE;
+    v_retirement claimcore_witness.installation_loss_retirements%ROWTYPE;
+    v_digest bytea;
+BEGIN
+    IF session_user <> 'claimcore_witness_owner'
+       OR p_installation_id IS NULL OR p_lineage_id IS NULL OR p_epoch IS NULL
+       OR p_retirement_id IS NULL OR p_intent_sequence IS NULL OR p_intent_sequence<1
+       OR p_intent_hash IS NULL OR octet_length(p_intent_hash)<>32
+       OR p_primary_candidate_sha256 IS NULL OR octet_length(p_primary_candidate_sha256)<>32
+       OR p_key_id IS NULL OR p_encrypted_settlement IS NULL
+       OR octet_length(p_encrypted_settlement) NOT BETWEEN 1 AND 1048576 THEN
+        RAISE EXCEPTION 'invalid installation loss retirement settlement';
+    END IF;
+    SELECT * INTO STRICT v_installation
+      FROM claimcore_witness.installation WHERE singleton FOR UPDATE;
+    SELECT * INTO STRICT v_retirement
+      FROM claimcore_witness.installation_loss_retirements WHERE retirement_id=p_retirement_id FOR UPDATE;
+    IF v_installation.installation_id<>p_installation_id
+       OR v_installation.lineage_id<>p_lineage_id
+       OR v_installation.epoch<>p_epoch OR v_installation.active_key_id<>p_key_id
+       OR v_retirement.intent_sequence<>p_intent_sequence
+       OR v_retirement.intent_hash<>p_intent_hash
+       OR v_retirement.canonical_sha256<>p_primary_candidate_sha256 THEN
+        RAISE EXCEPTION 'installation loss retirement evidence diverged';
+    END IF;
+    v_digest:=pg_catalog.sha256(p_encrypted_settlement);
+    IF v_retirement.settlement_sequence IS NOT NULL THEN
+        IF NOT v_installation.loss_retired OR v_installation.loss_retirement_pending
+           OR v_installation.loss_retirement_id<>p_retirement_id
+           OR v_installation.loss_retirement_sequence<>v_retirement.settlement_sequence
+           OR v_installation.loss_retirement_hash<>v_retirement.settlement_hash
+           OR NOT EXISTS (
+               SELECT 1 FROM claimcore_witness.journal j
+               JOIN claimcore_witness.journal_payloads p
+                 ON p.installation_id=j.installation_id AND p.sequence=j.sequence
+               WHERE j.installation_id=p_installation_id AND j.operation_id=p_retirement_id
+                 AND j.phase='SETTLED_AUTHORITY'
+                 AND j.sequence=v_retirement.settlement_sequence
+                 AND j.entry_hash=v_retirement.settlement_hash
+                 AND j.payload_sha256=v_digest AND p.encrypted_payload=p_encrypted_settlement
+           ) THEN
+            RAISE EXCEPTION 'divergent installation loss retirement settlement retry';
+        END IF;
+        sequence:=v_retirement.settlement_sequence;
+        entry_hash:=v_retirement.settlement_hash;
+        payload_sha256:=v_digest;
+        RETURN NEXT;
+        RETURN;
+    END IF;
+    IF NOT v_installation.loss_retirement_pending OR v_installation.loss_retired
+       OR v_installation.loss_retirement_id<>p_retirement_id
+       OR v_installation.tip_sequence<>p_intent_sequence
+       OR v_installation.tip_hash<>p_intent_hash THEN
+        RAISE EXCEPTION 'installation loss retirement is not pending';
+    END IF;
+    sequence:=p_intent_sequence+1;
+    entry_hash:=pg_catalog.sha256(
+        p_intent_hash || pg_catalog.convert_to(
+            p_installation_id::text || ':' || p_lineage_id::text || ':' ||
+            p_epoch::text || ':' || sequence::text || ':' || p_retirement_id::text ||
+            ':SETTLED_AUTHORITY:' || p_key_id::text || ':INSTALLATION:-', 'UTF8') || v_digest);
+    INSERT INTO claimcore_witness.journal
+      (installation_id,lineage_id,epoch,sequence,operation_id,scope_kind,subject_case_id,
+       key_id,phase,payload_sha256,previous_hash,entry_hash)
+    VALUES (p_installation_id,p_lineage_id,p_epoch,sequence,p_retirement_id,'INSTALLATION',NULL,
+            p_key_id,'SETTLED_AUTHORITY',v_digest,p_intent_hash,entry_hash);
+    INSERT INTO claimcore_witness.journal_payloads
+      (installation_id,sequence,subject_case_id,encrypted_payload)
+    VALUES (p_installation_id,sequence,NULL,p_encrypted_settlement);
+    UPDATE claimcore_witness.installation_loss_retirements SET
+        settlement_sequence=sequence,settlement_hash=entry_hash
+      WHERE retirement_id=p_retirement_id;
+    UPDATE claimcore_witness.installation SET
+        loss_retirement_pending=false,loss_retired=true,
+        loss_retirement_sequence=sequence,loss_retirement_hash=entry_hash,
+        tip_sequence=sequence,tip_hash=entry_hash WHERE singleton;
+    payload_sha256:=v_digest;
+    RETURN NEXT;
+END
+$loss_settle$;
+
 REVOKE ALL ON ALL TABLES IN SCHEMA claimcore_witness FROM PUBLIC;
 REVOKE ALL ON ALL FUNCTIONS IN SCHEMA claimcore_witness FROM PUBLIC;
 GRANT USAGE ON SCHEMA claimcore_witness TO claimcore_witness_writer;
 GRANT USAGE ON SCHEMA claimcore_witness TO claimcore_witness_auditor;
 GRANT SELECT ON claimcore_witness.installation, claimcore_witness.journal,
-    claimcore_witness.journal_payloads, claimcore_witness.writer_handoffs
+    claimcore_witness.journal_payloads, claimcore_witness.writer_handoffs,
+    claimcore_witness.installation_loss_retirements
   TO claimcore_witness_writer;
 GRANT SELECT ON claimcore_witness.installation, claimcore_witness.journal,
-    claimcore_witness.journal_payloads, claimcore_witness.writer_handoffs
+    claimcore_witness.journal_payloads, claimcore_witness.writer_handoffs,
+    claimcore_witness.installation_loss_retirements
   TO claimcore_witness_auditor;
 GRANT EXECUTE ON FUNCTION claimcore_witness.append(uuid, uuid, bigint, uuid, text, uuid, text, uuid, bytea, bytea)
   TO claimcore_witness_writer;

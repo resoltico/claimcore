@@ -5,6 +5,7 @@ open System.Data.Common
 open System.Threading
 open Npgsql
 open ClaimCore.Witness
+open DataAuditCommon
 
 [<NoEquality; NoComparison>]
 type internal WriterActivationAuditRow =
@@ -117,7 +118,7 @@ module internal DataAuditWriterActivationRows =
                 let value = row identity reader
 
                 if reader.Read() then
-                    invalidOp "Writer activation page is ambiguous."
+                    corrupt ()
 
                 return Some value
         }

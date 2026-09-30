@@ -19,9 +19,12 @@ open ClaimCore.IntegrationTests.FixtureWitnessDatabase
 let completedAdministration outcome =
     match outcome with
     | AdministrationOutcome.Completed value -> value
-    | AdministrationOutcome.NotStarted _
-    | AdministrationOutcome.NotCommitted _ ->
-        failtest "Expected confirmed administrative completion."
+    | AdministrationOutcome.NotStarted reason
+    | AdministrationOutcome.NotCommitted reason ->
+        failtest (
+            "Expected confirmed administrative completion; safe reason: "
+            + reason.ToString()
+        )
     | _ -> failtest "Expected confirmed administrative completion."
 
 let refusedAdministration expected outcome =

@@ -53,6 +53,11 @@ module internal DatabaseInputPolicy =
                 "DB_WRITER_HANDOFF_FILE_REFUSED",
                 "Private writer-handoff abort evidence is missing or invalid."
             )
+        | DatabaseInputProblem.InstallationLossFileRefused ->
+            Some(
+                "DB_INSTALLATION_LOSS_FILE_REFUSED",
+                "Private installation-loss evidence is missing or invalid."
+            )
         | DatabaseInputProblem.PhysicalCopyProofFileRefused ->
             Some(
                 "DB_PHYSICAL_COPY_PROOF_FILE_REFUSED",

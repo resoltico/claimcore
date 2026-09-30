@@ -183,6 +183,7 @@ module internal ProcessDiagnosticCorpus =
                     epoch = "1"
                     witnessCutoff = "2"
                     witnessTipHash = String.replicate 64 "a"
+                    verifiedCaseTipsSha256 = String.replicate 64 "b"
                     counts = dataAuditCounts
                 |}
             )
@@ -196,7 +197,7 @@ module internal ProcessDiagnosticCorpus =
                     diagnostic =
                         {|
                             id = "DB_DATA_AUDIT_FAILED"
-                            parameters = Map.empty<string, int>
+                            parameters = Map.ofList [ "category", "EVIDENCE_DIVERGENCE" ]
                         |}
                     recommendedAction = "INSPECT_AND_RECONCILE"
                 |}

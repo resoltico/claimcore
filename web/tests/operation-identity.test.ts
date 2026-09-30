@@ -6,7 +6,7 @@ import {
   operationReducer,
   type OperationState,
 } from "../src/domain/operationReducer";
-import { caseFields, preparation, review } from "./v3-foundation.fixtures";
+import { caseFields, groupedCorrectionValues, preparation, review } from "./v3-foundation.fixtures";
 
 const firstId = "00000000-0000-4000-8000-000000000001";
 const secondId = "00000000-0000-4000-8000-000000000002";
@@ -188,6 +188,14 @@ it("retains an exact id until a retained preparation is edited, then starts a ne
 });
 
 it("models definite rejection and unknown outcomes without allowing a dispatched mutation to regress", () => {
+  const preparing = begin(initial(), 9);
+  expect(
+    operationReducer(preparing, {
+      type: "OUTCOME_UNKNOWN",
+      requestId: 9,
+      message: localNotice("unreachable"),
+    }),
+  ).toBe(preparing);
   const unknown = operationReducer(begin(initial(), 1), {
     type: "PREPARATION_UNKNOWN",
     requestId: 1,
@@ -257,23 +265,10 @@ it("keeps invalid reducer transitions inert and records a completed receipt", ()
 });
 
 it("freezes grouped correction identity while a later correction edit forks a new operation", () => {
-  const correction = {
-    registration: {
-      mode: "REPLACE" as const,
-      values: {
-        incidentDate: "2026-09-01",
-        incidentNotificationDate: "2026-09-02",
-        incidentCountry: "Latvia",
-        claimantName: "Synthetic A",
-        insurerName: "Synthetic insurer",
-        claimedAmount: "12.34",
-        claimedCurrency: "EUR",
-      },
-    },
-    decision: { mode: "KEEP" as const, values: {} },
-    payment: { mode: "KEEP" as const, values: {} },
-  };
-  const first = begin(initialOperation(firstId, "CORRECT_CASE", correction, "CASE-SYNTHETIC"), 1);
+  const first = begin(
+    initialOperation(firstId, "CORRECT_CASE", groupedCorrectionValues, "CASE-SYNTHETIC"),
+    1,
+  );
   if (first.exposedRequest?.command.kind !== "CORRECT_CASE")
     throw new Error("Expected a grouped correction request.");
   const rejected = refused(first, 1);
@@ -288,7 +283,7 @@ it("freezes grouped correction identity while a later correction edit forks a ne
     throw new Error("Expected retained grouped correction identity.");
   expect(rejected.exposedRequest.command.groups.registration).toEqual({
     mode: "REPLACE",
-    values: { ...correction.registration.values },
+    values: { ...groupedCorrectionValues.registration.values },
   });
   expect(edited.operationId).toBe(secondId);
   expect(edited.values).toMatchObject({

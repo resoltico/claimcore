@@ -5,9 +5,26 @@ open System.Security.Cryptography
 open ClaimCore.Application
 open ClaimCore.Postgres
 
-/// One runtime owns the verified primary pool, witness and owner-private key custody.
+/// One runtime owns the verified primary pool, separate read-barrier and full-audit pools,
+/// witness and owner-private key custody.
 type internal RuntimeResources(primaryConnection: string, artifactKeyRingPath: string) =
     let dataSource = RuntimeDataSource.create primaryConnection
+
+    let readBarrierDataSource =
+        try
+            RuntimeDataSource.createReadBarrier primaryConnection
+        with _ ->
+            dataSource.Dispose()
+            reraise ()
+
+    let fullAuditDataSource =
+        try
+            RuntimeDataSource.createFullAudit primaryConnection
+        with _ ->
+            readBarrierDataSource.Dispose()
+            dataSource.Dispose()
+            reraise ()
+
     let cursorKey = RandomNumberGenerator.GetBytes 32
     let cursorProtection = new CaseListCursorProtection(cursorKey)
     do CryptographicOperations.ZeroMemory cursorKey
@@ -15,6 +32,8 @@ type internal RuntimeResources(primaryConnection: string, artifactKeyRingPath: s
     let mutable clock: IBusinessTime option = None
     let mutable suppression: (IDisposable * ISuppressionCommitments) option = None
     member _.DataSource = dataSource
+    member _.ReadBarrierDataSource = readBarrierDataSource
+    member _.FullAuditDataSource = fullAuditDataSource
     member _.CursorProtection = cursorProtection :> ICaseListCursorProtection
     member _.ArtifactKeyRingPath = artifactKeyRingPath
     member _.Attach(value: WitnessProtocol) = witness <- Some value
@@ -40,4 +59,6 @@ type internal RuntimeResources(primaryConnection: string, artifactKeyRingPath: s
             witness |> Option.iter (fun value -> (value :> IDisposable).Dispose())
             suppression |> Option.iter (fun (disposable, _) -> disposable.Dispose())
             (cursorProtection :> IDisposable).Dispose()
+            readBarrierDataSource.Dispose()
+            fullAuditDataSource.Dispose()
             dataSource.Dispose()

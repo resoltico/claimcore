@@ -3,6 +3,7 @@ namespace ClaimCore.Postgres
 open System
 open System.Data
 open System.IO
+open System.Threading
 open Npgsql
 open NpgsqlTypes
 
@@ -153,6 +154,12 @@ module PreparationPruning =
         DatabaseEnvironment.requireCompatible connection
         OwnerConnection.requireIdentity connection
         SchemaBaseline.requireCurrent connection
+
+        use _authorityFence =
+            (AuthorityOperationFence.acquireShared None connection CancellationToken.None)
+                .GetAwaiter()
+                .GetResult()
+
         use transaction = connection.BeginTransaction(IsolationLevel.ReadCommitted)
         progress.BeginWork()
         Sql.lockKey connection transaction "claimcore:request-preparation-prune"

@@ -6,6 +6,7 @@
     <Compile Include="WitnessIdentity.fs" />
     <Compile Include="WitnessInstallationUse.fs" />
     <Compile Include="WitnessTypes.fs" />
+    <Compile Include="WitnessHandoffTypes.fs" />
     <Compile Include="WitnessKeyRotation.fs" />
     <Compile Include="WitnessAdmission.fs" />
     <Compile Include="WitnessAuditAdmission.fs" />
@@ -19,6 +20,7 @@
     <Compile Include="WitnessStoreMetadata.fs" />
     <Compile Include="WitnessStorePayloadPage.fs" />
     <Compile Include="WitnessStoreHandoff.fs" />
+    <Compile Include="WitnessStoreLossRetirement.fs" />
     <Compile Include="WitnessStore.fs" />
   </ItemGroup>
   <ItemGroup>

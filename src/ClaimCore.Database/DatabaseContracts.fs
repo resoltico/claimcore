@@ -179,6 +179,8 @@ module DatabaseContracts =
                 "epoch", count ()
                 "witnessCutoff", count ()
                 "witnessTipHash", obj [ "type", text "string"; "pattern", text "^[0-9a-f]{64}$" ]
+                "verifiedCaseTipsSha256",
+                obj [ "type", text "string"; "pattern", text "^[0-9a-f]{64}$" ]
                 "counts", dataAuditCounts ()
             ]
 
@@ -188,7 +190,19 @@ module DatabaseContracts =
                 "kind", constant "dataAuditResult"
                 "command", constant "VERIFY_DATA"
                 "status", constant "QUARANTINED"
-                "diagnostic", diagnostic "DB_DATA_AUDIT_FAILED" []
+                "diagnostic",
+                diagnostic
+                    "DB_DATA_AUDIT_FAILED"
+                    [
+                        "category",
+                        enumeration
+                            [
+                                "EVIDENCE_DIVERGENCE"
+                                "AUDIT_UNAVAILABLE"
+                                "AUDIT_FAULT"
+                                "TOPOLOGY_REFUSED"
+                            ]
+                    ]
                 action "INSPECT_AND_RECONCILE"
             ]
 

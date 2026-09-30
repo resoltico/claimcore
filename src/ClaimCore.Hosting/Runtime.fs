@@ -65,6 +65,10 @@ module private RuntimeActorFactory =
 [<Sealed>]
 type Runtime private (resources: RuntimeResources) =
     let safety = new RuntimeSafetySupervisor(resources)
+
+    let auditCadence =
+        new RuntimeAuditCadence(resources, RuntimeAuditInterval.configured ())
+
     let realDataScope = safety.CurrentUseState().Scope = InstallationUseScope.RealData
 
     let commitHealth =
@@ -81,10 +85,22 @@ type Runtime private (resources: RuntimeResources) =
             safety.RequireCurrent,
             safety.AcquireReadFence,
             {
-                RequireCaseMutation = safety.RequireCaseMutation
-                RequireCaseRead = safety.RequireCaseRead
-                RequireAuthoritySetup = safety.RequireAuthoritySetup
-                RequireAuthorityRead = safety.RequireAuthorityRead
+                RequireCaseMutation =
+                    (fun () ->
+                        auditCadence.RequireHealthy()
+                        safety.RequireCaseMutation())
+                RequireCaseRead =
+                    (fun () ->
+                        auditCadence.RequireHealthy()
+                        safety.RequireCaseRead())
+                RequireAuthoritySetup =
+                    (fun () ->
+                        auditCadence.RequireHealthy()
+                        safety.RequireAuthoritySetup())
+                RequireAuthorityRead =
+                    (fun () ->
+                        auditCadence.RequireHealthy()
+                        safety.RequireAuthorityRead())
                 CommitHealth = commitHealth
                 CommitHealthRequired = realDataScope
             }
@@ -103,6 +119,7 @@ type Runtime private (resources: RuntimeResources) =
                     false
                 else
                     try
+                        auditCadence.RequireHealthy()
                         safety.RequireCaseMutation()
                         true
                     with _ ->
@@ -239,4 +256,6 @@ type Runtime private (resources: RuntimeResources) =
         )
 
     interface IDisposable with
-        member _.Dispose() = (admission :> IDisposable).Dispose()
+        member _.Dispose() =
+            (auditCadence :> IDisposable).Dispose()
+            (admission :> IDisposable).Dispose()

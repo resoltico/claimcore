@@ -24,6 +24,7 @@ type CopySignerPurpose =
     | Checkpoint
     | WriterHandoffAbort
     | RestoreCopyVerifier
+    | InstallationLossRetirement
 
 [<NoEquality; NoComparison>]
 type CopySignerApprovalRequest =

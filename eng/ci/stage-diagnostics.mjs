@@ -15,6 +15,8 @@ const help = {
     "Run npm --prefix web run contract:check; regenerate only through the owning generator.",
   "frontend-unit":
     "Inspect the sanitized Vitest summary and reproduce npm --prefix web run test:unit.",
+  "frontend-mutation":
+    "Run npm --prefix web run test:mutation; inspect the local Stryker report without publishing mutant source.",
   "frontend-build":
     "Run npm --prefix web run build with the pinned tools; inspect its size and generated-asset policy.",
   "dependency-security":

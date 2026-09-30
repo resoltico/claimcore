@@ -5,7 +5,6 @@ open System.Data
 open System.Threading
 open System.Threading.Tasks
 open Npgsql
-open NpgsqlTypes
 open ClaimCore.Application
 open ActorGrantOwnerSafety
 
@@ -137,6 +136,13 @@ type internal ActorGrantRegistry(dataSource: NpgsqlDataSource, witness: WitnessP
         task {
             witness.Admit()
             use! connection = RuntimeDatabase.openConnectionAsync dataSource
+
+            use! _authorityLease =
+                AuthorityOperationFence.acquireShared
+                    (Some dataSource)
+                    connection
+                    System.Threading.CancellationToken.None
+
             use transaction = connection.BeginTransaction(IsolationLevel.ReadCommitted)
 
             let! revision =
@@ -147,46 +153,14 @@ type internal ActorGrantRegistry(dataSource: NpgsqlDataSource, witness: WitnessP
             match approver with
             | None -> return AuthorityWriteOutcome.Refused
             | Some authority ->
-                let kind, issuer, stable = PrincipalKey.storageParts targetPrincipal
-
-                use query =
-                    new NpgsqlCommand(
-                        "SELECT EXISTS(SELECT 1 FROM claimcore.actors "
-                        + "WHERE principal_kind=@kind AND issuer=@issuer AND principal_value=@value)",
-                        connection,
+                return!
+                    ActorRegistrationWrite.register
+                        connection
                         transaction
-                    )
-
-                Sql.text query "kind" kind
-                Sql.text query "issuer" issuer
-                Sql.text query "value" stable
-                let! exists = query.ExecuteScalarAsync()
-
-                if exists :?> bool then
-                    return AuthorityWriteOutcome.Refused
-                else
-                    let targetId = Guid.NewGuid()
-
-                    let action: ActorAuthorityAction =
-                        {
-                            EventId = Guid.NewGuid()
-                            Revision = revision + 1L
-                            ActionName = "REGISTER_ACTOR"
-                            TargetActorId = targetId
-                            ApproverActorId = Some authority.ActorId
-                            Principal = Some targetPrincipal
-                            Grant = None
-                            Enabled = Some true
-                        }
-
-                    return!
-                        ActorGrantWrite.run connection transaction witness action (fun () ->
-                            ActorGrantWrite.insertActor
-                                connection
-                                transaction
-                                targetId
-                                targetPrincipal
-                                action.Revision)
+                        witness
+                        authority.ActorId
+                        revision
+                        targetPrincipal
         }
 
     member _.SetEnabled(approverPrincipal: PrincipalKey, targetId: Guid, enabled: bool) =
@@ -196,6 +170,13 @@ type internal ActorGrantRegistry(dataSource: NpgsqlDataSource, witness: WitnessP
             else
                 witness.Admit()
                 use! connection = RuntimeDatabase.openConnectionAsync dataSource
+
+                use! _authorityLease =
+                    AuthorityOperationFence.acquireShared
+                        (Some dataSource)
+                        connection
+                        System.Threading.CancellationToken.None
+
                 use transaction = connection.BeginTransaction(IsolationLevel.ReadCommitted)
 
                 let! revision =
@@ -252,6 +233,13 @@ type internal ActorGrantRegistry(dataSource: NpgsqlDataSource, witness: WitnessP
             else
                 witness.Admit()
                 use! connection = RuntimeDatabase.openConnectionAsync dataSource
+
+                use! _authorityLease =
+                    AuthorityOperationFence.acquireShared
+                        (Some dataSource)
+                        connection
+                        System.Threading.CancellationToken.None
+
                 use transaction = connection.BeginTransaction(IsolationLevel.ReadCommitted)
 
                 let! revision =

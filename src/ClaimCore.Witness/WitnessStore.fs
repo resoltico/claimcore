@@ -21,6 +21,20 @@ type Store private (writerConnection: string, identity: Identity, material: byte
 
             Array.copy writerCapability)
 
+    // Long-held read fences use a separate bounded pool so their nested witness
+    // snapshots and evidence reads cannot exhaust the same connection pool.
+    let readFenceSource =
+        capability
+        |> Option.map (fun _ ->
+            try
+                let builder = NpgsqlConnectionStringBuilder(writerConnection)
+                builder.MaxPoolSize <- min builder.MaxPoolSize 32
+                builder.MinPoolSize <- 0
+                NpgsqlDataSource.Create(builder.ConnectionString)
+            with _ ->
+                capability |> Option.iter CryptographicOperations.ZeroMemory
+                reraise ())
+
     let mutable disposed = false
 
     let conn () =
@@ -81,11 +95,15 @@ type Store private (writerConnection: string, identity: Identity, material: byte
         checkAdmission connection
         readEvidence connection operation phase
 
+    member internal _.TryReadLossRetirement(retirementId: Guid) =
+        WitnessStoreLossRetirement.read writerConnection identity retirementId
+
     interface IDisposable with
         member _.Dispose() =
             if not disposed then
                 disposed <- true
                 capability |> Option.iter CryptographicOperations.ZeroMemory
+                readFenceSource |> Option.iter (fun source -> source.Dispose())
 
     member this.Read(operation: Guid, phase: Phase) =
         this.TryReadEvidence(operation, phase)
@@ -118,7 +136,11 @@ type Store private (writerConnection: string, identity: Identity, material: byte
             capability
             |> Option.defaultWith (fun () -> invalidOp "Auditor cannot acquire a writer lease.")
 
-        WitnessStoreReadLease.acquire writerConnection identity active expectedGeneration
+        let source =
+            readFenceSource
+            |> Option.defaultWith (fun () -> invalidOp "Witness read fence is unavailable.")
+
+        WitnessStoreReadLease.acquire source identity active expectedGeneration
 
     member _.ReadKeyCheck() =
         use connection = conn ()

@@ -198,6 +198,13 @@ module internal WriterHandoffOwnerAbortRelease =
                     OwnerConnection.requireIdentity primaryOwner
                     SchemaBaseline.requireCurrent primaryOwner
                     witness.AdmitReadOnly()
+
+                    use! _authorityFence =
+                        AuthorityOperationFence.acquireExclusive
+                            None
+                            primaryOwner
+                            CancellationToken.None
+
                     use transaction = primaryOwner.BeginTransaction(IsolationLevel.ReadCommitted)
 
                     return!

@@ -5,11 +5,10 @@ open Npgsql
 
 /// A claimant-bearing read holds the definer-acquired row lock through its core response.
 module internal WitnessStoreReadLease =
-    let acquire writerConnection identity (capability: byte array) expectedGeneration =
-        let connection = PostgresTransport.connection writerConnection
+    let acquire (source: NpgsqlDataSource) identity (capability: byte array) expectedGeneration =
+        let connection = source.OpenConnection()
 
         try
-            connection.Open()
             WitnessStoreRead.checkAdmission identity connection
             let transaction = connection.BeginTransaction()
 

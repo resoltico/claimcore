@@ -78,6 +78,36 @@ module internal DatabaseOwnerPrivateExecution =
             |> Some
         | _ -> None
 
+    let private installationLoss connection command deliver fail =
+        match command with
+        | DatabaseCommand.DraftInstallationLossRetirement(first,
+                                                          second,
+                                                          report,
+                                                          checkpoint,
+                                                          known,
+                                                          mode,
+                                                          output) ->
+            DatabaseInstallationLossExecution.draft
+                connection
+                first
+                second
+                report
+                checkpoint
+                known
+                mode
+                output
+            |> present deliver fail
+            |> Some
+        | DatabaseCommand.RetireInstallationAfterLoss paths ->
+            DatabaseInstallationLossExecution.record connection paths
+            |> present deliver fail
+            |> Some
+        | DatabaseCommand.ReconcileInstallationLossRetirement paths ->
+            DatabaseInstallationLossExecution.reconcile connection paths
+            |> present deliver fail
+            |> Some
+        | _ -> None
+
     let private verification connection command (output: Stream) (errors: Stream) =
         match command with
         | DatabaseCommand.VerifyRestoreReport(report, signature, index, nonce) ->
@@ -113,5 +143,6 @@ module internal DatabaseOwnerPrivateExecution =
         erasure connection command deliver fail
         |> Option.orElseWith (fun () -> handoff connection command deliver fail)
         |> Option.orElseWith (fun () -> dataUse connection command deliver fail)
+        |> Option.orElseWith (fun () -> installationLoss connection command deliver fail)
         |> Option.orElseWith (fun () -> verification connection command output errors)
         |> Option.orElseWith (fun () -> backup connection command deliver fail)

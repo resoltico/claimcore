@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.IO
 open System.Data.Common
 open System.Threading
 open Npgsql
@@ -154,7 +155,7 @@ module internal CaseLifecycleAuditRows =
                 let! extra = reader.ReadAsync(ct)
 
                 if extra then
-                    invalidOp "Duplicate lifecycle event."
+                    raise (InvalidDataException("Duplicate lifecycle event evidence."))
 
                 return Some row
         }
@@ -241,7 +242,7 @@ module internal CaseLifecycleAuditRows =
                 let! extra = reader.ReadAsync(ct)
 
                 if extra then
-                    invalidOp "Duplicate lifecycle approval."
+                    raise (InvalidDataException("Duplicate lifecycle approval evidence."))
 
                 return Some row
         }

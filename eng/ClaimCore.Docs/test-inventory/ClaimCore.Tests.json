@@ -81,6 +81,7 @@
     "ClaimCore deterministic suite.administration diagnostic boundaries.[CC-BACKUP-001] adopted copy transitions accept only signed private evidence paths",
     "ClaimCore deterministic suite.administration diagnostic boundaries.[CC-BACKUP-001] external copy publication accepts only one private proposal path",
     "ClaimCore deterministic suite.administration diagnostic boundaries.[CC-BACKUP-001] historical health readback accepts only owner-private evidence paths",
+    "ClaimCore deterministic suite.administration diagnostic boundaries.[CC-BACKUP-001] installation loss retirement accepts only exact private evidence paths",
     "ClaimCore deterministic suite.administration diagnostic boundaries.[CC-BACKUP-001] owner abort accepts only signed private evidence paths",
     "ClaimCore deterministic suite.administration diagnostic boundaries.[CC-BACKUP-001] owner adoption accepts only one private evidence path",
     "ClaimCore deterministic suite.administration diagnostic boundaries.[CC-BACKUP-001] owner backup capture accepts no path or caller-selected executable",

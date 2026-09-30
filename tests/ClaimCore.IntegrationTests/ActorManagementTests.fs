@@ -1,12 +1,15 @@
 module ClaimCore.IntegrationTests.ActorManagementTests
 
 open System
+open System.Data
+open System.Security.Cryptography
 open System.Text
 open System.Threading
 open Expecto
 open ClaimCore.Application
 open ClaimCore.Postgres
 open ClaimCore.Hosting
+open ClaimCore.Witness
 open ClaimCore.IntegrationTests.Fixtures
 open ClaimCore.IntegrationTests.ActorGrantTestSupport
 
@@ -68,6 +71,89 @@ let private grantReplay (management: IActorManagement) target =
         Expect.equal (revision, actorId) original "Observation is bound to original event."
     | _ -> failtest "Owner must observe the exact grant event."
 
+let private retainUnsettledRegistration
+    (app: string)
+    (witness: WitnessProtocol)
+    (principal: PrincipalKey)
+    (target: PrincipalKey)
+    =
+    use source = RuntimeDataSource.create app
+    use connection = RuntimeDatabase.openConnection source
+    use transaction = connection.BeginTransaction(IsolationLevel.ReadCommitted)
+
+    let revision =
+        ActorGrantRead.lockRevision connection transaction true CancellationToken.None
+        |> await
+
+    let owner =
+        ActorGrantRead.loadUnderLock
+            connection
+            transaction
+            principal
+            ResourceScope.Installation
+            revision
+            CancellationToken.None
+        |> await
+        |> Option.defaultWith (fun () -> failtest "Synthetic owner is absent.")
+
+    let action: ActorAuthorityAction =
+        {
+            EventId = Guid.NewGuid()
+            Revision = revision + 1L
+            ActionName = "REGISTER_ACTOR"
+            TargetActorId = Guid.NewGuid()
+            ApproverActorId = Some owner.ActorId
+            Principal = Some target
+            Grant = None
+            Enabled = Some true
+        }
+
+    let canonical = ActorGrantCandidate.encode action
+
+    try
+        let intent = witness.BeginAuthority(action.EventId, canonical, None)
+
+        ActorGrantWrite.insertActor
+            connection
+            transaction
+            action.TargetActorId
+            target
+            action.Revision
+        |> await
+
+        ActorGrantWrite.persistEvent connection transaction action canonical intent
+        |> await
+
+        transaction.Commit()
+        action.EventId, action.Revision, action.TargetActorId
+    finally
+        CryptographicOperations.ZeroMemory(canonical)
+
+let private pendingSettlementObservation
+    (management: IActorManagement)
+    (app: string)
+    (witness: WitnessProtocol)
+    (principal: PrincipalKey)
+    =
+    let eventId, revision, targetId =
+        retainUnsettledRegistration app witness principal (human "pending-owner-target")
+
+    Expect.isNone
+        (witness.EvidenceStore.TryReadEvidence(eventId, SettledAuthority))
+        "Primary authority committed while W1 response is absent."
+
+    let observed = management.Observe(eventId, CancellationToken.None) |> await
+
+    Expect.equal
+        observed
+        (ActorManagementOutcome.Applied(eventId, revision, targetId))
+        "Observation settles exact committed authority."
+
+    let tip = witness.Snapshot().TipSequence
+    let replayed = management.Observe(eventId, CancellationToken.None) |> await
+    Expect.equal replayed observed "Exact observation keeps the original authority identity."
+    Expect.equal (witness.Snapshot().TipSequence) tip "Observation replay appends no new W1."
+
 let private exactRetry =
     testCase "[CC-AUTH-001] owner management exact retry keeps event and target identity" (fun _ ->
         withAuthorityRuntimeDatabase (fun owner app writer witness ->
@@ -78,6 +164,7 @@ let private exactRetry =
             let management = (runtime.ForActor principal).Management
             registerReplay management target
             grantReplay management target
+            pendingSettlementObservation management app witness principal
 
             use source = RuntimeDataSource.create app
 

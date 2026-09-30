@@ -82,7 +82,7 @@ Run the complete local .NET suite through the same native-MTP test counts, seria
 pwsh -NoProfile -File eng/Run-LocalDotnetVerification.ps1
 ```
 
-The command retains its fresh synthetic reports under the ignored `artifacts/local-verification/` directory printed at completion. A selected `-Assembly ClaimCore.DocsTests` run is useful while editing that suite, but is explicitly partial; run the default full command before claiming local .NET verification. PostgreSQL integration and independent qualification stages are Linux-owned in CI; on macOS the same test executables and exact TRX inventories run locally, but their CI stage manifests cannot be forged for another platform. Published CLI process acceptance remains a separate required command below.
+The command rebuilds Release assemblies without incremental reuse, then compares each built test executable's native MTP discovery with the registered exact-name inventory before an expensive suite starts, then still reconciles the complete TRX after execution. CI performs the same discovery preflight. It retains fresh synthetic reports under the ignored `artifacts/local-verification/` directory printed at completion. A selected `-Assembly ClaimCore.DocsTests` run is useful while editing that suite, but is explicitly partial; run the default full command before claiming local .NET verification. PostgreSQL integration and independent qualification stages are Linux-owned in CI; on macOS the same test executables and exact TRX inventories run locally, but their CI stage manifests cannot be forged for another platform. Published CLI process acceptance remains a separate required command below.
 
 `ClaimCore.FuzzQualificationTests` runs on all three platforms in CI and its TRX is reconciled in
 final evidence like every other required suite. It needs no database. It drives every boundary that turns externally
@@ -112,7 +112,7 @@ runs 5,000 for both:
 CLAIMCORE_PROPERTY_PROFILE=extended CLAIMCORE_PROPERTY_BASE_SEED=<unsigned-seed> \
 dotnet test --project tests/ClaimCore.Tests/ClaimCore.Tests.fsproj \
   --configuration Release --no-build --no-restore \
-  --minimum-expected-tests=333 --zero-tests-policy=strict --timeout=20m -- \
+  --minimum-expected-tests=334 --zero-tests-policy=strict --timeout=20m -- \
   --settings="$PWD/eng/expecto.runsettings"
 ```
 
@@ -199,6 +199,7 @@ npm --prefix web audit signatures
 npm --prefix web run licenses:check
 npm --prefix web run sbom
 npm --prefix web run test:unit
+npm --prefix web run test:mutation
 npm --prefix web run build
 ```
 
@@ -207,6 +208,8 @@ project references and the Vitest suite uses isolated, machine-scaled file worke
 requires the resulting manifest to match source, npm lock, generated semantic/CLI-v4/Web-v3 contract,
 Node/npm versions, notices, and asset bytes. See [`web/README.md`](../web/README.md) for frontend
 structure and the current compiler-API compatibility arrangement.
+
+The locked StrykerJS/Vitest mutation gate targets the operation reducer only. It requires at least 92% killed mutants, refuses ignored or incomplete mutant results, and checks the exact source, tool version and target in an ignored local report. It does not exercise F# or PostgreSQL and cannot replace the full tests, catalog checks or restored-data audit.
 
 Contract generation is two deterministic stages: the F# generator writes canonical schemas, pure
 codec corpora, and split DTO modules; the locked Node stage compiles the aggregate Web response graph
@@ -278,6 +281,7 @@ no repository allowlist or inline `gitleaks:allow` bypass. Ignored private or ge
 deliberately outside this source gate. Every GitHub Actions artifact family is independently scanned
 after production and before upload; a missing path, scanner failure, or detected secret prevents its
 upload. The final evidence job also rescans the downloaded producer artifacts and its own report.
+Pinned scanner downloads use bounded transport retries; a safe failure-stage label distinguishes unavailable acquisition from scan execution without disclosing artifact paths or content, and neither condition permits upload.
 `eng/Check-ArtifactUploadPolicy.ps1` and its negative controls keep the upload guards complete when
 workflows change. An artifact scan does not replace the source inventory or the browser harness's
 known-secret output checks.

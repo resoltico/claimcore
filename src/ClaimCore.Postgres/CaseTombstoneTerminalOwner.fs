@@ -141,6 +141,32 @@ module internal CaseTombstoneTerminalOwner =
                             ct
         }
 
+    let private advanceWithAudit
+        ownerConnection
+        witness
+        commitments
+        copyProvider
+        fenceProvider
+        proposal
+        ct
+        =
+        task {
+            do! preflightAudit ownerConnection witness commitments ct
+
+            let! outcome =
+                transact ownerConnection witness commitments copyProvider fenceProvider proposal ct
+
+            match outcome with
+            | OwnerTerminalOutcome.Advanced _ ->
+                try
+                    do! preflightAudit ownerConnection witness commitments ct
+                    return outcome
+                with _ ->
+                    return
+                        OwnerTerminalOutcome.Unconfirmed(TombstoneTerminalProposal.eventId proposal)
+            | _ -> return outcome
+        }
+
     let execute
         ownerConnection
         (witness: WitnessProtocol)
@@ -156,6 +182,14 @@ module internal CaseTombstoneTerminalOwner =
             try
                 witness.Admit()
                 commitments.Admit()
+                use fenceConnection = new NpgsqlConnection(ownerConnection)
+                do! fenceConnection.OpenAsync(ct)
+                OwnerConnection.requireIdentity fenceConnection
+                SchemaBaseline.requireCurrent fenceConnection
+
+                use! _authorityFence =
+                    AuthorityOperationFence.acquireExclusive None fenceConnection ct
+
                 let! existing = readExisting ownerConnection eventId
 
                 match existing with
@@ -169,10 +203,8 @@ module internal CaseTombstoneTerminalOwner =
                             accepted
                             ct
                 | None ->
-                    do! preflightAudit ownerConnection witness commitments ct
-
-                    let! outcome =
-                        transact
+                    return!
+                        advanceWithAudit
                             ownerConnection
                             witness
                             commitments
@@ -180,15 +212,6 @@ module internal CaseTombstoneTerminalOwner =
                             fenceProvider
                             proposal
                             ct
-
-                    match outcome with
-                    | OwnerTerminalOutcome.Advanced _ ->
-                        try
-                            do! preflightAudit ownerConnection witness commitments ct
-                            return outcome
-                        with _ ->
-                            return OwnerTerminalOutcome.Unconfirmed eventId
-                    | _ -> return outcome
             with _ ->
                 return OwnerTerminalOutcome.Unconfirmed eventId
         }

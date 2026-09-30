@@ -15,6 +15,7 @@
     <Compile Include="RuntimeSchema.fs" />
     <Compile Include="DatabaseEnvironment.fs" />
     <Compile Include="RuntimeDatabase.fs" />
+    <Compile Include="AuthorityOperationFence.fs" />
     <Compile Include="ScalarEncoding.fs" />
     <Compile Include="Sql.fs" />
     <Compile Include="CaseErasureSuppression.fs" />
@@ -46,6 +47,10 @@
     <Compile Include="ManagedCopyEventHash.fs" />
     <Compile Include="ManagedCopySignerCandidate.fs" />
     <Compile Include="ManagedCopySignature.fs" />
+    <Compile Include="InstallationLossRetirementCandidate.fs" />
+    <Compile Include="InstallationLossOperationSet.fs" />
+    <Compile Include="InstallationLossRetirementWitness.fs" />
+    <Compile Include="InstallationLossRetirementPrimary.fs" />
     <Compile Include="ManagedCopyInventoryDigest.fs" />
     <Compile Include="BackupHealthCanonical.fs" />
     <Compile Include="BackupHealthTypes.fs" />
@@ -75,6 +80,7 @@
     <Compile Include="ActorGrantWrite.fs" />
     <Compile Include="ActorGrantOwnerSafety.fs" />
     <Compile Include="ActorGrantRegistryQueries.fs" />
+    <Compile Include="ActorRegistrationWrite.fs" />
     <Compile Include="ActorGrantRegistry.fs" />
     <Compile Include="ActorManagementGrant.fs" />
     <Compile Include="ActorManagementStore.fs" />
@@ -111,8 +117,12 @@
     <Compile Include="DataAuditJournalExternalPublication.fs" />
     <Compile Include="DataAuditJournalQueries.fs" />
     <Compile Include="DataAuditJournalCommands.fs" />
+    <Compile Include="DataAuditInstallationLossWitness.fs" />
+    <Compile Include="DataAuditInstallationLossPrimary.fs" />
+    <Compile Include="DataAuditInstallationLoss.fs" />
     <Compile Include="DataAuditJournal.fs" />
     <Compile Include="DataAuditAuthorityProjection.fs" />
+    <Compile Include="InstallationLossRetirementSigners.fs" />
     <Compile Include="CaseErasureDenials.fs" />
     <Compile Include="CaseErasureWitnessDenials.fs" />
     <Compile Include="CaseErasurePurgedDenialsAudit.fs" />
@@ -387,6 +397,11 @@
     <Compile Include="WriterHandoffOwnerAbortWrite.fs" />
     <Compile Include="WriterHandoffOwnerAbortBackfill.fs" />
     <Compile Include="WriterHandoffOwnerAbortRelease.fs" />
+    <Compile Include="InstallationLossRetirementState.fs" />
+    <Compile Include="InstallationLossRetirementDraft.fs" />
+    <Compile Include="InstallationLossRetirementPreflight.fs" />
+    <Compile Include="InstallationLossRetirementCommit.fs" />
+    <Compile Include="InstallationLossRetirementAdministration.fs" />
     <Compile Include="CaseTombstonePruneOwner.fs" />
     <Compile Include="CaseErasurePurgePreparation.fs" />
     <Compile Include="CaseErasurePurgeCommit.fs" />

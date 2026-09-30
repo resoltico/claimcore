@@ -182,6 +182,12 @@ module internal RecoveryStartStore =
 
                     use! connection = RuntimeDatabase.openConnectionAsync dataSource
 
+                    use! _authorityLease =
+                        AuthorityOperationFence.acquireShared
+                            (Some dataSource)
+                            connection
+                            System.Threading.CancellationToken.None
+
                     let! result =
                         withTransaction
                             connection
@@ -226,6 +232,12 @@ module internal RecoveryStartStore =
 
                 try
                     use! connection = RuntimeDatabase.openConnectionAsync dataSource
+
+                    use! _authorityLease =
+                        AuthorityOperationFence.acquireShared
+                            (Some dataSource)
+                            connection
+                            System.Threading.CancellationToken.None
 
                     return!
                         withTransaction

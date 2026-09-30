@@ -257,6 +257,13 @@ module internal ManagedCopyAdoptionApprovalWrite =
                 try
                     witness.Admit()
                     use! connection = RuntimeDatabase.openConnectionAsync dataSource
+
+                    use! _authorityLease =
+                        AuthorityOperationFence.acquireShared
+                            (Some dataSource)
+                            connection
+                            System.Threading.CancellationToken.None
+
                     use transaction = connection.BeginTransaction(IsolationLevel.ReadCommitted)
                     return! underLock connection transaction witness context request
                 with _ ->

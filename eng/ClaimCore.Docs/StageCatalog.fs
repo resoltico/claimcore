@@ -115,6 +115,7 @@ module StageCatalog =
                     OutputRequirement.Exact "vitest-summary.json"
                     OutputRequirement.Suffix "coverage-summary.json"
                 ]
+            gate "frontend-mutation" [ "npm"; "run"; "test:mutation" ]
             linux
                 "frontend-build"
                 [ "npm"; "run"; "build" ]

@@ -14,6 +14,18 @@ let internal auditorFor (writer: string) =
     builder.Database <- NpgsqlConnectionStringBuilder(writer).Database
     builder.ConnectionString
 
+let private checkConstrainedReadPool (writer: string) (witness: WitnessProtocol) raw =
+    let constrained = NpgsqlConnectionStringBuilder(writer)
+    constrained.MaxPoolSize <- 1
+    use limited = new Store(constrained.ConnectionString, witness.Identity, raw)
+    limited.Admit()
+    use _readFence = limited.AcquireReadFence(witness.Snapshot().WriterGeneration)
+
+    Expect.equal
+        (limited.Snapshot().TipSequence)
+        (witness.Snapshot().TipSequence)
+        "A held read fence cannot exhaust the snapshot connection pool."
+
 let private noWriterAuthority _ _ writer (witness: WitnessProtocol) =
     let auditorConnection = auditorFor writer
     use store = Store.OpenAudit(auditorConnection, witness.Identity)
@@ -68,6 +80,7 @@ let private noWriterAuthority _ _ writer (witness: WitnessProtocol) =
     let raw = IO.File.ReadAllBytes(capabilityPath)
 
     try
+        checkConstrainedReadPool writer witness raw
         use wrongMode = new Store(auditorConnection, witness.Identity, raw)
 
         Expect.throwsT<InvalidOperationException>

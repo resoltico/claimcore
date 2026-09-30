@@ -2,9 +2,7 @@
 
 **A local claims case register with one core for people and automation.**
 
-Record claim facts, payment decisions and payment dates through a structured CLI or a browser
-interface. Both use the same F#/.NET core for validation, case transitions and recovery, with
-PostgreSQL storing the current case and its accepted history.
+Record claim facts, payment decisions and payment dates through a structured CLI or a browser interface. Both call one authenticated HTTPS service whose F#/.NET core owns validation, case transitions, authorization and recovery. A primary PostgreSQL store holds current case projections and accepted history; a separately credentialed PostgreSQL witness records authority evidence.
 
 [Get started](docs/getting-started.md) · [Documentation](docs/README.md) ·
 [CLI reference](docs/cli.md) · [Architecture](docs/architecture.md) ·
@@ -32,9 +30,9 @@ details, notes and attachments are outside the current record.
 
 | Application | Use it for |
 |---|---|
-| `ClaimCore.Cli` | Strict JSON commands and structured outcomes for agents, scripts and terminal users. Runs independently of the Web host. |
-| `ClaimCore.Web` | Localhost-only HTTPS browser interface for human case work and explicit recovery. |
-| `ClaimCore.Database` | Schema-owner administration: fresh initialization, read-only verification and bounded pruning of technical preparations. Not a case-work interface. |
+| `ClaimCore.Cli` | Strict CLI-v4 JSON client for agents, scripts and terminal users over the authenticated HTTPS service; no database credential. |
+| `ClaimCore.Web` | Loopback HTTPS case-work service, OIDC browser host, and bearer API for CLI/automation. |
+| `ClaimCore.Database` | Separate owner administration for fresh initialization, verification, retention and data-safety operations; not a case-work interface. |
 
 The browser offers English, Latvian and Arabic, independent display formats and right-to-left
 layout. Expanded English is a layout-test pseudolocale. Language changes preserve drafts, prepared
@@ -58,9 +56,7 @@ Neither command starts PostgreSQL or the Web host, or requires runtime credentia
 
 ### Run the local application
 
-Follow [Getting started](docs/getting-started.md) from source build through PostgreSQL initialization,
-private credentials, a local HTTPS certificate and first login. Keep administrator credentials
-separate from runtime credentials.
+Follow [Getting started](docs/getting-started.md) from source build through separate primary/witness initialization, private credentials and keys, a local HTTPS certificate, and OIDC first login. Keep owner administration credentials separate from the service and CLI.
 
 **Runtime support is macOS and Linux.** Windows supports source builds, tests and database-free
 discovery; private-file runtime operations fail closed there.
@@ -70,9 +66,7 @@ formats are refused, not converted or deleted. Preserve old databases and artifa
 matching software. Read the [installation boundary](docs/database.md#fresh-installation-boundary)
 before initializing a new target.
 
-ClaimCore assumes one trusted local administrative boundary. Browser admission does not provide
-individual operator identities or per-user authorization. Remote access and multi-tenancy are not
-supported. Read [Security and operations](docs/operations.md) before considering real data.
+ClaimCore uses individual OIDC identities and default-deny actor/case grants, but the current service is loopback-bound and local two-cluster qualification does not prove independent-host resilience. Multi-tenancy and a qualified nonloopback deployment are not supplied. Read [Security and operations](docs/operations.md) before considering real data.
 
 ## How state stays consistent
 
@@ -87,12 +81,11 @@ supported. Read [Security and operations](docs/operations.md) before considering
   from browser language and display formats. Amount display preserves decimal precision; authoring
   and canonical copying remain independent of presentation.
 
-Recovery is not a backup system. Restoring an older database can remove later acceptance evidence;
-reconcile the restore before resuming case work. See [Data and recovery](docs/operations.md#data-and-recovery).
+Exact-request recovery is not a backup system. Restoring an older primary or witness backup can omit later authority; use independently retained checkpoints and a complete restored-pair audit before resuming case work. The included backup drill is synthetic, not a production restore certificate. See [Data and recovery](docs/operations.md#data-and-recovery).
 
 ## Architecture and verification
 
-ClaimCore is a typed modular monolith, not a collection of distributed services.
+ClaimCore keeps Domain and Application as one typed service core, with a separate PostgreSQL witness rather than a collection of business microservices.
 [`architecture.json`](architecture.json) defines component responsibilities and permitted
 dependencies; compiled architecture tests check those boundaries. Shared contract projections
 produce the CLI/Web schemas and browser validators instead of letting each adapter invent its own.

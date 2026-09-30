@@ -22,6 +22,11 @@ module internal DatabaseCommandTokens =
         | DatabaseCommand.SettleWriterHandoff _ -> Some "SETTLE_WRITER_HANDOFF"
         | DatabaseCommand.ActivateWriterHandoff _ -> Some "ACTIVATE_WRITER_HANDOFF"
         | DatabaseCommand.DraftWriterHandoffAbort _ -> Some "DRAFT_WRITER_HANDOFF_ABORT"
+        | DatabaseCommand.DraftInstallationLossRetirement _ ->
+            Some "DRAFT_INSTALLATION_LOSS_RETIREMENT"
+        | DatabaseCommand.RetireInstallationAfterLoss _ -> Some "RETIRE_INSTALLATION_AFTER_LOSS"
+        | DatabaseCommand.ReconcileInstallationLossRetirement _ ->
+            Some "RECONCILE_INSTALLATION_LOSS_RETIREMENT"
         | DatabaseCommand.VerifyRestoreReport _ -> Some "VERIFY_RESTORE_REPORT"
         | DatabaseCommand.VerifyFencedTail _ -> Some "VERIFY_FENCED_TAIL"
         | _ -> None

@@ -52,8 +52,8 @@ let private installed =
                         admin
                         "SELECT count(*) FROM information_schema.tables WHERE table_schema='claimcore' AND table_type='BASE TABLE'"
                     :?> int64)
-                    55L
-                    "Current baseline includes actor authority, physical backup, copy custody, and erasure evidence"))
+                    57L
+                    "Current baseline includes actor authority, physical backup, copy custody, erasure, and terminal-loss evidence"))
 
 let private grantSeedRoles admin app witness principal =
     provision admin witness principal |> applied

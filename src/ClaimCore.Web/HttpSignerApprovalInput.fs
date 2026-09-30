@@ -23,6 +23,7 @@ module internal HttpSignerApprovalInput =
         | "RESTORE_REPORT" -> CopySignerPurpose.RestoreReport
         | "CHECKPOINT" -> CopySignerPurpose.Checkpoint
         | "WRITER_HANDOFF_ABORT" -> CopySignerPurpose.WriterHandoffAbort
+        | "INSTALLATION_LOSS_RETIREMENT" -> CopySignerPurpose.InstallationLossRetirement
         | _ -> fail HttpInputProblem.InvalidJson
 
     let private role values =

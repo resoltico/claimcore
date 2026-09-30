@@ -36,13 +36,13 @@ foreach ($existing in @($artifacts, $verificationBase)) {
 }
 
 $suites = @(
-    [PSCustomObject]@{ Assembly = "ClaimCore.Tests"; Expected = 333; Configuration = "Release"; Coverage = "unit"; Timeout = "25m"; Stage = "unit" }
+    [PSCustomObject]@{ Assembly = "ClaimCore.Tests"; Expected = 334; Configuration = "Release"; Coverage = "unit"; Timeout = "25m"; Stage = "unit" }
     [PSCustomObject]@{ Assembly = "ClaimCore.WebTests"; Expected = 122; Configuration = "Release"; Coverage = "web"; Timeout = "25m"; Stage = "web" }
     [PSCustomObject]@{ Assembly = "ClaimCore.DocsTests"; Expected = 74; Configuration = "Release"; Coverage = ""; Timeout = "25m"; Stage = "docs" }
     [PSCustomObject]@{ Assembly = "ClaimCore.FuzzQualificationTests"; Expected = 5; Configuration = "Release"; Coverage = ""; Timeout = "25m"; Stage = "fuzz" }
     [PSCustomObject]@{ Assembly = "ClaimCore.ArchitectureTests"; Expected = 88; Configuration = "Debug"; Coverage = ""; Timeout = "25m"; Stage = "architecture" }
-    [PSCustomObject]@{ Assembly = "ClaimCore.IntegrationTests"; Expected = 333; Configuration = "Release"; Coverage = "integration"; Timeout = "90m"; Stage = "integration" }
     [PSCustomObject]@{ Assembly = "ClaimCore.WitnessTests"; Expected = 21; Configuration = "Release"; Coverage = ""; Timeout = "90m"; Stage = "witness-qualification" }
+    [PSCustomObject]@{ Assembly = "ClaimCore.IntegrationTests"; Expected = 357; Configuration = "Release"; Coverage = "integration"; Timeout = "110m"; Stage = "integration" }
     [PSCustomObject]@{ Assembly = "ClaimCore.RecoveryQualificationTests"; Expected = 19; Configuration = "Release"; Coverage = ""; Timeout = "90m"; Stage = "recovery-qualification" }
     [PSCustomObject]@{ Assembly = "ClaimCore.ConcurrencyQualificationTests"; Expected = 5; Configuration = "Release"; Coverage = ""; Timeout = "90m"; Stage = "concurrency-qualification" }
     [PSCustomObject]@{ Assembly = "ClaimCore.MigrationQualificationTests"; Expected = 15; Configuration = "Release"; Coverage = ""; Timeout = "90m"; Stage = "fresh-baseline-qualification" }
@@ -58,8 +58,14 @@ if ($selected.Count -eq 0) { throw "The requested .NET test assembly is not regi
 Set-Location $repository
 dotnet restore ClaimCore.slnx --locked-mode
 if ($LASTEXITCODE -ne 0) { throw "Locked .NET restore failed." }
-dotnet build ClaimCore.slnx --configuration Release --no-restore
+dotnet build ClaimCore.slnx --configuration Release --no-restore --no-incremental
 if ($LASTEXITCODE -ne 0) { throw "Release build failed." }
+$discoveryCheck = Join-Path $PSScriptRoot "Check-TestDiscovery.ps1"
+foreach ($suite in $selected) {
+    if ($suite.Configuration -ne "Debug") {
+        & $discoveryCheck -Assembly $suite.Assembly -Configuration $suite.Configuration
+    }
+}
 [IO.Directory]::CreateDirectory($resolved) | Out-Null
 $docs = Join-Path $repository "artifacts/bin/ClaimCore.Docs/release/ClaimCore.Docs.dll"
 $sourceFingerprint = (& dotnet $docs source-fingerprint)
@@ -73,6 +79,7 @@ foreach ($suite in $selected) {
     if ($suite.Configuration -eq "Debug") {
         dotnet build $project --configuration Debug --no-restore -p:Optimize=false
         if ($LASTEXITCODE -ne 0) { throw "The Debug architecture build failed." }
+        & $discoveryCheck -Assembly $suite.Assembly -Configuration $suite.Configuration
     }
     $results = if ($suite.Coverage -ne "") {
         Join-Path $resolved "coverage-input/$($suite.Coverage)"

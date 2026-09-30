@@ -12,6 +12,8 @@ module internal RuntimeSchema =
         """
         SELECT
             to_regclass('claimcore.installation_lineage') IS NOT NULL,
+            to_regclass('claimcore.installation_loss_retirements') IS NOT NULL,
+            to_regclass('claimcore.installation_loss_operation_denials') IS NOT NULL,
             to_regclass('claimcore.installation_data_use_activations') IS NOT NULL,
             to_regclass('claimcore.installation_data_use_plans') IS NOT NULL,
             to_regclass('claimcore.installation_data_use_approvals') IS NOT NULL,
@@ -115,7 +117,7 @@ module internal RuntimeSchema =
             )
         """
 
-    let private freshChecks =
+    let private lineageFreshChecks =
         """,
             (SELECT bool_and(a.attnotnull) FROM pg_catalog.pg_attribute a
                 WHERE a.attrelid = 'claimcore.installation_lineage'::regclass
@@ -127,7 +129,13 @@ module internal RuntimeSchema =
                         'writer_activation_event_id', 'writer_activation_sequence',
                         'writer_activation_hash',
                         'last_aborted_handoff_id', 'last_aborted_handoff_sequence',
-                        'last_aborted_handoff_hash')),
+                        'last_aborted_handoff_hash',
+                        'loss_retirement_id', 'loss_retirement_intent_sequence',
+                        'loss_retirement_intent_hash')),
+            EXISTS (SELECT 1 FROM pg_catalog.pg_constraint c
+                WHERE c.conrelid = 'claimcore.installation_lineage'::regclass
+                    AND c.conname = 'installation_loss_retirement_shape'
+                    AND c.contype = 'c' AND c.convalidated AND c.conenforced),
             EXISTS (SELECT 1 FROM pg_catalog.pg_constraint c
                 WHERE c.conrelid = 'claimcore.installation_lineage'::regclass
                     AND c.conname = 'installation_lineage_writer_handoff_shape'
@@ -136,7 +144,11 @@ module internal RuntimeSchema =
             EXISTS (SELECT 1 FROM pg_catalog.pg_constraint c
                 WHERE c.conrelid = 'claimcore.installation_lineage'::regclass
                     AND c.conname = 'installation_lineage_abort_ticket_shape'
-                    AND c.contype = 'c' AND c.convalidated AND c.conenforced),
+                    AND c.contype = 'c' AND c.convalidated AND c.conenforced)
+        """
+
+    let private recoveryFreshChecks =
+        """,
             (SELECT count(*) = 2 AND bool_and(c.convalidated AND c.conenforced AND position('(canonical_request_format = 3)' IN pg_get_constraintdef(c.oid)) > 0)
                 FROM pg_catalog.pg_constraint c WHERE c.conrelid IN (
                     'claimcore.request_preparations'::regclass, 'claimcore.operation_revocations'::regclass
@@ -168,7 +180,8 @@ module internal RuntimeSchema =
         + lineageDataCheck
         + authorityChecks
         + authorityCalendarChecks
-        + freshChecks
+        + lineageFreshChecks
+        + recoveryFreshChecks
         + RuntimeConstraintPolicy.sql
 
     let private requirePreparation (reader: DbDataReader) =

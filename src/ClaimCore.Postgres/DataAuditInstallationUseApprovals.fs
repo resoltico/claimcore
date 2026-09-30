@@ -3,6 +3,7 @@ namespace ClaimCore.Postgres
 open System
 open System.Threading
 open Npgsql
+open DataAuditCommon
 
 /// Global bounded replay catches orphan or altered actor approvals, even if never consumed.
 module internal DataAuditInstallationUseApprovals =
@@ -49,16 +50,21 @@ module internal DataAuditInstallationUseApprovals =
 
                 for approvalId, sequence in items do
                     if sequence > cutoff then
-                        invalidOp "Activation approval is beyond the witness audit cutoff."
+                        corrupt ()
 
-                    do!
-                        InstallationUseActivationApprovals.verifyOneReadOnly
-                            connection
-                            transaction
-                            witness
-                            approvalId
-                            cutoff
-                            ct
+                    // This read-only verifier uses InvalidOperationException for a failed
+                    // stored-approval proof; translate it only at this audit evidence seam.
+                    try
+                        do!
+                            InstallationUseActivationApprovals.verifyOneReadOnly
+                                connection
+                                transaction
+                                witness
+                                approvalId
+                                cutoff
+                                ct
+                    with :? InvalidOperationException ->
+                        corrupt ()
 
                     after <- sequence
                     count <- count + 1L

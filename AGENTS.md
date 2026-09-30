@@ -33,6 +33,14 @@ trust boundaries. [Development](docs/development.md) owns commands and gates.
   rechecked under authoritative locks, and cannot be inferred from a database role. An inaccessible
   case or operation has the same public refusal as an absent one. Case-list cursors are opaque,
   principal/grant/query-bound and short-lived.
+- A complete data audit first drains authority operations through post-COMMIT witness settlement
+  under an exclusive cross-process session lease, then takes the primary authority lock. During ordinary
+  writer activity, holds the independent witness read fence through one stable snapshot. Pending
+  handoff, activation and loss phases already fence ordinary witness appends; owner audit holds
+  the primary lock and refuses witness-tip movement. Failed or overdue scheduled audits close
+  actor-bound access. Terminal installation-loss retirement is owner-only, signed by two
+  distinct current human owners, and never turns missing history into a restored case or permits
+  old recovery identities to resume.
 - A data-entry-error void preserves history and is not erasure. Live purge, witness-payload prune,
   managed-copy deletion, and terminal privacy certification are distinct owner/evidence-bound
   steps. Active holds, unknown copies, unsettled attempts or missing independent verification keep
