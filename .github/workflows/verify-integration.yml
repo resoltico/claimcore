@@ -39,22 +39,11 @@ jobs:
       - name: Verify built test discovery before database qualification
         shell: pwsh
         run: |
-          $assemblies = @(
+          ./eng/Check-TestDiscoveryAll.ps1 -Assembly @(
             'ClaimCore.IntegrationTests', 'ClaimCore.WitnessTests',
             'ClaimCore.RecoveryQualificationTests', 'ClaimCore.ConcurrencyQualificationTests',
             'ClaimCore.MigrationQualificationTests', 'ClaimCore.BackupQualificationTests'
           )
-          $outcomes = $assemblies | ForEach-Object -ThrottleLimit 6 -Parallel {
-            try {
-              $output = & (Join-Path $using:PWD 'eng/Check-TestDiscovery.ps1') -Assembly $_ 2>&1 | Out-String
-              [PSCustomObject]@{ Assembly = $_; Passed = $true; Output = $output }
-            } catch {
-              [PSCustomObject]@{ Assembly = $_; Passed = $false; Output = $_.Exception.Message }
-            }
-          }
-          foreach ($outcome in $outcomes) { Write-Host $outcome.Output.TrimEnd() }
-          $failed = @($outcomes | Where-Object { -not $_.Passed } | ForEach-Object { $_.Assembly })
-          if ($failed.Count -gt 0) { throw "Test discovery failed for: $($failed -join ', ')" }
       - name: Resolve the exact built CLI
         shell: bash
         run: |
