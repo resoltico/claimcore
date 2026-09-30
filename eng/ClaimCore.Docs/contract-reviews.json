@@ -259,7 +259,7 @@
       "reviewer": "Agent reviewed the exact current heading and listed implementation and assertion sources; this is source review of local synthetic boundaries, not execution evidence, independent owner approval, or live real-data qualification.",
       "reviewedOn": "2026-09-30",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "d3397737e563efb66e75a06d819b0dcff0d81a49a2750c8c3872cbce98ae952c",
+      "reviewSubjectHash": "ddcd150d7b38038d997f2b7fbce37c97ceac2085ad8b21dfcb2e98deb6276a9f",
       "wholeFiles": [
         "db/baseline.sql",
         "db/witness-baseline.sql",
