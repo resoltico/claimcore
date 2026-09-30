@@ -10,7 +10,7 @@
     { "id": "npm-audit", "argv": ["npm", "--prefix", "web", "audit", "--audit-level=low"] },
     { "id": "npm-signatures", "argv": ["npm", "--prefix", "web", "audit", "signatures"] },
     { "id": "dependency-licenses", "argv": ["npm", "--prefix", "web", "run", "licenses:check"] },
-    { "id": "frontend-unit", "argv": ["npm", "--prefix", "web", "run", "test:unit"], "output": "artifacts/frontend" },
-    { "id": "frontend-mutation", "argv": ["npm", "--prefix", "web", "run", "test:mutation"] }
+    { "id": "frontend-unit", "argv": ["npm", "--prefix", "web", "run", "test:unit"], "output": "artifacts/frontend", "group": "vitest", "echoTail": 40 },
+    { "id": "frontend-mutation", "argv": ["npm", "--prefix", "web", "run", "test:mutation"], "group": "vitest" }
   ]
 }
