@@ -49,6 +49,13 @@ module internal ActorGrantAdministration =
             else
                 OwnerConnection.requireIdentity ownerConnection
                 witness.Admit()
+
+                use! _authorityLease =
+                    AuthorityOperationFence.acquireShared
+                        None
+                        ownerConnection
+                        CancellationToken.None
+
                 use transaction = ownerConnection.BeginTransaction(IsolationLevel.ReadCommitted)
 
                 let! revision =

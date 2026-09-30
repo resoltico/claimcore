@@ -15,6 +15,7 @@ let private coreAndRecovery =
         CoreBoundaryTests.tests
         RuntimeLifecycleTests.tests
         RuntimeAuditCadenceTests.tests
+        AuthorityOperationFenceTests.tests
         StorageBoundaryTests.tests
         PreparationTests.tests
         AcceptedReplayStorageTests.tests

@@ -2,6 +2,7 @@ namespace ClaimCore.Postgres
 
 open System
 open System.Data
+open System.Threading
 open Npgsql
 open ClaimCore.Application
 open ClaimCore.Witness
@@ -114,6 +115,26 @@ module internal InstallationLossRetirementDraft =
         else
             Some canonical
 
+    let private currentDecisionState primaryOwner transaction (witness: WitnessProtocol) =
+        let identity, retired =
+            InstallationLossRetirementState.primaryIdentity primaryOwner transaction
+
+        let revision =
+            InstallationLossRetirementState.authorityRevision primaryOwner transaction
+
+        let now = InstallationLossRetirementState.databaseNow primaryOwner transaction
+        let snapshot = witness.Snapshot()
+
+        if
+            retired
+            || snapshot.LossRetirementPending
+            || snapshot.LossRetired
+            || not (InstallationLossRetirementState.matchingIdentity identity witness)
+        then
+            None
+        else
+            Some(identity, snapshot, revision, now)
+
     let create
         (primaryOwner: NpgsqlConnection)
         (witness: WitnessProtocol)
@@ -129,25 +150,17 @@ module internal InstallationLossRetirementDraft =
             OwnerConnection.requireIdentity primaryOwner
             SchemaBaseline.requireCurrent primaryOwner
             witness.AdmitReadOnly()
+
+            use _authorityFence =
+                (AuthorityOperationFence.acquireShared None primaryOwner CancellationToken.None)
+                    .GetAwaiter()
+                    .GetResult()
+
             use transaction = primaryOwner.BeginTransaction(IsolationLevel.ReadCommitted)
 
-            let identity, retired =
-                InstallationLossRetirementState.primaryIdentity primaryOwner transaction
-
-            let revision =
-                InstallationLossRetirementState.authorityRevision primaryOwner transaction
-
-            let now = InstallationLossRetirementState.databaseNow primaryOwner transaction
-            let snapshot = witness.Snapshot()
-
-            if
-                retired
-                || snapshot.LossRetirementPending
-                || snapshot.LossRetired
-                || not (InstallationLossRetirementState.matchingIdentity identity witness)
-            then
-                None
-            else
+            match currentDecisionState primaryOwner transaction witness with
+            | None -> None
+            | Some(identity, snapshot, revision, now) ->
                 candidate
                     primaryOwner
                     transaction

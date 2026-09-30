@@ -10,18 +10,6 @@ open ClaimCore.HostSecurity
 open ClaimCore.Postgres
 open ClaimCore.Witness
 
-[<RequireQualifiedAccess; NoEquality; NoComparison>]
-type internal VerifyDataOutcome =
-    | Verified of DataAuditSummary * Snapshot
-    | InputRefused of DatabaseInputProblem
-    | AuditFailed of VerifyDataFailure
-
-and [<RequireQualifiedAccess; NoEquality; NoComparison>] internal VerifyDataFailure =
-    | EvidenceDivergence
-    | AuditUnavailable
-    | AuditFault
-    | TopologyRefused
-
 /// Owner-only, read-only full audit. A held primary authority row prevents product mutations
 /// while the stable primary snapshot is reconciled with one independent witness cutoff.
 module internal DatabaseVerifyData =
@@ -154,6 +142,26 @@ module internal DatabaseVerifyData =
 
         summary, tip
 
+    let private witnessFence (witness: WitnessProtocol) requireWriterFence =
+        let before = witness.Snapshot()
+
+        // Pending owner phases already fence ordinary appends. The outer session and
+        // primary row locks drain allowed owner transitions before the cutoff is captured.
+        if
+            requireWriterFence
+            && not (
+                before.HandoffPending
+                || before.ActivationPending
+                || before.LossRetirementPending
+                || before.LossRetired
+            )
+        then
+            witness.AcquireReadFence(before.WriterGeneration)
+        else
+            { new IDisposable with
+                member _.Dispose() = ()
+            }
+
     let private auditedUsing
         (ownerConnection: string)
         (custody: IKeyCustody)
@@ -167,6 +175,11 @@ module internal DatabaseVerifyData =
         barrier.Open()
         OwnerConnection.requireIdentity barrier
         SchemaBaseline.requireCurrent barrier
+
+        use _operationFence =
+            AuthorityOperationFence.acquireExclusive None barrier CancellationToken.None
+            |> fun work -> work.GetAwaiter().GetResult()
+
         let installation, keyId, check = identity barrier
         use transaction = barrier.BeginTransaction(IsolationLevel.ReadCommitted)
 
@@ -188,28 +201,10 @@ module internal DatabaseVerifyData =
             new WitnessProtocol(witnessStore, borrowedCustody custody, installation)
 
         witness.AdmitReadOnly()
-        let before = witness.Snapshot()
+        use _fence = witnessFence witness requireWriterFence
 
-        // Pending handoff/activation/loss phases already fence ordinary witness appends.
-        // Their product owner transitions take the primary authority lock held above;
-        // the final tip comparison also refuses any out-of-band movement.
-        use _fence =
-            if
-                requireWriterFence
-                && not (
-                    before.HandoffPending
-                    || before.ActivationPending
-                    || before.LossRetirementPending
-                    || before.LossRetired
-                )
-            then
-                witness.AcquireReadFence(before.WriterGeneration)
-            else
-                { new IDisposable with
-                    member _.Dispose() = ()
-                }
-
-        let summary, tip = auditSnapshot builder.ConnectionString witness port before
+        let cutoff = witness.Snapshot()
+        let summary, tip = auditSnapshot builder.ConnectionString witness port cutoff
         let inspected = inspect barrier transaction witness summary tip
         transaction.Rollback()
         summary, tip, inspected

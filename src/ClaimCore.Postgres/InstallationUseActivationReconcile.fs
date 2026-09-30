@@ -164,6 +164,7 @@ module internal InstallationUseActivationReconcile =
                 OwnerConnection.requireIdentity primaryOwner
                 SchemaBaseline.requireCurrent primaryOwner
                 witness.AdmitReadOnly()
+                use! _authorityFence = AuthorityOperationFence.acquireShared None primaryOwner ct
                 let stored, record = readSettled witness
                 eventId <- record.EventId
                 use transaction = primaryOwner.BeginTransaction(IsolationLevel.ReadCommitted)

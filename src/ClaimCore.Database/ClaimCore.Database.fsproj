@@ -60,6 +60,7 @@
     <Compile Include="DatabaseCommandCatalogue.fs" />
     <Compile Include="DatabaseBackupHealthContract.fs" />
     <Compile Include="DatabaseContracts.fs" />
+    <Compile Include="DatabaseDataAuditOutcome.fs" />
     <Compile Include="DatabaseVerifyData.fs" />
     <Compile Include="DatabaseBackupHealthLive.fs" />
     <Compile Include="DatabaseBackupCaptureBarrier.fs" />

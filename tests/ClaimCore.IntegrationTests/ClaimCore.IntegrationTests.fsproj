@@ -43,6 +43,8 @@
     <Compile Include="RecoveryArtifactImportTests.fs" />
     <Compile Include="RecoveryArtifactImportPreviewTests.fs" />
     <Compile Include="TechnicalWitnessTestSupport.fs" />
+    <Compile Include="AuthorityOperationFenceFixture.fs" />
+    <Compile Include="AuthorityOperationFenceTests.fs" />
     <Compile Include="TechnicalWitnessPruneTests.fs" />
     <Compile Include="TechnicalWitnessTests.fs" />
     <Compile Include="DataAuditTests.fs" />

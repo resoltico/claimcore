@@ -211,6 +211,12 @@ module internal StoreTransaction =
                     active.Admit()
                     use! connection = RuntimeDatabase.openConnectionAsync dataSource
 
+                    use! _authorityLease =
+                        AuthorityOperationFence.acquireShared
+                            (Some dataSource)
+                            connection
+                            System.Threading.CancellationToken.None
+
                     let! transaction =
                         connection.BeginTransactionAsync(IsolationLevel.ReadCommitted)
 

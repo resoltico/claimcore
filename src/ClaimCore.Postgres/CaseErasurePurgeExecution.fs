@@ -207,6 +207,7 @@ module internal CaseErasurePurge =
                 DatabaseEnvironment.requireCompatible owner
                 witness.Admit()
                 commitments.Admit()
+                use! _authorityFence = AuthorityOperationFence.acquireExclusive None owner ct
                 use transaction = owner.BeginTransaction(IsolationLevel.ReadCommitted)
                 do! lockAuthority owner transaction
                 let! stored = CaseErasurePurgeRead.find owner transaction caseId

@@ -159,6 +159,7 @@ module internal InstallationUseActivationOwner =
         (ct: CancellationToken)
         =
         task {
+            use! _authorityFence = AuthorityOperationFence.acquireShared None primaryOwner ct
             use transaction = primaryOwner.BeginTransaction(IsolationLevel.ReadCommitted)
 
             let! approvals =

@@ -232,6 +232,9 @@ module internal ManagedCopyVerifiedRestore =
         signature
         =
         task {
+            use! _authorityFence =
+                AuthorityOperationFence.acquireShared None connection CancellationToken.None
+
             use transaction = connection.BeginTransaction(IsolationLevel.ReadCommitted)
 
             let! _ =

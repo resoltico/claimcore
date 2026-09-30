@@ -159,6 +159,51 @@ module internal WriterHandoffOwnerAbortDraft =
             return revision, now, prepared, snapshot, primaryGeneration
         }
 
+    let private deriveUnderLock
+        (primaryOwner: NpgsqlConnection)
+        dataSource
+        (witness: WitnessProtocol)
+        (commitments: ISuppressionCommitments option)
+        handoffId
+        firstKey
+        secondKey
+        (oldCapability: byte array)
+        =
+        task {
+            use transaction = primaryOwner.BeginTransaction(IsolationLevel.ReadCommitted)
+
+            let! revision, now, prepared, snapshot, primaryGeneration =
+                state primaryOwner transaction witness handoffId
+
+            if
+                not (
+                    exactPending
+                        witness
+                        handoffId
+                        prepared
+                        snapshot
+                        primaryGeneration
+                        firstKey
+                        secondKey
+                )
+            then
+                return None
+            else
+                return!
+                    candidate
+                        primaryOwner
+                        transaction
+                        dataSource
+                        witness
+                        commitments
+                        firstKey
+                        secondKey
+                        prepared
+                        revision
+                        now
+                        oldCapability
+        }
+
     let create
         (primaryOwner: NpgsqlConnection)
         dataSource
@@ -174,38 +219,23 @@ module internal WriterHandoffOwnerAbortDraft =
                 OwnerConnection.requireIdentity primaryOwner
                 SchemaBaseline.requireCurrent primaryOwner
                 witness.AdmitReadOnly()
-                use transaction = primaryOwner.BeginTransaction(IsolationLevel.ReadCommitted)
 
-                let! revision, now, prepared, snapshot, primaryGeneration =
-                    state primaryOwner transaction witness handoffId
+                use! _authorityFence =
+                    AuthorityOperationFence.acquireExclusive
+                        None
+                        primaryOwner
+                        CancellationToken.None
 
-                if
-                    not (
-                        exactPending
-                            witness
-                            handoffId
-                            prepared
-                            snapshot
-                            primaryGeneration
-                            firstKey
-                            secondKey
-                    )
-                then
-                    return None
-                else
-                    return!
-                        candidate
-                            primaryOwner
-                            transaction
-                            dataSource
-                            witness
-                            commitments
-                            firstKey
-                            secondKey
-                            prepared
-                            revision
-                            now
-                            oldCapability
+                return!
+                    deriveUnderLock
+                        primaryOwner
+                        dataSource
+                        witness
+                        commitments
+                        handoffId
+                        firstKey
+                        secondKey
+                        oldCapability
             with _ ->
                 return None
         }

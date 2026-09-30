@@ -59,8 +59,42 @@ module private DatabaseBackupCaptureAdmission =
                 }
         }
 
-/// A single witness FOR SHARE lease freezes authority while complete primary/witness audits and
-/// both physical BASE streams run. It does not itself register, retain, or certify a backup.
+    let private combinedLease (authority: IDisposable) (witness: IDisposable) =
+        { new IDisposable with
+            member _.Dispose() =
+                try
+                    witness.Dispose()
+                finally
+                    authority.Dispose()
+        }
+
+    let acquire owner dataSource (witness: WitnessProtocol) commitments ct =
+        task {
+            let! authorityLease = AuthorityOperationFence.acquireExclusive None owner ct
+
+            try
+                let before = witness.Snapshot()
+
+                if before.HandoffPending || before.ActivationPending then
+                    invalidOp "Writer authority is not active for backup capture."
+
+                let witnessLease = witness.AcquireReadFence(before.WriterGeneration)
+
+                try
+                    let! cutoff =
+                        auditedCutoff dataSource witness commitments before.WriterGeneration ct
+
+                    return cutoff, combinedLease authorityLease witnessLease
+                with error ->
+                    witnessLease.Dispose()
+                    return raise error
+            with error ->
+                authorityLease.Dispose()
+                return raise error
+        }
+
+/// An exclusive primary operation lease drains settlement before a witness FOR SHARE lease
+/// freezes authority through complete audits and both physical BASE streams.
 [<Sealed>]
 type internal DatabaseBackupCaptureBarrier
     private
@@ -132,31 +166,14 @@ type internal DatabaseBackupCaptureBarrier
             OwnerConnection.requireIdentity owner
             SchemaBaseline.requireCurrent owner
             witness.Admit()
-            let before = witness.Snapshot()
 
-            if before.HandoffPending || before.ActivationPending then
-                invalidOp "Writer authority is not active for backup capture."
+            let! cutoff, lease =
+                DatabaseBackupCaptureAdmission.acquire
+                    owner
+                    dataSource
+                    witness
+                    commitments
+                    cancellationToken
 
-            let lease = witness.AcquireReadFence(before.WriterGeneration)
-
-            try
-                let! cutoff =
-                    DatabaseBackupCaptureAdmission.auditedCutoff
-                        dataSource
-                        witness
-                        commitments
-                        before.WriterGeneration
-                        cancellationToken
-
-                return
-                    new DatabaseBackupCaptureBarrier(
-                        dataSource,
-                        witness,
-                        commitments,
-                        lease,
-                        cutoff
-                    )
-            with error ->
-                lease.Dispose()
-                return raise error
+            return new DatabaseBackupCaptureBarrier(dataSource, witness, commitments, lease, cutoff)
         }

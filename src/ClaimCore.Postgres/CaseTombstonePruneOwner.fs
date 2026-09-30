@@ -131,6 +131,20 @@ module internal CaseTombstonePruneOwner =
                         ct
         }
 
+    let private readyForPrune ownerConnection witness commitments caseId ct =
+        task {
+            let! pending = pendingReceipt ownerConnection caseId
+
+            if pending then
+                return true
+            else
+                try
+                    do! preflightAudit ownerConnection witness commitments ct
+                    return true
+                with _ ->
+                    return false
+        }
+
     let execute
         ownerConnection
         witnessOwnerConnection
@@ -147,19 +161,16 @@ module internal CaseTombstonePruneOwner =
                 try
                     witness.Admit()
                     commitments.Admit()
-                    let! pending = pendingReceipt ownerConnection proposal.CaseId
+                    use fenceConnection = new NpgsqlConnection(ownerConnection)
+                    do! fenceConnection.OpenAsync(ct)
+                    OwnerConnection.requireIdentity fenceConnection
+                    SchemaBaseline.requireCurrent fenceConnection
+
+                    use! _authorityFence =
+                        AuthorityOperationFence.acquireExclusive None fenceConnection ct
 
                     let! audited =
-                        task {
-                            if pending then
-                                return true
-                            else
-                                try
-                                    do! preflightAudit ownerConnection witness commitments ct
-                                    return true
-                                with _ ->
-                                    return false
-                        }
+                        readyForPrune ownerConnection witness commitments proposal.CaseId ct
 
                     if not audited then
                         return OwnerWitnessPruneOutcome.AuditUnavailable "preprune-full-audit"

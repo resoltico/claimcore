@@ -145,6 +145,7 @@ module internal CaseLifecycleReconcile =
                     OwnerConnection.requireIdentity connection
                     RuntimeSchema.requireCompatible connection
                     witness.Admit()
+                    use! _authorityLease = AuthorityOperationFence.acquireShared None connection ct
                     use transaction = connection.BeginTransaction(IsolationLevel.RepeatableRead)
 
                     use readOnly =

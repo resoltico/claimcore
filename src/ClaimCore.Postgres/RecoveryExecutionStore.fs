@@ -156,6 +156,12 @@ module internal RecoveryExecutionStore =
             let request = Operation.request operation
             use! connection = RuntimeDatabase.openConnectionAsync dataSource
 
+            use! _authorityLease =
+                AuthorityOperationFence.acquireShared
+                    (Some dataSource)
+                    connection
+                    System.Threading.CancellationToken.None
+
             let! transaction =
                 connection.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken)
 

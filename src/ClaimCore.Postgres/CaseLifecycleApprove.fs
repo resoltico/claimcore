@@ -97,19 +97,8 @@ module internal CaseLifecycleApprove =
                 CaseLifecycleStoreSupport.clear draft
         }
 
-    let private transact
-        dataSource
-        witness
-        (context: ActorCallContext)
-        (change: LifecycleChange)
-        approvalId
-        expiresAt
-        instant
-        =
+    let private authorizedProjection connection transaction context (change: LifecycleChange) =
         task {
-            use! connection = RuntimeDatabase.openConnectionAsync dataSource
-            use transaction = CaseLifecycleStoreSupport.beginTransaction connection
-
             let! revision =
                 ActorGrantRead.lockRevision
                     connection
@@ -125,7 +114,7 @@ module internal CaseLifecycleApprove =
                     change.EventId
 
             match found with
-            | None -> return LifecycleWriteOutcome.ResourceUnavailable
+            | None -> return None
             | Some projection ->
                 let! allowed =
                     CaseLifecycleStoreSupport.authorize
@@ -135,20 +124,45 @@ module internal CaseLifecycleApprove =
                         context
                         projection
 
-                if not allowed then
-                    return LifecycleWriteOutcome.ResourceUnavailable
-                else
-                    return!
-                        approveUnderLock
-                            connection
-                            transaction
-                            witness
-                            context
-                            projection
-                            change
-                            approvalId
-                            expiresAt
-                            instant
+                return if allowed then Some projection else None
+        }
+
+    let private transact
+        dataSource
+        witness
+        (context: ActorCallContext)
+        (change: LifecycleChange)
+        approvalId
+        expiresAt
+        instant
+        =
+        task {
+            use! connection = RuntimeDatabase.openConnectionAsync dataSource
+
+            use! _authorityLease =
+                AuthorityOperationFence.acquireShared
+                    (Some dataSource)
+                    connection
+                    System.Threading.CancellationToken.None
+
+            use transaction = CaseLifecycleStoreSupport.beginTransaction connection
+
+            let! found = authorizedProjection connection transaction context change
+
+            match found with
+            | None -> return LifecycleWriteOutcome.ResourceUnavailable
+            | Some projection ->
+                return!
+                    approveUnderLock
+                        connection
+                        transaction
+                        witness
+                        context
+                        projection
+                        change
+                        approvalId
+                        expiresAt
+                        instant
         }
 
     let private approvalTime (change: LifecycleChange) approvalAt expiresAt =

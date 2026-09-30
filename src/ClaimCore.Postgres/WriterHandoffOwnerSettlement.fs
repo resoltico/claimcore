@@ -113,6 +113,13 @@ module internal WriterHandoffOwnerSettlement =
                     OwnerConnection.requireIdentity primaryOwner
                     SchemaBaseline.requireCurrent primaryOwner
                     witness.AdmitReadOnly()
+
+                    use! _authorityFence =
+                        AuthorityOperationFence.acquireExclusive
+                            None
+                            primaryOwner
+                            CancellationToken.None
+
                     use transaction = primaryOwner.BeginTransaction(IsolationLevel.ReadCommitted)
 
                     let context =

@@ -255,6 +255,13 @@ module internal WriterHandoffOwnerAbortBackfill =
                     OwnerConnection.requireIdentity primaryOwner
                     SchemaBaseline.requireCurrent primaryOwner
                     witness.AdmitReadOnly()
+
+                    use! _authorityFence =
+                        AuthorityOperationFence.acquireShared
+                            None
+                            primaryOwner
+                            System.Threading.CancellationToken.None
+
                     use transaction = primaryOwner.BeginTransaction(IsolationLevel.ReadCommitted)
 
                     return!

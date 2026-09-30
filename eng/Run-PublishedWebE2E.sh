@@ -260,6 +260,8 @@ run_engine() (
           printf 'Published authenticated CLI acceptance failed.\n' >&2
           exit 1
         }
+    dotnet "$docs_dll" verify-test-report ClaimCore.AcceptanceTests \
+      "${cli_results#"$repo_root"/}/ClaimCore.AcceptanceTests.trx"
     printf 'Published authenticated CLI acceptance passed in isolated %s fixture.\n' "$engine"
   fi
   printf 'Published %s OIDC browser qualification passed with two isolated clusters.\n' "$engine"

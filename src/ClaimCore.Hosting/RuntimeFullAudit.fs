@@ -6,16 +6,28 @@ open System.Threading
 open Npgsql
 open ClaimCore.Postgres
 
-/// The primary authority lock drains admitted mutations before the witness read fence
-/// blocks further tickets. Both remain held through the complete stable-snapshot audit.
+/// The session lease drains complete authority operations, including post-COMMIT settlement,
+/// before primary and witness locks establish the complete stable-snapshot audit.
 module internal RuntimeFullAudit =
     let runWith
         (resources: RuntimeResources)
+        (beforeWitnessFence: unit -> System.Threading.Tasks.Task)
         (afterFence: unit -> System.Threading.Tasks.Task)
         (cancellationToken: CancellationToken)
         =
         task {
-            use! barrier = resources.DataSource.OpenConnectionAsync(cancellationToken)
+            use! barrier = resources.FullAuditDataSource.OpenConnectionAsync(cancellationToken)
+
+            use! _operationFence =
+                AuthorityOperationFence.acquireExclusive
+                    (Some resources.FullAuditDataSource)
+                    barrier
+                    cancellationToken
+
+            use! auditConnection =
+                RuntimeDatabase.openConnectionAsyncWithCancellation
+                    resources.FullAuditDataSource
+                    cancellationToken
 
             use! transaction =
                 barrier.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken)
@@ -33,10 +45,11 @@ module internal RuntimeFullAudit =
                 invalidOp "Primary audit barrier is unavailable."
 
             let witness = resources.Witness
+            let generation = witness.Snapshot().WriterGeneration
+            do! beforeWitnessFence ()
+            use _fence = witness.AcquireReadFence(generation)
             let before = witness.Snapshot()
-            use _fence = witness.AcquireReadFence(before.WriterGeneration)
             do! afterFence ()
-            use! auditConnection = resources.DataSource.OpenConnectionAsync(cancellationToken)
 
             let! summary =
                 DataAudit.runWithSuppression
@@ -58,4 +71,8 @@ module internal RuntimeFullAudit =
         }
 
     let run (resources: RuntimeResources) (cancellationToken: CancellationToken) =
-        runWith resources (fun () -> System.Threading.Tasks.Task.CompletedTask) cancellationToken
+        runWith
+            resources
+            (fun () -> System.Threading.Tasks.Task.CompletedTask)
+            (fun () -> System.Threading.Tasks.Task.CompletedTask)
+            cancellationToken

@@ -208,6 +208,13 @@ module internal CaseTombstoneTerminalApprovalWrite =
         task {
             let value = TombstoneTerminalProposal.copy proposal
             use! connection = RuntimeDatabase.openConnectionAsync dataSource
+
+            use! _authorityLease =
+                AuthorityOperationFence.acquireShared
+                    (Some dataSource)
+                    connection
+                    System.Threading.CancellationToken.None
+
             use transaction = connection.BeginTransaction(IsolationLevel.ReadCommitted)
 
             let! revision =

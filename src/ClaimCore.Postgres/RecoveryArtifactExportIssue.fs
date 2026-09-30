@@ -223,6 +223,9 @@ module internal RecoveryArtifactExportIssue =
                 ct.ThrowIfCancellationRequested()
                 use! connection = RuntimeDatabase.openConnectionAsyncWithCancellation dataSource ct
 
+                use! _authorityLease =
+                    AuthorityOperationFence.acquireShared (Some dataSource) connection ct
+
                 use! transaction =
                     connection.BeginTransactionAsync(IsolationLevel.ReadCommitted, ct)
 

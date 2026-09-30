@@ -98,18 +98,8 @@ module internal CaseLifecycleApply =
                 CaseLifecycleStoreSupport.clear draft
         }
 
-    let private transact
-        dataSource
-        witness
-        commitments
-        (context: ActorCallContext)
-        (change: LifecycleChange)
-        instant
-        =
+    let private authorizedProjection connection transaction context (change: LifecycleChange) =
         task {
-            use! connection = RuntimeDatabase.openConnectionAsync dataSource
-            use transaction = CaseLifecycleStoreSupport.beginTransaction connection
-
             let! revision =
                 ActorGrantRead.lockRevision
                     connection
@@ -125,7 +115,7 @@ module internal CaseLifecycleApply =
                     change.EventId
 
             match found with
-            | None -> return LifecycleWriteOutcome.ResourceUnavailable
+            | None -> return None
             | Some projection ->
                 let! allowed =
                     CaseLifecycleStoreSupport.authorize
@@ -135,19 +125,43 @@ module internal CaseLifecycleApply =
                         context
                         projection
 
-                if not allowed then
-                    return LifecycleWriteOutcome.ResourceUnavailable
-                else
-                    return!
-                        applyUnderLock
-                            connection
-                            transaction
-                            witness
-                            commitments
-                            context
-                            projection
-                            change
-                            instant
+                return if allowed then Some projection else None
+        }
+
+    let private transact
+        dataSource
+        witness
+        commitments
+        (context: ActorCallContext)
+        (change: LifecycleChange)
+        instant
+        =
+        task {
+            use! connection = RuntimeDatabase.openConnectionAsync dataSource
+
+            use! _authorityLease =
+                AuthorityOperationFence.acquireShared
+                    (Some dataSource)
+                    connection
+                    System.Threading.CancellationToken.None
+
+            use transaction = CaseLifecycleStoreSupport.beginTransaction connection
+
+            let! found = authorizedProjection connection transaction context change
+
+            match found with
+            | None -> return LifecycleWriteOutcome.ResourceUnavailable
+            | Some projection ->
+                return!
+                    applyUnderLock
+                        connection
+                        transaction
+                        witness
+                        commitments
+                        context
+                        projection
+                        change
+                        instant
         }
 
     let apply

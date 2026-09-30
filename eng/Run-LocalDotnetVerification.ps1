@@ -42,7 +42,7 @@ $suites = @(
     [PSCustomObject]@{ Assembly = "ClaimCore.FuzzQualificationTests"; Expected = 5; Configuration = "Release"; Coverage = ""; Timeout = "25m"; Stage = "fuzz" }
     [PSCustomObject]@{ Assembly = "ClaimCore.ArchitectureTests"; Expected = 88; Configuration = "Debug"; Coverage = ""; Timeout = "25m"; Stage = "architecture" }
     [PSCustomObject]@{ Assembly = "ClaimCore.WitnessTests"; Expected = 21; Configuration = "Release"; Coverage = ""; Timeout = "90m"; Stage = "witness-qualification" }
-    [PSCustomObject]@{ Assembly = "ClaimCore.IntegrationTests"; Expected = 347; Configuration = "Release"; Coverage = "integration"; Timeout = "110m"; Stage = "integration" }
+    [PSCustomObject]@{ Assembly = "ClaimCore.IntegrationTests"; Expected = 357; Configuration = "Release"; Coverage = "integration"; Timeout = "110m"; Stage = "integration" }
     [PSCustomObject]@{ Assembly = "ClaimCore.RecoveryQualificationTests"; Expected = 19; Configuration = "Release"; Coverage = ""; Timeout = "90m"; Stage = "recovery-qualification" }
     [PSCustomObject]@{ Assembly = "ClaimCore.ConcurrencyQualificationTests"; Expected = 5; Configuration = "Release"; Coverage = ""; Timeout = "90m"; Stage = "concurrency-qualification" }
     [PSCustomObject]@{ Assembly = "ClaimCore.MigrationQualificationTests"; Expected = 15; Configuration = "Release"; Coverage = ""; Timeout = "90m"; Stage = "fresh-baseline-qualification" }
@@ -58,7 +58,7 @@ if ($selected.Count -eq 0) { throw "The requested .NET test assembly is not regi
 Set-Location $repository
 dotnet restore ClaimCore.slnx --locked-mode
 if ($LASTEXITCODE -ne 0) { throw "Locked .NET restore failed." }
-dotnet build ClaimCore.slnx --configuration Release --no-restore
+dotnet build ClaimCore.slnx --configuration Release --no-restore --no-incremental
 if ($LASTEXITCODE -ne 0) { throw "Release build failed." }
 $discoveryCheck = Join-Path $PSScriptRoot "Check-TestDiscovery.ps1"
 foreach ($suite in $selected) {

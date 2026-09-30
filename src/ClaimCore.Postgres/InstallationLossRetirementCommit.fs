@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System.Data
+open System.Threading
 open Npgsql
 open ClaimCore.Application
 open ClaimCore.Witness
@@ -128,6 +129,11 @@ module internal InstallationLossRetirementCommit =
             commitments
 
     let internal finish primaryOwner ownerWitnessConnection witness input intent commitments =
+        use _authorityFence =
+            (AuthorityOperationFence.acquireShared None primaryOwner CancellationToken.None)
+                .GetAwaiter()
+                .GetResult()
+
         finishWith ignore primaryOwner ownerWitnessConnection witness input intent commitments
 
     let private execute
@@ -142,6 +148,12 @@ module internal InstallationLossRetirementCommit =
         OwnerConnection.requireIdentity primaryOwner
         SchemaBaseline.requireCurrent primaryOwner
         witness.AdmitReadOnly()
+
+        use _authorityFence =
+            (AuthorityOperationFence.acquireExclusive None primaryOwner CancellationToken.None)
+                .GetAwaiter()
+                .GetResult()
+
         use transaction = primaryOwner.BeginTransaction(IsolationLevel.ReadCommitted)
 
         let commitments, alreadyRetired =

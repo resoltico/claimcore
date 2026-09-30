@@ -15,6 +15,7 @@
     <Compile Include="RuntimeSchema.fs" />
     <Compile Include="DatabaseEnvironment.fs" />
     <Compile Include="RuntimeDatabase.fs" />
+    <Compile Include="AuthorityOperationFence.fs" />
     <Compile Include="ScalarEncoding.fs" />
     <Compile Include="Sql.fs" />
     <Compile Include="CaseErasureSuppression.fs" />
@@ -79,6 +80,7 @@
     <Compile Include="ActorGrantWrite.fs" />
     <Compile Include="ActorGrantOwnerSafety.fs" />
     <Compile Include="ActorGrantRegistryQueries.fs" />
+    <Compile Include="ActorRegistrationWrite.fs" />
     <Compile Include="ActorGrantRegistry.fs" />
     <Compile Include="ActorManagementGrant.fs" />
     <Compile Include="ActorManagementStore.fs" />

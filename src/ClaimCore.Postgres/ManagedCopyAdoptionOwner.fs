@@ -141,6 +141,14 @@ module internal ManagedCopyAdoptionOwner =
                 try
                     witness.Admit()
                     commitments.Admit()
+                    use fenceConnection = new NpgsqlConnection(ownerConnection)
+                    do! fenceConnection.OpenAsync(ct)
+                    OwnerConnection.requireIdentity fenceConnection
+                    SchemaBaseline.requireCurrent fenceConnection
+
+                    use! _authorityFence =
+                        AuthorityOperationFence.acquireExclusive None fenceConnection ct
+
                     let! prior = existing ownerConnection submission.AdoptionEventId ct
 
                     match prior with

@@ -260,6 +260,7 @@ module internal WriterHandoffActivation =
                 OwnerConnection.requireIdentity primaryOwner
                 SchemaBaseline.requireCurrent primaryOwner
                 witness.AdmitReadOnly()
+                use! _authorityFence = AuthorityOperationFence.acquireExclusive None primaryOwner ct
                 let! readiness = preflight dataSource witness verifier commitments value ct
 
                 match readiness with

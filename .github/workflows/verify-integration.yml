@@ -171,7 +171,7 @@ jobs:
 
           Invoke-RegisteredProject "witness-qualification" "tests/ClaimCore.WitnessTests/ClaimCore.WitnessTests.fsproj" "ClaimCore.WitnessTests" 21 $false
           if ($overall -ne 0) { exit $overall }
-          Invoke-RegisteredProject "integration-linux" "tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj" "ClaimCore.IntegrationTests" 347 $true "110m"
+          Invoke-RegisteredProject "integration-linux" "tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj" "ClaimCore.IntegrationTests" 357 $true "110m"
           $qualifications = @(
             Start-RegisteredProject "recovery-qualification" "tests/ClaimCore.RecoveryQualificationTests/ClaimCore.RecoveryQualificationTests.fsproj" "ClaimCore.RecoveryQualificationTests" 19
             Start-RegisteredProject "concurrency-qualification" "tests/ClaimCore.ConcurrencyQualificationTests/ClaimCore.ConcurrencyQualificationTests.fsproj" "ClaimCore.ConcurrencyQualificationTests" 5

@@ -172,6 +172,7 @@ let private verifyCompleteAuditBarrier resources owner witness =
     let audit =
         RuntimeFullAudit.runWith
             resources
+            (fun () -> Task.CompletedTask)
             (fun () ->
                 fenced.TrySetResult() |> ignore
                 release.Task :> Task)
