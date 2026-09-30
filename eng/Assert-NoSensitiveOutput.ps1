@@ -9,7 +9,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-function Get-SecretVariants {
+function Get-SecretVariant {
     param([string] $Path)
 
     $info = [IO.FileInfo]::new([IO.Path]::GetFullPath($Path))
@@ -40,9 +40,9 @@ function Get-SecretVariants {
         [void] $variants.Add([Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($value)))
         [void] $variants.Add([Uri]::EscapeDataString($value))
         [void] $variants.Add($json.Substring(1, $json.Length - 2))
-    }
-    catch [Text.DecoderFallbackException] {
+    } catch [Text.DecoderFallbackException] {
         # Raw capability files are binary; only their encoded forms can appear in text reports.
+        Write-Verbose "A binary capability file contributes only its encoded forms."
     }
 
     return $variants
@@ -50,7 +50,7 @@ function Get-SecretVariants {
 
 $variants = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
 foreach ($path in $SecretFile) {
-    foreach ($variant in Get-SecretVariants $path) {
+    foreach ($variant in Get-SecretVariant $path) {
         [void] $variants.Add($variant)
     }
 }

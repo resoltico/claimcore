@@ -98,7 +98,7 @@ try {
     $allProbes = @($mustBeIgnored) + @($mustRemainVisible)
     $probeInput = $allProbes -join "`n"
     $ignoredOutput = @($probeInput | & git --git-dir $temporaryGit --work-tree $repoRoot `
-        -c core.quotePath=false check-ignore --no-index --stdin)
+            -c core.quotePath=false check-ignore --no-index --stdin)
     if ($LASTEXITCODE -notin 0, 1) {
         throw "Git could not classify the ignore-policy probes."
     }
@@ -119,13 +119,11 @@ try {
             throw "A required public release input is ignored: $relative"
         }
     }
-}
-finally {
+} finally {
     foreach ($name in $gitRedirectVariables) {
         if ($null -eq $savedEnvironment[$name]) {
             Remove-Item -LiteralPath "Env:$name" -ErrorAction SilentlyContinue
-        }
-        else {
+        } else {
             [Environment]::SetEnvironmentVariable($name, $savedEnvironment[$name])
         }
     }

@@ -69,7 +69,6 @@ try {
     $failures = @($document.SelectNodes('//t:UnitTestResult[@outcome="Failed"]', $namespace))
     if ($failures.Count -ne 1) { throw "The diagnostic probe did not record one intentional failure." }
     Write-Host "Faulted TRX diagnostic privacy control passed."
-}
-finally {
+} finally {
     if (Test-Path -LiteralPath $root -PathType Container) { [IO.Directory]::Delete($root, $true) }
 }

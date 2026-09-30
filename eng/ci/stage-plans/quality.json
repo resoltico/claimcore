@@ -14,6 +14,22 @@
     { "id": "eng-npm-audit", "argv": ["npm", "--prefix", "eng", "audit", "--audit-level=low"] },
     { "id": "eng-npm-signatures", "argv": ["npm", "--prefix", "eng", "audit", "signatures"] },
     {
+      "id": "python-format",
+      "argv": ["uv", "run", "--frozen", "ruff", "format", "--check", "--no-cache"],
+      "requires": ["uv"]
+    },
+    {
+      "id": "python-lint",
+      "argv": ["uv", "run", "--frozen", "ruff", "check", "--no-cache"],
+      "requires": ["uv"]
+    },
+    { "id": "python-types", "argv": ["uv", "run", "--frozen", "mypy"], "requires": ["uv"] },
+    {
+      "id": "python-limits",
+      "argv": ["uv", "run", "--frozen", "python", "-B", "eng/lint/check_python_limits.py"],
+      "requires": ["uv"]
+    },
+    {
       "id": "sensitive-output-negative-controls",
       "argv": ["pwsh", "-NoProfile", "-File", "eng/Test-SensitiveOutputPolicy.ps1"]
     },
@@ -51,6 +67,16 @@
     {
       "id": "workflow-toolchain-negative-controls",
       "argv": ["pwsh", "-NoProfile", "-File", "eng/Test-WorkflowToolchainPolicy.ps1"]
+    },
+    {
+      "id": "shfmt",
+      "argv": ["shfmt", "-d"],
+      "appendFiles": { "directories": ["eng", "db"], "suffix": ".sh" },
+      "requires": ["shfmt"]
+    },
+    {
+      "id": "powershell-analysis",
+      "argv": ["pwsh", "-NoProfile", "-File", "eng/Check-PowerShellAnalysis.ps1"]
     },
     {
       "id": "shellcheck",

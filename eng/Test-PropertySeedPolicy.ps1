@@ -29,8 +29,7 @@ try {
     & $selector -EventName workflow_dispatch -RequestedSeed "01" -Repository owner/project `
         -Workflow verification -RunId 1234 -RunAttempt 1 | Out-Null
     throw "A noncanonical manual seed was accepted."
-}
-catch {
+} catch {
     if ($_.Exception.Message -eq "A noncanonical manual seed was accepted.") { throw }
 }
 

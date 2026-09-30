@@ -72,8 +72,7 @@ function Invoke-ChildProcess {
             StandardOutput = $standardOutput.GetAwaiter().GetResult()
             StandardError = $standardError.GetAwaiter().GetResult()
         }
-    }
-    finally {
+    } finally {
         $child.Dispose()
     }
 }
@@ -85,7 +84,7 @@ function Invoke-SafeGit {
         -RemoveEnvironment $gitRedirectVariables -TimeoutSeconds 60
 }
 
-function Get-NulPaths {
+function Get-NulPath {
     param([string] $Raw)
 
     if ($Raw.Length -gt 0 -and $Raw[$Raw.Length - 1] -ne [char]0) {
@@ -114,8 +113,7 @@ function Get-Inventory {
         $inventory = Invoke-SafeGit @(
             "ls-files", "--cached", "--others", "--exclude-per-directory=.gitignore", "-z", "--", "."
         )
-    }
-    else {
+    } else {
         $initialized = Invoke-SafeGit @("init", "--bare", "--quiet", $TemporaryGitDirectory)
         if ($initialized.ExitCode -ne 0) {
             throw "The temporary source inventory could not be initialized."
@@ -129,7 +127,7 @@ function Get-Inventory {
     if ($inventory.ExitCode -ne 0) {
         throw "The source inventory could not be enumerated."
     }
-    return Get-NulPaths $inventory.StandardOutput
+    return Get-NulPath $inventory.StandardOutput
 }
 
 function Resolve-SafeSourceFile {
@@ -148,14 +146,14 @@ function Resolve-SafeSourceFile {
 
     $current = $repoRoot
     foreach ($segment in $segments) {
-        $matches = @(
+        $entries = @(
             [IO.Directory]::EnumerateFileSystemEntries($current) |
                 Where-Object { [string]::Equals([IO.Path]::GetFileName($_), $segment, [StringComparison]::Ordinal) }
         )
-        if ($matches.Count -ne 1) {
+        if ($entries.Count -ne 1) {
             throw "A source path is missing or has different casing."
         }
-        $current = $matches[0]
+        $current = $entries[0]
         if (([IO.File]::GetAttributes($current) -band [IO.FileAttributes]::ReparsePoint) -ne 0) {
             throw "Source inventory paths may not contain symbolic links or junctions."
         }
@@ -221,17 +219,16 @@ try {
     $gitleaks = Invoke-ChildProcess -FileName $GitleaksPath -WorkingDirectory $repoRoot `
         -RemoveEnvironment @("GITLEAKS_CONFIG", "GITLEAKS_CONFIG_TOML") `
         -Arguments @(
-            "dir", "--redact", "--no-banner", "--no-color", "--exit-code", "1",
-            "--ignore-gitleaks-allow", "--gitleaks-ignore-path", $emptyIgnore, $snapshotRoot
-        )
+        "dir", "--redact", "--no-banner", "--no-color", "--exit-code", "1",
+        "--ignore-gitleaks-allow", "--gitleaks-ignore-path", $emptyIgnore, $snapshotRoot
+    )
     [Console]::Out.Write($gitleaks.StandardOutput)
     [Console]::Error.Write($gitleaks.StandardError)
     $scanExit = $gitleaks.ExitCode
     if ($scanExit -eq 0) {
         Write-Host "Source secret scan passed for $($inventory.Count) repository files."
     }
-}
-finally {
+} finally {
     if ([IO.Directory]::Exists($temporaryRoot)) {
         [IO.Directory]::Delete($temporaryRoot, $true)
     }

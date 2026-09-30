@@ -15,3 +15,7 @@ fsharp_space_before_parameter = true
 
 [*.{ts,tsx,js,mjs,cjs,json,css,yml,yaml,props,targets,fsproj,slnx}]
 indent_size = 2
+
+[*.sh]
+indent_size = 2
+switch_case_indent = true

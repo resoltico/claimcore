@@ -1,0 +1,5 @@
+# Shared by every shell script in the repository; the stage plan adds no further options.
+external-sources=true
+enable=all
+severity=style
+disable=SC2310,SC2312

@@ -21,7 +21,7 @@ function Get-StepScalar {
     return $null
 }
 
-function Normalize-Condition {
+function ConvertTo-NormalizedCondition {
     param([string] $Value)
 
     if ($null -eq $Value) { return "" }
@@ -49,7 +49,7 @@ function Assert-LiteralArtifactPath {
     return $path.TrimEnd('/')
 }
 
-function Get-RunLines {
+function Get-RunLine {
     param([object] $Step)
 
     $start = -1
@@ -75,7 +75,7 @@ function Get-RunLines {
     return $result.ToArray()
 }
 
-function Get-ScanPaths {
+function Get-ScanPath {
     param([object] $Step)
 
     $inline = Get-StepScalar $Step 'run'
@@ -84,10 +84,10 @@ function Get-ScanPaths {
         if (-not $inline.StartsWith($prefix, [StringComparison]::Ordinal)) {
             throw "$($Step.Location) must invoke eng/Scan-ArtifactSecrets.ps1 directly."
         }
-        return Assert-LiteralArtifactPath ($inline.Substring($prefix.Length)) $Step.Location $false
+        return Assert-LiteralArtifactPath -Value ($inline.Substring($prefix.Length)) -Context $Step.Location -AllowGlob $false
     }
 
-    $lines = @(Get-RunLines $Step)
+    $lines = @(Get-RunLine $Step)
     if ($lines.Count -lt 2 -or
         $lines[0].TrimEnd('`').Trim() -cne 'pwsh -NoProfile -File eng/Scan-ArtifactSecrets.ps1') {
         throw "$($Step.Location) must invoke eng/Scan-ArtifactSecrets.ps1 directly."
@@ -97,12 +97,12 @@ function Get-ScanPaths {
     foreach ($line in $lines[1..($lines.Count - 1)]) {
         $argument = $line.TrimEnd('`').Trim()
         if ($argument.Length -eq 0) { throw "$($Step.Location) has an empty scan argument." }
-        $paths.Add((Assert-LiteralArtifactPath $argument $Step.Location $false))
+        $paths.Add((Assert-LiteralArtifactPath -Value $argument -Context $Step.Location -AllowGlob $false))
     }
     return $paths.ToArray()
 }
 
-function Get-UploadPaths {
+function Get-UploadPath {
     param([object] $Step)
 
     $with = $false
@@ -121,10 +121,10 @@ function Get-UploadPaths {
                 $item = $Step.Lines[$next]
                 if ($item.Trim().Length -eq 0) { continue }
                 if ($item -notmatch '^            \S') { break }
-                $paths.Add((Assert-LiteralArtifactPath $item.Trim() $Step.Location $true))
+                $paths.Add((Assert-LiteralArtifactPath -Value $item.Trim() -Context $Step.Location -AllowGlob $true))
             }
         } else {
-            $paths.Add((Assert-LiteralArtifactPath $value $Step.Location $true))
+            $paths.Add((Assert-LiteralArtifactPath -Value $value -Context $Step.Location -AllowGlob $true))
         }
         if ($paths.Count -eq 0) { throw "$($Step.Location) has no upload paths." }
         return $paths.ToArray()
@@ -144,10 +144,10 @@ function Test-ScanCoversUpload {
         $uploadBase = $UploadPath
     }
     return $uploadBase -ceq $ScanPath -or
-        $uploadBase.StartsWith($ScanPath + '/', [StringComparison]::Ordinal)
+    $uploadBase.StartsWith($ScanPath + '/', [StringComparison]::Ordinal)
 }
 
-function Assert-JobUploads {
+function Assert-JobUpload {
     param([object] $Job)
 
     $steps = @($Job.Steps)
@@ -172,14 +172,14 @@ function Assert-JobUploads {
     if ($scanIndex -ne $uploadIndices[0] - 1) {
         throw "$($scan.Location) must immediately precede the first upload."
     }
-    if ((Normalize-Condition (Get-StepScalar $scan 'if')) -cne 'always()') {
+    if ((ConvertTo-NormalizedCondition (Get-StepScalar $scan 'if')) -cne 'always()') {
         throw "$($scan.Location) must run with if: always()."
     }
     $continueOnError = Get-StepScalar $scan 'continue-on-error'
     if ($null -ne $continueOnError -and $continueOnError -cne 'false') {
         throw "$($scan.Location) must fail the job when scanning fails."
     }
-    $scanPaths = @(Get-ScanPaths $scan)
+    $scanPaths = @(Get-ScanPath $scan)
 
     for ($index = $scanIndex + 1; $index -lt $steps.Count; $index++) {
         if ($uploadIndices -cnotcontains $index) {
@@ -188,11 +188,11 @@ function Assert-JobUploads {
     }
     foreach ($index in $uploadIndices) {
         $upload = $steps[$index]
-        if ((Normalize-Condition (Get-StepScalar $upload 'if')) -cne
+        if ((ConvertTo-NormalizedCondition (Get-StepScalar $upload 'if')) -cne
             "always() && steps.artifact_scan.outcome == 'success'") {
             throw "$($upload.Location) must require artifact_scan.outcome == 'success'."
         }
-        foreach ($path in @(Get-UploadPaths $upload)) {
+        foreach ($path in @(Get-UploadPath $upload)) {
             if (-not @($scanPaths | Where-Object { Test-ScanCoversUpload $_ $path }).Count) {
                 throw "$($upload.Location) uploads a path outside artifact_scan scope."
             }
@@ -201,7 +201,7 @@ function Assert-JobUploads {
     return $uploadIndices.Count
 }
 
-function New-Job {
+function Initialize-WorkflowJob {
     param([string] $Location)
     return [pscustomobject]@{ Location = $Location; Steps = [Collections.Generic.List[object]]::new() }
 }
@@ -225,7 +225,7 @@ function Assert-Workflow {
         if ($line -match '^[^\s#]' -and $line -notmatch '^jobs:') { $inJobs = $false; continue }
         if ($line -match '^  [A-Za-z0-9_-]+:\s*(?:#.*)?$') {
             if ($null -ne $job) { $jobs.Add($job) }
-            $job = New-Job "${Path}:$($index + 1)"
+            $job = Initialize-WorkflowJob "${Path}:$($index + 1)"
             $step = $null
             $inSteps = $false
             continue
@@ -245,7 +245,7 @@ function Assert-Workflow {
     if ($null -ne $job) { $jobs.Add($job) }
 
     $checked = 0
-    foreach ($item in $jobs) { $checked += Assert-JobUploads $item }
+    foreach ($item in $jobs) { $checked += Assert-JobUpload $item }
     if ($checked -ne $rawUploads) {
         throw "$Path contains an upload outside the supported job/step structure."
     }
@@ -255,7 +255,7 @@ function Assert-Workflow {
 $fullRoot = [IO.Path]::GetFullPath($WorkflowRoot)
 if (-not [IO.Directory]::Exists($fullRoot)) { throw "Workflow root is unavailable." }
 $files = @([IO.Directory]::GetFiles($fullRoot, '*.yml') + [IO.Directory]::GetFiles($fullRoot, '*.yaml') |
-    Sort-Object -Unique)
+        Sort-Object -Unique)
 if ($files.Count -eq 0) { throw "Workflow root has no YAML files." }
 
 $count = 0

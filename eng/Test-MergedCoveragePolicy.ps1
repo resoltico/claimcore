@@ -27,10 +27,9 @@ function Assert-Rejected {
     param([string] $Label)
 
     try {
-        Test-ClaimCoreCoverageFloors $report | Out-Null
+        Test-ClaimCoreCoverageFloor $report | Out-Null
         throw "Coverage floor negative control '$Label' was accepted."
-    }
-    catch {
+    } catch {
         if ($_.Exception.Message -eq "Coverage floor negative control '$Label' was accepted.") {
             throw
         }
@@ -39,7 +38,7 @@ function Assert-Rejected {
 
 try {
     Write-Coverage
-    $boundary = Test-ClaimCoreCoverageFloors $report
+    $boundary = Test-ClaimCoreCoverageFloor $report
     if ($boundary.LineRate -ne 0.60 -or $boundary.BranchRate -ne 0.40 -or $boundary.WebPackages -ne 1) {
         throw "Exact coverage-floor boundary was not accepted."
     }
@@ -47,7 +46,7 @@ try {
     $standardDoctype = '<!DOCTYPE coverage SYSTEM "http://cobertura.sourceforge.net/xml/coverage-04.dtd">'
     $withDoctype = $standardDoctype + [Environment]::NewLine + [IO.File]::ReadAllText($report)
     [IO.File]::WriteAllText($report, $withDoctype, [Text.UTF8Encoding]::new($false))
-    Test-ClaimCoreCoverageFloors $report | Out-Null
+    Test-ClaimCoreCoverageFloor $report | Out-Null
 
     Write-Coverage -Line "0.5999"
     Assert-Rejected "repository lines below 60%"
@@ -74,7 +73,6 @@ try {
     Assert-Rejected "DTD entity is never resolved"
 
     Write-Host "Merged coverage floor negative controls passed."
-}
-finally {
+} finally {
     [IO.Directory]::Delete($fixtureRoot, $true)
 }

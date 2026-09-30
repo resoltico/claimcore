@@ -1,5 +1,11 @@
 Set-StrictMode -Version Latest
 
+<#
+.SYNOPSIS
+Fails unless the browser coverage report is a well-formed Cobertura document with measured lines.
+.PARAMETER Path
+The browser coverage report to check.
+#>
 function Assert-ClaimCoreBrowserCoverage {
     param([Parameter(Mandatory)][string] $Path)
 
@@ -12,8 +18,7 @@ function Assert-ClaimCoreBrowserCoverage {
         $report = [Xml.XmlDocument]::new()
         $report.XmlResolver = $null
         $report.Load($reader)
-    }
-    finally {
+    } finally {
         $reader.Dispose()
     }
 
@@ -65,7 +70,13 @@ function Assert-ClaimCoreBrowserCoverage {
     }
 }
 
-function Resolve-ClaimCoreCoverageInputs {
+<#
+.SYNOPSIS
+Finds the one coverage report each expected role and partition must have produced.
+.PARAMETER InputRoot
+The directory holding one subdirectory of Cobertura reports per role.
+#>
+function Resolve-ClaimCoreCoverageInput {
     param([Parameter(Mandatory)][string] $InputRoot)
 
     $root = [IO.Path]::GetFullPath($InputRoot)
@@ -91,14 +102,14 @@ function Resolve-ClaimCoreCoverageInputs {
     ) + @($integrationPartitions | ForEach-Object { @{ Role = "integration"; Prefix = "integration-$_" } })
     foreach ($entry in $roles) {
         $directory = Join-Path $root $entry.Role
-        $matches = @(
+        $entries = @(
             Get-ChildItem -LiteralPath $directory -File -ErrorAction Stop |
                 Where-Object { $_.Name -match ("^" + [regex]::Escape($entry.Prefix) + "\.coverage\.cobertura\.[0-9]{15}\.xml$") }
         )
-        if ($matches.Count -ne 1) {
+        if ($entries.Count -ne 1) {
             throw "Coverage role '$($entry.Prefix)' must provide exactly one timestamped report."
         }
-        $reports.Add($matches[0].FullName)
+        $reports.Add($entries[0].FullName)
     }
 
     $browserDirectory = Join-Path $root "browser"
@@ -125,4 +136,4 @@ function Resolve-ClaimCoreCoverageInputs {
     return @($reports)
 }
 
-Export-ModuleMember -Function "Resolve-ClaimCoreCoverageInputs", "Assert-ClaimCoreBrowserCoverage"
+Export-ModuleMember -Function "Resolve-ClaimCoreCoverageInput", "Assert-ClaimCoreBrowserCoverage"

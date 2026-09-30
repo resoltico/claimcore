@@ -259,7 +259,7 @@
       "reviewer": "Agent reviewed the exact current heading and listed implementation and assertion sources; this is source review of local synthetic boundaries, not execution evidence, independent owner approval, or live real-data qualification.",
       "reviewedOn": "2026-09-30",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "1cc5b16dd3ce78642f8e491428929a92732d91cf38db0249d02f316aa1227d7a",
+      "reviewSubjectHash": "6ebceed7e2fb865d1ef640f8118708bb3a6286b027294bb4111fa63936d5924c",
       "wholeFiles": [
         "db/baseline.sql",
         "db/witness-baseline.sql",
@@ -364,9 +364,9 @@
       "contractId": "CC-CLI-001",
       "reviewerKind": "agent",
       "reviewer": "Agent reviewed the exact published walkthrough heading, six source frames, generated CLI-v4 client and strict parser path, and isolated process and unit assertions; this is source review, not execution evidence or independent owner approval.",
-      "reviewedOn": "2026-09-29",
+      "reviewedOn": "2026-09-30",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "b8805fa004f5b5baa45cbb959f01ccdc1d4948e0bb39f24898a414320031ddd2",
+      "reviewSubjectHash": "013e0326de4bd3e329dbf8d6d96b4e4694be5651d9e987b02f493ef052bf998a",
       "wholeFiles": [
         "examples/01-open.json",
         "examples/02-decide.json",
@@ -391,9 +391,9 @@
       "contractId": "CC-CLI-002",
       "reviewerKind": "agent",
       "reviewer": "Agent reviewed the exact current heading and listed implementation and assertion sources; this is source review of local synthetic boundaries, not execution evidence, independent owner approval, or live real-data qualification.",
-      "reviewedOn": "2026-09-27",
+      "reviewedOn": "2026-09-30",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "a45e4a98af23e4a81a55096362ca4f28c6ad2531d458684bb29a1157bb6962bb",
+      "reviewSubjectHash": "38cd39995005cf2af9498cc7ecc38b50297f56574d90de1555d7efe24e6c37f2",
       "wholeFiles": [
         "src/ClaimCore.HostSecurity/PrivateFileService.fs",
         "src/ClaimCore.HostSecurity/PosixPrivateFiles.fs",
@@ -730,7 +730,7 @@
       "reviewer": "Agent reviewed the exact current heading and listed implementation and assertion sources; this is source review of local synthetic boundaries, not execution evidence, independent owner approval, or live real-data qualification.",
       "reviewedOn": "2026-09-30",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "d004744822479144eb4b34c20e7c71eb64fcc8dd2091808b3125e773cd95b6f5",
+      "reviewSubjectHash": "5f6b8c83c162e63fc2524e0ded70e81894951c77e9a2a3dc63898fc0adaacdb1",
       "wholeFiles": [
         ".github/workflows/verify-frontend.yml",
         "docs/diagnostics.md",

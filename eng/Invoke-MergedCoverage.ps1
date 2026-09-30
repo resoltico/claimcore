@@ -17,7 +17,7 @@ $resolve = {
     if ([IO.Path]::IsPathRooted($Path)) { return [IO.Path]::GetFullPath($Path) }
     return [IO.Path]::GetFullPath((Join-Path $repoRoot $Path))
 }
-$input = & $resolve $InputRoot
+$coverageInput = & $resolve $InputRoot
 $output = & $resolve $OutputRoot
 $artifactPrefix = $artifactsRoot.TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
 
@@ -41,13 +41,13 @@ $manifestExit = 0
 [IO.Directory]::CreateDirectory($output) | Out-Null
 
 try {
-    $reports = @(Resolve-ClaimCoreCoverageInputs $input)
+    $reports = @(Resolve-ClaimCoreCoverageInput $coverageInput)
     $reportArgument = "-reports:" + ($reports -join ";")
     & dotnet tool run reportgenerator -- $reportArgument "-targetdir:$output" `
         "-reporttypes:Cobertura;MarkdownSummaryGithub" "-title:ClaimCore coverage"
     if ($LASTEXITCODE -ne 0) { throw "The pinned report generator failed." }
 
-    $assessed = Test-ClaimCoreCoverageFloors (Join-Path $output "Cobertura.xml")
+    $assessed = Test-ClaimCoreCoverageFloor (Join-Path $output "Cobertura.xml")
     if (-not [string]::IsNullOrWhiteSpace($SummaryPath)) {
         $summary = Join-Path $output "SummaryGithub.md"
         [IO.File]::AppendAllText([IO.Path]::GetFullPath($SummaryPath), [IO.File]::ReadAllText($summary))
@@ -55,11 +55,9 @@ try {
 
     Write-Host "Merged production coverage passed: line $([math]::Round($assessed.LineRate * 100, 2))%, branch $([math]::Round($assessed.BranchRate * 100, 2))%, Web packages $($assessed.WebPackages)."
     $status = 0
-}
-catch {
+} catch {
     $failure = $_.Exception.Message
-}
-finally {
+} finally {
     if (-not [string]::IsNullOrWhiteSpace($RunId)) {
         $finished = (Get-Date).ToUniversalTime().ToString("O")
         $outcome = if ($status -eq 0) { "success" } else { "failure" }

@@ -10,59 +10,59 @@ fi
 
 image="$1"
 platform="$2"
-if [[ -z "$image" || ( "$platform" != linux/amd64 && "$platform" != linux/arm64 ) ]]; then
+if [[ -z "${image}" || ("${platform}" != linux/amd64 && "${platform}" != linux/arm64) ]]; then
   printf '%s\n' 'A local image reference and a supported platform are required.' >&2
   exit 2
 fi
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
-bash "$repo_root/eng/Check-PostgresImageNotice.sh"
+bash "${repo_root}/eng/Check-PostgresImageNotice.sh"
 base_image='postgres:18.6@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280'
-grep -Fqx "FROM $base_image" "$repo_root/db/Dockerfile.postgres-patched"
-base_child="$(bash "$repo_root/eng/Resolve-PostgresBaseChild.sh" "$platform")"
+grep -Fqx "FROM ${base_image}" "${repo_root}/db/Dockerfile.postgres-patched"
+base_child="$(bash "${repo_root}/eng/Resolve-PostgresBaseChild.sh" "${platform}")"
 
 tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/claimcore-pg-image.XXXXXXXX")"
 nonce="${tmp_dir##*.}"
-container="claimcore-pg-recipe-$nonce"
-volume="claimcore-pg-recipe-$nonce"
+container="claimcore-pg-recipe-${nonce}"
+volume="claimcore-pg-recipe-${nonce}"
 created_container=0
 created_volume=0
 
 cleanup() {
-  if [[ "$created_container" -eq 1 ]]; then
-    docker rm --force "$container" >/dev/null 2>&1 || true
+  if [[ "${created_container}" -eq 1 ]]; then
+    docker rm --force "${container}" >/dev/null 2>&1 || true
   fi
-  if [[ "$created_volume" -eq 1 ]]; then
-    if [[ "$(docker volume inspect --format '{{ index .Labels "claimcore.postgres-image-recipe" }}' "$volume" 2>/dev/null)" == "$nonce" ]]; then
-      docker volume rm "$volume" >/dev/null 2>&1 || true
+  if [[ "${created_volume}" -eq 1 ]]; then
+    if [[ "$(docker volume inspect --format '{{ index .Labels "claimcore.postgres-image-recipe" }}' "${volume}" 2>/dev/null)" == "${nonce}" ]]; then
+      docker volume rm "${volume}" >/dev/null 2>&1 || true
     else
       printf '%s\n' 'Refusing to remove a volume whose isolation label changed.' >&2
     fi
   fi
-  rm -rf -- "$tmp_dir"
+  rm -rf -- "${tmp_dir}"
 }
 trap cleanup EXIT
 
-image_arch="$(docker image inspect --format '{{.Architecture}}' "$image")"
-if [[ "$image_arch" != "${platform#linux/}" ]]; then
-  printf 'Image architecture %s does not match %s.\n' "$image_arch" "$platform" >&2
+image_arch="$(docker image inspect --format '{{.Architecture}}' "${image}")"
+if [[ "${image_arch}" != "${platform#linux/}" ]]; then
+  printf 'Image architecture %s does not match %s.\n' "${image_arch}" "${platform}" >&2
   exit 1
 fi
 
 for item in LICENSE AUTHORS; do
-  installed_sha="$(docker run --rm --platform "$platform" --entrypoint sha256sum "$image" \
-    "/usr/share/doc/docker-library-postgres/$item" | cut -d ' ' -f 1)"
-  source_sha="$(shasum -a 256 "$repo_root/db/postgres-upstream/$item" | cut -d ' ' -f 1)"
-  if [[ "$installed_sha" != "$source_sha" ]]; then
-    printf 'The installed PostgreSQL upstream %s notice differs from the pinned source.\n' "$item" >&2
+  installed_sha="$(docker run --rm --platform "${platform}" --entrypoint sha256sum "${image}" \
+    "/usr/share/doc/docker-library-postgres/${item}" | cut -d ' ' -f 1)"
+  source_sha="$(shasum -a 256 "${repo_root}/db/postgres-upstream/${item}" | cut -d ' ' -f 1)"
+  if [[ "${installed_sha}" != "${source_sha}" ]]; then
+    printf 'The installed PostgreSQL upstream %s notice differs from the pinned source.\n' "${item}" >&2
     exit 1
   fi
 done
 
-docker run --rm --platform "$platform" --entrypoint dpkg-query "$base_child" \
-  -W '-f=${Package}\t${Version}\n' | LC_ALL=C sort > "$tmp_dir/base-packages"
-docker run --rm --platform "$platform" --entrypoint dpkg-query "$image" \
-  -W '-f=${Package}\t${Version}\n' | LC_ALL=C sort > "$tmp_dir/patched-packages"
+docker run --rm --platform "${platform}" --entrypoint dpkg-query "${base_child}" \
+  -W '-f=${Package}\t${Version}\n' | LC_ALL=C sort >"${tmp_dir}/base-packages"
+docker run --rm --platform "${platform}" --entrypoint dpkg-query "${image}" \
+  -W '-f=${Package}\t${Version}\n' | LC_ALL=C sort >"${tmp_dir}/patched-packages"
 
 awk -F '\t' '
   BEGIN {
@@ -88,78 +88,78 @@ awk -F '\t' '
         exit 1
       }
   }
-' "$tmp_dir/base-packages" > "$tmp_dir/expected-packages"
+' "${tmp_dir}/base-packages" >"${tmp_dir}/expected-packages"
 
-if ! cmp -s "$tmp_dir/expected-packages" "$tmp_dir/patched-packages"; then
+if ! cmp -s "${tmp_dir}/expected-packages" "${tmp_dir}/patched-packages"; then
   printf '%s\n' 'Patched image changed packages beyond the seven pinned Debian upgrades.' >&2
-  diff -u "$tmp_dir/expected-packages" "$tmp_dir/patched-packages" >&2 || true
+  diff -u "${tmp_dir}/expected-packages" "${tmp_dir}/patched-packages" >&2 || true
   exit 1
 fi
 
-postgres_version="$(docker run --rm --platform "$platform" --entrypoint postgres "$image" --version)"
-if [[ "$postgres_version" != 'postgres (PostgreSQL) 18.6' &&
-      "$postgres_version" != 'postgres (PostgreSQL) 18.6 '* ]]; then
-  printf 'Unexpected PostgreSQL executable version: %s\n' "$postgres_version" >&2
+postgres_version="$(docker run --rm --platform "${platform}" --entrypoint postgres "${image}" --version)"
+if [[ "${postgres_version}" != 'postgres (PostgreSQL) 18.6' &&
+  "${postgres_version}" != 'postgres (PostgreSQL) 18.6 '* ]]; then
+  printf 'Unexpected PostgreSQL executable version: %s\n' "${postgres_version}" >&2
   exit 1
 fi
 
 for source in debian.sources pgdg.list; do
-  docker run --rm --platform "$platform" --entrypoint cat "$base_child" \
-    "/etc/apt/sources.list.d/$source" > "$tmp_dir/base-$source"
-  docker run --rm --platform "$platform" --entrypoint cat "$image" \
-    "/etc/apt/sources.list.d/$source" > "$tmp_dir/patched-$source"
-  if ! cmp -s "$tmp_dir/base-$source" "$tmp_dir/patched-$source"; then
-    printf 'Patched image did not restore the official %s bytes.\n' "$source" >&2
+  docker run --rm --platform "${platform}" --entrypoint cat "${base_child}" \
+    "/etc/apt/sources.list.d/${source}" >"${tmp_dir}/base-${source}"
+  docker run --rm --platform "${platform}" --entrypoint cat "${image}" \
+    "/etc/apt/sources.list.d/${source}" >"${tmp_dir}/patched-${source}"
+  if ! cmp -s "${tmp_dir}/base-${source}" "${tmp_dir}/patched-${source}"; then
+    printf 'Patched image did not restore the official %s bytes.\n' "${source}" >&2
     exit 1
   fi
 done
 
-docker run --rm --platform "$platform" --entrypoint sh "$image" -ec '
+docker run --rm --platform "${platform}" --entrypoint sh "${image}" -ec '
   test ! -e /etc/apt/sources.list.d/pgdg.list.disabled
   test ! -e /tmp/claimcore-debian.sources.original
   test -f /usr/share/keyrings/debian-archive-keyring.pgp
 '
 
-if docker volume inspect "$volume" >/dev/null 2>&1; then
+if docker volume inspect "${volume}" >/dev/null 2>&1; then
   printf '%s\n' 'Refusing to adopt an existing volume with the disposable name.' >&2
   exit 1
 fi
-docker volume create --label "claimcore.postgres-image-recipe=$nonce" "$volume" >/dev/null
-if [[ "$(docker volume inspect --format '{{ index .Labels "claimcore.postgres-image-recipe" }}' "$volume")" != "$nonce" ]]; then
+docker volume create --label "claimcore.postgres-image-recipe=${nonce}" "${volume}" >/dev/null
+if [[ "$(docker volume inspect --format '{{ index .Labels "claimcore.postgres-image-recipe" }}' "${volume}")" != "${nonce}" ]]; then
   printf '%s\n' 'A pre-existing volume has the requested disposable name.' >&2
   exit 1
 fi
 created_volume=1
 
-docker run --detach --name "$container" --platform "$platform" --network none \
+docker run --detach --name "${container}" --platform "${platform}" --network none \
   --env POSTGRES_PASSWORD=synthetic-image-recipe-only \
-  --mount "type=volume,src=$volume,dst=/var/lib/postgresql" \
-  "$image" >/dev/null
+  --mount "type=volume,src=${volume},dst=/var/lib/postgresql" \
+  "${image}" >/dev/null
 created_container=1
 
 ready=0
 for _ in {1..60}; do
   # initdb briefly starts and stops a temporary server. Only accept readiness
   # after the entrypoint has completed initialization and begun final startup.
-  if docker logs "$container" 2>&1 | grep -F 'PostgreSQL init process complete; ready for start up.' >/dev/null &&
-    docker exec --user postgres "$container" pg_isready \
-    --dbname postgres --username postgres >/dev/null 2>&1; then
+  if docker logs "${container}" 2>&1 | grep -F 'PostgreSQL init process complete; ready for start up.' >/dev/null &&
+    docker exec --user postgres "${container}" pg_isready \
+      --dbname postgres --username postgres >/dev/null 2>&1; then
     ready=1
     break
   fi
   sleep 1
 done
-if [[ "$ready" -ne 1 ]]; then
+if [[ "${ready}" -ne 1 ]]; then
   printf '%s\n' 'Isolated PostgreSQL startup did not become ready.' >&2
   exit 1
 fi
 
-server_version="$(docker exec --user postgres "$container" psql \
+server_version="$(docker exec --user postgres "${container}" psql \
   --dbname postgres --no-psqlrc --tuples-only --no-align \
   --command "SELECT split_part(current_setting('server_version'), ' ', 1)")"
-if [[ "$server_version" != 18.6 ]]; then
-  printf 'Unexpected running PostgreSQL version: %s\n' "$server_version" >&2
+if [[ "${server_version}" != 18.6 ]]; then
+  printf 'Unexpected running PostgreSQL version: %s\n' "${server_version}" >&2
   exit 1
 fi
 
-printf 'PostgreSQL image recipe passed for %s: seven pinned package changes, upstream MIT notice and isolated 18.6 startup.\n' "$platform"
+printf 'PostgreSQL image recipe passed for %s: seven pinned package changes, upstream MIT notice and isolated 18.6 startup.\n' "${platform}"

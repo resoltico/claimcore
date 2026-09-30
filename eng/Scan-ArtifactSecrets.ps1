@@ -9,6 +9,8 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
+# Functions below read the override from script scope.
+$archiveOverride = $GitleaksArchivePath
 
 # Fixed release assets and SHA-256 digests checked against both the official
 # v8.30.1 checksum asset and GitHub's release-asset digests. Never trust a
@@ -62,11 +64,9 @@ function Assert-ArtifactTree {
             foreach ($child in [IO.Directory]::EnumerateFileSystemEntries($entry)) {
                 $pending.Push($child)
             }
-        }
-        elseif (($attributes -band [IO.FileAttributes]::Device) -ne 0) {
+        } elseif (($attributes -band [IO.FileAttributes]::Device) -ne 0) {
             throw "Artifact tree contains a special file."
-        }
-        else {
+        } else {
             $regularFiles++
         }
     }
@@ -97,8 +97,7 @@ function Get-ArtifactFingerprint {
             foreach ($child in [IO.Directory]::EnumerateFileSystemEntries($entry)) {
                 $pending.Push($child)
             }
-        }
-        else {
+        } else {
             $files.Add($entry)
         }
     }
@@ -113,8 +112,7 @@ function Get-ArtifactFingerprint {
             $fingerprint.AppendData($record)
         }
         return [Convert]::ToHexString($fingerprint.GetHashAndReset())
-    }
-    finally { $fingerprint.Dispose() }
+    } finally { $fingerprint.Dispose() }
 }
 
 function Invoke-QuietProcess {
@@ -149,23 +147,21 @@ function Invoke-QuietProcess {
         [void]$stdout.GetAwaiter().GetResult()
         [void]$stderr.GetAwaiter().GetResult()
         return $process.ExitCode
-    }
-    finally {
+    } finally {
         $process.Dispose()
     }
 }
 
-function Install-VerifiedGitleaks {
+function Install-VerifiedGitleaksBinary {
     param([string] $TemporaryRoot, [string[]] $Asset)
 
     $archive = Join-Path $TemporaryRoot $Asset[0]
-    if ($GitleaksArchivePath) {
-        if (-not [IO.File]::Exists($GitleaksArchivePath)) {
+    if ($archiveOverride) {
+        if (-not [IO.File]::Exists($archiveOverride)) {
             throw "Verified scanner archive is missing."
         }
-        [IO.File]::Copy([IO.Path]::GetFullPath($GitleaksArchivePath), $archive, $false)
-    }
-    else {
+        [IO.File]::Copy([IO.Path]::GetFullPath($archiveOverride), $archive, $false)
+    } else {
         for ($attempt = 1; $attempt -le 4; $attempt++) {
             $partial = Join-Path $TemporaryRoot ("scanner-download-$attempt")
             try {
@@ -173,8 +169,7 @@ function Install-VerifiedGitleaks {
                     -MaximumRedirection 5 -TimeoutSec 45 -ErrorAction Stop | Out-Null
                 [IO.File]::Move($partial, $archive)
                 break
-            }
-            catch {
+            } catch {
                 if ([IO.File]::Exists($partial)) { [IO.File]::Delete($partial) }
                 if ($attempt -eq 4) { throw "Pinned scanner archive is unavailable." }
                 Start-Sleep -Milliseconds (2000 * $attempt + [Random]::Shared.Next(0, 1000))
@@ -198,10 +193,8 @@ function Install-VerifiedGitleaks {
             $destination = [IO.File]::Create($binary)
             try { $source.CopyTo($destination) }
             finally { $destination.Dispose(); $source.Dispose() }
-        }
-        finally { $zip.Dispose() }
-    }
-    else {
+        } finally { $zip.Dispose() }
+    } else {
         if ((Invoke-QuietProcess -FileName "tar" -Arguments @("-xzf", $archive, "-C", $TemporaryRoot, "gitleaks") -WorkingDirectory $TemporaryRoot) -ne 0) {
             throw "Scanner archive extraction failed."
         }
@@ -242,7 +235,7 @@ try {
     $emptyIgnore = Join-Path $temporaryRoot "empty.gitleaksignore"
     [IO.File]::WriteAllText($emptyIgnore, "", [Text.UTF8Encoding]::new($false))
     $failureStage = "SCANNER_ACQUISITION"
-    $binary = Install-VerifiedGitleaks -TemporaryRoot $temporaryRoot -Asset $assets[$key]
+    $binary = Install-VerifiedGitleaksBinary -TemporaryRoot $temporaryRoot -Asset $assets[$key]
     $failureStage = "SCANNER_EXECUTION"
     $exitCode = 0
     foreach ($target in $targets) {
@@ -263,19 +256,16 @@ try {
     }
     if ($exitCode -eq 0) {
         [Console]::Out.WriteLine("Artifact secret scan passed for $($targets.Count) explicit path(s).")
-    }
-    else {
+    } else {
         [Console]::Error.WriteLine("Artifact secret scan completed and refused its targets.")
     }
-}
-catch {
+} catch {
     # Do not emit exception details, target paths, tool logs, or matched bytes. The message still
     # distinguishes a scanner that could not run from a scan that completed and found something,
     # because a fail-closed gate that cannot tell an operator which one happened is not actionable.
     [Console]::Error.WriteLine("Artifact secret scan could not complete at $failureStage.")
     $exitCode = 1
-}
-finally {
+} finally {
     if ($temporaryRoot -and [IO.Directory]::Exists($temporaryRoot)) {
         try { [IO.Directory]::Delete($temporaryRoot, $true) }
         catch { [Console]::Error.WriteLine("Artifact scanner cleanup failed."); $exitCode = 1 }

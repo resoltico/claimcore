@@ -30,7 +30,10 @@ const help = {
     "Run pwsh -File eng/Check-WorkflowToolchainPolicy.ps1; inspect structural workflow policy.",
   "workflow-toolchain-negative-controls":
     "Run pwsh -File eng/Test-WorkflowToolchainPolicy.ps1; inspect governance control failures.",
+  "powershell-analysis":
+    "Run pwsh -File eng/Check-PowerShellAnalysis.ps1; every PSScriptAnalyzer rule runs over the tracked sources.",
   shellcheck: "Run shellcheck over tracked eng and db shell sources.",
+  shfmt: "Run shfmt -d over tracked eng and db shell sources; apply shfmt -w for the listed files.",
 };
 const policyStages = [
   "lint-exceptions",
@@ -40,6 +43,10 @@ const policyStages = [
   "eng-lint",
   "eng-npm-audit",
   "eng-npm-signatures",
+  "python-format",
+  "python-lint",
+  "python-types",
+  "python-limits",
   "sensitive-output-negative-controls",
   "coverage-input-negative-controls",
   "coverage-floor-negative-controls",
@@ -57,9 +64,10 @@ const policyStages = [
   "publish-database",
   "publish-web",
 ];
-for (const stage of policyStages)
+for (const stage of policyStages) {
   help[stage] =
     "Reproduce the registered stage procedure with the pinned toolchain; do not waive a failed policy or evidence requirement.";
+}
 
 const escape = String.fromCharCode(27);
 const ansi = new RegExp(`${escape}\\[[0-9;]*m`, "gu");
@@ -83,11 +91,14 @@ function assertIdentity(producer, stage, codes) {
   if (
     !["quality", "frontend", "frontend-product", "publish"].includes(producer) ||
     !Object.hasOwn(help, stage)
-  )
+  ) {
     throw new Error("Unregistered reporting identity.");
-  for (const code of codes)
-    if (!Number.isSafeInteger(code) || code < 0 || code > 255)
+  }
+  for (const code of codes) {
+    if (!Number.isSafeInteger(code) || code < 0 || code > 255) {
       throw new Error("Invalid stage exit status.");
+    }
+  }
 }
 
 /**
@@ -102,17 +113,24 @@ function findingOf(line, root, tracked) {
   const match = location.exec(clean);
   const path = match ? (match[1] ?? "") : clean.replace(/^\[warn\]\s*/u, "").trim();
   const file = relative(resolve(root), resolve(root, path)).split("\\").join("/");
-  if (!tracked.has(file)) return null;
+  if (!tracked.has(file)) {
+    return null;
+  }
   /** @type {Finding} */
   const finding = { file };
-  if (!match) return finding;
+  if (!match) {
+    return finding;
+  }
   const lineNumber = Number(match[2] ?? match[4]);
   const column = Number(match[3] ?? match[5]);
   if (lineNumber > 0 && lineNumber <= 1000000 && column > 0 && column <= 1000000) {
     finding.line = lineNumber;
     finding.column = column;
   }
-  if (match[6]) finding.rule = match[6];
+  const [, , , , , , rule] = match;
+  if (rule) {
+    finding.rule = rule;
+  }
   return finding;
 }
 
@@ -125,23 +143,28 @@ export function stageDiagnostic({ producer, stage, exitCode, manifestExit, log, 
   const findings = [];
   for (const line of log.slice(-2 * 1024 * 1024).split(/\r?\n/u)) {
     const finding = findingOf(line, root, tracked);
-    if (finding === null) continue;
-    if (!findings.some((item) => JSON.stringify(item) === JSON.stringify(finding)))
+    if (finding === null) {
+      continue;
+    }
+    if (!findings.some((item) => JSON.stringify(item) === JSON.stringify(finding))) {
       findings.push(finding);
-    if (findings.length === 30) break;
+    }
+    if (findings.length === 30) {
+      break;
+    }
   }
-  const failure = manifestExit !== 0 ? "evidence-failed" : "passed";
+  const failure = manifestExit === 0 ? "passed" : "evidence-failed";
   return {
     schemaVersion: 1,
     producer,
     stageId: stage,
     exitCode,
     manifestExit,
-    outcome: exitCode !== 0 ? "procedure-failed" : failure,
+    outcome: exitCode === 0 ? failure : "procedure-failed",
     guidance:
-      manifestExit !== 0
-        ? "Stage evidence did not qualify. Check required outputs and exact reviewed test inventory; a passing subprocess is insufficient."
-        : help[stage],
+      manifestExit === 0
+        ? help[stage]
+        : "Stage evidence did not qualify. Check required outputs and exact reviewed test inventory; a passing subprocess is insufficient.",
     findings,
     rawLogPublished: false,
   };

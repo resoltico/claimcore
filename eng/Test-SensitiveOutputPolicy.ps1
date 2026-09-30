@@ -35,9 +35,9 @@ try {
     $binarySecret = [Security.Cryptography.RandomNumberGenerator]::GetBytes(32)
     [IO.File]::WriteAllBytes($binarySecretPath, $binarySecret)
     foreach ($variant in @(
-        [Convert]::ToBase64String($binarySecret),
-        [Convert]::ToHexString($binarySecret).ToLowerInvariant()
-    )) {
+            [Convert]::ToBase64String($binarySecret),
+            [Convert]::ToHexString($binarySecret).ToLowerInvariant()
+        )) {
         [IO.File]::WriteAllText($diagnosticPath, $variant, [Text.UTF8Encoding]::new($false))
         & $pwsh -NoProfile -File $checker -ScanRoot (Split-Path $diagnosticPath) -SecretFile $binarySecretPath *> $null
         if ($LASTEXITCODE -eq 0) {
@@ -54,8 +54,7 @@ try {
     if ($LASTEXITCODE -ne 0) {
         throw "Sensitive-output positive control rejected sanitized output."
     }
-}
-finally {
+} finally {
     if ([IO.Directory]::Exists($probeRoot)) {
         [IO.Directory]::Delete($probeRoot, $true)
     }

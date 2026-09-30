@@ -14,7 +14,7 @@
       "argv": [
         "bash",
         "-c",
-        "dotnet restore ClaimCore.slnx --locked-mode && dotnet tool restore && npm --prefix eng ci && dotnet build ClaimCore.slnx --configuration Release --no-restore"
+        "dotnet restore ClaimCore.slnx --locked-mode && dotnet tool restore && npm --prefix eng ci && uv sync --frozen && dotnet build ClaimCore.slnx --configuration Release --no-restore"
       ],
       "scope": null
     },

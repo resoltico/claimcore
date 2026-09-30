@@ -29,8 +29,8 @@ $archivePath = if ($GitleaksArchivePath) {
     Join-Path $testRoot $assets[$key]
 }
 $canary =
-    "aws_access_key_id = " + "AK" + "IA7JQ4N2P6R8T0V3X5" + [Environment]::NewLine +
-    "aws_secret_access_key = " + "7Yk3pQ9v" + "L2mN8cR4" + "tW6xZ1aB" + "5dF0hJ7s" + "K9uE3iO6"
+"aws_access_key_id = " + "AK" + "IA7JQ4N2P6R8T0V3X5" + [Environment]::NewLine +
+"aws_secret_access_key = " + "7Yk3pQ9v" + "L2mN8cR4" + "tW6xZ1aB" + "5dF0hJ7s" + "K9uE3iO6"
 
 function Invoke-Scanner {
     param([string[]] $Paths)
@@ -68,16 +68,14 @@ try {
     $previousArchive = $env:CLAIMCORE_SCANNER_ARCHIVE
     try {
         $env:CLAIMCORE_SCANNER_ARCHIVE = $archivePath
-        $environmentOutput = @(& $pwsh -NoProfile -File $scanner $safe 2>&1)
+        $null = & $pwsh -NoProfile -File $scanner $safe 2>&1
         if ($LASTEXITCODE -ne 0) {
             throw "An environment-supplied scanner archive did not preserve positional artifact paths."
         }
-    }
-    finally {
+    } finally {
         if ($null -eq $previousArchive) {
             Remove-Item Env:CLAIMCORE_SCANNER_ARCHIVE -ErrorAction SilentlyContinue
-        }
-        else {
+        } else {
             $env:CLAIMCORE_SCANNER_ARCHIVE = $previousArchive
         }
     }
@@ -115,8 +113,7 @@ try {
     if ((Invoke-Scanner @($probeRoot)).ExitCode -eq 0) {
         throw "A target-local Gitleaks ignore file bypassed the artifact scan."
     }
-}
-finally {
+} finally {
     if ([IO.Directory]::Exists($testRoot)) {
         [IO.Directory]::Delete($testRoot, $true)
     }

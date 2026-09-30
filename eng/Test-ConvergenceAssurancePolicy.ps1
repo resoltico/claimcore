@@ -120,12 +120,11 @@ try {
     $management = @($matrix.entries | Where-Object { $_.id -eq "endpoint-web:authority.register" })
     if ($management.Count -ne 1) { throw "Expected one Web authority.register evidence subject." }
     $management[0].tests = @($management[0].tests | Where-Object {
-        $_ -notlike "*endpoint authority.register dispatches authenticated route"
-    })
+            $_ -notlike "*endpoint authority.register dispatches authenticated route"
+        })
     Write-Json $matrixProbePath $matrix
     Invoke-Probe "Endpoint assurance must retain its exact published or TestServer runtime"
-}
-finally {
+} finally {
     @($baselineProbePath, $lineageProbePath, $matrixProbePath) |
         Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } |
         ForEach-Object { [IO.File]::Delete($_) }

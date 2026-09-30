@@ -20,10 +20,9 @@ function Assert-Rejected {
     param([string] $Label)
 
     try {
-        Resolve-ClaimCoreCoverageInputs $root | Out-Null
+        Resolve-ClaimCoreCoverageInput $root | Out-Null
         throw "Coverage negative control '$Label' was accepted."
-    }
-    catch {
+    } catch {
         if ($_.Exception.Message -eq "Coverage negative control '$Label' was accepted.") {
             throw
         }
@@ -47,7 +46,7 @@ try {
         Write-Report "browser/$engine.coverage.cobertura.e2e.xml" $browserCoverage | Out-Null
     }
 
-    $resolved = @(Resolve-ClaimCoreCoverageInputs $root)
+    $resolved = @(Resolve-ClaimCoreCoverageInput $root)
     if ($resolved.Count -ne (5 + $partitionIds.Count)) { throw "The positive coverage fixture did not resolve every registered report." }
 
     $extra = Write-Report "browser/extra.coverage.cobertura.injected.xml"
@@ -88,8 +87,7 @@ try {
     Write-Report $browserPath $browserCoverage | Out-Null
 
     Write-Host "Coverage input policy negative controls passed."
-}
-finally {
+} finally {
     if (Test-Path -LiteralPath $root -PathType Container) {
         [IO.Directory]::Delete($root, $true)
     }

@@ -45,7 +45,22 @@ jobs:
             --output "$tools/gitleaks.tar.gz"
           echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  $tools/gitleaks.tar.gz" | sha256sum --check
           tar --extract --gzip --file "$tools/gitleaks.tar.gz" --directory "$tools" gitleaks
+          curl --fail --silent --show-error --location \
+            https://github.com/astral-sh/uv/releases/download/0.12.21/uv-x86_64-unknown-linux-gnu.tar.gz \
+            --output "$tools/uv.tar.gz"
+          echo "23f02075b652bb1df64178cfae41b5caf160822e720e2663568f3f5d63bc52c0  $tools/uv.tar.gz" | sha256sum --check
+          tar --extract --gzip --file "$tools/uv.tar.gz" --directory "$tools" --strip-components=1 uv-x86_64-unknown-linux-gnu/uv
+          curl --fail --silent --show-error --location \
+            https://github.com/mvdan/sh/releases/download/v3.14.1/shfmt_v3.14.1_linux_amd64 \
+            --output "$tools/shfmt"
+          echo "76e77641faa025814b77f153b29796b8e6fa2fca03e0c76a691608b86c7ea7bf  $tools/shfmt" | sha256sum --check
+          chmod +x "$tools/shfmt"
           echo "$tools" >> "$GITHUB_PATH"
+      - name: Install the pinned PowerShell analyzer
+        shell: pwsh
+        run: Install-Module -Name PSScriptAnalyzer -RequiredVersion 1.25.0 -Repository PSGallery -Scope CurrentUser -Force
+      - name: Install the locked Python tooling graph
+        run: uv sync --frozen
       - name: Scan source before generating outputs
         id: source_secrets
         continue-on-error: true

@@ -25,7 +25,13 @@ function Read-CoberturaRate {
     return $rate
 }
 
-function Test-ClaimCoreCoverageFloors {
+<#
+.SYNOPSIS
+Checks the merged Cobertura report against the repository's coverage floors.
+.PARAMETER CoberturaPath
+The merged Cobertura report.
+#>
+function Test-ClaimCoreCoverageFloor {
     param([Parameter(Mandatory)][string] $CoberturaPath)
 
     $settings = [Xml.XmlReaderSettings]::new()
@@ -38,8 +44,7 @@ function Test-ClaimCoreCoverageFloors {
         $report = [Xml.XmlDocument]::new()
         $report.XmlResolver = $null
         $report.Load($reader)
-    }
-    finally {
+    } finally {
         $reader.Dispose()
     }
 
@@ -47,16 +52,16 @@ function Test-ClaimCoreCoverageFloors {
         throw "Merged coverage must be a Cobertura coverage document."
     }
 
-    $line = Read-CoberturaRate $report.DocumentElement "line-rate" 0.60 "Merged production coverage"
-    $branch = Read-CoberturaRate $report.DocumentElement "branch-rate" 0.40 "Merged production coverage"
+    $line = Read-CoberturaRate -Node $report.DocumentElement -Name "line-rate" -Minimum 0.60 -Subject "Merged production coverage"
+    $branch = Read-CoberturaRate -Node $report.DocumentElement -Name "branch-rate" -Minimum 0.40 -Subject "Merged production coverage"
     $webPackages = @($report.SelectNodes('/coverage/packages/package[starts-with(@name, "ClaimCore.Web")]'))
     if ($webPackages.Count -eq 0) {
         throw "Merged coverage contains no ClaimCore.Web production package."
     }
 
     foreach ($package in $webPackages) {
-        [void] (Read-CoberturaRate $package "line-rate" 0.80 "ClaimCore.Web package")
-        [void] (Read-CoberturaRate $package "branch-rate" 0.70 "ClaimCore.Web package")
+        [void] (Read-CoberturaRate -Node $package -Name "line-rate" -Minimum 0.80 -Subject "ClaimCore.Web package")
+        [void] (Read-CoberturaRate -Node $package -Name "branch-rate" -Minimum 0.70 -Subject "ClaimCore.Web package")
     }
 
     return [PSCustomObject]@{
@@ -66,4 +71,4 @@ function Test-ClaimCoreCoverageFloors {
     }
 }
 
-Export-ModuleMember -Function "Test-ClaimCoreCoverageFloors"
+Export-ModuleMember -Function "Test-ClaimCoreCoverageFloor"

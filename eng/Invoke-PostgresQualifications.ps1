@@ -68,7 +68,12 @@ function Copy-Tree {
 }
 
 function New-TestProcess {
+    [CmdletBinding(SupportsShouldProcess)]
     param($Job)
+
+    if (-not $PSCmdlet.ShouldProcess($Job.Assembly, "Prepare the test process")) {
+        return
+    }
 
     $common = @(
         "--results-directory=$($Job.Results)", "--minimum-expected-tests=$($Job.Expected)",
@@ -84,7 +89,7 @@ function New-TestProcess {
         $Job.PrivateBin = Join-Path $repository ("artifacts/measured-bin/" + [Guid]::NewGuid().ToString("N"))
         Copy-Tree $source $Job.PrivateBin
         $arguments = @((Join-Path $Job.PrivateBin "$($Job.Assembly).dll")) + $common + $settings +
-            @("--coverlet", "--coverlet-file-prefix=$($Job.CoveragePrefix)", "--coverlet-output-format=cobertura")
+        @("--coverlet", "--coverlet-file-prefix=$($Job.CoveragePrefix)", "--coverlet-output-format=cobertura")
     } else {
         $arguments = @(
             "test", "--project", $Job.Project, "--configuration", "Release", "--no-build", "--no-restore",
@@ -115,23 +120,23 @@ foreach ($stage in $stages) {
         foreach ($partition in $partitioned[0].partitions) {
             $counted += [int] $partition.tests
             $jobs.Add(@{
-                Stage = $stage.Stage; Assembly = $stage.Assembly; Project = $stage.Project
-                Expected = [int] $partition.tests; Timeout = $stage.Timeout
-                Selector = [string] $partitioned[0].selector; Partition = [string] $partition.id
-                Results = Join-Path $resultsBase "$($stage.Stage)-partitions/$($partition.id)"
-                TrxName = "$($stage.Assembly).$($partition.id).trx"
-                CoveragePrefix = if ($stage.Coverage) { "integration-$($partition.id)" } else { $null }
-            })
+                    Stage = $stage.Stage; Assembly = $stage.Assembly; Project = $stage.Project
+                    Expected = [int] $partition.tests; Timeout = $stage.Timeout
+                    Selector = [string] $partitioned[0].selector; Partition = [string] $partition.id
+                    Results = Join-Path $resultsBase "$($stage.Stage)-partitions/$($partition.id)"
+                    TrxName = "$($stage.Assembly).$($partition.id).trx"
+                    CoveragePrefix = if ($stage.Coverage) { "integration-$($partition.id)" } else { $null }
+                })
         }
         if ($counted -ne $stage.Expected) { throw "Registered partitions of $($stage.Assembly) do not sum to its registered count." }
     } else {
         $jobs.Add(@{
-            Stage = $stage.Stage; Assembly = $stage.Assembly; Project = $stage.Project
-            Expected = $stage.Expected; Timeout = $stage.Timeout; Selector = $null; Partition = $null
-            Results = Join-Path $resultsBase $stage.Stage
-            TrxName = "$($stage.Assembly).trx"
-            CoveragePrefix = $null
-        })
+                Stage = $stage.Stage; Assembly = $stage.Assembly; Project = $stage.Project
+                Expected = $stage.Expected; Timeout = $stage.Timeout; Selector = $null; Partition = $null
+                Results = Join-Path $resultsBase $stage.Stage
+                TrxName = "$($stage.Assembly).trx"
+                CoveragePrefix = $null
+            })
     }
 }
 
@@ -191,8 +196,8 @@ foreach ($stage in $stages) {
         [IO.Directory]::CreateDirectory($results) | Out-Null
         if ($succeeded) {
             $inputs = @($own | ForEach-Object {
-                [IO.Path]::GetRelativePath($repository, (Join-Path $_.Results $_.TrxName)).Replace([IO.Path]::DirectorySeparatorChar, '/')
-            })
+                    [IO.Path]::GetRelativePath($repository, (Join-Path $_.Results $_.TrxName)).Replace([IO.Path]::DirectorySeparatorChar, '/')
+                })
             $merged = [IO.Path]::GetRelativePath($repository, (Join-Path $results "$($stage.Assembly).trx")).Replace([IO.Path]::DirectorySeparatorChar, '/')
             & dotnet $docs merge-test-reports $stage.Assembly $merged @inputs
             if ($LASTEXITCODE -ne 0) { $succeeded = $false }

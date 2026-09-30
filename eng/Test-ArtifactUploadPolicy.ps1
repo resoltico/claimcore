@@ -47,20 +47,20 @@ function Assert-PolicyResult {
 try {
     [IO.Directory]::CreateDirectory($probeRoot) | Out-Null
 
-    Assert-PolicyResult "valid upload" $valid $true
+    Assert-PolicyResult -Case "valid upload" -Workflow $valid -Accept $true
 
     $globUpload = $valid.Replace(
         'path: artifacts/output/',
         "path: |`n            artifacts/output/a.json`n            artifacts/output/b.json"
     )
-    Assert-PolicyResult "scanned parent covers multiple upload paths" $globUpload $true
+    Assert-PolicyResult -Case "scanned parent covers multiple upload paths" -Workflow $globUpload -Accept $true
 
     $missingScan = [regex]::Replace(
         $valid,
         '(?ms)^      - name: Scan before upload\r?\n.*?(?=^      - name: Upload output)',
         ''
     )
-    Assert-PolicyResult "missing scanner" $missingScan $false
+    Assert-PolicyResult -Case "missing scanner" -Workflow $missingScan -Accept $false
 
     $newJob = $valid + @'
 
@@ -73,7 +73,7 @@ try {
         with:
           path: artifacts/other/
 '@
-    Assert-PolicyResult "added unscanned job" $newJob $false
+    Assert-PolicyResult -Case "added unscanned job" -Workflow $newJob -Accept $false
 
     $extraUpload = $valid + @'
 
@@ -83,41 +83,41 @@ try {
         with:
           path: artifacts/output/
 '@
-    Assert-PolicyResult "added unguarded upload in existing job" $extraUpload $false
+    Assert-PolicyResult -Case "added unguarded upload in existing job" -Workflow $extraUpload -Accept $false
 
     $removedGuard = $valid.Replace(
         "steps.artifact_scan.outcome == 'success'",
         'steps.artifact_scan.conclusion == ''success'''
     )
-    Assert-PolicyResult "guard refers to conclusion" $removedGuard $false
+    Assert-PolicyResult -Case "guard refers to conclusion" -Workflow $removedGuard -Accept $false
 
     $removedGuard = $valid.Replace(
         "if: `${{ always() && steps.artifact_scan.outcome == 'success' }}",
         'if: always()'
     )
-    Assert-PolicyResult "removed upload guard" $removedGuard $false
+    Assert-PolicyResult -Case "removed upload guard" -Workflow $removedGuard -Accept $false
 
     $conditionalScan = [regex]::Replace(
         $valid,
         '(?m)(        id: artifact_scan\r?\n        if: )always\(\)',
         '${1}success()'
     )
-    Assert-PolicyResult "scanner skipped after failure" $conditionalScan $false
+    Assert-PolicyResult -Case "scanner skipped after failure" -Workflow $conditionalScan -Accept $false
 
     $ignoredFailure = $valid.Replace(
         '        id: artifact_scan',
         "        id: artifact_scan`n        continue-on-error: true"
     )
-    Assert-PolicyResult "scanner failure ignored" $ignoredFailure $false
+    Assert-PolicyResult -Case "scanner failure ignored" -Workflow $ignoredFailure -Accept $false
 
     $duplicateScan = $valid.Replace(
         '      - name: Upload output',
         "      - name: Duplicate scan`n        id: artifact_scan`n      - name: Upload output"
     )
-    Assert-PolicyResult "duplicate scanner id" $duplicateScan $false
+    Assert-PolicyResult -Case "duplicate scanner id" -Workflow $duplicateScan -Accept $false
 
     $wrongPath = $valid.Replace('path: artifacts/output/', 'path: artifacts/other/')
-    Assert-PolicyResult "upload path outside scan scope" $wrongPath $false
+    Assert-PolicyResult -Case "upload path outside scan scope" -Workflow $wrongPath -Accept $false
 
     $writerStep = @'
       - name: Mutate output after scan
@@ -125,21 +125,20 @@ try {
       - name: Upload output
 '@
     $interveningWriter = $valid.Replace('      - name: Upload output', $writerStep)
-    Assert-PolicyResult "post-scan writer" $interveningWriter $false
+    Assert-PolicyResult -Case "post-scan writer" -Workflow $interveningWriter -Accept $false
 
     $commentOnly = $valid.Replace(
         'pwsh -NoProfile -File eng/Scan-ArtifactSecrets.ps1 `',
         '# pwsh -NoProfile -File eng/Scan-ArtifactSecrets.ps1 `'
     )
-    Assert-PolicyResult "commented-out scanner" $commentOnly $false
+    Assert-PolicyResult -Case "commented-out scanner" -Workflow $commentOnly -Accept $false
 
     $unknownExpression = $valid.Replace('path: artifacts/output/', 'path: artifacts/${{ matrix.unreviewed }}/')
-    Assert-PolicyResult "unreviewed path expression" $unknownExpression $false
+    Assert-PolicyResult -Case "unreviewed path expression" -Workflow $unknownExpression -Accept $false
 
     $oddStructure = $valid.Replace('        uses: actions/upload-artifact@', '          uses: actions/upload-artifact@')
-    Assert-PolicyResult "unparsed upload structure" $oddStructure $false
-}
-finally {
+    Assert-PolicyResult -Case "unparsed upload structure" -Workflow $oddStructure -Accept $false
+} finally {
     if ([IO.Directory]::Exists($probeRoot)) { [IO.Directory]::Delete($probeRoot, $true) }
 }
 

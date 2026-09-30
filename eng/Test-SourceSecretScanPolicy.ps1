@@ -3,13 +3,15 @@ param([string] $GitleaksPath = "gitleaks")
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+# Functions below read the scanner path from script scope.
+$scannerPath = $GitleaksPath
 
 $scanner = Join-Path $PSScriptRoot "Scan-SourceSecrets.ps1"
 $pwsh = (Get-Process -Id $PID).Path
 $probeRoot = Join-Path ([IO.Path]::GetTempPath()) ("claimcore-source-scan-policy-" + [Guid]::NewGuid().ToString("N"))
 $canary =
-    "aws_access_key_id = " + "AK" + "IA7JQ4N2P6R8T0V3X5" + [Environment]::NewLine +
-    "aws_secret_access_key = " + "7Yk3pQ9v" + "L2mN8cR4" + "tW6xZ1aB" + "5dF0hJ7s" + "K9uE3iO6"
+"aws_access_key_id = " + "AK" + "IA7JQ4N2P6R8T0V3X5" + [Environment]::NewLine +
+"aws_secret_access_key = " + "7Yk3pQ9v" + "L2mN8cR4" + "tW6xZ1aB" + "5dF0hJ7s" + "K9uE3iO6"
 $gitRedirectVariables = @(
     "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_CEILING_DIRECTORIES", "GIT_COMMON_DIR",
     "GIT_CONFIG_COUNT", "GIT_CONFIG_PARAMETERS", "GIT_DIR", "GIT_DISCOVERY_ACROSS_FILESYSTEM",
@@ -17,9 +19,7 @@ $gitRedirectVariables = @(
 )
 
 function Invoke-Scanner {
-    $output = @(
-        & $pwsh -NoProfile -File $scanner -RepositoryRoot $probeRoot -GitleaksPath $GitleaksPath 2>&1
-    )
+    $null = & $pwsh -NoProfile -File $scanner -RepositoryRoot $probeRoot -GitleaksPath $scannerPath 2>&1
     return $LASTEXITCODE
 }
 
@@ -37,13 +37,11 @@ function Invoke-ProbeGit {
             $detail = ($gitOutput -join " ")
             throw "Source-scan Git fixture command '$($Arguments[0])' failed with exit $LASTEXITCODE`: $detail"
         }
-    }
-    finally {
+    } finally {
         foreach ($name in $gitRedirectVariables) {
             if ($null -eq $saved[$name]) {
                 Remove-Item -LiteralPath "Env:$name" -ErrorAction SilentlyContinue
-            }
-            else {
+            } else {
                 [Environment]::SetEnvironmentVariable($name, $saved[$name])
             }
         }
@@ -88,8 +86,7 @@ try {
     if ((Invoke-Scanner) -eq 0) {
         throw "The source scan omitted a force-tracked ignored canary."
     }
-}
-finally {
+} finally {
     if ([IO.Directory]::Exists($probeRoot)) {
         [IO.Directory]::Delete($probeRoot, $true)
     }
