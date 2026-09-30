@@ -91,28 +91,54 @@ module internal WitnessStoreRead =
 
         generation
 
-    let checkAdmission (identity: Identity) (connection: NpgsqlConnection) =
-        let _, baselineDigest = Baseline.script ()
-        use catalog = new NpgsqlCommand(Baseline.catalogScript (), connection)
+    let private baselineDigest = lazy (snd (Baseline.script ()))
+    let private catalogScript = lazy (Baseline.catalogScript ())
+    let private catalogDigest = lazy (Baseline.catalogDigest ())
+
+    let private witnessSchema = "claimcore_witness"
+
+    /// The frozen catalog and every catalog-derived privilege answer, verified only when the
+    /// catalog has changed since they last held (see `CatalogEpoch`).
+    let private requireStructure (role: string | null) (connection: NpgsqlConnection) =
+        use catalog = new NpgsqlCommand(catalogScript.Value, connection)
 
         let liveCatalog =
             match catalog.ExecuteScalar() with
             | :? string as value -> value
             | _ -> invalidOp "Witness catalog is unavailable."
 
-        if liveCatalog <> Baseline.catalogDigest () then
+        if liveCatalog <> catalogDigest.Value then
             invalidOp "Witness live catalog differs from the frozen manifest."
 
-        use roleCommand = new NpgsqlCommand("SELECT current_user", connection)
-
         let admission =
-            match roleCommand.ExecuteScalar() with
-            | :? string as role when role = "claimcore_witness_writer" -> WitnessAdmission.script ()
-            | :? string as role when role = "claimcore_witness_auditor" ->
-                WitnessAuditAdmission.script ()
+            match role with
+            | "claimcore_witness_writer" -> WitnessAdmission.script ()
+            | "claimcore_witness_auditor" -> WitnessAuditAdmission.script ()
             | _ -> invalidOp "Witness role is not admitted."
 
-        use command = new NpgsqlCommand(admission, connection)
+        use command = new NpgsqlCommand(admission.Structure, connection)
+
+        if command.ExecuteScalar() :?> bool |> not then
+            invalidOp "Witness database admission failed."
+
+    let checkAdmission (identity: Identity) (connection: NpgsqlConnection) =
+        use roleCommand = new NpgsqlCommand("SELECT current_user", connection)
+
+        let role: string | null =
+            match roleCommand.ExecuteScalar() with
+            | :? string as value -> value
+            | _ -> null
+
+        CatalogEpoch.admit "witness" witnessSchema connection (fun () ->
+            requireStructure role connection)
+
+        // The role is admitted here: the guarded verification above raised otherwise.
+        let admission =
+            match role with
+            | "claimcore_witness_writer" -> WitnessAdmission.script ()
+            | _ -> WitnessAuditAdmission.script ()
+
+        use command = new NpgsqlCommand(admission.Liveness, connection)
 
         command.Parameters.AddWithValue("installation", NpgsqlDbType.Uuid, identity.InstallationId)
         |> ignore
@@ -123,7 +149,7 @@ module internal WitnessStoreRead =
         command.Parameters.AddWithValue("epoch", NpgsqlDbType.Bigint, identity.Epoch)
         |> ignore
 
-        command.Parameters.AddWithValue("digest", NpgsqlDbType.Text, baselineDigest)
+        command.Parameters.AddWithValue("digest", NpgsqlDbType.Text, baselineDigest.Value)
         |> ignore
 
         if command.ExecuteScalar() :?> bool |> not then
