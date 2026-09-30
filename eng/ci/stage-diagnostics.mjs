@@ -71,7 +71,9 @@ export function stageDiagnostic({
   tracked,
 }) {
   if (
-    !["quality", "frontend", "publish"].includes(producer) ||
+    !["quality", "frontend", "frontend-product", "publish"].includes(
+      producer,
+    ) ||
     !Object.hasOwn(help, stage)
   )
     throw new Error("Unregistered reporting identity.");

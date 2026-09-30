@@ -38,22 +38,24 @@ foreach ($existing in @($artifacts, $verificationBase)) {
 $suites = @(
     [PSCustomObject]@{ Assembly = "ClaimCore.Tests"; Expected = 334; Configuration = "Release"; Coverage = "unit"; Timeout = "25m"; Stage = "unit" }
     [PSCustomObject]@{ Assembly = "ClaimCore.WebTests"; Expected = 122; Configuration = "Release"; Coverage = "web"; Timeout = "25m"; Stage = "web" }
-    [PSCustomObject]@{ Assembly = "ClaimCore.DocsTests"; Expected = 74; Configuration = "Release"; Coverage = ""; Timeout = "25m"; Stage = "docs" }
+    [PSCustomObject]@{ Assembly = "ClaimCore.DocsTests"; Expected = 78; Configuration = "Release"; Coverage = ""; Timeout = "25m"; Stage = "docs" }
     [PSCustomObject]@{ Assembly = "ClaimCore.FuzzQualificationTests"; Expected = 5; Configuration = "Release"; Coverage = ""; Timeout = "25m"; Stage = "fuzz" }
     [PSCustomObject]@{ Assembly = "ClaimCore.ArchitectureTests"; Expected = 88; Configuration = "Debug"; Coverage = ""; Timeout = "25m"; Stage = "architecture" }
-    [PSCustomObject]@{ Assembly = "ClaimCore.WitnessTests"; Expected = 21; Configuration = "Release"; Coverage = ""; Timeout = "90m"; Stage = "witness-qualification" }
-    [PSCustomObject]@{ Assembly = "ClaimCore.IntegrationTests"; Expected = 372; Configuration = "Release"; Coverage = "integration"; Timeout = "110m"; Stage = "integration" }
-    [PSCustomObject]@{ Assembly = "ClaimCore.RecoveryQualificationTests"; Expected = 19; Configuration = "Release"; Coverage = ""; Timeout = "90m"; Stage = "recovery-qualification" }
-    [PSCustomObject]@{ Assembly = "ClaimCore.ConcurrencyQualificationTests"; Expected = 5; Configuration = "Release"; Coverage = ""; Timeout = "90m"; Stage = "concurrency-qualification" }
-    [PSCustomObject]@{ Assembly = "ClaimCore.MigrationQualificationTests"; Expected = 15; Configuration = "Release"; Coverage = ""; Timeout = "90m"; Stage = "fresh-baseline-qualification" }
-    [PSCustomObject]@{ Assembly = "ClaimCore.BackupQualificationTests"; Expected = 2; Configuration = "Release"; Coverage = ""; Timeout = "90m"; Stage = "backup-qualification" }
 )
-$selected = if ([string]::IsNullOrWhiteSpace($Assembly)) {
-    $suites
-} else {
-    @($suites | Where-Object { $_.Assembly -ceq $Assembly })
+# The PostgreSQL-backed suites run together, concurrently, through the script CI also runs, so a local
+# run exercises the same partitions, floors and merged reports.
+$postgresStages = [ordered]@{
+    "ClaimCore.IntegrationTests" = "integration-linux"
+    "ClaimCore.BackupQualificationTests" = "backup-qualification"
+    "ClaimCore.RecoveryQualificationTests" = "recovery-qualification"
+    "ClaimCore.WitnessTests" = "witness-qualification"
+    "ClaimCore.MigrationQualificationTests" = "fresh-baseline-qualification"
+    "ClaimCore.ConcurrencyQualificationTests" = "concurrency-qualification"
 }
-if ($selected.Count -eq 0) { throw "The requested .NET test assembly is not registered." }
+$everything = [string]::IsNullOrWhiteSpace($Assembly)
+$selected = @(if ($everything) { $suites } else { $suites | Where-Object { $_.Assembly -ceq $Assembly } })
+$postgresSelected = @($postgresStages.Keys | Where-Object { $everything -or $_ -ceq $Assembly })
+if ($selected.Count -eq 0 -and $postgresSelected.Count -eq 0) { throw "The requested .NET test assembly is not registered." }
 
 Set-Location $repository
 dotnet restore ClaimCore.slnx --locked-mode
@@ -65,6 +67,9 @@ foreach ($suite in $selected) {
     if ($suite.Configuration -ne "Debug") {
         & $discoveryCheck -Assembly $suite.Assembly -Configuration $suite.Configuration
     }
+}
+foreach ($assembly in $postgresSelected) {
+    & $discoveryCheck -Assembly $assembly -Configuration "Release"
 }
 [IO.Directory]::CreateDirectory($resolved) | Out-Null
 $docs = Join-Path $repository "artifacts/bin/ClaimCore.Docs/release/ClaimCore.Docs.dll"
@@ -127,19 +132,38 @@ foreach ($suite in $selected) {
     }
 }
 
+if ($postgresSelected.Count -gt 0) {
+    $qualification = Join-Path $PSScriptRoot "Invoke-PostgresQualifications.ps1"
+    $qualificationArguments = @{
+        RunId = $runId
+        Attempt = "1"
+        ResultsRoot = (Join-Path $resolved "test-results")
+        StageIds = @($postgresSelected | ForEach-Object { $postgresStages[$_] })
+    }
+    if ($platform -ne "linux") { $qualificationArguments["NoEvidence"] = $true }
+    & $qualification @qualificationArguments
+    if ($LASTEXITCODE -ne 0) { throw "The PostgreSQL-backed suites did not complete every registered test." }
+    foreach ($assembly in $postgresSelected) {
+        $trx = Join-Path $resolved "test-results/$($postgresStages[$assembly])/$assembly.trx"
+        $relative = [IO.Path]::GetRelativePath($repository, $trx).Replace([IO.Path]::DirectorySeparatorChar, '/')
+        dotnet $docs verify-test-report $assembly $relative
+        if ($LASTEXITCODE -ne 0) { throw "$assembly TRX identity verification failed." }
+    }
+}
+
 $finishedFingerprint = (& dotnet $docs source-fingerprint)
 if ($LASTEXITCODE -ne 0 -or $finishedFingerprint -cne $sourceFingerprint) {
     throw "Source changed while the local .NET suites were running."
 }
-if ($selected.Count -eq $suites.Count) {
+if ($everything) {
     [IO.File]::WriteAllText(
         (Join-Path $resolved "complete-source-fingerprint.txt"),
         $sourceFingerprint + [Environment]::NewLine
     )
 }
 
-Write-Host "Local .NET verification passed for $($selected.Count) registered suite(s)."
+Write-Host "Local .NET verification passed for $($selected.Count + $postgresSelected.Count) registered suite(s)."
 Write-Host "Retained synthetic reports: $resolved"
-if ($selected.Count -ne $suites.Count) {
+if (-not $everything) {
     Write-Host "This selected-suite run is not complete local verification."
 }

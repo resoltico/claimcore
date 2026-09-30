@@ -67,7 +67,9 @@ lifecycle, coverage, and evidence must all succeed for the same source. Do not r
 family as the whole gate.
 
 Required tests must be zero-retry and unfiltered. Focused, pending, skipped, expected-failure,
-conditional, filtered, retried, or sharded required tests fail policy. Commands that actually ran and
+conditional, filtered, retried, or ad hoc sharded required tests fail policy. The only sharding is the
+registered partitioning of the PostgreSQL integration suite described below, whose reports must merge
+into exactly the registered inventory. Commands that actually ran and
 their outcomes must be reported separately from source inspection.
 
 ### .NET tests
@@ -92,6 +94,18 @@ bytes, mutated valid encodings, adversarial JSON, and invalid UTF-8. A boundary 
 refusing hostile input with a typed result; an escaping exception fails the property and prints a
 deterministic recheck token. It shares the property profile and base seed described below, so the
 scheduled extended run explores the same boundaries at 5,000 cases.
+
+The PostgreSQL-backed suites run together and concurrently through
+[`eng/Invoke-PostgresQualifications.ps1`](../eng/Invoke-PostgresQualifications.ps1), the one script that CI and
+`Run-LocalDotnetVerification.ps1` use. The integration assembly is registered as partitions in
+[`eng/test-partitions.json`](../eng/test-partitions.json); each runs as its own process against its own primary and
+witness clusters (`CLAIMCORE_INTEGRATION_PARTITION` selects one, and no selection is the whole suite). The discovery
+preflight proves the partitions are disjoint and cover exactly the registered inventory, the script refuses any
+non-passing partition, `ClaimCore.Docs merge-test-reports` joins the partition reports, and the merged report is
+verified against the compiled inventory like any other. Each measured partition runs a private copy of the test's
+output directory because Coverlet rewrites assemblies on disk. Move a test list to another partition in
+`tests/ClaimCore.IntegrationTests/Suite.fs` and update the registered counts to rebalance; the concurrency bound is
+`-MaxParallel` or `CLAIMCORE_PARALLEL_JOBS`.
 
 The integration and qualification processes create exactly labelled isolated PostgreSQL containers.
 The separate qualification executables prevent a generic integration pass from being reported as
@@ -223,6 +237,13 @@ against the exact response schemas, in addition to validating positive, malforme
 samples. This is wire-conformance evidence, not a claim that every runtime branch was exercised.
 
 ### Repository quality
+
+CI and local runs execute the source, dependency and infrastructure gates and the frontend gates through one
+runner, `node eng/ci/run-stages.mjs quality` (or `frontend`, `frontend-product`), which reads the registered plan in
+`eng/ci/stage-plans/`, runs independent stages concurrently (`--parallel N`, default the smaller of the core count and
+4), serialises stages that share a resource group, and records the same log, evidence manifest and diagnostic per
+stage as a serial run. Add `--only id,id` to run some stages; a stage whose tool is absent is skipped locally and
+fails in CI. The commands below are the same gates one at a time.
 
 ```text
 bash eng/Check-Fantomas.sh

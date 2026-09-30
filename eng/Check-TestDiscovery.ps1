@@ -48,4 +48,27 @@ for ($index = 0; $index -lt $expected.Length; $index++) {
     }
 }
 
+$partitionRegistry = Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot 'test-partitions.json') | ConvertFrom-Json -AsHashtable
+$partitioned = @($partitionRegistry.assemblies | Where-Object { $_.assembly -ceq $Assembly })
+if ($partitioned.Count -gt 1) { throw 'Test partitions are registered twice for one assembly.' }
+if ($partitioned.Count -eq 1) {
+    $selector = [string] $partitioned[0].selector
+    $union = [Collections.Generic.HashSet[string]]::new($ordinal)
+    foreach ($partition in $partitioned[0].partitions) {
+        $previous = [Environment]::GetEnvironmentVariable($selector)
+        [Environment]::SetEnvironmentVariable($selector, [string] $partition.id)
+        try { $partitionListed = @(& dotnet $binary --list-tests json) } finally { [Environment]::SetEnvironmentVariable($selector, $previous) }
+        if ($LASTEXITCODE -ne 0 -or $partitionListed.Count -eq 0) { throw "Partition '$($partition.id)' discovery did not complete." }
+        $names = @((($partitionListed -join "`n") | ConvertFrom-Json -AsHashtable).tests | ForEach-Object { $_.displayName })
+        if ($names.Count -ne [int] $partition.tests) { throw "Partition '$($partition.id)' discovers $($names.Count) tests; $($partition.tests) are registered." }
+        foreach ($name in $names) {
+            if (-not $union.Add($name)) { throw "Test '$name' belongs to more than one partition." }
+        }
+    }
+    if ($union.Count -ne $expected.Length -or -not $union.SetEquals([string[]] $expected)) {
+        throw 'Registered partitions do not cover exactly the registered test inventory.'
+    }
+    Write-Host "Built $Assembly partitions cover exactly its $($expected.Length) registered tests."
+}
+
 Write-Host "Built $Assembly discovery matches $($actual.Length) registered tests."

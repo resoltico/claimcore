@@ -21,8 +21,12 @@ jobs:
     uses: ./.github/workflows/verify-quality.yml
 
   frontend:
-    name: Frontend producer
+    name: Frontend gates
     uses: ./.github/workflows/verify-frontend.yml
+
+  frontend-product:
+    name: Frontend product
+    uses: ./.github/workflows/verify-frontend-product.yml
 
   unit:
     name: Cross-platform unit and Web tests
@@ -38,7 +42,7 @@ jobs:
 
   publish:
     name: Immutable published applications
-    needs: [frontend]
+    needs: [frontend-product]
     uses: ./.github/workflows/verify-publish.yml
 
   acceptance:
@@ -62,6 +66,7 @@ jobs:
     needs:
       - quality
       - frontend
+      - frontend-product
       - unit
       - integration
       - documentation
@@ -77,6 +82,7 @@ jobs:
     needs:
       - quality
       - frontend
+      - frontend-product
       - unit
       - integration
       - documentation

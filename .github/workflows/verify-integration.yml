@@ -39,13 +39,22 @@ jobs:
       - name: Verify built test discovery before database qualification
         shell: pwsh
         run: |
-          foreach ($assembly in @(
+          $assemblies = @(
             'ClaimCore.IntegrationTests', 'ClaimCore.WitnessTests',
             'ClaimCore.RecoveryQualificationTests', 'ClaimCore.ConcurrencyQualificationTests',
             'ClaimCore.MigrationQualificationTests', 'ClaimCore.BackupQualificationTests'
-          )) {
-            & ./eng/Check-TestDiscovery.ps1 -Assembly $assembly
+          )
+          $outcomes = $assemblies | ForEach-Object -ThrottleLimit 6 -Parallel {
+            try {
+              $output = & (Join-Path $using:PWD 'eng/Check-TestDiscovery.ps1') -Assembly $_ 2>&1 | Out-String
+              [PSCustomObject]@{ Assembly = $_; Passed = $true; Output = $output }
+            } catch {
+              [PSCustomObject]@{ Assembly = $_; Passed = $false; Output = $_.Exception.Message }
+            }
           }
+          foreach ($outcome in $outcomes) { Write-Host $outcome.Output.TrimEnd() }
+          $failed = @($outcomes | Where-Object { -not $_.Passed } | ForEach-Object { $_.Assembly })
+          if ($failed.Count -gt 0) { throw "Test discovery failed for: $($failed -join ', ')" }
       - name: Resolve the exact built CLI
         shell: bash
         run: |
@@ -53,134 +62,9 @@ jobs:
           cli_path="$(dotnet msbuild src/ClaimCore.Cli/ClaimCore.Cli.fsproj -nologo -verbosity:quiet -property:Configuration=Release -getProperty:TargetPath)"
           test -f "$cli_path"
           echo "CLAIMCORE_TEST_CLI_PATH=$cli_path" >> "$GITHUB_ENV"
-      - name: Qualify isolated backup and restore through native MTP
+      - name: Run every PostgreSQL-backed suite concurrently through native MTP
         shell: pwsh
-        run: |
-          Set-StrictMode -Version Latest
-          $results = Join-Path $PWD "artifacts/test-results/backup-qualification"
-          if (Test-Path -LiteralPath $results) { throw "The backup result directory must start absent." }
-          $started = (Get-Date).ToUniversalTime().ToString("O")
-          dotnet test --project tests/ClaimCore.BackupQualificationTests/ClaimCore.BackupQualificationTests.fsproj `
-            --configuration Release --no-build --no-restore --max-parallel-test-modules 1 `
-            "--results-directory=$results" --minimum-expected-tests=2 --zero-tests-policy=strict `
-            --timeout=90m -- "--settings=$PWD/eng/expecto.runsettings" --report-trx `
-            --report-trx-filename=ClaimCore.BackupQualificationTests.trx
-          $testExit = $LASTEXITCODE
-          $finished = (Get-Date).ToUniversalTime().ToString("O")
-          if (!(Test-Path -LiteralPath $results)) { New-Item -ItemType Directory -Path $results | Out-Null }
-          $outcome = if ($testExit -eq 0) { "success" } else { "failure" }
-          dotnet artifacts/bin/ClaimCore.Docs/release/ClaimCore.Docs.dll stage-manifest `
-            backup-qualification "${{ github.run_id }}" "${{ github.run_attempt }}" `
-            $outcome $started $finished $results
-          if ($testExit -ne 0 -or $LASTEXITCODE -ne 0) { exit 1 }
-      - name: Run integration, witness, and three other qualifications through native MTP
-        shell: pwsh
-        run: |
-          Set-StrictMode -Version Latest
-          $docs = Join-Path $PWD "artifacts/bin/ClaimCore.Docs/release/ClaimCore.Docs.dll"
-          $overall = 0
-
-          function Invoke-RegisteredProject {
-            param(
-              [string] $Stage,
-              [string] $Project,
-              [string] $Assembly,
-              [int] $Expected,
-              [bool] $Coverage,
-              [string] $Timeout = "90m"
-            )
-
-            $results = Join-Path $PWD "artifacts/test-results/$Stage"
-            if (Test-Path -LiteralPath $results) { throw "The test result directory must start absent." }
-            $arguments = @(
-              "test", "--project", $Project, "--configuration", "Release", "--no-build", "--no-restore",
-              "--max-parallel-test-modules", "1", "--results-directory=$results",
-              "--minimum-expected-tests=$Expected", "--zero-tests-policy=strict", "--timeout=$Timeout",
-              "--", "--settings=$PWD/eng/expecto.runsettings", "--report-trx",
-              "--report-trx-filename=$Assembly.trx"
-            )
-            if ($Coverage) {
-              $arguments += @("--coverlet", "--coverlet-file-prefix=integration", "--coverlet-output-format=cobertura")
-            }
-
-            $started = (Get-Date).ToUniversalTime().ToString("O")
-            & dotnet @arguments
-            $testExit = $LASTEXITCODE
-            $finished = (Get-Date).ToUniversalTime().ToString("O")
-            if (!(Test-Path -LiteralPath $results)) { New-Item -ItemType Directory -Path $results | Out-Null }
-            $outcome = if ($testExit -eq 0) { "success" } else { "failure" }
-            & dotnet $docs stage-manifest $Stage "${{ github.run_id }}" "${{ github.run_attempt }}" $outcome $started $finished $results
-            if ($testExit -ne 0 -or $LASTEXITCODE -ne 0) { $script:overall = 1 }
-          }
-
-          function Start-RegisteredProject {
-            param(
-              [string] $Stage,
-              [string] $Project,
-              [string] $Assembly,
-              [int] $Expected
-            )
-
-            $results = Join-Path $PWD "artifacts/test-results/$Stage"
-            if (Test-Path -LiteralPath $results) { throw "The test result directory must start absent." }
-            $arguments = @(
-              "test", "--project", $Project, "--configuration", "Release", "--no-build", "--no-restore",
-              "--max-parallel-test-modules", "1", "--results-directory=$results",
-              "--minimum-expected-tests=$Expected", "--zero-tests-policy=strict", "--timeout=90m",
-              "--", "--settings=$PWD/eng/expecto.runsettings", "--report-trx",
-              "--report-trx-filename=$Assembly.trx"
-            )
-            $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
-            $startInfo.FileName = "dotnet"
-            $startInfo.WorkingDirectory = $PWD.Path
-            $startInfo.UseShellExecute = $false
-            $startInfo.RedirectStandardOutput = $true
-            $startInfo.RedirectStandardError = $true
-            foreach ($argument in $arguments) { $startInfo.ArgumentList.Add($argument) }
-            $process = [System.Diagnostics.Process]::new()
-            $process.StartInfo = $startInfo
-            $started = (Get-Date).ToUniversalTime().ToString("O")
-            if (!$process.Start()) { throw "The $Stage test process did not start." }
-
-            [PSCustomObject]@{
-              Stage = $Stage
-              Results = $results
-              Started = $started
-              Process = $process
-              StandardOutput = $process.StandardOutput.ReadToEndAsync()
-              StandardError = $process.StandardError.ReadToEndAsync()
-            }
-          }
-
-          function Complete-RegisteredProject {
-            param([PSCustomObject] $Run)
-
-            $Run.Process.WaitForExit()
-            [Console]::Out.Write($Run.StandardOutput.GetAwaiter().GetResult())
-            [Console]::Error.Write($Run.StandardError.GetAwaiter().GetResult())
-            $testExit = $Run.Process.ExitCode
-            $finished = $Run.Process.ExitTime.ToUniversalTime().ToString("O")
-            $Run.Process.Dispose()
-            if (!(Test-Path -LiteralPath $Run.Results)) {
-              New-Item -ItemType Directory -Path $Run.Results | Out-Null
-            }
-            $outcome = if ($testExit -eq 0) { "success" } else { "failure" }
-            & dotnet $docs stage-manifest $Run.Stage "${{ github.run_id }}" "${{ github.run_attempt }}" $outcome $Run.Started $finished $Run.Results
-            if ($testExit -ne 0 -or $LASTEXITCODE -ne 0) { $script:overall = 1 }
-          }
-
-          Invoke-RegisteredProject "witness-qualification" "tests/ClaimCore.WitnessTests/ClaimCore.WitnessTests.fsproj" "ClaimCore.WitnessTests" 21 $false
-          if ($overall -ne 0) { exit $overall }
-          Invoke-RegisteredProject "integration-linux" "tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj" "ClaimCore.IntegrationTests" 372 $true "110m"
-          $qualifications = @(
-            Start-RegisteredProject "recovery-qualification" "tests/ClaimCore.RecoveryQualificationTests/ClaimCore.RecoveryQualificationTests.fsproj" "ClaimCore.RecoveryQualificationTests" 19
-            Start-RegisteredProject "concurrency-qualification" "tests/ClaimCore.ConcurrencyQualificationTests/ClaimCore.ConcurrencyQualificationTests.fsproj" "ClaimCore.ConcurrencyQualificationTests" 5
-            Start-RegisteredProject "fresh-baseline-qualification" "tests/ClaimCore.MigrationQualificationTests/ClaimCore.MigrationQualificationTests.fsproj" "ClaimCore.MigrationQualificationTests" 15
-          )
-          foreach ($qualification in $qualifications) {
-            Complete-RegisteredProject $qualification
-          }
-          exit $overall
+        run: pwsh -NoProfile -File eng/Invoke-PostgresQualifications.ps1 -RunId "${{ github.run_id }}" -Attempt "${{ github.run_attempt }}"
       - name: Remove only this run's labeled integration containers
         if: always()
         shell: bash
@@ -192,6 +76,7 @@ jobs:
         run: |
           pwsh -NoProfile -File eng/Scan-ArtifactSecrets.ps1 `
             artifacts/test-results/integration-linux/ `
+            artifacts/test-results/integration-linux-partitions/ `
             artifacts/test-results/witness-qualification/ `
             artifacts/test-results/recovery-qualification/ `
             artifacts/test-results/concurrency-qualification/ `
@@ -209,6 +94,14 @@ jobs:
         with:
           name: claimcore-test-integration-linux-${{ github.run_id }}-${{ github.run_attempt }}
           path: artifacts/test-results/integration-linux/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload the integration partition reports the merged report derives from
+        if: ${{ always() && steps.artifact_scan.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: claimcore-test-integration-partitions-linux-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/test-results/integration-linux-partitions/
           if-no-files-found: error
           retention-days: 14
       - name: Upload required independent qualification results

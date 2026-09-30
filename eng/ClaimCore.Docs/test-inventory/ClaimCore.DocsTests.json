@@ -75,6 +75,10 @@
     "ClaimCore documentation assurance.semantic review subjects.review registry cannot include itself or an empty subject",
     "ClaimCore documentation assurance.semantic review subjects.source review is not accepted as independent owner approval",
     "ClaimCore documentation assurance.semantic review subjects.strict verification rejects a vacuous review registry",
-    "ClaimCore documentation assurance.semantic review subjects.whole-file changes invalidate the review subject"
+    "ClaimCore documentation assurance.semantic review subjects.whole-file changes invalidate the review subject",
+    "ClaimCore documentation assurance.test report merge.merges disjoint partition reports into one verifiable report",
+    "ClaimCore documentation assurance.test report merge.refuses a partition with a non-passing test",
+    "ClaimCore documentation assurance.test report merge.refuses partitions that share a test",
+    "ClaimCore documentation assurance.test report merge.refuses to overwrite an existing report"
   ]
 }

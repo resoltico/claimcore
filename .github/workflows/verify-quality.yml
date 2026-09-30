@@ -130,61 +130,8 @@ jobs:
           dotnet "$docs" stage-manifest restore-tools "${{ github.run_id }}" "${{ github.run_attempt }}" success "$TOOLS_STARTED" "$TOOLS_FINISHED" artifacts/stages/restore-tools
           dotnet "$docs" stage-manifest build-release "${{ github.run_id }}" "${{ github.run_attempt }}" success "$BUILD_STARTED" "$BUILD_FINISHED" artifacts/bin
           dotnet "$docs" stage-manifest secret-scan-source "${{ github.run_id }}" "${{ github.run_attempt }}" "$SOURCE_SCAN_OUTCOME" "$SOURCE_SCAN_STARTED" "$SOURCE_SCAN_FINISHED" artifacts/stages/secret-scan-source
-      - name: Run all registered source and infrastructure gates
-        shell: bash
-        run: |
-          set -u
-          docs=artifacts/bin/ClaimCore.Docs/release/ClaimCore.Docs.dll
-          overall=0
-          run_stage() {
-            stage="$1"
-            shift
-            output="artifacts/stages/$stage"
-            test ! -e "$output" || return 1
-            mkdir -p "$output"
-            log="$RUNNER_TEMP/claimcore-$stage.log"
-            started="$(date -u +%Y-%m-%dT%H:%M:%S.0000000+00:00)"
-            if "$@" >"$log" 2>&1; then
-              status=0
-            else
-              status=$?
-            fi
-            finished="$(date -u +%Y-%m-%dT%H:%M:%S.0000000+00:00)"
-            outcome=failure
-            if [[ "$status" -eq 0 ]]; then outcome=success; fi
-            printf 'Stage %s: %s.\n' "$stage" "$outcome"
-            if dotnet "$docs" stage-manifest "$stage" "${{ github.run_id }}" "${{ github.run_attempt }}" "$outcome" "$started" "$finished" "$output"; then
-              manifest_status=0
-            else
-              manifest_status=$?
-            fi
-            node eng/ci/stage-report.mjs quality "$stage" "$status" "$manifest_status" "$log" || overall=1
-            if [[ "$status" -ne 0 || "$manifest_status" -ne 0 ]]; then overall=1; fi
-          }
-          run_stage analyzer-suppressions pwsh -File eng/Check-AnalyzerSuppressions.ps1
-          run_stage analyzer-suppression-negative-controls pwsh -File eng/Test-AnalyzerSuppressionPolicy.ps1
-          run_stage sensitive-output-negative-controls pwsh -File eng/Test-SensitiveOutputPolicy.ps1
-          run_stage coverage-input-negative-controls pwsh -File eng/Test-CoverageInputPolicy.ps1
-          run_stage coverage-floor-negative-controls pwsh -File eng/Test-MergedCoveragePolicy.ps1
-          run_stage property-seed-negative-controls pwsh -File eng/Test-PropertySeedPolicy.ps1
-          run_stage test-diagnostic-negative-controls pwsh -File eng/Test-TestDiagnosticPrivacy.ps1
-          run_stage convergence-assurance pwsh -File eng/Check-ConvergenceAssurance.ps1
-          run_stage convergence-assurance-negative-controls pwsh -File eng/Test-ConvergenceAssurancePolicy.ps1
-          run_stage dependency-security pwsh -File eng/Check-DependencySecurity.ps1
-          run_stage fantomas bash eng/Check-Fantomas.sh
-          run_stage fsharplint bash eng/Check-FSharpLint.sh
-          run_stage actionlint actionlint -color
-          run_stage workflow-toolchain pwsh -File eng/Check-WorkflowToolchainPolicy.ps1
-          run_stage workflow-toolchain-negative-controls pwsh -File eng/Test-WorkflowToolchainPolicy.ps1
-          mapfile -d "" scripts < <(find eng db -type f -name "*.sh" -print0)
-          run_stage shellcheck shellcheck -x "${scripts[@]}"
-          run_stage compose-config env CLAIMCORE_COMPOSE_PROJECT=claimcore-config-${{ github.run_id }} POSTGRES_PASSWORD=owner-policy-value CLAIMCORE_APP_PASSWORD=runtime-policy-value CLAIMCORE_POSTGRES_PORT=0 docker compose --file compose.yaml config --quiet
-          run_stage compose-health bash eng/Test-ComposePolicy.sh
-          run_stage docker-cleanup-assurance bash eng/Test-LabeledTestContainerCleanup.sh
-          run_stage container-image-assurance-negative-controls bash eng/Test-PostgresImageAssurancePolicy.sh
-          run_stage container-sbom bash eng/Check-PostgresImageAssurance.sh sbom "$PWD/artifacts/stages/container-sbom"
-          run_stage container-vulnerability-scan bash eng/Check-PostgresImageAssurance.sh scan "$PWD/artifacts/stages/container-vulnerability-scan"
-          exit "$overall"
+      - name: Run all registered source and infrastructure gates concurrently
+        run: node eng/ci/run-stages.mjs quality --parallel 4
       - name: Require the pre-generation source scan
         if: always()
         env:

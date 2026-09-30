@@ -213,7 +213,9 @@ module StageCatalog =
             | None -> value)
 
     let definitions =
-        (bootstrap |> owned "quality" |> reassigned [ "restore-frontend", "frontend" ])
+        (bootstrap
+         |> owned "quality"
+         |> reassigned [ "restore-frontend", "frontend-product" ])
         @ (sourceQuality
            |> owned "quality"
            |> reassigned [ "secret-scan-artifacts", "evidence" ])
@@ -224,9 +226,11 @@ module StageCatalog =
                    "npm-audit", "frontend"
                    "npm-signatures", "frontend"
                    "dependency-licenses", "frontend"
-                   "sbom", "frontend"
+                   "sbom", "frontend-product"
                ])
-        @ owned "frontend" frontend
+        @ (frontend
+           |> owned "frontend"
+           |> reassigned [ "frontend-build", "frontend-product" ])
         @ owned "documentation" documentation
         @ (behavior |> owned "integration" |> reassigned [ "coverage", "coverage" ])
         @ owned "publish" publications

@@ -3146,7 +3146,11 @@
         "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.semantic review subjects.review registry cannot include itself or an empty subject",
         "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.semantic review subjects.source review is not accepted as independent owner approval",
         "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.semantic review subjects.strict verification rejects a vacuous review registry",
-        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.semantic review subjects.whole-file changes invalidate the review subject"
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.semantic review subjects.whole-file changes invalidate the review subject",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.test report merge.merges disjoint partition reports into one verifiable report",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.test report merge.refuses a partition with a non-passing test",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.test report merge.refuses partitions that share a test",
+        "dotnet:ClaimCore.DocsTests::ClaimCore documentation assurance.test report merge.refuses to overwrite an existing report"
       ]
     },
     {

@@ -1,0 +1,37 @@
+{
+  "producer": "quality",
+  "stages": [
+    { "id": "analyzer-suppression-negative-controls", "argv": ["pwsh", "-NoProfile", "-File", "eng/Test-AnalyzerSuppressionPolicy.ps1"], "exclusive": true },
+    { "id": "analyzer-suppressions", "argv": ["pwsh", "-NoProfile", "-File", "eng/Check-AnalyzerSuppressions.ps1"] },
+    { "id": "sensitive-output-negative-controls", "argv": ["pwsh", "-NoProfile", "-File", "eng/Test-SensitiveOutputPolicy.ps1"] },
+    { "id": "coverage-input-negative-controls", "argv": ["pwsh", "-NoProfile", "-File", "eng/Test-CoverageInputPolicy.ps1"] },
+    { "id": "coverage-floor-negative-controls", "argv": ["pwsh", "-NoProfile", "-File", "eng/Test-MergedCoveragePolicy.ps1"] },
+    { "id": "property-seed-negative-controls", "argv": ["pwsh", "-NoProfile", "-File", "eng/Test-PropertySeedPolicy.ps1"] },
+    { "id": "test-diagnostic-negative-controls", "argv": ["pwsh", "-NoProfile", "-File", "eng/Test-TestDiagnosticPrivacy.ps1"] },
+    { "id": "convergence-assurance", "argv": ["pwsh", "-NoProfile", "-File", "eng/Check-ConvergenceAssurance.ps1"] },
+    { "id": "convergence-assurance-negative-controls", "argv": ["pwsh", "-NoProfile", "-File", "eng/Test-ConvergenceAssurancePolicy.ps1"] },
+    { "id": "dependency-security", "argv": ["pwsh", "-NoProfile", "-File", "eng/Check-DependencySecurity.ps1"] },
+    { "id": "fantomas", "argv": ["bash", "eng/Check-Fantomas.sh"] },
+    { "id": "fsharplint", "argv": ["bash", "eng/Check-FSharpLint.sh"] },
+    { "id": "actionlint", "argv": ["actionlint", "-color"], "requires": ["actionlint"] },
+    { "id": "workflow-toolchain", "argv": ["pwsh", "-NoProfile", "-File", "eng/Check-WorkflowToolchainPolicy.ps1"] },
+    { "id": "workflow-toolchain-negative-controls", "argv": ["pwsh", "-NoProfile", "-File", "eng/Test-WorkflowToolchainPolicy.ps1"] },
+    { "id": "shellcheck", "argv": ["shellcheck", "-x"], "appendFiles": { "directories": ["eng", "db"], "suffix": ".sh" }, "requires": ["shellcheck"] },
+    {
+      "id": "compose-config",
+      "argv": ["docker", "compose", "--file", "compose.yaml", "config", "--quiet"],
+      "env": {
+        "CLAIMCORE_COMPOSE_PROJECT": "claimcore-config-{runId}",
+        "POSTGRES_PASSWORD": "owner-policy-value",
+        "CLAIMCORE_APP_PASSWORD": "runtime-policy-value",
+        "CLAIMCORE_POSTGRES_PORT": "0"
+      },
+      "requires": ["docker"]
+    },
+    { "id": "compose-health", "argv": ["bash", "eng/Test-ComposePolicy.sh"], "group": "docker", "requires": ["docker"] },
+    { "id": "docker-cleanup-assurance", "argv": ["bash", "eng/Test-LabeledTestContainerCleanup.sh"], "group": "docker", "requires": ["docker"] },
+    { "id": "container-image-assurance-negative-controls", "argv": ["bash", "eng/Test-PostgresImageAssurancePolicy.sh"] },
+    { "id": "container-sbom", "argv": ["bash", "eng/Check-PostgresImageAssurance.sh", "sbom", "{root}/artifacts/stages/container-sbom"], "group": "docker", "requires": ["docker"] },
+    { "id": "container-vulnerability-scan", "argv": ["bash", "eng/Check-PostgresImageAssurance.sh", "scan", "{root}/artifacts/stages/container-vulnerability-scan"], "group": "docker", "requires": ["docker"] }
+  ]
+}

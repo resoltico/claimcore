@@ -187,12 +187,17 @@ export function validateWorkflowSources(sources, { graph = true } = {}) {
         ),
       )
       .join("\n");
+    const plans = [...sources]
+      .filter(([path]) => /^eng\/ci\/stage-plans\/[^/]+\.json$/u.test(path))
+      .map(([, source]) => source)
+      .join("\n");
     assert(
-      !allRuns.includes("Check-DependencyCurrency.ps1"),
+      !allRuns.includes("Check-DependencyCurrency.ps1") &&
+        !plans.includes("Check-DependencyCurrency.ps1"),
       "Upstream freshness must not gate unrelated PRs.",
     );
     assert.equal(
-      (allRuns.match(/run_stage dependency-security /gu) ?? []).length,
+      (plans.match(/"id":\s*"dependency-security"/gu) ?? []).length,
       1,
       "Dependency security needs exactly one producer.",
     );
