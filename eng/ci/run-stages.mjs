@@ -71,6 +71,19 @@ function commandFor(stage, runId) {
   return argv;
 }
 
+// A failing stage may opt in to showing the end of its own log. Only stages whose output is tool
+// output about public artifacts opt in; the log is otherwise kept private (see stage-diagnostics).
+function echoTail(id, log, lines) {
+  const text = readFileSync(log, "utf8")
+    .replace(/\u001b\[[0-9;]*m/g, "")
+    .split("\n")
+    .filter((line) => line.trim() !== "")
+    .slice(-lines)
+    .map((line) => line.slice(0, 240));
+  console.log(`${id}: last ${text.length} log lines`);
+  for (const line of text) console.log(`  ${line}`);
+}
+
 const timestamp = () => new Date().toISOString().replace("Z", "0000+00:00");
 
 // Evidence manifests are registered for Linux producers; other platforms run and report only.
@@ -132,6 +145,8 @@ function execute(stage, plan, runId, attempt) {
             { cwd: root, stdio: "inherit" },
           )
         : { status: 0 };
+      if (status !== 0 && stage.echoTail)
+        echoTail(stage.id, log, stage.echoTail);
       const report = spawnSync(
         "node",
         [

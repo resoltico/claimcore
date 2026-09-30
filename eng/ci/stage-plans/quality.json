@@ -31,7 +31,7 @@
     { "id": "compose-health", "argv": ["bash", "eng/Test-ComposePolicy.sh"], "group": "docker", "requires": ["docker"] },
     { "id": "docker-cleanup-assurance", "argv": ["bash", "eng/Test-LabeledTestContainerCleanup.sh"], "group": "docker", "requires": ["docker"] },
     { "id": "container-image-assurance-negative-controls", "argv": ["bash", "eng/Test-PostgresImageAssurancePolicy.sh"] },
-    { "id": "container-sbom", "argv": ["bash", "eng/Check-PostgresImageAssurance.sh", "sbom", "{root}/artifacts/stages/container-sbom"], "group": "docker", "requires": ["docker"] },
-    { "id": "container-vulnerability-scan", "argv": ["bash", "eng/Check-PostgresImageAssurance.sh", "scan", "{root}/artifacts/stages/container-vulnerability-scan"], "group": "docker", "requires": ["docker"] }
+    { "id": "container-sbom", "argv": ["bash", "eng/Check-PostgresImageAssurance.sh", "sbom", "{root}/artifacts/stages/container-sbom"], "group": "docker", "requires": ["docker"], "echoTail": 30 },
+    { "id": "container-vulnerability-scan", "argv": ["bash", "eng/Check-PostgresImageAssurance.sh", "scan", "{root}/artifacts/stages/container-vulnerability-scan"], "group": "docker", "requires": ["docker"], "echoTail": 30 }
   ]
 }
