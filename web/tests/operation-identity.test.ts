@@ -3,6 +3,7 @@ import { expect, it } from "vitest";
 import { createDraft } from "../src/domain/metadata";
 import { initialOperation, operationReducer } from "../src/domain/operationReducer";
 import { caseFields, groupedCorrectionValues, preparation, review } from "./v3-foundation.fixtures";
+import { expectDomainHelpersExact } from "./domain-metadata.fixtures";
 import {
   begin,
   expectGuardedTransitionsInert,
@@ -243,6 +244,7 @@ it("keeps invalid reducer transitions inert and records a completed receipt", ()
   );
   expect(accepted.delivery).toBe("ACCEPTED");
   expectGuardedTransitionsInert(fresh);
+  expectDomainHelpersExact();
 });
 
 it("freezes grouped correction identity while a later correction edit forks a new operation", () => {

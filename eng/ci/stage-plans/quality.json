@@ -7,6 +7,7 @@
       "exclusive": true
     },
     { "id": "lint-exceptions", "argv": ["node", "eng/lint/check-exceptions.mjs"] },
+    { "id": "test-suite-registry", "argv": ["node", "eng/ci/check-test-suites.mjs"] },
     { "id": "eng-tests", "argv": ["npm", "--prefix", "eng", "test"] },
     { "id": "eng-format", "argv": ["npm", "--prefix", "eng", "run", "format:check"] },
     { "id": "eng-types", "argv": ["npm", "--prefix", "eng", "run", "typecheck"] },

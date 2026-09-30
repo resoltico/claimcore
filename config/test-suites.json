@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 1,
+  "suites": [
+    {
+      "id": "unit",
+      "assembly": "ClaimCore.Tests",
+      "project": "tests/ClaimCore.Tests/ClaimCore.Tests.fsproj",
+      "expected": 334,
+      "coverage": true,
+      "platforms": ["linux", "macos", "windows"],
+      "configuration": "Release"
+    },
+    {
+      "id": "fuzz",
+      "assembly": "ClaimCore.FuzzQualificationTests",
+      "project": "tests/ClaimCore.FuzzQualificationTests/ClaimCore.FuzzQualificationTests.fsproj",
+      "expected": 5,
+      "coverage": false,
+      "platforms": ["linux", "macos", "windows"],
+      "configuration": "Release"
+    },
+    {
+      "id": "web",
+      "assembly": "ClaimCore.WebTests",
+      "project": "tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj",
+      "expected": 122,
+      "coverage": true,
+      "platforms": ["linux", "macos", "windows"],
+      "configuration": "Release"
+    },
+    {
+      "id": "architecture",
+      "assembly": "ClaimCore.ArchitectureTests",
+      "project": "tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj",
+      "expected": 88,
+      "coverage": false,
+      "platforms": ["linux", "macos", "windows"],
+      "configuration": "Debug"
+    },
+    {
+      "id": "docs",
+      "assembly": "ClaimCore.DocsTests",
+      "project": "tests/ClaimCore.DocsTests/ClaimCore.DocsTests.fsproj",
+      "expected": 78,
+      "coverage": false,
+      "platforms": ["linux", "macos", "windows"],
+      "configuration": "Release"
+    },
+    {
+      "id": "integration",
+      "stage": "integration-linux",
+      "assembly": "ClaimCore.IntegrationTests",
+      "project": "tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj",
+      "expected": 372,
+      "coverage": true,
+      "timeout": "110m",
+      "platforms": ["linux"],
+      "configuration": "Release"
+    },
+    {
+      "id": "backup-qualification",
+      "stage": "backup-qualification",
+      "assembly": "ClaimCore.BackupQualificationTests",
+      "project": "tests/ClaimCore.BackupQualificationTests/ClaimCore.BackupQualificationTests.fsproj",
+      "expected": 2,
+      "coverage": false,
+      "timeout": "90m",
+      "platforms": ["linux"],
+      "configuration": "Release"
+    },
+    {
+      "id": "recovery-qualification",
+      "stage": "recovery-qualification",
+      "assembly": "ClaimCore.RecoveryQualificationTests",
+      "project": "tests/ClaimCore.RecoveryQualificationTests/ClaimCore.RecoveryQualificationTests.fsproj",
+      "expected": 19,
+      "coverage": false,
+      "timeout": "90m",
+      "platforms": ["linux"],
+      "configuration": "Release"
+    },
+    {
+      "id": "witness-qualification",
+      "stage": "witness-qualification",
+      "assembly": "ClaimCore.WitnessTests",
+      "project": "tests/ClaimCore.WitnessTests/ClaimCore.WitnessTests.fsproj",
+      "expected": 21,
+      "coverage": false,
+      "timeout": "90m",
+      "platforms": ["linux"],
+      "configuration": "Release"
+    },
+    {
+      "id": "fresh-baseline-qualification",
+      "stage": "fresh-baseline-qualification",
+      "assembly": "ClaimCore.MigrationQualificationTests",
+      "project": "tests/ClaimCore.MigrationQualificationTests/ClaimCore.MigrationQualificationTests.fsproj",
+      "expected": 15,
+      "coverage": false,
+      "timeout": "90m",
+      "platforms": ["linux"],
+      "configuration": "Release"
+    },
+    {
+      "id": "concurrency-qualification",
+      "stage": "concurrency-qualification",
+      "assembly": "ClaimCore.ConcurrencyQualificationTests",
+      "project": "tests/ClaimCore.ConcurrencyQualificationTests/ClaimCore.ConcurrencyQualificationTests.fsproj",
+      "expected": 5,
+      "coverage": false,
+      "timeout": "90m",
+      "platforms": ["linux"],
+      "configuration": "Release"
+    }
+  ]
+}

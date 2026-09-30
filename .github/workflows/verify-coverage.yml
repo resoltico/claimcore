@@ -6,27 +6,16 @@ on:
 permissions:
   contents: read
 
-env:
-  CI: true
-  DOTNET_CLI_TELEMETRY_OPTOUT: 1
-  DOTNET_NOLOGO: 1
-  NO_COLOR: 1
-  TESTINGPLATFORM_TELEMETRY_OPTOUT: 1
-
 jobs:
   coverage:
     name: Merged production coverage policy
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: ./.github/actions/toolchain
-        with:
-          dotnet-cache-path: |
-            **/packages.lock.json
-            .config/dotnet-tools.json
       - name: Download Linux unit coverage
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:

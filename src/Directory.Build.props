@@ -1,0 +1,11 @@
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+  <!-- A project that sets IsShippedApplication ships the repository LICENSE beside its binaries. -->
+  <ItemGroup Condition="'$(IsShippedApplication)' == 'true'">
+    <None
+      Include="$(MSBuildThisFileDirectory)../LICENSE"
+      Link="LICENSE"
+      CopyToOutputDirectory="PreserveNewest"
+      CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

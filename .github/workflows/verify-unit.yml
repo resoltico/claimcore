@@ -6,13 +6,6 @@ on:
 permissions:
   contents: read
 
-env:
-  CI: true
-  DOTNET_CLI_TELEMETRY_OPTOUT: 1
-  DOTNET_NOLOGO: 1
-  NO_COLOR: 1
-  TESTINGPLATFORM_TELEMETRY_OPTOUT: 1
-
 jobs:
   tests:
     name: ${{ matrix.label }} (${{ matrix.platform }})
@@ -20,7 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             platform: linux
             label: Unit and process tests
             stage: unit-linux
@@ -30,7 +23,7 @@ jobs:
             prefix: unit
             configuration: Release
             coverage: true
-          - os: macos-latest
+          - os: macos-26
             platform: macos
             label: Unit and process tests
             stage: unit-macos
@@ -40,7 +33,7 @@ jobs:
             prefix: unit
             configuration: Release
             coverage: true
-          - os: windows-latest
+          - os: windows-2025-vs2026
             platform: windows
             label: Unit and process tests
             stage: unit-windows
@@ -50,7 +43,7 @@ jobs:
             prefix: unit
             configuration: Release
             coverage: true
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             platform: linux
             label: Boundary decoding totality
             stage: fuzz-linux
@@ -60,7 +53,7 @@ jobs:
             prefix: fuzz
             configuration: Release
             coverage: false
-          - os: macos-latest
+          - os: macos-26
             platform: macos
             label: Boundary decoding totality
             stage: fuzz-macos
@@ -70,7 +63,7 @@ jobs:
             prefix: fuzz
             configuration: Release
             coverage: false
-          - os: windows-latest
+          - os: windows-2025-vs2026
             platform: windows
             label: Boundary decoding totality
             stage: fuzz-windows
@@ -80,7 +73,7 @@ jobs:
             prefix: fuzz
             configuration: Release
             coverage: false
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             platform: linux
             label: Web host and security tests
             stage: web-linux
@@ -90,7 +83,7 @@ jobs:
             prefix: web
             configuration: Release
             coverage: true
-          - os: macos-latest
+          - os: macos-26
             platform: macos
             label: Web host and security tests
             stage: web-macos
@@ -100,7 +93,7 @@ jobs:
             prefix: web
             configuration: Release
             coverage: true
-          - os: windows-latest
+          - os: windows-2025-vs2026
             platform: windows
             label: Web host and security tests
             stage: web-windows
@@ -110,7 +103,7 @@ jobs:
             prefix: web
             configuration: Release
             coverage: true
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             platform: linux
             label: Qualified architecture inspection
             stage: architecture-linux
@@ -120,7 +113,7 @@ jobs:
             prefix: architecture
             configuration: Debug
             coverage: false
-          - os: macos-latest
+          - os: macos-26
             platform: macos
             label: Qualified architecture inspection
             stage: architecture-macos
@@ -130,7 +123,7 @@ jobs:
             prefix: architecture
             configuration: Debug
             coverage: false
-          - os: windows-latest
+          - os: windows-2025-vs2026
             platform: windows
             label: Qualified architecture inspection
             stage: architecture-windows
@@ -195,7 +188,7 @@ jobs:
             "--report-trx", "--report-trx-filename=$($env:ASSEMBLY).trx"
           )
           if ($env:COLLECT_COVERAGE -eq "true") {
-            $arguments += @("--coverlet", "--coverlet-file-prefix=$env:COVERAGE_PREFIX", "--coverlet-output-format=cobertura")
+            $arguments += @("--coverlet", "--coverlet-file-prefix=$env:COVERAGE_PREFIX")
           }
           if ($env:CONFIGURATION -eq "Debug") {
             $env:CLAIMCORE_ARCHITECTURE_REPORT = Join-Path $results "architecture-report.json"

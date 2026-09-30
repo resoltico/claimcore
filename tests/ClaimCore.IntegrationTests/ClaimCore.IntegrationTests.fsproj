@@ -1,10 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <IsTestProject>true</IsTestProject>
-    <GenerateProgramFile>false</GenerateProgramFile>
-    <EnableExpectoTestingPlatformIntegration>true</EnableExpectoTestingPlatformIntegration>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="../RepositoryRoot.fs" Link="RepositoryRoot.fs" />
     <Compile Include="FixtureEnvironment.fs" />
@@ -258,9 +252,6 @@
     <Compile Include="Suite.fs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="../../eng/claimcore.testconfig.json" Link="testconfig.json" CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Application/ClaimCore.Application.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Database/ClaimCore.Database.fsproj" />
@@ -272,12 +263,9 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="coverlet.MTP" PrivateAssets="all" />
-    <PackageReference Include="Expecto" />
-    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" PrivateAssets="all" />
     <PackageReference Include="Npgsql" />
     <PackageReference Include="NSec.Cryptography" />
     <PackageReference Include="Testcontainers.PostgreSql" />
-    <PackageReference Include="YoloDev.Expecto.TestSdk" PrivateAssets="all" />
   </ItemGroup>
   <Import Project="../../src/ClaimCore.HostSecurity/HostSecurity.Native.targets" />
 </Project>

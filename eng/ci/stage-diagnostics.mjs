@@ -37,6 +37,7 @@ const help = {
 };
 const policyStages = [
   "lint-exceptions",
+  "test-suite-registry",
   "eng-tests",
   "eng-format",
   "eng-types",

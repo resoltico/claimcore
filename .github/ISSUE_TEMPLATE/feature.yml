@@ -1,0 +1,49 @@
+name: Feature request
+description: Propose a capability using synthetic, non-sensitive facts
+title: "[Feature] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This is a public request. Do not include credentials, connection strings, request or recovery
+        files, claimant information, database extracts, private captures, or unredacted logs. Security
+        concerns belong in the private process described by SECURITY.md.
+  - type: checkboxes
+    id: safe-request
+    attributes:
+      label: Public-request safety
+      options:
+        - label: >-
+            I have used only synthetic, redacted information and have not included any secret or
+            claimant payload.
+          required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Affected surface
+      options:
+        - Web application
+        - CLI
+        - Database administration
+        - Domain or application library
+        - Build, test, or documentation tooling
+    validations:
+      required: true
+  - type: textarea
+    id: need
+    attributes:
+      label: Need
+      description: Describe the operator-visible problem this solves, not the implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: State the observable behavior and the authority or data it touches.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered

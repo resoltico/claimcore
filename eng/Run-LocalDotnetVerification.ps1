@@ -41,22 +41,23 @@ foreach ($existing in @($artifacts, $verificationBase)) {
     }
 }
 
-$suites = @(
-    [PSCustomObject]@{ Assembly = "ClaimCore.Tests"; Expected = 334; Configuration = "Release"; Coverage = "unit"; Timeout = "25m"; Stage = "unit" }
-    [PSCustomObject]@{ Assembly = "ClaimCore.WebTests"; Expected = 122; Configuration = "Release"; Coverage = "web"; Timeout = "25m"; Stage = "web" }
-    [PSCustomObject]@{ Assembly = "ClaimCore.DocsTests"; Expected = 78; Configuration = "Release"; Coverage = ""; Timeout = "25m"; Stage = "docs" }
-    [PSCustomObject]@{ Assembly = "ClaimCore.FuzzQualificationTests"; Expected = 5; Configuration = "Release"; Coverage = ""; Timeout = "25m"; Stage = "fuzz" }
-    [PSCustomObject]@{ Assembly = "ClaimCore.ArchitectureTests"; Expected = 88; Configuration = "Debug"; Coverage = ""; Timeout = "25m"; Stage = "architecture" }
-)
+# The suite facts come from the registry CI also reads; only the coverage role and timeout are local.
+$suiteRegistry = Get-Content -Raw -LiteralPath (Join-Path $repository "config/test-suites.json") | ConvertFrom-Json -AsHashtable
+$suites = @($suiteRegistry.suites | Where-Object { -not $_.ContainsKey("stage") } | ForEach-Object {
+        [PSCustomObject]@{
+            Assembly      = $_.assembly
+            Expected      = [int] $_.expected
+            Configuration = $_.configuration
+            Coverage      = if ($_.coverage) { $_.id } else { "" }
+            Timeout       = "25m"
+            Stage         = $_.id
+        }
+    })
 # The PostgreSQL-backed suites run together, concurrently, through the script CI also runs, so a local
 # run exercises the same partitions, floors and merged reports.
-$postgresStages = [ordered]@{
-    "ClaimCore.IntegrationTests" = "integration-linux"
-    "ClaimCore.BackupQualificationTests" = "backup-qualification"
-    "ClaimCore.RecoveryQualificationTests" = "recovery-qualification"
-    "ClaimCore.WitnessTests" = "witness-qualification"
-    "ClaimCore.MigrationQualificationTests" = "fresh-baseline-qualification"
-    "ClaimCore.ConcurrencyQualificationTests" = "concurrency-qualification"
+$postgresStages = [ordered]@{}
+foreach ($suite in @($suiteRegistry.suites | Where-Object { $_.ContainsKey("stage") })) {
+    $postgresStages[$suite.assembly] = $suite.stage
 }
 if ($PostgresOnly -and $SkipPostgres) { throw "PostgresOnly and SkipPostgres exclude each other." }
 $named = -not [string]::IsNullOrWhiteSpace($Assembly)
@@ -111,7 +112,7 @@ foreach ($suite in $selected) {
         "--report-trx-filename=$($suite.Assembly).trx"
     )
     if ($suite.Coverage -ne "") {
-        $arguments += @("--coverlet", "--coverlet-file-prefix=$($suite.Coverage)", "--coverlet-output-format=cobertura")
+        $arguments += @("--coverlet", "--coverlet-file-prefix=$($suite.Coverage)")
     }
     if ($suite.Configuration -eq "Debug") {
         $env:CLAIMCORE_ARCHITECTURE_REPORT = Join-Path $results "architecture-report.json"

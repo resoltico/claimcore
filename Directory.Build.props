@@ -41,14 +41,4 @@
   <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.fsproj'">
     <PackageReference Include="FSharp.Core" />
   </ItemGroup>
-  <ItemGroup
-    Condition="'$(MSBuildProjectName)' == 'ClaimCore.Cli' Or
-               '$(MSBuildProjectName)' == 'ClaimCore.Database' Or
-               '$(MSBuildProjectName)' == 'ClaimCore.Web'">
-    <None
-      Include="$(MSBuildThisFileDirectory)LICENSE"
-      Link="LICENSE"
-      CopyToOutputDirectory="PreserveNewest"
-      CopyToPublishDirectory="PreserveNewest" />
-  </ItemGroup>
 </Project>

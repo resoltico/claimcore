@@ -42,6 +42,7 @@ module StageCatalog =
             gate "fantomas" [ "bash"; "eng/Check-Fantomas.sh" ]
             gate "fsharplint" [ "bash"; "eng/Check-FSharpLint.sh" ]
             gate "lint-exceptions" [ "node"; "eng/lint/check-exceptions.mjs" ]
+            gate "test-suite-registry" [ "node"; "eng/ci/check-test-suites.mjs" ]
             gate "eng-tests" [ "npm"; "test" ]
             gate "eng-format" [ "npm"; "run"; "format:check" ]
             gate "eng-types" [ "npm"; "run"; "typecheck" ]

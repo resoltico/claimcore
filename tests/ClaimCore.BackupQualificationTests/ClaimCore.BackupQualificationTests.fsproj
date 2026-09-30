@@ -1,16 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <IsTestProject>true</IsTestProject>
-    <GenerateProgramFile>false</GenerateProgramFile>
-    <EnableExpectoTestingPlatformIntegration>true</EnableExpectoTestingPlatformIntegration>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="Suite.fs" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="Expecto" />
-    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" PrivateAssets="all" />
-    <PackageReference Include="YoloDev.Expecto.TestSdk" PrivateAssets="all" />
   </ItemGroup>
 </Project>

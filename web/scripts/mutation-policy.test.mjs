@@ -1,39 +1,49 @@
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { test } from "node:test";
-import { verifyMutationReport } from "./check-mutation-report.mjs";
+import { targets, verifyMutationReport } from "./check-mutation-report.mjs";
 
-const target = "src/domain/operationReducer.ts";
+const [target] = targets;
 const evidence = () => ({
   schemaVersion: "1.0",
   framework: { name: "StrykerJS", version: "10.0.0" },
   thresholds: { high: 92, low: 92, break: 92 },
-  files: { [target]: { source: "synthetic", mutants: [{ status: "Killed" }] } },
+  files: Object.fromEntries(
+    targets.map((name) => [name, { source: "synthetic", mutants: [{ status: "Killed" }] }]),
+  ),
   testFiles: { "tests/synthetic.test.ts": {} },
 });
+const sources = () => Object.fromEntries(targets.map((name) => [name, "synthetic"]));
 
-test("mutation evidence accepts one exact reviewed target", () => {
-  assert.equal(verifyMutationReport(evidence(), "synthetic", "10.0.0").score, 100);
+test("mutation evidence accepts exactly the reviewed targets", () => {
+  assert.equal(verifyMutationReport(evidence(), sources(), "10.0.0").score, 100);
 });
 
 test("mutation evidence rejects target or toolchain substitution", () => {
   const changed = evidence();
-  changed.files = { "src/other.ts": changed.files[target] };
-  assert.throws(() => verifyMutationReport(changed, "synthetic", "10.0.0"));
-  assert.throws(() => verifyMutationReport(evidence(), "changed", "10.0.0"));
-  assert.throws(() => verifyMutationReport(evidence(), "synthetic", "11.0.0"));
+  changed.files = { ...changed.files, "src/other.ts": changed.files[target] };
+  assert.throws(() => verifyMutationReport(changed, sources(), "10.0.0"));
+  const missing = evidence();
+  delete missing.files[target];
+  assert.throws(() => verifyMutationReport(missing, sources(), "10.0.0"));
+  assert.throws(() =>
+    verifyMutationReport(evidence(), { ...sources(), [target]: "changed" }, "10.0.0"),
+  );
+  assert.throws(() => verifyMutationReport(evidence(), sources(), "11.0.0"));
 });
 
 test("mutation evidence rejects empty, ignored, or below-floor mutants", () => {
   const empty = evidence();
-  empty.files[target].mutants = [];
-  assert.throws(() => verifyMutationReport(empty, "synthetic", "10.0.0"));
+  for (const name of targets) {
+    empty.files[name].mutants = [];
+  }
+  assert.throws(() => verifyMutationReport(empty, sources(), "10.0.0"));
   const ignored = evidence();
   ignored.files[target].mutants = [{ status: "Ignored" }];
-  assert.throws(() => verifyMutationReport(ignored, "synthetic", "10.0.0"));
+  assert.throws(() => verifyMutationReport(ignored, sources(), "10.0.0"));
   const below = evidence();
-  below.files[target].mutants.push({ status: "Survived" });
-  assert.throws(() => verifyMutationReport(below, "synthetic", "10.0.0"));
+  below.files[target].mutants.push({ status: "Survived" }, { status: "Survived" });
+  assert.throws(() => verifyMutationReport(below, sources(), "10.0.0"));
 });
 
 test("mutation testing never needs the TypeScript compiler API that TypeScript 7 does not ship", () => {

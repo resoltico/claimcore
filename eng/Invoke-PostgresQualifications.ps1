@@ -38,15 +38,19 @@ if ($MaxParallel -le 0) {
     $MaxParallel = if ($configured -match '^[1-9][0-9]*$') { [int] $configured } else { 8 }
 }
 
-# Registered floors: each assembly's exact minimum test count, independent of its inventory.
-$stages = @(
-    @{ Stage = "integration-linux"; Assembly = "ClaimCore.IntegrationTests"; Project = "tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj"; Expected = 372; Timeout = "110m"; Coverage = $true }
-    @{ Stage = "backup-qualification"; Assembly = "ClaimCore.BackupQualificationTests"; Project = "tests/ClaimCore.BackupQualificationTests/ClaimCore.BackupQualificationTests.fsproj"; Expected = 2; Timeout = "90m"; Coverage = $false }
-    @{ Stage = "recovery-qualification"; Assembly = "ClaimCore.RecoveryQualificationTests"; Project = "tests/ClaimCore.RecoveryQualificationTests/ClaimCore.RecoveryQualificationTests.fsproj"; Expected = 19; Timeout = "90m"; Coverage = $false }
-    @{ Stage = "witness-qualification"; Assembly = "ClaimCore.WitnessTests"; Project = "tests/ClaimCore.WitnessTests/ClaimCore.WitnessTests.fsproj"; Expected = 21; Timeout = "90m"; Coverage = $false }
-    @{ Stage = "fresh-baseline-qualification"; Assembly = "ClaimCore.MigrationQualificationTests"; Project = "tests/ClaimCore.MigrationQualificationTests/ClaimCore.MigrationQualificationTests.fsproj"; Expected = 15; Timeout = "90m"; Coverage = $false }
-    @{ Stage = "concurrency-qualification"; Assembly = "ClaimCore.ConcurrencyQualificationTests"; Project = "tests/ClaimCore.ConcurrencyQualificationTests/ClaimCore.ConcurrencyQualificationTests.fsproj"; Expected = 5; Timeout = "90m"; Coverage = $false }
-)
+# Registered floors: each assembly's exact minimum test count, independent of its inventory. The
+# registry is the only place the counts, projects and timeouts are written.
+$suiteRegistry = Get-Content -Raw -LiteralPath (Join-Path $repository "config/test-suites.json") | ConvertFrom-Json -AsHashtable
+$stages = @($suiteRegistry.suites | Where-Object { $_.ContainsKey("stage") } | ForEach-Object {
+        @{
+            Stage    = $_.stage
+            Assembly = $_.assembly
+            Project  = $_.project
+            Expected = [int] $_.expected
+            Timeout  = $_.timeout
+            Coverage = [bool] $_.coverage
+        }
+    })
 
 $resultsBase = if ([IO.Path]::IsPathRooted($ResultsRoot)) { [IO.Path]::GetFullPath($ResultsRoot) } else { [IO.Path]::GetFullPath((Join-Path $repository $ResultsRoot)) }
 if ($StageIds.Count -gt 0) {
@@ -89,7 +93,7 @@ function New-TestProcess {
         $Job.PrivateBin = Join-Path $repository ("artifacts/measured-bin/" + [Guid]::NewGuid().ToString("N"))
         Copy-Tree $source $Job.PrivateBin
         $arguments = @((Join-Path $Job.PrivateBin "$($Job.Assembly).dll")) + $common + $settings +
-        @("--coverlet", "--coverlet-file-prefix=$($Job.CoveragePrefix)", "--coverlet-output-format=cobertura")
+        @("--coverlet", "--coverlet-file-prefix=$($Job.CoveragePrefix)")
     } else {
         $arguments = @(
             "test", "--project", $Job.Project, "--configuration", "Release", "--no-build", "--no-restore",

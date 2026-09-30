@@ -43,7 +43,7 @@ docker buildx du
 
 [`docker system df`](https://docs.docker.com/reference/cli/docker/system/df/) summarizes daemon
 storage; [`docker buildx du`](https://docs.docker.com/reference/cli/docker/buildx/du/) reports cache
-for the selected builder. These commands are read-only. A volume marked *reclaimable* is merely
+for the selected builder. These commands are read-only. A volume marked _reclaimable_ is merely
 unused by a current container, not known to be disposable: this Docker daemon may also hold other
 projects' data. ClaimCore's Compose `postgres-data` volume is persistent. Normal
 `docker compose down` retains it; do not use `docker compose down --volumes` for an adopted database.
@@ -53,7 +53,7 @@ label and their anonymous volumes. It never targets the named Compose volume. Do
 host-wide `docker system prune` or `docker volume prune`, or infer ownership from a volume's name or
 reclaimable status.
 If build cache itself needs attention, identify a builder you own with `docker buildx ls`, then
-*explicitly* run `docker buildx prune --builder BUILDER_NAME --filter 'until=168h'` after replacing
+_explicitly_ run `docker buildx prune --builder BUILDER_NAME --filter 'until=168h'` after replacing
 `BUILDER_NAME`. [Buildx prune](https://docs.docker.com/reference/cli/docker/buildx/prune/) affects
 that builder's eligible cache records, not just ClaimCore's, and prompts before removal without
 `--force`; do not use it on a shared builder without coordinating with its other users.
@@ -248,7 +248,7 @@ requires the resulting manifest to match source, npm lock, generated semantic/CL
 Node/npm versions, notices, and asset bytes. See [`web/README.md`](../web/README.md) for frontend
 structure and the current compiler-API compatibility arrangement.
 
-The locked StrykerJS/Vitest mutation gate targets the operation reducer only. It requires at least 92% killed mutants, refuses ignored or incomplete mutant results, and checks the exact source, tool version and target in an ignored local report. It does not exercise F# or PostgreSQL and cannot replace the full tests, catalog checks or restored-data audit.
+The locked StrykerJS/Vitest mutation gate targets the pure operation-domain modules (metadata, initial state, request freezing and the reducer). It requires at least 92% killed mutants across them, refuses ignored or incomplete mutant results, and checks the exact sources, tool version and target set in an ignored local report. It does not exercise F# or PostgreSQL and cannot replace the full tests, catalog checks or restored-data audit.
 
 Contract generation is two deterministic stages: the F# generator writes canonical schemas, pure
 codec corpora, and split DTO modules; the locked Node stage compiles the aggregate Web response graph
@@ -291,6 +291,13 @@ pwsh -NoProfile -File eng/Check-DependencySecurity.ps1
 bash eng/Check-FSharpLint.sh
 actionlint -color
 find eng db -type f -name '*.sh' -exec shellcheck -x {} +
+find eng db -type f -name '*.sh' -exec shfmt -d {} +
+pwsh -NoProfile -File eng/Check-PowerShellAnalysis.ps1
+node eng/ci/check-test-suites.mjs
+uv run --frozen ruff check --no-cache
+uv run --frozen ruff format --check --no-cache
+uv run --frozen mypy
+uv run --frozen python -B eng/lint/check_python_limits.py
 env CLAIMCORE_COMPOSE_PROJECT=claimcore-config-local POSTGRES_PASSWORD=owner-policy-value CLAIMCORE_APP_PASSWORD=runtime-policy-value CLAIMCORE_POSTGRES_PORT=0 docker compose --file compose.yaml config --quiet
 bash eng/Test-LabeledTestContainerCleanup.sh
 bash eng/Test-ComposePolicy.sh
@@ -331,6 +338,29 @@ Pinned scanner downloads use bounded transport retries; a safe failure-stage lab
 `eng/Check-ArtifactUploadPolicy.ps1` and its negative controls keep the upload guards complete when
 workflows change. An artifact scan does not replace the source inventory or the browser harness's
 known-secret output checks.
+
+Every language runs its linter in its strictest useful mode, and each mode is pinned so it cannot be
+weakened in passing:
+
+| Language                                 | Gate                                                       | Strict mode                                                                                                                      |
+| ---------------------------------------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| F#                                       | compiler, Fantomas (no roll-forward), FSharpLint           | warnings as errors; size and complexity ceilings pinned by the exception engine                                                  |
+| TypeScript and JavaScript (`web`, `eng`) | TypeScript 7 `tsc`, oxlint with type-aware rules, Prettier | correctness, suspicious, pedantic, perf and style categories at `error`, denied warnings; typed rules scoped to TypeScript files |
+| Python (`eng/backup`)                    | uv-locked ruff, mypy, function-length check                | every ruff rule selected, mypy `strict`, 50-line functions, 300-line files, pylint argument and statement ceilings pinned        |
+| Shell                                    | shellcheck, shfmt                                          | every optional check at `style` severity through `.shellcheckrc`; shfmt settings in `.editorconfig`                              |
+| PowerShell                               | PSScriptAnalyzer 1.25.0                                    | every rule, including the formatting rules, from `config/PSScriptAnalyzerSettings.psd1`                                          |
+
+The exception engine (`node eng/lint/check-exceptions.mjs`) pins the oxlint categories and the Python
+ceilings, so relaxing them fails the gate. `config/test-suites.json` owns each suite's assembly, project,
+exact minimum test count and coverage role; `node eng/ci/check-test-suites.mjs` holds every workflow
+literal to it and the PostgreSQL runners read it directly. Runner images are pinned to exact labels, and
+telemetry settings live in the toolchain action.
+
+Evaluated and not adopted: F# analyzers (G-Research and Ionide) report about 740 findings, of which about
+560 ask for typed interpolation holes on every `$"..."`, and the "unsafe option unwrapping" findings mostly flag `.Value` on
+validated wrapper types; adopting them would need hundreds of mechanical edits for little defect-finding value, so FSharpLint and the strict
+compiler remain the F# gates. F# mutation testing is also not adopted; StrykerJS covers the pure TypeScript
+operation-domain modules, and F# behavior is covered by the property, integration and qualification suites.
 
 [`config/lint-exceptions.json`](../config/lint-exceptions.json) is the sole registry of lint, type, format and
 coverage exceptions for every language. Every entry has a stable `LX-nnnn` id, the tool, the exact rules (never a
@@ -433,15 +463,15 @@ current-attempt CI artifacts, not in source.
 
 Dependency ownership is ecosystem-specific:
 
-| Dependency class | Version owner | Locked graph or immutable identity |
-|---|---|---|
-| .NET SDK | `global.json` | Exact SDK with roll-forward disabled. |
-| NuGet packages | `Directory.Packages.props` | Per-project `packages.lock.json` files. |
-| .NET repository tools | `.config/dotnet-tools.json` | The tool manifest itself. |
-| Node.js and npm | `.node-version` and `web/package.json` | Exact engine and package-manager declarations. |
-| Frontend packages | `web/package.json` | `web/package-lock.json`. |
-| PostgreSQL container | `db/postgresql-baseline.json` | Exact image tag and digest. |
-| GitHub Actions | Workflow `uses` entries | Full action commit SHA with reviewed version comment. |
+| Dependency class      | Version owner                          | Locked graph or immutable identity                    |
+| --------------------- | -------------------------------------- | ----------------------------------------------------- |
+| .NET SDK              | `global.json`                          | Exact SDK with roll-forward disabled.                 |
+| NuGet packages        | `Directory.Packages.props`             | Per-project `packages.lock.json` files.               |
+| .NET repository tools | `.config/dotnet-tools.json`            | The tool manifest itself.                             |
+| Node.js and npm       | `.node-version` and `web/package.json` | Exact engine and package-manager declarations.        |
+| Frontend packages     | `web/package.json`                     | `web/package-lock.json`.                              |
+| PostgreSQL container  | `db/postgresql-baseline.json`          | Exact image tag and digest.                           |
+| GitHub Actions        | Workflow `uses` entries                | Full action commit SHA with reviewed version comment. |
 
 For an intentional NuGet update:
 

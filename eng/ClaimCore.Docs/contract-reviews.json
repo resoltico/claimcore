@@ -103,7 +103,7 @@
       "reviewer": "Agent reviewed the exact current heading and listed implementation and assertion sources; this is source review of local synthetic boundaries, not execution evidence, independent owner approval, or live real-data qualification.",
       "reviewedOn": "2026-09-30",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "bcc1b163549f2c77247efa9101dbfbcaa2a2fd9c14c1abb98754c439a3a4bde5",
+      "reviewSubjectHash": "8fe04e72a43484ec7fa2af35e4ae26c3eb1480f66b93874e962f1e6dbd47feb5",
       "wholeFiles": [
         "config/architecture.json",
         "tests/ClaimCore.ArchitectureTests/ManifestTests.fs",
@@ -259,7 +259,7 @@
       "reviewer": "Agent reviewed the exact current heading and listed implementation and assertion sources; this is source review of local synthetic boundaries, not execution evidence, independent owner approval, or live real-data qualification.",
       "reviewedOn": "2026-09-30",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "6ebceed7e2fb865d1ef640f8118708bb3a6286b027294bb4111fa63936d5924c",
+      "reviewSubjectHash": "079fdbfbb4902decee492afbc094eb81f09ed7e9183d13224b412949fc5c05b7",
       "wholeFiles": [
         "db/baseline.sql",
         "db/witness-baseline.sql",
@@ -730,7 +730,7 @@
       "reviewer": "Agent reviewed the exact current heading and listed implementation and assertion sources; this is source review of local synthetic boundaries, not execution evidence, independent owner approval, or live real-data qualification.",
       "reviewedOn": "2026-09-30",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "5f6b8c83c162e63fc2524e0ded70e81894951c77e9a2a3dc63898fc0adaacdb1",
+      "reviewSubjectHash": "175c048a3f7979231afe72e8502037dbfbc6c009cfe520d28fd149ca68064e85",
       "wholeFiles": [
         ".github/workflows/verify-frontend.yml",
         "docs/diagnostics.md",

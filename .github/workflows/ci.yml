@@ -91,7 +91,7 @@ jobs:
       - browser
       - coverage
       - evidence
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       # Derived from `needs`, so a family added above is gated automatically. A second hand-written

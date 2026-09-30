@@ -7,7 +7,7 @@ import { workflowSources } from "./workflow-sources.mjs";
 
 const root = fileURLToPath(new URL("../..", import.meta.url));
 const pin = "1".repeat(40);
-const compliant = `on: workflow_dispatch\npermissions: {contents: read}\njobs:\n  probe:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@${pin} # v7.0.1\n        with:\n          persist-credentials: false\n`;
+const compliant = `on: workflow_dispatch\npermissions: {contents: read}\njobs:\n  probe:\n    runs-on: ubuntu-24.04\n    steps:\n      - uses: actions/checkout@${pin} # v7.0.1\n        with:\n          persist-credentials: false\n`;
 const isolated = (text = compliant, path = ".github/workflows/probe.yml") =>
   new Map([[path, text]]);
 /** @param {string} text @param {string} [path] */
@@ -46,6 +46,15 @@ const transforms = [
     "alias configuration",
     (s) =>
       `copy: &copy false\n${s.replace("persist-credentials: false", "persist-credentials: *copy")}`,
+  ],
+  ["moving runner alias", (s) => s.replace("ubuntu-24.04", "ubuntu-latest")],
+  [
+    "moving matrix runner alias",
+    (s) =>
+      s.replace(
+        "    runs-on: ubuntu-24.04\n",
+        "    runs-on: ${{ matrix.os }}\n    strategy:\n      matrix:\n        include:\n          - os: macos-latest\n",
+      ),
   ],
   ["fake aggregate name", (s) => s.replace("    runs-on:", "    name: Gate\n    runs-on:")],
 ];

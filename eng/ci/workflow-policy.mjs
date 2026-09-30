@@ -103,10 +103,29 @@ function checkWrite(permission, level, job, publisher) {
 }
 
 /**
+ * Runner images are pinned to an exact label so a moving `-latest` alias cannot change a job.
+ * @param {Json} job
+ */
+function checkRunners(job) {
+  const include = job["strategy"]?.["matrix"]?.["include"];
+  const labels = [
+    job["runs-on"],
+    ...(Array.isArray(include) ? include.map((/** @type {Json} */ entry) => entry["os"]) : []),
+  ];
+  for (const label of labels) {
+    assert(
+      typeof label !== "string" || !/-latest$/u.test(label),
+      "Runner images must be pinned, never -latest.",
+    );
+  }
+}
+
+/**
  * @param {Json} job
  * @param {boolean} publisher
  */
 function checkJob(job, publisher) {
+  checkRunners(job);
   assert(
     job["continue-on-error"] === undefined || falseInput(job["continue-on-error"]),
     "Required jobs cannot tolerate failure.",
