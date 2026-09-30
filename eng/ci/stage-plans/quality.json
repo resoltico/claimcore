@@ -2,6 +2,7 @@
   "producer": "quality",
   "stages": [
     { "id": "analyzer-suppression-negative-controls", "argv": ["pwsh", "-NoProfile", "-File", "eng/Test-AnalyzerSuppressionPolicy.ps1"], "exclusive": true },
+    { "id": "convergence-assurance-negative-controls", "argv": ["pwsh", "-NoProfile", "-File", "eng/Test-ConvergenceAssurancePolicy.ps1"], "exclusive": true },
     { "id": "analyzer-suppressions", "argv": ["pwsh", "-NoProfile", "-File", "eng/Check-AnalyzerSuppressions.ps1"] },
     { "id": "sensitive-output-negative-controls", "argv": ["pwsh", "-NoProfile", "-File", "eng/Test-SensitiveOutputPolicy.ps1"] },
     { "id": "coverage-input-negative-controls", "argv": ["pwsh", "-NoProfile", "-File", "eng/Test-CoverageInputPolicy.ps1"] },
@@ -9,7 +10,6 @@
     { "id": "property-seed-negative-controls", "argv": ["pwsh", "-NoProfile", "-File", "eng/Test-PropertySeedPolicy.ps1"] },
     { "id": "test-diagnostic-negative-controls", "argv": ["pwsh", "-NoProfile", "-File", "eng/Test-TestDiagnosticPrivacy.ps1"] },
     { "id": "convergence-assurance", "argv": ["pwsh", "-NoProfile", "-File", "eng/Check-ConvergenceAssurance.ps1"] },
-    { "id": "convergence-assurance-negative-controls", "argv": ["pwsh", "-NoProfile", "-File", "eng/Test-ConvergenceAssurancePolicy.ps1"] },
     { "id": "dependency-security", "argv": ["pwsh", "-NoProfile", "-File", "eng/Check-DependencySecurity.ps1"] },
     { "id": "fantomas", "argv": ["bash", "eng/Check-Fantomas.sh"] },
     { "id": "fsharplint", "argv": ["bash", "eng/Check-FSharpLint.sh"] },
