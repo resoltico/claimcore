@@ -1,5 +1,6 @@
 module ClaimCore.IntegrationTests.Suite
 
+open System
 open Expecto
 
 do afterRunTests Fixtures.shutdown
@@ -33,12 +34,18 @@ let private coreAndRecovery =
         RecoveryRaceTests.tests
         RecoveryEvidenceTests.tests
         RecoveryLifecycleAuthorityTests.tests
-        TerminalCapacityTests.tests
         RecoveryStateTests.tests
         RecoveryCancellationTests.tests
         AdministrationCompletionTests.tests
         DataAuditTests.tests
     ]
+
+/// One test that drives 1,024 accepted operations in sequence; alone, it bounds one partition.
+let private terminalCapacity = [ TerminalCapacityTests.tests ]
+
+/// Restored-writer activation runs real restores and is the longest run of physical-copy tests.
+let private restoredWriterActivation =
+    [ WriterActivationTests.tests; WriterActivationCrashTests.tests ]
 
 let private restoreAndBackup =
     [
@@ -62,8 +69,6 @@ let private restoreAndBackup =
         RestoreProduceSignedPairTests.tests
         RestoreWriterHandoffPhysicalTests.tests
         RestoreFencedTailPhysicalTests.tests
-        WriterActivationTests.tests
-        WriterActivationCrashTests.tests
         IndependentHostProbeTests.tests
         IndependentHostTopologyTests.tests
         ActorGrantStoreTests.tests
@@ -152,8 +157,29 @@ let private lifecycleAndPrivacy =
         CaseErasurePurgeAdmissionTests.tests
     ]
 
-let private groups =
-    coreAndRecovery @ restoreAndBackup @ actorAndCustody @ lifecycleAndPrivacy
+/// The registered partitions. Each is run by its own process against its own primary and witness
+/// clusters, so partitions may run concurrently; running every partition in one process (no
+/// selection) discovers and executes exactly the union. The ids and counts are registered in
+/// `eng/ClaimCore.Docs/test-inventory/partitions/ClaimCore.IntegrationTests.json`.
+let private partitions =
+    [
+        "terminal-capacity", terminalCapacity
+        "core-and-recovery", coreAndRecovery
+        "restored-writer-activation", restoredWriterActivation
+        "restore-and-backup", restoreAndBackup
+        "actor-and-custody", actorAndCustody
+        "lifecycle-and-privacy", lifecycleAndPrivacy
+    ]
+
+let private selectedGroups () =
+    match Environment.GetEnvironmentVariable "CLAIMCORE_INTEGRATION_PARTITION" with
+    | null
+    | "" -> partitions |> List.collect snd
+    | id ->
+        match partitions |> List.tryFind (fun (name, _) -> name = id) with
+        | Some(_, group) -> group
+        | None -> invalidOp "CLAIMCORE_INTEGRATION_PARTITION names no registered partition."
 
 [<Tests>]
-let tests = testList "ClaimCore PostgreSQL integration" groups |> testSequenced
+let tests =
+    testList "ClaimCore PostgreSQL integration" (selectedGroups ()) |> testSequenced

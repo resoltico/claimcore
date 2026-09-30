@@ -1,0 +1,16 @@
+{
+  "producer": "frontend",
+  "stages": [
+    { "id": "frontend-unit", "argv": ["npm", "--prefix", "web", "run", "test:unit"], "output": "artifacts/frontend", "exclusive": true },
+    { "id": "frontend-format", "argv": ["npm", "--prefix", "web", "run", "format:check"] },
+    { "id": "frontend-types", "argv": ["npm", "--prefix", "web", "run", "typecheck"], "group": "typescript-build" },
+    { "id": "frontend-eslint", "argv": ["npm", "--prefix", "web", "run", "lint"] },
+    { "id": "frontend-stylelint", "argv": ["npm", "--prefix", "web", "run", "lint:styles"] },
+    { "id": "frontend-dead-code", "argv": ["npm", "--prefix", "web", "run", "dead-code"] },
+    { "id": "frontend-contract-inventory", "argv": ["npm", "--prefix", "web", "run", "contract:check"] },
+    { "id": "npm-audit", "argv": ["npm", "--prefix", "web", "audit", "--audit-level=low"] },
+    { "id": "npm-signatures", "argv": ["npm", "--prefix", "web", "audit", "signatures"] },
+    { "id": "dependency-licenses", "argv": ["npm", "--prefix", "web", "run", "licenses:check"] },
+    { "id": "frontend-mutation", "argv": ["npm", "--prefix", "web", "run", "test:mutation"] }
+  ]
+}

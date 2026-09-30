@@ -19,5 +19,14 @@ export function workflowSources(root) {
     }
   }
   visit(join(root, ".github"));
+  // The stage plans are part of what a workflow runs, so governance reads them with the workflows.
+  const plans = join(root, "eng/ci/stage-plans");
+  for (const item of readdirSync(plans, { withFileTypes: true })) {
+    const path = join(plans, item.name);
+    if (lstatSync(path).isSymbolicLink())
+      throw new Error("Stage plans may not use symlinks.");
+    if (item.isFile() && /\.json$/u.test(item.name))
+      result.set(`eng/ci/stage-plans/${item.name}`, readFileSync(path, "utf8"));
+  }
   return result;
 }

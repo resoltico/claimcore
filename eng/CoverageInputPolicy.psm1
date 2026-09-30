@@ -74,14 +74,29 @@ function Resolve-ClaimCoreCoverageInputs {
     }
 
     $reports = [Collections.Generic.List[string]]::new()
-    foreach ($role in @("unit", "web", "integration")) {
-        $directory = Join-Path $root $role
+    $partitionRegistry = Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot "test-partitions.json") | ConvertFrom-Json -AsHashtable
+    $integrationPartitions = @(
+        $partitionRegistry.assemblies |
+            Where-Object { $_.assembly -ceq "ClaimCore.IntegrationTests" } |
+            ForEach-Object { $_.partitions } |
+            ForEach-Object { $_.id }
+    )
+    if ($integrationPartitions.Count -lt 1) { throw "The integration partitions are not registered." }
+
+    # Each role has one report per producing test process: the unit and Web suites run once, and the
+    # integration suite runs once per registered partition.
+    $roles = @(
+        @{ Role = "unit"; Prefix = "unit" }
+        @{ Role = "web"; Prefix = "web" }
+    ) + @($integrationPartitions | ForEach-Object { @{ Role = "integration"; Prefix = "integration-$_" } })
+    foreach ($entry in $roles) {
+        $directory = Join-Path $root $entry.Role
         $matches = @(
             Get-ChildItem -LiteralPath $directory -File -ErrorAction Stop |
-                Where-Object { $_.Name -match "^$role\.coverage\.cobertura\.[0-9]{15}\.xml$" }
+                Where-Object { $_.Name -match ("^" + [regex]::Escape($entry.Prefix) + "\.coverage\.cobertura\.[0-9]{15}\.xml$") }
         )
         if ($matches.Count -ne 1) {
-            throw "Coverage role '$role' must provide exactly one timestamped report."
+            throw "Coverage role '$($entry.Prefix)' must provide exactly one timestamped report."
         }
         $reports.Add($matches[0].FullName)
     }

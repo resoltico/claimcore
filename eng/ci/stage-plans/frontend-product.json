@@ -1,0 +1,13 @@
+{
+  "producer": "frontend-product",
+  "stages": [
+    { "id": "restore-frontend", "argv": ["npm", "--prefix", "web", "ci"] },
+    { "id": "sbom", "argv": ["npm", "--prefix", "web", "run", "sbom"], "after": ["restore-frontend"], "output": "artifacts/sbom" },
+    {
+      "id": "frontend-build",
+      "argv": ["bash", "-c", "npm --prefix web run build && mkdir -p artifacts/frontend-product/dist && cp -R web/dist/. artifacts/frontend-product/dist/"],
+      "after": ["restore-frontend"],
+      "output": "artifacts/frontend-product"
+    }
+  ]
+}

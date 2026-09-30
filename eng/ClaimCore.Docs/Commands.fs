@@ -162,10 +162,28 @@ module Commands =
 
             ExitCode.InvocationFailed
 
+    let private mergeReports root assembly output inputs =
+        match TestReportMerge.merge root assembly output inputs with
+        | Ok count ->
+            Console.Out.WriteLine($"Merged {inputs.Length} reports into {output} ({count} tests).")
+            ExitCode.Success
+        | Error message ->
+            Console.Error.WriteLine(message)
+            ExitCode.CheckFailed
+
     let private localTestReport (assessed: Result<unit, string>) =
         match assessed with
         | Ok() ->
             Console.Out.WriteLine("Registered local TRX passed.")
+            ExitCode.Success
+        | Error message ->
+            Console.Error.WriteLine(message)
+            ExitCode.CheckFailed
+
+    let private sourceFingerprint root runner =
+        match Provenance.sourceIdentity root runner with
+        | Ok identity ->
+            Console.Out.WriteLine(identity.ContentSha256 + ":" + identity.LocksSha256)
             ExitCode.Success
         | Error message ->
             Console.Error.WriteLine(message)
@@ -183,18 +201,13 @@ module Commands =
         | "verify-frontend-report" :: rest -> frontendReports root rest
         | [ "verify-test-report"; assembly; relative ] ->
             LocalTestReports.verify root assembly relative |> localTestReport
-        | [ "source-fingerprint" ] ->
-            match Provenance.sourceIdentity root runner with
-            | Ok identity ->
-                Console.Out.WriteLine(identity.ContentSha256 + ":" + identity.LocksSha256)
-                ExitCode.Success
-            | Error message ->
-                Console.Error.WriteLine(message)
-                ExitCode.CheckFailed
+        | "merge-test-reports" :: assembly :: output :: inputs ->
+            mergeReports root assembly output inputs
+        | [ "source-fingerprint" ] -> sourceFingerprint root runner
         | "convergence" :: rest -> convergence root rest
         | _ ->
             Console.Error.WriteLine(
-                "Usage: ClaimCore.Docs check | write | stage-manifest <stage-id> <run-id> <attempt> <outcome> <started-utc> <finished-utc> <output-root> | verify-publish-manifest <stage-id> <output-root> <manifest> | verify-frontend-report vitest|browser <engine>|all | verify-test-report <assembly> <repository-relative-trx> | source-fingerprint | evidence <run-id> <attempt>"
+                "Usage: ClaimCore.Docs check | write | stage-manifest <stage-id> <run-id> <attempt> <outcome> <started-utc> <finished-utc> <output-root> | verify-publish-manifest <stage-id> <output-root> <manifest> | verify-frontend-report vitest|browser <engine>|all | verify-test-report <assembly> <repository-relative-trx> | merge-test-reports <assembly> <output-trx> <input-trx>... | source-fingerprint | evidence <run-id> <attempt>"
             )
 
             ExitCode.InvocationFailed

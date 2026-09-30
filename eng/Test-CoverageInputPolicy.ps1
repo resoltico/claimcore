@@ -36,13 +36,19 @@ try {
     $browserPath = "browser/chromium.coverage.cobertura.e2e.xml"
     Write-Report "unit/unit.coverage.cobertura.202609090000001.xml" | Out-Null
     Write-Report "web/web.coverage.cobertura.202609090000002.xml" | Out-Null
-    Write-Report "integration/integration.coverage.cobertura.202609090000003.xml" | Out-Null
+    $partitionRegistry = Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot "test-partitions.json") | ConvertFrom-Json -AsHashtable
+    $partitionIds = @($partitionRegistry.assemblies | Where-Object { $_.assembly -ceq "ClaimCore.IntegrationTests" } | ForEach-Object { $_.partitions } | ForEach-Object { $_.id })
+    $stamp = 202609090000003
+    foreach ($partitionId in $partitionIds) {
+        Write-Report "integration/integration-$partitionId.coverage.cobertura.$stamp.xml" | Out-Null
+        $stamp++
+    }
     foreach ($engine in @("chromium", "firefox", "webkit")) {
         Write-Report "browser/$engine.coverage.cobertura.e2e.xml" $browserCoverage | Out-Null
     }
 
     $resolved = @(Resolve-ClaimCoreCoverageInputs $root)
-    if ($resolved.Count -ne 6) { throw "The positive coverage fixture did not resolve six reports." }
+    if ($resolved.Count -ne (5 + $partitionIds.Count)) { throw "The positive coverage fixture did not resolve every registered report." }
 
     $extra = Write-Report "browser/extra.coverage.cobertura.injected.xml"
     Assert-Rejected "unexpected report"
@@ -51,6 +57,20 @@ try {
     $duplicate = Write-Report "unit/unit.coverage.cobertura.202609090000004.xml"
     Assert-Rejected "duplicate role"
     [IO.File]::Delete($duplicate)
+
+    $missingPartition = Get-ChildItem -LiteralPath (Join-Path $root "integration") -File | Select-Object -First 1
+    $missingContent = [IO.File]::ReadAllText($missingPartition.FullName)
+    [IO.File]::Delete($missingPartition.FullName)
+    Assert-Rejected "missing integration partition"
+    [IO.File]::WriteAllText($missingPartition.FullName, $missingContent)
+
+    $duplicatePartition = Write-Report ("integration/" + ($missingPartition.Name -replace '[0-9]{15}', '202609090000099'))
+    Assert-Rejected "duplicate integration partition"
+    [IO.File]::Delete($duplicatePartition)
+
+    $unregistered = Write-Report "integration/integration-unregistered.coverage.cobertura.202609090000098.xml"
+    Assert-Rejected "unregistered integration partition"
+    [IO.File]::Delete($unregistered)
 
     Write-Report $browserPath '<coverage branches-covered="0" branches-valid="0"><packages/></coverage>' | Out-Null
     Assert-Rejected "empty browser coverage"

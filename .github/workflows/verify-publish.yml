@@ -43,11 +43,11 @@ jobs:
           mkdir -p web/dist
           cp -R artifacts/frontend-input/dist/. web/dist/
           npm --prefix web run assets:verify
-      - name: Restore and build the immutable source tree
+      - name: Restore the locked source tree and build the evidence tool
         run: |
           dotnet restore ClaimCore.slnx --locked-mode
           dotnet tool restore
-          dotnet build ClaimCore.slnx --configuration Release --no-restore
+          dotnet build eng/ClaimCore.Docs/ClaimCore.Docs.fsproj --configuration Release --no-restore
       - name: Verify native publish item ownership
         run: bash eng/Test-HostSecurityNativePublishItems.sh
       - name: Publish and describe all three applications

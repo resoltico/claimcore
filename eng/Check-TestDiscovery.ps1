@@ -48,4 +48,36 @@ for ($index = 0; $index -lt $expected.Length; $index++) {
     }
 }
 
+$partitionRegistry = Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot 'test-partitions.json') | ConvertFrom-Json -AsHashtable
+$partitioned = @($partitionRegistry.assemblies | Where-Object { $_.assembly -ceq $Assembly })
+if ($partitioned.Count -gt 1) { throw 'Test partitions are registered twice for one assembly.' }
+if ($partitioned.Count -eq 1) {
+    $selector = [string] $partitioned[0].selector
+    $union = [Collections.Generic.HashSet[string]]::new($ordinal)
+    foreach ($partition in $partitioned[0].partitions) {
+        # The selector goes to the child process only; changing this process's environment would race
+        # with any other discovery running beside it in the same process.
+        $startInfo = [System.Diagnostics.ProcessStartInfo]::new("dotnet")
+        $startInfo.ArgumentList.Add($binary)
+        $startInfo.ArgumentList.Add("--list-tests")
+        $startInfo.ArgumentList.Add("json")
+        $startInfo.RedirectStandardOutput = $true
+        $startInfo.UseShellExecute = $false
+        $startInfo.Environment[$selector] = [string] $partition.id
+        $child = [System.Diagnostics.Process]::Start($startInfo)
+        $partitionOutput = $child.StandardOutput.ReadToEnd()
+        $child.WaitForExit()
+        if ($child.ExitCode -ne 0 -or [string]::IsNullOrWhiteSpace($partitionOutput)) { throw "Partition '$($partition.id)' discovery did not complete." }
+        $names = @(($partitionOutput | ConvertFrom-Json -AsHashtable).tests | ForEach-Object { $_.displayName })
+        if ($names.Count -ne [int] $partition.tests) { throw "Partition '$($partition.id)' discovers $($names.Count) tests; $($partition.tests) are registered." }
+        foreach ($name in $names) {
+            if (-not $union.Add($name)) { throw "Test '$name' belongs to more than one partition." }
+        }
+    }
+    if ($union.Count -ne $expected.Length -or -not $union.SetEquals([string[]] $expected)) {
+        throw 'Registered partitions do not cover exactly the registered test inventory.'
+    }
+    Write-Host "Built $Assembly partitions cover exactly its $($expected.Length) registered tests."
+}
+
 Write-Host "Built $Assembly discovery matches $($actual.Length) registered tests."

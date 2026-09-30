@@ -31,6 +31,7 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Internal
 
+- CI runs the PostgreSQL-backed suites concurrently through one script shared with local verification: the integration suite is registered as six partitions that each own their clusters and merge into one exact report, the frontend product is built and published without waiting for the frontend gates, and the source and frontend gates run concurrently through one registered stage runner (`node eng/ci/run-stages.mjs`); `node eng/ci/run-local.mjs` runs the CI jobs that fit on one machine, cheapest first, scoped to what changed.
 - Expanded component, generated-contract, source-review, test-inventory and targeted Web operation-reducer mutation enforcement for the new service and evidence boundaries; local synthetic qualifications and green checks are verification evidence, not independent-host or production certification. Updated the locked .NET, frontend and repository-tool dependency graph without changing the stated coverage floors.
 
 ## [0.5.0] - 2026-09-23

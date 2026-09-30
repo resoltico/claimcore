@@ -67,8 +67,34 @@ lifecycle, coverage, and evidence must all succeed for the same source. Do not r
 family as the whole gate.
 
 Required tests must be zero-retry and unfiltered. Focused, pending, skipped, expected-failure,
-conditional, filtered, retried, or sharded required tests fail policy. Commands that actually ran and
+conditional, filtered, retried, or ad hoc sharded required tests fail policy. The only sharding is the
+registered partitioning of the PostgreSQL integration suite described below, whose reports must merge
+into exactly the registered inventory. Commands that actually ran and
 their outcomes must be reported separately from source inspection.
+
+### Running CI locally
+
+```sh
+node eng/ci/run-local.mjs
+```
+
+runs, in order and stopping before spending more time once a job has failed, the CI jobs that can run on
+one machine: the locked restore and strict-compiler build, the documentation check, the source and
+dependency gates, the frontend product and gates, the Unit/Web/documentation/fuzz/architecture suites, and
+the partitioned PostgreSQL suites. Each job runs the command CI runs. The jobs are registered in
+[`eng/ci/local-plan.json`](../eng/ci/local-plan.json), which also lists every CI family with no local
+equivalent (the macOS and Windows legs, the published-browser lifecycles, merged coverage and evidence
+reconciliation) with the reason, and a test holds that list to `ci.yml`. Jobs run one after another because
+they share one working tree, several of them read or write it as a whole and stage outputs must start absent;
+each uses the machine's cores internally. Generated stage outputs under `artifacts/` are removed first.
+
+By default a job runs only when a changed file, measured against the merge base with `origin/main` and
+including uncommitted and untracked files, could affect it, so a documentation-only change skips the frontend
+and database suites; `--changed-since REF` moves the base and `--all` runs everything. `--include published`
+adds the published CLI acceptance (it publishes the applications and uses Docker). `--only id,id` and
+`--skip id,id` select jobs, `--no-fail-fast` continues past a failure, and logs go to
+`artifacts/local-ci/<time>/<job>.log` with the tail of a failing log printed. A green local run is verification
+of what ran here, not of the platforms and evidence steps it lists as not run; use the summary it prints.
 
 ### .NET tests
 
@@ -92,6 +118,19 @@ bytes, mutated valid encodings, adversarial JSON, and invalid UTF-8. A boundary 
 refusing hostile input with a typed result; an escaping exception fails the property and prints a
 deterministic recheck token. It shares the property profile and base seed described below, so the
 scheduled extended run explores the same boundaries at 5,000 cases.
+
+The PostgreSQL-backed suites run together and concurrently through
+[`eng/Invoke-PostgresQualifications.ps1`](../eng/Invoke-PostgresQualifications.ps1), the one script that CI and
+`Run-LocalDotnetVerification.ps1` use. The integration assembly is registered as partitions in
+[`eng/test-partitions.json`](../eng/test-partitions.json); each runs as its own process against its own primary and
+witness clusters (`CLAIMCORE_INTEGRATION_PARTITION` selects one, and no selection is the whole suite). The discovery
+preflight proves the partitions are disjoint and cover exactly the registered inventory, the script refuses any
+non-passing partition, `ClaimCore.Docs merge-test-reports` joins the partition reports, and the merged report is
+verified against the compiled inventory like any other. Each measured partition runs a private copy of the test's
+output directory because Coverlet rewrites assemblies on disk. Move a test list to another partition in
+`tests/ClaimCore.IntegrationTests/Suite.fs` and update the registered counts to rebalance; the concurrency bound is
+`-MaxParallel` or `CLAIMCORE_PARALLEL_JOBS`. The PostgreSQL CI job builds only the projects it runs through
+`ClaimCore.PostgresQualification.slnf`; add a new PostgreSQL-backed test project there and to the orchestrator.
 
 The integration and qualification processes create exactly labelled isolated PostgreSQL containers.
 The separate qualification executables prevent a generic integration pass from being reported as
@@ -223,6 +262,13 @@ against the exact response schemas, in addition to validating positive, malforme
 samples. This is wire-conformance evidence, not a claim that every runtime branch was exercised.
 
 ### Repository quality
+
+CI and local runs execute the source, dependency and infrastructure gates and the frontend gates through one
+runner, `node eng/ci/run-stages.mjs quality` (or `frontend`, `frontend-product`), which reads the registered plan in
+`eng/ci/stage-plans/`, runs independent stages concurrently (`--parallel N`, default the smaller of the core count and
+4), serialises stages that share a resource group, and records the same log, evidence manifest and diagnostic per
+stage as a serial run. Add `--only id,id` to run some stages; a stage whose tool is absent is skipped locally and
+fails in CI. The commands below are the same gates one at a time.
 
 ```text
 bash eng/Check-Fantomas.sh

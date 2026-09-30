@@ -144,24 +144,6 @@ for (const [name, path, modify] of [
       ),
   ],
   [
-    "duplicate security execution",
-    "verify-frontend.yml",
-    (s) =>
-      s.replace(
-        "          run_stage restore-frontend",
-        "          run_stage dependency-security duplicate pwsh -File eng/Check-DependencySecurity.ps1\n          run_stage restore-frontend",
-      ),
-  ],
-  [
-    "currency reintroduced into PR gate",
-    "verify-frontend.yml",
-    (s) =>
-      s.replace(
-        "          run_stage restore-frontend",
-        "          run_stage currency duplicate pwsh -File eng/Check-DependencyCurrency.ps1\n          run_stage restore-frontend",
-      ),
-  ],
-  [
     "unprotected publisher",
     "publish-postgres-image.yml",
     (s) => s.replace("    environment: release\n", ""),
@@ -169,6 +151,33 @@ for (const [name, path, modify] of [
 ]) {
   test(`real graph refuses ${name}`, () =>
     assert.throws(() => validateWorkflowSources(changed(path, modify))));
+}
+
+for (const [name, modify] of [
+  [
+    "duplicate security execution",
+    (s) =>
+      s.replace(
+        '"stages": [',
+        '"stages": [\n    { "id": "dependency-security", "argv": ["pwsh", "-File", "eng/Check-DependencySecurity.ps1"] },',
+      ),
+  ],
+  [
+    "currency reintroduced into PR gate",
+    (s) =>
+      s.replace(
+        '"stages": [',
+        '"stages": [\n    { "id": "currency", "argv": ["pwsh", "-File", "eng/Check-DependencyCurrency.ps1"] },',
+      ),
+  ],
+]) {
+  test(`real graph refuses ${name} in a stage plan`, () => {
+    const sources = workflowSources(root);
+    const key = "eng/ci/stage-plans/frontend.json";
+    assert(sources.has(key));
+    sources.set(key, modify(sources.get(key)));
+    assert.throws(() => validateWorkflowSources(sources));
+  });
 }
 
 test("an orphan .yaml verifier cannot evade graph reachability", () => {

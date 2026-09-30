@@ -30,6 +30,7 @@
     <Compile Include="Report.fs" />
     <Compile Include="TrxStructure.fs" />
     <Compile Include="Evidence.fs" />
+    <Compile Include="TestReportMerge.fs" />
     <Compile Include="EvidenceReconciliation.fs" />
     <Compile Include="StageCollection.fs" />
     <Compile Include="DocumentationReport.fs" />

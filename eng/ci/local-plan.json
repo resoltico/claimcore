@@ -1,0 +1,214 @@
+{
+  "clean": [
+    "artifacts/stages",
+    "artifacts/sbom",
+    "artifacts/frontend",
+    "artifacts/frontend-product",
+    "artifacts/diagnostics"
+  ],
+  "jobs": [
+    {
+      "id": "setup",
+      "title": "Locked restore, tools and the strict-compiler Release build",
+      "mirrors": [
+        "quality"
+      ],
+      "argv": [
+        "bash",
+        "-c",
+        "dotnet restore ClaimCore.slnx --locked-mode && dotnet tool restore && dotnet build ClaimCore.slnx --configuration Release --no-restore"
+      ],
+      "scope": null
+    },
+    {
+      "id": "docs-check",
+      "title": "Generated documentation, links and contracts",
+      "mirrors": [
+        "documentation"
+      ],
+      "after": [
+        "setup"
+      ],
+      "argv": [
+        "dotnet",
+        "artifacts/bin/ClaimCore.Docs/release/ClaimCore.Docs.dll",
+        "check"
+      ],
+      "scope": null
+    },
+    {
+      "id": "quality",
+      "title": "Source, dependency and infrastructure gates (concurrent stage runner)",
+      "mirrors": [
+        "quality"
+      ],
+      "after": [
+        "setup"
+      ],
+      "argv": [
+        "node",
+        "eng/ci/run-stages.mjs",
+        "quality"
+      ],
+      "scope": null
+    },
+    {
+      "id": "frontend-product",
+      "title": "Locked frontend graph, SBOM and production build",
+      "mirrors": [
+        "frontend-product"
+      ],
+      "after": [
+        "setup"
+      ],
+      "argv": [
+        "node",
+        "eng/ci/run-stages.mjs",
+        "frontend-product"
+      ],
+      "scope": [
+        "^web/",
+        "^eng/ci/",
+        "^eng/ClaimCore\\.ContractGenerator/",
+        "^src/ClaimCore\\.(Contracts|CliProtocol|Application|Domain)/",
+        "^\\.node-version$",
+        "^global\\.json$"
+      ]
+    },
+    {
+      "id": "frontend-gates",
+      "title": "Frontend format, types, lint, tests, mutation and dependency gates",
+      "mirrors": [
+        "frontend"
+      ],
+      "after": [
+        "frontend-product"
+      ],
+      "argv": [
+        "node",
+        "eng/ci/run-stages.mjs",
+        "frontend"
+      ],
+      "scope": [
+        "^web/",
+        "^eng/ci/",
+        "^eng/ClaimCore\\.ContractGenerator/",
+        "^src/ClaimCore\\.(Contracts|CliProtocol|Application|Domain)/",
+        "^\\.node-version$",
+        "^global\\.json$"
+      ]
+    },
+    {
+      "id": "tests-dotnet",
+      "title": "Unit, Web, documentation, fuzz and architecture suites",
+      "mirrors": [
+        "unit",
+        "documentation"
+      ],
+      "after": [
+        "quality",
+        "docs-check",
+        "frontend-gates"
+      ],
+      "argv": [
+        "pwsh",
+        "-NoProfile",
+        "-File",
+        "eng/Run-LocalDotnetVerification.ps1",
+        "-NoRebuild",
+        "-SkipPostgres"
+      ],
+      "scope": [
+        "^src/",
+        "^tests/",
+        "^db/",
+        "^eng/",
+        "^docs/",
+        "^web/",
+        "\\.(props|targets|slnx|slnf)$",
+        "^global\\.json$",
+        "packages\\.lock\\.json$",
+        "^compose\\.yaml$",
+        "^architecture\\.json$",
+        "^analyzer-suppressions\\.json$"
+      ]
+    },
+    {
+      "id": "tests-postgres",
+      "title": "PostgreSQL integration, witness, recovery, concurrency, migration and backup suites (partitioned)",
+      "mirrors": [
+        "integration"
+      ],
+      "after": [
+        "tests-dotnet"
+      ],
+      "argv": [
+        "pwsh",
+        "-NoProfile",
+        "-File",
+        "eng/Run-LocalDotnetVerification.ps1",
+        "-NoRebuild",
+        "-PostgresOnly"
+      ],
+      "tools": [
+        "docker"
+      ],
+      "scope": [
+        "^src/",
+        "^tests/ClaimCore\\.(Integration|Witness|RecoveryQualification|ConcurrencyQualification|MigrationQualification|BackupQualification)Tests/",
+        "^tests/RepositoryRoot\\.fs$",
+        "^db/",
+        "^eng/(Invoke-PostgresQualifications|Run-LocalDotnetVerification|Check-TestDiscovery)\\.ps1$",
+        "^eng/test-partitions\\.json$",
+        "^eng/ClaimCore\\.Docs/",
+        "\\.(props|targets)$",
+        "^global\\.json$",
+        "packages\\.lock\\.json$"
+      ]
+    },
+    {
+      "id": "published-cli",
+      "title": "Published CLI acceptance (publishes the applications, uses Docker)",
+      "mirrors": [
+        "publish",
+        "acceptance"
+      ],
+      "after": [
+        "tests-postgres"
+      ],
+      "argv": [
+        "bash",
+        "eng/Run-PublishedCliAcceptance.sh"
+      ],
+      "tools": [
+        "docker"
+      ],
+      "optional": true,
+      "scope": [
+        "^src/",
+        "^db/",
+        "^tests/ClaimCore\\.AcceptanceTests/",
+        "^eng/Run-PublishedCliAcceptance\\.sh$",
+        "^web/"
+      ]
+    }
+  ],
+  "notLocal": [
+    {
+      "family": "unit",
+      "reason": "The macOS and Windows legs need those operating systems; the Linux leg is tests-dotnet."
+    },
+    {
+      "family": "browser",
+      "reason": "The three published-browser lifecycles need the synthetic OIDC fixture and three browser engines; run eng/Run-PublishedWebE2E.sh by hand."
+    },
+    {
+      "family": "coverage",
+      "reason": "Merged coverage needs every producer, including the browser lifecycles; CI merges it."
+    },
+    {
+      "family": "evidence",
+      "reason": "Evidence reconciliation binds Linux stage manifests produced in one CI run."
+    }
+  ]
+}

@@ -149,9 +149,18 @@ jobs:
       - uses: ./.github/actions/toolchain
       - name: Restore the locked source tree
         run: dotnet restore ClaimCore.slnx --locked-mode
-      - name: Build the Release source tree
+      # The registered project, the CLI its process tests resolve, and the evidence tool: nothing else
+      # in the solution is used by this job.
+      - name: Build the Release project graph
         if: matrix.configuration == 'Release'
-        run: dotnet build ClaimCore.slnx --configuration Release --no-restore
+        shell: bash
+        env:
+          PROJECT: ${{ matrix.project }}
+        run: |
+          set -euo pipefail
+          dotnet build eng/ClaimCore.Docs/ClaimCore.Docs.fsproj --configuration Release --no-restore
+          dotnet build src/ClaimCore.Cli/ClaimCore.Cli.fsproj --configuration Release --no-restore
+          dotnet build "$PROJECT" --configuration Release --no-restore
       - name: Build the Release evidence manifest tool
         if: matrix.configuration == 'Debug'
         run: dotnet build eng/ClaimCore.Docs/ClaimCore.Docs.fsproj --configuration Release --no-restore

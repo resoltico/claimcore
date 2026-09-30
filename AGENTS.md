@@ -67,8 +67,9 @@ trust boundaries. [Development](docs/development.md) owns commands and gates.
   with one matching `[CC-…]` token. Reattest `eng/ClaimCore.Docs/contract-reviews.json` only after
   reviewing the exact heading and assertion sources.
 - Required .NET tests use native .NET 10 Microsoft Testing Platform commands and exact registered
-  counts. Focused, pending, skipped, expected-failure, conditional, filtered, retried, or sharded
-  runs cannot satisfy complete verification.
+  counts. Focused, pending, skipped, expected-failure, conditional, filtered, retried, or
+  unregistered sharded runs cannot satisfy complete verification; the PostgreSQL integration partitions
+  registered in `eng/test-partitions.json` merge into one exact report and are the only sharding.
 - Enforce size, complexity, and lint limits across production and test code without grandfathering.
   [`analyzer-suppressions.json`](analyzer-suppressions.json) is the sole source-code exception
   registry.
