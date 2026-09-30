@@ -25,7 +25,7 @@ jobs:
       - uses: ./.github/actions/toolchain
       - name: Build the evidence executable
         run: |
-          dotnet restore eng/ClaimCore.Docs/ClaimCore.Docs.fsproj --locked-mode
+          dotnet restore ClaimCore.slnx --locked-mode
           dotnet build eng/ClaimCore.Docs/ClaimCore.Docs.fsproj --configuration Release --no-restore
       - name: Produce the frontend and its SBOM from the locked graph
         run: node eng/ci/run-stages.mjs frontend-product --parallel 2
