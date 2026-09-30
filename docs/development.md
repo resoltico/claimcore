@@ -105,7 +105,8 @@ non-passing partition, `ClaimCore.Docs merge-test-reports` joins the partition r
 verified against the compiled inventory like any other. Each measured partition runs a private copy of the test's
 output directory because Coverlet rewrites assemblies on disk. Move a test list to another partition in
 `tests/ClaimCore.IntegrationTests/Suite.fs` and update the registered counts to rebalance; the concurrency bound is
-`-MaxParallel` or `CLAIMCORE_PARALLEL_JOBS`.
+`-MaxParallel` or `CLAIMCORE_PARALLEL_JOBS`. The PostgreSQL CI job builds only the projects it runs through
+`ClaimCore.PostgresQualification.slnf`; add a new PostgreSQL-backed test project there and to the orchestrator.
 
 The integration and qualification processes create exactly labelled isolated PostgreSQL containers.
 The separate qualification executables prevent a generic integration pass from being reported as

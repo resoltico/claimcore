@@ -34,8 +34,8 @@ jobs:
           echo "$RUNNER_TEMP/claimcore-age/bin" >> "$GITHUB_PATH"
       - name: Restore and build the locked source tree
         run: |
-          dotnet restore ClaimCore.slnx --locked-mode
-          dotnet build ClaimCore.slnx --configuration Release --no-restore
+          dotnet restore ClaimCore.PostgresQualification.slnf --locked-mode
+          dotnet build ClaimCore.PostgresQualification.slnf --configuration Release --no-restore
       - name: Verify built test discovery before database qualification
         shell: pwsh
         run: |

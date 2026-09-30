@@ -1,0 +1,15 @@
+{
+  "solution": {
+    "path": "ClaimCore.slnx",
+    "projects": [
+      "tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj",
+      "tests/ClaimCore.WitnessTests/ClaimCore.WitnessTests.fsproj",
+      "tests/ClaimCore.RecoveryQualificationTests/ClaimCore.RecoveryQualificationTests.fsproj",
+      "tests/ClaimCore.ConcurrencyQualificationTests/ClaimCore.ConcurrencyQualificationTests.fsproj",
+      "tests/ClaimCore.MigrationQualificationTests/ClaimCore.MigrationQualificationTests.fsproj",
+      "tests/ClaimCore.BackupQualificationTests/ClaimCore.BackupQualificationTests.fsproj",
+      "src/ClaimCore.Cli/ClaimCore.Cli.fsproj",
+      "eng/ClaimCore.Docs/ClaimCore.Docs.fsproj"
+    ]
+  }
+}
