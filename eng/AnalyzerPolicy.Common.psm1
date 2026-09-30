@@ -179,7 +179,7 @@ function Assert-NoNestedConfigExclusions {
         if ($propertyPath -ne "ignoreFiles" -and
             $property.Name -match '(?i)(ignore|exclude|suppress|allowed)' -and
             (Test-ActiveJsonValue $property.Value)) {
-            throw "fsharplint.json configures '$propertyPath' outside the central registry."
+            throw "config/fsharplint.json configures '$propertyPath' outside the central registry."
         }
         Assert-NoNestedConfigExclusions $property.Value $propertyPath
     }

@@ -8,7 +8,7 @@ ClaimCore's case-work boundary is one authenticated HTTPS service over a primary
 
 ## The component contract
 
-[`architecture.json`](../architecture.json) is this repository's single architecture contract. It
+[`config/architecture.json`](../config/architecture.json) is this repository's single architecture contract. It
 classifies every `.fsproj` the repository builds — product, tooling, and test — and records each
 component's layer, responsibility, permitted direct dependencies, permitted NuGet packages, and
 reviewed `InternalsVisibleTo` grants. Nothing restates it: the compiled architecture suite enforces

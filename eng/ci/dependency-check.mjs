@@ -93,7 +93,7 @@ try {
   const holds = validateHolds(
     JSON.parse(
       readFileSync(
-        process.argv[3] ?? join(root, "dependency-holds.json"),
+        process.argv[3] ?? join(root, "config/dependency-holds.json"),
         "utf8",
       ),
     ),

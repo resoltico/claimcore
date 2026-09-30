@@ -31,7 +31,7 @@ test "$(grep -Fc "http://snapshot.debian.org/archive/debian/$snapshot/" db/Docke
 test "$(grep -Fc "http://snapshot.debian.org/archive/debian-security/$snapshot/" db/Dockerfile.postgres-patched)" -eq 1
 
 recipe_sha="$(sha256sum db/Dockerfile.postgres-patched | cut -d ' ' -f 1)"
-exceptions_sha="$(sha256sum container-vulnerability-exceptions.yaml | cut -d ' ' -f 1)"
+exceptions_sha="$(sha256sum config/container-vulnerability-exceptions.yaml | cut -d ' ' -f 1)"
 upstream_license_sha="$(sha256sum db/postgres-upstream/LICENSE | cut -d ' ' -f 1)"
 upstream_authors_sha="$(sha256sum db/postgres-upstream/AUTHORS | cut -d ' ' -f 1)"
 {

@@ -71,7 +71,7 @@ trust boundaries. [Development](docs/development.md) owns commands and gates.
   unregistered sharded runs cannot satisfy complete verification; the PostgreSQL integration partitions
   registered in `eng/test-partitions.json` merge into one exact report and are the only sharding.
 - Enforce size, complexity, and lint limits across production and test code without grandfathering.
-  [`analyzer-suppressions.json`](analyzer-suppressions.json) is the sole source-code exception
+  [`config/analyzer-suppressions.json`](config/analyzer-suppressions.json) is the sole source-code exception
   registry.
   Follow [repository quality](docs/development.md#repository-quality): entries need an owner,
   exact file/rule/scope, substantive rationale, and an ISO review or expiry date. Directives need

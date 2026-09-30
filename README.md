@@ -86,7 +86,7 @@ Exact-request recovery is not a backup system. Restoring an older primary or wit
 ## Architecture and verification
 
 ClaimCore keeps Domain and Application as one typed service core, with a separate PostgreSQL witness rather than a collection of business microservices.
-[`architecture.json`](architecture.json) defines component responsibilities and permitted
+[`config/architecture.json`](config/architecture.json) defines component responsibilities and permitted
 dependencies; compiled architecture tests check those boundaries. Shared contract projections
 produce the CLI/Web schemas and browser validators instead of letting each adapter invent its own.
 

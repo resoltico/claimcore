@@ -112,7 +112,7 @@ module ArchitectureInspectionReport =
                 Error "Architecture report assembly or edge inventory is incomplete or unordered."
         | _ -> Error "Architecture report has missing inventory arrays."
 
-    /// The expected assembly inventory is the product tier of `architecture.json`; this validator
+    /// The expected assembly inventory is the product tier of `config/architecture.json`; this validator
     /// never restates it.
     let validateBytes (requiredAssemblies: Set<string>) (bytes: byte array) =
         if bytes.Length = 0 || bytes.Length > maximumBytes then

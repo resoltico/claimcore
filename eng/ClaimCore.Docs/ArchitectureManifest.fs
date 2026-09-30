@@ -4,7 +4,7 @@ open System
 open System.IO
 open System.Text.Json
 
-/// One classified component of `architecture.json`, the repository's single architecture contract.
+/// One classified component of `config/architecture.json`, the repository's single architecture contract.
 /// The compiled architecture suite enforces this file; documentation renders from it.
 [<NoEquality; NoComparison>]
 type ArchitectureComponent =
@@ -22,7 +22,7 @@ type private ArchitectureManifestAnchor = class end
 
 [<RequireQualifiedAccess>]
 module ArchitectureManifest =
-    let fileName = "architecture.json"
+    let fileName = "config/architecture.json"
     let private maximumBytes = 64 * 1024
 
     let private text (name: string) (element: JsonElement) =

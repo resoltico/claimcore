@@ -119,16 +119,16 @@ let tests =
             rejected
                 "rejects a stage from the wrong producer before copying"
                 "frontend"
-                "fsharplint.json"
+                "config/fsharplint.json"
                 id
             rejected
                 "rejects duplicate stage data before copying any record"
                 "frontend"
                 "fantomas.json"
                 (fun _ -> manifest "fantomas")
-            rejected "rejects a stale run identity" "quality" "fsharplint.json" (fun value ->
+            rejected "rejects a stale run identity" "quality" "config/fsharplint.json" (fun value ->
                 { value with RunId = "other-run" })
-            rejected "rejects a stale attempt identity" "quality" "fsharplint.json" (fun value ->
+            rejected "rejects a stale attempt identity" "quality" "config/fsharplint.json" (fun value ->
                 { value with Attempt = 2 })
             rejected "rejects unregistered stages" "quality" "unknown.json" (fun value ->
                 { value with StageId = "unknown" })

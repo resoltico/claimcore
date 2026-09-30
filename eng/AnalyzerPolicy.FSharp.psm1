@@ -140,20 +140,20 @@ function Find-ProjectWarningSuppressions {
 function Assert-FSharpLintPolicy {
     param([string] $RepoRoot, [Collections.Generic.List[string]] $GeneratedExclusions)
 
-    $lintConfig = [Text.Json.JsonDocument]::Parse([IO.File]::ReadAllText((Join-Path $RepoRoot "fsharplint.json")))
+    $lintConfig = [Text.Json.JsonDocument]::Parse([IO.File]::ReadAllText((Join-Path $RepoRoot "config/fsharplint.json")))
     try {
         $ignoreFiles = @(
             $lintConfig.RootElement.GetProperty("ignoreFiles").EnumerateArray() |
                 ForEach-Object { $_.GetString() }
         )
         if (Compare-Object @($GeneratedExclusions) $ignoreFiles -CaseSensitive) {
-            throw "fsharplint.json ignoreFiles must exactly match generatedExclusions in analyzer-suppressions.json."
+            throw "config/fsharplint.json ignoreFiles must exactly match generatedExclusions in config/analyzer-suppressions.json."
         }
         foreach ($property in $lintConfig.RootElement.EnumerateObject()) {
             if ($property.Value.ValueKind -eq [Text.Json.JsonValueKind]::Object) {
                 $enabled = [Text.Json.JsonElement]::new()
                 if ($property.Value.TryGetProperty("enabled", [ref] $enabled) -and -not $enabled.GetBoolean()) {
-                    throw "fsharplint.json disables '$($property.Name)' outside the registry."
+                    throw "config/fsharplint.json disables '$($property.Name)' outside the registry."
                 }
             }
         }
@@ -174,11 +174,11 @@ function Assert-FSharpLintPolicy {
         foreach ($limit in $fsharpGodFileLimits) {
             $rule = $lintConfig.RootElement.GetProperty($limit.Rule)
             if (-not $rule.GetProperty("enabled").GetBoolean()) {
-                throw "fsharplint.json must keep '$($limit.Rule)' enabled."
+                throw "config/fsharplint.json must keep '$($limit.Rule)' enabled."
             }
             $value = $rule.GetProperty("config").GetProperty($limit.Property).GetInt32()
             if ($value -gt $limit.Maximum) {
-                throw "fsharplint.json weakens '$($limit.Rule)' to $value; the maximum is $($limit.Maximum)."
+                throw "config/fsharplint.json weakens '$($limit.Rule)' to $value; the maximum is $($limit.Maximum)."
             }
         }
     }

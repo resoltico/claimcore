@@ -90,7 +90,7 @@ jobs:
             docker run --rm \
               --volume /var/run/docker.sock:/var/run/docker.sock \
               --volume "$RUNNER_TEMP/claimcore-postgres-trivy-cache:/root/.cache/trivy" \
-              --volume "$GITHUB_WORKSPACE/container-vulnerability-exceptions.yaml:/claimcore-exceptions.yaml:ro" \
+              --volume "$GITHUB_WORKSPACE/config/container-vulnerability-exceptions.yaml:/claimcore-exceptions.yaml:ro" \
               "$TRIVY" image --image-src docker --scanners vuln \
               --severity HIGH,CRITICAL --ignore-unfixed \
               --ignorefile /claimcore-exceptions.yaml --show-suppressed \
@@ -189,7 +189,7 @@ jobs:
             docker run --rm \
               --volume "$scan_config:/claimcore-trivy-pull.json:ro" \
               --volume "$RUNNER_TEMP/claimcore-postgres-trivy-cache:/root/.cache/trivy" \
-              --volume "$GITHUB_WORKSPACE/container-vulnerability-exceptions.yaml:/claimcore-exceptions.yaml:ro" \
+              --volume "$GITHUB_WORKSPACE/config/container-vulnerability-exceptions.yaml:/claimcore-exceptions.yaml:ro" \
               "$TRIVY" image --config /claimcore-trivy-pull.json \
               --image-src remote --skip-db-update --scanners vuln \
               --severity HIGH,CRITICAL --ignore-unfixed \

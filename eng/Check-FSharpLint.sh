@@ -9,7 +9,7 @@ run_pattern() {
   local extension="$2"
   if find "$root" -type f -name "*.$extension" -print -quit | grep --quiet .; then
     dotnet fsharplint lint --file-type wildcard "$root/**/*.$extension" \
-      --lint-config fsharplint.json
+      --lint-config config/fsharplint.json
   fi
 }
 
@@ -17,7 +17,7 @@ run_individual() {
   local root="$1"
   local extension="$2"
   while IFS= read -r -d '' source; do
-    dotnet fsharplint lint --file-type file "$source" --lint-config fsharplint.json
+    dotnet fsharplint lint --file-type file "$source" --lint-config config/fsharplint.json
   done < <(find "$root" -type f -name "*.$extension" -print0)
 }
 

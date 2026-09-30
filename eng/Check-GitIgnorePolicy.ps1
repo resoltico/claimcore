@@ -49,7 +49,7 @@ $mustRemainVisible = @(
     ".editorconfig", ".gitattributes", ".node-version", ".vscode/extensions.json",
     ".vscode/settings.json", "AGENTS.md", "CHANGELOG.md", "CONTRIBUTING.md", "LICENSE",
     "README.md", "ClaimCore.slnx", "Directory.Build.props", "Directory.Packages.props",
-    "NuGet.Config", "analyzer-suppressions.json", "compose.yaml", "dependency-holds.json",
+    "NuGet.Config", "config/analyzer-suppressions.json", "compose.yaml", "config/dependency-holds.json",
     "db/baseline.sql", "db/schema-baseline.json",
     "docs/development.md", "docs/releasing.md", "eng/Check-GitIgnorePolicy.ps1",
     "eng/release/policy.mjs", "eng/release/publisher.mjs", "eng/release/publish-release.mjs",

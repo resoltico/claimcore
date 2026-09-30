@@ -42,7 +42,7 @@ for (const path of [
   "eng/ClaimCore.Docs/contract-reviews.json",
   "tests/new-suite.fs",
   "web/scripts/check-bundle-size.mjs",
-  "analyzer-suppressions.json",
+  "config/analyzer-suppressions.json",
 ])
   test(`review scope highlights policy change ${path}`, () => {
     assert(reviewScopes(path).includes("contract-policy"));

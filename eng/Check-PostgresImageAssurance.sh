@@ -103,7 +103,7 @@ for architecture in amd64 arm64; do
       failed=1
     fi
   elif ! docker run --rm \
-    --volume "$repo_root/container-vulnerability-exceptions.yaml:/claimcore-exceptions.yaml:ro" \
+    --volume "$repo_root/config/container-vulnerability-exceptions.yaml:/claimcore-exceptions.yaml:ro" \
     "$trivy" image --image-src remote --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed \
     --ignorefile /claimcore-exceptions.yaml --show-suppressed --exit-code 1 \
     --no-progress "$child"; then

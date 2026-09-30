@@ -5,7 +5,7 @@ open ClaimCore.Docs
 open Expecto
 
 let private original = "dotnet:Original", "dotnet-mtp", "original.json"
-let private added = "dotnet:Architecture", "dotnet-mtp", "architecture.json"
+let private added = "dotnet:Architecture", "dotnet-mtp", "config/architecture.json"
 
 let private registrationTests =
     testList

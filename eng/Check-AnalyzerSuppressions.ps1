@@ -10,7 +10,7 @@ Import-Module (Join-Path $PSScriptRoot "AnalyzerPolicy.Common.psm1") -Force
 
 $repoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
 if ([string]::IsNullOrWhiteSpace($RegistryPath)) {
-    $RegistryPath = Join-Path $repoRoot "analyzer-suppressions.json"
+    $RegistryPath = Join-Path $repoRoot "config/analyzer-suppressions.json"
 }
 
 function Get-GeneratedExclusions {

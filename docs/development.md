@@ -193,11 +193,11 @@ See [Architecture](architecture.md#compiled-architecture-enforcement).
 
 #### Changing the component graph
 
-[`architecture.json`](../architecture.json) is the only place a component's tier, layer,
+[`config/architecture.json`](../config/architecture.json) is the only place a component's tier, layer,
 responsibility, direct project edges, NuGet packages, or `InternalsVisibleTo` grants are declared.
 To add, split, or retire a component:
 
-1. Edit `architecture.json` and the affected `.fsproj` files together. Every `.fsproj` under `src/`,
+1. Edit `config/architecture.json` and the affected `.fsproj` files together. Every `.fsproj` under `src/`,
    `eng/`, and `tests/` must be classified exactly once, and every declared edge must match the
    manifest in both directions.
 2. Keep each `InternalsVisibleTo` attribute and its manifest entry in step. A grant must name a
@@ -255,7 +255,7 @@ codec corpora, and split DTO modules; the locked Node stage compiles the aggrega
 to typed AJV standalone shared host, discovery, core, and recovery validator groups and finalizes the combined manifest. The
 generated minified validator groups are the only source-analyzer exception for that output, are each
 independently limited to 600 KiB, and are dynamically selected before response acceptance; their
-exact exclusions remain registered in `analyzer-suppressions.json`.
+exact exclusions remain registered in `config/analyzer-suppressions.json`.
 
 Frontend corpus tests compare every generated CLI endpoint outcome kind and Web endpoint outcome tag
 against the exact response schemas, in addition to validating positive, malformed, and cross-endpoint
@@ -332,7 +332,7 @@ Pinned scanner downloads use bounded transport retries; a safe failure-stage lab
 workflows change. An artifact scan does not replace the source inventory or the browser harness's
 known-secret output checks.
 
-[`analyzer-suppressions.json`](../analyzer-suppressions.json) is the sole source-code exception
+[`config/analyzer-suppressions.json`](../config/analyzer-suppressions.json) is the sole source-code exception
 registry. Every suppression or generated exclusion requires an owner, exact file/rule/scope,
 substantive rationale, and ISO `reviewOn` or `expiresOn` date. Exceptional directives require a
 nearby rationale and `suppression-registry: file|rule|scope` reference. File-size, function-size,
@@ -352,7 +352,7 @@ index, creates a separate CycloneDX SBOM for each, and scans both for fixed high
 vulnerabilities. Its immutable Trivy invocation, image-index policy, and temporary exception policy
 live in [`verify-quality.yml`](../.github/workflows/verify-quality.yml),
 [`Check-PostgresImageAssurance.sh`](../eng/Check-PostgresImageAssurance.sh), and
-[`container-vulnerability-exceptions.yaml`](../container-vulnerability-exceptions.yaml). The
+[`config/container-vulnerability-exceptions.yaml`](../config/container-vulnerability-exceptions.yaml). The
 manually dispatched [`publisher`](../.github/workflows/publish-postgres-image.yml) builds the
 maintained PostgreSQL 18.6/Trixie derivative from a pinned official base and signed Debian snapshot;
 it qualifies each architecture before pushing, then verifies the published child and index digests.
@@ -455,7 +455,7 @@ required. Upstream freshness is reported separately by the daily dependency-heal
 dependency reports use fresh ignored directories so repeated checks do not collide; GitHub retains
 its fixed per-job artifact paths. An available update does not block an unrelated PR. Holds remain
 exact for the installed graph, owned, justified and review-dated in
-[`dependency-holds.json`](../dependency-holds.json). A hold is not permission to ignore security
+[`config/dependency-holds.json`](../config/dependency-holds.json). A hold is not permission to ignore security
 findings or leave an update unexamined. [CI governance](ci-governance.md#safe-actionable-failures)
 defines report ownership and transient-failure handling.
 
