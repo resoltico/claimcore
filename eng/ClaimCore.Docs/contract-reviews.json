@@ -103,7 +103,7 @@
       "reviewer": "Agent reviewed the exact current heading and listed implementation and assertion sources; this is source review of local synthetic boundaries, not execution evidence, independent owner approval, or live real-data qualification.",
       "reviewedOn": "2026-09-30",
       "conclusion": "source-reviewed",
-      "reviewSubjectHash": "014d8cb81bd12b72eb93a258371251e17a715d57bb3c1e32e7dc1f63a67e99c2",
+      "reviewSubjectHash": "a4f4bf92b712f3b96fc7f10ebadb455494de851f7ac8c85bd54720ba1202714f",
       "wholeFiles": [
         "architecture.json",
         "tests/ClaimCore.ArchitectureTests/ManifestTests.fs",
