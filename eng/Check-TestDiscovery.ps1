@@ -55,11 +55,20 @@ if ($partitioned.Count -eq 1) {
     $selector = [string] $partitioned[0].selector
     $union = [Collections.Generic.HashSet[string]]::new($ordinal)
     foreach ($partition in $partitioned[0].partitions) {
-        $previous = [Environment]::GetEnvironmentVariable($selector)
-        [Environment]::SetEnvironmentVariable($selector, [string] $partition.id)
-        try { $partitionListed = @(& dotnet $binary --list-tests json) } finally { [Environment]::SetEnvironmentVariable($selector, $previous) }
-        if ($LASTEXITCODE -ne 0 -or $partitionListed.Count -eq 0) { throw "Partition '$($partition.id)' discovery did not complete." }
-        $names = @((($partitionListed -join "`n") | ConvertFrom-Json -AsHashtable).tests | ForEach-Object { $_.displayName })
+        # The selector goes to the child process only; changing this process's environment would race
+        # with any other discovery running beside it in the same process.
+        $startInfo = [System.Diagnostics.ProcessStartInfo]::new("dotnet")
+        $startInfo.ArgumentList.Add($binary)
+        $startInfo.ArgumentList.Add("--list-tests")
+        $startInfo.ArgumentList.Add("json")
+        $startInfo.RedirectStandardOutput = $true
+        $startInfo.UseShellExecute = $false
+        $startInfo.Environment[$selector] = [string] $partition.id
+        $child = [System.Diagnostics.Process]::Start($startInfo)
+        $partitionOutput = $child.StandardOutput.ReadToEnd()
+        $child.WaitForExit()
+        if ($child.ExitCode -ne 0 -or [string]::IsNullOrWhiteSpace($partitionOutput)) { throw "Partition '$($partition.id)' discovery did not complete." }
+        $names = @(($partitionOutput | ConvertFrom-Json -AsHashtable).tests | ForEach-Object { $_.displayName })
         if ($names.Count -ne [int] $partition.tests) { throw "Partition '$($partition.id)' discovers $($names.Count) tests; $($partition.tests) are registered." }
         foreach ($name in $names) {
             if (-not $union.Add($name)) { throw "Test '$name' belongs to more than one partition." }
