@@ -174,6 +174,8 @@ ClaimCore PostgreSQL integration.case tombstone stewardship.[CC-ERASE-001] tombs
 ClaimCore PostgreSQL integration.case-list cursor protection.[CC-AUTH-001] cursor tamper and runtime restart refuse without plaintext
 ClaimCore PostgreSQL integration.case-list cursor protection.[CC-AUTH-001] encrypted cursor binds actor grant query and expiry
 ClaimCore PostgreSQL integration.copy adoption owner approval.[CC-ERASE-001] product export adoption approval and tamper audit remain pending
+ClaimCore PostgreSQL integration.domain durable evidence.[CC-DOM-001] fresh SQL refuses terminal business revisions and unsupported rule evidence
+ClaimCore PostgreSQL integration.domain durable evidence.[CC-DOM-002] clock rollback amendments persist and retain the current rule revision
 ClaimCore PostgreSQL integration.external copy publication owner process.[CC-ERASE-001] owner process publishes one signed pre-fence external copy
 ClaimCore PostgreSQL integration.external copy publication.[CC-AUDIT-001] external publication verifies actual bytes and detects signature tampering
 ClaimCore PostgreSQL integration.external copy publication.[CC-ERASE-001] signed PRESENT publication replays exactly and erasure fences new copies

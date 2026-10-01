@@ -18,7 +18,11 @@ module internal DataAuditReplay =
         previous
         (row: AcceptedAuditRow)
         =
-        if row.CaseId <> caseId || row.RuleRevision <> 1s || row.WitnessSequence > cutoff then
+        if
+            row.CaseId <> caseId
+            || row.RuleRevision <> int16 DomainRules.version
+            || row.WitnessSequence > cutoff
+        then
             corrupt ()
 
         let localDate =

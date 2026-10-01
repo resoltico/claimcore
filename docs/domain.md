@@ -98,7 +98,10 @@ claim.
 - Dates use real `YYYY-MM-DD` calendar values from year 0001 through 9999. Present dates follow
   incident ≤ notification ≤ decision ≤ payment. Newly asserted event dates cannot be later than the
   installation's persisted business date. Reaffirming an unchanged accepted date does not make old
-  history invalid after a clock change.
+  history invalid after a clock change. This applies to ordinary registration amendments, unpaid
+  decision replacements and explicit corrections. Each changed date is checked independently;
+  clearing a decision or payment removes its date from current state, so recording it again is a
+  new assertion.
 - Input amounts match `(0|[1-9][0-9]{0,17})(\.[0-9]{1,4})?`: no sign, exponent, leading integer
   zeroes, or bare decimal point. The maximum is `999999999999999999.9999`; values are rejected rather
   than rounded. Accepted views render the same decimal value canonically, without insignificant

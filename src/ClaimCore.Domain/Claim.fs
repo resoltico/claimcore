@@ -20,11 +20,10 @@ module Claim =
         Validation.text InputTarget.CaseReference reference |> Result.map ignore
 
     let view claim =
-        let decision, paymentDate =
-            match claim.Progress with
-            | PaymentProgress.Undecided -> None, None
-            | PaymentProgress.Decided decision -> Some decision, None
-            | PaymentProgress.Paid(decision, paid) -> Some decision, Some(Validation.dateText paid)
+        let decision = PaymentProgress.decision claim.Progress
+
+        let paymentDate =
+            PaymentProgress.paymentDate claim.Progress |> Option.map Validation.dateText
 
         {
             Fields =
@@ -59,50 +58,27 @@ module Claim =
             ClaimedCurrency = fields.ClaimedCurrency
         }
 
-    let private restorePayment decision paid =
-        result {
-            match paid with
-            | None -> return PaymentProgress.Decided decision
-            | Some rawDate ->
-                let! date = Validation.date InputTarget.PaymentDate rawDate
-                do! Validation.onOrBefore InputTarget.PaymentDate decision.Date date
+    let private restoreProgress (fields: CaseFields) =
+        match fields.PaymentDecisionDate, fields.PayableAmount, fields.PayableCurrency with
+        | None, None, None when fields.PaymentDate.IsNone -> Ok PaymentProgress.Undecided
+        | None, None, None -> Error DomainError.DecisionRequired
+        | Some date, Some amount, Some currency ->
+            result {
+                let! decision =
+                    Validation.decision
+                        {
+                            PaymentDecisionDate = date
+                            PayableAmount = amount
+                            PayableCurrency = currency
+                        }
 
-                if decision.Payable.Value = 0M then
-                    return! Error DomainError.ZeroDecisionCannotBePaid
-                else
-                    return PaymentProgress.Paid(decision, date)
-        }
+                let! paid =
+                    match fields.PaymentDate with
+                    | None -> Ok None
+                    | Some value -> Validation.date InputTarget.PaymentDate value |> Result.map Some
 
-    let private restoreDecision (facts: Validation.Facts) decisionDate amount currency paid =
-        result {
-            let! decision =
-                Validation.decision
-                    {
-                        PaymentDecisionDate = decisionDate
-                        PayableAmount = amount
-                        PayableCurrency = currency
-                    }
-
-            do!
-                Validation.onOrBefore
-                    InputTarget.PaymentDecisionDate
-                    facts.NotificationDate
-                    decision.Date
-
-            return! restorePayment decision paid
-        }
-
-    let private restoreProgress facts (fields: CaseFields) =
-        match
-            fields.PaymentDecisionDate,
-            fields.PayableAmount,
-            fields.PayableCurrency,
-            fields.PaymentDate
-        with
-        | None, None, None, None -> Ok PaymentProgress.Undecided
-        | None, None, None, Some _ -> Error DomainError.DecisionRequired
-        | Some decisionDate, Some amount, Some currency, paid ->
-            restoreDecision facts decisionDate amount currency paid
+                return! PaymentProgress.fromGroups (Some decision) paid
+            }
         | _ ->
             Validation.invalidCorrection
                 InputTarget.PaymentDecisionDate
@@ -118,7 +94,8 @@ module Claim =
 
             let! facts = fields |> registration |> Validation.registration
 
-            let! progress = restoreProgress facts fields
+            let! progress = restoreProgress fields
+            do! StateValidation.progress facts progress
 
             if snapshot.Version < 1L || snapshot.Version = Int64.MaxValue then
                 return!
@@ -136,10 +113,8 @@ module Claim =
                     }
         }
 
-    let private openCase today (request: CommandRequest) registration =
+    let private openCase today (request: CommandRequest) (facts: Validation.Facts) =
         result {
-            let! facts = Validation.registration registration
-
             do!
                 Validation.notFuture
                     InputTarget.IncidentNotificationDate
@@ -156,104 +131,63 @@ module Claim =
                 }
         }
 
-    let private changePayment today command claim =
-        match command, claim.Progress with
-        | Command.Decide rawDecision, _ ->
-            result {
-                let! decision = Validation.decision rawDecision
-
-                do!
-                    Validation.onOrBefore
-                        InputTarget.PaymentDecisionDate
-                        claim.Facts.NotificationDate
-                        decision.Date
-
-                do! Validation.notFuture InputTarget.PaymentDecisionDate today decision.Date
-
-                return
-                    { claim with
-                        Progress = PaymentProgress.Decided decision
-                    }
-            }
-        | Command.WithdrawDecision, _ ->
-            Ok
-                { claim with
-                    Progress = PaymentProgress.Undecided
-                }
-        | Command.RecordPayment rawDate, PaymentProgress.Decided decision ->
-            result {
-                let! paidDate = Validation.date InputTarget.PaymentDate rawDate
-                do! Validation.onOrBefore InputTarget.PaymentDate decision.Date paidDate
-                do! Validation.notFuture InputTarget.PaymentDate today paidDate
-
-                return
-                    { claim with
-                        Progress = PaymentProgress.Paid(decision, paidDate)
-                    }
-            }
-        | Command.ClearPayment, PaymentProgress.Paid(decision, _) ->
-            Ok
-                { claim with
-                    Progress = PaymentProgress.Decided decision
-                }
+    let private changePayment command progress =
+        match command, progress with
+        | ValidatedCommand.Decide decision, _ -> Ok(PaymentProgress.Decided decision)
+        | ValidatedCommand.WithdrawDecision, _ -> Ok PaymentProgress.Undecided
+        | ValidatedCommand.RecordPayment date, PaymentProgress.Decided decision ->
+            Ok(PaymentProgress.Paid(decision, date))
+        | ValidatedCommand.ClearPayment, PaymentProgress.Paid(decision, _) ->
+            Ok(PaymentProgress.Decided decision)
         | _ ->
             Validation.invalidCommand InputTarget.Command CommandViolation.StateTransitionMismatch
 
-    let private change today command claim =
+    let private change command (claim: Claim) =
+        match command with
+        | ValidatedCommand.Open _ -> Error DomainError.AlreadyExists
+        | ValidatedCommand.Reopen -> Ok(claim.Facts, claim.Progress, CaseStatus.Opened)
+        | ValidatedCommand.Close -> Ok(claim.Facts, claim.Progress, CaseStatus.Closed)
+        | ValidatedCommand.AmendRegistration facts -> Ok(facts, claim.Progress, claim.Status)
+        | ValidatedCommand.CorrectCase correction ->
+            CaseCorrections.apply claim.Facts claim.Progress correction
+            |> Result.map (fun (facts, progress) -> facts, progress, claim.Status)
+        | _ ->
+            changePayment command claim.Progress
+            |> Result.map (fun progress -> claim.Facts, progress, claim.Status)
+
+    /// A candidate becomes opaque accepted state only after both invariant checks pass.
+    let private transition today kind command claim =
         result {
-            do! Eligibility.check (Commands.kind command) claim.Status claim.Progress
+            do! Eligibility.check kind claim.Status claim.Progress
+            let! facts, progress, status = change command claim
+            do! StateValidation.progress facts progress
+            do! StateValidation.newlyAssertedDates today claim.Facts claim.Progress facts progress
 
-            match command with
-            | Command.Open _ -> return! Error DomainError.AlreadyExists
-            | Command.Reopen ->
-                return
-                    { claim with
-                        Status = CaseStatus.Opened
-                    }
-            | Command.Close ->
-                return
-                    { claim with
-                        Status = CaseStatus.Closed
-                    }
-            | Command.AmendRegistration rawFacts ->
-                let! facts = Validation.registration rawFacts
-
-                do!
-                    Validation.notFuture
-                        InputTarget.IncidentNotificationDate
-                        today
-                        facts.NotificationDate
-
-                return { claim with Facts = facts }
-            | Command.CorrectCase correction ->
-                let! fields = CaseCorrections.apply today (view claim).Fields correction
-
-                let! corrected =
-                    restore
-                        {
-                            Fields = fields
-                            Version = claim.Revision
-                        }
-
-                return corrected
-            | _ -> return! changePayment today command claim
+            return
+                { claim with
+                    Facts = facts
+                    Progress = progress
+                    Status = status
+                    Revision = claim.Revision + 1L
+                }
         }
 
     /// Envelope and payload admission stays behind the public Claim facade.
-    let validateRequest request = RequestValidation.validate request
+    let validateRequest request =
+        RequestValidation.parse request |> Result.map ignore
 
     /// The same authority on transitions is called by every application adapter.
     /// An injectable business date keeps the domain free from environment/clock reads.
     let decide (today: DateOnly) (request: CommandRequest) (current: Claim option) =
         result {
-            do! validateRequest request
+            let! command = RequestValidation.parse request
 
             match current with
             | None ->
-                match request.Command with
-                | Command.Open registration when request.ExpectedVersion = 0L ->
+                match command with
+                | ValidatedCommand.Open registration when request.ExpectedVersion = 0L ->
                     return! openCase today request registration
-                | Command.Open _ -> return! Error(DomainError.VersionConflict 0L)
+                | ValidatedCommand.Open _ -> return! Error(DomainError.VersionConflict 0L)
                 | _ -> return! Error DomainError.NotFound
             | Some claim ->
                 if claim.Reference <> request.CaseReference then
@@ -269,12 +203,7 @@ module Claim =
                             InputTarget.Version
                             CommandViolation.RevisionExhausted
                 else
-                    let! changed = change today request.Command claim
-
-                    return
-                        { changed with
-                            Revision = claim.Revision + 1L
-                        }
+                    return! transition today (Commands.kind request.Command) command claim
         }
 
 

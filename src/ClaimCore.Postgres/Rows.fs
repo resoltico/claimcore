@@ -90,7 +90,7 @@ module internal Rows =
             raise (InvalidDataException("Stored opaque case identity is absent."))
 
         if
-            reader.GetInt16(ordinal reader "rule_revision") <> 1s
+            reader.GetInt16(ordinal reader "rule_revision") <> int16 DomainRules.version
             || reader.GetInt16(ordinal reader "request_format_version")
                <> int16 RecordVersions.RequestFingerprint
             || reader.GetInt16(ordinal reader "snapshot_version")

@@ -31,20 +31,34 @@ module FieldDefinitions =
             }
 
     let private amount =
+        let maximumIntegerDigits = 18
+        let maximumFractionalDigits = 4
+
+        let integerTail =
+            (maximumIntegerDigits - 1).ToString(System.Globalization.CultureInfo.InvariantCulture)
+
+        let fractional =
+            maximumFractionalDigits.ToString(System.Globalization.CultureInfo.InvariantCulture)
+
         ScalarRule.Amount
             {
-                Text = text 23
-                Grammar = "(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?"
-                MaximumIntegerDigits = 18
-                MaximumFractionalDigits = 4
+                Text = text (maximumIntegerDigits + 1 + maximumFractionalDigits)
+                Grammar = "(0|[1-9][0-9]{0," + integerTail + "})(\\.[0-9]{1," + fractional + "})?"
+                MaximumIntegerDigits = maximumIntegerDigits
+                MaximumFractionalDigits = maximumFractionalDigits
             }
 
     let private currency =
+        let exactCharacters = 3
+
+        let characters =
+            exactCharacters.ToString(System.Globalization.CultureInfo.InvariantCulture)
+
         ScalarRule.Currency
             {
-                Text = text 3
-                Grammar = "[A-Z]{3}"
-                ExactCharacters = 3
+                Text = text exactCharacters
+                Grammar = "[A-Z]{" + characters + "}"
+                ExactCharacters = exactCharacters
             }
 
     let private status = ScalarRule.CaseStatus { AllowedValues = CaseStatuses.all }

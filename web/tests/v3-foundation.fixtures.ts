@@ -40,7 +40,7 @@ export const groupedCorrectionValues = {
 
 export const definition: SemanticDefinition = {
   contractKind: "SEMANTIC_CORE_V1",
-  ruleSetVersion: 1,
+  ruleSetVersion: 2,
   application: "ClaimCore",
   scope: "trusted-local-operator-claims-register",
   canonicalCommandFormat: 3,

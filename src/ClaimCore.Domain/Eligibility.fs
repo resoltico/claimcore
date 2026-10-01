@@ -6,6 +6,26 @@ type internal PaymentProgress =
     | Decided of decision: Validation.Decision
     | Paid of decision: Validation.Decision * paidDate: System.DateOnly
 
+/// Complete groups are retained as typed state; no paid state can omit its decision.
+module internal PaymentProgress =
+    let decision =
+        function
+        | PaymentProgress.Undecided -> None
+        | PaymentProgress.Decided value
+        | PaymentProgress.Paid(value, _) -> Some value
+
+    let paymentDate =
+        function
+        | PaymentProgress.Paid(_, date) -> Some date
+        | _ -> None
+
+    let fromGroups decision payment =
+        match decision, payment with
+        | None, None -> Ok PaymentProgress.Undecided
+        | None, Some _ -> Error DomainError.DecisionRequired
+        | Some value, None -> Ok(PaymentProgress.Decided value)
+        | Some value, Some date -> Ok(PaymentProgress.Paid(value, date))
+
 module internal Eligibility =
     let private amendment progress =
         match progress with
