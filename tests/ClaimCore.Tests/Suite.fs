@@ -14,6 +14,9 @@ let private foundation =
         CaseLifecycleProjectionTests.tests
         CasePurgeAuthorizationTests.tests
         CaseCorrectionTests.tests
+        BusinessDateTests.tests
+        DomainAdmissionTests.tests
+        CorrectionMatrixTests.tests
         DomainValidationTests.tests
         AvailabilityTests.tests
         PaginationTests.tests

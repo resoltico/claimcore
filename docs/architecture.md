@@ -46,6 +46,11 @@ runtime assets transitive but does not expose compile/build/analyzer assets to c
 The evaluated-project rules reject a configuration or imported property that re-enables implicit
 transitive project references. Compiler-reference and published-tree tests verify that CLI cannot see or deploy PostgreSQL administration/Npgsql, while Web transport code cannot compile a direct owner-administration call. This is source encapsulation, not a substitute for separate database roles, actor grants, or independent witness custody.
 
+Internal validated commands retain parsed scalars for one decision invocation; the original
+authored request remains the authority for canonical operation bytes. Corrections assemble typed
+facts and payment progress from accepted state. Restoration and transitions share complete-state
+validation, and newly asserted dates are checked before constructing opaque accepted Claim.
+
 ### Machine identity and presentation
 
 Semantic identity covers machine names, every scalar constraint, command input shapes, rule IDs

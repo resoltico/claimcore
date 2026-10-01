@@ -4,6 +4,7 @@ open System
 open System.Threading.Tasks
 open Npgsql
 open NpgsqlTypes
+open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.RecordFormat
 
@@ -131,7 +132,7 @@ module internal Sql =
         ) VALUES (
             @operation, @caseId, @reference, @preparer, @importer,
             @submitter, @resolver, @acceptedActor, @grantRevision,
-            @revision, @command, 1, @fingerprint,
+            @revision, @command, {DomainRules.version}, @fingerprint,
             {RecordVersions.RequestFingerprint}, @canonicalRequest,
             {ScalarEncoding.dateParameter "effectiveBusinessDate"}, @observedUtcInstant,
             {RecordVersions.Snapshot}, @snapshot,

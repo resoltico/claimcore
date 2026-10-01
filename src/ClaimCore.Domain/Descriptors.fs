@@ -114,7 +114,7 @@ module ScalarRules =
 module DomainRules =
     /// Increment when executable business meaning changes without a descriptor-shape change.
     /// Translations and editorial corrections do not change this revision.
-    let version = 1
+    let version = 2
 
     let private crossFieldRules =
         [
@@ -179,12 +179,13 @@ module DomainRules =
                 Identifier = "CLOSED_CASE_REOPEN_FIRST"
                 Category = DomainRuleCategory.Transition
                 Meaning =
-                    "A closed case permits only REOPEN; it must be reopened before other changes."
+                    "A closed case permits CORRECT_CASE and REOPEN; ordinary edits require reopening."
             }
             {
                 Identifier = "AMENDMENT_REQUIRES_UNDECIDED_CASE"
                 Category = DomainRuleCategory.Transition
-                Meaning = "Registration facts may change only while the case has no decision."
+                Meaning =
+                    "AMEND_REGISTRATION requires an open, undecided case; CORRECT_CASE has separate eligibility."
             }
         ]
 

@@ -26,7 +26,7 @@ CREATE TABLE claimcore.cases (
     payable_currency text,
     payment_date date,
     status text NOT NULL CHECK (status IN ('OPENED', 'CLOSED')),
-    revision bigint NOT NULL CHECK (revision > 0),
+    revision bigint NOT NULL CHECK (revision > 0 AND revision < 9223372036854775807),
     disposition text NOT NULL DEFAULT 'ACTIVE'
         CHECK (disposition IN ('ACTIVE', 'VOIDED_DATA_ENTRY_ERROR')),
     privacy_phase text NOT NULL DEFAULT 'ACTIVE'
@@ -91,12 +91,12 @@ CREATE TABLE claimcore.case_changes (
     resolver_actor_id uuid,
     accepted_actor_id uuid NOT NULL,
     grant_revision bigint NOT NULL CHECK (grant_revision > 0),
-    revision bigint NOT NULL CHECK (revision > 0),
+    revision bigint NOT NULL CHECK (revision > 0 AND revision < 9223372036854775807),
     command_name text NOT NULL CHECK (command_name IN (
         'OPEN', 'AMEND_REGISTRATION', 'DECIDE', 'WITHDRAW_DECISION',
         'RECORD_PAYMENT', 'CLEAR_PAYMENT', 'CLOSE', 'REOPEN', 'CORRECT_CASE'
     )),
-    rule_revision smallint NOT NULL CHECK (rule_revision = 1),
+    rule_revision smallint NOT NULL CHECK (rule_revision = 2),
     request_format_version smallint NOT NULL CHECK (request_format_version = 1),
     request_sha256 text NOT NULL CHECK (request_sha256 ~ '^[0-9a-f]{64}$'),
     canonical_request bytea NOT NULL CHECK (octet_length(canonical_request) BETWEEN 1 AND 65536),

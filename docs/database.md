@@ -157,6 +157,12 @@ rather than assuming an exception or returned unit expresses every completion st
 
 ## Stored data
 
+Accepted command rows record the executable Domain rule revision. Readers and writers use the
+Domain-owned revision; the fresh baseline admits only that reviewed revision. Business case and
+accepted-history revisions are positive and below `Int64.MaxValue`. Updating executable rules and
+their baseline is a fresh-installation boundary, without converting retained old installations.
+
+
 `cases` holds the current projection of exactly thirteen business fields plus technical revision, disposition, and privacy state. `case_changes` retains ordered accepted-operation evidence with canonical requests, witnessed tickets, actor attribution, and snapshots; accepted replay does not depend on optional preparation retention. A row is a projection, not an independent authority: full audit replays accepted decisions and lifecycle changes against witnessed evidence before comparing the current row. Voiding a data-entry-error case preserves its business history; a privacy erasure request instead fences ordinary access and requires a separate, evidence-bound purge lifecycle.
 
 `request_preparations` stores exact format-3 canonical request bytes and digest with the first preparer's actor/grant provenance and timestamp. An exact-byte replay preserves that first retained metadata. Raw canonical-record import is not an entry point; signed current recovery-artifact import is rechecked against case privacy, current grant, stored export/copy identity, and settled witness evidence. Identified attempts and their independent definite settlements remain available through bounded operation-specific inspection while technical material is retained.

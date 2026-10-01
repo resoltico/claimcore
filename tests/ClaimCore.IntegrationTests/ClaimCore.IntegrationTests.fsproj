@@ -19,6 +19,7 @@
     <Compile Include="CoreBoundaryTests.fs" />
     <Compile Include="RuntimeLifecycleTests.fs" />
     <Compile Include="StorageDateTests.fs" />
+    <Compile Include="DomainEvidenceTests.fs" />
     <Compile Include="CatalogAdmissionTests.fs" />
     <Compile Include="CatalogEpochChanges.fs" />
     <Compile Include="CatalogEpochTokenTests.fs" />

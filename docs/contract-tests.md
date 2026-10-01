@@ -273,7 +273,24 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-DB-001 | integration | ClaimCore PostgreSQL integration.unsupported installation refusal.[CC-DB-001] unknown identities and altered digests are refused with no repair |
 | CC-DB-001 | unit | ClaimCore deterministic suite.administration diagnostic boundaries.[CC-DB-001] real-data owner commands require exact plan and approvals |
 | CC-DB-002 | unit | ClaimCore deterministic suite.Database admin private-file boundary.[CC-DB-002] schema-owner credential rejects unsafe mode, links, UTF-8, and size before database access |
+| CC-DOM-001 | integration | ClaimCore PostgreSQL integration.domain durable evidence.[CC-DOM-001] fresh SQL refuses terminal business revisions and unsupported rule evidence |
+| CC-DOM-001 | unit | ClaimCore deterministic suite.correction group invariants.[CC-DOM-001] explicit paid reaffirmation cannot retain a zero replacement decision |
+| CC-DOM-001 | unit | ClaimCore deterministic suite.domain accepted-state admission.[CC-DOM-001] restoration refuses invalid paid and chronological states |
 | CC-DOM-001 | unit | ClaimCore deterministic suite.generated semantic field contract.semantic field schema.[CC-DOM-001] semantic contract renders exactly thirteen ordered field descriptors |
+| CC-DOM-002 | integration | ClaimCore PostgreSQL integration.domain durable evidence.[CC-DOM-002] clock rollback amendments persist and retain the current rule revision |
+| CC-DOM-002 | unit | ClaimCore deterministic suite.business date assertions.correction assertions.[CC-DOM-002] a closed paid correction reaffirms accepted dates after rollback |
+| CC-DOM-002 | unit | ClaimCore deterministic suite.business date assertions.correction assertions.[CC-DOM-002] a correction cannot hide a new future incident behind accepted dates |
+| CC-DOM-002 | unit | ClaimCore deterministic suite.business date assertions.correction assertions.[CC-DOM-002] equivalent amount spelling remains a correction no-op after rollback |
+| CC-DOM-002 | unit | ClaimCore deterministic suite.business date assertions.ordinary assertions.[CC-DOM-002] amendment retains accepted dates after clock rollback |
+| CC-DOM-002 | unit | ClaimCore deterministic suite.business date assertions.ordinary assertions.[CC-DOM-002] an unchanged notification cannot hide a new future incident |
+| CC-DOM-002 | unit | ClaimCore deterministic suite.business date assertions.ordinary assertions.[CC-DOM-002] changing an accepted decision date asserts a new date |
+| CC-DOM-002 | unit | ClaimCore deterministic suite.business date assertions.ordinary assertions.[CC-DOM-002] clearing payment removes its date reaffirmation authority |
+| CC-DOM-002 | unit | ClaimCore deterministic suite.business date assertions.ordinary assertions.[CC-DOM-002] decision amount replacement retains its accepted date after rollback |
+| CC-DOM-002 | unit | ClaimCore deterministic suite.business date assertions.ordinary assertions.[CC-DOM-002] initial decisions cannot reuse a future historical date |
+| CC-DOM-002 | unit | ClaimCore deterministic suite.business date assertions.ordinary assertions.[CC-DOM-002] newly replaced notification dates are checked independently |
+| CC-DOM-002 | unit | ClaimCore deterministic suite.business date assertions.ordinary assertions.[CC-DOM-002] withdrawing a decision removes its date reaffirmation authority |
+| CC-DOM-002 | unit | ClaimCore deterministic suite.correction group invariants.[CC-DOM-002] all correction choices match an independent eight-state matrix |
+| CC-DOM-002 | unit | ClaimCore deterministic suite.domain accepted-state admission.[CC-DOM-002] malformed payload admission precedes stale revision and eligibility |
 | CC-DOM-002 | unit | ClaimCore deterministic suite.state guard and advertised actions.[CC-DOM-002] each state advertises and enforces the specified command set |
 | CC-ERASE-001 | integration | ClaimCore PostgreSQL integration.adopted external copy transitions.[CC-ERASE-001] adopted external exact signed absence completes deletion |
 | CC-ERASE-001 | integration | ClaimCore PostgreSQL integration.case erasure authority fences.[CC-ERASE-001] case-linked copy registration refuses a witnessed erasure fence |

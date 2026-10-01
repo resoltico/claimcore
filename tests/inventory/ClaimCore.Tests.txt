@@ -109,6 +109,17 @@ ClaimCore deterministic suite.authenticated CLI client foundation.private test t
 ClaimCore deterministic suite.authenticated CLI client foundation.service response validation rejects schema drift
 ClaimCore deterministic suite.authenticated CLI client foundation.token response parsing is bounded and redacted
 ClaimCore deterministic suite.authenticated CLI client foundation.unsafe origins and missing automation secret fail closed
+ClaimCore deterministic suite.business date assertions.correction assertions.[CC-DOM-002] a closed paid correction reaffirms accepted dates after rollback
+ClaimCore deterministic suite.business date assertions.correction assertions.[CC-DOM-002] a correction cannot hide a new future incident behind accepted dates
+ClaimCore deterministic suite.business date assertions.correction assertions.[CC-DOM-002] equivalent amount spelling remains a correction no-op after rollback
+ClaimCore deterministic suite.business date assertions.ordinary assertions.[CC-DOM-002] amendment retains accepted dates after clock rollback
+ClaimCore deterministic suite.business date assertions.ordinary assertions.[CC-DOM-002] an unchanged notification cannot hide a new future incident
+ClaimCore deterministic suite.business date assertions.ordinary assertions.[CC-DOM-002] changing an accepted decision date asserts a new date
+ClaimCore deterministic suite.business date assertions.ordinary assertions.[CC-DOM-002] clearing payment removes its date reaffirmation authority
+ClaimCore deterministic suite.business date assertions.ordinary assertions.[CC-DOM-002] decision amount replacement retains its accepted date after rollback
+ClaimCore deterministic suite.business date assertions.ordinary assertions.[CC-DOM-002] initial decisions cannot reuse a future historical date
+ClaimCore deterministic suite.business date assertions.ordinary assertions.[CC-DOM-002] newly replaced notification dates are checked independently
+ClaimCore deterministic suite.business date assertions.ordinary assertions.[CC-DOM-002] withdrawing a decision removes its date reaffirmation authority
 ClaimCore deterministic suite.case-list cursor contract.[CC-AUTH-001] invalid list cursor has one typed diagnostic
 ClaimCore deterministic suite.case-list cursor contract.[CC-AUTH-001] list cursor binds caller grant query and expiry
 ClaimCore deterministic suite.compiler-enforced core boundary.CLI excludes storage from compilation and deployment
@@ -131,9 +142,13 @@ ClaimCore deterministic suite.core ownership and typed interfaces.dependency dir
 ClaimCore deterministic suite.core ownership and typed interfaces.dependency direction.the CLI protocol cannot reach storage or composition
 ClaimCore deterministic suite.core ownership and typed interfaces.typed core public surface.IClaimsCore exposes only typed endpoint methods and recovery workflow
 ClaimCore deterministic suite.core ownership and typed interfaces.typed core public surface.transport codecs have one Contracts owner and no anonymous adapter projection
+ClaimCore deterministic suite.correction group invariants.[CC-DOM-001] explicit paid reaffirmation cannot retain a zero replacement decision
+ClaimCore deterministic suite.correction group invariants.[CC-DOM-002] all correction choices match an independent eight-state matrix
 ClaimCore deterministic suite.current identity and durable encoding.CORRECT_CASE uses explicit complete groups without changing the other format-3 vectors
 ClaimCore deterministic suite.current identity and durable encoding.all eight command encodings and identities match fixed format-3 vectors
 ClaimCore deterministic suite.current identity and durable encoding.snapshot-2 encoding stays independent of advisory rendering metadata
+ClaimCore deterministic suite.domain accepted-state admission.[CC-DOM-001] restoration refuses invalid paid and chronological states
+ClaimCore deterministic suite.domain accepted-state admission.[CC-DOM-002] malformed payload admission precedes stale revision and eligibility
 ClaimCore deterministic suite.domain validation.chronology.decision before notification is rejected
 ClaimCore deterministic suite.domain validation.chronology.future payment is rejected
 ClaimCore deterministic suite.domain validation.chronology.payment before decision is rejected

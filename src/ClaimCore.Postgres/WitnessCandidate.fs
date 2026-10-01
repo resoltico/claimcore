@@ -108,7 +108,7 @@ module internal WitnessCandidate =
         writer.WriteString("command", commandName)
         writer.WriteString("effectiveBusinessDate", businessDate.ToString("yyyy-MM-dd"))
         writer.WriteString("observedUtcInstant", (microsecondInstant observedInstant).ToString("O"))
-        writer.WriteNumber("ruleRevision", 1)
+        writer.WriteNumber("ruleRevision", DomainRules.version)
         writer.WriteBase64String("canonicalRequest", ReadOnlySpan<byte>(canonicalRequest))
         writer.WriteBase64String("canonicalSnapshot", ReadOnlySpan<byte>(canonicalSnapshot))
         writer.WriteEndObject()

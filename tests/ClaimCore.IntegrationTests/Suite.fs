@@ -18,6 +18,7 @@ let private coreAndRecovery =
         RuntimeAuditCadenceTests.tests
         AuthorityOperationFenceTests.tests
         StorageBoundaryTests.tests
+        DomainEvidenceTests.tests
         PreparationTests.tests
         AcceptedReplayStorageTests.tests
         WitnessProtocolTests.tests
@@ -159,8 +160,8 @@ let private lifecycleAndPrivacy =
 
 /// The registered partitions. Each is run by its own process against its own primary and witness
 /// clusters, so partitions may run concurrently; running every partition in one process (no
-/// selection) discovers and executes exactly the union. The ids and counts are registered in
-/// `eng/ClaimCore.Docs/test-inventory/partitions/ClaimCore.IntegrationTests.json`.
+/// selection) discovers and executes exactly the union. Configuration registers the ids; generated
+/// inventories under tests/inventory own the expected tests, without duplicated counts.
 let private partitions =
     [
         "terminal-capacity", terminalCapacity

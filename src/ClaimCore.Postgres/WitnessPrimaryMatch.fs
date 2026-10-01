@@ -4,6 +4,7 @@ open System
 open System.Data.Common
 open System.Text.Json
 open ClaimCore.Witness
+open ClaimCore.Domain
 
 /// Read-only, bounded comparison of one committed primary row with its encrypted candidate.
 module internal WitnessPrimaryMatch =
@@ -26,8 +27,8 @@ module internal WitnessPrimaryMatch =
 
     let private identity (root: JsonElement) (reader: DbDataReader) operationId =
         root.GetProperty("version").GetInt32() = 2
-        && root.GetProperty("ruleRevision").GetInt32() = 1
-        && reader.GetInt16(6) = 1s
+        && root.GetProperty("ruleRevision").GetInt32() = DomainRules.version
+        && reader.GetInt16(6) = int16 DomainRules.version
         && root.GetProperty("operationId").GetGuid() = operationId
         && root.GetProperty("caseId").GetGuid() = reader.GetGuid(10)
         && root.GetProperty("caseReference").GetString() = reader.GetString(0)

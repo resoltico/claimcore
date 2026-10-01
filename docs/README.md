@@ -29,4 +29,5 @@ maintaining competing copies.
 The [repository tooling design](tooling-design.md) and its separate [design QA](tooling-design-qa.md)
 record the decisions behind engineering foundations. The [configuration design](configuration-design.md)
 and its separate [design QA](configuration-design-qa.md) record the cross-ecosystem configuration audit. The generated [contract-test map](contract-tests.md)
-helps locate the registered tests that name each contract.
+helps locate the registered tests that name each contract. The [domain model design](domain-model-design.md)
+and its separate [design QA](domain-model-design-qa.md) record the business-invariant audit.

@@ -25,6 +25,9 @@
     <Compile Include="CaseLifecycleProjectionTests.fs" />
     <Compile Include="CasePurgeAuthorizationTests.fs" />
     <Compile Include="CaseCorrectionTests.fs" />
+    <Compile Include="BusinessDateTests.fs" />
+    <Compile Include="DomainAdmissionTests.fs" />
+    <Compile Include="CorrectionMatrixTests.fs" />
     <Compile Include="DomainValidationTests.fs" />
     <Compile Include="AvailabilityTests.fs" />
     <Compile Include="PaginationTests.fs" />
