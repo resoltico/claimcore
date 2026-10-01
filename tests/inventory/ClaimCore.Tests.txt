@@ -123,11 +123,12 @@ ClaimCore deterministic suite.business date assertions.ordinary assertions.[CC-D
 ClaimCore deterministic suite.case-list cursor contract.[CC-AUTH-001] invalid list cursor has one typed diagnostic
 ClaimCore deterministic suite.case-list cursor contract.[CC-AUTH-001] list cursor binds caller grant query and expiry
 ClaimCore deterministic suite.compiler-enforced core boundary.CLI excludes storage from compilation and deployment
-ClaimCore deterministic suite.compiler-enforced core boundary.ordinary caller can use IClaimsCore
+ClaimCore deterministic suite.compiler-enforced core boundary.ordinary caller can use the actor-bound core
 ClaimCore deterministic suite.compiler-enforced core boundary.ordinary caller cannot create the core callback
 ClaimCore deterministic suite.compiler-enforced core boundary.ordinary caller cannot forge a prepared operation
 ClaimCore deterministic suite.compiler-enforced core boundary.ordinary caller cannot instantiate PostgreSQL storage
 ClaimCore deterministic suite.compiler-enforced core boundary.ordinary caller cannot see the store port
+ClaimCore deterministic suite.compiler-enforced core boundary.unbound core cannot be supplied by an ordinary caller
 ClaimCore deterministic suite.configuration projections.Compose uses the canonical digest-pinned PostgreSQL image
 ClaimCore deterministic suite.core outcome diagnostic emission.diagnostic specificity preserves existing cancellation precedence
 ClaimCore deterministic suite.core outcome diagnostic emission.provider error payloads never enter diagnostic presentation
@@ -205,6 +206,10 @@ ClaimCore deterministic suite.exact retained identity.[CC-REC-001] Execute rejec
 ClaimCore deterministic suite.exact retained identity.[CC-REC-001] concurrent exact retained admission classifies creator and replay
 ClaimCore deterministic suite.exact retained identity.[CC-REC-001] exact Prepare retry after acceptance returns an observed receipt
 ClaimCore deterministic suite.exact retained identity.[CC-REC-001] exact retained Prepare retry after another commit directs Recovery
+ClaimCore deterministic suite.export effect and delivery ownership.[CC-CLI-002] FAILED export preserves core-owned uncertainty guidance
+ClaimCore deterministic suite.export effect and delivery ownership.[CC-CLI-002] private destination failure retains observed service completion
+ClaimCore deterministic suite.export effect and delivery ownership.[CC-CLI-002] witnessed export is noncancellable and lost completion stays uncertain
+ClaimCore deterministic suite.export effect and delivery ownership.[CC-REC-001] signed export completion cannot become a late cancellation
 ClaimCore deterministic suite.fresh recovery format boundary.[CC-REC-001] current request and signed artifact preserve exact identity
 ClaimCore deterministic suite.fresh recovery format boundary.[CC-REC-001] historical canonical requests are refused
 ClaimCore deterministic suite.fresh recovery format boundary.[CC-REC-001] plaintext v2 and unsigned records are refused

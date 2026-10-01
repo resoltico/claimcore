@@ -223,34 +223,34 @@ let private transportTests () =
     use accepted = new MemoryStream(bytes "abc")
 
     Expect.equal
-        (HttpInput.readBounded 3 accepted |> await)
+        (HttpBody.readBounded 3 accepted |> await)
         (Ok(bytes "abc"))
         "The exact endpoint byte bound is accepted"
 
     use rejected = new MemoryStream(bytes "abcd")
 
     expectError
-        (HttpInput.readBounded 3 rejected |> await)
+        (HttpBody.readBounded 3 rejected |> await)
         "Over-limit streaming input is rejected before JSON allocation"
 
     use broken = new FaultingStream(IOException("Synthetic read failure."))
 
     Expect.equal
-        (HttpInput.readBounded 8 broken |> await)
+        (HttpBody.readBounded 8 broken |> await)
         (Error HttpInputProblem.BodyUnreadable)
         "I/O failures have one safe transport classification"
 
     use cancelled = new FaultingStream(OperationCanceledException())
 
     Expect.equal
-        (HttpInput.readBounded 8 cancelled |> await)
+        (HttpBody.readBounded 8 cancelled |> await)
         (Error HttpInputProblem.BodyCancelled)
         "Interrupted reads remain distinct from unreadable bodies"
 
     use oversized = new FaultingStream(BadHttpRequestException("Synthetic 413", 413))
 
     Expect.equal
-        (HttpInput.readBounded 8 oversized |> await)
+        (HttpBody.readBounded 8 oversized |> await)
         (Error HttpInputProblem.BodyTooLarge)
         "The host's streaming 413 maps to the bounded body refusal"
 
@@ -258,16 +258,16 @@ let private transportTests () =
         new FaultingStream(BadHttpRequestException("Synthetic 400", 400))
 
     Expect.equal
-        (HttpInput.readBounded 8 otherHttpFailure |> await)
+        (HttpBody.readBounded 8 otherHttpFailure |> await)
         (Error HttpInputProblem.BodyUnreadable)
         "An unrelated host read failure is not mislabeled as body size"
 
     use empty = new MemoryStream()
 
-    Expect.equal (HttpInput.readBounded 8 empty |> await) (Ok [||]) "An empty body is read exactly"
+    Expect.equal (HttpBody.readBounded 8 empty |> await) (Ok [||]) "An empty body is read exactly"
 
     Expect.throwsT<ArgumentException>
-        (fun () -> HttpInput.readBounded 0 empty |> await |> ignore)
+        (fun () -> HttpBody.readBounded 0 empty |> await |> ignore)
         "A nonpositive endpoint limit is a programming error"
 
 let tests =

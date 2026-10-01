@@ -109,63 +109,6 @@ type RuntimeStub(?invalidExportMetadata: bool) as this =
                 )
         }
 
-    let core =
-        { new IClaimsCore with
-            member _.Describe() = description
-
-            member _.Prepare(draft, _) =
-                this.CoreCalls <- this.CoreCalls + 1
-
-                Task.FromResult(
-                    defaultArg
-                        this.PrepareOutcome
-                        (PrepareOutcome.CancelledBeforeAdmission draft.OperationId)
-                )
-
-            member _.Execute(draft, _) =
-                this.CoreCalls <- this.CoreCalls + 1
-
-                Task.FromResult(
-                    defaultArg
-                        this.ExecuteOutcome
-                        (SubmissionOutcome.CancelledBeforeAdmission draft.OperationId)
-                )
-
-            member _.Get(reference, _) =
-                this.CoreCalls <- this.CoreCalls + 1
-
-                Task.FromResult(
-                    defaultArg this.GetOutcome (QueryOutcome.Succeeded(Lookup.NotFound reference))
-                )
-
-            member _.List(_, _) =
-                this.CoreCalls <- this.CoreCalls + 1
-
-                Task.FromResult(
-                    defaultArg
-                        this.ListOutcome
-                        (QueryOutcome.Succeeded { Items = []; NextCursor = None })
-                )
-
-            member _.History(request, _) =
-                this.CoreCalls <- this.CoreCalls + 1
-
-                Task.FromResult(
-                    defaultArg
-                        this.HistoryOutcome
-                        (QueryOutcome.Succeeded(Lookup.NotFound request.CaseReference))
-                )
-
-            member _.ObserveOperation(id, _) =
-                this.CoreCalls <- this.CoreCalls + 1
-
-                Task.FromResult(
-                    defaultArg this.ObserveOutcome (QueryOutcome.Succeeded(Lookup.NotFound id))
-                )
-
-            member _.Recovery = recovery
-        }
-
     let lifecycle =
         { new ICaseLifecycleWorkflow with
             member _.Review(_, _) =
@@ -211,6 +154,10 @@ type RuntimeStub(?invalidExportMetadata: bool) as this =
                 )
         }
 
+    let recordCoreCall configured fallback =
+        this.CoreCalls <- this.CoreCalls + 1
+        stubResult configured fallback
+
     let actorCore =
         { new IActorClaimsCore with
             member _.Definition(_) =
@@ -218,14 +165,31 @@ type RuntimeStub(?invalidExportMetadata: bool) as this =
                     defaultArg this.DefinitionOutcome (QueryOutcome.Succeeded description)
                 )
 
-            member _.Prepare(request, token) = core.Prepare(request, token)
-            member _.Execute(request, token) = core.Execute(request, token)
-            member _.Get(reference, token) = core.Get(reference, token)
-            member _.List(request, token) = core.List(request, token)
-            member _.History(request, token) = core.History(request, token)
+            member _.Prepare(draft, _) =
+                recordCoreCall
+                    this.PrepareOutcome
+                    (PrepareOutcome.CancelledBeforeAdmission draft.OperationId)
 
-            member _.ObserveOperation(operationId, token) =
-                core.ObserveOperation(operationId, token)
+            member _.Execute(draft, _) =
+                recordCoreCall
+                    this.ExecuteOutcome
+                    (SubmissionOutcome.CancelledBeforeAdmission draft.OperationId)
+
+            member _.Get(reference, _) =
+                recordCoreCall this.GetOutcome (QueryOutcome.Succeeded(Lookup.NotFound reference))
+
+            member _.List(_, _) =
+                recordCoreCall
+                    this.ListOutcome
+                    (QueryOutcome.Succeeded { Items = []; NextCursor = None })
+
+            member _.History(request, _) =
+                recordCoreCall
+                    this.HistoryOutcome
+                    (QueryOutcome.Succeeded(Lookup.NotFound request.CaseReference))
+
+            member _.ObserveOperation(id, _) =
+                recordCoreCall this.ObserveOutcome (QueryOutcome.Succeeded(Lookup.NotFound id))
 
             member _.Recovery = recovery
             member _.Management = management
@@ -290,5 +254,4 @@ type RuntimeStub(?invalidExportMetadata: bool) as this =
     member val EnvelopeRetainOutcome: RecoveryImportRetainOutcome option = None with get, set
 
 
-    member _.Core = core
     member _.ActorCore = actorCore

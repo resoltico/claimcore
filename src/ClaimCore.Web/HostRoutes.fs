@@ -71,7 +71,7 @@ module HostRoutes =
                 with
                 | Error failure -> return RouteSupport.admissionFailure context failure
                 | Ok _ ->
-                    match! HttpInput.readBounded 1024 context.Request.Body with
+                    match! HttpBody.readBounded 1024 context.Request.Body with
                     | Error problem -> return RouteSupport.inputFailure context problem
                     | Ok bytes ->
                         match HttpInput.logout bytes with

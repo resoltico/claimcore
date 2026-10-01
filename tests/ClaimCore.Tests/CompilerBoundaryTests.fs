@@ -62,7 +62,7 @@ let private positive =
     lazy
         (runProbe
             "public-core"
-            "open System.Threading\nopen System.Threading.Tasks\nopen ClaimCore.Application\nlet describe (core: IClaimsCore) : CoreDescription = core.Describe()\nlet read (core: IClaimsCore) : Task<QueryOutcome<Lookup<CurrentCase, string>>> = core.Get(\"EXAMPLE\", CancellationToken.None)\nlet fieldCount (description: CoreDescription) = description.Contract.Fields.Length\nprintfn \"CORE_BOUNDARY_POSITIVE\"")
+            "open System.Threading\nopen System.Threading.Tasks\nopen ClaimCore.Application\nlet describe (core: IActorClaimsCore) : Task<QueryOutcome<CoreDescription>> = core.Definition(CancellationToken.None)\nlet read (core: IActorClaimsCore) : Task<QueryOutcome<Lookup<CurrentCase, string>>> = core.Get(\"EXAMPLE\", CancellationToken.None)\nlet fieldCount (description: CoreDescription) = description.Contract.Fields.Length\nprintfn \"CORE_BOUNDARY_POSITIVE\"")
 
 let private requirePositive () =
     let result = positive.Value
@@ -135,7 +135,11 @@ let tests =
     testList
         "compiler-enforced core boundary"
         [
-            testCase "ordinary caller can use IClaimsCore" requirePositive
+            inaccessible
+                "unbound core cannot be supplied by an ordinary caller"
+                "IClaimsCore"
+                "open ClaimCore.Application\nlet supply (core: IClaimsCore) = core.Describe()"
+            testCase "ordinary caller can use the actor-bound core" requirePositive
             testCase "CLI excludes storage from compilation and deployment" hostCompileClosures
             inaccessible
                 "ordinary caller cannot see the store port"

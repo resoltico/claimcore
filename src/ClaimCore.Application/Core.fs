@@ -7,7 +7,7 @@ open ClaimCore.Domain
 
 /// The only application entry point for CLI, Web, and native callers. Composition supplies narrow
 /// claim and recovery ports; no caller receives persistence objects or transition callbacks.
-type IClaimsCore =
+type internal IClaimsCore =
     abstract Describe: unit -> CoreDescription
     abstract Prepare: CommandRequest * CancellationToken -> Task<PrepareOutcome>
     abstract Execute: CommandRequest * CancellationToken -> Task<SubmissionOutcome>

@@ -13,7 +13,6 @@ module CliMutationCatalog =
                 "operation.observe"
                 "recovery.list"
                 "recovery.inspect"
-                "recovery.export"
                 "recovery.importEnvelopePreview"
                 "authority.observe"
                 "authority.reviewRealDataActivation"

@@ -17,6 +17,7 @@
     <Compile Include="ActorCoreFixture.fs" />
     <Compile Include="PreparationAttributionTests.fs" />
     <Compile Include="SignedRecoveryImportTests.fs" />
+    <Compile Include="ExportDeliveryTests.fs" />
     <Compile Include="DomainTests.fs" />
     <Compile Include="CaseLifecycleTestSupport.fs" />
     <Compile Include="OwnerErasureTestSupport.fs" />

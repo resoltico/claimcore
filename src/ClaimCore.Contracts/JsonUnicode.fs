@@ -1,4 +1,4 @@
-namespace ClaimCore.Web
+namespace ClaimCore.Contracts
 
 open System
 open System.Text.Json

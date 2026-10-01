@@ -34,7 +34,7 @@
       "tier": "product",
       "layer": "core",
       "project": "src/ClaimCore.Application/ClaimCore.Application.fsproj",
-      "role": "The typed IClaimsCore facade, request admission, operation identity, endpoint outcomes, and the sole public recovery workflow.",
+      "role": "Actor-bound typed service facades, request admission, operation identity, endpoint outcomes and recovery decisions; internal scoped-core composition seams.",
       "dependsOn": [
         "ClaimCore.Domain",
         "ClaimCore.RecordFormat"
@@ -54,7 +54,7 @@
       "tier": "product",
       "layer": "contract",
       "project": "src/ClaimCore.Contracts/ClaimCore.Contracts.fsproj",
-      "role": "Pure projection of Application's semantic description into CLI-v4 and Web-v3 wire contracts, schemas, codecs, and generated browser DTOs.",
+      "role": "Pure semantic/CLI/Web schema projection, strict HTTP request codecs, wire rendering and generated browser DTOs; no host composition or storage effects.",
       "dependsOn": [
         "ClaimCore.Application",
         "ClaimCore.Domain"

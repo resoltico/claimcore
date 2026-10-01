@@ -1,6 +1,7 @@
 module ClaimCore.AcceptanceTests.RemoteFixture
 
 open System
+open Expecto
 open System.Collections.Generic
 open System.IO
 open System.Text
@@ -120,3 +121,27 @@ let command endpoint operation revision kind values =
             expectedRevision = string revision
             command = {| kind = kind; values = values |}
         |}
+
+let observedDestinationFailure operationId digest destination =
+    let original = File.ReadAllBytes(destination)
+
+    let repeated =
+        call
+            "recovery.export"
+            {|
+                operationId = operationId
+                requestSha256 = digest
+                destination = destination
+            |}
+
+    Expect.equal repeated.ExitCode 3 "A private file refuses overwrite after observed export"
+    use response = JsonDocument.Parse(ReadOnlyMemory repeated.StandardOutput)
+
+    Expect.equal
+        (response.RootElement.GetProperty("executionPhase").GetString())
+        "RESULT_OBSERVED"
+        "Actual authenticated HTTP export completed"
+
+    Expect.isTrue
+        (File.ReadAllBytes(destination) = original)
+        "Private destination remains unchanged"

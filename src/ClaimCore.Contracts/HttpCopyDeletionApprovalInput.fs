@@ -1,10 +1,10 @@
-namespace ClaimCore.Web
+namespace ClaimCore.Contracts
 
 open System
 open ClaimCore.Application
 open HttpInputSupport
 
-module internal HttpCopyDeletionApprovalInput =
+module HttpCopyDeletionApprovalInput =
     let approve bytes =
         parse bytes (fun root ->
             let values =

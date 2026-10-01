@@ -25,6 +25,7 @@ let private foundation =
         ExactReplayTests.tests
         PreparationAttributionTests.tests
         SignedRecoveryImportTests.tests
+        ExportDeliveryTests.tests
         ReceiptFirstTests.tests
         RecoveryOutcomeTests.tests
         RecoveryCancellationOutcomeTests.tests

@@ -40,12 +40,23 @@ module CliSchemas =
             "https://claimcore.local/contracts/cli-v4.invocation.schema.json"
             "ClaimCore CLI v4 invocation"
 
+    let responseDocument (projection: ContractModel) =
+        let definitions =
+            projection.WebEndpoints
+            |> List.head
+            |> WebSchemas.responseDocument projection
+            |> _.Definitions
+
+        {
+            Identifier = "https://claimcore.local/contracts/cli-v4.response.schema.json"
+            Title = "ClaimCore CLI v4 response"
+            Root = CliRemoteSchemas.response projection
+            Definitions = definitions
+        }
+
     let response projection =
-        CliRemoteSchemas.response projection
-        |> renderRemote
-            projection
-            "https://claimcore.local/contracts/cli-v4.response.schema.json"
-            "ClaimCore CLI v4 response"
+        let document = responseDocument projection
+        CanonicalJson.renderSchema document document.Root
 
     let definition (projection: ContractModel) =
         CanonicalJson.renderSchema projection.DefinitionSchema projection.DefinitionSchema.Root

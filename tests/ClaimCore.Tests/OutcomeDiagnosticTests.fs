@@ -112,7 +112,15 @@ let private comparePayload id (response: CliWireResponse) web =
 let private faultParity () =
     for fault, id in CoreFaults.all do
         let response = WebWireCodec.get (QueryOutcome.Failed fault) |> remote "case.get"
-        Expect.equal response.ExitCode 3 "Query failure exit remains three"
+
+        Expect.equal
+            response.ExitCode
+            (if fault.Action = RecommendedAction.RecoverExact then
+                 4
+             else
+                 3)
+            "Core-owned fault knowledge determines delivery exit"
+
         comparePayload id response (WebWireCodec.get (QueryOutcome.Failed fault))
 
 let private recoveryParity () =

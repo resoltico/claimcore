@@ -29,6 +29,8 @@ let private propertyIds =
             "CC-PROP-TRANSITION-001"
             "CC-PROP-AVAILABILITY-001"
             "CC-FUZZ-JSON-001"
+            "CC-FUZZ-HTTP-001"
+            "CC-FUZZ-HTTP-BYTES-001"
             "CC-FUZZ-INVOCATION-001"
             "CC-FUZZ-RECORD-001"
             "CC-FUZZ-ENVELOPE-001"

@@ -1,4 +1,5 @@
 ClaimCore fuzz qualification.boundary decoding totality.CLI invocation framing refuses hostile input without throwing
+ClaimCore fuzz qualification.boundary decoding totality.[CC-ARCH-001] contract-owned HTTP codecs refuse hostile bytes without throwing
 ClaimCore fuzz qualification.boundary decoding totality.canonical record decoding refuses hostile input without throwing
 ClaimCore fuzz qualification.boundary decoding totality.opaque cursors refuse hostile tokens without throwing
 ClaimCore fuzz qualification.boundary decoding totality.recovery envelope decoding refuses hostile input without throwing

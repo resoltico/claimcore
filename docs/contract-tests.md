@@ -21,6 +21,8 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-APP-002 | unit | ClaimCore deterministic suite.accepted receipt first.[CC-APP-002] accepted-history read failure refuses before fresh preparation |
 | CC-APP-002 | unit | ClaimCore deterministic suite.accepted receipt first.[CC-APP-002] cancellation after accepted observation preserves definite receipt |
 | CC-ARCH-001 | architecture | ClaimCore architecture suite.architecture manifest.[CC-ARCH-001] restore publication trust is invisible to ordinary consumers |
+| CC-ARCH-001 | architecture | ClaimCore architecture suite.component effect ownership.[CC-ARCH-001] Web bindings cannot decode ClaimCore JSON bytes |
+| CC-ARCH-001 | fuzz | ClaimCore fuzz qualification.boundary decoding totality.[CC-ARCH-001] contract-owned HTTP codecs refuse hostile bytes without throwing |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.adopted external copy transitions.[CC-AUDIT-001] adopted external signed origin and transition replay |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.adopted product copy transitions.[CC-AUDIT-001] product export signed post-adoption transition replays through projection |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.authority operation fence.[CC-AUDIT-001] cancelled queued exclusive acquisition retires its connector and releases authority |
@@ -220,6 +222,9 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-CLI-002 | unit | ClaimCore deterministic suite.CLI private-file security.[CC-CLI-002] private export rejects leaf and ancestor links without changing targets |
 | CC-CLI-002 | unit | ClaimCore deterministic suite.CLI private-file security.[CC-CLI-002] private source enforces exact size, mode, ACL, and strict UTF-8 |
 | CC-CLI-002 | unit | ClaimCore deterministic suite.CLI private-file security.[CC-CLI-002] private source rejects symlinks, ancestor links, directories, and relative paths |
+| CC-CLI-002 | unit | ClaimCore deterministic suite.export effect and delivery ownership.[CC-CLI-002] FAILED export preserves core-owned uncertainty guidance |
+| CC-CLI-002 | unit | ClaimCore deterministic suite.export effect and delivery ownership.[CC-CLI-002] private destination failure retains observed service completion |
+| CC-CLI-002 | unit | ClaimCore deterministic suite.export effect and delivery ownership.[CC-CLI-002] witnessed export is noncancellable and lost completion stays uncertain |
 | CC-CLI-002 | unit | ClaimCore deterministic suite.native private-file ancestor race.[CC-CLI-002] descriptor-relative create and lock remain in pinned parent after ancestor swap |
 | CC-CLI-003 | unit | ClaimCore deterministic suite.remote frame-local delivery diagnostics.[CC-CLI-003] every generated CLI mutation retains delivery uncertainty |
 | CC-CLI-003 | unit | ClaimCore deterministic suite.remote invocation contract.[CC-CLI-003] CLI v4 inputs bind exact noncancellable endpoints |
@@ -427,6 +432,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-REC-001 | unit | ClaimCore deterministic suite.exact retained identity.[CC-REC-001] concurrent exact retained admission classifies creator and replay |
 | CC-REC-001 | unit | ClaimCore deterministic suite.exact retained identity.[CC-REC-001] exact Prepare retry after acceptance returns an observed receipt |
 | CC-REC-001 | unit | ClaimCore deterministic suite.exact retained identity.[CC-REC-001] exact retained Prepare retry after another commit directs Recovery |
+| CC-REC-001 | unit | ClaimCore deterministic suite.export effect and delivery ownership.[CC-REC-001] signed export completion cannot become a late cancellation |
 | CC-REC-001 | unit | ClaimCore deterministic suite.fresh recovery format boundary.[CC-REC-001] current request and signed artifact preserve exact identity |
 | CC-REC-001 | unit | ClaimCore deterministic suite.fresh recovery format boundary.[CC-REC-001] historical canonical requests are refused |
 | CC-REC-001 | unit | ClaimCore deterministic suite.fresh recovery format boundary.[CC-REC-001] plaintext v2 and unsigned records are refused |
@@ -566,6 +572,14 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-WEB-001 | web | ClaimCore.Web.Web v3 admission.[CC-WEB-001] rejects absent and remote peers or wrong host authority |
 | CC-WEB-001 | web | ClaimCore.Web.Web v3 admission.[CC-WEB-001] requires one exact browser origin and same-origin metadata |
 | CC-WEB-001 | web | ClaimCore.Web.Web v3 admission.[CC-WEB-001] returns typed CSRF admission refusal |
+| CC-WEB-001 | web | ClaimCore.Web.asynchronous HTTP transport boundaries.[CC-WEB-001] suspended I/O failure retains safe refusal |
+| CC-WEB-001 | web | ClaimCore.Web.asynchronous HTTP transport boundaries.[CC-WEB-001] suspended Kestrel size refusal retains transport classification |
+| CC-WEB-001 | web | ClaimCore.Web.asynchronous HTTP transport boundaries.[CC-WEB-001] suspended cancellation retains safe refusal |
+| CC-WEB-001 | web | ClaimCore.Web.asynchronous HTTP transport boundaries.[CC-WEB-001] suspended dispatch phase 0 preserves failure knowledge |
+| CC-WEB-001 | web | ClaimCore.Web.asynchronous HTTP transport boundaries.[CC-WEB-001] suspended dispatch phase 1 preserves failure knowledge |
+| CC-WEB-001 | web | ClaimCore.Web.asynchronous HTTP transport boundaries.[CC-WEB-001] suspended dispatch phase 2 preserves failure knowledge |
+| CC-WEB-001 | web | ClaimCore.Web.asynchronous HTTP transport boundaries.[CC-WEB-001] suspended exact-size request is accepted |
+| CC-WEB-001 | web | ClaimCore.Web.asynchronous HTTP transport boundaries.[CC-WEB-001] suspended oversized request is refused |
 | CC-WEB-001 | web | ClaimCore.Web.configuration.Web configuration boundaries.[CC-WEB-001] enforces session lifetime ordering |
 | CC-WEB-001 | web | ClaimCore.Web.configuration.Web configuration boundaries.[CC-WEB-001] loads defaults and rejects every out-of-range admission limit |
 | CC-WEB-001 | web | ClaimCore.Web.configuration.Web configuration boundaries.[CC-WEB-001] rejects linked credentials and certificates without private keys |

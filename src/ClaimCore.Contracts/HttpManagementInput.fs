@@ -1,20 +1,19 @@
-namespace ClaimCore.Web
+namespace ClaimCore.Contracts
 
 open System
 open System.Text.Json
 open ClaimCore.Application
-open ClaimCore.Contracts
 open HttpInputSupport
 
 [<NoEquality; NoComparison>]
-type internal ManagementRegisterInput =
+type HttpManagementRegisterInput =
     {
         EventId: Guid
         Principal: PrincipalKey
     }
 
 [<NoEquality; NoComparison>]
-type internal ManagementGrantInput =
+type HttpManagementGrantInput =
     {
         EventId: Guid
         Principal: PrincipalKey
@@ -24,14 +23,14 @@ type internal ManagementGrantInput =
     }
 
 [<NoEquality; NoComparison>]
-type internal ManagementEnabledInput =
+type HttpManagementEnabledInput =
     {
         EventId: Guid
         Principal: PrincipalKey
         Enabled: bool
     }
 
-module internal HttpManagementInput =
+module HttpManagementInput =
     let private eventId values =
         required "eventId" values |> stringValue |> operationIdValue
 

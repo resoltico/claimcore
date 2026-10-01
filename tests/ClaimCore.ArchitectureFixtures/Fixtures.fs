@@ -115,3 +115,11 @@ module GoodInterface =
 module BadInterface =
     type IRead =
         abstract Read: unit -> Boundary
+
+
+type GoodRequestCodec =
+    static member Size(bytes: byte array) = bytes.Length
+
+type BadRequestCodec =
+    static member Decode(bytes: byte array) =
+        System.Text.Json.JsonDocument.Parse(System.ReadOnlyMemory<byte>(bytes))

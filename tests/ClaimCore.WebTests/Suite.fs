@@ -1,5 +1,7 @@
 module ClaimCore.WebTests.Suite
 
+open ClaimCore.Contracts
+
 open Expecto
 
 [<Tests>]
@@ -30,6 +32,7 @@ let tests =
             CopyAdoptionApprovalInputTests.tests
             WriterHandoffApprovalInputTests.tests
             TransportDiagnosticTests.tests
+            AsyncTransportTests.tests
             ProgramEntryTests.tests
             WireTests.tests
             RealDataActivationWireTests.tests

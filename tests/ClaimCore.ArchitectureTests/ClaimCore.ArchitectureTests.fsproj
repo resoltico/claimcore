@@ -10,6 +10,7 @@
     <Compile Include="ProjectEvaluation.fs" />
     <Compile Include="ProductPolicy.fs" />
     <Compile Include="ProductModel.fs" />
+    <Compile Include="PolicyInputTests.fs" />
     <Compile Include="FixtureTests.fs" />
     <Compile Include="ProjectEvaluationTests.fs" />
     <Compile Include="ManifestTests.fs" />

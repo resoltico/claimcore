@@ -144,6 +144,27 @@ let private platformPair shape (target: Type) methodName =
                 "Violation must identify the platform method")
     ]
 
+let private decoderRule side =
+    let model = architecture.Value
+    let subject = select (side + "RequestCodec")
+
+    let target =
+        ArchRuleDefinition.Types().That().Are(typeof<System.Text.Json.JsonDocument>)
+
+    Inspection.requireSelection model subject |> ignore
+    Inspection.requireSelection model target |> ignore
+    subject.Should().NotDependOnAny(target) :> IArchRule
+
+let private requestDecoderControls =
+    [
+        testCase "request codec accepts pure counterpart" (fun () ->
+            Inspection.check architecture.Value (decoderRule "Good"))
+        testCase "request codec detects forbidden JSON dependency" (fun () ->
+            Expect.isNonEmpty
+                (Inspection.violations architecture.Value (decoderRule "Bad"))
+                "The decoder rule detects actual JSON dependency")
+    ]
+
 let tests =
     let forms =
         [
@@ -168,6 +189,6 @@ let tests =
         "F# inspection qualification"
         (forms
          @ memberForms
-         @ preflight
+         @ (preflight @ requestDecoderControls)
          @ platformPair "Clock" typeof<DateTime> "get_UtcNow"
          @ platformPair "Io" typeof<File> "ReadAllText")

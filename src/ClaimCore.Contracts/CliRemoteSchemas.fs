@@ -44,7 +44,6 @@ module CliRemoteSchemas =
                                 "CLI_SERVICE_UNAVAILABLE"
                                 "CLI_SERVICE_REPLY_INVALID"
                                 "CLI_PRIVATE_SOURCE_INVALID"
-                                "CLI_PRIVATE_DESTINATION_INVALID"
                             ])
                         true
                     property "executionPhase" (token "NOT_STARTED") true
@@ -61,7 +60,17 @@ module CliRemoteSchemas =
                     property "action" (token "RECOVER_EXACT") true
                 ]
 
-        Schema.oneOf [ definite; uncertain ]
+        let observed =
+            envelope
+                "localFailure"
+                identifier
+                [
+                    property "code" (token "CLI_PRIVATE_DESTINATION_INVALID") true
+                    property "executionPhase" (token "RESULT_OBSERVED") true
+                    property "action" (token "STOP_AND_INVESTIGATE") true
+                ]
+
+        Schema.oneOf [ definite; uncertain; observed ]
 
     let exported =
         envelope

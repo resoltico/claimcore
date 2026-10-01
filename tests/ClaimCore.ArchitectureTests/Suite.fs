@@ -8,6 +8,7 @@ let tests =
         "ClaimCore architecture suite"
         [
             FixtureTests.tests
+            PolicyInputTests.tests
             ProjectEvaluationTests.tests
             ManifestTests.tests
             SurfaceTests.tests

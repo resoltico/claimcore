@@ -7,6 +7,7 @@ open Hedgehog
 open Hedgehog.FSharp
 open ClaimCore.Application
 open ClaimCore.Domain
+open ClaimCore.Contracts
 open ClaimCore.Cli
 open ClaimCore.RecordFormat
 open ClaimCore.Tests.PropertyHarness
@@ -79,10 +80,44 @@ let private caseListCursorBoundary =
             "synthetic-token"
         |> ignore
 
+let private httpCodecs bytes =
+    HttpInput.logout bytes |> ignore
+    HttpInput.draft bytes |> ignore
+    HttpInput.caseReference bytes |> ignore
+    HttpInput.page 50 bytes |> ignore
+    HttpInput.history 50 bytes |> ignore
+    HttpInput.recoveryPage 50 bytes |> ignore
+    HttpInput.recoveryInspect 50 bytes |> ignore
+    HttpInput.operationId bytes |> ignore
+    HttpInput.resolve bytes |> ignore
+    HttpInput.dismiss bytes |> ignore
+    HttpManagementInput.register bytes |> ignore
+    HttpManagementInput.setGrant bytes |> ignore
+    HttpManagementInput.setEnabled bytes |> ignore
+    HttpManagementInput.observe bytes |> ignore
+    HttpSignerApprovalInput.approve bytes |> ignore
+    HttpCopyDeletionApprovalInput.approve bytes |> ignore
+    HttpCopyAdoptionApprovalInput.approve bytes |> ignore
+    HttpWriterHandoffApprovalInput.approve bytes |> ignore
+    HttpRealDataActivationInput.review bytes |> ignore
+    HttpRealDataActivationInput.approve bytes |> ignore
+    HttpLifecycleInput.review bytes |> ignore
+    HttpLifecycleInput.apply bytes |> ignore
+    HttpLifecycleInput.approve bytes |> ignore
+    HttpTombstoneInput.review bytes |> ignore
+    HttpTombstoneInput.approve bytes |> ignore
+    HttpTombstoneInput.hold bytes |> ignore
+    HttpTombstoneTerminalInput.approve bytes |> ignore
+
 let tests =
     testList
         "boundary decoding totality"
         [
+            testCase
+                "[CC-ARCH-001] contract-owned HTTP codecs refuse hostile bytes without throwing"
+                (fun () ->
+                    run "CC-FUZZ-HTTP-001" (property Corpora.jsonLike httpCodecs)
+                    run "CC-FUZZ-HTTP-BYTES-001" (property Corpora.arbitraryBytes httpCodecs))
             testCase "strict JSON parsing refuses hostile input without throwing" (fun () ->
                 run "CC-FUZZ-JSON-001" (property Corpora.jsonLike strictJson))
 

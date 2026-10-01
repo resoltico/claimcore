@@ -69,7 +69,7 @@ module RemoteServiceCall =
             return if bytes.Length <= maximum then Some bytes else None
         }
 
-    let private export request (response: HttpResponseMessage) cancelled =
+    let private export (request: RemoteRequest) (response: HttpResponseMessage) cancelled =
         task {
             match request.OperationId, request.Destination with
             | Some operationId, Some destination ->
@@ -95,7 +95,7 @@ module RemoteServiceCall =
                     filename <> Some expectedName
                     || media <> Some "application/vnd.claimcore.recovery+json"
                 then
-                    return Error CliRemoteProblem.ServiceReplyInvalid
+                    return Error CliRemoteProblem.DeliveryUnconfirmed
                 else
                     match! readBounded 131072 response cancelled with
                     | Some bytes when artifactIdentity operationId bytes ->
@@ -109,8 +109,8 @@ module RemoteServiceCall =
                                         "application/vnd.claimcore.recovery+json"
                                 )
                         | Error _ -> return Error CliRemoteProblem.PrivateDestination
-                    | _ -> return Error CliRemoteProblem.ServiceReplyInvalid
-            | _ -> return Error CliRemoteProblem.ServiceReplyInvalid
+                    | _ -> return Error CliRemoteProblem.DeliveryUnconfirmed
+            | _ -> return Error CliRemoteProblem.DeliveryUnconfirmed
         }
 
     let private json request (response: HttpResponseMessage) cancelled =

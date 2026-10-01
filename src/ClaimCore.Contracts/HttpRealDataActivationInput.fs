@@ -1,10 +1,10 @@
-namespace ClaimCore.Web
+namespace ClaimCore.Contracts
 
 open System
 open ClaimCore.Application
 open HttpInputSupport
 
-module internal HttpRealDataActivationInput =
+module HttpRealDataActivationInput =
     let review bytes =
         parse bytes (fun root ->
             let values = properties root |> exactProperties [ "planId" ]

@@ -6,8 +6,8 @@ open System.Threading
 open System.Threading.Tasks
 open ClaimCore.RecordFormat
 
-/// Recovery export remains a separate narrow read because it handles claimant-bearing artifact bytes
-/// while ordinary recovery list and inspection stay metadata-only.
+/// Export discloses claimant-bearing bytes and issues witnessed custody evidence. A completed
+/// issuance is not relabelled as cancellation; ordinary recovery reads stay metadata-only.
 module internal RecoveryExports =
     let private encode
         (artifactAuthority: IRecoveryArtifactAuthority)
@@ -55,8 +55,6 @@ module internal RecoveryExports =
         task {
             match! encode artifactAuthority operationId retained cancellationToken with
             | Error fault -> return RecoveryQueryOutcome.RecoveryFailed fault
-            | Ok _ when cancellationToken.IsCancellationRequested ->
-                return RecoveryQueryOutcome.RecoveryCancelled
             | Ok artifact -> return RecoveryQueryOutcome.RecoverySucceeded(Lookup.Found artifact)
         }
 

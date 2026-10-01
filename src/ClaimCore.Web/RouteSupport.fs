@@ -38,7 +38,7 @@ module RouteSupport =
             match! admit context with
             | Error failure -> return Error(admissionFailure context failure)
             | Ok() ->
-                match! HttpInput.readBounded maximumBytes context.Request.Body with
+                match! HttpBody.readBounded maximumBytes context.Request.Body with
                 | Error reason -> return Error(inputFailure context reason)
                 | Ok bytes -> return Ok bytes
         }

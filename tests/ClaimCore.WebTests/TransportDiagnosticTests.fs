@@ -39,12 +39,12 @@ let private boundedReads () =
     use large = new MemoryStream([| 1uy; 2uy; 3uy |])
 
     Expect.equal
-        (HttpInput.readBounded 2 exact |> wait)
+        (HttpBody.readBounded 2 exact |> wait)
         (Ok [| 1uy; 2uy |])
         "Inclusive size boundary"
 
     Expect.equal
-        (HttpInput.readBounded 2 large |> wait)
+        (HttpBody.readBounded 2 large |> wait)
         (Error HttpInputProblem.BodyTooLarge)
         "Streamed over-limit cause"
 
@@ -57,7 +57,7 @@ let private boundedReads () =
         }
 
     Expect.equal
-        (HttpInput.readBounded 2 broken |> wait)
+        (HttpBody.readBounded 2 broken |> wait)
         (Error HttpInputProblem.BodyUnreadable)
         "Read failure carries no provider text"
 

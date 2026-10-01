@@ -191,6 +191,7 @@ let private privateArtifact () =
 
     Expect.equal exported.ExitCode 0 "Private export succeeded"
     Expect.isTrue (File.Exists(destination)) "Exclusive private file was created"
+    RemoteFixture.observedDestinationFailure operationReopen.Value digest destination
 
     use preview = result "recovery.importEnvelopePreview" {| source = destination |} 0
     expectTag "SUCCEEDED" preview
