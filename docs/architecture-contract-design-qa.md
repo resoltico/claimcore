@@ -17,3 +17,9 @@ This separate pass challenges [the design](architecture-contract-design.md) befo
 | Better architecture means more abstractions. | Reject a service bag, universal generator, plugin dispatcher and component splits without a concrete need. Keep explicit typed workflows, independent witnesses, owner-only administration and platform-native build inputs. |
 
 Proceed with the reviewed changes, then regenerate affected contracts/inventories and run the required suites, published clients and full CI. Revisit the design if actual tool or runtime behavior contradicts these decisions.
+
+Implementation QA: moving codec coverage out of Web exposed the host's remaining branch coverage
+at 68.38%, below the unchanged 70% floor. Add deterministic delayed-stream and delayed-dispatch
+controls for real asynchronous HTTP boundaries; do not lower the floor or reinterpret the failing
+run as complete verification. These controls check allocation, cancellation and execution knowledge
+when reads/dispatch actually suspend, rather than only exercising completed Task values.

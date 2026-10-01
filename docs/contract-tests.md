@@ -572,6 +572,14 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-WEB-001 | web | ClaimCore.Web.Web v3 admission.[CC-WEB-001] rejects absent and remote peers or wrong host authority |
 | CC-WEB-001 | web | ClaimCore.Web.Web v3 admission.[CC-WEB-001] requires one exact browser origin and same-origin metadata |
 | CC-WEB-001 | web | ClaimCore.Web.Web v3 admission.[CC-WEB-001] returns typed CSRF admission refusal |
+| CC-WEB-001 | web | ClaimCore.Web.asynchronous HTTP transport boundaries.[CC-WEB-001] suspended I/O failure retains safe refusal |
+| CC-WEB-001 | web | ClaimCore.Web.asynchronous HTTP transport boundaries.[CC-WEB-001] suspended Kestrel size refusal retains transport classification |
+| CC-WEB-001 | web | ClaimCore.Web.asynchronous HTTP transport boundaries.[CC-WEB-001] suspended cancellation retains safe refusal |
+| CC-WEB-001 | web | ClaimCore.Web.asynchronous HTTP transport boundaries.[CC-WEB-001] suspended dispatch phase 0 preserves failure knowledge |
+| CC-WEB-001 | web | ClaimCore.Web.asynchronous HTTP transport boundaries.[CC-WEB-001] suspended dispatch phase 1 preserves failure knowledge |
+| CC-WEB-001 | web | ClaimCore.Web.asynchronous HTTP transport boundaries.[CC-WEB-001] suspended dispatch phase 2 preserves failure knowledge |
+| CC-WEB-001 | web | ClaimCore.Web.asynchronous HTTP transport boundaries.[CC-WEB-001] suspended exact-size request is accepted |
+| CC-WEB-001 | web | ClaimCore.Web.asynchronous HTTP transport boundaries.[CC-WEB-001] suspended oversized request is refused |
 | CC-WEB-001 | web | ClaimCore.Web.configuration.Web configuration boundaries.[CC-WEB-001] enforces session lifetime ordering |
 | CC-WEB-001 | web | ClaimCore.Web.configuration.Web configuration boundaries.[CC-WEB-001] loads defaults and rejects every out-of-range admission limit |
 | CC-WEB-001 | web | ClaimCore.Web.configuration.Web configuration boundaries.[CC-WEB-001] rejects linked credentials and certificates without private keys |

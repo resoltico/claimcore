@@ -49,6 +49,7 @@
     <Compile Include="TestServerRecoveryOutcomeTests.fs" />
     <Compile Include="TestServerBoundaryTests.fs" />
     <Compile Include="TransportDiagnosticTests.fs" />
+    <Compile Include="AsyncTransportTests.fs" />
     <Compile Include="Suite.fs" />
   </ItemGroup>
   <ItemGroup>

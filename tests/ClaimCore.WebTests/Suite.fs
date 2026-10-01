@@ -32,6 +32,7 @@ let tests =
             CopyAdoptionApprovalInputTests.tests
             WriterHandoffApprovalInputTests.tests
             TransportDiagnosticTests.tests
+            AsyncTransportTests.tests
             ProgramEntryTests.tests
             WireTests.tests
             RealDataActivationWireTests.tests
