@@ -93,7 +93,12 @@ type internal RuntimeAdmission
             lease.Dispose()
             reraise ()
 
-    member this.RunClassified(work: unit -> Task<'value>, isPreAdmissionRefusal: 'value -> bool) =
+    member this.RunClassified
+        (
+            work: unit -> Task<'value>,
+            isPreAdmissionRefusal: 'value -> bool,
+            ?validateDisclosure: 'value -> Task
+        ) =
         task {
             use _lease = this.Admit()
             useGate.RequireCaseMutation()
@@ -105,11 +110,19 @@ type internal RuntimeAdmission
             // A witnessed mutation can settle just before a handoff fences disclosure.
             // Recheck after settlement so no claimant-bearing outcome escapes this core boundary.
             use _disclosureFence = acquireReadFence ()
+
+            match validateDisclosure with
+            | Some validate -> do! validate outcome
+            | None -> ()
+
             return outcome
         }
 
     member this.Run(work: unit -> Task<'value>) =
         this.RunClassified(work, fun _ -> false)
+
+    member this.RunDisclosing(work: unit -> Task<'value>, validateDisclosure: 'value -> Task) =
+        this.RunClassified(work, (fun _ -> false), validateDisclosure)
 
     member this.RunRead(work: unit -> Task<'value>) =
         task {

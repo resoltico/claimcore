@@ -85,7 +85,15 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.actor/grant resource lookup.[CC-AUTH-001] case and accepted-operation lookups do not reveal inaccessible identities |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.case-list cursor protection.[CC-AUTH-001] cursor tamper and runtime restart refuse without plaintext |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.case-list cursor protection.[CC-AUTH-001] encrypted cursor binds actor grant query and expiry |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.mutation result disclosure.[CC-AUTH-001] accepted command result is withheld after editor revocation |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.mutation result disclosure.[CC-AUTH-001] accepted command result is withheld after erasure fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.mutation result disclosure.[CC-AUTH-001] accepted recovery resolution is withheld after operator revocation |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.mutation result disclosure.[CC-AUTH-001] exact import result is withheld after importer revocation |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.mutation result disclosure.[CC-AUTH-001] retained preparation is withheld after editor revocation |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.mutation result disclosure.[CC-AUTH-001] revoked preparation details are withheld after operator revocation |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.mutation result disclosure.[CC-AUTH-001] witnessed export is withheld after exporter revocation |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.signed recovery artifact import preview.[CC-AUTH-001] signed import preview requires current actor authority |
+| CC-AUTH-001 | unit | ClaimCore deterministic suite.[CC-AUTH-001] CLI discovery compares the complete issuer identity |
 | CC-AUTH-001 | unit | ClaimCore deterministic suite.[CC-AUTH-001] every Domain command maps to edit capability |
 | CC-AUTH-001 | unit | ClaimCore deterministic suite.actor and grant authorization.[CC-AUTH-001] absent and inaccessible cases disclose identically |
 | CC-AUTH-001 | unit | ClaimCore deterministic suite.actor and grant authorization.[CC-AUTH-001] case grants stay scoped |
@@ -596,6 +604,10 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-WEB-001 | web | ClaimCore.Web.copy adoption approval input.[CC-WEB-001] adoption origin binds exact witnessed provenance |
 | CC-WEB-001 | web | ClaimCore.Web.copy deletion approval input.[CC-WEB-001] deletion approval binds exact report verifier and cutoff |
 | CC-WEB-001 | web | ClaimCore.Web.copy deletion approval input.[CC-WEB-001] deletion approval refuses forged or malformed metadata |
+| CC-WEB-001 | web | ClaimCore.Web.exact principal admission.[CC-WEB-001] composite and unauthenticated principals cannot select an actor |
+| CC-WEB-001 | web | ClaimCore.Web.exact principal admission.[CC-WEB-001] discovery refuses nonobjects and duplicate members |
+| CC-WEB-001 | web | ClaimCore.Web.exact principal admission.[CC-WEB-001] repeated subject and client claims are refused in every order |
+| CC-WEB-001 | web | ClaimCore.Web.exact principal admission.[CC-WEB-001] root and slash-ended issuer metadata preserve exact identity |
 | CC-WEB-001 | web | ClaimCore.Web.lifecycle input.[CC-WEB-001] lifecycle drafts and approvals retain exact caller identities |
 | CC-WEB-001 | web | ClaimCore.Web.lifecycle input.[CC-WEB-001] lifecycle input refuses forged or malformed fields |
 | CC-WEB-001 | web | ClaimCore.Web.management input.[CC-WEB-001] binds exact authority event, principal, role and scope before dispatch |

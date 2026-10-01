@@ -229,6 +229,13 @@ ClaimCore PostgreSQL integration.managed-copy signer purpose.[CC-BACKUP-001] del
 ClaimCore PostgreSQL integration.managed-copy signer purpose.[CC-BACKUP-001] signer key holder cannot self-approve as owner
 ClaimCore PostgreSQL integration.managed-copy signer purpose.[CC-BACKUP-001] signer owner approval refuses swapped purpose holder and revoked grant
 ClaimCore PostgreSQL integration.managed-copy verified deletion.[CC-BACKUP-001] independent absence and witnessed one-use approval co-commit verified deletion
+ClaimCore PostgreSQL integration.mutation result disclosure.[CC-AUTH-001] accepted command result is withheld after editor revocation
+ClaimCore PostgreSQL integration.mutation result disclosure.[CC-AUTH-001] accepted command result is withheld after erasure fence
+ClaimCore PostgreSQL integration.mutation result disclosure.[CC-AUTH-001] accepted recovery resolution is withheld after operator revocation
+ClaimCore PostgreSQL integration.mutation result disclosure.[CC-AUTH-001] exact import result is withheld after importer revocation
+ClaimCore PostgreSQL integration.mutation result disclosure.[CC-AUTH-001] retained preparation is withheld after editor revocation
+ClaimCore PostgreSQL integration.mutation result disclosure.[CC-AUTH-001] revoked preparation details are withheld after operator revocation
+ClaimCore PostgreSQL integration.mutation result disclosure.[CC-AUTH-001] witnessed export is withheld after exporter revocation
 ClaimCore PostgreSQL integration.owner backup capture evidence.[CC-BACKUP-001] owner seals exact distinct signed capture files and detects changed bytes
 ClaimCore PostgreSQL integration.owner backup capture fence.[CC-AUDIT-001] complete audit drains primary mutations and blocks new witness tickets
 ClaimCore PostgreSQL integration.owner backup capture fence.[CC-BACKUP-001] witness read fence holds accepted and owner authority stable during capture

@@ -29,13 +29,6 @@ module internal ActorCoreApi =
             | _ -> return GateResult.Failed
         }
 
-    let private commandAction preparing (request: CommandRequest) =
-        match request.Command, preparing with
-        | Command.Open _, true -> EndpointAction.PrepareNewCase
-        | Command.Open _, false -> EndpointAction.ExecuteNewCase
-        | _, true -> EndpointAction.PrepareCommand
-        | _ -> EndpointAction.ExecuteCommand
-
     let private prepare
         (gate: IActorGate)
         (factory: ActorCallContext -> IClaimsCore)
@@ -44,7 +37,7 @@ module internal ActorCoreApi =
         (ct: CancellationToken)
         =
         task {
-            let action = commandAction true request
+            let action = ActorMutationDisclosure.commandAction true request
             let! result = acquire (gate.Command(principal, action, request, ct)) ct
 
             match result with
@@ -69,7 +62,7 @@ module internal ActorCoreApi =
         (ct: CancellationToken)
         =
         task {
-            let action = commandAction false request
+            let action = ActorMutationDisclosure.commandAction false request
             let! result = acquire (gate.Command(principal, action, request, ct)) ct
 
             match result with

@@ -98,6 +98,7 @@ type internal IActorGate =
         cancellationToken: CancellationToken ->
             Task<ActorCallContext option>
 
+    /// Import-result disclosure resolves the stored operation, then checks case-scoped import authority.
     abstract Operation:
         principal: PrincipalKey *
         action: EndpointAction *

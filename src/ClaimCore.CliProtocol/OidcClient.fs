@@ -68,7 +68,7 @@ module OidcClient =
                         textProperty "jwks_uri" root |> Option.bind tryHttps
                     with
                     | Some actualIssuer, Some authorization, Some token, Some jwks when
-                        actualIssuer = issuer.AbsoluteUri.TrimEnd('/')
+                        actualIssuer = issuer.AbsoluteUri
                         ->
                         Ok
                             {

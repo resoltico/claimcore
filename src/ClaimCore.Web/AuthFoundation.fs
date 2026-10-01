@@ -15,7 +15,6 @@ module OidcAuthority =
                 && uri.Query = ""
                 && uri.Fragment = ""
                 && uri.HostNameType <> UriHostNameType.Unknown
-                && not (value.EndsWith("/", StringComparison.Ordinal))
             then
                 Ok uri
             else
@@ -30,10 +29,22 @@ module OidcAuthority =
             use document = JsonDocument.Parse(source)
             let root = document.RootElement
 
+            let names =
+                if root.ValueKind = JsonValueKind.Object then
+                    root.EnumerateObject() |> Seq.map _.Name |> Seq.toList
+                else
+                    []
+
             let text (name: string) =
-                match root.TryGetProperty(name) with
-                | true, property when property.ValueKind = JsonValueKind.String ->
-                    property.GetString() |> Option.ofObj
+                match
+                    root.ValueKind = JsonValueKind.Object,
+                    names.Length = (names |> Set.ofList |> Set.count)
+                with
+                | true, true ->
+                    match root.TryGetProperty(name) with
+                    | true, property when property.ValueKind = JsonValueKind.String ->
+                        property.GetString() |> Option.ofObj
+                    | _ -> None
                 | _ -> None
 
             match
@@ -65,18 +76,27 @@ module PrincipalIdentity =
         else
             Error "OIDC_CLIENT_INVALID"
 
-    let fromAccessToken issuer cliClient serviceClient (principal: ClaimsPrincipal) =
-        let claim (name: string) =
-            principal.FindFirst(name)
-            |> Option.ofObj
-            |> Option.map _.Value
-            |> Option.defaultValue ""
+    let private authenticatedIdentity (principal: ClaimsPrincipal) =
+        match principal.Identities |> Seq.toList with
+        | [ identity ] when identity.IsAuthenticated -> Some identity
+        | _ -> None
 
-        if not (principal.Identity |> Option.ofObj |> Option.exists _.IsAuthenticated) then
-            Error "OIDC_PRINCIPAL_UNAUTHENTICATED"
-        else
-            let client = claim "azp"
+    let private singleClaim (name: string) (identity: ClaimsIdentity) =
+        match identity.FindAll(name) |> Seq.toList with
+        | [ claim ] -> Some claim.Value
+        | _ -> None
 
-            if client = serviceClient then service issuer client
-            elif client = cliClient then human issuer (claim "sub")
-            else Error "OIDC_CLIENT_UNKNOWN"
+    let fromBrowserSession issuer principal =
+        match authenticatedIdentity principal |> Option.bind (singleClaim "sub") with
+        | Some subject -> human issuer subject
+        | None -> Error "OIDC_SUBJECT_INVALID"
+
+    let fromAccessToken issuer cliClient serviceClient principal =
+        match authenticatedIdentity principal with
+        | None -> Error "OIDC_PRINCIPAL_UNAUTHENTICATED"
+        | Some identity ->
+            match singleClaim "azp" identity, singleClaim "sub" identity with
+            | Some client, Some subject when client = cliClient -> human issuer subject
+            | Some client, Some subject when client = serviceClient && nonBlank subject ->
+                service issuer client
+            | _ -> Error "OIDC_CLIENT_UNKNOWN"

@@ -21,6 +21,7 @@ let private coreAndRecovery =
         DomainEvidenceTests.tests
         PreparationTests.tests
         PreparationHoldRetentionTests.tests
+        MutationDisclosureTests.tests
         AcceptedReplayStorageTests.tests
         AcceptedHistoryRetentionTests.tests
         AcceptedReplayWitnessTests.tests

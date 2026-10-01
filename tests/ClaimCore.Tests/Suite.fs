@@ -59,6 +59,7 @@ let private surfaces =
         ConfigurationTests.tests
         CliProcessTests.tests
         RemoteClientTests.tests
+        IssuerIdentityTests.tests
         RemoteInvocationTests.tests
         ActorAuthorizationTests.tests
         ActorAuthorizationMatrixTests.tests

@@ -9,7 +9,30 @@ module internal RuntimeActorFacade =
         | Rejection.Domain(DomainError.InvalidInput _) -> true
         | _ -> false
 
-    let private wrapRecovery (admission: RuntimeAdmission) (inner: IRecoveryWorkflow) =
+    let private prepare
+        (admission: RuntimeAdmission)
+        gate
+        principal
+        (inner: IActorClaimsCore)
+        request
+        ct
+        =
+        admission.RunClassified(
+            (fun () -> inner.Prepare(request, ct)),
+            (function
+            | PrepareOutcome.PrepareRejected(_, rejection) when invalidInput rejection -> true
+            | PrepareOutcome.CancelledBeforeAdmission _ -> true
+            | _ -> false),
+            ActorMutationDisclosure.prepare gate principal request
+        )
+
+
+    let private wrapRecovery
+        (admission: RuntimeAdmission)
+        gate
+        principal
+        (inner: IRecoveryWorkflow)
+        =
         { new IRecoveryWorkflow with
             member _.List(view, after, limit, ct) =
                 admission.RunRead(fun () -> inner.List(view, after, limit, ct))
@@ -18,19 +41,31 @@ module internal RuntimeActorFacade =
                 admission.RunRead(fun () -> inner.Inspect(operationId, after, limit, ct))
 
             member _.Resolve(operationId, digest, ct) =
-                admission.Run(fun () -> inner.Resolve(operationId, digest, ct))
+                admission.RunDisclosing(
+                    (fun () -> inner.Resolve(operationId, digest, ct)),
+                    ActorMutationDisclosure.resolve gate principal operationId
+                )
 
             member _.Dismiss(operationId, digest, confirmed, ct) =
-                admission.Run(fun () -> inner.Dismiss(operationId, digest, confirmed, ct))
+                admission.RunDisclosing(
+                    (fun () -> inner.Dismiss(operationId, digest, confirmed, ct)),
+                    ActorMutationDisclosure.dismiss gate principal operationId
+                )
 
             member _.ExportEnvelope(operationId, digest, ct) =
-                admission.Run(fun () -> inner.ExportEnvelope(operationId, digest, ct))
+                admission.RunDisclosing(
+                    (fun () -> inner.ExportEnvelope(operationId, digest, ct)),
+                    ActorMutationDisclosure.export gate principal operationId
+                )
 
             member _.PreviewEnvelopeImport(source, ct) =
                 admission.RunRead(fun () -> inner.PreviewEnvelopeImport(source, ct))
 
             member _.RetainEnvelopeImport(source, digest, ct) =
-                admission.Run(fun () -> inner.RetainEnvelopeImport(source, digest, ct))
+                admission.RunDisclosing(
+                    (fun () -> inner.RetainEnvelopeImport(source, digest, ct)),
+                    ActorMutationDisclosure.retain gate principal
+                )
         }
 
     let private wrapManagement (admission: RuntimeAdmission) (inner: IActorManagement) =
@@ -78,20 +113,18 @@ module internal RuntimeActorFacade =
                 admission.Run(fun () -> inner.ChangeHold(change, ct))
         }
 
-    let wrap (admission: RuntimeAdmission) (inner: IActorClaimsCore) : IActorClaimsCore =
+    let wrap
+        (admission: RuntimeAdmission)
+        gate
+        principal
+        (inner: IActorClaimsCore)
+        : IActorClaimsCore =
         { new IActorClaimsCore with
             member _.Definition(ct) =
                 admission.RunAuthorityRead(fun () -> inner.Definition ct)
 
             member _.Prepare(request, ct) =
-                admission.RunClassified(
-                    (fun () -> inner.Prepare(request, ct)),
-                    (function
-                    | PrepareOutcome.PrepareRejected(_, rejection) when invalidInput rejection ->
-                        true
-                    | PrepareOutcome.CancelledBeforeAdmission _ -> true
-                    | _ -> false)
-                )
+                prepare admission gate principal inner request ct
 
             member _.Execute(request, ct) =
                 admission.RunClassified(
@@ -102,7 +135,8 @@ module internal RuntimeActorFacade =
                         ->
                         true
                     | SubmissionOutcome.CancelledBeforeAdmission _ -> true
-                    | _ -> false)
+                    | _ -> false),
+                    ActorMutationDisclosure.submit gate principal request
                 )
 
             member _.Get(reference, ct) =
@@ -117,7 +151,7 @@ module internal RuntimeActorFacade =
             member _.ObserveOperation(operationId, ct) =
                 admission.RunRead(fun () -> inner.ObserveOperation(operationId, ct))
 
-            member _.Recovery = wrapRecovery admission inner.Recovery
+            member _.Recovery = wrapRecovery admission gate principal inner.Recovery
             member _.Management = wrapManagement admission inner.Management
             member _.Lifecycle = wrapLifecycle admission inner.Lifecycle
             member _.Tombstones = wrapTombstones admission inner.Tombstones
