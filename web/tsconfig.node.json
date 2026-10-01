@@ -3,7 +3,21 @@
   "compilerOptions": {
     "composite": true,
     "tsBuildInfoFile": "./node_modules/.cache/tsconfig.node.tsbuildinfo",
-    "types": ["node"]
+    "types": ["node"],
+    "allowJs": true,
+    "checkJs": true,
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true
   },
-  "include": ["vite.config.ts", "playwright.config.ts", "scripts"]
+  "include": [
+    "vite.config.ts",
+    "playwright.config.ts",
+    "scripts",
+    "lint",
+    "stylelint.config.mjs",
+    "../eng/ci/repository-path.mjs",
+    "../eng/lint/jsonc.mjs"
+  ]
 }

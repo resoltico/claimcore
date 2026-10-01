@@ -26,8 +26,10 @@ const dotnetCandidates = () => {
   if (configured !== undefined && !isAbsolute(configured)) {
     throw new Error("CLAIMCORE_DOTNET must name one absolute executable.");
   }
+  /** @type {string[]} */
   return [configured, join(homedir(), ".dotnet", executable), executable].filter(
-    (candidate) => candidate !== undefined && (!isAbsolute(candidate) || existsSync(candidate)),
+    (candidate) =>
+      typeof candidate === "string" && (!isAbsolute(candidate) || existsSync(candidate)),
   );
 };
 
@@ -46,6 +48,7 @@ const resolveDotnet = async () => {
   throw new Error("The exact .NET SDK selected by global.json is unavailable.");
 };
 
+/** @param {string} output */
 export const generateContracts = async (output) => {
   const dotnet = await resolveDotnet();
   await execute(

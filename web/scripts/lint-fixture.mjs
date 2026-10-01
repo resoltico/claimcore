@@ -18,6 +18,7 @@ const tsgolint = join(web, "node_modules/.bin/tsgolint");
  */
 function detachedConfig(typeAware) {
   const config = JSON.parse(readFileSync(join(web, ".oxlintrc.json"), "utf8"));
+  config.extends = [fileURLToPath(new URL("../../config/oxlint.json", import.meta.url))];
   config.jsPlugins = config.jsPlugins.map(
     (/** @type {string | {name: string, specifier: string}} */ plugin) =>
       typeof plugin === "string"

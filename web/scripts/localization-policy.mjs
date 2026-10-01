@@ -1,6 +1,7 @@
 import { parse, TYPE } from "@formatjs/icu-messageformat-parser";
 import { parseDocument } from "yaml";
 
+/** @param {string} source @returns {Record<string, string>} */
 export const readCatalog = (source) => {
   const parsed = parseDocument(source, { schema: "json", uniqueKeys: true });
   if (parsed.errors.length || parsed.warnings.length) {
@@ -12,6 +13,7 @@ export const readCatalog = (source) => {
   }
   return value;
 };
+/** @param {Record<string, string>} catalog @param {Record<string, string>} entries @param {string} domain */
 export const addDomain = (catalog, entries, domain) => {
   for (const [key, value] of Object.entries(entries)) {
     if (!key.startsWith(`${domain}.`) || Object.hasOwn(catalog, key)) {
@@ -21,6 +23,7 @@ export const addDomain = (catalog, entries, domain) => {
   }
 };
 const forbidden = /[<>\u202a-\u202e\u2066-\u2069\u200e\u200f]/u;
+/** @param {import("@formatjs/icu-messageformat-parser").PluralElement} node @param {string} language */
 const pluralSelector = (node, language) => {
   const categories = new Intl.PluralRules(language, { type: node.pluralType }).resolvedOptions()
     .pluralCategories;
@@ -36,6 +39,7 @@ const pluralSelector = (node, language) => {
       .sort(),
   ];
 };
+/** @param {string} name */
 const assertArgumentName = (name) => {
   if (
     !/^[a-zA-Z][a-zA-Z0-9]*$/u.test(name) ||
@@ -44,6 +48,11 @@ const assertArgumentName = (name) => {
     throw new Error("Unsafe interpolation argument name.");
   }
 };
+/** @param {import("@formatjs/icu-messageformat-parser").MessageFormatElement} node @returns {node is import("@formatjs/icu-messageformat-parser").ArgumentElement | import("@formatjs/icu-messageformat-parser").PluralElement | import("@formatjs/icu-messageformat-parser").SelectElement} */
+const coordinatedArgument = (node) =>
+  node.type === TYPE.argument || node.type === TYPE.plural || node.type === TYPE.select;
+
+/** @param {import("@formatjs/icu-messageformat-parser").MessageFormatElement[]} nodes @param {string} language @param {Record<string, string>} args @param {unknown[]} selectors */
 const inspectNodes = (nodes, language, args, selectors) => {
   for (const node of nodes) {
     if ([TYPE.number, TYPE.date, TYPE.time, TYPE.tag].includes(node.type)) {
@@ -52,7 +61,7 @@ const inspectNodes = (nodes, language, args, selectors) => {
     if (node.type === TYPE.literal && forbidden.test(node.value)) {
       throw new Error("Unsafe catalog literal.");
     }
-    if (![TYPE.argument, TYPE.plural, TYPE.select].includes(node.type)) {
+    if (!coordinatedArgument(node)) {
       continue;
     }
     assertArgumentName(node.value);
@@ -74,12 +83,15 @@ const inspectNodes = (nodes, language, args, selectors) => {
     }
   }
 };
+/** @param {string | undefined} message @param {string} language */
 export const messageShape = (message, language) => {
   if (typeof message !== "string" || message.trim() === "" || message.length > 8000) {
     throw new Error("Invalid catalog text.");
   }
   const ast = parse(message, { requiresOtherClause: true });
+  /** @type {Record<string, string>} */
   const args = {};
+  /** @type {unknown[]} */
   const selectors = [];
   inspectNodes(ast, language, args, selectors);
   return {
@@ -88,6 +100,7 @@ export const messageShape = (message, language) => {
     selectors: [...new Set(selectors.map((value) => JSON.stringify(value)))].sort(),
   };
 };
+/** @param {Record<string, string>} source @param {Record<string, string>} translated @param {string} language */
 export const validateCatalog = (source, translated, language) => {
   if (
     JSON.stringify(Object.keys(source).sort()) !== JSON.stringify(Object.keys(translated).sort())
@@ -105,6 +118,7 @@ export const validateCatalog = (source, translated, language) => {
     }
   }
 };
+/** @param {string} value */
 const expand = (value) =>
   value.replace(
     /[aeiouAEIOU]/gu,
@@ -120,8 +134,9 @@ const expand = (value) =>
         I: "ÏÏ",
         O: "ÖÖ",
         U: "ÜÜ",
-      })[c],
+      })[/** @type {"a"|"e"|"i"|"o"|"u"|"A"|"E"|"I"|"O"|"U"} */ (c)] ?? c,
   );
+/** @param {import("@formatjs/icu-messageformat-parser").MessageFormatElement[]} ast @returns {import("@formatjs/icu-messageformat-parser").MessageFormatElement[]} */
 export const pseudolocalize = (ast) =>
   ast.map((node) => {
     if (node.type === TYPE.literal) {
@@ -140,22 +155,31 @@ export const pseudolocalize = (ast) =>
     }
     return structuredClone(node);
   });
+/** @param {import("./tooling-types.mjs").JsonRecord} semantic @param {import("./tooling-types.mjs").JsonRecord} hostSchema @returns {Record<string, Record<string, unknown>>} */
 export const diagnosticRequirements = (semantic, hostSchema) => {
   const result = Object.fromEntries(
-    [semantic.rejectionDiagnostics, semantic.faultDiagnostics, semantic.recoveryDiagnostics]
+    [
+      semantic["rejectionDiagnostics"],
+      semantic["faultDiagnostics"],
+      semantic["recoveryDiagnostics"],
+    ]
       .flat()
       .map((d) => [
         d.id,
         Object.fromEntries(
-          d.parameters.map((p) => [p.name, { minimum: p.minimum, maximum: p.maximum }]),
+          d.parameters.map((/** @type {{name: string, minimum: number, maximum: number}} */ p) => [
+            p.name,
+            { minimum: p.minimum, maximum: p.maximum },
+          ]),
         ),
       ]),
   );
+  /** @param {import("./tooling-types.mjs").JsonRecord} node */
   const visit = (node) => {
     if (!node || typeof node !== "object") {
       return;
     }
-    const d = node.properties?.diagnostic?.properties;
+    const d = node["properties"]?.diagnostic?.properties;
     if (d) {
       for (const id of d.id.enum ?? [d.id.const]) {
         result[id] = d.parameters.properties;
@@ -172,6 +196,7 @@ export const diagnosticRequirements = (semantic, hostSchema) => {
   visit(hostSchema);
   return result;
 };
+/** @param {string | undefined} message @param {Record<string, unknown>} args @param {string} id */
 const assertDiagnosticShape = (message, args, id) => {
   const actual = messageShape(message, "en").args;
   if (
@@ -182,14 +207,16 @@ const assertDiagnosticShape = (message, args, id) => {
     throw new Error(`Diagnostic parameters differ: ${id}`);
   }
 };
+/** @param {Record<string, string>} catalog @param {import("./tooling-types.mjs").JsonRecord} semantic @param {Record<string, Record<string, unknown>>} requirements */
 export const validateCoverage = (catalog, semantic, requirements) => {
+  /** @type {string[]} */
   const keys = [];
-  for (const field of semantic.fields) {
+  for (const field of semantic["fields"]) {
     for (const s of ["label", "meaning"]) {
       keys.push(`field.${field.name}.${s}`);
     }
   }
-  for (const c of semantic.commands) {
+  for (const c of semantic["commands"]) {
     for (const s of ["label", "meaning"]) {
       keys.push(`command.${c.kind}.${s}`);
     }

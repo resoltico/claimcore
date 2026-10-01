@@ -5,6 +5,7 @@ import { join } from "node:path";
 import test from "node:test";
 import { describeDirectory, verifyLock, writeLock } from "./contract-lock.mjs";
 
+/** @param {Record<string, string>} files @param {(directory: string, lock: string) => Promise<void>} body */
 const withDirectory = async (files, body) => {
   const scratch = await mkdtemp(join(tmpdir(), "claimcore-contract-lock-"));
   try {
@@ -32,9 +33,9 @@ test("a lock records every artifact in ordinal order and verifies its own direct
 
 test("a changed, missing or unexpected artifact is refused", async () => {
   const mutations = [
-    (directory) => writeFile(join(directory, "a.json"), "changed"),
-    (directory) => rm(join(directory, "a.json")),
-    (directory) => writeFile(join(directory, "extra.json"), "extra"),
+    (/** @type {string} */ directory) => writeFile(join(directory, "a.json"), "changed"),
+    (/** @type {string} */ directory) => rm(join(directory, "a.json")),
+    (/** @type {string} */ directory) => writeFile(join(directory, "extra.json"), "extra"),
   ];
   for (const mutate of mutations) {
     await withDirectory({ "a.json": "{}" }, async (directory, lock) => {

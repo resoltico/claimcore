@@ -45,6 +45,13 @@ const rejected = [
   ["a short reason", { reason: "because" }, /substantive reason/u],
   ["no owner", { owner: "" }, /named owner/u],
   ["no review or expiry date", { reviewOn: undefined }, /requires reviewOn or expiresOn/u],
+  ["an impossible calendar day", { reviewOn: "2999-02-31" }, /ISO yyyy-MM-dd/u],
+  ["a non-leap day", { reviewOn: "2999-02-29" }, /ISO yyyy-MM-dd/u],
+  ["a parent path escape", { file: "../outside" }, /one exact repository-relative file/u],
+  ["duplicate rules", { rules: ["no-console", "no-console"] }, /exact rule names/u],
+  ["unknown fields", { extraPolicy: true }, /unknown fields/u],
+  ["a malformed optional expiry", { expiresOn: 29990101 }, /ISO yyyy-MM-dd/u],
+  ["a null review date", { reviewOn: null }, /ISO yyyy-MM-dd/u],
   ["a malformed date", { reviewOn: "next year" }, /ISO yyyy-MM-dd/u],
   ["an expired review", { reviewOn: "2000-01-01" }, /passed its reviewOn date/u],
   [
@@ -109,4 +116,20 @@ test("an unreadable or wrong-version registry is reported, not ignored", () => {
     loadRegistry(root, `${root}/config/lint-exceptions.json`, report);
     assert.match(report.errors.join("\n"), /version 2/u);
   });
+});
+
+test("valid leap days are accepted and malformed registry members cannot disappear", () => {
+  assert.deepEqual(load([{ ...validEntry, reviewOn: "2996-02-29" }]).errors, []);
+  for (const malformed of [
+    { version: 2, generated: [], exceptions: [null] },
+    { version: 2, generated: [false], exceptions: [] },
+    { version: 2, generated: [], exceptions: [], typo: true },
+  ]) {
+    withTree({ "config/lint-exceptions.json": JSON.stringify(malformed) }, (root) => {
+      const report = new Report();
+      const registry = loadRegistry(root, `${root}/config/lint-exceptions.json`, report);
+      assert.match(report.errors.join("\n"), /complete object arrays/u);
+      assert.equal(registry.exceptions.length, 0);
+    });
+  }
 });

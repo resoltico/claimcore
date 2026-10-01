@@ -26,6 +26,7 @@ const createCompiler = () => {
   return compiler;
 };
 
+/** @param {string[]} moduleIds @param {string} webDirectory @param {string} temporary */
 const embeddedPackages = (moduleIds, webDirectory, temporary) => {
   const marker = `${sep}node_modules${sep}`;
   const names = new Set(["rolldown"]);
@@ -48,6 +49,7 @@ const embeddedPackages = (moduleIds, webDirectory, temporary) => {
   return [...names].sort();
 };
 
+/** @param {import("ajv").AnySchemaObject[]} schemas */
 const validateSchemas = (schemas) => {
   const identifiers = new Set();
   for (const schema of schemas) {
@@ -62,6 +64,7 @@ const validateSchemas = (schemas) => {
   }
 };
 
+/** @param {{exportName: string, schemaReference: string}[]} validators */
 const validateExports = (validators) => {
   const names = new Set();
   const references = new Set();
@@ -85,27 +88,31 @@ const validateExports = (validators) => {
   }
 };
 
+/** @param {string} temporary @param {string} entry @param {string} webDirectory */
 const bundleOutput = async (temporary, entry, webDirectory) => {
   const bundle = await rolldown({ input: entry, treeshake: true });
   const generated = await bundle.generate({ format: "esm", minify: true, sourcemap: false });
   const chunks = generated.output.filter((item) => item.type === "chunk");
+  const [chunk] = chunks;
   if (
+    !chunk ||
     chunks.length !== 1 ||
     generated.output.length !== 1 ||
-    chunks[0].imports.length !== 0 ||
-    chunks[0].dynamicImports.length !== 0
+    chunk.imports.length !== 0 ||
+    chunk.dynamicImports.length !== 0
   ) {
     throw new Error("Standalone validator bundling must produce one self-contained ESM chunk.");
   }
-  if (chunks[0].code.includes(temporary)) {
+  if (chunk.code.includes(temporary)) {
     throw new Error("Standalone validator output contains a temporary path.");
   }
   return {
-    embeddedPackages: embeddedPackages(chunks[0].moduleIds, webDirectory, temporary),
-    source: `/* Generated from ClaimCore.Contracts schemas. Do not edit. */${chunks[0].code.trim()}\n`,
+    embeddedPackages: embeddedPackages(chunk.moduleIds, webDirectory, temporary),
+    source: `/* Generated from ClaimCore.Contracts schemas. Do not edit. */${chunk.code.trim()}\n`,
   };
 };
 
+/** @param {string} source @param {string} webDirectory */
 const bundledCode = async (source, webDirectory) => {
   const cache = resolve(webDirectory, "node_modules/.cache");
   await mkdir(cache, { recursive: true });
@@ -119,6 +126,7 @@ const bundledCode = async (source, webDirectory) => {
   }
 };
 
+/** @param {{schemas: import("ajv").AnySchemaObject[], validators: {exportName: string, schemaReference: string}[]}} inventory @param {string} webDirectory */
 export const compileStandaloneValidators = async (inventory, webDirectory) => {
   validateSchemas(inventory.schemas);
   validateExports(inventory.validators);

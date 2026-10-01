@@ -18,7 +18,7 @@
 *.yml text eol=lf
 *.yaml text eol=lf
 *.md text eol=lf
-uv.lock text eol=lf -diff
-package-lock.json text eol=lf -diff
-packages.lock.json text eol=lf -diff
+uv.lock text eol=lf
+package-lock.json text eol=lf
+packages.lock.json text eol=lf
 tests/inventory/*.txt text eol=lf

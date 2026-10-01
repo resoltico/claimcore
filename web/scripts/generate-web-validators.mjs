@@ -1,3 +1,4 @@
+import { packageVersion, validatorNotice } from "./validator-notices.mjs";
 import { readFile, readdir, rename, rm, writeFile } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
 
@@ -18,7 +19,9 @@ const responsesSchema = "web-v3.responses.schema.json";
 const safeName = /^[A-Za-z0-9][A-Za-z0-9._-]*$/u;
 export const maximumStandaloneValidatorGroupBytes = 600 * 1024;
 
+/** @param {string} file @returns {Promise<import("./tooling-types.mjs").JsonRecord>} */
 const readJson = async (file) => JSON.parse(await readFile(file, "utf8"));
+/** @param {string} source @param {string} filepath */
 const formatTypeScript = async (source, filepath) => {
   const canonicalPath = resolve(
     import.meta.dirname,
@@ -32,34 +35,38 @@ const formatTypeScript = async (source, filepath) => {
   return format(source, { ...configuration, filepath: canonicalPath });
 };
 
+/** @param {import("./tooling-types.mjs").JsonRecord} catalog @param {Set<string>} provisional */
 const endpointInventory = (catalog, provisional) => {
-  if (!Array.isArray(catalog.endpoints) || catalog.endpoints.length === 0) {
+  if (!Array.isArray(catalog["endpoints"]) || catalog["endpoints"].length === 0) {
     throw new Error("The Web v3 catalog has no endpoint inventory.");
   }
   const seen = new Set();
-  return catalog.endpoints.map((endpoint) => {
-    const { id, responseDefinition } = endpoint;
-    if (
-      typeof id !== "string" ||
-      seen.has(id) ||
-      typeof responseDefinition !== "string" ||
-      !safeName.test(responseDefinition)
-    ) {
-      throw new Error("The Web v3 endpoint inventory is invalid.");
-    }
-    const responseSchema = `web-v3.endpoint.${id}.response.schema.json`;
-    if (
-      !safeName.test(responseSchema) ||
-      basename(responseSchema) !== responseSchema ||
-      !provisional.has(responseSchema)
-    ) {
-      throw new Error("The Web v3 response-schema inventory is invalid.");
-    }
-    seen.add(id);
-    return { endpoint: id, exportName: validatorName(id), responseDefinition };
-  });
+  return catalog["endpoints"].map(
+    (/** @type {{id: string, responseDefinition: string}} */ endpoint) => {
+      const { id, responseDefinition } = endpoint;
+      if (
+        typeof id !== "string" ||
+        seen.has(id) ||
+        typeof responseDefinition !== "string" ||
+        !safeName.test(responseDefinition)
+      ) {
+        throw new Error("The Web v3 endpoint inventory is invalid.");
+      }
+      const responseSchema = `web-v3.endpoint.${id}.response.schema.json`;
+      if (
+        !safeName.test(responseSchema) ||
+        basename(responseSchema) !== responseSchema ||
+        !provisional.has(responseSchema)
+      ) {
+        throw new Error("The Web v3 response-schema inventory is invalid.");
+      }
+      seen.add(id);
+      return { endpoint: id, exportName: validatorName(id), responseDefinition };
+    },
+  );
 };
 
+/** @param {string} directory @param {string} file @returns {Promise<import("ajv").AnySchemaObject>} */
 const readSchema = async (directory, file) => {
   const schema = await readJson(join(directory, file));
   const identifier = `https://claimcore.local/contracts/${file}`;
@@ -72,9 +79,13 @@ const readSchema = async (directory, file) => {
   return schema;
 };
 
+/** @param {string} directory @param {import("./tooling-types.mjs").ValidatorEndpoint[]} endpoints @param {string} group */
 const validatorInventory = async (directory, endpoints, group) => {
   if (group === "host") {
     const host = await readSchema(directory, hostSchema);
+    if (typeof host.$id !== "string") {
+      throw new Error("Host schema needs an identifier.");
+    }
     return {
       schemas: [host],
       validators: [{ exportName: "validate_host_failure", schemaReference: host.$id }],
@@ -82,7 +93,10 @@ const validatorInventory = async (directory, endpoints, group) => {
   }
   const aggregate = await readSchema(directory, responsesSchema);
   const endpointValidators = endpoints.map(({ exportName, responseDefinition }) => {
-    if (aggregate.$defs?.[responseDefinition] === undefined) {
+    if (
+      responseDefinition === undefined ||
+      aggregate["$defs"]?.[responseDefinition] === undefined
+    ) {
       throw new Error(`Aggregate responses omit ${responseDefinition}.`);
     }
     return {
@@ -96,6 +110,7 @@ const validatorInventory = async (directory, endpoints, group) => {
   };
 };
 
+/** @param {string} directory @param {Set<string>} provisional */
 const assertProvisionalOutput = async (directory, provisional) => {
   const entries = await readdir(directory, { withFileTypes: true });
   if (entries.some((entry) => !entry.isFile())) {
@@ -114,6 +129,7 @@ const assertProvisionalOutput = async (directory, provisional) => {
   }
 };
 
+/** @param {string} file @param {string} contents */
 const atomicWrite = async (file, contents) => {
   const temporary = `${file}.${process.pid}.tmp`;
   try {
@@ -125,6 +141,7 @@ const atomicWrite = async (file, contents) => {
   }
 };
 
+/** @param {string} directory @param {Set<string>} provisional */
 const formatTypeScriptArtifacts = async (directory, provisional) => {
   const names = [...provisional]
     .filter(
@@ -143,51 +160,7 @@ const formatTypeScriptArtifacts = async (directory, provisional) => {
   }
 };
 
-const packageVersion = (lock, name) => {
-  const version = lock.packages?.[`node_modules/${name}`]?.version;
-  if (typeof version !== "string") {
-    throw new Error(`The locked ${name} version is missing.`);
-  }
-  return version;
-};
-
-const packageNotice = async (webDirectory, lock, name) => {
-  const packageDirectory = join(webDirectory, "node_modules", name);
-  const manifest = await readJson(join(packageDirectory, "package.json"));
-  const version = packageVersion(lock, name);
-  if (
-    manifest.name !== name ||
-    manifest.version !== version ||
-    typeof manifest.license !== "string"
-  ) {
-    throw new Error(`Embedded package metadata is invalid for ${name}.`);
-  }
-  const files = await readdir(packageDirectory, { withFileTypes: true });
-  const licenses = files
-    .filter((entry) => entry.isFile() && /^licen[cs]e(?:\.(?:md|txt))?$/iu.test(entry.name))
-    .map((entry) => entry.name)
-    .sort();
-  if (licenses.length !== 1) {
-    throw new Error(`Embedded package ${name} needs one license file.`);
-  }
-  const license = (await readFile(join(packageDirectory, licenses[0]), "utf8")).trim();
-  const repository =
-    typeof manifest.repository === "string" ? manifest.repository : manifest.repository?.url;
-  if (license.length === 0 || typeof repository !== "string" || repository.length === 0) {
-    throw new Error(`Embedded package attribution is incomplete for ${name}.`);
-  }
-  return `Package: ${name}@${version}\nDeclared license: ${manifest.license}\nUpstream: ${repository}\n\n${license}`;
-};
-
-const validatorNotice = async (webDirectory, lock, names) => {
-  const notices = await Promise.all(names.map((name) => packageNotice(webDirectory, lock, name)));
-  const header =
-    "ClaimCore Web v3 standalone-validator third-party notices\n\n" +
-    "Generated from the exact locked packages whose code is embedded in the split Web-v3 validator modules.";
-  const separator = `\n\n${"-".repeat(80)}\n\n`;
-  return `${header}\n\n${notices.join(separator)}\n`;
-};
-
+/** @param {import("./tooling-types.mjs").JsonRecord} manifest @param {Set<string>} provisional @param {import("./tooling-types.mjs").PackageLock} lock @param {string[]} embeddedPackages */
 const combinedManifest = (manifest, provisional, lock, embeddedPackages) => ({
   ...manifest,
   files: [...provisional, ...standaloneValidatorArtifacts].sort(),
@@ -199,6 +172,7 @@ const combinedManifest = (manifest, provisional, lock, embeddedPackages) => ({
   },
 });
 
+/** @param {string} source @param {{exportName: string}[]} entries */
 const assertValidatorModule = async (source, entries) => {
   const url = `data:text/javascript;base64,${Buffer.from(source).toString("base64")}`;
   const compiled = await import(url);
@@ -212,15 +186,19 @@ const assertValidatorModule = async (source, entries) => {
   }
 };
 
+/** @param {string} output */
 const provisionalInventory = async (output) => {
   const manifestPath = join(output, "contracts-manifest.json");
   const manifest = await readJson(manifestPath);
-  if (!Array.isArray(manifest.files) || !manifest.files.every((file) => safeName.test(file))) {
+  if (
+    !Array.isArray(manifest["files"]) ||
+    !manifest["files"].every((file) => safeName.test(file))
+  ) {
     throw new Error("The provisional contract manifest is invalid.");
   }
-  const provisional = new Set(manifest.files);
+  const provisional = new Set(manifest["files"]);
   if (
-    provisional.size !== manifest.files.length ||
+    provisional.size !== manifest["files"].length ||
     standaloneValidatorArtifacts.some((artifact) => provisional.has(artifact))
   ) {
     throw new Error("The F# manifest must contain a unique provisional artifact inventory.");
@@ -235,6 +213,7 @@ const provisionalInventory = async (output) => {
   return { manifest, provisional };
 };
 
+/** @param {string} output @param {import("./tooling-types.mjs").ValidatorGroups} groups @param {string} webDirectory */
 const compileGroups = (output, groups, webDirectory) =>
   Promise.all(
     Object.entries(groups).map(async ([group, groupEndpoints]) => {
@@ -248,12 +227,15 @@ const compileGroups = (output, groups, webDirectory) =>
     }),
   );
 
+/** @param {string} output @param {import("./tooling-types.mjs").ValidatorGroups} groups @param {Awaited<ReturnType<typeof compileGroups>>} compiledGroups */
 const writeValidatorGroups = async (output, groups, compiledGroups) => {
   await Promise.all(
     compiledGroups.map(async ({ group, compiled }) => {
       const declarationFile = join(output, `web-v3.validators.${group}.d.mts`);
       const declarationSource = await formatTypeScript(
-        validatorDeclarations(groups[group]),
+        validatorDeclarations(
+          groups[/** @type {keyof import("./tooling-types.mjs").ValidatorGroups} */ (group)],
+        ),
         declarationFile,
       );
       await atomicWrite(declarationFile, declarationSource);
@@ -262,6 +244,7 @@ const writeValidatorGroups = async (output, groups, compiledGroups) => {
   );
 };
 
+/** @param {string} directory */
 export const generateWebValidators = async (directory) => {
   const output = resolve(directory);
   const manifestPath = join(output, "contracts-manifest.json");
@@ -281,7 +264,9 @@ export const generateWebValidators = async (directory) => {
   if (embeddedPackages.length === 0) {
     throw new Error("Split standalone validator modules have no embedded package inventory.");
   }
-  const lock = await readJson(resolve(webDirectory, "package-lock.json"));
+  const lock = /** @type {import("./tooling-types.mjs").PackageLock} */ (
+    await readJson(resolve(webDirectory, "package-lock.json"))
+  );
   const noticeSource = await validatorNotice(webDirectory, lock, embeddedPackages);
   const wrapperFile = join(output, "web-v3.validation.ts");
   const wrapperSource = await formatTypeScript(validationWrapper(groups), wrapperFile);

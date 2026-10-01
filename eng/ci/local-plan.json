@@ -58,7 +58,8 @@
         "^eng/ClaimCore\\.ContractGenerator/",
         "^src/ClaimCore\\.(Contracts|CliProtocol|Application|Domain)/",
         "^\\.node-version$",
-        "^global\\.json$"
+        "^global\\.json$",
+        "^config/oxlint\\.json$"
       ]
     },
     {

@@ -25,6 +25,7 @@ const resultKeys = {
 };
 const failureStatuses = new Set(["failed", "timedOut"]);
 
+/** @param {unknown} summary */
 const writeSummary = async (summary) => {
   await mkdir(dirname(output), { recursive: true });
   const temporary = `${output}.${process.pid}.tmp`;
@@ -44,13 +45,15 @@ const safeStage = () => {
   }
 };
 
+/** @param {import("./tooling-types.mjs").BrowserTotals} totals @param {keyof import("./tooling-types.mjs").BrowserTotals} status */
 const count = (totals, status) => {
-  const key = resultKeys[status];
+  const key = /** @type {keyof import("./tooling-types.mjs").BrowserTotals} */ (resultKeys[status]);
   if (key !== undefined) {
     totals[key] += 1;
   }
 };
 
+/** @param {SanitizedPlaywrightReporter} reporter @param {import("@playwright/test/reporter").TestResult} result */
 const recordFailure = (reporter, result) => {
   if (!failureStatuses.has(result.status)) {
     return;
@@ -67,15 +70,21 @@ export default class SanitizedPlaywrightReporter {
   sourceLocations = browserSources(resolve(scriptDirectory, "../.."));
   stepDiagnostics = new WeakMap();
   totals = { passed: 0, failed: 0, skipped: 0, timedOut: 0, interrupted: 0 };
+  /** @type {import("./tooling-types.mjs").TestSummary[]} */
   tests = [];
+  /** @type {(number | null)[]} */
   failureLines = [];
+  /** @type {string[]} */
   failureCodes = [];
+  /** @type {unknown[]} */
   diagnosticTests = [];
 
+  /** @param {import("@playwright/test/reporter").FullConfig} _config @param {import("@playwright/test/reporter").Suite} suite */
   onBegin(_config, suite) {
     this.expected = suite.allTests().length;
   }
 
+  /** @param {import("@playwright/test/reporter").TestCase} _test @param {import("@playwright/test/reporter").TestResult} result */
   onTestBegin(_test, result) {
     this.stepDiagnostics.set(result, new BrowserStepDiagnostic(this.sourceLocations));
     if (progressFile !== undefined) {
@@ -83,14 +92,17 @@ export default class SanitizedPlaywrightReporter {
     }
   }
 
+  /** @param {import("@playwright/test/reporter").TestCase} _test @param {import("@playwright/test/reporter").TestResult} result @param {import("@playwright/test/reporter").TestStep} step */
   onStepBegin(_test, result, step) {
     this.stepDiagnostics.get(result)?.begin(step);
   }
 
+  /** @param {import("@playwright/test/reporter").TestCase} _test @param {import("@playwright/test/reporter").TestResult} result @param {import("@playwright/test/reporter").TestStep} step */
   onStepEnd(_test, result, step) {
     this.stepDiagnostics.get(result)?.end(step);
   }
 
+  /** @param {import("@playwright/test/reporter").TestCase} test @param {import("@playwright/test/reporter").TestResult} result */
   onTestEnd(test, result) {
     count(this.totals, result.status);
     this.tests.push({ id: test.title, outcome: result.status, durationMs: result.duration });
@@ -104,6 +116,7 @@ export default class SanitizedPlaywrightReporter {
     });
   }
 
+  /** @param {import("@playwright/test/reporter").FullResult} result */
   async onEnd(result) {
     await writeSummary({
       format: "claimcore-playwright-report",

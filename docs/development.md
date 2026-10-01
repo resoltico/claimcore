@@ -52,7 +52,10 @@ npm --prefix web run contract:generate
 dotnet build ClaimCore.slnx --configuration Release --no-restore
 ```
 
-Committed NuGet and npm lock files make both dependency graphs reproducible. A missing or stale lock
+Committed NuGet and npm lock files make both dependency graphs reproducible. npm installs enforce
+the exact declared engines through each package's `.npmrc`. Repository NuGet configuration clears
+inherited package sources, audit sources and package mappings before declaring the supported source.
+Lock files retain ordinary Git text diffs so reviewers can inspect the full dependency changes. A missing or stale lock
 is a repository defect, not a reason for CI to manufacture a new baseline. An ordinary .NET build
 does not produce or consume browser assets.
 
@@ -391,7 +394,13 @@ weakened in passing:
 | Shell                                    | shellcheck, shfmt                                          | every optional check at `style` severity through `.shellcheckrc`; shfmt settings in `.editorconfig`                              |
 | GitHub workflows                         | actionlint, zizmor, repository workflow policy             | zizmor pedantic persona; the only disabled audit is registered                                                                   |
 
-The exception engine (`node eng/lint/check-exceptions.mjs`) pins the oxlint categories and the Python
+Shared Oxlint declarations live in [`config/oxlint.json`](../config/oxlint.json); package configs
+extend them and own their environments, plugins and scope-specific rules. Compiler settings remain inside each package root so isolated mutation sandboxes retain their
+complete configuration. Both engineering and frontend JavaScript tooling are checked by the native TypeScript compiler. Browser globals belong
+to browser source and tests, while orchestration uses Node globals. Retained Web asset identity
+includes the full repository-local compiler inheritance graph, including the frontend base settings.
+
+The exception engine (`node eng/lint/check-exceptions.mjs`) pins inherited and overridden oxlint categories and the Python
 ceilings, so relaxing them fails the gate. `node eng/ci/suites/check-registry.mjs` holds the repository to the suite
 registry: every test project is registered, every registered file exists, every inventory belongs to a suite, and
 no workflow or script repeats a test count. Runner images are pinned to exact labels, and telemetry settings live in
@@ -410,7 +419,8 @@ administration, is held by `ClaimCore.Hosting` and the architecture manifest.
 [`config/lint-exceptions.json`](../config/lint-exceptions.json) is the sole registry of lint, type, format and
 coverage exceptions for every language. Every entry has a stable `LX-nnnn` id, the tool, the exact rules (never a
 blanket), one exact file, a kind, an exact occurrence count, a substantive reason, an owner and an ISO `reviewOn`
-or `expiresOn` date; generated-output exclusions are a separate reviewed list of recognized paths. An inline
+or `expiresOn` calendar-valid date; malformed entries, duplicate rules and unknown fields fail rather
+than disappearing during loading. Generated-output exclusions are a separate reviewed list of recognized paths. An inline
 suppression (`// oxlint-disable-next-line`, `# noqa`, `#nowarn`, `# shellcheck disable=`, `@ts-expect-error`,
 `prettier-ignore`, coverage ignores and their equivalents) must carry `lint-exception: LX-nnnn` in its own comment or
 the line above; no line numbers are recorded, so edits above a suppression never break it. Configuration-level
@@ -528,8 +538,8 @@ not delete selected locks, hand-edit generated locks, or let CI choose a new gra
 Security checking uses each ecosystem's own tool, all required: NuGet Audit runs on every restore and its
 vulnerability warnings are errors, `npm audit` and `npm audit signatures` run for `web` and `eng`, `uv audit` for the
 Python graph, and the frontend license check for production dependencies. Dependabot opens one grouped, 7-day-cooldown
-pull request per ecosystem each week (npm for `web` and `eng`, NuGet, the .NET SDK, uv, GitHub Actions including the
-composite action, and the Compose image). An available update does not block an unrelated PR, and a vulnerability
+version-update pull request per ecosystem each week (npm for `web` and `eng`, NuGet, the .NET SDK, uv, GitHub Actions including the
+composite action, and the Compose image). The version cooldown does not delay security updates. An available update does not block an unrelated PR, and a vulnerability
 finding is never a reason to waive a gate.
 
 See [Browser presentation](web.md#browser-presentation) for user-visible locale behavior and the

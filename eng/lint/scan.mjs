@@ -49,7 +49,7 @@ const scanners = [
     scan: ({ path, text }) => scanBuildConfig(path, text),
   },
   {
-    applies: (_, name) => /^\.oxlintrc\.jsonc?$/u.test(name),
+    applies: (path, name) => /^\.oxlintrc\.jsonc?$/u.test(name) || path === "config/oxlint.json",
     scan: ({ path, text }) => scanOxlintConfig(path, text),
   },
   {

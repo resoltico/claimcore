@@ -1,6 +1,6 @@
 // Boundary rules that no built-in oxlint rule expresses, run through oxlint's JavaScript plugin API.
 
-/** @param {import("oxlint/plugins").Expression} source */
+/** @param {import("oxlint/plugins-dev").Expression} source */
 function importedText(source) {
   if (source.type === "Literal" && typeof source.value === "string") return source.value;
   if (source.type === "TemplateLiteral")
@@ -8,7 +8,7 @@ function importedText(source) {
   return null;
 }
 
-/** @type {import("oxlint/plugins").Rule} */
+/** @type {import("oxlint/plugins-dev").Rule} */
 const noPresentationImport = {
   meta: {
     type: "problem",
@@ -32,7 +32,6 @@ const noPresentationImport = {
   },
 };
 
-/** @type {import("oxlint/plugins").Plugin} */
 const plugin = {
   meta: { name: "claimcore" },
   rules: { "no-presentation-import": noPresentationImport },

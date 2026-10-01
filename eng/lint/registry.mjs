@@ -36,6 +36,18 @@ function text(entry, name) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+/** @param {string} value @returns {boolean} */
+function calendarDay(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/u.test(value)) {
+    return false;
+  }
+  const instant = new Date(`${value}T00:00:00Z`);
+  return Number.isFinite(instant.getTime()) && instant.toISOString().slice(0, 10) === value;
+}
+
+/** @param {Record<string, unknown>} entry @param {string[]} fields @returns {boolean} */
+const knownFields = (entry, fields) => Object.keys(entry).every((field) => fields.includes(field));
+
 /**
  * Owner, reason and a review or expiry date that has not passed.
  * @param {Record<string, unknown>} entry
@@ -52,13 +64,13 @@ function checkGovernance(entry, label, report, today) {
   if (text(entry, "reason").length < 20) {
     report.add(`${label} needs a substantive reason.`);
   }
-  const dates = ["reviewOn", "expiresOn"].filter((name) => text(entry, name) !== "");
+  const dates = ["reviewOn", "expiresOn"].filter((name) => entry[name] !== undefined);
   if (dates.length === 0) {
     report.add(`${label} requires reviewOn or expiresOn.`);
   }
   for (const name of dates) {
     const value = text(entry, name);
-    if (!/^\d{4}-\d{2}-\d{2}$/u.test(value) || Number.isNaN(Date.parse(value))) {
+    if (!calendarDay(value)) {
       report.add(`${label} ${name} must be an ISO yyyy-MM-dd date.`);
     } else if (new Date(`${value}T23:59:59Z`) < today) {
       report.add(`${label} passed its ${name} date ${value}.`);
@@ -66,6 +78,12 @@ function checkGovernance(entry, label, report, today) {
   }
   return report.errors.length === before;
 }
+
+/** @param {string} file @returns {boolean} */
+const registeredFile = (file) =>
+  file !== "" &&
+  !/[*?\\:]/u.test(file) &&
+  file.split("/").every((part) => part !== "" && part !== "." && part !== "..");
 
 /**
  * What is wrong with an entry's own fields, independent of governance.
@@ -90,7 +108,25 @@ function fieldProblems(entry, root, ids, rules) {
     [tools.has(text(entry, "tool")), `names an unknown tool '${text(entry, "tool")}'.`],
     [kind === "inline" || kind === "config", "kind must be inline or config."],
     [Number.isInteger(count) && Number(count) >= 1, "needs a positive integer count."],
-    [rules.length > 0 && rules.length === listed, "needs exact rule names."],
+    [
+      rules.length > 0 && rules.length === listed && new Set(rules).size === rules.length,
+      "needs exact rule names without duplicates.",
+    ],
+    [
+      knownFields(entry, [
+        "id",
+        "tool",
+        "rules",
+        "file",
+        "kind",
+        "count",
+        "reason",
+        "owner",
+        "reviewOn",
+        "expiresOn",
+      ]),
+      "contains unknown fields.",
+    ],
     [
       rules.every(
         (rule) =>
@@ -98,11 +134,11 @@ function fieldProblems(entry, root, ids, rules) {
       ),
       "names a blanket, wildcard or non-suppressible rule.",
     ],
+    [registeredFile(file), "must name one exact repository-relative file."],
     [
-      file !== "" && !/[*?]/u.test(file) && !file.endsWith("/") && !file.startsWith("/"),
-      "must name one exact repository-relative file.",
+      !registeredFile(file) || existsSync(join(root, file)),
+      `points to a file that does not exist: ${file}.`,
     ],
-    [existsSync(join(root, file)), `points to a file that does not exist: ${file}.`],
   ];
   return checks.filter(([ok]) => !ok).map(([, message]) => message);
 }
@@ -150,6 +186,9 @@ function generatedEntry(entry, report, seen) {
   const path = text(entry, "path");
   const label = `Generated exclusion ${path || "(no path)"}`;
   const before = report.errors.length;
+  if (!knownFields(entry, ["path", "generator", "reason", "owner", "reviewOn", "expiresOn"])) {
+    report.add(`${label} contains unknown fields.`);
+  }
   if (!generatedPath.test(path)) {
     report.add(`${label} is not an exact recognized generated-output path.`);
   }
@@ -192,6 +231,16 @@ export function loadRegistry(root, registryPath, report) {
   }
   if (!isObject(parsed) || parsed["version"] !== 2) {
     report.add("The lint exception registry must be an object with version 2.");
+    return { generated: [], exceptions: [] };
+  }
+  if (
+    !knownFields(parsed, ["version", "generated", "exceptions"]) ||
+    !Array.isArray(parsed["generated"]) ||
+    !Array.isArray(parsed["exceptions"]) ||
+    !parsed["generated"].every(isObject) ||
+    !parsed["exceptions"].every(isObject)
+  ) {
+    report.add("The lint exception registry needs complete object arrays and no unknown fields.");
     return { generated: [], exceptions: [] };
   }
   const generatedSeen = new Set();

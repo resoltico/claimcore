@@ -238,11 +238,13 @@ test("oxlint size and complexity ceilings are fixed", () => {
       categories: Object.fromEntries(
         ["correctness", "suspicious", "pedantic", "perf", "style"].map((name) => [name, "error"]),
       ),
-      options: { denyWarnings: true },
+      options: { denyWarnings: true, reportUnusedDisableDirectives: "error" },
       rules: {
         complexity: ["error", { max: complexity }],
         "max-lines": ["error", { max: 300 }],
-        "max-lines-per-function": ["error", { max: 50 }],
+        "max-lines-per-function": ["error", { max: 50, IIFEs: true }],
+        "max-params": ["error", { max: 5 }],
+        "max-statements": ["error", { max: 50 }],
       },
     });
   assert.deepEqual(

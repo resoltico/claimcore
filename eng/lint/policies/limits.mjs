@@ -23,7 +23,6 @@ const pythonPylintLimits = [
   ["max-positional-args", 5],
   ["max-statements", 50],
 ];
-const oxlintCategories = ["correctness", "suspicious", "pedantic", "perf", "style"];
 const nestedExclusion = /(ignore|exclude|suppress|allowed)/iu;
 
 /**
@@ -78,40 +77,6 @@ export function checkFSharpLint(root, generated, report) {
       report.add(
         `config/fsharplint.json weakens '${name}' to ${String(value)}; the maximum is ${maximum}.`,
       );
-    }
-  }
-}
-
-/**
- * The size and complexity ceilings of the TypeScript linter are fixed.
- * @param {string} root
- * @param {string} path
- * @param {import("../model.mjs").Report} report
- */
-export function checkOxlintLimits(root, path, report) {
-  const config = table(readJson(root, path));
-  const categories = table(config["categories"]);
-  for (const category of oxlintCategories) {
-    if (categories[category] !== "error") {
-      report.add(`${path} must set the '${category}' rule category to "error".`);
-    }
-  }
-  if (table(config["options"])["denyWarnings"] !== true) {
-    report.add(`${path} must set options.denyWarnings to true.`);
-  }
-  const rules = table(config["rules"]);
-  /** @type {Array<[string, string, number]>} */
-  const limits = [
-    ["complexity", "max", 12],
-    ["max-lines", "max", 300],
-    ["max-lines-per-function", "max", 50],
-  ];
-  for (const [name, property, maximum] of limits) {
-    const setting = rules[name];
-    const options = Array.isArray(setting) ? table(setting[1]) : {};
-    const value = options[property];
-    if (typeof value !== "number" || value > maximum) {
-      report.add(`${path} must set '${name}' with ${property} at most ${maximum}.`);
     }
   }
 }

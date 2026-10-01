@@ -11,7 +11,8 @@ import {
 const catalogue = JSON.parse(
   readFileSync(new URL("../src/generated/contracts/web-v3.catalog.json", import.meta.url), "utf8"),
 );
-const endpoints = catalogue.endpoints.map((entry) => ({
+/** @type {import("./tooling-types.mjs").ValidatorEndpoint[]} */
+const endpoints = catalogue.endpoints.map((/** @type {{id: string}} */ entry) => ({
   endpoint: entry.id,
   exportName: validatorName(entry.id),
 }));

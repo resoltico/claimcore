@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const output = resolve(scriptDirectory, "../../artifacts/frontend/vitest-summary.json");
 
+/** @param {unknown} summary */
 const writeSummary = async (summary) => {
   await mkdir(dirname(output), { recursive: true });
   const temporary = `${output}.${process.pid}.tmp`;
@@ -14,8 +15,10 @@ const writeSummary = async (summary) => {
 
 export default class SanitizedVitestReporter {
   totals = { passed: 0, failed: 0, skipped: 0, todo: 0 };
+  /** @type {import("./tooling-types.mjs").TestSummary[]} */
   tests = [];
 
+  /** @param {import("vitest/node").TestCase} testCase */
   onTestCaseResult(testCase) {
     const result = testCase.result();
     const { state } = result;
@@ -39,6 +42,7 @@ export default class SanitizedVitestReporter {
     }
   }
 
+  /** @param {unknown[]} _modules @param {unknown[]} _errors @param {string} status */
   async onTestRunEnd(_modules, _errors, status) {
     await writeSummary({
       format: "claimcore-vitest-report",
