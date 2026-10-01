@@ -82,3 +82,6 @@ Desktop.ini
 .venv/
 .mypy_cache/
 .ruff_cache/
+
+# Contract artifacts are generated from the F# projection; config/contracts.lock.json is what is reviewed.
+/web/src/generated/

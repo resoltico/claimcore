@@ -2,7 +2,7 @@ import { readFile, writeFile } from "node:fs/promises";
 
 import { expect, type Download, type Page } from "@playwright/test";
 
-import { isWebV3Response } from "../src/generated/convergence/web-v3.validation";
+import { isWebV3Response } from "../src/generated/contracts/web-v3.validation";
 import type { PreparedIdentity } from "./case-workflow";
 import { expectAccessible, progress } from "./session-helpers";
 

@@ -2,8 +2,8 @@ import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { expect, type Page } from "@playwright/test";
 
-import { isWebV3Response } from "../src/generated/convergence/web-v3.validation";
-import { webV3Endpoints } from "../src/generated/convergence/web-v3.endpoint-catalog";
+import { isWebV3Response } from "../src/generated/contracts/web-v3.validation";
+import { webV3Endpoints } from "../src/generated/contracts/web-v3.endpoint-catalog";
 import { browserRequest, progress, sessionToken } from "./session-helpers";
 
 type Principals = Readonly<{

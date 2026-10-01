@@ -25,7 +25,7 @@
     "node": true,
     "es2024": true
   },
-  "ignorePatterns": ["src/generated/convergence/web-v3.validators.*.mjs"],
+  "ignorePatterns": ["src/generated/contracts/web-v3.validators.*.mjs"],
   "rules": {
     "capitalized-comments": "off",
     "complexity": [

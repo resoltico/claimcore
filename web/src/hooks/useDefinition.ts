@@ -2,7 +2,7 @@ import { localNotice } from "../api/notices";
 import type { Notice } from "../api/notices";
 import { useEffect, useState } from "react";
 import { resultNotice, type DefinitionPayload, v3 } from "../api/v3";
-import { webV3WireContractFingerprint } from "../generated/convergence/web-v3.endpoint-catalog";
+import { webV3WireContractFingerprint } from "../generated/contracts/web-v3.endpoint-catalog";
 
 export const useDefinition = (sessionEpoch: number) => {
   const [definition, setDefinition] = useState<DefinitionPayload | null>(null);

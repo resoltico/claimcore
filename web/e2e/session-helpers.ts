@@ -4,8 +4,8 @@ import { isAbsolute, resolve } from "node:path";
 import { AxeBuilder } from "@axe-core/playwright";
 import { expect, type BrowserContext, type Page } from "@playwright/test";
 
-import { isHostFailure, isWebV3Response } from "../src/generated/convergence/web-v3.validation";
-import type { HostFailure, WebV3Response } from "../src/generated/convergence/web-v3.types";
+import { isHostFailure, isWebV3Response } from "../src/generated/contracts/web-v3.validation";
+import type { HostFailure, WebV3Response } from "../src/generated/contracts/web-v3.types";
 
 type BrowserReply = Readonly<{
   status: number;

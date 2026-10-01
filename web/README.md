@@ -39,14 +39,15 @@ including formatting, typechecking, linting, dependency assurance, tests, and as
 
 ## Generated contract and publish boundary
 
-The contract check first regenerates semantic, CLI-v4, and Web-v3 catalogs, exact endpoint response
+`npm run contract:generate` regenerates semantic, CLI-v4, and Web-v3 catalogs, exact endpoint response
 schemas, pure-codec corpora, and split TypeScript DTO modules from F#. A deterministic Node
 postprocess compiles the aggregate Web response graph into typed AJV standalone core and recovery
 validator groups, formats generated TypeScript, and binds the complete inventory in one manifest. The
 browser dynamically imports only the group required to validate a received endpoint response.
-Temporary output is compared byte-for-byte with `src/generated/convergence/`. Use the explicit
-generation script only for an intentional contract change, then review every generated diff with its
-production codec and tests.
+The output lives in the ignored `src/generated/contracts/` and must match the committed
+`config/contracts.lock.json` (length and SHA-256 per artifact). `contract:verify` and `contract:check`
+verify an existing directory without regenerating. Use `contract:lock` only for an intentional contract
+change, then review the lock diff with its production codec and tests.
 
 The Vite output under `dist/` is ignored. Asset production records a manifest bound to frontend
 source, the npm lock, generated contract, Node/npm versions, notices, and output bytes. The .NET Web

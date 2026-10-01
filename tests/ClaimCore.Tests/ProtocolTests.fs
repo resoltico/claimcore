@@ -13,12 +13,6 @@ open ClaimCore.TestSupport
 
 let private bytes value = Encoding.UTF8.GetBytes(value: string)
 
-let private rawCorpusPath =
-    Path.Combine(
-        RepositoryRoot.find (),
-        "web/src/generated/convergence/cli-v4.raw-decoder-corpus.json"
-    )
-
 let private parse text =
     match StrictJson.parseDocument 131072 (bytes text) with
     | Ok document -> document
@@ -146,7 +140,11 @@ let private decodeRaw bytes =
         |> Result.map (fun (endpoint, _, _) -> endpoint)
 
 let private rawCorpus () =
-    use document = JsonDocument.Parse(File.ReadAllBytes(rawCorpusPath))
+    use document =
+        JsonDocument.Parse(
+            snd (ClaimCore.ContractGeneration.CliRawCorpus.artifact (ContractProjection.current ()))
+        )
+
     let root = document.RootElement
     Expect.equal (root.GetProperty("schemaVersion").GetInt32()) 1 "Raw corpus version"
 

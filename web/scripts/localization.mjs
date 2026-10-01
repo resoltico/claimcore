@@ -39,7 +39,7 @@ for (const lang of languages) {
 for (const lang of languages) {
   validateCatalog(catalogs.en, catalogs[lang], lang);
 }
-const generated = resolve(root, "src/generated/convergence");
+const generated = resolve(root, "src/generated/contracts");
 const semantic = JSON.parse(
   await readFile(resolve(generated, "semantic-core-v1.contract.json"), "utf8"),
 );

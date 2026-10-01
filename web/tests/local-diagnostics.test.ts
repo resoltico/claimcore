@@ -5,10 +5,10 @@ import { resolve } from "node:path";
 import Ajv2020, { type ValidateFunction } from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
 import { describe, expect, it } from "vitest";
-import { isHostFailure } from "../src/generated/convergence/web-v3.validation";
+import { isHostFailure } from "../src/generated/contracts/web-v3.validation";
 import { webCases } from "./contract-corpus.fixtures";
 
-const root = resolve(import.meta.dirname, "../src/generated/convergence");
+const root = resolve(import.meta.dirname, "../src/generated/contracts");
 const object = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 const read = (name: string): Record<string, unknown> => {

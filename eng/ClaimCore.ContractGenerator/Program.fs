@@ -23,7 +23,7 @@ let main arguments =
     artifacts |> List.iter (write output)
 
     File.WriteAllBytes(
-        Path.Combine(output, "convergence-manifest.json"),
+        Path.Combine(output, "contracts-manifest.json"),
         ContractArtifacts.manifest artifacts projection
     )
 

@@ -2,7 +2,7 @@ import { localNotice } from "../src/api/notices";
 import { render, screen } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
-import { isWebV3EndpointId } from "../src/generated/convergence/web-v3.endpoint-catalog";
+import { isWebV3EndpointId } from "../src/generated/contracts/web-v3.endpoint-catalog";
 import { CopyValue } from "../src/components/CopyValue";
 import { CaseFieldsView } from "../src/components/CaseFieldsView";
 import { DescriptorField } from "../src/components/DescriptorField";

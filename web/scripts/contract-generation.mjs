@@ -46,7 +46,7 @@ const resolveDotnet = async () => {
   throw new Error("The exact .NET SDK selected by global.json is unavailable.");
 };
 
-export const generateConvergenceContracts = async (output) => {
+export const generateContracts = async (output) => {
   const dotnet = await resolveDotnet();
   await execute(
     dotnet,

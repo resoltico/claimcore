@@ -5,13 +5,9 @@ import {
   type WebV3EndpointId,
   webV3Endpoints,
   webV3HostFailureStatuses,
-} from "../generated/convergence/web-v3.endpoint-catalog";
-import { isHostFailure, isWebV3Response } from "../generated/convergence/web-v3.validation";
-import type {
-  CommandDraft,
-  HostFailure,
-  WebV3Response,
-} from "../generated/convergence/web-v3.types";
+} from "../generated/contracts/web-v3.endpoint-catalog";
+import { isHostFailure, isWebV3Response } from "../generated/contracts/web-v3.validation";
+import type { CommandDraft, HostFailure, WebV3Response } from "../generated/contracts/web-v3.types";
 
 /** The generated endpoint catalogue owns route, method, media type, and byte limits. */
 export type * from "./types";

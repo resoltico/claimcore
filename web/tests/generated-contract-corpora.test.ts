@@ -1,10 +1,10 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
 
-import semantic from "../src/generated/convergence/semantic-core-v1.contract.json";
+import semantic from "../src/generated/contracts/semantic-core-v1.contract.json";
 
-import { isHostFailure, isWebV3Response } from "../src/generated/convergence/web-v3.validation";
-import { webV3HostFailureStatuses } from "../src/generated/convergence/web-v3.endpoint-catalog";
+import { isHostFailure, isWebV3Response } from "../src/generated/contracts/web-v3.validation";
+import { webV3HostFailureStatuses } from "../src/generated/contracts/web-v3.endpoint-catalog";
 import {
   cliCases,
   cliCommandPrepareInputValidator,

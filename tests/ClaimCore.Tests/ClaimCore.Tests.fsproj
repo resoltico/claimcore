@@ -88,6 +88,7 @@
     <ProjectReference Include="../../src/ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Database/ClaimCore.Database.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj" />
+    <ProjectReference Include="../../eng/ClaimCore.ContractGenerator/ClaimCore.ContractGenerator.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="coverlet.MTP" PrivateAssets="all" />

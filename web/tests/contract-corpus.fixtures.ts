@@ -8,8 +8,8 @@ import {
   isWebV3EndpointId,
   type WebV3EndpointId,
   webV3Endpoints,
-} from "../src/generated/convergence/web-v3.endpoint-catalog";
-import type { WebV3Response } from "../src/generated/convergence/web-v3.types";
+} from "../src/generated/contracts/web-v3.endpoint-catalog";
+import type { WebV3Response } from "../src/generated/contracts/web-v3.types";
 
 type ParsedCase = {
   readonly id: string;
@@ -21,7 +21,7 @@ type ParsedCase = {
 export type CliParsedCase = ParsedCase & { readonly exitCode: number };
 export type WebParsedCase = ParsedCase & { readonly status: number };
 
-const generated = resolve(import.meta.dirname, "../src/generated/convergence");
+const generated = resolve(import.meta.dirname, "../src/generated/contracts");
 
 export const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);

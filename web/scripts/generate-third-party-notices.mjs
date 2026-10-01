@@ -20,7 +20,7 @@ const fallbacks = new Map([
   ["client-only@0.0.1", resolve(webDirectory, "node_modules/react/LICENSE")],
 ]);
 const validatorNotice = readFileSync(
-  resolve(webDirectory, "src/generated/convergence/web-v3.validators.NOTICE.txt"),
+  resolve(webDirectory, "src/generated/contracts/web-v3.validators.NOTICE.txt"),
   "utf8",
 ).trim();
 const embeddedPackages = new Set(

@@ -1,10 +1,10 @@
 import { writeFile } from "node:fs/promises";
 
 import { expect, type Page, type Locator } from "@playwright/test";
-import type { WebV3EndpointId } from "../src/generated/convergence/web-v3.endpoint-catalog";
-import { webV3Endpoints } from "../src/generated/convergence/web-v3.endpoint-catalog";
-import type { WebV3Response } from "../src/generated/convergence/web-v3.types";
-import { isWebV3Response } from "../src/generated/convergence/web-v3.validation";
+import type { WebV3EndpointId } from "../src/generated/contracts/web-v3.endpoint-catalog";
+import { webV3Endpoints } from "../src/generated/contracts/web-v3.endpoint-catalog";
+import type { WebV3Response } from "../src/generated/contracts/web-v3.types";
+import { isWebV3Response } from "../src/generated/contracts/web-v3.validation";
 import type { Language, DisplayLocale } from "../src/presentation/preferences";
 import en from "../src/presentation/catalogs/en.ui.json" with { type: "json" };
 import lv from "../src/presentation/catalogs/lv.ui.json" with { type: "json" };

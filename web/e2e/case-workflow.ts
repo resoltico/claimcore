@@ -1,7 +1,7 @@
 import { expect, type Page } from "@playwright/test";
 
-import { isWebV3Response } from "../src/generated/convergence/web-v3.validation";
-import type { WebV3Response } from "../src/generated/convergence/web-v3.types";
+import { isWebV3Response } from "../src/generated/contracts/web-v3.validation";
+import type { WebV3Response } from "../src/generated/contracts/web-v3.types";
 import { progress } from "./session-helpers";
 
 export type PreparedIdentity = Readonly<{ operationId: string; requestSha256: string }>;
