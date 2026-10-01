@@ -86,6 +86,16 @@ async function download(url) {
 }
 
 /**
+ * The tar that reads every pinned archive kind. On Windows that is the system bsdtar, which unpacks zip
+ * archives; the `tar` first on PATH there can be GNU tar from Git for Windows, which cannot.
+ * @returns {string}
+ */
+const tarExecutable = () =>
+  process.platform === "win32"
+    ? join(process.env["SystemRoot"] ?? "C:\\Windows", "System32", "tar.exe")
+    : "tar";
+
+/**
  * @param {Buffer} bytes
  * @param {string} name
  * @param {Asset} asset
@@ -100,7 +110,7 @@ function unpack(bytes, name, asset) {
     const archive = join(scratch, `asset.${asset.archive}`);
     writeFileSync(archive, bytes);
     const member = asset.member ?? name;
-    const extracted = spawnSync("tar", ["-xf", archive, "-C", scratch, member], {
+    const extracted = spawnSync(tarExecutable(), ["-xf", archive, "-C", scratch, member], {
       stdio: "ignore",
     });
     if (extracted.status !== 0) {

@@ -26,6 +26,11 @@ jobs:
         with:
           name: claimcore-frontend-sbom-${{ github.run_id }}-${{ github.run_attempt }}
           path: artifacts/sbom
+      - name: Download the exact current-attempt generated contracts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: claimcore-contracts-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/contracts-input
       - name: Install the verified frontend tree for publication
         shell: bash
         run: |
@@ -35,6 +40,9 @@ jobs:
           test -f artifacts/frontend-input/dist/claimcore-assets.manifest.json
           mkdir -p web/dist
           cp -R artifacts/frontend-input/dist/. web/dist/
+          mkdir -p web/src/generated/contracts
+          cp -R artifacts/contracts-input/. web/src/generated/contracts/
+          npm --prefix web run contract:verify
           npm --prefix web run assets:verify
       - name: Restore the locked source tree and pinned tools
         run: |

@@ -9,6 +9,7 @@ import { appendFileSync, cpSync, existsSync, mkdirSync, readFileSync, rmSync } f
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { flag, option } from "../process-support.mjs";
+import { builtCliPath } from "./cli.mjs";
 import { discoverDotnet, parseInventory } from "./inventory.mjs";
 import { planSuite } from "./plan.mjs";
 import { inventoryPath, loadSuites } from "./registry.mjs";
@@ -79,30 +80,6 @@ function build(suite) {
       ...extra,
     ]);
   }
-}
-
-/**
- * The built CLI that the database suites' process tests start.
- * @returns {string}
- */
-function builtCliPath() {
-  const result = spawnSync(
-    "dotnet",
-    [
-      "msbuild",
-      "src/ClaimCore.Cli/ClaimCore.Cli.fsproj",
-      "-nologo",
-      "-verbosity:quiet",
-      "-property:Configuration=Release",
-      "-getProperty:TargetPath",
-    ],
-    { cwd: root, encoding: "utf8" },
-  );
-  const path = result.stdout.trim();
-  if (result.status !== 0 || !existsSync(path)) {
-    throw new Error("The built CLI could not be resolved; build ClaimCore.Cli first.");
-  }
-  return path;
 }
 
 /**

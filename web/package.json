@@ -27,7 +27,7 @@
     "dead-code": "knip",
     "contract:generate": "node scripts/regenerate-contract.mjs",
     "contract:lock": "node scripts/regenerate-contract.mjs --write-lock",
-    "contract:verify": "node scripts/check-contract.mjs",
+    "contract:verify": "node scripts/verify-contract-lock.mjs",
     "contract:check": "node scripts/check-contract.mjs && node scripts/check-react-aria.mjs && npm run localization:check",
     "licenses:check": "license-checker-rseidelsohn --production --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;0BSD;CC0-1.0'",
     "notices:generate": "node scripts/generate-third-party-notices.mjs",
