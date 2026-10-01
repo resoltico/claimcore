@@ -28,6 +28,32 @@ let private ambiguousClaims () =
             (PrincipalIdentity.fromBrowserSession issuer (principal claims))
             "Cookie and OIDC admission share exact subject selection"
 
+let private exactClaimNames () =
+    Expect.isError
+        (bearer [ Claim("AZP", "cli"); Claim("sub", "human") ])
+        "Uppercase client name cannot select a client"
+
+    Expect.isError
+        (bearer [ Claim("azp", "cli"); Claim("SUB", "human") ])
+        "Uppercase subject name cannot select a human"
+
+    Expect.isError
+        (PrincipalIdentity.fromBrowserSession issuer (principal [ Claim("SUB", "human") ]))
+        "Browser subject selection uses the exact name"
+
+    let exact =
+        [
+            Claim("azp", "cli")
+            Claim("sub", "human")
+            Claim("SUB", "extension")
+            Claim("AZP", "service")
+        ]
+
+    Expect.equal
+        (bearer exact)
+        (PrincipalIdentity.human issuer "human")
+        "Distinct extensions cannot replace exact identity claims"
+
 let private multipleIdentities () =
     let claims = [ Claim("azp", "cli"); Claim("sub", "human") ]
 
@@ -98,6 +124,9 @@ let tests =
     testList
         "exact principal admission"
         [
+            testCase
+                "[CC-WEB-001] claim names select identity with ordinal case sensitivity"
+                exactClaimNames
             testCase
                 "[CC-WEB-001] repeated subject and client claims are refused in every order"
                 ambiguousClaims

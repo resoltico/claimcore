@@ -604,6 +604,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-WEB-001 | web | ClaimCore.Web.copy adoption approval input.[CC-WEB-001] adoption origin binds exact witnessed provenance |
 | CC-WEB-001 | web | ClaimCore.Web.copy deletion approval input.[CC-WEB-001] deletion approval binds exact report verifier and cutoff |
 | CC-WEB-001 | web | ClaimCore.Web.copy deletion approval input.[CC-WEB-001] deletion approval refuses forged or malformed metadata |
+| CC-WEB-001 | web | ClaimCore.Web.exact principal admission.[CC-WEB-001] claim names select identity with ordinal case sensitivity |
 | CC-WEB-001 | web | ClaimCore.Web.exact principal admission.[CC-WEB-001] composite and unauthenticated principals cannot select an actor |
 | CC-WEB-001 | web | ClaimCore.Web.exact principal admission.[CC-WEB-001] discovery refuses nonobjects and duplicate members |
 | CC-WEB-001 | web | ClaimCore.Web.exact principal admission.[CC-WEB-001] repeated subject and client claims are refused in every order |

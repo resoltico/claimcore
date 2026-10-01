@@ -37,6 +37,11 @@ approval queries and terminal owner evidence before implementation.
     of a wildcard that could silently exempt a new claimant-bearing outcome. Normalize disclosure
     lookup faults to the same bounded exception as a lost grant, without provider details.
 
+11. **Platform claim lookup may fold names.** A real .NET `ClaimsIdentity` probe matched `SUB`
+    when looking up `sub`. Select exact ordinal claim names explicitly; uppercase-only subject or
+    client names cannot select an actor. A distinct uppercase extension does not replace the exact
+    registered claim. This revises the identity-selection implementation assumption.
+
 ## Executable evidence
 
 `PrincipalAdmissionTests` covers identity ambiguity and total discovery refusal.

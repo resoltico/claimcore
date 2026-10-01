@@ -126,7 +126,7 @@ outcomes are HTTP `200` endpoint bodies. Typed host failures use the appropriate
 `404`, `409`, `413`, `415`, `429`, `500`, or `503` response and state
 `executionPhase: NOT_STARTED` or `STARTED_UNCONFIRMED` where meaningful.
 
-Identity selection requires exactly one authenticated identity and one subject; bearer identity also requires exactly one authorized client claim. Duplicate identity claims are refused even when their values agree. Discovery rejects nonobject and duplicate-member documents and compares the complete issuer URI; canonical root issuers and slash-ended HTTPS endpoints are supported.
+Identity selection uses exact case-sensitive claim names and requires exactly one authenticated identity and one subject; bearer identity also requires exactly one authorized client claim. Duplicate identity claims are refused even when their values agree. Discovery rejects nonobject and duplicate-member documents and compares the complete issuer URI; canonical root issuers and slash-ended HTTPS endpoints are supported.
 
 Browser sessions remain server-side behind secure, HTTP-only, same-site cookies and are bounded by idle and absolute expiry. Access and refresh tokens are not exposed to browser JavaScript. A fresh OIDC login does not revive an expired session.
 

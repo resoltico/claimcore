@@ -10,7 +10,7 @@ owned by [Architecture](architecture.md#cc-auth-001), [Web](web.md#cc-web-001),
 
 Web identity selection used `FindFirst` for subject and authorized client. Repeated claims could
 silently choose the first actor or the human/service classification. Require one authenticated
-identity, one subject and, for bearer admission, one authorized client. Reject repeated identical
+identity, exact ordinal claim names, one subject and, for bearer admission, one authorized client. Reject repeated identical
 claims too. Browser callback and cookie admission share this selection. Signature, exact issuer,
 audience, lifetime, algorithm and token-type validation remain middleware responsibilities.
 

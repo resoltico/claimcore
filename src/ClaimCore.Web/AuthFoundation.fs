@@ -82,7 +82,11 @@ module PrincipalIdentity =
         | _ -> None
 
     let private singleClaim (name: string) (identity: ClaimsIdentity) =
-        match identity.FindAll(name) |> Seq.toList with
+        match
+            identity.Claims
+            |> Seq.filter (fun claim -> String.Equals(claim.Type, name, StringComparison.Ordinal))
+            |> Seq.toList
+        with
         | [ claim ] -> Some claim.Value
         | _ -> None
 
