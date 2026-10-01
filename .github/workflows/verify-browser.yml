@@ -55,7 +55,7 @@ jobs:
             --targetargs "eng/Run-PublishedWebE2E.sh artifacts/publish-input/web artifacts/publish-input/database $ENGINE" \
             --include '[ClaimCore.Web]*' --exclude-assemblies-without-sources None --format cobertura \
             --output "artifacts/browser/$ENGINE.coverage.cobertura.e2e.xml" --verbosity minimal
-          node eng/ci/coverage/browser.mjs "artifacts/browser/$ENGINE.coverage.cobertura.e2e.xml"
+          node eng/ci/coverage-policy/browser.mjs "artifacts/browser/$ENGINE.coverage.cobertura.e2e.xml"
           node eng/ci/publish/main.mjs verify artifacts/publish-input web database
       - name: Remove only this run's labeled browser containers
         if: always()

@@ -42,7 +42,7 @@ jobs:
           dotnet restore ClaimCore.slnx --locked-mode
           dotnet tool restore
       - name: Merge and enforce repository coverage floors
-        run: node eng/ci/coverage/merge.mjs artifacts/coverage-input artifacts/coverage-report "$GITHUB_STEP_SUMMARY"
+        run: node eng/ci/coverage-policy/merge.mjs artifacts/coverage-input artifacts/coverage-report "$GITHUB_STEP_SUMMARY"
       - name: Scan artifacts before upload
         id: artifact_scan
         if: always()
