@@ -15,26 +15,6 @@ open RecoveryExecutionDecision
 
 /// Owns the operation/case lock and dispatches to witnessed outcomes.
 module internal RecoveryExecutionStore =
-    let private completeExisting
-        connection
-        transaction
-        request
-        attemptId
-        receipt
-        cancellationToken
-        commitStarted
-        witness
-        =
-        acceptExisting
-            connection
-            transaction
-            request
-            attemptId
-            receipt
-            cancellationToken
-            commitStarted
-            witness
-
     let private executeKnown
         (connection: NpgsqlConnection)
         (transaction: NpgsqlTransaction)
@@ -54,22 +34,19 @@ module internal RecoveryExecutionStore =
             let request = Operation.request operation
 
             let! accepted =
-                StoreData.readOperation connection (Some transaction) request.OperationId
+                RecoveryAcceptedObservation.read
+                    connection
+                    transaction
+                    witness
+                    request.OperationId
+                    (Operation.fingerprint operation)
 
             match accepted with
-            | Some(receipt, original) when original = Operation.fingerprint operation ->
-                return!
-                    completeExisting
-                        connection
-                        transaction
-                        request
-                        attemptId
-                        receipt
-                        cancellationToken
-                        commitStarted
-                        witness
-            | Some _ -> return Error RecoveryStoreFailure.IdempotencyConflict
-            | None ->
+            | Ok(Some receipt) ->
+                // A later accepted receipt cannot settle a different historical attempt.
+                return Ok(AdmittedExecution.ObservedAccepted receipt)
+            | Error failure -> return Error failure
+            | Ok None ->
                 return!
                     executeWithoutAccepted
                         connection

@@ -5,6 +5,7 @@ open Npgsql
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.TestSupport
 open ClaimCore.IntegrationTests.Fixtures
 
 let private persistDateExtrema (value: string) =
@@ -31,10 +32,13 @@ let private persistDateExtrema (value: string) =
                     }
         }
 
-    Service.executeAsync service businessClock request
-    |> await
-    |> accepted
-    |> ignore
+    let execute input =
+        CommandExecution.executeAsync service businessClock input
+        |> await
+        |> accepted
+        |> ignore
+
+    execute request
 
     let decision =
         Command.Decide
@@ -44,12 +48,12 @@ let private persistDateExtrema (value: string) =
                 PayableCurrency = "USD"
             }
 
-    Service.executeAsync service businessClock (next request 1L decision)
-    |> await
-    |> accepted
-    |> ignore
+    execute (next request 1L decision)
 
-    Service.executeAsync service businessClock (next request 2L (Command.RecordPayment value))
+    CommandExecution.executeAsync
+        service
+        businessClock
+        (next request 2L (Command.RecordPayment value))
     |> await
     |> accepted
     |> ignore

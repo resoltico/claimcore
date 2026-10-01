@@ -20,6 +20,7 @@ module internal OperationAuthorityStore =
     type Revocation =
         {
             OperationId: Guid
+            WitnessEventId: Guid
             CaseId: Guid
             RevokingActorId: Guid
             GrantRevision: int64
@@ -49,11 +50,13 @@ module internal OperationAuthorityStore =
             || reader.GetGuid(5) = Guid.Empty
             || reader.GetInt64(6) <= 0L
             || reader.GetGuid(7) = Guid.Empty
+            || reader.GetGuid(8) <> WitnessEventIdentity.revocationEventId (reader.GetGuid(0))
         then
             raise (InvalidDataException("Stored operation revocation failed integrity checks."))
 
         {
             OperationId = reader.GetGuid(0)
+            WitnessEventId = reader.GetGuid(8)
             CaseId = reader.GetGuid(7)
             RevokingActorId = reader.GetGuid(5)
             GrantRevision = reader.GetInt64(6)
@@ -72,7 +75,7 @@ module internal OperationAuthorityStore =
             use command =
                 new NpgsqlCommand(
                     "SELECT operation_id, canonical_request_format, request_sha256, revoked_at, reason, "
-                    + "revoking_actor_id,grant_revision,case_id "
+                    + "revoking_actor_id,grant_revision,case_id,witness_event_id "
                     + "FROM claimcore.operation_revocations WHERE operation_id = @operation",
                     connection,
                     transaction
@@ -90,7 +93,7 @@ module internal OperationAuthorityStore =
             use command =
                 new NpgsqlCommand(
                     "SELECT operation_id, canonical_request_format, request_sha256, revoked_at, reason, "
-                    + "revoking_actor_id,grant_revision,case_id "
+                    + "revoking_actor_id,grant_revision,case_id,witness_event_id "
                     + "FROM claimcore.operation_revocations WHERE operation_id = @operation",
                     connection
                 )
@@ -127,10 +130,12 @@ module internal OperationAuthorityStore =
         revokingActorId
         grantRevision
         caseId
+        witnessEventId
         : OperationRevocation =
         let revocation =
             {
                 OperationId = operationId
+                WitnessEventId = witnessEventId
                 CaseId = caseId
                 RevokingActorId = revokingActorId
                 GrantRevision = grantRevision
@@ -142,6 +147,7 @@ module internal OperationAuthorityStore =
 
         if
             revocation.OperationId = Guid.Empty
+            || revocation.WitnessEventId <> WitnessEventIdentity.revocationEventId operationId
             || revocation.CanonicalRequestFormat <> int RecordVersions.CanonicalCommandFormat
             || revocation.RequestSha256.Length <> 64
             || revocation.RevokingActorId = Guid.Empty
@@ -165,19 +171,20 @@ module internal OperationAuthorityStore =
             use command =
                 new NpgsqlCommand(
                     "INSERT INTO claimcore.operation_revocations ("
-                    + "operation_id, case_id, canonical_request_format, request_sha256, "
+                    + "operation_id, witness_event_id, case_id, canonical_request_format, request_sha256, "
                     + "revoking_actor_id,grant_revision,reason, "
                     + "witness_sequence, witness_epoch, witness_entry_hash"
-                    + ") VALUES (@operation, @caseId, @format, @digest, @actor, @grantRevision, "
+                    + ") VALUES (@operation, @event, @caseId, @format, @digest, @actor, @grantRevision, "
                     + "@reason, @sequence, @epoch, @hash) "
                     + "ON CONFLICT (operation_id) DO NOTHING "
                     + "RETURNING operation_id, canonical_request_format, request_sha256, "
-                    + "revoked_at, reason, revoking_actor_id, grant_revision, case_id",
+                    + "revoked_at, reason, revoking_actor_id, grant_revision, case_id, witness_event_id",
                     connection,
                     transaction
                 )
 
             Sql.uuid command "operation" operationId
+            Sql.uuid command "event" ticket.OperationId
             Sql.uuid command "caseId" actorEvidence.CaseId
 
             Sql.add

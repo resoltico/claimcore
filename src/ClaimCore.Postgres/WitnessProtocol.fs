@@ -154,8 +154,10 @@ type internal WitnessProtocol
     member _.BeginRevocation
         (operationId: Guid, requestSha256: string, actorEvidence: RevocationActorEvidence)
         =
+        let eventId = WitnessEventIdentity.revocationEventId operationId
+
         try
-            if store.TryReadEvidence(operationId, Intent).IsSome then
+            if store.TryReadEvidence(eventId, Intent).IsSome then
                 raise WitnessPending
         with _ ->
             raise WitnessPending
@@ -165,11 +167,11 @@ type internal WitnessProtocol
         try
             let digest = SHA256.HashData(plain)
             let keyId = custody.ActiveKeyId
-            let encrypted = custody.Encrypt(keyId, associatedData operationId "INTENT", plain)
+            let encrypted = custody.Encrypt(keyId, associatedData eventId "INTENT", plain)
 
             let ticket =
                 try
-                    store.Append(operationId, Some actorEvidence.CaseId, Intent, keyId, encrypted)
+                    store.Append(eventId, Some actorEvidence.CaseId, Intent, keyId, encrypted)
                 with _ ->
                     raise WitnessPending
 

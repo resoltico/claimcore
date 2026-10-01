@@ -28,4 +28,6 @@ module internal Operation =
 
     let request operation = operation.RequestValue
     let fingerprint operation = operation.FingerprintValue
-    let canonicalRequest operation = operation.CanonicalRequestValue
+
+    let canonicalRequest operation =
+        Array.copy operation.CanonicalRequestValue

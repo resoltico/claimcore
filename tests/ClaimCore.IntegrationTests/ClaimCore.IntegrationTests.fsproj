@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <Compile Include="../RepositoryRoot.fs" Link="RepositoryRoot.fs" />
+    <Compile Include="../CommandExecution.fs" Link="CommandExecution.fs" />
     <Compile Include="FixtureEnvironment.fs" />
     <Compile Include="FixturePrivateFiles.fs" />
     <Compile Include="FixtureWitnessIdentity.fs" />
@@ -8,10 +9,13 @@
     <Compile Include="FixtureDatabase.fs" />
     <Compile Include="CaseListCursorTestSupport.fs" />
     <Compile Include="CaseListCursorProtectionTests.fs" />
+    <Compile Include="FixtureCommandExecution.fs" />
     <Compile Include="ActorBoundStoreFixture.fs" />
     <Compile Include="Fixtures.fs" />
     <Compile Include="TransactionPaginationTests.fs" />
     <Compile Include="TransactionRejectionTests.fs" />
+    <Compile Include="OperationLookupTests.fs" />
+    <Compile Include="TransactionReplayTests.fs" />
     <Compile Include="TransactionTests.fs" />
     <Compile Include="SchemaTests.fs" />
     <Compile Include="FieldStorageTests.fs" />
@@ -27,6 +31,7 @@
     <Compile Include="StorageBoundaryTests.fs" />
     <Compile Include="PreparationTests.fs" />
     <Compile Include="AcceptedReplayStorageTests.fs" />
+    <Compile Include="AcceptedHistoryRetentionTests.fs" />
     <Compile Include="WitnessProtocolTests.fs" />
     <Compile Include="WitnessKeyCustodyTests.fs" />
     <Compile Include="RecoveryArtifactKeyCustodyTests.fs" />
@@ -41,6 +46,12 @@
     <Compile Include="RecoveryArtifactImportTests.fs" />
     <Compile Include="RecoveryArtifactImportPreviewTests.fs" />
     <Compile Include="TechnicalWitnessTestSupport.fs" />
+    <Compile Include="RecoverySnapshotGate.fs" />
+    <Compile Include="RecoverySnapshotTests.fs" />
+    <Compile Include="AcceptedReplayWitnessTests.fs" />
+    <Compile Include="AuthorityOperationFenceCloseTests.fs" />
+    <Compile Include="RevocationIntentIdentityTests.fs" />
+    <Compile Include="SettledAttemptExecutionTests.fs" />
     <Compile Include="AuthorityOperationFenceFixture.fs" />
     <Compile Include="AuthorityOperationFenceTests.fs" />
     <Compile Include="TechnicalWitnessPruneTests.fs" />
@@ -185,6 +196,7 @@
     <Compile Include="ActorManagementTests.fs" />
     <Compile Include="CaseLifecycleStoreFixture.fs" />
     <Compile Include="CaseLifecycleStoreTests.fs" />
+    <Compile Include="PreparationHoldRetentionTests.fs" />
     <Compile Include="CaseListBlockedTimingTests.fs" />
     <Compile Include="CaseErasureFenceTests.fs" />
     <Compile Include="CaseLifecycleAuditTests.fs" />

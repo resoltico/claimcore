@@ -1,8 +1,7 @@
-ClaimCore PostgreSQL integration.PostgreSQL accepted receipt identity.[CC-APP-002] PostgreSQL accepted history without preparation remains replayable
 ClaimCore PostgreSQL integration.PostgreSQL accepted receipt identity.[CC-APP-002] PostgreSQL accepted replay survives owner pruning of preparation
 ClaimCore PostgreSQL integration.PostgreSQL accepted receipt identity.[CC-APP-002] PostgreSQL concurrent pruned replay and conflicts keep one accepted revision
 ClaimCore PostgreSQL integration.PostgreSQL accepted receipt identity.[CC-APP-002] PostgreSQL rejects wrong digest before parsing accepted snapshot
-ClaimCore PostgreSQL integration.PostgreSQL operation authority lifecycle.[CC-REC-001] a started worker cannot execute after revocation or later preparation pruning
+ClaimCore PostgreSQL integration.PostgreSQL operation authority lifecycle.[CC-REC-001] a revoked worker cannot execute or lose unsettled preparation evidence
 ClaimCore PostgreSQL integration.PostgreSQL operation authority lifecycle.[CC-REC-001] attempt 65 is refused while bounded evidence pages remain available
 ClaimCore PostgreSQL integration.PostgreSQL preparation boundary.[CC-REC-001] concurrent same-ID retain reports one creator and one existing replay
 ClaimCore PostgreSQL integration.PostgreSQL preparation boundary.capacity refusal preserves retained material and permits exact replay
@@ -85,9 +84,15 @@ ClaimCore PostgreSQL integration.Storage boundary qualification.storage scalars 
 ClaimCore PostgreSQL integration.Storage boundary qualification.storage scalars and fixture target.out of decimal range is rejected without conversion overflow
 ClaimCore PostgreSQL integration.Storage boundary qualification.transaction and baseline integrity.core transaction does not join caller ambient scope
 ClaimCore PostgreSQL integration.Storage boundary qualification.transaction and baseline integrity.runtime rejects installed script hash mismatch
+ClaimCore PostgreSQL integration.[CC-APP-002] PostgreSQL accepted history without preparation remains replayable
+ClaimCore PostgreSQL integration.[CC-AUDIT-001] authority lease cleanup preserves an observed result and retires its connector
 ClaimCore PostgreSQL integration.[CC-AUTH-001] case-list cursor binds principal grant query and visible page
 ClaimCore PostgreSQL integration.[CC-AUTH-001] voided and erasure-fenced identities share denial timing class
 ClaimCore PostgreSQL integration.[CC-BACKUP-001] root-signed topology refuses an aggregate key reused by a host
+ClaimCore PostgreSQL integration.[CC-LIFE-001] [CC-REC-001] a witnessed hold retains terminal preparation evidence until release
+ClaimCore PostgreSQL integration.[CC-REC-001] [CC-WIT-001] revocation fences future authority without rewriting an orphan acceptance
+ClaimCore PostgreSQL integration.[CC-REC-001] a settled rejection cannot be re-executed or issue an orphan intent
+ClaimCore PostgreSQL integration.[CC-REC-001] recovery inspection uses one snapshot across concurrent owner pruning
 ClaimCore PostgreSQL integration.actor and grant storage.[CC-AUTH-001] exact authority replay detects a forged live actor projection
 ClaimCore PostgreSQL integration.actor and grant storage.[CC-AUTH-001] explicit grant revocation advances authority and invalidates stale snapshot
 ClaimCore PostgreSQL integration.actor and grant storage.[CC-AUTH-001] initial owner is private and unknown login remains ungranted
@@ -360,6 +365,10 @@ ClaimCore PostgreSQL integration.witness prune owner SQL.[CC-ERASE-001] owner pr
 ClaimCore PostgreSQL integration.witness prune uncertainty.[CC-ERASE-001] exact settled prune replay survives witness key rotation
 ClaimCore PostgreSQL integration.witness prune uncertainty.[CC-ERASE-001] partial prune retries exact intent and refuses changed proposal
 ClaimCore PostgreSQL integration.witness prune uncertainty.[CC-ERASE-001] unexpected postcutoff CASE intent prevents witness ciphertext deletion
+ClaimCore PostgreSQL integration.witnessed accepted observation.[CC-WIT-001] accepted replay requires exact independent settlement
+ClaimCore PostgreSQL integration.witnessed accepted observation.[CC-WIT-001] attempt admission cannot bypass accepted settlement
+ClaimCore PostgreSQL integration.witnessed accepted observation.[CC-WIT-001] read-only case and receipt disclosures require settled evidence
+ClaimCore PostgreSQL integration.witnessed accepted observation.[CC-WIT-001] retention cannot bypass accepted settlement
 ClaimCore PostgreSQL integration.witnessed primary commit.[CC-WIT-001] orphan intent stays unknown without primary effect
 ClaimCore PostgreSQL integration.witnessed primary commit.[CC-WIT-001] postcommit witness outage stays unknown then exact retry settles
 ClaimCore PostgreSQL integration.witnessed primary commit.[CC-WIT-001] wrong witness key refuses runtime opening before case work

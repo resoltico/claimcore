@@ -137,13 +137,18 @@ module internal RecoveryDismissalStore =
         (witness: WitnessProtocol)
         =
         task {
-            let! accepted = StoreData.readOperation connection (Some transaction) operationId
+            let! accepted =
+                RecoveryAcceptedObservation.read
+                    connection
+                    transaction
+                    witness
+                    operationId
+                    requestSha256
 
             match accepted with
-            | Some(_, fingerprint) when fingerprint <> requestSha256 ->
-                return Error RecoveryStoreFailure.IdempotencyConflict
-            | Some(receipt, _) -> return Ok(RecoveryDismissal.ObservedAccepted receipt, None)
-            | None ->
+            | Error failure -> return Error failure
+            | Ok(Some receipt) -> return Ok(RecoveryDismissal.ObservedAccepted receipt, None)
+            | Ok None ->
                 let! revoked = find connection transaction operationId
 
                 match revoked with
@@ -238,7 +243,8 @@ module internal RecoveryDismissalStore =
                         transaction.CommitAsync(CancellationToken.None))
 
                 intent
-                |> Option.iter (fun value -> active.SettleRevoked(operationId, value) |> ignore)
+                |> Option.iter (fun value ->
+                    active.SettleRevoked(value.Ticket.OperationId, value) |> ignore)
 
                 return Ok outcome
         }

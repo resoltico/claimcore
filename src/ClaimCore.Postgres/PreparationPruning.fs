@@ -28,6 +28,17 @@ module PreparationPruning =
                 WHERE a.operation_id = p.operation_id AND s.attempt_id IS NULL
             )
             AND NOT EXISTS (
+                SELECT 1 FROM claimcore.case_holds h
+                WHERE h.case_id = p.case_id AND h.released_at IS NULL
+            )
+            AND NOT EXISTS (
+                SELECT 1 FROM claimcore.case_erasure_holds h
+                WHERE h.case_id = p.case_id AND NOT EXISTS (
+                    SELECT 1 FROM claimcore.case_erasure_hold_releases released
+                    WHERE released.hold_id = h.hold_id
+                )
+            )
+            AND NOT EXISTS (
                 SELECT 1 FROM claimcore.recovery_artifact_exports e
                 WHERE e.operation_id = p.operation_id AND e.expires_at > clock_timestamp()
             )
@@ -162,6 +173,10 @@ module PreparationPruning =
 
         use transaction = connection.BeginTransaction(IsolationLevel.ReadCommitted)
         progress.BeginWork()
+
+        ActorGrantRead.lockRevision connection transaction false CancellationToken.None
+        |> fun pending -> pending.GetAwaiter().GetResult() |> ignore
+
         Sql.lockKey connection transaction "claimcore:request-preparation-prune"
         let candidateIds = candidates connection transaction options
         let candidateCount = candidateIds.Length

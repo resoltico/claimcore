@@ -5,6 +5,7 @@ open Npgsql
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.TestSupport
 open ClaimCore.IntegrationTests.Fixtures
 
 let private storedRule reference =
@@ -44,7 +45,11 @@ let private amendment =
             use database = store ()
             let service = database :> IClaimStore
             let initial = newRequest ()
-            Service.executeAsync service clock initial |> await |> accepted |> ignore
+
+            CommandExecution.executeAsync service clock initial
+            |> await
+            |> accepted
+            |> ignore
 
             let changed =
                 Command.AmendRegistration
@@ -55,7 +60,7 @@ let private amendment =
             let amended = next initial 1L changed
 
             let receipt =
-                Service.executeAsync service rollbackClock amended |> await |> accepted
+                CommandExecution.executeAsync service rollbackClock amended |> await |> accepted
 
             Expect.equal (Claim.view receipt.Case).Version 2L "Accepted revision"
 
@@ -64,7 +69,9 @@ let private amendment =
                 (int16 DomainRules.version)
                 "Actual SQL evidence matches executable rules"
 
-            let replay = Service.executeAsync service rollbackClock amended |> await |> accepted
+            let replay =
+                CommandExecution.executeAsync service rollbackClock amended |> await |> accepted
+
             Expect.isTrue replay.Replayed "Exact replay retains acceptance after rollback"
 
             Expect.isTrue
@@ -78,7 +85,11 @@ let private constraints =
             use database = store ()
             let service = database :> IClaimStore
             let initial = newRequest ()
-            Service.executeAsync service clock initial |> await |> accepted |> ignore
+
+            CommandExecution.executeAsync service clock initial
+            |> await
+            |> accepted
+            |> ignore
 
             for table in [ "cases"; "case_changes" ] do
                 rejectUpdate
@@ -89,7 +100,9 @@ let private constraints =
                 "UPDATE claimcore.case_changes SET rule_revision=1 WHERE case_reference=@reference"
                 initial.CaseReference
 
-            let replay = Service.executeAsync service clock initial |> await |> accepted
+            let replay =
+                CommandExecution.executeAsync service clock initial |> await |> accepted
+
             Expect.isTrue replay.Replayed "Rejected SQL did not alter accepted evidence"
             Expect.equal (Claim.view replay.Case).Version 1L "Original revision")
 

@@ -6,6 +6,7 @@ open System.Threading
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.TestSupport
 open ClaimCore.Hosting
 open ClaimCore.RecordFormat
 open ClaimCore.IntegrationTests.Fixtures
@@ -59,14 +60,18 @@ let tests =
                 use database = store ()
                 let service = database :> IClaimStore
                 let initial = newRequest ()
-                Service.executeAsync service clock initial |> await |> accepted |> ignore
+
+                CommandExecution.executeAsync service clock initial
+                |> await
+                |> accepted
+                |> ignore
 
                 let beforeCase = service.Get(initial.CaseReference) |> await |> accepted
 
                 let beforeHistory = service.History(initial.CaseReference, 0L) |> await |> accepted
 
                 let result =
-                    Service.executeAsync
+                    CommandExecution.executeAsync
                         service
                         clock
                         (next initial 1L (Command.RecordPayment "2026-08-20"))

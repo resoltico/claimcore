@@ -5,6 +5,7 @@ open System.Threading
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Application
+open ClaimCore.TestSupport
 open ClaimCore.Domain
 open ClaimCore.Tests.Fixtures
 
@@ -37,7 +38,7 @@ let private acceptDirectly (claims: CoreStore.Store) input =
         Drafts.bind input
         |> Result.defaultWith (fun _ -> failtest "Synthetic draft must bind.")
 
-    match Service.executeAsync claims clock request |> await with
+    match CommandExecution.executeAsync claims clock request |> await with
     | Ok receipt -> receipt
     | Error _ -> failtest "Synthetic direct command must accept."
 
@@ -51,10 +52,10 @@ type private LostConfirmationStore() =
 
     member _.TransactionCalls = inner.TransactionCalls
 
-    interface IClaimStore with
-        member _.Transact(operation, decide) =
+    interface ITestCommandExecutor with
+        member _.Execute(operation, capture, decide) =
             task {
-                let! result = (inner :> IClaimStore).Transact(operation, decide)
+                let! result = (inner :> ITestCommandExecutor).Execute(operation, capture, decide)
 
                 match result with
                 | Ok _ when loseFirst ->
@@ -64,6 +65,7 @@ type private LostConfirmationStore() =
                 | _ -> return result
             }
 
+    interface IClaimStore with
         member _.Get reference = (inner :> IClaimStore).Get reference
         member _.List after = (inner :> IClaimStore).List after
 

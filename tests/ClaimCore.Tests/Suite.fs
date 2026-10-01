@@ -7,6 +7,7 @@ let private foundation =
         PropertyHarnessTests.tests
         ScalarPropertyTests.tests
         RecordPropertyTests.tests
+        CommandIdentityIsolationTests.tests
         TransitionPropertyTests.tests
         DomainTests.tests
         CaseDispositionTests.tests

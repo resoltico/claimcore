@@ -7,6 +7,7 @@ open Expecto
 open Npgsql
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.TestSupport
 open ClaimCore.Postgres
 open ClaimCore.Witness
 open ClaimCore.IntegrationTests.Fixtures
@@ -97,16 +98,7 @@ let private acceptedOpen (source: NpgsqlDataSource) (witness: WitnessProtocol) f
         |> await
         |> Option.defaultWith (fun () -> failtest "Synthetic editor was not admitted.")
 
-    use cases =
-        new PostgresStore(
-            source,
-            witness,
-            context,
-            CaseListCursorTestSupport.protection,
-            CaseListCursorTestSupport.clock
-        )
-
-    Service.executeAsync (cases :> IClaimStore) clock input
+    FixtureCommandExecution.executeRequest source witness context clock input
     |> await
     |> accepted
     |> ignore

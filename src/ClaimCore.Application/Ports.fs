@@ -51,13 +51,8 @@ type internal BusinessContext =
         TimeZoneId: string
     }
 
-/// Storage owns locks/commit, not business decisions. It invokes decide while holding the case lock.
+/// Read and exact-receipt observations. IRecoveryStore alone owns command mutation and its locks.
 type internal IClaimStore =
-    abstract Transact:
-        operation: PreparedOperation *
-        decide: (Claim option -> Result<Claim * BusinessContext, DomainError>) ->
-            Task<Result<Receipt, CoreFailure>>
-
     abstract Get: reference: string -> Task<Result<Claim option, CoreFailure>>
     abstract List: request: CaseListRequest -> Task<Result<CasePage, CoreFailure>>
 

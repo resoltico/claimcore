@@ -28,6 +28,7 @@
     <Compile Include="ActorGrantTombstoneGate.fs" />
     <Compile Include="ActorGrantGate.fs" />
     <Compile Include="PreparationEvidence.fs" />
+    <Compile Include="WitnessEventIdentity.fs" />
     <Compile Include="WitnessCandidate.fs" />
     <Compile Include="WitnessProof.fs" />
     <Compile Include="WitnessCustodyAdmission.fs" />
@@ -134,7 +135,9 @@
     <Compile Include="DataAuditPurgedApprovals.fs" />
     <Compile Include="DataAuditPurgedErasureCandidate.fs" />
     <Compile Include="StoreData.fs" />
-    <Compile Include="StoreTransactionPersistence.fs" />
+    <Compile Include="AcceptedCasePersistence.fs" />
+    <Compile Include="CaseReadLifecycleEvidence.fs" />
+    <Compile Include="CaseReadEvidence.fs" />
     <Compile Include="ActorReadStore.fs" />
     <Compile Include="ActorOperationReadStore.fs" />
     <Compile Include="ActorMutationSuppression.fs" />
@@ -160,9 +163,9 @@
     <Compile Include="CaseLifecycleApprove.fs" />
     <Compile Include="CaseLifecycleReview.fs" />
     <Compile Include="CaseLifecycleStore.fs" />
-    <Compile Include="StoreTransaction.fs" />
     <Compile Include="RecoveryReadAuthority.fs" />
     <Compile Include="RecoveryReadStore.fs" />
+    <Compile Include="RecoveryAcceptedObservation.fs" />
     <Compile Include="RecoveryRetentionStore.fs" />
     <Compile Include="RecoveryStartStore.fs" />
     <Compile Include="RecoveryDismissalStore.fs" />

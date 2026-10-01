@@ -39,7 +39,8 @@ module internal AuthorityOperationFence =
         with _ ->
             // A failed unlock cannot return a session with a retained lease to its pool.
             discard source connection
-            reraise ()
+            // Retirement protects the pool without rewriting an already observed result.
+            ()
 
     let private acquire source (connection: NpgsqlConnection) shared (ct: CancellationToken) =
         task {

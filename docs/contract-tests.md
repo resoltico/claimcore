@@ -9,12 +9,13 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | --- | --- | --- |
 | CC-APP-001 | acceptance | published authenticated CLI v4 acceptance.[CC-APP-001] rejected published CLI-v4 command preserves current case and accepted history |
 | CC-APP-001 | integration | ClaimCore PostgreSQL integration.rejected transactions.[CC-APP-001] rejected command changes neither case nor history |
-| CC-APP-002 | integration | ClaimCore PostgreSQL integration.PostgreSQL accepted receipt identity.[CC-APP-002] PostgreSQL accepted history without preparation remains replayable |
 | CC-APP-002 | integration | ClaimCore PostgreSQL integration.PostgreSQL accepted receipt identity.[CC-APP-002] PostgreSQL accepted replay survives owner pruning of preparation |
 | CC-APP-002 | integration | ClaimCore PostgreSQL integration.PostgreSQL accepted receipt identity.[CC-APP-002] PostgreSQL concurrent pruned replay and conflicts keep one accepted revision |
 | CC-APP-002 | integration | ClaimCore PostgreSQL integration.PostgreSQL accepted receipt identity.[CC-APP-002] PostgreSQL rejects wrong digest before parsing accepted snapshot |
 | CC-APP-002 | integration | ClaimCore PostgreSQL integration.PostgreSQL transactions.persistence and replay.[CC-APP-002] exact replay returns original receipt, not current state |
 | CC-APP-002 | integration | ClaimCore PostgreSQL integration.PostgreSQL transactions.persistence and replay.[CC-APP-002] same ID with different content fails |
+| CC-APP-002 | integration | ClaimCore PostgreSQL integration.[CC-APP-002] PostgreSQL accepted history without preparation remains replayable |
+| CC-APP-002 | unit | ClaimCore deterministic suite.[CC-APP-002] prepared canonical identity cannot be mutated through an accessor |
 | CC-APP-002 | unit | ClaimCore deterministic suite.accepted receipt first.[CC-APP-002] accepted identity conflict refuses without recovery disclosure |
 | CC-APP-002 | unit | ClaimCore deterministic suite.accepted receipt first.[CC-APP-002] accepted receipt wins after original commit confirmation is lost |
 | CC-APP-002 | unit | ClaimCore deterministic suite.accepted receipt first.[CC-APP-002] accepted replay needs no retained preparation or recovery read |
@@ -23,6 +24,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-ARCH-001 | architecture | ClaimCore architecture suite.architecture manifest.[CC-ARCH-001] restore publication trust is invisible to ordinary consumers |
 | CC-ARCH-001 | architecture | ClaimCore architecture suite.component effect ownership.[CC-ARCH-001] Web bindings cannot decode ClaimCore JSON bytes |
 | CC-ARCH-001 | fuzz | ClaimCore fuzz qualification.boundary decoding totality.[CC-ARCH-001] contract-owned HTTP codecs refuse hostile bytes without throwing |
+| CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.[CC-AUDIT-001] authority lease cleanup preserves an observed result and retires its connector |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.adopted external copy transitions.[CC-AUDIT-001] adopted external signed origin and transition replay |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.adopted product copy transitions.[CC-AUDIT-001] product export signed post-adoption transition replays through projection |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.authority operation fence.[CC-AUDIT-001] cancelled queued exclusive acquisition retires its connector and releases authority |
@@ -354,6 +356,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-ERASE-001 | unit | ClaimCore deterministic suite.owner live purge authorization.[CC-ERASE-001] hold and tombstone prevent a second live purge |
 | CC-ERASE-001 | unit | ClaimCore deterministic suite.owner live purge authorization.[CC-ERASE-001] owner live purge authorization keeps privacy pending |
 | CC-ERASE-001 | unit | ClaimCore deterministic suite.owner live purge authorization.[CC-ERASE-001] owner purge uses technical execution and two distinct stewards |
+| CC-LIFE-001 | integration | ClaimCore PostgreSQL integration.[CC-LIFE-001] [CC-REC-001] a witnessed hold retains terminal preparation evidence until release |
 | CC-LIFE-001 | integration | ClaimCore PostgreSQL integration.case lifecycle capacity.[CC-LIFE-001] 257th active hold is refused before a witness intent |
 | CC-LIFE-001 | integration | ClaimCore PostgreSQL integration.case lifecycle capacity.[CC-LIFE-001] concurrent stewards cannot consume a third approval slot |
 | CC-LIFE-001 | integration | ClaimCore PostgreSQL integration.case lifecycle reconciliation.[CC-LIFE-001] owner reconciles committed lifecycle intent without inventing an orphan outcome |
@@ -373,7 +376,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-LIFE-001 | unit | ClaimCore deterministic suite.lifecycle projection.[CC-LIFE-001] lifecycle SQL projection loader refuses duplicate and terminal holds |
 | CC-REC-001 | concurrency-qualification | ClaimCore concurrency qualification.PostgreSQL recovery races.[CC-REC-001] simultaneous exact resolves retain one accepted revision |
 | CC-REC-001 | concurrency-qualification | ClaimCore concurrency qualification.PostgreSQL recovery races.[CC-REC-001] simultaneous resolve and dismiss have one lifecycle winner |
-| CC-REC-001 | integration | ClaimCore PostgreSQL integration.PostgreSQL operation authority lifecycle.[CC-REC-001] a started worker cannot execute after revocation or later preparation pruning |
+| CC-REC-001 | integration | ClaimCore PostgreSQL integration.PostgreSQL operation authority lifecycle.[CC-REC-001] a revoked worker cannot execute or lose unsettled preparation evidence |
 | CC-REC-001 | integration | ClaimCore PostgreSQL integration.PostgreSQL operation authority lifecycle.[CC-REC-001] attempt 65 is refused while bounded evidence pages remain available |
 | CC-REC-001 | integration | ClaimCore PostgreSQL integration.PostgreSQL preparation boundary.[CC-REC-001] concurrent same-ID retain reports one creator and one existing replay |
 | CC-REC-001 | integration | ClaimCore PostgreSQL integration.PostgreSQL recovery cancellation.[CC-REC-001] caller cancellation after commit start cannot relabel outcome |
@@ -394,6 +397,10 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-REC-001 | integration | ClaimCore PostgreSQL integration.PostgreSQL recovery state table.[CC-REC-001] dismissed preparation is idempotent and cannot be exported |
 | CC-REC-001 | integration | ClaimCore PostgreSQL integration.PostgreSQL recovery state table.[CC-REC-001] missing preparation has explicit read and action outcomes |
 | CC-REC-001 | integration | ClaimCore PostgreSQL integration.PostgreSQL terminal capacity.[CC-REC-001] 1,024 recent accepted operations leave capacity for a distinct fresh preparation |
+| CC-REC-001 | integration | ClaimCore PostgreSQL integration.[CC-LIFE-001] [CC-REC-001] a witnessed hold retains terminal preparation evidence until release |
+| CC-REC-001 | integration | ClaimCore PostgreSQL integration.[CC-REC-001] [CC-WIT-001] revocation fences future authority without rewriting an orphan acceptance |
+| CC-REC-001 | integration | ClaimCore PostgreSQL integration.[CC-REC-001] a settled rejection cannot be re-executed or issue an orphan intent |
+| CC-REC-001 | integration | ClaimCore PostgreSQL integration.[CC-REC-001] recovery inspection uses one snapshot across concurrent owner pruning |
 | CC-REC-001 | integration | ClaimCore PostgreSQL integration.actor-bound v3 recovery import.[CC-REC-001] import requires current grant, authenticated artifact and active case |
 | CC-REC-001 | integration | ClaimCore PostgreSQL integration.owner-private recovery artifact key policy.[CC-REC-001] artifact key policy rejects unsafe bounds |
 | CC-REC-001 | integration | ClaimCore PostgreSQL integration.owner-private recovery artifact key policy.[CC-REC-001] artifact keys rotate with bounded issue and verify horizons |
@@ -605,6 +612,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-WEB-001 | web | ClaimCore.Web.writer handoff approval input.[CC-WEB-001] handoff approval binds exact fence candidate |
 | CC-WEB-001 | web | ClaimCore.Web.writer handoff approval input.[CC-WEB-001] handoff approval refuses forged or malformed metadata |
 | CC-WIT-001 | integration | ClaimCore PostgreSQL integration.Storage boundary qualification.catalog change token behavior.catalog change token.[CC-WIT-001] structural and privilege changes move the witness catalog token |
+| CC-WIT-001 | integration | ClaimCore PostgreSQL integration.[CC-REC-001] [CC-WIT-001] revocation fences future authority without rewriting an orphan acceptance |
 | CC-WIT-001 | integration | ClaimCore PostgreSQL integration.owner-private witness key custody.[CC-WIT-001] owner-private key-ring file admits and broad mode refuses |
 | CC-WIT-001 | integration | ClaimCore PostgreSQL integration.technical witness phases.[CC-WIT-001] PREPARE commit without settlement stays unknown then reconciles |
 | CC-WIT-001 | integration | ClaimCore PostgreSQL integration.technical witness phases.[CC-WIT-001] START commit without settlement returns same attempt once |
@@ -612,6 +620,10 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-WIT-001 | integration | ClaimCore PostgreSQL integration.technical witness phases.[CC-WIT-001] orphan PREPARE intent never invents a primary preparation |
 | CC-WIT-001 | integration | ClaimCore PostgreSQL integration.technical witness phases.[CC-WIT-001] orphan START intent never invents an attempt |
 | CC-WIT-001 | integration | ClaimCore PostgreSQL integration.witness auditor.[CC-WIT-001] audit-only credential reads evidence but cannot append or admit case work |
+| CC-WIT-001 | integration | ClaimCore PostgreSQL integration.witnessed accepted observation.[CC-WIT-001] accepted replay requires exact independent settlement |
+| CC-WIT-001 | integration | ClaimCore PostgreSQL integration.witnessed accepted observation.[CC-WIT-001] attempt admission cannot bypass accepted settlement |
+| CC-WIT-001 | integration | ClaimCore PostgreSQL integration.witnessed accepted observation.[CC-WIT-001] read-only case and receipt disclosures require settled evidence |
+| CC-WIT-001 | integration | ClaimCore PostgreSQL integration.witnessed accepted observation.[CC-WIT-001] retention cannot bypass accepted settlement |
 | CC-WIT-001 | integration | ClaimCore PostgreSQL integration.witnessed primary commit.[CC-WIT-001] orphan intent stays unknown without primary effect |
 | CC-WIT-001 | integration | ClaimCore PostgreSQL integration.witnessed primary commit.[CC-WIT-001] postcommit witness outage stays unknown then exact retry settles |
 | CC-WIT-001 | integration | ClaimCore PostgreSQL integration.witnessed primary commit.[CC-WIT-001] wrong witness key refuses runtime opening before case work |

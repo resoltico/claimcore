@@ -5,6 +5,7 @@ open Npgsql
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.TestSupport
 open ClaimCore.Postgres
 open ClaimCore.RecordFormat
 open ClaimCore.IntegrationTests.Fixtures
@@ -38,7 +39,7 @@ let private constraintTests =
                 use database = store ()
                 let request = newRequest ()
 
-                Service.executeAsync (database :> IClaimStore) clock request
+                CommandExecution.executeAsync (database :> IClaimStore) clock request
                 |> await
                 |> accepted
                 |> ignore
@@ -52,7 +53,7 @@ let private constraintTests =
                 use database = store ()
                 let request = newRequest ()
 
-                Service.executeAsync (database :> IClaimStore) clock request
+                CommandExecution.executeAsync (database :> IClaimStore) clock request
                 |> await
                 |> accepted
                 |> ignore
@@ -66,7 +67,7 @@ let private constraintTests =
                 use database = store ()
                 let request = newRequest ()
 
-                Service.executeAsync (database :> IClaimStore) clock request
+                CommandExecution.executeAsync (database :> IClaimStore) clock request
                 |> await
                 |> accepted
                 |> ignore
@@ -106,7 +107,7 @@ let private privilegeTests =
                     use database = store ()
                     let request = newRequest ()
 
-                    Service.executeAsync (database :> IClaimStore) clock request
+                    CommandExecution.executeAsync (database :> IClaimStore) clock request
                     |> await
                     |> accepted
                     |> ignore
@@ -196,14 +197,22 @@ let private atomicityTests =
                 use database = store ()
                 let service = database :> IClaimStore
                 let request = newRequest ()
-                Service.executeAsync service clock request |> await |> accepted |> ignore
+
+                CommandExecution.executeAsync service clock request
+                |> await
+                |> accepted
+                |> ignore
+
                 use admin = new NpgsqlConnection(adminConnection ())
                 admin.Open()
 
                 withFailureTrigger admin request.CaseReference (fun () ->
                     Expect.throwsT<RuntimeDatabaseMismatch>
                         (fun () ->
-                            Service.executeAsync service clock (next request 1L Command.Close)
+                            CommandExecution.executeAsync
+                                service
+                                clock
+                                (next request 1L Command.Close)
                             |> await
                             |> ignore)
                         "An unregistered trigger refuses runtime admission"

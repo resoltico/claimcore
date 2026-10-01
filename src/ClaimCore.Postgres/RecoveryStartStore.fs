@@ -10,6 +10,7 @@ open OperationAuthorityStore
 open PreparationData
 open PreparationLifecycleStore
 open SubmissionAttemptStore
+open WitnessProtocolReconciliation
 
 /// Witnessed admission of technical submission attempts and their settlements.
 module internal RecoveryStartStore =
@@ -93,13 +94,19 @@ module internal RecoveryStartStore =
                 return Error RecoveryStoreFailure.ResourceUnavailable
             | Some header ->
                 WitnessTechnical.reconcilePrepare witness connection transaction header
-                let! accepted = StoreData.readOperation connection (Some transaction) operationId
+
+                let! accepted =
+                    RecoveryAcceptedObservation.read
+                        connection
+                        transaction
+                        witness
+                        operationId
+                        header.RequestSha256
 
                 match accepted with
-                | Some(receipt, fingerprint) when fingerprint = header.RequestSha256 ->
-                    return Ok(RecoveryStart.ObservedAccepted receipt)
-                | Some _ -> return Error RecoveryStoreFailure.IdempotencyConflict
-                | None ->
+                | Ok(Some receipt) -> return Ok(RecoveryStart.ObservedAccepted receipt)
+                | Error failure -> return Error failure
+                | Ok None ->
                     return!
                         startWithoutAccepted
                             connection

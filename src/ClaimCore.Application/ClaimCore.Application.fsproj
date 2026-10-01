@@ -38,7 +38,6 @@
     <Compile Include="CoreConversions.fs" />
     <Compile Include="OperationRejection.fs" />
     <Compile Include="Drafts.fs" />
-    <Compile Include="Service.fs" />
     <Compile Include="HistoryCursor.fs" />
     <Compile Include="RecoveryCursorCodec.fs" />
     <Compile Include="RecoveryAttemptCursorCodec.fs" />

@@ -66,7 +66,7 @@ module internal DataAuditJournalCommands =
                         "SELECT EXISTS (SELECT 1 FROM claimcore.case_changes WHERE operation_id=@operation)"
                 Revoked =
                     keyed
-                        "SELECT EXISTS (SELECT 1 FROM claimcore.operation_revocations WHERE operation_id=@operation)"
+                        "SELECT EXISTS (SELECT 1 FROM claimcore.operation_revocations WHERE witness_event_id=@operation)"
                 Authority = keyed DataAuditJournalQueries.authority
                 ExternalPublication =
                     keyed (

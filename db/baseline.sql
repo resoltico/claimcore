@@ -1843,6 +1843,9 @@ CREATE TABLE claimcore.request_submission_settlements (
 CREATE TABLE claimcore.operation_revocations (
     operation_id uuid PRIMARY KEY
         CHECK (operation_id <> '00000000-0000-0000-0000-000000000000'),
+    witness_event_id uuid NOT NULL UNIQUE
+        CHECK (witness_event_id <> '00000000-0000-0000-0000-000000000000'
+            AND witness_event_id <> operation_id),
     case_id uuid NOT NULL CHECK (case_id <> '00000000-0000-0000-0000-000000000000'),
     canonical_request_format smallint NOT NULL CHECK (canonical_request_format = 3),
     request_sha256 text NOT NULL CHECK (request_sha256 ~ '^[0-9a-f]{64}$'),

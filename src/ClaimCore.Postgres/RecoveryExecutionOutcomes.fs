@@ -15,54 +15,17 @@ open WitnessProtocolReconciliation
 /// The one storage-owned transaction that rechecks authority, invokes the pure Domain callback,
 /// persists accepted state, and records a definite settlement together.
 module internal RecoveryExecutionOutcomes =
-    let acceptExisting
-        (connection: NpgsqlConnection)
-        (transaction: NpgsqlTransaction)
-        (request: CommandRequest)
-        (attemptId: Guid)
-        receipt
-        cancellationToken
-        commitStarted
-        (witness: WitnessProtocol)
-        =
-        task {
-            witness.ReconcileAccepted(connection, transaction, request.OperationId)
-
-            do!
-                settleExistingAttempt
-                    connection
-                    transaction
-                    request.OperationId
-                    attemptId
-                    RecoverySettlement.Accepted
-
-            do! commit transaction cancellationToken commitStarted
-            return Ok(AdmittedExecution.Accepted receipt)
-        }
-
     let revokeExisting
         (connection: NpgsqlConnection)
         (transaction: NpgsqlTransaction)
         (request: CommandRequest)
-        (attemptId: Guid)
-        cancellationToken
-        commitStarted
         (witness: WitnessProtocol)
         =
         task {
             witness.ReconcileRevoked(connection, transaction, request.OperationId)
 
-            do!
-                settleExistingAttempt
-                    connection
-                    transaction
-                    request.OperationId
-                    attemptId
-                    RecoverySettlement.RevokedBeforeExecution
-
-            do! commit transaction cancellationToken commitStarted
-
-            return Ok(AdmittedExecution.RevokedBeforeExecution SettlementConfirmation.Confirmed)
+            // Revocation closes future authority; it does not settle a historical attempt.
+            return Ok(AdmittedExecution.RevokedBeforeExecution SettlementConfirmation.Unconfirmed)
         }
 
     let rejectPending
@@ -117,7 +80,7 @@ module internal RecoveryExecutionOutcomes =
         task {
             try
                 return!
-                    StoreTransactionPersistence.persistUnderCaseLock
+                    AcceptedCasePersistence.persistUnderCaseLock
                         connection
                         transaction
                         operation

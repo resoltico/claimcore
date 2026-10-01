@@ -4,29 +4,45 @@ open System.Threading.Tasks
 open ClaimCore.RecordFormat
 
 /// A same-ID receipt is not an exact replay until the accepted fingerprint is checked against the
-/// retained canonical bytes by the content-bound claim transaction.
+/// retained canonical bytes by content-bound witnessed observation; this path cannot execute.
 module internal ObservedReceiptVerification =
     let private corruptFault: CoreFault = CoreFault.RetainedCanonicalInvalid
 
+    let private identity (preparation: RetainedPreparation) =
+        RequestRecord.decode SemanticContract.current.RequestByteLimit preparation.CanonicalRequest
+        |> Result.mapError ignore
+        |> Result.bind (fun request -> Operation.prepare request |> Result.mapError ignore)
+        |> Result.bind (fun operation ->
+            if
+                (Operation.request operation).OperationId = preparation.OperationId
+                && Operation.canonicalRequest operation = preparation.CanonicalRequest
+                && Operation.fingerprint operation = preparation.RequestSha256
+            then
+                Ok operation
+            else
+                Error())
+
     let verify
         (store: IClaimStore)
-        (clock: IBusinessTime)
         (preparation: RetainedPreparation)
         (summary: PreparationSummary)
         : Task<RetainedResolution> =
         task {
-            match
-                RequestRecord.decode
-                    SemanticContract.current.RequestByteLimit
-                    preparation.CanonicalRequest
-            with
+            match identity preparation with
             | Error _ -> return ResolutionFailedBeforeAttempt(Some summary, corruptFault)
-            | Ok request ->
+            | Ok operation ->
                 try
-                    let! result = Service.executeAsync store clock request
+                    let! result =
+                        store.Accepted(
+                            (Operation.request operation).OperationId,
+                            Operation.fingerprint operation
+                        )
 
                     match result with
-                    | Ok accepted -> return ObservedReceipt(TypedProjection.receipt accepted)
+                    | Ok(Some accepted) -> return ObservedReceipt(TypedProjection.receipt accepted)
+                    | Ok None ->
+                        return
+                            ResolutionFailedBeforeAttempt(Some summary, CoreFault.StoreUnavailable)
                     | Error CoreFailure.IdempotencyConflict -> return ReceiptIdentityConflict
                     | Error failure ->
                         return

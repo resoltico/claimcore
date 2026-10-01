@@ -20,7 +20,13 @@ let private coreAndRecovery =
         StorageBoundaryTests.tests
         DomainEvidenceTests.tests
         PreparationTests.tests
+        PreparationHoldRetentionTests.tests
         AcceptedReplayStorageTests.tests
+        AcceptedHistoryRetentionTests.tests
+        AcceptedReplayWitnessTests.tests
+        AuthorityOperationFenceCloseTests.tests
+        RevocationIntentIdentityTests.tests
+        SettledAttemptExecutionTests.tests
         WitnessProtocolTests.tests
         WitnessKeyCustodyTests.tests
         RecoveryArtifactKeyCustodyTests.tests
@@ -34,6 +40,7 @@ let private coreAndRecovery =
         RecoveryProcessTests.tests
         RecoveryRaceTests.tests
         RecoveryEvidenceTests.tests
+        RecoverySnapshotTests.tests
         RecoveryLifecycleAuthorityTests.tests
         RecoveryStateTests.tests
         RecoveryCancellationTests.tests
