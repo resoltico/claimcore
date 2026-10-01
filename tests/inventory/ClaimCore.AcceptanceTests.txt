@@ -1,0 +1,16 @@
+published authenticated CLI v4 acceptance.NDJSON session preserves frame-local results
+published authenticated CLI v4 acceptance.[CC-APP-001] rejected published CLI-v4 command preserves current case and accepted history
+published authenticated CLI v4 acceptance.[CC-CLI-001] published malformed frames retain exact typed refusals
+published authenticated CLI v4 acceptance.[CC-CLI-001] published operation and recovery identities reject invalid UUID and digest
+published authenticated CLI v4 acceptance.[CC-CLI-001] published six-request witnessed lifecycle retains exact history
+published authenticated CLI v4 acceptance.[CC-CLI-001] witnessed accepted command and exact replay
+published authenticated CLI v4 acceptance.[CC-CLI-002] malformed owner-private envelope preview retains no preparation
+published authenticated CLI v4 acceptance.[CC-CLI-002] private recovery export and preview
+published authenticated CLI v4 acceptance.[CC-CLI-002] unsafe private source refuses without path disclosure
+published authenticated CLI v4 acceptance.authenticated case list, get, and history
+published authenticated CLI v4 acceptance.configuration-free published discovery
+published authenticated CLI v4 acceptance.forged loopback PKCE state is refused before service access
+published authenticated CLI v4 acceptance.live Keycloak public-client code and PKCE reaches the service
+published authenticated CLI v4 acceptance.retained preparation resolves by exact digest
+published authenticated CLI v4 acceptance.service credential reads without a database dependency
+published authenticated CLI v4 acceptance.strict CLI v4 frame refusal

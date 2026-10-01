@@ -18,11 +18,9 @@
  * @property {string[]} [after] Stages that must finish first.
  * @property {string} [group] Stages in one group never overlap.
  * @property {boolean} [exclusive] Runs alone.
- * @property {string} [output] Repository-relative output directory.
  * @property {Record<string, string>} [env]
  * @property {string[]} [requires] Tools that must be on PATH.
  * @property {{ directories: string[], suffix: string }} [appendFiles]
- * @property {number} [echoTail] Log lines to show when the stage fails.
  */
 
 /**

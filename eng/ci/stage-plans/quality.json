@@ -2,18 +2,37 @@
   "producer": "quality",
   "stages": [
     {
-      "id": "convergence-assurance-negative-controls",
-      "argv": ["pwsh", "-NoProfile", "-File", "eng/Test-ConvergenceAssurancePolicy.ps1"],
-      "exclusive": true
+      "id": "lint-exceptions",
+      "argv": ["node", "eng/lint/check-exceptions.mjs"]
     },
-    { "id": "lint-exceptions", "argv": ["node", "eng/lint/check-exceptions.mjs"] },
-    { "id": "test-suite-registry", "argv": ["node", "eng/ci/check-test-suites.mjs"] },
-    { "id": "eng-tests", "argv": ["npm", "--prefix", "eng", "test"] },
-    { "id": "eng-format", "argv": ["npm", "--prefix", "eng", "run", "format:check"] },
-    { "id": "eng-types", "argv": ["npm", "--prefix", "eng", "run", "typecheck"] },
-    { "id": "eng-lint", "argv": ["npm", "--prefix", "eng", "run", "lint"] },
-    { "id": "eng-npm-audit", "argv": ["npm", "--prefix", "eng", "audit", "--audit-level=low"] },
-    { "id": "eng-npm-signatures", "argv": ["npm", "--prefix", "eng", "audit", "signatures"] },
+    {
+      "id": "suite-registry",
+      "argv": ["node", "eng/ci/suites/check-registry.mjs"]
+    },
+    {
+      "id": "eng-tests",
+      "argv": ["npm", "--prefix", "eng", "test"]
+    },
+    {
+      "id": "eng-format",
+      "argv": ["npm", "--prefix", "eng", "run", "format:check"]
+    },
+    {
+      "id": "eng-types",
+      "argv": ["npm", "--prefix", "eng", "run", "typecheck"]
+    },
+    {
+      "id": "eng-lint",
+      "argv": ["npm", "--prefix", "eng", "run", "lint"]
+    },
+    {
+      "id": "eng-npm-audit",
+      "argv": ["npm", "--prefix", "eng", "audit", "--audit-level=low"]
+    },
+    {
+      "id": "eng-npm-signatures",
+      "argv": ["npm", "--prefix", "eng", "audit", "signatures"]
+    },
     {
       "id": "python-format",
       "argv": ["uv", "run", "--frozen", "ruff", "format", "--check", "--no-cache"],
@@ -24,65 +43,82 @@
       "argv": ["uv", "run", "--frozen", "ruff", "check", "--no-cache"],
       "requires": ["uv"]
     },
-    { "id": "python-types", "argv": ["uv", "run", "--frozen", "mypy"], "requires": ["uv"] },
+    {
+      "id": "python-types",
+      "argv": ["uv", "run", "--frozen", "mypy"],
+      "requires": ["uv"]
+    },
     {
       "id": "python-limits",
       "argv": ["uv", "run", "--frozen", "python", "-B", "eng/lint/check_python_limits.py"],
       "requires": ["uv"]
     },
     {
-      "id": "sensitive-output-negative-controls",
-      "argv": ["pwsh", "-NoProfile", "-File", "eng/Test-SensitiveOutputPolicy.ps1"]
+      "id": "python-audit",
+      "argv": ["uv", "audit", "--frozen"],
+      "requires": ["uv"]
     },
     {
-      "id": "coverage-input-negative-controls",
-      "argv": ["pwsh", "-NoProfile", "-File", "eng/Test-CoverageInputPolicy.ps1"]
+      "id": "git-ignore-policy",
+      "argv": ["node", "eng/ci/policy/ignore.mjs"]
     },
     {
-      "id": "coverage-floor-negative-controls",
-      "argv": ["pwsh", "-NoProfile", "-File", "eng/Test-MergedCoveragePolicy.ps1"]
+      "id": "source-secret-scan",
+      "argv": ["node", "eng/ci/scan/main.mjs", "source"]
     },
     {
-      "id": "property-seed-negative-controls",
-      "argv": ["pwsh", "-NoProfile", "-File", "eng/Test-PropertySeedPolicy.ps1"]
+      "id": "test-diagnostic-privacy",
+      "argv": ["node", "eng/ci/policy/diagnostic-privacy.mjs"]
     },
     {
-      "id": "test-diagnostic-negative-controls",
-      "argv": ["pwsh", "-NoProfile", "-File", "eng/Test-TestDiagnosticPrivacy.ps1"]
+      "id": "fantomas",
+      "argv": ["bash", "eng/Check-Fantomas.sh"]
     },
     {
-      "id": "convergence-assurance",
-      "argv": ["pwsh", "-NoProfile", "-File", "eng/Check-ConvergenceAssurance.ps1"]
+      "id": "fsharplint",
+      "argv": ["bash", "eng/Check-FSharpLint.sh"]
     },
     {
-      "id": "dependency-security",
-      "argv": ["pwsh", "-NoProfile", "-File", "eng/Check-DependencySecurity.ps1"]
-    },
-    { "id": "fantomas", "argv": ["bash", "eng/Check-Fantomas.sh"] },
-    { "id": "fsharplint", "argv": ["bash", "eng/Check-FSharpLint.sh"] },
-    { "id": "actionlint", "argv": ["actionlint", "-color"], "requires": ["actionlint"] },
-    {
-      "id": "workflow-toolchain",
-      "argv": ["pwsh", "-NoProfile", "-File", "eng/Check-WorkflowToolchainPolicy.ps1"]
+      "id": "actionlint",
+      "argv": ["actionlint", "-color"],
+      "requires": ["actionlint"]
     },
     {
-      "id": "workflow-toolchain-negative-controls",
-      "argv": ["pwsh", "-NoProfile", "-File", "eng/Test-WorkflowToolchainPolicy.ps1"]
+      "id": "workflow-security",
+      "argv": [
+        "uv",
+        "run",
+        "--frozen",
+        "zizmor",
+        "--config",
+        ".github/zizmor.yml",
+        "--no-progress",
+        "--no-exit-codes",
+        "--format=plain",
+        ".github"
+      ],
+      "requires": ["uv"]
+    },
+    {
+      "id": "workflow-policy",
+      "argv": ["node", "eng/ci/check-workflows.mjs"]
     },
     {
       "id": "shfmt",
       "argv": ["shfmt", "-d"],
-      "appendFiles": { "directories": ["eng", "db"], "suffix": ".sh" },
+      "appendFiles": {
+        "directories": ["eng", "db"],
+        "suffix": ".sh"
+      },
       "requires": ["shfmt"]
-    },
-    {
-      "id": "powershell-analysis",
-      "argv": ["pwsh", "-NoProfile", "-File", "eng/Check-PowerShellAnalysis.ps1"]
     },
     {
       "id": "shellcheck",
       "argv": ["shellcheck", "-x"],
-      "appendFiles": { "directories": ["eng", "db"], "suffix": ".sh" },
+      "appendFiles": {
+        "directories": ["eng", "db"],
+        "suffix": ".sh"
+      },
       "requires": ["shellcheck"]
     },
     {
@@ -107,34 +143,6 @@
       "argv": ["bash", "eng/Test-LabeledTestContainerCleanup.sh"],
       "group": "docker",
       "requires": ["docker"]
-    },
-    {
-      "id": "container-image-assurance-negative-controls",
-      "argv": ["bash", "eng/Test-PostgresImageAssurancePolicy.sh"]
-    },
-    {
-      "id": "container-sbom",
-      "argv": [
-        "bash",
-        "eng/Check-PostgresImageAssurance.sh",
-        "sbom",
-        "{root}/artifacts/stages/container-sbom"
-      ],
-      "group": "docker",
-      "requires": ["docker"],
-      "echoTail": 30
-    },
-    {
-      "id": "container-vulnerability-scan",
-      "argv": [
-        "bash",
-        "eng/Check-PostgresImageAssurance.sh",
-        "scan",
-        "{root}/artifacts/stages/container-vulnerability-scan"
-      ],
-      "group": "docker",
-      "requires": ["docker"],
-      "echoTail": 30
     }
   ]
 }

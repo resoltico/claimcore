@@ -4,25 +4,57 @@
     {
       "id": "frontend-unit",
       "argv": ["npm", "--prefix", "web", "run", "test:unit"],
-      "output": "artifacts/frontend",
       "exclusive": true
     },
-    { "id": "frontend-format", "argv": ["npm", "--prefix", "web", "run", "format:check"] },
+    {
+      "id": "frontend-report",
+      "argv": ["node", "eng/ci/suites/frontend.mjs", "vitest"],
+      "after": ["frontend-unit"]
+    },
+    {
+      "id": "frontend-format",
+      "argv": ["npm", "--prefix", "web", "run", "format:check"]
+    },
     {
       "id": "frontend-types",
       "argv": ["npm", "--prefix", "web", "run", "typecheck"],
       "group": "typescript-build"
     },
-    { "id": "frontend-lint", "argv": ["npm", "--prefix", "web", "run", "lint"] },
-    { "id": "frontend-stylelint", "argv": ["npm", "--prefix", "web", "run", "lint:styles"] },
-    { "id": "frontend-dead-code", "argv": ["npm", "--prefix", "web", "run", "dead-code"] },
+    {
+      "id": "frontend-lint",
+      "argv": ["npm", "--prefix", "web", "run", "lint"]
+    },
+    {
+      "id": "frontend-stylelint",
+      "argv": ["npm", "--prefix", "web", "run", "lint:styles"]
+    },
+    {
+      "id": "frontend-dead-code",
+      "argv": ["npm", "--prefix", "web", "run", "dead-code"]
+    },
     {
       "id": "frontend-contract-inventory",
       "argv": ["npm", "--prefix", "web", "run", "contract:check"]
     },
-    { "id": "npm-audit", "argv": ["npm", "--prefix", "web", "audit", "--audit-level=low"] },
-    { "id": "npm-signatures", "argv": ["npm", "--prefix", "web", "audit", "signatures"] },
-    { "id": "dependency-licenses", "argv": ["npm", "--prefix", "web", "run", "licenses:check"] },
-    { "id": "frontend-mutation", "argv": ["npm", "--prefix", "web", "run", "test:mutation"] }
+    {
+      "id": "npm-audit",
+      "argv": ["npm", "--prefix", "web", "audit", "--audit-level=low"]
+    },
+    {
+      "id": "npm-signatures",
+      "argv": ["npm", "--prefix", "web", "audit", "signatures"]
+    },
+    {
+      "id": "dependency-licenses",
+      "argv": ["npm", "--prefix", "web", "run", "licenses:check"]
+    },
+    {
+      "id": "frontend-mutation",
+      "argv": ["npm", "--prefix", "web", "run", "test:mutation"]
+    },
+    {
+      "id": "browser-inventory",
+      "argv": ["node", "eng/ci/suites/inventory.mjs", "--check", "--only", "browser"]
+    }
   ]
 }

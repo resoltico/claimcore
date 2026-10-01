@@ -1,12 +1,23 @@
 {
   "producer": "frontend-product",
   "stages": [
-    { "id": "restore-frontend", "argv": ["npm", "--prefix", "web", "ci"] },
+    {
+      "id": "restore-frontend",
+      "argv": ["npm", "--prefix", "web", "ci"]
+    },
+    {
+      "id": "contracts",
+      "argv": [
+        "bash",
+        "-c",
+        "npm --prefix web run contract:generate && mkdir -p artifacts/frontend-contracts && cp -R web/src/generated/contracts/. artifacts/frontend-contracts/"
+      ],
+      "after": ["restore-frontend"]
+    },
     {
       "id": "sbom",
       "argv": ["npm", "--prefix", "web", "run", "sbom"],
-      "after": ["restore-frontend"],
-      "output": "artifacts/sbom"
+      "after": ["restore-frontend"]
     },
     {
       "id": "frontend-build",
@@ -15,8 +26,7 @@
         "-c",
         "npm --prefix web run build && mkdir -p artifacts/frontend-product/dist && cp -R web/dist/. artifacts/frontend-product/dist/"
       ],
-      "after": ["restore-frontend"],
-      "output": "artifacts/frontend-product"
+      "after": ["contracts"]
     }
   ]
 }
