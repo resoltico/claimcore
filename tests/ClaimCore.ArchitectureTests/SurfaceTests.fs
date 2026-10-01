@@ -56,6 +56,7 @@ let private applicationSurfaceIsClosed () =
             "ClaimCore.Application.IRecoveryStore"
             "ClaimCore.Application.IBusinessTime"
             "ClaimCore.Application.CoreApi"
+            "ClaimCore.Application.IClaimsCore"
             "ClaimCore.Application.PreparedOperation"
             "ClaimCore.Application.RetainedPreparation"
         ] do

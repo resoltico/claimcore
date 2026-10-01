@@ -220,7 +220,7 @@ module Routes =
                         core.Recovery.ExportEnvelope(
                             input.OperationId,
                             input.RequestSha256,
-                            requestToken context
+                            mutationToken
                         )
 
                     RouteSupport.markCompleted context

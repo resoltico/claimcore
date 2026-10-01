@@ -1,6 +1,5 @@
-namespace ClaimCore.Web
+namespace ClaimCore.Contracts
 
-open ClaimCore.Contracts
 
 open System.Text.Json
 open ClaimCore.Application

@@ -1,12 +1,11 @@
-namespace ClaimCore.Web
+namespace ClaimCore.Contracts
 
 open System
 open System.Text.Json
 open ClaimCore.Application
-open ClaimCore.Contracts
 open HttpInputSupport
 
-module internal HttpSignerApprovalInput =
+module HttpSignerApprovalInput =
     let private action =
         function
         | "REGISTER" -> CopySignerAction.Register

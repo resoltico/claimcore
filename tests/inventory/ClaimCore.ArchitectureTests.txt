@@ -44,6 +44,8 @@ ClaimCore architecture suite.F# inspection qualification.member rule detects onl
 ClaimCore architecture suite.F# inspection qualification.member rule permits other method on same type
 ClaimCore architecture suite.F# inspection qualification.missing input fails before loading
 ClaimCore architecture suite.F# inspection qualification.omitted reflected type fails completeness
+ClaimCore architecture suite.F# inspection qualification.request codec accepts pure counterpart
+ClaimCore architecture suite.F# inspection qualification.request codec detects forbidden JSON dependency
 ClaimCore architecture suite.architecture manifest.[CC-ARCH-001] restore publication trust is invisible to ordinary consumers
 ClaimCore architecture suite.architecture manifest.compiled internals grants match the manifest exactly
 ClaimCore architecture suite.architecture manifest.declared project edges match the manifest exactly
@@ -53,10 +55,16 @@ ClaimCore architecture suite.architecture manifest.internals grants name classif
 ClaimCore architecture suite.architecture manifest.product components depend only on product components
 ClaimCore architecture suite.architecture manifest.stale permissions and empty grant sets are detected
 ClaimCore architecture suite.architecture manifest.the reviewed component graph is acyclic
+ClaimCore architecture suite.architecture policy admission.duplicate and unknown root fields are refused
+ClaimCore architecture suite.architecture policy admission.escaped and wrongly classified project paths are refused
+ClaimCore architecture suite.architecture policy admission.malformed list entries cannot disappear during parsing
+ClaimCore architecture suite.architecture policy admission.reviewed policy parses completely
+ClaimCore architecture suite.architecture policy admission.unknown component fields and duplicate properties are refused
 ClaimCore architecture suite.component effect ownership.Application avoids selected ambient clock, identity and host IO APIs
 ClaimCore architecture suite.component effect ownership.Contracts avoids selected ambient clock, identity and host IO APIs
 ClaimCore architecture suite.component effect ownership.Domain avoids selected ambient clock, identity and host IO APIs
 ClaimCore architecture suite.component effect ownership.RecordFormat avoids selected ambient clock, identity and host IO APIs
+ClaimCore architecture suite.component effect ownership.[CC-ARCH-001] Web bindings cannot decode ClaimCore JSON bytes
 ClaimCore architecture suite.component effect ownership.adapters cannot call the domain decision directly
 ClaimCore architecture suite.component effect ownership.case-work hosts cannot reach schema administration
 ClaimCore architecture suite.component effect ownership.only the composition root constructs the typed core

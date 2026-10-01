@@ -12,7 +12,7 @@ type CorrectionDraftAction =
     | Replace of (string * string) list
 
 /// Transport/form command shape. Native callers never receive this type: they call the closed
-/// `IClaimsCore` boundary with Domain's `CommandRequest` after this one pure binder has run.
+/// `IActorClaimsCore` boundary with Domain's `CommandRequest` after this one pure binder has run.
 [<RequireQualifiedAccess>]
 type DraftCommand =
     | Flat of kind: CommandKind * values: (string * string) list
@@ -30,7 +30,7 @@ type CommandDraft =
         Command: DraftCommand
     }
 
-/// Native input binding shared by downstream forms. Only IClaimsCore.Execute can accept a change.
+/// Native input binding shared by downstream forms. Only actor-bound Execute can accept a change.
 module Drafts =
     let private flatCommand kind (values: Map<string, string>) =
         // Keys are checked exactly before this private binder is called.

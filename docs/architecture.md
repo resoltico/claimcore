@@ -22,8 +22,8 @@ allowance. Adding one is a reviewed change to the architecture, not an implement
 |---|---|---|---|
 | `Domain` | core | Accepted values, field metadata, validation, available transitions, and case state. | none |
 | `RecordFormat` | core | Byte-stable canonical command-record format 3, historical snapshots, and signed recovery-artifact format 3. | `Domain` |
-| `Application` | core | The typed IClaimsCore facade, request admission, operation identity, endpoint outcomes, and the sole public recovery workflow. | `Domain`, `RecordFormat` |
-| `Contracts` | contract | Pure projection of Application's semantic description into CLI-v4 and Web-v3 wire contracts, schemas, codecs, and generated browser DTOs. | `Application`, `Domain` |
+| `Application` | core | Actor-bound typed service facades, request admission, operation identity, endpoint outcomes and recovery decisions; internal scoped-core composition seams. | `Domain`, `RecordFormat` |
+| `Contracts` | contract | Pure semantic/CLI/Web schema projection, strict HTTP request codecs, wire rendering and generated browser DTOs; no host composition or storage effects. | `Application`, `Domain` |
 | `HostSecurity` | infrastructure | Handle-first local private-file and directory admission. No claims or transport decision authority. | none |
 | `Postgres` | infrastructure | Durable actor-bound storage, exact fresh-schema admission, witnessed authority and recovery transactions, lifecycle and managed-copy evidence, and schema-owner administration. | `Application`, `Domain`, `RecordFormat`, `Witness` |
 | `Witness` | infrastructure | Independent PostgreSQL witness baseline and append-only authority journal; a separate service role can append through a narrow definer function and read back committed evidence. | none |
@@ -111,6 +111,9 @@ The suite checks the manifest from five independent directions:
   avoid the selected ambient console, file-system, environment, randomness, thread, clock, and
   identity-minting APIs. Web runtime opening stays confined to `Program`, only the composition root
   constructs the typed core, and direct domain-decision calls are forbidden outside their owner.
+  Web bindings cannot depend on JsonDocument for ClaimCore request decoding; Contracts and the
+  explicit third-party OIDC metadata decoder provide positive counterparts. Architecture policy
+  parsing rejects duplicate/unknown fields and escaped project paths before loading assemblies.
   Each of these rules asserts its positive counterpart as well, so none can pass vacuously.
 
 Each platform's passing suite emits a bounded, sorted report of the actual inspected assembly type
@@ -141,34 +144,20 @@ as cancellation or failure by concurrent disposal.
 
 ## Public boundary
 
-Inside the service, Application exposes this endpoint-typed native facade; browser and CLI callers use the generated authenticated HTTP API instead:
+Application's public service boundary is `IActorClaimsCore`, obtained through
+`ClaimCore.Hosting.Runtime.ForActor` with a principal acquired from validated authentication.
+Every endpoint rechecks current actor grants. Native Prepare/Execute accept Domain CommandRequest;
+Web binds its transport draft exactly once through Drafts. Query, recovery, management, lifecycle,
+tombstone and approval members retain their distinct typed outcomes.
 
-```fsharp
-type IClaimsCore =
-    abstract Describe: unit -> CoreDescription
-    abstract Prepare: CommandRequest * CancellationToken -> Task<PrepareOutcome>
-    abstract Execute: CommandRequest * CancellationToken -> Task<SubmissionOutcome>
-    abstract Get: string * CancellationToken -> Task<QueryOutcome<Lookup<CurrentCase, string>>>
-    abstract List: CaseListRequest * CancellationToken -> Task<QueryOutcome<CaseSummaryPage>>
-    abstract History: HistoryRequest * CancellationToken -> Task<QueryOutcome<Lookup<HistoryResultPage, string>>>
-    abstract ObserveOperation: Guid * CancellationToken -> Task<QueryOutcome<Lookup<OperationReceipt, Guid>>>
-    abstract Recovery: IRecoveryWorkflow
-```
+The complete supported signature is [Core.fsi](../src/ClaimCore.Application/Core.fsi).
+`IClaimsCore` and CoreApi are internal composition seams, unavailable to ordinary consumers.
+Hosting owns the scoped stores, credentials and runtime lifetime; the facade exposes none of them.
+Public views, previews and advertised commands remain advisory rather than commit authority.
 
-`Describe` returns the connected runtime description and semantic fingerprint. A fresh `Prepare`
-produces a durably retained technical preparation plus a Domain-derived advisory review. An exact
-retry instead reports its authoritative accepted receipt or its still-retained but non-reviewable
-recovery state; it never fabricates a current-state review. `Execute` is the one-call command
-workflow. `Get`, `List`, `History`, and `ObserveOperation` have distinct query
-outcomes. Recovery is available only through `IClaimsCore.Recovery`, whose list, inspect, resolve,
-dismiss, export, preview-import, and retain-import methods have their own typed lifecycle refusals.
-
-A caller obtains the composed facade through `ClaimCore.Hosting.Runtime.OpenPostgres` and disposes
-its lifetime after use. `Runtime` is the only type the composition root exports, and `Postgres`
-exports nothing but its schema-owner administration surface; the store, data source, preparation
-record, recovery port, and transition callback are unreachable implementation details. An editable
-view, a preview, or advertised command is never commit authority; execution always revalidates
-authoritative state and expected revision.
+Pure ClaimCore HTTP request decoding, transport DTOs, schemas and wire rendering belong to Contracts.
+Web owns bounded HTTP stream acquisition, Kestrel failures, authentication, dispatch and delivery.
+The compiled decoder rule excludes only OidcAuthority's distinct third-party discovery boundary.
 
 ## Core outcome meaning and presentation
 

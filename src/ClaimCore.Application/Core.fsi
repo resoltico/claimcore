@@ -7,7 +7,7 @@ open ClaimCore.Domain
 
 /// Public typed application boundary. Each endpoint carries its own semantic outcome instead of a
 /// catch-all response/status pair; storage and raw preparation records remain inaccessible.
-type IClaimsCore =
+type internal IClaimsCore =
     abstract Describe: unit -> CoreDescription
     abstract Prepare: CommandRequest * CancellationToken -> Task<PrepareOutcome>
     abstract Execute: CommandRequest * CancellationToken -> Task<SubmissionOutcome>

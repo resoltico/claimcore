@@ -48,7 +48,12 @@ module CliRemoteWireCodec =
 
             writer.WriteString(
                 "executionPhase",
-                if uncertain then "STARTED_UNCONFIRMED" else "NOT_STARTED"
+                if uncertain then
+                    "STARTED_UNCONFIRMED"
+                elif problem = CliRemoteProblem.PrivateDestination then
+                    "RESULT_OBSERVED"
+                else
+                    "NOT_STARTED"
             )
 
             writer.WriteString(
@@ -83,6 +88,16 @@ module CliRemoteWireCodec =
             | "REJECTED"
             | "REVOKED_BEFORE_EXECUTION" -> 2
             | _ -> 3
+
+    /// A core-owned recovery action carries knowledge even inside the generic FAILED envelope.
+    let private faultDeliveryUnconfirmed (outcome: JsonElement) =
+        let data = outcome.GetProperty("data")
+        let mutable action = Unchecked.defaultof<JsonElement>
+
+        data.ValueKind = JsonValueKind.Object
+        && data.TryGetProperty("recommendedAction", &action)
+        && action.ValueKind = JsonValueKind.String
+        && action.GetString() = "RECOVER_EXACT"
 
     let private outcomeExit (response: JsonElement) =
         let outcome = response.GetProperty("outcome")
@@ -145,7 +160,8 @@ module CliRemoteWireCodec =
                     "REVOKED"
                 ]
 
-        if tag = "COMPLETED" then executionExit outcome
+        if tag = "FAILED" && faultDeliveryUnconfirmed outcome then 4
+        elif tag = "COMPLETED" then executionExit outcome
         elif tag = "SUCCEEDED" then succeededExit ()
         elif Set.contains tag uncertain then 4
         elif Set.contains tag cancelled then 130

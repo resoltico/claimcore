@@ -153,7 +153,7 @@ On a broken output stream after mutation dispatch, stderr carries only a bounded
 <a id="cc-cli-003"></a>
 ### CC-CLI-003 — Remote mutation delivery remains uncertain after dispatch
 
-Every generated mutating CLI endpoint is noncancellable after admission. A timeout, malformed service reply, lost HTTP response, or failed stdout delivery after dispatch exits 4 when the mutation may have started; it is not evidence that the service did not commit. Preserve the exact approval, event, or operation identity and inspect the relevant service or owner evidence before retrying. Read-only endpoints retain definite failure classification because they cannot create authority or change case data.
+Every generated mutating CLI endpoint is noncancellable after admission. A timeout, malformed service reply, lost HTTP response, or failed stdout delivery after dispatch exits 4 when the mutation may have started; it is not evidence that the service did not commit. Preserve the exact approval, event, or operation identity and inspect the relevant service or owner evidence before retrying. Read-only endpoints retain definite failure classification because they cannot create authority or change case data. Recovery export issues witnessed custody evidence and is therefore noncancellable. An explicit core fault recommending RECOVER_EXACT remains uncertain even when wrapped in FAILED. A verified export whose private destination refuses creation reports RESULT_OBSERVED; it never claims that service issuance did not start.
 
 ## Canonical request identity and recovery
 

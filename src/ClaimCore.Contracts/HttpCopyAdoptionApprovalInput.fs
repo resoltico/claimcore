@@ -1,12 +1,11 @@
-namespace ClaimCore.Web
+namespace ClaimCore.Contracts
 
 open System
 open System.Text.Json
 open ClaimCore.Application
-open ClaimCore.Contracts
 open HttpInputSupport
 
-module internal HttpCopyAdoptionApprovalInput =
+module HttpCopyAdoptionApprovalInput =
     let private uuid value =
         value |> stringValue |> operationIdValue
 

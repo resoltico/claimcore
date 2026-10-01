@@ -1,19 +1,17 @@
-namespace ClaimCore.Web
+namespace ClaimCore.Contracts
 
-open ClaimCore.Contracts
 
 open System
 open System.Globalization
-open System.IO
 open System.Text
 open System.Text.Json
 open ClaimCore.Application
 
 [<NoEquality; NoComparison>]
-type PageInput = { Cursor: string option; Limit: int }
+type HttpPageInput = { Cursor: string option; Limit: int }
 
 [<NoEquality; NoComparison>]
-type RecoveryPageInput =
+type HttpRecoveryPageInput =
     {
         View: RecoveryListView
         Cursor: string option
@@ -21,7 +19,7 @@ type RecoveryPageInput =
     }
 
 [<NoEquality; NoComparison>]
-type RecoveryInspectInput =
+type HttpRecoveryInspectInput =
     {
         OperationId: Guid
         AttemptCursor: string option
@@ -29,7 +27,7 @@ type RecoveryInspectInput =
     }
 
 [<NoEquality; NoComparison>]
-type HistoryInput =
+type HttpHistoryInput =
     {
         CaseReference: string
         Cursor: string option
@@ -38,21 +36,21 @@ type HistoryInput =
     }
 
 [<NoEquality; NoComparison>]
-type ResolveInput =
+type HttpResolveInput =
     {
         OperationId: Guid
         RequestSha256: string
     }
 
 [<NoEquality; NoComparison>]
-type DismissInput =
+type HttpDismissInput =
     {
         OperationId: Guid
         RequestSha256: string
         Confirmed: bool
     }
 
-module HttpInputSupport =
+module internal HttpInputSupport =
     exception InvalidInput of HttpInputProblem
 
     let fail message = raise (InvalidInput message)
@@ -175,41 +173,6 @@ module HttpInputSupport =
         | InvalidInput message -> Error message
         | :? DecoderFallbackException -> Error HttpInputProblem.InvalidUtf8
         | :? JsonException -> Error HttpInputProblem.InvalidJson
-
-    let readBounded limit (stream: Stream) =
-        task {
-            if limit < 1 then
-                invalidArg (nameof limit) "The request byte limit must be positive."
-
-            try
-                use output = new MemoryStream()
-                let buffer = Array.zeroCreate<byte> 4096
-                let mutable total = 0
-                let mutable complete = false
-
-                while total <= limit && not complete do
-                    let! count = stream.ReadAsync(buffer, 0, buffer.Length)
-
-                    if count = 0 then
-                        complete <- true
-                    elif count > limit - total then
-                        total <- limit + 1
-                    else
-                        total <- total + count
-                        output.Write(buffer, 0, count)
-
-                if total > limit then
-                    return Error HttpInputProblem.BodyTooLarge
-                else
-                    return Ok(output.ToArray())
-            with
-            | :? Microsoft.AspNetCore.Http.BadHttpRequestException as failure when
-                failure.StatusCode = 413
-                ->
-                return Error HttpInputProblem.BodyTooLarge
-            | :? OperationCanceledException -> return Error HttpInputProblem.BodyCancelled
-            | :? IOException -> return Error HttpInputProblem.BodyUnreadable
-        }
 
     let sourceDigest value =
         try

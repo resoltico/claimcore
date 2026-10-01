@@ -1,5 +1,7 @@
 module ClaimCore.WebTests.WriterHandoffApprovalInputTests
 
+open ClaimCore.Contracts
+
 open System
 open System.Text
 open Expecto

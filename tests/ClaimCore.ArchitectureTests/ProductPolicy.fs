@@ -69,33 +69,81 @@ let private optionalNames (element: JsonElement) name =
 let manifestPath () =
     Path.Combine(RepositoryRoot.find (), "config/architecture.json")
 
-let private read () =
-    let path = manifestPath ()
+let private exactFields allowed (element: JsonElement) =
+    if element.ValueKind <> JsonValueKind.Object then
+        invalidOp "Architecture policy must contain objects."
 
-    if not (File.Exists path) then
-        invalidOp "The architecture manifest is missing."
+    let names = element.EnumerateObject() |> Seq.map _.Name |> Seq.toList
 
-    use document = JsonDocument.Parse(File.ReadAllText path)
+    if
+        names.Length <> (Set.ofList names).Count
+        || names |> List.exists (fun name -> not (List.contains name allowed))
+    then
+        invalidOp "Architecture policy contains duplicate or unknown fields."
+
+let private parseComponent (element: JsonElement) =
+    exactFields
+        [
+            "name"
+            "tier"
+            "layer"
+            "project"
+            "role"
+            "dependsOn"
+            "compileOnlyDependsOn"
+            "packages"
+            "frameworkReferences"
+            "internalsVisibleTo"
+        ]
+        element
+
+    let value =
+        {
+            Name = requireText element "name"
+            Tier = requireText element "tier"
+            Layer = requireText element "layer"
+            Project = requireText element "project"
+            Role = requireText element "role"
+            DependsOn = requireNames element "dependsOn"
+            CompileOnlyDependsOn = optionalNames element "compileOnlyDependsOn"
+            Packages = requireNames element "packages"
+            FrameworkReferences = requireNames element "frameworkReferences"
+            InternalsVisibleTo = requireNames element "internalsVisibleTo"
+        }
+
+    let parts = value.Project.Split('/')
+
+    let folder =
+        match value.Tier with
+        | "product" -> "src"
+        | "tooling" -> "eng"
+        | "test" -> "tests"
+        | _ -> ""
+
+    if
+        parts.Length < 3
+        || parts[0] <> folder
+        || parts |> Array.exists (fun part -> part = "" || part = "." || part = "..")
+        || value.Project.Contains('\\')
+        || value.Project.Contains(':')
+    then
+        invalidOp "Architecture policy project paths must stay inside their repository tier."
+
+    value
+
+/// Strict policy parsing is independently exercised before project or assembly loading.
+let parse text =
+    use document = JsonDocument.Parse(text: string)
     let root = document.RootElement
+    exactFields [ "version"; "description"; "components" ] root
+    requireText root "description" |> ignore
 
     if root.GetProperty("version").GetInt32() <> 1 then
         invalidOp "The architecture manifest declares an unsupported version."
 
     let parsed =
         root.GetProperty("components").EnumerateArray()
-        |> Seq.map (fun element ->
-            {
-                Name = requireText element "name"
-                Tier = requireText element "tier"
-                Layer = requireText element "layer"
-                Project = requireText element "project"
-                Role = requireText element "role"
-                DependsOn = requireNames element "dependsOn"
-                CompileOnlyDependsOn = optionalNames element "compileOnlyDependsOn"
-                Packages = requireNames element "packages"
-                FrameworkReferences = requireNames element "frameworkReferences"
-                InternalsVisibleTo = requireNames element "internalsVisibleTo"
-            })
+        |> Seq.map parseComponent
         |> Seq.toList
 
     if parsed.IsEmpty then
@@ -127,6 +175,14 @@ let private read () =
                 invalidOp (item.Name + " has an undeclared compile-only dependency: " + target)
 
     parsed
+
+let private read () =
+    let path = manifestPath ()
+
+    if not (File.Exists path) then
+        invalidOp "The architecture manifest is missing."
+
+    parse (File.ReadAllText path)
 
 let private manifest = lazy (read ())
 

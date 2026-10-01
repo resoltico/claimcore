@@ -1,5 +1,7 @@
 module ClaimCore.WebTests.TombstoneTerminalInputTests
 
+open ClaimCore.Contracts
+
 open System
 open System.Text
 open Expecto

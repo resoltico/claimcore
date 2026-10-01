@@ -1,5 +1,7 @@
 module ClaimCore.WebTests.TestServerRecoveryOutcomeTests
 
+open ClaimCore.Contracts
+
 open System.Net.Http
 open Expecto
 open ClaimCore.Application

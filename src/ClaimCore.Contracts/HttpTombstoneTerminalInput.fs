@@ -1,19 +1,18 @@
-namespace ClaimCore.Web
+namespace ClaimCore.Contracts
 
 open System
 open System.Text.Json
 open ClaimCore.Application
-open ClaimCore.Contracts
 open HttpInputSupport
 
-type internal TombstoneTerminalApprovalInput =
+type HttpTombstoneTerminalApprovalInput =
     {
         Proposal: TombstoneTerminalProposal
         ApprovalId: Guid
         ExpiresAt: DateTimeOffset
     }
 
-module internal HttpTombstoneTerminalInput =
+module HttpTombstoneTerminalInput =
     let private uuid value =
         value |> stringValue |> operationIdValue
 

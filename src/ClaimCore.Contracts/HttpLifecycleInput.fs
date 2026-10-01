@@ -1,20 +1,19 @@
-namespace ClaimCore.Web
+namespace ClaimCore.Contracts
 
 open System
 open System.Globalization
 open System.Text.Json
 open ClaimCore.Application
-open ClaimCore.Contracts
 open HttpInputSupport
 
-type internal LifecycleApprovalInput =
+type HttpLifecycleApprovalInput =
     {
         Change: LifecycleChange
         ApprovalId: Guid
         ExpiresAt: DateTimeOffset
     }
 
-module internal HttpLifecycleInput =
+module HttpLifecycleInput =
     let private dateOnly (element: JsonElement) =
         let source = stringValue element
         let mutable value = DateOnly.MinValue

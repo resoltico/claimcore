@@ -1,5 +1,7 @@
 module ClaimCore.WebTests.Suite
 
+open ClaimCore.Contracts
+
 open Expecto
 
 [<Tests>]

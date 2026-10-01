@@ -1,6 +1,5 @@
-namespace ClaimCore.Web
+namespace ClaimCore.Contracts
 
-open ClaimCore.Contracts
 
 open ClaimCore.Application
 open HttpInputSupport
@@ -8,8 +7,6 @@ open HttpInputSupport
 /// Strict HTTP-v3 request decoding. The request schema comes from ClaimCore.Contracts; these
 /// entry points enforce exact JSON object semantics before values reach the typed Application facade.
 module HttpInput =
-    let readBounded = HttpInputSupport.readBounded
-
     let logout bytes =
         parse bytes (fun root ->
             let values = properties root |> exactProperties []

@@ -62,7 +62,7 @@ let private deterministic subject =
 /// than by a project edge. The selector is anchored to the `Program` module the author declared,
 /// and the positive assertion keeps the rule from passing merely because composition moved out of
 /// the selector's reach.
-/// Contracts owns every CLI-v3 and Web-v3 codec, including the database-free discovery payloads.
+/// Contracts owns every CLI-v4 and Web-v3 codec, including the database-free discovery payloads.
 /// A renderer that authored wire JSON itself would fork the generated contract without its schema,
 /// corpus, or fingerprint noticing, so no wire-contract renderer may reach a JSON writer at all.
 /// `Database` is deliberately outside this set: it publishes no wire contract and references no
@@ -190,11 +190,42 @@ let private caseWorkHostsCannotAdminister () =
         Inspection.requireSelection model host |> ignore
         Inspection.check model (host.Should().NotDependOnAny(administration))
 
+/// ClaimCore byte decoding has one owner; OIDC discovery is an explicit third-party protocol.
+let private requestDecodingIsContractOwned () =
+    let model = architecture.Value
+    let document = ArchRuleDefinition.Types().That().Are(typeof<JsonDocument>)
+
+    let authentication =
+        ArchRuleDefinition
+            .Types()
+            .That()
+            .HaveFullNameMatching(@"^ClaimCore\.Web\.OidcAuthority(?:[+/.].*)?$")
+
+    let bindings =
+        ArchRuleDefinition.Types().That().Are(select "Web").And().AreNot(authentication)
+
+    Inspection.requireSelection model document |> ignore
+    Inspection.requireSelection model authentication |> ignore
+    Inspection.requireSelection model bindings |> ignore
+
+    Expect.isNonEmpty
+        (Inspection.violations model ((select "Contracts").Should().NotDependOnAny(document)))
+        "Contracts actually decodes JSON bytes"
+
+    Expect.isNonEmpty
+        (Inspection.violations model (authentication.Should().NotDependOnAny(document)))
+        "Explicit third-party metadata decoder"
+
+    Inspection.check model (bindings.Should().NotDependOnAny(document))
+
 let tests =
     testList
         "component effect ownership"
         ([
             testCase "wire-contract renderers cannot author JSON" wireRenderersDoNotAuthorJson
+            testCase
+                "[CC-ARCH-001] Web bindings cannot decode ClaimCore JSON bytes"
+                requestDecodingIsContractOwned
             testCase
                 "only the installation calendar owners resolve time zones"
                 installationOwnsTheCalendar
