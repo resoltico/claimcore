@@ -1,3 +1,4 @@
+import { executable } from "../executable.mjs";
 // A failing test must not serialize the data it compared. This builds a one-test probe project whose
 // assertion fails on a synthetic claimant value, runs it through the real test runner with TRX
 // reporting, and requires that neither the report nor the runner output contains the value.
@@ -79,7 +80,7 @@ function main() {
     writeFileSync(join(scratch, "Probe.fs"), probeSource);
     const results = join(scratch, "results");
     const run = spawnSync(
-      "dotnet",
+      executable("dotnet"),
       [
         "test",
         "--project",

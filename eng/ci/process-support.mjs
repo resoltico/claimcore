@@ -1,3 +1,4 @@
+import { commandLine } from "./executable.mjs";
 // Small process and command-line helpers shared by the stage runner and the local runner.
 import { spawn } from "node:child_process";
 import { closeSync, existsSync, openSync, readFileSync } from "node:fs";
@@ -26,7 +27,13 @@ export const flag = (argv, name) => argv.includes(`--${name}`);
 export const onPath = (tool) =>
   (process.env["PATH"] ?? "")
     .split(delimiter)
-    .some((directory) => directory !== "" && existsSync(join(directory, tool)));
+    .some(
+      (directory) =>
+        directory !== "" &&
+        ["", ...(process.platform === "win32" ? [".exe", ".cmd", ".bat"] : [])].some((suffix) =>
+          existsSync(join(directory, tool + suffix)),
+        ),
+    );
 
 /**
  * The last non-empty lines of a log without terminal colour codes, each cut to `width`.
@@ -53,15 +60,21 @@ export function logTailLines(path, lines, width) {
  * @returns {Promise<number>}
  */
 export function runToLog(command, args, { cwd, log, env }) {
+  const selected = commandLine(command, args);
   const descriptor = openSync(log, "w");
   return new Promise((resolve) => {
-    const child = spawn(command, args, {
+    const child = spawn(...selected, {
       cwd,
       stdio: ["ignore", descriptor, descriptor],
       ...(env === undefined ? {} : { env }),
     });
+    let settled = false;
     /** @param {number} status */
     const settle = (status) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
       closeSync(descriptor);
       resolve(status);
     };

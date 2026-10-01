@@ -7,7 +7,8 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { installTool } from "../tools.mjs";
 import { scanArtifacts } from "./artifacts.mjs";
-import { parseNulPaths, resolveSourceFile, scanSource } from "./source.mjs";
+import { scanSource } from "./source.mjs";
+import { parseNulPaths, resolveSourceFile } from "../repository-path.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const gitleaks = await installTool(root, "gitleaks");

@@ -1,31 +1,33 @@
 // Holds the suite registry to the repository: every test project is registered, every registered
 // file exists, every inventory belongs to a suite, and nothing repeats a test count that the
 // inventories already own.
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { repositoryFiles } from "../repository.mjs";
 import { inventoryPath, loadSuites } from "./registry.mjs";
 
-/**
- * @param {string} root
- * @param {string} directory Repository-relative.
- * @param {RegExp} pattern
- * @returns {string[]} Repository-relative files below `directory` whose path matches `pattern`.
- */
-function filesMatching(root, directory, pattern) {
-  const absolute = join(root, directory);
-  if (!existsSync(absolute)) {
-    return [];
-  }
-  return readdirSync(absolute, { withFileTypes: true }).flatMap((entry) => {
-    const path = `${directory}/${entry.name}`;
-    if (entry.isDirectory()) {
-      return entry.name === "node_modules" || entry.name === "bin" || entry.name === "obj"
-        ? []
-        : filesMatching(root, path, pattern);
+/** @param {string} root @param {import("./registry.mjs").Suite[]} suites @returns {string[]} */
+function suiteProblems(root, suites) {
+  const errors = [];
+  for (const suite of suites) {
+    if (
+      suite.kind === "dotnet" &&
+      suite.group !== undefined &&
+      !["postgres", "published"].includes(suite.group)
+    ) {
+      errors.push(`Suite ${suite.id} belongs to no required CI execution family.`);
     }
-    return pattern.test(path) ? [path] : [];
-  });
+    if (suite.group === "published" && suite.id !== "acceptance") {
+      errors.push(`Suite ${suite.id} has no published execution entry point.`);
+    }
+    for (const path of [suite.project, ...(suite.build ?? []), inventoryPath(suite)]) {
+      if (path !== undefined && !existsSync(join(root, path))) {
+        errors.push(`Suite ${suite.id} names ${path}, which does not exist.`);
+      }
+    }
+  }
+  return errors;
 }
 
 /**
@@ -34,32 +36,29 @@ function filesMatching(root, directory, pattern) {
  */
 export function checkRegistry(root) {
   const suites = loadSuites(root);
+  const files = repositoryFiles(root);
+  const filesMatching = (/** @type {string} */ directory, /** @type {RegExp} */ pattern) =>
+    files.filter((path) => path.startsWith(`${directory}/`) && pattern.test(path));
   /** @type {string[]} */
   const errors = [];
   const registeredProjects = new Set(
     suites.flatMap((suite) => (suite.project ? [suite.project] : [])),
   );
-  for (const project of filesMatching(root, "tests", /^tests\/[^/]+Tests\/[^/]+\.fsproj$/u)) {
+  for (const project of filesMatching("tests", /^tests\/[^/]+Tests\/[^/]+\.fsproj$/u)) {
     if (!registeredProjects.has(project)) {
       errors.push(`${project} is a test project that no suite registers.`);
     }
   }
-  for (const suite of suites) {
-    for (const path of [suite.project, ...(suite.build ?? []), inventoryPath(suite)]) {
-      if (path !== undefined && !existsSync(join(root, path))) {
-        errors.push(`Suite ${suite.id} names ${path}, which does not exist.`);
-      }
-    }
-  }
+  errors.push(...suiteProblems(root, suites));
   const inventories = new Set(suites.map(inventoryPath));
-  for (const file of filesMatching(root, "tests/inventory", /\.txt$/u)) {
+  for (const file of filesMatching("tests/inventory", /\.txt$/u)) {
     if (!inventories.has(file)) {
       errors.push(`${file} belongs to no registered suite.`);
     }
   }
   const sources = [
-    ...filesMatching(root, ".github/workflows", /\.ya?ml$/u),
-    ...filesMatching(root, "eng", /\.(sh|mjs)$/u).filter((path) => !path.endsWith(".test.mjs")),
+    ...filesMatching(".github/workflows", /\.ya?ml$/u),
+    ...filesMatching("eng", /\.(sh|mjs)$/u).filter((path) => !path.endsWith(".test.mjs")),
   ];
   for (const path of sources) {
     if (/--minimum-expected-tests=\d+/u.test(readFileSync(join(root, path), "utf8"))) {

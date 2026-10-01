@@ -14,39 +14,19 @@ import { join } from "node:path";
  * @property {string} [timeout] `dotnet test` timeout, such as `25m`.
  * @property {string[]} [build] Further projects the suite's processes need built.
  * @property {string[]} [msbuild] Extra build properties for the suite's own project.
+ * @property {Record<string, string>} [env] Defaults with {root} and {results} path templates.
  * @property {string} [group] Suites of one group run together; `published` suites run elsewhere.
  * @property {{ selector: string, ids: string[] }} [partitions] Environment selector and its values.
  */
 
-const kinds = new Set(["dotnet", "vitest", "playwright"]);
-const platforms = new Set(["linux", "macos", "windows"]);
-const identifier = /^[a-z][a-z0-9-]*$/u;
+import { problems } from "./registry-validation.mjs";
 
 /**
+ * Where the suite's generated inventory is committed.
  * @param {Suite} suite
- * @returns {string[]}
+ * @returns {string}
  */
-function problems(suite) {
-  /** @type {string[]} */
-  const found = [];
-  if (!identifier.test(suite.id)) {
-    found.push(`Suite id '${suite.id}' must be lowercase kebab-case.`);
-  }
-  if (!kinds.has(suite.kind)) {
-    found.push(`Suite ${suite.id} has an unknown kind.`);
-  }
-  if (suite.kind === "dotnet") {
-    for (const key of /** @type {const} */ (["assembly", "project", "configuration", "timeout"])) {
-      if (typeof suite[key] !== "string") {
-        found.push(`Suite ${suite.id} needs ${key}.`);
-      }
-    }
-  }
-  if (!Array.isArray(suite.platforms) || !suite.platforms.every((os) => platforms.has(os))) {
-    found.push(`Suite ${suite.id} lists unknown platforms.`);
-  }
-  return found;
-}
+export const inventoryPath = (suite) => `tests/inventory/${suite.assembly ?? suite.id}.txt`;
 
 /**
  * Read and validate config/test-suites.json.
@@ -62,23 +42,30 @@ export function loadSuites(root) {
   /** @type {Suite[]} */
   const suites = listed;
   const ids = new Set();
+  const projects = new Set();
+  const inventories = new Set();
   const errors = suites.flatMap((suite) => {
+    const invalid = problems(suite);
+    if (!suite || typeof suite !== "object") {
+      return invalid;
+    }
     const duplicate = ids.has(suite.id) ? [`Suite ${suite.id} is registered twice.`] : [];
+    if (suite.project && projects.has(suite.project)) {
+      duplicate.push(`Suite ${suite.id} repeats a registered project.`);
+    }
+    if (inventories.has(inventoryPath(suite))) {
+      duplicate.push(`Suite ${suite.id} repeats a registered inventory.`);
+    }
     ids.add(suite.id);
-    return [...duplicate, ...problems(suite)];
+    projects.add(suite.project);
+    inventories.add(inventoryPath(suite));
+    return [...duplicate, ...invalid];
   });
   if (errors.length > 0) {
     throw new Error(errors.join("\n"));
   }
   return suites;
 }
-
-/**
- * Where the suite's generated inventory is committed.
- * @param {Suite} suite
- * @returns {string}
- */
-export const inventoryPath = (suite) => `tests/inventory/${suite.assembly ?? suite.id}.txt`;
 
 /**
  * The built test assembly of a .NET suite.

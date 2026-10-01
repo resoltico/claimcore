@@ -12,6 +12,7 @@ import { join } from "node:path";
  * @property {string} results Directory the process writes its reports to.
  * @property {string} trx Report file name inside `results`.
  * @property {string[]} names The tests the report must name exactly.
+ * @property {string} binaryDirectory Directory of the selected configuration's built assemblies.
  * @property {string | undefined} privateBin Measured copy of the test binaries, when one is made.
  */
 
@@ -37,7 +38,7 @@ function dotnetArguments(suite, { results, trx, count, coveragePrefix }, root) {
   if (suite.partitions !== undefined && coveragePrefix !== undefined) {
     // Coverlet rewrites assemblies while it measures, so each concurrent measured process runs its
     // own copy of the output directory, inside the repository so product processes find its root.
-    const privateBin = join(root, "artifacts/measured-bin", `${suite.id}-${coveragePrefix}`);
+    const privateBin = join(results, "measured-bin");
     return {
       privateBin,
       args: [
@@ -79,19 +80,22 @@ function dotnetArguments(suite, { results, trx, count, coveragePrefix }, root) {
 const coveragePrefix = (id, partition) => (partition === undefined ? id : `${id}-${partition}`);
 
 /**
+ * @param {string} root
  * @param {import("./registry.mjs").Suite} suite
  * @param {string | undefined} partition
  * @param {string} results
  * @returns {NodeJS.ProcessEnv}
  */
-function environment(suite, partition, results) {
+function environment(root, suite, partition, results) {
   /** @type {NodeJS.ProcessEnv} */
-  const env = {};
+  const env = Object.fromEntries(
+    Object.entries(suite.env ?? {}).map(([key, value]) => [
+      key,
+      value.replaceAll("{root}", root).replaceAll("{results}", results),
+    ]),
+  );
   if (suite.partitions && partition) {
     env[suite.partitions.selector] = partition;
-  }
-  if (suite.configuration === "Debug") {
-    env["CLAIMCORE_ARCHITECTURE_REPORT"] = join(results, "architecture-report.json");
   }
   return env;
 }
@@ -123,11 +127,17 @@ export function planSuite(root, suite, { resultsRoot, names, partitionNames }) {
       assembly,
       partition,
       args,
-      env: environment(suite, partition, results),
+      env: environment(root, suite, partition, results),
       results,
       trx,
       names: owned,
       privateBin,
+      binaryDirectory: join(
+        root,
+        "artifacts/bin",
+        assembly,
+        (suite.configuration ?? "Release").toLowerCase(),
+      ),
     };
     return planned;
   };

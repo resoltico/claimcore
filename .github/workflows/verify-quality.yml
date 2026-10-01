@@ -16,16 +16,10 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/toolchain
-      - name: Install the locked engineering npm graph
-        run: npm --prefix eng ci
+      - name: Restore the locked source and tools and build with strict compiler policy
+        run: node eng/ci/source-build.mjs
       - name: Install the pinned uv
         run: node eng/ci/tools.mjs uv
-      - name: Restore locked dependencies and pinned tools (NuGet Audit fails the restore)
-        run: |
-          dotnet restore ClaimCore.slnx --locked-mode
-          dotnet tool restore
-      - name: Build with strict compiler policy
-        run: dotnet build ClaimCore.slnx --configuration Release --no-restore
       - name: Run every registered quality stage concurrently
         env:
           # Lets the workflow audit check action pins and versions against GitHub, not only offline.

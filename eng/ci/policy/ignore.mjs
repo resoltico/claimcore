@@ -1,3 +1,4 @@
+import { executable } from "../executable.mjs";
 // The git ignore policy: private and generated paths must be ignored, public release inputs must
 // exist and must not be. Git classifies the probes against the working tree's .gitignore files
 // with an isolated, empty index, so nothing tracked or staged can change the answer.
@@ -37,12 +38,12 @@ function ignoredAmong(root, probes) {
   try {
     const database = join(scratch, "inventory.git");
     const env = gitEnvironment();
-    const init = spawnSync("git", ["init", "--bare", "--quiet", database], { env });
+    const init = spawnSync(executable("git"), ["init", "--bare", "--quiet", database], { env });
     if (init.status !== 0) {
       throw new Error("The isolated Git ignore database could not be initialized.");
     }
     const check = spawnSync(
-      "git",
+      executable("git"),
       [
         "--git-dir",
         database,

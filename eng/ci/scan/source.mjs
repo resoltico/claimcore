@@ -8,137 +8,14 @@ import {
   lstatSync,
   mkdirSync,
   mkdtempSync,
-  readdirSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, isAbsolute, join, resolve, sep } from "node:path";
-import { gitEnvironment, runChild, scannerEnvironment } from "./process.mjs";
-
-/**
- * @param {string} raw NUL-terminated `git ls-files -z` output.
- * @returns {string[]}
- */
-export function parseNulPaths(raw) {
-  if (raw.length > 0 && !raw.endsWith("\0")) {
-    throw new Error("Git returned a non-terminated source inventory.");
-  }
-  const paths = raw.split("\0").slice(0, -1);
-  if (paths.some((path) => path === "")) {
-    throw new Error("Git returned an empty source path.");
-  }
-  return paths;
-}
-
-/** @typedef {(args: string[]) => Promise<import("./process.mjs").ChildResult>} Git */
-
-/**
- * The files git lists for a working tree, minus tracked files deleted from it.
- * @param {Git} git
- * @returns {Promise<string[]>}
- */
-async function listWorktree(git) {
-  const listing = await git([
-    "ls-files",
-    "--cached",
-    "--others",
-    "--exclude-per-directory=.gitignore",
-    "-z",
-    "--",
-    ".",
-  ]);
-  const removed = await git(["ls-files", "--deleted", "-z", "--", "."]);
-  if (listing.status !== 0 || removed.status !== 0) {
-    throw new Error("The source inventory could not be enumerated.");
-  }
-  // A tracked file deleted from the working tree is not source; the snapshot is the working tree.
-  const gone = new Set(parseNulPaths(removed.stdout));
-  return parseNulPaths(listing.stdout).filter((path) => !gone.has(path));
-}
-
-/**
- * The files a directory that is not a git worktree would have, by its .gitignore files alone.
- * @param {Git} git
- * @param {string} root
- * @param {string} scratch
- * @returns {Promise<string[]>}
- */
-async function listPlainDirectory(git, root, scratch) {
-  const bare = join(scratch, "inventory.git");
-  if ((await git(["init", "--bare", "--quiet", bare])).status !== 0) {
-    throw new Error("The temporary source inventory could not be initialized.");
-  }
-  const listing = await git([
-    "--git-dir",
-    bare,
-    "--work-tree",
-    root,
-    "ls-files",
-    "--others",
-    "--exclude-per-directory=.gitignore",
-    "-z",
-    "--",
-    ".",
-  ]);
-  if (listing.status !== 0) {
-    throw new Error("The source inventory could not be enumerated.");
-  }
-  return parseNulPaths(listing.stdout);
-}
-
-/**
- * @param {string} root
- * @param {string} scratch
- * @returns {Promise<string[]>}
- */
-async function inventory(root, scratch) {
-  const env = gitEnvironment();
-  /** @type {Git} */
-  const git = (args) => runChild("git", args, { cwd: root, env, timeoutMs: 60_000 });
-  const probe = await git(["rev-parse", "--is-inside-work-tree"]);
-  const inside = probe.status === 0 && probe.stdout.trim() === "true";
-  if (!inside && existsSync(join(root, ".git"))) {
-    throw new Error("The repository contains an invalid or inaccessible Git worktree marker.");
-  }
-  return inside ? listWorktree(git) : listPlainDirectory(git, root, scratch);
-}
-
-/**
- * Resolve an inventory path to a regular file inside `root`, exact in case and free of links.
- * @param {string} root
- * @param {string} relative
- * @returns {string}
- */
-export function resolveSourceFile(root, relative) {
-  if (
-    relative.trim() === "" ||
-    isAbsolute(relative) ||
-    relative.includes("\\") ||
-    relative.includes("\0")
-  ) {
-    throw new Error("The source inventory contains an unsafe path.");
-  }
-  const segments = relative.split("/");
-  if (segments.some((segment) => ["", ".", ".."].includes(segment))) {
-    throw new Error("The source inventory contains an unsafe path segment.");
-  }
-  let current = root;
-  for (const segment of segments) {
-    if (!readdirSync(current).includes(segment)) {
-      throw new Error("A source path is missing or has different casing.");
-    }
-    current = join(current, segment);
-    if (lstatSync(current).isSymbolicLink()) {
-      throw new Error("Source inventory paths may not contain symbolic links or junctions.");
-    }
-  }
-  const full = resolve(current);
-  if (!full.startsWith(root + sep) || !lstatSync(full).isFile()) {
-    throw new Error("A source inventory entry is outside the repository or is not a regular file.");
-  }
-  return full;
-}
+import { dirname, join, resolve } from "node:path";
+import { runChild, scannerEnvironment } from "./process.mjs";
+import { repositoryFiles } from "../repository.mjs";
+import { resolveSourceFile } from "../repository-path.mjs";
 
 /**
  * @param {string} root
@@ -188,7 +65,7 @@ export async function scanSource({
     mkdirSync(snapshot);
     const emptyIgnore = join(scratch, "empty.gitleaksignore");
     writeFileSync(emptyIgnore, "");
-    const files = await inventory(repository, scratch);
+    const files = repositoryFiles(repository);
     if (files.length === 0) {
       throw new Error("The source inventory is empty.");
     }

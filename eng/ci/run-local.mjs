@@ -8,6 +8,7 @@
 // local equivalent and why; a test holds that registry to ci.yml so it cannot drift. Each job runs
 // the same command CI runs. By default a job runs only when a changed file could affect it (against
 // the merge base with origin/main); when that cannot be decided, everything runs.
+import { artifactDirectory, cleanDirectories } from "./artifact-path.mjs";
 import { mkdirSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -88,7 +89,7 @@ async function runJob(job, logs, outcomes) {
         .join("\n"),
     );
   }
-  return { failed: !passed };
+  return { status: passed ? "passed" : "failed" };
 }
 
 /** @param {LocalRegistry} registry @param {Map<string, string>} outcomes */
@@ -110,6 +111,7 @@ function planOf(registry) {
     stages: registry.jobs.map(({ id, argv: command, after, group }) => ({
       id,
       argv: command,
+      exclusive: true,
       ...(after === undefined ? {} : { after }),
       ...(group === undefined ? {} : { group }),
     })),
@@ -132,11 +134,15 @@ function selectionFor(changed) {
  * @returns {string} The log directory.
  */
 function prepareRun(registry) {
-  const logs = join(root, "artifacts/local-ci", new Date().toISOString().replace(/[:.]/gu, "-"));
+  const clean = cleanDirectories(root, registry.clean ?? []);
+  const logs = artifactDirectory(
+    root,
+    join("artifacts/local-ci", new Date().toISOString().replace(/[:.]/gu, "-")),
+  );
   mkdirSync(logs, { recursive: true });
   // Stage outputs must start absent, as they do in a CI checkout; these are generated, never sources.
-  for (const path of registry.clean ?? []) {
-    rmSync(join(root, path), { recursive: true, force: true });
+  for (const path of clean) {
+    rmSync(path, { recursive: true, force: true });
   }
   return logs;
 }
@@ -149,6 +155,10 @@ async function main() {
     ? null
     : changedFiles(root, option(argv, "changed-since", undefined));
   const selection = selectionFor(changed);
+  const selectedIds = [...selection.only, ...selection.skip];
+  if (selectedIds.some((id) => !registry.jobs.some((job) => job.id === id))) {
+    throw new Error("Local selection names an unknown job.");
+  }
   const logs = prepareRun(registry);
   // Jobs share this one working tree, and several read or write it as a whole: the documentation
   // assessment refuses a tree that changes under it, the convergence controls place probe files in
@@ -163,7 +173,7 @@ async function main() {
   );
   const plan = planOf(registry);
   const byId = new Map(registry.jobs.map((job) => [job.id, job]));
-  /** @param {import("./types.mjs").Stage} stage */
+  /** @param {import("./types.mjs").Stage} stage @returns {Promise<import("./types.mjs").StageResult>} */
   const run = (stage) => {
     const job = /** @type {LocalJob} */ (byId.get(stage.id));
     const why = reasonToSkip(job, selection);
@@ -172,16 +182,16 @@ async function main() {
     }
     outcomes.set(job.id, `skipped (${why})`);
     console.log(`- ${job.id}: skipped (${why})`);
-    return Promise.resolve({ failed: false, skipped: true });
+    return Promise.resolve({ status: "skipped" });
   };
   const results = await runPlan(plan, parallel, run, { failFast: !flag(argv, "no-fail-fast") });
   for (const result of results) {
-    if (result.value.notStarted) {
+    if (result.value.status === "not-started") {
       outcomes.set(result.stage.id, "not started (an earlier job failed)");
     }
   }
   summarize(registry, outcomes);
-  if (results.some((result) => result.value.failed)) {
+  if (results.some((result) => result.value.status === "failed")) {
     process.exitCode = 1;
   }
 }

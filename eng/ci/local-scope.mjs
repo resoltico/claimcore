@@ -1,4 +1,7 @@
+import { executable } from "./executable.mjs";
 // Which registered jobs a set of changed files can affect.
+import { gitEnvironment } from "./scan/process.mjs";
+import { parseNulPaths } from "./repository-path.mjs";
 import { spawnSync } from "node:child_process";
 
 /**
@@ -6,7 +9,12 @@ import { spawnSync } from "node:child_process";
  * @param {string[]} args
  */
 const git = (root, args) =>
-  spawnSync("git", args, { cwd: root, encoding: "utf8", maxBuffer: 16 * 1024 * 1024 });
+  spawnSync(executable("git"), args, {
+    cwd: root,
+    env: gitEnvironment(),
+    encoding: "utf8",
+    maxBuffer: 16 * 1024 * 1024,
+  });
 
 /**
  * Files changed against `ref` (default: the merge base with origin/main), including uncommitted and
@@ -16,16 +24,20 @@ const git = (root, args) =>
  * @returns {string[] | null}
  */
 export function changedFiles(root, ref) {
-  const base = ref ?? git(root, ["merge-base", "HEAD", "origin/main"]).stdout.trim();
+  const probe = ref === undefined ? git(root, ["merge-base", "HEAD", "origin/main"]) : undefined;
+  if (probe && probe.status !== 0) {
+    return null;
+  }
+  const base = ref ?? probe?.stdout.trim();
   if (!base) {
     return null;
   }
-  const tracked = git(root, ["diff", "--name-only", base]);
-  const untracked = git(root, ["ls-files", "--others", "--exclude-standard"]);
+  const tracked = git(root, ["diff", "--name-only", "-z", base]);
+  const untracked = git(root, ["ls-files", "--others", "--exclude-per-directory=.gitignore", "-z"]);
   if (tracked.status !== 0 || untracked.status !== 0) {
     return null;
   }
-  return [...tracked.stdout.split("\n"), ...untracked.stdout.split("\n")].filter(Boolean);
+  return [...new Set([...parseNulPaths(tracked.stdout), ...parseNulPaths(untracked.stdout)])];
 }
 
 /**

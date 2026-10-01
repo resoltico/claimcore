@@ -1,3 +1,4 @@
+import { commandLine } from "../executable.mjs";
 // Generated test inventories: one sorted file of display names per suite, committed so that adding,
 // removing or renaming a test is visible in review, and checked against what the build discovers.
 //
@@ -72,7 +73,7 @@ export function compareNames(committed, discovered) {
  * @returns {string}
  */
 function capture(command, args, { cwd, env }) {
-  const result = spawnSync(command, args, {
+  const result = spawnSync(...commandLine(command, args), {
     cwd,
     encoding: "utf8",
     maxBuffer,
@@ -187,7 +188,11 @@ export function discover(root, suite) {
 export function syncInventories(root, { write, only = [] }) {
   /** @type {string[]} */
   const errors = [];
-  for (const suite of loadSuites(root)) {
+  const suites = loadSuites(root);
+  if (only.some((id) => !suites.some((suite) => suite.id === id))) {
+    throw new Error("Inventory selection names an unknown suite.");
+  }
+  for (const suite of suites) {
     // A suite that only a run can enumerate is checked by its own report verification.
     const selected = only.length > 0 ? only.includes(suite.id) : suite.kind !== "vitest";
     if (!selected) {

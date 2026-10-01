@@ -13,8 +13,11 @@
     <Compile Include="MarkdownModel.fs" />
     <Compile Include="Links.fs" />
     <Compile Include="Contracts.fs" />
-    <Compile Include="Generators.fs" />
+    <Compile Include="SuiteInventories.fs" />
     <Compile Include="ContractTokens.fs" />
+    <Compile Include="GenerationTypes.fs" />
+    <Compile Include="DevelopmentBlocks.fs" />
+    <Compile Include="Generators.fs" />
     <Compile Include="DocumentationCommands.fs" />
     <Compile Include="Commands.fs" />
     <Compile Include="Program.fs" />

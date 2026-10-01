@@ -15,6 +15,13 @@ let private declared (ids: string list) =
 
 let private verify (inventory: string) (ids: string list) =
     use repository = new TempRepository()
+
+    repository.Write(
+        "config/test-suites.json",
+        """{"schemaVersion":2,"suites":[{"id":"example","assembly":"Example.Tests"}]}"""
+    )
+    |> ignore
+
     repository.Write("tests/inventory/Example.Tests.txt", inventory) |> ignore
     ContractTokens.verify repository.Root (declared ids)
 
@@ -50,6 +57,26 @@ let tests =
                 Expect.isTrue
                     (errors |> List.exists (fun error -> error.Message.Contains("CC-GHOST-007")))
                     "The unknown token is named"
+
+            testCase "an orphan inventory cannot supply a contract witness"
+            <| fun _ ->
+                use repository = new TempRepository()
+
+                repository.Write(
+                    "config/test-suites.json",
+                    """{"schemaVersion":2,"suites":[{"id":"example","assembly":"Example.Tests"}]}"""
+                )
+                |> ignore
+
+                repository.Write("tests/inventory/Example.Tests.txt", "unrelated test\n")
+                |> ignore
+
+                repository.Write("tests/inventory/Orphan.txt", "[CC-DOM-001] orphan\n")
+                |> ignore
+
+                ContractTokens.verify repository.Root (declared [ "CC-DOM-001" ])
+                |> requireError
+                |> ignore
 
             testCase "refuses a missing inventory directory"
             <| fun _ ->

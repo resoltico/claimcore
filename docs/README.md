@@ -25,3 +25,7 @@ sensitive reports follow [SECURITY.md](../SECURITY.md).
 
 Each rule has one durable owner. Other documents summarize and link to that owner instead of
 maintaining competing copies.
+
+The [repository tooling design](tooling-design.md) and its separate [design QA](tooling-design-qa.md)
+record the decisions behind engineering foundations. The generated [contract-test map](contract-tests.md)
+helps locate the registered tests that name each contract.

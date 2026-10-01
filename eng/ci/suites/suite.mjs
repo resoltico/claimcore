@@ -1,15 +1,18 @@
+import { artifactDirectory } from "../artifact-path.mjs";
+import { executable } from "../executable.mjs";
 // Runs registered test suites: checks the build's discovered tests against the committed inventory,
 // runs the test processes (concurrently for a group), then verifies every report against the
 // inventory. CI jobs and local runs use this one entry point.
 //
 //   node eng/ci/suites/suite.mjs run <suite-id>... | --group <group> | --cross-platform
 //        [--platform linux|macos|windows] [--parallel N] [--results-root dir] [--build]
-import { spawn, spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import { appendFileSync, cpSync, existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { flag, option } from "../process-support.mjs";
-import { builtCliPath } from "./cli.mjs";
+import { runPlan } from "../stage-plan.mjs";
+import { parseSelection, selectSuites } from "./selection.mjs";
+import { buildSuites } from "./build.mjs";
 import { discoverDotnet, parseInventory } from "./inventory.mjs";
 import { planSuite } from "./plan.mjs";
 import { inventoryPath, loadSuites } from "./registry.mjs";
@@ -23,81 +26,19 @@ const platformNames = /** @type {Record<string, string>} */ ({ win32: "windows",
 const currentPlatform = () => platformNames[process.platform] ?? "linux";
 
 /**
- * @param {import("./registry.mjs").Suite[]} suites
- * @param {string[]} argv
- * @returns {import("./registry.mjs").Suite[]}
- */
-function selectSuites(suites, argv) {
-  if (flag(argv, "cross-platform")) {
-    const here = option(argv, "platform", currentPlatform());
-    return suites.filter(
-      (suite) =>
-        suite.kind === "dotnet" && suite.group === undefined && suite.platforms.includes(here),
-    );
-  }
-  const group = option(argv, "group", undefined);
-  const ids = argv.slice(argv.indexOf("run") + 1).filter((part) => !part.startsWith("--"));
-  const named = group === undefined ? ids : [];
-  const selected =
-    group === undefined
-      ? suites.filter((suite) => named.includes(suite.id))
-      : suites.filter((suite) => suite.group === group);
-  const missing = named.filter((id) => !suites.some((suite) => suite.id === id));
-  if (selected.length === 0 || missing.length > 0) {
-    throw new Error(
-      `Name registered suites or a registered group (unknown: ${missing.join(", ")}).`,
-    );
-  }
-  return selected;
-}
-
-/**
- * @param {string} command
- * @param {string[]} args
- * @returns {void}
- */
-function runChecked(command, args) {
-  const result = spawnSync(command, args, { cwd: root, stdio: "inherit" });
-  if (result.status !== 0) {
-    throw new Error(`${command} ${args.join(" ")} failed.`);
-  }
-}
-
-/**
- * @param {import("./registry.mjs").Suite} suite
- * @returns {void}
- */
-function build(suite) {
-  const configuration = suite.configuration ?? "Release";
-  for (const project of [...(suite.build ?? []), suite.project ?? ""]) {
-    const extra = project === suite.project ? (suite.msbuild ?? []) : [];
-    runChecked("dotnet", [
-      "build",
-      project,
-      "--configuration",
-      configuration,
-      "--no-restore",
-      ...extra,
-    ]);
-  }
-}
-
-/**
  * @param {import("./plan.mjs").Job} job
- * @param {NodeJS.ProcessEnv} extra Environment shared by every job of the run.
  * @returns {Promise<{ status: number, output: string }>}
  */
-function execute(job, extra) {
+function execute(job) {
   if (job.privateBin !== undefined) {
-    const source = join(root, "artifacts/bin", job.assembly, "release");
     rmSync(job.privateBin, { recursive: true, force: true });
-    cpSync(source, job.privateBin, { recursive: true });
+    cpSync(job.binaryDirectory, job.privateBin, { recursive: true });
   }
   mkdirSync(job.results, { recursive: true });
   return new Promise((resolve) => {
-    const child = spawn("dotnet", job.args, {
+    const child = spawn(executable("dotnet"), job.args, {
       cwd: root,
-      env: { ...process.env, ...extra, ...job.env },
+      env: { ...process.env, ...job.env },
       stdio: ["ignore", "pipe", "pipe"],
     });
     /** @type {Buffer[]} */
@@ -118,22 +59,26 @@ function execute(job, extra) {
  * Run `jobs` with at most `limit` processes at a time, printing each one's output as a group.
  * @param {import("./plan.mjs").Job[]} jobs
  * @param {number} limit
- * @param {NodeJS.ProcessEnv} extra
  * @returns {Promise<Map<import("./plan.mjs").Job, number>>}
  */
-async function runJobs(jobs, limit, extra) {
+async function runJobs(jobs, limit) {
   /** @type {Map<import("./plan.mjs").Job, number>} */
   const statuses = new Map();
-  const queue = [...jobs];
-  const worker = async () => {
-    for (let job = queue.shift(); job; job = queue.shift()) {
-      const { status, output } = await execute(job, extra);
-      const title = job.partition ? `${job.suite} [${job.partition}]` : job.suite;
-      process.stdout.write(`::group::${title}\n${output}\n::endgroup::\n`);
-      statuses.set(job, status);
+  const stages = jobs.map((job, index) => ({
+    id: `suite-${index}`,
+    argv: ["dotnet", ...job.args],
+  }));
+  await runPlan({ producer: "suites", stages }, limit, async (stage) => {
+    const job = jobs[stages.indexOf(stage)];
+    if (!job) {
+      throw new Error("The suite process plan is incomplete.");
     }
-  };
-  await Promise.all(Array.from({ length: Math.min(limit, jobs.length) }, worker));
+    const { status, output } = await execute(job);
+    const title = job.partition ? `${job.suite} [${job.partition}]` : job.suite;
+    process.stdout.write(`::group::${title}\n${output}\n::endgroup::\n`);
+    statuses.set(job, status);
+    return { status: status === 0 ? "passed" : "failed" };
+  });
   return statuses;
 }
 
@@ -187,15 +132,12 @@ export function architectureSummary(reportPath) {
  */
 
 /**
- * Build if asked, then check the build against the inventory and plan the suite's processes.
+ * Check the selected build against the inventory and plan the suite's processes.
  * @param {import("./registry.mjs").Suite} suite
- * @param {{ build: boolean, resultsRoot: string }} options
+ * @param {{ resultsRoot: string }} options
  * @returns {Prepared}
  */
-function prepare(suite, { build: wantBuild, resultsRoot }) {
-  if (wantBuild) {
-    build(suite);
-  }
+function prepare(suite, { resultsRoot }) {
   const names = parseInventory(readFileSync(join(root, inventoryPath(suite)), "utf8"));
   const { names: discovered, partitions: partitionNames } = discoverDotnet(root, suite);
   if (JSON.stringify(discovered) !== JSON.stringify(names)) {
@@ -238,27 +180,27 @@ function conclude({ suite, jobs, names }, statuses, resultsRoot) {
  * @returns {Promise<number>} Process exit code.
  */
 export async function run(argv) {
-  const platform = option(argv, "platform", currentPlatform());
-  // A named suite runs wherever it is asked to; a group runs only the members for this platform.
-  const grouped = option(argv, "group", undefined) !== undefined;
-  const suites = selectSuites(loadSuites(root), argv).filter(
-    (suite) => suite.kind === "dotnet" && (!grouped || suite.platforms.includes(platform)),
+  const selection = parseSelection(argv);
+  const platform = selection.options["platform"] ?? currentPlatform();
+  const suites = selectSuites(loadSuites(root), selection, platform);
+  const limit = Number(
+    selection.options["parallel"] ?? process.env["CLAIMCORE_PARALLEL_JOBS"] ?? "8",
   );
-  const limit = Number(option(argv, "parallel", process.env["CLAIMCORE_PARALLEL_JOBS"] ?? "8"));
-  const resultsRoot = join(root, option(argv, "results-root", "artifacts/test-results"));
-  const prepared = suites.map((suite) =>
-    prepare(suite, { build: flag(argv, "build"), resultsRoot }),
+  if (!Number.isInteger(limit) || limit < 1) {
+    throw new Error("Concurrency must be a positive integer.");
+  }
+  const resultsRoot = artifactDirectory(
+    root,
+    selection.options["results-root"] ?? "artifacts/test-results",
   );
+  if (selection.enabled.has("build")) {
+    buildSuites(root, suites);
+  }
+  const prepared = suites.map((suite) => prepare(suite, { resultsRoot }));
   const started = Date.now();
-  const needsCli = suites.some((suite) => suite.group === "postgres");
-  const extra =
-    needsCli && process.env["CLAIMCORE_TEST_CLI_PATH"] === undefined
-      ? { CLAIMCORE_TEST_CLI_PATH: builtCliPath() }
-      : {};
   const statuses = await runJobs(
     prepared.flatMap((plan) => plan.jobs),
     limit,
-    extra,
   );
   const outcomes = prepared.map((plan) => conclude(plan, statuses, resultsRoot));
   process.stdout.write(

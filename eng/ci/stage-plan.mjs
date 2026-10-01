@@ -7,12 +7,15 @@
 // the requested concurrency. Every stage runs to completion whether or not another failed: a
 // verification run reports all findings, not the first.
 
+import { validateStageMetadata } from "./stage-metadata.mjs";
+
 const stageId = /^[a-z0-9]+(-[a-z0-9]+)*$/u;
 
 /** @param {import("./types.mjs").Stage[]} stages @returns {Set<string>} */
 function checkStages(stages) {
   const ids = new Set();
   for (const stage of stages) {
+    validateStageMetadata(stage);
     if (typeof stage.id !== "string" || !stageId.test(stage.id)) {
       throw new Error("Stage ids are lowercase kebab-case.");
     }
@@ -71,7 +74,12 @@ function checkAcyclic(stages) {
  */
 export function validatePlan(candidate) {
   const plan = /** @type {import("./types.mjs").Plan} */ (candidate);
-  if (!plan || typeof plan.producer !== "string" || !Array.isArray(plan.stages)) {
+  if (
+    !plan ||
+    typeof plan.producer !== "string" ||
+    !Array.isArray(plan.stages) ||
+    plan.stages.length === 0
+  ) {
     throw new Error("A stage plan needs a producer and a stage list.");
   }
   const ids = checkStages(plan.stages);
@@ -105,13 +113,18 @@ class Schedule {
     if (this.exclusiveRunning || (this.failFast && this.failed)) {
       return undefined;
     }
-    return this.pending.find(
-      (stage) =>
-        (stage.after ?? []).every((id) => this.finished.has(id)) &&
-        (stage.group === undefined || !this.busyGroups.has(stage.group)) &&
-        // An exclusive stage waits for the running stages to drain; nothing may start behind it.
-        (stage.exclusive !== true || this.running === 0),
-    );
+    for (const stage of this.pending) {
+      if (!(stage.after ?? []).every((id) => this.finished.has(id))) {
+        continue;
+      }
+      if (stage.exclusive === true) {
+        return this.running === 0 ? stage : undefined;
+      }
+      if (stage.group === undefined || !this.busyGroups.has(stage.group)) {
+        return stage;
+      }
+    }
+    return undefined;
   }
 
   /** @param {import("./types.mjs").Stage} stage */
@@ -136,7 +149,7 @@ class Schedule {
     if (stage.group !== undefined) {
       this.busyGroups.delete(stage.group);
     }
-    if (value.failed) {
+    if (value.status === "failed") {
       this.failed = true;
     }
   }
@@ -147,6 +160,24 @@ function checkConcurrency(parallel) {
   if (!Number.isInteger(parallel) || parallel < 1) {
     throw new Error("Concurrency must be a positive integer.");
   }
+}
+
+/** @param {import("./types.mjs").StageResult} value @returns {import("./types.mjs").StageResult} */
+function requireResult(value) {
+  if (!value || !["passed", "failed", "skipped"].includes(value.status)) {
+    throw new Error("A task returned an invalid execution result.");
+  }
+  const fields = new Set(["status"]);
+  if (value.status !== "passed") {
+    fields.add("note");
+  }
+  if (value.status === "failed") {
+    fields.add("error");
+  }
+  if (Object.keys(value).some((key) => !fields.has(key))) {
+    throw new Error("A task returned contradictory execution metadata.");
+  }
+  return value;
 }
 
 /**
@@ -164,9 +195,10 @@ function launch(schedule, running, parallel, runStage) {
       stage.id,
       Promise.resolve()
         .then(() => runStage(stage))
+        .then(requireResult)
         .then(
           (value) => ({ stage, value }),
-          (error) => ({ stage, value: { failed: true, error } }),
+          (error) => ({ stage, value: { status: "failed", error } }),
         ),
     );
   }
@@ -176,7 +208,7 @@ function launch(schedule, running, parallel, runStage) {
  * Run every stage of `plan`, `parallel` at a time, through `runStage(stage)`, which returns a
  * promise. Resolves with the results in completion order. Never rejects for a failing stage.
  * With `failFast`, no stage starts after one has failed: stages already running finish, and the
- * rest are reported as not started (`notStarted` in the result).
+ * rest are reported as not started (`status: not-started` in the result).
  * @param {import("./types.mjs").Plan} plan
  * @param {number} parallel
  * @param {(stage: import("./types.mjs").Stage) => Promise<import("./types.mjs").StageResult>} runStage
@@ -205,6 +237,12 @@ export async function runPlan(plan, parallel, runStage, { failFast = false } = {
     results.push(done);
   }
   return failFast && schedule.failed
-    ? [...results, ...schedule.pending.map((stage) => ({ stage, value: { notStarted: true } }))]
+    ? [
+        ...results,
+        ...schedule.pending.map((stage) => ({
+          stage,
+          value: { status: /** @type {const} */ ("not-started") },
+        })),
+      ]
     : results;
 }

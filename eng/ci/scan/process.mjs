@@ -1,3 +1,4 @@
+import { commandLine } from "../executable.mjs";
 // Running the scanner and git as child processes with a bounded lifetime and a scrubbed environment.
 import { spawn } from "node:child_process";
 
@@ -16,7 +17,11 @@ import { spawn } from "node:child_process";
  */
 export function runChild(command, args, { cwd, env, timeoutMs = 300_000 }) {
   return new Promise((resolve, reject) => {
-    const child = spawn(command, args, { cwd, env, stdio: ["ignore", "pipe", "pipe"] });
+    const child = spawn(...commandLine(command, args), {
+      cwd,
+      env,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
     /** @type {Buffer[]} */
     const out = [];
     /** @type {Buffer[]} */

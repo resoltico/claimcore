@@ -31,6 +31,28 @@ let private generatedFixture (repository: TempRepository) (helps: ProcessOutput 
         |> MarkdownModel.read repository.Root
         |> requireOk
 
+    repository.Write(
+        "config/test-suites.json",
+        """{"schemaVersion":2,"suites":[{"id":"example","assembly":"Example.Tests"}]}"""
+    )
+    |> ignore
+
+    repository.Write("tests/inventory/Example.Tests.txt", "unrelated test\n")
+    |> ignore
+
+    let development =
+        repository.Write(
+            "docs/development.md",
+            "# Development\n\n" + marker "quality-stages" + marker "pinned-tools"
+        )
+        |> MarkdownModel.read repository.Root
+        |> requireOk
+
+    let evidence =
+        repository.Write("docs/contract-tests.md", "# Contract tests\n\n" + marker "contract-tests")
+        |> MarkdownModel.read repository.Root
+        |> requireOk
+
     [
         "ClaimCore.Cli", "docs/cli.md", "cli-help", List.item 0 helps
         "ClaimCore.Database", "docs/database.md", "database-help", List.item 1 helps
@@ -44,7 +66,10 @@ let private generatedFixture (repository: TempRepository) (helps: ProcessOutput 
         let parsed = MarkdownModel.read repository.Root path |> requireOk
         parsed, [ processOutput 0 "build" ""; processOutput 0 (binary + "\n") ""; help ])
     |> List.unzip
-    |> fun (documents, outputs) -> architecture :: documents, List.concat outputs
+    |> fun (documents, outputs) ->
+        development :: evidence :: architecture :: documents,
+        [ processOutput 0 "stages\n" ""; processOutput 0 "tools\n" "" ]
+        @ List.concat outputs
 
 let private blockTests =
     testList
@@ -126,7 +151,7 @@ let private generationSuccessTests =
                     "```text\nline one\nline two\n```"
                     "Named normalization"
 
-                Expect.equal runner.Requests.Length 9 "Only fixed registered invocations run"
+                Expect.equal runner.Requests.Length 11 "Only fixed registered invocations run"
 
         ]
 

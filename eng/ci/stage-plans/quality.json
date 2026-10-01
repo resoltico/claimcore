@@ -10,6 +10,12 @@
       "argv": ["node", "eng/ci/suites/check-registry.mjs"]
     },
     {
+      "id": "clean-source",
+      "argv": ["node", "eng/ci/clean-source.mjs"],
+      "requires": ["dotnet"],
+      "exclusive": true
+    },
+    {
       "id": "eng-tests",
       "argv": ["npm", "--prefix", "eng", "test"]
     },
@@ -90,10 +96,11 @@
         "run",
         "--frozen",
         "zizmor",
+        "--persona",
+        "pedantic",
         "--config",
         ".github/zizmor.yml",
         "--no-progress",
-        "--no-exit-codes",
         "--format=plain",
         ".github"
       ],

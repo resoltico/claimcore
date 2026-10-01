@@ -12,11 +12,7 @@
       "id": "setup",
       "title": "Locked restore, tools and the strict-compiler Release build",
       "mirrors": ["quality"],
-      "argv": [
-        "bash",
-        "-c",
-        "dotnet restore ClaimCore.slnx --locked-mode && dotnet tool restore && npm --prefix eng ci && dotnet build ClaimCore.slnx --configuration Release --no-restore"
-      ],
+      "argv": ["node", "eng/ci/source-build.mjs"],
       "scope": null
     },
     {
@@ -70,7 +66,7 @@
       "title": "Every registered cross-platform suite for this platform (CI runs the other platforms)",
       "mirrors": ["suites"],
       "after": ["quality", "docs-check", "frontend-gates"],
-      "argv": ["node", "eng/ci/suites/suite.mjs", "run", "--cross-platform"],
+      "argv": ["node", "eng/ci/suites/suite.mjs", "run", "--cross-platform", "--build"],
       "scope": [
         "^src/",
         "^tests/",

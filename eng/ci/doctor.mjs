@@ -1,3 +1,4 @@
+import { commandLine } from "./executable.mjs";
 // Report whether this machine has the toolchain a checkout pins, and how to fix what is missing.
 // Every version is read from the file that owns it: global.json, .node-version, the package
 // manifests' engines and config/tools.json. Exit status 0 means every required tool matches.
@@ -26,7 +27,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
  * @returns {string | undefined} Trimmed standard output, or undefined when it cannot run.
  */
 function capture(command, args) {
-  const result = spawnSync(command, args, {
+  const result = spawnSync(...commandLine(command, args), {
     cwd: root,
     encoding: "utf8",
     env: { ...process.env, PATH: pathWithTools(root) },

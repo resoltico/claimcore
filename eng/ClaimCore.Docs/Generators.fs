@@ -2,29 +2,6 @@ namespace ClaimCore.Docs
 
 open System
 
-[<NoEquality; NoComparison>]
-type GenerationContext =
-    {
-        Root: RepositoryRoot
-        Processes: IProcessRunner
-    }
-
-[<NoEquality; NoComparison>]
-type BlockRegistration =
-    {
-        Id: string
-        Document: string
-        Render: GenerationContext -> Result<string, Diagnostic list>
-    }
-
-[<NoEquality; NoComparison>]
-type GeneratedDocument =
-    {
-        Original: MarkdownFile
-        ExpectedText: string
-        Blocks: BlockStatus list
-    }
-
 [<RequireQualifiedAccess>]
 module Generators =
     let private invoke context arguments timeout =
@@ -158,6 +135,27 @@ module Generators =
 
     let registrations =
         [
+            {
+                Id = "quality-stages"
+                Document = "docs/development.md"
+                Render =
+                    fun context -> DevelopmentBlocks.render context.Root context.Processes "stages"
+            }
+            {
+                Id = "pinned-tools"
+                Document = "docs/development.md"
+                Render =
+                    fun context -> DevelopmentBlocks.render context.Root context.Processes "tools"
+            }
+            {
+                Id = "contract-tests"
+                Document = "docs/contract-tests.md"
+                Render =
+                    fun context ->
+                        ContractTokens.render context.Root
+                        |> Result.mapError (fun message ->
+                            [ Diagnostic.create DiagnosticCode.InvalidContract message ])
+            }
             registration
                 "cli-help"
                 "docs/cli.md"

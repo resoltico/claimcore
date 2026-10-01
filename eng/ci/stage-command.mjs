@@ -1,33 +1,4 @@
-// How one registered stage becomes a command line and where it may run.
-import { readdirSync } from "node:fs";
-import { join } from "node:path";
-
-/**
- * Files under `directories` whose name ends with `suffix`, sorted.
- * @param {string} root
- * @param {string[]} directories
- * @param {string} suffix
- * @returns {string[]}
- */
-function filesEndingWith(root, directories, suffix) {
-  /** @type {string[]} */
-  const found = [];
-  /** @param {string} directory */
-  const walk = (directory) => {
-    for (const entry of readdirSync(join(root, directory), { withFileTypes: true })) {
-      const path = `${directory}/${entry.name}`;
-      if (entry.isDirectory()) {
-        walk(path);
-      } else if (entry.name.endsWith(suffix)) {
-        found.push(path);
-      }
-    }
-  };
-  for (const directory of directories) {
-    walk(directory);
-  }
-  return found.sort();
-}
+import { repositoryFiles } from "./repository.mjs";
 
 /**
  * The command line of a stage with run id and root substituted and any registered files appended.
@@ -42,7 +13,14 @@ export function commandFor(stage, runId, root) {
   );
   if (stage.appendFiles) {
     const { directories, suffix } = stage.appendFiles;
-    argv.push(...filesEndingWith(root, directories, suffix));
+    const files = repositoryFiles(root).filter(
+      (path) =>
+        path.endsWith(suffix) && directories.some((directory) => path.startsWith(`${directory}/`)),
+    );
+    if (files.length === 0) {
+      throw new Error("A stage source selector matched no source files.");
+    }
+    argv.push(...files);
   }
   return argv;
 }

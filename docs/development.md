@@ -5,8 +5,8 @@ This document is the sole owner of contributor verification commands. Product op
 
 ## Prerequisites
 
-Run `node eng/ci/doctor.mjs` to see which of these a machine lacks and how to fix it. Every version
-is read from the file that owns it, never repeated here.
+Run `node eng/ci/doctor.mjs` to see which of these a machine lacks and how to fix it. Every pin
+is read from its owning file; the tool table below is generated.
 
 - The .NET SDK selected by [`global.json`](../global.json).
 - The Node release in [`.node-version`](../.node-version) and the npm release declared by
@@ -20,6 +20,15 @@ is read from the file that owns it, never repeated here.
   shfmt, uv). Each entry names a version and a SHA-256 per platform; `node eng/ci/tools.mjs`
   installs them verified into `artifacts/tools/bin`, and the stage runner installs what a stage needs.
 - The pinned Playwright Chromium, Firefox, and WebKit revisions for browser qualification.
+
+<!-- generated:begin pinned-tools -->
+| Tool | Version | Pinned platforms |
+| --- | --- | --- |
+| actionlint | 1.7.12 | darwin-arm64, darwin-x64, linux-arm64, linux-x64, win32-x64 |
+| gitleaks | 8.30.1 | darwin-arm64, darwin-x64, linux-arm64, linux-x64, win32-arm64, win32-x64 |
+| shfmt | 3.14.1 | darwin-arm64, darwin-x64, linux-arm64, linux-x64, win32-x64 |
+| uv | 0.12.21 | darwin-arm64, darwin-x64, linux-arm64, linux-x64, win32-x64 |
+<!-- generated:end pinned-tools -->
 
 Run commands from the repository root. Use only synthetic data and isolated test databases.
 
@@ -117,14 +126,14 @@ dependency gates, the frontend product and gates, the cross-platform suites for 
 partitioned PostgreSQL suites. Each job runs the command CI runs. The jobs are registered in
 [`eng/ci/local-plan.json`](../eng/ci/local-plan.json), which also lists every CI family with no local
 equivalent (the other operating systems, the published-browser lifecycles and merged coverage) with the
-reason, and a test holds that list to `ci.yml`. Jobs run one after another because they share one working
+reason, and a test holds that list to `ci.yml`. Jobs run exclusively one after another because they share one working
 tree; each uses the machine's cores internally. Generated outputs under `artifacts/` are removed first.
 
 By default a job runs only when a changed file, measured against the merge base with `origin/main` and
 including uncommitted and untracked files, could affect it, so a documentation-only change skips the frontend
 and database suites; `--changed-since REF` moves the base and `--all` runs everything. `--include published`
 adds the published CLI acceptance (it publishes the applications and uses Docker). `--only id,id` and
-`--skip id,id` select jobs, `--no-fail-fast` continues past a failure, and logs go to
+`--skip id,id` select jobs (unknown IDs fail), `--no-fail-fast` continues past a failure, and logs go to
 `artifacts/local-ci/<time>/<job>.log` with the tail of a failing log printed. A green local run is verification
 of what ran here, not of the platforms and families it lists as not run; use the summary it prints.
 
@@ -148,20 +157,20 @@ node eng/ci/suites/suite.mjs run --cross-platform   # every suite that runs on t
 node eng/ci/suites/suite.mjs run --group postgres --build
 ```
 
-For each suite the runner builds what it needs, compares the built test executable's native discovery with the
+For each suite, `--build` performs a locked restore and builds its declared inputs; shared inputs build once per configuration. The runner compares the built test executable's native discovery with the
 inventory (and proves partitions are disjoint and cover exactly the inventory), runs `dotnet test` with
 `--minimum-expected-tests` taken from the inventory, then verifies the TRX report structurally: one completed
 run, exact counters, zero failures, every inventoried test passed exactly once, nothing else ran. Suites of the
 `postgres` group (integration, witness, recovery, concurrency, migration, backup) run concurrently; the integration
 suite runs as its registered partitions, each in its own process against its own primary and witness clusters
 (`CLAIMCORE_INTEGRATION_PARTITION` selects one, no selection is the whole suite). Each measured partition runs a
-private copy of the test output directory because Coverlet rewrites assemblies on disk. Rebalance partitions in
+private copy of the test output directory under its own results directory because Coverlet rewrites assemblies on disk. Rebalance partitions in
 `tests/ClaimCore.IntegrationTests/Suite.fs`, then rewrite the inventory and the partition list in the registry.
 `CLAIMCORE_PARALLEL_JOBS` or `--parallel` bounds concurrency. Results land in `artifacts/test-results/<suite>/`.
 
 Contract tokens connect the documents to the tests: a contract heading `CC-xxx-nnn` in its owner document
-must be named by at least one test whose name contains `[CC-xxx-nnn]`, and every `[CC-…]` token in an inventory
-must name a declared contract. `ClaimCore.Docs check` enforces both directions.
+must be named by at least one test in a registered suite whose name contains `[CC-xxx-nnn]`, and every `[CC-…]` token in a registered inventory
+must name a declared contract. `ClaimCore.Docs check` enforces both directions and checks the generated [contract-test map](contract-tests.md). Orphan inventories cannot provide contract evidence.
 
 `ClaimCore.FuzzQualificationTests` needs no database and runs on Linux in CI (its inputs are operating-system
 independent). It drives every boundary that turns externally supplied bytes or opaque tokens into typed values -
@@ -307,32 +316,40 @@ runner, `node eng/ci/run-stages.mjs quality` (or `frontend`, `frontend-product`)
 `eng/ci/stage-plans/`, runs independent stages concurrently (`--parallel N`, default the smaller of the core count and
 4), serialises stages that share a resource group, and prints each stage's output as one group when it ends. Add
 `--only id,id` to run some stages. A stage that needs a pinned tool installs it first, at the pinned version; a stage
-whose other tool is absent is skipped locally and fails in CI.
+whose other required tool is absent fails both locally and in CI. Unknown selections fail before execution.
+The table shows each stage's arguments and additional inputs; run the plan to resolve source selectors and templates.
 
-```text
-node eng/lint/check-exceptions.mjs
-node eng/ci/suites/check-registry.mjs
-npm --prefix eng ci && npm --prefix eng test
-npm --prefix eng run typecheck && npm --prefix eng run lint && npm --prefix eng run format:check
-uv run --frozen ruff check --no-cache
-uv run --frozen ruff format --check --no-cache
-uv run --frozen mypy
-uv run --frozen python -B eng/lint/check_python_limits.py
-uv audit --frozen
-node eng/ci/policy/ignore.mjs
-node eng/ci/scan/main.mjs source
-node eng/ci/policy/diagnostic-privacy.mjs
-bash eng/Check-Fantomas.sh
-bash eng/Check-FSharpLint.sh
-actionlint -color
-uv run --frozen zizmor --persona pedantic --config .github/zizmor.yml --no-progress .github
-node eng/ci/check-workflows.mjs
-find eng db -type f -name '*.sh' -exec shellcheck -x {} +
-find eng db -type f -name '*.sh' -exec shfmt -d {} +
-env CLAIMCORE_COMPOSE_PROJECT=claimcore-config-local POSTGRES_PASSWORD=owner-policy-value CLAIMCORE_APP_PASSWORD=runtime-policy-value CLAIMCORE_POSTGRES_PORT=0 docker compose --file compose.yaml config --quiet
-bash eng/Test-LabeledTestContainerCleanup.sh
-bash eng/Test-ComposePolicy.sh
-```
+<!-- generated:begin quality-stages -->
+| Stage | Command | Inputs and ordering |
+| --- | --- | --- |
+| lint-exceptions | node eng/lint/check-exceptions.mjs |  |
+| suite-registry | node eng/ci/suites/check-registry.mjs |  |
+| clean-source | node eng/ci/clean-source.mjs | requires dotnet; exclusive |
+| eng-tests | npm --prefix eng test |  |
+| eng-format | npm --prefix eng run format:check |  |
+| eng-types | npm --prefix eng run typecheck |  |
+| eng-lint | npm --prefix eng run lint |  |
+| eng-npm-audit | npm --prefix eng audit --audit-level=low |  |
+| eng-npm-signatures | npm --prefix eng audit signatures |  |
+| python-format | uv run --frozen ruff format --check --no-cache | requires uv |
+| python-lint | uv run --frozen ruff check --no-cache | requires uv |
+| python-types | uv run --frozen mypy | requires uv |
+| python-limits | uv run --frozen python -B eng/lint/check_python_limits.py | requires uv |
+| python-audit | uv audit --frozen | requires uv |
+| git-ignore-policy | node eng/ci/policy/ignore.mjs |  |
+| source-secret-scan | node eng/ci/scan/main.mjs source |  |
+| test-diagnostic-privacy | node eng/ci/policy/diagnostic-privacy.mjs |  |
+| fantomas | bash eng/Check-Fantomas.sh |  |
+| fsharplint | bash eng/Check-FSharpLint.sh |  |
+| actionlint | actionlint -color | requires actionlint |
+| workflow-security | uv run --frozen zizmor --persona pedantic --config .github/zizmor.yml --no-progress --format=plain .github | requires uv |
+| workflow-policy | node eng/ci/check-workflows.mjs |  |
+| shfmt | shfmt -d | requires shfmt; append .sh source under eng, db |
+| shellcheck | shellcheck -x | requires shellcheck; append .sh source under eng, db |
+| compose-config | CLAIMCORE_COMPOSE_PROJECT="claimcore-config-{runId}" POSTGRES_PASSWORD="owner-policy-value" CLAIMCORE_APP_PASSWORD="runtime-policy-value" CLAIMCORE_POSTGRES_PORT="0" docker compose --file compose.yaml config --quiet | requires docker |
+| compose-health | bash eng/Test-ComposePolicy.sh | requires docker; resource docker |
+| docker-cleanup-assurance | bash eng/Test-LabeledTestContainerCleanup.sh | requires docker; resource docker |
+<!-- generated:end quality-stages -->
 
 Use Fantomas without `--check` to format changed F# files. The FSharpLint gate applies its configured
 syntax-tree rules after the strict compiler has type-checked the solution. FSharpLint, oxlint (type-aware,
