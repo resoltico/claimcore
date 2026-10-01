@@ -179,6 +179,10 @@ attempt; pruned technical material cannot be exported.
 
 Logout is unavailable while a mutation is dispatched. When it succeeds, the host signs out the server-side browser ticket and cookie, makes the principal anonymous, issues a fresh anonymous antiforgery token, and returns that session snapshot. The browser increments its local session epoch, aborts reads, and clears claimant state.
 
+A definite server access refusal on a paginated read clears that request's cached rows, continuation
+and page metadata. Transient delivery/storage failures remain retryable; other reads keep their own
+state. Already-disclosed downloads, clipboard contents and human knowledge are not remotely erased.
+
 Reads may be abortable. Mutation HTTP never uses browser cancellation after dispatch. A typed
 not-started admission response proves no execution. A lost prepare response remains uncertain and may be retried or inspected with the exact operation ID and request bytes. A lost, timed-out,
 malformed, wrong-media, or undecodable submit response after dispatch is

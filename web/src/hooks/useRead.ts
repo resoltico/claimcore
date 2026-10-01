@@ -2,6 +2,7 @@ import type { Notice } from "../api/notices";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { resultNotice, type ApiResult, type EndpointOutcome } from "../api/v3";
+import { isDisclosureRefused } from "../api/outcomes";
 
 type ReadState<T> = { value: T | null; message: Notice | null; loading: boolean };
 type Page<T> = { readonly items: ReadonlyArray<T>; readonly nextCursor: string | null };
@@ -58,6 +59,11 @@ const fetchPage = async <R extends EndpointOutcome, T, P extends Page<T>>(
   }
   const page = result.kind === "outcome" ? select(result.value) : null;
   if (page === null) {
+    if (isDisclosureRefused(result)) {
+      sinks.setItems([]);
+      sinks.setCursor(null);
+      sinks.setPage(null);
+    }
     sinks.setMessage(resultNotice(result));
   } else {
     sinks.setItems((previous) =>

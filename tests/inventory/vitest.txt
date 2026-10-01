@@ -5,6 +5,8 @@ announces unsaved preferences in the chosen language without blocking the switch
 associates optional field errors and supports password text input
 binds consent to one reviewed preparation and exact identity rather than an editor-wide boolean
 clears claimant definition state when the server rejects or mismatches assets
+clears this page's cached rows cursor and metadata after a browser session refusal
+clears this page's cached rows cursor and metadata after a resource grant refusal
 closes recovery detail, confirm, and import dialogs without dispatching mutations
 coalesces duplicate page loads for one in-flight cursor
 coalesces duplicate preparation activation while retention is pending
@@ -12,6 +14,7 @@ coalesces duplicate recovery retention for the same previewed bytes
 copies safe values and provides an accessible fallback when clipboard access is unavailable
 discards an aborted definition response when session epoch changes
 discards an aborted keyed read instead of replacing its newer response
+does not interpret a local delivery notice as a definite server refusal
 does not rebase a frozen preparation after language switching and an external revision change
 does not retain recovery material without a preview
 does not send a credential from an anonymous session
@@ -38,6 +41,7 @@ ignores late prepare and submit responses from inactive attempts
 keeps ICU plural grammar independent from the number-display locale
 keeps a failed history page request-local without erasing current case data
 keeps a non-reviewable retained Prepare exact and directs Recovery
+keeps a previously disclosed page retryable after a transient delivery failure
 keeps an in-flight submission and its exact recovery identity through language and format switches
 keeps an unknown recovery result explicit and directs inspection
 keeps cancelled or non-diagnostic outcomes distinct from a translated core refusal

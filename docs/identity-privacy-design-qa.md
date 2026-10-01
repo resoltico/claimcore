@@ -42,6 +42,12 @@ approval queries and terminal owner evidence before implementation.
     client names cannot select an actor. A distinct uppercase extension does not replace the exact
     registered claim. This revises the identity-selection implementation assumption.
 
+12. **Cached pages can outlive an explicit refusal.** A rejected continuation previously left old
+    rows and its cursor displayed. Clear only that request's cache on closed access/session refusal
+    diagnostics. Keep transient failures retryable and preserve unrelated successful reads; do not
+    introduce polling, client grant decisions or a claim to retract already-disclosed knowledge.
+    Positive-page/refusal and transient-failure React hook controls distinguish the behavior.
+
 ## Executable evidence
 
 `PrincipalAdmissionTests` covers identity ambiguity and total discovery refusal.

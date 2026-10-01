@@ -48,6 +48,11 @@ owner activity and would not express the current resource policy. Hidden ambient
 second authorization policy are unnecessary. Explicit callbacks under the existing final fence reuse
 one policy and preserve primary-first lock order.
 
+Paginated browser reads also retained prior rows and continuation metadata after a definitive
+server access refusal. They now clear that request's cache using closed server diagnostic identities.
+Transient delivery/storage failures remain retryable, and unrelated reads retain their state.
+This changes presentation of cached data, never server permission or commit authority.
+
 ## Adjacent boundaries reviewed
 
 - The security policy still described the removed shared browser credential. Its supported-boundary
