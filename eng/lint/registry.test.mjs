@@ -133,3 +133,11 @@ test("valid leap days are accepted and malformed registry members cannot disappe
     });
   }
 });
+
+test("review and expiry dates remain valid through their entire UTC day", (context) => {
+  context.mock.timers.enable({ apis: ["Date"], now: new Date("2040-02-29T23:59:59.999Z") });
+  const entry = { ...validEntry, reviewOn: "2040-02-29", expiresOn: "2040-02-29" };
+  assert.deepEqual(load([entry]).errors, []);
+  context.mock.timers.setTime(new Date("2040-03-01T00:00:00Z").getTime());
+  assert.equal(load([entry]).errors.filter((error) => /passed its/u.test(error)).length, 2);
+});

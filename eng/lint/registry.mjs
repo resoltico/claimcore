@@ -72,7 +72,7 @@ function checkGovernance(entry, label, report, today) {
     const value = text(entry, name);
     if (!calendarDay(value)) {
       report.add(`${label} ${name} must be an ISO yyyy-MM-dd date.`);
-    } else if (new Date(`${value}T23:59:59Z`) < today) {
+    } else if (value < today.toISOString().slice(0, 10)) {
       report.add(`${label} passed its ${name} date ${value}.`);
     }
   }
