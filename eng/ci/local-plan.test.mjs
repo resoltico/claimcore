@@ -94,3 +94,7 @@ test("only generated stage outputs are cleaned before a local run", () => {
     );
   }
 });
+
+test("shared lint policy changes require the frontend gates", () => {
+  assert.equal(affected(job("frontend-gates"), ["config/oxlint.json"]), true);
+});

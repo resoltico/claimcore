@@ -29,7 +29,7 @@ const stateFiles = [
   "src/views/recovery/RecoveryState.ts",
 ];
 
-/** @param {string} path @param {string[]} codes */
+/** @param {string} path @param {string[]} codes @param {boolean} expectViolation */
 async function assertEach(path, codes, expectViolation) {
   const found = await lintCases(codes.map((code) => ({ path, code })));
   codes.forEach((code, index) => {
@@ -72,4 +72,9 @@ test("claimant content must render as text", async () => {
     ["export const view = <div dangerouslySetInnerHTML={{ __html: 'x' }} />;"],
     true,
   );
+});
+
+test("Node tooling rejects browser globals while retaining Node runtime access", async () => {
+  await assertEach("scripts/control.mjs", ["window.document.title;", "navigator.language;"], true);
+  await assertEach("scripts/control.mjs", ["process.version;"], false);
 });

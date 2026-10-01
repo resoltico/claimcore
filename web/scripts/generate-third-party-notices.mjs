@@ -30,6 +30,7 @@ if (embeddedPackages.size === 0) {
   throw new Error("The generated standalone-validator package inventory is missing.");
 }
 
+/** @param {string} identity */
 const packageName = (identity) => identity.slice(0, identity.lastIndexOf("@"));
 
 const dependencies = Object.entries(inventory)

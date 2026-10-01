@@ -17,27 +17,33 @@ if (javascript.length === 0 || styles.length !== 1) {
 
 const sources = new Map(
   await Promise.all(
-    javascript.map(async (entry) => [
-      entry.name,
-      await readFile(resolve(assets, entry.name), "utf8"),
-    ]),
+    javascript.map(
+      async (entry) =>
+        /** @type {[string,string]} */ ([
+          entry.name,
+          await readFile(resolve(assets, entry.name), "utf8"),
+        ]),
+    ),
   ),
 );
 
+/** @param {string} html */
 const entryScripts = (html) =>
   Array.from(
     html.matchAll(
       /<script\b(?=[^>]*\btype=["']module["'])(?=[^>]*\bsrc=["']\/assets\/([^"']+\.js)["'])[^>]*><\/script>/gu,
     ),
-    (match) => match[1],
+    (match) => match[1] ?? "",
   );
 
+/** @param {string} source */
 const staticImports = (source) =>
   Array.from(
     source.matchAll(/(?:^|;)import(?:[^"']*?from)?["']\.\/([^"']+\.js)["']/gu),
-    (match) => match[1],
+    (match) => match[1] ?? "",
   );
 
+/** @param {string[]} scripts */
 const initialEntrySources = (scripts) => {
   const pending = [...scripts];
   const initial = new Set();
@@ -79,7 +85,11 @@ if (
   throw new Error("The Web JavaScript bundle exceeds its reviewed byte budget.");
 }
 
-const style = await readFile(resolve(assets, styles[0].name));
+const [stylesheet] = styles;
+if (!stylesheet) {
+  throw new Error("A Web stylesheet is required.");
+}
+const style = await readFile(resolve(assets, stylesheet.name));
 if (style.byteLength > 64 * 1024) {
   throw new Error("The Web stylesheet exceeds its reviewed byte budget.");
 }

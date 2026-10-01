@@ -4,7 +4,7 @@
   "[fsharp]": {
     "editor.defaultFormatter": "Ionide.Ionide-fsharp"
   },
-  "[typescript][typescriptreact][javascript][json][jsonc][css][markdown][yaml]": {
+  "[typescript][typescriptreact][javascript][javascriptreact][json][jsonc][css][markdown][yaml]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "[python]": {

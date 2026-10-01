@@ -141,6 +141,7 @@
     "config/contracts.lock.json",
     "config/tools.json",
     "config/test-suites.json",
-    "tests/inventory/ClaimCore.Tests.txt"
+    "tests/inventory/ClaimCore.Tests.txt",
+    "config/oxlint.json"
   ]
 }

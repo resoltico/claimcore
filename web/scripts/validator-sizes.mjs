@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { maximumStandaloneValidatorGroupBytes } from "./generate-web-validators.mjs";
 import { standaloneValidatorArtifacts } from "./validator-groups.mjs";
 
+/** @param {string[]} left @param {string[]} right */
 const sameInventory = (left, right) =>
   left.length === right.length && left.every((value, index) => value === right[index]);
 

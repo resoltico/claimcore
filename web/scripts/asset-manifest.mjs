@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { readdir, readFile, rename, writeFile } from "node:fs/promises";
 import { basename, dirname, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { compilerInputs } from "./compiler-inputs.mjs";
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const webDirectory = resolve(scriptDirectory, "..");
@@ -10,10 +11,14 @@ const distDirectory = resolve(webDirectory, "dist");
 const manifestFileName = "claimcore-assets.manifest.json";
 const manifestPath = resolve(distDirectory, manifestFileName);
 
+/** @param {string} path */
 const asRelativePath = (path) => relative(webDirectory, path).split(sep).join("/");
+/** @param {string | NodeJS.ArrayBufferView} contents */
 const hash = (contents) => createHash("sha256").update(contents).digest("hex");
+/** @param {string} path */
 const readHash = async (path) => hash(await readFile(path));
 
+/** @param {string} directory @returns {Promise<string[]>} */
 const filesBelow = async (directory) => {
   const entries = await readdir(directory, { withFileTypes: true });
   const files = await Promise.all(
@@ -44,12 +49,19 @@ const sourceFiles = async () => {
     "tsconfig.json",
     "tsconfig.node.json",
     "vite.config.ts",
+    "../eng/ci/repository-path.mjs",
+    "../eng/lint/jsonc.mjs",
   ].map((file) => resolve(webDirectory, file));
-  return [...source, ...scripts, ...fixed]
+  const compiler = compilerInputs(
+    resolve(webDirectory, ".."),
+    fixed.filter((file) => basename(file).startsWith("tsconfig")),
+  );
+  return [...new Set([...source, ...scripts, ...fixed, ...compiler])]
     .filter((path) => !asRelativePath(path).startsWith("src/generated/"))
     .sort((left, right) => asRelativePath(left).localeCompare(asRelativePath(right)));
 };
 
+/** @param {string} root @param {string} [excluded] */
 const recordsFor = async (root, excluded) => {
   const files = await filesBelow(root);
   const records = await Promise.all(
@@ -64,6 +76,7 @@ const recordsFor = async (root, excluded) => {
   return records.sort((left, right) => left.path.localeCompare(right.path));
 };
 
+/** @param {{ path: string, sha256: string }[]} records */
 const treeHash = (records) =>
   hash(records.map((record) => `${record.path}\n${record.sha256}\n`).join(""));
 
@@ -106,6 +119,7 @@ const createManifest = async () => {
   };
 };
 
+/** @param {Awaited<ReturnType<typeof createManifest>>} manifest */
 const canonicalManifest = (manifest) => `${JSON.stringify(manifest, null, 2)}\n`;
 
 export const writeManifest = async () => {

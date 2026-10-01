@@ -14,12 +14,14 @@ import {
 } from "./localization-policy.mjs";
 import { renderedTokens, validateTokens } from "./localization-tokens.mjs";
 const root = resolve(import.meta.dirname, "../src");
+/** @param {string} path */
 const json = (path) => JSON.parse(readFileSync(resolve(root, path), "utf8"));
 const semantic = json("generated/contracts/semantic-core-v1.contract.json");
 const requirements = diagnosticRequirements(
   semantic,
   json("generated/contracts/web-v3.host-failure.schema.json"),
 );
+/** @param {string} language @returns {Record<string, string>} */
 const catalog = (language) =>
   Object.assign(
     {},
@@ -114,6 +116,7 @@ test("pseudolocalization transforms only literal nodes and preserves exact inter
   const changed = pseudolocalize(ast);
   assert.deepEqual(ast, before);
   const value = new IntlMessageFormat(changed, "en").format({ id: "UUID-12<exact>", n: 2 });
+  assert.ok(typeof value === "string");
   assert.ok(value.includes("UUID-12<exact>"));
   assert.ok(value.includes("2"));
   assert.ok(!value.includes("Operation"));
@@ -127,7 +130,9 @@ test("missing or obsolete metadata, diagnostic parameters and rendered tokens fa
   assert.throws(() =>
     validateCoverage({ ...en, "diagnostic.OBSOLETE": "obsolete" }, semantic, requirements),
   );
-  const id = Object.keys(requirements).find((key) => Object.keys(requirements[key]).length > 0);
+  const id = Object.keys(requirements).find(
+    (key) => Object.keys(requirements[key] ?? {}).length > 0,
+  );
   assert.throws(() =>
     validateCoverage({ ...en, [`diagnostic.${id}`]: "lost arguments" }, semantic, requirements),
   );

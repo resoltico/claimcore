@@ -1,5 +1,6 @@
-import * as components from "react-aria-components";
-
+const entry = import.meta.resolve("react-aria-components");
+/** @type {Record<string, unknown>} Runtime export introspection, not the browser type program. */
+const components = await import(entry);
 const required = [
   "ModalOverlay",
   "Modal",
@@ -10,7 +11,6 @@ const required = [
   "Checkbox",
   "FileTrigger",
 ];
-
 if (!required.every((name) => components[name] !== undefined)) {
   throw new Error("React Aria Components does not expose the required accessible controls.");
 }

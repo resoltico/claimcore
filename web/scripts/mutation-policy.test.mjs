@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 import { targets, verifyMutationReport } from "./check-mutation-report.mjs";
 
-const [target] = targets;
+const target = targets[0] ?? "";
 const evidence = () => ({
   schemaVersion: "1.0",
   framework: { name: "StrykerJS", version: "10.0.0" },
@@ -13,6 +13,12 @@ const evidence = () => ({
   ),
   testFiles: { "tests/synthetic.test.ts": {} },
 });
+/** @param {import("./tooling-types.mjs").MutationReport} report */
+const targetFile = (report) => {
+  const file = report.files[target];
+  assert.ok(file);
+  return file;
+};
 const sources = () => Object.fromEntries(targets.map((name) => [name, "synthetic"]));
 
 test("mutation evidence accepts exactly the reviewed targets", () => {
@@ -21,7 +27,7 @@ test("mutation evidence accepts exactly the reviewed targets", () => {
 
 test("mutation evidence rejects target or toolchain substitution", () => {
   const changed = evidence();
-  changed.files = { ...changed.files, "src/other.ts": changed.files[target] };
+  changed.files = { ...changed.files, "src/other.ts": targetFile(changed) };
   assert.throws(() => verifyMutationReport(changed, sources(), "10.0.0"));
   const missing = evidence();
   delete missing.files[target];
@@ -35,14 +41,16 @@ test("mutation evidence rejects target or toolchain substitution", () => {
 test("mutation evidence rejects empty, ignored, or below-floor mutants", () => {
   const empty = evidence();
   for (const name of targets) {
-    empty.files[name].mutants = [];
+    const file = empty.files[name];
+    assert.ok(file);
+    file.mutants = [];
   }
   assert.throws(() => verifyMutationReport(empty, sources(), "10.0.0"));
   const ignored = evidence();
-  ignored.files[target].mutants = [{ status: "Ignored" }];
+  targetFile(ignored).mutants = [{ status: "Ignored" }];
   assert.throws(() => verifyMutationReport(ignored, sources(), "10.0.0"));
   const below = evidence();
-  below.files[target].mutants.push({ status: "Survived" }, { status: "Survived" });
+  targetFile(below).mutants.push({ status: "Survived" }, { status: "Survived" });
   assert.throws(() => verifyMutationReport(below, sources(), "10.0.0"));
 });
 

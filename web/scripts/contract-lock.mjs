@@ -9,8 +9,10 @@ const root = resolve(import.meta.dirname, "../..");
 const lockPath = resolve(root, "config/contracts.lock.json");
 export const generatedDirectory = resolve(root, "web/src/generated/contracts");
 
+/** @param {string} left @param {string} right */
 const compareOrdinal = (left, right) => Buffer.compare(Buffer.from(left), Buffer.from(right));
 
+/** @param {import("./tooling-types.mjs").ContractFile} file */
 const validFile = (file) =>
   file !== null &&
   typeof file === "object" &&
@@ -22,6 +24,7 @@ const validFile = (file) =>
   typeof file.sha256 === "string" &&
   /^[0-9a-f]{64}$/u.test(file.sha256);
 
+/** @param {import("./tooling-types.mjs").ContractFile[]} files */
 const validateFiles = (files) => {
   if (!Array.isArray(files) || files.length === 0 || !files.every(validFile)) {
     throw new Error("The contract lock requires a nonempty valid file list.");
@@ -30,7 +33,7 @@ const validateFiles = (files) => {
   for (const [index, file] of files.entries()) {
     if (
       portable.has(file.path.toLowerCase()) ||
-      (index > 0 && compareOrdinal(files[index - 1].path, file.path) >= 0)
+      (index > 0 && compareOrdinal(files[index - 1]?.path ?? "", file.path) >= 0)
     ) {
       throw new Error("The contract lock file list must be unique, portable and in ordinal order.");
     }
@@ -60,6 +63,7 @@ export const describeDirectory = async (directory) => {
   return described.sort((left, right) => compareOrdinal(left.path, right.path));
 };
 
+/** @param {string} directory @param {string} [lockFile] */
 export const writeLock = async (directory, lockFile = lockPath) => {
   const files = await describeDirectory(directory);
   validateFiles(files);
@@ -72,7 +76,10 @@ export const writeLock = async (directory, lockFile = lockPath) => {
  * @param {string} [lockFile] The lock file; the committed lock by default.
  */
 export const verifyLock = async (directory, lockFile = lockPath) => {
-  const lock = JSON.parse(await readFile(lockFile, "utf8"));
+  const lock =
+    /** @type {{schemaVersion: number, files: import("./tooling-types.mjs").ContractFile[]}} */ (
+      JSON.parse(await readFile(lockFile, "utf8"))
+    );
   if (!lock || lock.schemaVersion !== 1 || Object.keys(lock).length !== 2) {
     throw new Error("config/contracts.lock.json is malformed.");
   }
@@ -88,11 +95,12 @@ export const verifyLock = async (directory, lockFile = lockPath) => {
     ...[...expected.keys()].filter((path) => !found.has(path)).map((path) => `missing ${path}`),
     ...[...found.keys()].filter((path) => !expected.has(path)).map((path) => `unexpected ${path}`),
     ...[...found]
-      .filter(
-        ([path, entry]) =>
-          expected.has(path) &&
-          (expected.get(path).sha256 !== entry.sha256 || expected.get(path).bytes !== entry.bytes),
-      )
+      .filter(([path, entry]) => {
+        const locked = expected.get(path);
+        return (
+          locked !== undefined && (locked.sha256 !== entry.sha256 || locked.bytes !== entry.bytes)
+        );
+      })
       .map(([path]) => `changed ${path}`),
   ];
   if (problems.length > 0) {

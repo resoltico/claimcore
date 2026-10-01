@@ -1,4 +1,4 @@
-const endpointGroupNames = ["discovery", "core", "recovery"];
+const endpointGroupNames = /** @type {const} */ (["discovery", "core", "recovery"]);
 const groupNames = ["host", ...endpointGroupNames];
 
 export const standaloneValidatorArtifacts = [
@@ -16,9 +16,11 @@ export const obsoleteStandaloneValidatorArtifacts = [
   "web-v3.validators.ts",
 ];
 
+/** @param {string} endpoint */
 export const validatorName = (endpoint) =>
   `validate_${endpoint.replaceAll(/[^A-Za-z0-9_$]/gu, "_")}`;
 
+/** @param {string} endpoint */
 const groupForEndpoint = (endpoint) => {
   if (endpoint === "definition") {
     return "discovery";
@@ -26,8 +28,10 @@ const groupForEndpoint = (endpoint) => {
   return endpoint.startsWith("recovery.") ? "recovery" : "core";
 };
 
+/** @param {import("./tooling-types.mjs").ValidatorEndpoint[]} endpoints @returns {import("./tooling-types.mjs").ValidatorGroups} */
 export const validatorGroups = (endpoints) => {
-  const groups = Object.fromEntries(groupNames.map((name) => [name, []]));
+  /** @type {import("./tooling-types.mjs").ValidatorGroups} */
+  const groups = { host: [], discovery: [], core: [], recovery: [] };
   for (const endpoint of endpoints) {
     groups[groupForEndpoint(endpoint.endpoint)].push(endpoint);
   }
@@ -39,6 +43,7 @@ export const validatorGroups = (endpoints) => {
   return groups;
 };
 
+/** @param {import("./tooling-types.mjs").ValidatorEndpoint[]} endpoints */
 const declarations = (endpoints) =>
   endpoints
     .map(
@@ -47,6 +52,7 @@ const declarations = (endpoints) =>
     )
     .join("\n");
 
+/** @param {import("./tooling-types.mjs").ValidatorEndpoint[]} endpoints */
 export const validatorDeclarations = (
   endpoints,
 ) => `/* Generated from ClaimCore.Contracts schemas. Do not edit. */
@@ -67,6 +73,7 @@ ${endpoints.length === 0 ? "export const validate_host_failure: WebV3Validator<H
 ${declarations(endpoints)}
 `;
 
+/** @param {import("./tooling-types.mjs").ValidatorEndpoint[]} endpoints */
 const endpointValidators = (endpoints) =>
   endpoints
     .map(
@@ -74,13 +81,17 @@ const endpointValidators = (endpoints) =>
     )
     .join("\n");
 
+/** @param {import("./tooling-types.mjs").ValidatorGroups} groups */
 const endpointGroups = (groups) =>
   Object.entries(groups)
-    .flatMap(([group, endpoints]) => endpoints.map(({ endpoint }) => [endpoint, group]))
+    .flatMap(([group, endpoints]) =>
+      endpoints.map(({ endpoint }) => /** @type {[string, string]} */ ([endpoint, group])),
+    )
     .sort(([left], [right]) => left.localeCompare(right))
     .map(([endpoint, group]) => `  ${JSON.stringify(endpoint)}: ${JSON.stringify(group)},`)
     .join("\n");
 
+/** @param {import("./tooling-types.mjs").ValidatorGroups} groups */
 export const validationWrapper = (
   groups,
 ) => `/* Generated from ClaimCore.Contracts schemas. Do not edit. */

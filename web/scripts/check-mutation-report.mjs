@@ -9,6 +9,7 @@ export const targets = [
 ];
 const minimumScore = 92;
 
+/** @param {import("./tooling-types.mjs").MutationReport} report @param {string} version */
 function requireIdentity(report, version) {
   if (
     report.schemaVersion !== "1.0" ||
@@ -22,11 +23,12 @@ function requireIdentity(report, version) {
   }
 }
 
+/** @param {import("./tooling-types.mjs").MutationReport} report @param {Record<string, string>} sources */
 function requireScope(report, sources) {
   const files = Object.keys(report.files ?? {}).sort();
   if (
     JSON.stringify(files) !== JSON.stringify([...targets].sort()) ||
-    targets.some((target) => report.files[target].source !== sources[target]) ||
+    targets.some((target) => report.files[target]?.source !== sources[target]) ||
     typeof report.testFiles !== "object" ||
     report.testFiles === null ||
     Object.keys(report.testFiles).length === 0
@@ -35,10 +37,11 @@ function requireScope(report, sources) {
   }
 }
 
+/** @param {import("./tooling-types.mjs").MutationReport} report @param {Record<string, string>} sources @param {string} version */
 export function verifyMutationReport(report, sources, version) {
   requireIdentity(report, version);
   requireScope(report, sources);
-  const mutants = targets.flatMap((target) => report.files[target].mutants);
+  const mutants = targets.flatMap((target) => report.files[target]?.mutants ?? []);
   if (
     mutants.length === 0 ||
     mutants.some((mutant) => !["Killed", "Survived"].includes(mutant.status))
@@ -54,7 +57,9 @@ export function verifyMutationReport(report, sources, version) {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const config = JSON.parse(readFileSync(new URL("../stryker.config.json", import.meta.url)));
+  const config = JSON.parse(
+    readFileSync(new URL("../stryker.config.json", import.meta.url), "utf8"),
+  );
   if (
     JSON.stringify(config.mutate) !== JSON.stringify(targets) ||
     JSON.stringify(config.ignorePatterns) !== JSON.stringify(["artifacts/**"]) ||
@@ -66,7 +71,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   ) {
     throw new Error("Mutation configuration is outside the reviewed scope.");
   }
-  const packageJson = JSON.parse(readFileSync(new URL("../package.json", import.meta.url)));
+  const packageJson = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
   const version = packageJson.devDependencies?.["@stryker-mutator/core"];
   const sources = Object.fromEntries(
     targets.map((target) => [
@@ -75,7 +80,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     ]),
   );
   const report = JSON.parse(
-    readFileSync(new URL("../artifacts/stryker/domain-mutation.json", import.meta.url)),
+    readFileSync(new URL("../artifacts/stryker/domain-mutation.json", import.meta.url), "utf8"),
   );
   const { killed, total, score } = verifyMutationReport(report, sources, version);
   process.stdout.write(

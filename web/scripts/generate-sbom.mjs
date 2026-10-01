@@ -11,6 +11,7 @@ const outputFile = resolve(outputDirectory, "claimcore-web.cdx.json");
 const npmCli = process.env["npm_execpath"];
 const rootDirectory = resolve(webDirectory, "..");
 
+/** @param {import("./tooling-types.mjs").PackageLock} packageLock */
 const productionRootReferences = (packageLock) => {
   const rootPackage = packageLock.packages?.[""];
   if (rootPackage === undefined) {
@@ -27,12 +28,13 @@ const productionRootReferences = (packageLock) => {
     .sort();
 };
 
+/** @param {string[]} roots @param {Map<string, import("./tooling-types.mjs").BomComponent>} components @param {Map<string, import("./tooling-types.mjs").BomDependency>} dependencies */
 const reachableReferences = (roots, components, dependencies) => {
   const retained = new Set();
   const pending = [...roots];
   while (pending.length > 0) {
     const reference = pending.pop();
-    if (retained.has(reference)) {
+    if (reference === undefined || retained.has(reference)) {
       continue;
     }
     if (!components.has(reference)) {
@@ -44,6 +46,7 @@ const reachableReferences = (roots, components, dependencies) => {
   return retained;
 };
 
+/** @param {import("./tooling-types.mjs").BomDocument} document @param {import("./tooling-types.mjs").PackageLock} packageLock */
 const productionClosure = (document, packageLock) => {
   const rootGraph = document.dependencies?.find(
     (dependency) => dependency.ref === document.metadata?.component?.["bom-ref"],
