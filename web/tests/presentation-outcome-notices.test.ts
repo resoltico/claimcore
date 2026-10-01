@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 import type { EndpointOutcome } from "../src/api/v3";
-import type { Fault, RecoveryRejection } from "../src/generated/convergence/web-v3.types";
+import type { Fault, RecoveryRejection } from "../src/generated/contracts/web-v3.types";
 import { resultNotice } from "../src/api/v3";
 import { createPresenter } from "../src/presentation/presenter";
 import { operationId, preparation } from "./v3-ui.fixtures";

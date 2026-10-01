@@ -2,8 +2,8 @@ import { randomUUID } from "node:crypto";
 
 import { expect, test, type Page } from "@playwright/test";
 
-import { isWebV3Response } from "../src/generated/convergence/web-v3.validation";
-import type { WebV3Response } from "../src/generated/convergence/web-v3.types";
+import { isWebV3Response } from "../src/generated/contracts/web-v3.validation";
+import type { WebV3Response } from "../src/generated/contracts/web-v3.types";
 import {
   droppedSubmission,
   keepForRecovery,
@@ -36,7 +36,9 @@ const inspect = async (page: Page, identity: PreparedIdentity): Promise<void> =>
     );
   }
   await progress("recovery-row-found");
-  if (!(await row.isVisible())) throw new Error("E2E_RECOVERY_ROW_HIDDEN");
+  if (!(await row.isVisible())) {
+    throw new Error("E2E_RECOVERY_ROW_HIDDEN");
+  }
   await row.getByRole("button", { name: "Inspect" }).click();
   await progress("recovery-dialog-opened");
   const dialog = page.getByRole("dialog", { name: "Recovery details" });

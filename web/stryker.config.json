@@ -1,6 +1,11 @@
 {
   "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
-  "mutate": ["src/domain/operationReducer.ts"],
+  "mutate": [
+    "src/domain/metadata.ts",
+    "src/domain/operationInitial.ts",
+    "src/domain/operationReducer.ts",
+    "src/domain/operationRequest.ts"
+  ],
   "testRunner": "vitest",
   "vitest": {
     "configFile": "vite.config.ts",
@@ -12,11 +17,12 @@
   "cleanTempDir": "always",
   "reporters": ["clear-text", "progress", "json"],
   "jsonReporter": {
-    "fileName": "artifacts/stryker/operation-reducer.json"
+    "fileName": "artifacts/stryker/domain-mutation.json"
   },
   "thresholds": {
     "high": 92,
     "low": 92,
     "break": 92
-  }
+  },
+  "tsconfigFile": "tsconfig.sandbox-rewrite-disabled.json"
 }

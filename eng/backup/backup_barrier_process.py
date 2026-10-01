@@ -4,20 +4,32 @@ import os
 import socket
 import subprocess
 import sys
+from types import TracebackType
+from typing import Self
 
-from deployment_common import DeploymentRefusal, private_path, require
+from deployment_common import DeploymentRefusalError, private_path, require
 from deployment_publication import package_binary
+
+FRAME_LIMIT = 16384
+RECEIVE_BLOCK = 4096
+SOCKET_TIMEOUT_SECONDS = 30
+SHUTDOWN_SECONDS = 2
 
 
 class DatabaseBarrierController:
-    def __init__(self, archive_root, checkpoint_root):
+    """Runs the packaged owner process and speaks framed requests to it."""
+
+    def __init__(
+        self, archive_root: str | os.PathLike[str], checkpoint_root: str | os.PathLike[str]
+    ) -> None:
+        """Start the packaged owner process on a private socket pair."""
         require(sys.platform in ("darwin", "linux"), "barrier-platform")
         binary = package_binary()
         require(binary.is_file(), "barrier-owner-unavailable")
         archive = private_path(archive_root, directory=True)
         checkpoint = private_path(checkpoint_root, directory=True)
         parent, child = socket.socketpair(socket.AF_UNIX, socket.SOCK_STREAM)
-        parent.settimeout(30)
+        parent.settimeout(SOCKET_TIMEOUT_SECONDS)
         environment = os.environ.copy()
         environment["CLAIMCORE_BACKUP_CONTROL_FD"] = str(child.fileno())
         environment["CLAIMCORE_BACKUP_ARCHIVE_ROOT"] = str(archive)
@@ -35,44 +47,58 @@ class DatabaseBarrierController:
         except OSError:
             parent.close()
             child.close()
-            raise DeploymentRefusal("barrier-owner-unavailable") from None
+            msg = "barrier-owner-unavailable"
+            raise DeploymentRefusalError(msg) from None
         child.close()
         self.socket = parent
         self.process = process
 
-    def exchange(self, raw):
+    def exchange(self, raw: bytes) -> bytes:
+        """Send one frame and return the owner's newline-terminated answer."""
         require(
-            isinstance(raw, bytes) and 1 < len(raw) <= 16384 and raw.endswith(b"\n"),
+            isinstance(raw, bytes) and 1 < len(raw) <= FRAME_LIMIT and raw.endswith(b"\n"),
             "barrier-frame-limit",
         )
         try:
             self.socket.sendall(raw)
             received = bytearray()
-            while len(received) < 16384:
-                block = self.socket.recv(min(4096, 16384 - len(received)))
+            while len(received) < FRAME_LIMIT:
+                block = self.socket.recv(min(RECEIVE_BLOCK, FRAME_LIMIT - len(received)))
                 if not block:
-                    raise DeploymentRefusal("barrier-owner-unavailable")
+                    msg = "barrier-owner-unavailable"
+                    raise DeploymentRefusalError(msg)
                 received.extend(block)
                 if received.endswith(b"\n"):
                     return bytes(received)
-            raise DeploymentRefusal("barrier-frame-limit")
+            msg = "barrier-frame-limit"
+            raise DeploymentRefusalError(msg)
         except (OSError, TimeoutError):
-            raise DeploymentRefusal("barrier-owner-unavailable") from None
+            msg = "barrier-owner-unavailable"
+            raise DeploymentRefusalError(msg) from None
 
-    def observe(self, raw):
+    def observe(self, raw: bytes) -> bytes:
+        """Read the durable receipt back through the same fixed session."""
         # The fixed Database session performs a separate durable receipt readback.
         return self.exchange(raw)
 
-    def close(self):
+    def close(self) -> None:
+        """Close the session and stop the owner process."""
         self.socket.close()
         try:
-            self.process.wait(timeout=2)
+            self.process.wait(timeout=SHUTDOWN_SECONDS)
         except subprocess.TimeoutExpired:
             self.process.kill()
             self.process.wait()
 
-    def __enter__(self):
+    def __enter__(self) -> Self:
+        """Return the running controller."""
         return self
 
-    def __exit__(self, _type, _value, _traceback):
+    def __exit__(
+        self,
+        _type: type[BaseException] | None,
+        _value: BaseException | None,
+        _traceback: TracebackType | None,
+    ) -> None:
+        """Stop the owner process."""
         self.close()

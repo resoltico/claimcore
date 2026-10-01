@@ -20,15 +20,21 @@ export const validatorName = (endpoint) =>
   `validate_${endpoint.replaceAll(/[^A-Za-z0-9_$]/gu, "_")}`;
 
 const groupForEndpoint = (endpoint) => {
-  if (endpoint === "definition") return "discovery";
+  if (endpoint === "definition") {
+    return "discovery";
+  }
   return endpoint.startsWith("recovery.") ? "recovery" : "core";
 };
 
 export const validatorGroups = (endpoints) => {
   const groups = Object.fromEntries(groupNames.map((name) => [name, []]));
-  for (const endpoint of endpoints) groups[groupForEndpoint(endpoint.endpoint)].push(endpoint);
+  for (const endpoint of endpoints) {
+    groups[groupForEndpoint(endpoint.endpoint)].push(endpoint);
+  }
   for (const group of endpointGroupNames) {
-    if (groups[group].length === 0) throw new Error(`The ${group} validator group is empty.`);
+    if (groups[group].length === 0) {
+      throw new Error(`The ${group} validator group is empty.`);
+    }
   }
   return groups;
 };

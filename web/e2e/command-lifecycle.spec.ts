@@ -1,13 +1,14 @@
 import { randomUUID } from "node:crypto";
 
 import { expect, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
 
 import { completeCommand, openCase } from "./case-workflow";
 import { expectAccessible, openAuthenticated } from "./session-helpers";
 
 const reference = (): string => `BROWSER-${randomUUID()}`;
 
-const decide = async (page: import("@playwright/test").Page): Promise<void> => {
+const decide = async (page: Page): Promise<void> => {
   await completeCommand(page, "Record payment decision", {
     "Payment decision date": "2026-09-03",
     "Amount to be paid": "300.25",

@@ -4,15 +4,17 @@ import base64
 import hashlib
 import json
 import os
-import re
 import stat
-import uuid
-from datetime import datetime, timezone
+from binascii import Error as Base64Error
+from datetime import UTC, datetime
 from pathlib import Path
 
+from backup_types import JsonObject
 from deployment_common import (
-    DeploymentRefusal,
+    DeploymentRefusalError,
     canonical,
+    is_sha256,
+    is_uuid,
     private_path,
     require,
     timestamp,
@@ -43,21 +45,35 @@ CANDIDATE = {
     "backupCaptureHash",
     "maintenanceEvidenceSha256",
 }
+BARRIER = (
+    "leaseId",
+    "captureNonce",
+    "writerGeneration",
+    "backupCaptureSequence",
+    "backupCaptureHash",
+    "maintenanceEvidenceSha256",
+)
+CONFIG_FIELDS = {
+    "format",
+    "purpose",
+    "socketPath",
+    "ledgerRoot",
+    "signingKeyFile",
+    "verificationKeyFile",
+    "checkpointSigningKeyId",
+    "installationId",
+    "lineageId",
+    "epoch",
+    "transport",
+}
+CONFIG_LIMIT = 16384
+CANDIDATE_LIMIT = 16384
+SOCKET_PATH_LIMIT = 100
+MAX_CLOCK_SKEW_SECONDS = 300
 
 
-def _uuid(value):
-    try:
-        parsed = uuid.UUID(value)
-        return parsed.int != 0 and str(parsed) == value
-    except (TypeError, ValueError, AttributeError):
-        return False
-
-
-def _sha(value):
-    return isinstance(value, str) and re.fullmatch(r"[0-9a-f]{64}", value) is not None
-
-
-def socket_directory(path):
+def socket_directory(path: Path) -> Path:
+    """Return the owner-only, unlinked directory that will hold the signer socket."""
     root = Path(path)
     require(root.is_absolute(), "checkpoint-signer-socket")
     for ancestor in (root, *root.parents):
@@ -65,38 +81,21 @@ def socket_directory(path):
     try:
         info = root.lstat()
     except OSError:
-        raise DeploymentRefusal("checkpoint-signer-socket") from None
+        msg = "checkpoint-signer-socket"
+        raise DeploymentRefusalError(msg) from None
     require(
-        stat.S_ISDIR(info.st_mode)
-        and info.st_uid == os.geteuid()
-        and info.st_mode & 0o077 == 0,
+        stat.S_ISDIR(info.st_mode) and info.st_uid == os.geteuid() and info.st_mode & 0o077 == 0,
         "checkpoint-signer-socket-permissions",
     )
     return root
 
 
-def configuration(path, expected_transport="LOCAL_SOCKET"):
+def configuration(path: str | Path, expected_transport: str = "LOCAL_SOCKET") -> JsonObject:
+    """Load the closed signer configuration for the expected transport."""
     source = private_path(path)
-    require(source.stat().st_size <= 16384, "checkpoint-signer-config-size")
-    config = json.loads(source.read_bytes())
-    require(
-        isinstance(config, dict)
-        and set(config)
-        == {
-            "format",
-            "purpose",
-            "socketPath",
-            "ledgerRoot",
-            "signingKeyFile",
-            "verificationKeyFile",
-            "checkpointSigningKeyId",
-            "installationId",
-            "lineageId",
-            "epoch",
-            "transport",
-        },
-        "checkpoint-signer-config",
-    )
+    require(source.stat().st_size <= CONFIG_LIMIT, "checkpoint-signer-config-size")
+    config: JsonObject = json.loads(source.read_bytes())
+    require(isinstance(config, dict) and set(config) == CONFIG_FIELDS, "checkpoint-signer-config")
     require(
         config["format"] == "claimcore-checkpoint-signer-config-1"
         and config["purpose"] == "CHECKPOINT"
@@ -104,7 +103,7 @@ def configuration(path, expected_transport="LOCAL_SOCKET"):
         "checkpoint-signer-purpose",
     )
     for name in ("checkpointSigningKeyId", "installationId", "lineageId"):
-        require(_uuid(config[name]), "checkpoint-signer-identity")
+        require(is_uuid(config[name]), "checkpoint-signer-identity")
     require(
         type(config["epoch"]) is int and config["epoch"] > 0,
         "checkpoint-signer-identity",
@@ -115,7 +114,7 @@ def configuration(path, expected_transport="LOCAL_SOCKET"):
     if expected_transport == "LOCAL_SOCKET":
         sock = Path(config["socketPath"])
         require(
-            sock.is_absolute() and not sock.exists() and len(os.fsencode(sock)) < 100,
+            sock.is_absolute() and not sock.exists() and len(os.fsencode(sock)) < SOCKET_PATH_LIMIT,
             "checkpoint-signer-socket",
         )
         socket_directory(sock.parent)
@@ -125,76 +124,75 @@ def configuration(path, expected_transport="LOCAL_SOCKET"):
     return config
 
 
-def _candidate(config, request):
+def _request_candidate(config: JsonObject, request: JsonObject) -> bytes:
+    require(isinstance(request, dict) and set(request) == REQUEST, "checkpoint-request-shape")
     require(
-        isinstance(request, dict) and set(request) == REQUEST,
-        "checkpoint-request-shape",
-    )
-    require(
-        request["format"] == "claimcore-checkpoint-sign-request-1"
-        and _sha(request["nonce"]),
+        request["format"] == "claimcore-checkpoint-sign-request-1" and is_sha256(request["nonce"]),
         "checkpoint-request-nonce",
     )
     require(
         request["checkpointSigningKeyId"] == config["checkpointSigningKeyId"]
-        and _sha(request["candidateSha256"]),
+        and is_sha256(request["candidateSha256"]),
         "checkpoint-request-key",
     )
     try:
         raw = base64.b64decode(request["candidateBase64"], validate=True)
-    except (ValueError, base64.binascii.Error):
-        raise DeploymentRefusal("checkpoint-request-candidate") from None
+    except (ValueError, Base64Error):
+        msg = "checkpoint-request-candidate"
+        raise DeploymentRefusalError(msg) from None
     require(
-        0 < len(raw) <= 16384
+        0 < len(raw) <= CANDIDATE_LIMIT
         and hashlib.sha256(raw).hexdigest() == request["candidateSha256"],
         "checkpoint-request-candidate",
     )
-    candidate = json.loads(raw)
-    require(
-        isinstance(candidate, dict)
-        and set(candidate) == CANDIDATE
-        and canonical(candidate) == raw,
-        "checkpoint-candidate-shape",
-    )
+    return raw
+
+
+def _check_candidate_identity(config: JsonObject, candidate: JsonObject) -> None:
     require(
         candidate["format"] == "claimcore-witness-checkpoint-1"
         and candidate["checkpointSigningKeyId"] == config["checkpointSigningKeyId"]
         and candidate["installationId"] == config["installationId"]
         and candidate["lineageId"] == config["lineageId"]
         and candidate["epoch"] == config["epoch"]
-        and _uuid(candidate["cycleId"])
+        and is_uuid(candidate["cycleId"])
         and type(candidate["sequence"]) is int
         and candidate["sequence"] >= 0
-        and _sha(candidate["hash"])
-        and _sha(candidate["checkpointCustodianCommitment"]),
+        and is_sha256(candidate["hash"])
+        and is_sha256(candidate["checkpointCustodianCommitment"]),
         "checkpoint-candidate-identity",
     )
     captured = timestamp(candidate["capturedAt"])
     require(
-        abs((datetime.now(timezone.utc) - captured).total_seconds()) <= 300,
+        abs((datetime.now(UTC) - captured).total_seconds()) <= MAX_CLOCK_SKEW_SECONDS,
         "checkpoint-candidate-time",
     )
-    barrier = (
-        "leaseId",
-        "captureNonce",
-        "writerGeneration",
-        "backupCaptureSequence",
-        "backupCaptureHash",
-        "maintenanceEvidenceSha256",
-    )
+
+
+def _check_barrier(candidate: JsonObject) -> None:
     if candidate["leaseId"] is None:
-        require(
-            all(candidate[name] is None for name in barrier), "checkpoint-barrier-shape"
-        )
-    else:
-        require(
-            _uuid(candidate["leaseId"])
-            and _sha(candidate["captureNonce"])
-            and type(candidate["writerGeneration"]) is int
-            and candidate["writerGeneration"] > 0
-            and candidate["backupCaptureSequence"] == candidate["sequence"]
-            and candidate["backupCaptureHash"] == candidate["hash"]
-            and _sha(candidate["maintenanceEvidenceSha256"]),
-            "checkpoint-barrier-shape",
-        )
+        require(all(candidate[name] is None for name in BARRIER), "checkpoint-barrier-shape")
+        return
+    require(
+        is_uuid(candidate["leaseId"])
+        and is_sha256(candidate["captureNonce"])
+        and type(candidate["writerGeneration"]) is int
+        and candidate["writerGeneration"] > 0
+        and candidate["backupCaptureSequence"] == candidate["sequence"]
+        and candidate["backupCaptureHash"] == candidate["hash"]
+        and is_sha256(candidate["maintenanceEvidenceSha256"]),
+        "checkpoint-barrier-shape",
+    )
+
+
+def admit_candidate(config: JsonObject, request: JsonObject) -> tuple[JsonObject, bytes]:
+    """Admit only the exact, current checkpoint candidate the request commits to."""
+    raw = _request_candidate(config, request)
+    candidate = json.loads(raw)
+    require(
+        isinstance(candidate, dict) and set(candidate) == CANDIDATE and canonical(candidate) == raw,
+        "checkpoint-candidate-shape",
+    )
+    _check_candidate_identity(config, candidate)
+    _check_barrier(candidate)
     return candidate, raw

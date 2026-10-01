@@ -6,13 +6,14 @@ import { PresentationControls } from "./presentation/PresentationControls";
 
 const SessionContent = () => {
   const { state, logout, refresh } = useSession();
-  if (state.kind === "loading")
+  if (state.kind === "loading") {
     return (
       <main className="loading">
         <Message id="ui.loadingSession" />
       </main>
     );
-  if (state.kind === "failure")
+  }
+  if (state.kind === "failure") {
     return (
       <main className="loading">
         <p role="alert">
@@ -23,8 +24,10 @@ const SessionContent = () => {
         </button>
       </main>
     );
-  if (state.kind === "authenticated")
+  }
+  if (state.kind === "authenticated") {
     return <Dashboard token={state.token} sessionEpoch={state.epoch} onLogout={logout} />;
+  }
   return <LoginScreen message={state.message} />;
 };
 export const App = () => (

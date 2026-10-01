@@ -3,10 +3,7 @@ import assert from "node:assert/strict";
 import { BrowserStepDiagnostic } from "../../web/scripts/playwright-diagnostics.mjs";
 
 const sources = new Map([
-  [
-    "/repo/web/e2e/check.spec.ts",
-    { file: "web/e2e/check.spec.ts", lines: 100 },
-  ],
+  ["/repo/web/e2e/check.spec.ts", { file: "web/e2e/check.spec.ts", lines: 100 }],
 ]);
 const step = {
   category: "pw:api",
@@ -44,7 +41,7 @@ test("browser diagnostics keep unfinished safe location without inheriting anoth
   const first = new BrowserStepDiagnostic(sources);
   first.begin(step);
   first.end(step);
-  assert.equal(first.snapshot().line, 12);
+  assert.equal(first.snapshot()?.line, 12);
   const second = new BrowserStepDiagnostic(sources);
   assert.equal(second.snapshot(), null);
 });

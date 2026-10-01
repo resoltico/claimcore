@@ -2,7 +2,7 @@ import { localNotice } from "../src/api/notices";
 import { render, screen } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
-import { isWebV3EndpointId } from "../src/generated/convergence/web-v3.endpoint-catalog";
+import { isWebV3EndpointId } from "../src/generated/contracts/web-v3.endpoint-catalog";
 import { CopyValue } from "../src/components/CopyValue";
 import { CaseFieldsView } from "../src/components/CaseFieldsView";
 import { DescriptorField } from "../src/components/DescriptorField";
@@ -102,6 +102,7 @@ it("gives simultaneous current and historical case fields distinct heading IDs",
   expect(sections).toHaveLength(2);
   const headings = sections.map((section) => section.getAttribute("aria-labelledby"));
   expect(headings[0]).not.toBe(headings[1]);
-  for (const id of headings)
+  for (const id of headings) {
     expect(document.getElementById(id ?? "")?.textContent).toContain("Case fields");
+  }
 });

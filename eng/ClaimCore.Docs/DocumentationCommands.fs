@@ -7,13 +7,11 @@ open System.Text
 [<NoEquality; NoComparison>]
 type DocumentationAssessment =
     {
-        Source: SourceIdentity
         Documents: MarkdownFile list
         Generated: GeneratedDocument list
         VirtualDocuments: MarkdownFile list
         Links: int
         Contracts: ContractDeclaration list
-        Reviews: ContractReview list
     }
 
 [<RequireQualifiedAccess>]
@@ -30,119 +28,41 @@ module DocumentationCommands =
             | None -> document
             | Some text -> MarkdownModel.fromText document.RelativePath document.FullPath text)
 
-    let private completeAssessment root runner source documents generated =
+    let private completeAssessment (root: RepositoryRoot) documents generated =
         let virtualDocs = virtualDocuments documents generated
 
         match Links.check root virtualDocs, Contracts.declarations virtualDocs with
         | Error errors, _
         | _, Error errors -> Error errors
         | Ok links, Ok contracts ->
-            match Reviews.verify root contracts (DateOnly.FromDateTime(DateTime.UtcNow)) with
+            match ContractTokens.verify root contracts with
             | Error errors -> Error errors
-            | Ok reviews ->
-                match Provenance.sourceIdentity root runner with
-                | Error message -> Error [ Diagnostic.create DiagnosticCode.Invocation message ]
-                | Ok after when after.ContentSha256 <> source.ContentSha256 ->
-                    Error
-                        [
-                            Diagnostic.create
-                                DiagnosticCode.ConcurrentEdit
-                                "Repository inputs changed during documentation assessment."
-                        ]
-                | Ok _ ->
-                    Ok
-                        {
-                            Source = source
-                            Documents = documents
-                            Generated = generated
-                            VirtualDocuments = virtualDocs
-                            Links = links
-                            Contracts = contracts
-                            Reviews = reviews
-                        }
+            | Ok() ->
+                Ok
+                    {
+                        Documents = documents
+                        Generated = generated
+                        VirtualDocuments = virtualDocs
+                        Links = links
+                        Contracts = contracts
+                    }
 
     let private assess (root: RepositoryRoot) (runner: IProcessRunner) =
-        match Provenance.sourceIdentity root runner, MarkdownModel.readAll root with
-        | Error message, _ -> Error [ Diagnostic.create DiagnosticCode.Invocation message ]
-        | _, Error errors -> Error errors
-        | Ok source, Ok documents ->
+        match MarkdownModel.readAll root runner with
+        | Error errors -> Error errors
+        | Ok documents ->
             let context = { Root = root; Processes = runner }
 
             match Generators.generate context documents with
             | Error errors -> Error errors
-            | Ok generated -> completeAssessment root runner source documents generated
-
-    let private report
-        (root: RepositoryRoot)
-        (operation: string)
-        (outcome: string)
-        (assessment: DocumentationAssessment option)
-        (errors: Diagnostic list)
-        =
-        let source, blocks, documents, links, contracts =
-            match assessment with
-            | Some value ->
-                value.Source,
-                value.Generated |> List.collect _.Blocks,
-                value.Documents.Length,
-                value.Links,
-                value.Contracts |> List.map _.Id
-            | None ->
-                {
-                    GitRevision = None
-                    State = "unknown"
-                    ContentSha256 = String.replicate 64 "0"
-                    LocksSha256 = String.replicate 64 "0"
-                },
-                [],
-                0,
-                0,
-                []
-
-        DocumentationReport.write
-            root
-            operation
-            outcome
-            source
-            blocks
-            documents
-            links
-            contracts
-            errors
-
-    let internal includeReportWrite operation operationResult reportResult =
-        match reportResult, operationResult with
-        | Ok(), result -> result
-        | Error message, Ok _ ->
-            Error
-                [
-                    Diagnostic.create
-                        DiagnosticCode.Invocation
-                        $"Documentation '{operation}' report could not be written: {message}"
-                ]
-        | Error message, Error errors ->
-            Error(
-                errors
-                @ [
-                    Diagnostic.create
-                        DiagnosticCode.Invocation
-                        $"Documentation '{operation}' report could not be written: {message}"
-                ]
-            )
-
-    let private finish root operation outcome assessment errors result =
-        report root operation outcome assessment errors
-        |> includeReportWrite operation result
+            | Ok generated -> completeAssessment root documents generated
 
     let check (root: RepositoryRoot) (runner: IProcessRunner) =
         match ArchitectureManifest.requireCurrent root with
-        | Error message ->
-            let errors = [ Diagnostic.create DiagnosticCode.InvalidManifest message ]
-            finish root "check" "failed" None errors (Error errors)
+        | Error message -> Error [ Diagnostic.create DiagnosticCode.InvalidManifest message ]
         | Ok() ->
-
             match assess root runner with
-            | Error errors -> finish root "check" "failed" None errors (Error errors)
+            | Error errors -> Error errors
             | Ok assessment ->
                 let drift =
                     assessment.Generated
@@ -152,10 +72,7 @@ module DocumentationCommands =
                             DiagnosticCode.GeneratedDrift
                             $"Generated blocks are stale in '{item.Original.RelativePath}'.")
 
-                if drift.IsEmpty then
-                    finish root "check" "passed" (Some assessment) [] (Ok assessment)
-                else
-                    finish root "check" "failed" (Some assessment) drift (Error drift)
+                if drift.IsEmpty then Ok assessment else Error drift
 
     let private replaceOne (root: RepositoryRoot) (document: MarkdownFile) (expected: string) =
         let temporary =
@@ -225,11 +142,8 @@ module DocumentationCommands =
 
     let private writeAssessed root runner assessment =
         match applyChanges root assessment with
-        | Some error -> finish root "write" "failed" (Some assessment) [ error ] (Error [ error ])
-        | None ->
-            match check root runner with
-            | Ok verified -> finish root "write" "passed" (Some verified) [] (Ok verified)
-            | Error errors -> finish root "write" "failed" None errors (Error errors)
+        | Some error -> Error [ error ]
+        | None -> check root runner
 
     let write (root: RepositoryRoot) (runner: IProcessRunner) =
         let lockPath = Path.Combine(root.Path, "artifacts/docs/write.lock")
@@ -249,7 +163,7 @@ module DocumentationCommands =
                 )
 
             match assess root runner with
-            | Error errors -> finish root "write" "failed" None errors (Error errors)
+            | Error errors -> Error errors
             | Ok assessment -> writeAssessed root runner assessment
         with error ->
             Error

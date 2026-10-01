@@ -1,13 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <IsTestProject>true</IsTestProject>
-    <GenerateProgramFile>false</GenerateProgramFile>
-    <EnableExpectoTestingPlatformIntegration>true</EnableExpectoTestingPlatformIntegration>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="../RepositoryRoot.fs" Link="RepositoryRoot.fs" />
-    <Compile Include="PublishManifest.fs" />
     <Compile Include="Configuration.fs" />
     <Compile Include="ProcessRunner.fs" />
     <Compile Include="RemoteFixture.fs" />
@@ -18,10 +11,6 @@
     <Compile Include="Suite.fs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="../../eng/claimcore.testconfig.json" Link="testconfig.json" CopyToOutputDirectory="PreserveNewest" />
     <PackageReference Include="coverlet.MTP" PrivateAssets="all" />
-    <PackageReference Include="Expecto" />
-    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" PrivateAssets="all" />
-    <PackageReference Include="YoloDev.Expecto.TestSdk" PrivateAssets="all" />
   </ItemGroup>
 </Project>

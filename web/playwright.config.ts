@@ -18,8 +18,9 @@ const localHttpsOrigin = (value: string): string => {
     parsed.pathname !== "/" ||
     parsed.search.length > 0 ||
     parsed.hash.length > 0
-  )
+  ) {
     throw new Error("Published browser tests must target one explicit local HTTPS origin.");
+  }
   return parsed.origin;
 };
 

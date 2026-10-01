@@ -6,7 +6,7 @@ import { createPresenter } from "./presenter";
 import { loadPreferences, savePreferences, type Preferences } from "./preferences";
 
 export const PresentationProvider = ({ children }: { children: ReactNode }) => {
-  const [preferences, setValue] = useState(loadPreferences);
+  const [preferences, setPreferences] = useState(loadPreferences);
   const [persistenceFailed, setPersistenceFailed] = useState(false);
   const [changed, setChanged] = useState(false);
   const presenter = useMemo(() => createPresenter(preferences), [preferences]);
@@ -21,7 +21,7 @@ export const PresentationProvider = ({ children }: { children: ReactNode }) => {
     persistenceFailed,
     changed,
     setPreferences: (next: Preferences): void => {
-      setValue(next);
+      setPreferences(next);
       setPersistenceFailed(!savePreferences(next));
       setChanged(true);
     },

@@ -1,6 +1,7 @@
 """Separate local CHECKPOINT signer; synthetic IPC is not independent host custody."""
 
 import base64
+import contextlib
 import json
 import os
 import socket
@@ -10,16 +11,23 @@ import sys
 import tempfile
 from pathlib import Path
 
-from checkpoint_signer_policy import _candidate
+from backup_types import JsonObject
+from checkpoint_signer_policy import admit_candidate
 from deployment_common import (
-    DeploymentRefusal,
+    SIGNATURE_BYTES,
+    DeploymentRefusalError,
     canonical,
     private_path,
     require,
 )
 
+REQUEST_LIMIT = 32768
+RECEIVE_BLOCK = 4096
+CONNECTION_TIMEOUT_SECONDS = 10
+BACKLOG = 4
 
-def _sign(config, source):
+
+def _sign(config: JsonObject, source: bytes) -> bytes:
     with tempfile.TemporaryDirectory(prefix="claimcore-checkpoint-sign-") as raw:
         root = Path(raw).resolve()
         root.chmod(0o700)
@@ -44,7 +52,7 @@ def _sign(config, source):
             check=False,
         )
         require(
-            result.returncode == 0 and signature.stat().st_size == 64,
+            result.returncode == 0 and signature.stat().st_size == SIGNATURE_BYTES,
             "checkpoint-signature-unavailable",
         )
         verified = subprocess.run(
@@ -69,34 +77,40 @@ def _sign(config, source):
         return signature.read_bytes()
 
 
-def sign_request(config, request):
-    candidate, raw = _candidate(config, request)
+def _recorded_signature(record: Path, request: JsonObject) -> str:
+    saved = json.loads(private_path(record).read_bytes())
+    require(saved["candidateSha256"] == request["candidateSha256"], "checkpoint-cycle-reused")
+    encoded: str = saved["signatureBase64"]
+    return encoded
+
+
+def _record_signature(
+    config: JsonObject, record: Path, candidate: JsonObject, request: JsonObject, raw: bytes
+) -> str:
+    encoded = base64.b64encode(_sign(config, raw)).decode("ascii")
+    result = canonical(
+        {
+            "cycleId": candidate["cycleId"],
+            "candidateSha256": request["candidateSha256"],
+            "signatureBase64": encoded,
+        }
+    )
+    descriptor = os.open(record, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
+    with os.fdopen(descriptor, "wb") as stream:
+        stream.write(result)
+        stream.flush()
+        os.fsync(stream.fileno())
+    return encoded
+
+
+def sign_request(config: JsonObject, request: JsonObject) -> JsonObject:
+    """Admit the candidate, sign it once per cycle, and return the signed response."""
+    candidate, raw = admit_candidate(config, request)
     record = config["ledgerRoot"] / (candidate["cycleId"] + ".json")
     if record.exists():
-        record = private_path(record)
-        saved = json.loads(record.read_bytes())
-        require(
-            saved["candidateSha256"] == request["candidateSha256"],
-            "checkpoint-cycle-reused",
-        )
-        encoded = saved["signatureBase64"]
+        encoded = _recorded_signature(record, request)
     else:
-        signature = _sign(config, raw)
-        encoded = base64.b64encode(signature).decode("ascii")
-        result = canonical(
-            {
-                "cycleId": candidate["cycleId"],
-                "candidateSha256": request["candidateSha256"],
-                "signatureBase64": encoded,
-            }
-        )
-        descriptor = os.open(
-            record, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600
-        )
-        with os.fdopen(descriptor, "wb") as stream:
-            stream.write(result)
-            stream.flush()
-            os.fsync(stream.fileno())
+        encoded = _record_signature(config, record, candidate, request, raw)
     return {
         "format": "claimcore-checkpoint-sign-response-1",
         "status": "SIGNED",
@@ -107,57 +121,57 @@ def sign_request(config, request):
     }
 
 
-def serve(config):
-    path = config["socketPath"]
+def _receive(connection: socket.socket) -> bytes:
+    raw = bytearray()
+    while len(raw) < REQUEST_LIMIT:
+        block = connection.recv(min(RECEIVE_BLOCK, REQUEST_LIMIT - len(raw)))
+        if not block:
+            break
+        raw.extend(block)
+        if raw.endswith(b"\n"):
+            break
+    return bytes(raw)
+
+
+def _answer(config: JsonObject, raw: bytes) -> JsonObject:
+    try:
+        require(0 < len(raw) <= REQUEST_LIMIT, "checkpoint-request-limit")
+        request = json.loads(raw)
+        require(canonical(request) == raw, "checkpoint-request-canonical")
+        return sign_request(config, request)
+    except (DeploymentRefusalError, ValueError, KeyError, TypeError) as error:
+        return {
+            "format": "claimcore-checkpoint-sign-response-1",
+            "status": "REFUSED",
+            "reason": error.args[0]
+            if isinstance(error, DeploymentRefusalError)
+            else "checkpoint-request-refused",
+        }
+
+
+def serve(config: JsonObject) -> None:
+    """Serve sign requests on the local socket until terminated."""
+    path: Path = config["socketPath"]
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as listener:
         listener.bind(str(path))
-        os.chmod(path, 0o600)
-        listener.listen(4)
+        path.chmod(0o600)
+        listener.listen(BACKLOG)
         try:
             while True:
                 connection, _ = listener.accept()
                 with connection:
-                    connection.settimeout(10)
-                    raw = bytearray()
-                    while len(raw) < 32768:
-                        block = connection.recv(min(4096, 32768 - len(raw)))
-                        if not block:
-                            break
-                        raw.extend(block)
-                        if raw.endswith(b"\n"):
-                            break
-                    try:
-                        require(0 < len(raw) <= 32768, "checkpoint-request-limit")
-                        request = json.loads(raw)
-                        require(
-                            canonical(request) == raw, "checkpoint-request-canonical"
-                        )
-                        response = sign_request(config, request)
-                    except (
-                        DeploymentRefusal,
-                        ValueError,
-                        KeyError,
-                        TypeError,
-                    ) as error:
-                        response = {
-                            "format": "claimcore-checkpoint-sign-response-1",
-                            "status": "REFUSED",
-                            "reason": error.args[0]
-                            if isinstance(error, DeploymentRefusal)
-                            else "checkpoint-request-refused",
-                        }
-                    connection.sendall(canonical(response))
+                    connection.settimeout(CONNECTION_TIMEOUT_SECONDS)
+                    connection.sendall(canonical(_answer(config, _receive(connection))))
         finally:
-            try:
+            with contextlib.suppress(OSError):
                 if stat.S_ISSOCK(path.lstat().st_mode):
                     path.unlink()
-            except OSError:
-                pass
 
 
-def serve_once(config):
-    raw = sys.stdin.buffer.readline(32769)
-    require(0 < len(raw) <= 32768 and raw.endswith(b"\n"), "checkpoint-request-limit")
+def serve_once(config: JsonObject) -> None:
+    """Answer exactly one request read from stdin, for the remote stdio transport."""
+    raw = sys.stdin.buffer.readline(REQUEST_LIMIT + 1)
+    require(0 < len(raw) <= REQUEST_LIMIT and raw.endswith(b"\n"), "checkpoint-request-limit")
     request = json.loads(raw)
     require(canonical(request) == raw, "checkpoint-request-canonical")
     sys.stdout.buffer.write(canonical(sign_request(config, request)))

@@ -52,9 +52,37 @@ let private rejectsWrongCase () =
     let wrong = Path.Combine(directory, "exact.md")
     Repository.ensureExistingSafe repository.Root wrong |> requireError |> ignore
 
-let private validatesClosedSourceInventory () =
-    RepositoryPolicyAssertions.validateFallbackInventory ()
-    RepositoryPolicyAssertions.validateGitProvenance ()
+let private listsMarkdownThroughGit () =
+    use repository = new TempRepository()
+    repository.Write("docs/b.md", "# B\n") |> ignore
+    repository.Write("docs/a.md", "# A\n") |> ignore
+    repository.Write("README.md", "# R\n") |> ignore
+    let listed = "docs/b.md\000docs/a.md\000README.md\000deleted.md\000"
+    let runner = QueueRunner([ processOutput 0 listed "" ])
+
+    let files =
+        Repository.markdownFiles repository.Root runner
+        |> requireOk
+        |> List.map (Repository.relativePath repository.Root)
+
+    Expect.equal
+        files
+        [ "README.md"; "docs/a.md"; "docs/b.md" ]
+        "Ordinal order; deleted files are skipped"
+
+    let request = runner.Requests |> List.exactlyOne
+    Expect.equal request.FileName "git" "Git lists the files"
+    Expect.contains request.Arguments "--exclude-standard" "Git applies the ignore rules"
+
+    Expect.equal
+        (request.Environment |> Map.ofList |> Map.tryFind "GIT_DIR")
+        (Some None)
+        "Git redirection variables are removed"
+
+let private refusesUnlistableRepository () =
+    use repository = new TempRepository()
+    let runner = QueueRunner([ processOutput 128 "" "fatal: not a git repository" ])
+    Repository.markdownFiles repository.Root runner |> requireError |> ignore
 
 let private pathTests =
     testList
@@ -65,9 +93,8 @@ let private pathTests =
                 rejectsUnsafeRegisteredPaths
             testCase "rejects a symlink in an existing path" rejectsExistingSymlink
             testCase "detects exact path casing on every host" rejectsWrongCase
-            testCase
-                "source provenance is closed, private-aware, and Git-worktree-safe"
-                validatesClosedSourceInventory
+            testCase "lists the Markdown files Git lists, in ordinal order" listsMarkdownThroughGit
+            testCase "refuses a repository Git cannot list" refusesUnlistableRepository
         ]
 
 let private linkTests =

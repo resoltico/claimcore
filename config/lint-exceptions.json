@@ -1,0 +1,560 @@
+{
+  "version": 2,
+  "generated": [
+    {
+      "path": "artifacts/obj/",
+      "generator": "the .NET SDK compiler",
+      "reason": "Excludes only SDK-generated compiler inputs from the centralized intermediate-output directory.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "path": "src/ClaimCore.Web/wwwroot/",
+      "generator": "the verified frontend publish target",
+      "reason": "Excludes only the generated Web asset copy consumed by the .NET publish output.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "path": "web/artifacts/",
+      "generator": "the frontend test and build tools",
+      "reason": "Excludes only frontend-local generated reports when a tool is invoked from the Web directory.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "path": "web/coverage/",
+      "generator": "the Vitest coverage reporter",
+      "reason": "Excludes only generated HTML and JSON coverage output, never hand-authored test source.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "path": "web/dist/",
+      "generator": "the Vite production builder",
+      "reason": "Excludes only manifest-bound production assets generated from the linted frontend sources.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "path": "web/node_modules/",
+      "generator": "the locked npm installer",
+      "reason": "Excludes only third-party package contents materialized from the reviewed npm lock file.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "path": "web/playwright-report/",
+      "generator": "the Playwright reporter",
+      "reason": "Excludes only generated browser-report output and does not exclude the browser specifications.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "path": "web/test-results/",
+      "generator": "the Playwright test runner",
+      "reason": "Excludes only generated browser-run results and does not exclude the browser specifications.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    }
+  ],
+  "exceptions": [
+    {
+      "id": "LX-0001",
+      "tool": "oxlint",
+      "rules": ["ignorePatterns:src/generated/contracts/web-v3.validators.*.mjs"],
+      "file": "web/.oxlintrc.json",
+      "kind": "config",
+      "count": 1,
+      "reason": "Excludes only the deterministic, generated AJV standalone validator groups from human-source lint rules; contract generation enforces their exact schema inventory, runtime exports, deterministic bytes, and 600 KiB per-group ceiling.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0002",
+      "tool": "prettier",
+      "rules": ["ignore-file:src/generated/contracts/*.json"],
+      "file": "web/.prettierignore",
+      "kind": "config",
+      "count": 1,
+      "reason": "ClaimCore.Contracts emits canonical minified JSON whose exact bytes feed the generated CLI-v4 and Web-v3 wire-contract fingerprints.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0003",
+      "tool": "prettier",
+      "rules": ["ignore-file:src/generated/contracts/web-v3.validators.*.mjs"],
+      "file": "web/.prettierignore",
+      "kind": "config",
+      "count": 1,
+      "reason": "The AJV and Rolldown pipeline emits deterministic minified standalone validator groups; contract generation enforces a 600 KiB ceiling for each group and browser code dynamically imports only the typed group required by an endpoint.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0004",
+      "tool": "ruff",
+      "rules": ["ignore:COM812", "ignore:ISC001"],
+      "file": "pyproject.toml",
+      "kind": "config",
+      "count": 2,
+      "reason": "Both rules conflict with the output of ruff format, which owns trailing commas and implicit string concatenation; ruff itself documents disabling them next to the formatter.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0005",
+      "tool": "ruff",
+      "rules": ["ignore:CPY001"],
+      "file": "pyproject.toml",
+      "kind": "config",
+      "count": 1,
+      "reason": "The project licence lives in the repository LICENSE file; per-file copyright headers would duplicate it and drift.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0006",
+      "tool": "ruff",
+      "rules": ["ignore:D203", "ignore:D213"],
+      "file": "pyproject.toml",
+      "kind": "config",
+      "count": 2,
+      "reason": "D203 and D213 are the mutually exclusive alternatives of D211 and D212; selecting every rule would demand contradictory layouts, so the conventional pair D211 and D212 stays enforced.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0007",
+      "tool": "ruff",
+      "rules": ["ignore:E402"],
+      "file": "pyproject.toml",
+      "kind": "config",
+      "count": 1,
+      "reason": "Every entry point and drill sets sys.dont_write_bytecode before importing its sibling modules so that running a script never writes bytecode into the checkout; that assignment must precede the imports.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0008",
+      "tool": "ruff",
+      "rules": ["ignore:S603", "ignore:S607"],
+      "file": "pyproject.toml",
+      "kind": "config",
+      "count": 2,
+      "reason": "Every subprocess call runs a fixed argument vector without a shell, and the listed tools (openssl, ssh, docker, PostgreSQL clients) are resolved and version-checked by the backup tooling; executing those tools is the purpose of the programs.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0009",
+      "tool": "ruff",
+      "rules": [
+        "per-file-ignores:eng/backup/Test-*.py:D101",
+        "per-file-ignores:eng/backup/Test-*.py:D102",
+        "per-file-ignores:eng/backup/Test-*.py:D103",
+        "per-file-ignores:eng/backup/Test-*.py:D107"
+      ],
+      "file": "pyproject.toml",
+      "kind": "config",
+      "count": 4,
+      "reason": "Drill test names state the behaviour under test and their bodies are short; a docstring would only repeat the name. Non-test modules keep every docstring rule.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0010",
+      "tool": "ruff",
+      "rules": ["per-file-ignores:eng/backup/Test-*.py:PLR2004"],
+      "file": "pyproject.toml",
+      "kind": "config",
+      "count": 1,
+      "reason": "Drill assertions compare against literal expected values; naming every expected literal as a constant would hide the expectation from the reader.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0011",
+      "tool": "ruff",
+      "rules": [
+        "per-file-ignores:eng/backup/Test-*.py:PT009",
+        "per-file-ignores:eng/backup/Test-*.py:PT017",
+        "per-file-ignores:eng/backup/Test-*.py:PT018",
+        "per-file-ignores:eng/backup/Test-*.py:PT027"
+      ],
+      "file": "pyproject.toml",
+      "kind": "config",
+      "count": 4,
+      "reason": "The drills are unittest.TestCase suites run directly by the interpreter and the repository deliberately has no pytest dependency, so the pytest-style rules do not apply to them.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0012",
+      "tool": "ruff",
+      "rules": ["per-file-ignores:eng/backup/Test-*.py:S101"],
+      "file": "pyproject.toml",
+      "kind": "config",
+      "count": 1,
+      "reason": "Assertions are the verification mechanism of the drills and never execute in the shipped backup tooling; non-test modules keep the rule.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0013",
+      "tool": "oxlint",
+      "rules": ["typescript/no-unsafe-type-assertion"],
+      "file": "web/src/presentation/Message.tsx",
+      "kind": "inline",
+      "count": 1,
+      "reason": "The prop union is checked at every call site, so the spread tuple is exactly the catalog's argument list; TypeScript cannot derive that from the generic key inside the component.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0014",
+      "tool": "oxlint",
+      "rules": ["typescript/no-unsafe-type-assertion"],
+      "file": "web/src/presentation/messages.ts",
+      "kind": "inline",
+      "count": 1,
+      "reason": "The generated catalogs are JSON modules whose ICU message shape is produced and validated by the localization generator; the inferred JSON module type is wider than the catalog map it feeds.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0015",
+      "tool": "oxlint",
+      "rules": ["typescript/no-unsafe-type-assertion"],
+      "file": "web/src/domain/metadata.ts",
+      "kind": "inline",
+      "count": 2,
+      "reason": "Draft values are built from the validated definition and a dynamic command kind, which TypeScript cannot relate to the discriminated draft union; the reducer tests and the contract corpus exercise every command kind.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0016",
+      "tool": "oxlint",
+      "rules": ["react/exhaustive-effect-dependencies"],
+      "file": "web/src/hooks/useRead.ts",
+      "kind": "inline",
+      "count": 1,
+      "reason": "The key dependency is the deliberate reload trigger: the effect must rerun when the caller's key changes even though the effect body does not read it.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0017",
+      "tool": "oxlint",
+      "rules": ["react/exhaustive-effect-dependencies"],
+      "file": "web/src/hooks/useDefinition.ts",
+      "kind": "inline",
+      "count": 1,
+      "reason": "The session epoch is the deliberate reload trigger: a new epoch must discard the old definition even though the effect body does not read the epoch.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0018",
+      "tool": "oxlint",
+      "rules": ["typescript/no-deprecated"],
+      "file": "web/src/views/operation/OperationReview.tsx",
+      "kind": "inline",
+      "count": 1,
+      "reason": "react-aria-components 1.21 deprecates Checkbox for CheckboxField with CheckboxButton; the replacement changes the rendered structure that the browser accessibility tests pin, so the migration needs its own browser-verified change.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0019",
+      "tool": "oxlint",
+      "rules": [
+        "capitalized-comments",
+        "func-style",
+        "id-length",
+        "init-declarations",
+        "no-continue",
+        "no-inline-comments",
+        "no-ternary",
+        "sort-imports",
+        "sort-keys"
+      ],
+      "file": "eng/.oxlintrc.json",
+      "kind": "config",
+      "count": 9,
+      "reason": "Purely stylistic rules with no bug-finding value that contradict prettier's layout or each other (no-ternary against no-negated-condition, sort-keys against meaningful field order, func-style against arrow-function modules, id-length against conventional short names); every rule with correctness value stays enabled.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0020",
+      "tool": "oxlint",
+      "rules": ["no-magic-numbers"],
+      "file": "eng/.oxlintrc.json",
+      "kind": "config",
+      "count": 1,
+      "reason": "The rule flags every numeric literal, including exit codes, byte sizes and protocol limits that the surrounding identifier already names; the comparison-only Python equivalent (PLR2004) stays enabled where it finds real magic values.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0021",
+      "tool": "oxlint",
+      "rules": ["prefer-named-capture-group"],
+      "file": "eng/.oxlintrc.json",
+      "kind": "config",
+      "count": 1,
+      "reason": "Short single-purpose patterns read positionally (match[1]); groups are named where a pattern has several consumers, and unused capture groups are already written as non-capturing.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0022",
+      "tool": "oxlint",
+      "rules": ["no-await-in-loop"],
+      "file": "eng/.oxlintrc.json",
+      "kind": "config",
+      "count": 1,
+      "reason": "The engineering scripts call GitHub, git and dependency tools one request at a time on purpose: pagination cursors, ordering guarantees and rate limits make concurrent awaits incorrect.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0023",
+      "tool": "oxlint",
+      "rules": ["require-await"],
+      "file": "eng/.oxlintrc.json",
+      "kind": "config",
+      "count": 1,
+      "reason": "Test doubles implement promise-returning interfaces (the GitHub API and stage runners) and must return promises without awaiting; the override covers only test and fixture files.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0024",
+      "tool": "oxlint",
+      "rules": ["no-template-curly-in-string"],
+      "file": "eng/.oxlintrc.json",
+      "kind": "config",
+      "count": 1,
+      "reason": "These workflow policy files state and test GitHub Actions expression text, which contains literal dollar-brace placeholders in ordinary strings by design.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0025",
+      "tool": "oxlint",
+      "rules": [
+        "capitalized-comments",
+        "func-style",
+        "id-length",
+        "init-declarations",
+        "no-continue",
+        "no-inline-comments",
+        "no-ternary",
+        "sort-imports",
+        "sort-keys"
+      ],
+      "file": "web/.oxlintrc.json",
+      "kind": "config",
+      "count": 9,
+      "reason": "Purely stylistic rules with no bug-finding value that contradict prettier's layout or each other (no-ternary against no-negated-condition, sort-keys against meaningful field order, func-style against arrow-function modules, id-length against conventional short names); every rule with correctness value stays enabled.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0026",
+      "tool": "oxlint",
+      "rules": ["no-magic-numbers"],
+      "file": "web/.oxlintrc.json",
+      "kind": "config",
+      "count": 1,
+      "reason": "The rule flags every numeric literal, including HTTP statuses, byte limits and timeouts that the surrounding identifier already names.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0027",
+      "tool": "oxlint",
+      "rules": ["prefer-named-capture-group"],
+      "file": "web/.oxlintrc.json",
+      "kind": "config",
+      "count": 1,
+      "reason": "Short single-purpose patterns read positionally; named groups are used where a pattern has several consumers.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0028",
+      "tool": "oxlint",
+      "rules": [
+        "react/function-component-definition",
+        "react/jsx-handler-names",
+        "react/jsx-max-depth",
+        "react/jsx-props-no-spreading"
+      ],
+      "file": "web/.oxlintrc.json",
+      "kind": "config",
+      "count": 4,
+      "reason": "Component-shape conventions that conflict with the established structure: components are typed arrow constants, typed action objects supply handlers whose names already state the action, and prop spreading forwards complete typed records.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0029",
+      "tool": "oxlint",
+      "rules": ["react/react-in-jsx-scope"],
+      "file": "web/.oxlintrc.json",
+      "kind": "config",
+      "count": 1,
+      "reason": "The project compiles JSX with the automatic runtime, so React is deliberately not imported into every component module.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0030",
+      "tool": "oxlint",
+      "rules": ["jsx-a11y/prefer-tag-over-role"],
+      "file": "web/.oxlintrc.json",
+      "kind": "config",
+      "count": 1,
+      "reason": "The status regions are layout containers; the suggested output element is phrasing content for calculation results, and swapping it would change layout and the locators the accessibility tests pin.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0031",
+      "tool": "oxlint",
+      "rules": ["typescript/consistent-return"],
+      "file": "web/.oxlintrc.json",
+      "kind": "config",
+      "count": 1,
+      "reason": "tsc's noImplicitReturns already proves every path returns, and this rule reports exhaustive switches over closed unions as inconsistent.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0032",
+      "tool": "oxlint",
+      "rules": ["typescript/consistent-type-definitions"],
+      "file": "web/.oxlintrc.json",
+      "kind": "config",
+      "count": 1,
+      "reason": "Type aliases carry unions, mapped types and the generated contract shapes; requiring interfaces would conflict with the generated contract types.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0033",
+      "tool": "oxlint",
+      "rules": ["typescript/prefer-readonly-parameter-types"],
+      "file": "web/.oxlintrc.json",
+      "kind": "config",
+      "count": 1,
+      "reason": "The rule flags every React prop, DOM and library type; immutability is enforced at the contract boundary by the generated Readonly wire types.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0034",
+      "tool": "oxlint",
+      "rules": ["typescript/strict-void-return"],
+      "file": "web/.oxlintrc.json",
+      "kind": "config",
+      "count": 1,
+      "reason": "Test doubles created with vi.fn are passed to void callback props and assertions read their calls; returning a value from a mock is intentional and cannot affect production code.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0035",
+      "tool": "oxlint",
+      "rules": ["typescript/no-unsafe-type-assertion"],
+      "file": "web/.oxlintrc.json",
+      "kind": "config",
+      "count": 2,
+      "reason": "Test fixtures assert the shape of synthetic JSON and mocked values, and the generated validator module asserts shapes its own runtime validators have just proved.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0036",
+      "tool": "oxlint",
+      "rules": ["no-await-in-loop"],
+      "file": "web/.oxlintrc.json",
+      "kind": "config",
+      "count": 1,
+      "reason": "Browser flows, script steps and fixture setup are sequential by design: each step depends on the state the previous one produced.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0037",
+      "tool": "oxlint",
+      "rules": ["typescript/no-unnecessary-type-parameters"],
+      "file": "web/.oxlintrc.json",
+      "kind": "config",
+      "count": 1,
+      "reason": "The generated validator accessor keeps its generic so each call site infers the response type from the endpoint identifier.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0038",
+      "tool": "oxlint",
+      "rules": ["typescript/array-type"],
+      "file": "web/.oxlintrc.json",
+      "kind": "config",
+      "count": 1,
+      "reason": "The bundler emits the standalone validator declaration files with its own array syntax; generated declarations are not hand-edited.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0039",
+      "tool": "shellcheck",
+      "rules": ["SC2154"],
+      "file": "db/dev-init.sh",
+      "kind": "inline",
+      "count": 1,
+      "reason": "The script validates its required environment inputs before using them, and uppercase environment variables are never assigned inside the script by design.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0041",
+      "tool": "shellcheck",
+      "rules": ["SC2154"],
+      "file": "eng/PublishedWebE2E-Setup.sh",
+      "kind": "inline",
+      "count": 1,
+      "reason": "This fragment is sourced by the runner, which defines and validates the environment variables and paths it reads; they are intentionally not assigned in the fragment.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0042",
+      "tool": "shellcheck",
+      "rules": ["SC2310", "SC2312"],
+      "file": ".shellcheckrc",
+      "kind": "config",
+      "count": 2,
+      "reason": "The scripts run with set -euo pipefail and deliberately test helper functions in conditions and substitute pipeline or path lookups whose failure the next explicit check reports; rewriting them into temporary variables would add noise without adding verification.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0043",
+      "tool": "zizmor",
+      "rules": ["self-repository:disable"],
+      "file": ".github/zizmor.yml",
+      "kind": "config",
+      "count": 1,
+      "reason": "The audit asks for the `$/...` self-repository action syntax, which actionlint and the repository's own workflow policy do not yet understand; the reviewed `./` form is kept until all three accept it.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    }
+  ]
+}

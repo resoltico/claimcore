@@ -29,8 +29,11 @@ let private everyProjectIsClassified () =
     let missing = Set.difference discovered classified
     let phantom = Set.difference classified discovered
 
-    Expect.isEmpty missing "Every repository project must be classified in architecture.json"
-    Expect.isEmpty phantom "architecture.json must not classify a project that does not exist"
+    Expect.isEmpty missing "Every repository project must be classified in config/architecture.json"
+
+    Expect.isEmpty
+        phantom
+        "config/architecture.json must not classify a project that does not exist"
 
 /// Declared edges, for every tier, equal the reviewed permission set exactly.
 let private declaredGraphMatchesManifest () =

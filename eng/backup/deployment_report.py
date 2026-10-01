@@ -3,10 +3,19 @@
 import base64
 import json
 import re
-import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
-from deployment_common import canonical, private_path, require, timestamp, verify
+from backup_types import Json, JsonObject
+from deployment_common import (
+    SIGNATURE_BYTES,
+    canonical,
+    is_sha256,
+    is_uuid,
+    private_path,
+    require,
+    timestamp,
+    verify,
+)
 
 FIELDS = {
     "format",
@@ -72,26 +81,31 @@ TRUE_CLAIMS = (
 )
 
 
-def _uuid(value):
-    try:
-        parsed = uuid.UUID(value)
-        return parsed.int != 0 and str(parsed) == value
-    except (TypeError, ValueError, AttributeError):
-        return False
+REPORT_LIMIT = 128 * 1024
+MIN_OWNERS = 2
+MAX_OWNERS = 1000
+VALIDITY_HOURS = 1
+DIGEST_FIELDS = (
+    "backupCaptureHash",
+    "witnessCutoffHash",
+    "verifierBinarySha256",
+    "evidenceIndexSha256",
+    "checkpointSha256",
+    "signedInventoryFileSha256",
+    "quiescentBarrierSha256",
+    "catalogManifestSha256",
+    "custodyPublicKeySha256",
+)
+IDENTITY_FIELDS = ("installationId", "lineageId", "cycleId", "reportSignerKeyId", "custodyKeyId")
 
 
-def _digest(value):
-    return isinstance(value, str) and re.fullmatch(r"[0-9a-f]{64}", value) is not None
-
-
-def _lsn(value):
+def _lsn(value: Json) -> bool:
     return (
-        isinstance(value, str)
-        and re.fullmatch(r"[0-9A-F]{1,8}/[0-9A-F]{1,8}", value) is not None
+        isinstance(value, str) and re.fullmatch(r"[0-9A-F]{1,8}/[0-9A-F]{1,8}", value) is not None
     )
 
 
-def _custody_objects(value):
+def _custody_objects(value: Json) -> None:
     require(
         isinstance(value, dict) and set(value) == {"archive", "checkpoint"},
         "qualification-copy-inventory",
@@ -100,27 +114,26 @@ def _custody_objects(value):
         require(
             isinstance(item, dict)
             and set(item) == {"objectId", "sha256", "bytes"}
-            and _uuid(item["objectId"])
-            and _digest(item["sha256"])
+            and is_uuid(item["objectId"])
+            and is_sha256(item["sha256"])
             and type(item["bytes"]) is int
             and item["bytes"] > 0,
             "qualification-copy-inventory",
         )
 
 
-def _owners(value, revision):
+def _owners(value: Json, revision: int) -> None:
     require(
-        isinstance(value, list) and 2 <= len(value) <= 1000,
+        isinstance(value, list) and MIN_OWNERS <= len(value) <= MAX_OWNERS,
         "qualification-owner-roster",
     )
     actors, approvals = set(), set()
     for item in value:
         require(
             isinstance(item, dict)
-            and set(item)
-            == {"actorId", "approvalEventId", "active", "role", "grantRevision"}
-            and _uuid(item["actorId"])
-            and _uuid(item["approvalEventId"])
+            and set(item) == {"actorId", "approvalEventId", "active", "role", "grantRevision"}
+            and is_uuid(item["actorId"])
+            and is_uuid(item["approvalEventId"])
             and item["active"] is True
             and item["role"] == "owner"
             and type(item["grantRevision"]) is int
@@ -135,21 +148,7 @@ def _owners(value, revision):
     )
 
 
-def pre_handoff_report(config):
-    source = private_path(config["fullReportPath"])
-    signature = private_path(config["fullReportSignaturePath"])
-    raw = source.read_bytes()
-    signed = signature.read_bytes()
-    require(0 < len(raw) <= 128 * 1024 and len(signed) == 64, "qualification-size")
-    report = json.loads(raw)
-    require(
-        isinstance(report, dict) and raw == canonical(report),
-        "qualification-not-canonical",
-    )
-    verified, digest = verify(
-        {"report": report, "signatureBase64": base64.b64encode(signed).decode("ascii")},
-        config["fullReportPublicKey"],
-    )
+def _check_claims(verified: JsonObject, config: JsonObject) -> None:
     require(set(verified) == FIELDS, "qualification-shape")
     require(
         verified["format"] == "claimcore-restore-qualification-1"
@@ -164,14 +163,8 @@ def pre_handoff_report(config):
         type(verified["pendingIntents"]) is int and verified["pendingIntents"] == 0,
         "qualification-pending-intent",
     )
-    for name in (
-        "installationId",
-        "lineageId",
-        "cycleId",
-        "reportSignerKeyId",
-        "custodyKeyId",
-    ):
-        require(_uuid(verified[name]), "qualification-identity")
+    for name in IDENTITY_FIELDS:
+        require(is_uuid(verified[name]), "qualification-identity")
     require(
         verified["installationId"] == config["installationId"]
         and verified["lineageId"] == config["lineageId"]
@@ -186,18 +179,11 @@ def pre_handoff_report(config):
         and 0 <= verified["backupCaptureSequence"] <= verified["witnessCutoff"],
         "qualification-cutoff",
     )
-    for name in (
-        "backupCaptureHash",
-        "witnessCutoffHash",
-        "verifierBinarySha256",
-        "evidenceIndexSha256",
-        "checkpointSha256",
-        "signedInventoryFileSha256",
-        "quiescentBarrierSha256",
-        "catalogManifestSha256",
-        "custodyPublicKeySha256",
-    ):
-        require(_digest(verified[name]), "qualification-evidence-digest")
+    for name in DIGEST_FIELDS:
+        require(is_sha256(verified[name]), "qualification-evidence-digest")
+
+
+def _check_clusters(verified: JsonObject) -> None:
     for cluster in ("primary", "witness"):
         require(
             isinstance(verified[cluster + "SystemId"], str)
@@ -215,18 +201,37 @@ def pre_handoff_report(config):
     revision = verified["authorityRevision"]
     require(type(revision) is int and revision > 0, "qualification-authority")
     _owners(verified["authorizedApprovers"], revision)
-    checked, expires = (
-        timestamp(verified["checkedAt"]),
-        timestamp(verified["validUntil"]),
-    )
-    now = datetime.now(timezone.utc)
-    require(
-        checked <= now < expires <= checked + timedelta(hours=1),
-        "qualification-expired",
-    )
-    require(now - checked <= timedelta(hours=1), "qualification-expired")
+
+
+def _check_freshness(verified: JsonObject, config: JsonObject) -> None:
+    checked, expires = timestamp(verified["checkedAt"]), timestamp(verified["validUntil"])
+    now = datetime.now(UTC)
+    window = timedelta(hours=VALIDITY_HOURS)
+    require(checked <= now < expires <= checked + window, "qualification-expired")
+    require(now - checked <= window, "qualification-expired")
     require(
         verified["verifierBinarySha256"] == config["productVerifierSha256"],
         "qualification-verifier-identity",
     )
+
+
+def pre_handoff_report(config: JsonObject) -> tuple[JsonObject, str]:
+    """Verify the signed restore qualification report and return it with its digest."""
+    source = private_path(config["fullReportPath"])
+    signature = private_path(config["fullReportSignaturePath"])
+    raw = source.read_bytes()
+    signed = signature.read_bytes()
+    require(0 < len(raw) <= REPORT_LIMIT and len(signed) == SIGNATURE_BYTES, "qualification-size")
+    report = json.loads(raw)
+    require(
+        isinstance(report, dict) and raw == canonical(report),
+        "qualification-not-canonical",
+    )
+    verified, digest = verify(
+        {"report": report, "signatureBase64": base64.b64encode(signed).decode("ascii")},
+        config["fullReportPublicKey"],
+    )
+    _check_claims(verified, config)
+    _check_clusters(verified)
+    _check_freshness(verified, config)
     return verified, digest

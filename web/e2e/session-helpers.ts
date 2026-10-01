@@ -4,8 +4,8 @@ import { isAbsolute, resolve } from "node:path";
 import { AxeBuilder } from "@axe-core/playwright";
 import { expect, type BrowserContext, type Page } from "@playwright/test";
 
-import { isHostFailure, isWebV3Response } from "../src/generated/convergence/web-v3.validation";
-import type { HostFailure, WebV3Response } from "../src/generated/convergence/web-v3.types";
+import { isHostFailure, isWebV3Response } from "../src/generated/contracts/web-v3.validation";
+import type { HostFailure, WebV3Response } from "../src/generated/contracts/web-v3.types";
 
 type BrowserReply = Readonly<{
   status: number;
@@ -13,17 +13,27 @@ type BrowserReply = Readonly<{
   payload: unknown;
 }>;
 
+export const progress = async (stage: string): Promise<void> => {
+  const file = process.env["CLAIMCORE_WEB_E2E_PROGRESS_FILE"];
+  if (file !== undefined) {
+    await writeFile(file, stage);
+  }
+};
+
 const oidcCredentialsFile = process.env["CLAIMCORE_TEST_OIDC_CREDENTIALS"];
-if (oidcCredentialsFile === undefined)
+if (oidcCredentialsFile === undefined) {
   throw new Error("Synthetic OIDC credentials were not configured.");
+}
 
 const syntheticOwner = async (): Promise<{ username: string; password: string }> => {
   const source: unknown = JSON.parse(await readFile(oidcCredentialsFile, "utf8"));
   if (typeof source !== "object" || source === null || !("users" in source)) {
     throw new Error("Synthetic OIDC user inventory is invalid.");
   }
-  const users = source.users;
-  if (!Array.isArray(users)) throw new Error("Synthetic OIDC user inventory is invalid.");
+  const { users } = source;
+  if (!Array.isArray(users)) {
+    throw new Error("Synthetic OIDC user inventory is invalid.");
+  }
   const owner: unknown = users[0];
   if (
     typeof owner !== "object" ||
@@ -41,7 +51,9 @@ type Cookies = Awaited<ReturnType<BrowserContext["cookies"]>>;
 
 export const openAuthenticated = async (page: Page): Promise<void> => {
   const output = process.env["CLAIMCORE_WEB_E2E_PRIVATE_OUTPUT_DIR"];
-  if (output === undefined) throw new Error("Private browser output was not configured.");
+  if (output === undefined) {
+    throw new Error("Private browser output was not configured.");
+  }
   const state: unknown = JSON.parse(
     await readFile(resolve(output, "authenticated-state.json"), "utf8"),
   );
@@ -60,7 +72,9 @@ export const openAuthenticated = async (page: Page): Promise<void> => {
 
 export const expectAccessible = async (page: Page): Promise<void> => {
   const result = await new AxeBuilder({ page }).analyze();
-  if (result.violations.length === 0) return;
+  if (result.violations.length === 0) {
+    return;
+  }
   const ruleIds = result.violations
     .map((violation) => violation.id.replace(/[^a-zA-Z0-9]+/gu, "_").toUpperCase())
     .sort()
@@ -68,7 +82,7 @@ export const expectAccessible = async (page: Page): Promise<void> => {
   throw new Error(`E2E_AXE_${ruleIds}`);
 };
 
-export const browserRequest = async (
+export const browserRequest = (
   page: Page,
   path: string,
   init?: Readonly<{
@@ -133,7 +147,9 @@ const awaitOidcReturn = async (
     const current = new URL(page.url());
     const safeFile = process.env["CLAIMCORE_WEB_E2E_SAFE_FAILURE_FILE"];
     if (safeFile !== undefined) {
-      if (!isAbsolute(safeFile)) throw new Error("Safe failure path must be absolute.");
+      if (!isAbsolute(safeFile)) {
+        throw new Error("Safe failure path must be absolute.");
+      }
       await writeFile(
         safeFile,
         `${JSON.stringify({ callbackStatus: callbackStatus(), origin: current.origin, pathname: current.pathname })}\n`,
@@ -202,9 +218,4 @@ export const logout = async (page: Page): Promise<void> => {
     throw new Error("Invalid logout response.");
   }
   expect((reply.payload as WebV3Response<"session">).outcome.data.authenticated).toBe(false);
-};
-
-export const progress = async (stage: string): Promise<void> => {
-  const file = process.env["CLAIMCORE_WEB_E2E_PROGRESS_FILE"];
-  if (file !== undefined) await import("node:fs/promises").then((fs) => fs.writeFile(file, stage));
 };

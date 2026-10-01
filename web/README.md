@@ -20,11 +20,16 @@ failure meaning remain in the F# Domain and Application projects.
 The exact Node and npm versions are declared by [`.node-version`](../.node-version) and
 [`package.json`](package.json). The package lock is authoritative for the installed graph.
 
-The `tsc` command is the native TypeScript 7 compiler used for typechecking and builds. The separately
-aliased `@typescript/typescript6` package supplies the compiler API currently required by
-`typescript-eslint`; it does not compile ClaimCore. Composite project references retain incremental
+The `tsc` command is the native TypeScript 7 compiler and the only TypeScript installed; it types and
+builds ClaimCore. Linting is oxlint with type-aware rules on the same native toolchain
+(`oxlint-tsgolint`), run by `scripts/lint.mjs` once per TypeScript project (`scripts/lint-projects.mjs`)
+because type-aware rules read one program at a time. `oxc-parser` reads the generated recovery types
+for the localization vocabulary, since TypeScript 7 ships no JavaScript compiler API. Boundary rules
+that no built-in rule expresses live in `lint/claimcore-plugin.mjs`. Every lint, type, format and
+coverage exception is registered in [`config/lint-exceptions.json`](../config/lint-exceptions.json).
+Composite project references retain incremental
 state in ignored files, and Vitest uses isolated, machine-scaled file workers. The locked StrykerJS
-gate mutates only `src/domain/operationReducer.ts` and checks a 92% minimum against exact-source
+gate (its sandbox tsconfig rewrite is disabled because it needs a compiler API TypeScript 7 does not ship; Vitest needs no tsconfig) mutates only `src/domain/operationReducer.ts` and checks a 92% minimum against exact-source
 local evidence; it is not F# or PostgreSQL mutation coverage.
 
 [`package.json`](package.json) defines the individual npm scripts. Their canonical ordered use,
@@ -34,14 +39,15 @@ including formatting, typechecking, linting, dependency assurance, tests, and as
 
 ## Generated contract and publish boundary
 
-The contract check first regenerates semantic, CLI-v4, and Web-v3 catalogs, exact endpoint response
+`npm run contract:generate` regenerates semantic, CLI-v4, and Web-v3 catalogs, exact endpoint response
 schemas, pure-codec corpora, and split TypeScript DTO modules from F#. A deterministic Node
 postprocess compiles the aggregate Web response graph into typed AJV standalone core and recovery
 validator groups, formats generated TypeScript, and binds the complete inventory in one manifest. The
 browser dynamically imports only the group required to validate a received endpoint response.
-Temporary output is compared byte-for-byte with `src/generated/convergence/`. Use the explicit
-generation script only for an intentional contract change, then review every generated diff with its
-production codec and tests.
+The output lives in the ignored `src/generated/contracts/` and must match the committed
+`config/contracts.lock.json` (length and SHA-256 per artifact). `contract:verify` and `contract:check`
+verify an existing directory without regenerating. Use `contract:lock` only for an intentional contract
+change, then review the lock diff with its production codec and tests.
 
 The Vite output under `dist/` is ignored. Asset production records a manifest bound to frontend
 source, the npm lock, generated contract, Node/npm versions, notices, and output bytes. The .NET Web

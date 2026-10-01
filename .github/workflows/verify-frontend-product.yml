@@ -6,39 +6,29 @@ on:
 permissions:
   contents: read
 
-env:
-  CI: true
-  DOTNET_CLI_TELEMETRY_OPTOUT: 1
-  DOTNET_NOLOGO: 1
-  NO_COLOR: 1
-  TESTINGPLATFORM_TELEMETRY_OPTOUT: 1
-
 jobs:
   product:
     name: Locked frontend product and SBOM
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: ./.github/actions/toolchain
-      - name: Build the evidence executable
-        run: |
-          dotnet restore ClaimCore.slnx --locked-mode
-          dotnet build eng/ClaimCore.Docs/ClaimCore.Docs.fsproj --configuration Release --no-restore
-      - name: Produce the frontend and its SBOM from the locked graph
+      - name: Restore the locked source tree
+        run: dotnet restore ClaimCore.slnx --locked-mode
+      - name: Produce the contracts, the frontend and its SBOM from the locked graphs
         run: node eng/ci/run-stages.mjs frontend-product --parallel 2
       - name: Scan artifacts before upload
         id: artifact_scan
         if: always()
-        shell: pwsh
+        shell: bash
         run: |
-          pwsh -NoProfile -File eng/Scan-ArtifactSecrets.ps1 `
-            artifacts/frontend-product/ `
-            artifacts/sbom/ `
-            "artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/" `
-            artifacts/diagnostics/frontend-product/
+          node eng/ci/scan/main.mjs artifacts \
+            artifacts/frontend-product/ \
+            artifacts/frontend-contracts/ \
+            artifacts/sbom/
       - name: Upload immutable frontend product
         if: ${{ always() && steps.artifact_scan.outcome == 'success' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -47,27 +37,19 @@ jobs:
           path: artifacts/frontend-product/
           if-no-files-found: error
           retention-days: 14
+      - name: Upload the generated contract artifacts
+        if: ${{ always() && steps.artifact_scan.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: claimcore-contracts-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/frontend-contracts/
+          if-no-files-found: error
+          retention-days: 14
       - name: Upload required frontend SBOM
         if: ${{ always() && steps.artifact_scan.outcome == 'success' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: claimcore-frontend-sbom-${{ github.run_id }}-${{ github.run_attempt }}
           path: artifacts/sbom/
-          if-no-files-found: error
-          retention-days: 14
-      - name: Upload frontend product stage evidence
-        if: ${{ always() && steps.artifact_scan.outcome == 'success' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: claimcore-stage-frontend-product-${{ github.run_id }}-${{ github.run_attempt }}
-          path: artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/*.json
-          if-no-files-found: error
-          retention-days: 14
-      - name: Upload safe frontend product stage diagnostics
-        if: ${{ always() && steps.artifact_scan.outcome == 'success' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: claimcore-diagnostics-frontend-product-${{ github.run_id }}-${{ github.run_attempt }}
-          path: artifacts/diagnostics/frontend-product/
           if-no-files-found: error
           retention-days: 14

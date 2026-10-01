@@ -13,7 +13,7 @@ export default {
     rolldownOptions: {
       output: {
         codeSplitting: {
-          groups: [{ name: "presentation-catalogs", test: /\/src\/presentation\/generated\// }],
+          groups: [{ name: "presentation-catalogs", test: /\/src\/presentation\/generated\//u }],
         },
       },
     },

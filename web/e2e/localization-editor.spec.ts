@@ -21,10 +21,14 @@ test("preserves authored Unicode and invalid calendar text while localizing real
   const date = page.locator('input[name="incidentDate"]');
   await name.fill("A\u0308 / العربية");
   await date.fill("2026-02-30");
-  await name.evaluate((element: HTMLInputElement) => element.setSelectionRange(1, 3));
+  await name.evaluate((element: HTMLInputElement) => {
+    element.setSelectionRange(1, 3);
+  });
   const originalNode = await name.elementHandle();
   const requests = trackRequests(page);
-  for (const language of ["lv", "ar", "en-XA", "en"] as const) await selectLanguage(page, language);
+  for (const language of ["lv", "ar", "en-XA", "en"] as const) {
+    await selectLanguage(page, language);
+  }
   expect(await name.evaluate((element, prior) => element === prior, originalNode)).toBe(true);
   expect(
     await name.evaluate((element: HTMLInputElement) => [

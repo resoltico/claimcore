@@ -1,0 +1,22 @@
+ClaimCore documentation assurance.Markdown assurance.contract declarations.extracts an anchored contract heading
+ClaimCore documentation assurance.Markdown assurance.contract declarations.rejects a missing anchor and duplicate contract ID
+ClaimCore documentation assurance.Markdown assurance.generated Markdown blocks.recognizes one exact block and ignores fenced marker examples
+ClaimCore documentation assurance.Markdown assurance.generated Markdown blocks.rejects nested marker pairs
+ClaimCore documentation assurance.Markdown assurance.generated Markdown blocks.rejects orphaned and malformed marker syntax
+ClaimCore documentation assurance.Markdown assurance.generated Markdown blocks.replaces only the registered body span
+ClaimCore documentation assurance.Markdown assurance.trusted block generators.trusted block failures.fails closed when the trusted producer writes stderr
+ClaimCore documentation assurance.Markdown assurance.trusted block generators.trusted block failures.requires registration in both directions
+ClaimCore documentation assurance.Markdown assurance.trusted block generators.trusted block output.normalizes only CLI CRLF and emits one final LF
+ClaimCore documentation assurance.Path and link safety.local links and anchors.accepts checked local external and explicit-anchor links
+ClaimCore documentation assurance.Path and link safety.local links and anchors.rejects duplicate explicit anchors
+ClaimCore documentation assurance.Path and link safety.local links and anchors.rejects missing targets fragments and traversal escapes
+ClaimCore documentation assurance.Path and link safety.local links and anchors.rejects wrong case malformed encoding and unsafe schemes
+ClaimCore documentation assurance.Path and link safety.repository path confinement.detects exact path casing on every host
+ClaimCore documentation assurance.Path and link safety.repository path confinement.lists the Markdown files Git lists, in ordinal order
+ClaimCore documentation assurance.Path and link safety.repository path confinement.refuses a repository Git cannot list
+ClaimCore documentation assurance.Path and link safety.repository path confinement.rejects a symlink in an existing path
+ClaimCore documentation assurance.Path and link safety.repository path confinement.rejects rooted dot parent and backslash registered paths
+ClaimCore documentation assurance.contract tokens.accepts every contract named by a test and no unknown token
+ClaimCore documentation assurance.contract tokens.refuses a contract that no test names
+ClaimCore documentation assurance.contract tokens.refuses a missing inventory directory
+ClaimCore documentation assurance.contract tokens.refuses a token that names no declared contract

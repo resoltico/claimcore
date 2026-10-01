@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 2,
+  "suites": [
+    {
+      "id": "unit",
+      "kind": "dotnet",
+      "assembly": "ClaimCore.Tests",
+      "project": "tests/ClaimCore.Tests/ClaimCore.Tests.fsproj",
+      "configuration": "Release",
+      "coverage": true,
+      "platforms": ["linux", "macos", "windows"],
+      "timeout": "30m",
+      "build": ["src/ClaimCore.Cli/ClaimCore.Cli.fsproj"]
+    },
+    {
+      "id": "fuzz",
+      "kind": "dotnet",
+      "assembly": "ClaimCore.FuzzQualificationTests",
+      "project": "tests/ClaimCore.FuzzQualificationTests/ClaimCore.FuzzQualificationTests.fsproj",
+      "configuration": "Release",
+      "coverage": false,
+      "platforms": ["linux"],
+      "timeout": "30m"
+    },
+    {
+      "id": "web",
+      "kind": "dotnet",
+      "assembly": "ClaimCore.WebTests",
+      "project": "tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj",
+      "configuration": "Release",
+      "coverage": true,
+      "platforms": ["linux", "macos", "windows"],
+      "timeout": "25m"
+    },
+    {
+      "id": "architecture",
+      "kind": "dotnet",
+      "assembly": "ClaimCore.ArchitectureTests",
+      "project": "tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj",
+      "configuration": "Debug",
+      "coverage": false,
+      "platforms": ["linux"],
+      "timeout": "25m",
+      "msbuild": ["-p:Optimize=false"]
+    },
+    {
+      "id": "docs",
+      "kind": "dotnet",
+      "assembly": "ClaimCore.DocsTests",
+      "project": "tests/ClaimCore.DocsTests/ClaimCore.DocsTests.fsproj",
+      "configuration": "Release",
+      "coverage": false,
+      "platforms": ["linux", "macos", "windows"],
+      "timeout": "25m"
+    },
+    {
+      "id": "acceptance",
+      "kind": "dotnet",
+      "assembly": "ClaimCore.AcceptanceTests",
+      "project": "tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj",
+      "configuration": "Release",
+      "coverage": false,
+      "platforms": ["linux"],
+      "timeout": "40m",
+      "group": "published"
+    },
+    {
+      "id": "integration",
+      "kind": "dotnet",
+      "assembly": "ClaimCore.IntegrationTests",
+      "project": "tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj",
+      "configuration": "Release",
+      "coverage": true,
+      "platforms": ["linux"],
+      "group": "postgres",
+      "timeout": "110m",
+      "partitions": {
+        "selector": "CLAIMCORE_INTEGRATION_PARTITION",
+        "ids": [
+          "terminal-capacity",
+          "core-and-recovery",
+          "restored-writer-activation",
+          "restore-and-backup",
+          "actor-and-custody",
+          "lifecycle-and-privacy"
+        ]
+      }
+    },
+    {
+      "id": "backup-qualification",
+      "kind": "dotnet",
+      "assembly": "ClaimCore.BackupQualificationTests",
+      "project": "tests/ClaimCore.BackupQualificationTests/ClaimCore.BackupQualificationTests.fsproj",
+      "configuration": "Release",
+      "coverage": false,
+      "platforms": ["linux"],
+      "group": "postgres",
+      "timeout": "90m"
+    },
+    {
+      "id": "recovery-qualification",
+      "kind": "dotnet",
+      "assembly": "ClaimCore.RecoveryQualificationTests",
+      "project": "tests/ClaimCore.RecoveryQualificationTests/ClaimCore.RecoveryQualificationTests.fsproj",
+      "configuration": "Release",
+      "coverage": false,
+      "platforms": ["linux"],
+      "group": "postgres",
+      "timeout": "90m"
+    },
+    {
+      "id": "witness-qualification",
+      "kind": "dotnet",
+      "assembly": "ClaimCore.WitnessTests",
+      "project": "tests/ClaimCore.WitnessTests/ClaimCore.WitnessTests.fsproj",
+      "configuration": "Release",
+      "coverage": false,
+      "platforms": ["linux"],
+      "group": "postgres",
+      "timeout": "90m"
+    },
+    {
+      "id": "fresh-baseline-qualification",
+      "kind": "dotnet",
+      "assembly": "ClaimCore.MigrationQualificationTests",
+      "project": "tests/ClaimCore.MigrationQualificationTests/ClaimCore.MigrationQualificationTests.fsproj",
+      "configuration": "Release",
+      "coverage": false,
+      "platforms": ["linux"],
+      "group": "postgres",
+      "timeout": "90m"
+    },
+    {
+      "id": "concurrency-qualification",
+      "kind": "dotnet",
+      "assembly": "ClaimCore.ConcurrencyQualificationTests",
+      "project": "tests/ClaimCore.ConcurrencyQualificationTests/ClaimCore.ConcurrencyQualificationTests.fsproj",
+      "configuration": "Release",
+      "coverage": false,
+      "platforms": ["linux"],
+      "group": "postgres",
+      "timeout": "90m"
+    },
+    {
+      "id": "vitest",
+      "kind": "vitest",
+      "platforms": ["linux"]
+    },
+    {
+      "id": "browser",
+      "kind": "playwright",
+      "platforms": ["linux"]
+    }
+  ]
+}

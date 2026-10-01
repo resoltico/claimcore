@@ -1,39 +1,18 @@
 import { localNotice } from "../src/api/notices";
 import { expect, it } from "vitest";
 import { createDraft } from "../src/domain/metadata";
-import {
-  initialOperation,
-  operationReducer,
-  type OperationState,
-} from "../src/domain/operationReducer";
+import { initialOperation, operationReducer } from "../src/domain/operationReducer";
 import { caseFields, groupedCorrectionValues, preparation, review } from "./v3-foundation.fixtures";
-
-const firstId = "00000000-0000-4000-8000-000000000001";
-const secondId = "00000000-0000-4000-8000-000000000002";
-const initial = () =>
-  initialOperation(firstId, "OPEN", { claimantName: "Synthetic A" }, "CASE-SYNTHETIC");
-const begin = (state: OperationState, requestId: number) =>
-  operationReducer(state, {
-    type: "PREPARING",
-    requestId,
-    draft:
-      state.exposedRequest ??
-      createDraft(state.operationId, state.caseReference, "0", state.command, state.values),
-  });
-const refused = (state: OperationState, requestId: number) =>
-  operationReducer(state, {
-    type: "DEFINITELY_REJECTED",
-    requestId,
-    message: localNotice("unreachable"),
-    field: null,
-  });
-const reviewed = () =>
-  operationReducer(begin(initial(), 1), {
-    type: "PREPARED",
-    requestId: 1,
-    preparation,
-    review,
-  });
+import { expectDomainHelpersExact } from "./domain-metadata.fixtures";
+import {
+  begin,
+  expectGuardedTransitionsInert,
+  firstId,
+  initial,
+  refused,
+  reviewed,
+  secondId,
+} from "./operation-identity.fixtures";
 
 it("forks a new ID when an exposed request is edited after definite submit refusal", () => {
   const unexposed = operationReducer(initial(), {
@@ -107,7 +86,9 @@ it("retains the frozen exact request on unchanged retry after unknown preparatio
   expect(retry.delivery).toBe("PREPARING");
   expect(retry.exposedRequest).toBe(first.exposedRequest);
   expect(retry.operationId).toBe(firstId);
-  if (retry.exposedRequest?.command.kind !== "OPEN") throw new Error("Expected an OPEN request.");
+  if (retry.exposedRequest?.command.kind !== "OPEN") {
+    throw new Error("Expected an OPEN request.");
+  }
   expect(retry.exposedRequest.command.values.claimantName).toBe("Synthetic A");
   expect(
     operationReducer(unknown, {
@@ -262,6 +243,8 @@ it("keeps invalid reducer transitions inert and records a completed receipt", ()
     },
   );
   expect(accepted.delivery).toBe("ACCEPTED");
+  expectGuardedTransitionsInert(fresh);
+  expectDomainHelpersExact();
 });
 
 it("freezes grouped correction identity while a later correction edit forks a new operation", () => {
@@ -269,8 +252,9 @@ it("freezes grouped correction identity while a later correction edit forks a ne
     initialOperation(firstId, "CORRECT_CASE", groupedCorrectionValues, "CASE-SYNTHETIC"),
     1,
   );
-  if (first.exposedRequest?.command.kind !== "CORRECT_CASE")
+  if (first.exposedRequest?.command.kind !== "CORRECT_CASE") {
     throw new Error("Expected a grouped correction request.");
+  }
   const rejected = refused(first, 1);
   const edited = operationReducer(rejected, {
     type: "EDIT_CORRECTION",
@@ -279,8 +263,9 @@ it("freezes grouped correction identity while a later correction edit forks a ne
     value: "Synthetic B",
     nextOperationId: secondId,
   });
-  if (rejected.exposedRequest?.command.kind !== "CORRECT_CASE")
+  if (rejected.exposedRequest?.command.kind !== "CORRECT_CASE") {
     throw new Error("Expected retained grouped correction identity.");
+  }
   expect(rejected.exposedRequest.command.groups.registration).toEqual({
     mode: "REPLACE",
     values: { ...groupedCorrectionValues.registration.values },

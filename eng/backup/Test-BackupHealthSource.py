@@ -16,143 +16,139 @@ from backup_health_source_inspection import (
     inspect_checkpoint,
     inspect_restore,
 )
-from deployment_common import DeploymentRefusal, canonical
+from deployment_common import DeploymentRefusalError, canonical
+
+REPOSITORY = Path(__file__).parents[2]
+SIGNATURE_BYTES = 64
+
+
+def _run(script: str, *arguments: str) -> subprocess.CompletedProcess[bytes]:
+    return subprocess.run(
+        [sys.executable, "-B", "eng/backup/" + script, *arguments],
+        cwd=REPOSITORY,
+        capture_output=True,
+        check=False,
+    )
 
 
 class BackupHealthSourceTests(unittest.TestCase):
-    def test_role_signing_requires_current_physical_files(self):
-        with tempfile.TemporaryDirectory() as raw:
-            root = Path(raw).resolve()
-            root.chmod(0o700)
-            policy, source, keys, archive = fixture(root)
-            self.assertEqual(
-                parse_policy(canonical(policy))["policyId"], policy["policyId"]
+    def setUp(self) -> None:
+        self._directory = tempfile.TemporaryDirectory()
+        self.root = Path(self._directory.name).resolve()
+        self.root.chmod(0o700)
+        self.policy, self.source, self.keys, self.archive = fixture(self.root)
+
+    def tearDown(self) -> None:
+        self._directory.cleanup()
+
+    def _prepare_source(self) -> Path:
+        private(self.root, "policy.json", canonical(self.policy))
+        private(self.root, "draft.json", canonical(self.source))
+        prepared = self.root / "health.source.json"
+        result = _run(
+            "Prepare-BackupHealthSource.py",
+            "--policy",
+            str(self.root / "policy.json"),
+            "--draft",
+            str(self.root / "draft.json"),
+            "--output",
+            str(prepared),
+        )
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(prepared.read_bytes(), canonical(self.source))
+        return prepared
+
+    def _sign_roles(self, prepared: Path) -> None:
+        for role, key_path in self.keys.items():
+            output = self.root / ("health." + role + ".sig")
+            signed = _run(
+                "Sign-BackupHealthRole.py",
+                "--role",
+                role,
+                "--policy",
+                str(self.root / "policy.json"),
+                "--source",
+                str(prepared),
+                "--private-key",
+                str(key_path),
+                "--signature-output",
+                str(output),
             )
-            self.assertEqual(
-                parse_source(canonical(source), policy)["cycleId"], source["cycleId"]
+            self.assertEqual(signed.returncode, 0)
+            self.assertEqual(len(output.read_bytes()), SIGNATURE_BYTES)
+
+    def _write_fence(self) -> None:
+        fence = dict.fromkeys(
+            (
+                "handoffId",
+                "w1Sequence",
+                "w1Hash",
+                "activationSequence",
+                "activationHash",
+                "oldGeneration",
+                "newGeneration",
             )
-            inspect_archive(source, policy)
-            inspect_checkpoint(source, policy)
-            inspect_restore(source, policy)
-            private(root, "policy.json", canonical(policy))
-            private(root, "draft.json", canonical(source))
-            prepared = root / "health.source.json"
-            result = subprocess.run(
-                [
-                    sys.executable,
-                    "-B",
-                    "eng/backup/Prepare-BackupHealthSource.py",
-                    "--policy",
-                    str(root / "policy.json"),
-                    "--draft",
-                    str(root / "draft.json"),
-                    "--output",
-                    str(prepared),
-                ],
-                cwd=Path(__file__).parents[2],
-                capture_output=True,
-                check=False,
-            )
-            self.assertEqual(result.returncode, 0)
-            self.assertEqual(prepared.read_bytes(), canonical(source))
-            for role, key_path in keys.items():
-                output = root / ("health." + role + ".sig")
-                signed = subprocess.run(
-                    [
-                        sys.executable,
-                        "-B",
-                        "eng/backup/Sign-BackupHealthRole.py",
-                        "--role",
-                        role,
-                        "--policy",
-                        str(root / "policy.json"),
-                        "--source",
-                        str(prepared),
-                        "--private-key",
-                        str(key_path),
-                        "--signature-output",
-                        str(output),
-                    ],
-                    cwd=Path(__file__).parents[2],
-                    capture_output=True,
-                    check=False,
-                )
-                self.assertEqual(signed.returncode, 0)
-                self.assertEqual(len(output.read_bytes()), 64)
-            fence = {
-                name: None
-                for name in (
-                    "handoffId",
-                    "w1Sequence",
-                    "w1Hash",
-                    "activationSequence",
-                    "activationHash",
-                    "oldGeneration",
-                    "newGeneration",
-                )
-            }
-            fence["kind"] = "GENESIS"
-            private(root, "fence.json", canonical(fence))
-            issuer = key(root, "issuer")
-            issuer_id, holder_id = str(uuid.uuid4()), str(uuid.uuid4())
-            candidate_path = root / "health.certificate.json"
-            prepared_candidate = subprocess.run(
-                [
-                    sys.executable,
-                    "-B",
-                    "eng/backup/Prepare-BackupHealthCertificate.py",
-                    "--policy",
-                    str(root / "policy.json"),
-                    "--source",
-                    str(prepared),
-                    "--writer-fence",
-                    str(root / "fence.json"),
-                    "--signer-key-id",
-                    issuer_id,
-                    "--signer-holder-actor-id",
-                    holder_id,
-                    "--output",
-                    str(candidate_path),
-                ],
-                cwd=Path(__file__).parents[2],
-                capture_output=True,
-                check=False,
-            )
-            self.assertEqual(prepared_candidate.returncode, 0)
-            signed_candidate = subprocess.run(
-                [
-                    sys.executable,
-                    "-B",
-                    "eng/backup/Sign-BackupHealthCertificate.py",
-                    "--policy",
-                    str(root / "policy.json"),
-                    "--source",
-                    str(prepared),
-                    "--archive-signature",
-                    str(root / "health.archive.sig"),
-                    "--checkpoint-signature",
-                    str(root / "health.checkpoint.sig"),
-                    "--test-restore-signature",
-                    str(root / "health.test-restore.sig"),
-                    "--candidate",
-                    str(candidate_path),
-                    "--private-key",
-                    str(issuer),
-                    "--signature-output",
-                    str(root / "health.certificate.sig"),
-                ],
-                cwd=Path(__file__).parents[2],
-                capture_output=True,
-                check=False,
-            )
-            self.assertEqual(signed_candidate.returncode, 0)
-            self.assertEqual(len((root / "health.certificate.sig").read_bytes()), 64)
-            first = source["objects"][0]
-            (archive / first["relativePath"]).write_bytes(b"changed")
-            with self.assertRaisesRegex(
-                DeploymentRefusal, "health-source-archive-object"
-            ):
-                inspect_archive(source, policy)
+        )
+        fence["kind"] = "GENESIS"
+        private(self.root, "fence.json", canonical(fence))
+
+    def _certificate(self, prepared: Path) -> None:
+        self._write_fence()
+        issuer = key(self.root, "issuer")
+        candidate_path = self.root / "health.certificate.json"
+        prepared_candidate = _run(
+            "Prepare-BackupHealthCertificate.py",
+            "--policy",
+            str(self.root / "policy.json"),
+            "--source",
+            str(prepared),
+            "--writer-fence",
+            str(self.root / "fence.json"),
+            "--signer-key-id",
+            str(uuid.uuid4()),
+            "--signer-holder-actor-id",
+            str(uuid.uuid4()),
+            "--output",
+            str(candidate_path),
+        )
+        self.assertEqual(prepared_candidate.returncode, 0)
+        signed_candidate = _run(
+            "Sign-BackupHealthCertificate.py",
+            "--policy",
+            str(self.root / "policy.json"),
+            "--source",
+            str(prepared),
+            "--archive-signature",
+            str(self.root / "health.archive.sig"),
+            "--checkpoint-signature",
+            str(self.root / "health.checkpoint.sig"),
+            "--test-restore-signature",
+            str(self.root / "health.test-restore.sig"),
+            "--candidate",
+            str(candidate_path),
+            "--private-key",
+            str(issuer),
+            "--signature-output",
+            str(self.root / "health.certificate.sig"),
+        )
+        self.assertEqual(signed_candidate.returncode, 0)
+        self.assertEqual(len((self.root / "health.certificate.sig").read_bytes()), SIGNATURE_BYTES)
+
+    def test_role_signing_requires_current_physical_files(self) -> None:
+        self.assertEqual(parse_policy(canonical(self.policy))["policyId"], self.policy["policyId"])
+        self.assertEqual(
+            parse_source(canonical(self.source), self.policy)["cycleId"], self.source["cycleId"]
+        )
+        inspect_archive(self.source, self.policy)
+        inspect_checkpoint(self.source, self.policy)
+        inspect_restore(self.source, self.policy)
+        prepared = self._prepare_source()
+        self._sign_roles(prepared)
+        self._certificate(prepared)
+        first = self.source["objects"][0]
+        (self.archive / first["relativePath"]).write_bytes(b"changed")
+        with self.assertRaisesRegex(DeploymentRefusalError, "health-source-archive-object"):
+            inspect_archive(self.source, self.policy)
 
 
 if __name__ == "__main__":

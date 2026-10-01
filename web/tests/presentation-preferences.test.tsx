@@ -19,8 +19,9 @@ import {
 afterEach(() => vi.restoreAllMocks());
 
 it("resolves explicit language and display-format preferences independently with deterministic fallbacks", () => {
-  for (const input of [undefined, null, 42, "", "invalid_tag", "x".repeat(65), "de-DE"])
+  for (const input of [undefined, null, 42, "", "invalid_tag", "x".repeat(65), "de-DE"]) {
     expect(resolveLanguage(input)).toBe("en");
+  }
   expect(resolveLanguage("LV-lv")).toBe("lv");
   expect(resolveLanguage("ar-EG")).toBe("ar");
   expect(resolveLanguage("en-xa")).toBe("en-XA");
@@ -46,8 +47,9 @@ it("refuses corrupt, oversized and unknown preference records without retaining 
     '{"version":2,"language":"ar","displayLocale":"ar-EG"}',
     '{"version":1,"language":"ar"}',
     '{"version":1,"language":"ar","displayLocale":"ar-EG","claimant":"secret"}',
-  ])
+  ]) {
     expect(parsePreferences(text)).toEqual(defaults);
+  }
   expect(parsePreferences('{"version":1,"language":null,"displayLocale":42}')).toEqual(defaults);
   localStorage.setItem(preferenceKey, "private-invalid-text");
   expect(loadPreferences()).toEqual(defaults);

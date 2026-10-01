@@ -9,12 +9,12 @@ import unittest
 from pathlib import Path
 
 sys.dont_write_bytecode = True
-from deployment_common import DeploymentRefusal
+from deployment_common import DeploymentRefusalError
 from deployment_publication_root import reviewed_publication_root
 
 
 class PublicationRootTests(unittest.TestCase):
-    def test_absent_then_exact_pinned_public_bytes(self):
+    def test_absent_then_exact_pinned_public_bytes(self) -> None:
         self.assertIsNone(reviewed_publication_root())
         with tempfile.TemporaryDirectory() as raw:
             root = Path(raw).resolve()
@@ -54,17 +54,15 @@ class PublicationRootTests(unittest.TestCase):
             )
             key = public.read_bytes()
             sha = hashlib.sha256(key).hexdigest()
-            self.assertEqual(
-                reviewed_publication_root(pinned_sha=sha, source=public), key
-            )
-            with self.assertRaisesRegex(DeploymentRefusal, "publication-root-digest"):
+            self.assertEqual(reviewed_publication_root(pinned_sha=sha, source=public), key)
+            with self.assertRaisesRegex(DeploymentRefusalError, "publication-root-digest"):
                 reviewed_publication_root(pinned_sha="0" * 64, source=public)
             link = root / "linked.pub"
             link.symlink_to(public)
-            with self.assertRaisesRegex(DeploymentRefusal, "publication-root-file"):
+            with self.assertRaisesRegex(DeploymentRefusalError, "publication-root-file"):
                 reviewed_publication_root(pinned_sha=sha, source=link)
             public.write_bytes(b"tampered public key")
-            with self.assertRaisesRegex(DeploymentRefusal, "publication-root-digest"):
+            with self.assertRaisesRegex(DeploymentRefusalError, "publication-root-digest"):
                 reviewed_publication_root(pinned_sha=sha, source=public)
 
 

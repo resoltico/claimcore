@@ -70,7 +70,9 @@ const definitePrepareRejection = async (): Promise<void> => {
   renderEditor({ current: null, initialCommand: "OPEN" });
   await user.click(screen.getByRole("button", { name: "Prepare exact request" }));
   const input = screen.getByLabelText("Handler's case reference", { exact: true });
-  await waitFor(() => expect(document.activeElement).toBe(input));
+  await waitFor(() => {
+    expect(document.activeElement).toBe(input);
+  });
   expect(input).toHaveAttribute("aria-invalid", "true");
   expect(screen.getAllByText("A non-blank value is required.").length).toBeGreaterThan(0);
   expect(screen.queryByRole("dialog", { name: "Review prepared operation" })).toBeNull();
@@ -94,7 +96,9 @@ const namedAuthoringRejection = async (): Promise<void> => {
   renderEditor({ current: null, initialCommand: "OPEN" });
   await user.click(screen.getByRole("button", { name: "Prepare exact request" }));
   const input = screen.getByLabelText("Incident date", { exact: true });
-  await waitFor(() => expect(document.activeElement).toBe(input));
+  await waitFor(() => {
+    expect(document.activeElement).toBe(input);
+  });
   expect(input).toHaveAttribute("aria-invalid", "true");
   const descriptions = (input.getAttribute("aria-describedby") ?? "")
     .split(" ")
@@ -237,7 +241,9 @@ const cancelReview = async (): Promise<void> => {
   expect(screen.queryByRole("dialog", { name: "Review prepared operation" })).toBeNull();
   const prepareButton = screen.getByRole("button", { name: "Prepare exact request" });
   expect(prepareButton).toBeVisible();
-  await waitFor(() => expect(document.activeElement).toBe(prepareButton));
+  await waitFor(() => {
+    expect(document.activeElement).toBe(prepareButton);
+  });
 };
 
 const keepDirtyCommand = async (): Promise<void> => {

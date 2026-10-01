@@ -1,0 +1,431 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["eslint", "react", "jsx-a11y", "oxc"],
+  "jsPlugins": [
+    "./lint/claimcore-plugin.mjs",
+    {
+      "name": "react-hooks-js",
+      "specifier": "eslint-plugin-react-hooks"
+    }
+  ],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "pedantic": "error",
+    "perf": "error",
+    "style": "error"
+  },
+  "options": {
+    "typeAware": true,
+    "denyWarnings": true,
+    "reportUnusedDisableDirectives": "error"
+  },
+  "env": {
+    "browser": true,
+    "node": true,
+    "es2024": true
+  },
+  "ignorePatterns": ["src/generated/contracts/web-v3.validators.*.mjs"],
+  "rules": {
+    "capitalized-comments": "off",
+    "complexity": [
+      "error",
+      {
+        "max": 12
+      }
+    ],
+    "for-direction": "error",
+    "func-style": "off",
+    "id-length": "off",
+    "init-declarations": "off",
+    "max-lines": [
+      "error",
+      {
+        "max": 300,
+        "skipBlankLines": false,
+        "skipComments": false
+      }
+    ],
+    "max-lines-per-function": [
+      "error",
+      {
+        "max": 50,
+        "skipBlankLines": false,
+        "skipComments": false,
+        "IIFEs": true
+      }
+    ],
+    "max-params": [
+      "error",
+      {
+        "max": 5
+      }
+    ],
+    "max-statements": [
+      "error",
+      {
+        "max": 50
+      }
+    ],
+    "no-alert": "error",
+    "no-async-promise-executor": "error",
+    "no-case-declarations": "error",
+    "no-compare-neg-zero": "error",
+    "no-cond-assign": "error",
+    "no-console": "error",
+    "no-constant-binary-expression": "error",
+    "no-constant-condition": "error",
+    "no-continue": "off",
+    "no-control-regex": "error",
+    "no-debugger": "error",
+    "no-delete-var": "error",
+    "no-dupe-else-if": "error",
+    "no-duplicate-case": "error",
+    "no-duplicate-imports": [
+      "error",
+      {
+        "allowSeparateTypeImports": true
+      }
+    ],
+    "no-empty": "error",
+    "no-empty-character-class": "error",
+    "no-empty-function": "error",
+    "no-empty-pattern": "error",
+    "no-empty-static-block": "error",
+    "no-eq-null": "error",
+    "no-eval": "error",
+    "no-ex-assign": "error",
+    "no-extra-boolean-cast": "error",
+    "no-fallthrough": "error",
+    "no-global-assign": "error",
+    "no-inline-comments": "off",
+    "no-invalid-regexp": "error",
+    "no-irregular-whitespace": "error",
+    "no-loss-of-precision": "error",
+    "no-magic-numbers": "off",
+    "no-misleading-character-class": "error",
+    "no-nonoctal-decimal-escape": "error",
+    "no-prototype-builtins": "error",
+    "no-regex-spaces": "error",
+    "no-self-assign": "error",
+    "no-shadow-restricted-names": "error",
+    "no-sparse-arrays": "error",
+    "no-ternary": "off",
+    "no-unassigned-vars": "error",
+    "no-unsafe-finally": "error",
+    "no-unsafe-optional-chaining": "error",
+    "no-unused-labels": "error",
+    "no-unused-private-class-members": "error",
+    "no-use-before-define": [
+      "error",
+      {
+        "functions": false,
+        "classes": true,
+        "variables": true
+      }
+    ],
+    "no-useless-assignment": "error",
+    "no-useless-backreference": "error",
+    "no-useless-catch": "error",
+    "no-useless-escape": "error",
+    "no-var": "error",
+    "one-var": ["error", "never"],
+    "prefer-const": "error",
+    "prefer-named-capture-group": "off",
+    "prefer-rest-params": "error",
+    "prefer-spread": "error",
+    "preserve-caught-error": "error",
+    "react/function-component-definition": "off",
+    "react/jsx-handler-names": "off",
+    "react/jsx-max-depth": "off",
+    "react/jsx-props-no-spreading": "off",
+    "react/react-in-jsx-scope": "off",
+    "require-yield": "error",
+    "sort-imports": "off",
+    "sort-keys": "off",
+    "use-isnan": "error",
+    "valid-typeof": "error"
+  },
+  "overrides": [
+    {
+      "files": ["**/*.ts", "**/*.tsx"],
+      "rules": {
+        "jsx-a11y/alt-text": "error",
+        "jsx-a11y/anchor-has-content": "error",
+        "jsx-a11y/anchor-is-valid": "error",
+        "jsx-a11y/aria-activedescendant-has-tabindex": "error",
+        "jsx-a11y/aria-props": "error",
+        "jsx-a11y/aria-proptypes": "error",
+        "jsx-a11y/aria-role": "error",
+        "jsx-a11y/aria-unsupported-elements": "error",
+        "jsx-a11y/autocomplete-valid": "error",
+        "jsx-a11y/click-events-have-key-events": "error",
+        "jsx-a11y/heading-has-content": "error",
+        "jsx-a11y/html-has-lang": "error",
+        "jsx-a11y/iframe-has-title": "error",
+        "jsx-a11y/img-redundant-alt": "error",
+        "jsx-a11y/interactive-supports-focus": "error",
+        "jsx-a11y/label-has-associated-control": "error",
+        "jsx-a11y/media-has-caption": "error",
+        "jsx-a11y/mouse-events-have-key-events": "error",
+        "jsx-a11y/no-access-key": "error",
+        "jsx-a11y/no-autofocus": "error",
+        "jsx-a11y/no-distracting-elements": "error",
+        "jsx-a11y/no-interactive-element-to-noninteractive-role": "error",
+        "jsx-a11y/no-noninteractive-element-interactions": "error",
+        "jsx-a11y/no-noninteractive-element-to-interactive-role": "error",
+        "jsx-a11y/no-noninteractive-tabindex": "error",
+        "jsx-a11y/no-redundant-roles": "error",
+        "jsx-a11y/no-static-element-interactions": "error",
+        "jsx-a11y/prefer-tag-over-role": "off",
+        "jsx-a11y/role-has-required-aria-props": "error",
+        "jsx-a11y/role-supports-aria-props": "error",
+        "jsx-a11y/scope": "error",
+        "jsx-a11y/tabindex-no-positive": "error",
+        "react-hooks-js/config": "error",
+        "react-hooks-js/error-boundaries": "error",
+        "react-hooks-js/exhaustive-deps": "error",
+        "react-hooks-js/gating": "error",
+        "react-hooks-js/globals": "error",
+        "react-hooks-js/immutability": "error",
+        "react-hooks-js/incompatible-library": "error",
+        "react-hooks-js/preserve-manual-memoization": "error",
+        "react-hooks-js/purity": "error",
+        "react-hooks-js/refs": "error",
+        "react-hooks-js/rules-of-hooks": "error",
+        "react-hooks-js/set-state-in-effect": "error",
+        "react-hooks-js/set-state-in-render": "error",
+        "react-hooks-js/static-components": "error",
+        "react-hooks-js/unsupported-syntax": "error",
+        "react-hooks-js/use-memo": "error",
+        "react/no-danger": "error",
+        "typescript/array-type": [
+          "error",
+          {
+            "default": "array",
+            "readonly": "generic"
+          }
+        ],
+        "typescript/await-thenable": "error",
+        "typescript/ban-ts-comment": "error",
+        "typescript/consistent-return": "off",
+        "typescript/consistent-type-definitions": "off",
+        "typescript/no-array-constructor": "error",
+        "typescript/no-array-delete": "error",
+        "typescript/no-base-to-string": "error",
+        "typescript/no-duplicate-enum-values": "error",
+        "typescript/no-duplicate-type-constituents": "error",
+        "typescript/no-empty-object-type": "error",
+        "typescript/no-explicit-any": "error",
+        "typescript/no-extra-non-null-assertion": "error",
+        "typescript/no-floating-promises": "error",
+        "typescript/no-for-in-array": "error",
+        "typescript/no-implied-eval": "error",
+        "typescript/no-misused-new": "error",
+        "typescript/no-misused-promises": "error",
+        "typescript/no-namespace": "error",
+        "typescript/no-non-null-asserted-optional-chain": "error",
+        "typescript/no-redundant-type-constituents": "error",
+        "typescript/no-require-imports": "error",
+        "typescript/no-this-alias": "error",
+        "typescript/no-unnecessary-type-assertion": "error",
+        "typescript/no-unnecessary-type-constraint": "error",
+        "typescript/no-unsafe-argument": "error",
+        "typescript/no-unsafe-assignment": "error",
+        "typescript/no-unsafe-call": "error",
+        "typescript/no-unsafe-declaration-merging": "error",
+        "typescript/no-unsafe-enum-comparison": "error",
+        "typescript/no-unsafe-function-type": "error",
+        "typescript/no-unsafe-member-access": "error",
+        "typescript/no-unsafe-return": "error",
+        "typescript/no-unsafe-unary-minus": "error",
+        "typescript/no-unused-expressions": "error",
+        "typescript/no-unused-vars": "error",
+        "typescript/no-wrapper-object-types": "error",
+        "typescript/only-throw-error": "error",
+        "typescript/prefer-as-const": "error",
+        "typescript/prefer-namespace-keyword": "error",
+        "typescript/prefer-promise-reject-errors": "error",
+        "typescript/prefer-readonly-parameter-types": "off",
+        "typescript/require-await": "error",
+        "typescript/restrict-plus-operands": "error",
+        "typescript/restrict-template-expressions": "error",
+        "typescript/triple-slash-reference": "error",
+        "typescript/unbound-method": "error",
+        "typescript/switch-exhaustiveness-check": [
+          "error",
+          {
+            "considerDefaultExhaustiveForUnions": true
+          }
+        ]
+      },
+      "plugins": ["typescript"]
+    },
+    {
+      "files": ["src/**/*.ts", "src/**/*.tsx"],
+      "rules": {
+        "no-restricted-globals": [
+          "error",
+          {
+            "globals": [
+              {
+                "name": "fetch",
+                "message": "Use the validated browser API boundary in src/api/v3.ts."
+              },
+              {
+                "name": "XMLHttpRequest",
+                "message": "Use the validated browser API boundary in src/api/v3.ts."
+              },
+              {
+                "name": "WebSocket",
+                "message": "Use the validated browser API boundary in src/api/v3.ts."
+              },
+              {
+                "name": "EventSource",
+                "message": "Use the validated browser API boundary in src/api/v3.ts."
+              }
+            ],
+            "checkGlobalObject": true
+          }
+        ]
+      },
+      "excludeFiles": ["src/api/v3.ts", "src/generated/**"]
+    },
+    {
+      "files": [
+        "src/api/**/*.ts",
+        "src/api/**/*.tsx",
+        "src/domain/**/*.ts",
+        "src/domain/**/*.tsx",
+        "src/hooks/**/*.ts",
+        "src/hooks/**/*.tsx",
+        "src/views/recovery/RecoveryState.ts"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["**/presentation", "**/presentation/**"],
+                "message": "Keep locale and rendered text out of operation and request coordination."
+              }
+            ]
+          }
+        ],
+        "no-restricted-globals": [
+          "error",
+          {
+            "globals": [
+              {
+                "name": "Intl",
+                "message": "Operation state and transport must remain presentation-independent."
+              },
+              {
+                "name": "localStorage",
+                "message": "Operation state and transport must remain presentation-independent."
+              },
+              {
+                "name": "sessionStorage",
+                "message": "Operation state and transport must remain presentation-independent."
+              },
+              {
+                "name": "navigator",
+                "message": "Operation state and transport must remain presentation-independent."
+              },
+              {
+                "name": "fetch",
+                "message": "Operation state and transport must remain presentation-independent."
+              },
+              {
+                "name": "XMLHttpRequest",
+                "message": "Operation state and transport must remain presentation-independent."
+              },
+              {
+                "name": "WebSocket",
+                "message": "Operation state and transport must remain presentation-independent."
+              },
+              {
+                "name": "EventSource",
+                "message": "Operation state and transport must remain presentation-independent."
+              }
+            ],
+            "checkGlobalObject": true
+          }
+        ],
+        "claimcore/no-presentation-import": "error"
+      },
+      "excludeFiles": ["src/api/v3.ts"]
+    },
+    {
+      "files": ["src/api/v3.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["**/presentation", "**/presentation/**"],
+                "message": "Keep locale and rendered text out of operation and request coordination."
+              }
+            ]
+          }
+        ],
+        "no-restricted-globals": [
+          "error",
+          {
+            "globals": [
+              {
+                "name": "Intl",
+                "message": "Operation state and transport must remain presentation-independent."
+              },
+              {
+                "name": "localStorage",
+                "message": "Operation state and transport must remain presentation-independent."
+              },
+              {
+                "name": "sessionStorage",
+                "message": "Operation state and transport must remain presentation-independent."
+              },
+              {
+                "name": "navigator",
+                "message": "Operation state and transport must remain presentation-independent."
+              }
+            ],
+            "checkGlobalObject": true
+          }
+        ],
+        "claimcore/no-presentation-import": "error"
+      }
+    },
+    {
+      "files": ["tests/**", "e2e/**"],
+      "env": {
+        "vitest": true
+      }
+    },
+    {
+      "files": ["tests/**/*.ts", "tests/**/*.tsx", "e2e/**/*.ts", "e2e/**/*.tsx"],
+      "rules": {
+        "typescript/strict-void-return": "off",
+        "typescript/no-unsafe-type-assertion": "off"
+      },
+      "plugins": ["typescript"]
+    },
+    {
+      "files": ["tests/**", "e2e/**", "scripts/**"],
+      "rules": {
+        "no-await-in-loop": "off"
+      }
+    },
+    {
+      "files": ["src/generated/**/*.ts", "src/generated/**/*.mts", "src/api/v3.ts"],
+      "rules": {
+        "typescript/no-unsafe-type-assertion": "off",
+        "typescript/no-unnecessary-type-parameters": "off",
+        "typescript/array-type": "off"
+      },
+      "plugins": ["typescript"]
+    }
+  ]
+}

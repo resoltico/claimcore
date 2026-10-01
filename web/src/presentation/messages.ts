@@ -8,6 +8,8 @@ import shapes from "./generated/arguments.json";
 import type { Preferences } from "./preferences";
 import type { MessageKey, Values } from "./types";
 
+// lint-exception: LX-0014
+// oxlint-disable-next-line typescript/no-unsafe-type-assertion
 const catalogs = { en, lv, ar, "en-XA": pseudo } as unknown as Record<
   string,
   Record<string, MessageFormatElement[]>
@@ -17,7 +19,9 @@ const cache = new Map<string, IntlMessageFormat>();
 const message = (key: string, preferences: Preferences): IntlMessageFormat => {
   const cacheKey = `${preferences.language}|${preferences.displayLocale}|${key}`;
   const cached = cache.get(cacheKey);
-  if (cached !== undefined) return cached;
+  if (cached !== undefined) {
+    return cached;
+  }
   const ast = catalogs[preferences.language]![key] ?? catalogs["en"]![key]!;
   const grammar = preferences.language === "en-XA" ? "en" : preferences.language;
   const formatter = new IntlMessageFormat(ast, grammar, undefined, {
@@ -36,8 +40,9 @@ const safeArgs = (key: string, values: Readonly<Record<string, string | number>>
   if (
     shape === undefined ||
     Object.keys(values).sort().join(",") !== Object.keys(shape).sort().join(",")
-  )
+  ) {
     return false;
+  }
   return Object.entries(shape).every(
     ([name, role]) =>
       typeof values[name] === role &&
@@ -51,8 +56,9 @@ export const renderKey = (
   key: string,
   values: Readonly<Record<string, string | number>> = {},
 ): string => {
-  if (!safeArgs(key, values))
+  if (!safeArgs(key, values)) {
     return String(message("notice.unknownDiagnostic", preferences).format());
+  }
   const prepared = Object.fromEntries(
     Object.entries(values).map(([k, v]) => [k, isolate(v, preferences.language === "ar")]),
   );

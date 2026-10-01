@@ -10,10 +10,11 @@ Install the prerequisites and complete the locked first-checkout workflow in
 build, test, lint, coverage, published-acceptance, and evidence commands. Run its
 [complete verification](docs/development.md#complete-verification) before claiming a change is ready.
 
-Docker is required by PostgreSQL and published-application tests. Required test projects must run
-through the native .NET 10 Microsoft Testing Platform commands with the exact registered counts.
-Focused, pending, skipped, expected-failure, conditional, filtered, retried, or sharded required
-tests are policy failures.
+Docker is required by PostgreSQL and published-application tests. Required test projects run through
+`node eng/ci/suites/suite.mjs` on the native .NET 10 Microsoft Testing Platform, against the generated
+inventories in `tests/inventory/` (rewrite one with `node eng/ci/suites/inventory.mjs --write` in the
+same commit as the test change). Focused, pending, skipped, expected-failure, conditional, filtered,
+retried, or sharded required tests are policy failures.
 
 ## Change rules
 
@@ -21,7 +22,7 @@ tests are policy failures.
 - Put business decisions in Domain/Application, durable encoding in RecordFormat, wire schemas and
   codecs in Contracts, persistence and schema-owner administration in Postgres, runtime composition
   in Hosting, CLI-v4 framing and authenticated HTTPS delivery in CliProtocol, and process/HTTP presentation in Cli/Web.
-  `architecture.json` is the authority on which component may reference which.
+  `config/architecture.json` is the authority on which component may reference which.
 - Contracts owns every CLI-v4 and Web-v3 payload, including database-free discovery. A renderer
   that composed wire JSON itself would fork the generated contract, so add the payload to Contracts
   and select it from the adapter.
@@ -33,25 +34,21 @@ tests are policy failures.
   synchronized with behavior.
 - Keep contract headings, `[CC-…]` evidence leaves, and review-subject hashes synchronized. A passing
   tagged test does not substitute for semantic review of its assertions.
-- Declare every component edge, package, and `InternalsVisibleTo` grant in `architecture.json`, and
+- Declare every component edge, package, and `InternalsVisibleTo` grant in `config/architecture.json`, and
   review changes to it against the actual module boundaries, compiled inspection, evaluated project
   graph, and required report evidence; do not widen permitted edges merely to clear the gate.
 - Update each dependency in its owning manifest and commit reviewed lock-file changes.
 - Do not commit local connections, credentials, build output, test reports, container state, or real
   case data.
 
-FSharpLint, ESLint, and Stylelint own product/test file-size, function-size, complexity, nesting, and
+FSharpLint, oxlint, and Stylelint own product/test file-size, function-size, complexity, nesting, and
 specificity limits. A limit failure is a design prompt: split a real responsibility instead of
 adding wrappers or suppressing the rule.
 
-[`analyzer-suppressions.json`](analyzer-suppressions.json) is the sole authoritative source-code
-exception registry. Do not add an inline or project-level bypass merely to clear a gate; the exact
+[`config/lint-exceptions.json`](config/lint-exceptions.json) is the sole authoritative registry of lint, type,
+format and coverage exceptions for every language. Do not add an inline or project-level bypass merely to clear a gate; the exact
 registry schema and non-suppressible rules are owned by [Repository
 quality](docs/development.md#repository-quality).
-
-Container vulnerability exceptions are separate. Every entry in
-[`container-vulnerability-exceptions.yaml`](container-vulnerability-exceptions.yaml) must be narrowly
-scoped, technically justified, and short-lived.
 
 ## Pull-request evidence
 
@@ -65,10 +62,9 @@ in [SUPPORT.md](SUPPORT.md).
 
 Publication and repository-policy changes follow [CI governance](docs/ci-governance.md). Use one
 feature branch and verify the actual PR head and current attempt; preserve a truthful handoff after
-follow-up commits. Semantic review records say `source-reviewed`, never independent owner approval.
-A green gate is necessary execution evidence, not an instruction to merge. Follow the separate
-[owner-review procedure](docs/owner-review.md) on exact current revisions; review reports do not
-record approval and settings declarations are not active native enforcement.
+follow-up commits. A green gate is necessary execution evidence, not an instruction to merge. Follow the
+separate [owner-review procedure](docs/owner-review.md) on exact current revisions; source review does
+not record approval and settings declarations are not active native enforcement.
 
 ## Licensing contributions
 

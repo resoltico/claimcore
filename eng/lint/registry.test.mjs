@@ -1,0 +1,112 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { Report } from "./model.mjs";
+import { loadRegistry } from "./registry.mjs";
+import { registryText, validEntry, withTree } from "./test-support.mjs";
+
+/**
+ * @param {Record<string, unknown>[]} exceptions
+ * @param {Record<string, unknown>[]} [generated]
+ * @returns {{ errors: string[], accepted: number }}
+ */
+function load(exceptions, generated = []) {
+  return withTree(
+    {
+      "config/lint-exceptions.json": registryText(exceptions, generated),
+      [String(validEntry.file)]: "",
+    },
+    (root) => {
+      const report = new Report();
+      const registry = loadRegistry(root, `${root}/config/lint-exceptions.json`, report);
+      return { errors: report.errors, accepted: registry.exceptions.length };
+    },
+  );
+}
+
+test("a complete entry is accepted", () => {
+  assert.deepEqual(load([validEntry]), { errors: [], accepted: 1 });
+});
+
+/** @type {Array<[string, Record<string, unknown>, RegExp]>} */
+const rejected = [
+  ["a malformed id", { id: "LX-1" }, /id of the form LX-0000/u],
+  ["an unknown tool", { tool: "eslint" }, /unknown tool 'eslint'/u],
+  ["an unknown kind", { kind: "file" }, /kind must be inline or config/u],
+  ["a zero count", { count: 0 }, /positive integer count/u],
+  ["a fractional count", { count: 1.5 }, /positive integer count/u],
+  ["no rules", { rules: [] }, /exact rule names/u],
+  ["a blanket rule", { rules: ["*"] }, /blanket, wildcard or non-suppressible/u],
+  ["a wildcard inline rule", { rules: ["no-*"] }, /blanket, wildcard or non-suppressible/u],
+  ["a non-suppressible size rule", { rules: ["max-lines"] }, /non-suppressible/u],
+  ["a non-suppressible complexity rule", { rules: ["complexity"] }, /non-suppressible/u],
+  ["a wildcard file", { file: "web/src/*.ts" }, /one exact repository-relative file/u],
+  ["an absolute file", { file: "/etc/passwd" }, /one exact repository-relative file/u],
+  ["a missing file", { file: "web/src/missing.ts" }, /does not exist/u],
+  ["a short reason", { reason: "because" }, /substantive reason/u],
+  ["no owner", { owner: "" }, /named owner/u],
+  ["no review or expiry date", { reviewOn: undefined }, /requires reviewOn or expiresOn/u],
+  ["a malformed date", { reviewOn: "next year" }, /ISO yyyy-MM-dd/u],
+  ["an expired review", { reviewOn: "2000-01-01" }, /passed its reviewOn date/u],
+  [
+    "an expired exception",
+    { reviewOn: undefined, expiresOn: "2000-01-01" },
+    /passed its expiresOn date/u,
+  ],
+];
+for (const [name, change, message] of rejected) {
+  test(`the registry rejects ${name}`, () => {
+    const { errors, accepted } = load([{ ...validEntry, ...change }]);
+    assert.ok(
+      errors.some((error) => message.test(error)),
+      errors.join("\n"),
+    );
+    assert.equal(accepted, 0);
+  });
+}
+
+test("the registry rejects duplicate ids", () => {
+  assert.ok(
+    load([validEntry, validEntry]).errors.some((error) => /duplicates another id/u.test(error)),
+  );
+});
+
+test("config exceptions may name pattern targets but never a blanket rule", () => {
+  const pattern = { ...validEntry, kind: "config", rules: ["ignorePatterns:src/generated/*.mjs"] };
+  assert.deepEqual(load([pattern]).errors, []);
+  assert.ok(load([{ ...pattern, rules: ["*"] }]).errors.length > 0);
+});
+
+test("only recognized generated-output paths may be excluded", () => {
+  const generated = {
+    path: "web/dist/",
+    generator: "the Vite production builder",
+    reason: "Generated output that is never hand-authored.",
+    owner: "project maintainers",
+    reviewOn: "2999-01-01",
+  };
+  assert.deepEqual(load([], [generated]).errors, []);
+  assert.ok(
+    load([], [{ ...generated, path: "web/src/" }]).errors.some((error) =>
+      /recognized generated-output path/u.test(error),
+    ),
+  );
+  assert.ok(
+    load([], [{ ...generated, generator: "tool" }]).errors.some((error) =>
+      /generator specifically/u.test(error),
+    ),
+  );
+  assert.ok(load([], [generated, generated]).errors.some((error) => /listed twice/u.test(error)));
+});
+
+test("an unreadable or wrong-version registry is reported, not ignored", () => {
+  withTree({ "config/lint-exceptions.json": "{" }, (root) => {
+    const report = new Report();
+    loadRegistry(root, `${root}/config/lint-exceptions.json`, report);
+    assert.match(report.errors.join("\n"), /cannot be read/u);
+  });
+  withTree({ "config/lint-exceptions.json": JSON.stringify({ version: 1 }) }, (root) => {
+    const report = new Report();
+    loadRegistry(root, `${root}/config/lint-exceptions.json`, report);
+    assert.match(report.errors.join("\n"), /version 2/u);
+  });
+});

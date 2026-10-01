@@ -28,9 +28,9 @@ jobs:
     name: Frontend product
     uses: ./.github/workflows/verify-frontend-product.yml
 
-  unit:
-    name: Cross-platform unit and Web tests
-    uses: ./.github/workflows/verify-unit.yml
+  suites:
+    name: Registered suites
+    uses: ./.github/workflows/verify-suites.yml
 
   integration:
     name: PostgreSQL integration
@@ -57,24 +57,8 @@ jobs:
 
   coverage:
     name: Merged .NET coverage
-    needs: [unit, integration, browser]
+    needs: [suites, integration, browser]
     uses: ./.github/workflows/verify-coverage.yml
-
-  evidence:
-    name: Conjunctive evidence reconciliation
-    if: always()
-    needs:
-      - quality
-      - frontend
-      - frontend-product
-      - unit
-      - integration
-      - documentation
-      - publish
-      - acceptance
-      - browser
-      - coverage
-    uses: ./.github/workflows/verify-evidence.yml
 
   gate:
     name: Gate
@@ -83,15 +67,14 @@ jobs:
       - quality
       - frontend
       - frontend-product
-      - unit
+      - suites
       - integration
       - documentation
       - publish
       - acceptance
       - browser
       - coverage
-      - evidence
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       # Derived from `needs`, so a family added above is gated automatically. A second hand-written

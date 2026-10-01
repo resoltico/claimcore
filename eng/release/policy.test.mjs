@@ -10,15 +10,20 @@ test("extracts the section body without duplicating GitHub release metadata", ()
   assert(!extractReleaseBody(changelog, version).includes(`[${version}]`));
 });
 
-for (const [name, source] of [
+/** @type {Array<[string, string]>} */
+const refusals = [
   ["missing section", changelog.replaceAll("[0.3.0]", "[0.4.0]")],
   ["duplicate section", `${changelog}\n${section}`],
   ["bad date", changelog.replace("2026-09-19", "2026-02-30")],
   ["empty section", "## [0.3.0] - 2026-09-19\n\n### Added\n"],
   ["bare carriage return", changelog.replace("café", "ca\rfé")],
   ["unclosed fence", `${changelog}\n~~~sh\n`],
-  ["external reference", `${changelog.replace("Preserve this line.", "Read [guide].")}\n[guide]: https://example.com`],
-]) {
+  [
+    "external reference",
+    `${changelog.replace("Preserve this line.", "Read [guide].")}\n[guide]: https://example.com`,
+  ],
+];
+for (const [name, source] of refusals) {
   test(`refuses ${name}`, () => assert.throws(() => extractReleaseBody(source, version)));
 }
 
@@ -47,7 +52,10 @@ for (const invalid of [
   props.replace(version, "0.3.0-rc.1"),
   props.replace("</PropertyGroup>", `<Version>${version}</Version></PropertyGroup>`),
   `<!DOCTYPE Project>${props}`,
-  props.replace("<Version>", "<Description><Version>").replace("</Version>", "</Version></Description>"),
+  props
+    .replace("<Version>", "<Description><Version>")
+    .replace("</Version>", "</Version></Description>"),
 ]) {
-  test("refuses a noncanonical Version declaration", () => assert.throws(() => declaredVersion(invalid)));
+  test("refuses a noncanonical Version declaration", () =>
+    assert.throws(() => declaredVersion(invalid)));
 }

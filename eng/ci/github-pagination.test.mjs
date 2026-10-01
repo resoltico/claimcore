@@ -1,8 +1,9 @@
 import test from "node:test";
+import { must } from "./test-support.mjs";
 import assert from "node:assert/strict";
 import { pages } from "./github-api.mjs";
-const rows = (start, count) =>
-  Array.from({ length: count }, (_, i) => ({ id: start + i }));
+/** @param {number} start @param {number} count */
+const rows = (start, count) => Array.from({ length: count }, (_, i) => ({ id: start + i }));
 for (const field of ["workflow_runs", "jobs"]) {
   test(`${field} enumeration verifies complete counts across pages`, async () => {
     let page = 0;
@@ -16,7 +17,8 @@ for (const field of ["workflow_runs", "jobs"]) {
     );
     assert.equal(result.length, 102);
   });
-  for (const [label, documents] of [
+  /** @type {Array<[string, import("./types.mjs").Json[]]>} */
+  const refusals = [
     ["short page", [{ total_count: 2, [field]: rows(1, 1) }]],
     ["missing count", [{ [field]: rows(1, 1) }]],
     ["duplicate IDs", [{ total_count: 2, [field]: [{ id: 1 }, { id: 1 }] }]],
@@ -34,11 +36,11 @@ for (const field of ["workflow_runs", "jobs"]) {
         { total_count: 101, [field]: rows(1, 1) },
       ],
     ],
-  ])
+  ];
+  for (const [label, documents] of refusals) {
     test(`${field} enumeration rejects ${label}`, async () => {
       let index = 0;
-      await assert.rejects(
-        pages(async () => documents[index++], "items", field),
-      );
+      await assert.rejects(pages(async () => must(documents[index++]), "items", field));
     });
+  }
 }

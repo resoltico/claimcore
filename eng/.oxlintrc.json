@@ -1,0 +1,142 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["eslint", "oxc"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "pedantic": "error",
+    "perf": "error",
+    "style": "error"
+  },
+  "options": {
+    "denyWarnings": true,
+    "reportUnusedDisableDirectives": "error"
+  },
+  "env": {
+    "node": true,
+    "es2024": true
+  },
+  "rules": {
+    "capitalized-comments": "off",
+    "complexity": [
+      "error",
+      {
+        "max": 12
+      }
+    ],
+    "for-direction": "error",
+    "func-style": "off",
+    "id-length": "off",
+    "init-declarations": "off",
+    "max-lines": [
+      "error",
+      {
+        "max": 300,
+        "skipBlankLines": false,
+        "skipComments": false
+      }
+    ],
+    "max-lines-per-function": [
+      "error",
+      {
+        "max": 50,
+        "skipBlankLines": false,
+        "skipComments": false,
+        "IIFEs": true
+      }
+    ],
+    "max-params": [
+      "error",
+      {
+        "max": 5
+      }
+    ],
+    "max-statements": [
+      "error",
+      {
+        "max": 50
+      }
+    ],
+    "no-alert": "error",
+    "no-async-promise-executor": "error",
+    "no-await-in-loop": "off",
+    "no-case-declarations": "error",
+    "no-compare-neg-zero": "error",
+    "no-cond-assign": "error",
+    "no-constant-binary-expression": "error",
+    "no-constant-condition": "error",
+    "no-continue": "off",
+    "no-control-regex": "error",
+    "no-debugger": "error",
+    "no-delete-var": "error",
+    "no-dupe-else-if": "error",
+    "no-duplicate-case": "error",
+    "no-empty": "error",
+    "no-empty-character-class": "error",
+    "no-empty-function": "error",
+    "no-empty-pattern": "error",
+    "no-empty-static-block": "error",
+    "no-eq-null": "error",
+    "no-eval": "error",
+    "no-ex-assign": "error",
+    "no-extra-boolean-cast": "error",
+    "no-fallthrough": "error",
+    "no-global-assign": "error",
+    "no-inline-comments": "off",
+    "no-invalid-regexp": "error",
+    "no-irregular-whitespace": "error",
+    "no-loss-of-precision": "error",
+    "no-magic-numbers": "off",
+    "no-misleading-character-class": "error",
+    "no-nonoctal-decimal-escape": "error",
+    "no-prototype-builtins": "error",
+    "no-regex-spaces": "error",
+    "no-self-assign": "error",
+    "no-shadow-restricted-names": "error",
+    "no-sparse-arrays": "error",
+    "no-ternary": "off",
+    "no-unassigned-vars": "error",
+    "no-unsafe-finally": "error",
+    "no-unsafe-optional-chaining": "error",
+    "no-unused-labels": "error",
+    "no-unused-private-class-members": "error",
+    "no-use-before-define": [
+      "error",
+      {
+        "functions": false,
+        "classes": true,
+        "variables": true
+      }
+    ],
+    "no-useless-assignment": "error",
+    "no-useless-backreference": "error",
+    "no-useless-catch": "error",
+    "no-useless-escape": "error",
+    "no-var": "error",
+    "one-var": ["error", "never"],
+    "prefer-const": "error",
+    "prefer-named-capture-group": "off",
+    "prefer-rest-params": "error",
+    "prefer-spread": "error",
+    "preserve-caught-error": "error",
+    "require-yield": "error",
+    "sort-imports": "off",
+    "sort-keys": "off",
+    "use-isnan": "error",
+    "valid-typeof": "error"
+  },
+  "overrides": [
+    {
+      "files": ["**/*.test.mjs", "**/test-support.mjs", "**/settings-fixture.mjs"],
+      "rules": {
+        "require-await": "off"
+      }
+    },
+    {
+      "files": ["ci/workflow-graph.mjs", "ci/workflow-policy.mjs", "ci/workflow-policy.test.mjs"],
+      "rules": {
+        "no-template-curly-in-string": "off"
+      }
+    }
+  ]
+}

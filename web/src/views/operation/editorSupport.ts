@@ -16,8 +16,10 @@ export const prepared = (
   response.outcome.tag === "PREPARED" ? response.outcome.data : null;
 
 export const acceptedReceipt = (response: WebV3Response<"command.execute">): Receipt | null => {
-  const outcome = response.outcome;
-  if (outcome.tag === "OBSERVED_ACCEPTED") return outcome.data.receipt;
+  const { outcome } = response;
+  if (outcome.tag === "OBSERVED_ACCEPTED") {
+    return outcome.data.receipt;
+  }
   if (outcome.tag === "COMPLETED" && outcome.data.execution.tag === "ACCEPTED") {
     return outcome.data.execution.receipt;
   }

@@ -22,11 +22,13 @@ const readJson = async (file) => JSON.parse(await readFile(file, "utf8"));
 const formatTypeScript = async (source, filepath) => {
   const canonicalPath = resolve(
     import.meta.dirname,
-    "../src/generated/convergence",
+    "../src/generated/contracts",
     basename(filepath),
   );
   const configuration = await resolveConfig(canonicalPath, { editorconfig: true });
-  if (configuration === null) throw new Error("The Web formatting configuration is unavailable.");
+  if (configuration === null) {
+    throw new Error("The Web formatting configuration is unavailable.");
+  }
   return format(source, { ...configuration, filepath: canonicalPath });
 };
 
@@ -97,18 +99,18 @@ const validatorInventory = async (directory, endpoints, group) => {
 const assertProvisionalOutput = async (directory, provisional) => {
   const entries = await readdir(directory, { withFileTypes: true });
   if (entries.some((entry) => !entry.isFile())) {
-    throw new Error("Generated convergence output must contain regular files only.");
+    throw new Error("Generated contract output must contain regular files only.");
   }
   const allowed = new Set([
     ...provisional,
-    "convergence-manifest.json",
+    "contracts-manifest.json",
     ...standaloneValidatorArtifacts,
     ...obsoleteStandaloneValidatorArtifacts,
   ]);
   const extra = entries.map((entry) => entry.name).filter((name) => !allowed.has(name));
   const missing = [...provisional].filter((name) => !entries.some((entry) => entry.name === name));
   if (extra.length > 0 || missing.length > 0) {
-    throw new Error("The provisional convergence artifact inventory is incomplete or has extras.");
+    throw new Error("The provisional contract artifact inventory is incomplete or has extras.");
   }
 };
 
@@ -131,7 +133,9 @@ const formatTypeScriptArtifacts = async (directory, provisional) => {
         /^web-v3\.types(?:\.[a-z]+)*\.ts$/u.test(name),
     )
     .sort();
-  if (names.length < 2) throw new Error("Generated Web TypeScript artifacts are missing.");
+  if (names.length < 2) {
+    throw new Error("Generated Web TypeScript artifacts are missing.");
+  }
   for (const name of names) {
     const file = join(directory, name);
     const source = await readFile(file, "utf8");
@@ -141,7 +145,9 @@ const formatTypeScriptArtifacts = async (directory, provisional) => {
 
 const packageVersion = (lock, name) => {
   const version = lock.packages?.[`node_modules/${name}`]?.version;
-  if (typeof version !== "string") throw new Error(`The locked ${name} version is missing.`);
+  if (typeof version !== "string") {
+    throw new Error(`The locked ${name} version is missing.`);
+  }
   return version;
 };
 
@@ -161,7 +167,9 @@ const packageNotice = async (webDirectory, lock, name) => {
     .filter((entry) => entry.isFile() && /^licen[cs]e(?:\.(?:md|txt))?$/iu.test(entry.name))
     .map((entry) => entry.name)
     .sort();
-  if (licenses.length !== 1) throw new Error(`Embedded package ${name} needs one license file.`);
+  if (licenses.length !== 1) {
+    throw new Error(`Embedded package ${name} needs one license file.`);
+  }
   const license = (await readFile(join(packageDirectory, licenses[0]), "utf8")).trim();
   const repository =
     typeof manifest.repository === "string" ? manifest.repository : manifest.repository?.url;
@@ -205,10 +213,10 @@ const assertValidatorModule = async (source, entries) => {
 };
 
 const provisionalInventory = async (output) => {
-  const manifestPath = join(output, "convergence-manifest.json");
+  const manifestPath = join(output, "contracts-manifest.json");
   const manifest = await readJson(manifestPath);
   if (!Array.isArray(manifest.files) || !manifest.files.every((file) => safeName.test(file))) {
-    throw new Error("The provisional convergence manifest is invalid.");
+    throw new Error("The provisional contract manifest is invalid.");
   }
   const provisional = new Set(manifest.files);
   if (
@@ -217,14 +225,17 @@ const provisionalInventory = async (output) => {
   ) {
     throw new Error("The F# manifest must contain a unique provisional artifact inventory.");
   }
-  if (!provisional.has(hostSchema)) throw new Error("The host-failure schema is missing.");
-  if (!provisional.has(responsesSchema))
+  if (!provisional.has(hostSchema)) {
+    throw new Error("The host-failure schema is missing.");
+  }
+  if (!provisional.has(responsesSchema)) {
     throw new Error("The aggregate response schema is missing.");
+  }
   await assertProvisionalOutput(output, provisional);
   return { manifest, provisional };
 };
 
-const compileGroups = async (output, groups, webDirectory) =>
+const compileGroups = (output, groups, webDirectory) =>
   Promise.all(
     Object.entries(groups).map(async ([group, groupEndpoints]) => {
       const inventory = await validatorInventory(output, groupEndpoints, group);
@@ -253,7 +264,7 @@ const writeValidatorGroups = async (output, groups, compiledGroups) => {
 
 export const generateWebValidators = async (directory) => {
   const output = resolve(directory);
-  const manifestPath = join(output, "convergence-manifest.json");
+  const manifestPath = join(output, "contracts-manifest.json");
   const { manifest, provisional } = await provisionalInventory(output);
   await Promise.all(
     obsoleteStandaloneValidatorArtifacts.map((name) => rm(join(output, name), { force: true })),

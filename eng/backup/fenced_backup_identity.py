@@ -3,20 +3,25 @@
 import re
 import subprocess
 
-import managed
+from backup_types import JsonObject
+from managed_common import metadata, pg_env, require, tool
+
+GENERATION_OUTPUT_LIMIT = 32
+NAME_OUTPUT_LIMIT = 128
 
 
-def expected_identity(config):
-    primary = managed.metadata(config, "primary")
-    witness = managed.metadata(config, "witness")
+def expected_identity(config: JsonObject) -> JsonObject:
+    """Read the active writer identity the held capture must match."""
+    primary = metadata(config, "primary")
+    witness = metadata(config, "witness")
     for index, name in enumerate(("installation", "lineage", "epoch")):
-        managed.require(
+        require(
             primary[index] == witness[index],
             "cluster-identity-mismatch-" + name,
         )
     result = subprocess.run(
         [
-            managed.tool("psql", "psql (PostgreSQL) 18.6"),
+            tool("psql", "psql (PostgreSQL) 18.6"),
             "-X",
             "-w",
             "-q",
@@ -27,20 +32,18 @@ def expected_identity(config):
             "-c",
             "SELECT writer_generation::text FROM claimcore.installation_lineage WHERE singleton",
         ],
-        env=managed.pg_env(config["primary"]["metadataService"]),
+        env=pg_env(config["primary"]["metadataService"]),
         stdout=subprocess.PIPE,
         stderr=subprocess.DEVNULL,
         timeout=10,
         check=False,
     )
-    managed.require(
-        result.returncode == 0 and len(result.stdout) <= 32,
+    require(
+        result.returncode == 0 and len(result.stdout) <= GENERATION_OUTPUT_LIMIT,
         "writer-generation-unavailable",
     )
     generation = result.stdout.decode("ascii", "strict").strip()
-    managed.require(
-        re.fullmatch(r"[1-9][0-9]{0,17}", generation), "writer-generation-invalid"
-    )
+    require(re.fullmatch(r"[1-9][0-9]{0,17}", generation), "writer-generation-invalid")
     return {
         "installationId": primary[0],
         "lineageId": primary[1],
@@ -49,25 +52,26 @@ def expected_identity(config):
     }
 
 
-def require_test_databases(config):
+def require_test_databases(config: JsonObject) -> None:
+    """Refuse synthetic capture against anything but disposable test databases."""
     for cluster in ("primary", "witness"):
         result = subprocess.run(
             [
-                managed.tool("psql", "psql (PostgreSQL) 18.6"),
+                tool("psql", "psql (PostgreSQL) 18.6"),
                 "-XAtq",
                 "-w",
                 "-c",
                 "SELECT current_database()",
             ],
-            env=managed.pg_env(config[cluster]["metadataService"]),
+            env=pg_env(config[cluster]["metadataService"]),
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
             timeout=10,
             check=False,
         )
-        managed.require(
-            result.returncode == 0 and len(result.stdout) <= 128,
+        require(
+            result.returncode == 0 and len(result.stdout) <= NAME_OUTPUT_LIMIT,
             "synthetic-database-unavailable",
         )
         name = result.stdout.decode("ascii", "strict").strip()
-        managed.require(name.endswith("_test"), "synthetic-database-name")
+        require(name.endswith("_test"), "synthetic-database-name")

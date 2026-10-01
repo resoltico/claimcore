@@ -18,7 +18,7 @@ export default class SanitizedVitestReporter {
 
   onTestCaseResult(testCase) {
     const result = testCase.result();
-    const state = result.state;
+    const { state } = result;
     const duration = testCase.diagnostic()?.duration ?? 0;
     if (!Number.isFinite(duration) || duration < 0 || duration > 2_147_483_647) {
       throw new Error("Vitest reported an invalid test duration.");
@@ -28,10 +28,15 @@ export default class SanitizedVitestReporter {
       outcome: state,
       durationMs: Math.ceil(duration),
     });
-    if (state === "passed") this.totals.passed += 1;
-    else if (state === "failed") this.totals.failed += 1;
-    else if (state === "skipped" && testCase.options.mode === "todo") this.totals.todo += 1;
-    else if (state === "skipped") this.totals.skipped += 1;
+    if (state === "passed") {
+      this.totals.passed += 1;
+    } else if (state === "failed") {
+      this.totals.failed += 1;
+    } else if (state === "skipped" && testCase.options.mode === "todo") {
+      this.totals.todo += 1;
+    } else if (state === "skipped") {
+      this.totals.skipped += 1;
+    }
   }
 
   async onTestRunEnd(_modules, _errors, status) {

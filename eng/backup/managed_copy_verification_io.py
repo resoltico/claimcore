@@ -6,25 +6,41 @@ import os
 import re
 import stat
 import subprocess
-from datetime import datetime, timedelta, timezone
+import uuid
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+from backup_types import Json, JsonObject
 from tool_versions import locate as locate_tool
 from tool_versions import matches as matches_tool_version
 
+READ_BLOCK = 65536
+SIGNATURE_BYTES = 64
+PROOF_LIMIT = 32768
+KEY_LIMIT = 16384
+PROOF_MINUTES = 5
+TOOL_TIMEOUT_SECONDS = 10
+SIGN_TIMEOUT_SECONDS = 30
+PRIVATE_DIRECTORY_MODE = 0o700
+NO_FOLLOW = getattr(os, "O_NOFOLLOW", 0)
 
-class VerificationFailure(Exception):
-    def __init__(self, code):
+
+class VerificationFailureError(Exception):
+    """A managed-copy verification refusal carrying a fixed uppercase code."""
+
+    def __init__(self, code: str) -> None:
+        """Keep the fixed refusal code."""
         self.code = code
         super().__init__(code)
 
 
-def require(condition, code):
+def require(condition: object, code: str) -> None:
+    """Refuse with `code` unless `condition` holds."""
     if not condition:
-        raise VerificationFailure(code)
+        raise VerificationFailureError(code)
 
 
-def _canonical_path(raw):
+def _canonical_path(raw: Json) -> Path:
     require(
         isinstance(raw, str) and raw.startswith("/") and "\x00" not in raw,
         "PRIVATE_PATH_REFUSED",
@@ -36,15 +52,15 @@ def _canonical_path(raw):
     )
     for component in (path, *path.parents):
         try:
-            require(
-                not stat.S_ISLNK(os.lstat(component).st_mode), "LINKED_PATH_REFUSED"
-            )
+            require(not stat.S_ISLNK(os.lstat(component).st_mode), "LINKED_PATH_REFUSED")
         except FileNotFoundError:
-            raise VerificationFailure("PRIVATE_PATH_REFUSED") from None
+            msg = "PRIVATE_PATH_REFUSED"
+            raise VerificationFailureError(msg) from None
     return path
 
 
-def private_file(raw, maximum):
+def private_file(raw: Json, maximum: int) -> Path:
+    """Return an owner-private single-link regular file within `maximum` bytes."""
     path = _canonical_path(raw)
     info = os.lstat(path)
     require(
@@ -58,31 +74,34 @@ def private_file(raw, maximum):
     return path
 
 
-def private_directory(raw):
+def private_directory(raw: str) -> Path:
+    """Return an owner-only (0700) directory."""
     path = _canonical_path(raw)
     info = os.lstat(path)
     require(
         stat.S_ISDIR(info.st_mode)
         and info.st_uid == os.geteuid()
-        and info.st_mode & 0o777 == 0o700,
+        and info.st_mode & 0o777 == PRIVATE_DIRECTORY_MODE,
         "PRIVATE_DIRECTORY_REFUSED",
     )
     return path
 
 
-def read_private(raw, maximum):
+def _identity(info: os.stat_result) -> tuple[int, int, int, int, int]:
+    return (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
+
+
+def read_private(raw: Json, maximum: int) -> bytes:
+    """Read a private file in full, refusing if it changes while being read."""
     path = private_file(raw, maximum)
-    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
-    descriptor = os.open(path, flags)
+    descriptor = os.open(path, os.O_RDONLY | NO_FOLLOW)
     try:
         before = os.fstat(descriptor)
-        require(
-            before.st_nlink == 1 and before.st_size <= maximum, "PRIVATE_FILE_REFUSED"
-        )
+        require(before.st_nlink == 1 and before.st_size <= maximum, "PRIVATE_FILE_REFUSED")
         chunks = []
         total = 0
         while True:
-            block = os.read(descriptor, min(65536, maximum + 1 - total))
+            block = os.read(descriptor, min(READ_BLOCK, maximum + 1 - total))
             if not block:
                 break
             total += len(block)
@@ -91,20 +110,7 @@ def read_private(raw, maximum):
         after = os.fstat(descriptor)
         current = os.lstat(path)
         require(
-            (
-                before.st_dev,
-                before.st_ino,
-                before.st_size,
-                before.st_mtime_ns,
-                before.st_ctime_ns,
-            )
-            == (
-                after.st_dev,
-                after.st_ino,
-                after.st_size,
-                after.st_mtime_ns,
-                after.st_ctime_ns,
-            )
+            _identity(before) == _identity(after)
             and total == after.st_size
             and (current.st_dev, current.st_ino) == (after.st_dev, after.st_ino),
             "PRIVATE_FILE_CHANGED",
@@ -114,16 +120,17 @@ def read_private(raw, maximum):
         os.close(descriptor)
 
 
-def hash_private(raw, expected_bytes, maximum):
+def hash_private(raw: Json, expected_bytes: int, maximum: int) -> str:
+    """Hash a private file of exactly `expected_bytes`, refusing if it changes."""
     path = private_file(raw, maximum)
     require(expected_bytes <= maximum, "COPY_SIZE_REFUSED")
-    descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+    descriptor = os.open(path, os.O_RDONLY | NO_FOLLOW)
     try:
         before = os.fstat(descriptor)
         digest = hashlib.sha256()
         total = 0
         while True:
-            block = os.read(descriptor, 65536)
+            block = os.read(descriptor, READ_BLOCK)
             if not block:
                 break
             total += len(block)
@@ -134,20 +141,7 @@ def hash_private(raw, expected_bytes, maximum):
         require(
             total == expected_bytes
             and total == after.st_size
-            and (
-                before.st_dev,
-                before.st_ino,
-                before.st_size,
-                before.st_mtime_ns,
-                before.st_ctime_ns,
-            )
-            == (
-                after.st_dev,
-                after.st_ino,
-                after.st_size,
-                after.st_mtime_ns,
-                after.st_ctime_ns,
-            )
+            and _identity(before) == _identity(after)
             and (current.st_dev, current.st_ino) == (after.st_dev, after.st_ino),
             "COPY_CHANGED",
         )
@@ -156,12 +150,12 @@ def hash_private(raw, expected_bytes, maximum):
         os.close(descriptor)
 
 
-def write_new(raw, value):
+def write_new(raw: str, value: bytes) -> None:
+    """Create a new owner-only file with `value`, flushing file and directory."""
     path = Path(raw)
     private_directory(str(path.parent))
     require(not path.exists() and not path.is_symlink(), "OUTPUT_ALREADY_EXISTS")
-    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
-    descriptor = os.open(path, flags, 0o600)
+    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | NO_FOLLOW, 0o600)
     try:
         with os.fdopen(descriptor, "wb", closefd=False) as stream:
             stream.write(value)
@@ -176,48 +170,54 @@ def write_new(raw, value):
         os.close(directory)
 
 
-def canonical(value):
+def canonical(value: Json) -> bytes:
+    """Return the canonical newline-terminated JSON of a proof, bounded in size."""
     encoded = (
-        json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
-        + "\n"
+        json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=True) + "\n"
     ).encode("ascii")
-    require(len(encoded) <= 32768, "PROOF_TOO_LARGE")
+    require(len(encoded) <= PROOF_LIMIT, "PROOF_TOO_LARGE")
     return encoded
 
 
-def exact_json(raw):
-    def pairs(items):
-        result = {}
+def exact_json(raw: bytes) -> JsonObject:
+    """Parse JSON, refusing duplicate fields and invalid text."""
+
+    def pairs(items: list[tuple[str, Json]]) -> JsonObject:
+        result: JsonObject = {}
         for name, value in items:
             require(name not in result, "DUPLICATE_FIELD")
             result[name] = value
         return result
 
     try:
-        return json.loads(raw, object_pairs_hook=pairs)
+        parsed: JsonObject = json.loads(raw, object_pairs_hook=pairs)
     except (ValueError, UnicodeError):
-        raise VerificationFailure("INVALID_JSON") from None
+        msg = "INVALID_JSON"
+        raise VerificationFailureError(msg) from None
+    return parsed
 
 
-def tool(name, version):
+def tool(name: str, version: str | None) -> str:
+    """Locate a required executable, optionally proving its exact version."""
     found = locate_tool(name)
-    require(found is not None, "TOOL_UNAVAILABLE")
+    if found is None:
+        msg = "TOOL_UNAVAILABLE"
+        raise VerificationFailureError(msg)
     if version:
         result = subprocess.run(
-            [found, "--version"], capture_output=True, timeout=10, check=False
+            [found, "--version"], capture_output=True, timeout=TOOL_TIMEOUT_SECONDS, check=False
         )
         require(
             result.returncode == 0
-            and matches_tool_version(
-                name, version, result.stdout.decode("utf-8", "replace")
-            ),
+            and matches_tool_version(name, version, result.stdout.decode("utf-8", "replace")),
             "TOOL_VERSION_REFUSED",
         )
     return found
 
 
-def sign(private_key, proof):
-    key = private_file(private_key, 16384)
+def sign(private_key: Json, proof: Path) -> bytes:
+    """Sign the proof file with an owner-private Ed25519 key."""
+    key = private_file(private_key, KEY_LIMIT)
     result = subprocess.run(
         [
             tool("openssl", None),
@@ -230,37 +230,36 @@ def sign(private_key, proof):
             str(proof),
         ],
         capture_output=True,
-        timeout=30,
+        timeout=SIGN_TIMEOUT_SECONDS,
         check=False,
     )
     require(
-        result.returncode == 0 and len(result.stdout) == 64, "SIGNATURE_UNAVAILABLE"
+        result.returncode == 0 and len(result.stdout) == SIGNATURE_BYTES, "SIGNATURE_UNAVAILABLE"
     )
     return result.stdout
 
 
-def now_and_expiry():
-    now = datetime.now(timezone.utc).replace(microsecond=0)
+def now_and_expiry() -> tuple[str, str]:
+    """Return the current time and a five-minute expiry as second-precision UTC text."""
+    now = datetime.now(UTC).replace(microsecond=0)
     return (
         now.isoformat().replace("+00:00", "Z"),
-        (now + timedelta(minutes=5)).isoformat().replace("+00:00", "Z"),
+        (now + timedelta(minutes=PROOF_MINUTES)).isoformat().replace("+00:00", "Z"),
     )
 
 
-def uuid_text(value):
-    import uuid
-
+def uuid_text(value: Json) -> str:
+    """Return `value` when it is the canonical text of a non-nil UUID."""
     try:
         parsed = uuid.UUID(value)
-        require(parsed.int != 0 and str(parsed) == value, "IDENTITY_REFUSED")
-        return value
     except (TypeError, ValueError):
-        raise VerificationFailure("IDENTITY_REFUSED") from None
+        msg = "IDENTITY_REFUSED"
+        raise VerificationFailureError(msg) from None
+    require(parsed.int != 0 and str(parsed) == value, "IDENTITY_REFUSED")
+    return str(value)
 
 
-def sha_text(value):
-    require(
-        isinstance(value, str) and re.fullmatch(r"[0-9a-f]{64}", value),
-        "DIGEST_REFUSED",
-    )
-    return value
+def sha_text(value: Json) -> str:
+    """Return `value` when it is a lowercase SHA-256 digest."""
+    require(isinstance(value, str) and re.fullmatch(r"[0-9a-f]{64}", value), "DIGEST_REFUSED")
+    return str(value)

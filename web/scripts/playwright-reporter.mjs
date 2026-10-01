@@ -33,7 +33,9 @@ const writeSummary = async (summary) => {
 };
 
 const safeStage = () => {
-  if (progressFile === undefined) return null;
+  if (progressFile === undefined) {
+    return null;
+  }
   try {
     const value = readFileSync(progressFile, "utf8");
     return /^[a-z0-9-]{1,64}$/u.test(value) ? value : null;
@@ -44,14 +46,20 @@ const safeStage = () => {
 
 const count = (totals, status) => {
   const key = resultKeys[status];
-  if (key !== undefined) totals[key] += 1;
+  if (key !== undefined) {
+    totals[key] += 1;
+  }
 };
 
 const recordFailure = (reporter, result) => {
-  if (!failureStatuses.has(result.status)) return;
+  if (!failureStatuses.has(result.status)) {
+    return;
+  }
   reporter.failureLines.push(result.errors[0]?.location?.line ?? null);
   const code = result.errors[0]?.message?.match(/E2E_[A-Z_0-9]+/u)?.[0];
-  if (code !== undefined) reporter.failureCodes.push(code);
+  if (code !== undefined) {
+    reporter.failureCodes.push(code);
+  }
 };
 
 export default class SanitizedPlaywrightReporter {
@@ -70,7 +78,9 @@ export default class SanitizedPlaywrightReporter {
 
   onTestBegin(_test, result) {
     this.stepDiagnostics.set(result, new BrowserStepDiagnostic(this.sourceLocations));
-    if (progressFile !== undefined) writeFileSync(progressFile, "test-start");
+    if (progressFile !== undefined) {
+      writeFileSync(progressFile, "test-start");
+    }
   }
 
   onStepBegin(_test, result, step) {
@@ -108,6 +118,8 @@ export default class SanitizedPlaywrightReporter {
     });
     if (result.status === "passed") {
       await Promise.all([diagnostics, layout].map((path) => unlink(path).catch(() => undefined)));
-    } else await writeFile(diagnostics, `${JSON.stringify(this.diagnosticTests, null, 2)}\n`);
+    } else {
+      await writeFile(diagnostics, `${JSON.stringify(this.diagnosticTests, null, 2)}\n`);
+    }
   }
 }

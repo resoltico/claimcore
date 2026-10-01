@@ -1,3 +1,6 @@
+import type { HostFailure } from "../generated/contracts/web-v3.types";
+import type { Notice } from "./notices";
+
 /** Generated endpoint-owned types exposed by the validated browser API boundary. */
 export type {
   AdvisoryReview,
@@ -26,10 +29,8 @@ export type {
   SemanticDefinition,
   SessionSnapshot,
   WebV3Response,
-} from "../generated/convergence/web-v3.types";
+} from "../generated/contracts/web-v3.types";
 
-import type { HostFailure } from "../generated/convergence/web-v3.types";
-import type { Notice } from "./notices";
 /** Local delivery facts belong to the browser adapter, not generated server DTOs. */
 export type ApiResult<T> =
   | { readonly kind: "outcome"; readonly value: T; readonly status: number }

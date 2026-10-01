@@ -3,10 +3,13 @@
 import re
 import subprocess
 
-import managed
+from managed_common import refuse, require
+
+CONTROLDATA_LIMIT = 8192
 
 
-def system_id(container):
+def system_id(container: str) -> str:
+    """Read a disposable container's PostgreSQL system identifier."""
     result = subprocess.run(
         [
             "docker",
@@ -22,8 +25,8 @@ def system_id(container):
         timeout=10,
         check=False,
     )
-    managed.require(
-        result.returncode == 0 and len(result.stdout) <= 8192,
+    require(
+        result.returncode == 0 and len(result.stdout) <= CONTROLDATA_LIMIT,
         "synthetic-system-unavailable",
     )
     found = re.search(
@@ -31,5 +34,6 @@ def system_id(container):
         result.stdout,
         re.MULTILINE,
     )
-    managed.require(found is not None, "synthetic-system-invalid")
+    if found is None:
+        refuse("synthetic-system-invalid")
     return found.group(1).decode("ascii")

@@ -4,7 +4,7 @@ open System
 open System.IO
 open System.Text.Json
 
-/// One classified component of `architecture.json`, the repository's single architecture contract.
+/// One classified component of `config/architecture.json`, the repository's single architecture contract.
 /// The compiled architecture suite enforces this file; documentation renders from it.
 [<NoEquality; NoComparison>]
 type ArchitectureComponent =
@@ -15,14 +15,13 @@ type ArchitectureComponent =
         Project: string
         Role: string
         DependsOn: string list
-        TestInventory: bool
     }
 
 type private ArchitectureManifestAnchor = class end
 
 [<RequireQualifiedAccess>]
 module ArchitectureManifest =
-    let fileName = "architecture.json"
+    let fileName = "config/architecture.json"
     let private maximumBytes = 64 * 1024
 
     let private text (name: string) (element: JsonElement) =
@@ -56,12 +55,6 @@ module ArchitectureManifest =
         | Error message -> Some message
         | Ok _ -> None
 
-    let private flag (name: string) (element: JsonElement) =
-        match element.TryGetProperty(name) with
-        | true, value when value.ValueKind = JsonValueKind.True -> Ok true
-        | true, value when value.ValueKind = JsonValueKind.False -> Ok false
-        | _ -> Error $"The architecture manifest entry is missing '{name}'."
-
     let private component' (element: JsonElement) =
         match
             text "name" element,
@@ -69,10 +62,9 @@ module ArchitectureManifest =
             text "layer" element,
             text "project" element,
             text "role" element,
-            names "dependsOn" element,
-            flag "testInventory" element
+            names "dependsOn" element
         with
-        | Ok name, Ok tier, Ok layer, Ok project, Ok role, Ok dependsOn, Ok testInventory ->
+        | Ok name, Ok tier, Ok layer, Ok project, Ok role, Ok dependsOn ->
             Ok
                 {
                     Name = name
@@ -81,7 +73,6 @@ module ArchitectureManifest =
                     Project = project
                     Role = role
                     DependsOn = dependsOn
-                    TestInventory = testInventory
                 }
         | _ -> Error "The architecture manifest has an incomplete component."
 
@@ -163,13 +154,6 @@ module ArchitectureManifest =
             else
                 Error
                     "The architecture manifest changed after this tool was built. Rebuild ClaimCore.Docs.")
-
-    /// Test runners that publish a compiled test inventory, as the manifest classifies them.
-    let testInventoryAssemblies components =
-        components
-        |> List.filter (fun item -> item.TestInventory)
-        |> List.map _.Name
-        |> Set.ofList
 
     let inTier tier components =
         components

@@ -8,7 +8,7 @@ ClaimCore's case-work boundary is one authenticated HTTPS service over a primary
 
 ## The component contract
 
-[`architecture.json`](../architecture.json) is this repository's single architecture contract. It
+[`config/architecture.json`](../config/architecture.json) is this repository's single architecture contract. It
 classifies every `.fsproj` the repository builds — product, tooling, and test — and records each
 component's layer, responsibility, permitted direct dependencies, permitted NuGet packages, and
 reviewed `InternalsVisibleTo` grants. Nothing restates it: the compiled architecture suite enforces
@@ -58,7 +58,7 @@ descriptors cannot automatically prove that arbitrary implementations behave ide
 
 The browser networking policy covers all handwritten browser source except the validated API
 adapter. Its positive and negative controls include root components, domain-view helpers, qualified
-global access, and alternative networking APIs. ESLint is a development boundary, not a security
+global access, and alternative networking APIs. oxlint is a development boundary, not a security
 sandbox for dynamically constructed JavaScript.
 
 ### Composition roots
@@ -109,11 +109,10 @@ The suite checks the manifest from five independent directions:
   Each of these rules asserts its positive counterpart as well, so none can pass vacuously.
 
 Each platform's passing suite emits a bounded, sorted report of the actual inspected assembly type
-counts and cross-component edges. Counts are observations, not thresholds. CI scans the report,
-requires it in the stage manifest, verifies the downloaded bytes and schema during final evidence —
-against the manifest's own product inventory, not a second hard-coded list — and shows a concise
-graph in its job summary. A rule violation fails its named test with an actionable source/target
-diagnostic; a report alone is not proof of correct behavior.
+counts and cross-component edges. Counts are observations, not thresholds. The inspection builds the
+report from the manifest's own product inventory and fails when a required assembly is omitted or no
+cross-product edge is observed; CI shows a concise graph in its job summary. A rule violation fails its
+named test with an actionable source/target diagnostic; a report alone is not proof of correct behavior.
 
 These checks complement curated signatures, ordinary-consumer compile tests, protocol tests and
 real PostgreSQL/browser qualifications. They do not prove transaction correctness, complete effect

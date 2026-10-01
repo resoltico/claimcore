@@ -1,3 +1,4 @@
+/** @typedef {import("../ci/types.mjs").Json} Json */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { releaseClaimCore } from "./publisher.mjs";
@@ -5,9 +6,12 @@ import { createFixture, sha, tag } from "./test-support.mjs";
 
 test("blocks when CI is rerun during Gate verification", async () => {
   const fixture = createFixture();
+  /** @type {import("../ci/types.mjs").GithubApi} */
   const api = async (path, options) => {
     const result = await fixture.api(path, options);
-    if (path.includes("/jobs?")) fixture.state.runs[0].run_attempt += 1;
+    if (path?.includes("/jobs?")) {
+      fixture.state.runs[0].run_attempt += 1;
+    }
     return result;
   };
   await assert.rejects(releaseClaimCore({ ...fixture.options, api, publish: true }));
@@ -16,14 +20,20 @@ test("blocks when CI is rerun during Gate verification", async () => {
 
 test("leaves a draft alone when the tag changes after draft creation", async () => {
   const fixture = createFixture();
+  /** @type {import("../ci/types.mjs").GithubApi} */
   const api = async (path, options) => {
     const result = await fixture.api(path, options);
-    if (options?.method === "POST") fixture.state.tagSha = "4".repeat(40);
+    if (options?.method === "POST") {
+      fixture.state.tagSha = "4".repeat(40);
+    }
     return result;
   };
   await assert.rejects(releaseClaimCore({ ...fixture.options, api, publish: true }));
   assert.equal(fixture.state.release.draft, true);
-  assert.deepEqual(fixture.writes().map((call) => call.method), ["POST"]);
+  assert.deepEqual(
+    fixture.writes().map((/** @type {Json} */ call) => call.method),
+    ["POST"],
+  );
 });
 
 for (const operation of ["Post", "Patch"]) {
@@ -33,24 +43,36 @@ for (const operation of ["Post", "Patch"]) {
     await assert.rejects(releaseClaimCore({ ...fixture.options, publish: true }), /Lost/u);
     await releaseClaimCore({ ...fixture.options, publish: true });
     assert.equal(fixture.state.release.draft, false);
-    assert.deepEqual(fixture.writes().map((call) => call.method), ["POST", "PATCH"]);
+    assert.deepEqual(
+      fixture.writes().map((/** @type {Json} */ call) => call.method),
+      ["POST", "PATCH"],
+    );
   });
 }
 
 test("reports a post-publication edit without rollback or silent repair", async () => {
   const fixture = createFixture();
+  /** @type {import("../ci/types.mjs").GithubApi} */
   const api = async (path, options) => {
     const result = await fixture.api(path, options);
-    if (options?.method === "PATCH") fixture.state.release.body += "\nUnexpected change.";
+    if (options?.method === "PATCH") {
+      fixture.state.release.body += "\nUnexpected change.";
+    }
     return result;
   };
-  await assert.rejects(releaseClaimCore({ ...fixture.options, api, publish: true }), /body differs/u);
+  await assert.rejects(
+    releaseClaimCore({ ...fixture.options, api, publish: true }),
+    /body differs/u,
+  );
   assert.equal(fixture.state.release.draft, false);
 });
 
 test("refuses a workflow result set that GitHub would truncate", async () => {
   const fixture = createFixture();
-  fixture.state.runs = Array.from({ length: 1001 }, (_, index) => ({ ...fixture.state.runs[0], id: index + 1 }));
+  fixture.state.runs = Array.from({ length: 1001 }, (_, index) => ({
+    ...fixture.state.runs[0],
+    id: index + 1,
+  }));
   await assert.rejects(releaseClaimCore({ ...fixture.options, publish: true }), /result limit/u);
   assert.equal(fixture.writes().length, 0);
 });

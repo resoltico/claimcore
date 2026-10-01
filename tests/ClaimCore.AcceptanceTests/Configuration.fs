@@ -59,9 +59,6 @@ let private file name =
 
 let load () =
     let cliDirectory = directory "CLAIMCORE_ACCEPTANCE_CLI_DIR"
-    let manifest = file "CLAIMCORE_ACCEPTANCE_CLI_MANIFEST"
-    PublishManifest.verify "publish-cli" cliDirectory manifest |> ignore
-
     let cliDll = Path.Combine(cliDirectory, "ClaimCore.Cli.dll")
 
     if not (File.Exists(cliDll)) then

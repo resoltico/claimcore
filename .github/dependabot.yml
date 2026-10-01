@@ -1,23 +1,81 @@
 version: 2
+
+# One weekly window per ecosystem. Updates land in a single grouped pull request per ecosystem so
+# that each one is reviewed with its full locked-graph change, and a 7-day cooldown keeps a release
+# that is withdrawn or fixed within its first week out of the graph.
 updates:
   - package-ecosystem: npm
     directory: /web
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5
+    groups:
+      web-npm:
+        patterns: ["*"]
+  - package-ecosystem: npm
+    directory: /eng
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5
+    groups:
+      engineering-npm:
+        patterns: ["*"]
   - package-ecosystem: nuget
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5
+    groups:
+      nuget:
+        patterns: ["*"]
+  - package-ecosystem: dotnet-sdk
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 2
+  - package-ecosystem: uv
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5
+    groups:
+      python-tooling:
+        patterns: ["*"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns: ["*"]
   # Composite actions are not covered by the repository-root entry, so their pins are scanned here.
   - package-ecosystem: github-actions
     directory: /.github/actions/toolchain
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5
+    groups:
+      toolchain-actions:
+        patterns: ["*"]
   - package-ecosystem: docker-compose
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 2

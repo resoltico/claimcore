@@ -3,100 +3,75 @@
 import base64
 import hashlib
 import json
-import re
-import tempfile
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from deployment_common import canonical, require, timestamp, verify
+from backup_types import JsonObject
+from deployment_common import (
+    SIGNATURE_BYTES,
+    DeploymentRefusalError,
+    canonical,
+    is_sha256,
+    is_uuid,
+    require,
+    timestamp,
+    verify_root_signed,
+)
+
+MANIFEST_LIMIT = 16384
+VERIFIER_LIMIT = 100_000_000
+VALIDITY_DAYS = 7
 
 
-def package_binary():
+def package_binary() -> Path:
+    """Return the packaged product verifier path."""
     return (
         Path(__file__).resolve().parents[2]
         / "artifacts/bin/ClaimCore.Database/release/ClaimCore.Database.dll"
     )
 
 
-def package_publication_files():
+def package_publication_files() -> tuple[Path, Path]:
+    """Return the packaged publication manifest and signature paths."""
     root = package_binary().parent
     return root / "claimcore-publication.json", root / "claimcore-publication.sig"
 
 
-def _digest(value):
-    return isinstance(value, str) and re.fullmatch(r"[0-9a-f]{64}", value) is not None
+PUBLICATION_FIELDS = {
+    "format",
+    "publicationId",
+    "verifierBinarySha256",
+    "reportSignerKeyId",
+    "checkpointSignerKeyId",
+    "installationId",
+    "lineageId",
+    "epoch",
+    "writerGeneration",
+    "witnessCutoff",
+    "witnessCutoffHash",
+    "issuedAt",
+    "validUntil",
+}
+IDENTITY_FIELDS = (
+    "publicationId",
+    "reportSignerKeyId",
+    "checkpointSignerKeyId",
+    "installationId",
+    "lineageId",
+)
 
 
-def _uuid(value):
-    try:
-        import uuid
-
-        parsed = uuid.UUID(value)
-        return parsed.int != 0 and str(parsed) == value
-    except (TypeError, ValueError, AttributeError):
-        return False
-
-
-def verify_publication(root_key, manifest_path, signature_path, binary_path, now=None):
-    now = now or datetime.now(timezone.utc)
-    require(root_key is not None, "publication-root-unavailable")
-    for path, maximum in ((manifest_path, 16384), (signature_path, 64)):
-        require(
-            path.is_file() and 0 < path.stat().st_size <= maximum, "publication-missing"
-        )
-    raw = manifest_path.read_bytes()
-    signature = signature_path.read_bytes()
-    require(len(signature) == 64, "publication-signature-shape")
-    document = json.loads(raw)
-    require(raw == canonical(document), "publication-not-canonical")
-    envelope = {
-        "report": document,
-        "signatureBase64": base64.b64encode(signature).decode("ascii"),
-    }
-    if isinstance(root_key, bytes):
-        with tempfile.TemporaryDirectory(prefix="claimcore-publish-root-") as temporary:
-            key = Path(temporary) / "reviewed-root.pem"
-            key.write_bytes(root_key)
-            key.chmod(0o600)
-            verified, digest = verify(envelope, key)
-    else:
-        verified, digest = verify(envelope, root_key)
-    require(
-        set(verified)
-        == {
-            "format",
-            "publicationId",
-            "verifierBinarySha256",
-            "reportSignerKeyId",
-            "checkpointSignerKeyId",
-            "installationId",
-            "lineageId",
-            "epoch",
-            "writerGeneration",
-            "witnessCutoff",
-            "witnessCutoffHash",
-            "issuedAt",
-            "validUntil",
-        },
-        "publication-shape",
-    )
-    require(
-        verified["format"] == "claimcore-publication-manifest-1", "publication-format"
-    )
-    for name in (
-        "publicationId",
-        "reportSignerKeyId",
-        "checkpointSignerKeyId",
-        "installationId",
-        "lineageId",
-    ):
-        require(_uuid(verified[name]), "publication-identity")
+def _check_shape(verified: JsonObject) -> None:
+    require(set(verified) == PUBLICATION_FIELDS, "publication-shape")
+    require(verified["format"] == "claimcore-publication-manifest-1", "publication-format")
+    for name in IDENTITY_FIELDS:
+        require(is_uuid(verified[name]), "publication-identity")
     require(
         verified["reportSignerKeyId"] != verified["checkpointSignerKeyId"],
         "publication-key-separation",
     )
     for name in ("verifierBinarySha256", "witnessCutoffHash"):
-        require(_digest(verified[name]), "publication-digest")
+        require(is_sha256(verified[name]), "publication-digest")
     require(
         type(verified["epoch"]) is int
         and verified["epoch"] > 0
@@ -106,19 +81,53 @@ def verify_publication(root_key, manifest_path, signature_path, binary_path, now
         and verified["witnessCutoff"] >= 0,
         "publication-generation",
     )
-    issued = timestamp(verified["issuedAt"])
-    expires = timestamp(verified["validUntil"])
-    require(
-        issued <= now < expires <= issued + timedelta(days=7), "publication-expired"
-    )
+
+
+def _read_envelope(manifest_path: Path, signature_path: Path) -> JsonObject:
+    for path, maximum in ((manifest_path, MANIFEST_LIMIT), (signature_path, SIGNATURE_BYTES)):
+        require(path.is_file() and 0 < path.stat().st_size <= maximum, "publication-missing")
+    raw = manifest_path.read_bytes()
+    signature = signature_path.read_bytes()
+    require(len(signature) == SIGNATURE_BYTES, "publication-signature-shape")
+    document = json.loads(raw)
+    require(raw == canonical(document), "publication-not-canonical")
+    return {"report": document, "signatureBase64": base64.b64encode(signature).decode("ascii")}
+
+
+def _check_binary(verified: JsonObject, binary_path: Path) -> None:
     require(binary_path.is_file(), "published-verifier-missing")
-    require(binary_path.stat().st_size <= 100_000_000, "published-verifier-size")
+    require(binary_path.stat().st_size <= VERIFIER_LIMIT, "published-verifier-size")
     actual = hashlib.sha256(binary_path.read_bytes()).hexdigest()
     require(actual == verified["verifierBinarySha256"], "published-verifier-digest")
+
+
+def verify_publication(
+    root_key: bytes | str | Path | None,
+    manifest_path: Path,
+    signature_path: Path,
+    binary_path: Path,
+    now: datetime | None = None,
+) -> tuple[JsonObject, str]:
+    """Verify the root-signed publication manifest and the packaged verifier it names."""
+    current = now or datetime.now(UTC)
+    if root_key is None:
+        msg = "publication-root-unavailable"
+        raise DeploymentRefusalError(msg)
+    verified, digest = verify_root_signed(root_key, _read_envelope(manifest_path, signature_path))
+    _check_shape(verified)
+    issued, expires = timestamp(verified["issuedAt"]), timestamp(verified["validUntil"])
+    require(
+        issued <= current < expires <= issued + timedelta(days=VALIDITY_DAYS),
+        "publication-expired",
+    )
+    _check_binary(verified, binary_path)
     return verified, digest
 
 
-def match_qualification(publication, qualification, report_sha, config):
+def match_qualification(
+    publication: JsonObject, qualification: JsonObject, report_sha: str, config: JsonObject
+) -> None:
+    """Require the publication to match the qualification, report and config."""
     require(
         publication["installationId"] == qualification["installationId"],
         "publication-installation",
@@ -140,4 +149,4 @@ def match_qualification(publication, qualification, report_sha, config):
         publication["verifierBinarySha256"] == config["productVerifierSha256"],
         "publication-verifier",
     )
-    require(_digest(report_sha), "qualification-digest")
+    require(is_sha256(report_sha), "qualification-digest")

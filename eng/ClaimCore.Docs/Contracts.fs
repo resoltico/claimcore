@@ -11,7 +11,6 @@ type ContractDeclaration =
         Id: string
         Document: string
         Line: int
-        SectionBytes: byte array
     }
 
 [<RequireQualifiedAccess>]
@@ -21,9 +20,6 @@ module Contracts =
 
     let private expectedAnchor (id: string) =
         $"<a id=\"{id.ToLowerInvariant()}\"></a>"
-
-    let private contractAnchorPattern =
-        Regex("^<a id=\"cc-[a-z]{2,12}-[0-9]{3}\"></a>$", RegexOptions.CultureInvariant)
 
     let private anchor (document: MarkdownFile) (id: string) (heading: HeadingBlock) =
         let previous =
@@ -50,34 +46,6 @@ module Contracts =
                 Ok candidate
             else
                 Error $"Contract '{id}' must immediately follow its matching explicit anchor."
-
-    let private sectionBytes (document: MarkdownFile) (anchorNode: Block) (heading: HeadingBlock) =
-        let nextHeading =
-            MarkdownModel.blocks document
-            |> Seq.choose (function
-                | :? HeadingBlock as candidate when
-                    candidate.Span.Start > heading.Span.Start && candidate.Level <= heading.Level
-                    ->
-                    Some candidate
-                | _ -> None)
-            |> Seq.sortBy _.Span.Start
-            |> Seq.tryHead
-
-        let finish =
-            match nextHeading with
-            | None -> document.Text.Length
-            | Some next ->
-                MarkdownModel.blocks document
-                |> Seq.filter (fun candidate -> candidate.Span.End < next.Span.Start)
-                |> Seq.sortByDescending _.Span.End
-                |> Seq.tryHead
-                |> Option.filter (fun candidate ->
-                    MarkdownModel.sourceText document candidate |> contractAnchorPattern.IsMatch)
-                |> Option.map _.Span.Start
-                |> Option.defaultValue next.Span.Start
-
-        document.Text.Substring(anchorNode.Span.Start, finish - anchorNode.Span.Start)
-        |> Text.Encoding.UTF8.GetBytes
 
     let private inspectHeading
         (document: MarkdownFile)
@@ -115,13 +83,12 @@ module Contracts =
                     )
 
                     None
-                | Ok anchorNode ->
+                | Ok _ ->
                     Some
                         {
                             Id = id
                             Document = document.RelativePath
                             Line = line
-                            SectionBytes = sectionBytes document anchorNode heading
                         }
 
             declaration, List.ofSeq diagnostics
@@ -144,7 +111,7 @@ module Contracts =
             errors.Add(
                 Diagnostic.create
                     DiagnosticCode.InvalidContract
-                    "No contract headings were found; documentation evidence cannot pass vacuously."
+                    "No contract headings were found; the documentation check cannot pass vacuously."
             )
 
         if errors.Count = 0 then

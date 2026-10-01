@@ -6,7 +6,7 @@ open System.Text.Json
 open ClaimCore.TestSupport
 
 /// One classified repository component. The reviewed maximum direct graph, package set, and
-/// internals grants all come from `architecture.json`; nothing here restates them.
+/// internals grants all come from `config/architecture.json`; nothing here restates them.
 [<NoEquality; NoComparison>]
 type Component =
     {
@@ -67,7 +67,7 @@ let private optionalNames (element: JsonElement) name =
     | true, _ -> requireNames element name
 
 let manifestPath () =
-    Path.Combine(RepositoryRoot.find (), "architecture.json")
+    Path.Combine(RepositoryRoot.find (), "config/architecture.json")
 
 let private read () =
     let path = manifestPath ()

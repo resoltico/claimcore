@@ -15,7 +15,9 @@ const cloneGroup = <T extends CorrectionGroup>(group: T): T =>
   group.mode === "REPLACE" ? { ...group, values: { ...group.values } } : { ...group };
 
 export const freezeRequest = (draft: CommandDraft): CommandDraft => {
-  if (draft.command.kind !== "CORRECT_CASE") return { ...draft, command: cloneFlat(draft.command) };
+  if (draft.command.kind !== "CORRECT_CASE") {
+    return { ...draft, command: cloneFlat(draft.command) };
+  }
   return {
     ...draft,
     command: {

@@ -28,7 +28,9 @@ export const editor = (overrides: Partial<ComponentProps<typeof OperationEditor>
 
 export const draftAt = (index: number): CommandDraft => {
   const body = vi.mocked(globalThis.fetch).mock.calls[index]?.[1]?.body;
-  if (typeof body !== "string") throw new Error("Expected one serialized canonical request.");
+  if (typeof body !== "string") {
+    throw new Error("Expected one serialized canonical request.");
+  }
   return JSON.parse(body) as CommandDraft;
 };
 export const preparedReply = (index = 0): Response => {
@@ -66,7 +68,8 @@ export const languageControl = (): HTMLSelectElement => {
   const result = screen
     .getAllByRole("combobox")
     .find((item) => item.querySelector('option[value="en-XA"]'));
-  if (!(result instanceof HTMLSelectElement))
+  if (!(result instanceof HTMLSelectElement)) {
     throw new Error("Expected the accessible language selector.");
+  }
   return result;
 };

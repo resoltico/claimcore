@@ -1,4 +1,5 @@
 import test from "node:test";
+import { must } from "./test-support.mjs";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
 import { validateWorkflowSources } from "./workflow-policy.mjs";
@@ -6,18 +7,15 @@ import { workflowSources } from "./workflow-sources.mjs";
 
 const root = fileURLToPath(new URL("../..", import.meta.url));
 const pin = "1".repeat(40);
-const compliant = `on: workflow_dispatch\npermissions: {contents: read}\njobs:\n  probe:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@${pin} # v7.0.1\n        with:\n          persist-credentials: false\n`;
+const compliant = `on: workflow_dispatch\npermissions: {contents: read}\njobs:\n  probe:\n    runs-on: ubuntu-24.04\n    steps:\n      - uses: actions/checkout@${pin} # v7.0.1\n        with:\n          persist-credentials: false\n`;
 const isolated = (text = compliant, path = ".github/workflows/probe.yml") =>
   new Map([[path, text]]);
-const verify = (text, path) =>
-  validateWorkflowSources(isolated(text, path), { graph: false });
+/** @param {string} text @param {string} [path] */
+const verify = (text, path) => validateWorkflowSources(isolated(text, path), { graph: false });
 
 for (const extension of ["yml", "yaml"]) {
   test(`parses real credential settings in .${extension} workflows`, () => {
-    assert.equal(
-      verify(compliant, `.github/workflows/probe.${extension}`).workflows,
-      1,
-    );
+    assert.equal(verify(compliant, `.github/workflows/probe.${extension}`).workflows, 1);
     assert.throws(
       () =>
         verify(
@@ -31,54 +29,43 @@ for (const extension of ["yml", "yaml"]) {
     );
   });
 }
-for (const [label, transform] of [
-  [
-    "missing checkout setting",
-    (s) => s.replace("persist-credentials: false", "fetch-depth: 1"),
-  ],
+/** @type {Array<[string, (source: string) => string]>} */
+const transforms = [
+  ["missing checkout setting", (s) => s.replace("persist-credentials: false", "fetch-depth: 1")],
   [
     "comment-only checkout setting",
-    (s) =>
-      s.replace("persist-credentials: false", "# persist-credentials: false"),
+    (s) => s.replace("persist-credentials: false", "# persist-credentials: false"),
   ],
   ["tag action reference", (s) => s.replace(pin, "v7")],
   ["missing reviewed pin comment", (s) => s.replace(" # v7.0.1", "")],
-  [
-    "direct SDK selector",
-    (s) => s.replace("actions/checkout", "actions/setup-dotnet"),
-  ],
-  [
-    "write-default permissions",
-    (s) => s.replace("contents: read", "contents: write"),
-  ],
-  [
-    "privileged PR event",
-    (s) => s.replace("workflow_dispatch", "pull_request_target"),
-  ],
-  ["duplicate mapping keys", (s) => s + "permissions: {}\n"],
+  ["direct SDK selector", (s) => s.replace("actions/checkout", "actions/setup-dotnet")],
+  ["write-default permissions", (s) => s.replace("contents: read", "contents: write")],
+  ["privileged PR event", (s) => s.replace("workflow_dispatch", "pull_request_target")],
+  ["duplicate mapping keys", (s) => `${s}permissions: {}\n`],
   [
     "alias configuration",
     (s) =>
-      "copy: &copy false\n" +
-      s.replace("persist-credentials: false", "persist-credentials: *copy"),
+      `copy: &copy false\n${s.replace("persist-credentials: false", "persist-credentials: *copy")}`,
   ],
+  ["moving runner alias", (s) => s.replace("ubuntu-24.04", "ubuntu-latest")],
   [
-    "fake aggregate name",
-    (s) => s.replace("    runs-on:", "    name: Gate\n    runs-on:"),
+    "moving matrix runner alias",
+    (s) =>
+      s.replace(
+        "    runs-on: ubuntu-24.04\n",
+        "    runs-on: ${{ matrix.os }}\n    strategy:\n      matrix:\n        include:\n          - os: macos-latest\n",
+      ),
   ],
-]) {
-  test(`refuses ${label}`, () =>
-    assert.throws(() => verify(transform(compliant))));
+  ["fake aggregate name", (s) => s.replace("    runs-on:", "    name: Gate\n    runs-on:")],
+];
+for (const [label, transform] of transforms) {
+  test(`refuses ${label}`, () => assert.throws(() => verify(transform(compliant))));
 }
 
 test("accepts quoted false and inspects action.yaml composite steps", () => {
   assert.equal(
-    verify(
-      compliant.replace(
-        "persist-credentials: false",
-        'persist-credentials: "false"',
-      ),
-    ).workflows,
+    verify(compliant.replace("persist-credentials: false", 'persist-credentials: "false"'))
+      .workflows,
     1,
   );
   const sources = isolated();
@@ -86,10 +73,7 @@ test("accepts quoted false and inspects action.yaml composite steps", () => {
     ".github/actions/toolchain/action.yaml",
     `runs:\n  using: composite\n  steps:\n    - uses: actions/setup-node@${pin} # v7.0.0\n`,
   );
-  assert.equal(
-    validateWorkflowSources(sources, { graph: false }).compositeActions,
-    1,
-  );
+  assert.equal(validateWorkflowSources(sources, { graph: false }).compositeActions, 1);
   sources.set(
     ".github/actions/toolchain/action.yaml",
     "runs:\n  using: composite\n  steps:\n    - uses: actions/setup-node@main\n",
@@ -97,11 +81,12 @@ test("accepts quoted false and inspects action.yaml composite steps", () => {
   assert.throws(() => validateWorkflowSources(sources, { graph: false }));
 });
 
+/** @param {string} path @param {(source: string) => string} modify */
 function changed(path, modify) {
   const sources = workflowSources(root);
   const key = `.github/workflows/${path}`;
   assert(sources.has(key));
-  const old = sources.get(key);
+  const old = must(sources.get(key));
   const next = modify(old);
   assert.notEqual(old, next, "Control must actually alter its source.");
   sources.set(key, next);
@@ -109,75 +94,42 @@ function changed(path, modify) {
 }
 
 test("validates the complete real workflow graph", () => {
-  assert(validateWorkflowSources(workflowSources(root)).workflows >= 15);
+  assert(validateWorkflowSources(workflowSources(root)).workflows >= 10);
 });
-for (const [name, path, modify] of [
+/** @type {Array<[string, string, (source: string) => string]>} */
+const graphControls = [
   [
     "mandatory job outside Gate",
     "ci.yml",
-    (s) =>
-      s + "\n  forgotten:\n    uses: ./.github/workflows/verify-unit.yml\n",
+    (s) => `${s}\n  forgotten:\n    uses: ./.github/workflows/verify-suites.yml\n`,
   ],
-  [
-    "failure-permissive Gate",
-    "ci.yml",
-    (s) => s.replace('test "$result" = "success"', "true"),
-  ],
+  ["failure-permissive Gate", "ci.yml", (s) => s.replace('test "$result" = "success"', "true")],
   [
     "shared manual and push concurrency",
     "ci.yml",
     (s) => s.replace("-${{ github.event_name }}", ""),
   ],
   [
-    "missing producer isolation",
-    "verify-evidence.yml",
-    (s) => s.replace("merge-multiple: false", "merge-multiple: true"),
+    "upload outside the scanned path",
+    "verify-frontend.yml",
+    (s) => s.replace("path: artifacts/frontend/", "path: artifacts/elsewhere/"),
   ],
   [
-    "self-referential evidence stage scan",
-    "verify-evidence.yml",
+    "upload without a successful scan",
+    "verify-suites.yml",
+    (s) => s.replace("always() && steps.artifact_scan.outcome == 'success'", "always()"),
+  ],
+  [
+    "scan by the retired PowerShell scanner",
+    "verify-coverage.yml",
     (s) =>
-      s.replace(
-        "            artifacts/evidence-producers \\",
-        '            "artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages" \\\n' +
-          "            artifacts/evidence-producers \\",
-      ),
+      s.replace("node eng/ci/scan/main.mjs artifacts", "pwsh -File eng/Scan-ArtifactSecrets.ps1"),
   ],
-  [
-    "unprotected publisher",
-    "publish-postgres-image.yml",
-    (s) => s.replace("    environment: release\n", ""),
-  ],
-]) {
+  ["unprotected publisher", "release.yml", (s) => s.replace("    environment: release\n", "")],
+];
+for (const [name, path, modify] of graphControls) {
   test(`real graph refuses ${name}`, () =>
     assert.throws(() => validateWorkflowSources(changed(path, modify))));
-}
-
-for (const [name, modify] of [
-  [
-    "duplicate security execution",
-    (s) =>
-      s.replace(
-        '"stages": [',
-        '"stages": [\n    { "id": "dependency-security", "argv": ["pwsh", "-File", "eng/Check-DependencySecurity.ps1"] },',
-      ),
-  ],
-  [
-    "currency reintroduced into PR gate",
-    (s) =>
-      s.replace(
-        '"stages": [',
-        '"stages": [\n    { "id": "currency", "argv": ["pwsh", "-File", "eng/Check-DependencyCurrency.ps1"] },',
-      ),
-  ],
-]) {
-  test(`real graph refuses ${name} in a stage plan`, () => {
-    const sources = workflowSources(root);
-    const key = "eng/ci/stage-plans/frontend.json";
-    assert(sources.has(key));
-    sources.set(key, modify(sources.get(key)));
-    assert.throws(() => validateWorkflowSources(sources));
-  });
 }
 
 test("an orphan .yaml verifier cannot evade graph reachability", () => {
@@ -189,7 +141,8 @@ test("an orphan .yaml verifier cannot evade graph reachability", () => {
   assert.throws(() => validateWorkflowSources(sources), /disconnected/u);
 });
 
-for (const [label, path, before, after] of [
+/** @type {Array<[string, string, string, string]>} */
+const executionControls = [
   [
     "skipped Gate step",
     "ci.yml",
@@ -214,11 +167,14 @@ for (const [label, path, before, after] of [
     "github.ref == 'refs/heads/main'",
     "github.ref == 'refs/heads/main' || true",
   ],
-])
+];
+for (const [label, path, before, after] of executionControls) {
   test(`rejects ${label} in parsed execution settings`, () => {
     const values = workflowSources(root);
     const name = `.github/workflows/${path}`;
-    assert(values.get(name).includes(before));
-    values.set(name, values.get(name).replaceAll(before, after));
+    const current = must(values.get(name));
+    assert(current.includes(before));
+    values.set(name, current.replaceAll(before, after));
     assert.throws(() => validateWorkflowSources(values));
   });
+}

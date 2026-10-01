@@ -1,9 +1,14 @@
 """Exact signed source field sets and scalar/physical-copy decoders."""
 
 import re
-import uuid
 
-from deployment_common import require, timestamp
+from backup_types import Json, JsonObject
+from deployment_common import is_sha256, is_uuid, require, timestamp
+
+MIN_SEGMENT_BYTES = 1048576
+MAX_SEGMENT_BYTES = 1073741824
+MAX_CIPHERTEXT_BYTES = 1099511627776
+MIN_OBJECT_REVISION = 2
 
 POLICY_FIELDS = {
     "format",
@@ -94,26 +99,14 @@ RESTORE_FIELDS = {
 }
 
 
-def _uuid(value):
-    try:
-        parsed = uuid.UUID(value)
-        return parsed.int != 0 and str(parsed) == value
-    except (ValueError, TypeError, AttributeError):
-        return False
-
-
-def _sha(value):
-    return isinstance(value, str) and re.fullmatch(r"[0-9a-f]{64}", value) is not None
-
-
-def _lsn(value):
+def _lsn(value: Json) -> bool:
     return (
-        isinstance(value, str)
-        and re.fullmatch(r"[0-9A-F]{1,8}/[0-9A-F]{1,8}", value) is not None
+        isinstance(value, str) and re.fullmatch(r"[0-9A-F]{1,8}/[0-9A-F]{1,8}", value) is not None
     )
 
 
-def _relative(value):
+def is_relative_path(value: Json) -> bool:
+    """Return whether `value` is a short relative path without dot segments."""
     return (
         isinstance(value, str)
         and re.fullmatch(r"[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+){0,3}", value) is not None
@@ -121,19 +114,15 @@ def _relative(value):
     )
 
 
-def _object(value):
+def _check_object_identity(value: JsonObject) -> None:
     require(
-        isinstance(value, dict) and set(value) == OBJECT_FIELDS,
-        "health-source-object-shape",
-    )
-    require(
-        _uuid(value["copyId"])
+        is_uuid(value["copyId"])
         and value["cluster"] in ("PRIMARY", "WITNESS")
         and value["kind"] in ("BASE", "WAL"),
         "health-source-object-id",
     )
     require(
-        type(value["revision"]) is int and value["revision"] >= 2,
+        type(value["revision"]) is int and value["revision"] >= MIN_OBJECT_REVISION,
         "health-source-object-revision",
     )
     require(
@@ -141,27 +130,36 @@ def _object(value):
         and re.fullmatch(r"[0-9]{1,20}", value["postgresSystemId"]),
         "health-source-system",
     )
-    require(
-        type(value["timeline"]) is int and value["timeline"] > 0,
-        "health-source-timeline",
-    )
+    require(type(value["timeline"]) is int and value["timeline"] > 0, "health-source-timeline")
+
+
+def _check_object_bytes(value: JsonObject) -> None:
     size = value["walSegmentBytes"]
     require(
-        type(size) is int and 1048576 <= size <= 1073741824 and size & (size - 1) == 0,
+        type(size) is int
+        and MIN_SEGMENT_BYTES <= size <= MAX_SEGMENT_BYTES
+        and size & (size - 1) == 0,
         "health-source-segment-size",
     )
     require(
         _lsn(value["walHorizon"])
-        and _sha(value["ciphertextSha256"])
-        and _sha(value["physicalReceiptSha256"]),
+        and is_sha256(value["ciphertextSha256"])
+        and is_sha256(value["physicalReceiptSha256"]),
         "health-source-object-digest",
     )
     require(
         type(value["ciphertextBytes"]) is int
-        and 1 <= value["ciphertextBytes"] <= 1099511627776,
+        and 1 <= value["ciphertextBytes"] <= MAX_CIPHERTEXT_BYTES,
         "health-source-object-size",
     )
-    require(_relative(value["relativePath"]), "health-source-object-path")
+    require(is_relative_path(value["relativePath"]), "health-source-object-path")
+
+
+def check_object(value: JsonObject) -> None:
+    """Refuse a signed source object whose fields are not exactly well formed."""
+    require(isinstance(value, dict) and set(value) == OBJECT_FIELDS, "health-source-object-shape")
+    _check_object_identity(value)
+    _check_object_bytes(value)
     segment = value["walSegment"]
     require(
         (

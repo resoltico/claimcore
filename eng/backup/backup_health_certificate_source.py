@@ -4,11 +4,13 @@ import base64
 import hashlib
 import subprocess
 import tempfile
-import uuid
+from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
 
-from deployment_common import canonical, require, timestamp, utc
+from backup_health_source_io import read_private
+from backup_types import JsonObject
+from deployment_common import SIGNATURE_BYTES, canonical, is_uuid, require, timestamp, utc
 
 FENCE_FIELDS = {
     "kind",
@@ -20,89 +22,92 @@ FENCE_FIELDS = {
     "oldGeneration",
     "newGeneration",
 }
+VALIDITY_SECONDS = 90
+ROLE_KEY_BYTES = 32
+DIGEST_LENGTH = 64
+ED25519_PREFIX = bytes.fromhex("302a300506032b6570032100")
+BASE_KEYS = ("copyId", "revision", "physicalReceiptSha256", "verifiedAt")
+CHECKPOINT_KEYS = ("sequence", "hash", "objectSha256", "verifiedAt")
+RESTORE_KEYS = ("reportSha256", "witnessCutoff", "witnessCutoffHash", "verifiedAt")
+POLICY_KEYS = (
+    "maximumBackupAgeSeconds",
+    "maximumWalLagSeconds",
+    "maximumCheckpointAgeSeconds",
+    "maximumRestoreTestAgeSeconds",
+    "restoreHorizonSeconds",
+)
 
 
-def _uuid(value):
-    try:
-        parsed = uuid.UUID(value)
-        return parsed.int != 0 and str(parsed) == value
-    except (ValueError, TypeError, AttributeError):
-        return False
+@dataclass(frozen=True)
+class CertificateRequest:
+    """The signer identities, writer fence and time a certificate candidate is prepared for."""
+
+    signer_key_id: str
+    signer_holder_id: str
+    writer_fence: JsonObject
+    checked_at: str
 
 
-def _fence(value, generation, tip):
-    require(
-        isinstance(value, dict) and set(value) == FENCE_FIELDS,
-        "health-certificate-fence",
-    )
+def _fence(value: JsonObject, generation: int, tip: int) -> None:
+    require(isinstance(value, dict) and set(value) == FENCE_FIELDS, "health-certificate-fence")
     if generation == 1:
         require(
             value["kind"] == "GENESIS"
             and all(value[name] is None for name in FENCE_FIELDS - {"kind"}),
             "health-certificate-genesis",
         )
-    else:
-        require(
-            value["kind"] == "HANDOFF" and _uuid(value["handoffId"]),
-            "health-certificate-handoff",
-        )
-        require(
-            value["oldGeneration"] == generation - 1
-            and value["newGeneration"] == generation
-            and type(value["w1Sequence"]) is int
-            and type(value["activationSequence"]) is int
-            and 0 < value["w1Sequence"] < value["activationSequence"] <= tip
-            and all(
-                isinstance(value[name], str) and len(value[name]) == 64
-                for name in ("w1Hash", "activationHash")
-            ),
-            "health-certificate-activation",
-        )
-
-
-def candidate(
-    source, policy, signer_key_id, signer_holder_id, writer_fence, checked_at
-):
+        return
     require(
-        _uuid(signer_key_id) and _uuid(signer_holder_id), "health-certificate-signer"
+        value["kind"] == "HANDOFF" and is_uuid(value["handoffId"]), "health-certificate-handoff"
     )
-    _fence(writer_fence, source["writerGeneration"], source["witnessTipSequence"])
-    checked = timestamp(checked_at)
+    require(
+        value["oldGeneration"] == generation - 1
+        and value["newGeneration"] == generation
+        and type(value["w1Sequence"]) is int
+        and type(value["activationSequence"]) is int
+        and 0 < value["w1Sequence"] < value["activationSequence"] <= tip
+        and all(
+            isinstance(value[name], str) and len(value[name]) == DIGEST_LENGTH
+            for name in ("w1Hash", "activationHash")
+        ),
+        "health-certificate-activation",
+    )
+
+
+def _copy(source: JsonObject, cluster: str, kind: str) -> JsonObject:
+    found: JsonObject = next(
+        item for item in source["objects"] if (item["cluster"], item["kind"]) == (cluster, kind)
+    )
+    return found
+
+
+def _wal(source: JsonObject, cluster: str) -> JsonObject:
+    objects = [
+        item for item in source["objects"] if (item["cluster"], item["kind"]) == (cluster, "WAL")
+    ]
+    return {
+        "copyIds": sorted(item["copyId"] for item in objects),
+        "registeredHorizon": source["testRestore"][cluster.lower() + "WalHorizon"],
+        "archiveInspectionSha256": hashlib.sha256(canonical(source)).hexdigest(),
+        "verifiedAt": source["checkedAt"],
+    }
+
+
+def candidate(source: JsonObject, policy: JsonObject, request: CertificateRequest) -> JsonObject:
+    """Assemble the exact, unsigned health-certificate candidate for a verified source."""
+    require(
+        is_uuid(request.signer_key_id) and is_uuid(request.signer_holder_id),
+        "health-certificate-signer",
+    )
+    _fence(request.writer_fence, source["writerGeneration"], source["witnessTipSequence"])
+    checked = timestamp(request.checked_at)
     require(
         timestamp(source["checkedAt"]) <= checked < timestamp(source["validUntil"]),
         "health-certificate-time",
     )
-    expiry = min(timestamp(source["validUntil"]), checked + timedelta(seconds=90))
-
-    def copy(cluster, kind):
-        return next(
-            item
-            for item in source["objects"]
-            if (item["cluster"], item["kind"]) == (cluster, kind)
-        )
-
-    def base(item):
-        return {
-            name: item[name]
-            for name in ("copyId", "revision", "physicalReceiptSha256", "verifiedAt")
-        }
-
-    def wal(cluster):
-        objects = [
-            item
-            for item in source["objects"]
-            if (item["cluster"], item["kind"]) == (cluster, "WAL")
-        ]
-        return {
-            "copyIds": sorted(item["copyId"] for item in objects),
-            "registeredHorizon": source["testRestore"][cluster.lower() + "WalHorizon"],
-            "archiveInspectionSha256": hashlib.sha256(canonical(source)).hexdigest(),
-            "verifiedAt": source["checkedAt"],
-        }
-
-    checkpoint = source["checkpoint"]
+    expiry = min(timestamp(source["validUntil"]), checked + timedelta(seconds=VALIDITY_SECONDS))
     restored = source["testRestore"]
-    value = {
+    return {
         "format": "claimcore-backup-health-1",
         "source": "ClaimCore.Database",
         "scope": "full",
@@ -114,49 +119,33 @@ def candidate(
         "authorityRevision": source["authorityRevision"],
         "witnessTipSequence": source["witnessTipSequence"],
         "witnessTipHash": source["witnessTipHash"],
-        "checkedAt": checked_at,
+        "checkedAt": request.checked_at,
         "validUntil": utc(expiry),
-        "maximumBackupAgeSeconds": policy["maximumBackupAgeSeconds"],
-        "maximumWalLagSeconds": policy["maximumWalLagSeconds"],
-        "maximumCheckpointAgeSeconds": policy["maximumCheckpointAgeSeconds"],
-        "maximumRestoreTestAgeSeconds": policy["maximumRestoreTestAgeSeconds"],
-        "restoreHorizonSeconds": policy["restoreHorizonSeconds"],
+        **{name: policy[name] for name in POLICY_KEYS},
         "primarySystemId": restored["primarySystemId"],
         "primaryTimeline": restored["primaryTimeline"],
         "witnessSystemId": restored["witnessSystemId"],
         "witnessTimeline": restored["witnessTimeline"],
-        "primaryBase": base(copy("PRIMARY", "BASE")),
-        "witnessBase": base(copy("WITNESS", "BASE")),
-        "primaryWal": wal("PRIMARY"),
-        "witnessWal": wal("WITNESS"),
-        "checkpoint": {
-            name: checkpoint[name]
-            for name in ("sequence", "hash", "objectSha256", "verifiedAt")
-        },
-        "testRestore": {
-            name: restored[name]
-            for name in (
-                "reportSha256",
-                "witnessCutoff",
-                "witnessCutoffHash",
-                "verifiedAt",
-            )
-        },
+        "primaryBase": {name: _copy(source, "PRIMARY", "BASE")[name] for name in BASE_KEYS},
+        "witnessBase": {name: _copy(source, "WITNESS", "BASE")[name] for name in BASE_KEYS},
+        "primaryWal": _wal(source, "PRIMARY"),
+        "witnessWal": _wal(source, "WITNESS"),
+        "checkpoint": {name: source["checkpoint"][name] for name in CHECKPOINT_KEYS},
+        "testRestore": {name: restored[name] for name in RESTORE_KEYS},
         "knownCopyInventorySha256": source["knownCopyInventorySha256"],
         "artifactCutoffSequence": source["artifactCutoffSequence"],
-        "writerFence": writer_fence,
-        "signerKeyId": signer_key_id,
-        "signerHolderActorId": signer_holder_id,
+        "writerFence": request.writer_fence,
+        "signerKeyId": request.signer_key_id,
+        "signerHolderActorId": request.signer_holder_id,
     }
-    return value
 
 
-def _verify_raw(source_bytes, signature, public_key):
+def _verify_raw(source_bytes: bytes, signature: bytes, public_key: bytes) -> None:
     require(
-        isinstance(signature, bytes) and len(signature) == 64, "health-role-signature"
+        isinstance(signature, bytes) and len(signature) == SIGNATURE_BYTES, "health-role-signature"
     )
     require(
-        isinstance(public_key, bytes) and len(public_key) == 32,
+        isinstance(public_key, bytes) and len(public_key) == ROLE_KEY_BYTES,
         "health-role-public-key",
     )
     with tempfile.TemporaryDirectory(prefix="claimcore-health-verify-") as raw:
@@ -164,11 +153,11 @@ def _verify_raw(source_bytes, signature, public_key):
         root.chmod(0o700)
         source = root / "source.json"
         signed = root / "source.sig"
-        key = root / "role.der"
+        verifier_file = root / "role.der"
         for path, body in (
             (source, source_bytes),
             (signed, signature),
-            (key, bytes.fromhex("302a300506032b6570032100") + public_key),
+            (verifier_file, ED25519_PREFIX + public_key),
         ):
             path.write_bytes(body)
             path.chmod(0o600)
@@ -179,7 +168,7 @@ def _verify_raw(source_bytes, signature, public_key):
                 "-verify",
                 "-pubin",
                 "-inkey",
-                str(key),
+                str(verifier_file),
                 "-keyform",
                 "DER",
                 "-rawin",
@@ -195,10 +184,9 @@ def _verify_raw(source_bytes, signature, public_key):
         require(result.returncode == 0, "health-role-signature")
 
 
-def verify_roles(source_bytes, policy, signature_paths):
-    from backup_health_source_io import _read
-
+def verify_roles(source_bytes: bytes, policy: JsonObject, signature_paths: dict[str, str]) -> None:
+    """Require every policy role's independent signature over the exact source bytes."""
     for role in policy["roles"]:
-        encoded = role["publicKeyBase64"]
-        public = base64.b64decode(encoded, validate=True)
-        _verify_raw(source_bytes, _read(signature_paths[role["role"]], 64), public)
+        public = base64.b64decode(role["publicKeyBase64"], validate=True)
+        signature = read_private(signature_paths[role["role"]], SIGNATURE_BYTES)
+        _verify_raw(source_bytes, signature, public)

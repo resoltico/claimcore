@@ -4,25 +4,27 @@ import base64
 import hashlib
 import json
 import os
-import re
 import selectors
 import subprocess
-import tempfile
 import time
-import uuid
-from datetime import datetime, timedelta, timezone
+from collections.abc import Callable
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+from backup_types import JsonObject
 from deployment_common import (
-    DeploymentRefusal,
+    SIGNATURE_BYTES,
+    DeploymentRefusalError,
     canonical,
+    is_sha256,
+    is_uuid,
     private_path,
     require,
     timestamp,
-    verify,
+    verify_root_signed,
 )
 from deployment_publication_root import reviewed_publication_root
-from deployment_verify import _pinned_host_key, _text
+from deployment_ssh import fixed_ssh_command, matching_text, require_pinned_host_key
 
 REMOTE_COMMAND = "/usr/local/libexec/claimcore/CheckpointSigner.py"
 FIELDS = {
@@ -43,70 +45,40 @@ FIELDS = {
     "issuedAt",
     "validUntil",
 }
+TOPOLOGY_LIMIT = 16384
+RESPONSE_LIMIT = 32768
+RECEIVE_BLOCK = 4096
+EXCHANGE_TIMEOUT_SECONDS = 30
+VALIDITY_DAYS = 7
+MAX_PORT = 65535
+STANDARD_PORT = 22
 
 
-def _uuid(value):
-    try:
-        parsed = uuid.UUID(value)
-        return parsed.int != 0 and str(parsed) == value
-    except (TypeError, ValueError, AttributeError):
-        return False
-
-
-def topology(config, candidate, *, root_key=None, now=None):
-    require(
-        "checkpointSignerRootPath" not in config
-        and "checkpointSignerCommand" not in config,
-        "checkpoint-remote-config",
-    )
-    root_key = reviewed_publication_root() if root_key is None else root_key
-    require(root_key is not None, "publication-root-unavailable")
+def _read_topology(config: JsonObject, root_key: bytes | str | Path) -> tuple[JsonObject, str]:
     source = private_path(config["checkpointSignerTopologyFile"])
     detached = private_path(config["checkpointSignerTopologySignatureFile"])
     raw, signed = source.read_bytes(), detached.read_bytes()
-    require(0 < len(raw) <= 16384 and len(signed) == 64, "checkpoint-topology-size")
-    body = json.loads(raw)
     require(
-        isinstance(body, dict) and raw == canonical(body),
-        "checkpoint-topology-canonical",
+        0 < len(raw) <= TOPOLOGY_LIMIT and len(signed) == SIGNATURE_BYTES,
+        "checkpoint-topology-size",
     )
-    if isinstance(root_key, bytes):
-        with tempfile.TemporaryDirectory(
-            prefix="claimcore-checkpoint-root-"
-        ) as temporary:
-            root = Path(temporary).resolve()
-            root.chmod(0o700)
-            key = root / "root.pub"
-            key.write_bytes(root_key)
-            key.chmod(0o600)
-            report, digest = verify(
-                {
-                    "report": body,
-                    "signatureBase64": base64.b64encode(signed).decode("ascii"),
-                },
-                key,
-            )
-    else:
-        report, digest = verify(
-            {
-                "report": body,
-                "signatureBase64": base64.b64encode(signed).decode("ascii"),
-            },
-            root_key,
-        )
+    body = json.loads(raw)
+    require(isinstance(body, dict) and raw == canonical(body), "checkpoint-topology-canonical")
+    return verify_root_signed(
+        root_key,
+        {"report": body, "signatureBase64": base64.b64encode(signed).decode("ascii")},
+    )
+
+
+def _check_topology(report: JsonObject, candidate: JsonObject, config: JsonObject) -> None:
     require(
         set(report) == FIELDS
         and report["format"] == "claimcore-checkpoint-signer-topology-1"
         and report["purpose"] == "CHECKPOINT",
         "checkpoint-topology-shape",
     )
-    for name in (
-        "installationId",
-        "lineageId",
-        "checkpointSigningKeyId",
-        "adminActorId",
-    ):
-        require(_uuid(report[name]), "checkpoint-topology-identity")
+    for name in ("installationId", "lineageId", "checkpointSigningKeyId", "adminActorId"):
+        require(is_uuid(report[name]), "checkpoint-topology-identity")
     require(
         report["installationId"] == candidate["installationId"]
         and report["lineageId"] == candidate["lineageId"]
@@ -114,41 +86,52 @@ def topology(config, candidate, *, root_key=None, now=None):
         and report["checkpointSigningKeyId"] == candidate["checkpointSigningKeyId"],
         "checkpoint-topology-candidate",
     )
-    for name in (
-        "checkpointPublicKeySha256",
-        "sshHostKeySha256",
-        "machineHash",
-        "storageHash",
-    ):
-        require(
-            isinstance(report[name], str)
-            and re.fullmatch(r"[0-9a-f]{64}", report[name]),
-            "checkpoint-topology-digest",
-        )
+    for name in ("checkpointPublicKeySha256", "sshHostKeySha256", "machineHash", "storageHash"):
+        require(is_sha256(report[name]), "checkpoint-topology-digest")
     public = private_path(config["checkpointVerificationKey"])
     require(
-        hashlib.sha256(public.read_bytes()).hexdigest()
-        == report["checkpointPublicKeySha256"],
+        hashlib.sha256(public.read_bytes()).hexdigest() == report["checkpointPublicKeySha256"],
         "checkpoint-topology-key",
     )
-    issued, expires = timestamp(report["issuedAt"]), timestamp(report["validUntil"])
-    now = now or datetime.now(timezone.utc)
+
+
+def topology(
+    config: JsonObject,
+    candidate: JsonObject,
+    *,
+    root_key: bytes | str | Path | None = None,
+    now: datetime | None = None,
+) -> tuple[JsonObject, str]:
+    """Verify the root-signed signer topology against the candidate and configuration."""
     require(
-        issued <= now < expires <= issued + timedelta(days=7),
+        "checkpointSignerRootPath" not in config and "checkpointSignerCommand" not in config,
+        "checkpoint-remote-config",
+    )
+    root_key = reviewed_publication_root() if root_key is None else root_key
+    if root_key is None:
+        msg = "publication-root-unavailable"
+        raise DeploymentRefusalError(msg)
+    report, digest = _read_topology(config, root_key)
+    _check_topology(report, candidate, config)
+    issued, expires = timestamp(report["issuedAt"]), timestamp(report["validUntil"])
+    current = now or datetime.now(UTC)
+    require(
+        issued <= current < expires <= issued + timedelta(days=VALIDITY_DAYS),
         "checkpoint-topology-expired",
     )
     return report, digest
 
 
-def ssh_command(config, manifest):
-    host = _text(manifest["sshHost"], r"[A-Za-z0-9][A-Za-z0-9.-]{0,252}", "ssh-host")
-    user = _text(manifest["sshUser"], r"[A-Za-z_][A-Za-z0-9_-]{0,31}", "ssh-user")
+def ssh_command(config: JsonObject, manifest: JsonObject) -> list[str]:
+    """Build the fixed ssh command that runs the remote signer over stdio."""
+    host = matching_text(manifest["sshHost"], r"[A-Za-z0-9][A-Za-z0-9.-]{0,252}", "ssh-host")
+    user = matching_text(manifest["sshUser"], r"[A-Za-z_][A-Za-z0-9_-]{0,31}", "ssh-user")
     port = manifest["sshPort"]
-    require(type(port) is int and 1 <= port <= 65535, "ssh-port")
+    require(type(port) is int and 1 <= port <= MAX_PORT, "ssh-port")
     known = private_path(config["checkpointKnownHostsFile"])
     identity = private_path(config["checkpointSshIdentityFile"])
-    lookup = host if port == 22 else f"[{host}]:{port}"
-    _pinned_host_key(known, lookup, manifest["sshHostKeySha256"])
+    lookup = host if port == STANDARD_PORT else f"[{host}]:{port}"
+    require_pinned_host_key(known, lookup, manifest["sshHostKeySha256"])
     found = subprocess.run(
         ["ssh-keygen", "-F", lookup, "-f", str(known)],
         stdout=subprocess.DEVNULL,
@@ -157,82 +140,75 @@ def ssh_command(config, manifest):
     )
     require(found.returncode == 0, "ssh-host-key-not-pinned")
     return [
-        "ssh",
-        "-F",
-        "/dev/null",
-        "-i",
-        str(identity),
-        "-o",
-        "IdentitiesOnly=yes",
-        "-o",
-        "BatchMode=yes",
-        "-o",
-        "StrictHostKeyChecking=yes",
-        "-o",
-        f"UserKnownHostsFile={known}",
-        "-o",
-        "GlobalKnownHostsFile=/dev/null",
-        "-o",
-        "ProxyCommand=none",
-        "-o",
-        "ProxyJump=none",
-        "-o",
-        "ConnectTimeout=10",
-        "-p",
-        str(port),
+        *fixed_ssh_command(identity, known, port),
         f"{user}@{host}",
         REMOTE_COMMAND,
         "--stdio-sign",
     ]
 
 
-def _exchange(command, payload):
+def _collect(child: subprocess.Popen[bytes]) -> bytes:
+    stream = child.stdout
+    if stream is None:
+        msg = "checkpoint-remote-unavailable"
+        raise DeploymentRefusalError(msg)
+    output = bytearray()
+    deadline = time.monotonic() + EXCHANGE_TIMEOUT_SECONDS
+    with selectors.DefaultSelector() as selector:
+        selector.register(stream, selectors.EVENT_READ)
+        while selector.get_map():
+            remaining = deadline - time.monotonic()
+            require(remaining > 0, "checkpoint-remote-timeout")
+            for key, _ in selector.select(remaining):
+                block = os.read(key.fd, min(RECEIVE_BLOCK, RESPONSE_LIMIT + 1 - len(output)))
+                if not block:
+                    selector.unregister(key.fileobj)
+                else:
+                    output.extend(block)
+                    require(len(output) <= RESPONSE_LIMIT, "checkpoint-remote-response-limit")
+    return bytes(output)
+
+
+def _exchange(command: list[str], payload: bytes) -> bytes:
+    child: subprocess.Popen[bytes] | None = None
     try:
         child = subprocess.Popen(
-            command,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
+            command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL
         )
+        if child.stdin is None:
+            msg = "checkpoint-remote-unavailable"
+            raise DeploymentRefusalError(msg)
         child.stdin.write(payload)
         child.stdin.close()
-        output = bytearray()
-        deadline = time.monotonic() + 30
-        with selectors.DefaultSelector() as selector:
-            selector.register(child.stdout, selectors.EVENT_READ)
-            while selector.get_map():
-                remaining = deadline - time.monotonic()
-                require(remaining > 0, "checkpoint-remote-timeout")
-                for key, _ in selector.select(remaining):
-                    block = os.read(key.fd, min(4096, 32769 - len(output)))
-                    if not block:
-                        selector.unregister(key.fileobj)
-                    else:
-                        output.extend(block)
-                        require(
-                            len(output) <= 32768, "checkpoint-remote-response-limit"
-                        )
+        output = _collect(child)
         require(child.wait(timeout=1) == 0, "checkpoint-remote-refused")
-        return bytes(output)
     except (OSError, subprocess.TimeoutExpired):
-        raise DeploymentRefusal("checkpoint-remote-unavailable") from None
+        msg = "checkpoint-remote-unavailable"
+        raise DeploymentRefusalError(msg) from None
+    else:
+        return output
     finally:
-        if "child" in locals() and child.poll() is None:
+        if child is not None and child.poll() is None:
             child.kill()
             child.wait()
 
 
-def request_remote(config, payload, candidate, *, root_key=None, runner=None):
+def request_remote(
+    config: JsonObject,
+    payload: bytes,
+    candidate: JsonObject,
+    *,
+    root_key: bytes | str | Path | None = None,
+    runner: Callable[[list[str], bytes], bytes] | None = None,
+) -> JsonObject:
+    """Send the sign request to the pinned remote signer and return its canonical answer."""
     manifest, _ = topology(config, candidate, root_key=root_key)
     command = ssh_command(config, manifest)
     raw = _exchange(command, payload) if runner is None else runner(command, payload)
     require(
-        isinstance(raw, bytes) and 0 < len(raw) <= 32768,
+        isinstance(raw, bytes) and 0 < len(raw) <= RESPONSE_LIMIT,
         "checkpoint-remote-response-limit",
     )
-    response = json.loads(raw)
-    require(
-        isinstance(response, dict) and raw == canonical(response),
-        "checkpoint-remote-response",
-    )
+    response: JsonObject = json.loads(raw)
+    require(isinstance(response, dict) and raw == canonical(response), "checkpoint-remote-response")
     return response

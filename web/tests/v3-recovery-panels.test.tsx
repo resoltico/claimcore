@@ -168,7 +168,9 @@ it("renders recovery import controls and lets the page reload without mutation",
   );
   expect(screen.getByRole("button", { name: "Import recovery envelope" })).toBeVisible();
   const input = document.querySelector('input[type="file"]');
-  if (input === null) throw new Error("Recovery file input is missing.");
+  if (input === null) {
+    throw new Error("Recovery file input is missing.");
+  }
   fireEvent.change(input, { target: { files: [] } });
   expect(action.preview).not.toHaveBeenCalled();
   const artifact = new File(["{}"], "synthetic-recovery.json", {
@@ -186,7 +188,9 @@ it("renders terminal revocation authority and exposes no mutation action", () =>
   const action = actions();
   const view = listing();
   view.view = "TERMINAL";
-  if (view.page === null) throw new Error("Expected a recovery page.");
+  if (view.page === null) {
+    throw new Error("Expected a recovery page.");
+  }
   view.page = {
     ...view.page,
     view: "TERMINAL",

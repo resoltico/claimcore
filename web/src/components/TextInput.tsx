@@ -1,3 +1,8 @@
+import { FieldError } from "react-aria-components/FieldError";
+import { Input } from "react-aria-components/Input";
+import { Label } from "react-aria-components/Label";
+import { TextField } from "react-aria-components/TextField";
+
 type TextInputProps = {
   id: string;
   label: string;
@@ -19,7 +24,3 @@ export const TextInput = ({ id, label, value, onChange, error, type = "text" }: 
     {error === undefined ? null : <FieldError>{error}</FieldError>}
   </TextField>
 );
-import { FieldError } from "react-aria-components/FieldError";
-import { Input } from "react-aria-components/Input";
-import { Label } from "react-aria-components/Label";
-import { TextField } from "react-aria-components/TextField";

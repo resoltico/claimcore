@@ -7,14 +7,22 @@ import { grantSyntheticCasework } from "./authority-setup";
 
 const required = (name: string): string => {
   const value = process.env[name];
-  if (value === undefined || value === "") throw new Error(`Missing published browser ${name}.`);
+  if (value === undefined || value === "") {
+    throw new Error(`Missing published browser ${name}.`);
+  }
   return value;
 };
 
 const browserFor = (engine: string) => {
-  if (engine === "chromium") return chromium;
-  if (engine === "firefox") return firefox;
-  if (engine === "webkit") return webkit;
+  if (engine === "chromium") {
+    return chromium;
+  }
+  if (engine === "firefox") {
+    return firefox;
+  }
+  if (engine === "webkit") {
+    return webkit;
+  }
   throw new Error("Published browser setup requires one engine.");
 };
 

@@ -6,13 +6,15 @@ import stat
 import subprocess
 from pathlib import Path
 
-from deployment_common import DeploymentRefusal, private_path, require
+from deployment_common import DeploymentRefusalError, private_path, require
+
+HASH_BLOCK = 1024 * 1024
+ED25519_PREFIX = bytes.fromhex("302a300506032b6570032100")
+ED25519_DER_LENGTH = 44
 
 
-def _open_exact(path, maximum):
-    target = Path(os.path.abspath(path))
-    parts = target.parts[1:]
-    require(parts, "health-source-path")
+def _descend(parts: tuple[str, ...]) -> int:
+    """Open the parent directory of the final component without following any link."""
     descriptor = os.open("/", os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC)
     try:
         for component in parts[:-1]:
@@ -23,6 +25,34 @@ def _open_exact(path, maximum):
             )
             os.close(descriptor)
             descriptor = child
+    except OSError:
+        os.close(descriptor)
+        raise
+    return descriptor
+
+
+def _admit_file(opened: int, maximum: int) -> int:
+    details = os.fstat(opened)
+    require(
+        stat.S_ISREG(details.st_mode)
+        and details.st_uid == os.geteuid()
+        and details.st_mode & 0o077 == 0
+        and 0 < details.st_size <= maximum,
+        "health-source-private-file",
+    )
+    return details.st_size
+
+
+def _open_exact(path: str | os.PathLike[str], maximum: int) -> tuple[int, int]:
+    target = Path(os.path.normpath(Path.cwd() / path))
+    parts = target.parts[1:]
+    require(parts, "health-source-path")
+    try:
+        descriptor = _descend(parts)
+    except OSError:
+        msg = "health-source-private-file"
+        raise DeploymentRefusalError(msg) from None
+    try:
         parent = os.fstat(descriptor)
         require(
             parent.st_uid == os.geteuid() and parent.st_mode & 0o077 == 0,
@@ -34,25 +64,21 @@ def _open_exact(path, maximum):
             dir_fd=descriptor,
         )
         try:
-            details = os.fstat(opened)
-            require(
-                stat.S_ISREG(details.st_mode)
-                and details.st_uid == os.geteuid()
-                and details.st_mode & 0o077 == 0
-                and 0 < details.st_size <= maximum,
-                "health-source-private-file",
-            )
-            return opened, details.st_size
-        except (DeploymentRefusal, OSError):
+            size = _admit_file(opened, maximum)
+        except (DeploymentRefusalError, OSError):
             os.close(opened)
             raise
     except OSError:
-        raise DeploymentRefusal("health-source-private-file") from None
+        msg = "health-source-private-file"
+        raise DeploymentRefusalError(msg) from None
+    else:
+        return opened, size
     finally:
         os.close(descriptor)
 
 
-def _read(path, maximum):
+def read_private(path: str | os.PathLike[str], maximum: int) -> bytes:
+    """Read an owner-only regular file of at most `maximum` bytes."""
     descriptor, size = _open_exact(path, maximum)
     try:
         with os.fdopen(descriptor, "rb", closefd=False) as stream:
@@ -63,12 +89,13 @@ def _read(path, maximum):
         os.close(descriptor)
 
 
-def _hash(path, maximum):
+def hash_private(path: str | os.PathLike[str], maximum: int) -> tuple[str, int]:
+    """Hash an owner-only regular file of at most `maximum` bytes."""
     digest, count = hashlib.sha256(), 0
     descriptor, size = _open_exact(path, maximum)
     try:
         with os.fdopen(descriptor, "rb", closefd=False) as stream:
-            while chunk := stream.read(1024 * 1024):
+            while chunk := stream.read(HASH_BLOCK):
                 count += len(chunk)
                 require(count <= maximum, "health-source-object-size")
                 digest.update(chunk)
@@ -78,7 +105,8 @@ def _hash(path, maximum):
     return digest.hexdigest(), count
 
 
-def role_public_key(private_key):
+def role_public_key(private_key: str | os.PathLike[str]) -> bytes:
+    """Return the raw Ed25519 public key of an owner-private key file."""
     key = private_path(private_key)
     result = subprocess.run(
         ["openssl", "pkey", "-in", str(key), "-pubout", "-outform", "DER"],
@@ -86,27 +114,25 @@ def role_public_key(private_key):
         stderr=subprocess.DEVNULL,
         check=False,
     )
-    prefix = bytes.fromhex("302a300506032b6570032100")
     require(
         result.returncode == 0
-        and result.stdout.startswith(prefix)
-        and len(result.stdout) == 44,
+        and result.stdout.startswith(ED25519_PREFIX)
+        and len(result.stdout) == ED25519_DER_LENGTH,
         "health-role-key",
     )
-    return result.stdout[len(prefix) :]
+    return result.stdout[len(ED25519_PREFIX) :]
 
 
-def create_private(path, content, maximum):
+def create_private(path: str | os.PathLike[str], content: bytes, maximum: int) -> None:
+    """Create a new owner-only file with `content`, never replacing or following links."""
     require(
         isinstance(content, bytes) and 0 < len(content) <= maximum,
         "health-source-output-size",
     )
-    target = Path(os.path.abspath(path))
+    target = Path(os.path.normpath(Path.cwd() / path))
     parent = private_path(target.parent, directory=True)
     try:
-        directory = os.open(
-            parent, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC
-        )
+        directory = os.open(parent, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC)
         try:
             descriptor = os.open(
                 target.name,
@@ -124,4 +150,5 @@ def create_private(path, content, maximum):
         finally:
             os.close(directory)
     except OSError:
-        raise DeploymentRefusal("health-source-output-refused") from None
+        msg = "health-source-output-refused"
+        raise DeploymentRefusalError(msg) from None

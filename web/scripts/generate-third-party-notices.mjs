@@ -20,7 +20,7 @@ const fallbacks = new Map([
   ["client-only@0.0.1", resolve(webDirectory, "node_modules/react/LICENSE")],
 ]);
 const validatorNotice = readFileSync(
-  resolve(webDirectory, "src/generated/convergence/web-v3.validators.NOTICE.txt"),
+  resolve(webDirectory, "src/generated/contracts/web-v3.validators.NOTICE.txt"),
   "utf8",
 ).trim();
 const embeddedPackages = new Set(
@@ -41,7 +41,9 @@ const dependencies = Object.entries(inventory)
       throw new Error(`${name} does not provide reviewed redistribution license text.`);
     }
     const licenseText = readFileSync(licenseFile, "utf8").trim();
-    if (licenseText.length === 0) throw new Error(`${name} has empty redistribution license text.`);
+    if (licenseText.length === 0) {
+      throw new Error(`${name} has empty redistribution license text.`);
+    }
     const repository = metadata.repository === undefined ? "Not supplied" : metadata.repository;
     return { name, licenses: metadata.licenses, repository, licenseText };
   });

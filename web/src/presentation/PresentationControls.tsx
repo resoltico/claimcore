@@ -2,23 +2,11 @@ import { useId } from "react";
 import { usePresentation } from "./context";
 import { resolveDisplayLocale, resolveLanguage } from "./preferences";
 
-export const PresentationControls = () => {
-  const p = usePresentation();
-  const id = useId();
-  return (
-    <section className="presentation-controls" aria-label={p.text("ui.language")}>
-      <LanguageControl id={id} />
-      <DisplayControl id={id} />
-      <small id={`${id}-hint`}>{p.text("ui.preferencesHint")}</small>
-      <span aria-live="polite" className="presentation-status">
-        {p.persistenceFailed
-          ? p.text("ui.preferencesNotSaved")
-          : p.changed
-            ? p.text("ui.preferencesChanged")
-            : ""}
-      </span>
-    </section>
-  );
+const preferencesStatus = (p: ReturnType<typeof usePresentation>): string => {
+  if (p.persistenceFailed) {
+    return p.text("ui.preferencesNotSaved");
+  }
+  return p.changed ? p.text("ui.preferencesChanged") : "";
 };
 
 const LanguageControl = ({ id }: { id: string }) => {
@@ -30,12 +18,12 @@ const LanguageControl = ({ id }: { id: string }) => {
         id={`${id}-language`}
         value={p.language}
         aria-describedby={`${id}-hint`}
-        onChange={(e) =>
+        onChange={(e) => {
           p.setPreferences({
             language: resolveLanguage(e.target.value),
             displayLocale: p.displayLocale,
-          })
-        }
+          });
+        }}
       >
         <option value="en" lang="en">
           English
@@ -61,12 +49,12 @@ const DisplayControl = ({ id }: { id: string }) => {
         id={`${id}-format`}
         value={p.displayLocale}
         aria-describedby={`${id}-hint`}
-        onChange={(e) =>
+        onChange={(e) => {
           p.setPreferences({
             language: p.language,
             displayLocale: resolveDisplayLocale(e.target.value),
-          })
-        }
+          });
+        }}
       >
         <option value="en-GB" lang="en">
           English — United Kingdom
@@ -79,5 +67,20 @@ const DisplayControl = ({ id }: { id: string }) => {
         </option>
       </select>
     </div>
+  );
+};
+
+export const PresentationControls = () => {
+  const p = usePresentation();
+  const id = useId();
+  return (
+    <section className="presentation-controls" aria-label={p.text("ui.language")}>
+      <LanguageControl id={id} />
+      <DisplayControl id={id} />
+      <small id={`${id}-hint`}>{p.text("ui.preferencesHint")}</small>
+      <span aria-live="polite" className="presentation-status">
+        {preferencesStatus(p)}
+      </span>
+    </section>
   );
 };

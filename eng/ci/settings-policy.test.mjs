@@ -1,5 +1,7 @@
+/** @typedef {import("./types.mjs").Json} Json */
 import test from "node:test";
 import assert from "node:assert/strict";
+import { must, statusError } from "./test-support.mjs";
 import { settingsPlan } from "./settings-policy.mjs";
 import { configureSettings } from "./settings-service.mjs";
 
@@ -7,26 +9,27 @@ import { snapshot, fakeApi } from "./settings-fixture.mjs";
 
 test("minimal owner policy requires PRs without impossible self-approval", () => {
   const plan = settingsPlan(snapshot());
-  const branch = plan.operations.find((op) => op.path === "rulesets/7");
+  const branch = must(plan.operations.find((/** @type {Json} */ op) => op.path === "rulesets/7"));
   const pr = branch.json.rules.find(
-    (rule) => rule.type === "pull_request",
+    (/** @type {Json} */ rule) => rule.type === "pull_request",
   ).parameters;
   assert.equal(pr.required_approving_review_count, 0);
   assert.equal(pr.required_review_thread_resolution, true);
   assert.equal(
-    branch.json.rules.find((rule) => rule.type === "required_status_checks")
+    branch.json.rules.find((/** @type {Json} */ rule) => rule.type === "required_status_checks")
       .parameters.strict_required_status_checks_policy,
     true,
   );
   assert.equal(
-    plan.operations.find((op) => op.path === "environments/release").json
-      .prevent_self_review,
+    must(plan.operations.find((/** @type {Json} */ op) => op.path === "environments/release")).json[
+      "prevent_self_review"
+    ],
     false,
   );
 });
 test("settings preserve stronger existing controls and unrelated required checks", () => {
   const state = snapshot();
-  state.rules[0].rules.push(
+  must(state["rules"][0]).rules.push(
     { type: "required_signatures" },
     {
       type: "pull_request",
@@ -37,16 +40,16 @@ test("settings preserve stronger existing controls and unrelated required checks
       },
     },
   );
-  state.rules[0].rules[0].parameters.required_status_checks.push({
+  must(state["rules"][0]).rules[0].parameters.required_status_checks.push({
     context: "External review",
     integration_id: 777,
   });
-  const rules = settingsPlan(state).operations.find(
-    (op) => op.path === "rulesets/7",
-  ).json.rules;
-  assert(rules.some((rule) => rule.type === "required_signatures"));
+  const { rules } = must(
+    settingsPlan(state).operations.find((/** @type {Json} */ op) => op.path === "rulesets/7"),
+  ).json;
+  assert(rules.some((/** @type {Json} */ rule) => rule.type === "required_signatures"));
   assert.equal(
-    rules.find((rule) => rule.type === "pull_request").parameters
+    rules.find((/** @type {Json} */ rule) => rule.type === "pull_request").parameters
       .required_approving_review_count,
     2,
   );
@@ -57,7 +60,7 @@ test("ambiguous provider and existing bypasses stop rather than silently rewriti
   state.rules[0].bypass_actors.push({ actor_type: "User", actor_id: 123 });
   assert.throws(() => settingsPlan(state));
   state.rules[0].bypass_actors = [];
-  state.rules[0].rules[0].parameters.required_status_checks[0].integration_id = 999;
+  must(state["rules"][0]).rules[0].parameters.required_status_checks[0].integration_id = 999;
   assert.throws(() => settingsPlan(state));
 });
 test("configuration applies the reviewed plan and verifies idempotent read-back", async () => {
@@ -68,10 +71,7 @@ test("configuration applies the reviewed plan and verifies idempotent read-back"
   assert.equal(result.outcome, "verified-scoped-policy");
   assert.equal(writes.length, 6);
   assert.equal(settingsPlan(state).operations.length, 0);
-  assert.equal(
-    (await configureSettings(api, settingsPlan(state).planSha256)).applied,
-    0,
-  );
+  assert.equal((await configureSettings(api, settingsPlan(state).planSha256)).applied, 0);
   assert.equal(writes.length, 6);
 });
 test("a stale approved plan causes no configuration writes", async () => {
@@ -90,16 +90,14 @@ test("an administration denial does not invent absent configuration or retry wri
   await assert.rejects(
     configureSettings(async () => {
       calls++;
-      const error = new Error("denied");
-      error.status = 403;
-      throw error;
+      throw statusError(403);
     }, "a".repeat(64)),
   );
   assert.equal(calls, 1);
 });
 test("unknown release restrictions require owner reconciliation rather than deletion", () => {
   const state = snapshot();
-  state.branches = [{ name: "production", type: "branch" }];
+  state["branches"] = [{ name: "production", type: "branch" }];
   assert.throws(() => settingsPlan(state), /explicit owner reconciliation/u);
 });
 
@@ -113,15 +111,16 @@ test("approved configuration plans cannot be transplanted to a different reposit
 test("concurrent settings changes stop publication instead of overwriting stronger policy", async () => {
   const state = snapshot();
   const plan = settingsPlan(state).planSha256;
-  let reads = 0,
-    writes = 0;
+  let reads = 0;
+  let writes = 0;
   const api = fakeApi(state, {
     read(path) {
-      if (path === "" && ++reads === 2)
+      if (path === "" && ++reads === 2) {
         state.rules[0].bypass_actors.push({
           actor_type: "User",
           actor_id: 999,
         });
+      }
     },
     write() {
       writes++;

@@ -10,7 +10,7 @@ test.use({ storageState: { cookies: [], origins: [] } });
 
 const assertNarrowLayout = async (page: Page, stage: "login" | "cases" | "zoom"): Promise<void> => {
   const metrics = await page.evaluate(() => {
-    const clientWidth = document.documentElement.clientWidth;
+    const { clientWidth } = document.documentElement;
     const offenders = [...document.querySelectorAll("*")]
       .map((element) => ({ element, rect: element.getBoundingClientRect() }))
       .filter(({ rect }) => rect.right > clientWidth + 1)
@@ -29,7 +29,9 @@ const assertNarrowLayout = async (page: Page, stage: "login" | "cases" | "zoom")
       offenders,
     };
   });
-  if (metrics.scrollWidth <= metrics.clientWidth + 1) return;
+  if (metrics.scrollWidth <= metrics.clientWidth + 1) {
+    return;
+  }
   const safe = metrics.offenders.map(({ tag, className, left, right, width }) => {
     const name = className.replace(/[^a-zA-Z0-9_-]/gu, "").slice(0, 40);
     return { tag, className: name, left, right, width };

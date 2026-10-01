@@ -19,10 +19,14 @@ const filesBelow = async (directory) => {
   const files = await Promise.all(
     entries
       .sort((left, right) => left.name.localeCompare(right.name))
-      .map(async (entry) => {
+      .map((entry) => {
         const path = resolve(directory, entry.name);
-        if (entry.isDirectory()) return filesBelow(path);
-        if (entry.isFile()) return [path];
+        if (entry.isDirectory()) {
+          return filesBelow(path);
+        }
+        if (entry.isFile()) {
+          return [path];
+        }
         throw new Error(`Asset inputs cannot contain a symbolic link or special file: ${path}.`);
       }),
   );
@@ -68,10 +72,11 @@ const requiredRuntime = async () => {
   const node = `v${packageManifest.engines?.node ?? ""}`;
   const npm = packageManifest.engines?.npm;
   const actualNpm = execFileSync("npm", ["--version"], { encoding: "utf8" }).trim();
-  if (node !== process.version || npm !== actualNpm)
+  if (node !== process.version || npm !== actualNpm) {
     throw new Error(
       "ClaimCore Web assets require the exact Node.js and npm versions in package.json.",
     );
+  }
   return { node, npm };
 };
 
@@ -112,8 +117,9 @@ export const writeManifest = async () => {
 export const verifyManifest = async () => {
   const expected = canonicalManifest(await createManifest());
   const actual = await readFile(manifestPath, "utf8");
-  if (actual !== expected)
+  if (actual !== expected) {
     throw new Error(
       "ClaimCore Web asset manifest does not bind this exact dist tree and build inputs.",
     );
+  }
 };

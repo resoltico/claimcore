@@ -7,9 +7,10 @@
 .env
 .env.*
 !.env.example
-# Only the reviewed, credential-free Web npm policy is repository source.
+# Only the reviewed, credential-free Web and engineering npm policies are repository source.
 .npmrc
 !/web/.npmrc
+!/eng/.npmrc
 .netrc
 _netrc
 *.connection
@@ -78,3 +79,9 @@ pnpm-debug.log*
 ._*
 Thumbs.db
 Desktop.ini
+.venv/
+.mypy_cache/
+.ruff_cache/
+
+# Contract artifacts are generated from the F# projection; config/contracts.lock.json is what is reviewed.
+/web/src/generated/

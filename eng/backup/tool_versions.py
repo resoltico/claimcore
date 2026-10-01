@@ -3,27 +3,25 @@
 import os
 import re
 import shutil
+from pathlib import Path
 
-POSTGRES_TOOLS = frozenset(
-    {"psql", "pg_isready", "pg_verifybackup", "pg_waldump", "pg_basebackup"}
-)
+POSTGRES_TOOLS = frozenset({"psql", "pg_isready", "pg_verifybackup", "pg_waldump", "pg_basebackup"})
 
 
-def locate(name):
+def locate(name: str) -> str | None:
+    """Return the executable for `name`, honouring the selected PostgreSQL directory."""
     selected = os.environ.get("CLAIMCORE_PG_BIN")
     if name in POSTGRES_TOOLS and selected is not None:
-        if not os.path.isabs(selected):
+        directory = Path(selected)
+        if not directory.is_absolute():
             return None
-        candidate = os.path.join(selected, name)
-        return (
-            candidate
-            if os.path.isfile(candidate) and os.access(candidate, os.X_OK)
-            else None
-        )
+        candidate = directory / name
+        return str(candidate) if candidate.is_file() and os.access(candidate, os.X_OK) else None
     return shutil.which(name)
 
 
-def matches(name, expected, observed):
+def matches(name: str, expected: str, observed: object) -> bool:
+    """Whether `observed` is the exact admitted version output for tool `name`."""
     if not isinstance(observed, str):
         return False
     value = observed.strip()

@@ -8,12 +8,12 @@ import uuid
 from pathlib import Path
 
 sys.dont_write_bytecode = True
-from deployment_common import DeploymentRefusal
+from deployment_common import DeploymentRefusalError
 from deployment_final_wal import read_final_wal
 
 
 class FinalWalArchiveTests(unittest.TestCase):
-    def test_complete_actual_set_and_missing_or_changed_copy(self):
+    def test_complete_actual_set_and_missing_or_changed_copy(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve()
             root.chmod(0o700)
@@ -45,15 +45,15 @@ class FinalWalArchiveTests(unittest.TestCase):
             self.assertEqual(len(verified["finalWalObjectSha256"]), 64)
             linked = root / "linked.age"
             linked.hardlink_to(paths[0])
-            with self.assertRaisesRegex(DeploymentRefusal, "final-wal-file-invalid"):
+            with self.assertRaisesRegex(DeploymentRefusalError, "final-wal-file-invalid"):
                 read_final_wal(config)
             linked.unlink()
             paths[1].unlink()
-            with self.assertRaises(DeploymentRefusal):
+            with self.assertRaises(DeploymentRefusalError):
                 read_final_wal(config)
             paths[1].write_bytes(bytes([3]) * ((1 << 20) + 32))
             paths[1].chmod(0o600)
-            with self.assertRaisesRegex(DeploymentRefusal, "final-wal-changed"):
+            with self.assertRaisesRegex(DeploymentRefusalError, "final-wal-changed"):
                 read_final_wal(config)
 
 

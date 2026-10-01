@@ -62,8 +62,12 @@ const useRecoveryDialogs = (token: string, listing: Listing) => {
     busy,
     actions: guardedActions,
     closeDetails,
-    closeConfirm: () => setConfirm(null),
-    closeImport: () => setImporting(null),
+    closeConfirm: () => {
+      setConfirm(null);
+    },
+    closeImport: () => {
+      setImporting(null);
+    },
   };
 };
 

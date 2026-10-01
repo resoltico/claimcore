@@ -6,7 +6,9 @@ import "./styles.css";
 import "./login.css";
 
 const root = document.getElementById("root");
-if (root === null) throw new Error("Missing ClaimCore root element.");
+if (root === null) {
+  throw new Error("Missing ClaimCore root element.");
+}
 
 createRoot(root).render(
   <StrictMode>

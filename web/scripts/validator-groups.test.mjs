@@ -9,10 +9,7 @@ import {
 } from "./validator-groups.mjs";
 
 const catalogue = JSON.parse(
-  readFileSync(
-    new URL("../src/generated/convergence/web-v3.catalog.json", import.meta.url),
-    "utf8",
-  ),
+  readFileSync(new URL("../src/generated/contracts/web-v3.catalog.json", import.meta.url), "utf8"),
 );
 const endpoints = catalogue.endpoints.map((entry) => ({
   endpoint: entry.id,

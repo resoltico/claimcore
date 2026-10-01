@@ -1,40 +1,41 @@
 #!/usr/bin/env python3
 """Owner-only encrypted pair capture under a fixed Database authority lease."""
 
+import argparse
 import json
 import os
 import sys
+from types import TracebackType
 
 sys.dont_write_bytecode = True
-import managed
-from backup_barrier import BarrierUnknown, capture_with_barrier
+from backup_barrier import BarrierUnknownError, capture_with_barrier
 from backup_barrier_process import DatabaseBarrierController
-from deployment_common import DeploymentRefusal
+from deployment_common import DeploymentRefusalError
 from fenced_backup_identity import expected_identity, require_test_databases
+from managed_capture import capture
+from managed_common import BackupFailureError, require
+from managed_config import configuration
+
+MIN_PYTHON = (3, 12)
 
 
-def main():
+def main() -> None:
+    """Capture the owner-labelled encrypted pair and write its typed status."""
     os.umask(0o077)
-    managed.require(sys.version_info >= (3, 12), "python-3.12-required")
-    import argparse
-
+    require(sys.version_info >= MIN_PYTHON, "python-3.12-required")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", required=True)
     parser.add_argument("--synthetic-only", action="store_true")
     args = parser.parse_args()
-    config = managed.configuration(args.config)
+    config = configuration(args.config)
     if config["checkpointSignerMode"] == "LOCAL_SYNTHETIC":
-        managed.require(
-            args.synthetic_only, "local-checkpoint-signer-is-synthetic-only"
-        )
+        require(args.synthetic_only, "local-checkpoint-signer-is-synthetic-only")
         require_test_databases(config)
     expected = expected_identity(config)
-    with DatabaseBarrierController(
-        config["archiveRoot"], config["checkpointRoot"]
-    ) as owner:
+    with DatabaseBarrierController(config["archiveRoot"], config["checkpointRoot"]) as owner:
         result = capture_with_barrier(
             owner,
-            lambda held: managed.capture(config, held),
+            lambda held: capture(config, held),
             expected,
             checkpoint_root=config["checkpointRoot"],
         )
@@ -52,8 +53,11 @@ def main():
     )
 
 
-def safe_error(_kind, error, _traceback):
-    if isinstance(error, (DeploymentRefusal, managed.BackupFailure, BarrierUnknown)):
+def safe_error(
+    _kind: type[BaseException], error: BaseException, _traceback: TracebackType | None
+) -> None:
+    """Report only a safe typed reason for an uncaught exception."""
+    if isinstance(error, (DeploymentRefusalError, BackupFailureError, BarrierUnknownError)):
         category = error.args[0] if error.args else "capture-unavailable"
     else:
         category = "capture-unavailable"
@@ -61,7 +65,7 @@ def safe_error(_kind, error, _traceback):
         json.dumps(
             {
                 "status": "CAPTURE_UNCONFIRMED"
-                if isinstance(error, BarrierUnknown)
+                if isinstance(error, BarrierUnknownError)
                 else "REFUSED",
                 "reason": category,
                 "realDataReady": False,

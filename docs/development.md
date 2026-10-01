@@ -5,15 +5,20 @@ This document is the sole owner of contributor verification commands. Product op
 
 ## Prerequisites
 
+Run `node eng/ci/doctor.mjs` to see which of these a machine lacks and how to fix it. Every version
+is read from the file that owns it, never repeated here.
+
 - The .NET SDK selected by [`global.json`](../global.json).
-- Node 26.9.0 from [`.node-version`](../.node-version) and the npm release declared by
-  [`web/package.json`](../web/package.json). On this workstation, run frontend commands through the
-  configured Node 26 toolchain rather than the operating-system default Node executable.
+- The Node release in [`.node-version`](../.node-version) and the npm release declared by
+  [`web/package.json`](../web/package.json) and [`eng/package.json`](../eng/package.json). Run
+  frontend and engineering commands through that toolchain rather than an operating-system default.
 - Docker for PostgreSQL integration, published acceptance, and infrastructure checks.
 - A C compiler available as `cc` (Apple Command Line Tools on macOS or a distribution compiler on
   Linux); locked .NET builds and publishes compile the private-file descriptor shim.
-- PowerShell 7 for policy gates and CI-equivalent test reporting.
-- Git, Bash, ShellCheck, Actionlint, Gitleaks, `jq`, `curl`, and OpenSSL.
+- Git, Bash, ShellCheck, `jq`, `curl`, and OpenSSL.
+- The pinned downloadable tools in [`config/tools.json`](../config/tools.json) (actionlint, Gitleaks,
+  shfmt, uv). Each entry names a version and a SHA-256 per platform; `node eng/ci/tools.mjs`
+  installs them verified into `artifacts/tools/bin`, and the stage runner installs what a stage needs.
 - The pinned Playwright Chromium, Firefox, and WebKit revisions for browser qualification.
 
 Run commands from the repository root. Use only synthetic data and isolated test databases.
@@ -21,15 +26,44 @@ Run commands from the repository root. Use only synthetic data and isolated test
 ## First checkout
 
 ```text
-dotnet tool restore
-npm --prefix web ci
+node eng/ci/setup.mjs
+```
+
+runs, in order, the locked `dotnet restore`, `dotnet tool restore`, `npm ci` for `eng` and `web`, the
+pinned tool installation, contract generation, and the strict-compiler Release build. The same steps
+by hand:
+
+```text
 dotnet restore ClaimCore.slnx --locked-mode
+dotnet tool restore
+npm --prefix eng ci
+npm --prefix web ci
+node eng/ci/tools.mjs
+npm --prefix web run contract:generate
 dotnet build ClaimCore.slnx --configuration Release --no-restore
 ```
 
 Committed NuGet and npm lock files make both dependency graphs reproducible. A missing or stale lock
 is a repository defect, not a reason for CI to manufacture a new baseline. An ordinary .NET build
 does not produce or consume browser assets.
+
+## Orchestration tooling
+
+Orchestration, policy checks and report verification are Node programs under `eng/ci/`, tested with
+`node:test` in `eng/` (`npm --prefix eng test`). F# is used for the product and for the documentation
+tool that needs product-independent Markdown parsing; Python only for the backup drills; Bash only for
+container and PostgreSQL drills. There is no PowerShell. The pieces:
+
+| Concern                | Entry point                                                    |
+| ---------------------- | -------------------------------------------------------------- |
+| Test suites            | `node eng/ci/suites/suite.mjs run ...`                         |
+| Test inventories       | `node eng/ci/suites/inventory.mjs --check` / `--write`         |
+| Stage plans            | `node eng/ci/run-stages.mjs <plan>`                            |
+| Whole local CI         | `node eng/ci/run-local.mjs`                                    |
+| Merged coverage        | `node eng/ci/coverage-policy/merge.mjs`                               |
+| Secret scans           | `node eng/ci/scan/main.mjs source` / `artifacts <path>...`     |
+| Published applications | `node eng/ci/publish/main.mjs build` / `verify`                |
+| Pinned tools           | `node eng/ci/tools.mjs`, `node eng/ci/doctor.mjs`              |
 
 ## Local Docker disk hygiene
 
@@ -43,7 +77,7 @@ docker buildx du
 
 [`docker system df`](https://docs.docker.com/reference/cli/docker/system/df/) summarizes daemon
 storage; [`docker buildx du`](https://docs.docker.com/reference/cli/docker/buildx/du/) reports cache
-for the selected builder. These commands are read-only. A volume marked *reclaimable* is merely
+for the selected builder. These commands are read-only. A volume marked _reclaimable_ is merely
 unused by a current container, not known to be disposable: this Docker daemon may also hold other
 projects' data. ClaimCore's Compose `postgres-data` volume is persistent. Normal
 `docker compose down` retains it; do not use `docker compose down --volumes` for an adopted database.
@@ -53,7 +87,7 @@ label and their anonymous volumes. It never targets the named Compose volume. Do
 host-wide `docker system prune` or `docker volume prune`, or infer ownership from a volume's name or
 reclaimable status.
 If build cache itself needs attention, identify a builder you own with `docker buildx ls`, then
-*explicitly* run `docker buildx prune --builder BUILDER_NAME --filter 'until=168h'` after replacing
+_explicitly_ run `docker buildx prune --builder BUILDER_NAME --filter 'until=168h'` after replacing
 `BUILDER_NAME`. [Buildx prune](https://docs.docker.com/reference/cli/docker/buildx/prune/) affects
 that builder's eligible cache records, not just ClaimCore's, and prompts before removal without
 `--force`; do not use it on a shared builder without coordinating with its other users.
@@ -61,16 +95,15 @@ that builder's eligible cache records, not just ClaimCore's, and prompts before 
 ## Complete verification
 
 A complete result is conjunctive: locked restore, compiler build, repository policy, every required
-test project, generated semantic/CLI-v4/Web-v3 contract check, frontend assurance, documentation,
+test suite, the generated semantic/CLI-v4/Web-v3 contract lock, frontend assurance, documentation,
 fresh-baseline creation/refusal database qualifications, published CLI acceptance, published browser
-lifecycle, coverage, and evidence must all succeed for the same source. Do not relabel one green
-family as the whole gate.
+lifecycle, and merged coverage must all succeed for the same source. Do not relabel one green family
+as the whole gate. CI's `Gate` job succeeds only when every family it lists in `needs` succeeded.
 
 Required tests must be zero-retry and unfiltered. Focused, pending, skipped, expected-failure,
 conditional, filtered, retried, or ad hoc sharded required tests fail policy. The only sharding is the
-registered partitioning of the PostgreSQL integration suite described below, whose reports must merge
-into exactly the registered inventory. Commands that actually ran and
-their outcomes must be reported separately from source inspection.
+registered partitioning of the PostgreSQL integration suite. Commands that actually ran and their
+outcomes must be reported separately from source inspection.
 
 ### Running CI locally
 
@@ -80,13 +113,12 @@ node eng/ci/run-local.mjs
 
 runs, in order and stopping before spending more time once a job has failed, the CI jobs that can run on
 one machine: the locked restore and strict-compiler build, the documentation check, the source and
-dependency gates, the frontend product and gates, the Unit/Web/documentation/fuzz/architecture suites, and
-the partitioned PostgreSQL suites. Each job runs the command CI runs. The jobs are registered in
+dependency gates, the frontend product and gates, the cross-platform suites for this platform, and the
+partitioned PostgreSQL suites. Each job runs the command CI runs. The jobs are registered in
 [`eng/ci/local-plan.json`](../eng/ci/local-plan.json), which also lists every CI family with no local
-equivalent (the macOS and Windows legs, the published-browser lifecycles, merged coverage and evidence
-reconciliation) with the reason, and a test holds that list to `ci.yml`. Jobs run one after another because
-they share one working tree, several of them read or write it as a whole and stage outputs must start absent;
-each uses the machine's cores internally. Generated stage outputs under `artifacts/` are removed first.
+equivalent (the other operating systems, the published-browser lifecycles and merged coverage) with the
+reason, and a test holds that list to `ci.yml`. Jobs run one after another because they share one working
+tree; each uses the machine's cores internally. Generated outputs under `artifacts/` are removed first.
 
 By default a job runs only when a changed file, measured against the merge base with `origin/main` and
 including uncommitted and untracked files, could affect it, so a documentation-only change skips the frontend
@@ -94,7 +126,7 @@ and database suites; `--changed-since REF` moves the base and `--all` runs every
 adds the published CLI acceptance (it publishes the applications and uses Docker). `--only id,id` and
 `--skip id,id` select jobs, `--no-fail-fast` continues past a failure, and logs go to
 `artifacts/local-ci/<time>/<job>.log` with the tail of a failing log printed. A green local run is verification
-of what ran here, not of the platforms and evidence steps it lists as not run; use the summary it prints.
+of what ran here, not of the platforms and families it lists as not run; use the summary it prints.
 
 ### .NET tests
 
@@ -102,40 +134,49 @@ of what ran here, not of the platforms and evidence steps it lists as not run; u
 runs through Microsoft's supported bridge. There is no `Microsoft.NET.Test.Sdk`, VSTest command path,
 manual test entry point, dual runner, or VSTest coverage collector.
 
-Run the complete local .NET suite through the same native-MTP test counts, serial module setting, fresh TRX reports, exact compiled-name verifier, and Unit/Web/Integration Coverlet inputs used by CI. It also runs the non-optimized Debug architecture inspection and records a local stage manifest where the current platform permits one:
+Every suite is registered once in [`config/test-suites.json`](../config/test-suites.json): its kind, assembly,
+project, build configuration, whether it collects coverage, the platforms it runs on, its timeout and, for the
+integration suite, the partitions. **The registry holds no counts.** The expected tests of a suite are the lines
+of its generated inventory, `tests/inventory/<assembly>.txt` (one display name per line, sorted, unique), which
+is written by `node eng/ci/suites/inventory.mjs --write` from the built test executables and never edited by
+hand. Changing, adding or removing a test therefore changes that file in the same commit, where review and
+`CODEOWNERS` see it.
 
 ```sh
-pwsh -NoProfile -File eng/Run-LocalDotnetVerification.ps1
+node eng/ci/suites/suite.mjs run unit web --build   # named suites
+node eng/ci/suites/suite.mjs run --cross-platform   # every suite that runs on this platform
+node eng/ci/suites/suite.mjs run --group postgres --build
 ```
 
-The command rebuilds Release assemblies without incremental reuse, then compares each built test executable's native MTP discovery with the registered exact-name inventory before an expensive suite starts, then still reconciles the complete TRX after execution. CI performs the same discovery preflight. It retains fresh synthetic reports under the ignored `artifacts/local-verification/` directory printed at completion. A selected `-Assembly ClaimCore.DocsTests` run is useful while editing that suite, but is explicitly partial; run the default full command before claiming local .NET verification. PostgreSQL integration and independent qualification stages are Linux-owned in CI; on macOS the same test executables and exact TRX inventories run locally, but their CI stage manifests cannot be forged for another platform. Published CLI process acceptance remains a separate required command below.
+For each suite the runner builds what it needs, compares the built test executable's native discovery with the
+inventory (and proves partitions are disjoint and cover exactly the inventory), runs `dotnet test` with
+`--minimum-expected-tests` taken from the inventory, then verifies the TRX report structurally: one completed
+run, exact counters, zero failures, every inventoried test passed exactly once, nothing else ran. Suites of the
+`postgres` group (integration, witness, recovery, concurrency, migration, backup) run concurrently; the integration
+suite runs as its registered partitions, each in its own process against its own primary and witness clusters
+(`CLAIMCORE_INTEGRATION_PARTITION` selects one, no selection is the whole suite). Each measured partition runs a
+private copy of the test output directory because Coverlet rewrites assemblies on disk. Rebalance partitions in
+`tests/ClaimCore.IntegrationTests/Suite.fs`, then rewrite the inventory and the partition list in the registry.
+`CLAIMCORE_PARALLEL_JOBS` or `--parallel` bounds concurrency. Results land in `artifacts/test-results/<suite>/`.
 
-`ClaimCore.FuzzQualificationTests` runs on all three platforms in CI and its TRX is reconciled in
-final evidence like every other required suite. It needs no database. It drives every boundary that turns externally
-supplied bytes or opaque tokens into typed values - strict JSON, CLI invocation framing, canonical
-request and snapshot records, recovery envelopes, and history and recovery cursors - with arbitrary
-bytes, mutated valid encodings, adversarial JSON, and invalid UTF-8. A boundary passes only by
-refusing hostile input with a typed result; an escaping exception fails the property and prints a
-deterministic recheck token. It shares the property profile and base seed described below, so the
-scheduled extended run explores the same boundaries at 5,000 cases.
+Contract tokens connect the documents to the tests: a contract heading `CC-xxx-nnn` in its owner document
+must be named by at least one test whose name contains `[CC-xxx-nnn]`, and every `[CC-…]` token in an inventory
+must name a declared contract. `ClaimCore.Docs check` enforces both directions.
 
-The PostgreSQL-backed suites run together and concurrently through
-[`eng/Invoke-PostgresQualifications.ps1`](../eng/Invoke-PostgresQualifications.ps1), the one script that CI and
-`Run-LocalDotnetVerification.ps1` use. The integration assembly is registered as partitions in
-[`eng/test-partitions.json`](../eng/test-partitions.json); each runs as its own process against its own primary and
-witness clusters (`CLAIMCORE_INTEGRATION_PARTITION` selects one, and no selection is the whole suite). The discovery
-preflight proves the partitions are disjoint and cover exactly the registered inventory, the script refuses any
-non-passing partition, `ClaimCore.Docs merge-test-reports` joins the partition reports, and the merged report is
-verified against the compiled inventory like any other. Each measured partition runs a private copy of the test's
-output directory because Coverlet rewrites assemblies on disk. Move a test list to another partition in
-`tests/ClaimCore.IntegrationTests/Suite.fs` and update the registered counts to rebalance; the concurrency bound is
-`-MaxParallel` or `CLAIMCORE_PARALLEL_JOBS`. The PostgreSQL CI job builds only the projects it runs through
-`ClaimCore.PostgresQualification.slnf`; add a new PostgreSQL-backed test project there and to the orchestrator.
+`ClaimCore.FuzzQualificationTests` needs no database and runs on Linux in CI (its inputs are operating-system
+independent). It drives every boundary that turns externally supplied bytes or opaque tokens into typed values -
+strict JSON, CLI invocation framing, canonical request and snapshot records, recovery envelopes, and history and
+recovery cursors - with arbitrary bytes, mutated valid encodings, adversarial JSON, and invalid UTF-8. A boundary
+passes only by refusing hostile input with a typed result; an escaping exception fails the property and prints a
+deterministic recheck token. It shares the property profile and base seed described below.
 
-The integration and qualification processes create exactly labelled isolated PostgreSQL containers.
-The separate qualification executables prevent a generic integration pass from being reported as
-recovery, concurrency, or fresh-baseline evidence.
-Linux CI installs PGDG-signed PostgreSQL 18.6 tools and checksum-pinned age 1.3.2 for the backup drills; it disables automatic creation of a host PostgreSQL cluster. A local backup qualification needs the same PostgreSQL 18.6 tools in `CLAIMCORE_PG_BIN` or `PATH` and age 1.3.2 in `PATH`.
+The integration and qualification processes create exactly labelled isolated PostgreSQL containers from the
+official, digest-pinned image named in [`db/postgresql-baseline.json`](../db/postgresql-baseline.json) (the same
+reference `compose.yaml` uses, held equal by a test). The separate qualification executables prevent a generic
+integration pass from being reported as recovery, concurrency, or fresh-baseline evidence. Linux CI installs
+PGDG-signed PostgreSQL 18.6 tools and checksum-pinned age 1.3.2 for the backup drills; it disables automatic
+creation of a host PostgreSQL cluster. A local backup qualification needs the same PostgreSQL 18.6 tools in
+`CLAIMCORE_PG_BIN` or `PATH` and age 1.3.2 in `PATH`.
 
 `ClaimCore.WebTests` includes production-route `TestServer` requests for all thirty-three generated
 Web-v3 endpoints, OIDC session cookies and antiforgery admission, retired-route 404 behavior, raw
@@ -149,55 +190,40 @@ runs 5,000 for both:
 
 ```sh
 CLAIMCORE_PROPERTY_PROFILE=extended CLAIMCORE_PROPERTY_BASE_SEED=<unsigned-seed> \
-dotnet test --project tests/ClaimCore.Tests/ClaimCore.Tests.fsproj \
-  --configuration Release --no-build --no-restore \
-  --minimum-expected-tests=334 --zero-tests-policy=strict --timeout=20m -- \
-  --settings="$PWD/eng/expecto.runsettings"
+  node eng/ci/suites/suite.mjs run unit fuzz --build --results-root artifacts/properties-results
 ```
 
 The base seed must be a canonical unsigned integer. CI chooses and records the weekly seed through
-`eng/Select-PropertySeed.ps1` so a failure can be reproduced exactly.
+`eng/ci/policy/property-seed.mjs` (a hash of the run's identity, or the seed a manual run supplies) so a failure
+can be reproduced exactly.
 
 ### Architecture inspection
 
 The architecture suite supplements the Release behavioral tests with non-optimised Debug
 implementation inspection. It uses the existing Expecto/Microsoft Testing Platform driver, not a
-second test framework. After the locked solution restore:
+second test framework, and runs on Linux in CI:
 
 ```sh
-dotnet build tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj \
-  --configuration Debug --no-restore -p:Optimize=false
-claimcore_arch_results="artifacts/architecture-inspection/run-$(date -u +%Y%m%dT%H%M%SZ)"
-test ! -e "$claimcore_arch_results"
-CLAIMCORE_ARCHITECTURE_REPORT="$PWD/$claimcore_arch_results/architecture-report.json" \
-dotnet test --project tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj \
-  --configuration Debug --no-build --no-restore --results-directory="$claimcore_arch_results" \
-  --minimum-expected-tests=88 --zero-tests-policy=strict --timeout=10m -- \
-  --settings="$PWD/eng/expecto.runsettings"
+node eng/ci/suites/suite.mjs run architecture --build
 ```
 
-CI runs this suite on Linux, macOS and Windows. Historical test-baseline registrations remain
-immutable; new explicitly registered producers extend the live inventory without rewriting that
-baseline. Its named TRX results and stage manifests are required by the same final evidence
-reconciliation as the existing suites. No coverage collector rewrites these inspection inputs.
-Required assembly/selector preflight and positive/negative F# fixtures qualify the compiled
-inspection mechanism. Each architecture run requires `CLAIMCORE_ARCHITECTURE_REPORT` and writes a
-bounded observed type/edge report under its fresh ignored results directory; an unset/blank path,
-missing parent, or preexisting report fails the suite rather than silently omitting the observation.
-CI scans and binds all three reports to stage manifests, rechecks
-their schema and hashes at final evidence, and displays a compact graph in the job summary. Type
-counts are observations, not fixed thresholds. Raw and evaluated project-reference checks reject
-forbidden unused edges and stale permissions alike; selected ambient-effect and direct-call rules
-are deliberately narrower than full effect or semantic proofs.
-See [Architecture](architecture.md#compiled-architecture-enforcement).
+The registry builds it with `-p:Optimize=false` and sets `CLAIMCORE_ARCHITECTURE_REPORT`; each run writes a
+bounded observed type/edge report under its fresh ignored results directory, and CI shows a compact graph in the
+job summary. An unset or blank path, missing parent, or preexisting report fails the suite rather than silently
+omitting the observation. No coverage collector rewrites these inspection inputs. Required assembly/selector
+preflight and positive/negative F# fixtures qualify the compiled inspection mechanism, and the inspection itself
+fails when a required product assembly is omitted or the observed graph has no cross-product edge. Type counts are
+observations, not fixed thresholds. Raw and evaluated project-reference checks reject forbidden unused edges and
+stale permissions alike; selected ambient-effect and direct-call rules are deliberately narrower than full effect
+or semantic proofs. See [Architecture](architecture.md#compiled-architecture-enforcement).
 
 #### Changing the component graph
 
-[`architecture.json`](../architecture.json) is the only place a component's tier, layer,
+[`config/architecture.json`](../config/architecture.json) is the only place a component's tier, layer,
 responsibility, direct project edges, NuGet packages, or `InternalsVisibleTo` grants are declared.
 To add, split, or retire a component:
 
-1. Edit `architecture.json` and the affected `.fsproj` files together. Every `.fsproj` under `src/`,
+1. Edit `config/architecture.json` and the affected `.fsproj` files together. Every `.fsproj` under `src/`,
    `eng/`, and `tests/` must be classified exactly once, and every declared edge must match the
    manifest in both directions.
 2. Keep each `InternalsVisibleTo` attribute and its manifest entry in step. A grant must name a
@@ -208,25 +234,18 @@ To add, split, or retire a component:
    as a stale permission.
 4. Run the architecture suite above, then refresh the generated component table with
    `ClaimCore.Docs write` so [Architecture](architecture.md#the-component-contract) cannot drift.
-5. Regenerate the affected `eng/ClaimCore.Docs/test-inventory/*.json` entries, register any new test
-   identity in `eng/assurance-matrix.json`, and update the expected counts in this document and in
-   the workflows.
-
-A test producer may record a successful stage manifest only when its single TRX report matches the
-compiled, reviewed test-name inventory exactly. Counts, names, assembly identity, and passing outcomes
-are checked at the producer and again during final evidence reconciliation. Runner minimum counts are
-an early floor, not an alternative inventory. Inventory changes must be reviewed against the source
-and actual discovery; CI never learns its expected names from the report it is validating.
+5. Register a new test project in `config/test-suites.json` and write its inventory.
 
 Do not add a compatibility edge, a transitional package, or a temporary grant: removing one requires
 no allowance, and the manifest records only what the reviewed architecture permits today.
 
 ### Frontend assurance
 
-Install the exact locked graph once, then run the frontend gates:
+Install the exact locked graph once, generate the contracts, then run the frontend gates:
 
 ```text
-dotnet build eng/ClaimCore.Docs/ClaimCore.Docs.fsproj --configuration Release --no-restore
+npm --prefix web ci
+npm --prefix web run contract:generate
 npm --prefix web run format:check
 npm --prefix web run typecheck
 npm --prefix web run lint
@@ -243,19 +262,39 @@ npm --prefix web run build
 ```
 
 `npm run build` is the sole frontend asset producer. The native TypeScript compiler uses composite
-project references and the Vitest suite uses isolated, machine-scaled file workers. `test:unit` now compares its actual sanitized report with the compiled reviewed test-name catalog; a stale count or renamed leaf fails locally immediately after Vitest, not only in final CI evidence. Rebuild the Docs executable after changing that catalog. Publication
-requires the resulting manifest to match source, npm lock, generated semantic/CLI-v4/Web-v3 contract,
-Node/npm versions, notices, and asset bytes. See [`web/README.md`](../web/README.md) for frontend
-structure and the current compiler-API compatibility arrangement.
+project references and the Vitest suite uses isolated, machine-scaled file workers. After Vitest,
+`node eng/ci/suites/frontend.mjs vitest` compares its sanitized report with `tests/inventory/vitest.txt`; a stale
+count or renamed leaf fails immediately. Browser reports are compared with `tests/inventory/browser.txt` the same
+way (`node eng/ci/suites/frontend.mjs browser <engine>`), and `node eng/ci/suites/inventory.mjs --check --only
+browser` compares that inventory with Playwright's own listing. Publication requires the resulting manifest to match
+source, npm lock, generated semantic/CLI-v4/Web-v3 contract, Node/npm versions, notices, and asset bytes. See
+[`web/README.md`](../web/README.md) for frontend structure and the current compiler-API compatibility arrangement.
 
-The locked StrykerJS/Vitest mutation gate targets the operation reducer only. It requires at least 92% killed mutants, refuses ignored or incomplete mutant results, and checks the exact source, tool version and target in an ignored local report. It does not exercise F# or PostgreSQL and cannot replace the full tests, catalog checks or restored-data audit.
+The locked StrykerJS/Vitest mutation gate targets the pure operation-domain modules (metadata, initial state, request
+freezing and the reducer). It requires at least 92% killed mutants across them, refuses ignored or incomplete mutant
+results, and checks the exact sources, tool version and target set in an ignored local report. It does not exercise F#
+or PostgreSQL and cannot replace the full tests, catalog checks or restored-data audit.
 
-Contract generation is two deterministic stages: the F# generator writes canonical schemas, pure
-codec corpora, and split DTO modules; the locked Node stage compiles the aggregate Web response graph
-to typed AJV standalone shared host, discovery, core, and recovery validator groups and finalizes the combined manifest. The
-generated minified validator groups are the only source-analyzer exception for that output, are each
-independently limited to 600 KiB, and are dynamically selected before response acceptance; their
-exact exclusions remain registered in `analyzer-suppressions.json`.
+#### Generated contracts
+
+Contract artifacts are generated, never tracked. The F# generator writes canonical schemas, pure codec corpora and
+split DTO modules; the locked Node stage compiles the aggregate Web response graph to typed AJV standalone shared
+host, discovery, core, and recovery validator groups (about 25 MB in all, written to the ignored
+`web/src/generated/contracts/`). [`config/contracts.lock.json`](../config/contracts.lock.json) records the length and
+SHA-256 of every artifact and is what a reviewer reads when a contract changes.
+
+- `npm --prefix web run contract:generate` regenerates and requires the result to match the lock. CI runs it before
+  the frontend jobs; the browser and acceptance jobs receive the frontend-product job's artifacts and verify them with
+  `contract:verify`.
+- `npm --prefix web run contract:lock` regenerates and writes a new lock. It is the explicit acceptance of a contract
+  change; review the lock diff and the F# change together.
+- `npm --prefix web run contract:check` verifies the generated directory against the lock without regenerating, and
+  runs the React Aria and localization checks.
+
+No test regenerates on its own. The F# unit tests derive the CLI raw-decoder corpus in process from the same
+projection. The generated minified validator groups are the only source-analyzer exception for that output, are each
+independently limited to 600 KiB, and are dynamically selected before response acceptance; their exact exclusions
+remain registered in `config/lint-exceptions.json`.
 
 Frontend corpus tests compare every generated CLI endpoint outcome kind and Web endpoint outcome tag
 against the exact response schemas, in addition to validating positive, malformed, and cross-endpoint
@@ -266,174 +305,195 @@ samples. This is wire-conformance evidence, not a claim that every runtime branc
 CI and local runs execute the source, dependency and infrastructure gates and the frontend gates through one
 runner, `node eng/ci/run-stages.mjs quality` (or `frontend`, `frontend-product`), which reads the registered plan in
 `eng/ci/stage-plans/`, runs independent stages concurrently (`--parallel N`, default the smaller of the core count and
-4), serialises stages that share a resource group, and records the same log, evidence manifest and diagnostic per
-stage as a serial run. Add `--only id,id` to run some stages; a stage whose tool is absent is skipped locally and
-fails in CI. The commands below are the same gates one at a time.
+4), serialises stages that share a resource group, and prints each stage's output as one group when it ends. Add
+`--only id,id` to run some stages. A stage that needs a pinned tool installs it first, at the pinned version; a stage
+whose other tool is absent is skipped locally and fails in CI.
 
 ```text
+node eng/lint/check-exceptions.mjs
+node eng/ci/suites/check-registry.mjs
+npm --prefix eng ci && npm --prefix eng test
+npm --prefix eng run typecheck && npm --prefix eng run lint && npm --prefix eng run format:check
+uv run --frozen ruff check --no-cache
+uv run --frozen ruff format --check --no-cache
+uv run --frozen mypy
+uv run --frozen python -B eng/lint/check_python_limits.py
+uv audit --frozen
+node eng/ci/policy/ignore.mjs
+node eng/ci/scan/main.mjs source
+node eng/ci/policy/diagnostic-privacy.mjs
 bash eng/Check-Fantomas.sh
-node --test eng/release/*.test.mjs
-pwsh -NoProfile -File eng/Check-AnalyzerSuppressions.ps1
-pwsh -NoProfile -File eng/Test-AnalyzerSuppressionPolicy.ps1
-pwsh -NoProfile -File eng/Test-SensitiveOutputPolicy.ps1
-pwsh -NoProfile -File eng/Test-CoverageInputPolicy.ps1
-pwsh -NoProfile -File eng/Test-MergedCoveragePolicy.ps1
-pwsh -NoProfile -File eng/Test-PropertySeedPolicy.ps1
-pwsh -NoProfile -File eng/Test-TestDiagnosticPrivacy.ps1
-pwsh -NoProfile -File eng/Test-ArtifactSecretScanPolicy.ps1
-pwsh -NoProfile -File eng/Check-ArtifactUploadPolicy.ps1
-pwsh -NoProfile -File eng/Check-WorkflowToolchainPolicy.ps1
-pwsh -NoProfile -File eng/Test-WorkflowToolchainPolicy.ps1
-pwsh -NoProfile -File eng/Test-ArtifactUploadPolicy.ps1
-pwsh -NoProfile -File eng/Check-ConvergenceAssurance.ps1
-pwsh -NoProfile -File eng/Test-ConvergenceAssurancePolicy.ps1
-pwsh -NoProfile -File eng/Check-DependencySecurity.ps1
 bash eng/Check-FSharpLint.sh
 actionlint -color
+uv run --frozen zizmor --persona pedantic --config .github/zizmor.yml --no-progress .github
+node eng/ci/check-workflows.mjs
 find eng db -type f -name '*.sh' -exec shellcheck -x {} +
+find eng db -type f -name '*.sh' -exec shfmt -d {} +
 env CLAIMCORE_COMPOSE_PROJECT=claimcore-config-local POSTGRES_PASSWORD=owner-policy-value CLAIMCORE_APP_PASSWORD=runtime-policy-value CLAIMCORE_POSTGRES_PORT=0 docker compose --file compose.yaml config --quiet
 bash eng/Test-LabeledTestContainerCleanup.sh
 bash eng/Test-ComposePolicy.sh
-bash eng/Test-PostgresImageAssurancePolicy.sh
-claimcore_sbom_output="$(mktemp -d "$PWD/artifacts/local-container-sbom.XXXXXXXX")"
-bash eng/Check-PostgresImageAssurance.sh sbom "$claimcore_sbom_output"
-claimcore_scan_output="$(mktemp -d "$PWD/artifacts/local-container-scan.XXXXXXXX")"
-bash eng/Check-PostgresImageAssurance.sh scan "$claimcore_scan_output"
-pwsh -NoProfile -File eng/Check-GitIgnorePolicy.ps1
-pwsh -NoProfile -File eng/Test-SourceSecretScanPolicy.ps1
-pwsh -NoProfile -File eng/Scan-SourceSecrets.ps1
 ```
 
 Use Fantomas without `--check` to format changed F# files. The FSharpLint gate applies its configured
-syntax-tree rules after the strict compiler has type-checked the solution. FSharpLint, ESLint,
-Stylelint, and the centralized physical-line policy enforce size and complexity limits across product
-and test code; repair findings instead of weakening a rule.
+syntax-tree rules after the strict compiler has type-checked the solution. FSharpLint, oxlint (type-aware,
+on the TypeScript 7 native toolchain), Stylelint, and the centralized physical-line policy enforce size and complexity
+limits across product and test code; repair findings instead of weakening a rule.
 
 Every workflow selects its toolchain through [`.github/actions/toolchain`](../.github/actions/toolchain/action.yml),
 which sets up the SDK from `global.json`, the Node release from `.node-version`, and then proves the
-runner is actually using both, including the npm release that no setup input pins. A workflow that
-selected a toolchain itself, checked out with persisted credentials, or referenced an action by tag
-would fail `Check-WorkflowToolchainPolicy.ps1`; its negative controls keep that gate honest. The same
-check covers both YAML extensions and composite metadata names, parses actual settings, checks the
-mandatory graph and guards artifact uploads. Dependabot scans composite actions alongside workflows.
-[CI governance](ci-governance.md) owns producer identity, failure reports, reruns and publication policy.
+runner is actually using both, including the npm release that no setup input pins. Two independent layers keep
+workflows safe: actionlint and zizmor (pedantic persona, with GitHub-backed audits in CI) apply the industry
+rules, and `node eng/ci/check-workflows.mjs` applies the repository's own: toolchain selection only through the
+composite action, no persisted checkout credentials, full-commit action pins with a reviewed version comment,
+read-only default permissions with publication confined to the protected `release` environment on `main`, pinned
+runner images, the mandatory graph (every family reachable from `Gate`), and scan-before-upload. Its negative
+controls run in `npm --prefix eng test`. Dependabot scans composite actions alongside workflows.
+[CI governance](ci-governance.md) owns workflow integrity and the repository-settings procedure.
 
-The Git-ignore gate checks private/generated probes and public release inputs through an isolated
-temporary Git database; it never initializes the working tree. The source-secret gate snapshots
-exactly the tracked plus nonignored-untracked source inventory. It
-uses the same Git ignore semantics before and after repository initialization, includes an ignored
-file if it was force-tracked, rejects reparse points and path collisions, and scans with redaction and
-no repository allowlist or inline `gitleaks:allow` bypass. Ignored private or generated state is
-deliberately outside this source gate. Every GitHub Actions artifact family is independently scanned
-after production and before upload; a missing path, scanner failure, or detected secret prevents its
-upload. The final evidence job also rescans the downloaded producer artifacts and its own report.
-Pinned scanner downloads use bounded transport retries; a safe failure-stage label distinguishes unavailable acquisition from scan execution without disclosing artifact paths or content, and neither condition permits upload.
-`eng/Check-ArtifactUploadPolicy.ps1` and its negative controls keep the upload guards complete when
-workflows change. An artifact scan does not replace the source inventory or the browser harness's
-known-secret output checks.
+The Git-ignore gate checks the private/generated probes and public release inputs listed in
+[`config/git-ignore-policy.json`](../config/git-ignore-policy.json) through an isolated temporary Git database; it
+never initializes the working tree. The source-secret gate snapshots exactly the tracked plus nonignored-untracked
+source inventory. It uses the same Git ignore semantics before and after repository initialization, includes an
+ignored file if it was force-tracked, rejects links and path collisions, and scans with redaction and no repository
+allowlist or inline `gitleaks:allow` bypass. Ignored private or generated state is deliberately outside this source
+gate. Every GitHub Actions artifact family is independently scanned after production and before upload
+(`node eng/ci/scan/main.mjs artifacts <path>...`); a missing path, scanner failure, or detected secret prevents its
+upload. The scanner is the checksum-verified binary from `config/tools.json`; a safe failure-stage label
+distinguishes unavailable acquisition from scan execution without disclosing artifact paths or content, and neither
+condition permits upload. An artifact scan does not replace the source inventory or the browser harness's
+known-secret output checks (`eng/ci/policy/sensitive-output.mjs`).
 
-[`analyzer-suppressions.json`](../analyzer-suppressions.json) is the sole source-code exception
-registry. Every suppression or generated exclusion requires an owner, exact file/rule/scope,
-substantive rationale, and ISO `reviewOn` or `expiresOn` date. Exceptional directives require a
-nearby rationale and `suppression-registry: file|rule|scope` reference. File-size, function-size,
-complexity, focused-test, contract-drift, and security-boundary rules are non-suppressible.
+Every language runs its linter in its strictest useful mode, and each mode is pinned so it cannot be
+weakened in passing:
 
-`eng/test-baseline-v0.1.json` is immutable evidence of the pre-convergence test identity set.
-`eng/test-lineage.json` maps every baseline identity to a retained or stronger replacement test, and
-`eng/assurance-matrix.json` maps every typed endpoint, outcome, recovery transition, cancellation
-boundary, CLI-v4/Web-v3 transport branch, and GUI workflow to live tests. Run the convergence check
-and its negative controls above after every test identity or matrix change. Each endpoint matrix row
-must list the exact outcome tags parsed from its generated response schema; deleting an endpoint,
-branch, outcome tag, or registered assurance subject fails policy. Test counts alone are not
-evidence of coverage, and a codec corpus does not prove a runtime branch was exercised.
+| Language                                 | Gate                                                       | Strict mode                                                                                                                      |
+| ---------------------------------------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| F#                                       | compiler, Fantomas (no roll-forward), FSharpLint           | warnings as errors; size and complexity ceilings pinned by the exception engine                                                  |
+| TypeScript and JavaScript (`web`, `eng`) | TypeScript 7 `tsc`, oxlint with type-aware rules, Prettier | correctness, suspicious, pedantic, perf and style categories at `error`, denied warnings; typed rules scoped to TypeScript files |
+| Python (`eng/backup`)                    | uv-locked ruff, mypy, function-length check, `uv audit`    | every ruff rule selected, mypy `strict`, 50-line functions, 300-line files, pylint argument and statement ceilings pinned        |
+| Shell                                    | shellcheck, shfmt                                          | every optional check at `style` severity through `.shellcheckrc`; shfmt settings in `.editorconfig`                              |
+| GitHub workflows                         | actionlint, zizmor, repository workflow policy             | zizmor pedantic persona; the only disabled audit is registered                                                                   |
 
-CI resolves the exact linux/amd64 and linux/arm64 children of the digest-pinned PostgreSQL image
-index, creates a separate CycloneDX SBOM for each, and scans both for fixed high and critical
-vulnerabilities. Its immutable Trivy invocation, image-index policy, and temporary exception policy
-live in [`verify-quality.yml`](../.github/workflows/verify-quality.yml),
-[`Check-PostgresImageAssurance.sh`](../eng/Check-PostgresImageAssurance.sh), and
-[`container-vulnerability-exceptions.yaml`](../container-vulnerability-exceptions.yaml). The
-manually dispatched [`publisher`](../.github/workflows/publish-postgres-image.yml) builds the
-maintained PostgreSQL 18.6/Trixie derivative from a pinned official base and signed Debian snapshot;
-it qualifies each architecture before pushing, then verifies the published child and index digests.
-The application baseline changes only after that publication is qualified. Do not point an adopted
-volume at a newly selected image without the operator's backup and planned downtime.
+The exception engine (`node eng/lint/check-exceptions.mjs`) pins the oxlint categories and the Python
+ceilings, so relaxing them fails the gate. `node eng/ci/suites/check-registry.mjs` holds the repository to the suite
+registry: every test project is registered, every registered file exists, every inventory belongs to a suite, and
+no workflow or script repeats a test count. Runner images are pinned to exact labels, and telemetry settings live in
+the toolchain action.
+
+Evaluated and not adopted: F# analyzers (G-Research and Ionide) report about 740 findings, of which about
+560 ask for typed interpolation holes on every `$"..."`, and the "unsafe option unwrapping" findings mostly flag
+`.Value` on validated wrapper types; adopting them would need hundreds of mechanical edits for little defect-finding
+value, so FSharpLint and the strict compiler remain the F# gates. F# mutation testing is also not adopted; StrykerJS
+covers the pure TypeScript operation-domain modules, and F# behavior is covered by the property, integration and
+qualification suites. Splitting `ClaimCore.Postgres` into runtime and administration assemblies was prototyped and
+rejected: the two halves share types and `internal` members across hundreds of files, so the split would move shared
+types without adding a safety property; the boundary that matters, case-work hosts never linking schema
+administration, is held by `ClaimCore.Hosting` and the architecture manifest.
+
+[`config/lint-exceptions.json`](../config/lint-exceptions.json) is the sole registry of lint, type, format and
+coverage exceptions for every language. Every entry has a stable `LX-nnnn` id, the tool, the exact rules (never a
+blanket), one exact file, a kind, an exact occurrence count, a substantive reason, an owner and an ISO `reviewOn`
+or `expiresOn` date; generated-output exclusions are a separate reviewed list of recognized paths. An inline
+suppression (`// oxlint-disable-next-line`, `# noqa`, `#nowarn`, `# shellcheck disable=`, `@ts-expect-error`,
+`prettier-ignore`, coverage ignores and their equivalents) must carry `lint-exception: LX-nnnn` in its own comment or
+the line above; no line numbers are recorded, so edits above a suppression never break it. Configuration-level
+ignores (ignore patterns, `per-file-ignores`, mypy overrides, disabled rules, zizmor audit settings, knip ignores,
+`.prettierignore`, `NoWarn`, `dotnet_diagnostic` severities) are matched by file, tool and target. An entry with no
+remaining occurrence is stale and fails, as does any occurrence without an entry or a count that differs.
+`node eng/lint/check-exceptions.mjs` runs the check; its tests (`npm --prefix eng test`) build isolated repository
+trees for every scanner and policy. File-size, function-size, complexity, focused-test, skipped-test, test-filter,
+retry, contract-drift and security-boundary rules are non-suppressible and enforced by the same command.
+
+Endpoint and outcome completeness is proven where it is actually exercised: tests iterate the generated endpoint and
+outcome catalogs (route-map dispatch, response-schema corpus coverage), so deleting an endpoint, branch or outcome tag
+fails a test rather than a registry. Test counts alone are not evidence of coverage, and a codec corpus does not prove
+a runtime branch was exercised.
 
 ### Documentation assurance
 
-Build the solution first, then check every Markdown file, generated help block, exact-case local link
-and anchor, contract declaration, and current hash-bound source review. The local gate also runs two
-byte-idle writes and proves neither changed the source relative to its starting state, so unrelated
-working-tree edits are preserved:
+Build the solution first, then check every Markdown file Git lists (tracked, plus untracked and not ignored),
+generated help block, exact-case local link and anchor, contract declaration, and the contract tokens in the test
+inventories. The local gate also runs two byte-idle writes and proves neither changed any listed file relative to its
+starting state, so unrelated working-tree edits are preserved:
 
 ```text
-pwsh -NoProfile -File eng/Check-LocalDocumentation.ps1
+node eng/ci/policy/documentation.mjs
 ```
 
 Maintainers use `ClaimCore.Docs write` only to refresh registered generated bodies. A source change
-made by either write is a failed local preflight until reviewed and committed; CI additionally requires
-the clean checkout to have no diff. Contract IDs remain in their registered owner documents, evidence-test leaf names
-start with one matching `[CC-…]` token, and review hashes are refreshed only after reviewing the exact
-contract and assertion sources. The hash detects later drift; it does not independently prove the
-quality or identity of the reviewer.
+made by either write is a failed local preflight until reviewed and committed; CI additionally runs this on a clean
+checkout. Contract IDs remain in their registered owner documents, and the tests that exercise a contract carry its
+`[CC-…]` token in their names.
 
 ### Published acceptance
 
-The CLI acceptance harness builds fresh CLI, Web, and Database publish trees with their license, .NET SBOM, third-party notices, and immutable manifests. It then runs the exact 16 registered CLI-v4 process tests against an isolated primary/witness pair and synthetic Keycloak over the published HTTPS service, including confidential automation and public-client PKCE. It never gives the CLI a database credential:
+The CLI acceptance harness builds fresh CLI, Web, and Database publish trees with their license, .NET SBOM, third-party
+notices, and a manifest each (`node eng/ci/publish/main.mjs build`). It then runs the exact registered CLI-v4 process
+tests (`tests/inventory/ClaimCore.AcceptanceTests.txt`) against an isolated primary/witness pair and synthetic Keycloak
+over the published HTTPS service, including confidential automation and public-client PKCE. It never gives the CLI a
+database credential:
 
 ```text
 bash eng/Run-PublishedCliAcceptance.sh
 ```
 
-For a local three-engine Web lifecycle with the same measured Web-branch requirement as CI, first run the complete local .NET command above. Pass the fresh `artifacts/local-verification/...` directory it prints to this wrapper:
+A manifest lists every regular file of a published tree with its length and SHA-256, plus a digest over those
+records. Every consumer verifies the tree it received before and after use (`node eng/ci/publish/main.mjs verify
+<root> [cli|database|web]...`), so the bytes that were published once are the bytes that were exercised.
+
+For a local three-engine Web lifecycle with the same measured Web-branch requirement as CI, first run the unit, web
+and postgres suites through `suite.mjs`, then:
 
 ```sh
-bash eng/Run-LocalBrowserCoverage.sh artifacts/local-verification/NAME_FROM_PREVIOUS_OUTPUT
+bash eng/Run-LocalBrowserCoverage.sh
 ```
 
-The wrapper requires the complete .NET run's source-fingerprint marker and refuses changed source or missing coverage inputs before publication. It locks and rebuilds the Web asset producer, creates fresh Web and Database publish trees with SBOMs and immutable manifests, verifies those manifests before and after published execution, and runs Chromium, Firefox, and WebKit separately under Coverlet. Each engine checks its actual sanitized test identities against the compiled catalog and must measure `ClaimCore.Web` branches. It then merges the three browser inputs with the full local .NET run's Unit, Web, and Integration inputs and enforces the same coverage floors as CI. The harness rejects a Vite server, uses a disposable synthetic OIDC issuer and separate primary and witness PostgreSQL clusters, and keeps private diagnostics out of retained sanitized results. Same-machine containers do not prove independent-host survival; GitHub artifact transfer and other operating-system runners remain separate CI evidence.
+The wrapper takes the .NET coverage reports from `artifacts/test-results`, locks and rebuilds the Web asset producer,
+creates fresh Web and Database publish trees with SBOMs and manifests, verifies those manifests after each engine,
+and runs Chromium, Firefox, and WebKit separately under Coverlet. Each engine checks its actual sanitized test
+identities against `tests/inventory/browser.txt` and must measure `ClaimCore.Web` branches. It then merges the three
+browser inputs with the .NET suites' inputs and enforces the same coverage floors as CI. The harness rejects a Vite
+server, uses a disposable synthetic OIDC issuer and separate primary and witness PostgreSQL clusters, and keeps
+private diagnostics out of retained sanitized results. Same-machine containers do not prove independent-host
+survival; GitHub artifact transfer and other operating-system runners remain separate CI evidence.
 
-### Coverage and evidence
+### Coverage
 
-Frontend unit tests enforce their configured coverage floors. The CI unit, integration, and browser
-jobs emit independent .NET Cobertura inputs; the coverage job first validates that exact input set,
-then merges it and enforces repository and Web-specific line and branch floors. It cannot be replaced
-by rerunning one convenient test family after the fact.
-Each published-browser input must contain measured `ClaimCore.Web` production branches; a successful
+Frontend unit tests enforce their configured coverage floors. The CI unit, web, integration and browser
+jobs emit independent .NET Cobertura inputs; the coverage job first resolves exactly the reports the registry and
+the browser engines imply (one per measured process, no extras), then merges them with ReportGenerator and enforces
+repository and Web-specific line and branch floors. It cannot be replaced by rerunning one convenient test family
+after the fact. Each published-browser input must contain measured `ClaimCore.Web` production branches; a successful
 browser lifecycle with an empty instrumentation report is not coverage evidence.
 
-The same merge/floor procedure runs locally and in CI after all six independent Cobertura inputs are
-available. Choose a new ignored output directory; the script refuses to overwrite an existing one:
-
 ```sh
-pwsh -NoProfile -File eng/Invoke-MergedCoverage.ps1 \
-  -InputRoot artifacts/coverage-input \
-  -OutputRoot artifacts/coverage-report/local-$(date -u +%Y%m%dT%H%M%SZ)
+node eng/ci/coverage-policy/merge.mjs artifacts/coverage-input artifacts/coverage-report/local-$(date -u +%Y%m%dT%H%M%SZ)
 ```
 
-`eng/CoverageThresholds.psm1` enforces the unchanged merged line/branch floors of 60%/40% and each
-ClaimCore.Web package at 80%/70%. The floor negative controls cover exact pass boundaries, just-below
+The output directory must not exist. `eng/ci/coverage-policy/policy.mjs` holds the unchanged merged line/branch floors of
+60%/40% and each ClaimCore.Web package at 80%/70%; its negative controls cover exact pass boundaries, just-below
 failures, missing or weak Web packages, nonfinite rates, and ignored DTD entity references.
 
-The final evidence job reconciles source identity, locks, stage manifests, test inventories, TRX,
-browser reports, coverage, publish manifests, documentation synchronization, and semantic source reviews for the same attempt. Producer artifacts retain separate directories
-until ownership/uniqueness checks pass; a source review does not establish owner authorization.
-Use **Re-run all jobs**, not mixed-attempt partial reruns. Generated reports belong under ignored `artifacts/` or
-current-attempt CI artifacts, not in source.
+Verification is job-local: each job verifies the reports it produced against the inventories before it uploads, and
+the consumers of published bytes verify manifests. Use **Re-run all jobs**, not mixed-attempt partial reruns.
+Generated reports belong under ignored `artifacts/` or current-attempt CI artifacts, not in source.
 
 ## Dependency updates
 
 Dependency ownership is ecosystem-specific:
 
-| Dependency class | Version owner | Locked graph or immutable identity |
-|---|---|---|
-| .NET SDK | `global.json` | Exact SDK with roll-forward disabled. |
-| NuGet packages | `Directory.Packages.props` | Per-project `packages.lock.json` files. |
-| .NET repository tools | `.config/dotnet-tools.json` | The tool manifest itself. |
-| Node.js and npm | `.node-version` and `web/package.json` | Exact engine and package-manager declarations. |
-| Frontend packages | `web/package.json` | `web/package-lock.json`. |
-| PostgreSQL container | `db/postgresql-baseline.json` | Exact image tag and digest. |
-| GitHub Actions | Workflow `uses` entries | Full action commit SHA with reviewed version comment. |
+| Dependency class      | Version owner                          | Locked graph or immutable identity                    |
+| --------------------- | -------------------------------------- | ----------------------------------------------------- |
+| .NET SDK              | `global.json`                          | Exact SDK with roll-forward disabled.                 |
+| NuGet packages        | `Directory.Packages.props`             | Per-project `packages.lock.json` files.               |
+| .NET repository tools | `.config/dotnet-tools.json`            | The tool manifest itself.                             |
+| Node.js and npm       | `.node-version` and the `package.json` engines | Exact engine and package-manager declarations. |
+| Frontend packages     | `web/package.json`                     | `web/package-lock.json`.                              |
+| Engineering packages  | `eng/package.json`                     | `eng/package-lock.json`.                              |
+| Python tooling        | `pyproject.toml`                       | `uv.lock`.                                            |
+| Downloaded tools      | `config/tools.json`                    | Version and per-platform SHA-256.                     |
+| PostgreSQL container  | `db/postgresql-baseline.json`          | Official image tag and digest.                        |
+| GitHub Actions        | Workflow `uses` entries                | Full action commit SHA with reviewed version comment. |
 
 For an intentional NuGet update:
 
@@ -448,16 +508,12 @@ review the exact graph and lifecycle scripts, run `npm ci`, then run frontend an
 verification. Apply the equivalent owner-and-lock discipline to SDKs, tools, images, and actions. Do
 not delete selected locks, hand-edit generated locks, or let CI choose a new graph.
 
-`eng/Check-DependencySecurity.ps1` keeps direct/transitive NuGet vulnerability and deprecation
-checks and approved hold governance in required CI. npm audit, signatures and license checks remain
-required. Upstream freshness is reported separately by the daily dependency-health workflow and
-`eng/Check-DependencyCurrency.ps1`; run the latter locally when claiming current dependencies. Local
-dependency reports use fresh ignored directories so repeated checks do not collide; GitHub retains
-its fixed per-job artifact paths. An available update does not block an unrelated PR. Holds remain
-exact for the installed graph, owned, justified and review-dated in
-[`dependency-holds.json`](../dependency-holds.json). A hold is not permission to ignore security
-findings or leave an update unexamined. [CI governance](ci-governance.md#safe-actionable-failures)
-defines report ownership and transient-failure handling.
+Security checking uses each ecosystem's own tool, all required: NuGet Audit runs on every restore and its
+vulnerability warnings are errors, `npm audit` and `npm audit signatures` run for `web` and `eng`, `uv audit` for the
+Python graph, and the frontend license check for production dependencies. Dependabot opens one grouped, 7-day-cooldown
+pull request per ecosystem each week (npm for `web` and `eng`, NuGet, the .NET SDK, uv, GitHub Actions including the
+composite action, and the Compose image). An available update does not block an unrelated PR, and a vulnerability
+finding is never a reason to waive a gate.
 
 See [Browser presentation](web.md#browser-presentation) for user-visible locale behavior and the
 [frontend source](../web/README.md) for catalog commands. Qualify language changes against exact

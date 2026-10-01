@@ -37,13 +37,12 @@ module Baseline =
 
             let selectedRelease = Regex.Escape($"{major}.{minor}")
 
-            let imagePattern =
-                $"^ghcr[.]io/resoltico/claimcore-postgres:{selectedRelease}-trixie-p[1-9][0-9]*-r[1-9][0-9]*-[1-9][0-9]*@sha256:[0-9a-f]{{64}}$"
+            let imagePattern = $"^postgres:{selectedRelease}@sha256:[0-9a-f]{{64}}$"
 
             if not (Regex.IsMatch(image, imagePattern, RegexOptions.CultureInvariant)) then
                 raise (
                     InvalidDataException(
-                        "The PostgreSQL image must pin a qualified ClaimCore PostgreSQL release to a multi-platform SHA-256 digest."
+                        "The PostgreSQL image must pin the official image of the selected release to a SHA-256 digest."
                     )
                 )
 

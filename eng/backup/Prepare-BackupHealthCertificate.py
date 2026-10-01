@@ -3,16 +3,35 @@
 import argparse
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from backup_health_certificate_source import candidate
+from backup_health_certificate_source import CertificateRequest, candidate
 from backup_health_policy import parse_policy
 from backup_health_source import parse_source
-from backup_health_source_io import _read, create_private
-from deployment_common import DeploymentRefusal, canonical, utc
+from backup_health_source_io import create_private, read_private
+from deployment_common import canonical, refuse, utc
+from health_cli import CERTIFICATE_LIMIT, FENCE_LIMIT, POLICY_LIMIT, SOURCE_LIMIT, run_refusing
 
 
-def main():
+def _prepare(options: argparse.Namespace) -> str:
+    policy = parse_policy(read_private(options.policy, POLICY_LIMIT))
+    source = parse_source(read_private(options.source, SOURCE_LIMIT), policy)
+    fence_bytes = read_private(options.writer_fence, FENCE_LIMIT)
+    fence = json.loads(fence_bytes)
+    if fence_bytes != canonical(fence):
+        refuse("health-certificate-fence-canonical")
+    request = CertificateRequest(
+        options.signer_key_id,
+        options.signer_holder_actor_id,
+        fence,
+        utc(datetime.now(UTC)),
+    )
+    create_private(options.output, canonical(candidate(source, policy, request)), CERTIFICATE_LIMIT)
+    return "backup-health-certificate=CANDIDATE_UNISSUED"
+
+
+def main() -> int:
+    """Prepare the short-lived candidate certificate for the CHECKPOINT holder."""
     parser = argparse.ArgumentParser(add_help=True)
     parser.add_argument("--policy", required=True)
     parser.add_argument("--source", required=True)
@@ -21,35 +40,7 @@ def main():
     parser.add_argument("--signer-holder-actor-id", required=True)
     parser.add_argument("--output", required=True)
     options = parser.parse_args()
-    try:
-        policy = parse_policy(_read(options.policy, 65536))
-        source = parse_source(_read(options.source, 131072), policy)
-        fence_bytes = _read(options.writer_fence, 8192)
-        fence = json.loads(fence_bytes)
-        if fence_bytes != canonical(fence):
-            raise DeploymentRefusal("health-certificate-fence-canonical")
-        checked_at = utc(datetime.now(timezone.utc))
-        document = candidate(
-            source,
-            policy,
-            options.signer_key_id,
-            options.signer_holder_actor_id,
-            fence,
-            checked_at,
-        )
-        create_private(options.output, canonical(document), 65536)
-        print("backup-health-certificate=CANDIDATE_UNISSUED")
-        return 0
-    except (DeploymentRefusal, ValueError, KeyError, TypeError) as error:
-        reason = (
-            str(error)
-            if isinstance(error, DeploymentRefusal)
-            else "health-certificate-invalid"
-        )
-        print(
-            json.dumps({"status": "REFUSED", "reason": reason}, separators=(",", ":"))
-        )
-        return 3
+    return run_refusing(lambda: _prepare(options), "health-certificate-invalid")
 
 
 if __name__ == "__main__":

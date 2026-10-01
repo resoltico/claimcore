@@ -13,26 +13,29 @@ inputs:
     description: Set up the Node release selected by .node-version and assert the exact npm.
     required: false
     default: "true"
-  dotnet-cache-path:
-    description: Cache key inputs for the .NET SDK cache.
-    required: false
-    default: "**/packages.lock.json"
 
 runs:
   using: composite
   steps:
+    # Telemetry, logo and color settings are identical for every job, so they live here and not in
+    # each workflow. GitHub Actions already sets CI=true.
+    - name: Disable telemetry, banners and color for every later step
+      shell: bash
+      run: |
+        {
+          echo "DOTNET_CLI_TELEMETRY_OPTOUT=1"
+          echo "DOTNET_NOLOGO=1"
+          echo "NO_COLOR=1"
+          echo "TESTINGPLATFORM_TELEMETRY_OPTOUT=1"
+        } >> "$GITHUB_ENV"
     - if: inputs.dotnet == 'true'
       uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
       with:
         global-json-file: global.json
-        cache: true
-        cache-dependency-path: ${{ inputs.dotnet-cache-path }}
     - if: inputs.node == 'true'
       uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
       with:
         node-version-file: .node-version
-        cache: npm
-        cache-dependency-path: web/package-lock.json
     # The setup action selects a version; this proves the runner is actually running it, including
     # the npm release, which no setup input pins.
     - if: inputs.node == 'true'

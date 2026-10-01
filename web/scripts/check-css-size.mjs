@@ -8,5 +8,7 @@ const cssFiles = entries.filter((entry) => entry.endsWith(".css"));
 for (const file of cssFiles) {
   const path = join(sourceDirectory.pathname, file);
   const lines = (await readFile(path, "utf8")).split("\n").length;
-  if (lines > 300) throw new Error(`${file} has ${lines} physical lines; maximum is 300.`);
+  if (lines > 300) {
+    throw new Error(`${file} has ${lines} physical lines; maximum is 300.`);
+  }
 }

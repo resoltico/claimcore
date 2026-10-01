@@ -22,13 +22,14 @@ concurrency:
 
 jobs:
   release:
+    name: Publish the verified changelog section
     if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     environment: release
     permissions:
-      actions: read
-      contents: write
+      actions: read # Read the Gate conclusion of the tagged commit before publishing.
+      contents: write # Create the GitHub release for the existing tag.
     steps:
       - name: Check out the dispatch commit, not the requested release tag
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

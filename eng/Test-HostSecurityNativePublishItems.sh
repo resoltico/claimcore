@@ -2,21 +2,24 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
-cd "$repo_root"
+cd "${repo_root}"
 case "$(uname -s)" in
   Darwin) extension=dylib ;;
   Linux) extension=so ;;
-  *) printf 'Native publish cardinality is unsupported on this host.\n' >&2; exit 64 ;;
+  *)
+    printf 'Native publish cardinality is unsupported on this host.\n' >&2
+    exit 64
+    ;;
 esac
-name="libclaimcore_hostsecurity_native.$extension"
+name="libclaimcore_hostsecurity_native.${extension}"
 
 check() {
   local project="$1" expected="$2" actual
-  actual="$(dotnet msbuild "$project" -getItem:None |
-    jq --arg name "$name" '[.Items.None[]? |
+  actual="$(dotnet msbuild "${project}" -getItem:None |
+    jq --arg name "${name}" '[.Items.None[]? |
       select(.Link == $name and .CopyToPublishDirectory == "PreserveNewest")] | length')"
-  if [[ "$actual" != "$expected" ]]; then
-    printf 'Native publish item cardinality failed for %s.\n' "$project" >&2
+  if [[ "${actual}" != "${expected}" ]]; then
+    printf 'Native publish item cardinality failed for %s.\n' "${project}" >&2
     exit 1
   fi
 }
