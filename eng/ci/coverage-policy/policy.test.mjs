@@ -169,49 +169,52 @@ test("inputs resolve every registered report wherever it was unpacked", () => {
   }
 });
 
+/** @typedef {[string, (files: ReturnType<typeof fixture>) => void]} Mutation */
+
+/** @type {Mutation[]} */
+const duplicateAndUnexpected = [
+  ["unexpected report", (files) => files.write("browser/extra.coverage.cobertura.injected.xml")],
+  ["duplicate role", (files) => files.write("unit/unit.coverage.cobertura.202609090000009.xml")],
+  [
+    "duplicate partition",
+    (files) => files.write("integration/integration-alpha.coverage.cobertura.202609090000099.xml"),
+  ],
+  [
+    "unregistered partition",
+    (files) => files.write("integration/integration-gamma.coverage.cobertura.202609090000098.xml"),
+  ],
+];
+
+/** @type {Mutation[]} */
+const missingAndMalformed = [
+  [
+    "untimestamped report",
+    (files) => {
+      rmSync(join(files.root, "unit/unit.coverage.cobertura.202609090000001.xml"));
+      files.write("unit/unit.coverage.cobertura.latest.xml");
+    },
+  ],
+  [
+    "missing partition",
+    (files) =>
+      rmSync(join(files.root, "elsewhere/integration-beta.coverage.cobertura.202609090000004.xml")),
+  ],
+  [
+    "missing engine",
+    (files) => rmSync(join(files.root, "browser/webkit.coverage.cobertura.e2e.xml")),
+  ],
+  [
+    "empty engine report",
+    (files) =>
+      files.write(
+        "browser/firefox.coverage.cobertura.e2e.xml",
+        '<coverage branches-covered="0" branches-valid="0"><packages/></coverage>',
+      ),
+  ],
+];
+
 test("inputs refuse a missing, duplicate or unexpected report", () => {
-  /** @type {[string, (files: ReturnType<typeof fixture>) => void][]} */
-  const mutations = [
-    ["unexpected report", (files) => files.write("browser/extra.coverage.cobertura.injected.xml")],
-    ["duplicate role", (files) => files.write("unit/unit.coverage.cobertura.202609090000009.xml")],
-    [
-      "duplicate partition",
-      (files) =>
-        files.write("integration/integration-alpha.coverage.cobertura.202609090000099.xml"),
-    ],
-    [
-      "unregistered partition",
-      (files) =>
-        files.write("integration/integration-gamma.coverage.cobertura.202609090000098.xml"),
-    ],
-    [
-      "untimestamped report",
-      (files) => {
-        rmSync(join(files.root, "unit/unit.coverage.cobertura.202609090000001.xml"));
-        files.write("unit/unit.coverage.cobertura.latest.xml");
-      },
-    ],
-    [
-      "missing partition",
-      (files) =>
-        rmSync(
-          join(files.root, "elsewhere/integration-beta.coverage.cobertura.202609090000004.xml"),
-        ),
-    ],
-    [
-      "missing engine",
-      (files) => rmSync(join(files.root, "browser/webkit.coverage.cobertura.e2e.xml")),
-    ],
-    [
-      "empty engine report",
-      (files) =>
-        files.write(
-          "browser/firefox.coverage.cobertura.e2e.xml",
-          '<coverage branches-covered="0" branches-valid="0"><packages/></coverage>',
-        ),
-    ],
-  ];
-  for (const [label, mutate] of mutations) {
+  for (const [label, mutate] of [...duplicateAndUnexpected, ...missingAndMalformed]) {
     const files = completeInputs();
     try {
       mutate(files);

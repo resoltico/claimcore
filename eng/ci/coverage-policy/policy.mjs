@@ -70,16 +70,32 @@ function wholeNumber(text) {
 }
 
 /**
- * A browser run's report must measure ClaimCore.Web branches, not merely exist.
- * @param {string} path
+ * The ClaimCore.Web branches a package's lines actually measured.
+ * @param {import("../suites/xml.mjs").XmlElement} web
+ * @returns {number}
  */
-export function checkBrowserCoverage(path) {
-  const root = readCoverage(path);
-  const covered = wholeNumber(root.attributes["branches-covered"]);
-  const valid = wholeNumber(root.attributes["branches-valid"]);
-  if (!(covered >= 1 && valid >= covered)) {
-    throw new Error("Browser coverage must contain measured branch counters.");
+function measuredWebBranches(web) {
+  let measured = 0;
+  for (const line of descendantsNamed(web, "line")) {
+    if (line.attributes["branch"]?.toLowerCase() !== "true") {
+      continue;
+    }
+    const match = /\(([0-9]+)\/([0-9]+)\)$/u.exec(line.attributes["condition-coverage"] ?? "");
+    const [coveredHere, validHere] = [Number(match?.[1]), Number(match?.[2])];
+    if (!match || validHere < 1 || coveredHere > validHere) {
+      throw new Error("Browser coverage has invalid ClaimCore.Web branch evidence.");
+    }
+    measured += coveredHere;
   }
+  return measured;
+}
+
+/**
+ * The one ClaimCore.Web package, whose branch rate must be a real measurement.
+ * @param {import("../suites/xml.mjs").XmlElement} root
+ * @returns {import("../suites/xml.mjs").XmlElement}
+ */
+function webPackage(root) {
   const web = descendantsNamed(root, "package").filter(
     (item) => item.attributes["name"] === "ClaimCore.Web",
   );
@@ -91,19 +107,21 @@ export function checkBrowserCoverage(path) {
   if (!(Number.isFinite(branchRate) && branchRate > 0 && branchRate <= 1)) {
     throw new Error("Browser coverage must measure ClaimCore.Web production branches.");
   }
-  let measured = 0;
-  for (const line of descendantsNamed(only, "line")) {
-    if (line.attributes["branch"]?.toLowerCase() !== "true") {
-      continue;
-    }
-    const match = /\(([0-9]+)\/([0-9]+)\)$/u.exec(line.attributes["condition-coverage"] ?? "");
-    const [coveredHere, validHere] = [Number(match?.[1]), Number(match?.[2])];
-    if (!match || validHere < 1 || coveredHere > validHere) {
-      throw new Error("Browser coverage has invalid ClaimCore.Web branch evidence.");
-    }
-    measured += coveredHere;
+  return only;
+}
+
+/**
+ * A browser run's report must measure ClaimCore.Web branches, not merely exist.
+ * @param {string} path
+ */
+export function checkBrowserCoverage(path) {
+  const root = readCoverage(path);
+  const covered = wholeNumber(root.attributes["branches-covered"]);
+  const valid = wholeNumber(root.attributes["branches-valid"]);
+  if (!(covered >= 1 && valid >= covered)) {
+    throw new Error("Browser coverage must contain measured branch counters.");
   }
-  if (measured < 1) {
+  if (measuredWebBranches(webPackage(root)) < 1) {
     throw new Error("Browser coverage must contain measured ClaimCore.Web branch evidence.");
   }
 }
