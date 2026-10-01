@@ -64,9 +64,13 @@ module internal CaseWitnessPayloadClassifier =
         | "PREPARE" ->
             version root 1
             && sameCase ticket (guid root "caseId")
-            && ticket.OperationId = WitnessTechnical.prepareEventId (guid root "operationId")
+            && ticket.OperationId = WitnessEventIdentity.prepareEventId (guid root "operationId")
         | "START" -> version root 1 && directCase ticket root "attemptId"
-        | "REVOCATION" -> version root 2 && directCase ticket root "operationId"
+        | "REVOCATION" ->
+            version root 3
+            && directCase ticket root "witnessEventId"
+            && WitnessEventIdentity.revocationEventId (root.GetProperty("operationId").GetGuid()) =
+                ticket.OperationId
         | "RECOVERY_EXPORT_V4" -> directCase ticket root "exportId"
         | _ -> false
 

@@ -173,6 +173,7 @@ type internal RecoverySettlement =
 [<RequireQualifiedAccess>]
 [<NoEquality; NoComparison>]
 type internal AdmittedExecution =
+    | ObservedAccepted of Receipt
     | Accepted of Receipt
     | Rejected of DomainError * SettlementConfirmation
     | RevokedBeforeExecution of SettlementConfirmation

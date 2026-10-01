@@ -167,7 +167,7 @@ their baseline is a fresh-installation boundary, without converting retained old
 
 `request_preparations` stores exact format-3 canonical request bytes and digest with the first preparer's actor/grant provenance and timestamp. An exact-byte replay preserves that first retained metadata. Raw canonical-record import is not an entry point; signed current recovery-artifact import is rechecked against case privacy, current grant, stored export/copy identity, and settled witness evidence. Identified attempts and their independent definite settlements remain available through bounded operation-specific inspection while technical material is retained.
 
-`operation_revocations` retains durable witnessed authority even if a terminal preparation is pruned. Actor/grant history, lifecycle events and approvals, legal holds, erasure fences, managed-copy inventory, and keyed operation/reference suppression live outside `CaseFields`. `installation_lineage` binds the installation UUID, witness epoch, suppression-key check, and mandatory business time zone; `schema_baseline` binds this fresh schema's identity/digest. `request_preparation_prunes` is owner-only maintenance audit. No old migration ledger or compatibility view is part of this installation.
+`operation_revocations` retains durable witnessed authority even if a terminal preparation is pruned. Its distinct deterministic witness event ID is bound separately from the authored command ID; revocation can close future unaccepted authority while preserving an earlier orphan acceptance intent and its uncertainty. Actor/grant history, lifecycle events and approvals, legal holds, erasure fences, managed-copy inventory, and keyed operation/reference suppression live outside `CaseFields`. `installation_lineage` binds the installation UUID, witness epoch, suppression-key check, and mandatory business time zone; `schema_baseline` binds this fresh schema's identity/digest. `request_preparation_prunes` is owner-only maintenance audit. No old migration ledger or compatibility view is part of this installation.
 
 Scalar bounds, exact numeric precision, complete decision tuples, chronology, payment prerequisites,
 keys and references remain enforced in the final CREATE definitions. These are defense in depth,
@@ -227,14 +227,14 @@ constraints, generated contracts, tests and documentation coherent.
 
 Pruning is an explicit owner operation, never an initialization side effect. Eligible preparations
 must already be terminal through an accepted receipt or durable revocation **and have no unsettled
-identified attempt**. A later accepted retry does not erase an earlier attempt's uncertainty.
+identified attempt, active case/erasure hold or unexpired recovery export**. A later accepted retry does not erase an earlier attempt's uncertainty.
 Definite rejection alone does not close authority: the request may become valid after later state
 or business-date changes. Pending, rejected-only and unsettled evidence is never inferred away.
 
 `--dry-run` audits candidate count without deleting candidates. `--settled-retention-days` and
 `--abandoned-retention-days` accept 1–3650 days, defaulting to 30; `--limit` accepts 1–1000, defaulting
 to 100. Pruning requires current-baseline admission and schema ownership, serializes maintenance,
-and audits parameters/counts. Review a dry run and the operator's retention requirements before
+and audits parameters/counts. It holds the primary shared authority lock before operation locks, serialising eligibility and deletion against new holds; a hold review date never releases protection. Review a dry run and the operator's retention requirements before
 explicit deletion. It never deletes a case, accepted history, independent revocation or lineage.
 An accepted receipt continues to support exact idempotent replay after technical pruning; a revoked
 operation retains only its compact tombstone when its preparation is pruned, not exportable bytes.

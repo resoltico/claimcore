@@ -10,6 +10,7 @@ open OperationAuthorityStore
 open PreparationData
 open PreparationLifecycleStore
 open SubmissionAttemptStore
+open WitnessProtocolReconciliation
 
 /// Retention and attempt admission use the operation lock, with capacity acquired before it.
 module internal RecoveryRetentionStore =
@@ -103,15 +104,11 @@ module internal RecoveryRetentionStore =
                 | None -> return! retainAbsent connection transaction limits draft witness pending
         }
 
-    let private retainInTransaction
-        (connection: NpgsqlConnection)
-        (transaction: NpgsqlTransaction)
-        (limits: PreparationLimits)
+    let private lockRetention
+        connection
+        transaction
         (draft: RecoveryPreparationDraft)
         (request: CommandRequest)
-        (actorContext: ActorCallContext)
-        (witness: WitnessProtocol)
-        (pending: (Guid * WitnessIntent) option ref)
         =
         task {
             let! revision =
@@ -127,6 +124,22 @@ module internal RecoveryRetentionStore =
 
             do! Sql.lockKeyAsync connection transaction ("case:" + request.CaseReference)
 
+            return revision
+        }
+
+    let private retainInTransaction
+        (connection: NpgsqlConnection)
+        (transaction: NpgsqlTransaction)
+        (limits: PreparationLimits)
+        (draft: RecoveryPreparationDraft)
+        (request: CommandRequest)
+        (actorContext: ActorCallContext)
+        (witness: WitnessProtocol)
+        (pending: (Guid * WitnessIntent) option ref)
+        =
+        task {
+            let! revision = lockRetention connection transaction draft request
+
             let! authorized =
                 ActorMutationGuard.authorize
                     connection
@@ -140,13 +153,17 @@ module internal RecoveryRetentionStore =
                 return Error RecoveryStoreFailure.ResourceUnavailable
             else
                 let! accepted =
-                    StoreData.readOperation connection (Some transaction) draft.OperationId
+                    RecoveryAcceptedObservation.read
+                        connection
+                        transaction
+                        witness
+                        draft.OperationId
+                        draft.RequestSha256
 
                 match accepted with
-                | Some(receipt, original) when original = draft.RequestSha256 ->
-                    return Ok(RecoveryRetain.ObservedAccepted receipt)
-                | Some _ -> return Error RecoveryStoreFailure.IdempotencyConflict
-                | None ->
+                | Ok(Some receipt) -> return Ok(RecoveryRetain.ObservedAccepted receipt)
+                | Error failure -> return Error failure
+                | Ok None ->
                     return!
                         retainWithoutAccepted
                             connection

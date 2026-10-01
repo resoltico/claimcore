@@ -107,7 +107,7 @@ let private assertNoCase (core: IActorClaimsCore) request =
     Sql.text command "reference" request.CaseReference
     Expect.isFalse (command.ExecuteScalar() :?> bool) "Revocation before execution leaves no case."
 
-let private pruneRevoked operationId =
+let private retainUnsettledRevocation operationId =
     ageRevokedPreparation operationId
 
     let result =
@@ -118,22 +118,20 @@ let private pruneRevoked operationId =
             }
         |> completedAdministration
 
-    Expect.equal result.DeletedCount 1 "The aged terminal preparation is owner-prunable"
+    Expect.equal
+        result.DeletedCount
+        0
+        "Revoked authority cannot erase an unsettled historical attempt"
 
-let private assertTombstone (core: IActorClaimsCore) operationId =
-    match core.Recovery.Inspect(operationId, None, 8, CancellationToken.None) |> await with
-    | RecoveryQueryOutcome.RecoverySucceeded(Lookup.Found(RecoveryInspection.RevokedInspection tombstone)) ->
-        Expect.equal tombstone.OperationId operationId "Tombstone preserves only terminal identity"
-    | _ -> failtest "Pruned revocation must remain inspectable without request payload."
+let private assertRetainedRevocation (port: IRecoveryStore) operationId =
+    match port.Inspect(operationId, None, 8, CancellationToken.None) |> await with
+    | Ok(Some(RecoveryStoreInspection.Retained(_, evidence, RecoveryAuthority.RevokedAuthority))) ->
+        Expect.equal evidence.Items.Length 1 "Original attempt evidence remains retained"
+    | _ -> failtest "Unsettled revocation remains retained rather than becoming a pruned tombstone."
 
-let private assertExactRevocation (core: IActorClaimsCore) request =
-    match core.Execute(request, CancellationToken.None) |> await with
-    | SubmissionOutcome.RejectedBeforeAttempt(_, Rejection.ResourceUnavailable) -> ()
-    | _ -> failtest "A pruned revocation must refuse exact retry without disclosing identity."
-
-let private startThenRevokeThenPrune =
+let private startedWorkerRetainsUncertainty =
     testCase
-        "[CC-REC-001] a started worker cannot execute after revocation or later preparation pruning"
+        "[CC-REC-001] a revoked worker cannot execute or lose unsettled preparation evidence"
         (fun () ->
             use runtime = openRuntime ()
             let operationId = Guid.NewGuid()
@@ -162,20 +160,19 @@ let private startThenRevokeThenPrune =
                 request
                 operation
                 attemptId
-                "The delayed worker must settle as revoked without a business write."
+                "The delayed worker must be fenced without rewriting historical knowledge."
 
             assertNoCase (actorCore runtime) request
-            pruneRevoked operationId
+            retainUnsettledRevocation operationId
 
             assertRevokedExecution
                 port
                 request
                 operation
                 attemptId
-                "A delayed worker remains revoked after the optional preparation is gone."
+                "A delayed worker remains fenced while unresolved preparation evidence survives."
 
-            assertTombstone (actorCore runtime) operationId
-            assertExactRevocation (actorCore runtime) request)
+            assertRetainedRevocation port operationId)
 
 let private attemptsUntilLimit (port: IRecoveryStore) operationId =
     [ 1..64 ]
@@ -267,4 +264,4 @@ let private attemptLimitAndPaging =
 let tests =
     testList
         "PostgreSQL operation authority lifecycle"
-        [ startThenRevokeThenPrune; attemptLimitAndPaging ]
+        [ startedWorkerRetainsUncertainty; attemptLimitAndPaging ]

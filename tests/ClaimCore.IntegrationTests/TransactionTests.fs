@@ -5,82 +5,8 @@ open System.Threading.Tasks
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.TestSupport
 open ClaimCore.IntegrationTests.Fixtures
-
-let private reopenPersistenceTest =
-    testCase "reopen connection and read all stored fields" (fun () ->
-        let request = newRequest ()
-
-        do
-            use database = store ()
-
-            Service.executeAsync (database :> IClaimStore) clock request
-            |> await
-            |> accepted
-            |> ignore
-
-        use reopened = store ()
-
-        let snapshot =
-            (reopened :> IClaimStore).Get(request.CaseReference)
-            |> await
-            |> accepted
-            |> Option.map Claim.view
-
-        let expected =
-            Claim.decide (clock.Capture().EffectiveBusinessDate) request None
-            |> accepted
-            |> Claim.view
-
-        Expect.isTrue
-            (snapshot = Some expected)
-            "All thirteen fields and technical revision survive a real connection reopen")
-
-let private exactReplayTest =
-    testCase "[CC-APP-002] exact replay returns original receipt, not current state" (fun () ->
-        use database = store ()
-        let service = database :> IClaimStore
-        let request = newRequest ()
-        let original = Service.executeAsync service clock request |> await |> accepted
-
-        Service.executeAsync service clock (next request 1L Command.Close)
-        |> await
-        |> accepted
-        |> ignore
-
-        let replay = Service.executeAsync service clock request |> await |> accepted
-        Expect.isTrue replay.Replayed "Replay"
-        Expect.equal (Claim.view replay.Case).Version 1L "Historical receipt"
-        Expect.equal replay.RecordedAt original.RecordedAt "Original acceptance time"
-
-        let current =
-            service.Get(request.CaseReference) |> await |> accepted |> Option.map Claim.view
-
-        Expect.equal
-            (current |> Option.map (fun value -> value.Version))
-            (Some 2L)
-            "Current state separate")
-
-let private idempotencyConflictTest =
-    testCase "[CC-APP-002] same ID with different content fails" (fun () ->
-        use database = store ()
-        let service = database :> IClaimStore
-        let request = newRequest ()
-        Service.executeAsync service clock request |> await |> accepted |> ignore
-
-        let result =
-            Service.executeAsync service clock { request with Command = Command.Close }
-            |> await
-
-        Expect.equal
-            (result |> Result.map (fun value -> value.OperationId))
-            (Error CoreFailure.IdempotencyConflict)
-            "No ID reuse")
-
-let private replayTests =
-    testList
-        "persistence and replay"
-        [ reopenPersistenceTest; exactReplayTest; idempotencyConflictTest ]
 
 let private concurrentAccepted =
     function
@@ -108,7 +34,8 @@ let private sameIdConcurrencyTests =
                 let service = database :> IClaimStore
                 let request = newRequest ()
 
-                let attempts = [| for _ in 1..8 -> Service.executeAsync service clock request |]
+                let attempts =
+                    [| for _ in 1..8 -> CommandExecution.executeAsync service clock request |]
 
                 let results = Task.WhenAll(attempts) |> await |> Array.map concurrentAccepted
 
@@ -139,7 +66,8 @@ let private absentCaseConcurrencyTests =
                         }
 
                     let attempts =
-                        [| first; second |] |> Array.map (Service.executeAsync service clock)
+                        [| first; second |]
+                        |> Array.map (CommandExecution.executeAsync service clock)
 
                     let outcomes = Task.WhenAll(attempts) |> await
 
@@ -188,7 +116,11 @@ let private revisionConcurrencyTests =
                     use database = store ()
                     let service = database :> IClaimStore
                     let initial = newRequest ()
-                    Service.executeAsync service clock initial |> await |> accepted |> ignore
+
+                    CommandExecution.executeAsync service clock initial
+                    |> await
+                    |> accepted
+                    |> ignore
 
                     let decide =
                         Command.Decide
@@ -200,7 +132,7 @@ let private revisionConcurrencyTests =
 
                     let attempts =
                         [| next initial 1L decide; next initial 1L Command.Close |]
-                        |> Array.map (Service.executeAsync service clock)
+                        |> Array.map (CommandExecution.executeAsync service clock)
 
                     let outcomes = Task.WhenAll(attempts) |> await
 
@@ -231,7 +163,11 @@ let private lifecycleTests =
                 use database = store ()
                 let service = database :> IClaimStore
                 let initial = newRequest ()
-                Service.executeAsync service clock initial |> await |> accepted |> ignore
+
+                CommandExecution.executeAsync service clock initial
+                |> await
+                |> accepted
+                |> ignore
 
                 let actions =
                     [
@@ -248,7 +184,10 @@ let private lifecycleTests =
                     ]
 
                 for index, action in actions |> List.indexed do
-                    Service.executeAsync service clock (next initial (int64 index + 1L) action)
+                    CommandExecution.executeAsync
+                        service
+                        clock
+                        (next initial (int64 index + 1L) action)
                     |> await
                     |> accepted
                     |> ignore
@@ -271,26 +210,12 @@ let private lifecycleTests =
                 Expect.isTrue (currency = Some "USD") "Independent decision currency")
         ]
 
-let private operationTests =
-    testList
-        "operation lookup"
-        [
-            testCase "operation lookup identifies exact accepted result" (fun () ->
-                use database = store ()
-                let service = database :> IClaimStore
-                let request = newRequest ()
-                Service.executeAsync service clock request |> await |> accepted |> ignore
-
-                let result = service.Operation(request.OperationId) |> await |> accepted
-
-                let reference =
-                    result
-                    |> Option.map (fun value -> (Claim.view value.Case).Fields.CaseReference)
-
-                Expect.isTrue (reference = Some request.CaseReference) "Operation identity")
-        ]
-
 let tests =
     testList
         "PostgreSQL transactions"
-        [ replayTests; concurrencyQualificationTests; lifecycleTests; operationTests ]
+        [
+            TransactionReplayTests.tests
+            concurrencyQualificationTests
+            lifecycleTests
+            OperationLookupTests.tests
+        ]

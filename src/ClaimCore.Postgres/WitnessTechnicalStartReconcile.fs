@@ -82,7 +82,7 @@ module internal WitnessTechnicalStartReconcile =
         | Some value ->
             if
                 value.AttemptId
-                <> WitnessTechnical.startEventId header.OperationId value.Ordinal
+                <> WitnessEventIdentity.startEventId header.OperationId value.Ordinal
             then
                 raise WitnessPending
 

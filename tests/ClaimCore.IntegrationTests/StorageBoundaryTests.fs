@@ -7,6 +7,7 @@ open Npgsql
 open NpgsqlTypes
 open Expecto
 open ClaimCore.Application
+open ClaimCore.TestSupport
 open ClaimCore.Domain
 open ClaimCore.Postgres
 open ClaimCore.IntegrationTests.Fixtures
@@ -61,7 +62,7 @@ let private rejectDriftedAmount (value: string) =
     use database = store ()
     let request = newRequest ()
 
-    Service.executeAsync (database :> IClaimStore) clock request
+    CommandExecution.executeAsync (database :> IClaimStore) clock request
     |> await
     |> accepted
     |> ignore
@@ -170,7 +171,9 @@ let private environmentTests =
                     use database = store ()
                     let service = database :> IClaimStore
                     let request = newRequest ()
-                    let original = Service.executeAsync service clock request |> await |> accepted
+
+                    let original =
+                        CommandExecution.executeAsync service clock request |> await |> accepted
 
                     let current =
                         service.Get(request.CaseReference)
@@ -230,7 +233,7 @@ let private transactionTests =
                     use _ambient = new TransactionScope()
                     use database = store ()
 
-                    Service.executeAsync (database :> IClaimStore) clock request
+                    CommandExecution.executeAsync (database :> IClaimStore) clock request
                     |> await
                     |> accepted
                     |> ignore

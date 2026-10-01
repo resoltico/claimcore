@@ -3,6 +3,7 @@ namespace ClaimCore.Tests
 open System
 open System.Threading.Tasks
 open ClaimCore.Application
+open ClaimCore.TestSupport
 
 module internal RecoveryStoreMutation =
     let private unresolvedAttempt state operationId =
@@ -127,16 +128,10 @@ module internal RecoveryStoreMutation =
         match state.ClaimStore with
         | Some store ->
             match
-                store.Transact(
-                    operation,
-                    fun current ->
-                        let context = today ()
-
-                        decide context.EffectiveBusinessDate current
-                        |> Result.map (fun claim -> claim, context)
-                )
+                (store :?> ITestCommandExecutor).Execute(operation, today, decide)
                 |> fun result -> result.GetAwaiter().GetResult()
             with
+            | Ok receipt when receipt.Replayed -> Ok(AdmittedExecution.ObservedAccepted receipt)
             | Ok receipt -> accepted state attemptId receipt
             | Error(CoreFailure.Domain rejection) ->
                 rejected state request.OperationId attemptId rejection
@@ -170,8 +165,7 @@ module internal RecoveryStoreMutation =
 
                 match Map.tryFind operationId state.Revocations with
                 | Some _ ->
-                    settleConfirmed state operationId attemptId "REVOKED_BEFORE_EXECUTION"
-                    Ok(AdmittedExecution.RevokedBeforeExecution SettlementConfirmation.Confirmed)
+                    Ok(AdmittedExecution.RevokedBeforeExecution SettlementConfirmation.Unconfirmed)
                 | None -> configuredExecution state settings operation attemptId today decide)
 
         Task.FromResult result

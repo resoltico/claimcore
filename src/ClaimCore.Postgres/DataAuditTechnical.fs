@@ -14,7 +14,7 @@ module internal DataAuditTechnical =
         let sequence = reader.GetInt64(2)
         let candidateDigest = reader.GetFieldValue<byte array>(5)
 
-        if eventId <> WitnessTechnical.prepareEventId operationId || sequence > cutoff then
+        if eventId <> WitnessEventIdentity.prepareEventId operationId || sequence > cutoff then
             corrupt ()
 
         let importer = if reader.IsDBNull(8) then None else Some(reader.GetGuid(8))
@@ -89,7 +89,7 @@ module internal DataAuditTechnical =
 
         if
             eventId <> attemptId
-            || eventId <> WitnessTechnical.startEventId operationId ordinal
+            || eventId <> WitnessEventIdentity.startEventId operationId ordinal
             || sequence > cutoff
             || submitter.IsSome = resolver.IsSome
         then

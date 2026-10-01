@@ -34,6 +34,8 @@ let private countFor operationId table =
             "SELECT count(*) FROM claimcore.request_submission_attempts WHERE operation_id = @operation"
         | "settlements" ->
             "SELECT count(*) FROM claimcore.request_submission_settlements s JOIN claimcore.request_submission_attempts a ON a.attempt_id = s.attempt_id WHERE a.operation_id = @operation"
+        | "unsettled" ->
+            "SELECT count(*) FROM claimcore.request_submission_attempts a WHERE a.operation_id=@operation AND NOT EXISTS (SELECT 1 FROM claimcore.request_submission_settlements s WHERE s.attempt_id=a.attempt_id)"
         | "receipts" ->
             "SELECT count(*) FROM claimcore.case_changes WHERE operation_id = @operation"
         | _ -> invalidArg "table" "Unknown synthetic evidence table."
@@ -86,7 +88,16 @@ let private dualResolve =
 
         let attempts = countFor operationId "attempts"
         Expect.isTrue (attempts = 1L || attempts = 2L) "Each started resolve has an attempt"
-        Expect.equal (countFor operationId "settlements") attempts "Every definite attempt settled")
+
+        Expect.equal
+            (countFor operationId "settlements")
+            1L
+            "Only the accepting execution settles its attempt"
+
+        Expect.equal
+            (countFor operationId "unsettled")
+            (attempts - 1L)
+            "Observing later acceptance preserves other attempt knowledge")
 
 let private resolveDismiss =
     testCase "[CC-REC-001] simultaneous resolve and dismiss have one lifecycle winner" (fun () ->
@@ -121,10 +132,15 @@ let private resolveDismiss =
         | ResolveOutcome.ResolveCompleted(_,
                                           _,
                                           DefiniteExecution.ExecutionRevokedBeforeExecution _,
-                                          SettlementConfirmation.Confirmed),
+                                          SettlementConfirmation.Unconfirmed),
           RecoveryDismissOutcome.DismissedPreparation _ ->
             Expect.equal (countFor operationId "attempts") 1L "Started work remains evidence"
-            Expect.equal (countFor operationId "settlements") 1L "Revoked attempt is settled"
+
+            Expect.equal
+                (countFor operationId "settlements")
+                0L
+                "Revocation preserves prior attempt uncertainty"
+
             Expect.equal (countFor operationId "receipts") 0L "Revocation prevents case mutation"
         | ResolveOutcome.RefusedBeforeAttempt(_, refusal),
           RecoveryDismissOutcome.DismissedPreparation _ ->

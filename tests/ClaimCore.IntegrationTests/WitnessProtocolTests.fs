@@ -6,6 +6,7 @@ open System.Threading
 open Expecto
 open Npgsql
 open ClaimCore.Application
+open ClaimCore.TestSupport
 open ClaimCore.Domain
 open ClaimCore.Postgres
 open ClaimCore.Postgres.WitnessProtocolReconciliation
@@ -73,20 +74,19 @@ let private executeWithSettlementFailure
     =
     use faulty =
         protocol installation (fun () ->
-            raise (TimeoutException("synthetic settlement interruption")))
+            if
+                count (witnessOwnerConnection ()) "claimcore_witness.journal" operation.OperationId >
+                    0L
+            then
+                raise (TimeoutException("synthetic settlement interruption")))
 
     let actor = openContext source faulty operation
 
-    use store =
-        new PostgresStore(
-            source,
-            faulty,
-            actor,
-            CaseListCursorTestSupport.protection,
-            CaseListCursorTestSupport.clock
-        )
 
-    match Service.executeAsync (store :> IClaimStore) clock operation |> await with
+    match
+        FixtureCommandExecution.executeRequest source faulty actor clock operation
+        |> await
+    with
     | Error(CoreFailure.CommitOutcomeUnknown value) ->
         Expect.equal value operation.OperationId "No definite receipt after settlement failure"
     | _ -> failtest "Postcommit settlement failure must be unknown."
@@ -110,16 +110,11 @@ let private retryAccepted
     use healthy = protocol installation (fun () -> ())
     let actor = openContext source healthy operation
 
-    use store =
-        new PostgresStore(
-            source,
-            healthy,
-            actor,
-            CaseListCursorTestSupport.protection,
-            CaseListCursorTestSupport.clock
-        )
 
-    match Service.executeAsync (store :> IClaimStore) clock operation |> await with
+    match
+        FixtureCommandExecution.executeRequest source healthy actor clock operation
+        |> await
+    with
     | Ok receipt -> Expect.isTrue receipt.Replayed "Exact retry returns original accepted receipt"
     | Error _ -> failtest "Exact primary/witness reconciliation must settle."
 
@@ -150,16 +145,11 @@ let private retryAfterCompetingSettlement
 
     let actor = openContext source racing operation
 
-    use store =
-        new PostgresStore(
-            source,
-            racing,
-            actor,
-            CaseListCursorTestSupport.protection,
-            CaseListCursorTestSupport.clock
-        )
 
-    match Service.executeAsync (store :> IClaimStore) clock operation |> await with
+    match
+        FixtureCommandExecution.executeRequest source racing actor clock operation
+        |> await
+    with
     | Ok receipt ->
         Expect.isTrue receipt.Replayed "Competing exact settlement returns the retained receipt"
     | Error _ -> failtest "A competing exact settlement must be verified by readback."
@@ -242,16 +232,11 @@ let private intentWithoutPrimaryReceipt =
         use source = RuntimeDataSource.create (appConnection ())
         let actor = beginOrphanIntent witness source operation
 
-        use store =
-            new PostgresStore(
-                source,
-                witness,
-                actor,
-                CaseListCursorTestSupport.protection,
-                CaseListCursorTestSupport.clock
-            )
 
-        match Service.executeAsync (store :> IClaimStore) clock operation |> await with
+        match
+            FixtureCommandExecution.executeRequest source witness actor clock operation
+            |> await
+        with
         | Error(CoreFailure.CommitOutcomeUnknown value) ->
             Expect.equal value operation.OperationId "Intent with absent receipt remains unknown"
         | _ -> failtest "Orphan intent must not be replayed or rejected as uncommitted."

@@ -7,6 +7,7 @@ open System.Threading.Tasks
 open Npgsql
 open Expecto
 open ClaimCore.Application
+open ClaimCore.TestSupport
 open ClaimCore.Domain
 open ClaimCore.Hosting
 open ClaimCore.Postgres
@@ -15,12 +16,12 @@ open ClaimCore.IntegrationTests.Fixtures
 
 let private request operationId reference = openRequest operationId reference
 
-let private openRuntime () =
+let internal openRuntime () =
     witnessedOpen (appConnection ()) CancellationToken.None
     |> await
     |> Result.defaultWith (fun _ -> failtest "Synthetic runtime must open.")
 
-let private rowCount table operationId =
+let internal rowCount table operationId =
     use connection = new NpgsqlConnection(adminConnection ())
     connection.Open()
 
@@ -33,7 +34,7 @@ let private rowCount table operationId =
     Sql.uuid command "operation" operationId
     command.ExecuteScalar() :?> int64
 
-let private ageAccepted operationId =
+let internal ageAccepted operationId =
     use connection = new NpgsqlConnection(adminConnection ())
     connection.Open()
 
@@ -62,7 +63,7 @@ let private snapshot operationId =
     | :? (byte array) as value -> value
     | _ -> failtest "Synthetic receipt snapshot must exist."
 
-let private acceptedEvidence operationId =
+let internal acceptedEvidence operationId =
     use connection = new NpgsqlConnection(adminConnection ())
     connection.Open()
 
@@ -94,7 +95,7 @@ let private replaceSnapshot operationId (value: byte array) =
     Sql.add command "snapshot" NpgsqlTypes.NpgsqlDbType.Bytea (box value)
     Expect.equal (command.ExecuteNonQuery()) 1 "Only this synthetic snapshot is changed"
 
-let private expectAccepted (core: IActorClaimsCore) input =
+let internal expectAccepted (core: IActorClaimsCore) input =
     match core.Prepare(input, CancellationToken.None) |> await with
     | PrepareOutcome.ObservedAccepted receipt ->
         Expect.equal receipt.OperationId input.OperationId "Prepare observes exact receipt"
@@ -213,40 +214,6 @@ let private concurrentPrunedReplayAndConflict =
 
                 Expect.equal (rowCount "case_changes" input.OperationId) 1L "No second acceptance"))
 
-let private acceptedWithoutTechnicalPreparation =
-    testCase
-        "[CC-APP-002] PostgreSQL accepted history without preparation remains replayable"
-        (fun () ->
-            let input = request (Guid.NewGuid()) ("HISTORY-" + Guid.NewGuid().ToString("N"))
-
-            use claims = store ()
-
-            match Service.executeAsync claims clock input |> await with
-            | Ok _ -> ()
-            | Error _ -> failtest "Synthetic direct history write must accept."
-
-            Expect.equal (rowCount "request_preparations" input.OperationId) 0L "No preparation"
-            let bytes, businessDays, observedAt = acceptedEvidence input.OperationId
-
-            Expect.sequenceEqual
-                bytes
-                (RequestRecord.encode input)
-                "Direct commit retains request bytes"
-
-            Expect.equal
-                businessDays
-                (DateOnly(2026, 9, 7).DayNumber - DateOnly(2000, 1, 1).DayNumber)
-                "Direct commit retains business date"
-
-            Expect.equal
-                observedAt
-                (DateTimeOffset(2026, 9, 7, 12, 0, 0, TimeSpan.Zero))
-                "Direct commit retains capture instant"
-
-            use runtime = openRuntime ()
-            expectAccepted (actorCore runtime) input
-            Expect.equal (rowCount "case_changes" input.OperationId) 1L "Accepted history retained")
-
 let private conflictPrecedesSnapshotProjection =
     testCase
         "[CC-APP-002] PostgreSQL rejects wrong digest before parsing accepted snapshot"
@@ -255,7 +222,7 @@ let private conflictPrecedesSnapshotProjection =
 
             use claims = store ()
 
-            match Service.executeAsync claims clock input |> await with
+            match CommandExecution.executeAsync claims clock input |> await with
             | Ok _ -> ()
             | Error _ -> failtest "Synthetic operation must accept."
 
@@ -293,6 +260,5 @@ let tests =
         [
             pruneAcceptedPreparation
             concurrentPrunedReplayAndConflict
-            acceptedWithoutTechnicalPreparation
             conflictPrecedesSnapshotProjection
         ]

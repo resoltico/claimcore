@@ -7,6 +7,7 @@ open Npgsql
 open NpgsqlTypes
 open ClaimCore.Application
 open ClaimCore.Domain
+open WitnessProtocolReconciliation
 
 /// Read operations hold the authority revision through disclosure. A grant change cannot slip
 /// between the final authorization check and a claimant-bearing row read.
@@ -66,7 +67,7 @@ module internal ActorReadStore =
                 | None -> false
         }
 
-    let get dataSource (context: ActorCallContext) reference =
+    let get dataSource witness (context: ActorCallContext) reference =
         snapshot dataSource (fun connection transaction revision ->
             task {
                 let! found = caseId connection transaction reference
@@ -98,10 +99,46 @@ module internal ActorReadStore =
                         let! result = command.ExecuteReaderAsync()
                         use reader = result
                         let! exists = reader.ReadAsync()
-                        return Ok(if exists then Some(Rows.claim reader) else None)
+                        let value = if exists then Some(Rows.claim reader) else None
+                        reader.Close()
+
+                        match value with
+                        | None -> return Ok None
+                        | Some claim ->
+                            return
+                                CaseReadEvidence.current witness connection transaction claim
+                                |> Result.map (fun () -> Some claim)
             })
 
-    let history dataSource (context: ActorCallContext) reference afterVersion =
+    let private verifyHistory witness connection transaction receipts =
+        receipts
+        |> List.tryPick (fun (receipt: Receipt) ->
+            match CaseReadEvidence.receipt witness connection transaction receipt.OperationId with
+            | Ok() -> None
+            | Error failure -> Some failure)
+
+    let private historyRows connection transaction reference afterVersion =
+        task {
+            use command = new NpgsqlCommand(Sql.history, connection, transaction)
+            Sql.text command "reference" reference
+            Sql.integer command "after" afterVersion
+            let! result = command.ExecuteReaderAsync()
+            use reader = result
+            let rows = ResizeArray<Receipt>()
+            let mutable reading = true
+
+            while reading do
+                let! exists = reader.ReadAsync()
+                reading <- exists
+
+                if exists then
+                    rows.Add(Rows.receipt reader false)
+
+            reader.Close()
+            return rows
+        }
+
+    let history dataSource witness (context: ActorCallContext) reference afterVersion =
         snapshot dataSource (fun connection transaction revision ->
             task {
                 let! found = caseId connection transaction reference
@@ -123,21 +160,7 @@ module internal ActorReadStore =
                     if not canRead then
                         return Error CoreFailure.ResourceUnavailable
                     else
-                        use command = new NpgsqlCommand(Sql.history, connection, transaction)
-                        Sql.text command "reference" reference
-                        Sql.integer command "after" afterVersion
-                        let! result = command.ExecuteReaderAsync()
-                        use reader = result
-                        let rows = ResizeArray<Receipt>()
-                        let mutable reading = true
-
-                        while reading do
-                            let! exists = reader.ReadAsync()
-                            reading <- exists
-
-                            if exists then
-                                rows.Add(Rows.receipt reader false)
-
+                        let! rows = historyRows connection transaction reference afterVersion
                         let limit = SemanticContract.current.MaximumPageSize
                         let items = rows |> Seq.truncate limit |> Seq.toList
 
@@ -149,12 +172,15 @@ module internal ActorReadStore =
                             else
                                 None
 
-                        return
-                            Ok
-                                {
-                                    Items = items
-                                    NextAfterVersion = next
-                                }
+                        match verifyHistory witness connection transaction items with
+                        | Some failure -> return Error failure
+                        | None ->
+                            return
+                                Ok
+                                    {
+                                        Items = items
+                                        NextAfterVersion = next
+                                    }
             })
 
     let private visibleListRows connection transaction (context: ActorCallContext) after limit =
@@ -197,6 +223,7 @@ module internal ActorReadStore =
         (protection: ICaseListCursorProtection)
         (clock: IBusinessTime)
         (request: CaseListRequest)
+        witness
         =
         task {
             if revision <> context.Binding.GrantRevision then
@@ -237,9 +264,12 @@ module internal ActorReadStore =
                             None
 
                     let page: CasePage = { Items = items; NextCursor = next }
-                    return Ok page
+
+                    match CaseReadEvidence.page witness connection transaction items with
+                    | None -> return Ok page
+                    | Some failure -> return Error failure
         }
 
-    let list dataSource context protection clock request =
+    let list dataSource witness context protection clock request =
         snapshot dataSource (fun connection transaction revision ->
-            listAtRevision connection transaction revision context protection clock request)
+            listAtRevision connection transaction revision context protection clock request witness)

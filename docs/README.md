@@ -34,3 +34,6 @@ and its separate [design QA](domain-model-design-qa.md) record the business-inva
 
 The [architecture and contract design](architecture-contract-design.md) and its separate
 [design QA](architecture-contract-design-qa.md) record the component and ArchUnitNET wiring audit.
+
+The [persistence and recovery design](persistence-recovery-design.md) and its separate
+[design QA](persistence-recovery-design-qa.md) record the transaction, witness, replay and retention audit.

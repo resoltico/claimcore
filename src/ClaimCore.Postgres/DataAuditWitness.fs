@@ -12,8 +12,12 @@ module internal DataAuditWitness =
     let private verifyRevocationRow (witness: WitnessProtocol) cutoff (reader: NpgsqlDataReader) =
         let operationId = reader.GetGuid(0)
         let sequence = reader.GetInt64(5)
+        let eventId = reader.GetGuid(8)
 
-        if sequence > cutoff then
+        if
+            sequence > cutoff
+            || eventId <> WitnessEventIdentity.revocationEventId operationId
+        then
             corrupt ()
 
         let evidence: RevocationActorEvidence =
@@ -32,7 +36,7 @@ module internal DataAuditWitness =
 
         witnessProof (fun () ->
             witness.VerifyRevokedEvidenceForCase(
-                operationId,
+                eventId,
                 sequence,
                 reader.GetInt64(6),
                 reader.GetFieldValue<byte array>(7),
@@ -50,7 +54,7 @@ module internal DataAuditWitness =
         task {
             use command =
                 new NpgsqlCommand(
-                    "SELECT operation_id,request_sha256,case_id,revoking_actor_id,grant_revision,witness_sequence,witness_epoch,witness_entry_hash FROM claimcore.operation_revocations ORDER BY operation_id",
+                    "SELECT operation_id,request_sha256,case_id,revoking_actor_id,grant_revision,witness_sequence,witness_epoch,witness_entry_hash,witness_event_id FROM claimcore.operation_revocations ORDER BY operation_id",
                     connection,
                     transaction
                 )

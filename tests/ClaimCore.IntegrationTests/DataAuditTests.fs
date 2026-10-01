@@ -52,16 +52,7 @@ let private acceptedCase owner app witness =
             Suppression = FixturePrivateFiles.syntheticCommitments witness.Identity
         }
 
-    use database =
-        new PostgresStore(
-            source,
-            witness,
-            actorContext,
-            CaseListCursorTestSupport.protection,
-            CaseListCursorTestSupport.clock
-        )
-
-    Service.executeAsync (database :> IClaimStore) clock input
+    FixtureCommandExecution.executeRequest source witness actorContext clock input
     |> await
     |> accepted
     |> ignore

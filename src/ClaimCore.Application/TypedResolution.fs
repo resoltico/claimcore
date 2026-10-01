@@ -13,41 +13,34 @@ module internal TypedResolution =
         (request: ClaimCore.Domain.CommandRequest)
         (result: Result<AdmittedExecution, RecoveryStoreFailure>)
         : RetainedResolution =
+        let resolved outcome settlement =
+            Resolved(summary, attemptId, outcome, settlement)
+
         match result with
+        | Ok(AdmittedExecution.ObservedAccepted receipt) ->
+            ObservedReceipt(TypedProjection.receipt receipt)
         | Ok(AdmittedExecution.Accepted accepted) ->
-            Resolved(
-                summary,
-                attemptId,
-                DefiniteExecution.Accepted(TypedProjection.receipt accepted),
+            resolved
+                (DefiniteExecution.Accepted(TypedProjection.receipt accepted))
                 SettlementConfirmation.Confirmed
-            )
         | Ok(AdmittedExecution.Rejected(rejection, settlement)) ->
-            Resolved(
-                summary,
-                attemptId,
-                DefiniteExecution.ExecutionRejected(
+            resolved
+                (DefiniteExecution.ExecutionRejected(
                     request.OperationId,
                     TypedProjection.rejection rejection
-                ),
+                ))
                 settlement
-            )
         | Ok(AdmittedExecution.RevokedBeforeExecution settlement) ->
-            Resolved(
-                summary,
-                attemptId,
-                DefiniteExecution.ExecutionRevokedBeforeExecution request.OperationId,
+            resolved
+                (DefiniteExecution.ExecutionRevokedBeforeExecution request.OperationId)
                 settlement
-            )
         | Ok(AdmittedExecution.FailedBeforeCommit(failure, settlement)) ->
-            Resolved(
-                summary,
-                attemptId,
-                DefiniteExecution.FailedBeforeCommit(
+            resolved
+                (DefiniteExecution.FailedBeforeCommit(
                     request.OperationId,
                     TypedProjection.coreFault failure
-                ),
+                ))
                 settlement
-            )
         | Ok(AdmittedExecution.CommitOutcomeUnknown _) ->
             ResolutionUnresolved(
                 summary,
@@ -179,7 +172,7 @@ module internal TypedResolution =
 
                     match observed with
                     | Ok(Some _) ->
-                        return! ObservedReceiptVerification.verify store clock preparation summary
+                        return! ObservedReceiptVerification.verify store preparation summary
                     | _ when cancellationToken.IsCancellationRequested ->
                         return ResolutionCancelledBeforeAttempt summary
                     | Error failure ->

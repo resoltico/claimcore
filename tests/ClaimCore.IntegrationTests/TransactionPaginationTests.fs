@@ -5,6 +5,7 @@ open System.Threading.Tasks
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.TestSupport
 open ClaimCore.IntegrationTests.Fixtures
 
 let private insertBatchSize = 8
@@ -18,7 +19,7 @@ let private openCase service reference =
             CaseReference = reference
         }
 
-    Service.executeAsync service clock request
+    CommandExecution.executeAsync service clock request
 
 let private openBatch service references =
     references

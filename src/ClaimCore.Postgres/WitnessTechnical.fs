@@ -24,43 +24,6 @@ type internal TechnicalCandidateMetadata =
 /// Technical PREPARE and START use distinct deterministic witness identities. An orphan INTENT
 /// therefore survives process loss and cannot be mistaken for the accepted command's INTENT.
 module internal WitnessTechnical =
-    let private derive (operationId: Guid) (domain: string) (ordinal: int64) =
-        let source =
-            Encoding.ASCII.GetBytes(
-                "claimcore:witness:technical:v1:"
-                + domain
-                + ":"
-                + operationId.ToString("D")
-                + ":"
-                + ordinal.ToString(Globalization.CultureInfo.InvariantCulture)
-            )
-
-        let digest = SHA256.HashData(source)
-        let bytes = digest[0..15]
-        bytes[6] <- (bytes[6] &&& 0x0fuy) ||| 0x80uy
-        bytes[8] <- (bytes[8] &&& 0x3fuy) ||| 0x80uy
-        let hex = Convert.ToHexStringLower(bytes)
-
-        Guid.Parse(
-            hex.Substring(0, 8)
-            + "-"
-            + hex.Substring(8, 4)
-            + "-"
-            + hex.Substring(12, 4)
-            + "-"
-            + hex.Substring(16, 4)
-            + "-"
-            + hex.Substring(20)
-        )
-
-    let prepareEventId operationId = derive operationId "PREPARE" 0L
-
-    let startEventId operationId ordinal =
-        if ordinal < 1L then
-            invalidArg (nameof ordinal) "Attempt ordinal must be positive."
-
-        derive operationId "START" ordinal
-
     let private encoded (write: Utf8JsonWriter -> unit) =
         use stream = new MemoryStream()
         use writer = new Utf8JsonWriter(stream)
@@ -126,7 +89,7 @@ module internal WitnessTechnical =
             writer.WriteEndObject())
 
     let beginPrepare (witness: WitnessProtocol) (draft: RecoveryPreparationDraft) =
-        let eventId = prepareEventId draft.OperationId
+        let eventId = WitnessEventIdentity.prepareEventId draft.OperationId
 
         let bytes =
             prepareCandidate
@@ -153,7 +116,7 @@ module internal WitnessTechnical =
         role
         grantRevision
         =
-        let attemptId = startEventId header.OperationId ordinal
+        let attemptId = WitnessEventIdentity.startEventId header.OperationId ordinal
 
         let bytes =
             startCandidate
@@ -200,7 +163,10 @@ module internal WitnessTechnical =
         let hash = reader.GetFieldValue<byte array>(3)
         let candidateHash = reader.GetFieldValue<byte array>(4)
 
-        if reader.Read() || eventId <> prepareEventId header.OperationId then
+        if
+            reader.Read()
+            || eventId <> WitnessEventIdentity.prepareEventId header.OperationId
+        then
             raise WitnessPending
 
         reader.Close()

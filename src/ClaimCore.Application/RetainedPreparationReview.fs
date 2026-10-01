@@ -33,14 +33,12 @@ module internal RetainedPreparationReview =
 
     let private observedOutcome
         (store: IClaimStore)
-        (clock: IBusinessTime)
         (request: CommandRequest)
         (retained: RetainedPreparation)
         (details: PreparationDetails)
         : Task<PrepareOutcome> =
         task {
-            let! verified =
-                ObservedReceiptVerification.verify store clock retained details.Summary
+            let! verified = ObservedReceiptVerification.verify store retained details.Summary
 
             match verified with
             | RetainedResolution.ObservedReceipt receipt ->
@@ -72,7 +70,7 @@ module internal RetainedPreparationReview =
                 let! observed = store.Operation request.OperationId
 
                 match observed with
-                | Ok(Some _) -> return! observedOutcome store clock request retained details
+                | Ok(Some _) -> return! observedOutcome store request retained details
                 | _ when cancellationToken.IsCancellationRequested ->
                     return PrepareOutcome.CancelledBeforeAdmission request.OperationId
                 | Error failure ->

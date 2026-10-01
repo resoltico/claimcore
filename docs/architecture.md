@@ -193,16 +193,17 @@ The OIDC principal maps to a ClaimCore actor whose grants are default-deny and s
    revoked identity, applies the pure Domain transition, and co-commits a receipt with its definite
    accepted settlement. A durable revocation ends future execution authority even after an attempt
    was admitted; it never rewrites earlier uncertainty.
-5. Recovery attempt admission and settlement are separate technical dimensions. A definite business
+5. One retained-attempt transaction path owns command writes. Claim-store observations have no Domain callback or fresh execution capability. Exact accepted observations reconcile committed witness candidates only in mutation-bound calls; read-only case, history and operation views verify independent settlement without appending. Current projections verify both accepted field history and the current lifecycle tip, since lifecycle events can advance revisions without changing the thirteen fields.
+6. Recovery attempt admission and settlement are separate technical dimensions. A definite business
    result is not replaced by an unconfirmed settlement; unresolved and unknown outcomes remain
    recoverable. Pending recovery capacity is separate from retained terminal evidence, attempt
    inspection is keyset-paged, and pruned revocations remain payload-free tombstones.
-6. CLI and Web render the endpoint-specific result without rebasing, inventing an operation ID, or
+7. CLI and Web render the endpoint-specific result without rebasing, inventing an operation ID, or
    inferring non-commit.
 
 PostgreSQL detailed recovery reads project actual attempt IDs and their settlements through a bounded
-operation-bound keyset page. Unsettled attempts are never converted to definite settlement by a
-later acceptance and continue to block pruning of that preparation. Application keeps these
+operation-bound keyset page. Recovery detail/header/evidence reads share a repeatable primary snapshot so concurrent owner pruning cannot mix retained metadata with a different attempt set. Unsettled attempts are never converted to definite settlement by a
+later acceptance or revocation and continue to block pruning of that preparation. A replay observed after attempt admission returns an observed receipt; it does not co-commit a new acceptance or settle a different historical attempt. A settled unaccepted attempt is refused before Domain execution or a witness intent; a fresh admitted attempt can retry the unchanged request. Application keeps these
 separate from producer provenance and accepted claim history. Before a technical COMMIT begins,
 cancellation can prove a rollback and yield a definite cancelled outcome. Once COMMIT starts, its
 result is not cancellable into a claim of non-commit: lost confirmation remains explicitly unknown.

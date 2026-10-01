@@ -5,6 +5,7 @@ open System.Collections.Generic
 open System.Threading.Tasks
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.TestSupport
 
 /// Test-only port double: not a storage adapter and not a claim of PostgreSQL correctness.
 type internal Store
@@ -17,8 +18,8 @@ type internal Store
     let gate = obj ()
     member _.TransactionCalls = transactions
 
-    interface IClaimStore with
-        member _.Transact(operation, decide) =
+    interface ITestCommandExecutor with
+        member _.Execute(operation, capture, decide) =
             Task.FromResult(
                 lock gate (fun () ->
                     transactions <- transactions + 1
@@ -30,9 +31,13 @@ type internal Store
                         Ok { receipt with Replayed = true }
                     | Some _ -> Error CoreFailure.IdempotencyConflict
                     | None ->
-                        match decide (Map.tryFind request.CaseReference cases) with
+                        match
+                            decide
+                                (capture ()).EffectiveBusinessDate
+                                (Map.tryFind request.CaseReference cases)
+                        with
                         | Error error -> Error(CoreFailure.Domain error)
-                        | Ok(claim, _) ->
+                        | Ok claim ->
                             let receipt: Receipt =
                                 {
                                     OperationId = request.OperationId
@@ -48,6 +53,7 @@ type internal Store
                             Ok receipt)
             )
 
+    interface IClaimStore with
         member _.Get reference =
             Task.FromResult(lock gate (fun () -> Ok(Map.tryFind reference cases)))
 

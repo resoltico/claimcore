@@ -14,17 +14,14 @@ module internal RecoveryExecutionSupport =
     let operationKey (operationId: Guid) =
         "operation:" + operationId.ToString("D")
 
-    let attemptExists
-        (connection: NpgsqlConnection)
-        (transaction: NpgsqlTransaction)
-        (operationId: Guid)
-        (attemptId: Guid)
-        =
+    let attemptUnsettled connection transaction operationId attemptId =
         task {
             use command =
                 new NpgsqlCommand(
-                    "SELECT EXISTS (SELECT 1 FROM claimcore.request_submission_attempts "
-                    + "WHERE operation_id = @operation AND attempt_id = @attempt)",
+                    "SELECT EXISTS (SELECT 1 FROM claimcore.request_submission_attempts a "
+                    + "WHERE a.operation_id=@operation AND a.attempt_id=@attempt "
+                    + "AND NOT EXISTS (SELECT 1 FROM claimcore.request_submission_settlements s "
+                    + "WHERE s.attempt_id=a.attempt_id))",
                     connection,
                     transaction
                 )
@@ -55,20 +52,6 @@ module internal RecoveryExecutionSupport =
         =
         commitBoundary cancellationToken commitStarted (fun () ->
             transaction.CommitAsync(Threading.CancellationToken.None))
-
-    let settleExistingAttempt
-        (connection: NpgsqlConnection)
-        (transaction: NpgsqlTransaction)
-        (operationId: Guid)
-        (attemptId: Guid)
-        outcome
-        =
-        task {
-            let! retainedAttempt = attemptExists connection transaction operationId attemptId
-
-            if retainedAttempt then
-                do! settleRequired connection transaction attemptId outcome
-        }
 
     let rollback (transaction: NpgsqlTransaction) =
         task {

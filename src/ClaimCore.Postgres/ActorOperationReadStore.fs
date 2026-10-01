@@ -3,6 +3,7 @@ namespace ClaimCore.Postgres
 open System
 open System.Threading
 open ClaimCore.Application
+open ClaimCore.Postgres.WitnessProtocolReconciliation
 
 /// Operation observations are admitted by exact operation/case identity, not a caller-supplied case.
 module internal ActorOperationReadStore =
@@ -42,8 +43,64 @@ module internal ActorOperationReadStore =
                 operationId
                 CancellationToken.None
 
-    let operation dataSource (context: ActorCallContext) operationId =
-        ActorReadStore.snapshot dataSource (fun connection transaction revision ->
+    let private mutatesEvidence (context: ActorCallContext) =
+        freshCommand context.Action
+        || context.Action = EndpointAction.RecoveryResolve
+        || context.Action = EndpointAction.RecoveryDismiss
+
+    let private snapshot dataSource context action =
+        if not (mutatesEvidence context) then
+            ActorReadStore.snapshot dataSource action
+        else
+            task {
+                let! result =
+                    StoreData.read dataSource (fun connection ->
+                        task {
+                            use! _lease =
+                                AuthorityOperationFence.acquireShared
+                                    (Some dataSource)
+                                    connection
+                                    CancellationToken.None
+
+                            use transaction =
+                                connection.BeginTransaction(
+                                    System.Data.IsolationLevel.ReadCommitted
+                                )
+
+                            let! revision =
+                                ActorGrantRead.lockRevision
+                                    connection
+                                    transaction
+                                    true
+                                    CancellationToken.None
+
+                            return! action connection transaction revision
+                        })
+
+                return result |> Result.bind id
+            }
+
+    let private witnessed
+        (witness: WitnessProtocol)
+        context
+        connection
+        transaction
+        (operationId: Guid)
+        receipt
+        =
+        try
+            if mutatesEvidence context then
+                Sql.lockKey connection transaction ("operation:" + operationId.ToString("D"))
+                witness.ReconcileAccepted(connection, transaction, operationId)
+            else
+                witness.VerifyAccepted(connection, transaction, operationId)
+
+            Ok receipt
+        with _ ->
+            Error(CoreFailure.CommitOutcomeUnknown operationId)
+
+    let operation dataSource witness (context: ActorCallContext) operationId =
+        snapshot dataSource context (fun connection transaction revision ->
             task {
                 let! found = operationCaseId connection transaction context operationId
 
@@ -74,11 +131,16 @@ module internal ActorOperationReadStore =
                         let! receipt =
                             StoreData.readOperation connection (Some transaction) operationId
 
-                        return Ok(receipt |> Option.map fst)
+                        match receipt with
+                        | None -> return Ok None
+                        | Some(value, _) ->
+                            return
+                                witnessed witness context connection transaction operationId value
+                                |> Result.map Some
             })
 
-    let accepted dataSource (context: ActorCallContext) operationId digest =
-        ActorReadStore.snapshot dataSource (fun connection transaction revision ->
+    let accepted dataSource witness (context: ActorCallContext) operationId digest =
+        snapshot dataSource context (fun connection transaction revision ->
             task {
                 let! found =
                     ActorGrantGateQueries.acceptedCaseId
@@ -108,10 +170,23 @@ module internal ActorOperationReadStore =
                     if not canRead then
                         return Error CoreFailure.ResourceUnavailable
                     else
-                        return!
+                        let! observed =
                             StoreData.readAcceptedUnderLock
                                 connection
                                 transaction
                                 operationId
                                 digest
+
+                        match observed with
+                        | Ok(Some receipt) ->
+                            return
+                                witnessed
+                                    witness
+                                    context
+                                    connection
+                                    transaction
+                                    operationId
+                                    receipt
+                                |> Result.map Some
+                        | other -> return other
             })

@@ -8,6 +8,7 @@ open System.Text.Json.Nodes
 open System.Threading
 open Expecto
 open ClaimCore.Application
+open ClaimCore.TestSupport
 open ClaimCore.Domain
 open ClaimCore.Hosting
 open ClaimCore.RecordFormat
@@ -172,7 +173,7 @@ let private acceptedReceiptCannotBeDismissed () =
 
     use database = store ()
 
-    Service.executeAsync (database :> IClaimStore) clock command
+    CommandExecution.executeAsync (database :> IClaimStore) clock command
     |> await
     |> accepted
     |> ignore
@@ -185,7 +186,7 @@ let private acceptedReceiptCannotBeDismissed () =
         Expect.equal
             rejection.Code
             RecoveryRejectionCode.RecoveryActionUnavailable
-            "Accepted receipt cannot be dismissed even without a submission marker"
+            "Accepted receipt cannot be dismissed after witnessed attempt admission"
     | _ -> failtest "A retained accepted receipt must block dismissal."
 
     match
@@ -194,7 +195,10 @@ let private acceptedReceiptCannotBeDismissed () =
         |> await
     with
     | RecoveryQueryOutcome.RecoverySucceeded(Lookup.Found(RecoveryInspection.RetainedInspection details)) ->
-        Expect.equal details.Preparation.Summary.State PreparationState.Unsubmitted "No marker"
+        Expect.equal
+            details.Preparation.Summary.State
+            PreparationState.SubmissionStarted
+            "Actual command protocol records admission"
 
         match details.Observation with
         | Lookup.Found receipt -> Expect.equal receipt.OperationId operationId "Exact receipt"

@@ -28,8 +28,8 @@ module internal CaseErasureWitnessDenials =
     let private sourceSql =
         "SELECT count(*) FROM ("
         + "SELECT operation_id AS id FROM claimcore.case_changes WHERE case_id=@case AND operation_id=@event "
-        + "UNION ALL SELECT operation_id FROM claimcore.operation_revocations "
-        + "WHERE case_id=@case AND operation_id=@event "
+        + "UNION ALL SELECT witness_event_id FROM claimcore.operation_revocations "
+        + "WHERE case_id=@case AND witness_event_id=@event "
         + "UNION ALL SELECT witness_event_id FROM claimcore.request_preparations "
         + "WHERE case_id=@case AND witness_event_id=@event "
         + "UNION ALL SELECT a.witness_event_id FROM claimcore.request_submission_attempts a "

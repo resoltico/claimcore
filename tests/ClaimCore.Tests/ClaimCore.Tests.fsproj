@@ -2,9 +2,11 @@
   <ItemGroup>
     <Compile Include="../../eng/RejectionExamples.fs" Link="RejectionExamples.fs" />
     <Compile Include="../RepositoryRoot.fs" Link="RepositoryRoot.fs" />
+    <Compile Include="../CommandExecution.fs" Link="CommandExecution.fs" />
     <Compile Include="PropertyHarness.fs" />
     <Compile Include="PropertyHarnessTests.fs" />
     <Compile Include="Fixtures.fs" />
+    <Compile Include="CommandIdentityIsolationTests.fs" />
     <Compile Include="ScalarPropertyTests.fs" />
     <Compile Include="RecordPropertyTests.fs" />
     <Compile Include="TransitionPropertyTests.fs" />
@@ -36,6 +38,7 @@
     <Compile Include="TypedCoreTests.fs" />
     <Compile Include="ExactReplayTests.fs" />
     <Compile Include="ReceiptFirstTests.fs" />
+    <Compile Include="ScriptedClaimStore.fs" />
     <Compile Include="RecoveryOutcomeTests.fs" />
     <Compile Include="RecoveryCancellationOutcomeTests.fs" />
     <Compile Include="RecoveryAuthorityTests.fs" />

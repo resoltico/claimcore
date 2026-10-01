@@ -5,41 +5,10 @@ open System.Threading
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Application
+open ClaimCore.TestSupport
+open ClaimCore.Tests.ScriptedClaimStore
 open ClaimCore.Domain
 open ClaimCore.Tests.Fixtures
-
-type private ExecutionMode =
-    | Normal
-    | Throws
-    | Unknown
-    | FailsBeforeCommit
-
-type private ScriptedClaimStore(mode: ExecutionMode) =
-    let inner = new CoreStore.Store()
-    member _.TransactionCalls = inner.TransactionCalls
-
-    interface IClaimStore with
-        member _.Transact(operation, decide) =
-            match mode with
-            | Normal -> (inner :> IClaimStore).Transact(operation, decide)
-            | Throws ->
-                Task.FromException<Result<Receipt, CoreFailure>>(InvalidOperationException())
-            | Unknown ->
-                let operationId = (Operation.request operation).OperationId
-                Task.FromResult(Error(CoreFailure.CommitOutcomeUnknown operationId))
-            | FailsBeforeCommit -> Task.FromResult(Error CoreFailure.StoreUnavailable)
-
-        member _.Get reference = (inner :> IClaimStore).Get reference
-        member _.List after = (inner :> IClaimStore).List after
-
-        member _.History(reference, after) =
-            (inner :> IClaimStore).History(reference, after)
-
-        member _.Operation operationId =
-            (inner :> IClaimStore).Operation operationId
-
-        member _.Accepted(operationId, requestSha256) =
-            (inner :> IClaimStore).Accepted(operationId, requestSha256)
 
 let private clock = businessTime today
 
@@ -76,7 +45,7 @@ let private resolve (core: IClaimsCore) operationId digest token =
     core.Recovery.Resolve(operationId, digest, token).Result
 
 let private makeCore mode (recovery: CoreRecoveryStore.Store) =
-    let claims = new ScriptedClaimStore(mode)
+    let claims = new ScriptedClaimStore.Store(mode)
     recovery.AttachClaimStore(claims :> IClaimStore)
     ActorCoreFixture.create (claims :> IClaimStore) (recovery :> IRecoveryStore) clock, claims
 
@@ -225,7 +194,10 @@ let private rejectedSettlement =
             |> Drafts.bind
             |> Result.defaultWith (fun _ -> failtest "Synthetic competing command must bind.")
 
-        match Service.executeAsync claimPort clock competing |> fun task -> task.Result with
+        match
+            CommandExecution.executeAsync claimPort clock competing
+            |> fun task -> task.Result
+        with
         | Ok _ -> ()
         | Error _ -> failtest "Competing synthetic open must commit first."
 
@@ -252,7 +224,9 @@ let private receiptBetweenObservationAndAttempt =
             |> Result.defaultWith (fun _ -> failtest "Synthetic interleaved command must bind.")
 
         let commitBetween () =
-            match Service.executeAsync claimPort clock request |> fun task -> task.Result with
+            match
+                CommandExecution.executeAsync claimPort clock request |> fun task -> task.Result
+            with
             | Ok _ -> ()
             | Error _ -> failtest "Synthetic receipt must commit at the interleave barrier."
 
@@ -262,17 +236,14 @@ let private receiptBetweenObservationAndAttempt =
         let digest = prepared core operationId command.CaseReference
 
         match resolve core operationId digest CancellationToken.None with
-        | ResolveOutcome.ResolveCompleted(_,
-                                          _,
-                                          DefiniteExecution.Accepted receipt,
-                                          SettlementConfirmation.Confirmed) ->
+        | ResolveOutcome.ResolveObservedAccepted receipt ->
             Expect.equal receipt.OperationId operationId "Exact operation receipt"
             Expect.isTrue receipt.Replayed "Core transaction observes intervening acceptance"
             Expect.equal receipt.Snapshot.Version 1L "No second revision"
         | _ -> failtest "Intervening exact receipt must replay without a second revision."
 
         Expect.equal claims.TransactionCalls 2 "One commit and one exact replay transaction"
-        Expect.equal recovery.SettlementCalls 1 "Definite replay attempt settled")
+        Expect.equal recovery.SettlementCalls 0 "Observed history cannot rewrite this attempt")
 
 let tests =
     testList

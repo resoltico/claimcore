@@ -77,7 +77,7 @@ module internal RecoveryReadStore =
 
                     cancellationToken.ThrowIfCancellationRequested()
                     use! connection = RuntimeDatabase.openConnectionAsync dataSource
-                    use transaction = connection.BeginTransaction(IsolationLevel.ReadCommitted)
+                    use transaction = connection.BeginTransaction(IsolationLevel.RepeatableRead)
 
                     let! revision =
                         ActorGrantRead.lockRevision connection transaction false cancellationToken
@@ -110,7 +110,7 @@ module internal RecoveryReadStore =
         task {
             cancellationToken.ThrowIfCancellationRequested()
             use! connection = RuntimeDatabase.openConnectionAsync dataSource
-            use transaction = connection.BeginTransaction(IsolationLevel.ReadCommitted)
+            use transaction = connection.BeginTransaction(IsolationLevel.RepeatableRead)
 
             let! revision =
                 ActorGrantRead.lockRevision connection transaction false cancellationToken
@@ -188,7 +188,7 @@ module internal RecoveryReadStore =
         task {
             ct.ThrowIfCancellationRequested()
             use! connection = RuntimeDatabase.openConnectionAsync dataSource
-            use transaction = connection.BeginTransaction(IsolationLevel.ReadCommitted)
+            use transaction = connection.BeginTransaction(IsolationLevel.RepeatableRead)
 
             let! revision = ActorGrantRead.lockRevision connection transaction false ct
 

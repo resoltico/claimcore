@@ -6,6 +6,7 @@ open System.Threading.Tasks
 open Npgsql
 open Expecto
 open ClaimCore.Application
+open ClaimCore.TestSupport
 open ClaimCore.Domain
 open ClaimCore.Postgres
 open ClaimCore.IntegrationTests.FixtureDatabase
@@ -83,19 +84,32 @@ type internal Store() =
                 return! call (adapter :> IClaimStore)
         }
 
+    interface ITestCommandExecutor with
+        member _.Execute(operation, capture, decide) =
+            task {
+                let request = Operation.request operation
+
+                let action =
+                    match request.Command with
+                    | Command.Open _ -> EndpointAction.ExecuteNewCase
+                    | _ -> EndpointAction.ExecuteCommand
+
+                let! context = gate.Command(principal, action, request, CancellationToken.None)
+
+                match context with
+                | None -> return Error CoreFailure.ResourceUnavailable
+                | Some actor ->
+                    return!
+                        FixtureCommandExecution.execute
+                            source
+                            witness
+                            actor
+                            operation
+                            capture
+                            decide
+            }
+
     interface IClaimStore with
-        member _.Transact(operation, decide) =
-            let request = Operation.request operation
-
-            let action =
-                match request.Command with
-                | Command.Open _ -> EndpointAction.ExecuteNewCase
-                | _ -> EndpointAction.ExecuteCommand
-
-            invoke
-                (gate.Command(principal, action, request, CancellationToken.None))
-                (fun adapter -> adapter.Transact(operation, decide))
-
         member _.Get(reference) =
             invoke
                 (gate.Case(principal, EndpointAction.GetCase, reference, CancellationToken.None))

@@ -40,7 +40,7 @@ module internal PreparationPageStore =
         + "NULL::smallint AS revocation_format, NULL::text AS revocation_sha256, "
         + "NULL::timestamptz AS revoked_at, NULL::text AS revocation_reason, "
         + "NULL::uuid AS revoking_actor_id, NULL::bigint AS grant_revision, "
-        + "NULL::uuid AS revocation_case_id "
+        + "NULL::uuid AS revocation_case_id, NULL::uuid AS revocation_event_id "
         + "FROM claimcore.request_preparations p "
         + "LEFT JOIN claimcore.request_preparation_lifecycle l ON l.operation_id = p.operation_id "
         + "WHERE NOT EXISTS (SELECT 1 FROM claimcore.case_changes c "
@@ -57,7 +57,7 @@ module internal PreparationPageStore =
         + "NULL::smallint AS revocation_format, NULL::text AS revocation_sha256, "
         + "NULL::timestamptz AS revoked_at, NULL::text AS revocation_reason, "
         + "NULL::uuid AS revoking_actor_id, NULL::bigint AS grant_revision, "
-        + "NULL::uuid AS revocation_case_id "
+        + "NULL::uuid AS revocation_case_id, NULL::uuid AS revocation_event_id "
         + "FROM claimcore.request_preparations p "
         + "LEFT JOIN claimcore.request_preparation_lifecycle l ON l.operation_id = p.operation_id "
         + "JOIN claimcore.case_changes c ON c.operation_id = p.operation_id "
@@ -69,7 +69,7 @@ module internal PreparationPageStore =
         + ", r.revoked_at AS occurred_at, 'REVOKED'::text AS authority, "
         + "r.canonical_request_format AS revocation_format, r.request_sha256 AS revocation_sha256, "
         + "r.revoked_at, r.reason AS revocation_reason, "
-        + "r.revoking_actor_id, r.grant_revision, r.case_id AS revocation_case_id "
+        + "r.revoking_actor_id, r.grant_revision, r.case_id AS revocation_case_id, r.witness_event_id AS revocation_event_id "
         + "FROM claimcore.request_preparations p "
         + "LEFT JOIN claimcore.request_preparation_lifecycle l ON l.operation_id = p.operation_id "
         + "JOIN claimcore.operation_revocations r ON r.operation_id = p.operation_id "
@@ -82,7 +82,7 @@ module internal PreparationPageStore =
         + "r.revoked_at AS occurred_at, 'REVOKED_TOMBSTONE'::text AS authority, "
         + "r.canonical_request_format AS revocation_format, r.request_sha256 AS revocation_sha256, "
         + "r.revoked_at, r.reason AS revocation_reason, "
-        + "r.revoking_actor_id, r.grant_revision, r.case_id AS revocation_case_id "
+        + "r.revoking_actor_id, r.grant_revision, r.case_id AS revocation_case_id, r.witness_event_id AS revocation_event_id "
         + "FROM claimcore.operation_revocations r "
         + "WHERE NOT EXISTS (SELECT 1 FROM claimcore.request_preparations p "
         + "                  WHERE p.operation_id = r.operation_id) "
@@ -176,6 +176,7 @@ module internal PreparationPageStore =
                     (reader.GetGuid(20))
                     (reader.GetInt64(21))
                     (reader.GetGuid(22))
+                    (reader.GetGuid(23))
 
             RecoveryStoreListItem.Revoked revocation, occurredAt
         | token ->

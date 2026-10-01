@@ -42,7 +42,7 @@ module internal WitnessTechnicalCandidateRead =
 
             try
                 if
-                    ticket.OperationId <> WitnessTechnical.prepareEventId operationId
+                    ticket.OperationId <> WitnessEventIdentity.prepareEventId operationId
                     || plain <> again
                     || Convert.ToHexStringLower(SHA256.HashData(canonicalRequest)) <> requestSha
                 then
@@ -86,7 +86,7 @@ module internal WitnessTechnicalCandidateRead =
         try
             if
                 ticket.OperationId <> attemptId
-                || attemptId <> WitnessTechnical.startEventId operationId ordinal
+                || attemptId <> WitnessEventIdentity.startEventId operationId ordinal
                 || plain <> again
             then
                 raise WitnessPending

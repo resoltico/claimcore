@@ -4,6 +4,7 @@ open System
 open System.Threading
 open Expecto
 open ClaimCore.Application
+open ClaimCore.TestSupport
 open ClaimCore.Domain
 open ClaimCore.Tests.Fixtures
 
@@ -244,7 +245,7 @@ let private observedIdentityConflict =
                 |> Drafts.bind
                 |> Result.defaultWith (fun _ -> failtest "Synthetic conflict must bind.")
 
-            match Service.executeAsync claimPort clock conflicting |> waitFor with
+            match CommandExecution.executeAsync claimPort clock conflicting |> waitFor with
             | Ok _ -> ()
             | Error _ -> failtest "The synthetic conflicting receipt must exist."
 

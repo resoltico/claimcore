@@ -5,6 +5,7 @@ open Npgsql
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application
+open ClaimCore.TestSupport
 open ClaimCore.Postgres
 open ClaimCore.IntegrationTests.Fixtures
 
@@ -174,7 +175,10 @@ let private persistLifecycle initial =
             next initial 2L (Command.RecordPayment "2026-08-20")
             next initial 3L Command.Close
         ] do
-        Service.executeAsync service clock command |> await |> accepted |> ignore
+        CommandExecution.executeAsync service clock command
+        |> await
+        |> accepted
+        |> ignore
 
 let private verifyLifecycle () =
     let initial = newRequest ()

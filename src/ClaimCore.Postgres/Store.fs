@@ -15,23 +15,25 @@ type internal PostgresStore
         clock: IBusinessTime
     ) =
     interface IClaimStore with
-        member _.Transact(operation, decide) =
-            StoreTransaction.transact dataSource (Some witness) (Some actorContext) operation decide
-
         member _.Get(reference) =
-            ActorReadStore.get dataSource actorContext reference
+            ActorReadStore.get dataSource witness actorContext reference
 
         member _.List(request) =
-            ActorReadStore.list dataSource actorContext cursorProtection clock request
+            ActorReadStore.list dataSource witness actorContext cursorProtection clock request
 
         member _.History(reference, afterVersion) =
-            ActorReadStore.history dataSource actorContext reference afterVersion
+            ActorReadStore.history dataSource witness actorContext reference afterVersion
 
         member _.Operation(operationId) =
-            ActorOperationReadStore.operation dataSource actorContext operationId
+            ActorOperationReadStore.operation dataSource witness actorContext operationId
 
         member _.Accepted(operationId, requestSha256) =
-            ActorOperationReadStore.accepted dataSource actorContext operationId requestSha256
+            ActorOperationReadStore.accepted
+                dataSource
+                witness
+                actorContext
+                operationId
+                requestSha256
 
     interface IDisposable with
         member _.Dispose() = ()

@@ -36,7 +36,7 @@ let private prepareCommitThenSettlementFailure =
                 | Error RecoveryStoreFailure.TechnicalMutationUnknown -> ()
                 | _ -> failtest "Missing PREPARE settlement must remain unknown."
 
-                let eventId = WitnessTechnical.prepareEventId request.OperationId
+                let eventId = WitnessEventIdentity.prepareEventId request.OperationId
 
                 Expect.equal
                     (rowCount owner "request_preparations" request.OperationId)
@@ -126,7 +126,7 @@ let private startCommitThenSettlementFailure =
             | Error _ -> failtest "Missing START settlement returned safe failure."
             | Ok _ -> failtest "Missing START settlement must remain unknown."
 
-            let eventId = WitnessTechnical.startEventId request.OperationId 1L
+            let eventId = WitnessEventIdentity.startEventId request.OperationId 1L
 
             Expect.equal
                 (rowCount owner "request_submission_attempts" request.OperationId)
@@ -253,7 +253,7 @@ let private forkedPrepareTicket =
                 (witnessCount
                     writer
                     (identity owner)
-                    (WitnessTechnical.prepareEventId request.OperationId))
+                    (WitnessEventIdentity.prepareEventId request.OperationId))
                 2
                 "Independent witness history remains intact"))
 

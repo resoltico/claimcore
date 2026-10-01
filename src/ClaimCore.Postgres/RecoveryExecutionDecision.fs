@@ -109,7 +109,7 @@ module internal RecoveryExecutionDecision =
         =
         task {
             let request = Operation.request operation
-            let! admitted = attemptExists connection transaction request.OperationId attemptId
+            let! admitted = attemptUnsettled connection transaction request.OperationId attemptId
 
             if not admitted then
                 return Error RecoveryStoreFailure.NotFound
@@ -201,15 +201,7 @@ module internal RecoveryExecutionDecision =
             | Some value when matches fingerprint value ->
                 knownRevocation.Value <- true
 
-                return!
-                    revokeExisting
-                        connection
-                        transaction
-                        request
-                        attemptId
-                        cancellationToken
-                        commitStarted
-                        witness
+                return! revokeExisting connection transaction request witness
             | Some _ -> return Error RecoveryStoreFailure.IdempotencyConflict
             | None ->
                 return!

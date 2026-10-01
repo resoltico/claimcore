@@ -35,6 +35,68 @@ module internal WitnessProtocolReconciliation =
         finally
             CryptographicOperations.ZeroMemory(expected)
 
+    let private acceptedIntent
+        (witness: WitnessProtocol)
+        (connection: NpgsqlConnection)
+        (transaction: NpgsqlTransaction)
+        operationId
+        =
+        let store = witness.EvidenceStore
+        let custody = witness.KeyCustody
+
+        let associatedData operation phase =
+            witness.AssociatedData(operation, phase)
+
+        let intent =
+            store.TryReadEvidence(operationId, Intent)
+            |> Option.defaultWith (fun () -> raise WitnessPending)
+
+        let plain =
+            custody.Decrypt(
+                intent.Ticket.KeyId,
+                associatedData operationId "INTENT",
+                intent.EncryptedPayload
+            )
+
+        try
+            use document = JsonDocument.Parse(plain)
+            let root = document.RootElement
+
+            use command =
+                new NpgsqlCommand(
+                    "SELECT case_reference,revision,canonical_request,snapshot,"
+                    + "effective_business_date::text,observed_utc_instant,rule_revision,"
+                    + "witness_sequence,witness_epoch,witness_entry_hash,case_id,"
+                    + "preparer_actor_id,importer_actor_id,submitter_actor_id,resolver_actor_id,"
+                    + "accepted_actor_id,grant_revision "
+                    + "FROM claimcore.case_changes WHERE operation_id=@operation",
+                    connection,
+                    transaction
+                )
+
+            command.Parameters.AddWithValue("operation", NpgsqlDbType.Uuid, operationId)
+            |> ignore
+
+            use reader = command.ExecuteReader()
+
+            if not (reader.Read()) then
+                raise WitnessPending
+
+            if
+                not (WitnessPrimaryMatch.accepted operationId intent.Ticket root reader)
+                || reader.Read()
+            then
+                raise WitnessPending
+
+            reader.Close()
+
+            {
+                Ticket = intent.Ticket
+                CandidateHash = SHA256.HashData(plain)
+            }
+        finally
+            CryptographicOperations.ZeroMemory(plain)
+
     type WitnessProtocol with
         member this.VerifyHistoricalTip(sequence: int64, expectedHash: byte array) =
             if isNull (box expectedHash) || expectedHash.Length <> 32 then
@@ -99,82 +161,52 @@ module internal WitnessProtocolReconciliation =
             finally
                 CryptographicOperations.ZeroMemory(plain)
 
+        member this.VerifyAccepted
+            (connection: NpgsqlConnection, transaction: NpgsqlTransaction, operationId: Guid)
+            =
+            let intent = acceptedIntent this connection transaction operationId
+
+            this.VerifyAcceptedEvidence(
+                operationId,
+                intent.Ticket.Sequence,
+                intent.Ticket.Epoch,
+                intent.Ticket.EntryHash,
+                intent.CandidateHash
+            )
+
         member this.ReconcileAccepted
             (connection: NpgsqlConnection, transaction: NpgsqlTransaction, operationId: Guid)
             =
-            let store = this.EvidenceStore
-            let custody = this.KeyCustody
-            let associatedData operation phase = this.AssociatedData(operation, phase)
-
-            let intent =
-                store.TryReadEvidence(operationId, Intent)
-                |> Option.defaultWith (fun () -> raise WitnessPending)
-
-            let plain =
-                custody.Decrypt(
-                    intent.Ticket.KeyId,
-                    associatedData operationId "INTENT",
-                    intent.EncryptedPayload
-                )
-
             try
-                use document = JsonDocument.Parse(plain)
-                let root = document.RootElement
+                let intent = acceptedIntent this connection transaction operationId
+                this.SettleAccepted(operationId, intent) |> ignore
 
-                use command =
-                    new NpgsqlCommand(
-                        "SELECT case_reference,revision,canonical_request,snapshot,"
-                        + "effective_business_date::text,observed_utc_instant,rule_revision,"
-                        + "witness_sequence,witness_epoch,witness_entry_hash,case_id,"
-                        + "preparer_actor_id,importer_actor_id,submitter_actor_id,resolver_actor_id,"
-                        + "accepted_actor_id,grant_revision "
-                        + "FROM claimcore.case_changes WHERE operation_id=@operation",
-                        connection,
-                        transaction
-                    )
-
-                command.Parameters.AddWithValue("operation", NpgsqlDbType.Uuid, operationId)
-                |> ignore
-
-                use reader = command.ExecuteReader()
-
-                if not (reader.Read()) then
-                    raise WitnessPending
-
-                if
-                    not (WitnessPrimaryMatch.accepted operationId intent.Ticket root reader)
-                    || reader.Read()
-                then
-                    raise WitnessPending
-
-                reader.Close()
-
-                let recovered =
-                    {
-                        Ticket = intent.Ticket
-                        CandidateHash = SHA256.HashData(plain)
-                    }
-
-                this.SettleAccepted(operationId, recovered) |> ignore
-                this.RequireSettled(operationId, SettledAccepted)
-            finally
-                CryptographicOperations.ZeroMemory(plain)
+                this.VerifyAcceptedEvidence(
+                    operationId,
+                    intent.Ticket.Sequence,
+                    intent.Ticket.Epoch,
+                    intent.Ticket.EntryHash,
+                    intent.CandidateHash
+                )
+            with _ ->
+                raise WitnessPending
 
         member this.ReconcileRevoked
             (connection: NpgsqlConnection, transaction: NpgsqlTransaction, operationId: Guid)
             =
+            let eventId = WitnessEventIdentity.revocationEventId operationId
             let store = this.EvidenceStore
             let custody = this.KeyCustody
             let associatedData operation phase = this.AssociatedData(operation, phase)
 
             let intent =
-                store.TryReadEvidence(operationId, Intent)
+                store.TryReadEvidence(eventId, Intent)
                 |> Option.defaultWith (fun () -> raise WitnessPending)
 
             let plain =
                 custody.Decrypt(
                     intent.Ticket.KeyId,
-                    associatedData operationId "INTENT",
+                    associatedData eventId "INTENT",
                     intent.EncryptedPayload
                 )
 
@@ -182,7 +214,7 @@ module internal WitnessProtocolReconciliation =
                 use command =
                     new NpgsqlCommand(
                         "SELECT request_sha256,witness_sequence,witness_epoch,witness_entry_hash,"
-                        + "revoking_actor_id,grant_revision,case_id "
+                        + "revoking_actor_id,grant_revision,case_id,witness_event_id "
                         + "FROM claimcore.operation_revocations WHERE operation_id=@operation",
                         connection,
                         transaction
@@ -196,7 +228,10 @@ module internal WitnessProtocolReconciliation =
                 if not (reader.Read()) then
                     raise WitnessPending
 
-                if not (revokedMatches operationId intent.Ticket plain reader) then
+                if
+                    reader.GetGuid(7) <> eventId
+                    || not (revokedMatches operationId intent.Ticket plain reader)
+                then
                     raise WitnessPending
 
                 reader.Close()
@@ -207,7 +242,7 @@ module internal WitnessProtocolReconciliation =
                         CandidateHash = SHA256.HashData(plain)
                     }
 
-                this.SettleRevoked(operationId, recovered) |> ignore
-                this.RequireSettled(operationId, SettledRevoked)
+                this.SettleRevoked(eventId, recovered) |> ignore
+                this.RequireSettled(eventId, SettledRevoked)
             finally
                 CryptographicOperations.ZeroMemory(plain)
