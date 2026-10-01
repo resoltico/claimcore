@@ -63,17 +63,22 @@ trust boundaries. [Development](docs/development.md) owns commands and gates.
 - Test only with synthetic data in isolated databases. Preserve adopted cases, database volumes,
   private `.local` state, and retained old installation evidence. Never print secrets, connection strings,
   recovery bytes, or claimant payloads.
-- Keep contract headings in their registered owner documents and evidence-test leaf names prefixed
-  with one matching `[CC-…]` token. Reattest `eng/ClaimCore.Docs/contract-reviews.json` only after
-  reviewing the exact heading and assertion sources.
-- Required .NET tests use native .NET 10 Microsoft Testing Platform commands and exact registered
-  counts. Focused, pending, skipped, expected-failure, conditional, filtered, retried, or
-  unregistered sharded runs cannot satisfy complete verification; the PostgreSQL integration partitions
-  registered in `eng/test-partitions.json` merge into one exact report and are the only sharding.
+- Keep contract headings in their registered owner documents and name at least one test per contract with
+  its `[CC-…]` token; `ClaimCore.Docs check` fails on an unnamed contract and on a token that names none.
+  There are no review hashes to refresh: review a contract by reading its heading and the tests that name it.
+- Required .NET tests use native .NET 10 Microsoft Testing Platform commands through
+  `node eng/ci/suites/suite.mjs`. A suite's expected tests are the lines of its generated
+  `tests/inventory/<assembly>.txt` (rewrite with `node eng/ci/suites/inventory.mjs --write`, never by hand,
+  and commit it with the test change); the registry `config/test-suites.json` holds no counts. Focused,
+  pending, skipped, expected-failure, conditional, filtered, retried, or unregistered sharded runs cannot
+  satisfy complete verification; the PostgreSQL integration partitions registered there are the only sharding.
+- Contract artifacts are generated, not tracked. `npm --prefix web run contract:generate` must match
+  `config/contracts.lock.json`; accept an intentional contract change only with `contract:lock` and review the
+  lock diff with the F# change.
 - Enforce size, complexity, and lint limits across production and test code without grandfathering.
   [`config/lint-exceptions.json`](config/lint-exceptions.json) is the sole registry of every lint, type,
   format and coverage exception for every language (F#, TypeScript, JavaScript, CSS, Python,
-  PowerShell, shell, YAML, MSBuild). Follow [repository quality](docs/development.md#repository-quality):
+  shell, YAML, MSBuild). Follow [repository quality](docs/development.md#repository-quality):
   each entry has a stable `LX-nnnn` id, tool, exact rules, one file, kind (`inline` or `config`), an exact
   occurrence count, a substantive reason, an owner and an ISO review or expiry date. An inline
   suppression carries `lint-exception: LX-nnnn` in its own comment or the line above; a config-level

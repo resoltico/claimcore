@@ -153,27 +153,58 @@ module Repository =
 
     let sha256File path = File.ReadAllBytes(path) |> sha256Bytes
 
-    let markdownFiles (root: RepositoryRoot) =
-        let rec walk directory =
-            seq {
-                for entry in Directory.EnumerateFileSystemEntries(directory) |> Seq.sort do
-                    let relative = Path.GetRelativePath(root.Path, entry)
+    let private gitRedirectVariables =
+        [
+            "GIT_ALTERNATE_OBJECT_DIRECTORIES"
+            "GIT_CEILING_DIRECTORIES"
+            "GIT_COMMON_DIR"
+            "GIT_CONFIG_COUNT"
+            "GIT_CONFIG_PARAMETERS"
+            "GIT_DIR"
+            "GIT_DISCOVERY_ACROSS_FILESYSTEM"
+            "GIT_INDEX_FILE"
+            "GIT_NAMESPACE"
+            "GIT_OBJECT_DIRECTORY"
+            "GIT_WORK_TREE"
+        ]
 
-                    if RepositoryPathPolicy.excludedDirectory relative then
-                        ()
-                    elif isReparse entry then
-                        raise (
-                            IOException($"Markdown inventory path is a symbolic link: {relative}")
-                        )
-                    elif Directory.Exists(entry) then
-                        yield! walk entry
-                    elif RepositoryPathPolicy.excludedFile relative then
-                        ()
-                    elif entry.EndsWith(".md", StringComparison.OrdinalIgnoreCase) then
-                        yield entry
+    /// The Markdown files git would list: tracked files, plus untracked files no .gitignore excludes.
+    /// Git owns the ignore rules, so this tool never restates them.
+    let markdownFiles (root: RepositoryRoot) (runner: IProcessRunner) =
+        let request =
+            {
+                FileName = "git"
+                Arguments =
+                    [
+                        "ls-files"
+                        "-z"
+                        "--cached"
+                        "--others"
+                        "--exclude-standard"
+                        "--"
+                        ":(glob)**/*.md"
+                    ]
+                WorkingDirectory = root.Path
+                Environment =
+                    [ for name in gitRedirectVariables -> name, None ]
+                    @ [ "GIT_OPTIONAL_LOCKS", Some "0"; "GIT_TERMINAL_PROMPT", Some "0" ]
+                Timeout = TimeSpan.FromSeconds 60.0
             }
 
-        walk root.Path |> Seq.toList
+        match runner.Run request with
+        | Error message -> Error $"The Markdown inventory could not be listed: {message}"
+        | Ok output when output.ExitCode <> 0 ->
+            Error
+                "The Markdown inventory could not be listed; the repository must be a Git worktree."
+        | Ok output ->
+            output.StandardOutput.Split('\000', StringSplitOptions.RemoveEmptyEntries)
+            |> Array.distinct
+            |> Array.sortWith (fun left right -> String.CompareOrdinal(left, right))
+            |> Array.map (fun relative ->
+                Path.Combine(root.Path, relative.Replace('/', Path.DirectorySeparatorChar)))
+            |> Array.filter File.Exists
+            |> Array.toList
+            |> Ok
 
 [<Sealed>]
 type SystemProcessRunner() =

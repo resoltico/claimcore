@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <Compile Include="../RepositoryRoot.fs" Link="RepositoryRoot.fs" />
     <Compile Include="WitnessTestSupport.fs" />
     <Compile Include="Suite.fs" />
     <Compile Include="WitnessAuditContinuationTests.fs" />

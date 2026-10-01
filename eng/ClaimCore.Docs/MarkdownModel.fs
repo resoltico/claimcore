@@ -80,22 +80,23 @@ module MarkdownModel =
             Document = Markdown.Parse(text, pipeline)
         }
 
-    let readAll root =
-        try
-            let mutable errors = []
-            let mutable documents = []
+    let readAll root runner =
+        match Repository.markdownFiles root runner with
+        | Error message -> Error [ Diagnostic.create DiagnosticCode.UnsafePath message ]
+        | Ok paths ->
+            try
+                let results = paths |> List.map (read root)
 
-            for path in Repository.markdownFiles root do
-                match read root path with
-                | Ok document -> documents <- document :: documents
-                | Error error -> errors <- error :: errors
-
-            if errors.IsEmpty then
-                Ok(documents |> List.sortBy _.RelativePath)
-            else
-                Error(List.rev errors)
-        with error ->
-            Error [ Diagnostic.create DiagnosticCode.UnsafePath error.Message ]
+                match
+                    results
+                    |> List.choose (function
+                        | Error error -> Some error
+                        | Ok _ -> None)
+                with
+                | [] -> Ok(results |> List.choose Result.toOption |> List.sortBy _.RelativePath)
+                | errors -> Error errors
+            with error ->
+                Error [ Diagnostic.create DiagnosticCode.UnsafePath error.Message ]
 
     let private nodeText (source: string) (node: MarkdownObject) =
         if node.Span.Start < 0 || node.Span.End < node.Span.Start then

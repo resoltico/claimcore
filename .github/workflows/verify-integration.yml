@@ -27,28 +27,10 @@ jobs:
           echo "CLAIMCORE_PG_BIN=/usr/lib/postgresql/18/bin" >> "$GITHUB_ENV"
           echo "/usr/lib/postgresql/18/bin" >> "$GITHUB_PATH"
           echo "$RUNNER_TEMP/claimcore-age/bin" >> "$GITHUB_PATH"
-      - name: Restore and build the locked source tree
-        run: |
-          dotnet restore ClaimCore.PostgresQualification.slnf --locked-mode
-          dotnet build ClaimCore.PostgresQualification.slnf --configuration Release --no-restore
-      - name: Verify built test discovery before database qualification
-        shell: pwsh
-        run: |
-          ./eng/Check-TestDiscoveryAll.ps1 -Assembly @(
-            'ClaimCore.IntegrationTests', 'ClaimCore.WitnessTests',
-            'ClaimCore.RecoveryQualificationTests', 'ClaimCore.ConcurrencyQualificationTests',
-            'ClaimCore.MigrationQualificationTests', 'ClaimCore.BackupQualificationTests'
-          )
-      - name: Resolve the exact built CLI
-        shell: bash
-        run: |
-          set -euo pipefail
-          cli_path="$(dotnet msbuild src/ClaimCore.Cli/ClaimCore.Cli.fsproj -nologo -verbosity:quiet -property:Configuration=Release -getProperty:TargetPath)"
-          test -f "$cli_path"
-          echo "CLAIMCORE_TEST_CLI_PATH=$cli_path" >> "$GITHUB_ENV"
-      - name: Run every PostgreSQL-backed suite concurrently through native MTP
-        shell: pwsh
-        run: pwsh -NoProfile -File eng/Invoke-PostgresQualifications.ps1 -RunId "${{ github.run_id }}" -Attempt "${{ github.run_attempt }}"
+      - name: Restore the locked source tree
+        run: dotnet restore ClaimCore.PostgresQualification.slnf --locked-mode
+      - name: Build, check against the inventories, run and verify every PostgreSQL-backed suite
+        run: node eng/ci/suites/suite.mjs run --group postgres --build
       - name: Remove only this run's labeled integration containers
         if: always()
         shell: bash
@@ -56,62 +38,15 @@ jobs:
       - name: Scan artifacts before upload
         id: artifact_scan
         if: always()
-        shell: pwsh
+        shell: bash
         run: |
-          pwsh -NoProfile -File eng/Scan-ArtifactSecrets.ps1 `
-            artifacts/test-results/integration-linux/ `
-            artifacts/test-results/integration-linux-partitions/ `
-            artifacts/test-results/witness-qualification/ `
-            artifacts/test-results/recovery-qualification/ `
-            artifacts/test-results/concurrency-qualification/ `
-            artifacts/test-results/fresh-baseline-qualification/ `
-            artifacts/test-results/backup-qualification/ `
-            "artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/integration-linux.json" `
-            "artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/witness-qualification.json" `
-            "artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/recovery-qualification.json" `
-            "artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/concurrency-qualification.json" `
-            "artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/fresh-baseline-qualification.json" `
-            "artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/backup-qualification.json"
-      - name: Upload required integration results
+          node eng/ci/scan/main.mjs artifacts \
+            artifacts/test-results/
+      - name: Upload the PostgreSQL suite results
         if: ${{ always() && steps.artifact_scan.outcome == 'success' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: claimcore-test-integration-linux-${{ github.run_id }}-${{ github.run_attempt }}
-          path: artifacts/test-results/integration-linux/
-          if-no-files-found: error
-          retention-days: 14
-      - name: Upload the integration partition reports the merged report derives from
-        if: ${{ always() && steps.artifact_scan.outcome == 'success' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: claimcore-test-integration-partitions-linux-${{ github.run_id }}-${{ github.run_attempt }}
-          path: artifacts/test-results/integration-linux-partitions/
-          if-no-files-found: error
-          retention-days: 14
-      - name: Upload required independent qualification results
-        if: ${{ always() && steps.artifact_scan.outcome == 'success' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: claimcore-test-qualifications-linux-${{ github.run_id }}-${{ github.run_attempt }}
-          path: |
-            artifacts/test-results/witness-qualification/
-            artifacts/test-results/recovery-qualification/
-            artifacts/test-results/concurrency-qualification/
-            artifacts/test-results/fresh-baseline-qualification/
-            artifacts/test-results/backup-qualification/
-          if-no-files-found: error
-          retention-days: 14
-      - name: Upload integration stage evidence
-        if: ${{ always() && steps.artifact_scan.outcome == 'success' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: claimcore-stage-integration-${{ github.run_id }}-${{ github.run_attempt }}
-          path: |
-            artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/integration-linux.json
-            artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/witness-qualification.json
-            artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/recovery-qualification.json
-            artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/concurrency-qualification.json
-            artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/fresh-baseline-qualification.json
-            artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/backup-qualification.json
+          name: claimcore-test-postgres-linux-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/test-results/
           if-no-files-found: error
           retention-days: 14

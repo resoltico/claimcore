@@ -1,6 +1,13 @@
 {
   "recommendations": [
     "ionide.ionide-fsharp",
-    "editorconfig.editorconfig"
+    "editorconfig.editorconfig",
+    "oxc.oxc-vscode",
+    "esbenp.prettier-vscode",
+    "stylelint.vscode-stylelint",
+    "charliermarsh.ruff",
+    "timonwong.shellcheck",
+    "foxundermoon.shell-format",
+    "github.vscode-github-actions"
   ]
 }

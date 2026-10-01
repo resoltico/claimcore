@@ -47,7 +47,7 @@ test("the local jobs form a valid plan whose commands exist", () => {
     for (const pattern of entry.scope ?? []) {
       assert.doesNotThrow(() => new RegExp(pattern, "u"));
     }
-    for (const part of entry.argv.filter((value) => /^eng\/.*\.(mjs|ps1|sh)$/u.test(value))) {
+    for (const part of entry.argv.filter((value) => /^eng\/.*\.(mjs|sh)$/u.test(value))) {
       assert.ok(existsSync(join(root, part)), `${entry.id} runs ${part}, which does not exist`);
     }
     assert.ok(entry.mirrors.length > 0, `${entry.id} must name the CI family it mirrors`);
@@ -76,7 +76,7 @@ test("changes select the jobs that can be affected by them", () => {
   );
   assert.equal(affected(job("tests-postgres"), ["db/baseline.sql"]), true);
   assert.equal(affected(job("frontend-gates"), ["src/ClaimCore.Contracts/Endpoints.fs"]), true);
-  assert.equal(affected(job("tests-dotnet"), ["eng/Run-LocalDotnetVerification.ps1"]), true);
+  assert.equal(affected(job("tests-dotnet"), ["eng/ci/suites/suite.mjs"]), true);
 });
 
 test("when the change set is unknown every job runs", () => {

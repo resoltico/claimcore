@@ -222,10 +222,12 @@ let private baselineTests =
                 for accepted in [ 180006; 180007; 180099 ] do
                     Expect.isTrue (Baseline.isSupported accepted) "Minor updates in the same major"
 
-                Expect.equal
-                    Baseline.containerImage
-                    "ghcr.io/resoltico/claimcore-postgres:18.6-trixie-p2-r34736975281-1@sha256:ae84d4fd380ade930b6246340a39e2448786f5bcaad258ee1f2e62807a5f8c45"
-                    "Digest-pinned multi-platform image")
+                Expect.isTrue
+                    (System.Text.RegularExpressions.Regex.IsMatch(
+                        Baseline.containerImage,
+                        $"^postgres:{Baseline.minimumVersion}@sha256:[0-9a-f]{{64}}$"
+                    ))
+                    "The official image of the selected release, pinned by digest")
             testCase "actual server is on the required baseline" (fun () ->
                 use connection = new NpgsqlConnection(appConnection ())
                 connection.Open()

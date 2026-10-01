@@ -5,14 +5,13 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 web_dll="${1:?Pass published Web directory.}/ClaimCore.Web.dll"
 database_dll="${2:?Pass published Database directory.}/ClaimCore.Database.dll"
-docs_dll="${repo_root}/artifacts/bin/ClaimCore.Docs/release/ClaimCore.Docs.dll"
 engine_scope="${3:-all}"
 if [[ "${engine_scope}" == all && -n "${CLAIMCORE_TEST_RUN_LABEL:-}" ]]; then
   printf 'All-engine qualification requires independently labeled runs.\n' >&2
   exit 64
 fi
-[[ -f "${web_dll}" && -f "${database_dll}" && -f "${docs_dll}" ]] || {
-  printf 'Published Web, Database, and documentation assurance assemblies are required.\n' >&2
+[[ -f "${web_dll}" && -f "${database_dll}" ]] || {
+  printf 'Published Web and Database assemblies are required.\n' >&2
   exit 64
 }
 case "${engine_scope}" in
@@ -107,6 +106,7 @@ run_engine() (
     fi
   }
   scan_output() {
+    local -a secrets=() roots=(--scan-root "${repo_root}/artifacts/browser" --scan-root "${state_dir}/diagnostics")
     local secret
     for secret in "${state_dir}"/*.password "${state_dir}"/*.subject \
       "${state_dir}"/*.secret \
@@ -119,19 +119,15 @@ run_engine() (
       "${state_dir}"/initial-owner.json "${state_dir}"/principals.json \
       "${state_dir}"/claimant.canary \
       "${CLAIMCORE_TEST_OIDC_CREDENTIALS}"; do
-      [[ -f "${secret}" ]] || continue
-      pwsh -NoProfile -File "${repo_root}/eng/Assert-NoSensitiveOutput.ps1" \
-        -ScanRoot "${repo_root}/artifacts/browser" -SecretFile "${secret}" \
-        >/dev/null 2>&1 || return 1
-      pwsh -NoProfile -File "${repo_root}/eng/Assert-NoSensitiveOutput.ps1" \
-        -ScanRoot "${state_dir}/diagnostics" -SecretFile "${secret}" >/dev/null 2>&1 ||
-        return 1
-      if [[ -n "${cli_results}" && -d "${cli_results}" ]]; then
-        pwsh -NoProfile -File "${repo_root}/eng/Assert-NoSensitiveOutput.ps1" \
-          -ScanRoot "${cli_results}" -SecretFile "${secret}" \
-          >/dev/null 2>&1 || return 1
+      if [[ -f "${secret}" ]]; then
+        secrets+=(--secret-file "${secret}")
       fi
     done
+    if [[ -n "${cli_results}" && -d "${cli_results}" ]]; then
+      roots+=(--scan-root "${cli_results}")
+    fi
+    [[ ${#secrets[@]} -eq 0 ]] ||
+      node "${repo_root}/eng/ci/policy/sensitive-output.mjs" "${roots[@]}" "${secrets[@]}" >/dev/null 2>&1
   }
   cleanup() {
     local status=$?
@@ -255,7 +251,7 @@ run_engine() (
     browser_failure
     exit 1
   fi
-  if ! dotnet "${docs_dll}" verify-frontend-report browser "${engine}"; then
+  if ! node "${repo_root}/eng/ci/suites/frontend.mjs" browser "${engine}"; then
     printf 'Published %s browser report inventory differs from the reviewed catalog.\n' "${engine}" >&2
     exit 1
   fi
@@ -279,7 +275,8 @@ run_engine() (
       CLAIMCORE_ACCEPTANCE_DRIVER_PATH="${repo_root}/web/e2e/cli-pkce-driver.mjs" \
       dotnet test --project "${repo_root}/tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj" \
       --configuration Release --no-build --no-restore \
-      --results-directory="${cli_results}" --minimum-expected-tests=16 \
+      --results-directory="${cli_results}" \
+      --minimum-expected-tests="$(wc -l <"${repo_root}/tests/inventory/ClaimCore.AcceptanceTests.txt" | tr -d ' ')" \
       --zero-tests-policy=strict --timeout=20m -- \
       --settings="${repo_root}/eng/expecto.runsettings" --report-trx \
       --report-trx-filename=ClaimCore.AcceptanceTests.trx \
@@ -287,8 +284,8 @@ run_engine() (
       printf 'Published authenticated CLI acceptance failed.\n' >&2
       exit 1
     }
-    dotnet "${docs_dll}" verify-test-report ClaimCore.AcceptanceTests \
-      "${cli_results#"${repo_root}"/}/ClaimCore.AcceptanceTests.trx"
+    node "${repo_root}/eng/ci/suites/verify-report.mjs" acceptance \
+      "${cli_results}/ClaimCore.AcceptanceTests.trx"
     printf 'Published authenticated CLI acceptance passed in isolated %s fixture.\n' "${engine}"
   fi
   printf 'Published %s OIDC browser qualification passed with two isolated clusters.\n' "${engine}"

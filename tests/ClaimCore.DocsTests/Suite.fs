@@ -6,16 +6,4 @@ open Expecto
 let tests =
     testList
         "ClaimCore documentation assurance"
-        [
-            MarkdownTests.tests
-            PathAndLinkTests.tests
-            ManifestTests.tests
-            EvidenceTests.tests
-            TestReportMergeTests.tests
-            StageEvidenceTests.tests
-            StageCollectionTests.tests
-            FrontendReportInventoryTests.tests
-            ArchitectureReportTests.tests
-            ReviewTests.tests
-            ConvergenceRegistrationTests.tests
-        ]
+        [ MarkdownTests.tests; PathAndLinkTests.tests; ContractTokenTests.tests ]

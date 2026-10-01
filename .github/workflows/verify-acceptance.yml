@@ -24,47 +24,32 @@ jobs:
         with:
           name: claimcore-published-${{ github.run_id }}-${{ github.run_attempt }}
           path: artifacts/publish-input
-      - name: Restore and build only the acceptance harness and evidence tool
+      - name: Download the exact current-attempt generated contracts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: claimcore-contracts-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/contracts-input
+      - name: Restore and build only the acceptance harness
         run: |
           dotnet restore ClaimCore.slnx --locked-mode
           dotnet build tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj --configuration Release --no-restore
-          dotnet build eng/ClaimCore.Docs/ClaimCore.Docs.fsproj --configuration Release --no-restore
       - name: Install locked browser qualification dependencies
         run: |
           npm --prefix web ci
           npm --prefix web exec -- playwright install --with-deps chromium
+          mkdir -p web/src/generated/contracts
+          cp -R artifacts/contracts-input/. web/src/generated/contracts/
+          npm --prefix web run contract:verify
       - name: Run all published-boundary acceptance tests
-        shell: pwsh
+        shell: bash
         env:
-          CLAIMCORE_ACCEPTANCE_CLI_DIR: ${{ github.workspace }}/artifacts/publish-input/cli
           CLAIMCORE_PUBLISHED_CLI_DIR: ${{ github.workspace }}/artifacts/publish-input/cli
-          CLAIMCORE_ACCEPTANCE_CLI_MANIFEST: ${{ github.workspace }}/artifacts/publish-input/manifests/publish-cli.json
-          CLAIMCORE_ACCEPTANCE_RESULTS_DIR: ${{ github.workspace }}/artifacts/test-results/acceptance-linux
+          CLAIMCORE_ACCEPTANCE_RESULTS_DIR: ${{ github.workspace }}/artifacts/test-results/acceptance
         run: |
-          Set-StrictMode -Version Latest
-          $docs = Join-Path $PWD "artifacts/bin/ClaimCore.Docs/release/ClaimCore.Docs.dll"
-          & dotnet $docs verify-publish-manifest publish-cli `
-            artifacts/publish-input/cli artifacts/publish-input/manifests/publish-cli.json
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          & dotnet $docs verify-publish-manifest publish-database `
-            artifacts/publish-input/database artifacts/publish-input/manifests/publish-database.json
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          & dotnet $docs verify-publish-manifest publish-web `
-            artifacts/publish-input/web artifacts/publish-input/manifests/publish-web.json
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          $results = Join-Path $PWD "artifacts/test-results/acceptance-linux"
-          if (Test-Path -LiteralPath $results) { throw "The test result directory must start absent." }
-          $started = (Get-Date).ToUniversalTime().ToString("O")
-          & bash eng/Run-PublishedWebE2E.sh `
-            artifacts/publish-input/web artifacts/publish-input/database chromium
-          $testExit = $LASTEXITCODE
-          $finished = (Get-Date).ToUniversalTime().ToString("O")
-          if (!(Test-Path -LiteralPath $results)) { New-Item -ItemType Directory -Path $results | Out-Null }
-          $outcome = if ($testExit -eq 0) { "success" } else { "failure" }
-          & dotnet $docs stage-manifest acceptance-linux "${{ github.run_id }}" "${{ github.run_attempt }}" $outcome $started $finished $results
-          $manifestExit = $LASTEXITCODE
-          if ($testExit -ne 0) { exit $testExit }
-          if ($manifestExit -ne 0) { exit $manifestExit }
+          set -euo pipefail
+          node eng/ci/publish/main.mjs verify artifacts/publish-input
+          bash eng/Run-PublishedWebE2E.sh artifacts/publish-input/web artifacts/publish-input/database chromium
+          node eng/ci/publish/main.mjs verify artifacts/publish-input
       - name: Remove only this run's labeled acceptance containers
         if: always()
         shell: bash
@@ -72,24 +57,15 @@ jobs:
       - name: Scan artifacts before upload
         id: artifact_scan
         if: always()
-        shell: pwsh
+        shell: bash
         run: |
-          pwsh -NoProfile -File eng/Scan-ArtifactSecrets.ps1 `
-            artifacts/test-results/acceptance-linux/ `
-            "artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/acceptance-linux.json"
-      - name: Upload required acceptance results
+          node eng/ci/scan/main.mjs artifacts \
+            artifacts/test-results/acceptance/
+      - name: Upload the acceptance results
         if: ${{ always() && steps.artifact_scan.outcome == 'success' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: claimcore-test-acceptance-linux-${{ github.run_id }}-${{ github.run_attempt }}
-          path: artifacts/test-results/acceptance-linux/
-          if-no-files-found: error
-          retention-days: 14
-      - name: Upload acceptance stage evidence
-        if: ${{ always() && steps.artifact_scan.outcome == 'success' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: claimcore-stage-acceptance-${{ github.run_id }}-${{ github.run_attempt }}
-          path: artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages/acceptance-linux.json
+          path: artifacts/test-results/acceptance/
           if-no-files-found: error
           retention-days: 14

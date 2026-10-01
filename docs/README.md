@@ -13,7 +13,7 @@ Choose the shortest path for the work you are doing:
 | Manage PostgreSQL schema or technical preparation retention | [Database](database.md) |
 | Build, test, lint, update dependencies, or qualify a change | [Development](development.md) |
 | Publish a PR, diagnose CI, or activate repository governance | [CI governance](ci-governance.md) |
-| Review exact architecture/security/contract-policy changes and authorize a merge | [Owner review](owner-review.md) |
+| Review changes and authorize a merge | [Owner review](owner-review.md) |
 | Prepare or publish a source-preview release | [Releasing](releasing.md) |
 | Assess privacy, recovery, or deployment readiness | [Security and operations](operations.md) |
 | Exercise one synthetic CLI lifecycle | [Synthetic walkthrough](../examples/README.md) |

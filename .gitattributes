@@ -9,9 +9,6 @@
 *.slnx text eol=lf
 *.sql text eol=lf
 *.py text eol=lf
-*.ps1 text eol=lf
-*.psm1 text eol=lf
-*.psd1 text eol=lf
 *.ts text eol=lf
 *.tsx text eol=lf
 *.mjs text eol=lf
@@ -24,3 +21,4 @@
 uv.lock text eol=lf -diff
 package-lock.json text eol=lf -diff
 packages.lock.json text eol=lf -diff
+tests/inventory/*.txt text eol=lf

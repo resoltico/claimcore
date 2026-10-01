@@ -3,5 +3,14 @@
   "files.eol": "\n",
   "[fsharp]": {
     "editor.defaultFormatter": "Ionide.Ionide-fsharp"
+  },
+  "[typescript][typescriptreact][javascript][json][jsonc][css][markdown][yaml]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff"
+  },
+  "[shellscript]": {
+    "editor.defaultFormatter": "foxundermoon.shell-format"
   }
 }

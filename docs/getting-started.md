@@ -10,7 +10,7 @@ The executable private-file path is supported on macOS and Linux. Windows suppor
 
 ## Before you begin
 
-Use one trusted, non-synchronized checkout. Match the .NET SDK in [`global.json`](../global.json), Node.js in [`.node-version`](../.node-version), and npm requirements in [`web/package.json`](../web/package.json). The first run downloads locked dependencies, browser binaries, and pinned container images; it requires network access. Also install a C compiler (`cc`), Docker with Compose, Git, Bash, OpenSSL 3, `curl`, `jq`, and PowerShell (`pwsh`). Docker must target the **local** engine, not a remote context or `DOCKER_HOST`.
+Use one trusted, non-synchronized checkout. Match the .NET SDK in [`global.json`](../global.json), Node.js in [`.node-version`](../.node-version), and npm requirements in [`web/package.json`](../web/package.json). The first run downloads locked dependencies, browser binaries, and pinned container images; it requires network access. Also install a C compiler (`cc`), Docker with Compose, Git, Bash, OpenSSL 3, `curl`, and `jq`. Docker must target the **local** engine, not a remote context or `DOCKER_HOST`.
 
 Do not point this guide at an existing ClaimCore database, volume, private `.local` directory, or adopted recovery artifact. This installation has one fresh checksum-bound primary baseline and a separate witness; unsupported older namespaces are refused, not migrated, adopted, reset, or converted. Preserve older data with its matching software. The [Development guide](development.md) owns the full contributor toolchain and verification gates.
 
@@ -25,7 +25,6 @@ openssl version
 docker compose version
 docker context show
 docker info --format '{{.Name}}'
-pwsh --version
 jq --version
 ```
 
@@ -43,9 +42,10 @@ cd claimcore-first-run
 Run each block separately and stop on an error. This build uses exact checked dependency graphs and does not create a database:
 
 ```sh
+dotnet restore ClaimCore.slnx --locked-mode
 dotnet tool restore
 npm --prefix web ci
-dotnet restore ClaimCore.slnx --locked-mode
+npm --prefix web run contract:generate
 dotnet build ClaimCore.slnx --configuration Release --no-restore
 ```
 

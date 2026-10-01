@@ -109,11 +109,10 @@ The suite checks the manifest from five independent directions:
   Each of these rules asserts its positive counterpart as well, so none can pass vacuously.
 
 Each platform's passing suite emits a bounded, sorted report of the actual inspected assembly type
-counts and cross-component edges. Counts are observations, not thresholds. CI scans the report,
-requires it in the stage manifest, verifies the downloaded bytes and schema during final evidence —
-against the manifest's own product inventory, not a second hard-coded list — and shows a concise
-graph in its job summary. A rule violation fails its named test with an actionable source/target
-diagnostic; a report alone is not proof of correct behavior.
+counts and cross-component edges. Counts are observations, not thresholds. The inspection builds the
+report from the manifest's own product inventory and fails when a required assembly is omitted or no
+cross-product edge is observed; CI shows a concise graph in its job summary. A rule violation fails its
+named test with an actionable source/target diagnostic; a report alone is not proof of correct behavior.
 
 These checks complement curated signatures, ordinary-consumer compile tests, protocol tests and
 real PostgreSQL/browser qualifications. They do not prove transaction correctness, complete effect

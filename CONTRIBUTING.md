@@ -10,10 +10,11 @@ Install the prerequisites and complete the locked first-checkout workflow in
 build, test, lint, coverage, published-acceptance, and evidence commands. Run its
 [complete verification](docs/development.md#complete-verification) before claiming a change is ready.
 
-Docker is required by PostgreSQL and published-application tests. Required test projects must run
-through the native .NET 10 Microsoft Testing Platform commands with the exact registered counts.
-Focused, pending, skipped, expected-failure, conditional, filtered, retried, or sharded required
-tests are policy failures.
+Docker is required by PostgreSQL and published-application tests. Required test projects run through
+`node eng/ci/suites/suite.mjs` on the native .NET 10 Microsoft Testing Platform, against the generated
+inventories in `tests/inventory/` (rewrite one with `node eng/ci/suites/inventory.mjs --write` in the
+same commit as the test change). Focused, pending, skipped, expected-failure, conditional, filtered,
+retried, or sharded required tests are policy failures.
 
 ## Change rules
 
@@ -49,10 +50,6 @@ format and coverage exceptions for every language. Do not add an inline or proje
 registry schema and non-suppressible rules are owned by [Repository
 quality](docs/development.md#repository-quality).
 
-Container vulnerability exceptions are separate. Every entry in
-[`config/container-vulnerability-exceptions.yaml`](config/container-vulnerability-exceptions.yaml) must be narrowly
-scoped, technically justified, and short-lived.
-
 ## Pull-request evidence
 
 Describe the behavior changed, compatibility or schema impact, and the exact commands actually run.
@@ -65,10 +62,9 @@ in [SUPPORT.md](SUPPORT.md).
 
 Publication and repository-policy changes follow [CI governance](docs/ci-governance.md). Use one
 feature branch and verify the actual PR head and current attempt; preserve a truthful handoff after
-follow-up commits. Semantic review records say `source-reviewed`, never independent owner approval.
-A green gate is necessary execution evidence, not an instruction to merge. Follow the separate
-[owner-review procedure](docs/owner-review.md) on exact current revisions; review reports do not
-record approval and settings declarations are not active native enforcement.
+follow-up commits. A green gate is necessary execution evidence, not an instruction to merge. Follow the
+separate [owner-review procedure](docs/owner-review.md) on exact current revisions; source review does
+not record approval and settings declarations are not active native enforcement.
 
 ## Licensing contributions
 

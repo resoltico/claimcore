@@ -105,12 +105,6 @@ const inlineCases = [
     ["shellcheck:SC2086:inline:-", "shellcheck:SC2046:inline:-"],
   ],
   [
-    "PowerShell SuppressMessage",
-    "eng/x.ps1",
-    "[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '')]\n",
-    ["psscriptanalyzer:PSAvoidUsingWriteHost:inline:-"],
-  ],
-  [
     "yamllint disable",
     ".github/x.yml",
     "# yamllint disable-line rule:line-length\n",
@@ -189,12 +183,12 @@ const configCases = [
     ],
   ],
   [
-    "PSScriptAnalyzer exclusions",
-    "config/PSScriptAnalyzerSettings.psd1",
-    "@{ ExcludeRules = @('PSAvoidUsingWriteHost', \"PSUseSingularNouns\") }\n",
+    "zizmor audit configuration",
+    ".github/zizmor.yml",
+    "rules:\n  self-repository:\n    disable: true\n  template-injection:\n    ignore:\n      - ci.yml:20\n",
     [
-      "psscriptanalyzer:PSAvoidUsingWriteHost:config:-",
-      "psscriptanalyzer:PSUseSingularNouns:config:-",
+      "zizmor:self-repository:disable:config:-",
+      "zizmor:template-injection:ignore:ci.yml:20:config:-",
     ],
   ],
   [

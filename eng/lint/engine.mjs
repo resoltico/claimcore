@@ -22,7 +22,7 @@ export function checkRepository(root, registryPath = join(root, "config/lint-exc
   const occurrences = [];
   for (const path of repositoryFiles(root, generated)) {
     if (
-      !/\.(?:fs|fsi|fsx|fsproj|props|targets|ts|tsx|js|mjs|cjs|css|json|jsonc|toml|py|sh|ps1|psm1|psd1|yml|yaml|editorconfig)$|(?:^|\/)(?:\.[a-z]+ignore|\.shellcheckrc|\.editorconfig)$/u.test(
+      !/\.(?:fs|fsi|fsx|fsproj|props|targets|ts|tsx|js|mjs|cjs|css|json|jsonc|toml|py|sh|yml|yaml|editorconfig)$|(?:^|\/)(?:\.[a-z]+ignore|\.shellcheckrc|\.editorconfig)$/u.test(
         path,
       )
     ) {

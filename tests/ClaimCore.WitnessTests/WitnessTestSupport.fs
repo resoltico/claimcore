@@ -8,7 +8,19 @@ open Testcontainers.PostgreSql
 open ClaimCore.Witness
 
 let image =
-    "ghcr.io/resoltico/claimcore-postgres:18.6-trixie-p2-r34736975281-1@sha256:ae84d4fd380ade930b6246340a39e2448786f5bcaad258ee1f2e62807a5f8c45"
+    use baseline =
+        System.Text.Json.JsonDocument.Parse(
+            System.IO.File.ReadAllBytes(
+                System.IO.Path.Combine(
+                    ClaimCore.TestSupport.RepositoryRoot.find (),
+                    "db/postgresql-baseline.json"
+                )
+            )
+        )
+
+    baseline.RootElement.GetProperty("containerImage").GetString()
+    |> Option.ofObj
+    |> Option.defaultWith (fun () -> failwith "The baseline containerImage must be text.")
 
 let keyId = Guid.Parse("7f271edd-e72d-4147-9c71-570845ff6f95")
 

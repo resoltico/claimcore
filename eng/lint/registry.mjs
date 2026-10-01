@@ -16,7 +16,7 @@ const tools = new Set([
   "knip",
   "ruff",
   "mypy",
-  "psscriptanalyzer",
+  "zizmor",
   "shellcheck",
   "yamllint",
   "actionlint",

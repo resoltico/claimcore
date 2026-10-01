@@ -59,20 +59,14 @@ function checkGateStep(gate) {
 }
 
 /** @param {Json} jobs */
-function checkGateAndEvidence(jobs) {
-  assert(jobs["gate"] && jobs["evidence"], "Gate and evidence jobs are required.");
+function checkGateJob(jobs) {
+  assert(jobs["gate"], "A Gate job is required.");
   assert.equal(jobs["gate"].name, "Gate");
   assert.equal(expression(jobs["gate"].if), "always()");
-  assert.equal(expression(jobs["evidence"].if), "always()");
   same(
     dependencies(jobs["gate"]),
     Object.keys(jobs).filter((id) => id !== "gate"),
     "Gate omits a verification family.",
-  );
-  same(
-    dependencies(jobs["evidence"]),
-    Object.keys(jobs).filter((id) => !["gate", "evidence"].includes(id)),
-    "Evidence omits a producer.",
   );
   same(
     Object.keys(jobs["gate"]),
@@ -98,10 +92,7 @@ function checkFamilies(jobs) {
       "Verification family needs a local reusable workflow.",
     );
     assert(!called.has(job.uses), "A reusable verification family is called twice.");
-    assert(
-      id === "evidence" || job.if === undefined,
-      "Mandatory family must not be conditionally omitted.",
-    );
+    assert(job.if === undefined, "Mandatory family must not be conditionally omitted.");
     called.add(job.uses);
     assert(!dependencies(job).includes(id), "Workflow dependency cycle.");
   }
@@ -156,7 +147,7 @@ function checkReusable(workflows, called) {
 export function checkGraph(orchestrator, workflows) {
   checkTriggers(orchestrator);
   const { jobs } = orchestrator;
-  checkGateAndEvidence(jobs);
+  checkGateJob(jobs);
   const called = checkFamilies(jobs);
   checkAcyclic(jobs);
   checkReusable(workflows, called);

@@ -94,14 +94,14 @@ function changed(path, modify) {
 }
 
 test("validates the complete real workflow graph", () => {
-  assert(validateWorkflowSources(workflowSources(root)).workflows >= 15);
+  assert(validateWorkflowSources(workflowSources(root)).workflows >= 10);
 });
 /** @type {Array<[string, string, (source: string) => string]>} */
 const graphControls = [
   [
     "mandatory job outside Gate",
     "ci.yml",
-    (s) => `${s}\n  forgotten:\n    uses: ./.github/workflows/verify-unit.yml\n`,
+    (s) => `${s}\n  forgotten:\n    uses: ./.github/workflows/verify-suites.yml\n`,
   ],
   ["failure-permissive Gate", "ci.yml", (s) => s.replace('test "$result" = "success"', "true")],
   [
@@ -110,58 +110,26 @@ const graphControls = [
     (s) => s.replace("-${{ github.event_name }}", ""),
   ],
   [
-    "missing producer isolation",
-    "verify-evidence.yml",
-    (s) => s.replace("merge-multiple: false", "merge-multiple: true"),
+    "upload outside the scanned path",
+    "verify-frontend.yml",
+    (s) => s.replace("path: artifacts/frontend/", "path: artifacts/elsewhere/"),
   ],
   [
-    "self-referential evidence stage scan",
-    "verify-evidence.yml",
+    "upload without a successful scan",
+    "verify-suites.yml",
+    (s) => s.replace("always() && steps.artifact_scan.outcome == 'success'", "always()"),
+  ],
+  [
+    "scan by the retired PowerShell scanner",
+    "verify-coverage.yml",
     (s) =>
-      s.replace(
-        "            artifacts/evidence-producers \\",
-        '            "artifacts/evidence/${{ github.run_id }}/${{ github.run_attempt }}/stages" \\\n' +
-          "            artifacts/evidence-producers \\",
-      ),
+      s.replace("node eng/ci/scan/main.mjs artifacts", "pwsh -File eng/Scan-ArtifactSecrets.ps1"),
   ],
-  [
-    "unprotected publisher",
-    "publish-postgres-image.yml",
-    (s) => s.replace("    environment: release\n", ""),
-  ],
+  ["unprotected publisher", "release.yml", (s) => s.replace("    environment: release\n", "")],
 ];
 for (const [name, path, modify] of graphControls) {
   test(`real graph refuses ${name}`, () =>
     assert.throws(() => validateWorkflowSources(changed(path, modify))));
-}
-
-/** @type {Array<[string, (source: string) => string]>} */
-const planControls = [
-  [
-    "duplicate security execution",
-    (s) =>
-      s.replace(
-        '"stages": [',
-        '"stages": [\n    { "id": "dependency-security", "argv": ["pwsh", "-File", "eng/Check-DependencySecurity.ps1"] },',
-      ),
-  ],
-  [
-    "currency reintroduced into PR gate",
-    (s) =>
-      s.replace(
-        '"stages": [',
-        '"stages": [\n    { "id": "currency", "argv": ["pwsh", "-File", "eng/Check-DependencyCurrency.ps1"] },',
-      ),
-  ],
-];
-for (const [name, modify] of planControls) {
-  test(`real graph refuses ${name} in a stage plan`, () => {
-    const sources = workflowSources(root);
-    const key = "eng/ci/stage-plans/frontend.json";
-    assert(sources.has(key));
-    sources.set(key, modify(must(sources.get(key))));
-    assert.throws(() => validateWorkflowSources(sources));
-  });
 }
 
 test("an orphan .yaml verifier cannot evade graph reachability", () => {

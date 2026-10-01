@@ -14,8 +14,7 @@
         "ClaimCore.Application",
         "ClaimCore.Tests"
       ],
-      "frameworkReferences": [],
-      "testInventory": false
+      "frameworkReferences": []
     },
     {
       "name": "ClaimCore.RecordFormat",
@@ -28,8 +27,7 @@
       ],
       "packages": [],
       "internalsVisibleTo": [],
-      "frameworkReferences": [],
-      "testInventory": false
+      "frameworkReferences": []
     },
     {
       "name": "ClaimCore.Application",
@@ -49,8 +47,7 @@
         "ClaimCore.Postgres",
         "ClaimCore.Tests"
       ],
-      "frameworkReferences": [],
-      "testInventory": false
+      "frameworkReferences": []
     },
     {
       "name": "ClaimCore.Contracts",
@@ -64,8 +61,7 @@
       ],
       "packages": [],
       "internalsVisibleTo": [],
-      "frameworkReferences": [],
-      "testInventory": false
+      "frameworkReferences": []
     },
     {
       "name": "ClaimCore.HostSecurity",
@@ -78,8 +74,7 @@
       "internalsVisibleTo": [
         "ClaimCore.Tests"
       ],
-      "frameworkReferences": [],
-      "testInventory": false
+      "frameworkReferences": []
     },
     {
       "name": "ClaimCore.Postgres",
@@ -102,8 +97,7 @@
         "ClaimCore.Hosting",
         "ClaimCore.IntegrationTests"
       ],
-      "frameworkReferences": [],
-      "testInventory": false
+      "frameworkReferences": []
     },
     {
       "name": "ClaimCore.Witness",
@@ -120,8 +114,7 @@
         "ClaimCore.IntegrationTests",
         "ClaimCore.Postgres"
       ],
-      "frameworkReferences": [],
-      "testInventory": false
+      "frameworkReferences": []
     },
     {
       "name": "ClaimCore.Hosting",
@@ -143,8 +136,7 @@
       "internalsVisibleTo": [
         "ClaimCore.IntegrationTests"
       ],
-      "frameworkReferences": [],
-      "testInventory": false
+      "frameworkReferences": []
     },
     {
       "name": "ClaimCore.CliProtocol",
@@ -159,8 +151,7 @@
       ],
       "packages": [],
       "frameworkReferences": [],
-      "internalsVisibleTo": [],
-      "testInventory": false
+      "internalsVisibleTo": []
     },
     {
       "name": "ClaimCore.Cli",
@@ -175,8 +166,7 @@
       ],
       "packages": [],
       "internalsVisibleTo": [],
-      "frameworkReferences": [],
-      "testInventory": false
+      "frameworkReferences": []
     },
     {
       "name": "ClaimCore.Web",
@@ -200,8 +190,7 @@
       ],
       "frameworkReferences": [
         "Microsoft.AspNetCore.App"
-      ],
-      "testInventory": false
+      ]
     },
     {
       "name": "ClaimCore.Database",
@@ -223,15 +212,14 @@
       "internalsVisibleTo": [
         "ClaimCore.IntegrationTests"
       ],
-      "frameworkReferences": [],
-      "testInventory": false
+      "frameworkReferences": []
     },
     {
       "name": "ClaimCore.Docs",
       "tier": "tooling",
       "layer": "tooling",
       "project": "eng/ClaimCore.Docs/ClaimCore.Docs.fsproj",
-      "role": "Repository documentation, publish-tree, and evidence reconciliation. Inspects the repository as data and never links product code.",
+      "role": "Repository documentation: generated blocks, Markdown links and contract headings checked against the test inventories. Inspects the repository as data and never links product code.",
       "dependsOn": [],
       "packages": [
         "Markdig"
@@ -239,15 +227,14 @@
       "internalsVisibleTo": [
         "ClaimCore.DocsTests"
       ],
-      "frameworkReferences": [],
-      "testInventory": false
+      "frameworkReferences": []
     },
     {
       "name": "ClaimCore.ContractGenerator",
       "tier": "tooling",
       "layer": "tooling",
       "project": "eng/ClaimCore.ContractGenerator/ClaimCore.ContractGenerator.fsproj",
-      "role": "Materializes checked contract artifacts from the pure Contracts projection. Never a runtime authority.",
+      "role": "Materializes contract artifacts from the pure Contracts projection. Never a runtime authority.",
       "dependsOn": [
         "ClaimCore.Application",
         "ClaimCore.Contracts",
@@ -257,8 +244,7 @@
       ],
       "packages": [],
       "internalsVisibleTo": [],
-      "frameworkReferences": [],
-      "testInventory": false
+      "frameworkReferences": []
     },
     {
       "name": "ClaimCore.OidcQualification",
@@ -273,8 +259,7 @@
       "internalsVisibleTo": [],
       "frameworkReferences": [
         "Microsoft.AspNetCore.App"
-      ],
-      "testInventory": false
+      ]
     },
     {
       "name": "ClaimCore.ArchitectureFixtures",
@@ -285,8 +270,7 @@
       "dependsOn": [],
       "packages": [],
       "internalsVisibleTo": [],
-      "frameworkReferences": [],
-      "testInventory": false
+      "frameworkReferences": []
     },
     {
       "name": "ClaimCore.ArchitectureTests",
@@ -310,8 +294,7 @@
       ],
       "packages": [],
       "internalsVisibleTo": [],
-      "frameworkReferences": [],
-      "testInventory": true
+      "frameworkReferences": []
     },
     {
       "name": "ClaimCore.Tests",
@@ -322,6 +305,7 @@
       "dependsOn": [
         "ClaimCore.Application",
         "ClaimCore.CliProtocol",
+        "ClaimCore.ContractGenerator",
         "ClaimCore.Contracts",
         "ClaimCore.Database",
         "ClaimCore.Domain",
@@ -331,8 +315,7 @@
       ],
       "packages": [],
       "internalsVisibleTo": [],
-      "frameworkReferences": [],
-      "testInventory": true
+      "frameworkReferences": []
     },
     {
       "name": "ClaimCore.WebTests",
@@ -348,8 +331,7 @@
       ],
       "packages": [],
       "internalsVisibleTo": [],
-      "frameworkReferences": [],
-      "testInventory": true
+      "frameworkReferences": []
     },
     {
       "name": "ClaimCore.IntegrationTests",
@@ -371,8 +353,7 @@
         "NSec.Cryptography"
       ],
       "internalsVisibleTo": [],
-      "frameworkReferences": [],
-      "testInventory": true
+      "frameworkReferences": []
     },
     {
       "name": "ClaimCore.WitnessTests",
@@ -391,8 +372,7 @@
         "YoloDev.Expecto.TestSdk"
       ],
       "internalsVisibleTo": [],
-      "frameworkReferences": [],
-      "testInventory": true
+      "frameworkReferences": []
     },
     {
       "name": "ClaimCore.BackupQualificationTests",
@@ -407,8 +387,7 @@
         "YoloDev.Expecto.TestSdk"
       ],
       "internalsVisibleTo": [],
-      "frameworkReferences": [],
-      "testInventory": true
+      "frameworkReferences": []
     },
     {
       "name": "ClaimCore.RecoveryQualificationTests",
@@ -421,8 +400,7 @@
       ],
       "packages": [],
       "internalsVisibleTo": [],
-      "frameworkReferences": [],
-      "testInventory": true
+      "frameworkReferences": []
     },
     {
       "name": "ClaimCore.ConcurrencyQualificationTests",
@@ -435,8 +413,7 @@
       ],
       "packages": [],
       "internalsVisibleTo": [],
-      "frameworkReferences": [],
-      "testInventory": true
+      "frameworkReferences": []
     },
     {
       "name": "ClaimCore.MigrationQualificationTests",
@@ -449,8 +426,7 @@
       ],
       "packages": [],
       "internalsVisibleTo": [],
-      "frameworkReferences": [],
-      "testInventory": true
+      "frameworkReferences": []
     },
     {
       "name": "ClaimCore.AcceptanceTests",
@@ -461,22 +437,20 @@
       "dependsOn": [],
       "packages": [],
       "internalsVisibleTo": [],
-      "frameworkReferences": [],
-      "testInventory": true
+      "frameworkReferences": []
     },
     {
       "name": "ClaimCore.DocsTests",
       "tier": "test",
       "layer": "test",
       "project": "tests/ClaimCore.DocsTests/ClaimCore.DocsTests.fsproj",
-      "role": "Tests for the repository documentation and evidence tooling.",
+      "role": "Tests for the repository documentation tooling.",
       "dependsOn": [
         "ClaimCore.Docs"
       ],
       "packages": [],
       "internalsVisibleTo": [],
-      "frameworkReferences": [],
-      "testInventory": true
+      "frameworkReferences": []
     },
     {
       "name": "ClaimCore.FuzzQualificationTests",
@@ -494,8 +468,7 @@
       ],
       "packages": [],
       "frameworkReferences": [],
-      "internalsVisibleTo": [],
-      "testInventory": true
+      "internalsVisibleTo": []
     }
   ]
 }

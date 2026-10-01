@@ -35,10 +35,6 @@ Use only synthetic data unless the deployment has separately defined and tested 
 secret custody, TLS, monitoring, backup and restore, retention and deletion, and incident response.
 The complete operating limits are in [Security and operations](docs/operations.md).
 
-CI scans both architecture-specific children of the exact PostgreSQL image index for fixed high and
-critical vulnerabilities. The maintained image is built from a pinned official PostgreSQL base and
-signed Debian snapshot; its publisher verifies both children and the final index before the
-application baseline changes. A temporary finding proved unreachable may be entered in
-`config/container-vulnerability-exceptions.yaml` with a technical statement and expiry. Expiry or any
-unlisted applicable finding fails the gate; remove an exception as soon as the selected image
-includes the fix.
+The local development and test database uses the official PostgreSQL image pinned by digest in
+`db/postgresql-baseline.json`; ClaimCore ships no database image. Dependabot proposes image updates
+weekly, and a newer image is adopted only through that reviewed change.

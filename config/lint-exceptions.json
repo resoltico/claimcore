@@ -62,7 +62,7 @@
     {
       "id": "LX-0001",
       "tool": "oxlint",
-      "rules": ["ignorePatterns:src/generated/convergence/web-v3.validators.*.mjs"],
+      "rules": ["ignorePatterns:src/generated/contracts/web-v3.validators.*.mjs"],
       "file": "web/.oxlintrc.json",
       "kind": "config",
       "count": 1,
@@ -73,7 +73,7 @@
     {
       "id": "LX-0002",
       "tool": "prettier",
-      "rules": ["ignore-file:src/generated/convergence/*.json"],
+      "rules": ["ignore-file:src/generated/contracts/*.json"],
       "file": "web/.prettierignore",
       "kind": "config",
       "count": 1,
@@ -84,7 +84,7 @@
     {
       "id": "LX-0003",
       "tool": "prettier",
-      "rules": ["ignore-file:src/generated/convergence/web-v3.validators.*.mjs"],
+      "rules": ["ignore-file:src/generated/contracts/web-v3.validators.*.mjs"],
       "file": "web/.prettierignore",
       "kind": "config",
       "count": 1,
@@ -524,17 +524,6 @@
       "reviewOn": "2027-03-01"
     },
     {
-      "id": "LX-0040",
-      "tool": "shellcheck",
-      "rules": ["SC2154"],
-      "file": "eng/Report-PostgresImagePublication.sh",
-      "kind": "inline",
-      "count": 1,
-      "reason": "The script validates its required environment inputs before using them, and uppercase environment variables are never assigned inside the script by design.",
-      "owner": "project maintainers",
-      "reviewOn": "2027-03-01"
-    },
-    {
       "id": "LX-0041",
       "tool": "shellcheck",
       "rules": ["SC2154"],
@@ -558,12 +547,12 @@
     },
     {
       "id": "LX-0043",
-      "tool": "psscriptanalyzer",
-      "rules": ["PSAvoidUsingWriteHost"],
-      "file": "config/PSScriptAnalyzerSettings.psd1",
+      "tool": "zizmor",
+      "rules": ["self-repository:disable"],
+      "file": ".github/zizmor.yml",
       "kind": "config",
       "count": 1,
-      "reason": "The PowerShell files are interactive console tools whose progress and failure text is written for the operator's terminal; redirectable streams would pollute the structured stdout some of them return.",
+      "reason": "The audit asks for the `$/...` self-repository action syntax, which actionlint and the repository's own workflow policy do not yet understand; the reviewed `./` form is kept until all three accept it.",
       "owner": "project maintainers",
       "reviewOn": "2027-03-01"
     }

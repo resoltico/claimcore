@@ -15,7 +15,7 @@ let private marker id =
 let private syntheticManifest =
     """{"version":1,"components":[{"name":"ClaimCore.Alpha","tier":"product","layer":"core","""
     + """"project":"src/ClaimCore.Alpha/ClaimCore.Alpha.fsproj","role":"Synthetic.","""
-    + """"dependsOn":[],"packages":[],"internalsVisibleTo":[],"testInventory":false}]}
+    + """"dependsOn":[],"packages":[],"internalsVisibleTo":[]}]}
 """
 
 /// Every registration must occur exactly once across the supplied documents, so the fixture carries

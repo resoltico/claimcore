@@ -30,10 +30,8 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/toolchain
-        with:
-          node: "false"
       - name: Select and validate the public exploration seed
-        shell: pwsh
+        shell: bash
         env:
           EVENT_NAME: ${{ github.event_name }}
           REPOSITORY: ${{ github.repository }}
@@ -42,47 +40,23 @@ jobs:
           RUN_ID: ${{ github.run_id }}
           WORKFLOW: ${{ github.workflow }}
         run: |
-          Set-StrictMode -Version Latest
-          $seed = & eng/Select-PropertySeed.ps1 -EventName $env:EVENT_NAME `
-            -RequestedSeed $env:REQUESTED_SEED -Repository $env:REPOSITORY `
-            -Workflow $env:WORKFLOW -RunId $env:RUN_ID -RunAttempt $env:RUN_ATTEMPT
-          Add-Content -LiteralPath $env:GITHUB_ENV -Value "CLAIMCORE_PROPERTY_BASE_SEED=$seed"
-      - name: Restore and build the locked unit project
-        run: |
-          dotnet restore ClaimCore.slnx --locked-mode
-          dotnet build tests/ClaimCore.Tests/ClaimCore.Tests.fsproj --configuration Release --no-restore
-          dotnet build tests/ClaimCore.FuzzQualificationTests/ClaimCore.FuzzQualificationTests.fsproj \
-            --configuration Release --no-restore
-      - name: Run the complete extended profile
-        shell: bash
-        run: |
           set -euo pipefail
-          pwsh -NoProfile -File eng/Check-TestDiscovery.ps1 -Assembly ClaimCore.Tests
-          pwsh -NoProfile -File eng/Check-TestDiscovery.ps1 -Assembly ClaimCore.FuzzQualificationTests
-          results=artifacts/test-results/properties-extended
-          test ! -e "$results"
-          dotnet test --project tests/ClaimCore.Tests/ClaimCore.Tests.fsproj \
-            --configuration Release --no-build --no-restore --max-parallel-test-modules 1 \
-            --results-directory="$results" \
-            --minimum-expected-tests=334 --zero-tests-policy=strict --timeout=30m \
-            -- --settings="$PWD/eng/expecto.runsettings" --report-trx \
-            --report-trx-filename=ClaimCore.Tests.extended.trx
-          dotnet test --project tests/ClaimCore.FuzzQualificationTests/ClaimCore.FuzzQualificationTests.fsproj \
-            --configuration Release --no-build --no-restore --max-parallel-test-modules 1 \
-            --results-directory="$results" \
-            --minimum-expected-tests=5 --zero-tests-policy=strict --timeout=30m \
-            -- --settings="$PWD/eng/expecto.runsettings" --report-trx \
-            --report-trx-filename=ClaimCore.FuzzQualificationTests.extended.trx
+          seed="$(node eng/ci/policy/property-seed.mjs)"
+          echo "CLAIMCORE_PROPERTY_BASE_SEED=$seed" >> "$GITHUB_ENV"
+      - name: Restore the locked source tree
+        run: dotnet restore ClaimCore.slnx --locked-mode
+      - name: Run the complete extended profile
+        run: node eng/ci/suites/suite.mjs run unit fuzz --build --results-root artifacts/properties-results
       - name: Scan artifacts before upload
         id: artifact_scan
         if: always()
-        shell: pwsh
-        run: pwsh -NoProfile -File eng/Scan-ArtifactSecrets.ps1 artifacts/test-results/properties-extended/
+        shell: bash
+        run: node eng/ci/scan/main.mjs artifacts artifacts/properties-results/
       - name: Upload required extended-profile evidence
         if: ${{ always() && steps.artifact_scan.outcome == 'success' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: claimcore-properties-extended-${{ github.run_id }}-${{ github.run_attempt }}
-          path: artifacts/test-results/properties-extended/
+          path: artifacts/properties-results/
           if-no-files-found: error
           retention-days: 30

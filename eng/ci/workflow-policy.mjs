@@ -3,13 +3,7 @@ import { checkGraph } from "./workflow-graph.mjs";
 import { checkUploads } from "./workflow-uploads.mjs";
 import { parseWorkflow } from "./yaml.mjs";
 
-import {
-  publisherPaths,
-  standalonePaths,
-  falseInput,
-  names,
-  expression,
-} from "./workflow-model.mjs";
+import { publisherPaths, falseInput, names, expression } from "./workflow-model.mjs";
 
 /** @typedef {import("./types.mjs").Json} Json */
 
@@ -160,57 +154,6 @@ function checkPermissions(value, publisher) {
 }
 
 /**
- * The evidence workflow collects producer manifests without reading its own directory.
- * @param {Json} evidence
- */
-function checkEvidenceWorkflow(evidence) {
-  const steps = Object.values(evidence["jobs"]).flatMap((job) => job.steps ?? []);
-  const collections = steps.filter((step) => step.with?.pattern?.startsWith("claimcore-stage-"));
-  assert.equal(collections.length, 1, "Expected one producer-manifest collection.");
-  assert.equal(collections[0].with.path, "artifacts/evidence-producers");
-  assert(
-    falseInput(collections[0].with["merge-multiple"]),
-    "Stage artifacts must retain producer directories.",
-  );
-  const artifactScan = steps.find((step) => step.id === "artifact_secrets");
-  assert(
-    typeof artifactScan?.run === "string" &&
-      !artifactScan.run.includes("artifacts/evidence/${{ github.run_id }}"),
-    "Artifact scanning cannot read its own stage directory before that manifest exists.",
-  );
-}
-
-/**
- * Upstream freshness never gates a pull request and dependency security has one producer.
- * @param {Map<string, string>} sources
- * @param {Map<string, Json>} workflows
- */
-function checkDependencyGating(sources, workflows) {
-  const allRuns = [...workflows]
-    .filter(([path]) => !standalonePaths.has(path))
-    .flatMap(([, value]) =>
-      Object.values(value["jobs"] ?? {}).flatMap((job) =>
-        (job.steps ?? []).map((/** @type {Json} */ step) => step["run"] ?? ""),
-      ),
-    )
-    .join("\n");
-  const plans = [...sources]
-    .filter(([path]) => /^eng\/ci\/stage-plans\/[^/]+\.json$/u.test(path))
-    .map(([, source]) => source)
-    .join("\n");
-  assert(
-    !allRuns.includes("Check-DependencyCurrency.ps1") &&
-      !plans.includes("Check-DependencyCurrency.ps1"),
-    "Upstream freshness must not gate unrelated PRs.",
-  );
-  assert.equal(
-    (plans.match(/"id":\s*"dependency-security"/gu) ?? []).length,
-    1,
-    "Dependency security needs exactly one producer.",
-  );
-}
-
-/**
  * Check every workflow and composite action against the reviewed structure.
  * @param {Map<string, string>} sources
  * @param {{ graph?: boolean }} [options]
@@ -255,8 +198,6 @@ export function validateWorkflowSources(sources, { graph = true } = {}) {
     const orchestrator = workflows.get("ci.yml");
     assert(orchestrator, "Missing CI orchestrator.");
     checkGraph(orchestrator, workflows);
-    checkEvidenceWorkflow(/** @type {Json} */ (workflows.get("verify-evidence.yml")));
-    checkDependencyGating(sources, workflows);
   }
   return { workflows: workflowCount, compositeActions: actionCount };
 }

@@ -22,7 +22,7 @@ function safePath(value, glob) {
     "Unsafe artifact path.",
   );
   assert(
-    !/\$\{\{(?!\s*(?:github\.run_id|github\.run_attempt|matrix\.(?:stage|engine))\s*\}\})/u.test(
+    !/\$\{\{(?!\s*(?:github\.run_id|github\.run_attempt|matrix\.(?:suite|platform|engine))\s*\}\})/u.test(
       path,
     ),
     "Unreviewed artifact expression.",
@@ -34,13 +34,13 @@ function safePath(value, glob) {
 }
 /** @param {import("./types.mjs").Json} step */
 function scanPaths(step) {
-  assert.equal(step.shell, "pwsh");
+  assert.equal(step.shell, "bash");
   assert.equal(normalize(step.if), "always()");
   const lines = step.run
     .split(/\r?\n/u)
-    .map((/** @type {string} */ line) => line.trim().replace(/`$/u, "").trim())
+    .map((/** @type {string} */ line) => line.trim().replace(/\\$/u, "").trim())
     .filter(Boolean);
-  const prefix = "pwsh -NoProfile -File eng/Scan-ArtifactSecrets.ps1";
+  const prefix = "node eng/ci/scan/main.mjs artifacts";
   assert(
     lines[0] === prefix || lines[0].startsWith(`${prefix} `),
     "Scan must invoke the private-output policy directly.",

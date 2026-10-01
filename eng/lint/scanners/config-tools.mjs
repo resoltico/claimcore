@@ -1,4 +1,5 @@
 import { parse } from "smol-toml";
+import { parse as parseYaml } from "yaml";
 import { strings, table } from "../model.mjs";
 import { configOccurrence } from "./config-web.mjs";
 
@@ -52,17 +53,25 @@ export function scanPyproject(file, text) {
 }
 
 /**
- * Rules excluded by the PSScriptAnalyzer settings file.
+ * Audits disabled or ignored in a zizmor configuration file.
  * @param {string} file
  * @param {string} text
  * @returns {import("../model.mjs").Occurrence[]}
  */
-export function scanPowerShellSettings(file, text) {
-  const excluded = /ExcludeRules\s*=\s*@\(([^)]*)\)/gisu;
-  const rules = [...text.matchAll(excluded)].flatMap((match) =>
-    [...(match[1] ?? "").matchAll(/['"]([^'"]+)['"]/gu)].map((rule) => rule[1] ?? ""),
-  );
-  return rules.map((rule) => configOccurrence(file, "psscriptanalyzer", rule));
+export function scanZizmorConfig(file, text) {
+  const rules = table(table(parseYaml(text))["rules"]);
+  /** @type {import("../model.mjs").Occurrence[]} */
+  const found = [];
+  for (const [rule, settings] of Object.entries(rules)) {
+    const entry = table(settings);
+    if (entry["disable"] === true) {
+      found.push(configOccurrence(file, "zizmor", `${rule}:disable`));
+    }
+    for (const where of strings(entry["ignore"])) {
+      found.push(configOccurrence(file, "zizmor", `${rule}:ignore:${where}`));
+    }
+  }
+  return found;
 }
 
 /**

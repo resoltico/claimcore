@@ -1,9 +1,9 @@
 import { basename } from "node:path";
 import {
   scanBuildConfig,
-  scanPowerShellSettings,
   scanPyproject,
   scanShellcheckConfig,
+  scanZizmorConfig,
 } from "./scanners/config-tools.mjs";
 import {
   scanCoverageConfig,
@@ -41,7 +41,7 @@ const scanners = [
   },
   { applies: (path) => path.endsWith(".py"), scan: ({ path, lines }) => scanPython(path, lines) },
   {
-    applies: (path) => /\.(?:sh|ps1|psm1|psd1|yml|yaml)$/u.test(path),
+    applies: (path) => /\.(?:sh|yml|yaml)$/u.test(path),
     scan: ({ path, lines }) => scanScripts(path, lines),
   },
   {
@@ -82,8 +82,8 @@ const scanners = [
     scan: ({ path, text }) => scanPyproject(path, text),
   },
   {
-    applies: (_, name) => name === "PSScriptAnalyzerSettings.psd1",
-    scan: ({ path, text }) => scanPowerShellSettings(path, text),
+    applies: (_, name) => /^zizmor\.ya?ml$/u.test(name),
+    scan: ({ path, text }) => scanZizmorConfig(path, text),
   },
   {
     applies: (_, name) => name === ".shellcheckrc",

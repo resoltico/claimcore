@@ -1,11 +1,7 @@
 import assert from "node:assert/strict";
 
-export const publisherPaths = new Set(["release.yml", "publish-postgres-image.yml"]);
-export const standalonePaths = new Set([
-  "verify-properties.yml",
-  "dependency-health.yml",
-  ...publisherPaths,
-]);
+export const publisherPaths = new Set(["release.yml"]);
+export const standalonePaths = new Set(["verify-properties.yml", ...publisherPaths]);
 /** @param {unknown} value */
 export const falseInput = (value) => value === false || value === "false";
 /** @param {unknown} value @returns {string[]} */

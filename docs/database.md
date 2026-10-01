@@ -249,15 +249,11 @@ file setup. [`.env.example`](../.env.example) declares its required passwords an
 project and host-port settings. The selected `CLAIMCORE_POSTGRES_PORT` must match both private
 connection files.
 
-The Compose dependency is a separately published PostgreSQL image, not a packaged ClaimCore
-application. Its [recipe](../db/Dockerfile.postgres-patched) pins the official PostgreSQL base and
-exact package upgrades from the signed [Debian](https://snapshot.debian.org/archive/debian/20260913T022727Z/)
-and [Debian security](https://snapshot.debian.org/archive/debian-security/20260913T022727Z/)
-snapshots, where corresponding source packages can be obtained. The image retains the Docker-library
-PostgreSQL [LICENSE](../db/postgres-upstream/LICENSE) and [AUTHORS](../db/postgres-upstream/AUTHORS)
-at `/usr/share/doc/docker-library-postgres/`; PostgreSQL and Debian package copyright notices remain
-under `/usr/share/doc/`. The image's per-architecture SBOMs and provenance are attested to its
-published digests; use the exact digest in [`db/postgresql-baseline.json`](../db/postgresql-baseline.json).
+The Compose dependency is the official PostgreSQL image, pinned by tag and digest in
+[`db/postgresql-baseline.json`](../db/postgresql-baseline.json) (and, equally, in `compose.yaml`; a test holds the
+two together), not a packaged ClaimCore application. ClaimCore ships no database image. The image keeps its own
+PostgreSQL license and package notices under `/usr/share/doc/`; weekly Dependabot pull requests propose newer images,
+and one is adopted only through that reviewed change.
 
 Compose is for local synthetic development only. Passwords initialize a new volume; changing `.env`
 does not rotate roles in a retained database. The authenticated health check remains unhealthy when

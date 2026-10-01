@@ -1,10 +1,11 @@
 {
   "clean": [
-    "artifacts/stages",
     "artifacts/sbom",
     "artifacts/frontend",
     "artifacts/frontend-product",
-    "artifacts/diagnostics"
+    "artifacts/test-results",
+    "artifacts/measured-bin",
+    "artifacts/frontend-contracts"
   ],
   "jobs": [
     {
@@ -14,7 +15,7 @@
       "argv": [
         "bash",
         "-c",
-        "dotnet restore ClaimCore.slnx --locked-mode && dotnet tool restore && npm --prefix eng ci && uv sync --frozen && dotnet build ClaimCore.slnx --configuration Release --no-restore"
+        "dotnet restore ClaimCore.slnx --locked-mode && dotnet tool restore && npm --prefix eng ci && dotnet build ClaimCore.slnx --configuration Release --no-restore"
       ],
       "scope": null
     },
@@ -23,7 +24,7 @@
       "title": "Generated documentation, links and contracts",
       "mirrors": ["documentation"],
       "after": ["setup"],
-      "argv": ["dotnet", "artifacts/bin/ClaimCore.Docs/release/ClaimCore.Docs.dll", "check"],
+      "argv": ["node", "eng/ci/policy/documentation.mjs"],
       "scope": null
     },
     {
@@ -66,17 +67,10 @@
     },
     {
       "id": "tests-dotnet",
-      "title": "Unit, Web, documentation, fuzz and architecture suites",
-      "mirrors": ["unit", "documentation"],
+      "title": "Every registered cross-platform suite for this platform (CI runs the other platforms)",
+      "mirrors": ["suites"],
       "after": ["quality", "docs-check", "frontend-gates"],
-      "argv": [
-        "pwsh",
-        "-NoProfile",
-        "-File",
-        "eng/Run-LocalDotnetVerification.ps1",
-        "-NoRebuild",
-        "-SkipPostgres"
-      ],
+      "argv": ["node", "eng/ci/suites/suite.mjs", "run", "--cross-platform"],
       "scope": [
         "^src/",
         "^tests/",
@@ -96,22 +90,14 @@
       "title": "PostgreSQL integration, witness, recovery, concurrency, migration and backup suites (partitioned)",
       "mirrors": ["integration"],
       "after": ["tests-dotnet"],
-      "argv": [
-        "pwsh",
-        "-NoProfile",
-        "-File",
-        "eng/Run-LocalDotnetVerification.ps1",
-        "-NoRebuild",
-        "-PostgresOnly"
-      ],
+      "argv": ["node", "eng/ci/suites/suite.mjs", "run", "--group", "postgres", "--build"],
       "tools": ["docker"],
       "scope": [
         "^src/",
-        "^tests/ClaimCore\\.(Integration|Witness|RecoveryQualification|ConcurrencyQualification|MigrationQualification|BackupQualification)Tests/",
-        "^tests/RepositoryRoot\\.fs$",
+        "^tests/",
         "^db/",
-        "^eng/(Invoke-PostgresQualifications|Run-LocalDotnetVerification|Check-TestDiscovery)\\.ps1$",
-        "^eng/test-partitions\\.json$",
+        "^eng/ci/suites/",
+        "^config/test-suites\\.json$",
         "^eng/ClaimCore\\.Docs/",
         "\\.(props|targets)$",
         "^global\\.json$",
@@ -131,15 +117,12 @@
         "^db/",
         "^tests/ClaimCore\\.AcceptanceTests/",
         "^eng/Run-PublishedCliAcceptance\\.sh$",
+        "^eng/ci/publish/",
         "^web/"
       ]
     }
   ],
   "notLocal": [
-    {
-      "family": "unit",
-      "reason": "The macOS and Windows legs need those operating systems; the Linux leg is tests-dotnet."
-    },
     {
       "family": "browser",
       "reason": "The three published-browser lifecycles need the synthetic OIDC fixture and three browser engines; run eng/Run-PublishedWebE2E.sh by hand."
@@ -147,10 +130,6 @@
     {
       "family": "coverage",
       "reason": "Merged coverage needs every producer, including the browser lifecycles; CI merges it."
-    },
-    {
-      "family": "evidence",
-      "reason": "Evidence reconciliation binds Linux stage manifests produced in one CI run."
     }
   ]
 }

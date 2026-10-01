@@ -1,0 +1,61 @@
+name: ClaimCore suite verification
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    name: Plan the registered suites
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/toolchain
+        with:
+          dotnet: "false"
+      - name: Derive the suite and platform matrix from config/test-suites.json
+        id: matrix
+        run: node eng/ci/suites/matrix.mjs >> "$GITHUB_OUTPUT"
+
+  suites:
+    name: ${{ matrix.suite }} (${{ matrix.platform }})
+    needs: [plan]
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/toolchain
+      - name: Restore the locked source tree
+        run: dotnet restore ClaimCore.slnx --locked-mode
+      - name: Build, check against the inventory, run and verify the suite
+        shell: bash
+        env:
+          SUITE: ${{ matrix.suite }}
+        run: node eng/ci/suites/suite.mjs run "$SUITE" --build
+      - name: Scan artifacts before upload
+        id: artifact_scan
+        if: always()
+        shell: bash
+        run: |
+          node eng/ci/scan/main.mjs artifacts \
+            artifacts/test-results/
+      - name: Upload the suite results
+        if: ${{ always() && steps.artifact_scan.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: claimcore-test-${{ matrix.suite }}-${{ matrix.platform }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/test-results/${{ matrix.suite }}/
+          if-no-files-found: error
+          retention-days: 14
