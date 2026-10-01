@@ -43,16 +43,12 @@ module AuthMiddleware =
         handler
 
     let private requireHuman (configuration: OidcConfiguration) (context: TokenValidatedContext) =
-        let subject =
-            context.Principal
-            |> Option.ofObj
-            |> Option.bind (fun principal -> principal.FindFirst("sub") |> Option.ofObj)
-            |> Option.map _.Value
-            |> Option.defaultValue ""
-
-        match PrincipalIdentity.human configuration.Issuer subject with
-        | Error _ -> context.Fail("OIDC_SUBJECT_INVALID")
-        | Ok _ -> ()
+        match context.Principal |> Option.ofObj with
+        | Some principal ->
+            match PrincipalIdentity.fromBrowserSession configuration.Issuer principal with
+            | Error _ -> context.Fail("OIDC_SUBJECT_INVALID")
+            | Ok _ -> ()
+        | None -> context.Fail("OIDC_SUBJECT_INVALID")
 
         Task.CompletedTask
 

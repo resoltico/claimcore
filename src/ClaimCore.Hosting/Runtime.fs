@@ -181,7 +181,7 @@ type Runtime private (resources: RuntimeResources) =
             adoptionApproval
             handoffApproval
             realDataActivationApproval
-        |> RuntimeActorFacade.wrap selectedAdmission
+        |> RuntimeActorFacade.wrap selectedAdmission gate principal
 
     member this.ForActor(principal: PrincipalKey) : IActorClaimsCore =
         this.ForActorUsing(principal, admission)

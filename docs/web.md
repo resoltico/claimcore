@@ -126,6 +126,8 @@ outcomes are HTTP `200` endpoint bodies. Typed host failures use the appropriate
 `404`, `409`, `413`, `415`, `429`, `500`, or `503` response and state
 `executionPhase: NOT_STARTED` or `STARTED_UNCONFIRMED` where meaningful.
 
+Identity selection uses exact case-sensitive claim names and requires exactly one authenticated identity and one subject; bearer identity also requires exactly one authorized client claim. Duplicate identity claims are refused even when their values agree. Discovery rejects nonobject and duplicate-member documents and compares the complete issuer URI; canonical root issuers and slash-ended HTTPS endpoints are supported.
+
 Browser sessions remain server-side behind secure, HTTP-only, same-site cookies and are bounded by idle and absolute expiry. Access and refresh tokens are not exposed to browser JavaScript. A fresh OIDC login does not revive an expired session.
 
 | Method and path | Service behavior |
@@ -176,6 +178,10 @@ attempt; pruned technical material cannot be exported.
 ## Session and delivery safety
 
 Logout is unavailable while a mutation is dispatched. When it succeeds, the host signs out the server-side browser ticket and cookie, makes the principal anonymous, issues a fresh anonymous antiforgery token, and returns that session snapshot. The browser increments its local session epoch, aborts reads, and clears claimant state.
+
+A definite server access refusal on a paginated read clears that request's cached rows, continuation
+and page metadata. Transient delivery/storage failures remain retryable; other reads keep their own
+state. Already-disclosed downloads, clipboard contents and human knowledge are not remotely erased.
 
 Reads may be abortable. Mutation HTTP never uses browser cancellation after dispatch. A typed
 not-started admission response proves no execution. A lost prepare response remains uncertain and may be retried or inspected with the exact operation ID and request bytes. A lost, timed-out,

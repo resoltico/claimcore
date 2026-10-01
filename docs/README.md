@@ -37,3 +37,6 @@ The [architecture and contract design](architecture-contract-design.md) and its 
 
 The [persistence and recovery design](persistence-recovery-design.md) and its separate
 [design QA](persistence-recovery-design-qa.md) record the transaction, witness, replay and retention audit.
+
+The [identity and privacy design](identity-privacy-design.md) and its separate
+[design QA](identity-privacy-design-qa.md) record the authentication and disclosure audit.

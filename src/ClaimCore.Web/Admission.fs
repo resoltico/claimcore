@@ -43,13 +43,7 @@ module Admission =
                 match authentication.Principal |> Option.ofObj with
                 | None -> return Error AdmissionFailure.SessionRejected
                 | Some principal ->
-                    let subject =
-                        principal.FindFirst("sub")
-                        |> Option.ofObj
-                        |> Option.map _.Value
-                        |> Option.defaultValue ""
-
-                    match PrincipalIdentity.human configuration.Issuer subject with
+                    match PrincipalIdentity.fromBrowserSession configuration.Issuer principal with
                     | Ok actor -> return Ok actor
                     | Error _ -> return Error AdmissionFailure.SessionRejected
         }

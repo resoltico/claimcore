@@ -71,3 +71,20 @@ export const isMutationUncertain = (result: ApiResult<EndpointOutcome>): boolean
     "RETAIN_STATE_UNKNOWN",
   ].includes(result.value.outcome.tag);
 };
+
+/** An access refusal clears only the cache for the read that received it. */
+export const isDisclosureRefused = (result: ApiResult<EndpointOutcome>): boolean => {
+  if (result.kind === "deliveryFailure") {
+    return false;
+  }
+  const notice = resultNotice(result);
+  return (
+    notice.kind === "diagnostic" &&
+    [
+      "ACCESS_RESOURCE_UNAVAILABLE",
+      "RESOURCE_UNAVAILABLE",
+      "WEB_HOST_SESSION_REJECTED",
+      "WEB_HOST_SESSION_FORBIDDEN",
+    ].includes(notice.diagnostic.id)
+  );
+};

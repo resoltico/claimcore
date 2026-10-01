@@ -68,6 +68,7 @@
     <Compile Include="ConfigurationTests.fs" />
     <Compile Include="CliProcessTests.fs" />
     <Compile Include="RemoteClientTests.fs" />
+    <Compile Include="IssuerIdentityTests.fs" />
     <Compile Include="RemoteInvocationTests.fs" />
     <Compile Include="ActorAuthorizationTests.fs" />
     <Compile Include="ActorAuthorizationMatrixTests.fs" />

@@ -60,6 +60,7 @@ ClaimCore deterministic suite.Hedgehog scalar boundaries.uppercase ASCII currenc
 ClaimCore deterministic suite.Hedgehog state invariants.accepted and rejected sequences preserve revision invariants
 ClaimCore deterministic suite.Hedgehog state invariants.reachable states match the independent availability matrix
 ClaimCore deterministic suite.[CC-APP-002] prepared canonical identity cannot be mutated through an accessor
+ClaimCore deterministic suite.[CC-AUTH-001] CLI discovery compares the complete issuer identity
 ClaimCore deterministic suite.[CC-AUTH-001] every Domain command maps to edit capability
 ClaimCore deterministic suite.accepted receipt first.[CC-APP-002] accepted identity conflict refuses without recovery disclosure
 ClaimCore deterministic suite.accepted receipt first.[CC-APP-002] accepted receipt wins after original commit confirmation is lost

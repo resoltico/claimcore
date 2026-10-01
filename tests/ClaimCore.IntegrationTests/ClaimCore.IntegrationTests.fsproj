@@ -197,6 +197,8 @@
     <Compile Include="CaseLifecycleStoreFixture.fs" />
     <Compile Include="CaseLifecycleStoreTests.fs" />
     <Compile Include="PreparationHoldRetentionTests.fs" />
+    <Compile Include="MutationDisclosureFixture.fs" />
+    <Compile Include="MutationDisclosureTests.fs" />
     <Compile Include="CaseListBlockedTimingTests.fs" />
     <Compile Include="CaseErasureFenceTests.fs" />
     <Compile Include="CaseLifecycleAuditTests.fs" />

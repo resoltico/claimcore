@@ -64,6 +64,7 @@
     <Compile Include="ActorRecoveryApi.fs" />
     <Compile Include="ActorCopyAdoptionApi.fs" />
     <Compile Include="ActorRealDataActivationApi.fs" />
+    <Compile Include="ActorMutationDisclosure.fs" />
     <Compile Include="ActorCoreApi.fs" />
   </ItemGroup>
   <ItemGroup>

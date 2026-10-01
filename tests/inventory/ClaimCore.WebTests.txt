@@ -106,6 +106,11 @@ ClaimCore.Web.copy adoption approval input.[CC-WEB-001] adoption approval refuse
 ClaimCore.Web.copy adoption approval input.[CC-WEB-001] adoption origin binds exact witnessed provenance
 ClaimCore.Web.copy deletion approval input.[CC-WEB-001] deletion approval binds exact report verifier and cutoff
 ClaimCore.Web.copy deletion approval input.[CC-WEB-001] deletion approval refuses forged or malformed metadata
+ClaimCore.Web.exact principal admission.[CC-WEB-001] claim names select identity with ordinal case sensitivity
+ClaimCore.Web.exact principal admission.[CC-WEB-001] composite and unauthenticated principals cannot select an actor
+ClaimCore.Web.exact principal admission.[CC-WEB-001] discovery refuses nonobjects and duplicate members
+ClaimCore.Web.exact principal admission.[CC-WEB-001] repeated subject and client claims are refused in every order
+ClaimCore.Web.exact principal admission.[CC-WEB-001] root and slash-ended issuer metadata preserve exact identity
 ClaimCore.Web.lifecycle input.[CC-WEB-001] lifecycle drafts and approvals retain exact caller identities
 ClaimCore.Web.lifecycle input.[CC-WEB-001] lifecycle input refuses forged or malformed fields
 ClaimCore.Web.management input.[CC-WEB-001] binds exact authority event, principal, role and scope before dispatch

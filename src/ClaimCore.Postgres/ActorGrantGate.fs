@@ -207,7 +207,8 @@ type internal PostgresActorGate(dataSource: NpgsqlDataSource, commitments: ISupp
                     | EndpointAction.RecoveryInspect
                     | EndpointAction.RecoveryResolve
                     | EndpointAction.RecoveryDismiss
-                    | EndpointAction.RecoveryExport ->
+                    | EndpointAction.RecoveryExport
+                    | EndpointAction.RecoveryImportRetain ->
                         operationCaseId connection transaction operationId cancellationToken
                     | _ -> task { return None }
 
@@ -216,7 +217,12 @@ type internal PostgresActorGate(dataSource: NpgsqlDataSource, commitments: ISupp
                 let caseId = if blocked then None else located
 
                 let resource =
-                    caseId |> Option.map (fun id -> ResourceScope.Operation(operationId, id))
+                    caseId
+                    |> Option.map (fun id ->
+                        if action = EndpointAction.RecoveryImportRetain then
+                            ResourceScope.Case id
+                        else
+                            ResourceScope.Operation(operationId, id))
 
                 let! actor =
                     authorize

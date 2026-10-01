@@ -26,10 +26,16 @@ ClaimCore is a pre-1.0 application for a single trusted local administrative bou
 does not promise security fixes for historical revisions; reproduce findings against the current
 maintained revision.
 
-The Web bootstrap credential, cookie, and in-memory session admit a local browser to the running
-host. They do not establish individual identity, per-user authorization, multi-tenancy, remote API
-security, or a tamper-proof audit. Runtime database credentials can bypass parts of the domain model;
-never expose them to browser clients, untrusted agents, or generated code.
+The Web service validates individual OIDC browser identities and CLI/automation bearer identities.
+Browser tickets remain server-side behind secure cookies; ClaimCore actor and resource grants are
+default-deny and rechecked under authority locks. Owner administration is a separate credential and
+executable boundary. The browser and CLI receive neither database nor witness credentials.
+
+The service is loopback-bound and does not supply multi-tenancy or a qualified nonloopback deployment.
+Primary schema owners, witness administrators and host/storage administrators remain trusted; control
+of both databases, keys or all retained evidence can defeat the application boundary. Keep runtime
+and owner credentials out of browser clients, untrusted agents and generated code. Individual login,
+a green test run or a current-pair audit does not certify independent-host recovery or total erasure.
 
 Use only synthetic data unless the deployment has separately defined and tested identity, access,
 secret custody, TLS, monitoring, backup and restore, retention and deletion, and incident response.
