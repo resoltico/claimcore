@@ -99,6 +99,17 @@
           "FSharp.Core": "[10.1.401, )"
         }
       },
+      "claimcore.contractgenerator": {
+        "type": "Project",
+        "dependencies": {
+          "ClaimCore.Application": "[0.5.0, )",
+          "ClaimCore.Contracts": "[0.5.0, )",
+          "ClaimCore.Database": "[0.5.0, )",
+          "ClaimCore.Domain": "[0.5.0, )",
+          "ClaimCore.Postgres": "[0.5.0, )",
+          "FSharp.Core": "[10.1.401, )"
+        }
+      },
       "claimcore.contracts": {
         "type": "Project",
         "dependencies": {
@@ -154,6 +165,7 @@
         "dependencies": {
           "ClaimCore.Application": "[0.5.0, )",
           "ClaimCore.CliProtocol": "[0.5.0, )",
+          "ClaimCore.ContractGenerator": "[0.5.0, )",
           "ClaimCore.Contracts": "[0.5.0, )",
           "ClaimCore.Database": "[0.5.0, )",
           "ClaimCore.Domain": "[0.5.0, )",
