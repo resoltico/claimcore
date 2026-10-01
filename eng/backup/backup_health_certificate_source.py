@@ -153,11 +153,11 @@ def _verify_raw(source_bytes: bytes, signature: bytes, public_key: bytes) -> Non
         root.chmod(0o700)
         source = root / "source.json"
         signed = root / "source.sig"
-        key = root / "role.der"
+        verifier_file = root / "role.der"
         for path, body in (
             (source, source_bytes),
             (signed, signature),
-            (key, ED25519_PREFIX + public_key),
+            (verifier_file, ED25519_PREFIX + public_key),
         ):
             path.write_bytes(body)
             path.chmod(0o600)
@@ -168,7 +168,7 @@ def _verify_raw(source_bytes: bytes, signature: bytes, public_key: bytes) -> Non
                 "-verify",
                 "-pubin",
                 "-inkey",
-                str(key),
+                str(verifier_file),
                 "-keyform",
                 "DER",
                 "-rawin",
