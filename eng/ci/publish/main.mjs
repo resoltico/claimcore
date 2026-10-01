@@ -1,3 +1,4 @@
+import { commandLine } from "../executable.mjs";
 // Publish the three applications once, describe them (SBOM, third-party notices, manifest) and let
 // every consumer verify the exact bytes it received.
 //
@@ -35,7 +36,7 @@ export const products = [
  * @returns {string} Standard output.
  */
 function run(command, args) {
-  const result = spawnSync(command, args, {
+  const result = spawnSync(...commandLine(command, args), {
     cwd: root,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "inherit"],

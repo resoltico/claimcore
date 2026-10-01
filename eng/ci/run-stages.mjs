@@ -20,7 +20,6 @@ import { installTool, loadTools, pathWithTools } from "./tools.mjs";
 
 const root = fileURLToPath(new URL("../..", import.meta.url));
 const { argv } = process;
-const inCi = Boolean(process.env["CI"]);
 const groups = Boolean(process.env["GITHUB_ACTIONS"]);
 
 /**
@@ -71,12 +70,13 @@ async function execute(stage, runId) {
   const missing = await provide(stage.requires ?? []);
   if (missing.length > 0) {
     // CI must never skip a gate; a developer machine without the tool cannot run it.
-    process.stdout.write(
-      `${stage.id}: ${inCi ? "FAILED" : "skipped"} (needs ${missing.join(", ")} on PATH).\n`,
-    );
-    return { failed: inCi, skipped: true };
+    process.stdout.write(`${stage.id}: FAILED (needs ${missing.join(", ")} on PATH).\n`);
+    return { status: "failed", note: "required tool unavailable" };
   }
-  const log = join(process.env["RUNNER_TEMP"] ?? tmpdir(), `claimcore-${stage.id}.log`);
+  const log = join(
+    process.env["RUNNER_TEMP"] ?? tmpdir(),
+    `claimcore-${runId}-${stage.id}-${randomUUID()}.log`,
+  );
   const [command = "", ...args] = commandFor(stage, runId, root);
   const status = await runToLog(command, args, {
     cwd: root,
@@ -84,7 +84,7 @@ async function execute(stage, runId) {
     env: environmentFor(stage, runId),
   });
   report(stage.id, status, log);
-  return { failed: status !== 0 };
+  return { status: status === 0 ? "passed" : "failed" };
 }
 
 async function main() {
@@ -99,15 +99,21 @@ async function main() {
   const runId = process.env["GITHUB_RUN_ID"] ?? `local-${randomUUID().replaceAll("-", "")}`;
   const parallel = Number(option(argv, "parallel", String(Math.min(availableParallelism(), 4))));
   const only = option(argv, "only", "").split(",").filter(Boolean);
+  const unknown = only.filter((id) => !plan.stages.some((stage) => stage.id === id));
+  if (unknown.length > 0) {
+    throw new Error(`Unknown stage selection: ${unknown.join(", ")}.`);
+  }
   const selected = {
     ...plan,
     stages:
       only.length === 0 ? plan.stages : plan.stages.filter((stage) => only.includes(stage.id)),
   };
   const results = await runPlan(selected, parallel, (stage) => execute(stage, runId));
-  const failed = results.filter((result) => result.value.failed).map((result) => result.stage.id);
+  const failed = results
+    .filter((result) => result.value.status === "failed")
+    .map((result) => result.stage.id);
   process.stdout.write(
-    `${plan.producer}: ${results.length - failed.length} of ${results.length} stages passed.\n`,
+    `${plan.producer}: ${results.filter((result) => result.value.status === "passed").length} passed, ${failed.length} failed, ${results.filter((result) => result.value.status === "skipped").length} skipped.\n`,
   );
   if (failed.length > 0) {
     process.stdout.write(`Failed: ${failed.join(", ")}\n`);

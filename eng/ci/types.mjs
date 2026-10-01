@@ -30,12 +30,7 @@
  */
 
 /**
- * @typedef {object} StageResult
- * @property {boolean} [failed]
- * @property {boolean} [skipped]
- * @property {boolean} [notStarted]
- * @property {string} [note]
- * @property {unknown} [error]
+ * @typedef {{ status: "passed" } | { status: "failed", error?: unknown, note?: string } | { status: "skipped", note?: string } | { status: "not-started" }} StageResult
  */
 
 export {};

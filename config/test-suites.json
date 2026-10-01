@@ -8,9 +8,15 @@
       "project": "tests/ClaimCore.Tests/ClaimCore.Tests.fsproj",
       "configuration": "Release",
       "coverage": true,
-      "platforms": ["linux", "macos", "windows"],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ],
       "timeout": "30m",
-      "build": ["src/ClaimCore.Cli/ClaimCore.Cli.fsproj"]
+      "build": [
+        "src/ClaimCore.Cli/ClaimCore.Cli.fsproj"
+      ]
     },
     {
       "id": "fuzz",
@@ -19,7 +25,9 @@
       "project": "tests/ClaimCore.FuzzQualificationTests/ClaimCore.FuzzQualificationTests.fsproj",
       "configuration": "Release",
       "coverage": false,
-      "platforms": ["linux"],
+      "platforms": [
+        "linux"
+      ],
       "timeout": "30m"
     },
     {
@@ -29,7 +37,11 @@
       "project": "tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj",
       "configuration": "Release",
       "coverage": true,
-      "platforms": ["linux", "macos", "windows"],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ],
       "timeout": "25m"
     },
     {
@@ -39,9 +51,16 @@
       "project": "tests/ClaimCore.ArchitectureTests/ClaimCore.ArchitectureTests.fsproj",
       "configuration": "Debug",
       "coverage": false,
-      "platforms": ["linux"],
+      "platforms": [
+        "linux"
+      ],
       "timeout": "25m",
-      "msbuild": ["-p:Optimize=false"]
+      "msbuild": [
+        "-p:Optimize=false"
+      ],
+      "env": {
+        "CLAIMCORE_ARCHITECTURE_REPORT": "{results}/architecture-report.json"
+      }
     },
     {
       "id": "docs",
@@ -50,7 +69,11 @@
       "project": "tests/ClaimCore.DocsTests/ClaimCore.DocsTests.fsproj",
       "configuration": "Release",
       "coverage": false,
-      "platforms": ["linux", "macos", "windows"],
+      "platforms": [
+        "linux",
+        "macos",
+        "windows"
+      ],
       "timeout": "25m"
     },
     {
@@ -60,7 +83,9 @@
       "project": "tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj",
       "configuration": "Release",
       "coverage": false,
-      "platforms": ["linux"],
+      "platforms": [
+        "linux"
+      ],
       "timeout": "40m",
       "group": "published"
     },
@@ -71,7 +96,9 @@
       "project": "tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj",
       "configuration": "Release",
       "coverage": true,
-      "platforms": ["linux"],
+      "platforms": [
+        "linux"
+      ],
       "group": "postgres",
       "timeout": "110m",
       "partitions": {
@@ -84,6 +111,12 @@
           "actor-and-custody",
           "lifecycle-and-privacy"
         ]
+      },
+      "build": [
+        "src/ClaimCore.Cli/ClaimCore.Cli.fsproj"
+      ],
+      "env": {
+        "CLAIMCORE_TEST_CLI_PATH": "{root}/artifacts/bin/ClaimCore.Cli/release/ClaimCore.Cli.dll"
       }
     },
     {
@@ -93,9 +126,17 @@
       "project": "tests/ClaimCore.BackupQualificationTests/ClaimCore.BackupQualificationTests.fsproj",
       "configuration": "Release",
       "coverage": false,
-      "platforms": ["linux"],
+      "platforms": [
+        "linux"
+      ],
       "group": "postgres",
-      "timeout": "90m"
+      "timeout": "90m",
+      "build": [
+        "src/ClaimCore.Cli/ClaimCore.Cli.fsproj"
+      ],
+      "env": {
+        "CLAIMCORE_TEST_CLI_PATH": "{root}/artifacts/bin/ClaimCore.Cli/release/ClaimCore.Cli.dll"
+      }
     },
     {
       "id": "recovery-qualification",
@@ -104,9 +145,17 @@
       "project": "tests/ClaimCore.RecoveryQualificationTests/ClaimCore.RecoveryQualificationTests.fsproj",
       "configuration": "Release",
       "coverage": false,
-      "platforms": ["linux"],
+      "platforms": [
+        "linux"
+      ],
       "group": "postgres",
-      "timeout": "90m"
+      "timeout": "90m",
+      "build": [
+        "src/ClaimCore.Cli/ClaimCore.Cli.fsproj"
+      ],
+      "env": {
+        "CLAIMCORE_TEST_CLI_PATH": "{root}/artifacts/bin/ClaimCore.Cli/release/ClaimCore.Cli.dll"
+      }
     },
     {
       "id": "witness-qualification",
@@ -115,9 +164,17 @@
       "project": "tests/ClaimCore.WitnessTests/ClaimCore.WitnessTests.fsproj",
       "configuration": "Release",
       "coverage": false,
-      "platforms": ["linux"],
+      "platforms": [
+        "linux"
+      ],
       "group": "postgres",
-      "timeout": "90m"
+      "timeout": "90m",
+      "build": [
+        "src/ClaimCore.Cli/ClaimCore.Cli.fsproj"
+      ],
+      "env": {
+        "CLAIMCORE_TEST_CLI_PATH": "{root}/artifacts/bin/ClaimCore.Cli/release/ClaimCore.Cli.dll"
+      }
     },
     {
       "id": "fresh-baseline-qualification",
@@ -126,9 +183,17 @@
       "project": "tests/ClaimCore.MigrationQualificationTests/ClaimCore.MigrationQualificationTests.fsproj",
       "configuration": "Release",
       "coverage": false,
-      "platforms": ["linux"],
+      "platforms": [
+        "linux"
+      ],
       "group": "postgres",
-      "timeout": "90m"
+      "timeout": "90m",
+      "build": [
+        "src/ClaimCore.Cli/ClaimCore.Cli.fsproj"
+      ],
+      "env": {
+        "CLAIMCORE_TEST_CLI_PATH": "{root}/artifacts/bin/ClaimCore.Cli/release/ClaimCore.Cli.dll"
+      }
     },
     {
       "id": "concurrency-qualification",
@@ -137,19 +202,31 @@
       "project": "tests/ClaimCore.ConcurrencyQualificationTests/ClaimCore.ConcurrencyQualificationTests.fsproj",
       "configuration": "Release",
       "coverage": false,
-      "platforms": ["linux"],
+      "platforms": [
+        "linux"
+      ],
       "group": "postgres",
-      "timeout": "90m"
+      "timeout": "90m",
+      "build": [
+        "src/ClaimCore.Cli/ClaimCore.Cli.fsproj"
+      ],
+      "env": {
+        "CLAIMCORE_TEST_CLI_PATH": "{root}/artifacts/bin/ClaimCore.Cli/release/ClaimCore.Cli.dll"
+      }
     },
     {
       "id": "vitest",
       "kind": "vitest",
-      "platforms": ["linux"]
+      "platforms": [
+        "linux"
+      ]
     },
     {
       "id": "browser",
       "kind": "playwright",
-      "platforms": ["linux"]
+      "platforms": [
+        "linux"
+      ]
     }
   ]
 }

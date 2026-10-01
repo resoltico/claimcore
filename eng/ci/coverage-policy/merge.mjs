@@ -1,3 +1,4 @@
+import { executable } from "../executable.mjs";
 // Merge the Cobertura reports of every measured process and enforce the coverage floors.
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
@@ -32,7 +33,7 @@ export function mergeCoverage(inputRoot, outputRoot, summaryPath) {
   const reports = resolveInputs(inRepository(inputRoot), loadSuites(root));
   mkdirSync(output, { recursive: true });
   const generated = spawnSync(
-    "dotnet",
+    executable("dotnet"),
     [
       "tool",
       "run",

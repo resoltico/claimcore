@@ -13,6 +13,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
+      tools: ${{ steps.matrix.outputs.tools }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -23,6 +24,24 @@ jobs:
       - name: Derive the suite and platform matrix from config/test-suites.json
         id: matrix
         run: node eng/ci/suites/matrix.mjs >> "$GITHUB_OUTPUT"
+
+  tools:
+    name: Pinned tools (${{ matrix.platform }})
+    needs: [plan]
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.tools) }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/toolchain
+        with:
+          dotnet: "false"
+      - name: Execute verified pinned tools and reject a forged asset hash
+        run: node eng/ci/tools-smoke.mjs
 
   suites:
     name: ${{ matrix.suite }} (${{ matrix.platform }})
@@ -37,8 +56,6 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/toolchain
-      - name: Restore the locked source tree
-        run: dotnet restore ClaimCore.slnx --locked-mode
       - name: Build, check against the inventory, run and verify the suite
         shell: bash
         env:

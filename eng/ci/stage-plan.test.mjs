@@ -46,7 +46,7 @@ test("independent stages overlap up to the limit and no further", async () => {
       peak = Math.max(peak, active);
       await pause(20);
       active -= 1;
-      return { failed: false };
+      return { status: "passed" };
     },
   );
   assert.equal(results.length, 5);
@@ -60,7 +60,7 @@ test("a stage never starts before the stages it follows have finished", async ()
     order.push(`start ${stage.id}`);
     await pause(stage.id === "early" ? 30 : 1);
     order.push(`end ${stage.id}`);
-    return { failed: false };
+    return { status: "passed" };
   });
   assert.deepEqual(order, ["start early", "end early", "start late", "end late"]);
 });
@@ -86,7 +86,7 @@ test("stages sharing a group never overlap while others do", async () => {
       }
       await pause(15);
       active.delete(stage.id);
-      return { failed: false };
+      return { status: "passed" };
     },
   );
   assert.equal(overlapped, false);
@@ -109,7 +109,7 @@ test("an exclusive stage runs alone and nothing starts while it runs", async () 
       active.add(stage.id);
       await pause(15);
       active.delete(stage.id);
-      return { failed: false };
+      return { status: "passed" };
     },
   );
   assert.equal(exclusiveSawOthers, false);
@@ -124,11 +124,11 @@ test("a failing or throwing stage is reported and does not stop the others", asy
       if (stage.id === "thrower") {
         throw new Error("boom");
       }
-      return { failed: stage.id === "bad" };
+      return { status: stage.id === "bad" ? "failed" : "passed" };
     },
   );
   const failed = results
-    .filter((result) => result.value.failed)
+    .filter((result) => result.value.status === "failed")
     .map((result) => result.stage.id)
     .sort();
   assert.deepEqual(failed, ["bad", "thrower"]);
@@ -143,13 +143,13 @@ test("with fail-fast nothing starts after a failure and the rest are reported as
     2,
     async (stage) => {
       started.push(stage.id);
-      return { failed: stage.id === "first" };
+      return { status: stage.id === "first" ? "failed" : "passed" };
     },
     { failFast: true },
   );
   assert.deepEqual(started, ["first"]);
   const notStarted = results
-    .filter((result) => result.value.notStarted)
+    .filter((result) => result.value.status === "not-started")
     .map((result) => result.stage.id)
     .sort();
   assert.deepEqual(notStarted, ["second", "third"]);
@@ -160,14 +160,69 @@ test("without fail-fast every stage still runs after a failure", async () => {
   const started = [];
   await runPlan(plan([{ id: "first" }, { id: "second", after: ["first"] }]), 2, async (stage) => {
     started.push(stage.id);
-    return { failed: stage.id === "first" };
+    return { status: stage.id === "first" ? "failed" : "passed" };
   });
   assert.deepEqual(started, ["first", "second"]);
 });
 
 test("concurrency must be a positive integer", async () => {
   await assert.rejects(
-    runPlan(plan([{ id: "one" }]), 0, async () => ({})),
+    runPlan(plan([{ id: "one" }]), 0, async () => ({ status: "passed" })),
     /positive/u,
   );
+});
+
+test("malformed execution results cannot become a passing task", async () => {
+  const results = await runPlan(
+    plan([{ id: "invalid" }]),
+    1,
+    async () => /** @type {import("./types.mjs").StageResult} */ ({}),
+  );
+  assert.equal(results[0]?.value.status, "failed");
+  const contradictory = await runPlan(
+    plan([{ id: "contradictory" }]),
+    1,
+    async () =>
+      /** @type {import("./types.mjs").StageResult} */ ({ status: "passed", failed: true }),
+  );
+  assert.equal(contradictory[0]?.value.status, "failed");
+});
+
+test("malformed resource and source-selector metadata is refused before execution", () => {
+  for (const extra of [
+    { exclusive: "yes" },
+    { group: 1 },
+    { after: "early" },
+    { env: [] },
+    { requires: ["node", "node"] },
+    { appendFiles: { directories: ["../private"], suffix: ".sh" } },
+    { ignoredField: true },
+  ]) {
+    assert.throws(() =>
+      validatePlan({ producer: "fixture", stages: [{ id: "invalid", argv: ["true"], ...extra }] }),
+    );
+  }
+});
+
+test("a ready exclusive task drains running work before later tasks may start", async () => {
+  /** @type {string[]} */
+  const order = [];
+  await runPlan(
+    plan([{ id: "first" }, { id: "exclusive", exclusive: true }, { id: "later" }]),
+    3,
+    async (stage) => {
+      order.push(`start ${stage.id}`);
+      await pause(5);
+      order.push(`end ${stage.id}`);
+      return { status: "passed" };
+    },
+  );
+  assert.deepEqual(order, [
+    "start first",
+    "end first",
+    "start exclusive",
+    "end exclusive",
+    "start later",
+    "end later",
+  ]);
 });

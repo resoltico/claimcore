@@ -17,6 +17,7 @@ ClaimCore documentation assurance.Path and link safety.repository path confineme
 ClaimCore documentation assurance.Path and link safety.repository path confinement.rejects a symlink in an existing path
 ClaimCore documentation assurance.Path and link safety.repository path confinement.rejects rooted dot parent and backslash registered paths
 ClaimCore documentation assurance.contract tokens.accepts every contract named by a test and no unknown token
+ClaimCore documentation assurance.contract tokens.an orphan inventory cannot supply a contract witness
 ClaimCore documentation assurance.contract tokens.refuses a contract that no test names
 ClaimCore documentation assurance.contract tokens.refuses a missing inventory directory
 ClaimCore documentation assurance.contract tokens.refuses a token that names no declared contract

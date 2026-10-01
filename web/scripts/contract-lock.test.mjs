@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -54,5 +54,33 @@ test("an absent output directory points at the generator and a nested directory 
     await assert.rejects(() => verifyLock(join(directory, "missing"), lock), /contract:generate/u);
     await mkdir(join(directory, "nested"));
     await assert.rejects(() => describeDirectory(directory), /regular files only/u);
+  });
+});
+
+test("a false byte length and duplicate locked entries are refused", async () => {
+  await withDirectory({ "a.json": "{}" }, async (directory, lock) => {
+    await writeLock(directory, lock);
+    const original = JSON.parse(await readFile(lock, "utf8"));
+    const wrongLength = structuredClone(original);
+    wrongLength.files[0].bytes += 1;
+    await writeFile(lock, JSON.stringify(wrongLength));
+    await assert.rejects(() => verifyLock(directory, lock), /differ from/u);
+    const duplicate = structuredClone(original);
+    duplicate.files.push(duplicate.files[0]);
+    await writeFile(lock, JSON.stringify(duplicate));
+    await assert.rejects(() => verifyLock(directory, lock), /unique/u);
+  });
+});
+
+test("empty and malformed lock inventories cannot qualify output", async () => {
+  await withDirectory({ "a.json": "{}" }, async (directory, lock) => {
+    for (const files of [
+      [],
+      [{ path: "../escape", bytes: 1, sha256: "0".repeat(64) }],
+      [{ path: "a.json", bytes: -1, sha256: "0".repeat(64) }],
+    ]) {
+      await writeFile(lock, JSON.stringify({ schemaVersion: 1, files }));
+      await assert.rejects(() => verifyLock(directory, lock), /valid file list/u);
+    }
   });
 });

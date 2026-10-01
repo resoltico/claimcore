@@ -34,4 +34,7 @@ export function buildMatrix(suites) {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const root = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
   process.stdout.write(`matrix=${JSON.stringify(buildMatrix(loadSuites(root)))}\n`);
+  process.stdout.write(
+    `tools=${JSON.stringify({ include: Object.entries(runners).map(([platform, os]) => ({ platform, os })) })}\n`,
+  );
 }

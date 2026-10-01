@@ -32,7 +32,7 @@ retried, or sharded required tests are policy failures.
   qualify atomic creation, repeatability, rollback and refusal without an upgrade or conversion path.
 - Keep protocol, capability, Web contract, example, documentation, schema, and baseline projections
   synchronized with behavior.
-- Keep contract headings, `[CC-…]` evidence leaves, and review-subject hashes synchronized. A passing
+- Keep contract headings and `[CC-…]` evidence leaves synchronized. A passing
   tagged test does not substitute for semantic review of its assertions.
 - Declare every component edge, package, and `InternalsVisibleTo` grant in `config/architecture.json`, and
   review changes to it against the actual module boundaries, compiled inspection, evaluated project

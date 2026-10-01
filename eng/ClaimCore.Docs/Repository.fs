@@ -180,7 +180,7 @@ module Repository =
                         "-z"
                         "--cached"
                         "--others"
-                        "--exclude-standard"
+                        "--exclude-per-directory=.gitignore"
                         "--"
                         ":(glob)**/*.md"
                     ]

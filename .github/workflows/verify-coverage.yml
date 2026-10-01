@@ -39,7 +39,6 @@ jobs:
           merge-multiple: true
       - name: Restore the pinned report tool
         run: |
-          dotnet restore ClaimCore.slnx --locked-mode
           dotnet tool restore
       - name: Merge and enforce repository coverage floors
         run: node eng/ci/coverage-policy/merge.mjs artifacts/coverage-input artifacts/coverage-report "$GITHUB_STEP_SUMMARY"

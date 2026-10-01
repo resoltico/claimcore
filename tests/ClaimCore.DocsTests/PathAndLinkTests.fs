@@ -72,7 +72,11 @@ let private listsMarkdownThroughGit () =
 
     let request = runner.Requests |> List.exactlyOne
     Expect.equal request.FileName "git" "Git lists the files"
-    Expect.contains request.Arguments "--exclude-standard" "Git applies the ignore rules"
+
+    Expect.contains
+        request.Arguments
+        "--exclude-per-directory=.gitignore"
+        "Git applies the ignore rules"
 
     Expect.equal
         (request.Environment |> Map.ofList |> Map.tryFind "GIT_DIR")

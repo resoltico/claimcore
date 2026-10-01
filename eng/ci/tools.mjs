@@ -1,11 +1,14 @@
+import { resolveSourceFile } from "./repository-path.mjs";
+import { executable as resolveExecutable } from "./executable.mjs";
 // The pinned downloadable tools: config/tools.json names each tool's version and, per platform,
 // the asset URL and its SHA-256. Installing verifies the digest before anything is unpacked and
 // places the executable in artifacts/tools/bin, which the runners put first on PATH.
 import { spawnSync } from "node:child_process";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import {
   chmodSync,
   existsSync,
+  lstatSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -86,16 +89,6 @@ async function download(url) {
 }
 
 /**
- * The tar that reads every pinned archive kind. On Windows that is the system bsdtar, which unpacks zip
- * archives; the `tar` first on PATH there can be GNU tar from Git for Windows, which cannot.
- * @returns {string}
- */
-const tarExecutable = () =>
-  process.platform === "win32"
-    ? join(process.env["SystemRoot"] ?? "C:\\Windows", "System32", "tar.exe")
-    : "tar";
-
-/**
  * @param {Buffer} bytes
  * @param {string} name
  * @param {Asset} asset
@@ -110,15 +103,46 @@ function unpack(bytes, name, asset) {
     const archive = join(scratch, `asset.${asset.archive}`);
     writeFileSync(archive, bytes);
     const member = asset.member ?? name;
-    const extracted = spawnSync(tarExecutable(), ["-xf", archive, "-C", scratch, member], {
+    if (member.includes("\\") || member.split("/").some((part) => ["", ".", ".."].includes(part))) {
+      throw new Error("A pinned archive member must be a safe relative file path.");
+    }
+    const extracted = spawnSync(resolveExecutable("tar"), ["-xf", archive, "-C", scratch, member], {
       stdio: "ignore",
     });
     if (extracted.status !== 0) {
       throw new Error(`The ${name} archive does not contain ${member}.`);
     }
-    return readFileSync(join(scratch, member));
+    const path = resolveSourceFile(scratch, member);
+    return readFileSync(path);
   } finally {
     rmSync(scratch, { recursive: true, force: true });
+  }
+}
+
+/** @param {Buffer} bytes @returns {string} */
+const digest = (bytes) => createHash("sha256").update(bytes).digest("hex");
+
+/** @param {string} path @param {string} marker @param {Tool} tool @param {Asset} asset */
+function installed(path, marker, tool, asset) {
+  if (
+    !existsSync(path) ||
+    !existsSync(marker) ||
+    !lstatSync(path).isFile() ||
+    lstatSync(path).isSymbolicLink() ||
+    !lstatSync(marker).isFile() ||
+    lstatSync(marker).isSymbolicLink()
+  ) {
+    return false;
+  }
+  try {
+    const record = JSON.parse(readFileSync(marker, "utf8"));
+    return (
+      record.version === tool.version &&
+      record.sha256 === asset.sha256 &&
+      record.executableSha256 === digest(readFileSync(path))
+    );
+  } catch {
+    return false;
   }
 }
 
@@ -126,14 +150,17 @@ function unpack(bytes, name, asset) {
  * Install one tool for this platform unless the verified version is already in place.
  * @param {string} root
  * @param {string} name
- * @param {{ tools?: Record<string, Tool>, platform?: string }} [options]
+ * @param {{ tools?: Record<string, Tool>, platform?: string, acquire?: (url: string) => Promise<Buffer> }} [options]
  * @returns {Promise<string>} The executable's path.
  */
 export async function installTool(
   root,
   name,
-  { tools = loadTools(root), platform = platformKey() } = {},
+  { tools = loadTools(root), platform = platformKey(), acquire = download } = {},
 ) {
+  if (!/^[a-z][a-z0-9-]*$/u.test(name)) {
+    throw new Error("A pinned tool requires a safe executable name.");
+  }
   const tool = tools[name];
   const asset = tool?.assets[platform];
   if (!tool || !asset) {
@@ -142,20 +169,32 @@ export async function installTool(
   const directory = toolsDirectory(root);
   const executable = join(directory, executableName(name, asset));
   const marker = join(directory, `.${name}.json`);
-  const record = JSON.stringify({ version: tool.version, sha256: asset.sha256 });
-  if (existsSync(executable) && existsSync(marker) && readFileSync(marker, "utf8") === record) {
+  if (installed(executable, marker, tool, asset)) {
     return executable;
   }
-  const bytes = await download(asset.url);
-  if (createHash("sha256").update(bytes).digest("hex") !== asset.sha256.toLowerCase()) {
+  const bytes = await acquire(asset.url);
+  if (digest(bytes) !== asset.sha256.toLowerCase()) {
     throw new Error(`The ${name} asset failed integrity verification.`);
   }
   mkdirSync(directory, { recursive: true });
-  const scratch = `${executable}.partial`;
-  writeFileSync(scratch, unpack(bytes, name, asset));
-  chmodSync(scratch, 0o755);
-  renameSync(scratch, executable);
-  writeFileSync(marker, record);
+  const unpacked = unpack(bytes, name, asset);
+  const record = JSON.stringify({
+    version: tool.version,
+    sha256: asset.sha256,
+    executableSha256: digest(unpacked),
+  });
+  const scratch = `${executable}.${randomUUID()}.partial`;
+  const pendingMarker = `${scratch}.json`;
+  try {
+    writeFileSync(scratch, unpacked);
+    chmodSync(scratch, 0o755);
+    writeFileSync(pendingMarker, record);
+    renameSync(scratch, executable);
+    renameSync(pendingMarker, marker);
+  } finally {
+    rmSync(scratch, { force: true });
+    rmSync(pendingMarker, { force: true });
+  }
   return executable;
 }
 
