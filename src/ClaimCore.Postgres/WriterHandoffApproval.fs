@@ -186,7 +186,7 @@ module internal WriterHandoffApproval =
         =
         task {
             let! holder = checkpointHolder connection transaction request.CheckpointSigningKeyId
-            let! now = ManagedCopySignerPolicy.databaseNow connection transaction
+            let! now = Sql.databaseNow connection transaction
             let snapshot = witness.Snapshot()
 
             let historical =

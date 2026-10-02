@@ -10,19 +10,6 @@ open ClaimCore.Application
 /// Owner process only. Live deletion remains ERASURE_PENDING until independent managed-copy and
 /// witness-payload absence plus the explicit suppression horizon are proven later.
 module internal CaseErasurePurge =
-    let private now connection transaction =
-        task {
-            use command = new NpgsqlCommand("SELECT clock_timestamp()", connection, transaction)
-            let! value = command.ExecuteScalarAsync()
-
-            return
-                match value with
-                | :? DateTimeOffset as instant -> instant
-                | :? DateTime as instant when instant.Kind = DateTimeKind.Utc ->
-                    DateTimeOffset instant
-                | _ -> raise (InvalidDataException("Owner purge clock is unavailable."))
-        }
-
     let private lockAuthority connection transaction =
         task {
             use authority =
@@ -85,7 +72,7 @@ module internal CaseErasurePurge =
             | Some projection when projection.CaseId <> caseId ->
                 return OwnerPurgeOutcome.AuditUnavailable "CASE_IDENTITY"
             | Some projection ->
-                let! instant = now owner transaction
+                let! instant = Sql.databaseNow owner transaction
                 stage.Value <- "PURGE_PROOF"
 
                 return!

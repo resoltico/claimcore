@@ -56,7 +56,7 @@ module internal InstallationLossRetirementState =
         | _ -> invalidOp "Loss decision owner authority is unavailable."
 
     let databaseNow primaryOwner transaction =
-        ManagedCopySignerPolicy.databaseNow primaryOwner transaction
+        Sql.databaseNow primaryOwner transaction
         |> fun work -> work.GetAwaiter().GetResult()
 
     let verifiedOwnerAuthority primaryOwner transaction witness cutoff =

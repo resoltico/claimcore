@@ -20,25 +20,36 @@ type private TicketEntry =
     {
         Ticket: AuthenticationTicket
         AbsoluteExpiry: DateTimeOffset
-        mutable IdleExpiry: DateTimeOffset
+        AbsoluteLifetime: TimeSpan
+        Started: int64
+        mutable LastActivity: int64
     }
 
 /// The browser cookie contains only a protected random lookup key. The ticket and its identity
 /// remain server-side and expire at the earlier of idle and absolute deadlines.
 [<Sealed>]
-type OidcTicketStore(idle: TimeSpan, absolute: TimeSpan, ?clock: unit -> DateTimeOffset) =
+type OidcTicketStore(idle: TimeSpan, absolute: TimeSpan, ?timeProvider: TimeProvider) =
     do
         if idle <= TimeSpan.Zero || absolute < idle then
             invalidArg (nameof idle) "OIDC session lifetimes must be positive and ordered."
 
-    let now = defaultArg clock (fun () -> DateTimeOffset.UtcNow)
+    let clock = defaultArg timeProvider TimeProvider.System
     let gate = obj ()
     let tickets = Dictionary<string, TicketEntry>(StringComparer.Ordinal)
 
-    let expire instant =
+    let expire instant timestamp =
+        let expired (entry: TicketEntry) =
+            let age = clock.GetElapsedTime(entry.Started, timestamp)
+            let inactive = clock.GetElapsedTime(entry.LastActivity, timestamp)
+
+            entry.AbsoluteExpiry <= instant
+            || age < TimeSpan.Zero
+            || inactive < TimeSpan.Zero
+            || age >= entry.AbsoluteLifetime
+            || inactive >= idle
+
         tickets
-        |> Seq.filter (fun entry ->
-            entry.Value.AbsoluteExpiry <= instant || entry.Value.IdleExpiry <= instant)
+        |> Seq.filter (fun entry -> expired entry.Value)
         |> Seq.map _.Key
         |> Seq.toArray
         |> Array.iter (fun key -> tickets.Remove(key) |> ignore)
@@ -46,18 +57,20 @@ type OidcTicketStore(idle: TimeSpan, absolute: TimeSpan, ?clock: unit -> DateTim
     interface ITicketStore with
         member _.StoreAsync(ticket) =
             let key = Guid.NewGuid().ToString("N")
-            let instant = now ()
-            let expiry = ticket.Properties.ExpiresUtc
-            let maximum = instant.Add(absolute)
-
-            let absoluteExpiry =
-                if expiry.HasValue then
-                    min maximum expiry.Value
-                else
-                    maximum
 
             lock gate (fun () ->
-                expire instant
+                let instant = clock.GetUtcNow()
+                let timestamp = clock.GetTimestamp()
+                let expiry = ticket.Properties.ExpiresUtc
+                let maximum = instant.Add(absolute)
+
+                let absoluteExpiry =
+                    if expiry.HasValue then
+                        min maximum expiry.Value
+                    else
+                        maximum
+
+                expire instant timestamp
 
                 if tickets.Count >= 10000 then
                     invalidOp "The OIDC session store is full."
@@ -67,7 +80,9 @@ type OidcTicketStore(idle: TimeSpan, absolute: TimeSpan, ?clock: unit -> DateTim
                     {
                         Ticket = ticket
                         AbsoluteExpiry = absoluteExpiry
-                        IdleExpiry = min absoluteExpiry (instant.Add(idle))
+                        AbsoluteLifetime = absoluteExpiry - instant
+                        Started = timestamp
+                        LastActivity = timestamp
                     }
                 ))
 
@@ -75,7 +90,7 @@ type OidcTicketStore(idle: TimeSpan, absolute: TimeSpan, ?clock: unit -> DateTim
 
         member _.RenewAsync(key, ticket) =
             lock gate (fun () ->
-                expire (now ())
+                expire (clock.GetUtcNow()) (clock.GetTimestamp())
 
                 match tickets.TryGetValue(key) with
                 | true, entry -> tickets[key] <- { entry with Ticket = ticket }
@@ -84,15 +99,14 @@ type OidcTicketStore(idle: TimeSpan, absolute: TimeSpan, ?clock: unit -> DateTim
             Task.CompletedTask
 
         member _.RetrieveAsync(key) =
-            let instant = now ()
-
             let ticket =
                 lock gate (fun () ->
-                    expire instant
+                    let timestamp = clock.GetTimestamp()
+                    expire (clock.GetUtcNow()) timestamp
 
                     match tickets.TryGetValue(key) with
                     | true, entry ->
-                        entry.IdleExpiry <- min entry.AbsoluteExpiry (instant.Add(idle))
+                        entry.LastActivity <- timestamp
                         entry.Ticket
                     | false, _ -> Unchecked.defaultof<AuthenticationTicket>)
 

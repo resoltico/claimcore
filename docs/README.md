@@ -64,3 +64,6 @@ The [resource lifetime design](resource-lifetimes-design.md) and separate
 
 The [failure semantics design](failure-semantics-design.md) and separate
 [design QA](failure-semantics-design-qa.md) trace outcome knowledge and safe recovery guidance.
+
+The [time and ordering design](time-ordering-design.md) and separate
+[design QA](time-ordering-design-qa.md) distinguish calendar, authority and elapsed clocks.

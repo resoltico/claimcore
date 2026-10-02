@@ -158,12 +158,15 @@ module internal CaseTombstoneHoldWrite =
             | None when stored.Phase = "ERASURE_FINAL" ->
                 return TombstoneWriteOutcome.Refused LifecycleRefusal.WrongPrivacyPhase
             | None ->
-                let! outcome = decision connection transaction change stored
-
-                match outcome with
+                match basic change instant with
                 | Error refusal -> return TombstoneWriteOutcome.Refused refusal
                 | Ok() ->
-                    return! commit connection transaction witness context change stored instant
+                    let! outcome = decision connection transaction change stored
+
+                    match outcome with
+                    | Error refusal -> return TombstoneWriteOutcome.Refused refusal
+                    | Ok() ->
+                        return! commit connection transaction witness context change stored instant
         }
 
     let private pruneReady
@@ -193,7 +196,6 @@ module internal CaseTombstoneHoldWrite =
         (witness: WitnessProtocol)
         (context: ActorCallContext)
         (change: TombstoneHoldChange)
-        instant
         =
         task {
             use! connection = RuntimeDatabase.openConnectionAsync dataSource
@@ -234,6 +236,8 @@ module internal CaseTombstoneHoldWrite =
                     if not allowed then
                         return TombstoneWriteOutcome.ResourceUnavailable
                     else
+                        let! instant = Sql.databaseNow connection transaction
+
                         return!
                             afterAuthorization
                                 connection
@@ -250,28 +254,19 @@ module internal CaseTombstoneHoldWrite =
         (witness: WitnessProtocol)
         (context: ActorCallContext)
         (request: TombstoneHoldChange)
-        (instant: DateTimeOffset)
         =
         task {
-            let utcInstant = instant.Offset = TimeSpan.Zero
-            let instant = CaseLifecycleStoreSupport.microsecondInstant instant
-
             if
                 context.Action <> EndpointAction.ManageTombstoneHold
                 || context.CaseId <> Some request.CaseId
             then
                 return TombstoneWriteOutcome.ResourceUnavailable
-            elif not utcInstant then
-                return TombstoneWriteOutcome.Refused LifecycleRefusal.InvalidTime
             else
-                match basic request instant with
-                | Error refusal -> return TombstoneWriteOutcome.Refused refusal
-                | Ok() ->
-                    try
-                        witness.Admit()
-                        return! write dataSource witness context request instant
-                    with
-                    | :? InvalidDataException ->
-                        return TombstoneWriteOutcome.Failed CoreFault.StoreIntegrityError
-                    | _ -> return TombstoneWriteOutcome.Failed CoreFault.StoreUnavailable
+                try
+                    witness.Admit()
+                    return! write dataSource witness context request
+                with
+                | :? InvalidDataException ->
+                    return TombstoneWriteOutcome.Failed CoreFault.StoreIntegrityError
+                | _ -> return TombstoneWriteOutcome.Failed CoreFault.StoreUnavailable
         }

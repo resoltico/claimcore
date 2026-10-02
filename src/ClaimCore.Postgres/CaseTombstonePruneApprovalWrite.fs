@@ -149,6 +149,8 @@ module internal CaseTombstonePruneApprovalWrite =
             | Some receipt -> return replay witness context value approvalId expiresAt receipt
             | None when not (matches stored value) ->
                 return TombstoneWriteOutcome.Refused LifecycleRefusal.VersionConflict
+            | None when not (valid value approvalId expiresAt instant) ->
+                return TombstoneWriteOutcome.Refused LifecycleRefusal.InvalidTime
             | None ->
                 let! slots = slotDecision connection transaction witness context value
 
@@ -175,7 +177,6 @@ module internal CaseTombstonePruneApprovalWrite =
         (value: TombstonePruneProposal)
         (approvalId: Guid)
         (expiresAt: DateTimeOffset)
-        (instant: DateTimeOffset)
         =
         task {
             use! connection = RuntimeDatabase.openConnectionAsync dataSource
@@ -211,6 +212,8 @@ module internal CaseTombstonePruneApprovalWrite =
                 if not allowed then
                     return TombstoneWriteOutcome.ResourceUnavailable
                 else
+                    let! instant = Sql.databaseNow connection transaction
+
                     return!
                         afterAuthorization
                             connection
@@ -231,23 +234,17 @@ module internal CaseTombstonePruneApprovalWrite =
         (value: TombstonePruneProposal)
         (approvalId: Guid)
         (expiresAt: DateTimeOffset)
-        (instant: DateTimeOffset)
         =
         task {
-            let utcInstant = instant.Offset = TimeSpan.Zero
-            let instant = CaseLifecycleStoreSupport.microsecondInstant instant
-
             if
                 context.Action <> EndpointAction.ApproveWitnessPrune
                 || context.CaseId <> Some value.CaseId
             then
                 return TombstoneWriteOutcome.ResourceUnavailable
-            elif not utcInstant || not (valid value approvalId expiresAt instant) then
-                return TombstoneWriteOutcome.Refused LifecycleRefusal.InvalidTime
             else
                 try
                     witness.Admit()
-                    return! apply dataSource witness context value approvalId expiresAt instant
+                    return! apply dataSource witness context value approvalId expiresAt
                 with
                 | :? InvalidDataException ->
                     return TombstoneWriteOutcome.Failed CoreFault.StoreIntegrityError

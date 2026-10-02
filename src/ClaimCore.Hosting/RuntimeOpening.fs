@@ -16,12 +16,12 @@ module internal RuntimeOpening =
         |> Option.ofObj
         |> Option.defaultWith (fun () -> invalidOp "Private writer capability is unavailable.")
 
-    let private businessTime zoneId =
+    let businessTime zoneId (timeProvider: TimeProvider) =
         let zone = TimeZoneInfo.FindSystemTimeZoneById(zoneId)
 
         { new IBusinessTime with
             member _.Capture() =
-                let observed = TimeProvider.System.GetUtcNow()
+                let observed = timeProvider.GetUtcNow()
                 let local = TimeZoneInfo.ConvertTime(observed, zone)
 
                 {
@@ -140,7 +140,7 @@ module internal RuntimeOpening =
                 let useState = InstallationUseScopeRead.requirePair _connection witness
                 requireBootstrapNoCases useState audit
 
-                let clock = businessTime businessTimeZone
+                let clock = businessTime businessTimeZone TimeProvider.System
                 resources.AttachClock(clock)
 
                 return Ok()

@@ -53,7 +53,7 @@ let private stagedAttempt owner (witness: WitnessProtocol) context request prima
     use connection = new NpgsqlConnection(owner)
     connection.Open()
     use transaction = connection.BeginTransaction(IsolationLevel.ReadCommitted)
-    let approvedAt = ManagedCopySignerPolicy.databaseNow connection transaction |> await
+    let approvedAt = Sql.databaseNow connection transaction |> await
 
     let canonical =
         RealDataActivationApprovalCandidate.canonical

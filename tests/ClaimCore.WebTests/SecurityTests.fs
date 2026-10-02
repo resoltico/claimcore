@@ -12,6 +12,21 @@ open ClaimCore.Web
 open ClaimCore.WebTests.RouteFixtures
 open ClaimCore.WebTests.PrivateTestPaths
 
+type private SessionClock(instant: DateTimeOffset) =
+    inherit TimeProvider()
+    let mutable utc = instant
+    let mutable elapsed = 0L
+    override _.GetUtcNow() = utc
+    override _.GetTimestamp() = elapsed
+    override _.TimestampFrequency = TimeSpan.TicksPerSecond
+
+    member _.Advance(value: TimeSpan) =
+        utc <- utc.Add(value)
+        elapsed <- elapsed + value.Ticks
+
+    member _.Elapsed(value: TimeSpan) = elapsed <- elapsed + value.Ticks
+    member _.Jump(value: TimeSpan) = utc <- utc.Add(value)
+
 let private origin = Uri("https://localhost:5443")
 
 let private postContext () =
@@ -55,10 +70,11 @@ let private connectionTests () =
         "Declared body limits are enforced before allocation"
 
 let private sessionTests () =
-    let mutable now = DateTimeOffset(2026, 9, 23, 12, 0, 0, TimeSpan.Zero)
+    let now = DateTimeOffset(2026, 9, 23, 12, 0, 0, TimeSpan.Zero)
+    let clock = SessionClock(now)
 
     let store =
-        OidcTicketStore(TimeSpan.FromMinutes(1.), TimeSpan.FromMinutes(2.), clock = (fun () -> now))
+        OidcTicketStore(TimeSpan.FromMinutes(1.), TimeSpan.FromMinutes(2.), timeProvider = clock)
         :> ITicketStore
 
     let identity = ClaimsIdentity([ Claim("sub", "synthetic-owner") ], "oidc")
@@ -73,10 +89,88 @@ let private sessionTests () =
         )
 
     let key = store.StoreAsync(ticket).Result
-    now <- now.AddSeconds(59.)
+    clock.Advance(TimeSpan.FromSeconds 59.)
     Expect.isNotNull (store.RetrieveAsync(key).Result) "Activity extends idle within absolute life"
-    now <- now.AddSeconds(61.)
+    clock.Advance(TimeSpan.FromSeconds 61.)
     Expect.isNull (store.RetrieveAsync(key).Result) "Absolute expiry revokes the server ticket"
+
+let private ticket expiry =
+    let properties = AuthenticationProperties()
+    properties.ExpiresUtc <- Nullable expiry
+    AuthenticationTicket(ClaimsPrincipal(ClaimsIdentity("oidc")), properties, "Cookies")
+
+let private rollbackIdle () =
+    let start = DateTimeOffset(2026, 10, 1, 12, 0, 0, TimeSpan.Zero)
+    let clock = SessionClock(start)
+
+    let store =
+        OidcTicketStore(TimeSpan.FromMinutes 1., TimeSpan.FromMinutes 4., timeProvider = clock)
+        :> ITicketStore
+
+    let value = ticket (start.AddHours 1.)
+    let key = store.StoreAsync(value).Result
+    clock.Jump(TimeSpan.FromHours -3.)
+    clock.Elapsed(TimeSpan.FromMinutes 1.)
+
+    Expect.isNull
+        (store.RetrieveAsync(key).Result)
+        "Exact elapsed idle boundary expires despite rollback"
+
+    store.RenewAsync(key, value).Wait()
+    clock.Jump(TimeSpan.FromHours 3.)
+
+    Expect.isNull
+        (store.RetrieveAsync(key).Result)
+        "Renewal and wall correction cannot revive an expired key"
+
+let private rollbackAbsolute () =
+    let start = DateTimeOffset(2026, 10, 1, 12, 0, 0, TimeSpan.Zero)
+    let clock = SessionClock(start)
+
+    let store =
+        OidcTicketStore(TimeSpan.FromMinutes 1., TimeSpan.FromMinutes 2., timeProvider = clock)
+        :> ITicketStore
+
+    let key = store.StoreAsync(ticket (start.AddHours 1.)).Result
+    clock.Advance(TimeSpan.FromSeconds 59.)
+    Expect.isNotNull (store.RetrieveAsync(key).Result) "First idle extension"
+    clock.Jump(TimeSpan.FromHours -3.)
+    clock.Elapsed(TimeSpan.FromSeconds 59.)
+
+    Expect.isNotNull
+        (store.RetrieveAsync(key).Result)
+        "Activity remains possible before absolute limit"
+
+    store.RenewAsync(key, ticket (start.AddHours 12.)).Wait()
+    clock.Elapsed(TimeSpan.FromSeconds 2.)
+
+    Expect.isNull
+        (store.RetrieveAsync(key).Result)
+        "Longer renewed ticket cannot extend original elapsed absolute life"
+
+let private ticketAndWallBounds () =
+    let start = DateTimeOffset(2026, 10, 1, 12, 0, 0, TimeSpan.Zero)
+    let clock = SessionClock(start)
+
+    let store =
+        OidcTicketStore(TimeSpan.FromMinutes 1., TimeSpan.FromMinutes 4., timeProvider = clock)
+        :> ITicketStore
+
+    let key = store.StoreAsync(ticket (start.AddSeconds 30.)).Result
+    clock.Jump(TimeSpan.FromHours -3.)
+    clock.Elapsed(TimeSpan.FromSeconds 30.)
+
+    Expect.isNull
+        (store.RetrieveAsync(key).Result)
+        "Original ticket's shorter expiry also bounds elapsed life"
+
+    clock.Jump(TimeSpan.FromHours 3.)
+    let fresh = store.StoreAsync(ticket (clock.GetUtcNow().AddHours 1.)).Result
+    clock.Jump(TimeSpan.FromHours 2.)
+
+    Expect.isNull
+        (store.RetrieveAsync(fresh).Result)
+        "Forward UTC correction can conservatively expire a ticket"
 
 let private stateLeaseTests () =
     let directory = newPrivateDirectory "claimcore-web-tests-"
@@ -112,6 +206,13 @@ let tests =
                 "[CC-WEB-001] limits requests to exact loopback browser admission"
                 connectionTests
             testCase "[CC-WEB-001] OIDC ticket enforces idle and absolute expiry" sessionTests
+            testCase "[CC-WEB-001] wall rollback cannot extend idle session life" rollbackIdle
+            testCase
+                "[CC-WEB-001] renewal cannot extend elapsed absolute session life"
+                rollbackAbsolute
+            testCase
+                "[CC-WEB-001] ticket expiry bounds elapsed life and forward wall jumps refuse"
+                ticketAndWallBounds
             testCase
                 "[CC-WEB-001] private host lease creates no bootstrap credential"
                 stateLeaseTests

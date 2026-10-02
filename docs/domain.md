@@ -88,6 +88,12 @@ Business disposition and privacy state are separate technical authority, not fou
 
 An erasure request immediately fences ordinary access and work. The next pending transition requires proof of the exact settled external witness fence; neither step deletes all copies or means that erasure has completed. A later owner-only live purge requires two distinct witnessed data-steward approvals, complete operation-denial coverage, no active hold, and a full current data audit. Managed backup, WAL, witness-payload, replica, snapshot, key, and export copies remain part of the privacy status until each known custodian has independently verified deletion or inaccessibility. While keyed reference/operation suppression evidence remains, the truthful status is `PAYLOAD_ERASED_SUPPRESSION_RETAINED`, not total personal-data erasure; `ERASURE_FINAL` additionally needs its explicit horizon and an independently evidenced old-writer and recovery-artifact fence. A missing or unknown copy never counts as deleted. The generic checkout lacks a reviewed publication root and cannot certify the final phase for real data.
 
+Fresh lifecycle and tombstone decisions use current primary UTC after authority/resource locks,
+including approval validity and UTC hold-review windows. A timestamp captured before lock contention
+cannot authorize a later decision. Expiry excludes the boundary instant for new approval authority;
+exact witnessed approval readback remains historical evidence after expiry and does not renew it.
+These technical UTC windows are separate from the installation calendar used for business dates.
+
 The decision date, payable amount, and payable currency are all present or all absent. A payment date
 requires a complete decision, a positive payable amount, and a date on or after the decision. Zero is
 a valid decision amount but cannot be marked paid. The payable amount and currency need not match the

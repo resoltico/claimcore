@@ -28,19 +28,6 @@ module internal CaseTombstoneTerminalOwner =
             return ()
         }
 
-    let private databaseClock connection transaction =
-        task {
-            use command = new NpgsqlCommand("SELECT clock_timestamp()", connection, transaction)
-            let! value = command.ExecuteScalarAsync()
-
-            return
-                match value with
-                | :? DateTimeOffset as instant -> instant
-                | :? DateTime as instant when instant.Kind = DateTimeKind.Utc ->
-                    DateTimeOffset instant
-                | _ -> raise (InvalidDataException("Primary clock is unavailable."))
-        }
-
     let private processNew
         connection
         transaction
@@ -62,7 +49,7 @@ module internal CaseTombstoneTerminalOwner =
             then
                 return OwnerTerminalOutcome.Unconfirmed value.EventId
             else
-                let! instant = databaseClock connection transaction
+                let! instant = Sql.databaseNow connection transaction
 
                 let! prepared =
                     CaseTombstoneTerminalOwnerPrepare.prepare

@@ -57,19 +57,6 @@ module internal ManagedCopyAdministration =
                 && not (reader.Read())
         }
 
-    let private now connection transaction =
-        task {
-            use command = new NpgsqlCommand("SELECT clock_timestamp()", connection, transaction)
-            let! value = command.ExecuteScalarAsync()
-
-            return
-                match value with
-                | :? DateTimeOffset as instant -> instant
-                | :? DateTime as instant when instant.Kind = DateTimeKind.Utc ->
-                    DateTimeOffset instant
-                | _ -> invalidOp "Database copy clock is unavailable."
-        }
-
     let private caseRegistrationBlocked connection transaction =
         function
         | None -> Threading.Tasks.Task.FromResult false
@@ -124,7 +111,7 @@ module internal ManagedCopyAdministration =
         task {
             let! present = ManagedCopyOwnerRead.copyExists connection transaction value.CopyId
             let! signer = ManagedCopyOwnerRead.signer connection transaction value.SigningKeyId
-            let! instant = now connection transaction
+            let! instant = Sql.databaseNow connection transaction
             let! blocked = caseRegistrationBlocked connection transaction value.SourceCaseId
 
             match signer with

@@ -182,7 +182,7 @@ module internal ManagedCopyExternalPublicationOwner =
             match prepared with
             | Error refusal -> return refusal
             | Ok ready ->
-                let! now = ManagedCopySignerPolicy.databaseNow connection transaction
+                let! now = Sql.databaseNow connection transaction
 
                 if
                     now >= ready.Registry.ValidUntil

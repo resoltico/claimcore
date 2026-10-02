@@ -41,8 +41,7 @@ module private RuntimeActorFactory =
                 resources.DataSource,
                 resources.Witness,
                 context,
-                resources.CursorProtection,
-                resources.Clock
+                resources.CursorProtection
             )
 
         let recovery =
@@ -157,15 +156,13 @@ type Runtime private (resources: RuntimeResources) =
             )
             :> ICaseLifecycleStore
 
-        let lifecycle =
-            ActorLifecycleApi.create gate lifecycleStore resources.Clock principal
+        let lifecycle = ActorLifecycleApi.create gate lifecycleStore principal
 
         let tombstoneStore =
             new PostgresCaseTombstoneStore(resources.DataSource, resources.Witness)
             :> ITombstoneStore
 
-        let tombstones =
-            ActorTombstoneApi.create gate tombstoneStore resources.Clock principal
+        let tombstones = ActorTombstoneApi.create gate tombstoneStore principal
 
         let signerApproval = RuntimeActorApprovalStores.signer resources
         let deletionApproval = RuntimeActorApprovalStores.deletion resources

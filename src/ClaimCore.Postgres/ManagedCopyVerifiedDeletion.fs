@@ -148,7 +148,7 @@ module internal ManagedCopyVerifiedDeletion =
                 match approvalExpiry with
                 | None -> return AuthorityWriteOutcome.Refused
                 | Some expires ->
-                    let! fresh = ManagedCopySignerPolicy.databaseNow connection transaction
+                    let! fresh = Sql.databaseNow connection transaction
 
                     if
                         fresh >= expires
@@ -239,7 +239,7 @@ module internal ManagedCopyVerifiedDeletion =
             let! signer =
                 ManagedCopyOwnerRead.signer connection transaction transition.Copy.SigningKeyId
 
-            let! now = ManagedCopySignerPolicy.databaseNow connection transaction
+            let! now = Sql.databaseNow connection transaction
 
             let! held =
                 ManagedCopyTransitionAdministration.held

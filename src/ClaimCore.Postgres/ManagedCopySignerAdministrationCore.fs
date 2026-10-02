@@ -136,7 +136,7 @@ module internal ManagedCopySignerAdministration =
             match target action purpose publicKey previous with
             | None -> return AuthorityWriteOutcome.Refused
             | Some publicHash ->
-                let! now = databaseNow connection transaction
+                let! now = Sql.databaseNow connection transaction
 
                 let! pair =
                     loadPair

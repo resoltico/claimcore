@@ -73,13 +73,7 @@ type internal Store() =
             | None -> return Error CoreFailure.ResourceUnavailable
             | Some actor ->
                 use adapter =
-                    new PostgresStore(
-                        source,
-                        witness,
-                        actor,
-                        CaseListCursorTestSupport.protection,
-                        CaseListCursorTestSupport.clock
-                    )
+                    new PostgresStore(source, witness, actor, CaseListCursorTestSupport.protection)
 
                 return! call (adapter :> IClaimStore)
         }

@@ -16,14 +16,6 @@ module internal InstallationUseActivationPreflight =
             ActivationHash = priorHash
         }
 
-    let databaseNow connection transaction =
-        use command = new NpgsqlCommand("SELECT clock_timestamp()", connection, transaction)
-
-        match command.ExecuteScalar() with
-        | :? DateTimeOffset as value -> value.ToUniversalTime()
-        | :? DateTime as value -> DateTimeOffset(value.ToUniversalTime(), TimeSpan.Zero)
-        | _ -> invalidOp "Data-use activation database clock is unavailable."
-
     let reviewedPlan (profile: ReviewedDeploymentProfile) (plan: BackupHealthActivationPlan) =
         profile.BackupHealthPolicySha256 = plan.PolicySha256
         && plan.PublicationRootSha256 =

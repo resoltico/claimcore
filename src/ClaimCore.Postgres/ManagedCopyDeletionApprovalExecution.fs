@@ -43,7 +43,7 @@ module internal ManagedCopyDeletionApproval =
             | None -> return CopyDeletionApprovalOutcome.ResourceUnavailable
             | Some value ->
                 let! held = activeHold connection transaction value.SourceCaseId
-                let! time = ManagedCopySignerPolicy.databaseNow connection transaction
+                let! time = Sql.databaseNow connection transaction
 
                 let historical =
                     try

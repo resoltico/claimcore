@@ -65,14 +65,7 @@ module internal ActorLifecycleApi =
                 return LifecycleReviewOutcome.Failed CoreFault.StoreUnavailable
         }
 
-    let private apply
-        gate
-        (store: ICaseLifecycleStore)
-        (clock: IBusinessTime)
-        principal
-        (change: LifecycleChange)
-        ct
-        =
+    let private apply gate (store: ICaseLifecycleStore) principal (change: LifecycleChange) ct =
         task {
             if
                 match change.Action with
@@ -86,9 +79,7 @@ module internal ActorLifecycleApi =
                 let! admission = admit gate principal (action change.Action) change.CaseReference ct
 
                 match admission with
-                | LifecycleAdmission.Available context ->
-                    let instant = clock.Capture().ObservedUtcInstant
-                    return! store.Apply(context, change, instant)
+                | LifecycleAdmission.Available context -> return! store.Apply(context, change)
                 | LifecycleAdmission.Unavailable -> return LifecycleWriteOutcome.ResourceUnavailable
                 | LifecycleAdmission.Cancelled ->
                     return LifecycleWriteOutcome.CancelledBeforeAdmission change.EventId
@@ -99,7 +90,6 @@ module internal ActorLifecycleApi =
     let private approve
         gate
         (store: ICaseLifecycleStore)
-        (clock: IBusinessTime)
         principal
         (change: LifecycleChange)
         approvalId
@@ -116,8 +106,7 @@ module internal ActorLifecycleApi =
 
             match admission with
             | LifecycleAdmission.Available context ->
-                let instant = clock.Capture().ObservedUtcInstant
-                return! store.Approve(context, change, approvalId, expiresAt, instant)
+                return! store.Approve(context, change, approvalId, expiresAt)
             | LifecycleAdmission.Unavailable -> return LifecycleWriteOutcome.ResourceUnavailable
             | LifecycleAdmission.Cancelled ->
                 return LifecycleWriteOutcome.CancelledBeforeAdmission approvalId
@@ -125,14 +114,13 @@ module internal ActorLifecycleApi =
                 return LifecycleWriteOutcome.Failed CoreFault.StoreUnavailable
         }
 
-    let create gate store clock principal : ICaseLifecycleWorkflow =
+    let create gate store principal : ICaseLifecycleWorkflow =
         { new ICaseLifecycleWorkflow with
             member _.Review(reference, ct) =
                 review gate store principal reference ct
 
-            member _.Apply(change, ct) =
-                apply gate store clock principal change ct
+            member _.Apply(change, ct) = apply gate store principal change ct
 
             member _.Approve(change, approvalId, expiresAt, ct) =
-                approve gate store clock principal change approvalId expiresAt ct
+                approve gate store principal change approvalId expiresAt ct
         }

@@ -131,6 +131,12 @@ Identity selection uses exact case-sensitive claim names and requires exactly on
 
 Browser sessions remain server-side behind secure, HTTP-only, same-site cookies and are bounded by idle and absolute expiry. Access and refresh tokens are not exposed to browser JavaScript. A fresh OIDC login does not revive an expired session.
 
+The ticket store checks elapsed idle and absolute limits under its gate, as well as the original
+bounded UTC deadline. A backward wall-clock adjustment cannot extend elapsed session life, and
+renewal cannot replace the original absolute limit. A shorter original ticket expiry also bounds
+elapsed life; a forward UTC change may conservatively refuse a session. Expired lookup keys are
+removed and cannot be revived by renewal or a later clock correction.
+
 | Method and path | Service behavior |
 |---|---|
 | `GET /auth/login` | Start the OIDC Authorization Code/S256 PKCE browser challenge. |

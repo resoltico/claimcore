@@ -7,6 +7,16 @@ open ClaimCore.Application
 open ClaimCore.Domain
 
 module internal CaseLifecycleApprove =
+    let private approvalTime (change: LifecycleChange) approvalAt expiresAt =
+        CaseLifecycleStoreSupport.validInstant approvalAt
+        && CaseLifecycleStoreSupport.validInstant expiresAt
+        && expiresAt > approvalAt
+        && expiresAt - approvalAt <= TimeSpan.FromHours 24.0
+        && match change.Action with
+           | LifecycleMutation.PurgeLivePayload(_, validUntil) ->
+               Sql.isUtcMicrosecond validUntil && expiresAt <= validUntil
+           | _ -> true
+
     let private approveFresh
         connection
         transaction
@@ -57,7 +67,6 @@ module internal CaseLifecycleApprove =
         (change: LifecycleChange)
         approvalId
         expiresAt
-        instant
         =
         task {
             let draft = CaseLifecycleCandidate.draft projection.CaseId change
@@ -81,18 +90,23 @@ module internal CaseLifecycleApprove =
                             projection.Sequence
                             stored
                 | None ->
-                    return!
-                        approveFresh
-                            connection
-                            transaction
-                            witness
-                            context
-                            projection
-                            change
-                            approvalId
-                            expiresAt
-                            instant
-                            draftHash
+                    let! instant = Sql.databaseNow connection transaction
+
+                    if not (approvalTime change instant expiresAt) then
+                        return LifecycleWriteOutcome.Refused LifecycleRefusal.ApprovalMismatch
+                    else
+                        return!
+                            approveFresh
+                                connection
+                                transaction
+                                witness
+                                context
+                                projection
+                                change
+                                approvalId
+                                expiresAt
+                                instant
+                                draftHash
             finally
                 CaseLifecycleStoreSupport.clear draft
         }
@@ -134,7 +148,6 @@ module internal CaseLifecycleApprove =
         (change: LifecycleChange)
         approvalId
         expiresAt
-        instant
         =
         task {
             use! connection = RuntimeDatabase.openConnectionAsync dataSource
@@ -162,18 +175,7 @@ module internal CaseLifecycleApprove =
                         change
                         approvalId
                         expiresAt
-                        instant
         }
-
-    let private approvalTime (change: LifecycleChange) approvalAt expiresAt =
-        CaseLifecycleStoreSupport.validInstant approvalAt
-        && CaseLifecycleStoreSupport.validInstant expiresAt
-        && expiresAt > approvalAt
-        && expiresAt - approvalAt <= TimeSpan.FromHours 24.0
-        && match change.Action with
-           | LifecycleMutation.PurgeLivePayload(_, validUntil) ->
-               Sql.isUtcMicrosecond validUntil && expiresAt <= validUntil
-           | _ -> true
 
     let private approvalIdentity (context: ActorCallContext) (change: LifecycleChange) approvalId =
         let action =
@@ -193,24 +195,21 @@ module internal CaseLifecycleApprove =
         (change: LifecycleChange)
         (approvalId: Guid)
         (expiresAt: DateTimeOffset)
-        (instant: DateTimeOffset)
         =
         task {
-            let validTime = approvalTime change instant expiresAt
-
-            let instant = CaseLifecycleStoreSupport.microsecondInstant instant
+            let utcExpiry = CaseLifecycleStoreSupport.validInstant expiresAt
             let expiresAt = CaseLifecycleStoreSupport.microsecondInstant expiresAt
 
             if
                 not (CaseLifecycleStoreSupport.validChange change)
-                || not validTime
+                || not utcExpiry
                 || not (approvalIdentity context change approvalId)
             then
                 return LifecycleWriteOutcome.Refused LifecycleRefusal.ApprovalMismatch
             else
                 try
                     witness.Admit()
-                    return! transact dataSource witness context change approvalId expiresAt instant
+                    return! transact dataSource witness context change approvalId expiresAt
                 with
                 | WitnessPending -> return LifecycleWriteOutcome.Unconfirmed approvalId
                 | :? System.IO.InvalidDataException ->

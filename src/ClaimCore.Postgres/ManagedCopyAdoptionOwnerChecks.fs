@@ -265,7 +265,7 @@ module internal ManagedCopyAdoptionOwnerChecks =
         (ct: CancellationToken)
         =
         task {
-            let! now = ManagedCopySignerPolicy.databaseNow connection transaction
+            let! now = Sql.databaseNow connection transaction
 
             let! held =
                 ManagedCopyTransitionAdministration.held connection transaction (Some stored.CaseId)

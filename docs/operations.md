@@ -71,6 +71,18 @@ ClaimCore does not ship its own time-zone database and does not detect tzdata sk
 Nothing in the product weakens this by running with invariant globalization, which would remove IANA
 zone resolution altogether.
 
+Durable lifecycle/tombstone approvals and holds, signer approvals, managed-copy retention and list
+windows use the primary database's current UTC observation under their locks. List validation and
+continuation issuance share one page observation. The database clock is not PostgreSQL transaction
+start time, and elapsed waiting cannot leave a new decision authorized by an earlier host instant.
+Witness sequences, revisions and exact identities define ordering; UTC timestamps do not replace them.
+
+Keep primary, witness, issuer and independent verifier UTC clocks synchronized. Database UTC is not
+a monotonic guarantee across clock corrections or restarts; signed current evidence refuses future
+observations and exact expiry, while historical readback does not restore fresh authority. Recovery
+and history cursors are query positions, not signed grants or independent freshness certificates;
+every read still requires current actor authority and disclosure checks.
+
 ## Independent witness authority
 
 <a id="cc-wit-001"></a>

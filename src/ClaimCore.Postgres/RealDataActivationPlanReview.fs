@@ -95,7 +95,7 @@ module internal RealDataActivationPlanReview =
 
                 match published with
                 | Some plan when eligible (witness.Snapshot()) plan ->
-                    let! now = ManagedCopySignerPolicy.databaseNow connection transaction
+                    let! now = Sql.databaseNow connection transaction
                     return RealDataActivationPlanReviewOutcome.Reviewed(project plan now)
                 | _ -> return RealDataActivationPlanReviewOutcome.ResourceUnavailable
             | _ -> return RealDataActivationPlanReviewOutcome.ResourceUnavailable

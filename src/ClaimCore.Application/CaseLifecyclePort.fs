@@ -60,14 +60,11 @@ type LifecycleWriteOutcome =
 type internal ICaseLifecycleStore =
     abstract Review: actor: ActorCallContext * caseReference: string -> Task<LifecycleReviewOutcome>
 
-    abstract Apply:
-        actor: ActorCallContext * change: LifecycleChange * instant: DateTimeOffset ->
-            Task<LifecycleWriteOutcome>
+    abstract Apply: actor: ActorCallContext * change: LifecycleChange -> Task<LifecycleWriteOutcome>
 
     abstract Approve:
         actor: ActorCallContext *
         change: LifecycleChange *
         approvalId: Guid *
-        expiresAt: DateTimeOffset *
-        instant: DateTimeOffset ->
+        expiresAt: DateTimeOffset ->
             Task<LifecycleWriteOutcome>

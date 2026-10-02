@@ -21,6 +21,7 @@
     <Compile Include="SchemaTests.fs" />
     <Compile Include="FieldStorageTests.fs" />
     <Compile Include="CoreRuntimeLifecycleTests.fs" />
+    <Compile Include="BusinessClockCaptureTests.fs" />
     <Compile Include="CoreBoundaryTests.fs" />
     <Compile Include="RuntimeLifecycleTests.fs" />
     <Compile Include="RuntimeResourceCleanupTests.fs" />
@@ -205,6 +206,7 @@
     <Compile Include="ActorManagementTests.fs" />
     <Compile Include="CaseLifecycleStoreFixture.fs" />
     <Compile Include="CaseLifecycleStoreTests.fs" />
+    <Compile Include="AuthorityExpirationTests.fs" />
     <Compile Include="PreparationHoldRetentionTests.fs" />
     <Compile Include="MutationDisclosureFixture.fs" />
     <Compile Include="MutationDisclosureTests.fs" />

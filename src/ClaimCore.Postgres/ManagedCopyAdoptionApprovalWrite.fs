@@ -152,7 +152,7 @@ module internal ManagedCopyAdoptionApprovalWrite =
                     transaction
                     request.AdoptionEventId
 
-            let! now = ManagedCopySignerPolicy.databaseNow connection transaction
+            let! now = Sql.databaseNow connection transaction
 
             if
                 stored.Phase <> "ERASURE_PENDING"

@@ -215,7 +215,7 @@ module internal WriterHandoffOwnerAbortStage =
             let! revision =
                 ActorGrantRead.lockRevision primaryOwner transaction true CancellationToken.None
 
-            let! now = ManagedCopySignerPolicy.databaseNow primaryOwner transaction
+            let! now = Sql.databaseNow primaryOwner transaction
 
             let prepared =
                 WriterHandoffOwnerRead.preparation primaryOwner transaction witness value.HandoffId

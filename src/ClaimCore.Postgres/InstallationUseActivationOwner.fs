@@ -85,7 +85,7 @@ module internal InstallationUseActivationOwner =
             InstallationUseActivationPreflight.state scope phase priorId priorSequence priorHash
 
         let snapshot = witness.Snapshot()
-        let now = InstallationUseActivationPreflight.databaseNow primary transaction
+        let now = Sql.databaseNowSync primary transaction
 
         let matches =
             InstallationUseActivationPreflight.phaseMatches

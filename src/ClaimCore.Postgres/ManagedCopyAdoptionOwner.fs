@@ -73,7 +73,7 @@ module internal ManagedCopyAdoptionOwner =
             match prepared with
             | Error refusal -> return refusal
             | Ok ready ->
-                let! fresh = ManagedCopySignerPolicy.databaseNow connection transaction
+                let! fresh = Sql.databaseNow connection transaction
 
                 if not (stillValid fresh ready) then
                     return CopyAdoptionOwnerOutcome.ResourceUnavailable

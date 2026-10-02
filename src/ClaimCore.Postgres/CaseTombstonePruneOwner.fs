@@ -33,19 +33,6 @@ module internal CaseTombstonePruneOwner =
             return ()
         }
 
-    let private databaseClock connection transaction =
-        task {
-            use command = new NpgsqlCommand("SELECT clock_timestamp()", connection, transaction)
-            let! value = command.ExecuteScalarAsync()
-
-            return
-                match value with
-                | :? DateTimeOffset as instant -> instant
-                | :? DateTime as instant when instant.Kind = DateTimeKind.Utc ->
-                    DateTimeOffset instant
-                | _ -> raise (InvalidDataException("Primary clock is unavailable."))
-        }
-
     let private resume
         witnessOwnerConnection
         connection
@@ -115,7 +102,7 @@ module internal CaseTombstonePruneOwner =
             match found with
             | None -> return OwnerWitnessPruneOutcome.ResourceUnavailable
             | Some stored ->
-                let! instant = databaseClock connection transaction
+                let! instant = Sql.databaseNow connection transaction
 
                 return!
                     resume

@@ -61,7 +61,7 @@ type RemoteAccessSession
 
             try
                 match current with
-                | Some token when token.ExpiresAt > DateTimeOffset.UtcNow -> return Ok token
+                | Some token when token.CanReuse -> return Ok token
                 | _ ->
                     match! RemoteTokenRequest.acquire configuration oidcClient cancelled with
                     | Error reason -> return Error reason
