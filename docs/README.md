@@ -61,3 +61,6 @@ The [test evidence design](test-evidence-design.md) and separate
 
 The [resource lifetime design](resource-lifetimes-design.md) and separate
 [design QA](resource-lifetimes-design-qa.md) trace construction, cleanup, signals and control streams.
+
+The [failure semantics design](failure-semantics-design.md) and separate
+[design QA](failure-semantics-design-qa.md) trace outcome knowledge and safe recovery guidance.

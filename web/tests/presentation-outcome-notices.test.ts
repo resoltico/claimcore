@@ -47,8 +47,15 @@ it("preserves diagnostics from direct read refusals and nested recovery executio
 });
 
 it("keeps cancelled or non-diagnostic outcomes distinct from a translated core refusal", () => {
+  const cancelled: EndpointOutcome = {
+    endpoint: "recovery.list",
+    outcome: { tag: "CANCELLED", data: null },
+  };
+  expect(resultNotice({ kind: "outcome", status: 200, value: cancelled })).toEqual({
+    kind: "local",
+    reason: "cancelled",
+  });
   for (const value of [
-    { endpoint: "recovery.list", outcome: { tag: "CANCELLED", data: null } },
     {
       endpoint: "recovery.inspect",
       outcome: { tag: "SUCCEEDED", data: { tag: "NOT_FOUND", identity: operationId } },

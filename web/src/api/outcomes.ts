@@ -44,6 +44,12 @@ export const resultNotice = (result: ApiResult<EndpointOutcome | Download>): Not
     return diagnostic;
   }
   switch (value.outcome.tag) {
+    case "CANCELLED":
+      return localNotice("cancelled");
+    case "CANCELLED_BEFORE_ADMISSION":
+      return localNotice("cancelledBeforeAdmission");
+    case "CANCELLED_BEFORE_ATTEMPT":
+      return localNotice("cancelledBeforeAttempt");
     case "DISMISSED":
       return localNotice("dismissed");
     case "ALREADY_DISMISSED":
@@ -59,17 +65,15 @@ export const resultNotice = (result: ApiResult<EndpointOutcome | Download>): Not
 const uncertainOutcome = (data: EndpointOutcome["outcome"]["data"]): boolean => {
   const recoverExact = (value: object): boolean =>
     "recommendedAction" in value && value.recommendedAction === "RECOVER_EXACT";
-  if (
+  return (
     data !== null &&
     typeof data === "object" &&
     (recoverExact(data) ||
       ("fault" in data && recoverExact(data.fault)) ||
+      ("rejection" in data && recoverExact(data.rejection)) ||
       ("execution" in data && "fault" in data.execution && recoverExact(data.execution.fault)) ||
       ("settlement" in data && data.settlement === "UNCONFIRMED"))
-  ) {
-    return true;
-  }
-  return false;
+  );
 };
 export const isMutationUncertain = (result: ApiResult<EndpointOutcome>): boolean => {
   if (result.kind === "deliveryFailure") {

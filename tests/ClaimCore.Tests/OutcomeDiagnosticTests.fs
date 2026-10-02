@@ -127,7 +127,15 @@ let private recoveryParity () =
     for reason, id in RecoveryRejections.all do
         let value = RecoveryQueryOutcome.RecoveryRejected reason
         let response = WebWireCodec.recoveryList value |> remote "recovery.list"
-        Expect.equal response.ExitCode 2 "Lifecycle refusal is not a fault or unknown commit"
+
+        Expect.equal
+            response.ExitCode
+            (if reason = RecoveryRejection.SubmissionAlreadyStarted then
+                 4
+             else
+                 2)
+            "Refusal preserves exact recovery direction for an earlier started submission"
+
         comparePayload id response (WebWireCodec.recoveryList value)
 
 let private localSeparation () =

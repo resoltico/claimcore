@@ -85,13 +85,15 @@ module CliRemoteWireCodec =
         && action.ValueKind = JsonValueKind.String
         && action.GetString() = "RECOVER_EXACT"
 
-    let private faultDeliveryUnconfirmed (data: JsonElement) =
-        let mutable fault = Unchecked.defaultof<JsonElement>
+    let private recoveryDirectedUncertainty (data: JsonElement) =
+        let childDirected (property: string) =
+            let mutable child = Unchecked.defaultof<JsonElement>
 
-        recoverExact data
-        || (data.ValueKind = JsonValueKind.Object
-            && data.TryGetProperty("fault", &fault)
-            && recoverExact fault)
+            data.ValueKind = JsonValueKind.Object
+            && data.TryGetProperty(property, &child)
+            && recoverExact child
+
+        recoverExact data || childDirected "fault" || childDirected "rejection"
 
     let private executionExit (outcome: JsonElement) =
         let data = outcome.GetProperty("data")
@@ -106,7 +108,7 @@ module CliRemoteWireCodec =
             | "ACCEPTED" -> 0
             | "REJECTED"
             | "REVOKED_BEFORE_EXECUTION" -> 2
-            | _ -> if faultDeliveryUnconfirmed execution then 4 else 3
+            | _ -> if recoveryDirectedUncertainty execution then 4 else 3
 
     let private uncertainOutcomes =
         Set.ofList
@@ -170,10 +172,7 @@ module CliRemoteWireCodec =
         let outcome = response.GetProperty("outcome")
         let tag = outcome.GetProperty("tag").GetString()
 
-        if
-            (tag = "FAILED" || tag = "FAILED_BEFORE_ATTEMPT")
-            && faultDeliveryUnconfirmed (outcome.GetProperty("data"))
-        then
+        if recoveryDirectedUncertainty (outcome.GetProperty("data")) then
             4
         elif tag = "COMPLETED" then
             executionExit outcome
@@ -207,12 +206,9 @@ module CliRemoteWireCodec =
 
         let mutating = CliMutationCatalog.isMutation endpoint
 
-        let diagnostic = response.GetProperty("diagnostic").GetProperty("id").GetString()
-
         let uncertain =
-            (phase.ValueKind = JsonValueKind.String
-             && phase.GetString() = "STARTED_UNCONFIRMED")
-            || (mutating && diagnostic = "WEB_HOST_COMPLETED_RESPONSE_FAILED")
+            mutating
+            && not (phase.ValueKind = JsonValueKind.String && phase.GetString() = "NOT_STARTED")
 
         encode (if uncertain then 4 else 3) (fun writer ->
             writer.WriteStartObject()

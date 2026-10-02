@@ -6,6 +6,9 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Fixed
 
+- Host admission/input refusals, including HTTP 429 `WEB_BUSY`, consistently declare `NOT_STARTED`, avoiding unnecessary browser mutation uncertainty for refused admission. Older null-phase bodies are rejected, so deploy matching host and client artifacts. CLI host failures for reads now exit 3, while completed recovery exports with invalid attachment metadata exit 4 and require exact custody evidence reconciliation. Refusal of a new request does not settle an earlier uncertain operation.
+- Browser and CLI preserve `RECOVER_EXACT` guidance in recovery refusals, including dismissal after submission started. Such CLI refusals now exit 4 instead of 2; scripts must preserve the exact operation identity for reconciliation. Revocation and attempt-limit explanations preserve earlier uncertainty and require exact evidence review before new work. Browser cancellation notices distinguish admission and attempt boundaries without settling prior attempts.
+
 - Failed runtime construction closes acquired pools, cursor custody and witness resources; readiness checks precede audit-worker startup. Deferred cleanup records bounded failure knowledge without retaining unobserved provider exceptions or changing admitted outcomes.
 - Web configuration and startup close acquired certificates on refusal and own the built application through route setup and shutdown.
 - CLI SIGINT exits while blocked on process streams. Possible mutation dispatch or incomplete mutation output now exits 4, including sessions that previously could exit 130 after an uncertain mutation. Scripts must preserve the submitted identity and reconcile exact service evidence; interruption may leave no complete response frame. Pre-dispatch interruption exits 130 and cannot later dispatch work.
@@ -13,7 +16,6 @@ Notable changes to this project are documented in this file. The format is based
 
 - Case-scoped listing uses granted case IDs instead of scanning every inaccessible case, while retaining ordered installation-wide pages and current authority, disposition and privacy checks. Existing indexes and the fresh storage baseline are unchanged.
 - Long full audits leave one configured interval after completion before the next audit starts. Shutdown closes admission and requests audit cancellation before draining actor work; cleanup joins audit callbacks without cancelling admitted mutations or releasing their pools early.
-- HTTP 429 `WEB_BUSY` now declares `executionPhase: NOT_STARTED`, avoiding unnecessary browser mutation uncertainty for refused admission. This refines the Web and CLI service contracts: rebuild matching host and client artifacts; the old null-phase busy body is rejected by current validators. Refusal of a new request does not settle an earlier uncertain operation.
 
 - Browser Return to case opens the accepted case, including a newly registered case, and rereads current state. Editing keeps navigation and logout unavailable until the explicit Back or return action, preserving draft context.
 - Uncertain browser submissions and non-reviewable preparations open Recovery with the exact operation ID and digest, clearing the editor's private state. Inspection works independently of pending-list membership; Operations retains the same ID for receipt observation. Recovery mutations lock navigation/logout during dispatch and invalidate stale inspected actions afterward.

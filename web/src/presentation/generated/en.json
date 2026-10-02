@@ -192,12 +192,15 @@
     }
   ],
   "diagnostic.OPERATION_REVOKED": [
-    { "type": 0, "value": "This exact operation was durably revoked before execution." }
+    {
+      "type": 0,
+      "value": "Authority for future execution of this exact operation was durably revoked. Earlier attempt uncertainty is unchanged; inspect its exact evidence."
+    }
   ],
   "diagnostic.OPERATION_RECOVERY_ATTEMPT_LIMIT": [
     {
       "type": 0,
-      "value": "This operation has reached its recovery attempt limit. Read the current case and author a new operation only after review."
+      "value": "This operation has reached its recovery attempt limit. Inspect its exact evidence and reconcile unresolved attempts before authoring new work."
     }
   ],
   "diagnostic.ACCESS_RESOURCE_UNAVAILABLE": [
@@ -333,12 +336,15 @@
     { "type": 0, "value": "The recovery envelope is unsupported or failed canonical decoding." }
   ],
   "diagnostic.RECOVERY_OPERATION_REVOKED": [
-    { "type": 0, "value": "This exact operation was durably revoked before execution." }
+    {
+      "type": 0,
+      "value": "Authority for future execution of this exact operation was durably revoked. Earlier attempt uncertainty is unchanged; inspect its exact evidence."
+    }
   ],
   "diagnostic.RECOVERY_ATTEMPT_LIMIT_REACHED": [
     {
       "type": 0,
-      "value": "This operation has reached its recovery attempt limit. Read the current case before authoring new work."
+      "value": "This operation has reached its recovery attempt limit. Inspect its exact evidence and reconcile unresolved attempts before authoring new work."
     }
   ],
   "diagnostic.WEB_HOST_CONNECTION_REJECTED": [
@@ -619,6 +625,24 @@
     {
       "type": 0,
       "value": "An explanation is unavailable. Follow the reported outcome and recovery guidance; do not infer permission to retry."
+    }
+  ],
+  "notice.cancelled": [
+    {
+      "type": 0,
+      "value": "This request was cancelled. Earlier attempts are not settled by this cancellation."
+    }
+  ],
+  "notice.cancelledBeforeAdmission": [
+    {
+      "type": 0,
+      "value": "This request was cancelled before admission. Earlier attempts are not settled by this cancellation."
+    }
+  ],
+  "notice.cancelledBeforeAttempt": [
+    {
+      "type": 0,
+      "value": "This request was cancelled before a new attempt. Inspect exact evidence for any earlier unresolved attempts."
     }
   ],
   "token.OPENED": [{ "type": 0, "value": "OPENED" }],

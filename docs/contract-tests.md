@@ -251,7 +251,9 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-CLI-002 | unit | ClaimCore deterministic suite.native private-file ancestor race.[CC-CLI-002] descriptor-relative create and lock remain in pinned parent after ancestor swap |
 | CC-CLI-003 | integration | ClaimCore PostgreSQL integration.CLI process interruption.[CC-CLI-003] SIGINT after real TLS mutation dispatch exits uncertain |
 | CC-CLI-003 | integration | ClaimCore PostgreSQL integration.CLI process interruption.[CC-CLI-003] SIGINT ends input wait before EOF and mutation admission |
+| CC-CLI-003 | unit | ClaimCore deterministic suite.CLI-v4 service exit contract.[CC-CLI-003] a refused dismissal preserves earlier submission uncertainty |
 | CC-CLI-003 | unit | ClaimCore deterministic suite.CLI-v4 service exit contract.[CC-CLI-003] nested faults preserve earlier exact-operation uncertainty |
+| CC-CLI-003 | unit | ClaimCore deterministic suite.CLI-v4 service exit contract.[CC-CLI-003] typed host phases preserve read and mutation delivery knowledge |
 | CC-CLI-003 | unit | ClaimCore deterministic suite.endpoint extension ownership.[CC-CLI-003] new case query derives response ownership without mutation authority |
 | CC-CLI-003 | unit | ClaimCore deterministic suite.remote frame-local delivery diagnostics.[CC-CLI-003] every generated CLI mutation retains delivery uncertainty |
 | CC-CLI-003 | unit | ClaimCore deterministic suite.remote frame-local delivery diagnostics.[CC-CLI-003] interruption after possible mutation preserves uncertainty |

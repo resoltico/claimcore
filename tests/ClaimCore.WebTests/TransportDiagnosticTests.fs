@@ -189,6 +189,19 @@ let private dispatchKnowledge () =
             knowledge
             "No false non-commit or retry guarantee"
 
+    for phase in [ 0; 1; 2 ] do
+        let value = invokeFailure phase
+
+        Expect.equal
+            (CliRemoteWireCodec.hostFailure "case.get" value).ExitCode
+            3
+            "Reads cannot mutate"
+
+        Expect.equal
+            (CliRemoteWireCodec.hostFailure "command.execute" value).ExitCode
+            (if phase = 0 then 3 else 4)
+            "Actual boundary bytes preserve mutation knowledge"
+
     startedResponseFailure ()
     failedResponseDelivery ()
 

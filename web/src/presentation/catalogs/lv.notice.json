@@ -19,5 +19,8 @@
   "notice.inspectBeforeRetry": "Pirms precīzās operācijas atkārtošanas pārbaudiet atkopšanu.",
   "notice.inspectBeforeAction": "Pirms citas darbības pārbaudiet atkopšanu.",
   "notice.keptForRecovery": "Sagatavotais pieprasījums ir saglabāts. Izmantojiet atkopšanu, lai to pārbaudītu, atrisinātu vai noraidītu.",
-  "notice.unknownDiagnostic": "Skaidrojums nav pieejams. Ievērojiet paziņoto rezultātu un atkopšanas norādījumus; neuzskatiet to par atļauju atkārtot."
+  "notice.unknownDiagnostic": "Skaidrojums nav pieejams. Ievērojiet paziņoto rezultātu un atkopšanas norādījumus; neuzskatiet to par atļauju atkārtot.",
+  "notice.cancelled": "Šis pieprasījums tika atcelts. Atcelšana nenoskaidro agrāko mēģinājumu iznākumu.",
+  "notice.cancelledBeforeAdmission": "Šis pieprasījums tika atcelts pirms pieņemšanas apstrādei. Atcelšana nenoskaidro agrāko mēģinājumu iznākumu.",
+  "notice.cancelledBeforeAttempt": "Šis pieprasījums tika atcelts pirms jauna mēģinājuma. Pārbaudiet precīzos pierādījumus par agrākiem neatrisinātiem mēģinājumiem."
 }

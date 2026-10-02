@@ -102,9 +102,9 @@ module RejectionPresentation =
             RejectionDiagnosticId.IdempotencyConflict,
             "This operation ID belongs to different command content. Do not reuse it."
             RejectionDiagnosticId.OperationRevoked,
-            "This exact operation was durably revoked before execution."
+            "Authority for future execution of this exact operation was durably revoked. Earlier attempt uncertainty is unchanged; inspect its exact evidence."
             RejectionDiagnosticId.RecoveryAttemptLimitReached,
-            "This operation has reached its recovery attempt limit. Read the current case and author a new operation only after review."
+            "This operation has reached its recovery attempt limit. Inspect its exact evidence and reconcile unresolved attempts before authoring new work."
             RejectionDiagnosticId.ResourceUnavailable, "The requested resource is unavailable."
         ]
 

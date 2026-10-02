@@ -34,9 +34,13 @@ Source-artifact digest mismatch is distinct from a retained request digest misma
 
 `CoreFaultPresentation` and `RecoveryRejectionPresentation` own default English in Contracts. Those
 faults are projected everywhere they occur, including nested preparation, execution, settlement,
-dismissal, and import outcomes. The outer outcome still owns commit knowledge. A fault diagnostic
-alone does not prove non-commit or authorize retry. Defensive store-cancellation projections retain
-their existing meaning; ordinary cancellation paths still return their cancellation outcomes.
+dismissal, and import outcomes. The outer outcome still owns commit knowledge. Both clients preserve
+`RECOVER_EXACT` guidance inside refusal payloads as well as faults: denial of a new action does not settle an earlier attempt.
+Revocation ends future authority without asserting historical nonexecution; exhausted attempts require
+exact evidence reconciliation before new work. Browser cancellation notices distinguish this request's
+admission/attempt boundary from ordinary refusal and uncertainty, without settling earlier attempts.
+A fault diagnostic alone does not prove non-commit or authorize retry. Defensive store-cancellation
+projections retain their existing meaning; ordinary cancellation paths still return their cancellation outcomes.
 
 Host/protocol admission failures and client-local failures remain separate from the core. CLI-v4 configuration, authentication, invalid service replies, and private-file refusals produce a distinct `localFailure` (exit 3), not a fabricated `CoreFault`; uncertain delivery is preserved as such. Web host and owner-only administration diagnostics remain separate from business and recovery outcomes. No local failure proves that an already dispatched mutation did not commit.
 
@@ -95,9 +99,12 @@ not expose credentials, unexpected property names or provider information.
 
 The request-local failure boundary is installed before connection, authentication and rate-limit
 middleware. It distinguishes pre-dispatch failure, unconfirmed dispatch, and failed delivery after
-a returned result. Only pre-dispatch failure claims `NOT_STARTED`. Once a response has started, the
-host aborts instead of appending another JSON document. A stopped host or broken response is never
-proof that a command rolled back. Preserve exact authored operation identity for recovery.
+a returned result. Typed admission and input refusals declare `NOT_STARTED`, as does pre-dispatch
+failure. Null phase after returned-result delivery failure or invalid export metadata does not prove rollback. Read-only
+CLI endpoints exit 3 for host failure; mutations without `NOT_STARTED` exit 4. Matching host/client
+artifacts are required: older null-phase admission bodies fail the current correlated schemas. Once a
+response has started, the host aborts instead of appending another JSON document. A stopped host or
+broken response is never proof that a command rolled back. Preserve exact authored operation identity for recovery.
 
 CLI-v4 frames are decoded before authentication or HTTPS dispatch. Frame-local state records the exact operation identity, whether remote dispatch may have begun, and whether a validated response was flushed. It is reset before each frame. A failed write or flush makes one bounded stderr attempt, never a second stdout frame or implicit replay; a potentially state-changing frame with lost delivery exits 4 even if the service may have committed.
 
