@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <Compile Include="AssemblyInfo.fs" />
     <Compile Include="StrictJson.fs" />
     <Compile Include="PrivateFiles.fs" />
     <Compile Include="FrameReader.fs" />

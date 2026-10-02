@@ -71,6 +71,7 @@
     <Compile Include="BoundedProcessTests.fs" />
     <Compile Include="RemoteClientTests.fs" />
     <Compile Include="HttpResponseDeadlineTests.fs" />
+    <Compile Include="RemoteResponseBoundsTests.fs" />
     <Compile Include="IssuerIdentityTests.fs" />
     <Compile Include="RemoteInvocationTests.fs" />
     <Compile Include="ActorAuthorizationTests.fs" />

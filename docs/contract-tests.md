@@ -226,6 +226,8 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-CLI-001 | acceptance | published authenticated CLI v4 acceptance.[CC-CLI-001] witnessed accepted command and exact replay |
 | CC-CLI-001 | unit | ClaimCore deterministic suite.HTTP response deadlines.[CC-CLI-001] discovery deadline covers a suspended body after headers |
 | CC-CLI-001 | unit | ClaimCore deterministic suite.HTTP response deadlines.[CC-CLI-001] token deadline covers a suspended body after headers |
+| CC-CLI-001 | unit | ClaimCore deterministic suite.service response bounds.[CC-CLI-001] CLI bounds service JSON buffering before parsing |
+| CC-CLI-001 | unit | ClaimCore deterministic suite.service response bounds.[CC-CLI-001] CLI reads a full history with maximum-length Unicode fields |
 | CC-CLI-002 | acceptance | published authenticated CLI v4 acceptance.[CC-CLI-002] malformed owner-private envelope preview retains no preparation |
 | CC-CLI-002 | acceptance | published authenticated CLI v4 acceptance.[CC-CLI-002] private recovery export and preview |
 | CC-CLI-002 | acceptance | published authenticated CLI v4 acceptance.[CC-CLI-002] unsafe private source refuses without path disclosure |

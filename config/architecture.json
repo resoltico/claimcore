@@ -151,7 +151,9 @@
       ],
       "packages": [],
       "frameworkReferences": [],
-      "internalsVisibleTo": []
+      "internalsVisibleTo": [
+        "ClaimCore.Tests"
+      ]
     },
     {
       "name": "ClaimCore.Cli",

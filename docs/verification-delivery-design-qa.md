@@ -38,6 +38,13 @@ This separate pass challenges the [design](verification-delivery-design.md) befo
    a capacity test proposing a hold whose fixed review date had expired. Give the new proposal a
    future review date so it reaches capacity validation. Keep the historical seeded holds, which
    remain active after their review date, and the assertion that refusal appends no witness intent.
+10. **Request and response bounds protect different shapes.** Fifty full receipts repeat valid
+    Unicode business fields and JSON escaping enlarges their representation. A codec probe disproves
+    the universal 128 KiB limit. Retain a finite JSON response bound separately from recovery-file
+    and input limits; prove a valid maximum-field history is schema-valid and readable, and prove
+    an over-limit response is refused by bounded buffering before parsing.
+    Keep that reader internal; declare access only for the existing deterministic test assembly in
+    the component manifest, rather than adding a public transport API for testing.
 
 This pass selects existing platform cancellation and lifetime mechanisms. It does not add speculative
 options, a new business facade, another deployment composition root or another test runner.

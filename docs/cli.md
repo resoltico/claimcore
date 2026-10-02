@@ -1,5 +1,9 @@
 # CLI and protocol
 
+Service JSON responses have a 16 MiB buffered allowance, separate from the 128 KiB request-frame and
+recovery-file limits. Full history pages repeat valid business fields and may exceed a single record's
+allowance, particularly after Unicode JSON escaping. Response buffering still uses the request deadline.
+
 `ClaimCore.Cli` is ClaimCore's strict JSON CLI-v4 client of the authenticated HTTPS service. `ClaimCore.Web` hosts case work and browser sessions; `ClaimCore.Database` is a separately credentialed owner administration program. The CLI has no PostgreSQL driver, runtime database credential, or direct store path. Old CLI-v3 frames and direct-database case work are not compatibility modes. Private source, destination, and automation-secret files use handle-first admission; unsupported host file security fails closed.
 
 After a Release build, use the executable directly:

@@ -27,6 +27,10 @@ component boundary, and [Operations](operations.md) deployment/backup admission.
 - Published test process capture bounds output only after `ReadToEndAsync`, while synchronous stdin
   can block before its timeout is reached. Use bounded concurrent input/output and a whole-process
   deadline with tree termination. Share only this test-process responsibility, not product decisions.
+- The CLI applies the 128 KiB recovery/request allowance to all JSON responses. An actual encoded
+  valid 50-entry full history with maximum-length Unicode fields is 201,201 bytes. Give service JSON
+  a separate finite 16 MiB allowance, accommodating paged histories and bounded owner reviews; keep
+  recovery artifact reads at 128 KiB. Test the actual codec, schema and response reader together.
 
 ## Boundaries retained
 
