@@ -46,7 +46,6 @@
     <Compile Include="WebTombstoneSchemas.fs" />
     <Compile Include="WebTerminalApprovalSchemas.fs" />
     <Compile Include="WebResponseSchemas.fs" />
-    <Compile Include="WebResponseCatalog.fs" />
     <Compile Include="CliWireTypes.fs" />
     <Compile Include="CliMutationCatalog.fs" />
     <Compile Include="RejectionPresentation.fs" />

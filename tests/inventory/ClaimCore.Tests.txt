@@ -209,6 +209,9 @@ ClaimCore deterministic suite.domain.registration facts.registration preserves t
 ClaimCore deterministic suite.encrypted recovery artifact v3.[CC-REC-001] v3 encrypts exact request and binds attribution
 ClaimCore deterministic suite.encrypted recovery artifact v3.[CC-REC-001] v3 enforces epoch expiry and key policy
 ClaimCore deterministic suite.encrypted recovery artifact v3.[CC-REC-001] v3 rejects tampering and v2
+ClaimCore deterministic suite.endpoint extension ownership.[CC-CLI-001] generated responses refuse an unreviewed endpoint family
+ClaimCore deterministic suite.endpoint extension ownership.[CC-CLI-001] generated responses refuse duplicate endpoint identifiers
+ClaimCore deterministic suite.endpoint extension ownership.[CC-CLI-003] new case query derives response ownership without mutation authority
 ClaimCore deterministic suite.exact retained identity.[CC-REC-001] Execute rejects a same-ID same-digest record with different canonical bytes
 ClaimCore deterministic suite.exact retained identity.[CC-REC-001] concurrent exact retained admission classifies creator and replay
 ClaimCore deterministic suite.exact retained identity.[CC-REC-001] exact Prepare retry after acceptance returns an observed receipt

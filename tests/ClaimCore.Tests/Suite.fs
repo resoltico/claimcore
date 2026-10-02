@@ -51,6 +51,7 @@ let private surfaces =
         FieldSchemaTests.tests
         DomainDescriptorTests.tests
         ContractsTests.tests
+        EndpointExtensionTests.tests
         SemanticIdentityTests.tests
         RejectionDiagnosticTests.tests
         RejectionEmissionTests.tests

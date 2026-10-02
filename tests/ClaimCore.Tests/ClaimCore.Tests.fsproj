@@ -59,6 +59,7 @@
     <Compile Include="FieldSchemaTests.fs" />
     <Compile Include="DomainDescriptorTests.fs" />
     <Compile Include="ContractsTests.fs" />
+    <Compile Include="EndpointExtensionTests.fs" />
     <Compile Include="SemanticIdentityTests.fs" />
     <Compile Include="RejectionDiagnosticTests.fs" />
     <Compile Include="RejectionEmissionTests.fs" />

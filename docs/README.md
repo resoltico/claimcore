@@ -46,3 +46,6 @@ The [verification and delivery design](verification-delivery-design.md) and its 
 
 The [product scope design](product-scope-design.md) and its separate
 [design QA](product-scope-design-qa.md) examine required mechanisms and remove unsupported complexity.
+
+The [code organization design](code-organization-design.md) and its separate
+[design QA](code-organization-design-qa.md) trace extension ownership and remove duplicate coordination.
