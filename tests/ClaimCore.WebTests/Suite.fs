@@ -13,6 +13,7 @@ let tests =
                 "configuration"
                 [
                     ConfigurationTests.tests
+                    StartupLifetimeTests.tests
                     OriginConfigurationTests.tests
                     WitnessConfigurationTests.tests
                 ]

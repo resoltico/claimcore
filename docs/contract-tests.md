@@ -123,6 +123,8 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.authority operation fence.[CC-BACKUP-001] backup capture drains actor settlement and retains the complete authority fence |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.backup capture private files.[CC-BACKUP-001] owner hashes only private exact-root capture files |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.backup capture signed claims.[CC-BACKUP-001] signed capture binds owner cutoff and both physical copies |
+| CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.backup control lifetimes.[CC-BACKUP-001] capture cancellation releases blocked control input |
+| CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.backup control lifetimes.[CC-BACKUP-001] trickled control input cannot extend a held frame deadline |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.backup health publication readback.[CC-BACKUP-001] expired historical health remains signed but cannot grant freshness |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.backup health publication readback.[CC-BACKUP-001] generic build refuses historical health readback without input access |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.backup health publication readback.[CC-BACKUP-001] historical health readback distinguishes complete partial missing and changed output |
@@ -247,9 +249,14 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-CLI-002 | unit | ClaimCore deterministic suite.export effect and delivery ownership.[CC-CLI-002] private destination failure retains observed service completion |
 | CC-CLI-002 | unit | ClaimCore deterministic suite.export effect and delivery ownership.[CC-CLI-002] witnessed export is noncancellable and lost completion stays uncertain |
 | CC-CLI-002 | unit | ClaimCore deterministic suite.native private-file ancestor race.[CC-CLI-002] descriptor-relative create and lock remain in pinned parent after ancestor swap |
+| CC-CLI-003 | integration | ClaimCore PostgreSQL integration.CLI process interruption.[CC-CLI-003] SIGINT after real TLS mutation dispatch exits uncertain |
+| CC-CLI-003 | integration | ClaimCore PostgreSQL integration.CLI process interruption.[CC-CLI-003] SIGINT ends input wait before EOF and mutation admission |
 | CC-CLI-003 | unit | ClaimCore deterministic suite.CLI-v4 service exit contract.[CC-CLI-003] nested faults preserve earlier exact-operation uncertainty |
 | CC-CLI-003 | unit | ClaimCore deterministic suite.endpoint extension ownership.[CC-CLI-003] new case query derives response ownership without mutation authority |
 | CC-CLI-003 | unit | ClaimCore deterministic suite.remote frame-local delivery diagnostics.[CC-CLI-003] every generated CLI mutation retains delivery uncertainty |
+| CC-CLI-003 | unit | ClaimCore deterministic suite.remote frame-local delivery diagnostics.[CC-CLI-003] interruption after possible mutation preserves uncertainty |
+| CC-CLI-003 | unit | ClaimCore deterministic suite.remote frame-local delivery diagnostics.[CC-CLI-003] interruption and mutation dispatch share one atomic gate |
+| CC-CLI-003 | unit | ClaimCore deterministic suite.remote frame-local delivery diagnostics.[CC-CLI-003] interruption before dispatch seals future work |
 | CC-CLI-003 | unit | ClaimCore deterministic suite.remote invocation contract.[CC-CLI-003] CLI v4 inputs bind exact noncancellable endpoints |
 | CC-DB-001 | fresh-baseline-qualification | ClaimCore fresh baseline qualification.fresh installation qualification.[CC-DB-001] a different calendar is refused without rewriting installation identity |
 | CC-DB-001 | fresh-baseline-qualification | ClaimCore fresh baseline qualification.fresh installation qualification.[CC-DB-001] baseline DDL failure rolls back the entire namespace before commit |
@@ -505,8 +512,13 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.production core boundary.runtime lifecycle.[CC-RUN-001] cancelled opening returns a safe typed fault |
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.production core boundary.runtime lifecycle.[CC-RUN-001] disposal closes admission and drains a held operation |
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.production core boundary.runtime lifecycle.[CC-RUN-001] disposed runtime refuses retained normal and recovery facades |
+| CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime cleanup ownership.[CC-RUN-001] deferred cleanup failure preserves admitted outcomes and safe completion |
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime cleanup ownership.[CC-RUN-001] runtime cleanup attempts every resource despite disposal faults |
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime cleanup ownership.[CC-RUN-001] runtime closes admission before cleanup completion |
+| CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime construction ownership.[CC-RUN-001] partial construction unwinds every child despite cleanup faults |
+| CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime construction ownership.[CC-RUN-001] successful construction transfers children to their parent |
+| CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime construction ownership.[CC-RUN-001] witness adoption transfers store and custody together |
+| CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime construction ownership.[CC-RUN-001] witness custody failure closes the actual store |
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime lifecycle under PostgreSQL.[CC-RUN-001] admitted mutation remains accepted while runtime drains |
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime lifecycle under PostgreSQL.[CC-RUN-001] admitted query keeps its typed outcome while runtime drains |
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime lifecycle under PostgreSQL.[CC-RUN-001] mid-open cancellation interrupts schema inspection |
@@ -619,6 +631,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-WEB-001 | web | ClaimCore.Web.configuration.Web configuration boundaries.[CC-WEB-001] rejects linked credentials and certificates without private keys |
 | CC-WEB-001 | web | ClaimCore.Web.configuration.[CC-WEB-001] accepts only one exact local HTTPS origin |
 | CC-WEB-001 | web | ClaimCore.Web.configuration.[CC-WEB-001] witness key and connection paths fail closed |
+| CC-WEB-001 | web | ClaimCore.Web.configuration.startup resource lifetimes.[CC-WEB-001] failed OIDC verification closes both startup certificates |
 | CC-WEB-001 | web | ClaimCore.Web.copy adoption approval input.[CC-WEB-001] adoption approval refuses invented provenance and actor fields |
 | CC-WEB-001 | web | ClaimCore.Web.copy adoption approval input.[CC-WEB-001] adoption origin binds exact witnessed provenance |
 | CC-WEB-001 | web | ClaimCore.Web.copy deletion approval input.[CC-WEB-001] deletion approval binds exact report verifier and cutoff |

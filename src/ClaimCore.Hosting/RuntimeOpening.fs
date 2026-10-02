@@ -77,6 +77,12 @@ module internal RuntimeOpening =
         then
             invalidOp "Real-data bootstrap contains claimant or pending authority."
 
+    let createWitness createStore custodyFactory identity =
+        use construction = new RuntimeConstruction()
+        let store = construction.Own(createStore ())
+        let custody = construction.Own(custodyFactory store)
+        construction.Transfer(new WitnessProtocol(store, custody, identity))
+
     let core
         (resources: RuntimeResources)
         (witnessConnection: string)
@@ -109,12 +115,14 @@ module internal RuntimeOpening =
 
             use writerCapability = WriterCapabilityFile.Load(writerCapabilityPath ())
 
-            let witnessStore =
-                writerCapability.Use(fun material ->
-                    new Store(witnessConnection, identity, material))
+            let witness =
+                createWitness
+                    (fun () ->
+                        writerCapability.Use(fun material ->
+                            new Store(witnessConnection, identity, material)))
+                    custodyFactory
+                    identity
 
-            let custody = custodyFactory witnessStore
-            let witness = new WitnessProtocol(witnessStore, custody, identity)
             resources.Attach(witness)
             witness.Admit()
 

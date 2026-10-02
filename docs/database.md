@@ -272,3 +272,11 @@ reuse the persistent developer database or repository connection files.
 ## Operational limits
 
 An installed checksum identifies recorded baseline source; current catalog checks and full data audit add separate evidence but do not defeat an administrator controlling primary, witness, keys, and checkpoints together. ClaimCore has no automatic repair, downgrade, or active-active failover. The owner-only managed backup tool and isolated two-cluster restore drill are functional synthetic qualification, not off-host custody, live admission, or a production cutover certificate. The service runtime owns its primary data-source lifetime and separately credentialed witness protocol; a second case-work process is not an authorized concurrent writer merely because it can connect. See [Security and operations](operations.md) before considering real data.
+
+### Backup control lifetime
+
+The inherited private duplex socket keeps exact bounded frames. BEGIN and OBSERVE waits are bounded
+by thirty seconds; a held FINISH/ABORT frame uses the remaining capture lease budget. One deadline
+covers the complete frame, including trickled bytes, and the capture cancellation token interrupts
+a blocked read. The owner awaits the read before releasing its stream/token scope. A missing reply
+after FINISH remains an evidence-reconciliation problem, not proof that sealing failed.

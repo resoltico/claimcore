@@ -179,10 +179,70 @@ let private everyMutationKeepsUncertainty () =
         Expect.equal code expected $"Delivery class for {endpoint.Identifier}"
         assertPrivacy errors
 
+let private interruptionSealsDispatch () =
+    use output = new MemoryStream()
+    use errors = new MemoryStream()
+    let delivery = FrameDelivery(output, errors)
+    delivery.BeginFrame()
+    delivery.BeforeAcquire()
+    Expect.equal (delivery.Interrupt()) 130 "No possible mutation was dispatched"
+
+    Expect.throwsT<OperationCanceledException>
+        (fun () -> delivery.BeforeRemoteDispatch("command.execute", input commandInput))
+        "Interrupted pre-dispatch state cannot later dispatch"
+
+let private mutationInterruptionIsUncertain () =
+    use output = new MemoryStream()
+    use errors = new MemoryStream()
+    let delivery = FrameDelivery(output, errors)
+    delivery.BeginFrame()
+    delivery.BeforeRemoteDispatch("command.execute", input commandInput)
+
+    Expect.equal
+        (delivery.Interrupt())
+        4
+        "A possible mutation is never represented as non-admission"
+
+let private interruptionAndDispatchRace () =
+    for _ in 1..100 do
+        use output = new MemoryStream()
+        use errors = new MemoryStream()
+        use ready = new System.Threading.Barrier(2)
+        let delivery = FrameDelivery(output, errors)
+        delivery.BeginFrame()
+
+        let dispatch =
+            System.Threading.Tasks.Task.Run(fun () ->
+                ready.SignalAndWait() |> ignore
+
+                try
+                    delivery.BeforeRemoteDispatch("command.execute", input commandInput)
+                    true
+                with :? OperationCanceledException ->
+                    false)
+
+        let interrupt =
+            System.Threading.Tasks.Task.Run(fun () ->
+                ready.SignalAndWait() |> ignore
+                delivery.Interrupt())
+
+        let started = dispatch.GetAwaiter().GetResult()
+        let code = interrupt.GetAwaiter().GetResult()
+        Expect.equal code (if started then 4 else 130) "Atomic dispatch/interruption knowledge"
+
 let tests =
     testList
         "remote frame-local delivery diagnostics"
         [
+            testCase
+                "[CC-CLI-003] interruption before dispatch seals future work"
+                interruptionSealsDispatch
+            testCase
+                "[CC-CLI-003] interruption after possible mutation preserves uncertainty"
+                mutationInterruptionIsUncertain
+            testCase
+                "[CC-CLI-003] interruption and mutation dispatch share one atomic gate"
+                interruptionAndDispatchRace
             testCase
                 "a later input failure cannot inherit a delivered operation identity"
                 completedFrame

@@ -1,3 +1,5 @@
+ClaimCore PostgreSQL integration.CLI process interruption.[CC-CLI-003] SIGINT after real TLS mutation dispatch exits uncertain
+ClaimCore PostgreSQL integration.CLI process interruption.[CC-CLI-003] SIGINT ends input wait before EOF and mutation admission
 ClaimCore PostgreSQL integration.PostgreSQL accepted receipt identity.[CC-APP-002] PostgreSQL accepted replay survives owner pruning of preparation
 ClaimCore PostgreSQL integration.PostgreSQL accepted receipt identity.[CC-APP-002] PostgreSQL concurrent pruned replay and conflicts keep one accepted revision
 ClaimCore PostgreSQL integration.PostgreSQL accepted receipt identity.[CC-APP-002] PostgreSQL rejects wrong digest before parsing accepted snapshot
@@ -139,6 +141,8 @@ ClaimCore PostgreSQL integration.authority operation fence.[CC-AUDIT-001] witnes
 ClaimCore PostgreSQL integration.authority operation fence.[CC-BACKUP-001] backup capture drains actor settlement and retains the complete authority fence
 ClaimCore PostgreSQL integration.backup capture private files.[CC-BACKUP-001] owner hashes only private exact-root capture files
 ClaimCore PostgreSQL integration.backup capture signed claims.[CC-BACKUP-001] signed capture binds owner cutoff and both physical copies
+ClaimCore PostgreSQL integration.backup control lifetimes.[CC-BACKUP-001] capture cancellation releases blocked control input
+ClaimCore PostgreSQL integration.backup control lifetimes.[CC-BACKUP-001] trickled control input cannot extend a held frame deadline
 ClaimCore PostgreSQL integration.backup health publication readback.[CC-BACKUP-001] expired historical health remains signed but cannot grant freshness
 ClaimCore PostgreSQL integration.backup health publication readback.[CC-BACKUP-001] generic build refuses historical health readback without input access
 ClaimCore PostgreSQL integration.backup health publication readback.[CC-BACKUP-001] historical health readback distinguishes complete partial missing and changed output
@@ -317,8 +321,13 @@ ClaimCore PostgreSQL integration.restored writer activation reconciliation.[CC-B
 ClaimCore PostgreSQL integration.restored writer activation.[CC-BACKUP-001] W1 settlement alone leaves restored case work quarantined
 ClaimCore PostgreSQL integration.restored writer activation.[CC-BACKUP-001] W1 stays quarantined until exact witnessed W2 activation
 ClaimCore PostgreSQL integration.restored writer activation.[CC-BACKUP-001] test-only verifier exercises W2 activation and exact retry
+ClaimCore PostgreSQL integration.runtime cleanup ownership.[CC-RUN-001] deferred cleanup failure preserves admitted outcomes and safe completion
 ClaimCore PostgreSQL integration.runtime cleanup ownership.[CC-RUN-001] runtime cleanup attempts every resource despite disposal faults
 ClaimCore PostgreSQL integration.runtime cleanup ownership.[CC-RUN-001] runtime closes admission before cleanup completion
+ClaimCore PostgreSQL integration.runtime construction ownership.[CC-RUN-001] partial construction unwinds every child despite cleanup faults
+ClaimCore PostgreSQL integration.runtime construction ownership.[CC-RUN-001] successful construction transfers children to their parent
+ClaimCore PostgreSQL integration.runtime construction ownership.[CC-RUN-001] witness adoption transfers store and custody together
+ClaimCore PostgreSQL integration.runtime construction ownership.[CC-RUN-001] witness custody failure closes the actual store
 ClaimCore PostgreSQL integration.runtime full-audit cadence.[CC-AUDIT-001] overdue complete audit closes admission persistently
 ClaimCore PostgreSQL integration.runtime full-audit cadence.[CC-AUDIT-001] runtime disposal cancels active scheduled audit
 ClaimCore PostgreSQL integration.runtime full-audit cadence.[CC-AUDIT-001] scheduled audit quarantines post-opening row tamper

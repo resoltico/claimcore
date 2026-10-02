@@ -5,6 +5,28 @@ open System.Threading.Tasks
 open Expecto
 open ClaimCore.Hosting
 
+let private admission source timeout =
+    new RuntimeAdmission(
+        source,
+        timeout,
+        ignore,
+        (fun () ->
+            { new IDisposable with
+                member _.Dispose() = ()
+            }),
+        {
+            RequireCaseMutation = ignore
+            RequireCaseRead = ignore
+            RequireAuthoritySetup = ignore
+            RequireAuthorityRead = ignore
+            CommitHealth =
+                { new ClaimCore.Postgres.ICaseMutationCommitHealth with
+                    member _.VerifyLocked(_, _) = ()
+                }
+            CommitHealthRequired = false
+        }
+    )
+
 let private attemptsEveryResource () =
     let attempted = ResizeArray<int>()
 
@@ -40,11 +62,6 @@ let private closingPrecedesCleanupWait () =
     let finish =
         TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
 
-    let empty () =
-        { new IDisposable with
-            member _.Dispose() = ()
-        }
-
     let source =
         { new IDisposable with
             member _.Dispose() =
@@ -52,24 +69,7 @@ let private closingPrecedesCleanupWait () =
                 finish.Task.GetAwaiter().GetResult()
         }
 
-    use admission =
-        new RuntimeAdmission(
-            source,
-            TimeSpan.FromMilliseconds 50.,
-            (fun () -> ()),
-            empty,
-            {
-                RequireCaseMutation = (fun () -> ())
-                RequireCaseRead = (fun () -> ())
-                RequireAuthoritySetup = (fun () -> ())
-                RequireAuthorityRead = (fun () -> ())
-                CommitHealth =
-                    { new ClaimCore.Postgres.ICaseMutationCommitHealth with
-                        member _.VerifyLocked(_, _) = ()
-                    }
-                CommitHealthRequired = false
-            }
-        )
+    use admission = admission source (TimeSpan.FromMilliseconds 50.)
 
     try
         (admission :> IDisposable).Dispose()
@@ -81,10 +81,60 @@ let private closingPrecedesCleanupWait () =
     finally
         finish.TrySetResult() |> ignore
 
+let private delayedFailurePreservesOutcome () =
+    let finish =
+        TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously)
+
+    let mutable closed = 0
+
+    let source =
+        { new IDisposable with
+            member _.Dispose() =
+                closed <- closed + 1
+                invalidOp "PRIVATE-PROVIDER-CANARY"
+        }
+
+    let admission = admission source (TimeSpan.FromMilliseconds 50.)
+    let pending = admission.RunRead(fun () -> finish.Task)
+    (admission :> IDisposable).Dispose()
+    finish.SetResult(42)
+
+    Expect.equal
+        (pending.GetAwaiter().GetResult())
+        42
+        "Late cleanup cannot replace the admitted result"
+
+    let completion = admission.CleanupCompletion
+
+    Expect.isFalse
+        (completion.WaitAsync(TimeSpan.FromSeconds 2.).GetAwaiter().GetResult())
+        "Failure knowledge remains available"
+
+    Expect.equal
+        completion.Status
+        TaskStatus.RanToCompletion
+        "No unobserved faulted completion task"
+
+    Expect.isNull completion.Exception "No provider exception is retained"
+
+    let error =
+        try
+            (admission :> IDisposable).Dispose()
+            failtest "A settled cleanup failure cannot pass another disposer."
+        with :? InvalidOperationException as error ->
+            error
+
+    Expect.equal error.Message "ClaimCore runtime cleanup failed." "Safe repeat-disposal failure"
+    Expect.isNull error.InnerException "No provider detail in disposal"
+    Expect.equal closed 1 "Cleanup is never repeated"
+
 let tests =
     testList
         "runtime cleanup ownership"
         [
+            testCase
+                "[CC-RUN-001] deferred cleanup failure preserves admitted outcomes and safe completion"
+                delayedFailurePreservesOutcome
             testCase
                 "[CC-RUN-001] runtime cleanup attempts every resource despite disposal faults"
                 attemptsEveryResource

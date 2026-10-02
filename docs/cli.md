@@ -159,6 +159,13 @@ On a broken output stream after mutation dispatch, stderr carries only a bounded
 
 Every generated mutating CLI endpoint is noncancellable after admission. A timeout, malformed service reply, lost HTTP response, or failed stdout delivery after dispatch exits 4 when the mutation may have started; it is not evidence that the service did not commit. Preserve the exact approval, event, or operation identity and inspect the relevant service or owner evidence before retrying. Read-only endpoints retain definite failure classification because they cannot create authority or change case data. Recovery export issues witnessed custody evidence and is therefore noncancellable. An explicit core fault recommending RECOVER_EXACT remains uncertain even when wrapped in FAILED. A verified export whose private destination refuses creation reports RESULT_OBSERVED; it never claims that service issuance did not start.
 
+SIGINT terminates the process even while stdin or stdout is blocked. Framing seals future dispatch
+before choosing the signal exit code: no possible mutation in the current frame gives 130; possible
+mutation dispatch or incomplete mutation output gives 4. A signal may leave no complete response
+frame, so preserve the submitted identity and inspect exact service evidence for exit 4. Earlier
+completed session frames keep their own outcomes. Process exit closes process-owned streams and
+connections; it does not prove that a dispatched server operation stopped or rolled back.
+
 Discovery, token acquisition and service response reads each carry the client's existing twenty-second
 whole-request deadline through headers and bounded content. A timeout after mutation dispatch retains
 unconfirmed delivery; it never means that server execution rolled back.

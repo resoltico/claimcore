@@ -26,13 +26,12 @@ type private RemoteSessionHolder() =
             session |> Option.iter (fun value -> (value :> IDisposable).Dispose())
             session <- None
 
-module RemoteFrameProcessing =
-    let private invoke
-        (holder: RemoteSessionHolder)
-        (delivery: FrameDelivery)
-        stopped
-        (bytes: byte array)
-        =
+/// Owns one cached service session; standard streams remain owned by the process caller.
+type RemoteFrameProcessor(input: Stream, output: Stream, errors: Stream) =
+    let delivery = FrameDelivery(output, errors)
+    let holder = new RemoteSessionHolder()
+
+    let invoke (holder: RemoteSessionHolder) (delivery: FrameDelivery) stopped (bytes: byte array) =
         match StrictJson.parseDocument 131072 bytes with
         | Error problem -> CliRemoteWireCodec.protocolFailure 2 problem
         | Ok document ->
@@ -61,16 +60,15 @@ module RemoteFrameProcessing =
                         linked.Token
                     |> fun work -> work.GetAwaiter().GetResult()
 
-    let private frame holder delivery stopped =
+    let frame holder delivery stopped =
         function
         | InputFrame.Bytes bytes -> Some(invoke holder delivery stopped bytes)
         | InputFrame.Failure problem -> Some(CliRemoteWireCodec.protocolFailure 2 problem)
         | InputFrame.EndOfInput -> None
 
-    let call (input: Stream) output errors stopped =
-        let delivery = FrameDelivery(output, errors)
-        use holder = new RemoteSessionHolder()
+    member _.Interrupt() = delivery.Interrupt()
 
+    member _.Call(stopped) =
         try
             delivery.BeginFrame()
 
@@ -83,10 +81,7 @@ module RemoteFrameProcessing =
         with error ->
             delivery.Failure error
 
-    let session (input: Stream) output errors (stopped: CancellationToken) =
-        let delivery = FrameDelivery(output, errors)
-        use holder = new RemoteSessionHolder()
-
+    member _.Session(stopped: CancellationToken) =
         try
             let mutable running = true
 
@@ -102,3 +97,15 @@ module RemoteFrameProcessing =
             if stopped.IsCancellationRequested then 130 else 0
         with error ->
             delivery.Failure error
+
+    interface IDisposable with
+        member _.Dispose() = (holder :> IDisposable).Dispose()
+
+module RemoteFrameProcessing =
+    let call input output errors stopped =
+        use processor = new RemoteFrameProcessor(input, output, errors)
+        processor.Call(stopped)
+
+    let session input output errors stopped =
+        use processor = new RemoteFrameProcessor(input, output, errors)
+        processor.Session(stopped)

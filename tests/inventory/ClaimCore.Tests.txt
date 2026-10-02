@@ -279,6 +279,9 @@ ClaimCore deterministic suite.rejection diagnostic emission.query admission pres
 ClaimCore deterministic suite.rejection diagnostic emission.request and business-date admission retain distinct typed causes
 ClaimCore deterministic suite.rejection diagnostic emission.state refusals keep typed reasons and accepted data unchanged
 ClaimCore deterministic suite.remote frame-local delivery diagnostics.[CC-CLI-003] every generated CLI mutation retains delivery uncertainty
+ClaimCore deterministic suite.remote frame-local delivery diagnostics.[CC-CLI-003] interruption after possible mutation preserves uncertainty
+ClaimCore deterministic suite.remote frame-local delivery diagnostics.[CC-CLI-003] interruption and mutation dispatch share one atomic gate
+ClaimCore deterministic suite.remote frame-local delivery diagnostics.[CC-CLI-003] interruption before dispatch seals future work
 ClaimCore deterministic suite.remote frame-local delivery diagnostics.a failed flush preserves the current operation identity
 ClaimCore deterministic suite.remote frame-local delivery diagnostics.a later input failure cannot inherit a delivered operation identity
 ClaimCore deterministic suite.remote frame-local delivery diagnostics.a malformed next frame stays independent of completed work
