@@ -43,3 +43,6 @@ The [identity and privacy design](identity-privacy-design.md) and its separate
 
 The [verification and delivery design](verification-delivery-design.md) and its separate
 [design QA](verification-delivery-design-qa.md) record the operational foundations audit.
+
+The [product scope design](product-scope-design.md) and its separate
+[design QA](product-scope-design-qa.md) examine required mechanisms and remove unsupported complexity.

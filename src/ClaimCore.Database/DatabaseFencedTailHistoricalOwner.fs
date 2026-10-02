@@ -8,14 +8,6 @@ open ClaimCore.Witness
 /// Only reconstructs the originally signed candidate. It never grants fresh W2 authority;
 /// the Postgres historical branch must find and reconcile the exact prior witness W2 ticket.
 module internal DatabaseFencedTailHistoricalOwner =
-    let private databaseNow (owner: NpgsqlConnection) =
-        use command = new NpgsqlCommand("SELECT clock_timestamp()", owner)
-
-        match command.ExecuteScalar() with
-        | :? DateTimeOffset as value -> value.ToUniversalTime()
-        | :? DateTime as value -> DateTimeOffset(value.ToUniversalTime(), TimeSpan.Zero)
-        | _ -> invalidOp "Owner database clock is unavailable."
-
     let private matching (host: HistoricalIndependentHostDigest) (local: FencedTailVerification) =
         host.Scope = "full"
         && host.InstallationId = local.InstallationId
@@ -86,7 +78,6 @@ module internal DatabaseFencedTailHistoricalOwner =
                                 owner
                                 loaded.Evidence
                                 publication
-                                (databaseNow owner)
                         with
                         | None -> None
                         | Some host ->

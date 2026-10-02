@@ -64,6 +64,7 @@ let private restoreAndBackup =
         RestoreReportPairBindingTests.tests
         RestorePublicationTests.tests
         RestoreProduceCanonicalTests.tests
+        RestoreReportScopeTests.tests
         RestoreProduceOutputTests.tests
         RestoreProduceArchiveTests.tests
         RestoreProduceBarrierTests.tests

@@ -106,7 +106,6 @@ type ArchiveProbeFixture =
 let private backup installation lineage now (archiveCopy: RestoreCustodyObject) =
     {
         Scope = "full"
-        RealDataReady = false
         InstallationId = installation
         LineageId = lineage
         Epoch = 1L

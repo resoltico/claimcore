@@ -189,23 +189,22 @@ module internal DatabaseIndependentHostProof =
         with _ ->
             None
 
-    let private withRoots (roots: byte array list) action =
-        if List.isEmpty roots then
-            None
-        else
+    let private withReviewedRoot action =
+        match DatabaseRestorePublication.reviewedRootKey () with
+        | None -> None
+        | Some root ->
             try
                 try
                     let documents = DatabaseIndependentHostEvidence.load ()
 
                     try
-                        roots |> List.tryPick (fun root -> action root documents)
+                        action root documents
                     finally
                         DatabaseIndependentHostEvidence.dispose documents
                 with _ ->
                     None
             finally
-                roots
-                |> List.iter (fun root -> CryptographicOperations.ZeroMemory(root.AsSpan()))
+                CryptographicOperations.ZeroMemory(root.AsSpan())
 
     let current
         (owner: NpgsqlConnection)
@@ -216,9 +215,8 @@ module internal DatabaseIndependentHostProof =
         try
             OwnerConnection.requireIdentity owner
 
-            withRoots
-                (DatabaseRestorePublication.reviewedRootKey () |> Option.toList)
-                (fun root documents -> verifyWithRoot root documents signed publication dbNow)
+            withReviewedRoot (fun root documents ->
+                verifyWithRoot root documents signed publication dbNow)
         with _ ->
             None
 
@@ -226,13 +224,11 @@ module internal DatabaseIndependentHostProof =
         (owner: NpgsqlConnection)
         (signed: SignedFencedTailEvidence)
         (publication: TrustedRestorePublication)
-        (_dbNow: DateTimeOffset)
         : HistoricalIndependentHostDigest option =
         try
             OwnerConnection.requireIdentity owner
 
-            withRoots
-                (DatabaseRestorePublication.reviewedRootKey () |> Option.toList)
-                (fun root documents -> historicalWithRoot root documents signed publication)
+            withReviewedRoot (fun root documents ->
+                historicalWithRoot root documents signed publication)
         with _ ->
             None

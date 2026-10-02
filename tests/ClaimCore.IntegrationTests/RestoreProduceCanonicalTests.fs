@@ -76,7 +76,6 @@ let private claims
     : RestoreReportClaims =
     {
         Scope = "synthetic-only"
-        RealDataReady = false
         InstallationId = installation
         LineageId = lineage
         Epoch = 1L

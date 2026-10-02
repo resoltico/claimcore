@@ -33,7 +33,6 @@ type internal FencedTailVerification =
         SignedSupplement: byte array
         SupplementSignature: byte array
         ValidUntil: DateTimeOffset
-        RealDataReady: bool
     }
 
 /// Rechecks a post-W1 signed tail against current signer/holder, witness, primary and private files.
@@ -131,7 +130,6 @@ module internal DatabaseRestoreFencedTailVerification =
             SignedSupplement = Array.copy evidence.Supplement
             SupplementSignature = Array.copy evidence.SupplementSignature
             ValidUntil = min tail.ValidUntil fence.ValidUntil
-            RealDataReady = false
         }
 
     let private requireShapes (evidence: SignedFencedTailEvidence) =

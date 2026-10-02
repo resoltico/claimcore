@@ -64,6 +64,7 @@
     <Compile Include="RestoreReportPairBindingTests.fs" />
     <Compile Include="RestorePublicationTests.fs" />
     <Compile Include="RestoreProduceCanonicalTests.fs" />
+    <Compile Include="RestoreReportScopeTests.fs" />
     <Compile Include="RestoreProduceOutputTests.fs" />
     <Compile Include="RestoreProduceArchiveTests.fs" />
     <Compile Include="RestoreProduceBarrierTests.fs" />

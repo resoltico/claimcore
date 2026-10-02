@@ -113,6 +113,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.Restore report owner roster.[CC-BACKUP-001] restore report refuses unregistered owner key claims |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.Restore report owner roster.[CC-BACKUP-001] source checkout cannot self-authorize a restore report |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.Restore report pair binding.[CC-BACKUP-001] stale or divergent restore pair facts refuse recheck |
+| CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.[CC-BACKUP-001] intermediate restore reports cannot claim deployment readiness |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.[CC-BACKUP-001] root-signed topology refuses an aggregate key reused by a host |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.advanced physical restored pair.[CC-BACKUP-001] original BASE pair replays later synthetic WAL before audit |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.authority operation fence.[CC-BACKUP-001] backup capture drains actor settlement and retains the complete authority fence |

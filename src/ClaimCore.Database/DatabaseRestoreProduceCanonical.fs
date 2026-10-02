@@ -223,7 +223,8 @@ module internal DatabaseRestoreProduceCanonical =
         put items "format" "claimcore-restore-qualification-1"
         put items "source" "ClaimCore.Database"
         put items "scope" claims.Scope
-        put items "realDataReady" claims.RealDataReady
+        // A restored-pair report is evidence for later qualification, never deployment readiness.
+        put items "realDataReady" false
         reportFacts items claims
         reportChecks items claims
         reportCustody items claims claims.CustodyKeyId claims.CustodyPublicKeySha256

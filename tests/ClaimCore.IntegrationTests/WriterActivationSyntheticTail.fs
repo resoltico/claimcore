@@ -68,5 +68,4 @@ let syntheticTail (context: SettledW1Context) : FencedTailVerification =
         SignedSupplement = supplement
         SupplementSignature = signature
         ValidUntil = context.ValidUntil
-        RealDataReady = false
     }
