@@ -47,19 +47,35 @@ module internal Sql =
         + pageWindow
 
     let listVisibleCases =
-        "SELECT "
+        """
+WITH admitted_actor AS MATERIALIZED (
+ SELECT actor_id FROM claimcore.actors
+ WHERE actor_id=@actor AND enabled AND principal_kind=@kind
+ AND issuer=@issuer AND principal_value=@principal
+), installation_access AS MATERIALIZED (
+ SELECT EXISTS(SELECT 1 FROM admitted_actor a JOIN claimcore.actor_grants g USING(actor_id)
+ WHERE g.active AND g.role_name=ANY(@roles) AND g.scope_kind='INSTALLATION') AS allowed
+), visible AS (
+ (SELECT c.case_reference FROM claimcore.cases c
+ WHERE (SELECT allowed FROM installation_access)
+ AND (@after IS NULL OR c.case_reference>@after COLLATE "C")
+ AND c.disposition='ACTIVE' AND c.privacy_phase='ACTIVE'
+ ORDER BY c.case_reference COLLATE "C" LIMIT @window)
+ UNION ALL
+ (SELECT DISTINCT c.case_reference COLLATE "C" AS case_reference FROM admitted_actor a
+ JOIN claimcore.actor_grants g USING(actor_id)
+ JOIN claimcore.cases c ON c.case_id=g.scope_case_id
+ WHERE NOT (SELECT allowed FROM installation_access)
+ AND g.scope_kind='CASE' AND g.active AND g.role_name=ANY(@roles)
+ AND (@after IS NULL OR c.case_reference>@after COLLATE "C")
+ AND c.disposition='ACTIVE' AND c.privacy_phase='ACTIVE'
+ ORDER BY c.case_reference COLLATE "C" LIMIT @window)
+)
+SELECT """
         + columns
-        + source
-        + " WHERE (@after IS NULL OR c.case_reference > @after COLLATE \"C\") "
-        + "AND c.disposition='ACTIVE' AND c.privacy_phase='ACTIVE' "
-        + "AND EXISTS (SELECT 1 FROM claimcore.actors a "
-        + "JOIN claimcore.actor_grants g ON g.actor_id=a.actor_id "
-        + "WHERE a.actor_id=@actor AND a.enabled AND a.principal_kind=@kind "
-        + "AND a.issuer=@issuer AND a.principal_value=@principal "
-        + "AND g.active AND g.role_name=ANY(@roles) "
-        + "AND (g.scope_kind='INSTALLATION' OR "
-        + "(g.scope_kind='CASE' AND g.scope_case_id=c.case_id))) "
-        + "ORDER BY c.case_reference COLLATE \"C\" LIMIT @window"
+        + """ FROM visible v JOIN claimcore.cases c USING(case_reference)
+ORDER BY c.case_reference COLLATE "C" LIMIT @window
+        """
 
     let private receiptColumns =
         "operation_id, case_id, case_reference, preparer_actor_id, importer_actor_id, "

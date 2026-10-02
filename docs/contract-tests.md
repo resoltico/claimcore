@@ -59,6 +59,8 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.runtime full-audit cadence.[CC-AUDIT-001] scheduled audit quarantines post-opening row tamper |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.runtime full-audit cadence.[CC-AUDIT-001] scheduled complete audits repeat and remain healthy |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.runtime full-audit cadence.[CC-AUDIT-001] scheduled full-audit failure closes actor authority lanes |
+| CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.runtime scheduling and shutdown.[CC-AUDIT-001] long complete audits leave a completion-based interval |
+| CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.witnessed capacity and competing work.[CC-AUDIT-001] paged witnessed volume export and actor work survive audit contention with small pools |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.[CC-AUTH-001] case-list cursor binds principal grant query and visible page |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.[CC-AUTH-001] voided and erasure-fenced identities share denial timing class |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.actor and grant storage.[CC-AUTH-001] exact authority replay detects a forged live actor projection |
@@ -83,6 +85,8 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.actor-bound replay.[CC-AUTH-001] current read grant permits receipt replay without duplicate effect |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.actor/grant resource lookup.[CC-AUTH-001] authority lock excludes a concurrent grant change |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.actor/grant resource lookup.[CC-AUTH-001] case and accepted-operation lookups do not reveal inaccessible identities |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.case-list capacity.[CC-AUTH-001] installation access keeps bounded ordered work at volume |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.case-list capacity.[CC-AUTH-001] sparse actor access selects indexed granted cases at volume |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.case-list cursor protection.[CC-AUTH-001] cursor tamper and runtime restart refuse without plaintext |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.case-list cursor protection.[CC-AUTH-001] encrypted cursor binds actor grant query and expiry |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.mutation result disclosure.[CC-AUTH-001] accepted command result is withheld after editor revocation |
@@ -507,6 +511,8 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime lifecycle under PostgreSQL.[CC-RUN-001] admitted query keeps its typed outcome while runtime drains |
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime lifecycle under PostgreSQL.[CC-RUN-001] mid-open cancellation interrupts schema inspection |
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime lifecycle under PostgreSQL.[CC-RUN-001] thrown opening closes its owned source |
+| CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime scheduling and shutdown.[CC-RUN-001] audit stop is nonblocking and cleanup joins cancellation callbacks |
+| CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime scheduling and shutdown.[CC-RUN-001] shutdown stops audit before draining admitted actor work |
 | CC-WEB-001 | web | ClaimCore.Web.OIDC authentication foundation.[CC-WEB-001] OIDC cookie uses revocable server-side ticket |
 | CC-WEB-001 | web | ClaimCore.Web.OIDC authentication foundation.[CC-WEB-001] OIDC mode closes legacy case work until grants exist |
 | CC-WEB-001 | web | ClaimCore.Web.OIDC authentication foundation.[CC-WEB-001] bearer principal uses explicit client classification |
@@ -625,6 +631,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-WEB-001 | web | ClaimCore.Web.lifecycle input.[CC-WEB-001] lifecycle drafts and approvals retain exact caller identities |
 | CC-WEB-001 | web | ClaimCore.Web.lifecycle input.[CC-WEB-001] lifecycle input refuses forged or malformed fields |
 | CC-WEB-001 | web | ClaimCore.Web.management input.[CC-WEB-001] binds exact authority event, principal, role and scope before dispatch |
+| CC-WEB-001 | web | ClaimCore.Web.queued HTTP capacity.[CC-WEB-001] bounded admission refuses overload and cancels queued reads before dispatch |
 | CC-WEB-001 | web | ClaimCore.Web.real-data activation input.[CC-WEB-001] activation requests refuse forged actor or key metadata |
 | CC-WEB-001 | web | ClaimCore.Web.real-data activation input.[CC-WEB-001] activation review and approval bind exact published plan fields |
 | CC-WEB-001 | web | ClaimCore.Web.real-data activation wire.[CC-WEB-001] owner plan review projects exact canonical bytes and typed nonclaimant facts |

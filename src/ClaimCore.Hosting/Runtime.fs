@@ -262,4 +262,5 @@ type Runtime private (resources: RuntimeResources) =
         )
 
     interface IDisposable with
-        member _.Dispose() = (admission :> IDisposable).Dispose()
+        member _.Dispose() =
+            admission.CloseAndDrain(auditCadence.RequestStop)

@@ -6,6 +6,7 @@ announces unsaved preferences in the chosen language without blocking the switch
 associates optional field errors and supports password text input
 binds consent to one reviewed preparation and exact identity rather than an editor-wide boolean
 bounds a stalled response and ignores a later successful result
+classifies verified overload as not started and refuses the old ambiguous busy body
 clears claimant definition state when the server rejects or mismatches assets
 clears the response timer on normal completion and leaves the validated result intact
 clears this page's cached rows cursor and metadata after a browser session refusal

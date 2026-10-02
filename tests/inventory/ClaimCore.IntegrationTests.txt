@@ -177,6 +177,8 @@ ClaimCore PostgreSQL integration.case lifecycle storage.[CC-LIFE-001] witnessed 
 ClaimCore PostgreSQL integration.case lifecycle storage.[CC-LIFE-001] witnessed void preserves history and reinstatement requires distinct stewards
 ClaimCore PostgreSQL integration.case pagination has an exact fifty-item boundary and lossless continuation
 ClaimCore PostgreSQL integration.case tombstone stewardship.[CC-ERASE-001] tombstone prune approvals and holds remain witnessed and auditable
+ClaimCore PostgreSQL integration.case-list capacity.[CC-AUTH-001] installation access keeps bounded ordered work at volume
+ClaimCore PostgreSQL integration.case-list capacity.[CC-AUTH-001] sparse actor access selects indexed granted cases at volume
 ClaimCore PostgreSQL integration.case-list cursor protection.[CC-AUTH-001] cursor tamper and runtime restart refuse without plaintext
 ClaimCore PostgreSQL integration.case-list cursor protection.[CC-AUTH-001] encrypted cursor binds actor grant query and expiry
 ClaimCore PostgreSQL integration.copy adoption owner approval.[CC-ERASE-001] product export adoption approval and tamper audit remain pending
@@ -326,6 +328,9 @@ ClaimCore PostgreSQL integration.runtime lifecycle under PostgreSQL.[CC-RUN-001]
 ClaimCore PostgreSQL integration.runtime lifecycle under PostgreSQL.[CC-RUN-001] admitted query keeps its typed outcome while runtime drains
 ClaimCore PostgreSQL integration.runtime lifecycle under PostgreSQL.[CC-RUN-001] mid-open cancellation interrupts schema inspection
 ClaimCore PostgreSQL integration.runtime lifecycle under PostgreSQL.[CC-RUN-001] thrown opening closes its owned source
+ClaimCore PostgreSQL integration.runtime scheduling and shutdown.[CC-AUDIT-001] long complete audits leave a completion-based interval
+ClaimCore PostgreSQL integration.runtime scheduling and shutdown.[CC-RUN-001] audit stop is nonblocking and cleanup joins cancellation callbacks
+ClaimCore PostgreSQL integration.runtime scheduling and shutdown.[CC-RUN-001] shutdown stops audit before draining admitted actor work
 ClaimCore PostgreSQL integration.runtime signed backup health.[CC-BACKUP-001] signed current health cannot authorize actor Execute after retained-copy loss
 ClaimCore PostgreSQL integration.settled erasure fence.[CC-ERASE-001] a mismatched request tombstone cannot mint pending proof
 ClaimCore PostgreSQL integration.settled erasure fence.[CC-ERASE-001] complete case witness scan stages bounded HMAC denials
@@ -379,6 +384,7 @@ ClaimCore PostgreSQL integration.witnessed accepted observation.[CC-WIT-001] acc
 ClaimCore PostgreSQL integration.witnessed accepted observation.[CC-WIT-001] attempt admission cannot bypass accepted settlement
 ClaimCore PostgreSQL integration.witnessed accepted observation.[CC-WIT-001] read-only case and receipt disclosures require settled evidence
 ClaimCore PostgreSQL integration.witnessed accepted observation.[CC-WIT-001] retention cannot bypass accepted settlement
+ClaimCore PostgreSQL integration.witnessed capacity and competing work.[CC-AUDIT-001] paged witnessed volume export and actor work survive audit contention with small pools
 ClaimCore PostgreSQL integration.witnessed primary commit.[CC-WIT-001] orphan intent stays unknown without primary effect
 ClaimCore PostgreSQL integration.witnessed primary commit.[CC-WIT-001] postcommit witness outage stays unknown then exact retry settles
 ClaimCore PostgreSQL integration.witnessed primary commit.[CC-WIT-001] wrong witness key refuses runtime opening before case work

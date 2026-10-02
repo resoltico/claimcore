@@ -26,7 +26,7 @@ it("clears claimant definition state when the server rejects or mismatches asset
         status: 429,
         diagnostic: { id: "WEB_HOST_BUSY", parameters: {} },
         message: "Busy",
-        executionPhase: null,
+        executionPhase: "NOT_STARTED",
       }),
       { status: 429, headers: { "content-type": "application/json" } },
     ),

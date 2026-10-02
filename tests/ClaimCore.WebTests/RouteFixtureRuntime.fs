@@ -175,8 +175,13 @@ type RuntimeStub(?invalidExportMetadata: bool) as this =
                     this.ExecuteOutcome
                     (SubmissionOutcome.CancelledBeforeAdmission draft.OperationId)
 
-            member _.Get(reference, _) =
-                recordCoreCall this.GetOutcome (QueryOutcome.Succeeded(Lookup.NotFound reference))
+            member _.Get(reference, token) =
+                match this.GetWork with
+                | Some work -> work reference token
+                | None ->
+                    recordCoreCall
+                        this.GetOutcome
+                        (QueryOutcome.Succeeded(Lookup.NotFound reference))
 
             member _.List(_, _) =
                 recordCoreCall
@@ -226,6 +231,11 @@ type RuntimeStub(?invalidExportMetadata: bool) as this =
     member val TombstoneWriteOutcome: TombstoneWriteOutcome option = None with get, set
     member val ManagementOutcome: ActorManagementOutcome option = None with get, set
     member val LastRecoveryCursor: string option option = None with get, set
+
+    member val GetWork: (string
+            -> System.Threading.CancellationToken
+            -> Task<QueryOutcome<Lookup<CurrentCase, string>>>) option = None with get, set
+
     member val GetOutcome: QueryOutcome<Lookup<CurrentCase, string>> option = None with get, set
     member val ListOutcome: QueryOutcome<CaseSummaryPage> option = None with get, set
 

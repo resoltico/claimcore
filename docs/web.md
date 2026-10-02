@@ -178,6 +178,12 @@ attempt; pruned technical material cannot be exported.
 
 ## Session and delivery safety
 
+Core admission permits four active requests and sixteen queued requests by default, with oldest-first
+queueing; configured limits may tighten these bounds. Overflow returns typed HTTP 429 WEB_BUSY with
+executionPhase NOT_STARTED before core dispatch. This refuses this request, without settling an older
+uncertain operation. Rebuild host and clients with the matching generated contract after this wire
+refinement; old null-phase busy responses no longer match the current schema.
+
 An editor keeps navigation and logout unavailable until its explicit Back or accepted Return to case
 action. Language and format changes preserve the draft and review. Return uses the accepted receipt's
 reference, including OPEN, then rereads current state and available commands. Session snapshots are

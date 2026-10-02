@@ -61,7 +61,7 @@ module WebHostFailures =
             WebHostFailure.EndpointMissing,
             ("WEB_HOST_ENDPOINT_MISSING", "WEB_NOT_FOUND", 404, None, "Endpoint was not found.")
             WebHostFailure.Busy,
-            ("WEB_HOST_BUSY", "WEB_BUSY", 429, None, "Request admission is busy.")
+            ("WEB_HOST_BUSY", "WEB_BUSY", 429, Some "NOT_STARTED", "Request admission is busy.")
             WebHostFailure.ExportMetadataInvalid,
             ("WEB_HOST_EXPORT_METADATA_INVALID",
              "WEB_PROTOCOL",

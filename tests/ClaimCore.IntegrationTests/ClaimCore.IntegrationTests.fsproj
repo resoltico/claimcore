@@ -42,6 +42,7 @@
     <Compile Include="FixtureWitnessWriterStore.fs" />
     <Compile Include="ActorGrantTestSupport.fs" />
     <Compile Include="RuntimeAuditCadenceTests.fs" />
+    <Compile Include="RuntimeSchedulingTests.fs" />
     <Compile Include="WitnessAuditorTests.fs" />
     <Compile Include="RecoveryArtifactExportTestSupport.fs" />
     <Compile Include="RecoveryArtifactExportTests.fs" />
@@ -56,6 +57,7 @@
     <Compile Include="SettledAttemptExecutionTests.fs" />
     <Compile Include="AuthorityOperationFenceFixture.fs" />
     <Compile Include="AuthorityOperationFenceTests.fs" />
+    <Compile Include="WitnessedCapacityTests.fs" />
     <Compile Include="TechnicalWitnessPruneTests.fs" />
     <Compile Include="TechnicalWitnessTests.fs" />
     <Compile Include="DataAuditTests.fs" />
@@ -93,6 +95,7 @@
     <Compile Include="BackupCaptureEvidenceFixture.fs" />
     <Compile Include="BackupCaptureSessionTests.fs" />
     <Compile Include="CaseListAuthorityTests.fs" />
+    <Compile Include="CaseListCapacityTests.fs" />
     <Compile Include="ActorBoundReplayTests.fs" />
     <Compile Include="ActorBoundRecoveryTests.fs" />
     <Compile Include="RecoveryListAuthorityTests.fs" />

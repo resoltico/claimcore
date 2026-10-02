@@ -46,6 +46,7 @@
     <Compile Include="TestServerRouteInputs.fs" />
     <Compile Include="TestServerRouteTests.fs" />
     <Compile Include="TestServerAdmissionTests.fs" />
+    <Compile Include="QueuedCapacityTests.fs" />
     <Compile Include="TestServerSessionFailureTests.fs" />
     <Compile Include="TestServerCoreOutcomeTests.fs" />
     <Compile Include="TestServerRecoveryOutcomeTests.fs" />
