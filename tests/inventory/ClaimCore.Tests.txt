@@ -51,6 +51,8 @@ ClaimCore deterministic suite.Domain semantic descriptors.scalar metadata owners
 ClaimCore deterministic suite.Domain semantic descriptors.stable executable-rule inventory.cross-field and transition rules have unique stable identifiers
 ClaimCore deterministic suite.Domain semantic descriptors.text and date scalar descriptors.date descriptors define exact Gregorian input range
 ClaimCore deterministic suite.Domain semantic descriptors.text and date scalar descriptors.text descriptors own every text validation constraint
+ClaimCore deterministic suite.HTTP response deadlines.[CC-CLI-001] discovery deadline covers a suspended body after headers
+ClaimCore deterministic suite.HTTP response deadlines.[CC-CLI-001] token deadline covers a suspended body after headers
 ClaimCore deterministic suite.Hedgehog canonical records.all command shapes retain external meaning
 ClaimCore deterministic suite.Hedgehog canonical records.layout is insignificant but semantic changes affect identity
 ClaimCore deterministic suite.Hedgehog scalar boundaries.Gregorian date grammar and range
@@ -111,6 +113,9 @@ ClaimCore deterministic suite.authenticated CLI client foundation.private test t
 ClaimCore deterministic suite.authenticated CLI client foundation.service response validation rejects schema drift
 ClaimCore deterministic suite.authenticated CLI client foundation.token response parsing is bounded and redacted
 ClaimCore deterministic suite.authenticated CLI client foundation.unsafe origins and missing automation secret fail closed
+ClaimCore deterministic suite.bounded test processes.test process concurrently captures finite input and output
+ClaimCore deterministic suite.bounded test processes.test process deadline covers a blocked input pipe
+ClaimCore deterministic suite.bounded test processes.test process stops oversized output on either channel
 ClaimCore deterministic suite.business date assertions.correction assertions.[CC-DOM-002] a closed paid correction reaffirms accepted dates after rollback
 ClaimCore deterministic suite.business date assertions.correction assertions.[CC-DOM-002] a correction cannot hide a new future incident behind accepted dates
 ClaimCore deterministic suite.business date assertions.correction assertions.[CC-DOM-002] equivalent amount spelling remains a correction no-op after rollback

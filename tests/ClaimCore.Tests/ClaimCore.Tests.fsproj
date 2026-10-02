@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <Compile Include="../BoundedProcess.fs" Link="BoundedProcess.fs" />
     <Compile Include="../../eng/RejectionExamples.fs" Link="RejectionExamples.fs" />
     <Compile Include="../RepositoryRoot.fs" Link="RepositoryRoot.fs" />
     <Compile Include="../CommandExecution.fs" Link="CommandExecution.fs" />
@@ -67,7 +68,9 @@
     <Compile Include="OutcomeEmissionTests.fs" />
     <Compile Include="ConfigurationTests.fs" />
     <Compile Include="CliProcessTests.fs" />
+    <Compile Include="BoundedProcessTests.fs" />
     <Compile Include="RemoteClientTests.fs" />
+    <Compile Include="HttpResponseDeadlineTests.fs" />
     <Compile Include="IssuerIdentityTests.fs" />
     <Compile Include="RemoteInvocationTests.fs" />
     <Compile Include="ActorAuthorizationTests.fs" />

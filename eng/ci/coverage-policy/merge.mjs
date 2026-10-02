@@ -5,6 +5,7 @@ import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import { loadSuites } from "../suites/registry.mjs";
+import { productionAssemblies } from "./measurement.mjs";
 import { checkFloors, resolveInputs } from "./policy.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
@@ -42,6 +43,9 @@ export function mergeCoverage(inputRoot, outputRoot, summaryPath) {
       `-reports:${reports.join(";")}`,
       `-targetdir:${output}`,
       "-reporttypes:Cobertura;MarkdownSummaryGithub",
+      `-assemblyfilters:${productionAssemblies()
+        .map((name) => `+${name}`)
+        .join(";")}`,
       "-title:ClaimCore coverage",
     ],
     { cwd: root, stdio: "inherit" },

@@ -64,7 +64,7 @@ module RemoteServiceCall =
 
     let private readBounded maximum (response: HttpResponseMessage) cancelled =
         task {
-            do! response.Content.LoadIntoBufferAsync(int64 maximum)
+            do! response.Content.LoadIntoBufferAsync(int64 maximum, cancelled)
             let! bytes = response.Content.ReadAsByteArrayAsync(cancelled)
             return if bytes.Length <= maximum then Some bytes else None
         }
@@ -171,6 +171,8 @@ module RemoteServiceCall =
         (cancelled: CancellationToken)
         =
         task {
+            use deadline = HttpRequestDeadline.link access.Client cancelled
+            let cancelled = deadline.Token
             let identifier = body.Contract.Identifier
             let location = Uri(access.Configuration.Service, body.Contract.Path.TrimStart('/'))
             use request = new HttpRequestMessage(HttpMethod.Post, location)

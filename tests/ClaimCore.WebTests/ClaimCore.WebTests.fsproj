@@ -19,6 +19,7 @@
     <Compile Include="OidcLiveApi.fs" />
     <Compile Include="OidcLiveFixture.fs" />
     <Compile Include="AuthFoundationTests.fs" />
+    <Compile Include="OidcStartupTests.fs" />
     <Compile Include="PrincipalAdmissionTests.fs" />
     <Compile Include="AuthTrustTests.fs" />
     <Compile Include="AdmissionEdgeTests.fs" />

@@ -43,7 +43,11 @@ node eng/ci/publish/main.mjs build --output "${publish_root}" --no-build
 
 CLAIMCORE_PUBLISHED_CLI_DIR="${cli_dir}" \
   CLAIMCORE_ACCEPTANCE_RESULTS_DIR="${results}" \
-  bash eng/Run-PublishedWebE2E.sh "${web_dir}" "${database_dir}" chromium
+  dotnet tool run coverlet -- "${cli_dir}" --target bash \
+  --targetargs "eng/Run-PublishedWebE2E.sh ${web_dir} ${database_dir} chromium" \
+  --include '[ClaimCore.Cli]*' --exclude-assemblies-without-sources None --format cobertura \
+  --output "${results}/cli.coverage.cobertura.acceptance.xml" --verbosity minimal
+node eng/ci/coverage-policy/cli.mjs "${results}/cli.coverage.cobertura.acceptance.xml"
 node eng/ci/publish/main.mjs verify "${publish_root}"
 
 printf 'Published authenticated CLI-v4 call/session acceptance passed; evidence is under %s.\n' "${workspace}"

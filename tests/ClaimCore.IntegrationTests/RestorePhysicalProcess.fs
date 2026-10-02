@@ -15,19 +15,9 @@ let run command arguments =
     for value in arguments do
         info.ArgumentList.Add(value)
 
-    use child = new Process(StartInfo = info)
-
-    if not (child.Start()) then
-        failtest "Isolated restore process could not start"
-
-    let output = child.StandardOutput.ReadToEndAsync()
-    let diagnostics = child.StandardError.ReadToEndAsync()
-
-    if not (child.WaitForExit(240000)) then
-        child.Kill(true)
-        failtest "Isolated restore process timed out"
-
-    let diagnosticText = diagnostics.GetAwaiter().GetResult()
+    let result = ClaimCore.TestSupport.BoundedProcess.run info None 1_048_576 240_000
+    let utf8 = System.Text.UTF8Encoding(false, true)
+    let diagnosticText = utf8.GetString(result.StandardError)
 
     let safe =
         Regex.Match(
@@ -50,7 +40,7 @@ let run command arguments =
         else
             "restore-stage=unavailable"
 
-    child.ExitCode, output.GetAwaiter().GetResult().Trim(), stage
+    result.ExitCode, utf8.GetString(result.StandardOutput).Trim(), stage
 
 let privateScratch () =
     let temporary = Path.GetTempPath()

@@ -56,9 +56,12 @@ type internal RuntimeResources(primaryConnection: string, artifactKeyRingPath: s
 
     interface IDisposable with
         member _.Dispose() =
-            witness |> Option.iter (fun value -> (value :> IDisposable).Dispose())
-            suppression |> Option.iter (fun (disposable, _) -> disposable.Dispose())
-            (cursorProtection :> IDisposable).Dispose()
-            readBarrierDataSource.Dispose()
-            fullAuditDataSource.Dispose()
-            dataSource.Dispose()
+            seq {
+                yield! witness |> Option.map (fun value -> value :> IDisposable) |> Option.toList
+                yield! suppression |> Option.map fst |> Option.toList
+                yield cursorProtection :> IDisposable
+                yield readBarrierDataSource :> IDisposable
+                yield fullAuditDataSource :> IDisposable
+                yield dataSource :> IDisposable
+            }
+            |> RuntimeResourceCleanup.disposeAll

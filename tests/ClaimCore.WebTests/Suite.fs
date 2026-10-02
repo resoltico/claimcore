@@ -19,6 +19,7 @@ let tests =
             |> testSequenced
             OidcConfigurationTests.tests
             AuthFoundationTests.tests
+            OidcStartupTests.tests
             PrincipalAdmissionTests.tests
             AuthTrustTests.tests
             AdmissionEdgeTests.tests

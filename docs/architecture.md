@@ -138,7 +138,10 @@ disclosing provider detail.
 Once opened, the lifetime owns the ordinary primary source, separate bounded read-barrier and two-connection full-audit sources, and witness store with its bounded read-fence pool; every actor-bound `IActorClaimsCore` and Recovery call enters
 through an admission lease. Disposal closes new admission, including through previously retained
 facade references. It drains admitted work for a bounded 30 seconds; if a call is still active, the
-sources remain owned until the final lease ends, then close exactly once. An admitted query or
+sources remain owned until the final lease ends, then close exactly once. Scheduled-audit cancellation
+and completion belong to that cleanup owner, so admission closes before cleanup waits. Cleanup attempts
+all owned pools and custody even when an earlier resource disposal fails, reporting only a bounded
+failure category. An admitted query or
 mutation keeps its original typed result, including a definite receipt, rather than being relabeled
 as cancellation or failure by concurrent disposal.
 

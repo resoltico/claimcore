@@ -49,14 +49,29 @@ function merged({
   extra = "",
   prologue = "",
 } = {}) {
-  return `${prologue}<coverage line-rate="${line}" branch-rate="${branch}"><packages><package name="${name}" line-rate="${webLine}" branch-rate="${webBranch}"/>${extra}</packages></coverage>`;
+  /** @param {number} count @param {number} hit @param {number} branchCount @param {string} conditions */
+  const measured = (count, hit, branchCount, conditions) =>
+    Array.from(
+      { length: count },
+      (_, i) =>
+        `<line number="${i + 1}" hits="${i < hit ? 1 : 0}" branch="${i < branchCount}"${i < branchCount ? ` condition-coverage="${conditions}"` : ""}/>`,
+    ).join("");
+  /** @param {string} pkgName @param {string} lineRate @param {string} branchRate @param {string} lines */
+  const pkg = (pkgName, lineRate, branchRate, lines) =>
+    `<package name="${pkgName}" line-rate="${lineRate}" branch-rate="${branchRate}"><classes><class name="${pkgName}.Measured"><lines>${lines}</lines></class></classes></package>`;
+  const web = pkg(name, webLine, webBranch, measured(100, 80, 10, "70% (7/10)"));
+  const domain = pkg("ClaimCore.Domain", "0.5", "0.25", measured(200, 100, 50, "25% (1/4)"));
+  return `${prologue}<coverage line-rate="${line}" branch-rate="${branch}" lines-valid="300" lines-covered="180" branches-valid="300" branches-covered="120"><packages>${web}${domain}${extra}</packages></coverage>`;
 }
 
 /** @param {string} content */
 function floors(content) {
   const files = fixture();
   try {
-    return checkFloors(files.write("Cobertura.xml", content));
+    return checkFloors(files.write("Cobertura.xml", content), [
+      "ClaimCore.Web",
+      "ClaimCore.Domain",
+    ]);
   } finally {
     files.done();
   }
@@ -154,6 +169,10 @@ function completeInputs() {
   files.write("web/web.coverage.cobertura.202609090000002.xml");
   files.write("integration/integration-alpha.coverage.cobertura.202609090000003.xml");
   files.write("elsewhere/integration-beta.coverage.cobertura.202609090000004.xml");
+  files.write(
+    "acceptance/cli.coverage.cobertura.acceptance.xml",
+    measured.replaceAll("ClaimCore.Web", "ClaimCore.Cli"),
+  );
   for (const engine of ["chromium", "firefox", "webkit"]) {
     files.write(`browser/${engine}.coverage.cobertura.e2e.xml`, measured);
   }
@@ -163,7 +182,7 @@ function completeInputs() {
 test("inputs resolve every registered report wherever it was unpacked", () => {
   const files = completeInputs();
   try {
-    assert.equal(resolveInputs(files.root, suites).length, 7);
+    assert.equal(resolveInputs(files.root, suites).length, 8);
   } finally {
     files.done();
   }
@@ -222,5 +241,20 @@ test("inputs refuse a missing, duplicate or unexpected report", () => {
     } finally {
       files.done();
     }
+  }
+});
+
+test("claimed perfect coverage cannot replace measured production data", () => {
+  for (const content of [
+    '<coverage line-rate="1" branch-rate="1"><packages><package name="ClaimCore.Web" line-rate="1" branch-rate="1"/></packages></coverage>',
+    merged().replace('lines-covered="180"', 'lines-covered="301"'),
+    merged().replaceAll('hits="1"', 'hits="0"'),
+    merged().replace('number="2"', 'number="1"'),
+    merged({
+      extra: '<package name="ClaimCore.ContractGenerator" line-rate="1" branch-rate="1"/>',
+    }),
+    merged().replace('branches-valid="300"', 'branches-valid="100"'),
+  ]) {
+    assert.throws(() => floors(content));
   }
 });

@@ -80,7 +80,13 @@ type Runtime private (resources: RuntimeResources) =
 
     let admission =
         new RuntimeAdmission(
-            resources,
+            { new IDisposable with
+                member _.Dispose() =
+                    try
+                        (auditCadence :> IDisposable).Dispose()
+                    finally
+                        (resources :> IDisposable).Dispose()
+            },
             TimeSpan.FromSeconds 30.,
             safety.RequireCurrent,
             safety.AcquireReadFence,
@@ -256,6 +262,4 @@ type Runtime private (resources: RuntimeResources) =
         )
 
     interface IDisposable with
-        member _.Dispose() =
-            (auditCadence :> IDisposable).Dispose()
-            (admission :> IDisposable).Dispose()
+        member _.Dispose() = (admission :> IDisposable).Dispose()

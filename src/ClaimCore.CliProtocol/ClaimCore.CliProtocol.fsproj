@@ -7,6 +7,7 @@
     <Compile Include="CliRemoteInvocation.fs" />
     <Compile Include="RemoteConfiguration.fs" />
     <Compile Include="RemoteTls.fs" />
+    <Compile Include="HttpRequestDeadline.fs" />
     <Compile Include="OidcClient.fs" />
     <Compile Include="LoopbackCallback.fs" />
     <Compile Include="InteractiveAuthorization.fs" />
