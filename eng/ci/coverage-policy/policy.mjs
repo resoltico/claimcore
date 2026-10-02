@@ -86,24 +86,25 @@ export function checkFloors(path, expected = productionAssemblies()) {
 
 /** @param {string | undefined} text */
 function wholeNumber(text) {
-  return text !== undefined && /^[0-9]+$/u.test(text) ? Number(text) : Number.NaN;
+  const value = text !== undefined && /^[0-9]+$/u.test(text) ? Number(text) : Number.NaN;
+  return Number.isSafeInteger(value) ? value : Number.NaN;
 }
 
 /**
- * The ClaimCore.Web branches a package's lines actually measured.
- * @param {import("../suites/xml.mjs").XmlElement} web
+ * The branches a package's lines actually measured.
+ * @param {import("../suites/xml.mjs").XmlElement} pkg
  * @returns {number}
  */
-function measuredBranches(web) {
+function measuredBranches(pkg) {
   let measured = 0;
-  for (const line of descendantsNamed(web, "line")) {
+  for (const line of descendantsNamed(pkg, "line")) {
     if (line.attributes["branch"]?.toLowerCase() !== "true") {
       continue;
     }
     const match = /\(([0-9]+)\/([0-9]+)\)$/u.exec(line.attributes["condition-coverage"] ?? "");
-    const [coveredHere, validHere] = [Number(match?.[1]), Number(match?.[2])];
-    if (!match || validHere < 1 || coveredHere > validHere) {
-      throw new Error("Browser coverage has invalid ClaimCore.Web branch evidence.");
+    const [coveredHere, validHere] = [wholeNumber(match?.[1]), wholeNumber(match?.[2])];
+    if (!match || !(coveredHere >= 0 && validHere >= 1 && coveredHere <= validHere)) {
+      throw new Error("Coverage has invalid measured production branch evidence.");
     }
     measured += coveredHere;
   }
@@ -111,20 +112,22 @@ function measuredBranches(web) {
 }
 
 /**
- * The one ClaimCore.Web package, whose branch rate must be a real measurement.
+ * The named production package, whose branch rate must be a real measurement.
  * @param {import("../suites/xml.mjs").XmlElement} root
  * @param {string} name
  * @returns {import("../suites/xml.mjs").XmlElement}
  */
 function measuredPackage(root, name) {
-  const web = descendantsNamed(root, "package").filter((item) => item.attributes["name"] === name);
-  const [only] = web;
-  if (web.length !== 1 || !only) {
-    throw new Error("Browser coverage must contain the ClaimCore.Web production package.");
+  const packages = descendantsNamed(root, "package").filter(
+    (item) => item.attributes["name"] === name,
+  );
+  const [only] = packages;
+  if (packages.length !== 1 || !only) {
+    throw new Error(`Coverage must contain exactly one ${name} production package.`);
   }
   const branchRate = Number(only.attributes["branch-rate"]);
   if (!(Number.isFinite(branchRate) && branchRate > 0 && branchRate <= 1)) {
-    throw new Error("Browser coverage must measure ClaimCore.Web production branches.");
+    throw new Error(`Coverage must measure ${name} production branches.`);
   }
   return only;
 }

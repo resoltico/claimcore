@@ -3,7 +3,13 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import test from "node:test";
-import { checkBrowserCoverage, checkFloors, measuredPrefixes, resolveInputs } from "./policy.mjs";
+import {
+  checkBrowserCoverage,
+  checkCliCoverage,
+  checkFloors,
+  measuredPrefixes,
+  resolveInputs,
+} from "./policy.mjs";
 
 /** @type {import("../suites/registry.mjs").Suite[]} */
 const suites = [
@@ -150,6 +156,23 @@ test("browser coverage must measure ClaimCore.Web branches", () => {
   ];
   for (const content of refused) {
     assert.throws(() => browserVerdict(content), /./u, content);
+  }
+});
+
+test("published CLI coverage requires its own finite measured branches", () => {
+  const files = fixture();
+  const valid = measured.replaceAll("ClaimCore.Web", "ClaimCore.Cli");
+  try {
+    checkCliCoverage(files.write("cli.xml", valid));
+    for (const content of [
+      measured,
+      valid.replace("50% (1/2)", "0% (0/2)"),
+      valid.replace("50% (1/2)", "50% (99999999999999999999/999999999999999999999)"),
+    ]) {
+      assert.throws(() => checkCliCoverage(files.write("cli.xml", content)));
+    }
+  } finally {
+    files.done();
   }
 });
 
