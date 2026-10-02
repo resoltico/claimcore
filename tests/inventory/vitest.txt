@@ -1,6 +1,7 @@
 aborts a stale page load before appending a newer cursor page
 aborts observation on unmount without delivering a late receipt
 accepts the matching generated definition fingerprint
+admits definite session refusal and conservative export failure, rejecting contradictory phases
 allocates a new ID when editing a definitely refused prepared request
 announces unsaved preferences in the chosen language without blocking the switch
 associates optional field errors and supports password text input
@@ -21,6 +22,7 @@ copies safe values and provides an accessible fallback when clipboard access is 
 discards an aborted definition response when session epoch changes
 discards an aborted keyed read instead of replacing its newer response
 discards reverse-order recovery inspection responses and cancels closed detail reads
+distinguishes cancellation boundaries from generic incomplete results in every language
 does not interpret a local delivery notice as a definite server refusal
 does not let an older refresh resurrect an authenticated session after logout
 does not rebase a frozen preparation after language switching and an external revision change
@@ -105,6 +107,7 @@ preserves authored content, DOM selection and operation identity across language
 preserves core recovery direction in generic and nested mutation faults
 preserves diagnostics from direct read refusals and nested recovery execution faults without server prose
 preserves every permitted amount digit and trailing zero in independent display locales
+preserves exact recovery guidance when dismissal refuses an already-started submission
 preserves only exact identity and recovery direction after uncertain export issuance
 refuses an export action when inspected recovery evidence has no exact digest
 refuses corrupt, oversized and unknown preference records without retaining arbitrary data

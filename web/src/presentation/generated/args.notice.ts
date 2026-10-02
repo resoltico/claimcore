@@ -21,4 +21,7 @@ export type NoticeArgs = {
   "notice.inspectBeforeAction": Readonly<Record<string, never>>;
   "notice.keptForRecovery": Readonly<Record<string, never>>;
   "notice.unknownDiagnostic": Readonly<Record<string, never>>;
+  "notice.cancelled": Readonly<Record<string, never>>;
+  "notice.cancelledBeforeAdmission": Readonly<Record<string, never>>;
+  "notice.cancelledBeforeAttempt": Readonly<Record<string, never>>;
 };

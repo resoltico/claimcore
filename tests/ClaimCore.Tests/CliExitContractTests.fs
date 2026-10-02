@@ -209,7 +209,69 @@ let private nestedRecoveryFaults =
                     expected
                     "Typed core direction governs delivery knowledge")
 
+let private hostKnowledge =
+    testCase
+        "[CC-CLI-003] typed host phases preserve read and mutation delivery knowledge"
+        (fun () ->
+            let cases =
+                [
+                    WebHostFailure.ConnectionRejected, 3
+                    WebHostFailure.OriginRejected, 3
+                    WebHostFailure.MediaTypeRejected, 3
+                    WebHostFailure.BodyTooLarge, 3
+                    WebHostFailure.SessionRejected, 3
+                    WebHostFailure.SessionForbidden, 3
+                    WebHostFailure.MethodRejected, 3
+                    WebHostFailure.AntiforgeryRejected, 3
+                    WebHostFailure.EndpointMissing, 3
+                    WebHostFailure.Busy, 3
+                    WebHostFailure.BeforeDispatchFailed, 3
+                    WebHostFailure.DispatchUnconfirmed, 4
+                    WebHostFailure.CompletedResponseFailed, 4
+                    WebHostFailure.ExportMetadataInvalid, 4
+                ]
+
+            for reason, expected in cases do
+                use document = JsonDocument.Parse(WebWireCodec.hostFailure reason)
+
+                for endpoint in [ "command.execute"; "recovery.export"; "unclassified.future" ] do
+                    Expect.equal
+                        (CliRemoteWireCodec.hostFailure endpoint document.RootElement).ExitCode
+                        expected
+                        "Only known non-dispatch permits definite mutation delivery failure"
+
+                Expect.equal
+                    (CliRemoteWireCodec.hostFailure "case.get" document.RootElement).ExitCode
+                    3
+                    "Read-only dispatch has no mutation uncertainty"
+
+            for reason in HttpInputProblems.all do
+                use document =
+                    JsonDocument.Parse(WebWireCodec.hostFailure (WebHostFailure.Input reason))
+
+                Expect.equal
+                    (document.RootElement.GetProperty("executionPhase").GetString())
+                    "NOT_STARTED"
+                    "Input refusal precedes dispatch")
+
+let private refusalKnowledge =
+    testCase "[CC-CLI-003] a refused dismissal preserves earlier submission uncertainty" (fun () ->
+        for reason, expected in
+            [
+                RecoveryRejection.SubmissionAlreadyStarted, 4
+                RecoveryRejection.DismissalConfirmationRequired, 2
+            ] do
+            let outcome = RecoveryDismissOutcome.DismissRefused(None, reason)
+            let reply = WebWireCodec.recoveryDismiss outcome |> remote "recovery.dismiss"
+            Expect.equal reply.ExitCode expected "Refusal does not settle earlier attempts")
+
 let tests =
     testList
         "CLI-v4 service exit contract"
-        [ lookupAbsence; prepareReplayWire; nestedRecoveryFaults ]
+        [
+            lookupAbsence
+            prepareReplayWire
+            nestedRecoveryFaults
+            hostKnowledge
+            refusalKnowledge
+        ]

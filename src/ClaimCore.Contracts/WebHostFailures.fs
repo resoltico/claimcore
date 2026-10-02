@@ -26,28 +26,32 @@ module WebHostFailures =
             ("WEB_HOST_CONNECTION_REJECTED",
              "WEB_CONNECTION_REJECTED",
              403,
-             None,
+             Some "NOT_STARTED",
              "Connection was refused.")
             WebHostFailure.OriginRejected,
             ("WEB_HOST_ORIGIN_REJECTED",
              "WEB_ORIGIN_REJECTED",
              403,
-             None,
+             Some "NOT_STARTED",
              "Request origin was refused.")
             WebHostFailure.MediaTypeRejected,
             ("WEB_HOST_MEDIA_TYPE_REJECTED",
              "WEB_MEDIA_TYPE",
              415,
-             None,
+             Some "NOT_STARTED",
              "The endpoint media type was refused.")
             WebHostFailure.BodyTooLarge,
             ("WEB_HOST_BODY_TOO_LARGE",
              "WEB_BODY_TOO_LARGE",
              413,
-             None,
+             Some "NOT_STARTED",
              "Request body is too large.")
             WebHostFailure.SessionRejected,
-            ("WEB_HOST_SESSION_REJECTED", "WEB_SESSION_REJECTED", 401, None, "Session was refused.")
+            ("WEB_HOST_SESSION_REJECTED",
+             "WEB_SESSION_REJECTED",
+             401,
+             Some "NOT_STARTED",
+             "Session was refused.")
         ]
 
     let private group1 =
@@ -56,10 +60,14 @@ module WebHostFailures =
             ("WEB_HOST_ANTIFORGERY_REJECTED",
              "WEB_CSRF_REJECTED",
              403,
-             None,
+             Some "NOT_STARTED",
              "Request verification was refused.")
             WebHostFailure.EndpointMissing,
-            ("WEB_HOST_ENDPOINT_MISSING", "WEB_NOT_FOUND", 404, None, "Endpoint was not found.")
+            ("WEB_HOST_ENDPOINT_MISSING",
+             "WEB_NOT_FOUND",
+             404,
+             Some "NOT_STARTED",
+             "Endpoint was not found.")
             WebHostFailure.Busy,
             ("WEB_HOST_BUSY", "WEB_BUSY", 429, Some "NOT_STARTED", "Request admission is busy.")
             WebHostFailure.ExportMetadataInvalid,
@@ -98,7 +106,7 @@ module WebHostFailures =
             ("WEB_HOST_SESSION_FORBIDDEN",
              "WEB_SESSION_REJECTED",
              403,
-             None,
+             Some "NOT_STARTED",
              "Session access was refused.")
             WebHostFailure.MethodRejected,
             ("WEB_HOST_METHOD_REJECTED",
@@ -117,13 +125,17 @@ module WebHostFailures =
     let private policy reason =
         match reason with
         | WebHostFailure.Input problem ->
-            let status, code, phase =
+            let status, code =
                 if problem = HttpInputProblem.BodyTooLarge then
-                    413, "WEB_BODY_TOO_LARGE", None
+                    413, "WEB_BODY_TOO_LARGE"
                 else
-                    400, "WEB_INVALID_REQUEST", Some "NOT_STARTED"
+                    400, "WEB_INVALID_REQUEST"
 
-            HttpInputProblems.token problem, code, status, phase, HttpInputProblems.render problem
+            HttpInputProblems.token problem,
+            code,
+            status,
+            Some "NOT_STARTED",
+            HttpInputProblems.render problem
         | _ -> entries |> List.find (fst >> (=) reason) |> snd
 
     let token reason =

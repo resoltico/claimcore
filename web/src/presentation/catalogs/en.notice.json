@@ -19,5 +19,8 @@
   "notice.inspectBeforeRetry": "Inspect Recovery before retrying this exact operation.",
   "notice.inspectBeforeAction": "Inspect Recovery before taking another action.",
   "notice.keptForRecovery": "Prepared request is retained. Use Recovery to inspect, resolve, or dismiss it.",
-  "notice.unknownDiagnostic": "An explanation is unavailable. Follow the reported outcome and recovery guidance; do not infer permission to retry."
+  "notice.unknownDiagnostic": "An explanation is unavailable. Follow the reported outcome and recovery guidance; do not infer permission to retry.",
+  "notice.cancelled": "This request was cancelled. Earlier attempts are not settled by this cancellation.",
+  "notice.cancelledBeforeAdmission": "This request was cancelled before admission. Earlier attempts are not settled by this cancellation.",
+  "notice.cancelledBeforeAttempt": "This request was cancelled before a new attempt. Inspect exact evidence for any earlier unresolved attempts."
 }

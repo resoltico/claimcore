@@ -20,7 +20,9 @@ ClaimCore deterministic suite.CLI v4 protocol.CLI v4 framing.timeout and strict 
 ClaimCore deterministic suite.CLI v4 protocol.CLI v4 framing.timeout and strict parser rejection.unknown and duplicate property paths never echo authored key names
 ClaimCore deterministic suite.CLI v4 protocol.CLI v4 generated service contract.endpoint implementation inventory is exactly the generated CLI catalog
 ClaimCore deterministic suite.CLI v4 protocol.CLI v4 generated service contract.generated schemas are strict JSON documents with the v4 declaration
+ClaimCore deterministic suite.CLI-v4 service exit contract.[CC-CLI-003] a refused dismissal preserves earlier submission uncertainty
 ClaimCore deterministic suite.CLI-v4 service exit contract.[CC-CLI-003] nested faults preserve earlier exact-operation uncertainty
+ClaimCore deterministic suite.CLI-v4 service exit contract.[CC-CLI-003] typed host phases preserve read and mutation delivery knowledge
 ClaimCore deterministic suite.CLI-v4 service exit contract.[CC-REC-001] exact prepare replay wires observed acceptance and retained recovery distinctly
 ClaimCore deterministic suite.CLI-v4 service exit contract.recovery lookup absence exits two while an empty recovery page succeeds
 ClaimCore deterministic suite.Case disposition.[CC-LIFE-001] duplicate, self, expired and stale approvals fail closed

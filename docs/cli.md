@@ -145,7 +145,7 @@ An exact prepare or execute retry after acceptance may return `OBSERVED_ACCEPTED
 | Exit | Meaning |
 |---:|---|
 | 0 | Successful endpoint result, including prepared, accepted, and observed-accepted work. |
-| 2 | Protocol failure, business rejection, conflict, not found, or refused recovery action. |
+| 2 | Protocol failure, business rejection, conflict, not found, or refused recovery action without `RECOVER_EXACT` guidance. |
 | 3 | Configuration/authentication, private-file, invalid service-reply, or definite service failure. |
 | 4 | Mutation, settlement, or result delivery remains uncertain. |
 | 64 | Unsupported CLI invocation. |
@@ -170,9 +170,9 @@ Discovery, token acquisition and service response reads each carry the client's 
 whole-request deadline through headers and bounded content. A timeout after mutation dispatch retains
 unconfirmed delivery; it never means that server execution rolled back.
 
-Core RECOVER_EXACT direction also exits 4 when nested in a prepare fault or a
-FAILED_BEFORE_ATTEMPT response. That response can describe an earlier uncertain operation; refusing
-a new attempt does not settle the earlier one. Preserve its exact identity and inspect before retry.
+Core RECOVER_EXACT direction also exits 4 inside a fault or recovery refusal, including dismissal
+refused because submission already started and a FAILED_BEFORE_ATTEMPT response. That response can
+describe an earlier uncertain operation; refusing a new attempt does not settle the earlier one. Preserve its exact identity and inspect before retry.
 
 ## Canonical request identity and recovery
 

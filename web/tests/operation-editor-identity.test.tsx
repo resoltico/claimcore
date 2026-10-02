@@ -97,7 +97,9 @@ it("allocates a new ID when editing a definitely refused prepared request", asyn
     await screen.findByRole("checkbox", { name: "I will submit this exact prepared request." }),
   );
   await user.click(screen.getByRole("button", { name: "Submit exact request" }));
-  await screen.findByText("This exact operation was durably revoked before execution.");
+  await screen.findByText(
+    "Authority for future execution of this exact operation was durably revoked. Earlier attempt uncertainty is unchanged; inspect its exact evidence.",
+  );
   const claimant = screen.getByLabelText("Claimant name", { exact: true });
   await user.type(claimant, "Synthetic B");
   await user.click(screen.getByRole("button", { name: "Prepare exact request" }));

@@ -6,6 +6,9 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Fixed
 
+- Host admission/input refusals consistently declare `NOT_STARTED`; older null-phase bodies are rejected, so deploy matching host and client artifacts. CLI host failures for reads now exit 3, while completed recovery exports with invalid attachment metadata exit 4 and require exact custody evidence reconciliation.
+- Browser and CLI preserve `RECOVER_EXACT` guidance in recovery refusals, including dismissal after submission started. Revocation and attempt-limit explanations preserve earlier uncertainty and require exact evidence review before new work. Browser cancellation notices distinguish admission and attempt boundaries without settling prior attempts.
+
 - Failed runtime construction closes acquired pools, cursor custody and witness resources; readiness checks precede audit-worker startup. Deferred cleanup records bounded failure knowledge without retaining unobserved provider exceptions or changing admitted outcomes.
 - Web configuration and startup close acquired certificates on refusal and own the built application through route setup and shutdown.
 - CLI SIGINT exits while blocked on process streams. Possible mutation dispatch or incomplete mutation output now exits 4, including sessions that previously could exit 130 after an uncertain mutation. Scripts must preserve the submitted identity and reconcile exact service evidence; interruption may leave no complete response frame. Pre-dispatch interruption exits 130 and cannot later dispatch work.

@@ -153,7 +153,7 @@ const definiteSubmitRejection = async (): Promise<void> => {
   await openReview(user);
   await selectConfirmedSubmit(user);
   expect(await screen.findByRole("alert")).toHaveTextContent(
-    "This exact operation was durably revoked before execution.",
+    "Authority for future execution of this exact operation was durably revoked. Earlier attempt uncertainty is unchanged; inspect its exact evidence.",
   );
 };
 

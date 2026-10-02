@@ -162,7 +162,7 @@ it("fails closed when the server definition is rejected or has a different Web f
         status: 401,
         diagnostic: { id: "WEB_HOST_SESSION_REJECTED", parameters: {} },
         message: "No",
-        executionPhase: null,
+        executionPhase: "NOT_STARTED",
       }),
       { status: 401, headers: { "content-type": "application/json" } },
     ),

@@ -130,7 +130,7 @@ it("uses generated v3 paths and typed endpoint outcomes", async () => {
         status: 401,
         diagnostic: { id: "WEB_HOST_SESSION_REJECTED", parameters: {} },
         message: "No",
-        executionPhase: null,
+        executionPhase: "NOT_STARTED",
       },
       401,
     ),
@@ -138,7 +138,7 @@ it("uses generated v3 paths and typed endpoint outcomes", async () => {
   const rejected = await v3.get("CASE-1", "token");
   expect(fetch.mock.calls[1]?.[0]).toBe("/api/v3/cases/get");
   expect(rejected).toMatchObject({ kind: "hostFailure", status: 401 });
-  expect(isMutationUncertain(rejected)).toBe(true);
+  expect(isMutationUncertain(rejected)).toBe(false);
   expect(resultNotice(rejected)).toEqual({
     kind: "diagnostic",
     diagnostic: { id: "WEB_HOST_SESSION_REJECTED", parameters: {} },

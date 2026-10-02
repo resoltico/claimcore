@@ -1,6 +1,7 @@
 module ClaimCore.WebTests.TestServerAdmissionTests
 
 open System.Net.Http
+open System.Text.Json
 open Expecto
 open ClaimCore.Contracts
 open ClaimCore.WebTests.TestServerFixture
@@ -156,6 +157,12 @@ let private malformedExportStatus () =
         )
 
     failure invalidAttachment 500 "WEB_PROTOCOL"
+    use document = JsonDocument.Parse invalidAttachment.Body
+
+    Expect.equal
+        (CliRemoteWireCodec.hostFailure "recovery.export" document.RootElement).ExitCode
+        4
+        "Completed export with invalid metadata cannot prove failed issuance"
 
 let private observedFailureStatuses () =
     use host = Host.Start(loginPermits = 1)

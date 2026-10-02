@@ -191,13 +191,13 @@
   "diagnostic.OPERATION_REVOKED": [
     {
       "type": 0,
-      "value": "Šīs precīzās operācijas tiesības neatgriezeniski atsauktas pirms izpildes."
+      "value": "Šīs precīzās operācijas turpmākās izpildes tiesības ir neatgriezeniski atsauktas. Agrāko mēģinājumu nenoteiktība nav mainījusies; pārbaudiet precīzos pierādījumus."
     }
   ],
   "diagnostic.OPERATION_RECOVERY_ATTEMPT_LIMIT": [
     {
       "type": 0,
-      "value": "Sasniegta operācijas atkopšanas mēģinājumu robeža. Nolasiet pašreizējo lietu un veidojiet jaunu operāciju tikai pēc pārskatīšanas."
+      "value": "Sasniegta operācijas atkopšanas mēģinājumu robeža. Pirms jauna darba pārbaudiet precīzos pierādījumus un noskaidrojiet neatrisināto mēģinājumu iznākumu."
     }
   ],
   "diagnostic.ACCESS_RESOURCE_UNAVAILABLE": [{ "type": 0, "value": "Šis resurss nav pieejams." }],
@@ -340,13 +340,13 @@
   "diagnostic.RECOVERY_OPERATION_REVOKED": [
     {
       "type": 0,
-      "value": "Šīs precīzās operācijas tiesības neatgriezeniski atsauktas pirms izpildes."
+      "value": "Šīs precīzās operācijas turpmākās izpildes tiesības ir neatgriezeniski atsauktas. Agrāko mēģinājumu nenoteiktība nav mainījusies; pārbaudiet precīzos pierādījumus."
     }
   ],
   "diagnostic.RECOVERY_ATTEMPT_LIMIT_REACHED": [
     {
       "type": 0,
-      "value": "Sasniegta operācijas atkopšanas mēģinājumu robeža. Pirms jauna darba nolasiet pašreizējo lietu."
+      "value": "Sasniegta operācijas atkopšanas mēģinājumu robeža. Pirms jauna darba pārbaudiet precīzos pierādījumus un noskaidrojiet neatrisināto mēģinājumu iznākumu."
     }
   ],
   "diagnostic.WEB_HOST_CONNECTION_REJECTED": [
@@ -629,6 +629,24 @@
     {
       "type": 0,
       "value": "Skaidrojums nav pieejams. Ievērojiet paziņoto rezultātu un atkopšanas norādījumus; neuzskatiet to par atļauju atkārtot."
+    }
+  ],
+  "notice.cancelled": [
+    {
+      "type": 0,
+      "value": "Šis pieprasījums tika atcelts. Atcelšana nenoskaidro agrāko mēģinājumu iznākumu."
+    }
+  ],
+  "notice.cancelledBeforeAdmission": [
+    {
+      "type": 0,
+      "value": "Šis pieprasījums tika atcelts pirms pieņemšanas apstrādei. Atcelšana nenoskaidro agrāko mēģinājumu iznākumu."
+    }
+  ],
+  "notice.cancelledBeforeAttempt": [
+    {
+      "type": 0,
+      "value": "Šis pieprasījums tika atcelts pirms jauna mēģinājuma. Pārbaudiet precīzos pierādījumus par agrākiem neatrisinātiem mēģinājumiem."
     }
   ],
   "token.OPENED": [{ "type": 0, "value": "ATVĒRTA" }],

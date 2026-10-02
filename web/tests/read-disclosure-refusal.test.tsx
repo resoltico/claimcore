@@ -53,7 +53,7 @@ const sessionRejected: ApiResult<ListResponse> = {
     status: 401,
     message: "Translated text is not the policy",
     diagnostic: { id: "WEB_HOST_SESSION_REJECTED", parameters: {} },
-    executionPhase: null,
+    executionPhase: "NOT_STARTED",
   },
 };
 

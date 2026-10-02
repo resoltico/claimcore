@@ -48,9 +48,9 @@ module RecoveryRejectionPresentation =
     let private group3 =
         [
             RecoveryRejection.OperationRevoked,
-            "This exact operation was durably revoked before execution."
+            "Authority for future execution of this exact operation was durably revoked. Earlier attempt uncertainty is unchanged; inspect its exact evidence."
             RecoveryRejection.AttemptLimitReached,
-            "This operation has reached its recovery attempt limit. Read the current case before authoring new work."
+            "This operation has reached its recovery attempt limit. Inspect its exact evidence and reconcile unresolved attempts before authoring new work."
             RecoveryRejection.ResourceUnavailable, "The requested resource is unavailable."
         ]
 

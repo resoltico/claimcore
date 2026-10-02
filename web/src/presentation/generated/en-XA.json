@@ -395,7 +395,7 @@
     { "type": 0, "value": "⟦" },
     {
       "type": 0,
-      "value": "Thïïs ëëxààct ööpëërààtïïöön wààs düürààbly rëëvöökëëd bëëföörëë ëëxëëcüütïïöön."
+      "value": "ÀÀüüthöörïïty föör füütüürëë ëëxëëcüütïïöön ööf thïïs ëëxààct ööpëërààtïïöön wààs düürààbly rëëvöökëëd. ËËààrlïïëër ààttëëmpt üüncëërtààïïnty ïïs üünchààngëëd; ïïnspëëct ïïts ëëxààct ëëvïïdëëncëë."
     },
     { "type": 0, "value": "⟧" }
   ],
@@ -403,7 +403,7 @@
     { "type": 0, "value": "⟦" },
     {
       "type": 0,
-      "value": "Thïïs ööpëërààtïïöön hààs rëëààchëëd ïïts rëëcöövëëry ààttëëmpt lïïmïït. Rëëààd thëë cüürrëënt cààsëë àànd ààüüthöör àà nëëw ööpëërààtïïöön öönly ààftëër rëëvïïëëw."
+      "value": "Thïïs ööpëërààtïïöön hààs rëëààchëëd ïïts rëëcöövëëry ààttëëmpt lïïmïït. ÏÏnspëëct ïïts ëëxààct ëëvïïdëëncëë àànd rëëcööncïïlëë üünrëësöölvëëd ààttëëmpts bëëföörëë ààüüthöörïïng nëëw wöörk."
     },
     { "type": 0, "value": "⟧" }
   ],
@@ -685,7 +685,7 @@
     { "type": 0, "value": "⟦" },
     {
       "type": 0,
-      "value": "Thïïs ëëxààct ööpëërààtïïöön wààs düürààbly rëëvöökëëd bëëföörëë ëëxëëcüütïïöön."
+      "value": "ÀÀüüthöörïïty föör füütüürëë ëëxëëcüütïïöön ööf thïïs ëëxààct ööpëërààtïïöön wààs düürààbly rëëvöökëëd. ËËààrlïïëër ààttëëmpt üüncëërtààïïnty ïïs üünchààngëëd; ïïnspëëct ïïts ëëxààct ëëvïïdëëncëë."
     },
     { "type": 0, "value": "⟧" }
   ],
@@ -693,7 +693,7 @@
     { "type": 0, "value": "⟦" },
     {
       "type": 0,
-      "value": "Thïïs ööpëërààtïïöön hààs rëëààchëëd ïïts rëëcöövëëry ààttëëmpt lïïmïït. Rëëààd thëë cüürrëënt cààsëë bëëföörëë ààüüthöörïïng nëëw wöörk."
+      "value": "Thïïs ööpëërààtïïöön hààs rëëààchëëd ïïts rëëcöövëëry ààttëëmpt lïïmïït. ÏÏnspëëct ïïts ëëxààct ëëvïïdëëncëë àànd rëëcööncïïlëë üünrëësöölvëëd ààttëëmpts bëëföörëë ààüüthöörïïng nëëw wöörk."
     },
     { "type": 0, "value": "⟧" }
   ],
@@ -1244,6 +1244,30 @@
     {
       "type": 0,
       "value": "ÀÀn ëëxplàànààtïïöön ïïs üünààvààïïlààblëë. Fööllööw thëë rëëpöörtëëd ööüütcöömëë àànd rëëcöövëëry güüïïdààncëë; döö nööt ïïnfëër pëërmïïssïïöön töö rëëtry."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "notice.cancelled": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thïïs rëëqüüëëst wààs cààncëëllëëd. ËËààrlïïëër ààttëëmpts ààrëë nööt sëëttlëëd by thïïs cààncëëllààtïïöön."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "notice.cancelledBeforeAdmission": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thïïs rëëqüüëëst wààs cààncëëllëëd bëëföörëë ààdmïïssïïöön. ËËààrlïïëër ààttëëmpts ààrëë nööt sëëttlëëd by thïïs cààncëëllààtïïöön."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "notice.cancelledBeforeAttempt": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thïïs rëëqüüëëst wààs cààncëëllëëd bëëföörëë àà nëëw ààttëëmpt. ÏÏnspëëct ëëxààct ëëvïïdëëncëë föör ààny ëëààrlïïëër üünrëësöölvëëd ààttëëmpts."
     },
     { "type": 0, "value": "⟧" }
   ],
