@@ -8,7 +8,6 @@ open System.Security.Cryptography
 open System.Security.Cryptography.X509Certificates
 open System.Text.Json
 open System.Threading
-open System.Threading.RateLimiting
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Authentication
 open Microsoft.AspNetCore.Authentication.OpenIdConnect
@@ -17,7 +16,6 @@ open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.DataProtection
 open Microsoft.AspNetCore.Hosting
 open Microsoft.AspNetCore.Http
-open Microsoft.AspNetCore.RateLimiting
 open Microsoft.AspNetCore.TestHost
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Logging
@@ -124,15 +122,7 @@ let private configureHostServices
     services.AddAntiforgery(fun options -> options.HeaderName <- "X-ClaimCore-Antiforgery")
     |> ignore
 
-    services.AddRateLimiter(fun options ->
-        options.AddConcurrencyLimiter(
-            "core",
-            fun limiter ->
-                limiter.PermitLimit <- 4
-                limiter.QueueLimit <- 0
-        )
-        |> ignore)
-    |> ignore
+    RateLimits.configure (webConfiguration configuration root).Admission services
 
 let private startHost configuration (root: X509Certificate2) =
     let builder = WebApplication.CreateBuilder()

@@ -47,3 +47,12 @@ nonempty recheck input as diagnostic configuration; retain normal required and e
 Keep token parsing in the F# harness rather than duplicating it in JavaScript. Prove wiring with a
 real runner subprocess that refuses recheck mode before restore or evidence creation. Do not change
 the native diagnostic replay capability or weaken inventory/report validation.
+
+The limiter experiment passed all 138 Web tests with Program's core permits increased by one.
+The overload assertion therefore protected a test-owned copy. Share the existing registration as
+an internal Web module through the already declared WebTests friendship; add no friend or public API.
+Preserve production rejection task semantics, no-store headers, policy names, defaults, queue order
+and middleware position. Fixture configuration remains explicit and supplies independent expectations;
+do not generate an extra certificate merely to obtain its limits. The OIDC fixture's declared queue
+limit must agree with its registration. After sharing, inject the same off-by-one into the common
+mechanism and require the existing overload test to fail, then restore and run full verification.

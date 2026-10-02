@@ -1,17 +1,11 @@
 module ClaimCore.WebTests.TestServerServices
 
-open ClaimCore.Contracts
 open System
 open System.Security.Cryptography
 open System.Security.Cryptography.X509Certificates
-open System.Threading
-open System.Threading.RateLimiting
-open System.Threading.Tasks
 open Microsoft.AspNetCore.Authentication.Cookies
-open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.DataProtection
 open Microsoft.AspNetCore.Http
-open Microsoft.AspNetCore.RateLimiting
 open Microsoft.Extensions.DependencyInjection
 open ClaimCore.Web
 
@@ -34,6 +28,14 @@ let private certificate () =
 
     request.CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1.), DateTimeOffset.UtcNow.AddDays(1.))
 
+let private admissionLimits loginPermits =
+    {
+        MaximumJsonBytes = 65536
+        CorePermitLimit = 4
+        CoreQueueLimit = 16
+        LoginPermitLimit = loginPermits
+    }
+
 let configureServices loginPermits (services: IServiceCollection) =
     services.AddDataProtection().UseEphemeralDataProtectionProvider() |> ignore
 
@@ -52,35 +54,7 @@ let configureServices loginPermits (services: IServiceCollection) =
 
     services.AddAuthorization() |> ignore
 
-    services.AddRateLimiter(fun options ->
-        options.RejectionStatusCode <- StatusCodes.Status429TooManyRequests
-
-        options.OnRejected <-
-            Func<OnRejectedContext, CancellationToken, ValueTask>(fun rejected _ ->
-                HttpHeaders.noStore rejected.HttpContext
-
-                ValueTask(
-                    (WebWire.hostFailure WebHostFailure.Busy).ExecuteAsync(rejected.HttpContext)
-                ))
-
-        options.AddConcurrencyLimiter(
-            "core",
-            fun limiter ->
-                limiter.PermitLimit <- 4
-                limiter.QueueProcessingOrder <- QueueProcessingOrder.OldestFirst
-                limiter.QueueLimit <- 16
-        )
-        |> ignore
-
-        options.AddFixedWindowLimiter(
-            "login",
-            fun limiter ->
-                limiter.PermitLimit <- loginPermits
-                limiter.Window <- TimeSpan.FromMinutes(1.)
-                limiter.QueueLimit <- 0
-        )
-        |> ignore)
-    |> ignore
+    RateLimits.configure (admissionLimits loginPermits) services
 
 let testConfiguration assets loginPermits =
     {
@@ -95,11 +69,5 @@ let testConfiguration assets loginPermits =
         SessionIdle = TimeSpan.FromMinutes(30.)
         SessionAbsolute = TimeSpan.FromHours(8.)
         Oidc = None
-        Admission =
-            {
-                MaximumJsonBytes = 65536
-                CorePermitLimit = 4
-                CoreQueueLimit = 16
-                LoginPermitLimit = loginPermits
-            }
+        Admission = admissionLimits loginPermits
     }

@@ -52,3 +52,10 @@ property while running fuzz returns successfully from every non-target property,
 inventory can still pass without fuzz property execution. Reject diagnostic recheck configuration
 at the required runner boundary before build or results creation. Keep direct executable rechecks
 available for diagnosis; do not combine their results with complete verification.
+
+The TestServer overload test builds a copy of Program's limiter registration. A production-only
+permit-limit defect can therefore escape while its four-permit/sixteen-queue assertion passes.
+Move the existing registration to one internal Web rate-limit module used by Program and both
+HTTP fixture hosts. Keep fixture limits explicit, production defaults and middleware order unchanged,
+and the fake core only as a controlled scheduler. Challenge the same permit mutation again after
+sharing the actual mechanism; do not describe this test as PostgreSQL or complete Program execution.

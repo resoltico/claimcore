@@ -22,6 +22,7 @@
     <Compile Include="WireOutcomes.fs" />
     <Compile Include="WireRecoveryOutcomes.fs" />
     <Compile Include="Headers.fs" />
+    <Compile Include="RateLimits.fs" />
     <Compile Include="Admission.fs" />
     <Compile Include="RouteSupport.fs" />
     <Compile Include="Routes.fs" />

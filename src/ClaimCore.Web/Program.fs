@@ -4,14 +4,12 @@ open System
 open System.IO
 open System.Net.Http
 open System.Threading
-open System.Threading.RateLimiting
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Antiforgery
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.DataProtection
 open Microsoft.AspNetCore.Http
 open Microsoft.AspNetCore.Hosting
-open Microsoft.AspNetCore.RateLimiting
 open Microsoft.AspNetCore.StaticFiles
 open Microsoft.AspNetCore.Server.Kestrel.Core
 open Microsoft.Extensions.DependencyInjection
@@ -71,33 +69,6 @@ let private writeHostFailure context reason =
         HttpHeaders.noStore context
         do! (WebWire.hostFailure reason).ExecuteAsync(context)
     }
-
-let private configureRateLimits (configuration: WebConfiguration) (services: IServiceCollection) =
-    services.AddRateLimiter(fun options ->
-        options.RejectionStatusCode <- StatusCodes.Status429TooManyRequests
-
-        options.OnRejected <-
-            Func<OnRejectedContext, CancellationToken, ValueTask>(fun rejected _ ->
-                ValueTask(writeHostFailure rejected.HttpContext WebHostFailure.Busy))
-
-        options.AddConcurrencyLimiter(
-            "core",
-            fun limiter ->
-                limiter.PermitLimit <- configuration.Admission.CorePermitLimit
-                limiter.QueueProcessingOrder <- QueueProcessingOrder.OldestFirst
-                limiter.QueueLimit <- configuration.Admission.CoreQueueLimit
-        )
-        |> ignore
-
-        options.AddFixedWindowLimiter(
-            "login",
-            fun limiter ->
-                limiter.PermitLimit <- configuration.Admission.LoginPermitLimit
-                limiter.Window <- TimeSpan.FromMinutes(1.)
-                limiter.QueueLimit <- 0
-        )
-        |> ignore)
-    |> ignore
 
 let private configureKestrel (configuration: WebConfiguration) (builder: WebApplicationBuilder) =
     builder.WebHost.ConfigureKestrel(fun options ->
@@ -213,7 +184,7 @@ let private run () =
         configuration.SessionAbsolute
         builder.Services
 
-    configureRateLimits configuration builder.Services
+    RateLimits.configure configuration.Admission builder.Services
     builder.Services.AddAuthorization() |> ignore
     let application = builder.Build()
 

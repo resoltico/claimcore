@@ -206,7 +206,10 @@ creation of a host PostgreSQL cluster. A local backup qualification needs the sa
 `ClaimCore.WebTests` includes production-route `TestServer` requests for all thirty-three generated
 Web-v3 endpoints, OIDC session cookies and antiforgery admission, retired-route 404 behavior, raw
 import bounds, and typed host failures. Its direct-context tests still cover narrower decoder and
-wire projection seams; those do not substitute for route execution.
+wire projection seams; those do not substitute for route execution. The HTTP fixtures share production
+limiter registration and use a controlled fake facade for admission scheduling. The overload control
+rejects an injected extra production permit; it does not prove PostgreSQL contention or the complete
+Program pipeline. Published client suites exercise the actual delivered host.
 Windows CI builds and exercises fail-closed private-file branches, but the current private-file
 runtime contract supports macOS and Linux only; Windows is not a published first-run target.
 
