@@ -47,8 +47,32 @@ let private validRecord =
         (ClaimCore.Tests.Fixtures.request 0L (Command.Open ClaimCore.Tests.Fixtures.registration)
          |> RequestRecord.encode)
 
+let private snapshot = lazy (ClaimCore.Tests.Fixtures.opened () |> Claim.view)
+let private validSnapshot = lazy (CaseRecord.encodeSnapshot snapshot.Value)
+
 let private recordCorpus =
-    Gen.choice [ Corpora.jsonLike; Corpora.mutated validRecord.Value ]
+    Gen.choice
+        [
+            Corpora.jsonLike
+            Corpora.mutated validRecord.Value
+            Corpora.mutated validSnapshot.Value
+        ]
+
+let private envelope = lazy (ClaimCore.Tests.RecoveryArtifactFixture.artifact ())
+
+let private validEnvelope =
+    lazy (ClaimCore.Tests.RecoveryArtifactFixture.encode envelope.Value)
+
+let private envelopeCorpus =
+    Gen.choice [ Corpora.jsonLike; Corpora.mutated validEnvelope.Value ]
+
+let private decodeEnvelope bytes =
+    let fixture = envelope.Value
+
+    ClaimCore.Tests.RecoveryArtifactFixture.decode
+        ClaimCore.Tests.RecoveryArtifactFixture.now
+        fixture.Epoch
+        bytes
 
 let private caseListCursorBoundary =
     let principal =
@@ -109,52 +133,68 @@ let private httpCodecs bytes =
     HttpTombstoneInput.hold bytes |> ignore
     HttpTombstoneTerminalInput.approve bytes |> ignore
 
+let private recordTests =
+    [
+        testCase "canonical record decoding refuses hostile input without throwing" (fun () ->
+            run
+                "CC-FUZZ-RECORD-001"
+                (property recordCorpus (fun bytes ->
+                    RequestRecord.decode 131072 bytes |> ignore
+                    CaseRecord.decodeSnapshot bytes |> ignore)))
+
+        testCase "recovery envelope decoding refuses hostile input without throwing" (fun () ->
+            run
+                "CC-FUZZ-ENVELOPE-001"
+                (property envelopeCorpus (fun bytes -> decodeEnvelope bytes |> ignore)))
+
+        testCase
+            "decoder seeds prove command snapshot and authenticated recovery acceptance"
+            (fun () ->
+                Expect.isOk
+                    (RequestRecord.decode 131072 validRecord.Value)
+                    "Command seed reaches decoding"
+
+                Expect.isTrue
+                    (CaseRecord.decodeSnapshot validSnapshot.Value = Ok snapshot.Value)
+                    "Snapshot seed meaning"
+
+                let restored =
+                    decodeEnvelope validEnvelope.Value |> ClaimCore.Tests.Fixtures.accepted
+
+                Expect.isTrue
+                    (restored.CanonicalRequest = envelope.Value.CanonicalRequest
+                     && restored.OperationId = envelope.Value.OperationId
+                     && restored.CaseId = envelope.Value.CaseId)
+                    "Authenticated seed retains exact operation bytes and identities")
+
+    ]
+
 let tests =
-    testList
-        "boundary decoding totality"
-        [
-            testCase
-                "[CC-ARCH-001] contract-owned HTTP codecs refuse hostile bytes without throwing"
-                (fun () ->
-                    run "CC-FUZZ-HTTP-001" (property Corpora.jsonLike httpCodecs)
-                    run "CC-FUZZ-HTTP-BYTES-001" (property Corpora.arbitraryBytes httpCodecs))
-            testCase "strict JSON parsing refuses hostile input without throwing" (fun () ->
-                run "CC-FUZZ-JSON-001" (property Corpora.jsonLike strictJson))
+    [
+        testCase
+            "[CC-ARCH-001] contract-owned HTTP codecs refuse hostile bytes without throwing"
+            (fun () ->
+                run "CC-FUZZ-HTTP-001" (property Corpora.jsonLike httpCodecs)
+                run "CC-FUZZ-HTTP-BYTES-001" (property Corpora.arbitraryBytes httpCodecs))
+        testCase "strict JSON parsing refuses hostile input without throwing" (fun () ->
+            run "CC-FUZZ-JSON-001" (property Corpora.jsonLike strictJson))
 
-            testCase "CLI invocation framing refuses hostile input without throwing" (fun () ->
-                run "CC-FUZZ-INVOCATION-001" (property Corpora.jsonLike invocation))
+        testCase "CLI invocation framing refuses hostile input without throwing" (fun () ->
+            run "CC-FUZZ-INVOCATION-001" (property Corpora.jsonLike invocation))
 
-            testCase "canonical record decoding refuses hostile input without throwing" (fun () ->
-                run
-                    "CC-FUZZ-RECORD-001"
-                    (property recordCorpus (fun bytes ->
-                        RequestRecord.decode 131072 bytes |> ignore
-                        CaseRecord.decodeSnapshot bytes |> ignore)))
 
-            testCase "recovery envelope decoding refuses hostile input without throwing" (fun () ->
-                run
-                    "CC-FUZZ-ENVELOPE-001"
-                    (property recordCorpus (fun bytes ->
-                        RecoveryEnvelopeV3.decode
-                            131072
-                            (fun _ -> None)
-                            (Guid.Parse("11111111-1111-4111-8111-111111111111"))
-                            1L
-                            (DateTimeOffset(2026, 9, 23, 0, 0, 0, TimeSpan.Zero))
-                            (TimeSpan.FromHours(24.0))
-                            bytes
-                        |> ignore)))
+        testCase "opaque cursors refuse hostile tokens without throwing" (fun () ->
+            run
+                "CC-FUZZ-CURSOR-001"
+                (property Corpora.cursorText (fun token ->
+                    HistoryCursor.decode token |> ignore
+                    RecoveryCursorCodec.decode token |> ignore
+                    RecoveryAttemptCursorCodec.decode token |> ignore
+                    caseListCursorBoundary (Encoding.UTF8.GetBytes token)))
 
-            testCase "opaque cursors refuse hostile tokens without throwing" (fun () ->
-                run
-                    "CC-FUZZ-CURSOR-001"
-                    (property Corpora.cursorText (fun token ->
-                        HistoryCursor.decode token |> ignore
-                        RecoveryCursorCodec.decode token |> ignore
-                        RecoveryAttemptCursorCodec.decode token |> ignore
-                        caseListCursorBoundary (Encoding.UTF8.GetBytes token)))
-
-                run
-                    "CC-FUZZ-CASE-LIST-CURSOR-001"
-                    (property Corpora.arbitraryBytes caseListCursorBoundary))
-        ]
+            run
+                "CC-FUZZ-CASE-LIST-CURSOR-001"
+                (property Corpora.arbitraryBytes caseListCursorBoundary))
+    ]
+    @ recordTests
+    |> testList "boundary decoding totality"

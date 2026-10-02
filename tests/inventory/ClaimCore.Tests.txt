@@ -54,14 +54,15 @@ ClaimCore deterministic suite.Domain semantic descriptors.text and date scalar d
 ClaimCore deterministic suite.Domain semantic descriptors.text and date scalar descriptors.text descriptors own every text validation constraint
 ClaimCore deterministic suite.HTTP response deadlines.[CC-CLI-001] discovery deadline covers a suspended body after headers
 ClaimCore deterministic suite.HTTP response deadlines.[CC-CLI-001] token deadline covers a suspended body after headers
-ClaimCore deterministic suite.Hedgehog canonical records.all command shapes retain external meaning
+ClaimCore deterministic suite.Hedgehog canonical records.all command and correction group shapes retain external meaning
 ClaimCore deterministic suite.Hedgehog canonical records.layout is insignificant but semantic changes affect identity
 ClaimCore deterministic suite.Hedgehog scalar boundaries.Gregorian date grammar and range
 ClaimCore deterministic suite.Hedgehog scalar boundaries.Unicode text and length boundaries
 ClaimCore deterministic suite.Hedgehog scalar boundaries.amount precision and magnitude
 ClaimCore deterministic suite.Hedgehog scalar boundaries.uppercase ASCII currency grammar
-ClaimCore deterministic suite.Hedgehog state invariants.accepted and rejected sequences preserve revision invariants
+ClaimCore deterministic suite.Hedgehog state invariants.accepted and rejected sequences match complete independent state
 ClaimCore deterministic suite.Hedgehog state invariants.reachable states match the independent availability matrix
+ClaimCore deterministic suite.Hedgehog state invariants.sequence oracle rejects refusal-only and corrupt accepted outcomes
 ClaimCore deterministic suite.[CC-APP-002] prepared canonical identity cannot be mutated through an accessor
 ClaimCore deterministic suite.[CC-AUTH-001] CLI discovery compares the complete issuer identity
 ClaimCore deterministic suite.[CC-AUTH-001] every Domain command maps to edit capability

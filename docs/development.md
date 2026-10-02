@@ -176,11 +176,21 @@ must be named by at least one test in a registered suite whose name contains `[C
 must name a declared contract. `ClaimCore.Docs check` enforces both directions and checks the generated [contract-test map](contract-tests.md). Orphan inventories cannot provide contract evidence.
 
 `ClaimCore.FuzzQualificationTests` needs no database and runs on Linux in CI (its inputs are operating-system
-independent). It drives every boundary that turns externally supplied bytes or opaque tokens into typed values -
-strict JSON, CLI invocation framing, canonical request and snapshot records, recovery envelopes, and history and
-recovery cursors - with arbitrary bytes, mutated valid encodings, adversarial JSON, and invalid UTF-8. A boundary
-passes only by refusing hostile input with a typed result; an escaping exception fails the property and prints a
-deterministic recheck token. It shares the property profile and base seed described below.
+independent). It exercises strict JSON, contract-owned HTTP input codecs, CLI invocation framing,
+canonical request and snapshot records, recovery envelopes, and history, recovery and case-list cursors
+with hostile byte/token corpora. Request, snapshot and encrypted recovery seeds have positive controls;
+their byte mutations reach format parsing, and recovery uses matching synthetic keys. Authentication
+normally refuses mutated envelopes before decryption, so this does not prove arbitrary authenticated
+plaintext coverage. A mutation may remain valid: totality requires either a decoded value or typed
+refusal, never an escaping exception. Failures print a deterministic recheck token without payloads.
+The suite shares the property profile and base seed described below.
+
+Unit transition sequences compare acceptance and complete resulting state against a separate finite
+fixture model, including stale requests and no-op corrections. Negative controls reject refusal-only,
+missing-payment, wrong-revision and payment-loss-on-closure outcomes. Canonical properties traverse all
+eighteen correction group shapes in each generated case and verify literal modes. Identity checks vary
+operation ID, revision, reference and command. Round trips and identity relations complement the fixed
+independent encoding/digest vectors; they do not replace byte expectations or real storage evidence.
 
 The integration and qualification processes create exactly labelled isolated PostgreSQL containers from the
 official, digest-pinned image named in [`db/postgresql-baseline.json`](../db/postgresql-baseline.json) (the same

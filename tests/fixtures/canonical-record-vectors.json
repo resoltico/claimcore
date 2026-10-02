@@ -1,5 +1,5 @@
 {
-  "purpose": "Independent ASCII protocol-2 and snapshot-2 encoding vectors. These are expectations, not recorded F# test results. Canonical scalar spelling is retained for requests.",
+  "purpose": "Independent ASCII canonical-command format-3 and snapshot-2 encoding vectors. These are expectations, not recorded F# test results. Canonical scalar spelling is retained for requests.",
   "requests": [
     {
       "command": "OPEN",
