@@ -52,7 +52,7 @@ const readProtectedList = (page: Page, token: string) =>
     } satisfies ApiReply<HostFailure>;
   }, token);
 
-const expectAnonymousV2Boundary = async (page: Page) => {
+const expectAnonymousSessionBoundary = async (page: Page) => {
   const missing = await readUnknownEndpoint(page);
   expect(missing).toMatchObject({
     status: 404,
@@ -73,7 +73,7 @@ const expectSessionRejection = async (page: Page, token: string) => {
   expect(rejected).toMatchObject({
     status: 401,
     cacheControl: expect.stringContaining("no-store"),
-    payload: { kind: "HOST_FAILURE", code: "WEB_SESSION_REJECTED", executionPhase: null },
+    payload: { kind: "HOST_FAILURE", code: "WEB_SESSION_REJECTED", executionPhase: "NOT_STARTED" },
   });
 };
 
@@ -95,7 +95,7 @@ test("uses OIDC sign-in and the accessible actor-bound case workspace", async ({
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "ClaimCore" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
-  const antiforgeryToken = await expectAnonymousV2Boundary(page);
+  const antiforgeryToken = await expectAnonymousSessionBoundary(page);
   await expectSessionRejection(page, antiforgeryToken);
   await expectRetiredBootstrapRoute(page);
   await login(page);
