@@ -176,5 +176,40 @@ let private prepareReplayWire =
                 (receipt.OperationId.ToString("D"))
                 "Original preparation identity")
 
+let private nestedRecoveryFaults =
+    testCase "[CC-CLI-003] nested faults preserve earlier exact-operation uncertainty" (fun () ->
+        let details, _ = wireFixtures ()
+        let operationId = details.Summary.OperationId
+
+        for fault, expected in [ CoreFault.CommitOutcomeUnknown, 4; CoreFault.StoreUnavailable, 3 ] do
+            let replies =
+                [
+                    "command.prepare",
+                    WebWireCodec.prepare (PrepareOutcome.PrepareFailed(operationId, fault))
+                    "command.execute",
+                    WebWireCodec.submit (SubmissionOutcome.FailedBeforeAttempt(None, fault))
+                    "command.execute",
+                    WebWireCodec.submit (
+                        SubmissionOutcome.Completed(
+                            details.Summary,
+                            Guid.Parse("60000000-0000-4000-8000-000000000003"),
+                            DefiniteExecution.FailedBeforeCommit(operationId, fault),
+                            SettlementConfirmation.Confirmed
+                        )
+                    )
+                    "recovery.resolve",
+                    WebWireCodec.resolve
+                        "recovery.resolve"
+                        (ResolveOutcome.ResolveFailedBeforeAttempt(None, fault))
+                ]
+
+            for endpoint, bytes in replies do
+                Expect.equal
+                    (remote endpoint bytes).ExitCode
+                    expected
+                    "Typed core direction governs delivery knowledge")
+
 let tests =
-    testList "CLI-v4 service exit contract" [ lookupAbsence; prepareReplayWire ]
+    testList
+        "CLI-v4 service exit contract"
+        [ lookupAbsence; prepareReplayWire; nestedRecoveryFaults ]

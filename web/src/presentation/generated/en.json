@@ -558,6 +558,7 @@
       "value": "Keep the accepted payment record, replace its date, or clear the recorded payment date; clearing does not reverse an external transfer."
     }
   ],
+  "notice.responseTimeout": [{ "type": 0, "value": "The service response timed out." }],
   "notice.unreachable": [{ "type": 0, "value": "The local service could not be reached." }],
   "notice.invalidHttp": [
     { "type": 0, "value": "The local service returned an invalid HTTP " },

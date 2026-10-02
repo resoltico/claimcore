@@ -71,6 +71,7 @@ const acceptsOperation = async (): Promise<void> => {
       initialCommand="CLOSE"
       onClose={vi.fn()}
       onCommitted={committed}
+      onRecovery={vi.fn()}
       onMutationLockChange={vi.fn()}
     />,
   );
@@ -120,6 +121,7 @@ describe("metadata-driven dirty command behavior", () => {
         initialCommand="CLOSE"
         onClose={vi.fn()}
         onCommitted={vi.fn()}
+        onRecovery={vi.fn()}
         onMutationLockChange={vi.fn()}
       />,
     );

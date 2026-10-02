@@ -1,4 +1,5 @@
 {
+  "notice.responseTimeout": "Pakalpojuma atbildes gaidīšanas laiks ir beidzies.",
   "notice.unreachable": "Vietējais pakalpojums nav sasniedzams.",
   "notice.invalidHttp": "Vietējais pakalpojums atgrieza nederīgu HTTP {status} atbildi.",
   "notice.fileTooLarge": "Izvēlētais fails pārsniedz {maximumBytes} baitus.",

@@ -10,7 +10,11 @@ import type { DefinitionPayload, Receipt } from "../api/v3";
 import { useOperationObservation } from "../hooks/useOperationObservation";
 import { CaseFieldsView } from "../components/CaseFieldsView";
 
-type OperationLookupProps = { token: string; definition: DefinitionPayload };
+type OperationLookupProps = {
+  token: string;
+  definition: DefinitionPayload;
+  initialOperationId?: string;
+};
 
 const ReceiptView = ({
   receipt,
@@ -58,10 +62,14 @@ const ObservationFeedback = ({
   );
 };
 
-export const OperationLookup = ({ token, definition }: OperationLookupProps) => {
+export const OperationLookup = ({
+  token,
+  definition,
+  initialOperationId,
+}: OperationLookupProps) => {
   const p = usePresentation();
   const { operationId, setOperationId, receipt, message, notObserved, loading, observe } =
-    useOperationObservation(token);
+    useOperationObservation(token, initialOperationId);
   return (
     <section aria-labelledby="operation-lookup-title">
       <h2 id="operation-lookup-title">{p.text("ui.operationLookup")}</h2>

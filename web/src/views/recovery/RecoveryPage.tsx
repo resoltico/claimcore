@@ -2,7 +2,6 @@ import { NoticeView } from "../../presentation/Message";
 import { usePresentation } from "../../presentation/context";
 import type { Notice } from "../../api/notices";
 import { Button } from "react-aria-components/Button";
-import type { PreparationSummary } from "../../api/v3";
 import {
   RecoveryConfirmDialog,
   RecoveryDetailsDialog,
@@ -15,7 +14,6 @@ import type { ConfirmState, ImportState, Inspection, RecoveryActions } from "./R
 
 type DialogProps = {
   selected: Inspection | null;
-  summary: PreparationSummary | null;
   confirm: ConfirmState | null;
   importing: ImportState | null;
   busy: string | null;
@@ -77,7 +75,6 @@ const Capacity = ({ listing }: { listing: Listing }) => {
 
 const RecoveryDialogs = ({
   selected,
-  summary,
   confirm,
   importing,
   busy,
@@ -89,7 +86,7 @@ const RecoveryDialogs = ({
   <>
     <RecoveryDetailsDialog
       selected={selected}
-      summary={summary}
+      busy={busy !== null}
       onClose={closeDetails}
       actions={actions}
     />

@@ -20,7 +20,6 @@ export type {
   PreparationSummary,
   Receipt,
   Rejection,
-  RecoveryDetails,
   RecoveryImportPreview,
   RecoveryInspection,
   RecoveryListItem,

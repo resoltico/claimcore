@@ -1,20 +1,27 @@
 aborts a stale page load before appending a newer cursor page
+aborts observation on unmount without delivering a late receipt
 accepts the matching generated definition fingerprint
 allocates a new ID when editing a definitely refused prepared request
 announces unsaved preferences in the chosen language without blocking the switch
 associates optional field errors and supports password text input
 binds consent to one reviewed preparation and exact identity rather than an editor-wide boolean
+bounds a stalled response and ignores a later successful result
 clears claimant definition state when the server rejects or mismatches assets
+clears the response timer on normal completion and leaves the validated result intact
 clears this page's cached rows cursor and metadata after a browser session refusal
 clears this page's cached rows cursor and metadata after a resource grant refusal
 closes recovery detail, confirm, and import dialogs without dispatching mutations
 coalesces duplicate page loads for one in-flight cursor
 coalesces duplicate preparation activation while retention is pending
 coalesces duplicate recovery retention for the same previewed bytes
+coalesces observation and discards an older receipt after changing the operation ID
+coalesces recovery mutations and previews without replacing an in-flight navigation lock
 copies safe values and provides an accessible fallback when clipboard access is unavailable
 discards an aborted definition response when session epoch changes
 discards an aborted keyed read instead of replacing its newer response
+discards reverse-order recovery inspection responses and cancels closed detail reads
 does not interpret a local delivery notice as a definite server refusal
+does not let an older refresh resurrect an authenticated session after logout
 does not rebase a frozen preparation after language switching and an external revision change
 does not retain recovery material without a preview
 does not send a credential from an anonymous session
@@ -37,13 +44,16 @@ generated contract corpora > rejects CLI lone surrogates and revision overflow
 generated contract corpora > validates every endpoint and cross-endpoint CLI outcome
 generated contract corpora > validates every local CLI protocol outcome
 gives simultaneous current and historical case fields distinct heading IDs
+hands a lost submit to exact recovery even when the pending list is empty
 ignores late prepare and submit responses from inactive attempts
 keeps ICU plural grammar independent from the number-display locale
 keeps a failed history page request-local without erasing current case data
 keeps a non-reviewable retained Prepare exact and directs Recovery
 keeps a previously disclosed page retryable after a transient delivery failure
+keeps accepted recovery evidence distinct from unconfirmed settlement and reports the exact subject
 keeps an in-flight submission and its exact recovery identity through language and format switches
 keeps an unknown recovery result explicit and directs inspection
+keeps attempt paging cancellable and prevents a late page from reopening closed recovery details
 keeps cancelled or non-diagnostic outcomes distinct from a translated core refusal
 keeps existing references immutable and delegates a reviewed commit
 keeps generated endpoint inventory callable and presents suspicious Unicode defensively
@@ -51,12 +61,15 @@ keeps invalid reducer transitions inert and records a completed receipt
 keeps missing case lookup and non-full history entries out of case presentation
 keeps recovery confirm dialog accessible before dispatch
 keeps recovery import dialog accessible before retention
+keeps the latest session snapshot when refresh responses finish in reverse order
+keeps unconfirmed settlement distinct from definite accepted execution
 leaves invalid authored decimal and integer text unchanged for core validation
 lists, reloads, pages, selects and opens cases through typed list outcomes
 local diagnostic contracts > fingerprints the administration grammar independently of display text
 local diagnostic contracts > rejects mismatched actual HTTP status even for an otherwise valid host body
 local diagnostic contracts > validates every process and administration cause and hostile counterpart
 localizes late validation by diagnostic identity and focuses the unchanged authoring field
+locks Dashboard during recovery dispatch and keeps the identity after lost resolution
 locks navigation and logout while a prepared mutation is dispatched
 maps every JSON endpoint to v3 and preserves nullable cursors and mutation identity
 metadata-driven descriptor rendering > renders descriptor labels and all supplied field values without client-side normalization
@@ -88,14 +101,17 @@ operation editor transport outcomes > shows a definite prepare rejection without
 operation editor transport outcomes > shows a definite submit rejection after preserving the prepared identity
 persists only presentation preferences and remains usable when storage is denied
 preserves authored content, DOM selection and operation identity across language switches before preparation
+preserves core recovery direction in generic and nested mutation faults
 preserves diagnostics from direct read refusals and nested recovery execution faults without server prose
 preserves every permitted amount digit and trailing zero in independent display locales
+preserves only exact identity and recovery direction after uncertain export issuance
 refuses an export action when inspected recovery evidence has no exact digest
 refuses corrupt, oversized and unknown preference records without retaining arbitrary data
 refuses unknown or malformed message arguments without echoing the supplied material
 rejects JSON-prefix spoofing and accepts an exact JSON media type with parameters
 rejects impossible local draft shapes and keeps absent current correction values blank
 rejects technical preparation details on an accepted Prepare replay
+releases the recovery navigation lock when an action throws
 renders ACTIVE separately from held state
 renders ERASURE_FINAL separately from held state
 renders ERASURE_REQUESTED separately from held state
@@ -120,6 +136,7 @@ renders the loading shell before local session discovery completes
 reports a failed list as a request-local error without manufacturing rows
 reports a found observation without a receipt as a protocol failure
 reports absent and malformed operation observations without leaving stale receipts
+reports definite accepted recovery knowledge and keeps its observation target
 reports malformed pages, malformed inspections, rejected imports, and invalid exports
 requests the next server attempt page only from an inspected retained item
 requires an explicit presentation provider instead of silently using ambient locale
@@ -139,6 +156,7 @@ routes dashboard list selections and the new-case command into the typed editor
 sends an explicit grouped correction and preserves all non-replaced groups
 sends bounded raw imports with generated media type and digest header
 shows a safe diagnostic after a failed lifecycle review
+shows command acceptance together with required recovery for unconfirmed settlement
 shows current fields, server command labels, full expandable history and retryable history pages
 shows logout transport failure as retriable and clears it after a session refresh
 shows the authoritative disposition, privacy phase, and active hold without exposing its ground
@@ -146,6 +164,7 @@ submits a retained operation ID and digest only once under duplicate confirmatio
 surfaces invalid snapshots after session refresh and logout responses
 switches language and display formats without remounting children or rewriting a draft
 switches recovery views explicitly and leaves unavailable capacity unrendered
+times out submission and witnessed export without adding mutation abort or retry
 treats a typed missing history as an empty read rather than a transport error
 uses an exact operation lookup result and clears absent lookup presentation
 uses generated v3 paths and typed endpoint outcomes

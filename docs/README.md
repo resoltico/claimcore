@@ -49,3 +49,6 @@ The [product scope design](product-scope-design.md) and its separate
 
 The [code organization design](code-organization-design.md) and its separate
 [design QA](code-organization-design-qa.md) trace extension ownership and remove duplicate coordination.
+
+The [client workflows design](client-workflows-design.md) and its separate
+[design QA](client-workflows-design-qa.md) trace drafts, exact recovery handoffs and client read races.

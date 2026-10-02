@@ -180,6 +180,7 @@
   "group.decision.meaning": {},
   "group.payment.label": {},
   "group.payment.meaning": {},
+  "notice.responseTimeout": {},
   "notice.unreachable": {},
   "notice.invalidHttp": { "status": "string" },
   "notice.fileTooLarge": { "maximumBytes": "string" },

@@ -24,6 +24,7 @@ it("coalesces duplicate preparation activation while retention is pending", asyn
       initialCommand: "CLOSE",
       onClose: vi.fn(),
       onCommitted: vi.fn(),
+      onRecovery: vi.fn(),
       onMutationLockChange: vi.fn(),
     }),
   );

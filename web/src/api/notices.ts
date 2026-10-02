@@ -12,6 +12,7 @@ export type Diagnostic =
   | RecoveryRejection["diagnostic"]
   | HostFailure["diagnostic"];
 export type LocalNoticeReason =
+  | "responseTimeout"
   | "unreachable"
   | "fileUnreadable"
   | "exportInvalid"

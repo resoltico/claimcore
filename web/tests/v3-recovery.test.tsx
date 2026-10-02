@@ -21,7 +21,7 @@ const inspectsAndDismisses = async (): Promise<void> => {
   fetch.mockResolvedValueOnce(inspection());
   fetch.mockResolvedValueOnce(response("recovery.dismiss", "DISMISSED", preparation));
   fetch.mockResolvedValueOnce(list([]));
-  render(<RecoveryView token="token" />);
+  render(<RecoveryView onRecovery={vi.fn()} onMutationLockChange={vi.fn()} token="token" />);
   await user.click(await screen.findByRole("button", { name: "Inspect" }));
   expect(await screen.findByRole("dialog", { name: "Recovery details" })).toHaveTextContent(
     preparation.summary.requestSha256!,
@@ -46,7 +46,7 @@ describe("v3 Recovery view", () => {
     fetch.mockResolvedValueOnce(inspection());
     fetch.mockResolvedValueOnce(accepted());
     fetch.mockResolvedValueOnce(list([]));
-    render(<RecoveryView token="token" />);
+    render(<RecoveryView onRecovery={vi.fn()} onMutationLockChange={vi.fn()} token="token" />);
     await user.click(await screen.findByRole("button", { name: "Inspect" }));
     await user.click(screen.getByRole("button", { name: "Resolve exact preparation" }));
     await screen.findByRole("button", { name: "Confirm resolve" });
@@ -67,7 +67,7 @@ describe("v3 Recovery view", () => {
     fetch.mockResolvedValueOnce(inspection());
     fetch.mockResolvedValueOnce(rejected());
     fetch.mockResolvedValueOnce(list([]));
-    render(<RecoveryView token="token" />);
+    render(<RecoveryView onRecovery={vi.fn()} onMutationLockChange={vi.fn()} token="token" />);
     await user.click(await screen.findByRole("button", { name: "Inspect" }));
     await user.click(screen.getByRole("button", { name: "Resolve exact preparation" }));
     await user.click(await screen.findByRole("button", { name: "Confirm resolve" }));
@@ -98,7 +98,9 @@ const exportsAndRetainsEnvelope = async (): Promise<void> => {
   fetch.mockResolvedValueOnce(response("recovery.importEnvelopePreview", "SUCCEEDED", preview));
   fetch.mockResolvedValueOnce(response("recovery.importEnvelopeRetain", "RETAINED", preparation));
   fetch.mockResolvedValueOnce(list([]));
-  const view = render(<RecoveryView token="token" />);
+  const view = render(
+    <RecoveryView onRecovery={vi.fn()} onMutationLockChange={vi.fn()} token="token" />,
+  );
   await user.click(await screen.findByRole("button", { name: "Inspect" }));
   await user.click(screen.getByRole("button", { name: "Export recovery envelope" }));
   expect(
@@ -126,7 +128,9 @@ const retainsEnvelopeAfterListFailure = async (): Promise<void> => {
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockResolvedValueOnce(response("recovery.list", "REJECTED", {}));
-  const view = render(<RecoveryView token="token" />);
+  const view = render(
+    <RecoveryView onRecovery={vi.fn()} onMutationLockChange={vi.fn()} token="token" />,
+  );
   expect(await screen.findByRole("alert")).toBeVisible();
   fetch.mockResolvedValueOnce(response("recovery.importEnvelopePreview", "SUCCEEDED", preview));
   fetch.mockResolvedValueOnce(response("recovery.importEnvelopeRetain", "RETAINED", preparation));
@@ -161,7 +165,9 @@ it("closes recovery detail, confirm, and import dialogs without dispatching muta
   fetch.mockResolvedValueOnce(inspection());
   fetch.mockResolvedValueOnce(inspection());
   fetch.mockResolvedValueOnce(response("recovery.importEnvelopePreview", "SUCCEEDED", preview));
-  const view = render(<RecoveryView token="token" />);
+  const view = render(
+    <RecoveryView onRecovery={vi.fn()} onMutationLockChange={vi.fn()} token="token" />,
+  );
   await user.click(await screen.findByRole("button", { name: "Inspect" }));
   await user.click(screen.getByRole("button", { name: "Cancel" }));
   await user.click(screen.getByRole("button", { name: "Inspect" }));
@@ -192,7 +198,9 @@ it("reports malformed pages, malformed inspections, rejected imports, and invali
     new Response("{}", { headers: { "content-type": "application/json" } }),
   );
   fetch.mockResolvedValueOnce(response("recovery.importEnvelopePreview", "REJECTED", {}));
-  const view = render(<RecoveryView token="token" />);
+  const view = render(
+    <RecoveryView onRecovery={vi.fn()} onMutationLockChange={vi.fn()} token="token" />,
+  );
   expect(await screen.findByRole("alert")).toBeVisible();
   await user.click(screen.getByRole("button", { name: "Reload" }));
   await user.click(await screen.findByRole("button", { name: "Inspect" }));
@@ -221,7 +229,7 @@ it("renders direct observed-accepted recovery receipts", async () => {
     }),
   );
   fetch.mockResolvedValueOnce(list([]));
-  render(<RecoveryView token="token" />);
+  render(<RecoveryView onRecovery={vi.fn()} onMutationLockChange={vi.fn()} token="token" />);
   await user.click(await screen.findByRole("button", { name: "Inspect" }));
   await user.click(screen.getByRole("button", { name: "Resolve exact preparation" }));
   await user.click(await screen.findByRole("button", { name: "Confirm resolve" }));

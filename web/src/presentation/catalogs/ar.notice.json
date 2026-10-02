@@ -1,4 +1,5 @@
 {
+  "notice.responseTimeout": "انتهت مهلة انتظار استجابة الخدمة.",
   "notice.unreachable": "تعذر الوصول إلى الخدمة المحلية.",
   "notice.invalidHttp": "أعادت الخدمة المحلية استجابة HTTP {status} غير صالحة.",
   "notice.fileTooLarge": "يتجاوز الملف المحدد {maximumBytes} بايت.",

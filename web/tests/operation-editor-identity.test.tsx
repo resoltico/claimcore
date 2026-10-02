@@ -29,6 +29,7 @@ const editor = (current: CurrentCase | null, initialCommand: "OPEN" | "CLOSE" | 
     initialCommand={initialCommand}
     onClose={vi.fn()}
     onCommitted={vi.fn()}
+    onRecovery={vi.fn()}
     onMutationLockChange={vi.fn()}
   />
 );

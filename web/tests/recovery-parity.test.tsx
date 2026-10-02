@@ -1,13 +1,10 @@
+import { onceWhilePending, createInspectionControl } from "../src/hooks/recoveryControl";
 import { render, screen, waitFor } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import type { PreparationDetails } from "../src/api/v3";
 import { RecoveryView } from "../src/views/RecoveryView";
-import {
-  onceWhilePending,
-  recoveryActions,
-  type RecoveryUi,
-} from "../src/views/recovery/RecoveryState";
+import { recoveryActions, type RecoveryUi } from "../src/views/recovery/RecoveryState";
 import { generatedWebValue } from "./contract-corpus.fixtures";
 import { fields, operationId, preparation, recoveryPage, response } from "./v3-ui.fixtures";
 
@@ -24,17 +21,14 @@ const inspection = (details: PreparationDetails = preparation) =>
   });
 
 const recoveryUi = (changes: Partial<RecoveryUi>): RecoveryUi => ({
-  selected: null,
+  inspection: createInspectionControl(),
+  onRecovery: vi.fn(),
   setSelected: vi.fn(),
-  selectedSummary: null,
-  setSelectedSummary: vi.fn(),
   confirm: null,
   setConfirm: vi.fn(),
   importing: null,
   setImporting: vi.fn(),
-  message: null,
   setMessage: vi.fn(),
-  busy: null,
   setBusy: vi.fn(),
   ...changes,
 });
@@ -54,7 +48,7 @@ it("requires fresh inspection before retrying a submission-started preparation",
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockResolvedValueOnce(list([started.summary]));
   fetch.mockResolvedValueOnce(inspection(started));
-  render(<RecoveryView token="token" />);
+  render(<RecoveryView onRecovery={vi.fn()} onMutationLockChange={vi.fn()} token="token" />);
   await screen.findByRole("button", { name: "Inspect" });
   expect(screen.queryByRole("button", { name: "Resolve exact preparation" })).toBeNull();
   await user.click(screen.getByRole("button", { name: "Inspect" }));
@@ -90,7 +84,7 @@ it("uses inspected accepted evidence to remove stale list mutation actions", asy
       },
     }),
   );
-  render(<RecoveryView token="token" />);
+  render(<RecoveryView onRecovery={vi.fn()} onMutationLockChange={vi.fn()} token="token" />);
   await user.click(await screen.findByRole("button", { name: "Inspect" }));
   expect(await screen.findByRole("dialog", { name: "Recovery details" })).toBeVisible();
   expect(screen.queryByRole("button", { name: "Resolve exact preparation" })).toBeNull();
@@ -164,7 +158,7 @@ it("keeps an unknown recovery result explicit and directs inspection", async () 
   fetch.mockResolvedValueOnce(inspection());
   fetch.mockRejectedValueOnce(new Error("Synthetic delivery loss"));
   fetch.mockResolvedValueOnce(list([]));
-  render(<RecoveryView token="token" />);
+  render(<RecoveryView onRecovery={vi.fn()} onMutationLockChange={vi.fn()} token="token" />);
   await user.click(await screen.findByRole("button", { name: "Inspect" }));
   await user.click(screen.getByRole("button", { name: "Resolve exact preparation" }));
   await user.click(await screen.findByRole("button", { name: "Confirm resolve" }));
@@ -172,6 +166,8 @@ it("keeps an unknown recovery result explicit and directs inspection", async () 
     await screen.findByText(/Inspect Recovery before retrying this exact operation/u),
   ).toBeVisible();
   expect(screen.queryByText(/Accepted exact operation/u)).toBeNull();
+  expect(screen.queryByRole("button", { name: "Resolve exact preparation" })).toBeNull();
+  expect(screen.queryByRole("dialog", { name: "Recovery details" })).toBeNull();
 });
 
 it("refuses an export action when inspected recovery evidence has no exact digest", async () => {
@@ -185,6 +181,22 @@ it("refuses an export action when inspected recovery evidence has no exact diges
   await actions.act();
   expect(globalThis.fetch).not.toHaveBeenCalled();
   expect(ui.setMessage).toHaveBeenCalledWith({ kind: "local", reason: "digestUnavailable" });
+});
+
+it("preserves only exact identity and recovery direction after uncertain export issuance", async () => {
+  vi.mocked(globalThis.fetch).mockRejectedValueOnce(new Error("Synthetic export response loss"));
+  const ui = recoveryUi({ confirm: { action: "EXPORT", item: preparation.summary } });
+  await recoveryActions("token", { load: vi.fn(() => Promise.resolve()) }, ui).act();
+  expect(ui.setSelected).toHaveBeenCalledWith(null);
+  expect(ui.onRecovery).toHaveBeenCalledWith({
+    operationId,
+    requestSha256: preparation.summary.requestSha256,
+    message: {
+      kind: "recovery",
+      cause: { kind: "local", reason: "unreachable" },
+      direction: "inspectBeforeAction",
+    },
+  });
 });
 
 it("uses the supplied attempt cursor for the next inspected evidence page", async () => {

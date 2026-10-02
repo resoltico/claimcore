@@ -1,10 +1,11 @@
+import type { InspectionControl } from "../../hooks/recoveryControl";
 import { localNotice, recoveryNotice } from "../../api/notices";
 import type { Notice } from "../../api/notices";
 import type { Dispatch, SetStateAction } from "react";
 import type {
+  ApiResult,
   PreparationSummary,
   Receipt,
-  RecoveryDetails,
   RecoveryImportPreview,
   RecoveryInspection,
   RecoveryListItem,
@@ -12,6 +13,7 @@ import type {
   WebV3Response,
 } from "../../api/v3";
 import { isMutationUncertain, resultNotice, v3 } from "../../api/v3";
+import type { RecoveryTarget } from "../../domain/operationState";
 
 export type Inspection = RecoveryInspection;
 export type RecoveryViewKind = RecoveryPage["view"];
@@ -22,27 +24,25 @@ type Setter<T> = Dispatch<SetStateAction<T>>;
 type Listing = { load: (cursor: string | null) => Promise<void> };
 
 export type RecoveryUi = {
-  selected: Inspection | null;
+  onRecovery: (target: RecoveryTarget) => void;
+  inspection: InspectionControl;
   setSelected: Setter<Inspection | null>;
-  selectedSummary: PreparationSummary | null;
-  setSelectedSummary: Setter<PreparationSummary | null>;
   confirm: ConfirmState | null;
   setConfirm: Setter<ConfirmState | null>;
   importing: ImportState | null;
   setImporting: Setter<ImportState | null>;
-  message: Notice | null;
   setMessage: Setter<Notice | null>;
-  busy: string | null;
   setBusy: Setter<string | null>;
 };
 
 export type RecoveryActions = {
+  inspectId: (operationId: string) => void;
   inspect: (item: RecoveryListItem) => void;
   loadAttempts: (operationId: string, cursor: string) => void;
   choose: (action: ConfirmState["action"], item: PreparationSummary) => void;
   act: () => Promise<void>;
   exportItem: (item: PreparationSummary) => void;
-  preview: (file: File) => void;
+  preview: (file: File) => Promise<void>;
   retain: () => Promise<void>;
 };
 
@@ -68,28 +68,66 @@ const accepted = (response: WebV3Response<"recovery.resolve">): Receipt | null =
 const operationId = (item: RecoveryListItem): string =>
   item.tag === "RETAINED" ? item.summary.operationId : item.revocation.operationId;
 
-const setInspection = (value: Inspection, ui: RecoveryUi): void => {
-  const retained: RecoveryDetails | null = value.tag === "RETAINED" ? value.value : null;
+type InspectionUi = Pick<RecoveryUi, "inspection" | "setSelected" | "setMessage" | "setBusy">;
+
+const setInspection = (value: Inspection, ui: InspectionUi): void => {
   ui.setSelected(value);
-  ui.setSelectedSummary(retained?.preparation.summary ?? null);
   ui.setMessage(null);
 };
 
-const inspectOperation = async (
+export const inspectOperation = async (
   id: string,
   attemptCursor: string | null,
   token: string,
-  ui: RecoveryUi,
+  ui: InspectionUi,
 ): Promise<void> => {
+  ui.inspection.cancel();
+  const signal = ui.inspection.begin();
+  if (attemptCursor === null) {
+    ui.setSelected(null);
+  }
   ui.setBusy(id);
-  const result = await v3.recoveryInspect(id, attemptCursor, 50, token);
+  const result = await v3.recoveryInspect(id, attemptCursor, 50, token, signal);
+  if (signal.aborted) {
+    return;
+  }
+  ui.inspection.complete();
   const details = result.kind === "outcome" ? inspection(result.value) : null;
   ui.setBusy(null);
   if (details === null) {
+    ui.setSelected(null);
     ui.setMessage(resultNotice(result));
   } else {
     setInspection(details, ui);
   }
+};
+
+const reportOperation = (
+  identity: Pick<RecoveryTarget, "operationId" | "requestSha256">,
+  message: Notice,
+  ui: RecoveryUi,
+): void => {
+  ui.setMessage(message);
+  ui.onRecovery({
+    operationId: identity.operationId,
+    requestSha256: identity.requestSha256,
+    message,
+  });
+};
+
+const exportFailure = (
+  result: ApiResult<WebV3Response<"recovery.export">>,
+  item: PreparationSummary,
+  ui: RecoveryUi,
+): void => {
+  ui.setSelected(null);
+  reportOperation(
+    item,
+    isMutationUncertain(result)
+      ? recoveryNotice(resultNotice(result), "inspectBeforeAction")
+      : resultNotice(result),
+    ui,
+  );
 };
 
 const download = async (item: PreparationSummary, token: string, ui: RecoveryUi): Promise<void> => {
@@ -100,14 +138,19 @@ const download = async (item: PreparationSummary, token: string, ui: RecoveryUi)
   ui.setBusy(item.operationId);
   const result = await v3.recoveryExport(item.operationId, item.requestSha256, token);
   ui.setBusy(null);
-  if (result.kind !== "outcome" || !("blob" in result.value)) {
-    ui.setMessage(resultNotice(result));
+  if (result.kind !== "outcome") {
+    exportFailure(result, item, ui);
     return;
   }
-  const url = URL.createObjectURL(result.value.blob);
+  const { value, status } = result;
+  if (!("blob" in value)) {
+    exportFailure({ kind: "outcome", value, status }, item, ui);
+    return;
+  }
+  const url = URL.createObjectURL(value.blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = result.value.filename;
+  link.download = value.filename;
   document.body.append(link);
   link.click();
   link.remove();
@@ -120,7 +163,8 @@ const resolutionNotice = (
   receipt: Receipt | null,
 ): Notice => {
   if (receipt !== null) {
-    return { kind: "accepted", operationId: receipt.operationId };
+    const message: Notice = { kind: "accepted", operationId: receipt.operationId };
+    return isMutationUncertain(result) ? recoveryNotice(message, "inspectBeforeAction") : message;
   }
   return isMutationUncertain(result)
     ? recoveryNotice(resultNotice(result), "inspectBeforeRetry")
@@ -141,12 +185,20 @@ const performAction = async (token: string, listing: Listing, ui: RecoveryUi): P
   if (typeof digest !== "string") {
     return;
   }
+  ui.inspection.cancel();
+  ui.setSelected(null);
   ui.setBusy(choice.item.operationId);
   if (choice.action === "DISMISS") {
     const result = await v3.recoveryDismiss(choice.item.operationId, digest, token);
     ui.setBusy(null);
     ui.setConfirm(null);
-    ui.setMessage(resultNotice(result));
+    reportOperation(
+      choice.item,
+      isMutationUncertain(result)
+        ? recoveryNotice(resultNotice(result), "inspectBeforeRetry")
+        : resultNotice(result),
+      ui,
+    );
     void listing.load(null);
     return;
   }
@@ -154,26 +206,20 @@ const performAction = async (token: string, listing: Listing, ui: RecoveryUi): P
   ui.setBusy(null);
   ui.setConfirm(null);
   const receipt = result.kind === "outcome" ? accepted(result.value) : null;
-  ui.setMessage(resolutionNotice(result, receipt));
+  reportOperation(choice.item, resolutionNotice(result, receipt), ui);
   void listing.load(null);
 };
 
-export const onceWhilePending = (
-  pending: { current: boolean },
-  action: () => Promise<void>,
-): Promise<void> => {
-  if (pending.current) {
-    return Promise.resolve();
-  }
-  pending.current = true;
-  return action().finally(() => {
-    pending.current = false;
-  });
-};
-
 const previewImport = async (file: File, token: string, ui: RecoveryUi): Promise<void> => {
+  ui.inspection.cancel();
+  const signal = ui.inspection.begin();
+  ui.setImporting(null);
   ui.setBusy("import-ENVELOPE");
-  const result = await v3.importEnvelopePreview(file, token);
+  const result = await v3.importEnvelopePreview(file, token, signal);
+  if (signal.aborted) {
+    return;
+  }
+  ui.inspection.complete();
   ui.setBusy(null);
   const data =
     result.kind === "outcome" && result.value.outcome.tag === "SUCCEEDED"
@@ -195,7 +241,13 @@ const retainImport = async (token: string, listing: Listing, ui: RecoveryUi): Pr
   const result = await v3.importEnvelopeRetain(value.file, value.preview.sourceSha256, token);
   ui.setBusy(null);
   ui.setImporting(null);
-  ui.setMessage(resultNotice(result));
+  reportOperation(
+    value.preview.decodedEffect,
+    isMutationUncertain(result)
+      ? recoveryNotice(resultNotice(result), "inspectBeforeRetry")
+      : resultNotice(result),
+    ui,
+  );
   void listing.load(null);
 };
 
@@ -204,6 +256,7 @@ export const recoveryActions = (
   listing: Listing,
   ui: RecoveryUi,
 ): RecoveryActions => ({
+  inspectId: (id) => void inspectOperation(id, null, token, ui),
   inspect: (item) => void inspectOperation(operationId(item), null, token, ui),
   loadAttempts: (id, cursor) => void inspectOperation(id, cursor, token, ui),
   choose: (action, item) => {
@@ -213,6 +266,6 @@ export const recoveryActions = (
   exportItem: (item) => {
     ui.setConfirm({ action: "EXPORT", item });
   },
-  preview: (file) => void previewImport(file, token, ui),
+  preview: (file) => previewImport(file, token, ui),
   retain: () => retainImport(token, listing, ui),
 });

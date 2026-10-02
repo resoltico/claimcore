@@ -1,4 +1,5 @@
 import { usePresentation } from "../presentation/context";
+import { NoticeView } from "../presentation/Message";
 import { useEffect, useRef, type RefObject } from "react";
 import { useOperationEditor } from "../hooks/operation/useOperationEditor";
 import { AcceptedOperation, CommandChangeDialog } from "./operation/OperationDialogs";
@@ -44,6 +45,13 @@ const OperationEditorLayout = ({
   const section = useRef<HTMLElement>(null);
   const prepareButtonRef = useRef<HTMLButtonElement>(null);
   useEditorFocus(model, section, prepareButtonRef);
+  if (model.state.delivery === "OUTCOME_UNKNOWN") {
+    return (
+      <p role="alert">
+        <NoticeView value={model.state.message!} />
+      </p>
+    );
+  }
   return (
     <section ref={section} aria-labelledby="operation-title" className="operation-editor">
       <h2 id="operation-title">{p.commandLabel(model.state.command)}</h2>

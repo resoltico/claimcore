@@ -53,6 +53,7 @@ it("rotates the retained operation ID when only an OPEN reference is changed", a
       initialCommand="OPEN"
       onClose={vi.fn()}
       onCommitted={vi.fn()}
+      onRecovery={vi.fn()}
       onMutationLockChange={vi.fn()}
     />,
   );
@@ -89,6 +90,7 @@ it("keeps existing references immutable and delegates a reviewed commit", async 
       initialCommand="CLOSE"
       onClose={vi.fn()}
       onCommitted={committed}
+      onRecovery={vi.fn()}
       onMutationLockChange={vi.fn()}
     />,
   );

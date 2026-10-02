@@ -50,22 +50,34 @@ const nextEpoch = (epoch: { current: number }): number => {
 export const useSession = () => {
   const [state, setState] = useState<SessionState>({ kind: "loading", epoch: 0 });
   const epoch = useRef(0);
+  const requestSerial = useRef(0);
 
   const refresh = useCallback(async (): Promise<void> => {
+    const requestId = ++requestSerial.current;
     const result = await v3.session();
+    if (requestSerial.current !== requestId) {
+      return;
+    }
     const value = snapshot(result);
     setState(stateFor(value, value === null ? resultNotice(result) : null, nextEpoch(epoch)));
   }, []);
 
   useEffect(() => {
     void refresh();
+    return () => {
+      requestSerial.current += 1;
+    };
   }, [refresh]);
 
   const logout = async (): Promise<void> => {
     if (state.kind !== "authenticated") {
       return;
     }
+    const requestId = ++requestSerial.current;
     const result = await v3.logout(state.token);
+    if (requestSerial.current !== requestId) {
+      return;
+    }
     const value = snapshot(result);
     // A successful logout response is an anonymous snapshot. No claimant-bearing state survives its epoch.
     setState(stateFor(value, value === null ? resultNotice(result) : null, nextEpoch(epoch)));

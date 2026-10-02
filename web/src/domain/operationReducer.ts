@@ -206,12 +206,21 @@ const completionResponse = (state: OperationState, action: CompletionResponse): 
         ...state,
         delivery: "ACCEPTED",
         receipt: action.receipt,
-        message: null,
+        message: action.message ?? null,
         pending: null,
       };
     case "OUTCOME_UNKNOWN":
       return state.pending.kind === "SUBMIT"
-        ? { ...only(state, "OUTCOME_UNKNOWN", action.message), pending: null }
+        ? {
+            ...only(state, "OUTCOME_UNKNOWN", action.message),
+            pending: null,
+            caseReference: "",
+            values: {},
+            preparation: null,
+            review: null,
+            receipt: null,
+            exposedRequest: null,
+          }
         : state;
   }
 };

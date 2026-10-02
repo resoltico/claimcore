@@ -47,7 +47,7 @@ export const CommandChangeDialog = ({ model }: CommandChangeProps) => {
 type AcceptedOperationProps = {
   definition: DefinitionPayload;
   receipt: Receipt | null;
-  onCommitted: () => void;
+  onCommitted: (receipt: Receipt) => void;
 };
 
 export const AcceptedOperation = ({ definition, receipt, onCommitted }: AcceptedOperationProps) => {
@@ -64,7 +64,13 @@ export const AcceptedOperation = ({ definition, receipt, onCommitted }: Accepted
         fields={definition.definition.fields}
         context={p.text("ui.acceptedContext", { operationId: receipt.operationId })}
       />
-      <Button onPress={onCommitted}>{p.text("ui.returnToCase")}</Button>
+      <Button
+        onPress={() => {
+          onCommitted(receipt);
+        }}
+      >
+        {p.text("ui.returnToCase")}
+      </Button>
     </section>
   );
 };

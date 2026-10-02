@@ -76,6 +76,23 @@ module CliRemoteWireCodec =
             writer.WriteString("path", failure.Path)
             writer.WriteEndObject())
 
+    /// Core recovery direction preserves earlier uncertainty even before a new attempt.
+    let private recoverExact (fault: JsonElement) =
+        let mutable action = Unchecked.defaultof<JsonElement>
+
+        fault.ValueKind = JsonValueKind.Object
+        && fault.TryGetProperty("recommendedAction", &action)
+        && action.ValueKind = JsonValueKind.String
+        && action.GetString() = "RECOVER_EXACT"
+
+    let private faultDeliveryUnconfirmed (data: JsonElement) =
+        let mutable fault = Unchecked.defaultof<JsonElement>
+
+        recoverExact data
+        || (data.ValueKind = JsonValueKind.Object
+            && data.TryGetProperty("fault", &fault)
+            && recoverExact fault)
+
     let private executionExit (outcome: JsonElement) =
         let data = outcome.GetProperty("data")
         let settlement = data.GetProperty("settlement").GetString()
@@ -83,91 +100,95 @@ module CliRemoteWireCodec =
         if settlement = "UNCONFIRMED" then
             4
         else
-            match data.GetProperty("execution").GetProperty("tag").GetString() with
+            let execution = data.GetProperty("execution")
+
+            match execution.GetProperty("tag").GetString() with
             | "ACCEPTED" -> 0
             | "REJECTED"
             | "REVOKED_BEFORE_EXECUTION" -> 2
-            | _ -> 3
+            | _ -> if faultDeliveryUnconfirmed execution then 4 else 3
 
-    /// A core-owned recovery action carries knowledge even inside the generic FAILED envelope.
-    let private faultDeliveryUnconfirmed (outcome: JsonElement) =
-        let data = outcome.GetProperty("data")
-        let mutable action = Unchecked.defaultof<JsonElement>
+    let private uncertainOutcomes =
+        Set.ofList
+            [
+                "PREPARATION_STATE_UNKNOWN"
+                "ATTEMPT_ADMISSION_UNKNOWN"
+                "ATTEMPT_UNRESOLVED"
+                "RETAIN_STATE_UNKNOWN"
+                "DISMISS_STATE_UNKNOWN"
+                "STARTED_UNCONFIRMED"
+                "UNCONFIRMED"
+            ]
 
-        data.ValueKind = JsonValueKind.Object
-        && data.TryGetProperty("recommendedAction", &action)
-        && action.ValueKind = JsonValueKind.String
-        && action.GetString() = "RECOVER_EXACT"
+    let private cancelledOutcomes =
+        Set.ofList [ "CANCELLED"; "CANCELLED_BEFORE_ADMISSION"; "CANCELLED_BEFORE_ATTEMPT" ]
+
+    let private refusedOutcomes =
+        Set.ofList
+            [
+                "REJECTED"
+                "REFUSED"
+                "NOT_FOUND"
+                "RETAINED_FOR_RECOVERY"
+                "REFUSED_BEFORE_ATTEMPT"
+            ]
+
+    let private successfulOutcomes =
+        Set.ofList
+            [
+                "PREPARED"
+                "OBSERVED_ACCEPTED"
+                "DISMISSED"
+                "ALREADY_DISMISSED"
+                "ALREADY_REVOKED"
+                "RETAINED"
+                "EXISTING"
+                "APPLIED"
+                "APPROVED"
+                "AVAILABLE"
+                "DESCRIBED"
+                "SNAPSHOT"
+                "REVOKED"
+            ]
+
+
+    let private lookupExit (data: JsonElement) =
+        let mutable inner = Unchecked.defaultof<JsonElement>
+
+        if
+            data.ValueKind = JsonValueKind.Object
+            && data.TryGetProperty("tag", &inner)
+            && inner.ValueKind = JsonValueKind.String
+            && inner.GetString() = "NOT_FOUND"
+        then
+            2
+        else
+            0
+
 
     let private outcomeExit (response: JsonElement) =
         let outcome = response.GetProperty("outcome")
         let tag = outcome.GetProperty("tag").GetString()
 
-        let succeededExit () =
-            let data = outcome.GetProperty("data")
-            let mutable inner = Unchecked.defaultof<JsonElement>
-
-            if
-                data.ValueKind = JsonValueKind.Object
-                && data.TryGetProperty("tag", &inner)
-                && inner.ValueKind = JsonValueKind.String
-                && inner.GetString() = "NOT_FOUND"
-            then
-                2
-            else
-                0
-
-        let uncertain =
-            Set.ofList
-                [
-                    "PREPARATION_STATE_UNKNOWN"
-                    "ATTEMPT_ADMISSION_UNKNOWN"
-                    "ATTEMPT_UNRESOLVED"
-                    "RETAIN_STATE_UNKNOWN"
-                    "DISMISS_STATE_UNKNOWN"
-                    "STARTED_UNCONFIRMED"
-                    "UNCONFIRMED"
-                ]
-
-        let cancelled =
-            Set.ofList [ "CANCELLED"; "CANCELLED_BEFORE_ADMISSION"; "CANCELLED_BEFORE_ATTEMPT" ]
-
-        let refused =
-            Set.ofList
-                [
-                    "REJECTED"
-                    "REFUSED"
-                    "NOT_FOUND"
-                    "RETAINED_FOR_RECOVERY"
-                    "REFUSED_BEFORE_ATTEMPT"
-                ]
-
-        let succeeded =
-            Set.ofList
-                [
-                    "PREPARED"
-                    "OBSERVED_ACCEPTED"
-                    "DISMISSED"
-                    "ALREADY_DISMISSED"
-                    "ALREADY_REVOKED"
-                    "RETAINED"
-                    "EXISTING"
-                    "APPLIED"
-                    "APPROVED"
-                    "AVAILABLE"
-                    "DESCRIBED"
-                    "SNAPSHOT"
-                    "REVOKED"
-                ]
-
-        if tag = "FAILED" && faultDeliveryUnconfirmed outcome then 4
-        elif tag = "COMPLETED" then executionExit outcome
-        elif tag = "SUCCEEDED" then succeededExit ()
-        elif Set.contains tag uncertain then 4
-        elif Set.contains tag cancelled then 130
-        elif Set.contains tag refused then 2
-        elif Set.contains tag succeeded then 0
-        else 3
+        if
+            (tag = "FAILED" || tag = "FAILED_BEFORE_ATTEMPT")
+            && faultDeliveryUnconfirmed (outcome.GetProperty("data"))
+        then
+            4
+        elif tag = "COMPLETED" then
+            executionExit outcome
+        elif tag = "SUCCEEDED" then
+            lookupExit (outcome.GetProperty("data"))
+        elif Set.contains tag uncertainOutcomes then
+            4
+        elif Set.contains tag cancelledOutcomes then
+            130
+        elif Set.contains tag refusedOutcomes then
+            2
+        elif Set.contains tag successfulOutcomes then
+            0
+        else
+            3
 
     let result (endpoint: string) (response: JsonElement) =
         let exitCode = outcomeExit response
