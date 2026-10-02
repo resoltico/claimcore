@@ -28,6 +28,7 @@ const renderEditor = (overrides: Partial<React.ComponentProps<typeof OperationEd
     initialCommand: "CLOSE",
     onClose: vi.fn(),
     onCommitted: vi.fn(),
+    onRecovery: vi.fn(),
     onMutationLockChange: vi.fn(),
   };
   return render(<OperationEditor {...defaults} {...overrides} />);
@@ -167,7 +168,7 @@ const uncertainSubmitDelivery = async (): Promise<void> => {
   expect(await screen.findByRole("alert")).toHaveTextContent(
     "Inspect Recovery before taking another action.",
   );
-  expect(screen.getByRole("button", { name: "Back without preparing" })).toBeDisabled();
+  expect(screen.queryByRole("button", { name: "Back without preparing" })).toBeNull();
 };
 
 const acceptedSubmission = async (): Promise<void> => {

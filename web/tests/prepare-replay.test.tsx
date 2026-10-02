@@ -37,6 +37,7 @@ const renderEditor = (committed = vi.fn(), locked = vi.fn()) =>
       initialCommand="CLOSE"
       onClose={vi.fn()}
       onCommitted={committed}
+      onRecovery={vi.fn()}
       onMutationLockChange={locked}
     />,
   );

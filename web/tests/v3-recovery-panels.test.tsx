@@ -14,6 +14,7 @@ import type { RecoveryActions } from "../src/views/recovery/RecoveryState";
 import { fields, operationId, preparation } from "./v3-ui.fixtures";
 
 const actions = (): RecoveryActions => ({
+  inspectId: vi.fn(),
   inspect: vi.fn(),
   loadAttempts: vi.fn(),
   choose: vi.fn(),
@@ -65,7 +66,7 @@ it("renders observed recovery details and leaves only permitted server actions e
       selected={{
         tag: "RETAINED",
         value: {
-          preparation,
+          preparation: { ...preparation, summary: acceptedSummary },
           observation: {
             tag: "FOUND",
             value: {
@@ -79,7 +80,7 @@ it("renders observed recovery details and leaves only permitted server actions e
           },
         },
       }}
-      summary={acceptedSummary}
+
       onClose={close}
       actions={action}
     />,
@@ -155,7 +156,7 @@ it("renders recovery import controls and lets the page reload without mutation",
     <RecoveryPage
       listing={page}
       selected={null}
-      summary={null}
+
       confirm={null}
       importing={null}
       message={null}
@@ -211,7 +212,7 @@ it("renders terminal revocation authority and exposes no mutation action", () =>
       <RecoveryPage
         listing={view}
         selected={null}
-        summary={null}
+
         confirm={null}
         importing={null}
         message={null}
@@ -223,7 +224,7 @@ it("renders terminal revocation authority and exposes no mutation action", () =>
       />
       <RecoveryDetailsDialog
         selected={{ tag: "REVOKED", revocation: revoked.revocation }}
-        summary={null}
+
         onClose={vi.fn()}
         actions={action}
       />
@@ -243,7 +244,7 @@ it("switches recovery views explicitly and leaves unavailable capacity unrendere
     <RecoveryPage
       listing={view}
       selected={null}
-      summary={null}
+
       confirm={null}
       importing={null}
       message={null}
@@ -285,7 +286,7 @@ it("requests the next server attempt page only from an inspected retained item",
           observation: { tag: "NOT_FOUND", identity: operationId },
         },
       }}
-      summary={preparation.summary}
+
       onClose={vi.fn()}
       actions={action}
     />,

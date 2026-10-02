@@ -2,6 +2,8 @@ import type { Notice } from "../api/notices";
 import type { AdvisoryReview, CommandDraft, PreparationDetails, Receipt } from "../api/v3";
 import type { CommandKind, CorrectionGroupName, CorrectionMode, DraftValues } from "./metadata";
 
+export type RecoveryTarget = { operationId: string; requestSha256: string | null; message: Notice };
+
 export type DeliveryState =
   | "EDITING"
   | "PREPARING"
@@ -54,7 +56,7 @@ export type OperationAction =
     }
   | { type: "DEFINITELY_REJECTED"; requestId: number; message: Notice; field: string | null }
   | { type: "SUBMITTING"; requestId: number }
-  | { type: "ACCEPTED"; requestId: number; receipt: Receipt }
+  | { type: "ACCEPTED"; requestId: number; receipt: Receipt; message?: Notice | null }
   | { type: "OUTCOME_UNKNOWN"; requestId: number; message: Notice }
   | { type: "KEEP_FOR_RECOVERY" }
   | { type: "RESET_MESSAGE" };

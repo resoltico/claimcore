@@ -566,6 +566,9 @@
       "value": "Saglabāt pieņemto maksājuma ierakstu, aizstāt tā datumu vai dzēst reģistrēto datumu; dzēšana neatceļ ārēju pārskaitījumu."
     }
   ],
+  "notice.responseTimeout": [
+    { "type": 0, "value": "Pakalpojuma atbildes gaidīšanas laiks ir beidzies." }
+  ],
   "notice.unreachable": [{ "type": 0, "value": "Vietējais pakalpojums nav sasniedzams." }],
   "notice.invalidHttp": [
     { "type": 0, "value": "Vietējais pakalpojums atgrieza nederīgu HTTP " },

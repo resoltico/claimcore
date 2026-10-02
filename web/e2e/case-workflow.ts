@@ -156,9 +156,8 @@ export const openCase = async (page: Page, caseReference: string): Promise<Prepa
   await startOpen(page, caseReference);
   const identity = await prepare(page);
   await submit(page);
-  await page.getByRole("button", { name: caseReference }).click();
-  await progress("open-detail");
   await expect(page.getByRole("heading", { name: "Case detail" })).toBeVisible();
+  await progress("open-detail");
   await expect(page.locator("section.case-fields").first().locator("dl > div")).toHaveCount(13);
   return identity;
 };

@@ -243,6 +243,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-CLI-002 | unit | ClaimCore deterministic suite.export effect and delivery ownership.[CC-CLI-002] private destination failure retains observed service completion |
 | CC-CLI-002 | unit | ClaimCore deterministic suite.export effect and delivery ownership.[CC-CLI-002] witnessed export is noncancellable and lost completion stays uncertain |
 | CC-CLI-002 | unit | ClaimCore deterministic suite.native private-file ancestor race.[CC-CLI-002] descriptor-relative create and lock remain in pinned parent after ancestor swap |
+| CC-CLI-003 | unit | ClaimCore deterministic suite.CLI-v4 service exit contract.[CC-CLI-003] nested faults preserve earlier exact-operation uncertainty |
 | CC-CLI-003 | unit | ClaimCore deterministic suite.endpoint extension ownership.[CC-CLI-003] new case query derives response ownership without mutation authority |
 | CC-CLI-003 | unit | ClaimCore deterministic suite.remote frame-local delivery diagnostics.[CC-CLI-003] every generated CLI mutation retains delivery uncertainty |
 | CC-CLI-003 | unit | ClaimCore deterministic suite.remote invocation contract.[CC-CLI-003] CLI v4 inputs bind exact noncancellable endpoints |

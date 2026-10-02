@@ -60,14 +60,15 @@ test("preserves a committed operation and exact recovery identity when its local
     await selectLanguage(page, "ar");
     await selectFormat(page, "lv-LV");
     await page.keyboard.press("Escape");
-    await expect(page.getByRole("dialog")).toBeVisible();
     await expect(page.getByRole("checkbox")).toBeChecked();
     expect(requests).toHaveLength(1);
     pending.release();
     await expect(page.getByRole("alert")).toBeVisible();
     await selectLanguage(page, "en");
-    await expect(page.getByRole("button", { name: "Back without preparing" })).toBeDisabled();
-    expect(requests).toHaveLength(1);
+    await expect(page.getByRole("heading", { name: "Recovery", exact: true })).toBeVisible();
+    expect(
+      requests.filter((request) => request.endsWith("/api/v3/operations/submit")),
+    ).toHaveLength(1);
   } finally {
     pending.release();
   }

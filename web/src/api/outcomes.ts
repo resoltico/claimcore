@@ -56,12 +56,30 @@ export const resultNotice = (result: ApiResult<EndpointOutcome | Download>): Not
       return localNotice("incomplete");
   }
 };
+const uncertainOutcome = (data: EndpointOutcome["outcome"]["data"]): boolean => {
+  const recoverExact = (value: object): boolean =>
+    "recommendedAction" in value && value.recommendedAction === "RECOVER_EXACT";
+  if (
+    data !== null &&
+    typeof data === "object" &&
+    (recoverExact(data) ||
+      ("fault" in data && recoverExact(data.fault)) ||
+      ("execution" in data && "fault" in data.execution && recoverExact(data.execution.fault)) ||
+      ("settlement" in data && data.settlement === "UNCONFIRMED"))
+  ) {
+    return true;
+  }
+  return false;
+};
 export const isMutationUncertain = (result: ApiResult<EndpointOutcome>): boolean => {
   if (result.kind === "deliveryFailure") {
     return true;
   }
   if (result.kind === "hostFailure") {
     return result.failure.executionPhase !== "NOT_STARTED";
+  }
+  if (uncertainOutcome(result.value.outcome.data)) {
+    return true;
   }
   return [
     "PREPARATION_STATE_UNKNOWN",

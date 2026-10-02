@@ -178,6 +178,12 @@ attempt; pruned technical material cannot be exported.
 
 ## Session and delivery safety
 
+An editor keeps navigation and logout unavailable until its explicit Back or accepted Return to case
+action. Language and format changes preserve the draft and review. Return uses the accepted receipt's
+reference, including OPEN, then rereads current state and available commands. Session snapshots are
+applied in request order; a late older refresh cannot replace newer session knowledge or undo logout.
+Every newly established session epoch starts a fresh authenticated client subtree.
+
 Logout is unavailable while a mutation is dispatched. When it succeeds, the host signs out the server-side browser ticket and cookie, makes the principal anonymous, issues a fresh anonymous antiforgery token, and returns that session snapshot. The browser increments its local session epoch, aborts reads, and clears claimant state.
 
 A definite server access refusal on a paginated read clears that request's cached rows, continuation
@@ -185,10 +191,19 @@ and page metadata. Transient delivery/storage failures remain retryable; other r
 state. Already-disclosed downloads, clipboard contents and human knowledge are not remotely erased.
 
 Reads may be abortable. Mutation HTTP never uses browser cancellation after dispatch. A typed
-not-started admission response proves no execution. A lost prepare response remains uncertain and may be retried or inspected with the exact operation ID and request bytes. A lost, timed-out,
+not-started admission response proves no execution. Browser JSON and export response waits have a
+twenty-second deadline, including body delivery and validation; expiration neither aborts a mutation
+nor proves that the server failed. A later response cannot replace the already-reported uncertainty.
+A lost prepare response remains uncertain and may be retried or inspected with the exact operation ID and request bytes. A lost, timed-out,
 malformed, wrong-media, or undecodable submit response after dispatch is
 `STARTED_UNCONFIRMED`: preserve only operation ID, digest, and recovery direction, clear claimant
 state, and never retry automatically.
+
+An uncertain submit or non-reviewable retained preparation opens Recovery with that exact identity.
+Inspect remains explicit and does not depend on the operation appearing in the pending list.
+Operations lookup is prefilled with the same ID for observation when preparation is absent or pruned;
+absence is never proof of failure. A known accepted receipt remains acceptance evidence when its
+response also reports unconfirmed witness settlement; the browser separately directs Recovery.
 
 ## Recovery, downloads, and clipboard
 
@@ -200,6 +215,12 @@ can resolve or dismiss only after accessible confirmation using the exact operat
 An accepted receipt is not offered as a new resolve action; an exact replay can observe it without a
 second accepted revision. Reload clears browser review state; durable recovery is the Application
 workflow, not browser state.
+
+Recovery resolve, dismiss, retain and export lock navigation/logout through dispatch. Resolution and dismissal
+invalidate old inspected mutation actions; results retain the subject ID/digest for fresh inspection.
+Reads and import previews can be canceled; late observation, inspection or attempt-page responses
+cannot overwrite a changed target or reopen a closed dialog. An explicit core RECOVER_EXACT direction
+remains uncertain inside generic faults and failed-before-attempt responses.
 
 Export first warns the operator, then accepts only a bounded attachment named exactly
 `claimcore-recovery-<canonical-operation-id>.json` with media type

@@ -1112,6 +1112,11 @@
     },
     { "type": 0, "value": "⟧" }
   ],
+  "notice.responseTimeout": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë sëërvïïcëë rëëspöönsëë tïïmëëd ööüüt." },
+    { "type": 0, "value": "⟧" }
+  ],
   "notice.unreachable": [
     { "type": 0, "value": "⟦" },
     { "type": 0, "value": "Thëë lööcààl sëërvïïcëë cööüüld nööt bëë rëëààchëëd." },

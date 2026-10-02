@@ -12,13 +12,16 @@ import type {
 import type { OperationAction, OperationState } from "../../domain/operationReducer";
 import type { CommandKind } from "../../domain/metadata";
 
+import type { RecoveryTarget } from "../../domain/operationState";
+
 export type OperationEditorProps = {
   token: string;
   definition: DefinitionPayload;
   current: CurrentCase | null;
   initialCommand: CommandKind;
   onClose: () => void;
-  onCommitted: () => void;
+  onCommitted: (receipt: Receipt) => void;
+  onRecovery: (target: RecoveryTarget) => void;
   onMutationLockChange: (locked: boolean) => void;
 };
 
@@ -63,4 +66,5 @@ export type SubmissionRequest = {
   draft: CommandDraft | null;
   token: string;
   dispatch: Dispatch<OperationAction>;
+  onRecovery: OperationEditorProps["onRecovery"];
 };

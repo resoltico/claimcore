@@ -86,10 +86,7 @@ const resolveAndObserve = async (page: Page, identity: PreparedIdentity): Promis
   await expectAccessible(page);
   await resolve.getByRole("button", { name: "Confirm resolve" }).click();
   await expect(page.getByRole("status")).toContainText("Accepted exact operation");
-  await page
-    .getByRole("dialog", { name: "Recovery details" })
-    .getByRole("button", { name: "Cancel" })
-    .click();
+  await expect(page.getByRole("dialog", { name: "Recovery details" })).toHaveCount(0);
   await selectRecoveryView(page, "TERMINAL");
   await inspect(page, identity);
   await expect(page.getByRole("button", { name: "Resolve exact preparation" })).toHaveCount(0);
@@ -145,11 +142,12 @@ test("preserves operation identity after a dropped published submit response", a
   await openAuthenticated(page);
   await openCase(page, caseReference);
   const identity = await droppedSubmission(page);
-  await expect(page.getByRole("button", { name: "Sign out" })).toBeDisabled();
-  await page.reload();
-  await navigateRecovery(page);
-  await selectRecoveryView(page, "TERMINAL");
-  await inspect(page, identity);
+  await expect(page.getByRole("button", { name: "Sign out" })).toBeEnabled();
+  await expect(page.getByRole("heading", { name: "Recovery", exact: true })).toBeVisible();
+  await expect(page.getByRole("alert")).toContainText(identity.operationId);
+  await expect(page.getByRole("alert")).toContainText(identity.requestSha256);
+  await expectAccessible(page);
+  await page.getByRole("alert").getByRole("button", { name: "Inspect", exact: true }).click();
   await expect(page.getByRole("dialog", { name: "Recovery details" })).toContainText(
     "Observed accepted operation",
   );
@@ -159,7 +157,7 @@ test("preserves operation identity after a dropped published submit response", a
     .getByRole("button", { name: "Cancel" })
     .click();
   await page.getByRole("button", { name: "Operations", exact: true }).click();
-  await page.getByLabel("Exact operation ID").fill(identity.operationId);
+  await expect(page.getByLabel("Exact operation ID")).toHaveValue(identity.operationId);
   await page.getByRole("button", { name: "Observe operation" }).click();
   await expect(
     page.getByText(`Accepted operation ${identity.operationId}`, { exact: false }),

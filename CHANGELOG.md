@@ -4,6 +4,12 @@ Notable changes to this project are documented in this file. The format is based
 
 ## [Unreleased]
 
+### Fixed
+
+- Browser Return to case opens the accepted case, including a newly registered case, and rereads current state. Editing keeps navigation and logout unavailable until the explicit Back or return action, preserving draft context.
+- Uncertain browser submissions and non-reviewable preparations open Recovery with the exact operation ID and digest, clearing the editor's private state. Inspection works independently of pending-list membership; Operations retains the same ID for receipt observation. Recovery mutations lock navigation/logout during dispatch and invalidate stale inspected actions afterward.
+- Late browser session snapshots, operation observations and recovery reads cannot replace newer state or reopen closed details. Browser response waits expire after twenty seconds without aborting dispatched mutations or treating timeout as failure to commit. Core `RECOVER_EXACT` faults remain uncertain in browser and CLI classification, including nested prepare and failed-before-attempt faults; affected CLI results now exit 4 instead of 3. Scripts must handle that uncertainty and preserve the exact operation identity. Known browser acceptance with unconfirmed settlement also directs Recovery.
+
 ### Internal
 
 - Web endpoint metadata owns its response schema directly; generated TypeScript response modules derive family membership from endpoint namespaces and reject duplicates or unknown families. Web JSON registration shares its admission setup while retaining explicit typed handlers and separate raw recovery handling. Adding an endpoint no longer requires matching a second response inventory and a presentation-only identifier list; generated contract bytes and mutation-safety classification remain unchanged.

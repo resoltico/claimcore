@@ -1,12 +1,10 @@
 import { usePreparedConsent } from "./usePreparedConsent";
-import { recoveryNotice } from "../../api/notices";
+import { sendPrepare, sendSubmit } from "./operationDelivery";
 import { useEffect, useReducer, useRef, useState } from "react";
-import { isMutationUncertain, resultNotice, v3 } from "../../api/v3";
 import {
   commandFor,
   commandInputs,
   correctionGroups,
-  createDraft,
   isCorrectionGroupName,
   isDirty,
   prefilledValues,
@@ -19,14 +17,8 @@ import type {
   EditorState,
   OperationEditorModel,
   OperationEditorProps,
-  SubmissionRequest,
 } from "../../views/operation/editorTypes";
-import {
-  acceptedReceipt,
-  isLocked,
-  nextOperationId,
-  prepared,
-} from "../../views/operation/editorSupport";
+import { isLocked, nextOperationId } from "../../views/operation/editorSupport";
 
 const initialValues = (props: OperationEditorProps) =>
   prefilledValues(props.definition.definition, props.initialCommand, props.current?.case ?? null);
@@ -51,111 +43,6 @@ const useEditorState = (props: OperationEditorProps): EditorState => {
     pendingCommand,
     setPendingCommand,
   };
-};
-
-const draftForPrepare = (props: OperationEditorProps, state: EditorState) =>
-  state.state.exposedRequest ??
-  createDraft(
-    state.state.operationId,
-    state.state.caseReference,
-    props.current?.case.revision ?? "0",
-    state.state.command,
-    { ...state.state.values },
-  );
-
-const dispatchPrepareResult = (
-  state: EditorState,
-  requestId: number,
-  result: Awaited<ReturnType<typeof v3.prepare>>,
-): void => {
-  const value = result.kind === "outcome" ? prepared(result.value) : null;
-  if (value !== null) {
-    state.dispatch({
-      type: "PREPARED",
-      requestId,
-      preparation: value.details,
-      review: value.review,
-    });
-    return;
-  }
-  if (result.kind === "outcome" && result.value.outcome.tag === "OBSERVED_ACCEPTED") {
-    state.dispatch({ type: "ACCEPTED", requestId, receipt: result.value.outcome.data.receipt });
-    return;
-  }
-  if (result.kind === "outcome" && result.value.outcome.tag === "RETAINED_FOR_RECOVERY") {
-    const { details, rejection } = result.value.outcome.data;
-    state.dispatch({
-      type: "RETAINED_FOR_RECOVERY",
-      requestId,
-      preparation: details,
-      message: recoveryNotice(
-        { kind: "diagnostic", diagnostic: rejection.diagnostic },
-        "inspectBeforeAction",
-      ),
-    });
-    return;
-  }
-  if (isMutationUncertain(result)) {
-    state.dispatch({
-      type: "PREPARATION_UNKNOWN",
-      requestId,
-      message: recoveryNotice(resultNotice(result), "inspectBeforeRetry"),
-    });
-    return;
-  }
-  const field =
-    result.kind === "outcome" && result.value.outcome.tag === "REJECTED"
-      ? result.value.outcome.data.rejection.field
-      : null;
-  state.dispatch({ type: "DEFINITELY_REJECTED", requestId, message: resultNotice(result), field });
-};
-
-const sendPrepare = async (
-  props: OperationEditorProps,
-  state: EditorState,
-  requestId: number,
-): Promise<void> => {
-  const draft = draftForPrepare(props, state);
-  state.dispatch({ type: "PREPARING", requestId, draft });
-  const result = await v3.prepare(draft, props.token);
-  dispatchPrepareResult(state, requestId, result);
-};
-
-const sendSubmit = async ({
-  preparation,
-  draft,
-  token,
-  dispatch,
-  requestId,
-}: SubmissionRequest & { requestId: number }): Promise<void> => {
-  const digest = preparation?.summary.requestSha256;
-  if (
-    preparation === null ||
-    draft === null ||
-    draft.operationId !== preparation.summary.operationId ||
-    typeof digest !== "string"
-  ) {
-    return;
-  }
-  dispatch({ type: "SUBMITTING", requestId });
-  const result = await v3.submit(draft, token);
-  const receipt = result.kind === "outcome" ? acceptedReceipt(result.value) : null;
-  if (receipt !== null) {
-    dispatch({ type: "ACCEPTED", requestId, receipt });
-  } else if (isMutationUncertain(result)) {
-    dispatch({
-      type: "OUTCOME_UNKNOWN",
-      requestId,
-      message: recoveryNotice(resultNotice(result), "inspectBeforeAction"),
-    });
-  } else {
-    dispatch({
-      type: "DEFINITELY_REJECTED",
-      requestId,
-      message: resultNotice(result),
-      field: null,
-    });
-  }
 };
 
 const canSendPrepare = (state: EditorState): boolean =>
@@ -249,6 +136,7 @@ const useEditorActions = (props: OperationEditorProps, state: EditorState): Edit
           draft: state.state.exposedRequest,
           token: props.token,
           dispatch: state.dispatch,
+          onRecovery: props.onRecovery,
           requestId: nextRequestId(),
         });
       } finally {

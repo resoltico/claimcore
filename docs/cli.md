@@ -163,6 +163,10 @@ Discovery, token acquisition and service response reads each carry the client's 
 whole-request deadline through headers and bounded content. A timeout after mutation dispatch retains
 unconfirmed delivery; it never means that server execution rolled back.
 
+Core RECOVER_EXACT direction also exits 4 when nested in a prepare fault or a
+FAILED_BEFORE_ATTEMPT response. That response can describe an earlier uncertain operation; refusing
+a new attempt does not settle the earlier one. Preserve its exact identity and inspect before retry.
+
 ## Canonical request identity and recovery
 
 Canonical format-3 request identity preserves authored string content. Thus amount spellings such as

@@ -4,11 +4,11 @@ import type { Notice } from "../../api/notices";
 import { Button } from "react-aria-components/Button";
 import type {
   PreparationDetails,
-  PreparationSummary,
   RecoveryListItem,
   RecoveryPage as RecoveryPageResult,
   RevokedOperation,
 } from "../../api/v3";
+import { RecoveryActionButtons } from "./RecoveryConfirmDialog";
 import { AccessibleModal } from "../../components/AccessibleModal";
 import type { Inspection, RecoveryActions, RecoveryViewKind } from "./RecoveryState";
 
@@ -167,7 +167,7 @@ export const RecoveryList = ({
                 onPress={() => {
                   actions.inspect(item);
                 }}
-                isDisabled={busy === id}
+                isDisabled={busy !== null}
               >
                 {item.tag === "RETAINED" ? p.text("ui.inspect") : p.text("ui.inspectRevocation")}
               </Button>
@@ -184,62 +184,13 @@ export const RecoveryList = ({
   );
 };
 
-const ActionButtons = ({
-  summary,
-  actions,
-}: {
-  summary: PreparationSummary;
-  actions: RecoveryActions;
-}) => {
-  const p = usePresentation();
-  const digestAvailable = summary.requestSha256 !== null;
-  const canResolve =
-    summary.authority === "PENDING" &&
-    summary.availableActions.includes("RESOLVE") &&
-    digestAvailable;
-  const canDismiss = summary.availableActions.includes("DISMISS") && digestAvailable;
-  return (
-    <div className="dialog-actions">
-      {canResolve ? (
-        <Button
-          onPress={() => {
-            actions.choose("RESOLVE", summary);
-          }}
-        >
-          {p.text("ui.resolveExact")}
-        </Button>
-      ) : null}
-      {canDismiss ? (
-        <Button
-          className="secondary-button"
-          onPress={() => {
-            actions.choose("DISMISS", summary);
-          }}
-        >
-          {p.text("ui.dismissPreparation")}
-        </Button>
-      ) : null}
-      {digestAvailable && summary.availableActions.includes("EXPORT") ? (
-        <Button
-          className="secondary-button"
-          onPress={() => {
-            actions.exportItem(summary);
-          }}
-        >
-          {p.text("ui.exportEnvelope")}
-        </Button>
-      ) : null}
-    </div>
-  );
-};
-
 const DetailsBody = ({
   selected,
-  summary,
+  busy,
   actions,
 }: {
   selected: Inspection | null;
-  summary: PreparationSummary | null;
+  busy: boolean;
   actions: RecoveryActions;
 }) => {
   const p = usePresentation();
@@ -249,9 +200,7 @@ const DetailsBody = ({
   if (selected.tag === "REVOKED") {
     return <RevocationDetails {...selected.revocation} />;
   }
-  if (summary === null) {
-    return null;
-  }
+  const { summary } = selected.value.preparation;
   return (
     <>
       <RetainedDetails value={selected.value.preparation} actions={actions} />
@@ -263,19 +212,19 @@ const DetailsBody = ({
           })}
         </p>
       ) : null}
-      <ActionButtons summary={summary} actions={actions} />
+      <RecoveryActionButtons summary={summary} actions={actions} busy={busy} />
     </>
   );
 };
 
 export const RecoveryDetailsDialog = ({
   selected,
-  summary,
+  busy = false,
   onClose,
   actions,
 }: {
   selected: Inspection | null;
-  summary: PreparationSummary | null;
+  busy?: boolean;
   onClose: () => void;
   actions: RecoveryActions;
 }) => {
@@ -292,7 +241,7 @@ export const RecoveryDetailsDialog = ({
         }
       }}
     >
-      <DetailsBody selected={selected} summary={summary} actions={actions} />
+      <DetailsBody selected={selected} busy={busy} actions={actions} />
     </AccessibleModal>
   );
 };

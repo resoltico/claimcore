@@ -1,4 +1,5 @@
 {
+  "notice.responseTimeout": "The service response timed out.",
   "notice.unreachable": "The local service could not be reached.",
   "notice.invalidHttp": "The local service returned an invalid HTTP {status} response.",
   "notice.fileTooLarge": "The selected file exceeds {maximumBytes} bytes.",

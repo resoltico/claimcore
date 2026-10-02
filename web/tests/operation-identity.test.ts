@@ -1,7 +1,11 @@
 import { localNotice } from "../src/api/notices";
 import { expect, it } from "vitest";
 import { createDraft } from "../src/domain/metadata";
-import { initialOperation, operationReducer } from "../src/domain/operationReducer";
+import {
+  initialOperation,
+  operationReducer,
+  type OperationState,
+} from "../src/domain/operationReducer";
 import { caseFields, groupedCorrectionValues, preparation, review } from "./v3-foundation.fixtures";
 import { expectDomainHelpersExact } from "./domain-metadata.fixtures";
 import {
@@ -13,6 +17,14 @@ import {
   reviewed,
   secondId,
 } from "./operation-identity.fixtures";
+
+const expectUnknownPrivateStateCleared = (completed: OperationState): void => {
+  expect(completed.caseReference).toBe("");
+  expect(completed.values).toEqual({});
+  expect(completed.exposedRequest).toBeNull();
+  expect(completed.preparation).toBeNull();
+  expect(completed.review).toBeNull();
+};
 
 it("forks a new ID when an exposed request is edited after definite submit refusal", () => {
   const unexposed = operationReducer(initial(), {
@@ -212,6 +224,7 @@ it("models definite rejection and unknown outcomes without allowing a dispatched
     { type: "OUTCOME_UNKNOWN", requestId: 4, message: localNotice("unreachable") },
   );
   expect(completed.delivery).toBe("OUTCOME_UNKNOWN");
+  expectUnknownPrivateStateCleared(completed);
   expect(operationReducer(completed, { type: "RESET_MESSAGE" }).message).toBeNull();
 });
 

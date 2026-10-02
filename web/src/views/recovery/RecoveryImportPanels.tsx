@@ -51,7 +51,7 @@ export const RecoveryImports = ({
   actions: RecoveryActions;
 }) => (
   <div className="actions">
-    <ImportButton busy={busy === "import-ENVELOPE"} onFile={actions.preview} />
+    <ImportButton busy={busy !== null} onFile={(file) => void actions.preview(file)} />
   </div>
 );
 

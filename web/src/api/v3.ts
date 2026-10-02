@@ -1,4 +1,5 @@
 import type { ApiResult } from "./types";
+import { withinResponseDeadline } from "./responseDeadline";
 import { exactDownloadDisposition } from "./downloadDisposition";
 import { localNotice } from "./notices";
 import {
@@ -55,10 +56,7 @@ const readJson = async (response: Response): Promise<unknown> => {
   }
 };
 
-const hostFailureStatus = (status: number): boolean =>
-  webV3HostFailureStatuses.some((candidate) => candidate === status);
-
-const decodeValidatedJsonResponse = async <K extends WebV3EndpointId>(
+const decodeJsonResponse = async <K extends WebV3EndpointId>(
   id: K,
   status: number,
   value: unknown,
@@ -66,7 +64,10 @@ const decodeValidatedJsonResponse = async <K extends WebV3EndpointId>(
   if (status === 200 && (await isWebV3Response(id, value))) {
     return { kind: "outcome", value: value as WebV3Response<K>, status };
   }
-  if (hostFailureStatus(status) && (await isHostFailure(value, status))) {
+  if (
+    webV3HostFailureStatuses.some((candidate) => candidate === status) &&
+    (await isHostFailure(value, status))
+  ) {
     return { kind: "hostFailure", failure: value as HostFailure, status };
   }
   return {
@@ -75,13 +76,7 @@ const decodeValidatedJsonResponse = async <K extends WebV3EndpointId>(
   };
 };
 
-const decodeJsonResponse = <K extends WebV3EndpointId>(
-  id: K,
-  status: number,
-  value: unknown,
-): Promise<ApiResult<WebV3Response<K>>> => decodeValidatedJsonResponse(id, status, value);
-
-const request = async <K extends WebV3EndpointId>(
+const requestResult = async <K extends WebV3EndpointId>(
   id: K,
   token: string | undefined,
   body: JsonBody | RawBody | undefined,
@@ -114,6 +109,13 @@ const request = async <K extends WebV3EndpointId>(
     return { kind: "deliveryFailure", notice: localNotice("unreachable") };
   }
 };
+
+const request = <K extends WebV3EndpointId>(
+  id: K,
+  token: string | undefined,
+  body: JsonBody | RawBody | undefined,
+  signal?: AbortSignal,
+) => withinResponseDeadline(requestResult(id, token, body, signal));
 
 type RawEndpointId = "recovery.importEnvelopePreview" | "recovery.importEnvelopeRetain";
 
@@ -149,7 +151,7 @@ const importRaw = async <K extends RawEndpointId>(
   }
 };
 
-const exportRecovery = async (
+const exportRecoveryResult = async (
   operationId: string,
   requestSha256: string,
   token: string,
@@ -188,6 +190,9 @@ const exportRecovery = async (
     return { kind: "deliveryFailure", notice: localNotice("unreachable") };
   }
 };
+
+const exportRecovery = (operationId: string, requestSha256: string, token: string) =>
+  withinResponseDeadline(exportRecoveryResult(operationId, requestSha256, token));
 
 export const v3 = {
   session: () => request("session", undefined, undefined),

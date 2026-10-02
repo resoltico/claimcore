@@ -97,7 +97,8 @@ it("keeps an in-flight submission and its exact recovery identity through langua
   expect(screen.getByRole("alert")).toHaveTextContent(
     "Inspect Recovery before taking another action.",
   );
-  expect(screen.getByRole("button", { name: "Back without preparing" })).toBeDisabled();
+  expect(screen.queryByRole("button", { name: "Back without preparing" })).toBeNull();
+  expect(screen.queryByRole("textbox")).toBeNull();
   expect(fetch).toHaveBeenCalledTimes(2);
   expect(JSON.parse(typeof submitted?.body === "string" ? submitted.body : "")).toEqual(draftAt(0));
 });

@@ -2,7 +2,8 @@ import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
 import { Button } from "react-aria-components/Button";
 import { useState } from "react";
-import type { CurrentCase, DefinitionPayload } from "../api/v3";
+import type { CurrentCase, DefinitionPayload, Receipt } from "../api/v3";
+import type { RecoveryTarget } from "../domain/operationState";
 import type { CommandKind } from "../domain/metadata";
 import { useDefinition } from "../hooks/useDefinition";
 import { CaseDetail } from "./CaseDetail";
@@ -84,7 +85,9 @@ type ContentProps = {
   setOperation: (value: OperationTarget | null) => void;
   setSelectedReference: (value: string | null) => void;
   setLocked: (value: boolean) => void;
-  committed: () => void;
+  committed: (receipt: Receipt) => void;
+  recover: (target: RecoveryTarget) => void;
+  recoveryTarget: RecoveryTarget | null;
 };
 
 type PaneProps = Pick<
@@ -127,98 +130,112 @@ const CasesPane = ({
   );
 };
 
-const DashboardContent = ({
-  token,
-  definition,
-  active,
-  operation,
-  selectedReference,
-  refresh,
-  setOperation,
-  setSelectedReference,
-  setLocked,
-  committed,
-}: ContentProps) => {
+const DashboardContent = (props: ContentProps) => {
+  const { definition, operation } = props;
   const p = usePresentation();
+  const workflow = {
+    token: props.token,
+    onRecovery: props.recover,
+    onMutationLockChange: props.setLocked,
+  };
   if (definition === null) {
     return <p>{p.text("ui.loadingDefinition")}</p>;
   }
   if (operation !== null) {
     return (
       <OperationEditor
-        token={token}
+        {...workflow}
         definition={definition}
         current={operation.current}
         initialCommand={operation.command}
         onClose={() => {
-          setOperation(null);
+          props.setOperation(null);
         }}
-        onCommitted={committed}
-        onMutationLockChange={setLocked}
+        onCommitted={props.committed}
       />
     );
   }
-  if (active === "recovery") {
-    return <RecoveryView token={token} />;
+  if (props.active === "recovery") {
+    return <RecoveryView {...workflow} target={props.recoveryTarget} />;
   }
-  if (active === "operations") {
-    return <OperationLookup token={token} definition={definition} />;
+  if (props.active === "operations") {
+    return (
+      <OperationLookup
+        token={props.token}
+        definition={definition}
+        initialOperationId={props.recoveryTarget?.operationId ?? ""}
+      />
+    );
   }
   return (
     <CasesPane
-      token={token}
+      token={props.token}
       definition={definition}
-      selectedReference={selectedReference}
-      refresh={refresh}
-      setOperation={setOperation}
-      setSelectedReference={setSelectedReference}
+      selectedReference={props.selectedReference}
+      refresh={props.refresh}
+      setOperation={props.setOperation}
+      setSelectedReference={props.setSelectedReference}
     />
   );
 };
 
-export const Dashboard = ({ token, sessionEpoch, onLogout }: DashboardProps) => {
+const useDashboardNavigation = () => {
   const [active, setActive] = useState<"cases" | "recovery" | "operations">("cases");
   const [selectedReference, setSelectedReference] = useState<string | null>(null);
   const [operation, setOperation] = useState<OperationTarget | null>(null);
   const [refresh, setRefresh] = useState(0);
   const [locked, setLocked] = useState(false);
-  const { definition, message } = useDefinition(sessionEpoch);
+  const [recoveryTarget, setRecoveryTarget] = useState<RecoveryTarget | null>(null);
   const navigate = (next: "cases" | "recovery" | "operations"): void => {
-    if (!locked) {
+    if (!locked && operation === null) {
       setActive(next);
       setSelectedReference(null);
     }
   };
-  const committed = (): void => {
-    const reference = operation?.current?.case.fields.caseReference ?? null;
+  const committed = (receipt: Receipt): void => {
     setOperation(null);
-    setSelectedReference(reference);
+    setSelectedReference(receipt.snapshot.fields.caseReference);
     setRefresh((value) => value + 1);
   };
+  const recover = (target: RecoveryTarget): void => {
+    setOperation(null);
+    setSelectedReference(null);
+    setRecoveryTarget(target);
+    setLocked(false);
+    setActive("recovery");
+  };
+
+  return {
+    active,
+    selectedReference,
+    operation,
+    refresh,
+    locked,
+    recoveryTarget,
+    setOperation,
+    setSelectedReference,
+    setLocked,
+    navigate,
+    committed,
+    recover,
+  };
+};
+
+export const Dashboard = ({ token, sessionEpoch, onLogout }: DashboardProps) => {
+  const navigation = useDashboardNavigation();
+  const { definition, message } = useDefinition(sessionEpoch);
+  const locked = navigation.locked || navigation.operation !== null;
 
   return (
     <main className="app-shell">
       <Header definition={definition} locked={locked} onLogout={onLogout} />
-      <DashboardNav active={active} locked={locked} navigate={navigate} />
+      <DashboardNav active={navigation.active} locked={locked} navigate={navigation.navigate} />
       {message === null ? null : (
         <p className="error" role="alert">
           <NoticeView value={message} />
         </p>
       )}
-      <DashboardContent
-        {...{
-          token,
-          definition,
-          active,
-          operation,
-          selectedReference,
-          refresh,
-          setOperation,
-          setSelectedReference,
-          setLocked,
-          committed,
-        }}
-      />
+      <DashboardContent {...navigation} token={token} definition={definition} />
     </main>
   );
 };
