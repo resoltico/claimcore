@@ -198,6 +198,15 @@ type Host
 
     member _.Runtime = runtime
 
+    member _.SendAsync
+        (method, path, body, mediaType, token, cancellation: System.Threading.CancellationToken)
+        =
+        task {
+            use request = createRequest method path body mediaType token []
+            use! response = client.SendAsync(request, cancellation)
+            return readReply response
+        }
+
     member _.SendWithHeaders
         (
             method: HttpMethod,

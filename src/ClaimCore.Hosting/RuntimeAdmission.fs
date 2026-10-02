@@ -149,23 +149,28 @@ type internal RuntimeAdmission
             return! work ()
         }
 
-    interface IDisposable with
-        member _.Dispose() =
-            let shouldCleanup =
-                lock gate (fun () ->
-                    closing <- true
+    member _.CloseAndDrain(stopBackgroundWork: unit -> unit) =
+        let shouldCleanup =
+            lock gate (fun () ->
+                closing <- true
 
-                    if active = 0 && not cleanupStarted then
-                        cleanupStarted <- true
-                        true
-                    else
-                        false)
+                if active = 0 && not cleanupStarted then
+                    cleanupStarted <- true
+                    true
+                else
+                    false)
 
-            if shouldCleanup then
-                cleanup ()
-
+        try
             try
-                if drained.Task.Wait(drainTimeout) then
-                    drained.Task.GetAwaiter().GetResult()
-            with _ ->
-                raise (InvalidOperationException("ClaimCore runtime cleanup failed."))
+                stopBackgroundWork ()
+            finally
+                if shouldCleanup then
+                    cleanup ()
+
+            if drained.Task.Wait(drainTimeout) then
+                drained.Task.GetAwaiter().GetResult()
+        with _ ->
+            raise (InvalidOperationException("ClaimCore runtime cleanup failed."))
+
+    interface IDisposable with
+        member this.Dispose() = this.CloseAndDrain(fun () -> ())

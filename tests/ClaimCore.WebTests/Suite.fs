@@ -46,6 +46,7 @@ let tests =
             TestServerTombstoneRouteTests.tests
             TestServerRouteTests.tests
             TestServerAdmissionTests.tests
+            QueuedCapacityTests.tests
             TestServerSessionFailureTests.tests
             TestServerCoreOutcomeTests.tests
             TestServerRecoveryOutcomeTests.tests

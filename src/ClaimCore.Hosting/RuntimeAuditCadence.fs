@@ -25,6 +25,8 @@ type internal RuntimeAuditCadence
 
     let cancellation = new CancellationTokenSource()
     let disposalGate = obj ()
+    let stopGate = obj ()
+    let mutable stopTask: Task option = None
     let mutable disposed = false
     let mutable failed = 0
     let mutable lastCompletedTicks = clock.Timestamp()
@@ -32,33 +34,33 @@ type internal RuntimeAuditCadence
     let worker =
         task {
             try
-                use timer = new PeriodicTimer(interval)
                 let mutable running = true
 
                 while running do
-                    let! due = timer.WaitForNextTickAsync(cancellation.Token)
+                    do! Task.Delay(interval, cancellation.Token)
 
-                    if due then
-                        try
-                            use bounded =
-                                CancellationTokenSource.CreateLinkedTokenSource(cancellation.Token)
+                    try
+                        use bounded =
+                            CancellationTokenSource.CreateLinkedTokenSource(cancellation.Token)
 
-                            bounded.CancelAfter(TimeSpan.FromHours 2.)
-                            do! runAudit bounded.Token
-
-                            Interlocked.Exchange(&lastCompletedTicks, clock.Timestamp()) |> ignore
-                        with
-                        | :? OperationCanceledException when cancellation.IsCancellationRequested ->
-                            running <- false
-                        | _ ->
-                            Interlocked.Exchange(&failed, 1) |> ignore
-                            running <- false
-                    else
+                        bounded.CancelAfter(TimeSpan.FromHours 2.)
+                        do! runAudit bounded.Token
+                        Interlocked.Exchange(&lastCompletedTicks, clock.Timestamp()) |> ignore
+                    with
+                    | :? OperationCanceledException when cancellation.IsCancellationRequested ->
+                        running <- false
+                    | _ ->
+                        Interlocked.Exchange(&failed, 1) |> ignore
                         running <- false
             with
             | :? OperationCanceledException when cancellation.IsCancellationRequested -> ()
             | _ -> Interlocked.Exchange(&failed, 1) |> ignore
         }
+
+    member _.RequestStop() =
+        lock stopGate (fun () ->
+            if not disposed && stopTask.IsNone then
+                stopTask <- Some(cancellation.CancelAsync()))
 
     member _.RequireHealthy() =
         if Volatile.Read(&failed) <> 0 then
@@ -94,19 +96,25 @@ type internal RuntimeAuditCadence
         )
 
     interface IDisposable with
-        member _.Dispose() =
+        member this.Dispose() =
             lock disposalGate (fun () ->
-                if not disposed then
-                    try
-                        cancellation.Cancel()
+                let shouldDispose = lock stopGate (fun () -> not disposed)
 
+                if shouldDispose then
+                    this.RequestStop()
+                    let callbacks = lock stopGate (fun () -> stopTask.Value)
+
+                    try
                         try
                             worker.GetAwaiter().GetResult()
                         with :? OperationCanceledException ->
                             ()
+
+                        callbacks.GetAwaiter().GetResult()
                     finally
-                        cancellation.Dispose()
-                        disposed <- true)
+                        lock stopGate (fun () ->
+                            cancellation.Dispose()
+                            disposed <- true))
 
 module internal RuntimeAuditInterval =
     let configured () =

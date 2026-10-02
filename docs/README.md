@@ -52,3 +52,6 @@ The [code organization design](code-organization-design.md) and its separate
 
 The [client workflows design](client-workflows-design.md) and its separate
 [design QA](client-workflows-design-qa.md) trace drafts, exact recovery handoffs and client read races.
+
+The [capacity and scheduling design](capacity-scheduling-design.md) and its separate
+[design QA](capacity-scheduling-design-qa.md) examine query work, audit cadence and shutdown ownership.
