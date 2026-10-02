@@ -74,6 +74,9 @@ ClaimCore.Web.Web security boundaries.[CC-WEB-001] OIDC ticket enforces idle and
 ClaimCore.Web.Web security boundaries.[CC-WEB-001] emits privacy headers and no-store
 ClaimCore.Web.Web security boundaries.[CC-WEB-001] limits requests to exact loopback browser admission
 ClaimCore.Web.Web security boundaries.[CC-WEB-001] private host lease creates no bootstrap credential
+ClaimCore.Web.Web security boundaries.[CC-WEB-001] renewal cannot extend elapsed absolute session life
+ClaimCore.Web.Web security boundaries.[CC-WEB-001] ticket expiry bounds elapsed life and forward wall jumps refuse
+ClaimCore.Web.Web security boundaries.[CC-WEB-001] wall rollback cannot extend idle session life
 ClaimCore.Web.Web session refusals through TestServer.[CC-WEB-001] logout rejects absent session and malformed or unverified bodies
 ClaimCore.Web.Web session refusals through TestServer.[CC-WEB-001] mixed bearer and browser credentials are refused
 ClaimCore.Web.Web session refusals through TestServer.[CC-WEB-001] retired bootstrap route refuses all request bodies

@@ -62,13 +62,7 @@ let private replay =
             use faulty = protocol owner writer (fun () -> raise (TimeoutException()))
 
             use uncertain =
-                new PostgresStore(
-                    source,
-                    faulty,
-                    submitter,
-                    CaseListCursorTestSupport.protection,
-                    clock
-                )
+                new PostgresStore(source, faulty, submitter, CaseListCursorTestSupport.protection)
 
             match
                 (uncertain :> IClaimStore).Accepted(request.OperationId, material.RequestSha256)
@@ -83,8 +77,7 @@ let private replay =
                     source,
                     witness,
                     submitter,
-                    CaseListCursorTestSupport.protection,
-                    clock
+                    CaseListCursorTestSupport.protection
                 )
 
             match
@@ -139,7 +132,7 @@ let private checkUnknown (request: CommandRequest) result =
 
 let private checkRead source witness (request: CommandRequest) context query =
     use claims =
-        new PostgresStore(source, witness, context, CaseListCursorTestSupport.protection, clock)
+        new PostgresStore(source, witness, context, CaseListCursorTestSupport.protection)
 
     query (claims :> IClaimStore)
     |> await

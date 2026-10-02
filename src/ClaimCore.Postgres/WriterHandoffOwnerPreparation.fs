@@ -96,7 +96,7 @@ module internal WriterHandoffOwnerPreparation =
             let! _ =
                 ActorGrantRead.lockRevision connection transaction true CancellationToken.None
 
-            let! now = ManagedCopySignerPolicy.databaseNow connection transaction
+            let! now = Sql.databaseNow connection transaction
             let snapshot = witness.Snapshot()
             let! verified = verifier.VerifyPreparation(value, canonical, CancellationToken.None)
 

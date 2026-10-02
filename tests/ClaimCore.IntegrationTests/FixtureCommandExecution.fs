@@ -62,13 +62,7 @@ let private admitted (port: IRecoveryStore) operation capture decide =
 let execute source witness context operation capture decide =
     task {
         use claims =
-            new PostgresStore(
-                source,
-                witness,
-                context,
-                CaseListCursorTestSupport.protection,
-                CaseListCursorTestSupport.clock
-            )
+            new PostgresStore(source, witness, context, CaseListCursorTestSupport.protection)
 
         let operationId = (Operation.request operation).OperationId
 

@@ -153,7 +153,7 @@ module internal RealDataActivationApproval =
         revision
         =
         task {
-            let! now = ManagedCopySignerPolicy.databaseNow connection transaction
+            let! now = Sql.databaseNow connection transaction
             let snapshot = witness.Snapshot()
             let! first = RealDataActivationApprovalRows.first connection transaction request
             let pending = RealDataActivationApprovalRecovery.tryRead witness request actorId

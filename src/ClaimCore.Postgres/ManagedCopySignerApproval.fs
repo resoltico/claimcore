@@ -140,7 +140,13 @@ module internal ManagedCopySignerApproval =
                 holder <> Guid.Empty && holder <> request.ApprovalId
             | CopySignerApprovalRole.Custodian -> true)
 
-    let private authorizedRole context request revision (live: ActorAuthority) =
+    let private authorizedRole
+        context
+        request
+        revision
+        (live: ActorAuthority)
+        (now: DateTimeOffset)
+        =
         let authorized =
             match
                 ActorAuthorization.authorizeAtRevision
@@ -152,8 +158,6 @@ module internal ManagedCopySignerApproval =
             with
             | AuthorizationDecision.Available(actorId, _) -> actorId = context.Binding.ActorId
             | AuthorizationDecision.Unavailable -> false
-
-        let now = DateTimeOffset.UtcNow
 
         if
             not authorized
@@ -239,7 +243,9 @@ module internal ManagedCopySignerApproval =
             match authority with
             | None -> return CopySignerApprovalOutcome.ResourceUnavailable
             | Some live ->
-                match authorizedRole context request revision live with
+                let! now = Sql.databaseNow connection transaction
+
+                match authorizedRole context request revision live now with
                 | None -> return CopySignerApprovalOutcome.ResourceUnavailable
                 | Some actorRole ->
                     let canonical =

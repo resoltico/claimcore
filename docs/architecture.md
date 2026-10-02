@@ -116,6 +116,11 @@ The suite checks the manifest from five independent directions:
   parsing rejects duplicate/unknown fields and escaped project paths before loading assemblies.
   Each of these rules asserts its positive counterpart as well, so none can pass vacuously.
 
+Primary storage additionally forbids ambient wall-clock reads, including TimeProvider.GetUtcNow.
+Its authority deadlines and list windows use current primary SQL time; Hosting's actual calendar
+capture is the positive counterpart. Local session/token budgets and full-audit scheduling retain
+their own process elapsed clocks rather than making PostgreSQL an application scheduler.
+
 Each platform's passing suite emits a bounded, sorted report of the actual inspected assembly type
 counts and cross-component edges. Counts are observations, not thresholds. The inspection builds the
 report from the manifest's own product inventory and fails when a required assembly is omitted or no

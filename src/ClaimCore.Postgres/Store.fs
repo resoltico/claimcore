@@ -11,15 +11,14 @@ type internal PostgresStore
         dataSource: NpgsqlDataSource,
         witness: WitnessProtocol,
         actorContext: ActorCallContext,
-        cursorProtection: ICaseListCursorProtection,
-        clock: IBusinessTime
+        cursorProtection: ICaseListCursorProtection
     ) =
     interface IClaimStore with
         member _.Get(reference) =
             ActorReadStore.get dataSource witness actorContext reference
 
         member _.List(request) =
-            ActorReadStore.list dataSource witness actorContext cursorProtection clock request
+            ActorReadStore.list dataSource witness actorContext cursorProtection request
 
         member _.History(reference, afterVersion) =
             ActorReadStore.history dataSource witness actorContext reference afterVersion

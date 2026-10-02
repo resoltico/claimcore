@@ -129,6 +129,8 @@ ClaimCore PostgreSQL integration.adopted external copy transitions.[CC-AUDIT-001
 ClaimCore PostgreSQL integration.adopted external copy transitions.[CC-ERASE-001] adopted external exact signed absence completes deletion
 ClaimCore PostgreSQL integration.adopted product copy transitions.[CC-AUDIT-001] product export signed post-adoption transition replays through projection
 ClaimCore PostgreSQL integration.advanced physical restored pair.[CC-BACKUP-001] original BASE pair replays later synthetic WAL before audit
+ClaimCore PostgreSQL integration.authority expiration under lock.[CC-LIFE-001] approval issuance uses current database time after lock delay
+ClaimCore PostgreSQL integration.authority expiration under lock.[CC-LIFE-001] delayed approval consumption refuses while expired exact readback survives
 ClaimCore PostgreSQL integration.authority operation fence.[CC-AUDIT-001] cancelled queued exclusive acquisition retires its connector and releases authority
 ClaimCore PostgreSQL integration.authority operation fence.[CC-AUDIT-001] cancelling an audit after its fence releases all authority locks
 ClaimCore PostgreSQL integration.authority operation fence.[CC-AUDIT-001] cancelling an audit queued behind authority does not strand its session lease
@@ -150,12 +152,14 @@ ClaimCore PostgreSQL integration.backup health publication readback.[CC-BACKUP-0
 ClaimCore PostgreSQL integration.backup health source.[CC-BACKUP-001] activation plan holds physical minima while live authority advances
 ClaimCore PostgreSQL integration.backup health source.[CC-BACKUP-001] backup health publication reconciles exact partial and complete bytes
 ClaimCore PostgreSQL integration.backup health source.[CC-BACKUP-001] generic source preview refuses full backup health before private input
+ClaimCore PostgreSQL integration.backup health source.[CC-BACKUP-001] health expiry is exclusive and historical readback grants no current validity
 ClaimCore PostgreSQL integration.backup health source.[CC-BACKUP-001] three independently signed current health source roles bind physical WAL and restore facts
 ClaimCore PostgreSQL integration.basic schema and PostgreSQL 18.6 baseline.baseline and current schema.actual server is on the required baseline
 ClaimCore PostgreSQL integration.basic schema and PostgreSQL 18.6 baseline.baseline and current schema.baseline rejects older releases and unqualified next major
 ClaimCore PostgreSQL integration.basic schema and PostgreSQL 18.6 baseline.baseline and current schema.live current-state row keeps exactly thirteen business columns plus revision metadata
 ClaimCore PostgreSQL integration.basic schema and PostgreSQL 18.6 baseline.field persistence and baseline identity.all fields survive decision, payment and closure without currency coercion
 ClaimCore PostgreSQL integration.basic schema and PostgreSQL 18.6 baseline.field persistence and baseline identity.baseline marker exactly matches the embedded baseline identity
+ClaimCore PostgreSQL integration.business calendar capture.[CC-DOM-002] stored-zone capture pairs one instant across leap midnight and DST boundaries
 ClaimCore PostgreSQL integration.case erasure authority fences.[CC-ERASE-001] case-linked copy registration refuses a witnessed erasure fence
 ClaimCore PostgreSQL integration.case erasure authority fences.[CC-ERASE-001] erasure fence rejects new case grants but permits revocation
 ClaimCore PostgreSQL integration.case erasure fence.[CC-ERASE-001] erasure request co-commits keyed reference and operation denials

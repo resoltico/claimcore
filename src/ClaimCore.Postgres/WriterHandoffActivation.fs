@@ -207,7 +207,7 @@ module internal WriterHandoffActivation =
         =
         task {
             let! _ = ActorGrantRead.lockRevision primaryOwner transaction true ct
-            let! now = ManagedCopySignerPolicy.databaseNow primaryOwner transaction
+            let! now = Sql.databaseNow primaryOwner transaction
 
             let state, snapshot, qualifiedNow =
                 checkedState primaryOwner transaction witness value readiness now

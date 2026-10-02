@@ -166,7 +166,7 @@ module internal ManagedCopyVerifiedRestore =
             | Some proof when
                 proofMatches connection transaction witness transition state original proof now
                 ->
-                let! fresh = ManagedCopySignerPolicy.databaseNow connection transaction
+                let! fresh = Sql.databaseNow connection transaction
 
                 if proof.Proof.ValidUntil <= fresh || state.RetainUntil <= fresh then
                     return AuthorityWriteOutcome.Refused
@@ -192,7 +192,7 @@ module internal ManagedCopyVerifiedRestore =
             let! signer =
                 ManagedCopyOwnerRead.signer connection transaction transition.Copy.SigningKeyId
 
-            let! now = ManagedCopySignerPolicy.databaseNow connection transaction
+            let! now = Sql.databaseNow connection transaction
 
             match current, signer with
             | Some state, Some(publicKey, publicDigest, true, CopySignerPurpose.CopyAttestor) ->

@@ -41,7 +41,6 @@ module internal ActorTombstoneApi =
     let private approve
         gate
         (store: ITombstoneStore)
-        (clock: IBusinessTime)
         principal
         (proposal: TombstonePruneProposal)
         approvalId
@@ -54,8 +53,7 @@ module internal ActorTombstoneApi =
 
             match admission with
             | TombstoneAdmission.Available context ->
-                let instant = clock.Capture().ObservedUtcInstant
-                return! store.ApproveWitnessPrune(context, proposal, approvalId, expiresAt, instant)
+                return! store.ApproveWitnessPrune(context, proposal, approvalId, expiresAt)
             | TombstoneAdmission.Unavailable -> return TombstoneWriteOutcome.ResourceUnavailable
             | TombstoneAdmission.Cancelled ->
                 return TombstoneWriteOutcome.CancelledBeforeAdmission approvalId
@@ -66,7 +64,6 @@ module internal ActorTombstoneApi =
     let private changeHold
         gate
         (store: ITombstoneStore)
-        (clock: IBusinessTime)
         principal
         (change: TombstoneHoldChange)
         ct
@@ -76,9 +73,7 @@ module internal ActorTombstoneApi =
                 admit gate principal EndpointAction.ManageTombstoneHold change.CaseId ct
 
             match admission with
-            | TombstoneAdmission.Available context ->
-                let instant = clock.Capture().ObservedUtcInstant
-                return! store.ChangeHold(context, change, instant)
+            | TombstoneAdmission.Available context -> return! store.ChangeHold(context, change)
             | TombstoneAdmission.Unavailable -> return TombstoneWriteOutcome.ResourceUnavailable
             | TombstoneAdmission.Cancelled ->
                 return TombstoneWriteOutcome.CancelledBeforeAdmission change.EventId
@@ -89,7 +84,6 @@ module internal ActorTombstoneApi =
     let private approveTerminal
         gate
         (store: ITombstoneStore)
-        (clock: IBusinessTime)
         principal
         proposal
         approvalId
@@ -103,8 +97,7 @@ module internal ActorTombstoneApi =
 
             match admission with
             | TombstoneAdmission.Available context ->
-                let instant = clock.Capture().ObservedUtcInstant
-                return! store.ApproveTerminal(context, proposal, approvalId, expiresAt, instant)
+                return! store.ApproveTerminal(context, proposal, approvalId, expiresAt)
             | TombstoneAdmission.Unavailable -> return TombstoneWriteOutcome.ResourceUnavailable
             | TombstoneAdmission.Cancelled ->
                 return TombstoneWriteOutcome.CancelledBeforeAdmission approvalId
@@ -112,16 +105,16 @@ module internal ActorTombstoneApi =
                 return TombstoneWriteOutcome.Failed CoreFault.StoreUnavailable
         }
 
-    let create gate (store: ITombstoneStore) (clock: IBusinessTime) principal : ITombstoneWorkflow =
+    let create gate (store: ITombstoneStore) principal : ITombstoneWorkflow =
         { new ITombstoneWorkflow with
             member _.Review(caseId, ct) = review gate store principal caseId ct
 
             member _.ApproveWitnessPrune(proposal, approvalId, expiresAt, ct) =
-                approve gate store clock principal proposal approvalId expiresAt ct
+                approve gate store principal proposal approvalId expiresAt ct
 
             member _.ApproveTerminal(proposal, approvalId, expiresAt, ct) =
-                approveTerminal gate store clock principal proposal approvalId expiresAt ct
+                approveTerminal gate store principal proposal approvalId expiresAt ct
 
             member _.ChangeHold(change, ct) =
-                changeHold gate store clock principal change ct
+                changeHold gate store principal change ct
         }

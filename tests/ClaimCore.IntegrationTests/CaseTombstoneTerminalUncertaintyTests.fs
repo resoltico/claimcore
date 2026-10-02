@@ -92,8 +92,7 @@ let private run =
                         context source fault first fixture.CaseId,
                         draft,
                         approvalId,
-                        expiry,
-                        DateTimeOffset.UtcNow
+                        expiry
                     )
                     |> await
                 with

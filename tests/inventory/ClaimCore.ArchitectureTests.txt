@@ -65,6 +65,7 @@ ClaimCore architecture suite.component effect ownership.Contracts avoids selecte
 ClaimCore architecture suite.component effect ownership.Domain avoids selected ambient clock, identity and host IO APIs
 ClaimCore architecture suite.component effect ownership.RecordFormat avoids selected ambient clock, identity and host IO APIs
 ClaimCore architecture suite.component effect ownership.[CC-ARCH-001] Web bindings cannot decode ClaimCore JSON bytes
+ClaimCore architecture suite.component effect ownership.[CC-ARCH-001] primary storage uses database time without ambient host clock reads
 ClaimCore architecture suite.component effect ownership.adapters cannot call the domain decision directly
 ClaimCore architecture suite.component effect ownership.case-work hosts cannot reach schema administration
 ClaimCore architecture suite.component effect ownership.only the composition root constructs the typed core

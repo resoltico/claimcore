@@ -11,10 +11,32 @@ open System.Threading.Tasks
 open ClaimCore.HostSecurity
 
 /// A token is kept in memory only. Its textual representation is deliberately non-secret.
-type AccessToken internal (value: string, expiresInSeconds: int) =
-    let expiresAt = DateTimeOffset.UtcNow.AddSeconds(float expiresInSeconds - 30.)
+type AccessToken
+    internal
+    (
+        value: string,
+        expiresInSeconds: int,
+        clock: TimeProvider,
+        observedUtc: DateTimeOffset,
+        observedTimestamp: int64
+    ) =
+    let lifetime = TimeSpan.FromSeconds(float expiresInSeconds)
+    let reuseLifetime = lifetime - TimeSpan.FromSeconds 30.
+    let expiresAt = observedUtc.Add(reuseLifetime)
+
+    let within budget =
+        let elapsed = clock.GetElapsedTime(observedTimestamp)
+
+        elapsed >= TimeSpan.Zero
+        && elapsed < budget
+        && clock.GetUtcNow() < observedUtc.Add(budget)
+
     member _.Authorization = AuthenticationHeaderValue("Bearer", value)
     member _.ExpiresAt = expiresAt
+
+    member _.CanUse = within lifetime
+    member _.CanReuse = within reuseLifetime
+
     override _.ToString() = "<redacted access token>"
 
 [<RequireQualifiedAccess; NoComparison>]
@@ -62,7 +84,12 @@ module OAuthTokenClient =
                     Error "OIDC_RESPONSE_INVALID"
         }
 
-    let parseTokenResponse (bytes: byte array) =
+    let internal parseTokenResponseAt
+        (clock: TimeProvider)
+        observedUtc
+        observedTimestamp
+        (bytes: byte array)
+        =
         try
             use document = JsonDocument.Parse(ReadOnlyMemory bytes)
             let root = document.RootElement
@@ -83,10 +110,22 @@ module OAuthTokenClient =
                 && value.Length >= 1
                 && value.Length <= 8192
                 ->
-                Ok(AccessToken(value, root.GetProperty("expires_in").GetInt32()))
+                Ok(
+                    AccessToken(
+                        value,
+                        root.GetProperty("expires_in").GetInt32(),
+                        clock,
+                        observedUtc,
+                        observedTimestamp
+                    )
+                )
             | _ -> Error "OIDC_RESPONSE_INVALID"
         with :? JsonException ->
             Error "OIDC_RESPONSE_INVALID"
+
+    let parseTokenResponse bytes =
+        let clock = TimeProvider.System
+        parseTokenResponseAt clock (clock.GetUtcNow()) (clock.GetTimestamp()) bytes
 
     let private grantFields clientId =
         function
@@ -117,7 +156,14 @@ module OAuthTokenClient =
             | _ -> Error "OIDC_CREDENTIAL_UNAVAILABLE"
         | _ -> Error "OIDC_GRANT_INVALID"
 
+    let private deliveredToken clock observedUtc observedTimestamp bytes =
+        match parseTokenResponseAt clock observedUtc observedTimestamp bytes with
+        | Ok token when token.CanUse -> Ok token
+        | Ok _ -> Error "OIDC_TOKEN_UNAVAILABLE"
+        | Error reason -> Error reason
+
     let private acquireHttps
+        (clock: TimeProvider)
         (client: HttpClient)
         endpoints
         clientId
@@ -140,6 +186,9 @@ module OAuthTokenClient =
 
                 request.Headers.Accept.Add(MediaTypeWithQualityHeaderValue("application/json"))
 
+                let observedUtc = clock.GetUtcNow()
+                let observedTimestamp = clock.GetTimestamp()
+
                 try
                     use! response =
                         client.SendAsync(
@@ -153,7 +202,8 @@ module OAuthTokenClient =
                     else
                         match! readLimited 32768 response cancelled with
                         | Error reason -> return Error reason
-                        | Ok bytes -> return parseTokenResponse bytes
+                        | Ok bytes ->
+                            return deliveredToken clock observedUtc observedTimestamp bytes
                 with
                 | :? OperationCanceledException -> return Error "OIDC_TOKEN_UNAVAILABLE"
                 | :? HttpRequestException -> return Error "OIDC_TOKEN_UNAVAILABLE"
@@ -162,10 +212,20 @@ module OAuthTokenClient =
 
     /// The supplied transport must disable redirects and enforce TLS. Provider details and response
     /// bodies are never returned on refusal.
-    let acquire (client: HttpClient) endpoints clientId grant (cancelled: CancellationToken) =
+    let internal acquireWithClock
+        clock
+        (client: HttpClient)
+        endpoints
+        clientId
+        grant
+        (cancelled: CancellationToken)
+        =
         task {
             if endpoints.Token.Scheme <> Uri.UriSchemeHttps then
                 return Error "OIDC_TOKEN_ENDPOINT_INVALID"
             else
-                return! acquireHttps client endpoints clientId grant cancelled
+                return! acquireHttps clock client endpoints clientId grant cancelled
         }
+
+    let acquire client endpoints clientId grant cancelled =
+        acquireWithClock TimeProvider.System client endpoints clientId grant cancelled

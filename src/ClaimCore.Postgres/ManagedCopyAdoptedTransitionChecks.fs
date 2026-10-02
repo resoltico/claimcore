@@ -22,7 +22,7 @@ module internal ManagedCopyAdoptedTransitionChecks =
             let! signer =
                 ManagedCopyOwnerRead.signer connection transaction origin.CustodianSigningKeyId
 
-            let! now = ManagedCopySignerPolicy.databaseNow connection transaction
+            let! now = Sql.databaseNow connection transaction
 
             let! held =
                 ManagedCopyTransitionAdministration.held connection transaction (Some origin.CaseId)

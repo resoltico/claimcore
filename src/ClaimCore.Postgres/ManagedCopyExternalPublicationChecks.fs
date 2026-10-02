@@ -220,7 +220,7 @@ module internal ManagedCopyExternalPublicationChecks =
                 let! signers =
                     signed connection transaction witness registration inspection submission
 
-                let! now = ManagedCopySignerPolicy.databaseNow connection transaction
+                let! now = Sql.databaseNow connection transaction
 
                 match revision, signers with
                 | Some caseRevision, Some(registry, inspector) when absent ->

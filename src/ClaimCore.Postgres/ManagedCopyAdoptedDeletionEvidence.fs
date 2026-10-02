@@ -56,7 +56,7 @@ module internal ManagedCopyAdoptedDeletionEvidence =
             match expiry with
             | None -> return false
             | Some approvalExpiry ->
-                let! fresh = ManagedCopySignerPolicy.databaseNow connection transaction
+                let! fresh = Sql.databaseNow connection transaction
 
                 return
                     fresh < approvalExpiry

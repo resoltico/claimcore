@@ -61,6 +61,7 @@ let private surfaces =
         CliProcessTests.tests
         BoundedProcessTests.tests
         RemoteClientTests.tests
+        TokenLifetimeTests.tests
         HttpResponseDeadlineTests.tests
         RemoteResponseBoundsTests.tests
         IssuerIdentityTests.tests

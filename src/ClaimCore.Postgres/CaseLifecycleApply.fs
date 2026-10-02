@@ -63,7 +63,6 @@ module internal CaseLifecycleApply =
         (context: ActorCallContext)
         (projection: LifecycleProjection)
         (change: LifecycleChange)
-        instant
         =
         task {
             let draft = CaseLifecycleCandidate.draft projection.CaseId change
@@ -83,6 +82,8 @@ module internal CaseLifecycleApply =
                 | None when not (CaseLifecycleStoreSupport.matchesProjection change projection) ->
                     return LifecycleWriteOutcome.Refused LifecycleRefusal.VersionConflict
                 | None ->
+                    let! instant = Sql.databaseNow connection transaction
+
                     return!
                         applyFresh
                             connection
@@ -134,7 +135,6 @@ module internal CaseLifecycleApply =
         commitments
         (context: ActorCallContext)
         (change: LifecycleChange)
-        instant
         =
         task {
             use! connection = RuntimeDatabase.openConnectionAsync dataSource
@@ -161,7 +161,6 @@ module internal CaseLifecycleApply =
                         context
                         projection
                         change
-                        instant
         }
 
     let apply
@@ -170,15 +169,10 @@ module internal CaseLifecycleApply =
         (commitments: ISuppressionCommitments)
         (context: ActorCallContext)
         (change: LifecycleChange)
-        instant
         =
         task {
-            let rawInstant = instant
-            let instant = CaseLifecycleStoreSupport.microsecondInstant instant
-
             if
                 not (CaseLifecycleStoreSupport.validChange change)
-                || not (CaseLifecycleStoreSupport.validInstant rawInstant)
                 || context.Action <> CaseLifecycleStoreSupport.expectedAction change.Action
                 || (match change.Action with
                     | LifecycleMutation.PurgeLivePayload _ -> true
@@ -188,7 +182,7 @@ module internal CaseLifecycleApply =
             else
                 try
                     witness.Admit()
-                    return! transact dataSource witness commitments context change instant
+                    return! transact dataSource witness commitments context change
                 with
                 | WitnessPending -> return LifecycleWriteOutcome.Unconfirmed change.EventId
                 | :? System.IO.InvalidDataException ->

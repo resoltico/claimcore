@@ -151,18 +151,15 @@ type internal ITombstoneStore =
         actor: ActorCallContext *
         proposal: TombstonePruneProposal *
         approvalId: Guid *
-        expiresAt: DateTimeOffset *
-        instant: DateTimeOffset ->
+        expiresAt: DateTimeOffset ->
             Task<TombstoneWriteOutcome>
 
     abstract ApproveTerminal:
         actor: ActorCallContext *
         proposal: TombstoneTerminalProposal *
         approvalId: Guid *
-        expiresAt: DateTimeOffset *
-        instant: DateTimeOffset ->
+        expiresAt: DateTimeOffset ->
             Task<TombstoneWriteOutcome>
 
     abstract ChangeHold:
-        actor: ActorCallContext * change: TombstoneHoldChange * instant: DateTimeOffset ->
-            Task<TombstoneWriteOutcome>
+        actor: ActorCallContext * change: TombstoneHoldChange -> Task<TombstoneWriteOutcome>

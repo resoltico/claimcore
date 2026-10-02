@@ -170,6 +170,12 @@ Discovery, token acquisition and service response reads each carry the client's 
 whole-request deadline through headers and bounded content. A timeout after mutation dispatch retains
 unconfirmed delivery; it never means that server execution rolled back.
 
+Token validity and reuse are bounded by elapsed time from token HTTPS dispatch and UTC expiry.
+Reuse retains the thirty-second margin; a fresh shorter-lived token can be used once but is not
+cached for reuse. Body delivery does not start a new lifetime, and backward wall-clock adjustments
+cannot extend elapsed validity. CLI refuses a reply delivered after the actual lifetime, before
+service dispatch. Credential expiry does not settle an earlier uncertain operation.
+
 Core RECOVER_EXACT direction also exits 4 inside a fault or recovery refusal, including dismissal
 refused because submission already started and a FAILED_BEFORE_ATTEMPT response. That response can
 describe an earlier uncertain operation; refusing a new attempt does not settle the earlier one. Preserve its exact identity and inspect before retry.

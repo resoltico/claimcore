@@ -7,14 +7,6 @@ open Npgsql
 /// The real-data mutation gate reopens short-lived signed evidence at the database clock,
 /// then compares the current witnessed lineage and complete copy-inventory projection.
 module internal BackupHealthRuntimeAdmission =
-    let private databaseNow (connection: NpgsqlConnection) (transaction: NpgsqlTransaction) =
-        use command = new NpgsqlCommand("SELECT clock_timestamp()", connection, transaction)
-
-        match command.ExecuteScalar() with
-        | :? DateTimeOffset as value -> value.ToUniversalTime()
-        | :? DateTime as value -> DateTimeOffset(value.ToUniversalTime(), TimeSpan.Zero)
-        | _ -> invalidOp "Backup health database clock is unavailable."
-
     let private currentAge now maximum observed =
         observed <= now && now - observed <= TimeSpan.FromSeconds(float maximum)
 
@@ -82,7 +74,7 @@ module internal BackupHealthRuntimeAdmission =
             BackupHealthPolicyCodec.parse policyBytes profile.BackupHealthPolicySha256
             |> Option.defaultWith (fun () -> invalidOp "Reviewed backup health policy is absent.")
 
-        let now = databaseNow connection transaction
+        let now = Sql.databaseNowSync connection transaction
 
         let claim =
             BackupHealthCertificate.parse canonical now

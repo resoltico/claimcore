@@ -70,6 +70,42 @@ let private signedIndependentSource =
             finally
                 dispose fixture)
 
+let private temporalCertificateBounds =
+    testCase
+        "[CC-BACKUP-001] health expiry is exclusive and historical readback grants no current validity"
+        (fun _ ->
+            let fixture = create ()
+
+            try
+                let value = fixture.Claims
+                let canonical = fixture.Loaded.CertificateBytes
+
+                Expect.isSome
+                    (BackupHealthCertificate.parse canonical value.CheckedAt)
+                    "Positive current certificate control"
+
+                Expect.isNone
+                    (BackupHealthCertificate.parse canonical (value.CheckedAt.AddTicks(-1L)))
+                    "Future observation refuses without a clock-skew allowance"
+
+                Expect.isSome
+                    (BackupHealthCertificate.parse canonical (value.ValidUntil.AddTicks(-1L)))
+                    "Last instant before expiry remains current"
+
+                Expect.isNone
+                    (BackupHealthCertificate.parse canonical value.ValidUntil)
+                    "Exact expiry is not current authority"
+
+                Expect.isSome
+                    (BackupHealthCertificate.parseHistorical canonical value.ValidUntil)
+                    "Historical readback preserves signed original evidence"
+
+                Expect.isNone
+                    (BackupHealthCertificate.parse canonical (value.ValidUntil.AddHours(1.)))
+                    "Historical readback cannot renew fresh authority"
+            finally
+                dispose fixture)
+
 let private rootClosed =
     testCase
         "[CC-BACKUP-001] generic source preview refuses full backup health before private input"
@@ -233,4 +269,10 @@ let private stableActivationPlan =
 let tests =
     testList
         "backup health source"
-        [ signedIndependentSource; rootClosed; exactPublication; stableActivationPlan ]
+        [
+            signedIndependentSource
+            temporalCertificateBounds
+            rootClosed
+            exactPublication
+            stableActivationPlan
+        ]

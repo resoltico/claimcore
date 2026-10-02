@@ -11,15 +11,8 @@ type internal PostgresCaseLifecycleStore
         member _.Review(actor, caseReference) =
             CaseLifecycleReview.review dataSource witness actor caseReference
 
-        member _.Apply(actor, change, instant) =
-            CaseLifecycleApply.apply dataSource witness commitments actor change instant
+        member _.Apply(actor, change) =
+            CaseLifecycleApply.apply dataSource witness commitments actor change
 
-        member _.Approve(actor, change, approvalId, expiresAt, instant) =
-            CaseLifecycleApprove.approve
-                dataSource
-                witness
-                actor
-                change
-                approvalId
-                expiresAt
-                instant
+        member _.Approve(actor, change, approvalId, expiresAt) =
+            CaseLifecycleApprove.approve dataSource witness actor change approvalId expiresAt

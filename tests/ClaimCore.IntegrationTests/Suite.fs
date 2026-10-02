@@ -9,6 +9,7 @@ let private coreAndRecovery =
     [
         TransactionPaginationTests.tests
         CaseListCursorProtectionTests.tests
+        BusinessClockCaptureTests.tests
         TransactionRejectionTests.tests
         TransactionTests.tests
         SchemaTests.tests
@@ -139,6 +140,7 @@ let private lifecycleAndPrivacy =
         ManagedCopyWitnessTipTests.tests
         ActorManagementTests.tests
         CaseLifecycleStoreTests.tests
+        AuthorityExpirationTests.tests
         CaseListBlockedTimingTests.tests
         CaseErasureFenceTests.tests
         CaseLifecycleAuditTests.tests

@@ -151,6 +151,7 @@ module internal ManagedCopyTransitionAdministration =
         (publicKey: byte array)
         (publicDigest: byte array)
         heldCopy
+        now
         =
         let original = ManagedCopyRegistrationAttestation.parse state.Registration
 
@@ -163,7 +164,7 @@ module internal ManagedCopyTransitionAdministration =
         && transition.Copy.Epoch = witness.Identity.Epoch
         && publicDigest = SHA256.HashData(publicKey)
         && ManagedCopySignature.verify publicKey canonical signature
-        && ManagedCopyTransitionPolicy.allowed state transition DateTimeOffset.UtcNow heldCopy
+        && ManagedCopyTransitionPolicy.allowed state transition now heldCopy
 
     let private commit
         (connection: NpgsqlConnection)
@@ -208,6 +209,7 @@ module internal ManagedCopyTransitionAdministration =
                 ManagedCopyOwnerRead.signer connection transaction transition.Copy.SigningKeyId
 
             let! heldCopy = held connection transaction transition.Copy.SourceCaseId
+            let! now = Sql.databaseNow connection transaction
 
             let historical =
                 try
@@ -233,6 +235,7 @@ module internal ManagedCopyTransitionAdministration =
                     publicKey
                     publicDigest
                     heldCopy
+                    now
                 ->
                 return! commit connection transaction witness transition canonical signature
             | _ -> return AuthorityWriteOutcome.Refused

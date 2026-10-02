@@ -126,7 +126,7 @@ module internal WriterHandoffOwnerSettlementChecks =
         newCapability
         =
         task {
-            let! now = ManagedCopySignerPolicy.databaseNow connection transaction
+            let! now = Sql.databaseNow connection transaction
             let snapshot = witness.Snapshot()
             let! evidence = verifier.VerifySettlement(value, canonical, CancellationToken.None)
 

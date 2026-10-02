@@ -9,6 +9,26 @@ open ClaimCore.Application
 open ClaimCore.RecordFormat
 
 module internal Sql =
+    let private utcInstant (value: obj | null) =
+        match value with
+        | :? DateTimeOffset as value -> value.ToUniversalTime()
+        | :? DateTime as value when value.Kind = DateTimeKind.Utc -> DateTimeOffset value
+        | _ -> invalidOp "Primary database clock is unavailable."
+
+    let private clockCommand (connection: NpgsqlConnection) (transaction: NpgsqlTransaction) =
+        new NpgsqlCommand("SELECT clock_timestamp()", connection, transaction)
+
+    let databaseNow connection transaction =
+        task {
+            use command = clockCommand connection transaction
+            let! value = command.ExecuteScalarAsync()
+            return utcInstant value
+        }
+
+    let databaseNowSync connection transaction =
+        use command = clockCommand connection transaction
+        command.ExecuteScalar() |> utcInstant
+
     let isUtcMicrosecond (value: DateTimeOffset) =
         value.Offset = TimeSpan.Zero && value.Ticks % 10L = 0L
 

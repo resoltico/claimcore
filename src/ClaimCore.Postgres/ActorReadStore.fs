@@ -221,7 +221,6 @@ module internal ActorReadStore =
         revision
         (context: ActorCallContext)
         (protection: ICaseListCursorProtection)
-        (clock: IBusinessTime)
         (request: CaseListRequest)
         witness
         =
@@ -229,6 +228,8 @@ module internal ActorReadStore =
             if revision <> context.Binding.GrantRevision then
                 return Error CoreFailure.ResourceUnavailable
             else
+                let! instant = Sql.databaseNow connection transaction
+
                 let position =
                     request.AfterCursor
                     |> Option.map (fun token ->
@@ -237,7 +238,7 @@ module internal ActorReadStore =
                             context.Binding
                             revision
                             request.Limit
-                            (clock.Capture().ObservedUtcInstant)
+                            instant
                             token
                         |> Result.map Some)
                     |> Option.defaultValue (Ok None)
@@ -258,7 +259,7 @@ module internal ActorReadStore =
                                     context.Binding
                                     revision
                                     request.Limit
-                                    (clock.Capture().ObservedUtcInstant)
+                                    instant
                                     (Claim.view value).Fields.CaseReference)
                         else
                             None
@@ -270,6 +271,6 @@ module internal ActorReadStore =
                     | Some failure -> return Error failure
         }
 
-    let list dataSource witness context protection clock request =
+    let list dataSource witness context protection request =
         snapshot dataSource (fun connection transaction revision ->
-            listAtRevision connection transaction revision context protection clock request witness)
+            listAtRevision connection transaction revision context protection request witness)

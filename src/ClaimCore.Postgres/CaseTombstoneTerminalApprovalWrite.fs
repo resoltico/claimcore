@@ -185,6 +185,10 @@ module internal CaseTombstoneTerminalApprovalWrite =
             | Some receipt -> return replay witness context proposal approvalId expiresAt receipt
             | None when not (CaseTombstoneTerminalPolicy.matches stored proposal) ->
                 return TombstoneWriteOutcome.Refused LifecycleRefusal.VersionConflict
+            | None when
+                not (CaseTombstoneTerminalPolicy.valid proposal approvalId expiresAt instant)
+                ->
+                return TombstoneWriteOutcome.Refused LifecycleRefusal.InvalidTime
             | None ->
                 let! available = slots connection transaction witness context proposal
 
@@ -204,7 +208,7 @@ module internal CaseTombstoneTerminalApprovalWrite =
                             stored.AuthorityRevision
         }
 
-    let private apply dataSource witness context proposal approvalId expiresAt instant =
+    let private apply dataSource witness context proposal approvalId expiresAt =
         task {
             let value = TombstoneTerminalProposal.copy proposal
             use! connection = RuntimeDatabase.openConnectionAsync dataSource
@@ -240,6 +244,8 @@ module internal CaseTombstoneTerminalApprovalWrite =
                 if not allowed then
                     return TombstoneWriteOutcome.ResourceUnavailable
                 else
+                    let! instant = Sql.databaseNow connection transaction
+
                     return!
                         afterAuthorization
                             connection
@@ -260,26 +266,17 @@ module internal CaseTombstoneTerminalApprovalWrite =
         proposal
         approvalId
         expiresAt
-        (instant: DateTimeOffset)
         =
         task {
-            let utcInstant = instant.Offset = TimeSpan.Zero
-            let instant = CaseLifecycleStoreSupport.microsecondInstant instant
-
             if
                 context.Action <> EndpointAction.ApproveTerminalErasure
                 || context.CaseId <> Some(TombstoneTerminalProposal.caseId proposal)
             then
                 return TombstoneWriteOutcome.ResourceUnavailable
-            elif
-                not utcInstant
-                || not (CaseTombstoneTerminalPolicy.valid proposal approvalId expiresAt instant)
-            then
-                return TombstoneWriteOutcome.Refused LifecycleRefusal.InvalidTime
             else
                 try
                     witness.Admit()
-                    return! apply dataSource witness context proposal approvalId expiresAt instant
+                    return! apply dataSource witness context proposal approvalId expiresAt
                 with
                 | :? InvalidDataException ->
                     return TombstoneWriteOutcome.Failed CoreFault.StoreIntegrityError

@@ -8,7 +8,7 @@ type internal PostgresCaseTombstoneStore(dataSource: NpgsqlDataSource, witness: 
         member _.Review(context, caseId) =
             CaseTombstoneReview.review dataSource witness context caseId
 
-        member _.ApproveWitnessPrune(context, proposal, approvalId, expiresAt, instant) =
+        member _.ApproveWitnessPrune(context, proposal, approvalId, expiresAt) =
             CaseTombstonePruneApprovalWrite.approve
                 dataSource
                 witness
@@ -16,9 +16,8 @@ type internal PostgresCaseTombstoneStore(dataSource: NpgsqlDataSource, witness: 
                 proposal
                 approvalId
                 expiresAt
-                instant
 
-        member _.ApproveTerminal(context, proposal, approvalId, expiresAt, instant) =
+        member _.ApproveTerminal(context, proposal, approvalId, expiresAt) =
             CaseTombstoneTerminalApprovalWrite.approve
                 dataSource
                 witness
@@ -26,7 +25,6 @@ type internal PostgresCaseTombstoneStore(dataSource: NpgsqlDataSource, witness: 
                 proposal
                 approvalId
                 expiresAt
-                instant
 
-        member _.ChangeHold(context, change, instant) =
-            CaseTombstoneHoldWrite.change dataSource witness context change instant
+        member _.ChangeHold(context, change) =
+            CaseTombstoneHoldWrite.change dataSource witness context change

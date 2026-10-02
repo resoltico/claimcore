@@ -23,6 +23,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-APP-002 | unit | ClaimCore deterministic suite.accepted receipt first.[CC-APP-002] cancellation after accepted observation preserves definite receipt |
 | CC-ARCH-001 | architecture | ClaimCore architecture suite.architecture manifest.[CC-ARCH-001] restore publication trust is invisible to ordinary consumers |
 | CC-ARCH-001 | architecture | ClaimCore architecture suite.component effect ownership.[CC-ARCH-001] Web bindings cannot decode ClaimCore JSON bytes |
+| CC-ARCH-001 | architecture | ClaimCore architecture suite.component effect ownership.[CC-ARCH-001] primary storage uses database time without ambient host clock reads |
 | CC-ARCH-001 | fuzz | ClaimCore fuzz qualification.boundary decoding totality.[CC-ARCH-001] contract-owned HTTP codecs refuse hostile bytes without throwing |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.[CC-AUDIT-001] authority lease cleanup preserves an observed result and retires its connector |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.adopted external copy transitions.[CC-AUDIT-001] adopted external signed origin and transition replay |
@@ -132,6 +133,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.backup health source.[CC-BACKUP-001] activation plan holds physical minima while live authority advances |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.backup health source.[CC-BACKUP-001] backup health publication reconciles exact partial and complete bytes |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.backup health source.[CC-BACKUP-001] generic source preview refuses full backup health before private input |
+| CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.backup health source.[CC-BACKUP-001] health expiry is exclusive and historical readback grants no current validity |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.backup health source.[CC-BACKUP-001] three independently signed current health source roles bind physical WAL and restore facts |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.fenced recovery tail.[CC-BACKUP-001] W1 supplement and independent fence require exact canonical signed shapes |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.fenced recovery tail.[CC-BACKUP-001] W1 tail refuses a missing segment or changed timeline |
@@ -251,6 +253,9 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-CLI-002 | unit | ClaimCore deterministic suite.native private-file ancestor race.[CC-CLI-002] descriptor-relative create and lock remain in pinned parent after ancestor swap |
 | CC-CLI-003 | integration | ClaimCore PostgreSQL integration.CLI process interruption.[CC-CLI-003] SIGINT after real TLS mutation dispatch exits uncertain |
 | CC-CLI-003 | integration | ClaimCore PostgreSQL integration.CLI process interruption.[CC-CLI-003] SIGINT ends input wait before EOF and mutation admission |
+| CC-CLI-003 | unit | ClaimCore deterministic suite.CLI token lifetimes.[CC-CLI-003] delayed token delivery cannot create fresh reuse lifetime |
+| CC-CLI-003 | unit | ClaimCore deterministic suite.CLI token lifetimes.[CC-CLI-003] forward wall jumps retain conservative UTC expiry |
+| CC-CLI-003 | unit | ClaimCore deterministic suite.CLI token lifetimes.[CC-CLI-003] rollback cannot extend elapsed token reuse |
 | CC-CLI-003 | unit | ClaimCore deterministic suite.CLI-v4 service exit contract.[CC-CLI-003] a refused dismissal preserves earlier submission uncertainty |
 | CC-CLI-003 | unit | ClaimCore deterministic suite.CLI-v4 service exit contract.[CC-CLI-003] nested faults preserve earlier exact-operation uncertainty |
 | CC-CLI-003 | unit | ClaimCore deterministic suite.CLI-v4 service exit contract.[CC-CLI-003] typed host phases preserve read and mutation delivery knowledge |
@@ -314,6 +319,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-DOM-001 | unit | ClaimCore deterministic suite.correction group invariants.[CC-DOM-001] explicit paid reaffirmation cannot retain a zero replacement decision |
 | CC-DOM-001 | unit | ClaimCore deterministic suite.domain accepted-state admission.[CC-DOM-001] restoration refuses invalid paid and chronological states |
 | CC-DOM-001 | unit | ClaimCore deterministic suite.generated semantic field contract.semantic field schema.[CC-DOM-001] semantic contract renders exactly thirteen ordered field descriptors |
+| CC-DOM-002 | integration | ClaimCore PostgreSQL integration.business calendar capture.[CC-DOM-002] stored-zone capture pairs one instant across leap midnight and DST boundaries |
 | CC-DOM-002 | integration | ClaimCore PostgreSQL integration.domain durable evidence.[CC-DOM-002] clock rollback amendments persist and retain the current rule revision |
 | CC-DOM-002 | unit | ClaimCore deterministic suite.business date assertions.correction assertions.[CC-DOM-002] a closed paid correction reaffirms accepted dates after rollback |
 | CC-DOM-002 | unit | ClaimCore deterministic suite.business date assertions.correction assertions.[CC-DOM-002] a correction cannot hide a new future incident behind accepted dates |
@@ -387,6 +393,8 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-ERASE-001 | unit | ClaimCore deterministic suite.owner live purge authorization.[CC-ERASE-001] owner live purge authorization keeps privacy pending |
 | CC-ERASE-001 | unit | ClaimCore deterministic suite.owner live purge authorization.[CC-ERASE-001] owner purge uses technical execution and two distinct stewards |
 | CC-LIFE-001 | integration | ClaimCore PostgreSQL integration.[CC-LIFE-001] [CC-REC-001] a witnessed hold retains terminal preparation evidence until release |
+| CC-LIFE-001 | integration | ClaimCore PostgreSQL integration.authority expiration under lock.[CC-LIFE-001] approval issuance uses current database time after lock delay |
+| CC-LIFE-001 | integration | ClaimCore PostgreSQL integration.authority expiration under lock.[CC-LIFE-001] delayed approval consumption refuses while expired exact readback survives |
 | CC-LIFE-001 | integration | ClaimCore PostgreSQL integration.case lifecycle capacity.[CC-LIFE-001] 257th active hold is refused before a witness intent |
 | CC-LIFE-001 | integration | ClaimCore PostgreSQL integration.case lifecycle capacity.[CC-LIFE-001] concurrent stewards cannot consume a third approval slot |
 | CC-LIFE-001 | integration | ClaimCore PostgreSQL integration.case lifecycle reconciliation.[CC-LIFE-001] owner reconciles committed lifecycle intent without inventing an orphan outcome |
@@ -603,6 +611,9 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-WEB-001 | web | ClaimCore.Web.Web security boundaries.[CC-WEB-001] emits privacy headers and no-store |
 | CC-WEB-001 | web | ClaimCore.Web.Web security boundaries.[CC-WEB-001] limits requests to exact loopback browser admission |
 | CC-WEB-001 | web | ClaimCore.Web.Web security boundaries.[CC-WEB-001] private host lease creates no bootstrap credential |
+| CC-WEB-001 | web | ClaimCore.Web.Web security boundaries.[CC-WEB-001] renewal cannot extend elapsed absolute session life |
+| CC-WEB-001 | web | ClaimCore.Web.Web security boundaries.[CC-WEB-001] ticket expiry bounds elapsed life and forward wall jumps refuse |
+| CC-WEB-001 | web | ClaimCore.Web.Web security boundaries.[CC-WEB-001] wall rollback cannot extend idle session life |
 | CC-WEB-001 | web | ClaimCore.Web.Web session refusals through TestServer.[CC-WEB-001] logout rejects absent session and malformed or unverified bodies |
 | CC-WEB-001 | web | ClaimCore.Web.Web session refusals through TestServer.[CC-WEB-001] mixed bearer and browser credentials are refused |
 | CC-WEB-001 | web | ClaimCore.Web.Web session refusals through TestServer.[CC-WEB-001] retired bootstrap route refuses all request bodies |

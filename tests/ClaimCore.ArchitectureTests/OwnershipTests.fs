@@ -25,16 +25,47 @@ let private forbiddenTypes =
 
 /// Ambient identity and calendar reads that would bypass the caller-supplied operation ID or the
 /// installation's stored business zone.
-let private forbiddenCalls =
+let private clockCalls =
     [
         typeof<DateTime>, "get_Now"
         typeof<DateTime>, "get_UtcNow"
         typeof<DateTime>, "get_Today"
         typeof<DateTimeOffset>, "get_Now"
         typeof<DateTimeOffset>, "get_UtcNow"
-        typeof<TimeZoneInfo>, "get_Local"
-        typeof<Guid>, "NewGuid"
+        typeof<TimeProvider>, "GetUtcNow"
     ]
+
+let private forbiddenCalls =
+    clockCalls @ [ typeof<TimeZoneInfo>, "get_Local"; typeof<Guid>, "NewGuid" ]
+
+let private primaryStorageUsesDatabaseTime () =
+    let model = architecture.Value
+    let storage = select "Postgres"
+    Inspection.requireSelection model storage |> ignore
+
+    for target, methodName in clockCalls do
+        let forbidden =
+            ArchRuleDefinition
+                .MethodMembers()
+                .That()
+                .AreDeclaredIn(target)
+                .And()
+                .HaveNameContaining(methodName)
+
+        Inspection.requireSelection model forbidden |> ignore
+        Inspection.check model (storage.Should().NotCallAny(forbidden))
+
+    let wall =
+        ArchRuleDefinition
+            .MethodMembers()
+            .That()
+            .AreDeclaredIn(typeof<TimeProvider>)
+            .And()
+            .HaveNameContaining("GetUtcNow")
+
+    Expect.isNonEmpty
+        (Inspection.violations model ((select "Hosting").Should().NotCallAny(wall)))
+        "Hosting owns the actual business-calendar clock capture"
 
 let private deterministic subject =
     testCase (subject + " avoids selected ambient clock, identity and host IO APIs") (fun () ->
@@ -222,6 +253,9 @@ let tests =
     testList
         "component effect ownership"
         ([
+            testCase
+                "[CC-ARCH-001] primary storage uses database time without ambient host clock reads"
+                primaryStorageUsesDatabaseTime
             testCase "wire-contract renderers cannot author JSON" wireRenderersDoNotAuthorJson
             testCase
                 "[CC-ARCH-001] Web bindings cannot decode ClaimCore JSON bytes"

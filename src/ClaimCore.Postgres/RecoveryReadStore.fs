@@ -200,7 +200,7 @@ module internal RecoveryReadStore =
                     ResourceScope.Installation
                     revision
 
-            let now = DateTimeOffset.UtcNow
+            let! now = Sql.databaseNow connection transaction
 
             let cursorBound =
                 after

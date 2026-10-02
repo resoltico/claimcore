@@ -3,6 +3,9 @@ ClaimCore deterministic suite.CLI private-file security.[CC-CLI-002] private exp
 ClaimCore deterministic suite.CLI private-file security.[CC-CLI-002] private export rejects leaf and ancestor links without changing targets
 ClaimCore deterministic suite.CLI private-file security.[CC-CLI-002] private source enforces exact size, mode, ACL, and strict UTF-8
 ClaimCore deterministic suite.CLI private-file security.[CC-CLI-002] private source rejects symlinks, ancestor links, directories, and relative paths
+ClaimCore deterministic suite.CLI token lifetimes.[CC-CLI-003] delayed token delivery cannot create fresh reuse lifetime
+ClaimCore deterministic suite.CLI token lifetimes.[CC-CLI-003] forward wall jumps retain conservative UTC expiry
+ClaimCore deterministic suite.CLI token lifetimes.[CC-CLI-003] rollback cannot extend elapsed token reuse
 ClaimCore deterministic suite.CLI v4 child-process contract.CLI v4 call and session.CLI v4 call.call refuses case work without authenticated service configuration
 ClaimCore deterministic suite.CLI v4 child-process contract.CLI v4 call and session.CLI v4 call.call reports strict frame errors as one protocol JSON response
 ClaimCore deterministic suite.CLI v4 child-process contract.CLI v4 call and session.CLI v4 session and hard break.removed protocol-v2 verbs are unsupported process invocations

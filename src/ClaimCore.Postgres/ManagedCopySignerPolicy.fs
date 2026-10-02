@@ -5,19 +5,6 @@ open Npgsql
 open ClaimCore.Application
 
 module internal ManagedCopySignerPolicy =
-    let databaseNow connection transaction =
-        task {
-            use command = new NpgsqlCommand("SELECT clock_timestamp()", connection, transaction)
-            let! value = command.ExecuteScalarAsync()
-
-            return
-                match value with
-                | :? DateTimeOffset as instant -> instant
-                | :? DateTime as instant when instant.Kind = DateTimeKind.Utc ->
-                    DateTimeOffset instant
-                | _ -> invalidOp "Database approval clock is unavailable."
-        }
-
     let matchesInstallation connection transaction (witness: WitnessProtocol) =
         task {
             use command =

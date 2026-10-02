@@ -79,11 +79,7 @@ let private uncertainVoid owner source writer proposer (actor: IActorClaimsCore)
         :> ICaseLifecycleStore
 
     match
-        storage.Apply(
-            context source fault proposer opened.CaseReference,
-            action,
-            DateTimeOffset.UtcNow
-        )
+        storage.Apply(context source fault proposer opened.CaseReference, action)
         |> await
     with
     | LifecycleWriteOutcome.Unconfirmed id when id = action.EventId -> ()

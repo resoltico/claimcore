@@ -99,6 +99,9 @@ let private overdueCadenceIsSticky () =
     use cadence =
         new RuntimeAuditCadence((fun _ -> Task.CompletedTask), TimeSpan.FromHours 24., clock)
 
+    Interlocked.Exchange(&ticks, (TimeSpan.FromHours 26.).Ticks) |> ignore
+    cadence.RequireHealthy()
+
     Interlocked.Exchange(&ticks, (TimeSpan.FromHours 26. + TimeSpan.FromTicks 1L).Ticks)
     |> ignore
 
