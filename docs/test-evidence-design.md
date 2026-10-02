@@ -46,3 +46,9 @@ admission. Assert its specific refusal rather than attempting a prepared fingerp
 command vectors also derive typed requests by decoding their own golden bytes; paired field swaps
 in encoder and decoder could preserve those bytes and digests. Supply independently constructed
 typed command expectations and snapshot fields, and compare decoding and encoding separately.
+
+The required suite runner also accepts the diagnostic recheck environment. Rechecking a unit-only
+property while running fuzz returns successfully from every non-target property, so an exact seven-test
+inventory can still pass without fuzz property execution. Reject diagnostic recheck configuration
+at the required runner boundary before build or results creation. Keep direct executable rechecks
+available for diagnosis; do not combine their results with complete verification.

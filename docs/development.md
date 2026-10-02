@@ -183,7 +183,10 @@ their byte mutations reach format parsing, and recovery uses matching synthetic 
 normally refuses mutated envelopes before decryption, so this does not prove arbitrary authenticated
 plaintext coverage. A mutation may remain valid: totality requires either a decoded value or typed
 refusal, never an escaping exception. Failures print a deterministic recheck token without payloads.
-The suite shares the property profile and base seed described below.
+The suite shares the property profile and base seed described below. Diagnostic rechecks can return
+without executing non-target properties, so the required suite runner rejects recheck configuration
+before restore or evidence creation. Use the native test executable directly for diagnostic replay;
+its results cannot establish complete suite verification.
 
 Unit transition sequences compare acceptance and complete resulting state against a separate finite
 fixture model, including stale requests and no-op corrections. Negative controls reject refusal-only,

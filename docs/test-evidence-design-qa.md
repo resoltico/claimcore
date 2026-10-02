@@ -39,3 +39,11 @@ coverage must compare actual names with the independent expected set, not only c
 Round trips can also hide paired correction-mode swaps; inspect encoded modes against literal
 KEEP/REPLACE/CLEAR expectations for every generated combination. Use boolean structural comparisons
 for the new snapshot seed assertion so failing diagnostics cannot print claimant fields.
+
+The recheck follow-up was reproduced: selecting a registered unit-only property in the fuzz suite
+produced seven passed tests without running any fuzz property. Guard the effective environment,
+including registered suite overrides, before building or creating a results directory. Reject any
+nonempty recheck input as diagnostic configuration; retain normal required and extended profiles.
+Keep token parsing in the F# harness rather than duplicating it in JavaScript. Prove wiring with a
+real runner subprocess that refuses recheck mode before restore or evidence creation. Do not change
+the native diagnostic replay capability or weaken inventory/report validation.
