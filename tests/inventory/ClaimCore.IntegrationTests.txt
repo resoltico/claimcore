@@ -88,6 +88,7 @@ ClaimCore PostgreSQL integration.[CC-APP-002] PostgreSQL accepted history withou
 ClaimCore PostgreSQL integration.[CC-AUDIT-001] authority lease cleanup preserves an observed result and retires its connector
 ClaimCore PostgreSQL integration.[CC-AUTH-001] case-list cursor binds principal grant query and visible page
 ClaimCore PostgreSQL integration.[CC-AUTH-001] voided and erasure-fenced identities share denial timing class
+ClaimCore PostgreSQL integration.[CC-BACKUP-001] intermediate restore reports cannot claim deployment readiness
 ClaimCore PostgreSQL integration.[CC-BACKUP-001] root-signed topology refuses an aggregate key reused by a host
 ClaimCore PostgreSQL integration.[CC-LIFE-001] [CC-REC-001] a witnessed hold retains terminal preparation evidence until release
 ClaimCore PostgreSQL integration.[CC-REC-001] [CC-WIT-001] revocation fences future authority without rewriting an orphan acceptance

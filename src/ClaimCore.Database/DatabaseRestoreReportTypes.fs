@@ -14,7 +14,6 @@ type internal RestoreCustodyObject =
 type internal RestoreReportClaims =
     {
         Scope: string
-        RealDataReady: bool
         InstallationId: Guid
         LineageId: Guid
         Epoch: int64

@@ -73,7 +73,7 @@ module internal DatabaseFencedTailOwnerExecution =
                 now
 
         if DatabaseFencedTailHostBinding.matchesLocal host local now then
-            Ok({ local with RealDataReady = true }, publication)
+            Ok(local, publication)
         else
             Error FencedTailOwnerRefusal.EvidenceRecheckFailed
 
@@ -147,7 +147,8 @@ module internal DatabaseFencedTailOwnerExecution =
             writer.WriteNumber("w1Sequence", proof.W1Sequence)
             writer.WriteString("w1Hash", proof.W1Hash)
             writer.WriteNumber("writerGeneration", proof.WriterGeneration)
-            writer.WriteBoolean("realDataReady", proof.RealDataReady)
+            // Success is returned only after fresh independent and local evidence match.
+            writer.WriteBoolean("realDataReady", true)
 
         writer.WriteEndObject()
         writer.Flush()

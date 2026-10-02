@@ -187,7 +187,7 @@ module internal DatabaseRestoreReportClaims =
         then
             invalidOp "Restore report qualification scope is inconsistent."
 
-        scope, realDataReady
+        scope
 
     let private checkedInterval root now =
         let checkedAt = instant "checkedAt" root
@@ -204,7 +204,7 @@ module internal DatabaseRestoreReportClaims =
         checkedAt, validUntil
 
     let private parsed root now =
-        let scope, realDataReady = qualificationScope root
+        let scope = qualificationScope root
         requireTrue root
 
         let archiveCustody, checkpointCustody = custody root
@@ -221,7 +221,6 @@ module internal DatabaseRestoreReportClaims =
 
         {
             Scope = scope
-            RealDataReady = realDataReady
             InstallationId = uuid "installationId" root
             LineageId = uuid "lineageId" root
             Epoch = DatabaseRestoreCanonical.number "epoch" root

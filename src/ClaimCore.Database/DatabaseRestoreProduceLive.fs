@@ -87,7 +87,6 @@ module internal DatabaseRestoreProduceLive =
 
         {
             Scope = "synthetic-only"
-            RealDataReady = false
             InstallationId = facts.InstallationId
             LineageId = facts.LineageId
             Epoch = facts.Epoch

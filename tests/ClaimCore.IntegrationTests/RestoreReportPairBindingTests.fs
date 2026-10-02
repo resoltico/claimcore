@@ -49,7 +49,6 @@ let private facts =
 let private report =
     {
         Scope = "synthetic-only"
-        RealDataReady = false
         InstallationId = facts.InstallationId
         LineageId = facts.LineageId
         Epoch = facts.Epoch

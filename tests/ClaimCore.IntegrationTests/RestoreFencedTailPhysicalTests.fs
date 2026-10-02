@@ -107,6 +107,18 @@ let private verifyHistoricalReport (context: SettledW1Context) now =
     Expect.equal ticket.Sequence context.W1Sequence "Exact post-W1 witness sequence"
     Expect.equal ticket.EntryHash context.W1Hash "Exact post-W1 witness hash"
 
+let private requireIndependentQualification (context: SettledW1Context) evidence =
+    use owner = new NpgsqlConnection(context.Access.Owner)
+    owner.Open()
+
+    Expect.isNone
+        (DatabaseIndependentHostProof.current
+            owner
+            evidence
+            context.Input.Publication
+            DateTimeOffset.UtcNow)
+        "A local W1 tail cannot mint independent deployment authority"
+
 let private verifyEvidence (context: SettledW1Context) report index supplement signature =
 
     let evidence: SignedFencedTailEvidence =
@@ -121,7 +133,7 @@ let private verifyEvidence (context: SettledW1Context) report index supplement s
 
     let expectedProbe = probeSha context.Fence
     let proof = inspect context report index expectedProbe evidence
-    Expect.isFalse proof.RealDataReady "Same-Mac W1 tail cannot authorize real data"
+    requireIndependentQualification context evidence
     Expect.equal proof.W1Sequence context.W1Sequence "Exact W1 tail binds settlement"
     Expect.equal proof.Scope "synthetic-only" "Physical tail remains synthetic"
 

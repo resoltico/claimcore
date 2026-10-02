@@ -122,6 +122,12 @@ Managed primary, witness, WAL, snapshot, replica, key and product-export copies 
 
 An owner-held, signed dual-BASE capture initially yields only `CAPTURED_UNVERIFIED`: its exact encrypted bytes and cutoff still need separate witnessed copy registration and physical `VERIFY→RETAINED`, WAL coverage, independent checkpoint custody, and a signed full restored-pair audit with W1 tail and writer fence. Neither the capture receipt nor the generic build's absent publication root establishes real-data readiness.
 
+Intermediate restore reports always carry `realDataReady: false`, including `scope: full`; scope
+identifies the evidence profile, not permission to process real data. The owner fenced-tail recheck
+reports readiness only after fresh independent-host and local evidence agree. Writer activation
+separately rechecks its exact signed candidate and current authority. Historical verification
+reconstructs the original signed candidate without granting a fresh W2 ticket or health lease.
+
 Restored-pair verification uses a separate SELECT-only witness auditor from the owner-private
 `CLAIMCORE_WITNESS_AUDIT_CONNECTION_FILE`, not the old writer credential or capability. The
 owner-private `CLAIMCORE_RESTORE_ARCHIVE_ROOT` must equal the signed index root, and encrypted
