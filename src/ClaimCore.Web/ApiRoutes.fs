@@ -47,185 +47,44 @@ module ApiRoutes =
             .RequireRateLimiting("core")
         |> ignore
 
-    let private caseEndpoints application configuration forActor =
+    let private jsonHandlers maximum =
+        [
+            "case.get", Routes.get admitted maximum
+            "case.list", Routes.list admitted maximum
+            "case.history", Routes.history admitted maximum
+            "operation.observe", Routes.observe admitted maximum
+            "command.prepare", Routes.prepare admitted maximum
+            "command.execute", Routes.submit admitted maximum
+            "authority.register", Routes.managementRegister admitted maximum
+            "authority.setGrant", Routes.managementSetGrant admitted maximum
+            "authority.setEnabled", Routes.managementSetEnabled admitted maximum
+            "authority.observe", Routes.managementObserve admitted maximum
+            "lifecycle.review", LifecycleRoutes.review admitted maximum
+            "lifecycle.apply", LifecycleRoutes.apply admitted maximum
+            "lifecycle.approve", LifecycleRoutes.approve admitted maximum
+            "tombstone.review", TombstoneRoutes.review admitted maximum
+            "tombstone.approvePrune", TombstoneRoutes.approvePrune admitted maximum
+            "tombstone.approveTerminal", TombstoneRoutes.approveTerminal admitted maximum
+            "tombstone.changeHold", TombstoneRoutes.changeHold admitted maximum
+            "authority.approveCopySigner", SignerApprovalRoutes.approve admitted maximum
+            "authority.approveCopyDeletion", CopyDeletionApprovalRoutes.approve admitted maximum
+            "authority.approveCopyAdoption", CopyAdoptionApprovalRoutes.approve admitted maximum
+            "authority.approveWriterHandoff", WriterHandoffApprovalRoutes.approve admitted maximum
+            "authority.reviewRealDataActivation", RealDataActivationRoutes.review admitted maximum
+            "authority.approveRealDataActivation", RealDataActivationRoutes.approve admitted maximum
+            "recovery.list", Routes.recoveryList admitted maximum
+            "recovery.inspect", Routes.recoveryInspect admitted maximum
+            "recovery.resolve", Routes.recoveryResolve admitted maximum
+            "recovery.dismiss", Routes.recoveryDismiss admitted maximum
+            "recovery.export", Routes.recoveryExport admitted maximum
+        ]
+
+    let private jsonEndpoints application configuration forActor =
         let maximum = configuration.Admission.MaximumJsonBytes
         let json = route configuration RequestBody.Json maximum forActor
 
-        mapEndpoint
-            application
-            (WebContract.jsonPath "case.get")
-            (json (Routes.get admitted maximum))
-
-        mapEndpoint
-            application
-            (WebContract.jsonPath "case.list")
-            (json (Routes.list admitted maximum))
-
-        mapEndpoint
-            application
-            (WebContract.jsonPath "case.history")
-            (json (Routes.history admitted maximum))
-
-        mapEndpoint
-            application
-            (WebContract.jsonPath "operation.observe")
-            (json (Routes.observe admitted maximum))
-
-        mapEndpoint
-            application
-            (WebContract.jsonPath "command.prepare")
-            (json (Routes.prepare admitted maximum))
-
-        mapEndpoint
-            application
-            (WebContract.jsonPath "command.execute")
-            (json (Routes.submit admitted maximum))
-
-    let private recoveryEndpoints application configuration forActor =
-        let maximum = configuration.Admission.MaximumJsonBytes
-        let json = route configuration RequestBody.Json maximum forActor
-
-        mapEndpoint
-            application
-            (WebContract.jsonPath "recovery.list")
-            (json (Routes.recoveryList admitted maximum))
-
-        mapEndpoint
-            application
-            (WebContract.jsonPath "recovery.inspect")
-            (json (Routes.recoveryInspect admitted maximum))
-
-        mapEndpoint
-            application
-            (WebContract.jsonPath "recovery.resolve")
-            (json (Routes.recoveryResolve admitted maximum))
-
-        mapEndpoint
-            application
-            (WebContract.jsonPath "recovery.dismiss")
-            (json (Routes.recoveryDismiss admitted maximum))
-
-        mapEndpoint
-            application
-            (WebContract.jsonPath "recovery.export")
-            (json (Routes.recoveryExport admitted maximum))
-
-    let private managementEndpoints application configuration forActor =
-        let maximum = configuration.Admission.MaximumJsonBytes
-        let json = route configuration RequestBody.Json maximum forActor
-
-        mapEndpoint
-            application
-            (WebContract.jsonPath "authority.register")
-            (json (Routes.managementRegister admitted maximum))
-
-        mapEndpoint
-            application
-            (WebContract.jsonPath "authority.setGrant")
-            (json (Routes.managementSetGrant admitted maximum))
-
-        mapEndpoint
-            application
-            (WebContract.jsonPath "authority.setEnabled")
-            (json (Routes.managementSetEnabled admitted maximum))
-
-        mapEndpoint
-            application
-            (WebContract.jsonPath "authority.observe")
-            (json (Routes.managementObserve admitted maximum))
-
-    let private lifecycleEndpoints application configuration forActor =
-        let maximum = configuration.Admission.MaximumJsonBytes
-        let json = route configuration RequestBody.Json maximum forActor
-
-        mapEndpoint
-            application
-            (WebContract.jsonPath "lifecycle.review")
-            (json (LifecycleRoutes.review admitted maximum))
-
-        mapEndpoint
-            application
-            (WebContract.jsonPath "lifecycle.apply")
-            (json (LifecycleRoutes.apply admitted maximum))
-
-        mapEndpoint
-            application
-            (WebContract.jsonPath "lifecycle.approve")
-            (json (LifecycleRoutes.approve admitted maximum))
-
-    let private tombstoneEndpoints application configuration forActor =
-        let maximum = configuration.Admission.MaximumJsonBytes
-        let json = route configuration RequestBody.Json maximum forActor
-
-        mapEndpoint
-            application
-            (WebContract.jsonPath "tombstone.review")
-            (json (TombstoneRoutes.review admitted maximum))
-
-        mapEndpoint
-            application
-            (WebContract.jsonPath "tombstone.approvePrune")
-            (json (TombstoneRoutes.approvePrune admitted maximum))
-
-        mapEndpoint
-            application
-            (WebContract.jsonPath "tombstone.approveTerminal")
-            (json (TombstoneRoutes.approveTerminal admitted maximum))
-
-        mapEndpoint
-            application
-            (WebContract.jsonPath "tombstone.changeHold")
-            (json (TombstoneRoutes.changeHold admitted maximum))
-
-    let private signerApprovalEndpoint application configuration forActor =
-        let maximum = configuration.Admission.MaximumJsonBytes
-        let json = route configuration RequestBody.Json maximum forActor
-
-        mapEndpoint
-            application
-            (WebContract.jsonPath "authority.approveCopySigner")
-            (json (SignerApprovalRoutes.approve admitted maximum))
-
-    let private copyDeletionApprovalEndpoint application configuration forActor =
-        let maximum = configuration.Admission.MaximumJsonBytes
-        let json = route configuration RequestBody.Json maximum forActor
-
-        mapEndpoint
-            application
-            (WebContract.jsonPath "authority.approveCopyDeletion")
-            (json (CopyDeletionApprovalRoutes.approve admitted maximum))
-
-    let private copyAdoptionApprovalEndpoint application configuration forActor =
-        let maximum = configuration.Admission.MaximumJsonBytes
-        let json = route configuration RequestBody.Json maximum forActor
-
-        mapEndpoint
-            application
-            (WebContract.jsonPath "authority.approveCopyAdoption")
-            (json (CopyAdoptionApprovalRoutes.approve admitted maximum))
-
-    let private writerHandoffApprovalEndpoint application configuration forActor =
-        let maximum = configuration.Admission.MaximumJsonBytes
-        let json = route configuration RequestBody.Json maximum forActor
-
-        mapEndpoint
-            application
-            (WebContract.jsonPath "authority.approveWriterHandoff")
-            (json (WriterHandoffApprovalRoutes.approve admitted maximum))
-
-    let private realDataActivationEndpoints application configuration forActor =
-        let maximum = configuration.Admission.MaximumJsonBytes
-        let json = route configuration RequestBody.Json maximum forActor
-
-        mapEndpoint
-            application
-            (WebContract.jsonPath "authority.reviewRealDataActivation")
-            (json (RealDataActivationRoutes.review admitted maximum))
-
-        mapEndpoint
-            application
-            (WebContract.jsonPath "authority.approveRealDataActivation")
-            (json (RealDataActivationRoutes.approve admitted maximum))
+        for identifier, handler in jsonHandlers maximum do
+            mapEndpoint application (WebContract.jsonPath identifier) (json handler)
 
     let private requiredHeader identifier =
         match WebContract.raw identifier with
@@ -261,14 +120,5 @@ module ApiRoutes =
             ))
 
     let map configuration forActor (application: WebApplication) =
-        caseEndpoints application configuration forActor
-        managementEndpoints application configuration forActor
-        lifecycleEndpoints application configuration forActor
-        tombstoneEndpoints application configuration forActor
-        signerApprovalEndpoint application configuration forActor
-        copyDeletionApprovalEndpoint application configuration forActor
-        copyAdoptionApprovalEndpoint application configuration forActor
-        writerHandoffApprovalEndpoint application configuration forActor
-        realDataActivationEndpoints application configuration forActor
-        recoveryEndpoints application configuration forActor
+        jsonEndpoints application configuration forActor
         importEndpoints application configuration forActor

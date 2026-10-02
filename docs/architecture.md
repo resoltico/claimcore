@@ -162,6 +162,13 @@ Pure ClaimCore HTTP request decoding, transport DTOs, schemas and wire rendering
 Web owns bounded HTTP stream acquisition, Kestrel failures, authentication, dispatch and delivery.
 The compiled decoder rule excludes only OidcAuthority's distinct third-party discovery boundary.
 
+Each Web endpoint declares its response schema beside its method, path, input and media contract.
+Generated response modules follow the endpoint's established namespace and reject unknown families
+or duplicate identifiers. Their presentation grouping does not classify mutation authority: CLI's
+reviewed read-only list remains separate and unknown endpoints retain mutation-safe delivery.
+Web registers explicit typed handlers through one JSON admission adapter; raw recovery uploads
+retain their distinct content, size and digest-header acquisition.
+
 ## Core outcome meaning and presentation
 
 Ordinary rejections, core faults and recovery lifecycle refusals are separate closed typed reasons.

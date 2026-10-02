@@ -25,59 +25,29 @@ module internal WebTypeScriptResponses =
 
         [ "export type " + name + " = {" ] @ properties @ [ "};" ]
 
-    let private endpointGroup identifiers (projection: ContractModel) =
+    // Response-file ownership follows established endpoint namespaces, not mutation authority.
+    let private responseGroup identifier =
+        match identifier with
+        | "session"
+        | "session.logout"
+        | "definition" -> "read"
+        | _ ->
+            match identifier.Split('.') with
+            | [| "case"; _ |]
+            | [| "operation"; _ |] -> "read"
+            | [| "authority"; _ |] -> "authority"
+            | [| "lifecycle"; _ |]
+            | [| "tombstone"; _ |] -> "lifecycle"
+            | [| "command"; _ |] -> "command"
+            | [| "recovery"; _ |] -> "recovery"
+            | _ -> invalidOp "A Web endpoint has no reviewed response namespace."
+
+    let private endpointGroup group (projection: ContractModel) =
         projection.WebEndpoints
-        |> List.filter (fun endpoint -> identifiers |> Set.contains endpoint.Identifier)
-
-    let private readIdentifiers =
-        Set.ofList
-            [
-                "session"
-                "session.logout"
-                "definition"
-                "case.get"
-                "case.list"
-                "case.history"
-                "operation.observe"
-            ]
-
-    let private authorityIdentifiers =
-        Set.ofList
-            [
-                "authority.register"
-                "authority.setGrant"
-                "authority.setEnabled"
-                "authority.observe"
-                "authority.approveCopySigner"
-                "authority.approveCopyDeletion"
-                "authority.approveCopyAdoption"
-                "authority.approveWriterHandoff"
-                "authority.reviewRealDataActivation"
-                "authority.approveRealDataActivation"
-            ]
-
-    let private lifecycleIdentifiers =
-        Set.ofList
-            [
-                "lifecycle.review"
-                "lifecycle.apply"
-                "lifecycle.approve"
-                "tombstone.review"
-                "tombstone.approvePrune"
-                "tombstone.approveTerminal"
-                "tombstone.changeHold"
-            ]
-
-    let private commandIdentifiers = Set.ofList [ "command.prepare"; "command.execute" ]
-
-    let private recoveryIdentifiers (projection: ContractModel) =
-        projection.WebEndpoints
-        |> List.map _.Identifier
-        |> List.filter (fun identifier -> identifier.StartsWith("recovery."))
-        |> Set.ofList
+        |> List.filter (fun endpoint -> responseGroup endpoint.Identifier = group)
 
     let private readModule projection =
-        let endpoints = endpointGroup readIdentifiers projection
+        let endpoints = endpointGroup "read" projection
 
         moduleBytes
             [
@@ -87,7 +57,7 @@ module internal WebTypeScriptResponses =
             (responseMap "WebV3ReadResponseByEndpoint" endpoints)
 
     let private commandModule projection =
-        let endpoints = endpointGroup commandIdentifiers projection
+        let endpoints = endpointGroup "command" projection
 
         moduleBytes
             [
@@ -98,19 +68,19 @@ module internal WebTypeScriptResponses =
             (responseMap "WebV3CommandResponseByEndpoint" endpoints)
 
     let private authorityModule projection =
-        let endpoints = endpointGroup authorityIdentifiers projection
+        let endpoints = endpointGroup "authority" projection
 
         moduleBytes [] (responseMap "WebV3AuthorityResponseByEndpoint" endpoints)
 
     let private lifecycleModule projection =
-        let endpoints = endpointGroup lifecycleIdentifiers projection
+        let endpoints = endpointGroup "lifecycle" projection
 
         moduleBytes
             [ "import type { Fault } from \"./web-v3.types.core\";" ]
             (responseMap "WebV3LifecycleResponseByEndpoint" endpoints)
 
     let private recoveryModule projection =
-        let endpoints = endpointGroup (recoveryIdentifiers projection) projection
+        let endpoints = endpointGroup "recovery" projection
 
         moduleBytes
             [
@@ -138,20 +108,8 @@ module internal WebTypeScriptResponses =
     let artifacts projection =
         let expected = projection.WebEndpoints |> List.map _.Identifier |> Set.ofList
 
-        let groups =
-            [
-                readIdentifiers
-                authorityIdentifiers
-                lifecycleIdentifiers
-                commandIdentifiers
-                recoveryIdentifiers projection
-            ]
-
-        let covered = groups |> List.fold Set.union Set.empty
-        let counted = groups |> List.sumBy Set.count
-
-        if covered <> expected || counted <> expected.Count then
-            invalidOp "Every Web endpoint must belong to exactly one generated response group."
+        if expected.Count <> projection.WebEndpoints.Length then
+            invalidOp "Generated Web response identifiers must be unique."
 
         [
             "web-v3.types.responses.read.ts", readModule projection

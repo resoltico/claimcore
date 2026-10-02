@@ -227,6 +227,8 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-CLI-001 | acceptance | published authenticated CLI v4 acceptance.[CC-CLI-001] witnessed accepted command and exact replay |
 | CC-CLI-001 | unit | ClaimCore deterministic suite.HTTP response deadlines.[CC-CLI-001] discovery deadline covers a suspended body after headers |
 | CC-CLI-001 | unit | ClaimCore deterministic suite.HTTP response deadlines.[CC-CLI-001] token deadline covers a suspended body after headers |
+| CC-CLI-001 | unit | ClaimCore deterministic suite.endpoint extension ownership.[CC-CLI-001] generated responses refuse an unreviewed endpoint family |
+| CC-CLI-001 | unit | ClaimCore deterministic suite.endpoint extension ownership.[CC-CLI-001] generated responses refuse duplicate endpoint identifiers |
 | CC-CLI-001 | unit | ClaimCore deterministic suite.service response bounds.[CC-CLI-001] CLI bounds service JSON buffering before parsing |
 | CC-CLI-001 | unit | ClaimCore deterministic suite.service response bounds.[CC-CLI-001] CLI reads a full history with maximum-length Unicode fields |
 | CC-CLI-002 | acceptance | published authenticated CLI v4 acceptance.[CC-CLI-002] malformed owner-private envelope preview retains no preparation |
@@ -241,6 +243,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-CLI-002 | unit | ClaimCore deterministic suite.export effect and delivery ownership.[CC-CLI-002] private destination failure retains observed service completion |
 | CC-CLI-002 | unit | ClaimCore deterministic suite.export effect and delivery ownership.[CC-CLI-002] witnessed export is noncancellable and lost completion stays uncertain |
 | CC-CLI-002 | unit | ClaimCore deterministic suite.native private-file ancestor race.[CC-CLI-002] descriptor-relative create and lock remain in pinned parent after ancestor swap |
+| CC-CLI-003 | unit | ClaimCore deterministic suite.endpoint extension ownership.[CC-CLI-003] new case query derives response ownership without mutation authority |
 | CC-CLI-003 | unit | ClaimCore deterministic suite.remote frame-local delivery diagnostics.[CC-CLI-003] every generated CLI mutation retains delivery uncertainty |
 | CC-CLI-003 | unit | ClaimCore deterministic suite.remote invocation contract.[CC-CLI-003] CLI v4 inputs bind exact noncancellable endpoints |
 | CC-DB-001 | fresh-baseline-qualification | ClaimCore fresh baseline qualification.fresh installation qualification.[CC-DB-001] a different calendar is refused without rewriting installation identity |
