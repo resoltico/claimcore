@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <Compile Include="../BoundedProcess.fs" Link="BoundedProcess.fs" />
     <Compile Include="../RepositoryRoot.fs" Link="RepositoryRoot.fs" />
     <Compile Include="../CommandExecution.fs" Link="CommandExecution.fs" />
     <Compile Include="FixtureEnvironment.fs" />
@@ -22,6 +23,7 @@
     <Compile Include="CoreRuntimeLifecycleTests.fs" />
     <Compile Include="CoreBoundaryTests.fs" />
     <Compile Include="RuntimeLifecycleTests.fs" />
+    <Compile Include="RuntimeResourceCleanupTests.fs" />
     <Compile Include="StorageDateTests.fs" />
     <Compile Include="DomainEvidenceTests.fs" />
     <Compile Include="CatalogAdmissionTests.fs" />

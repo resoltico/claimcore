@@ -9,6 +9,9 @@ open System.Threading
 open ClaimCore.Contracts
 
 module RemoteServiceCall =
+    // Full history pages and owner reviews are larger than individual request/recovery records.
+    let private maximumJsonResponseBytes = 16 * 1024 * 1024
+
     let hostStatusMatches status (root: JsonElement) =
         let mutable reported = Unchecked.defaultof<JsonElement>
         let mutable value = 0
@@ -64,7 +67,7 @@ module RemoteServiceCall =
 
     let private readBounded maximum (response: HttpResponseMessage) cancelled =
         task {
-            do! response.Content.LoadIntoBufferAsync(int64 maximum)
+            do! response.Content.LoadIntoBufferAsync(int64 maximum, cancelled)
             let! bytes = response.Content.ReadAsByteArrayAsync(cancelled)
             return if bytes.Length <= maximum then Some bytes else None
         }
@@ -113,7 +116,7 @@ module RemoteServiceCall =
             | _ -> return Error CliRemoteProblem.DeliveryUnconfirmed
         }
 
-    let private json request (response: HttpResponseMessage) cancelled =
+    let internal readJsonResponse request (response: HttpResponseMessage) cancelled =
         task {
             let media =
                 response.Content.Headers.ContentType |> Option.ofObj |> Option.map _.MediaType
@@ -121,7 +124,7 @@ module RemoteServiceCall =
             if media <> Some "application/json" then
                 return Error(invalidReply request.Contract.Identifier)
             else
-                match! readBounded 131072 response cancelled with
+                match! readBounded maximumJsonResponseBytes response cancelled with
                 | None -> return Error(invalidReply request.Contract.Identifier)
                 | Some bytes ->
                     try
@@ -171,6 +174,8 @@ module RemoteServiceCall =
         (cancelled: CancellationToken)
         =
         task {
+            use deadline = HttpRequestDeadline.link access.Client cancelled
+            let cancelled = deadline.Token
             let identifier = body.Contract.Identifier
             let location = Uri(access.Configuration.Service, body.Contract.Path.TrimStart('/'))
             use request = new HttpRequestMessage(HttpMethod.Post, location)
@@ -197,7 +202,7 @@ module RemoteServiceCall =
                     if response.StatusCode = HttpStatusCode.OK && body.Destination.IsSome then
                         export body response cancelled
                     else
-                        json body response cancelled
+                        readJsonResponse body response cancelled
 
                 return
                     match result with

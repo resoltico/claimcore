@@ -57,7 +57,7 @@ jobs:
 
   coverage:
     name: Merged .NET coverage
-    needs: [suites, integration, browser]
+    needs: [suites, integration, browser, acceptance]
     uses: ./.github/workflows/verify-coverage.yml
 
   gate:

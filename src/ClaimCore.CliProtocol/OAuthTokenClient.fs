@@ -52,23 +52,14 @@ module OAuthTokenClient =
 
     let private readLimited maximum (response: HttpResponseMessage) token =
         task {
-            use! source = response.Content.ReadAsStreamAsync(token)
-            let buffer = Array.zeroCreate<byte>(maximum + 1)
-            let mutable count = 0
-            let mutable reading = true
+            do! response.Content.LoadIntoBufferAsync(int64 maximum, token)
+            let! bytes = response.Content.ReadAsByteArrayAsync(token)
 
-            while reading && count < buffer.Length do
-                let! received = source.ReadAsync(buffer.AsMemory(count), token)
-
-                if received = 0 then
-                    reading <- false
+            return
+                if bytes.Length <= maximum then
+                    Ok bytes
                 else
-                    count <- count + received
-
-            if count > maximum then
-                return Error "OIDC_RESPONSE_INVALID"
-            else
-                return Ok(Array.take count buffer)
+                    Error "OIDC_RESPONSE_INVALID"
         }
 
     let parseTokenResponse (bytes: byte array) =
@@ -134,6 +125,9 @@ module OAuthTokenClient =
         (cancelled: CancellationToken)
         =
         task {
+            use deadline = HttpRequestDeadline.link client cancelled
+            let cancelled = deadline.Token
+
             match grantFields clientId grant with
             | Error reason -> return Error reason
             | Ok fields ->

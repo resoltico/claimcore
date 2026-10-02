@@ -4,6 +4,7 @@ open System
 open System.Diagnostics
 open System.IO
 open System.Text.Json
+open System.Text
 open Expecto
 open ClaimCore.Application
 open ClaimCore.TestSupport
@@ -34,30 +35,13 @@ let runDotnet arguments input =
     removeCoverageEnvironment startInfo
     startInfo.Environment["DOTNET_NOLOGO"] <- "1"
     arguments |> List.iter startInfo.ArgumentList.Add
-    use child = new Process(StartInfo = startInfo)
-
-    if not (child.Start()) then
-        failwith "The dotnet child process did not start."
-
-    let standardOutput = child.StandardOutput.ReadToEndAsync()
-    let standardError = child.StandardError.ReadToEndAsync()
-
-    try
-        child.StandardInput.Write(input: string)
-    with :? IOException ->
-        ()
-
-    child.StandardInput.Close()
-
-    if not (child.WaitForExit(120_000)) then
-        child.Kill(true)
-        child.WaitForExit()
-        failwith "The dotnet child process timed out."
+    let bytes = Encoding.UTF8.GetBytes(input: string)
+    let result = BoundedProcess.run startInfo (Some bytes) (16 * 1024 * 1024) 120_000
 
     {
-        ExitCode = child.ExitCode
-        StandardOutput = standardOutput.GetAwaiter().GetResult()
-        StandardError = standardError.GetAwaiter().GetResult()
+        ExitCode = result.ExitCode
+        StandardOutput = UTF8Encoding(false, true).GetString(result.StandardOutput)
+        StandardError = UTF8Encoding(false, true).GetString(result.StandardError)
     }
 
 let private resolveCliPath () =

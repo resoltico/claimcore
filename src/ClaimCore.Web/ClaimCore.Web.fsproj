@@ -14,6 +14,7 @@
     <Compile Include="OidcTrustRoot.fs" />
     <Compile Include="WebPrivateKeyPaths.fs" />
     <Compile Include="Configuration.fs" />
+    <Compile Include="OidcStartup.fs" />
     <Compile Include="Security.fs" />
     <Compile Include="HttpBody.fs" />
     <Compile Include="AuthMiddleware.fs" />

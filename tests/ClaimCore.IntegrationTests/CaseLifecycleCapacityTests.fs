@@ -106,7 +106,7 @@ let private holdCapacityUnderLock =
                     (LifecycleMutation.RecordHold(
                         Guid.NewGuid(),
                         "Synthetic excess hold",
-                        DateOnly(2026, 10, 1)
+                        DateOnly.FromDateTime(DateTime.UtcNow.AddDays 1.0)
                     ))
 
             match actor.Lifecycle.Apply(proposed, cancellation) |> await with

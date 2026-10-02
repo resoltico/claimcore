@@ -13,6 +13,8 @@ ClaimCore.Web.OIDC session route boundaries.[CC-WEB-001] OIDC challenge returns 
 ClaimCore.Web.OIDC session route boundaries.[CC-WEB-001] OIDC cookie session logs out through CSRF admission
 ClaimCore.Web.OIDC session route boundaries.[CC-WEB-001] definition refuses a core denial without disclosure
 ClaimCore.Web.OIDC session route boundaries.[CC-WEB-001] shared bootstrap route is physically absent
+ClaimCore.Web.OIDC startup requests.[CC-WEB-001] startup deadline covers a suspended metadata body
+ClaimCore.Web.OIDC startup requests.[CC-WEB-001] startup requests one exact discovery path for root and path issuers
 ClaimCore.Web.Web HTTP-v3 TestServer.[CC-WEB-001] HTTP failure statuses and execution phases use exact generated host bodies
 ClaimCore.Web.Web HTTP-v3 TestServer.[CC-WEB-001] OIDC logout revokes the browser ticket before disclosure
 ClaimCore.Web.Web HTTP-v3 TestServer.[CC-WEB-001] case and operation routes preserve found, absent, rejected, failed, and cancelled core outcomes

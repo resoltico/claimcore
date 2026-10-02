@@ -139,27 +139,10 @@ let private verifyOidcMetadata (configuration: OidcConfiguration) =
         handler.AllowAutoRedirect <- false
         use client = new HttpClient(handler, Timeout = TimeSpan.FromSeconds(10.))
 
-        let location =
-            configuration.Issuer.AbsoluteUri + "/.well-known/openid-configuration"
-
-        use response =
-            client
-                .GetAsync(location, HttpCompletionOption.ResponseHeadersRead)
-                .GetAwaiter()
-                .GetResult()
-
-        if not response.IsSuccessStatusCode then
-            WebStartupDiagnostics.refuse WebStartupProblem.OidcConfigurationInvalid
-
-        response.Content.LoadIntoBufferAsync(65536L).GetAwaiter().GetResult()
-        let bytes = response.Content.ReadAsByteArrayAsync().GetAwaiter().GetResult()
-
-        match OidcAuthority.validateMetadata configuration.Issuer (ReadOnlyMemory bytes) with
-        | Ok() -> ()
-        | Error _ -> WebStartupDiagnostics.refuse WebStartupProblem.OidcConfigurationInvalid
+        OidcStartup.verify client configuration
     with
     | :? HttpRequestException
-    | :? TaskCanceledException
+    | :? OperationCanceledException
     | :? InvalidOperationException ->
         WebStartupDiagnostics.refuse WebStartupProblem.OidcConfigurationInvalid
 

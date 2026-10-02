@@ -314,6 +314,8 @@ ClaimCore PostgreSQL integration.restored writer activation reconciliation.[CC-B
 ClaimCore PostgreSQL integration.restored writer activation.[CC-BACKUP-001] W1 settlement alone leaves restored case work quarantined
 ClaimCore PostgreSQL integration.restored writer activation.[CC-BACKUP-001] W1 stays quarantined until exact witnessed W2 activation
 ClaimCore PostgreSQL integration.restored writer activation.[CC-BACKUP-001] test-only verifier exercises W2 activation and exact retry
+ClaimCore PostgreSQL integration.runtime cleanup ownership.[CC-RUN-001] runtime cleanup attempts every resource despite disposal faults
+ClaimCore PostgreSQL integration.runtime cleanup ownership.[CC-RUN-001] runtime closes admission before cleanup completion
 ClaimCore PostgreSQL integration.runtime full-audit cadence.[CC-AUDIT-001] overdue complete audit closes admission persistently
 ClaimCore PostgreSQL integration.runtime full-audit cadence.[CC-AUDIT-001] runtime disposal cancels active scheduled audit
 ClaimCore PostgreSQL integration.runtime full-audit cadence.[CC-AUDIT-001] scheduled audit quarantines post-opening row tamper

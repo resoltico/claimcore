@@ -224,6 +224,10 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-CLI-001 | acceptance | published authenticated CLI v4 acceptance.[CC-CLI-001] published operation and recovery identities reject invalid UUID and digest |
 | CC-CLI-001 | acceptance | published authenticated CLI v4 acceptance.[CC-CLI-001] published six-request witnessed lifecycle retains exact history |
 | CC-CLI-001 | acceptance | published authenticated CLI v4 acceptance.[CC-CLI-001] witnessed accepted command and exact replay |
+| CC-CLI-001 | unit | ClaimCore deterministic suite.HTTP response deadlines.[CC-CLI-001] discovery deadline covers a suspended body after headers |
+| CC-CLI-001 | unit | ClaimCore deterministic suite.HTTP response deadlines.[CC-CLI-001] token deadline covers a suspended body after headers |
+| CC-CLI-001 | unit | ClaimCore deterministic suite.service response bounds.[CC-CLI-001] CLI bounds service JSON buffering before parsing |
+| CC-CLI-001 | unit | ClaimCore deterministic suite.service response bounds.[CC-CLI-001] CLI reads a full history with maximum-length Unicode fields |
 | CC-CLI-002 | acceptance | published authenticated CLI v4 acceptance.[CC-CLI-002] malformed owner-private envelope preview retains no preparation |
 | CC-CLI-002 | acceptance | published authenticated CLI v4 acceptance.[CC-CLI-002] private recovery export and preview |
 | CC-CLI-002 | acceptance | published authenticated CLI v4 acceptance.[CC-CLI-002] unsafe private source refuses without path disclosure |
@@ -492,6 +496,8 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.production core boundary.runtime lifecycle.[CC-RUN-001] cancelled opening returns a safe typed fault |
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.production core boundary.runtime lifecycle.[CC-RUN-001] disposal closes admission and drains a held operation |
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.production core boundary.runtime lifecycle.[CC-RUN-001] disposed runtime refuses retained normal and recovery facades |
+| CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime cleanup ownership.[CC-RUN-001] runtime cleanup attempts every resource despite disposal faults |
+| CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime cleanup ownership.[CC-RUN-001] runtime closes admission before cleanup completion |
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime lifecycle under PostgreSQL.[CC-RUN-001] admitted mutation remains accepted while runtime drains |
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime lifecycle under PostgreSQL.[CC-RUN-001] admitted query keeps its typed outcome while runtime drains |
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime lifecycle under PostgreSQL.[CC-RUN-001] mid-open cancellation interrupts schema inspection |
@@ -511,6 +517,8 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-WEB-001 | web | ClaimCore.Web.OIDC session route boundaries.[CC-WEB-001] OIDC cookie session logs out through CSRF admission |
 | CC-WEB-001 | web | ClaimCore.Web.OIDC session route boundaries.[CC-WEB-001] definition refuses a core denial without disclosure |
 | CC-WEB-001 | web | ClaimCore.Web.OIDC session route boundaries.[CC-WEB-001] shared bootstrap route is physically absent |
+| CC-WEB-001 | web | ClaimCore.Web.OIDC startup requests.[CC-WEB-001] startup deadline covers a suspended metadata body |
+| CC-WEB-001 | web | ClaimCore.Web.OIDC startup requests.[CC-WEB-001] startup requests one exact discovery path for root and path issuers |
 | CC-WEB-001 | web | ClaimCore.Web.Web HTTP-v3 TestServer.[CC-WEB-001] HTTP failure statuses and execution phases use exact generated host bodies |
 | CC-WEB-001 | web | ClaimCore.Web.Web HTTP-v3 TestServer.[CC-WEB-001] OIDC logout revokes the browser ticket before disclosure |
 | CC-WEB-001 | web | ClaimCore.Web.Web HTTP-v3 TestServer.[CC-WEB-001] case and operation routes preserve found, absent, rejected, failed, and cancelled core outcomes |

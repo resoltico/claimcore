@@ -40,3 +40,6 @@ The [persistence and recovery design](persistence-recovery-design.md) and its se
 
 The [identity and privacy design](identity-privacy-design.md) and its separate
 [design QA](identity-privacy-design-qa.md) record the authentication and disclosure audit.
+
+The [verification and delivery design](verification-delivery-design.md) and its separate
+[design QA](verification-delivery-design-qa.md) record the operational foundations audit.

@@ -82,6 +82,9 @@ module OidcClient =
 
     let discover (client: HttpClient) (issuer: Uri) (cancelled: CancellationToken) =
         task {
+            use deadline = HttpRequestDeadline.link client cancelled
+            let cancelled = deadline.Token
+
             let location =
                 Uri(issuer.AbsoluteUri.TrimEnd('/') + "/.well-known/openid-configuration")
 
@@ -94,7 +97,7 @@ module OidcClient =
                 if not response.IsSuccessStatusCode then
                     return Error "OIDC_METADATA_UNAVAILABLE"
                 else
-                    do! response.Content.LoadIntoBufferAsync(65536L)
+                    do! response.Content.LoadIntoBufferAsync(65536L, cancelled)
                     let! bytes = response.Content.ReadAsByteArrayAsync(cancelled)
                     return parseDiscovery issuer bytes
             with

@@ -33,7 +33,8 @@ dotnet tool restore
 for project in \
   src/ClaimCore.Cli/ClaimCore.Cli.fsproj \
   src/ClaimCore.Web/ClaimCore.Web.fsproj \
-  src/ClaimCore.Database/ClaimCore.Database.fsproj; do
+  src/ClaimCore.Database/ClaimCore.Database.fsproj \
+  tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj; do
   dotnet build "${project}" --configuration Release --no-restore
 done
 npm --prefix web ci
@@ -45,6 +46,16 @@ npm --prefix web run sbom
 npm --prefix web exec -- playwright install chromium firefox webkit
 bash eng/Test-HostSecurityNativePublishItems.sh
 node eng/ci/publish/main.mjs build --output "${publish_root}" --no-build
+
+CLAIMCORE_PUBLISHED_CLI_DIR="${publish_root}/cli" \
+  CLAIMCORE_ACCEPTANCE_RESULTS_DIR="${local_coverage}/acceptance" \
+  dotnet tool run coverlet -- "${publish_root}/cli" --target bash \
+  --targetargs "eng/Run-PublishedWebE2E.sh ${web_dir} ${database_dir} chromium" \
+  --include '[ClaimCore.Cli]*' --exclude-assemblies-without-sources None \
+  --format cobertura --output "${local_coverage}/acceptance/cli.coverage.cobertura.acceptance.xml" \
+  --verbosity minimal
+node eng/ci/coverage-policy/cli.mjs "${local_coverage}/acceptance/cli.coverage.cobertura.acceptance.xml"
+node eng/ci/publish/main.mjs verify "${publish_root}"
 
 for engine in chromium firefox webkit; do
   dotnet tool run coverlet -- "${web_dir}" --target bash \

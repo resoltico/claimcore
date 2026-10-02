@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <Compile Include="AssemblyInfo.fs" />
     <Compile Include="StrictJson.fs" />
     <Compile Include="PrivateFiles.fs" />
     <Compile Include="FrameReader.fs" />
@@ -7,6 +8,7 @@
     <Compile Include="CliRemoteInvocation.fs" />
     <Compile Include="RemoteConfiguration.fs" />
     <Compile Include="RemoteTls.fs" />
+    <Compile Include="HttpRequestDeadline.fs" />
     <Compile Include="OidcClient.fs" />
     <Compile Include="LoopbackCallback.fs" />
     <Compile Include="InteractiveAuthorization.fs" />

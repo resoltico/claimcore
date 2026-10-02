@@ -3,6 +3,7 @@
 // only names an external DTD (ReportGenerator writes one) is tolerated, never resolved.
 import { readdirSync, readFileSync } from "node:fs";
 import { basename, join } from "node:path";
+import { productionAssemblies, reconcileMeasurements } from "./measurement.mjs";
 import { descendantsNamed, parseXml } from "../suites/xml.mjs";
 
 export const browserEngines = ["chromium", "firefox", "webkit"];
@@ -43,10 +44,29 @@ function rate(node, name, { minimum, subject }) {
 /**
  * The merged report must meet the repository floors and carry every ClaimCore.Web package above its own.
  * @param {string} path
+ * @param {string[]} [expected]
  * @returns {{ lineRate: number, branchRate: number, webPackages: number }}
  */
-export function checkFloors(path) {
+export function checkFloors(path, expected = productionAssemblies()) {
   const root = readCoverage(path);
+  const measured = reconcileMeasurements(root, expected);
+  const derivedRate = (/** @type {number} */ covered, /** @type {number} */ valid) =>
+    valid === 0 ? 1 : covered / valid;
+  if (
+    derivedRate(measured.total.coveredLines, measured.total.lines) < mergedFloors.line ||
+    derivedRate(measured.total.coveredBranches, measured.total.branches) < mergedFloors.branch
+  ) {
+    throw new Error("Measured production coverage is below the required floor.");
+  }
+  for (const [name, counts] of measured.packages) {
+    if (
+      name.startsWith("ClaimCore.Web") &&
+      (derivedRate(counts.coveredLines, counts.lines) < webPackageFloors.line ||
+        derivedRate(counts.coveredBranches, counts.branches) < webPackageFloors.branch)
+    ) {
+      throw new Error("Measured Web coverage is below the required floor.");
+    }
+  }
   const subject = "Merged production coverage";
   const lineRate = rate(root, "line-rate", { minimum: mergedFloors.line, subject });
   const branchRate = rate(root, "branch-rate", { minimum: mergedFloors.branch, subject });
@@ -66,24 +86,25 @@ export function checkFloors(path) {
 
 /** @param {string | undefined} text */
 function wholeNumber(text) {
-  return text !== undefined && /^[0-9]+$/u.test(text) ? Number(text) : Number.NaN;
+  const value = text !== undefined && /^[0-9]+$/u.test(text) ? Number(text) : Number.NaN;
+  return Number.isSafeInteger(value) ? value : Number.NaN;
 }
 
 /**
- * The ClaimCore.Web branches a package's lines actually measured.
- * @param {import("../suites/xml.mjs").XmlElement} web
+ * The branches a package's lines actually measured.
+ * @param {import("../suites/xml.mjs").XmlElement} pkg
  * @returns {number}
  */
-function measuredWebBranches(web) {
+function measuredBranches(pkg) {
   let measured = 0;
-  for (const line of descendantsNamed(web, "line")) {
+  for (const line of descendantsNamed(pkg, "line")) {
     if (line.attributes["branch"]?.toLowerCase() !== "true") {
       continue;
     }
     const match = /\(([0-9]+)\/([0-9]+)\)$/u.exec(line.attributes["condition-coverage"] ?? "");
-    const [coveredHere, validHere] = [Number(match?.[1]), Number(match?.[2])];
-    if (!match || validHere < 1 || coveredHere > validHere) {
-      throw new Error("Browser coverage has invalid ClaimCore.Web branch evidence.");
+    const [coveredHere, validHere] = [wholeNumber(match?.[1]), wholeNumber(match?.[2])];
+    if (!match || !(coveredHere >= 0 && validHere >= 1 && coveredHere <= validHere)) {
+      throw new Error("Coverage has invalid measured production branch evidence.");
     }
     measured += coveredHere;
   }
@@ -91,21 +112,22 @@ function measuredWebBranches(web) {
 }
 
 /**
- * The one ClaimCore.Web package, whose branch rate must be a real measurement.
+ * The named production package, whose branch rate must be a real measurement.
  * @param {import("../suites/xml.mjs").XmlElement} root
+ * @param {string} name
  * @returns {import("../suites/xml.mjs").XmlElement}
  */
-function webPackage(root) {
-  const web = descendantsNamed(root, "package").filter(
-    (item) => item.attributes["name"] === "ClaimCore.Web",
+function measuredPackage(root, name) {
+  const packages = descendantsNamed(root, "package").filter(
+    (item) => item.attributes["name"] === name,
   );
-  const [only] = web;
-  if (web.length !== 1 || !only) {
-    throw new Error("Browser coverage must contain the ClaimCore.Web production package.");
+  const [only] = packages;
+  if (packages.length !== 1 || !only) {
+    throw new Error(`Coverage must contain exactly one ${name} production package.`);
   }
   const branchRate = Number(only.attributes["branch-rate"]);
   if (!(Number.isFinite(branchRate) && branchRate > 0 && branchRate <= 1)) {
-    throw new Error("Browser coverage must measure ClaimCore.Web production branches.");
+    throw new Error(`Coverage must measure ${name} production branches.`);
   }
   return only;
 }
@@ -121,8 +143,18 @@ export function checkBrowserCoverage(path) {
   if (!(covered >= 1 && valid >= covered)) {
     throw new Error("Browser coverage must contain measured branch counters.");
   }
-  if (measuredWebBranches(webPackage(root)) < 1) {
+  if (measuredBranches(measuredPackage(root, "ClaimCore.Web")) < 1) {
     throw new Error("Browser coverage must contain measured ClaimCore.Web branch evidence.");
+  }
+}
+
+/** Published CLI execution must contribute actual CLI entry-process branches.
+ * @param {string} path
+ */
+export function checkCliCoverage(path) {
+  const root = readCoverage(path);
+  if (measuredBranches(measuredPackage(root, "ClaimCore.Cli")) < 1) {
+    throw new Error("CLI coverage must contain measured entry-process branch evidence.");
   }
 }
 
@@ -173,6 +205,14 @@ export function resolveInputs(root, suites) {
     }
     reports.push(one);
   }
+  const cli = everything.filter(
+    (candidate) => basename(candidate) === "cli.coverage.cobertura.acceptance.xml",
+  );
+  if (cli.length !== 1 || cli[0] === undefined) {
+    throw new Error("Published CLI coverage is missing or duplicated.");
+  }
+  checkCliCoverage(cli[0]);
+  reports.push(cli[0]);
   for (const engine of browserEngines) {
     const [path] = everything.filter(
       (candidate) => basename(candidate) === `${engine}.coverage.cobertura.e2e.xml`,

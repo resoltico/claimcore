@@ -15,13 +15,6 @@ type Result =
 
 let private maximumOutputBytes = 1_048_576
 
-let private bytes name (value: string) =
-    let encoded = Encoding.UTF8.GetBytes(value)
-
-    if encoded.Length > maximumOutputBytes then
-        invalidOp ($"Published process exceeded the bounded {name} allowance.")
-
-    encoded
 
 let dotnet
     (timeout: int)
@@ -57,29 +50,11 @@ let dotnet
     start.Environment["NO_COLOR"] <- "1"
     start.Environment["TERM"] <- "dumb"
 
-    use child = new Process(StartInfo = start)
-
-    if not (child.Start()) then
-        invalidOp "Published process did not start."
-
-    standardInput
-    |> Option.iter (fun input ->
-        child.StandardInput.BaseStream.Write(input, 0, input.Length)
-        child.StandardInput.Close())
-
-    let stdout = child.StandardOutput.ReadToEndAsync()
-    let stderr = child.StandardError.ReadToEndAsync()
-
-    if not (child.WaitForExit(timeout)) then
-        try
-            child.Kill(true)
-        with _ ->
-            ()
-
-        invalidOp "Published process exceeded its time limit."
+    let result =
+        ClaimCore.TestSupport.BoundedProcess.run start standardInput maximumOutputBytes timeout
 
     {
-        ExitCode = child.ExitCode
-        StandardOutput = stdout.GetAwaiter().GetResult() |> bytes "standard-output"
-        StandardError = stderr.GetAwaiter().GetResult() |> bytes "standard-error"
+        ExitCode = result.ExitCode
+        StandardOutput = result.StandardOutput
+        StandardError = result.StandardError
     }

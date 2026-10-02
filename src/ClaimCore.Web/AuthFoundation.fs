@@ -24,6 +24,9 @@ module OidcAuthority =
 
     let parse value = exactHttpsUri value
 
+    let discoveryLocation (issuer: Uri) =
+        Uri(issuer.AbsoluteUri.TrimEnd('/') + "/.well-known/openid-configuration")
+
     let validateMetadata (issuer: Uri) (source: ReadOnlyMemory<byte>) =
         try
             use document = JsonDocument.Parse(source)

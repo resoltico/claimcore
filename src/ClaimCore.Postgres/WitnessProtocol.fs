@@ -261,5 +261,7 @@ type internal WitnessProtocol
 
     interface IDisposable with
         member _.Dispose() =
-            (store :> IDisposable).Dispose()
-            custody.Dispose()
+            try
+                (store :> IDisposable).Dispose()
+            finally
+                custody.Dispose()

@@ -58,7 +58,10 @@ let private surfaces =
         OutcomeEmissionTests.tests
         ConfigurationTests.tests
         CliProcessTests.tests
+        BoundedProcessTests.tests
         RemoteClientTests.tests
+        HttpResponseDeadlineTests.tests
+        RemoteResponseBoundsTests.tests
         IssuerIdentityTests.tests
         RemoteInvocationTests.tests
         ActorAuthorizationTests.tests

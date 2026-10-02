@@ -486,11 +486,16 @@ survival; GitHub artifact transfer and other operating-system runners remain sep
 
 ### Coverage
 
-Frontend unit tests enforce their configured coverage floors. The CI unit, web, integration and browser
+Frontend unit tests enforce their configured coverage floors. The CI unit, web, integration, published CLI and browser
 jobs emit independent .NET Cobertura inputs; the coverage job first resolves exactly the reports the registry and
 the browser engines imply (one per measured process, no extras), then merges them with ReportGenerator and enforces
-repository and Web-specific line and branch floors. It cannot be replaced by rerunning one convenient test family
-after the fact. Each published-browser input must contain measured `ClaimCore.Web` production branches; a successful
+repository and Web-specific line and branch floors. The architecture manifest supplies the exact product
+assembly set; tooling is excluded from aggregation, every product assembly must be measured, and the
+same floors apply independently to the merged class-line/branch projection and the reported rates.
+Empty or duplicate classes/lines and invalid counts refuse qualification. It cannot be replaced by rerunning one convenient test family
+after the fact. The published CLI input must contain measured `ClaimCore.Cli` entry-process branches and is produced
+while running the complete authenticated acceptance inventory; manifest verification runs before and
+after instrumentation restores the original tree. Each published-browser input must contain measured `ClaimCore.Web` production branches; a successful
 browser lifecycle with an empty instrumentation report is not coverage evidence.
 
 ```sh
