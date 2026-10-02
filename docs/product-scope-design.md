@@ -45,8 +45,14 @@ compatibility break without simplifying the required import behavior.
 
 ## Delivery and evidence
 
-No public payload, format, baseline, runtime option, dependency or protection is changed. Update
+No public payload, format, baseline, runtime option, production dependency or protection is changed. Update
 internal producers, consumers and fixtures together. Add a negative control for forged intermediate
 readiness, retain real signed-proof and physical restore/activation qualifications, and regenerate
 the affected inventory and contract-test map through their owners. The separate
 [design QA](product-scope-design-qa.md) challenges these decisions before implementation.
+
+Verification exposed an existing test-input defect: standalone architecture discovery aborts because
+the required Witness implementation is absent from the inspection directory. The inspection names
+every product assembly, but its project omits this direct reference. Declare that actual test
+dependency in the project and manifest; retain the missing-input guard and qualify the complete
+standalone build. This changes the test graph, not production permissions or dependencies.

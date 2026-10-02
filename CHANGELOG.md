@@ -7,6 +7,7 @@ Notable changes to this project are documented in this file. The format is based
 ### Internal
 
 - Restore evidence keeps intermediate reports, independently qualified handoff readiness and writer activation distinct without duplicating readiness flags in local report/tail records. Independent qualification uses the single source-pinned root; historical reconciliation no longer performs a clock query whose value was unused. Public signed formats, readiness/refusal results and safety checks are unchanged. See [Copy custody and restore](docs/operations.md#managed-copy-custody-and-restore).
+- Standalone architecture inspection declares its required Witness project directly so its implementation reaches the inspection output; missing inspection inputs still fail closed.
 
 ## [0.6.0] - 2026-10-02
 

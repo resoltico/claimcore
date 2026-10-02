@@ -35,3 +35,10 @@ This separate skeptical pass challenges the [design](product-scope-design.md).
 
 The design is approved as an agent design decision. Required complete verification and the user's
 explicit merge authorization remain separate from that decision and from production certification.
+
+Implementation feedback: a native discovery diagnostic reports SIGABRT with the missing Witness
+implementation as its actual cause. The Debug Witness exists in its own output but not the
+architecture output. Inspection loads it directly from the component manifest. Adding its direct
+test reference records a real consumer and removes an accidental reliance on prior builds; it
+does not remove a guard or add a production edge. Recheck the exact compiled/evaluated graph and
+standalone assembly closure after the change, and rebuild the documentation tool's manifest.

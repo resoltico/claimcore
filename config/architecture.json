@@ -292,7 +292,8 @@
         "ClaimCore.Hosting",
         "ClaimCore.Postgres",
         "ClaimCore.RecordFormat",
-        "ClaimCore.Web"
+        "ClaimCore.Web",
+        "ClaimCore.Witness"
       ],
       "packages": [],
       "internalsVisibleTo": [],
