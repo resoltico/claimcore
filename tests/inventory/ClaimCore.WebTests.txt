@@ -104,6 +104,7 @@ ClaimCore.Web.configuration.Web configuration boundaries.[CC-WEB-001] loads defa
 ClaimCore.Web.configuration.Web configuration boundaries.[CC-WEB-001] rejects linked credentials and certificates without private keys
 ClaimCore.Web.configuration.[CC-WEB-001] accepts only one exact local HTTPS origin
 ClaimCore.Web.configuration.[CC-WEB-001] witness key and connection paths fail closed
+ClaimCore.Web.configuration.startup resource lifetimes.[CC-WEB-001] failed OIDC verification closes both startup certificates
 ClaimCore.Web.copy adoption approval input.[CC-WEB-001] adoption approval refuses invented provenance and actor fields
 ClaimCore.Web.copy adoption approval input.[CC-WEB-001] adoption origin binds exact witnessed provenance
 ClaimCore.Web.copy deletion approval input.[CC-WEB-001] deletion approval binds exact report verifier and cutoff

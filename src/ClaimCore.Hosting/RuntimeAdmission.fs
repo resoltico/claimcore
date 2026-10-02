@@ -28,7 +28,7 @@ type internal RuntimeAdmission
     let gate = obj ()
 
     let drained =
-        TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously)
 
     let mutable closing = false
     let mutable active = 0
@@ -36,11 +36,14 @@ type internal RuntimeAdmission
 
     let cleanup () =
         Task.Run(fun () ->
-            try
-                dataSource.Dispose()
-                drained.TrySetResult() |> ignore
-            with error ->
-                drained.TrySetException(error) |> ignore)
+            let success =
+                try
+                    dataSource.Dispose()
+                    true
+                with _ ->
+                    false
+
+            drained.TrySetResult(success) |> ignore)
         |> ignore
 
     let release () =
@@ -149,7 +152,9 @@ type internal RuntimeAdmission
             return! work ()
         }
 
-    member _.CloseAndDrain(stopBackgroundWork: unit -> unit) =
+    member _.CleanupCompletion = drained.Task
+
+    member this.CloseAndDrain(stopBackgroundWork: unit -> unit) =
         let shouldCleanup =
             lock gate (fun () ->
                 closing <- true
@@ -167,8 +172,9 @@ type internal RuntimeAdmission
                 if shouldCleanup then
                     cleanup ()
 
-            if drained.Task.Wait(drainTimeout) then
-                drained.Task.GetAwaiter().GetResult()
+            if this.CleanupCompletion.Wait(drainTimeout) then
+                if not (this.CleanupCompletion.GetAwaiter().GetResult()) then
+                    invalidOp "ClaimCore runtime cleanup failed."
         with _ ->
             raise (InvalidOperationException("ClaimCore runtime cleanup failed."))
 

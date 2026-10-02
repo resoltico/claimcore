@@ -8,6 +8,8 @@ open ClaimCore.Contracts
 /// One process-delivery state per frame. Only closed operation identity, never authored values,
 /// can survive a failed stdout write. A completed frame clears all previous knowledge.
 type FrameDelivery(output: Stream, errors: Stream) =
+    let gate = obj ()
+    let mutable interrupted = false
     let mutable phase = CliDeliveryPhase.Idle
     let mutable identity: (Guid * string option) option = None
     let mutable potentiallyChanged = false
@@ -39,31 +41,51 @@ type FrameDelivery(output: Stream, errors: Stream) =
         else
             None
 
+    let advance change =
+        lock gate (fun () ->
+            if interrupted then
+                raise (OperationCanceledException())
+
+            change ())
+
     member _.BeginFrame() =
-        phase <- CliDeliveryPhase.Reading
-        identity <- None
-        potentiallyChanged <- false
+        advance (fun () ->
+            phase <- CliDeliveryPhase.Reading
+            identity <- None
+            potentiallyChanged <- false)
 
     member _.BeforeAcquire() =
-        phase <- CliDeliveryPhase.AcquiringService
+        advance (fun () -> phase <- CliDeliveryPhase.AcquiringService)
 
     member _.BeforeRemoteDispatch(identifier: string, input: JsonElement) =
-        phase <- CliDeliveryPhase.Dispatching
-        identity <- authoredIdentity input
-        potentiallyChanged <- mutates identifier
+        advance (fun () ->
+            phase <- CliDeliveryPhase.Dispatching
+            identity <- authoredIdentity input
+            potentiallyChanged <- mutates identifier)
 
     member _.ObserveRendered() =
-        phase <- CliDeliveryPhase.ResultObserved
+        advance (fun () -> phase <- CliDeliveryPhase.ResultObserved)
 
     member _.Write(response: CliWireResponse) =
-        phase <- CliDeliveryPhase.ResultAvailable response.ExitCode
+        advance (fun () -> phase <- CliDeliveryPhase.ResultAvailable response.ExitCode)
         output.Write(response.Bytes, 0, response.Bytes.Length)
         output.Flush()
-        phase <- CliDeliveryPhase.Idle
-        identity <- None
-        potentiallyChanged <- false
+
+        lock gate (fun () ->
+            phase <- CliDeliveryPhase.Idle
+            identity <- None
+            potentiallyChanged <- false)
+
+    /// Seals future dispatch before deciding the process signal exit code.
+    member _.Interrupt() =
+        lock gate (fun () ->
+            interrupted <- true
+            if potentiallyChanged then 4 else 130)
 
     member _.Failure(error: exn) =
+        let phase, potentiallyChanged, identity =
+            lock gate (fun () -> phase, potentiallyChanged, identity)
+
         let problem =
             match phase with
             | CliDeliveryPhase.Reading -> CliProcessProblem.InputReadFailed

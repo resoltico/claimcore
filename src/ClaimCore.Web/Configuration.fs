@@ -111,68 +111,6 @@ module Configuration =
         | Ok privatePath -> privatePath
         | Error _ -> WebStartupDiagnostics.refuse WebStartupProblem.StateDirectoryRefused
 
-    let private certificate () =
-        let path = required WebSetting.CertificatePath
-
-        let bytes =
-            match PrivateFileService.readBinary (8 * 1024 * 1024) path with
-            | Ok value when value.Length > 0 -> value
-            | Ok _
-            | Error _ -> WebStartupDiagnostics.refuse WebStartupProblem.CertificateAccessRefused
-
-        // macOS does not implement EphemeralKeySet for PKCS#12 imports. The certificate is a
-        // private, mode-restricted local deployment input; use the platform default there and
-        // retain ephemeral key storage everywhere it is supported.
-        let keyStorage =
-            if OperatingSystem.IsMacOS() then
-                X509KeyStorageFlags.DefaultKeySet
-            else
-                X509KeyStorageFlags.EphemeralKeySet
-
-        let loaded =
-            try
-                try
-                    X509CertificateLoader.LoadPkcs12(
-                        ReadOnlySpan<byte>(bytes),
-                        ReadOnlySpan<char>.Empty,
-                        keyStorage
-                    )
-                with :? CryptographicException ->
-                    WebStartupDiagnostics.refuse WebStartupProblem.CertificateInvalid
-            finally
-                CryptographicOperations.ZeroMemory(Span<byte>(bytes))
-
-        if not loaded.HasPrivateKey then
-            loaded.Dispose()
-            WebStartupDiagnostics.refuse WebStartupProblem.CertificateKeyMissing
-
-        let usable =
-            try
-                let now = DateTime.UtcNow
-
-                let serverAuthentication =
-                    loaded.Extensions
-                    |> Seq.tryPick (function
-                        | :? X509EnhancedKeyUsageExtension as value -> Some value
-                        | _ -> None)
-                    |> Option.exists (fun value ->
-                        value.EnhancedKeyUsages
-                        |> Seq.cast<Oid>
-                        |> Seq.exists (fun usage -> usage.Value = "1.3.6.1.5.5.7.3.1"))
-
-                loaded.NotBefore.ToUniversalTime() <= now
-                && now < loaded.NotAfter.ToUniversalTime()
-                && loaded.MatchesHostname("localhost", false, false)
-                && serverAuthentication
-            with :? CryptographicException ->
-                false
-
-        if not usable then
-            loaded.Dispose()
-            WebStartupDiagnostics.refuse WebStartupProblem.CertificateInvalid
-
-        loaded
-
     let private privateConnection setting refused empty =
         let path = required setting
 
@@ -198,12 +136,6 @@ module Configuration =
                 | Ok value -> value
                 | Error _ -> invalid ()
 
-            let trustRoot =
-                match environment "CLAIMCORE_OIDC_CA_CERT_FILE" with
-                | None -> None
-                | Some path when issuer.IsLoopback -> Some(OidcTrustRoot.load path)
-                | Some _ -> invalid ()
-
             let requiredName name =
                 match environment name with
                 | Some value when value.Length <= 256 -> value
@@ -224,6 +156,12 @@ module Configuration =
             if [ clientId; audience; serviceClient; cliClient ] |> Set.ofList |> Set.count <> 4 then
                 invalid ()
 
+            let trustRoot =
+                match environment "CLAIMCORE_OIDC_CA_CERT_FILE" with
+                | None -> None
+                | Some path when issuer.IsLoopback -> Some(OidcTrustRoot.load path)
+                | Some _ -> invalid ()
+
             Some
                 {
                     Issuer = issuer
@@ -234,6 +172,18 @@ module Configuration =
                     ServiceClientId = serviceClient
                     CliClientId = cliClient
                 }
+
+    /// The startup caller owns the certificates of a successfully loaded configuration.
+    let ownCertificates (configuration: WebConfiguration) =
+        { new IDisposable with
+            member _.Dispose() =
+                try
+                    configuration.Oidc |> Option.bind _.TrustRoot |> Option.iter _.Dispose()
+                finally
+                    configuration.Certificate.Dispose()
+        }
+
+    let private privateKeyPath = WebPrivateKeyPaths.requireAbsolute required
 
     let load () =
         let sessionIdle = minutes WebSetting.SessionIdle 30 30
@@ -260,37 +210,37 @@ module Configuration =
         let configuredAdmission = admission ()
         let configuredOidc = oidc ()
 
-        let configuredWitnessKeyPath =
-            WebPrivateKeyPaths.requireAbsolute
-                required
-                WebSetting.WitnessKeyFile
-                WebStartupProblem.WitnessKeyFileRefused
+        try
+            let configuredWitnessKeyPath =
+                privateKeyPath WebSetting.WitnessKeyFile WebStartupProblem.WitnessKeyFileRefused
 
-        let configuredSuppressionKeyPath =
-            WebPrivateKeyPaths.requireAbsolute
-                required
-                WebSetting.SuppressionKeyFile
-                WebStartupProblem.SuppressionKeyFileRefused
+            let configuredSuppressionKeyPath =
+                privateKeyPath
+                    WebSetting.SuppressionKeyFile
+                    WebStartupProblem.SuppressionKeyFileRefused
 
-        let configuredArtifactKeyPath =
-            WebPrivateKeyPaths.requireAbsolute
-                required
-                WebSetting.RecoveryArtifactKeyFile
-                WebStartupProblem.RecoveryArtifactKeyFileRefused
-        // The Hosting key custodian opens and validates the private key-ring file.
-        let configuredCertificate = certificate ()
+            let configuredArtifactKeyPath =
+                privateKeyPath
+                    WebSetting.RecoveryArtifactKeyFile
+                    WebStartupProblem.RecoveryArtifactKeyFileRefused
+            // The Hosting key custodian opens and validates the private key-ring file.
+            let configuredCertificate =
+                TlsCertificate.load (required WebSetting.CertificatePath)
 
-        {
-            Origin = configuredOrigin
-            ConnectionString = configuredConnection
-            WitnessConnectionString = configuredWitnessConnection
-            WitnessKeyRingPath = configuredWitnessKeyPath
-            SuppressionKeyPath = configuredSuppressionKeyPath
-            RecoveryArtifactKeyPath = configuredArtifactKeyPath
-            StateDirectory = configuredState
-            Certificate = configuredCertificate
-            SessionIdle = sessionIdle
-            SessionAbsolute = sessionAbsolute
-            Admission = configuredAdmission
-            Oidc = configuredOidc
-        }
+            {
+                Origin = configuredOrigin
+                ConnectionString = configuredConnection
+                WitnessConnectionString = configuredWitnessConnection
+                WitnessKeyRingPath = configuredWitnessKeyPath
+                SuppressionKeyPath = configuredSuppressionKeyPath
+                RecoveryArtifactKeyPath = configuredArtifactKeyPath
+                StateDirectory = configuredState
+                Certificate = configuredCertificate
+                SessionIdle = sessionIdle
+                SessionAbsolute = sessionAbsolute
+                Admission = configuredAdmission
+                Oidc = configuredOidc
+            }
+        with _ ->
+            configuredOidc |> Option.bind _.TrustRoot |> Option.iter _.Dispose()
+            reraise ()

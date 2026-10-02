@@ -5,6 +5,7 @@
     <Compile Include="RouteFixtureRuntime.fs" />
     <Compile Include="RouteFixtures.fs" />
     <Compile Include="TestServerServices.fs" />
+    <Compile Include="StartupLifetimeTests.fs" />
     <Compile Include="TestServerFixture.fs" />
     <Compile Include="TestServerOutcomeValues.fs" />
     <Compile Include="PrivateTestPaths.fs" />

@@ -62,35 +62,37 @@ let private discovery arguments =
         | Error _ -> unsupported ()
     | _ -> unsupported ()
 
-let private dispatch (stopped: CancellationToken) (arguments: string list) =
+let private dispatch (arguments: string list) =
     match arguments with
     | [ "call" ]
     | [ "session" ] ->
-        let run =
-            if arguments = [ "call" ] then
-                RemoteFrameProcessing.call
-            else
-                RemoteFrameProcessing.session
+        use input = Console.OpenStandardInput()
+        use output = Console.OpenStandardOutput()
+        use errors = Console.OpenStandardError()
+        use processor = new RemoteFrameProcessor(input, output, errors)
 
-        run
-            (Console.OpenStandardInput())
-            (Console.OpenStandardOutput())
-            (Console.OpenStandardError())
-            stopped
+        let interrupt =
+            ConsoleCancelEventHandler(fun _ event ->
+                event.Cancel <- true
+                Environment.Exit(processor.Interrupt()))
+
+        Console.CancelKeyPress.AddHandler(interrupt)
+
+        try
+            if arguments = [ "call" ] then
+                processor.Call(CancellationToken.None)
+            else
+                processor.Session(CancellationToken.None)
+        finally
+            Console.CancelKeyPress.RemoveHandler(interrupt)
     | _ -> discovery arguments
 
 [<EntryPoint>]
 let main argv =
-    use stopped = new CancellationTokenSource()
-
-    Console.CancelKeyPress.Add(fun event ->
-        event.Cancel <- true
-        stopped.Cancel())
-
     try
         BuildIdentity.requireCompatibleAssembly typeof<CliEndpoint>.Assembly
         Console.OutputEncoding <- UTF8Encoding(false)
-        dispatch stopped.Token (Array.toList argv)
+        dispatch (Array.toList argv)
     with _ ->
         writeProcessFailure CliProcessProblem.UnexpectedFailure
         70

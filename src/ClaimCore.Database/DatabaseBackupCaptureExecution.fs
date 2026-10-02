@@ -77,7 +77,7 @@ module internal DatabaseBackupCaptureExecution =
         DatabaseBackupControlPipe.allowCaptureUntil pipe session.ExpiresAt (now owner)
 
         let second =
-            DatabaseBackupControlPipe.readFrame pipe
+            DatabaseBackupControlPipe.readFrameWithCancellation pipe token
             |> Option.defaultWith (fun () ->
                 invalidOp "Backup capture FINISH or ABORT is unavailable.")
 
@@ -94,7 +94,7 @@ module internal DatabaseBackupCaptureExecution =
             pipe.ReadTimeout <- 30000
 
             let third =
-                DatabaseBackupControlPipe.readFrame pipe
+                DatabaseBackupControlPipe.readFrameWithCancellation pipe token
                 |> Option.defaultWith (fun () -> invalidOp "Backup capture OBSERVE is unavailable.")
 
             let observed = session.Accept(third, now owner, token).GetAwaiter().GetResult()

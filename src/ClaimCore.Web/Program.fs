@@ -152,19 +152,14 @@ let private openRuntime (configuration: WebConfiguration) =
 let private run () =
     let configuration = Configuration.load ()
 
+    use _certificates = Configuration.ownCertificates configuration
+
     let oidc =
         configuration.Oidc
         |> Option.defaultWith (fun () ->
             WebStartupDiagnostics.refuse WebStartupProblem.OidcConfigurationInvalid)
 
     verifyOidcMetadata oidc
-    use _certificate = configuration.Certificate
-
-    use _issuerTrust =
-        { new IDisposable with
-            member _.Dispose() =
-                oidc.TrustRoot |> Option.iter (fun root -> root.Dispose())
-        }
 
     use _stateLease = Security.acquireStateDirectory configuration.StateDirectory
     let assets = assetDirectory ()
@@ -186,7 +181,7 @@ let private run () =
 
     RateLimits.configure configuration.Admission builder.Services
     builder.Services.AddAuthorization() |> ignore
-    let application = builder.Build()
+    use application = builder.Build()
 
     application.Use(Func<HttpContext, RequestDelegate, Task>(RouteSupport.handleFailures))
     |> ignore

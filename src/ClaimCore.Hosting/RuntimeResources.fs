@@ -5,29 +5,31 @@ open System.Security.Cryptography
 open ClaimCore.Application
 open ClaimCore.Postgres
 
+module private RuntimeResourcesCreation =
+    let create primaryConnection =
+        use construction = new RuntimeConstruction()
+        let primary = construction.Own(RuntimeDataSource.create primaryConnection)
+
+        let barrier =
+            construction.Own(RuntimeDataSource.createReadBarrier primaryConnection)
+
+        let audit = construction.Own(RuntimeDataSource.createFullAudit primaryConnection)
+        let key = RandomNumberGenerator.GetBytes 32
+
+        let cursor =
+            try
+                construction.Own(new CaseListCursorProtection(key))
+            finally
+                CryptographicOperations.ZeroMemory key
+
+        construction.Transfer(primary, barrier, audit, cursor)
+
 /// One runtime owns the verified primary pool, separate read-barrier and full-audit pools,
 /// witness and owner-private key custody.
 type internal RuntimeResources(primaryConnection: string, artifactKeyRingPath: string) =
-    let dataSource = RuntimeDataSource.create primaryConnection
+    let dataSource, readBarrierDataSource, fullAuditDataSource, cursorProtection =
+        RuntimeResourcesCreation.create primaryConnection
 
-    let readBarrierDataSource =
-        try
-            RuntimeDataSource.createReadBarrier primaryConnection
-        with _ ->
-            dataSource.Dispose()
-            reraise ()
-
-    let fullAuditDataSource =
-        try
-            RuntimeDataSource.createFullAudit primaryConnection
-        with _ ->
-            readBarrierDataSource.Dispose()
-            dataSource.Dispose()
-            reraise ()
-
-    let cursorKey = RandomNumberGenerator.GetBytes 32
-    let cursorProtection = new CaseListCursorProtection(cursorKey)
-    do CryptographicOperations.ZeroMemory cursorKey
     let mutable witness: WitnessProtocol option = None
     let mutable clock: IBusinessTime option = None
     let mutable suppression: (IDisposable * ISuppressionCommitments) option = None

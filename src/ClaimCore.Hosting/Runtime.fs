@@ -66,10 +66,10 @@ module private RuntimeActorFactory =
 type Runtime private (resources: RuntimeResources) =
     let safety = new RuntimeSafetySupervisor(resources)
 
+    let realDataScope = safety.CurrentUseState().Scope = InstallationUseScope.RealData
+
     let auditCadence =
         new RuntimeAuditCadence(resources, RuntimeAuditInterval.configured ())
-
-    let realDataScope = safety.CurrentUseState().Scope = InstallationUseScope.RealData
 
     let commitHealth =
         { new ICaseMutationCommitHealth with

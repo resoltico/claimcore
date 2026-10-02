@@ -253,3 +253,11 @@ only established pre-dispatch refusal claims no operation started. Partial respo
 not followed by a second JSON object. Startup failures use bounded structured stderr without raw
 provider or configuration values. [Product diagnostics](diagnostics.md) owns this boundary and its
 native/wire break. Rebuild browser and host from matching generated contracts.
+
+### Startup resource ownership
+
+Failed configuration closes acquired issuer trust. Startup owns its server and issuer certificates
+before metadata verification and owns the built application through route setup and execution.
+Application services close before runtime and certificate owners; startup refusal does not leave a
+verified pool, certificate or unstarted host behind. Trust validation and private-file rules remain
+the same on supported hosts.

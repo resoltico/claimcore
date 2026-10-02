@@ -13,6 +13,7 @@
     <Compile Include="AuthFoundation.fs" />
     <Compile Include="OidcTrustRoot.fs" />
     <Compile Include="WebPrivateKeyPaths.fs" />
+    <Compile Include="TlsCertificate.fs" />
     <Compile Include="Configuration.fs" />
     <Compile Include="OidcStartup.fs" />
     <Compile Include="Security.fs" />

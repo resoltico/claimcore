@@ -58,3 +58,6 @@ The [capacity and scheduling design](capacity-scheduling-design.md) and its sepa
 
 The [test evidence design](test-evidence-design.md) and separate
 [design QA](test-evidence-design-qa.md) challenge state oracles, generated shapes and decoder reachability.
+
+The [resource lifetime design](resource-lifetimes-design.md) and separate
+[design QA](resource-lifetimes-design-qa.md) trace construction, cleanup, signals and control streams.

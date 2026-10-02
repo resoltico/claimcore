@@ -10,6 +10,7 @@
     <Compile Include="RecoveryArtifactAuthority.fs" />
     <Compile Include="CaseListCursorProtection.fs" />
     <Compile Include="RuntimeResourceCleanup.fs" />
+    <Compile Include="RuntimeConstruction.fs" />
     <Compile Include="RuntimeResources.fs" />
     <Compile Include="RuntimeFullAudit.fs" />
     <Compile Include="RuntimeAuditCadence.fs" />

@@ -135,6 +135,9 @@ policy merely by making its own tests green. Commands and exact evidence registr
 `OpenPostgres` observes caller cancellation through connection, role, ACL, schema, lineage, and full-data audit admission; a cancelled opening returns a safe typed runtime fault and never hands out a live facade.
 An unexpected opener exception maps to a safe fault and closes the source it created, without
 disclosing provider detail.
+Partial runtime construction unwinds every acquired pool, cursor key, witness store and custody
+before handing ownership to a completed parent. Readiness checks finish before the scheduled-audit
+worker starts, so failed adoption cannot leave a worker using closed pools.
 Once opened, the lifetime owns the ordinary primary source, separate bounded read-barrier and two-connection full-audit sources, and witness store with its bounded read-fence pool; every actor-bound `IActorClaimsCore` and Recovery call enters
 through an admission lease. Disposal closes new admission, including through previously retained
 facade references. It drains admitted work for a bounded 30 seconds; if a call is still active, the
@@ -145,6 +148,8 @@ all owned pools and custody even when an earlier resource disposal fails, report
 failure category. An admitted query or
 mutation keeps its original typed result, including a definite receipt, rather than being relabeled
 as cancellation or failure by concurrent disposal.
+Deferred cleanup completion retains a success/failure value, never a faulted task carrying provider
+details. A later disposer observes a settled cleanup failure without repeating resource disposal.
 
 ## Public boundary
 

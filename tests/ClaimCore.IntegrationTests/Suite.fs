@@ -16,6 +16,8 @@ let private coreAndRecovery =
         CoreBoundaryTests.tests
         RuntimeLifecycleTests.tests
         RuntimeResourceCleanupTests.tests
+        RuntimeConstructionTests.tests
+        CliInterruptionProcessTests.tests
         RuntimeAuditCadenceTests.tests
         RuntimeSchedulingTests.tests
         AuthorityOperationFenceTests.tests
@@ -90,6 +92,7 @@ let private restoreAndBackup =
         ActorBoundCoreTests.tests
         BackupCaptureFenceTests.tests
         BackupCaptureFrameTests.tests
+        BackupControlLifetimeTests.tests
     ]
 
 let private actorAndCustody =

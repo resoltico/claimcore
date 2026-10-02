@@ -24,6 +24,8 @@
     <Compile Include="CoreBoundaryTests.fs" />
     <Compile Include="RuntimeLifecycleTests.fs" />
     <Compile Include="RuntimeResourceCleanupTests.fs" />
+    <Compile Include="RuntimeConstructionTests.fs" />
+    <Compile Include="CliInterruptionProcessTests.fs" />
     <Compile Include="StorageDateTests.fs" />
     <Compile Include="DomainEvidenceTests.fs" />
     <Compile Include="CatalogAdmissionTests.fs" />
@@ -90,6 +92,7 @@
     <Compile Include="ActorBoundCoreTests.fs" />
     <Compile Include="BackupCaptureFenceTests.fs" />
     <Compile Include="BackupCaptureFrameTests.fs" />
+    <Compile Include="BackupControlLifetimeTests.fs" />
     <Compile Include="BackupCaptureClaimsTests.fs" />
     <Compile Include="BackupCapturePathsTests.fs" />
     <Compile Include="BackupCaptureEvidenceFixture.fs" />
