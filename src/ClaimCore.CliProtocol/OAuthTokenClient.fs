@@ -20,14 +20,22 @@ type AccessToken
         observedUtc: DateTimeOffset,
         observedTimestamp: int64
     ) =
-    let lifetime = TimeSpan.FromSeconds(float expiresInSeconds - 30.)
-    let expiresAt = observedUtc.Add(lifetime)
+    let lifetime = TimeSpan.FromSeconds(float expiresInSeconds)
+    let reuseLifetime = lifetime - TimeSpan.FromSeconds 30.
+    let expiresAt = observedUtc.Add(reuseLifetime)
+
+    let within budget =
+        let elapsed = clock.GetElapsedTime(observedTimestamp)
+
+        elapsed >= TimeSpan.Zero
+        && elapsed < budget
+        && clock.GetUtcNow() < observedUtc.Add(budget)
+
     member _.Authorization = AuthenticationHeaderValue("Bearer", value)
     member _.ExpiresAt = expiresAt
 
-    member _.CanReuse =
-        let elapsed = clock.GetElapsedTime(observedTimestamp)
-        elapsed >= TimeSpan.Zero && elapsed < lifetime && clock.GetUtcNow() < expiresAt
+    member _.CanUse = within lifetime
+    member _.CanReuse = within reuseLifetime
 
     override _.ToString() = "<redacted access token>"
 
@@ -150,7 +158,7 @@ module OAuthTokenClient =
 
     let private deliveredToken clock observedUtc observedTimestamp bytes =
         match parseTokenResponseAt clock observedUtc observedTimestamp bytes with
-        | Ok token when token.CanReuse -> Ok token
+        | Ok token when token.CanUse -> Ok token
         | Ok _ -> Error "OIDC_TOKEN_UNAVAILABLE"
         | Error reason -> Error reason
 
@@ -195,12 +203,7 @@ module OAuthTokenClient =
                         match! readLimited 32768 response cancelled with
                         | Error reason -> return Error reason
                         | Ok bytes ->
-                            match
-                                parseTokenResponseAt clock observedUtc observedTimestamp bytes
-                            with
-                            | Ok token when token.CanReuse -> return Ok token
-                            | Ok _ -> return Error "OIDC_TOKEN_UNAVAILABLE"
-                            | Error reason -> return Error reason
+                            return deliveredToken clock observedUtc observedTimestamp bytes
                 with
                 | :? OperationCanceledException -> return Error "OIDC_TOKEN_UNAVAILABLE"
                 | :? HttpRequestException -> return Error "OIDC_TOKEN_UNAVAILABLE"

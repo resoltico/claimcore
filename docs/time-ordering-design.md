@@ -4,7 +4,7 @@
 
 Browser ticket idle/absolute lifetimes and CLI token caching depend only on wall time. Backward
 adjustments can extend reuse. CLI token lifetime also starts after delivery and parsing, granting
-network delay extra cache life; very short tokens can be sent already inside the safety margin.
+network delay extra validity and cache life. Initial validity and the reuse margin are distinct.
 
 Lifecycle and tombstone workflows pass an Application business-clock instant into persistence
 before waiting for authority/case locks. Approval eligibility, hold review windows and event times
@@ -18,8 +18,9 @@ clock separately for validation and continuation issuance.
 Use the platform TimeProvider for process-local lifetimes. Tickets retain their original bounded UTC
 deadline and gain elapsed absolute/idle limits sampled under the ticket gate. Renewal cannot extend
 original absolute authority. Tokens preserve their public UTC expiry but cache validity additionally
-uses elapsed time from the start of token HTTPS dispatch, with the existing thirty-second safety
-margin. A reply delivered outside that budget cannot authorize service dispatch.
+uses elapsed time from the start of token HTTPS dispatch. Reuse retains the thirty-second margin;
+a fresh shorter-lived token can be used once. A reply delivered after its actual lifetime cannot
+authorize service dispatch. Do not impose a new minimum issuer lifetime merely for cache reuse.
 
 Use one Postgres SQL clock reader for current primary UTC, with synchronous and asynchronous entry
 points for the existing execution styles. Remove caller-supplied time from internal lifecycle and

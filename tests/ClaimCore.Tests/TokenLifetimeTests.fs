@@ -49,7 +49,7 @@ let private forwardWall () =
     Expect.isFalse token.CanReuse "UTC expiry still guards suspend or forward corrections"
 
 let private delayedDelivery () =
-    for seconds, expected in [ 29., true; 30., false; 31., false ] do
+    for seconds, expected in [ 14., true; 15., false; 16., false ] do
         let clock = TokenClock()
 
         use handler =
@@ -58,7 +58,7 @@ let private delayedDelivery () =
                     clock.Elapsed(TimeSpan.FromSeconds seconds)
                     clock.Jump(TimeSpan.FromHours -2.)
                     let reply = new HttpResponseMessage(HttpStatusCode.OK)
-                    reply.Content <- new StringContent(response 60)
+                    reply.Content <- new StringContent(response 15)
                     Task.FromResult(reply)
             }
 
@@ -94,7 +94,9 @@ let private delayedDelivery () =
             "Delivery uses dispatch time, not parse completion"
 
         match result with
-        | Ok token -> Expect.isTrue token.CanReuse "Successful reply retains usable budget"
+        | Ok token ->
+            Expect.isTrue token.CanUse "Successful short reply retains initial validity"
+            Expect.isFalse token.CanReuse "Short-lived token cannot enter the reuse margin"
         | Error reason ->
             Expect.equal reason "OIDC_TOKEN_UNAVAILABLE" "No secret or provider details"
 

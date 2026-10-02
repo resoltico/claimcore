@@ -7,7 +7,10 @@ This separate pass challenges clock ownership and expiration rather than equatin
   may conservatively refuse a credential. Sample ticket clocks inside the gate, after contention.
 - An issuer's expires_in describes remaining lifetime around issuance, not after body delivery.
   Start the conservative budget immediately before HTTPS SendAsync, after interactive authorization.
-  Refuse delivery beyond the safety budget; do not implicitly retry an already dispatched mutation.
+  Refuse delivery beyond actual validity; do not implicitly retry an already dispatched mutation.
+  Published qualification exposed the initial assumption that every reply must exceed the reuse
+  margin: its live fifteen-second tokens also exercise real expiry. Preserve fresh one-shot use and
+  the full reuse margin as separate predicates, without lengthening those fixture tokens.
 - A captured instant before an authority lock is not current admission time. Remove that argument
   from internal ports rather than retain an ignored clock input or make callers choose a new source.
   Read clock_timestamp after the locks, never PostgreSQL transaction-start now(). Compare full UTC
