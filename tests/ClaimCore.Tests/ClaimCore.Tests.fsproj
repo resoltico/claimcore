@@ -10,6 +10,7 @@
     <Compile Include="CommandIdentityIsolationTests.fs" />
     <Compile Include="ScalarPropertyTests.fs" />
     <Compile Include="RecordPropertyTests.fs" />
+    <Compile Include="TransitionOracle.fs" />
     <Compile Include="TransitionPropertyTests.fs" />
     <Compile Include="CoreStore.fs" />
     <Compile Include="CoreRecoveryStoreState.fs" />
@@ -51,6 +52,7 @@
     <Compile Include="CliExitContractTests.fs" />
     <Compile Include="CanonicalRecordTests.fs" />
     <Compile Include="FreshRecoveryFormatTests.fs" />
+    <Compile Include="RecoveryArtifactFixture.fs" />
     <Compile Include="RecoveryArtifactV3Tests.fs" />
     <Compile Include="DraftTests.fs" />
     <Compile Include="BuildIdentityTests.fs" />

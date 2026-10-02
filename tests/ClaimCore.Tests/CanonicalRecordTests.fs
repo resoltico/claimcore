@@ -18,6 +18,24 @@ let private text (value: JsonElement) (name: string) =
     |> Option.ofObj
     |> Option.defaultWith (fun () -> failtest "Golden vector text is missing")
 
+let private expectedRequests =
+    [
+        "OPEN", Command.Open registration
+        "AMEND_REGISTRATION", Command.AmendRegistration registration
+        "DECIDE", Command.Decide decision
+        "WITHDRAW_DECISION", Command.WithdrawDecision
+        "RECORD_PAYMENT", Command.RecordPayment "2026-08-20"
+        "CLEAR_PAYMENT", Command.ClearPayment
+        "CLOSE", Command.Close
+        "REOPEN", Command.Reopen
+    ]
+    |> List.mapi (fun index (name, command) ->
+        name,
+        { request (if index = 0 then 0L else 1L) command with
+            OperationId = System.Guid.Parse($"20000000-0000-4000-8000-{index + 1:D12}")
+        })
+    |> Map.ofList
+
 let private commandVectors =
     testCase "all eight command encodings and identities match fixed format-3 vectors" (fun () ->
         use document = JsonDocument.Parse(File.ReadAllText(vectorPath))
@@ -27,20 +45,33 @@ let private commandVectors =
 
         Expect.equal vectors.Length 8 "Every command family"
 
+        let actualNames =
+            vectors |> List.map (fun vector -> text vector "command") |> Set.ofList
+
+        let expectedNames = expectedRequests |> Map.keys |> Set.ofSeq
+
+        Expect.isTrue
+            (actualNames = expectedNames)
+            "No duplicate vector can hide an omitted command family"
+
         for vector in vectors do
             let canonical = text vector "canonicalUtf8"
 
-            let request =
-                canonical
-                |> Encoding.UTF8.GetBytes
-                |> RequestRecord.decode SemanticContract.current.RequestByteLimit
-                |> accepted
+            let request = expectedRequests[text vector "command"]
+
+            Expect.isTrue
+                (RequestRecord.decode
+                    SemanticContract.current.RequestByteLimit
+                    (Encoding.UTF8.GetBytes canonical)
+                    =
+                    Ok request)
+                "Decoded fields match independently constructed command meaning"
 
             let actual = request |> RequestRecord.encode |> Encoding.UTF8.GetString
 
             Expect.isTrue
                 (actual = canonical)
-                "The deliberately new format matches its fixed golden bytes"
+                "Canonical format matches its independent fixed golden bytes"
 
             let fingerprint = request |> Operation.prepare |> accepted |> Operation.fingerprint
             Expect.equal fingerprint (text vector "sha256") "Fixed independently computed identity")
@@ -50,8 +81,30 @@ let private snapshotVector =
         use document = JsonDocument.Parse(File.ReadAllText(vectorPath))
         let canonical = text document.RootElement "snapshot"
 
-        let view =
-            canonical |> Encoding.UTF8.GetBytes |> CaseRecord.decodeSnapshot |> accepted
+        let view: CaseView =
+            {
+                Fields =
+                    {
+                        IncidentDate = "2026-08-01"
+                        IncidentNotificationDate = "2026-08-03"
+                        IncidentCountry = "Lithuania"
+                        ClaimantName = "Example Claimant Ltd"
+                        InsurerName = "Example Alleged Insurer"
+                        ClaimedAmount = "1000"
+                        ClaimedCurrency = "EUR"
+                        CaseReference = "UNIT-001"
+                        PaymentDecisionDate = None
+                        PayableAmount = None
+                        PayableCurrency = None
+                        PaymentDate = None
+                        Status = CaseStatus.Opened
+                    }
+                Version = 1L
+            }
+
+        Expect.isTrue
+            (CaseRecord.decodeSnapshot (Encoding.UTF8.GetBytes canonical) = Ok view)
+            "Decoded snapshot fields have independent meaning"
 
         let restored = view |> Claim.restore |> accepted
 
@@ -107,9 +160,17 @@ let private correctionRecord =
 
             let incomplete =
                 expected.Replace(
-                    "\"payment\":{\"mode\":\"REPLACE\",\"paymentDate\":\"2026-08-21\"}",
+                    ",\"payment\":{\"mode\":\"REPLACE\",\"paymentDate\":\"2026-08-21\"}",
                     ""
                 )
+
+            use incompleteDocument = JsonDocument.Parse(incomplete)
+
+            Expect.equal
+                (incompleteDocument.RootElement.GetProperty("command").EnumerateObject()
+                 |> Seq.length)
+                3
+                "The missing-group control remains valid JSON"
 
             Expect.isError
                 (RequestRecord.decode 65536 (Encoding.UTF8.GetBytes incomplete))

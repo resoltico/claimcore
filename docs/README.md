@@ -55,3 +55,6 @@ The [client workflows design](client-workflows-design.md) and its separate
 
 The [capacity and scheduling design](capacity-scheduling-design.md) and its separate
 [design QA](capacity-scheduling-design-qa.md) examine query work, audit cadence and shutdown ownership.
+
+The [test evidence design](test-evidence-design.md) and separate
+[design QA](test-evidence-design-qa.md) challenge state oracles, generated shapes and decoder reachability.

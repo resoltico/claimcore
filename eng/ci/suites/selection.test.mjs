@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { randomUUID } from "node:crypto";
+import { existsSync } from "node:fs";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import { buildInputs } from "./build.mjs";
-import { parseSelection, selectSuites } from "./selection.mjs";
+import { parseSelection, requireCompletePropertyProfile, selectSuites } from "./selection.mjs";
 
 /** @type {import("./registry.mjs").Suite[]} */
 const suites = [
@@ -62,4 +66,44 @@ test("shared prerequisites are built once per configuration and property set", (
   const inputs = buildInputs(requirements);
   assert.equal(inputs.filter((input) => input.project === "src/Cli/Cli.fsproj").length, 1);
   assert.equal(inputs.length, 3);
+});
+
+test("complete evidence refuses diagnostic property inputs and retains full profiles", () => {
+  for (const environment of [
+    { CLAIMCORE_PROPERTY_PROFILE: "recheck" },
+    { CLAIMCORE_PROPERTY_RECHECK_ID: "CC-PROP-FINGERPRINT-001" },
+    { CLAIMCORE_PROPERTY_RECHECK_TOKEN: "synthetic-token" },
+  ]) {
+    assert.throws(
+      () => requireCompletePropertyProfile(environment),
+      /Diagnostic property rechecks/u,
+    );
+  }
+  for (const environment of [
+    {},
+    { CLAIMCORE_PROPERTY_PROFILE: "required", CLAIMCORE_PROPERTY_RECHECK_ID: "" },
+    { CLAIMCORE_PROPERTY_PROFILE: "extended", CLAIMCORE_PROPERTY_BASE_SEED: "42" },
+  ]) {
+    assert.doesNotThrow(() => requireCompletePropertyProfile(environment));
+  }
+});
+
+test("the required runner rejects recheck before restoring or creating evidence", () => {
+  const root = fileURLToPath(new URL("../../..", import.meta.url));
+  const results = `artifacts/recheck-policy-${randomUUID()}`;
+  const child = spawnSync(
+    process.execPath,
+    ["eng/ci/suites/suite.mjs", "run", "fuzz", "--build", "--results-root", results],
+    {
+      cwd: root,
+      env: { ...process.env, CLAIMCORE_PROPERTY_PROFILE: "recheck" },
+      encoding: "utf8",
+      timeout: 10_000,
+    },
+  );
+  assert.equal(child.error, undefined);
+  assert.equal(child.status, 1);
+  assert.match(child.stderr, /Diagnostic property rechecks/u);
+  assert.doesNotMatch(child.stdout, /Determining projects to restore|Running tests from/u);
+  assert.equal(existsSync(new URL(`../../../${results}`, import.meta.url)), false);
 });

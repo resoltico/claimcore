@@ -3,6 +3,19 @@
 const valued = new Set(["group", "platform", "parallel", "results-root"]);
 const flags = new Set(["build", "cross-platform"]);
 
+/** @param {Record<string, string | undefined>} environment */
+export function requireCompletePropertyProfile(environment) {
+  if (
+    environment["CLAIMCORE_PROPERTY_PROFILE"] === "recheck" ||
+    environment["CLAIMCORE_PROPERTY_RECHECK_ID"] ||
+    environment["CLAIMCORE_PROPERTY_RECHECK_TOKEN"]
+  ) {
+    throw new Error(
+      "Diagnostic property rechecks cannot provide complete suite evidence. Run the native test executable directly for diagnosis.",
+    );
+  }
+}
+
 /** @param {string} name @param {string | undefined} value @param {Record<string, string>} options @param {Set<string>} enabled */
 function readOption(name, value, options, enabled) {
   if (options[name] !== undefined || enabled.has(name)) {

@@ -11,7 +11,7 @@ import { appendFileSync, cpSync, existsSync, mkdirSync, readFileSync, rmSync } f
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { runPlan } from "../stage-plan.mjs";
-import { parseSelection, selectSuites } from "./selection.mjs";
+import { parseSelection, requireCompletePropertyProfile, selectSuites } from "./selection.mjs";
 import { buildSuites } from "./build.mjs";
 import { discoverDotnet, parseInventory } from "./inventory.mjs";
 import { planSuite } from "./plan.mjs";
@@ -183,6 +183,9 @@ export async function run(argv) {
   const selection = parseSelection(argv);
   const platform = selection.options["platform"] ?? currentPlatform();
   const suites = selectSuites(loadSuites(root), selection, platform);
+  for (const suite of suites) {
+    requireCompletePropertyProfile({ ...process.env, ...suite.env });
+  }
   const limit = Number(
     selection.options["parallel"] ?? process.env["CLAIMCORE_PARALLEL_JOBS"] ?? "8",
   );

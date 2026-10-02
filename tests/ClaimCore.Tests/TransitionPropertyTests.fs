@@ -27,6 +27,7 @@ let private commands =
                 Payment = PaymentCorrection.Keep
             }
         Command.Decide decision
+        Command.Decide { decision with PayableAmount = "0" }
         Command.WithdrawDecision
         Command.RecordPayment "2026-08-20"
         Command.ClearPayment
@@ -41,61 +42,66 @@ let private stepGenerator =
         return { Command = command; Stale = stale }
     }
 
-let private registrationProjection (fields: CaseFields) =
-    fields.IncidentDate,
-    fields.IncidentNotificationDate,
-    fields.IncidentCountry,
-    fields.ClaimantName,
-    fields.InsurerName,
-    fields.ClaimedAmount,
-    fields.ClaimedCurrency,
-    fields.CaseReference
-
-let private applyStep current step =
-    let before = Claim.view current
-
-    let expectedVersion = if step.Stale then before.Version - 1L else before.Version
-
-    let candidate =
-        { request expectedVersion step.Command with
-            CaseReference = before.Fields.CaseReference
-        }
-
-    match Claim.decide today candidate (Some current) with
-    | Ok changed ->
-        let after = Claim.view changed
-
-        let stable =
-            match step.Command with
-            | Command.AmendRegistration _
-            | Command.CorrectCase _ -> after.Fields.CaseReference = before.Fields.CaseReference
-            | _ -> registrationProjection after.Fields = registrationProjection before.Fields
-
-        changed, after.Version = before.Version + 1L && stable
-    | Error _ -> current, Claim.view current = before
-
-let private explicitAcceptRejectInvariant () =
-    let initial = opened ()
-
-    let closed, acceptedInvariant =
-        applyStep
-            initial
+let private initial: CaseView =
+    {
+        Fields =
             {
-                Command = Command.Close
-                Stale = false
+                IncidentDate = "2026-08-01"
+                IncidentNotificationDate = "2026-08-03"
+                IncidentCountry = "Lithuania"
+                ClaimantName = "Example Claimant Ltd"
+                InsurerName = "Example Alleged Insurer"
+                ClaimedAmount = "1000"
+                ClaimedCurrency = "EUR"
+                CaseReference = "UNIT-001"
+                PaymentDecisionDate = None
+                PayableAmount = None
+                PayableCurrency = None
+                PaymentDate = None
+                Status = CaseStatus.Opened
             }
+        Version = 1L
+    }
 
-    let unchanged, rejectedInvariant =
-        applyStep
-            closed
-            {
-                Command = Command.Close
-                Stale = false
-            }
+let private checkSequence steps =
+    let actualInitial = opened ()
 
-    acceptedInvariant
-    && rejectedInvariant
-    && Claim.view unchanged = Claim.view closed
+    let _, _, valid =
+        steps
+        |> List.fold
+            (fun (current, expected, valid) step ->
+                let candidate =
+                    request
+                        (if step.Stale then
+                             expected.Version - 1L
+                         else
+                             expected.Version)
+                        step.Command
+
+                let result = Claim.decide today candidate (Some current)
+                let nextExpected = TransitionOracle.advance expected step.Stale step.Command
+                let observed = result |> Result.map Claim.view
+                let matches = TransitionOracle.matches nextExpected observed
+                let nextActual = result |> Result.defaultValue current
+                nextActual, Option.defaultValue expected nextExpected, valid && matches)
+            (actualInitial, initial, Claim.view actualInitial = initial)
+
+    valid
+
+let private acceptingPath =
+    [
+        Command.Decide decision
+        Command.RecordPayment "2026-08-20"
+        Command.Close
+        Command.Reopen
+        Command.ClearPayment
+        Command.WithdrawDecision
+        Command.AmendRegistration registration
+        Command.Close
+        Command.Close
+        Command.Reopen
+    ]
+    |> List.map (fun command -> { Command = command; Stale = false })
 
 let private sequenceProperty =
     let sequenceGenerator =
@@ -103,17 +109,44 @@ let private sequenceProperty =
 
     property {
         let! steps = sequenceGenerator
-
-        let _, valid =
-            steps
-            |> List.fold
-                (fun (state, allValid) step ->
-                    let next, invariant = applyStep state step
-                    next, allValid && invariant)
-                (opened (), true)
-
-        return explicitAcceptRejectInvariant () && valid
+        return checkSequence acceptingPath && checkSequence steps
     }
+
+let private negativeControls () =
+    let decided =
+        TransitionOracle.advance initial false (Command.Decide decision) |> Option.get
+
+    let paid =
+        TransitionOracle.advance decided false (Command.RecordPayment "2026-08-20")
+        |> Option.get
+
+    let closed = TransitionOracle.advance paid false Command.Close |> Option.get
+
+    let controls =
+        [
+            Some decided, Error DomainError.NotFound
+            Some paid,
+            Ok
+                { paid with
+                    Fields = { paid.Fields with PaymentDate = None }
+                }
+            Some paid, Ok { paid with Version = decided.Version }
+            Some closed,
+            Ok
+                { closed with
+                    Fields =
+                        { closed.Fields with
+                            PaymentDate = None
+                        }
+                }
+            None, Ok paid
+        ]
+
+    controls
+    |> List.iter (fun (expected, actual) ->
+        Expect.isFalse
+            (TransitionOracle.matches expected actual)
+            "Plausible defective outcome is detected")
 
 type private ReachableState =
     | OpenUndecided
@@ -184,8 +217,11 @@ let tests =
     testList
         "Hedgehog state invariants"
         [
-            testCase "accepted and rejected sequences preserve revision invariants" (fun () ->
+            testCase "accepted and rejected sequences match complete independent state" (fun () ->
                 run "CC-PROP-TRANSITION-001" sequenceProperty)
+            testCase
+                "sequence oracle rejects refusal-only and corrupt accepted outcomes"
+                negativeControls
             testCase "reachable states match the independent availability matrix" (fun () ->
                 run "CC-PROP-AVAILABILITY-001" availabilityProperty)
         ]
