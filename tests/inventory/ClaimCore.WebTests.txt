@@ -7,7 +7,6 @@ ClaimCore.Web.OIDC authentication foundation.[CC-WEB-001] metadata pins issuer a
 ClaimCore.Web.OIDC authentication foundation.[CC-WEB-001] middleware pins OIDC and JWT validation policy
 ClaimCore.Web.OIDC authentication foundation.[CC-WEB-001] production issuer requires HTTPS and exact URI
 ClaimCore.Web.OIDC configuration.[CC-WEB-001] OIDC configuration rejects HTTP issuer
-ClaimCore.Web.OIDC configuration.[CC-WEB-001] issuer TLS leaf requires server purpose
 ClaimCore.Web.OIDC configuration.[CC-WEB-001] private CA rejects malformed and broad-permission files
 ClaimCore.Web.OIDC configuration.[CC-WEB-001] private issuer CA rejects wrong purpose and validity window
 ClaimCore.Web.OIDC session route boundaries.[CC-WEB-001] OIDC challenge returns locally after PKCE callback

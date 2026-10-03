@@ -97,7 +97,6 @@
           "ClaimCore.Application": "[0.6.0, )",
           "ClaimCore.Contracts": "[0.6.0, )",
           "ClaimCore.Domain": "[0.6.0, )",
-          "ClaimCore.HostSecurity": "[0.6.0, )",
           "ClaimCore.Web": "[0.6.0, )",
           "Expecto": "[11.1.0, )",
           "FSharp.Core": "[10.1.401, )",
