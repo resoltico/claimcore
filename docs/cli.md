@@ -46,6 +46,13 @@ Discovery commands do not connect to the service. call reads one strict JSON inv
 input line while retaining an authenticated client session. It does not accept positional command verbs,
 paths containing claimant data, aliases, text output, or protocol selection flags.
 
+Each invocation is limited to 131,072 bytes (excluding the session newline). An oversized
+`session` frame emits `FRAME_TOO_LARGE` and terminates with exit 2 immediately after the first
+excess byte, without waiting for a newline or EOF. Restart the session before sending more work;
+the unread tail is discarded when the process closes its input. Complete malformed frames still
+produce frame-local refusals and permit the next line. Earlier completed responses retain their
+own outcomes; this refusal does not settle any earlier uncertain operation.
+
 ## Local failures and core outcomes
 
 Configuration, authentication, invalid service replies, and private-file refusals return a CLI-v4 `localFailure` with a safe code and exit 3. A service host refusal is a distinct `serviceFailure`; a service outcome is nested under `result.service` and validated against the generated endpoint response schema before delivery. An uncertain outbound mutation or delivery returns a typed unconfirmed result and exit 4. Neither transport failure nor a temporarily absent receipt proves that a mutation failed. [Core outcome diagnostics](diagnostics.md) defines the service's safe diagnostic identities.

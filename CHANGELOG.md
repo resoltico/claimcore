@@ -13,6 +13,8 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Fixed
 
+- Oversized CLI session frames now emit `FRAME_TOO_LARGE` and terminate with exit 2 at the first byte beyond the 131,072-byte limit, without draining an unbounded line. Automation must restart the session before further work. Earlier responses and uncertain operation identities retain their outcomes.
+
 - Private-file operations refuse malformed Unicode paths before native marshalling can redirect them to replacement-character filenames. Valid Unicode paths remain supported. A metadata failure after lock acquisition releases the kernel lock immediately instead of retaining it until garbage collection.
 - Linux ARM64 private-file admission now uses native platform flags and file metadata, fixing refusal of legitimate private files and host state. Deploy the complete matching host/native-shim publish tree; the previous shim ABI is refused. Ownership, no-follow, ACL and inode protections remain enforced.
 - Repeating initial-owner provisioning with the original private principal reads the original witnessed receipt without creating another actor or restoring later revoked authority. A different principal or missing primary history still refuses. Database-free help now exposes the separate `prune-witness-payload` owner command.

@@ -204,10 +204,45 @@ let private callTests =
                         "Safe code"))
         ]
 
+let private oversizedOpenSession () =
+    let start = ProcessStartInfo("dotnet")
+    start.UseShellExecute <- false
+    start.RedirectStandardInput <- true
+    start.RedirectStandardOutput <- true
+    start.RedirectStandardError <- true
+    removeCoverageEnvironment start
+    start.ArgumentList.Add cliPath.Value
+    start.ArgumentList.Add "session"
+
+    use child =
+        Process.Start start
+        |> Option.ofObj
+        |> Option.defaultWith (fun () -> failtest "CLI process did not start")
+
+    try
+        let output = child.StandardOutput.ReadToEndAsync()
+        let errors = child.StandardError.ReadToEndAsync()
+        let bytes = Array.create 131073 (byte 'x')
+        child.StandardInput.BaseStream.Write(bytes, 0, bytes.Length)
+        child.StandardInput.BaseStream.Flush()
+        Expect.isTrue (child.WaitForExit 20000) "Session refuses without newline or stdin EOF"
+        Expect.equal child.ExitCode 2 "Terminal protocol refusal"
+        Expect.equal (errors.GetAwaiter().GetResult()) "" "No process failure"
+
+        expectJson (output.GetAwaiter().GetResult()) (fun root ->
+            Expect.equal (root.GetProperty("code").GetString()) "FRAME_TOO_LARGE" "Exact refusal")
+    finally
+        if not child.HasExited then
+            child.Kill(true)
+            child.WaitForExit()
+
 let private sessionTests =
     testList
         "CLI v4 session and hard break"
         [
+            testCase
+                "[CC-CLI-003] oversized session refuses while its input remains open"
+                oversizedOpenSession
             testCase
                 "session emits a local protocol frame for a blank line and exits cleanly"
                 (fun () ->

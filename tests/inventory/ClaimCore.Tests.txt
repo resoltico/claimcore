@@ -11,6 +11,7 @@ ClaimCore deterministic suite.CLI token lifetimes.[CC-CLI-003] forward wall jump
 ClaimCore deterministic suite.CLI token lifetimes.[CC-CLI-003] rollback cannot extend elapsed token reuse
 ClaimCore deterministic suite.CLI v4 child-process contract.CLI v4 call and session.CLI v4 call.call refuses case work without authenticated service configuration
 ClaimCore deterministic suite.CLI v4 child-process contract.CLI v4 call and session.CLI v4 call.call reports strict frame errors as one protocol JSON response
+ClaimCore deterministic suite.CLI v4 child-process contract.CLI v4 call and session.CLI v4 session and hard break.[CC-CLI-003] oversized session refuses while its input remains open
 ClaimCore deterministic suite.CLI v4 child-process contract.CLI v4 call and session.CLI v4 session and hard break.removed protocol-v2 verbs are unsupported process invocations
 ClaimCore deterministic suite.CLI v4 child-process contract.CLI v4 call and session.CLI v4 session and hard break.session emits a local protocol frame for a blank line and exits cleanly
 ClaimCore deterministic suite.CLI v4 child-process contract.CLI v4 discovery processes.all structured discovery variants use the generated contract
@@ -348,7 +349,8 @@ ClaimCore deterministic suite.typed core queries.typed lookup outcomes.get disti
 ClaimCore deterministic suite.typed core queries.typed lookup outcomes.operation observation distinguishes a missing operation from a store fault
 ClaimCore deterministic suite.typed pagination boundaries.case listing returns request-bounded stable pages without loss or overlap
 ClaimCore deterministic suite.typed pagination boundaries.history cursors preserve detail mode and continue from the last returned revision
-ClaimCore deterministic suite.typed protocol diagnostic boundaries.oversized NDJSON frames drain before admitting the next frame
+ClaimCore deterministic suite.typed protocol diagnostic boundaries.[CC-CLI-003] oversized NDJSON frames stop at the first excess byte
+ClaimCore deterministic suite.typed protocol diagnostic boundaries.[CC-CLI-003] oversized session frames terminate without admitting their tail
 ClaimCore deterministic suite.typed protocol diagnostic boundaries.protocol vocabulary is closed complete and presentation-free
 ClaimCore deterministic suite.typed protocol diagnostic boundaries.untrusted property names cannot enter diagnostic locations
 ClaimCore deterministic suite.typed protocol diagnostic boundaries.wrong scalar kinds are typed refusals rather than escaping exceptions
