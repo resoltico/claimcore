@@ -156,6 +156,13 @@ is written by `node eng/ci/suites/inventory.mjs --write` from the built test exe
 hand. Changing, adding or removing a test therefore changes that file in the same commit, where review and
 `CODEOWNERS` see it.
 
+Reports must reconcile unique executed names against that inventory, with one flat result, definition
+and entry section. Duplicate names cannot stand in for missing tests or partition coverage; misplaced
+records and contradictory sections refuse qualification. The shared XML reader rejects malformed
+version declarations without waiting for a job timeout and preserves every attribute for validation.
+CLI fixture children clear inherited ClaimCore credentials/configuration and coverage instrumentation
+before applying explicit synthetic settings; local operator configuration cannot select their service.
+
 ```sh
 node eng/ci/suites/suite.mjs run unit web --build   # named suites
 node eng/ci/suites/suite.mjs run --cross-platform   # every suite that runs on this platform

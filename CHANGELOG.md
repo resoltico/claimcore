@@ -38,6 +38,9 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Internal
 
+- CLI test fixtures clear ambient service credentials and configuration before applying synthetic settings, preventing local operator configuration from selecting their service.
+- Test qualification refuses duplicate executed names that conceal missing tests, overlapping incomplete partitions, and contradictory or misplaced TRX records. The shared report reader rejects malformed XML declarations promptly and retains prototype-named attributes for strict validation. Test counts alone remain insufficient evidence of execution or assertion quality.
+
 - Required backup qualification executes the operator configuration, capture-interruption, checkpoint-replay and independent-signature controls. Backup Python and shell changes now select the PostgreSQL job in local CI, so tool-only changes reach their qualification tests.
 - Verification checks transitions against an independent fixture model and golden vectors against typed meaning as well as bytes. Negative controls detect defective outcomes and omitted correction groups; canonical properties cover every correction shape, literal tags and operation identity. Snapshot/recovery fuzzing reaches authenticated decoding with valid seeds and matching keys; decoder totality remains separate from real storage qualification.
 - Required suite runs reject diagnostic property rechecks before restore or report creation, preventing exact test counts from masking unexecuted properties. Use the native test executable directly for diagnostic replay; those results cannot establish complete verification.

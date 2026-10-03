@@ -1,6 +1,5 @@
 module ClaimCore.AcceptanceTests.ProcessRunner
 
-open System
 open System.Collections.Generic
 open System.Diagnostics
 open System.Text
@@ -32,12 +31,7 @@ let dotnet
     start.StandardErrorEncoding <- UTF8Encoding(false, true)
     start.ArgumentList.Add(dll)
 
-    start.Environment.Keys
-    |> Seq.filter (fun name ->
-        name.StartsWith("CLAIMCORE_", StringComparison.OrdinalIgnoreCase)
-        || name.StartsWith("COVERLET_", StringComparison.OrdinalIgnoreCase))
-    |> Seq.toArray
-    |> Array.iter (fun name -> start.Environment.Remove(name) |> ignore)
+    ClaimCore.TestSupport.CliProcessEnvironment.clearInherited start
 
     for argument in arguments do
         start.ArgumentList.Add(argument)

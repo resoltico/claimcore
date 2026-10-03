@@ -43,7 +43,7 @@ function decode(value) {
  */
 function readTag(text, from) {
   /** @type {Record<string, string>} */
-  const attributes = {};
+  const attributes = Object.create(null);
   let index = from;
   while (index < text.length) {
     const rest = text.slice(index);
@@ -162,8 +162,15 @@ function skipDoctype(text, at) {
  * @returns {number} Index after the declaration.
  */
 function declaration(text, at, allowDoctype) {
-  if (text.startsWith("<?xml", at)) {
-    return text.indexOf("?>", at) + 2;
+  if (/^<\?xml[ \t\r\n]/u.test(text.slice(at))) {
+    if (at !== 0) {
+      throw new Error("XML version declaration must occur at the document start.");
+    }
+    const end = text.indexOf("?>", at);
+    if (end < 0) {
+      throw new Error("Unterminated XML version declaration.");
+    }
+    return end + 2;
   }
   if (allowDoctype && text.startsWith("<!DOCTYPE", at)) {
     return skipDoctype(text, at);

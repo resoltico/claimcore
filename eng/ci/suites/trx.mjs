@@ -49,17 +49,38 @@ function identity(element, name) {
 }
 
 /**
+ * @param {import("./xml.mjs").XmlElement} parent
+ * @param {string} name
+ */
+function onlyChild(parent, name) {
+  const matches = childrenNamed(parent, name);
+  const [child] = matches;
+  if (matches.length !== 1 || !child) {
+    throw new Error(`TRX must contain exactly one ${name} element.`);
+  }
+  return child;
+}
+
+/**
+ * @param {import("./xml.mjs").XmlElement} root
+ * @param {string} container
+ * @param {string} record
+ */
+function sectionRecords(root, container, record) {
+  const records = childrenNamed(onlyChild(root, container), record);
+  if (descendantsNamed(root, record).length !== records.length) {
+    throw new Error(`TRX ${record} records occur outside their ${container} section.`);
+  }
+  return records;
+}
+
+/**
  * @param {import("./xml.mjs").XmlElement} root
  * @returns {import("./xml.mjs").XmlElement}
  */
 function summaryCounters(root) {
-  const summaries = childrenNamed(root, "ResultSummary");
-  const [summary] = summaries;
-  const sets = summary ? childrenNamed(summary, "Counters") : [];
-  const [counters] = sets;
-  if (summaries.length !== 1 || sets.length !== 1 || !summary || !counters) {
-    throw new Error("TRX must contain exactly one summary and counter set.");
-  }
+  const summary = onlyChild(root, "ResultSummary");
+  const counters = onlyChild(summary, "Counters");
   if (summary.attributes["outcome"] !== "Completed") {
     throw new Error("TRX summary outcome is not Completed.");
   }
@@ -114,13 +135,9 @@ function readDefinitions(root) {
   /** @type {Map<string, { executionId: string, name: string, assembly: string }>} */
   const definitions = new Map();
   const executions = new Set();
-  for (const test of descendantsNamed(root, "UnitTest")) {
-    const [method] = childrenNamed(test, "TestMethod");
-    const runs = childrenNamed(test, "Execution");
-    const [run] = runs;
-    if (!method || !run || runs.length !== 1) {
-      throw new Error("TRX test definition is incomplete.");
-    }
+  for (const test of sectionRecords(root, "TestDefinitions", "UnitTest")) {
+    const method = onlyChild(test, "TestMethod");
+    const run = onlyChild(test, "Execution");
     const id = identity(test, "id");
     const executionId = identity(run, "id");
     if (definitions.has(id) || executions.has(executionId)) {
@@ -143,12 +160,7 @@ function readDefinitions(root) {
  * @returns {Set<string>} `testId:executionId` pairs.
  */
 function readEntries(root) {
-  const containers = childrenNamed(root, "TestEntries");
-  const [container] = containers;
-  if (containers.length !== 1 || !container) {
-    throw new Error("TRX must contain exactly one test-entry set.");
-  }
-  const pairs = childrenNamed(container, "TestEntry").map(
+  const pairs = sectionRecords(root, "TestEntries", "TestEntry").map(
     (entry) => `${identity(entry, "testId")}:${identity(entry, "executionId")}`,
   );
   if (pairs.length === 0 || new Set(pairs).size !== pairs.length) {
@@ -201,8 +213,7 @@ export function verifyTrx(text, { assembly, names }) {
   const total = checkCounters(root, names.length);
   const definitions = readDefinitions(root);
   const entries = readEntries(root);
-  const [results] = childrenNamed(root, "Results");
-  const executed = results ? childrenNamed(results, "UnitTestResult") : [];
+  const executed = sectionRecords(root, "Results", "UnitTestResult");
   if (executed.length !== total) {
     throw new Error("TRX result count differs from its summary.");
   }
@@ -220,7 +231,11 @@ export function verifyTrx(text, { assembly, names }) {
   }
   const found = checked.map((item) => item.name);
   const wanted = new Set(names);
-  if (found.length !== wanted.size || found.some((name) => !wanted.has(name))) {
+  if (
+    found.length !== wanted.size ||
+    new Set(found).size !== wanted.size ||
+    found.some((name) => !wanted.has(name))
+  ) {
     throw new Error("TRX test names differ from the committed inventory.");
   }
   return { runId, names: found };
@@ -239,7 +254,11 @@ export function verifyPartitions(partitions, { assembly, names }) {
     union.push(...verifyTrx(part.text, { assembly, names: part.names }).names);
   }
   const wanted = new Set(names);
-  if (union.length !== wanted.size || union.some((name) => !wanted.has(name))) {
+  if (
+    union.length !== wanted.size ||
+    new Set(union).size !== wanted.size ||
+    union.some((name) => !wanted.has(name))
+  ) {
     throw new Error("Partition reports overlap or do not cover the whole inventory.");
   }
 }

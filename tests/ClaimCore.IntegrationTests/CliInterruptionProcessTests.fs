@@ -23,10 +23,7 @@ let private startCli () =
     start.ArgumentList.Add(binary)
     start.ArgumentList.Add("session")
 
-    start.Environment.Keys
-    |> Seq.filter (fun key -> key.StartsWith("COVERLET_", StringComparison.OrdinalIgnoreCase))
-    |> Seq.toArray
-    |> Array.iter (fun key -> start.Environment.Remove(key) |> ignore)
+    CliProcessEnvironment.clearInherited start
 
     let child =
         Process.Start(start)
