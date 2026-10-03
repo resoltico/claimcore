@@ -11,7 +11,7 @@ type Inputs =
         ServiceUrl: string
         Issuer: string
         OidcCa: string
-        WebCertificate: string
+        ServiceCa: string
         ClientId: string
         SecretFile: string
         PublicClientId: string
@@ -79,7 +79,7 @@ let load () =
         ServiceUrl = service
         Issuer = issuer
         OidcCa = file "CLAIMCORE_ACCEPTANCE_OIDC_CA_FILE"
-        WebCertificate = file "CLAIMCORE_ACCEPTANCE_WEB_CERT_FILE"
+        ServiceCa = file "CLAIMCORE_ACCEPTANCE_SERVICE_CA_FILE"
         ClientId = required "CLAIMCORE_ACCEPTANCE_SERVICE_CLIENT_ID"
         SecretFile = file "CLAIMCORE_ACCEPTANCE_SERVICE_SECRET_FILE"
         PublicClientId = required "CLAIMCORE_ACCEPTANCE_PUBLIC_CLIENT_ID"

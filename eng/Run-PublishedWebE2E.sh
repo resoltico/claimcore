@@ -157,11 +157,7 @@ run_engine() (
   jq -r '.webClientSecret' "${CLAIMCORE_TEST_OIDC_CREDENTIALS}" \
     >"${state_dir}/oidc-client.secret"
   printf '%s\n' 'Synthetic claimant canary' >"${state_dir}/claimant.canary"
-  openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj /CN=localhost \
-    -addext 'subjectAltName=DNS:localhost' -addext 'extendedKeyUsage=serverAuth' \
-    -keyout "${state_dir}/web.key" -out "${state_dir}/web.pem" >/dev/null 2>&1
-  openssl pkcs12 -export -out "${state_dir}/web.pfx" \
-    -inkey "${state_dir}/web.key" -in "${state_dir}/web.pem" -passout pass: >/dev/null 2>&1
+  bash "${repo_root}/eng/Generate-SyntheticWebTls.sh" "${state_dir}"
   origin='https://localhost:5443'
   CLAIMCORE_CONNECTION_FILE="${state_dir}/primary-app.connection" \
     CLAIMCORE_WITNESS_CONNECTION_FILE="${state_dir}/witness-writer.connection" \
@@ -181,7 +177,7 @@ run_engine() (
     dotnet "${web_dll}" >"${state_dir}/diagnostics/web-host.log" 2>&1 &
   host_pid=$!
   for _ in $(seq 1 45); do
-    curl --cacert "${state_dir}/web.pem" --fail --silent "${origin}/health/live" \
+    curl --cacert "${state_dir}/web-ca.pem" --fail --silent "${origin}/health/live" \
       >/dev/null 2>&1 && break
     kill -0 "${host_pid}" 2>/dev/null || {
       web_failure
@@ -189,12 +185,12 @@ run_engine() (
     }
     sleep 1
   done
-  curl --cacert "${state_dir}/web.pem" --fail --silent "${origin}/health/live" \
+  curl --cacert "${state_dir}/web-ca.pem" --fail --silent "${origin}/health/live" \
     >/dev/null || {
     printf 'Published Web host was not live.\n' >&2
     exit 1
   }
-  status="$(curl --cacert "${state_dir}/web.pem" --silent --output /dev/null \
+  status="$(curl --cacert "${state_dir}/web-ca.pem" --silent --output /dev/null \
     --write-out '%{http_code}' -H 'Host: example.invalid' "${origin}/health/live")"
   [[ "${status}" == 403 ]] || {
     printf 'Foreign Host was not refused.\n' >&2
@@ -220,7 +216,7 @@ run_engine() (
       CLAIMCORE_CLI_AUTH_MODE=automation \
       CLAIMCORE_OIDC_CLIENT_SECRET_FILE="${state_dir}/service-client.secret" \
       CLAIMCORE_CLI_OIDC_TRUST_ROOT_FILE="${oidc_ca}" \
-      CLAIMCORE_CLI_SERVICE_TRUST_ROOT_FILE="${state_dir}/web.pem" \
+      CLAIMCORE_CLI_SERVICE_TRUST_ROOT_FILE="${state_dir}/web-ca.pem" \
       dotnet "${cli_dll}" call <"${state_dir}/cli-before-grant.json" \
       >"${state_dir}/diagnostics/cli-before-grant.out" \
       2>"${state_dir}/diagnostics/cli-before-grant.err"
@@ -266,7 +262,7 @@ run_engine() (
       CLAIMCORE_ACCEPTANCE_SERVICE_URL="${origin}/" \
       CLAIMCORE_ACCEPTANCE_ISSUER="${CLAIMCORE_TEST_OIDC_ISSUER}" \
       CLAIMCORE_ACCEPTANCE_OIDC_CA_FILE="${oidc_ca}" \
-      CLAIMCORE_ACCEPTANCE_WEB_CERT_FILE="${state_dir}/web.pem" \
+      CLAIMCORE_ACCEPTANCE_SERVICE_CA_FILE="${state_dir}/web-ca.pem" \
       CLAIMCORE_ACCEPTANCE_SERVICE_CLIENT_ID="$(jq -r '.serviceClientId' "${CLAIMCORE_TEST_OIDC_CREDENTIALS}")" \
       CLAIMCORE_ACCEPTANCE_SERVICE_SECRET_FILE="${state_dir}/service-client.secret" \
       CLAIMCORE_ACCEPTANCE_PUBLIC_CLIENT_ID="$(jq -r '.publicClientId' "${CLAIMCORE_TEST_OIDC_CREDENTIALS}")" \

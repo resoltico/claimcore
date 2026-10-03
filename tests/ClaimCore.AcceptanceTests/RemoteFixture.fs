@@ -19,7 +19,7 @@ let private automationEnvironment () =
     values["CLAIMCORE_CLI_AUTH_MODE"] <- "automation"
     values["CLAIMCORE_OIDC_CLIENT_SECRET_FILE"] <- selected.SecretFile
     values["CLAIMCORE_CLI_OIDC_TRUST_ROOT_FILE"] <- selected.OidcCa
-    values["CLAIMCORE_CLI_SERVICE_TRUST_ROOT_FILE"] <- selected.WebCertificate
+    values["CLAIMCORE_CLI_SERVICE_TRUST_ROOT_FILE"] <- selected.ServiceCa
     values :> IReadOnlyDictionary<string, string>
 
 let private interactiveEnvironment mode =
@@ -30,7 +30,7 @@ let private interactiveEnvironment mode =
     values["CLAIMCORE_OIDC_CLIENT_ID"] <- selected.PublicClientId
     values["CLAIMCORE_CLI_AUTH_MODE"] <- "interactive"
     values["CLAIMCORE_CLI_OIDC_TRUST_ROOT_FILE"] <- selected.OidcCa
-    values["CLAIMCORE_CLI_SERVICE_TRUST_ROOT_FILE"] <- selected.WebCertificate
+    values["CLAIMCORE_CLI_SERVICE_TRUST_ROOT_FILE"] <- selected.ServiceCa
     values["CLAIMCORE_CLI_TEST_AUTH_MODE"] <- mode
     values["CLAIMCORE_CLI_TEST_CREDENTIALS_FILE"] <- selected.OidcCredentialsFile
     values["CLAIMCORE_CLI_TEST_ISSUER"] <- selected.Issuer
