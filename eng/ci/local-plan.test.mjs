@@ -75,6 +75,9 @@ test("changes select the jobs that can be affected by them", () => {
     true,
   );
   assert.equal(affected(job("tests-postgres"), ["db/baseline.sql"]), true);
+  assert.equal(affected(job("tests-postgres"), ["eng/backup/capture_delivery.py"]), true);
+  assert.equal(affected(job("tests-postgres"), ["eng/backup/Test-ManagedBackup.sh"]), true);
+  assert.equal(affected(job("tests-postgres"), ["eng/backup/README.md"]), false);
   assert.equal(affected(job("frontend-gates"), ["src/ClaimCore.Contracts/Endpoints.fs"]), true);
   assert.equal(affected(job("tests-dotnet"), ["eng/ci/suites/suite.mjs"]), true);
   assert.equal(affected(job("published-cli"), ["eng/Generate-SyntheticWebTls.sh"]), true);

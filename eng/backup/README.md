@@ -26,6 +26,35 @@ The direct `managed.py capture` command is removed. `Test-ManagedBackupPrimitive
 
 ## Product restored-pair report boundary
 
+Capture success and post-FINISH uncertainty include the original opaque `leaseId` for
+`ClaimCore.Database reconcile-backup-capture <lease-id>`. SIGINT during FINISH or OBSERVE reports
+`CAPTURE_UNCONFIRMED` and retains the exact files. A hard kill may deliver no diagnostic: preserve
+the UUID-named cycle directory immediately under the configured archive root, which is the lease
+locator, and its separately held checkpoint files. A missing or changed receipt stays unknown;
+starting another capture does not reconcile the first. See the [interrupted owner procedures](../../docs/database.md#interrupted-owner-procedures).
+After SEALED and OBSERVED, an output or cleanup failure keeps `CAPTURED_UNVERIFIED` in the safe
+stderr diagnostic with the same receipt and lease IDs and a nonzero exit. Reconcile those IDs;
+failed stdout is retired so interpreter shutdown cannot retry delivery or append a traceback.
+
+The CHECKPOINT signer acknowledges first signing and exact replay only after the ledger file and
+its parent directory are synced. Previously recorded exact signatures remain available after the
+new-signing time window; readback does not renew `capturedAt` or the native capture lease. Preserve
+the ledger across restarts. Replay signatures are reverified against the original candidate and
+configured public key; a damaged record refuses and is not overwritten. Signed deployment
+aggregate outputs are also create-only and directory-synced; preserve a failed partial pair and
+use fresh output paths only after repeating the required evidence checks.
+Put aggregate outputs in their own `0700` directory with an owner-private parent; a bare temporary
+directory directly under public `/tmp` does not meet this admission rule.
+
+Exact PEM-file hashes bind the root-signed topology's pinned bytes. Key separation additionally
+compares parsed raw Ed25519 keys, so different PEM wrapping cannot make a shared key independent.
+This applies to COPY_ATTESTOR/CHECKPOINT, the two promotion approvals, the six observer roles and
+their separate aggregate signer, including native product verification. Independent keys alone
+still do not establish independent human, host, storage or administrator custody.
+Backup configuration must use the installation's exact nonzero 32-byte commitment key and
+canonical non-nil key IDs; unsupported material is refused before capture rather than producing
+evidence that the native custody reader cannot consume.
+
 `Verify-Restored.sh` invokes only the fixed published `ClaimCore.Database verify-restore-report <report> <signature> <evidence-index> <nonce>` command. The command refuses without an independently reviewed, immutable code-owned publication root; an environment-selected verifier or a callback result cannot install a root. A report and its index are sorted compact ASCII JSON with one LF and a detached Ed25519 signature. Distinct registered RESTORE_REPORT and CHECKPOINT keys/holders must sign their respective evidence. The report binds an exact quiescent backup-capture witness sequence/hash, a later complete auditor-only witness/DataAudit cutoff, primary and witness system IDs/timelines, registered WAL prefix horizons, actual encrypted BASE/WAL object hashes and lengths, owner roster, signed inventory, checkpoint and quiescent audit barrier. The consumer reopens private files through nofollow handles and compares registered copies, catalog, full audit, retained checkpoints and same-timeline WAL prefix coverage. It never converts unknown work into a definite success.
 
 A pre-handoff report explicitly says `recoveryTailUnsealed:true` and `realDataReady:false`. It proves audited facts and a registered WAL prefix, **not** complete recoverability to its later audit tip: the unregistered open tail is a named liability. The quiescent audit barrier does not claim old sessions terminated, endpoint isolation or credential revocation. A separately signed W1 fenced-recovery-tail supplement must later bind the exact report digest and close the open tail through the stopped writer's final endpoint; neither artifact alone authorizes cutover. The current backup capture still emits `unfenced-capture` and unregistered/unverified copies, and this checkout has no reviewed production publication root, so no full signed report is currently issuable from that capture and no real-data promotion is available. Do not relabel these absences as a passing qualification.

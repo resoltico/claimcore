@@ -10,6 +10,7 @@ let private expectedRefusalStages =
     [
         "Owner-selected callback hash passed", "owner-verifier-hash"
         "A shared copy/checkpoint signing key passed", "shared-signing-key"
+        "One owner signing key under different PEM wrapping passed", "shared-promotion-key"
         "Linked private configuration passed", "linked-configuration"
         "Linked private ancestor passed", "linked-ancestor"
         "The unfenced owner capture CLI remained available", "unfenced-capture"
@@ -37,10 +38,18 @@ let private safeStage (diagnostics: string) =
             "(?:backup-test-stage=line-[0-9]{1,4}|checkpoint-signer-stage=[a-z-]{1,70})"
         )
 
+    let typedRefusal =
+        Regex.Match(
+            diagnostics,
+            "(?m)^(?:[a-z_]+\\.)?(?:DeploymentRefusalError|BackupFailureError|ReviewFailureError): ([a-z0-9-]{1,70})\\r?$"
+        )
+
     if toolReason.Success then
         "backup-reason-" + toolReason.Groups[1].Value
     elif shellStage.Success then
         shellStage.Value
+    elif typedRefusal.Success then
+        "backup-reason-" + typedRefusal.Groups[1].Value
     else
         expectedRefusalStages
         |> List.tryPick (fun (message, category) ->
@@ -95,11 +104,49 @@ let private runScript tool scriptName =
 
     runner.ExitCode
 
+let private operatorEvidence =
+    testList
+        "operator evidence recovery"
+        [
+            testCase
+                "[CC-BACKUP-001] capture interruptions and checkpoint replay preserve exact evidence"
+                (fun _ ->
+                    Expect.equal
+                        (safeStage
+                            "deployment_common.DeploymentRefusalError: private-path-permissions")
+                        "backup-reason-private-path-permissions"
+                        "Typed subprocess refusals retain their bounded cause."
+
+                    Expect.equal
+                        (safeStage "DeploymentRefusalError: private /claimant")
+                        "stage-unavailable"
+                        "Private exception text stays hidden."
+
+                    for script in
+                        [
+                            "Test-ManagedConfig.py"
+                            "Test-BackupBarrier.py"
+                            "Test-CheckpointSigner.py"
+                        ] do
+                        Expect.equal
+                            (runScript "python3" script)
+                            0
+                            "Operator controls must complete")
+            testCase
+                "[CC-BACKUP-001] independent observer aggregate rejects key reuse and forged evidence"
+                (fun _ ->
+                    Expect.equal
+                        (runScript "python3" "Test-DeploymentAggregate.py")
+                        0
+                        "Independent aggregate controls must complete")
+        ]
+
 [<Tests>]
 let tests =
     testList
         "ClaimCore managed backup qualification"
         [
+            operatorEvidence
             testCase
                 "[CC-BACKUP-001] encrypted dual-cluster backup is verified by isolated restores and rejects altered evidence"
                 (fun _ ->

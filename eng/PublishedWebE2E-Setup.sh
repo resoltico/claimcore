@@ -184,7 +184,9 @@ if ! CLAIMCORE_ADMIN_CONNECTION_FILE="${state_dir}/primary-owner.connection" \
     "$(diagnostic "${state_dir}/diagnostics/owner-init.err")" >&2
   exit 1
 fi
-if CLAIMCORE_ADMIN_CONNECTION_FILE="${state_dir}/primary-owner.connection" \
+authority_before="$(docker exec "${primary}" psql -X -U claimcore_primary_owner -d claimcore -At -c 'SELECT revision FROM claimcore.authority_tip WHERE singleton')"
+witness_before="$(docker exec "${witness}" psql -X -U claimcore_witness_owner -d claimcore_witness -At -c 'SELECT tip_sequence FROM claimcore_witness.installation WHERE singleton')"
+if ! CLAIMCORE_ADMIN_CONNECTION_FILE="${state_dir}/primary-owner.connection" \
   CLAIMCORE_WITNESS_CONNECTION_FILE="${state_dir}/witness-writer.connection" \
   CLAIMCORE_WITNESS_KEY_FILE="${state_dir}/witness-key.json" \
   CLAIMCORE_WRITER_CAPABILITY_FILE="${state_dir}/writer.capability" \
@@ -192,11 +194,30 @@ if CLAIMCORE_ADMIN_CONNECTION_FILE="${state_dir}/primary-owner.connection" \
   dotnet "${database_dll}" provision-initial-owner \
   >"${state_dir}/diagnostics/owner-repeat.out" \
   2>"${state_dir}/diagnostics/owner-repeat.err"; then
-  printf 'Repeated first-owner provisioning was not refused.\n' >&2
+  printf 'Exact first-owner readback failed.\n' >&2
+  exit 1
+fi
+if ! jq -e '.operationOutcome == "COMPLETED"' "${state_dir}/diagnostics/owner-repeat.out" >/dev/null ||
+  [[ -s "${state_dir}/diagnostics/owner-repeat.err" ]] ||
+  [[ "$(docker exec "${primary}" psql -X -U claimcore_primary_owner -d claimcore -At -c 'SELECT revision FROM claimcore.authority_tip WHERE singleton')" != "${authority_before}" ]] ||
+  [[ "$(docker exec "${witness}" psql -X -U claimcore_witness_owner -d claimcore_witness -At -c 'SELECT tip_sequence FROM claimcore_witness.installation WHERE singleton')" != "${witness_before}" ]]; then
+  printf 'Exact first-owner readback changed authority or returned no confirmed receipt.\n' >&2
+  exit 1
+fi
+jq '{issuer,subject:.stewardSubject}' "${state_dir}/principals.json" >"${state_dir}/different-initial-owner.json"
+if CLAIMCORE_ADMIN_CONNECTION_FILE="${state_dir}/primary-owner.connection" \
+  CLAIMCORE_WITNESS_CONNECTION_FILE="${state_dir}/witness-writer.connection" \
+  CLAIMCORE_WITNESS_KEY_FILE="${state_dir}/witness-key.json" \
+  CLAIMCORE_WRITER_CAPABILITY_FILE="${state_dir}/writer.capability" \
+  CLAIMCORE_INITIAL_OWNER_PRINCIPAL_FILE="${state_dir}/different-initial-owner.json" \
+  dotnet "${database_dll}" provision-initial-owner \
+  >"${state_dir}/diagnostics/owner-different.out" \
+  2>"${state_dir}/diagnostics/owner-different.err"; then
+  printf 'A different first-owner principal was not refused.\n' >&2
   exit 1
 fi
 jq -e '.operationOutcome == "NOT_COMMITTED" and .diagnostic.id == "DB_OPERATION_FAILED"' \
-  "${state_dir}/diagnostics/owner-repeat.err" >/dev/null || {
-  printf 'Repeated first-owner refusal was not definite.\n' >&2
+  "${state_dir}/diagnostics/owner-different.err" >/dev/null || {
+  printf 'Different first-owner refusal was not definite.\n' >&2
   exit 1
 }

@@ -59,6 +59,11 @@ FILES = {
 class BarrierUnknownError(Exception):
     """FINISH may have committed; retain exact private files and seek readback."""
 
+    def __init__(self, lease_id: str) -> None:
+        """Keep only the validated opaque identity needed by owner reconciliation."""
+        super().__init__("barrier-finish-uncertain")
+        self.lease_id = lease_id
+
 
 class BarrierController(Protocol):
     """The owner-controlled transport that issues and settles the barrier."""
@@ -68,7 +73,7 @@ class BarrierController(Protocol):
         ...
 
     def observe(self, request: bytes) -> bytes:
-        """Read the settled receipt back from the independent witness."""
+        """Read the durable local capture receipt back through the owner."""
         ...
 
 
@@ -216,19 +221,19 @@ def capture_with_barrier(
     try:
         paths = capture_action(lease)
         _verify_capture_paths(paths, lease, checkpoint_root)
-    except Exception:
+    except (Exception, KeyboardInterrupt):
         controller.exchange(
             frame({"format": FORMAT, "kind": "ABORT", "nonce": nonce, "leaseId": lease["leaseId"]})
         )
         raise
     try:
         receipt = _finish_and_observe(controller, nonce, lease, paths)
-    except Exception as error:
-        msg = "barrier-finish-uncertain"
-        raise BarrierUnknownError(msg) from error
+    except (Exception, KeyboardInterrupt) as error:
+        raise BarrierUnknownError(lease["leaseId"]) from error
     return {
         "status": "captured-unverified-observed",
         "receiptId": receipt["cycleReceiptId"],
+        "leaseId": lease["leaseId"],
         "retained": False,
         "realDataReady": False,
     }

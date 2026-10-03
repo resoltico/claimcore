@@ -145,6 +145,13 @@ Managed primary, witness, WAL, snapshot, replica, key and product-export copies 
 
 An owner-held, signed dual-BASE capture initially yields only `CAPTURED_UNVERIFIED`: its exact encrypted bytes and cutoff still need separate witnessed copy registration and physical `VERIFY→RETAINED`, WAL coverage, independent checkpoint custody, and a signed full restored-pair audit with W1 tail and writer fence. Neither the capture receipt nor the generic build's absent publication root establishes real-data readiness.
 
+Independent signing roles require distinct raw Ed25519 keys as well as the existing human,
+machine, storage and host-key evidence. Different PEM encodings of one key cannot satisfy role
+separation; exact file digests still bind the signed topology's pinned bytes. Keep capture lease
+IDs, original signed candidates and matching verifier packages for the
+[interrupted owner procedures](database.md#interrupted-owner-procedures). A checkpoint or local
+capture receipt is historical evidence, not renewed health or permission to lift quarantine.
+
 Intermediate restore reports always carry `realDataReady: false`, including `scope: full`; scope
 identifies the evidence profile, not permission to process real data. The owner fenced-tail recheck
 reports readiness only after fresh independent-host and local evidence agree. Writer activation

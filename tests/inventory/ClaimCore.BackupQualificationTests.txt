@@ -1,2 +1,4 @@
 ClaimCore managed backup qualification.[CC-BACKUP-001] deploy-time custody gate refuses same-host and self-certified evidence
 ClaimCore managed backup qualification.[CC-BACKUP-001] encrypted dual-cluster backup is verified by isolated restores and rejects altered evidence
+ClaimCore managed backup qualification.operator evidence recovery.[CC-BACKUP-001] capture interruptions and checkpoint replay preserve exact evidence
+ClaimCore managed backup qualification.operator evidence recovery.[CC-BACKUP-001] independent observer aggregate rejects key reuse and forged evidence

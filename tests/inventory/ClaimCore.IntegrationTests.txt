@@ -91,12 +91,12 @@ ClaimCore PostgreSQL integration.[CC-AUDIT-001] authority lease cleanup preserve
 ClaimCore PostgreSQL integration.[CC-AUTH-001] case-list cursor binds principal grant query and visible page
 ClaimCore PostgreSQL integration.[CC-AUTH-001] voided and erasure-fenced identities share denial timing class
 ClaimCore PostgreSQL integration.[CC-BACKUP-001] intermediate restore reports cannot claim deployment readiness
-ClaimCore PostgreSQL integration.[CC-BACKUP-001] root-signed topology refuses an aggregate key reused by a host
 ClaimCore PostgreSQL integration.[CC-LIFE-001] [CC-REC-001] a witnessed hold retains terminal preparation evidence until release
 ClaimCore PostgreSQL integration.[CC-REC-001] [CC-WIT-001] revocation fences future authority without rewriting an orphan acceptance
 ClaimCore PostgreSQL integration.[CC-REC-001] a settled rejection cannot be re-executed or issue an orphan intent
 ClaimCore PostgreSQL integration.[CC-REC-001] recovery inspection uses one snapshot across concurrent owner pruning
 ClaimCore PostgreSQL integration.actor and grant storage.[CC-AUTH-001] exact authority replay detects a forged live actor projection
+ClaimCore PostgreSQL integration.actor and grant storage.[CC-AUTH-001] exact initial-owner readback preserves receipt without restoring authority
 ClaimCore PostgreSQL integration.actor and grant storage.[CC-AUTH-001] explicit grant revocation advances authority and invalidates stale snapshot
 ClaimCore PostgreSQL integration.actor and grant storage.[CC-AUTH-001] initial owner is private and unknown login remains ungranted
 ClaimCore PostgreSQL integration.actor and grant storage.[CC-AUTH-001] real-data roster needs a second distinct human owner or steward
@@ -213,6 +213,8 @@ ClaimCore PostgreSQL integration.full primary data audit.[CC-AUDIT-001] independ
 ClaimCore PostgreSQL integration.independent archive host proof.[CC-BACKUP-001] forged or stale archive observation is refused
 ClaimCore PostgreSQL integration.independent archive host proof.[CC-BACKUP-001] signed archive observation binds every final WAL object
 ClaimCore PostgreSQL integration.independent archive host proof.[CC-BACKUP-001] signed archive observation missing one final WAL object is refused
+ClaimCore PostgreSQL integration.independent topology signing keys.[CC-BACKUP-001] PEM rewrapping cannot establish independent native signer keys
+ClaimCore PostgreSQL integration.independent topology signing keys.[CC-BACKUP-001] root-signed topology refuses an aggregate key reused by a host
 ClaimCore PostgreSQL integration.installation loss crash boundaries.[CC-BACKUP-001] W1 response loss reconciles only the historical terminal ticket
 ClaimCore PostgreSQL integration.installation loss crash boundaries.[CC-BACKUP-001] primary COMMIT response loss before W1 preserves exact pending receipt
 ClaimCore PostgreSQL integration.installation loss crash boundaries.[CC-BACKUP-001] terminated in-COMMIT primary transaction keeps W0 pending

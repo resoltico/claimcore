@@ -20,6 +20,7 @@ from deployment_common import (
     canonical,
     is_sha256,
     private_path,
+    public_key_identity,
     require,
     timestamp,
     verify,
@@ -198,6 +199,9 @@ def verify_aggregate(
     required_scope: str = "full",
 ) -> tuple[JsonObject, str]:
     """Recheck signature, links, freshness, every probe and the old-writer observation."""
+    identities = [public_key_identity(context.role_keys[role]) for role in ROLES]
+    identities.extend((public_key_identity(context.observer_key), public_key_identity(public_key)))
+    require(len(set(identities)) == len(identities), "aggregate-key-reused")
     proof, digest = _verify_signature(raw, signature, public_key, context)
     _verify_links(proof, context, required_scope)
     checked, until = timestamp(proof["checkedAt"]), timestamp(proof["validUntil"])

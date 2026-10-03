@@ -170,6 +170,8 @@ module internal DatabaseIndependentHostAggregate =
         (documents: IndependentHostDocuments)
         (topology: IndependentHostTopology)
         =
+        DatabaseIndependentHostEvidence.requireIndependentKeys documents
+
         if
             DatabaseIndependentHostJson.sha256 documents.AggregatePublicKey
             <> topology.AggregatePublicKeySha256

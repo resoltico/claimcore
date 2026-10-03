@@ -197,6 +197,17 @@ let tests =
         "Database admin private-file boundary"
         [
             testCase
+                "[CC-ERASE-001] database-free help exposes the separate witness payload prune command"
+                (fun _ ->
+                    let code, output, errors = invokeCommand [ "help" ] "/private/not-opened"
+                    Expect.equal code 0 "Help needs no administration credential."
+                    Expect.equal errors "" "Help has no private-file refusal."
+
+                    Expect.stringContains
+                        output
+                        "ClaimCore.Database prune-witness-payload <private-proposal-file>"
+                        "Operators can discover the distinct post-purge phase.")
+            testCase
                 "[CC-DB-002] schema-owner credential rejects unsafe mode, links, UTF-8, and size before database access"
                 boundary
             testCase

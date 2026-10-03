@@ -14,6 +14,7 @@ from deployment_common import (
     is_sha256,
     is_uuid,
     private_path,
+    public_key_identity,
     require,
     timestamp,
     verify_root_signed,
@@ -202,6 +203,10 @@ def verify_topology(
     _verify_authority(manifest, publication_sha, now)
     pins = _verify_role_pins(manifest, config)
     observer = _verify_observer_pin(manifest, config, pins)
+    identities = [
+        public_key_identity(config["roles"][role]["probePublicKey"]) for role in ROLES
+    ] + [public_key_identity(config["fenceObserver"]["probePublicKey"])]
+    require(len(set(identities)) == len(identities), "topology-key-reused")
     require(
         manifest["deploymentVerifierPublicKeySha256"]
         not in {pin["probePublicKeySha256"] for pin in pins} | {observer["probePublicKeySha256"]},
