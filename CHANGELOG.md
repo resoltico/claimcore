@@ -38,6 +38,8 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Internal
 
+- Repository settings plans refuse ambiguous or malformed release protections before writes instead of selecting a duplicate timer or treating invalid reviewer identities as configured. Valid stronger reviewer, wait and self-review settings remain preserved. Declared owner policy is explicitly separate from live native activation.
+
 - CLI test fixtures clear ambient service credentials and configuration before applying synthetic settings, preventing local operator configuration from selecting their service.
 - Test qualification refuses duplicate executed names that conceal missing tests, overlapping incomplete partitions, and contradictory or misplaced TRX records. The shared report reader rejects malformed XML declarations promptly and retains prototype-named attributes for strict validation. Test counts alone remain insufficient evidence of execution or assertion quality.
 
