@@ -31,7 +31,7 @@ module DocumentationCommands =
     let private completeAssessment (root: RepositoryRoot) documents generated =
         let virtualDocs = virtualDocuments documents generated
 
-        match Links.check root virtualDocs, Contracts.declarations virtualDocs with
+        match Links.checkNavigation root virtualDocs, Contracts.declarations virtualDocs with
         | Error errors, _
         | _, Error errors -> Error errors
         | Ok links, Ok contracts ->

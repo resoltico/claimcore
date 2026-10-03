@@ -138,13 +138,15 @@ export function architectureSummary(reportPath) {
  * @returns {Prepared}
  */
 function prepare(suite, { resultsRoot }) {
+  if (existsSync(join(resultsRoot, suite.id))) {
+    throw new Error(
+      `The ${suite.id} results directory ${JSON.stringify(join(resultsRoot, suite.id))} must start absent. Preserve prior evidence and run: node eng/ci/suites/suite.mjs run ${suite.id} --results-root artifacts/results-${Date.now()}.`,
+    );
+  }
   const names = parseInventory(readFileSync(join(root, inventoryPath(suite)), "utf8"));
   const { names: discovered, partitions: partitionNames } = discoverDotnet(root, suite);
   if (JSON.stringify(discovered) !== JSON.stringify(names)) {
     throw new Error(`${inventoryPath(suite)} differs from the build. Run inventory.mjs --write.`);
-  }
-  if (existsSync(join(resultsRoot, suite.id))) {
-    throw new Error(`The ${suite.id} results directory must start absent.`);
   }
   return { suite, names, jobs: planSuite(root, suite, { resultsRoot, names, partitionNames }) };
 }

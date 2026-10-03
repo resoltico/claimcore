@@ -43,6 +43,7 @@ let private capture owner source witness commitments =
     |> await
 
 let private caseWork
+    ownerConnection
     (capture: unit -> DatabaseBackupCaptureBarrier)
     (actor: IActorClaimsCore)
     (witness: WitnessProtocol)
@@ -59,7 +60,7 @@ let private caseWork
         Task.Run(fun () -> actor.Execute(request, CancellationToken.None) |> await)
 
     try
-        Task.Delay(150).GetAwaiter().GetResult()
+        DatabaseObservation.blockedBy ownerConnection
         Expect.isFalse submitted.IsCompleted "No accepted case commits behind capture fence."
         Expect.equal (witness.Snapshot().TipSequence) cutoff "Witness cutoff is fixed."
         let summary = first.Verify(CancellationToken.None) |> await
@@ -75,6 +76,7 @@ let private caseWork
     | _ -> failtest "Fenced operation did not settle after lease release."
 
 let private grantChange
+    ownerConnection
     (capture: unit -> DatabaseBackupCaptureBarrier)
     (registry: ActorGrantRegistry)
     (principal: PrincipalKey)
@@ -88,7 +90,7 @@ let private grantChange
         Task.Run(fun () -> registry.SetGrant(principal, identity, editorGrant, false) |> await)
 
     try
-        Task.Delay(150).GetAwaiter().GetResult()
+        DatabaseObservation.blockedBy ownerConnection
         Expect.isFalse changed.IsCompleted "Owner grant mutation waits behind capture fence."
         Expect.equal (witness.Snapshot().TipSequence) cutoff "Owner authority cutoff is fixed."
         second.Verify(CancellationToken.None) |> await |> ignore
@@ -116,8 +118,8 @@ let private capturedAuthority =
                 let lease () =
                     capture ownerConnection source witness commitments
 
-                caseWork lease (runtime.ForActor principal) witness
-                grantChange lease registry principal identity witness
+                caseWork ownerConnection lease (runtime.ForActor principal) witness
+                grantChange ownerConnection lease registry principal identity witness
                 use audit = RuntimeDatabase.openConnection source
 
                 let summary =
@@ -131,6 +133,7 @@ let private capturedAuthority =
                 Expect.equal summary.PendingIntents 0L "Released fence leaves no unknown intent."))
 
 let private assertTicketBlocked
+    writer
     (witness: WitnessProtocol)
     (release: TaskCompletionSource<unit>)
     (audit: Task<DataAuditSummary>)
@@ -141,7 +144,7 @@ let private assertTicketBlocked
         Task.Run(fun () ->
             witness.BeginAuthority(Guid.NewGuid(), [| 0x43uy; 0x43uy |], None) |> ignore)
 
-    Task.Delay(150).GetAwaiter().GetResult()
+    DatabaseObservation.lockWait writer "transactionid"
     Expect.isFalse append.IsCompleted "New witness tickets wait for the full audit."
     Expect.equal (witness.Snapshot().TipSequence) cutoff "Audit cutoff remains fixed."
     release.SetResult()
@@ -149,7 +152,7 @@ let private assertTicketBlocked
     Expect.equal summary.WitnessCutoff cutoff "Complete snapshot used the fenced cutoff."
     Expect.isTrue (append.Wait(5000)) "Ticket resumes after the audit releases its fence."
 
-let private verifyCompleteAuditBarrier resources owner witness =
+let private verifyCompleteAuditBarrier resources owner writer witness =
     use ownerConnection = new NpgsqlConnection(owner)
     ownerConnection.Open()
     use held = ownerConnection.BeginTransaction(IsolationLevel.ReadCommitted)
@@ -178,13 +181,13 @@ let private verifyCompleteAuditBarrier resources owner witness =
                 release.Task :> Task)
             CancellationToken.None
 
-    Task.Delay(100).GetAwaiter().GetResult()
+    DatabaseObservation.blockedBy ownerConnection
     Expect.isFalse fenced.Task.IsCompleted "The primary barrier drains an admitted writer."
     held.Rollback()
 
     try
         Expect.isTrue (fenced.Task.Wait(5000)) "Audit acquired both global fences."
-        assertTicketBlocked witness release audit
+        assertTicketBlocked writer witness release audit
     finally
         release.TrySetResult() |> ignore
 
@@ -192,7 +195,7 @@ let private completeAuditDrainsAndFences =
     testCase
         "[CC-AUDIT-001] complete audit drains primary mutations and blocks new witness tickets"
         (fun _ ->
-            withAuthorityRuntimeDatabase (fun owner app _ witness ->
+            withAuthorityRuntimeDatabase (fun owner app writer witness ->
                 use resources = new RuntimeResources(app, artifactKeyRingFile ())
                 resources.Attach witness
 
@@ -203,7 +206,7 @@ let private completeAuditDrainsAndFences =
                     FixturePrivateFiles.syntheticCommitments witness.Identity
                 )
 
-                verifyCompleteAuditBarrier resources owner witness))
+                verifyCompleteAuditBarrier resources owner writer witness))
 
 let tests =
     testList "owner backup capture fence" [ capturedAuthority; completeAuditDrainsAndFences ]

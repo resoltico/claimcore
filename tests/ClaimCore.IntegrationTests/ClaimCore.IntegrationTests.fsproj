@@ -13,6 +13,7 @@
     <Compile Include="FixtureCommandExecution.fs" />
     <Compile Include="ActorBoundStoreFixture.fs" />
     <Compile Include="Fixtures.fs" />
+    <Compile Include="DatabaseObservation.fs" />
     <Compile Include="TransactionPaginationTests.fs" />
     <Compile Include="TransactionRejectionTests.fs" />
     <Compile Include="OperationLookupTests.fs" />

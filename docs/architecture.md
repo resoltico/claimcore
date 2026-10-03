@@ -44,7 +44,9 @@ Dependency direction points toward Domain and Application. CLI and Web transport
 compile against only the project references it declares. PostgreSQL's Npgsql dependency keeps its
 runtime assets transitive but does not expose compile/build/analyzer assets to case-work hosts.
 The evaluated-project rules reject a configuration or imported property that re-enables implicit
-transitive project references. Compiler-reference and published-tree tests verify that CLI cannot see or deploy PostgreSQL administration/Npgsql, while Web transport code cannot compile a direct owner-administration call. This is source encapsulation, not a substitute for separate database roles, actor grants, or independent witness custody.
+transitive project references. Compiler-reference and published-tree tests verify that CLI cannot see or deploy PostgreSQL administration/Npgsql, while Web transport code cannot compile a direct owner-administration call. Compiled dependency rules
+also keep Hosting away from schema initialization and owner preparation pruning. Hosting must
+read the installation's immutable time zone through the runtime reader. This is source encapsulation, not a substitute for separate database roles, actor grants, or independent witness custody.
 
 Internal validated commands retain parsed scalars for one decision invocation; the original
 authored request remains the authority for canonical operation bytes. Corrections assemble typed

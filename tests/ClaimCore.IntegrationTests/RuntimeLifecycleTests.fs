@@ -38,7 +38,7 @@ let private admittedQuerySurvivesDispose () =
     let pending =
         core.Get("RUNTIME-DRAIN-" + Guid.NewGuid().ToString("N"), CancellationToken.None)
 
-    Task.Delay(100).GetAwaiter().GetResult()
+    DatabaseObservation.blockedBy connection
     Expect.isFalse pending.IsCompleted "The database lock keeps an admitted query in flight"
     use disposalStarted = new ManualResetEventSlim()
 
@@ -74,7 +74,7 @@ let private cancellationInterruptsSchemaInspection () =
     use transaction = lockedTransaction
     use cancellation = new CancellationTokenSource()
     let opening = witnessedOpen (appConnection ()) cancellation.Token
-    Task.Delay(100).GetAwaiter().GetResult()
+    DatabaseObservation.blockedBy connection
     Expect.isFalse opening.IsCompleted "Schema inspection must wait behind the test lock"
     cancellation.Cancel()
 
@@ -99,7 +99,7 @@ let private admittedMutationSurvivesDispose () =
     use connection = connection
     use transaction = lockedTransaction
     let pending = core.Execute(openingRequest (), CancellationToken.None)
-    Task.Delay(100).GetAwaiter().GetResult()
+    DatabaseObservation.blockedBy connection
     Expect.isFalse pending.IsCompleted "The test lock keeps an admitted mutation in flight"
     use disposalStarted = new ManualResetEventSlim()
 

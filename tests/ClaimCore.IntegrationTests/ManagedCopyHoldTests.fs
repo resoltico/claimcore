@@ -142,7 +142,7 @@ let private heldCopies owner _ (witness: WitnessProtocol) (runtime: Runtime) pro
         |> await
         |> acceptedCopy eventId
 
-    Thread.Sleep(4500)
+    DatabaseObservation.afterInstant connection (DateTimeOffset.Parse(retainUntil))
     let before = witness.Snapshot().TipSequence
 
     for canonical, signature, _ in copies do

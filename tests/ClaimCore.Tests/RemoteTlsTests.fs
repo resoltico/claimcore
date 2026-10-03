@@ -54,10 +54,45 @@ let private leafPurpose () =
         (TlsCertificatePurpose.serverAuthentication clientOnly)
         "A client-auth-only leaf cannot authenticate the issuer server"
 
+let private rootValidityBoundaries () =
+    use rsa = RSA.Create(2048)
+
+    let request =
+        CertificateRequest(
+            "CN=synthetic-root",
+            rsa,
+            HashAlgorithmName.SHA256,
+            RSASignaturePadding.Pkcs1
+        )
+
+    request.CertificateExtensions.Add(X509BasicConstraintsExtension(true, false, 0, true))
+    request.CertificateExtensions.Add(X509KeyUsageExtension(X509KeyUsageFlags.KeyCertSign, true))
+    let first = DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)
+    let last = first.AddDays(1.)
+    use signed = request.CreateSelfSigned(first, last)
+
+    use publicOnly =
+        X509CertificateLoader.LoadCertificate(signed.Export(X509ContentType.Cert))
+
+    let valid instant =
+        TlsCertificatePurpose.validRoot publicOnly instant
+
+    Expect.isFalse (valid (first.UtcDateTime.AddTicks(-1L))) "Not yet valid root refuses."
+    Expect.isTrue (valid first.UtcDateTime) "Validity starts inclusively."
+    Expect.isTrue (valid (last.UtcDateTime.AddTicks(-1L))) "Root remains valid before expiry."
+    Expect.isFalse (valid last.UtcDateTime) "Exact expiry refuses."
+
+    Expect.isFalse
+        (TlsCertificatePurpose.validRoot signed first.UtcDateTime)
+        "Private roots refuse."
+
 let tests =
     testList
         "CLI TLS trust"
         [
+            testCase
+                "[CC-WEB-001] private TLS root validity has exact boundaries"
+                rootValidityBoundaries
             testCase "private test trust root is confined to loopback" trustRootScope
             testCase "[CC-WEB-001] issuer TLS leaf requires server purpose" leafPurpose
         ]

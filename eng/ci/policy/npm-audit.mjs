@@ -4,7 +4,8 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL("../../..", import.meta.url));
-const reviewBefore = Date.parse("2026-11-03T00:00:00Z");
+const reviewDate = "2026-11-03";
+const reviewBefore = Date.parse(`${reviewDate}T00:00:00Z`);
 const exceptions = new Map([
   ["braces", "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm"],
   ["http-cache-semantics", "https://github.com/advisories/GHSA-ch52-4w7c-c8xp"],
@@ -110,7 +111,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   try {
     const count = assess(audit(false), audit(true));
     process.stdout.write(
-      `Production audit clean; ${count} reviewed build-tool advisories remain until 2026-11-03.\n`,
+      `Production audit clean; ${count} reviewed build-tool advisories remain until ${reviewDate}.\n`,
     );
   } catch (error) {
     process.stderr.write(`${error instanceof Error ? error.message : "npm audit failed."}\n`);

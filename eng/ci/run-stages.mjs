@@ -55,7 +55,7 @@ function report(id, status, log) {
     );
   } else if (tail.length > 0) {
     process.stdout.write(
-      `${id}: last ${tail.length} log lines\n${tail.map((line) => `  ${line}`).join("\n")}\n`,
+      `${id}: last ${tail.length} log lines\n${tail.map((line) => `  ${line}`).join("\n")}\nFull log: ${JSON.stringify(log)}\n`,
     );
   }
   process.stdout.write(`${id}: ${status === 0 ? "passed" : "FAILED"}\n`);

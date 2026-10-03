@@ -8,7 +8,9 @@ export function artifactDirectory(root, value) {
   const output = resolve(repository, value);
   const path = relative(repository, output);
   if (isAbsolute(path) || !path.startsWith(`artifacts${sep}`)) {
-    throw new Error("Generated result directories must be below this checkout's artifacts tree.");
+    throw new Error(
+      `Result path ${JSON.stringify(output)} must be below ${JSON.stringify(join(repository, "artifacts"))}. Use --results-root artifacts/results-<unique-run-id>.`,
+    );
   }
   let current = repository;
   for (const part of path.split(sep)) {

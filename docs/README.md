@@ -26,6 +26,10 @@ sensitive reports follow [SECURITY.md](../SECURITY.md).
 Each rule has one durable owner. Other documents summarize and link to that owner instead of
 maintaining competing copies.
 
+The following design and challenge records preserve the rationale and counterexamples behind
+completed changes. They describe the state reviewed at that time; the owner documents above define
+current supported behavior. They are decision history, not additional contract owners.
+
 The [repository tooling design](tooling-design.md) and its separate [design QA](tooling-design-qa.md)
 record the decisions behind engineering foundations. The [configuration design](configuration-design.md)
 and its separate [design QA](configuration-design-qa.md) record the cross-ecosystem configuration audit. The generated [contract-test map](contract-tests.md)

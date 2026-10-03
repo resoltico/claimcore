@@ -16,7 +16,15 @@ test("results and cleanup cannot escape the generated tree or target its root", 
       join(root, "artifacts/test-results"),
     ]);
     for (const path of [".local", "src", "../outside", "artifacts", "artifacts/../../outside"]) {
-      assert.throws(() => artifactDirectory(root, path));
+      assert.throws(
+        () => artifactDirectory(root, path),
+        (error) => {
+          assert(error instanceof Error);
+          assert(error.message.includes(join(root, "artifacts")));
+          assert.match(error.message, /--results-root artifacts\/results/u);
+          return true;
+        },
+      );
       assert.throws(() => cleanDirectories(root, [path]));
     }
     mkdirSync(join(root, "private"));

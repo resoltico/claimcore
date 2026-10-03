@@ -114,7 +114,11 @@ claim.
   trailing zeroes.
 - Currencies are exactly three uppercase ASCII letters. This checks syntax, not ISO membership.
 - References allow 1–80 Unicode scalar values, country 1–100, and names 1–200. Blank values,
-  surrounding whitespace, control characters, and malformed Unicode are rejected.
+  surrounding whitespace, control characters, and malformed Unicode are rejected. Business text
+  preserves authored Unicode, including joining and directional characters; it is not an identifier
+  normalization or display-safety guarantee. Browser warnings expose suspicious code points without
+  rewriting accepted data. Lifecycle reasons separately reject format and line/paragraph separator
+  characters. Historical snapshot restoration uses the business-text rules too.
 
 Canonical request identity deliberately retains authored amount spelling and exact reference text;
 read [CLI and protocol](cli.md#canonical-request-identity-and-recovery) before constructing retries.

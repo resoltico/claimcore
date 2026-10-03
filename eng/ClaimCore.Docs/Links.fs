@@ -223,6 +223,7 @@ module Links =
                     anchorsByPath
                     path
                     (rawFragment |> Option.map (fun _ -> decodedFragment))
+                |> Result.map (fun () -> Some(Repository.relativePath root path))
 
     let private validateLink
         (root: RepositoryRoot)
@@ -234,12 +235,13 @@ module Links =
 
         match externalDestination destination with
         | Error message -> Error message
-        | Ok true -> Ok()
+        | Ok true -> Ok None
         | Ok false -> validateLocal root anchorsByPath document destination
 
-    let check (root: RepositoryRoot) (documents: MarkdownFile list) =
+    let private checkLinks navigation (root: RepositoryRoot) (documents: MarkdownFile list) =
         let anchorsByPath = Dictionary<string, Set<string>>()
         let errors = ResizeArray<Diagnostic>()
+        let edges = ResizeArray<string * string>()
 
         for document in documents do
             match anchors document with
@@ -262,7 +264,9 @@ module Links =
 
         for document, link in links do
             match validateLink root anchorsByPath document link with
-            | Ok() -> ()
+            | Ok None -> ()
+            | Ok(Some target) when not link.IsImage -> edges.Add(document.RelativePath, target)
+            | Ok(Some _) -> ()
             | Error message ->
                 errors.Add(
                     Diagnostic.at
@@ -272,7 +276,16 @@ module Links =
                         message
                 )
 
+        if navigation && errors.Count = 0 then
+            match DocumentationNavigation.check documents (List.ofSeq edges) with
+            | Ok() -> ()
+            | Error found -> found |> List.iter errors.Add
+
         if errors.Count = 0 then
             Ok links.Length
         else
             Error(List.ofSeq errors)
+
+    let check root documents = checkLinks false root documents
+
+    let checkNavigation root documents = checkLinks true root documents
