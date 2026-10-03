@@ -43,6 +43,8 @@ the ledger across restarts. Replay signatures are reverified against the origina
 configured public key; a damaged record refuses and is not overwritten. Signed deployment
 aggregate outputs are also create-only and directory-synced; preserve a failed partial pair and
 use fresh output paths only after repeating the required evidence checks.
+Put aggregate outputs in their own `0700` directory with an owner-private parent; a bare temporary
+directory directly under public `/tmp` does not meet this admission rule.
 
 Exact PEM-file hashes bind the root-signed topology's pinned bytes. Key separation additionally
 compares parsed raw Ed25519 keys, so different PEM wrapping cannot make a shared key independent.

@@ -138,7 +138,9 @@ class DeploymentAggregateTests(unittest.TestCase):
 
     def test_output_durability_failure_retains_partial_evidence(self) -> None:
         raw, signature = self._make(_submission(self.fx))
-        output, detached = self.root / "aggregate.json", self.root / "aggregate.sig"
+        directory = self.root / "outputs"
+        directory.mkdir(mode=0o700)
+        output, detached = directory / "aggregate.json", directory / "aggregate.sig"
         config: JsonObject = {
             "aggregateOutputFile": str(output),
             "aggregateSignatureFile": str(detached),
@@ -153,8 +155,8 @@ class DeploymentAggregateTests(unittest.TestCase):
         with self.assertRaisesRegex(DeploymentRefusalError, "aggregate-output-exists"):
             write_aggregate(config, raw, signature)
         fresh: JsonObject = {
-            "aggregateOutputFile": str(self.root / "fresh.json"),
-            "aggregateSignatureFile": str(self.root / "fresh.sig"),
+            "aggregateOutputFile": str(directory / "fresh.json"),
+            "aggregateSignatureFile": str(directory / "fresh.sig"),
         }
         with patch("deployment_aggregate_io.sync_directory", wraps=sync_directory) as synced:
             write_aggregate(fresh, raw, signature)

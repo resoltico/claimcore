@@ -38,10 +38,18 @@ let private safeStage (diagnostics: string) =
             "(?:backup-test-stage=line-[0-9]{1,4}|checkpoint-signer-stage=[a-z-]{1,70})"
         )
 
+    let typedRefusal =
+        Regex.Match(
+            diagnostics,
+            "(?m)^(?:[a-z_]+\\.)?(?:DeploymentRefusalError|BackupFailureError|ReviewFailureError): ([a-z0-9-]{1,70})\\r?$"
+        )
+
     if toolReason.Success then
         "backup-reason-" + toolReason.Groups[1].Value
     elif shellStage.Success then
         shellStage.Value
+    elif typedRefusal.Success then
+        "backup-reason-" + typedRefusal.Groups[1].Value
     else
         expectedRefusalStages
         |> List.tryPick (fun (message, category) ->
@@ -103,6 +111,17 @@ let private operatorEvidence =
             testCase
                 "[CC-BACKUP-001] capture interruptions and checkpoint replay preserve exact evidence"
                 (fun _ ->
+                    Expect.equal
+                        (safeStage
+                            "deployment_common.DeploymentRefusalError: private-path-permissions")
+                        "backup-reason-private-path-permissions"
+                        "Typed subprocess refusals retain their bounded cause."
+
+                    Expect.equal
+                        (safeStage "DeploymentRefusalError: private /claimant")
+                        "stage-unavailable"
+                        "Private exception text stays hidden."
+
                     for script in
                         [
                             "Test-ManagedConfig.py"

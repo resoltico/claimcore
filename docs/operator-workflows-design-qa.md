@@ -39,6 +39,9 @@ This separate pass challenges the design against concrete interrupted procedures
 - Check delivery into gates too: the local selector was experimentally false for a backup-only
   Python change. Add that dependency to its existing registry and a positive/negative scope
   control; keep documentation-only changes out of the expensive PostgreSQL job.
+- Ubuntu reproduction exposed a durability fixture using a bare temporary directory under public
+  /tmp; the Mac parent happened to be private. Use a nested private output directory, preserve
+  admission checks, and retain only bounded typed refusal categories in wrapper diagnostics.
 
 Accepted with these constraints. Keep existing formats and exact retry identities, use isolated
 synthetic verification, run local gates before publishing the PR, and merge only its verified head.
