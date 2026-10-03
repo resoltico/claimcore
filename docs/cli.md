@@ -226,10 +226,12 @@ inspect, dismiss, export, or accepted replay.
 ### CC-CLI-002 — Private CLI recovery artifacts stay inside handle-first paths
 
 After the service authorizes an export, `recovery.export` writes only through the handle-first private-file service to an absolute destination
-with exclusive creation, owner-private mode without extended ACLs, flush, and post-write validation.
+with well-formed Unicode, exclusive creation, owner-private mode without extended ACLs, flush, and post-write validation.
 It will not follow a leaf or ancestor link or overwrite an existing file; a failed write removes only
 the partial file this call created. Imports require an absolute, owner-private regular source without
-link traversal; handle identity checks also reject a pathname replaced during inspection. Imports
+link traversal; malformed UTF-16 path scalars refuse before native encoding can alias another filename.
+Valid Unicode filenames are preserved. Failed lock validation closes its acquired descriptor before
+returning a refusal; an inode whose identity could not be established is not deleted. Handle identity checks also reject a pathname replaced during inspection. Imports
 reject invalid UTF-8 and oversized bytes before decoding. Refusal responses and
 diagnostics do not echo the private path, artifact bytes, credentials, or claimant data. An envelope
 is installation-bound and contains claimant data. Preview hashes exact import-source bytes; retain

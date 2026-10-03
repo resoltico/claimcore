@@ -86,6 +86,7 @@
     <Compile Include="PrivateFileSecurityTests.fs" />
     <Compile Include="PrivateFileHashTests.fs" />
     <Compile Include="NativePrivateFileRaceTests.fs" />
+    <Compile Include="NativeFileBoundaryTests.fs" />
     <Compile Include="DatabasePrivateFileTests.fs" />
     <Compile Include="CompilerBoundaryTests.fs" />
     <Compile Include="DiagnosticTestStreams.fs" />
