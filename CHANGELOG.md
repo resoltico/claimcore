@@ -13,6 +13,8 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Fixed
 
+- Web asset manifests use unambiguous, ordinal path/hash records and cover nested manifest-named files; publication verification refuses empty inventories. Rebuild retained Web assets with `npm --prefix web run assets:produce` before publishing. These hashes establish artifact identity, not producer authentication or review quality.
+
 - Oversized CLI session frames now emit `FRAME_TOO_LARGE` and terminate with exit 2 at the first byte beyond the 131,072-byte limit, without draining an unbounded line. Automation must restart the session before further work. Earlier responses and uncertain operation identities retain their outcomes.
 
 - Private-file operations refuse malformed Unicode paths before native marshalling can redirect them to replacement-character filenames. Valid Unicode paths remain supported. A metadata failure after lock acquisition releases the kernel lock immediately instead of retaining it until garbage collection.

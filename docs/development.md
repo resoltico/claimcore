@@ -483,6 +483,13 @@ database credential:
 bash eng/Run-PublishedCliAcceptance.sh
 ```
 
+Web asset manifest format 2 binds source and generated-contract inventories with unambiguous JSON
+path/hash records in ordinal order. Only the root `claimcore-assets.manifest.json` excludes itself;
+nested files with that name remain inventoried. Regenerate retained assets with `npm --prefix web run
+assets:produce` before publishing after this format change. Publish verification also refuses an empty
+file inventory. These hashes establish identity against the recorded inputs, not producer authentication
+or review quality.
+
 A manifest lists every regular file of a published tree with its length and SHA-256, plus a digest over those
 records. Every consumer verifies the tree it received before and after use (`node eng/ci/publish/main.mjs verify
 <root> [cli|database|web]...`), so the bytes that were published once are the bytes that were exercised.

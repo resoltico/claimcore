@@ -128,6 +128,7 @@ function checkedManifest(value) {
   if (
     manifest.schemaVersion !== 1 ||
     !Array.isArray(manifest.files) ||
+    manifest.files.length === 0 ||
     !digestPattern.test(manifest.treeSha256)
   ) {
     throw new Error("The publish manifest is malformed.");
