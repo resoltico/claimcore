@@ -197,13 +197,13 @@ if ! CLAIMCORE_ADMIN_CONNECTION_FILE="${state_dir}/primary-owner.connection" \
   printf 'Exact first-owner readback failed.\n' >&2
   exit 1
 fi
-jq -e '.operationOutcome == "COMPLETED"' "${state_dir}/diagnostics/owner-repeat.out" >/dev/null &&
-  [[ ! -s "${state_dir}/diagnostics/owner-repeat.err" ]] &&
-  [[ "$(docker exec "${primary}" psql -X -U claimcore_primary_owner -d claimcore -At -c 'SELECT revision FROM claimcore.authority_tip WHERE singleton')" == "${authority_before}" ]] &&
-  [[ "$(docker exec "${witness}" psql -X -U claimcore_witness_owner -d claimcore_witness -At -c 'SELECT tip_sequence FROM claimcore_witness.installation WHERE singleton')" == "${witness_before}" ]] || {
+if ! jq -e '.operationOutcome == "COMPLETED"' "${state_dir}/diagnostics/owner-repeat.out" >/dev/null ||
+  [[ -s "${state_dir}/diagnostics/owner-repeat.err" ]] ||
+  [[ "$(docker exec "${primary}" psql -X -U claimcore_primary_owner -d claimcore -At -c 'SELECT revision FROM claimcore.authority_tip WHERE singleton')" != "${authority_before}" ]] ||
+  [[ "$(docker exec "${witness}" psql -X -U claimcore_witness_owner -d claimcore_witness -At -c 'SELECT tip_sequence FROM claimcore_witness.installation WHERE singleton')" != "${witness_before}" ]]; then
   printf 'Exact first-owner readback changed authority or returned no confirmed receipt.\n' >&2
   exit 1
-}
+fi
 jq '{issuer,subject:.stewardSubject}' "${state_dir}/principals.json" >"${state_dir}/different-initial-owner.json"
 if CLAIMCORE_ADMIN_CONNECTION_FILE="${state_dir}/primary-owner.connection" \
   CLAIMCORE_WITNESS_CONNECTION_FILE="${state_dir}/witness-writer.connection" \
