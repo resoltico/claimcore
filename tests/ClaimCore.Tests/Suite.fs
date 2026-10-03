@@ -74,6 +74,7 @@ let private surfaces =
         PrivateFileSecurityTests.tests
         PrivateFileHashTests.tests
         NativePrivateFileRaceTests.tests
+        NativeFileBoundaryTests.tests
         DatabasePrivateFileTests.tests
         CompilerBoundaryTests.tests
         FrameDeliveryTests.tests

@@ -243,6 +243,9 @@ ClaimCore deterministic suite.installation business calendar.a canonical zone pa
 ClaimCore deterministic suite.installation business calendar.only a canonical zone identifier can become the installation calendar
 ClaimCore deterministic suite.lifecycle projection.[CC-LIFE-001] a case has at most 256 simultaneous active holds
 ClaimCore deterministic suite.lifecycle projection.[CC-LIFE-001] lifecycle SQL projection loader refuses duplicate and terminal holds
+ClaimCore deterministic suite.native file boundary.[CC-CLI-002] malformed ancestors refuse while valid Unicode filenames remain exact
+ClaimCore deterministic suite.native file boundary.[CC-CLI-002] malformed filename scalars cannot read write hash delete or lock encoded aliases
+ClaimCore deterministic suite.native file boundary.[CC-CLI-002] native metadata failure releases an acquired file lock before refusal
 ClaimCore deterministic suite.native form contract.draft validation.flat forms reject missing extra and duplicate values
 ClaimCore deterministic suite.native form contract.draft validation.form binding does not trim uppercase or round business input
 ClaimCore deterministic suite.native form contract.draft validation.grouped correction requires complete replacements and one actual action

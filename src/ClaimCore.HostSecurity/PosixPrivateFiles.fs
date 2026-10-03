@@ -3,6 +3,7 @@ namespace ClaimCore.HostSecurity
 open System
 open System.IO
 open System.Security.Cryptography
+open System.Text
 open Microsoft.Win32.SafeHandles
 
 module internal PosixPrivateFiles =
@@ -15,6 +16,8 @@ module internal PosixPrivateFiles =
             || path.EndsWith("/", StringComparison.Ordinal)
         then
             raise (ArgumentException("Private-file path must be absolute."))
+
+        UTF8Encoding(false, true).GetByteCount(path) |> ignore
 
         let parts = path.Split('/', StringSplitOptions.RemoveEmptyEntries)
 
@@ -220,7 +223,13 @@ module internal PosixPrivateFiles =
         withParent path (fun parent name ->
             let descriptor = int (parent.DangerousGetHandle())
             let handle, created = PosixPrivateNative.openLockedHandle descriptor name
-            let opened = PosixPrivateNative.stat (handle.DangerousGetHandle())
+
+            let opened =
+                try
+                    PosixPrivateNative.stat (handle.DangerousGetHandle())
+                with _ ->
+                    handle.Dispose()
+                    reraise ()
 
             try
                 PosixPrivateNative.privateRegular (handle.DangerousGetHandle()) |> ignore

@@ -254,6 +254,9 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-CLI-002 | unit | ClaimCore deterministic suite.export effect and delivery ownership.[CC-CLI-002] FAILED export preserves core-owned uncertainty guidance |
 | CC-CLI-002 | unit | ClaimCore deterministic suite.export effect and delivery ownership.[CC-CLI-002] private destination failure retains observed service completion |
 | CC-CLI-002 | unit | ClaimCore deterministic suite.export effect and delivery ownership.[CC-CLI-002] witnessed export is noncancellable and lost completion stays uncertain |
+| CC-CLI-002 | unit | ClaimCore deterministic suite.native file boundary.[CC-CLI-002] malformed ancestors refuse while valid Unicode filenames remain exact |
+| CC-CLI-002 | unit | ClaimCore deterministic suite.native file boundary.[CC-CLI-002] malformed filename scalars cannot read write hash delete or lock encoded aliases |
+| CC-CLI-002 | unit | ClaimCore deterministic suite.native file boundary.[CC-CLI-002] native metadata failure releases an acquired file lock before refusal |
 | CC-CLI-002 | unit | ClaimCore deterministic suite.native private-file ancestor race.[CC-CLI-002] descriptor-relative create and lock remain in pinned parent after ancestor swap |
 | CC-CLI-003 | integration | ClaimCore PostgreSQL integration.CLI process interruption.[CC-CLI-003] SIGINT after real TLS mutation dispatch exits uncertain |
 | CC-CLI-003 | integration | ClaimCore PostgreSQL integration.CLI process interruption.[CC-CLI-003] SIGINT ends input wait before EOF and mutation admission |

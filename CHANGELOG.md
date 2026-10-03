@@ -13,6 +13,7 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Fixed
 
+- Private-file operations refuse malformed Unicode paths before native marshalling can redirect them to replacement-character filenames. Valid Unicode paths remain supported. A metadata failure after lock acquisition releases the kernel lock immediately instead of retaining it until garbage collection.
 - Linux ARM64 private-file admission now uses native platform flags and file metadata, fixing refusal of legitimate private files and host state. Deploy the complete matching host/native-shim publish tree; the previous shim ABI is refused. Ownership, no-follow, ACL and inode protections remain enforced.
 - Repeating initial-owner provisioning with the original private principal reads the original witnessed receipt without creating another actor or restoring later revoked authority. A different principal or missing primary history still refuses. Database-free help now exposes the separate `prune-witness-payload` owner command.
 - **For backup operators:** capture configuration now requires the installation's nonzero raw 32-byte commitment key and canonical non-nil key IDs, matching downstream custody readers. Replace oversized, zero or noncanonical inputs before capture; supported configurations and signed formats are unchanged.
