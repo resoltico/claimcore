@@ -162,6 +162,26 @@ let private scalarTests =
             testCase "non-finite stored money is refused" (fun () -> rejectDriftedAmount "NaN")
         ]
 
+let private assertRemoteOwnerTransport (builder: NpgsqlConnectionStringBuilder) =
+    builder.Options <- ""
+    builder.Host <- "database.example.invalid"
+
+    for mode in [ SslMode.Disable; SslMode.Prefer; SslMode.Require; SslMode.VerifyCA ] do
+        builder.SslMode <- mode
+
+        SchemaBaseline.verify builder.ConnectionString
+        |> refusedAdministration AdministrationFailure.OwnerConnectionInvalid
+
+    builder.SslMode <- SslMode.VerifyFull
+    let verified = OwnerConnection.builder builder.ConnectionString
+
+    Expect.equal
+        verified.GssEncryptionMode
+        GssEncryptionMode.Disable
+        "A remote owner connection must use authenticated TLS rather than GSS fallback"
+
+    Expect.isTrue verified.CheckCertificateRevocation "Remote owner TLS checks revocation"
+
 let private environmentTests =
     testList
         "database environment"
@@ -204,22 +224,7 @@ let private environmentTests =
                     syntheticSuppressionCheck
                 |> refusedAdministration AdministrationFailure.OwnerConnectionInvalid
 
-                builder.Options <- ""
-                builder.Host <- "database.example.invalid"
-
-                for mode in [ SslMode.Disable; SslMode.Prefer; SslMode.Require; SslMode.VerifyCA ] do
-                    builder.SslMode <- mode
-
-                    SchemaBaseline.verify builder.ConnectionString
-                    |> refusedAdministration AdministrationFailure.OwnerConnectionInvalid
-
-                builder.SslMode <- SslMode.VerifyFull
-                let verified = OwnerConnection.builder builder.ConnectionString
-
-                Expect.equal
-                    verified.GssEncryptionMode
-                    GssEncryptionMode.Disable
-                    "A remote owner connection must use authenticated TLS rather than GSS fallback")
+                assertRemoteOwnerTransport builder)
         ]
 
 let private transactionTests =

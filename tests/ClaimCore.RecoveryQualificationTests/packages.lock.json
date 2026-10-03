@@ -167,19 +167,19 @@
       "claimcore.application": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Domain": "[0.5.0, )",
-          "ClaimCore.RecordFormat": "[0.5.0, )",
+          "ClaimCore.Domain": "[0.6.0, )",
+          "ClaimCore.RecordFormat": "[0.6.0, )",
           "FSharp.Core": "[10.1.401, )"
         }
       },
       "claimcore.database": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Application": "[0.5.0, )",
-          "ClaimCore.Domain": "[0.5.0, )",
-          "ClaimCore.HostSecurity": "[0.5.0, )",
-          "ClaimCore.Postgres": "[0.5.0, )",
-          "ClaimCore.Witness": "[0.5.0, )",
+          "ClaimCore.Application": "[0.6.0, )",
+          "ClaimCore.Domain": "[0.6.0, )",
+          "ClaimCore.HostSecurity": "[0.6.0, )",
+          "ClaimCore.Postgres": "[0.6.0, )",
+          "ClaimCore.Witness": "[0.6.0, )",
           "FSharp.Core": "[10.1.401, )"
         }
       },
@@ -192,12 +192,12 @@
       "claimcore.hosting": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Application": "[0.5.0, )",
-          "ClaimCore.Domain": "[0.5.0, )",
-          "ClaimCore.HostSecurity": "[0.5.0, )",
-          "ClaimCore.Postgres": "[0.5.0, )",
-          "ClaimCore.RecordFormat": "[0.5.0, )",
-          "ClaimCore.Witness": "[0.5.0, )",
+          "ClaimCore.Application": "[0.6.0, )",
+          "ClaimCore.Domain": "[0.6.0, )",
+          "ClaimCore.HostSecurity": "[0.6.0, )",
+          "ClaimCore.Postgres": "[0.6.0, )",
+          "ClaimCore.RecordFormat": "[0.6.0, )",
+          "ClaimCore.Witness": "[0.6.0, )",
           "FSharp.Core": "[10.1.401, )",
           "Npgsql": "[10.0.3, )"
         }
@@ -211,14 +211,14 @@
       "claimcore.integrationtests": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Application": "[0.5.0, )",
-          "ClaimCore.Database": "[0.5.0, )",
-          "ClaimCore.Domain": "[0.5.0, )",
-          "ClaimCore.HostSecurity": "[0.5.0, )",
-          "ClaimCore.Hosting": "[0.5.0, )",
-          "ClaimCore.Postgres": "[0.5.0, )",
-          "ClaimCore.RecordFormat": "[0.5.0, )",
-          "ClaimCore.Witness": "[0.5.0, )",
+          "ClaimCore.Application": "[0.6.0, )",
+          "ClaimCore.Database": "[0.6.0, )",
+          "ClaimCore.Domain": "[0.6.0, )",
+          "ClaimCore.HostSecurity": "[0.6.0, )",
+          "ClaimCore.Hosting": "[0.6.0, )",
+          "ClaimCore.Postgres": "[0.6.0, )",
+          "ClaimCore.RecordFormat": "[0.6.0, )",
+          "ClaimCore.Witness": "[0.6.0, )",
           "Expecto": "[11.1.0, )",
           "FSharp.Core": "[10.1.401, )",
           "NSec.Cryptography": "[26.4.0, )",
@@ -229,10 +229,10 @@
       "claimcore.postgres": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Application": "[0.5.0, )",
-          "ClaimCore.Domain": "[0.5.0, )",
-          "ClaimCore.RecordFormat": "[0.5.0, )",
-          "ClaimCore.Witness": "[0.5.0, )",
+          "ClaimCore.Application": "[0.6.0, )",
+          "ClaimCore.Domain": "[0.6.0, )",
+          "ClaimCore.RecordFormat": "[0.6.0, )",
+          "ClaimCore.Witness": "[0.6.0, )",
           "FSharp.Core": "[10.1.401, )",
           "NSec.Cryptography": "[26.4.0, )",
           "Npgsql": "[10.0.3, )"
@@ -241,7 +241,7 @@
       "claimcore.recordformat": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Domain": "[0.5.0, )",
+          "ClaimCore.Domain": "[0.6.0, )",
           "FSharp.Core": "[10.1.401, )"
         }
       },

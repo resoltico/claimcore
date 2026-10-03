@@ -162,7 +162,11 @@ module DatabaseExecution =
             | Error _ -> Error DatabaseInputProblem.ConnectionFileRefused
             | Ok value when String.IsNullOrWhiteSpace value ->
                 Error DatabaseInputProblem.ConnectionFileEmpty
-            | Ok value -> Ok(value.Trim())
+            | Ok value ->
+                try
+                    Ok(PostgresTransport.connectionString (value.Trim()))
+                with _ ->
+                    Error DatabaseInputProblem.ConnectionFileRefused
 
     let private execute connection =
         function

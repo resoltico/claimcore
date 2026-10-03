@@ -535,6 +535,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime lifecycle under PostgreSQL.[CC-RUN-001] thrown opening closes its owned source |
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime scheduling and shutdown.[CC-RUN-001] audit stop is nonblocking and cleanup joins cancellation callbacks |
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime scheduling and shutdown.[CC-RUN-001] shutdown stops audit before draining admitted actor work |
+| CC-WEB-001 | unit | ClaimCore deterministic suite.CLI TLS trust.[CC-WEB-001] issuer TLS leaf requires server purpose |
 | CC-WEB-001 | web | ClaimCore.Web.OIDC authentication foundation.[CC-WEB-001] OIDC cookie uses revocable server-side ticket |
 | CC-WEB-001 | web | ClaimCore.Web.OIDC authentication foundation.[CC-WEB-001] OIDC mode closes legacy case work until grants exist |
 | CC-WEB-001 | web | ClaimCore.Web.OIDC authentication foundation.[CC-WEB-001] bearer principal uses explicit client classification |
@@ -707,4 +708,5 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-WIT-001 | witness-qualification | ClaimCore witness PostgreSQL.[CC-WIT-001] weaker same-name constraint closes admission |
 | CC-WIT-001 | witness-qualification | ClaimCore witness PostgreSQL.[CC-WIT-001] writer cannot invoke owner-only witness functions |
 | CC-WIT-001 | witness-qualification | ClaimCore witness PostgreSQL.[CC-WIT-001] writer capability and pending handoff fence every append |
+| CC-WIT-001 | witness-qualification | [CC-WIT-001] witness rotation rejects reused material and ambiguous key files |
 <!-- generated:end contract-tests -->

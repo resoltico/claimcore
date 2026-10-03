@@ -214,6 +214,16 @@ let private middlewarePolicy () =
     Expect.isTrue oidc.UsePkce "BFF uses PKCE"
     Expect.isFalse oidc.SaveTokens "BFF does not save tokens in the cookie ticket"
 
+    for handler in [ bearer.BackchannelHttpHandler; oidc.BackchannelHttpHandler ] do
+        let https =
+            handler
+            |> Option.ofObj
+            |> Option.defaultWith (fun () -> failtest "An issuer backchannel is required")
+            :?> HttpClientHandler
+
+        Expect.isTrue https.CheckCertificateRevocationList "Issuer key fetches check revocation"
+        Expect.isFalse https.AllowAutoRedirect "Issuer backchannels do not follow redirects"
+
     Expect.throws
         (fun () ->
             AuthMiddleware.configure

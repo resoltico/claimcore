@@ -19,6 +19,7 @@ module internal DatabaseWitnessInputs =
 
     let private exact names (element: JsonElement) =
         element.ValueKind = JsonValueKind.Object
+        && (element.EnumerateObject() |> Seq.length) = List.length names
         && (element.EnumerateObject() |> Seq.map _.Name |> Set.ofSeq) = Set.ofList names
 
     let private readJson setting missing refused invalid parse =
@@ -46,7 +47,7 @@ module internal DatabaseWitnessInputs =
                     if String.IsNullOrWhiteSpace value then
                         Error DatabaseInputProblem.WitnessFileInvalid
                     else
-                        Ok value
+                        Ok(PostgresTransport.connectionString value)
                 with _ ->
                     Error DatabaseInputProblem.WitnessFileInvalid
             finally
@@ -72,58 +73,18 @@ module internal DatabaseWitnessInputs =
                 Error DatabaseInputProblem.WitnessFileRefused
 
     let keyRing () =
-        readJson
+        privateBytes
             "CLAIMCORE_WITNESS_KEY_FILE"
             DatabaseInputProblem.WitnessSettingMissing
             DatabaseInputProblem.WitnessFileRefused
-            DatabaseInputProblem.WitnessFileInvalid
-            (fun root ->
-                if
-                    not (exact [ "version"; "activeKeyId"; "keys" ] root)
-                    || root.GetProperty("version").GetInt32() <> 1
-                then
+        |> Result.bind (fun bytes ->
+            try
+                try
+                    Ok(KeyRingCodec.parse bytes)
+                with _ ->
                     Error DatabaseInputProblem.WitnessFileInvalid
-                else
-                    let active = root.GetProperty("activeKeyId").GetGuid()
-                    let keys = root.GetProperty("keys")
-
-                    if
-                        keys.ValueKind <> JsonValueKind.Array
-                        || keys.GetArrayLength() < 1
-                        || keys.GetArrayLength() > 64
-                    then
-                        Error DatabaseInputProblem.WitnessFileInvalid
-                    else
-                        let decoded = ResizeArray<Guid * byte array>()
-
-                        try
-                            for entry in keys.EnumerateArray() do
-                                if not (exact [ "id"; "materialBase64" ] entry) then
-                                    invalidOp "Invalid private witness key ring."
-
-                                let keyId = entry.GetProperty("id").GetGuid()
-
-                                let encoded =
-                                    entry.GetProperty("materialBase64").GetString()
-                                    |> Option.ofObj
-                                    |> Option.defaultWith (fun () ->
-                                        invalidOp "Invalid private witness key ring.")
-
-                                let material = Convert.FromBase64String(encoded)
-
-                                if
-                                    material.Length <> 32
-                                    || Convert.ToBase64String(material) <> encoded
-                                then
-                                    CryptographicOperations.ZeroMemory(material)
-                                    invalidOp "Invalid private witness key ring."
-
-                                decoded.Add(keyId, material)
-
-                            Ok(new KeyRing(active, decoded) :> IKeyCustody)
-                        finally
-                            for _, material in decoded do
-                                CryptographicOperations.ZeroMemory(material))
+            finally
+                CryptographicOperations.ZeroMemory(bytes))
 
     let initialOwner () =
         readJson

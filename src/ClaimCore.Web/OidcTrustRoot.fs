@@ -24,32 +24,7 @@ module internal OidcTrustRoot =
             with :? CryptographicException ->
                 invalid ()
 
-        let basic =
-            certificate.Extensions
-            |> Seq.tryPick (function
-                | :? X509BasicConstraintsExtension as extension -> Some extension
-                | _ -> None)
-
-        let keyUsage =
-            certificate.Extensions
-            |> Seq.tryPick (function
-                | :? X509KeyUsageExtension as extension -> Some extension
-                | _ -> None)
-
-        let now = DateTime.UtcNow
-
-        let usable =
-            basic |> Option.exists _.CertificateAuthority
-            && (keyUsage
-                |> Option.exists (fun value ->
-                    (value.KeyUsages &&& X509KeyUsageFlags.KeyCertSign) =
-                        X509KeyUsageFlags.KeyCertSign))
-            && certificate.Subject = certificate.Issuer
-            && not certificate.HasPrivateKey
-            && certificate.NotBefore.ToUniversalTime() <= now
-            && now < certificate.NotAfter.ToUniversalTime()
-
-        if not usable then
+        if not (TlsCertificatePurpose.validRoot certificate DateTime.UtcNow) then
             certificate.Dispose()
             invalid ()
 

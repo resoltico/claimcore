@@ -113,7 +113,8 @@
         "^src/",
         "^db/",
         "^tests/ClaimCore\\.AcceptanceTests/",
-        "^eng/Run-PublishedCliAcceptance\\.sh$",
+        "^eng/(Run-PublishedCliAcceptance|Run-PublishedWebE2E|Generate-SyntheticWebTls|PublishedWebE2E-Setup)\\.sh$",
+        "^eng/oidc/",
         "^eng/ci/publish/",
         "^web/"
       ]

@@ -42,12 +42,30 @@ let private invalidPolicies () =
         |> fun text -> text.Replace("\"version\":1,", "\"version\":1,\"version\":1,")
         |> Encoding.UTF8.GetBytes
 
+    let zeroMaterial =
+        roster active "2026-10-01T00:00:00+00:00" "2026-10-01T01:00:00+00:00" 4096
+        |> Encoding.UTF8.GetString
+        |> fun text ->
+            text.Replace(
+                Convert.ToBase64String(encryption),
+                Convert.ToBase64String(Array.zeroCreate 32)
+            )
+        |> Encoding.UTF8.GetBytes
+
+    let repeatedMaterial =
+        roster active "2026-10-01T00:00:00+00:00" "2026-10-01T01:00:00+00:00" 4096
+        |> Encoding.UTF8.GetString
+        |> fun text -> text.Replace(Convert.ToBase64String(mac), Convert.ToBase64String(encryption))
+        |> Encoding.UTF8.GetBytes
+
     for bytes in
         [
             roster active "2026-10-01T00:00:00+00:00" "2026-10-01T00:30:00+00:00" 4096
             roster active "2026-10-01T00:00:00+00:00" "2026-10-01T01:00:00+00:00" 65537
             roster Guid.Empty "2026-10-01T00:00:00+00:00" "2026-10-01T01:00:00+00:00" 4096
             duplicate
+            zeroMaterial
+            repeatedMaterial
         ] do
         Expect.throws
             (fun () -> RecoveryArtifactKeyCustody.parse bytes |> ignore)

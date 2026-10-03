@@ -38,7 +38,7 @@
     },
     {
       "id": "npm-audit",
-      "argv": ["npm", "--prefix", "web", "audit", "--audit-level=low"]
+      "argv": ["node", "eng/ci/policy/npm-audit.mjs"]
     },
     {
       "id": "npm-signatures",

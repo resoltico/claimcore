@@ -4,6 +4,12 @@ Notable changes to this project are documented in this file. The format is based
 
 ## [Unreleased]
 
+### Security
+
+- Remote PostgreSQL owner/runtime/witness connections and system-trust HTTPS clients now check certificate revocation during TLS handshakes. Remote issuers and database CAs must publish reachable revocation evidence; missing or unknown status can prevent opening. Web OIDC discovery, token and signing-key backchannels no longer follow redirects. Existing TLS connections and cached issuer keys are not retroactively revoked; stop affected hosts and sessions during compromise response.
+- Loopback private HTTPS roots must be current public-only signing CAs, and presented leaves must carry server-authentication purpose. Replace leaf-as-root or wrong-purpose synthetic certificates. Witness, suppression, recovery-export and managed-copy commitment custody refuse ambiguous duplicate members, zero material or repeated rotation material as applicable. Preserve historical keys and evidence for exact audit; changing an ID or deleting old material does not repair a compromised or unreadable history.
+- The frontend dependency gate now keeps a clean production audit and limits two unpatched, development-only advisory exceptions to exact `braces` and `http-cache-semantics` findings until 2026-11-03. These tooling dependencies remain vulnerable; review upstream fixes before that date. Unknown or production findings still fail verification.
+
 ### Fixed
 
 - Lifecycle/tombstone approvals and holds use current primary database time after authority/resource locking, so pre-lock timestamps cannot authorize delayed decisions. Signer approvals, managed-copy retention and list-cursor windows use the same primary clock; case-list validation and issuance share one observation. Exact witnessed approval readback remains available after expiry without renewing authority. Database UTC and independent verifier clocks still require synchronization; timestamps do not replace witness/revision ordering.

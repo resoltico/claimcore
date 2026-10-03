@@ -12,6 +12,7 @@ open Microsoft.AspNetCore.Authentication.JwtBearer
 open Microsoft.AspNetCore.Authentication.OpenIdConnect
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.IdentityModel.Tokens
+open ClaimCore.HostSecurity
 
 module AuthMiddleware =
     [<Literal>]
@@ -21,7 +22,7 @@ module AuthMiddleware =
         [| SecurityAlgorithms.RsaSha256; SecurityAlgorithms.RsaSsaPssSha256 |]
 
     let internal syntheticTrustHandler (root: X509Certificate2) =
-        let handler = new HttpClientHandler()
+        let handler = new HttpClientHandler(AllowAutoRedirect = false)
 
         handler.ServerCertificateCustomValidationCallback <-
             Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool>
@@ -38,9 +39,15 @@ module AuthMiddleware =
                         chain.ChainPolicy.TrustMode <- X509ChainTrustMode.CustomRootTrust
                         chain.ChainPolicy.CustomTrustStore.Add(root) |> ignore
                         chain.ChainPolicy.RevocationMode <- X509RevocationMode.NoCheck
-                        chain.Build(certificate))
+                        TlsCertificatePurpose.requireServerAuthentication chain
+
+                        TlsCertificatePurpose.serverAuthentication certificate
+                        && chain.Build(certificate))
 
         handler
+
+    let internal productionTrustHandler () =
+        new HttpClientHandler(AllowAutoRedirect = false, CheckCertificateRevocationList = true)
 
     let private requireHuman (configuration: OidcConfiguration) (context: TokenValidatedContext) =
         match context.Principal |> Option.ofObj with
@@ -84,8 +91,10 @@ module AuthMiddleware =
         if syntheticRoot.IsSome then
             options.PushedAuthorizationBehavior <- PushedAuthorizationBehavior.Disable
 
-        (syntheticRoot |> Option.orElse configuration.TrustRoot)
-        |> Option.iter (fun root -> options.BackchannelHttpHandler <- syntheticTrustHandler root)
+        options.BackchannelHttpHandler <-
+            (syntheticRoot |> Option.orElse configuration.TrustRoot)
+            |> Option.map syntheticTrustHandler
+            |> Option.defaultWith productionTrustHandler
 
         options.SaveTokens <- false
         options.MapInboundClaims <- false
@@ -127,8 +136,10 @@ module AuthMiddleware =
         options.Authority <- configuration.Issuer.AbsoluteUri
         options.RequireHttpsMetadata <- true
 
-        (syntheticRoot |> Option.orElse configuration.TrustRoot)
-        |> Option.iter (fun root -> options.BackchannelHttpHandler <- syntheticTrustHandler root)
+        options.BackchannelHttpHandler <-
+            (syntheticRoot |> Option.orElse configuration.TrustRoot)
+            |> Option.map syntheticTrustHandler
+            |> Option.defaultWith productionTrustHandler
 
         options.Audience <- configuration.ApiAudience
         options.MapInboundClaims <- false

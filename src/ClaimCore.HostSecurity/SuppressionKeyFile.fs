@@ -112,10 +112,11 @@ type SuppressionKeyFile private (keyId: Guid, material: byte array) =
                     if root.ValueKind <> JsonValueKind.Object then
                         invalidOp "Private suppression key is invalid."
 
-                    let names = root.EnumerateObject() |> Seq.map _.Name |> Set.ofSeq
+                    let names = root.EnumerateObject() |> Seq.map _.Name |> Seq.toList
 
                     if
-                        names <> set [ "version"; "keyId"; "materialBase64" ]
+                        names.Length <> 3
+                        || Set.ofList names <> set [ "version"; "keyId"; "materialBase64" ]
                         || root.GetProperty("version").GetInt32() <> 1
                     then
                         invalidOp "Private suppression key is invalid."
@@ -133,7 +134,11 @@ type SuppressionKeyFile private (keyId: Guid, material: byte array) =
 
                     let material = Convert.FromBase64String(encoded)
 
-                    if material.Length <> 32 || Convert.ToBase64String(material) <> encoded then
+                    if
+                        material.Length <> 32
+                        || material |> Array.forall ((=) 0uy)
+                        || Convert.ToBase64String(material) <> encoded
+                    then
                         CryptographicOperations.ZeroMemory(material)
                         invalidOp "Private suppression key is invalid."
 

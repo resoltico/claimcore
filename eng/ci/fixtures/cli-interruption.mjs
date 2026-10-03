@@ -25,40 +25,96 @@ async function bounded(work, milliseconds) {
   }
 }
 
+/** @param {string[]} args */
+function generateCertificate(args) {
+  const result = spawnSync("openssl", args, { stdio: "ignore", timeout: 10_000 });
+  assert.equal(result.status, 0, "Synthetic certificate generation failed.");
+}
+
 /** @param {string} directory */
-function credentials(directory) {
-  const key = join(directory, "key.pem");
-  const certificate = join(directory, "certificate.pem");
-  const secret = join(directory, "secret");
-  writeFileSync(secret, "synthetic-only-secret", { mode: 0o600 });
-  const generated = spawnSync(
-    "openssl",
-    [
-      "req",
-      "-x509",
-      "-newkey",
-      "rsa:2048",
-      "-nodes",
-      "-days",
-      "1",
-      "-subj",
-      "/CN=synthetic-interruption",
-      "-addext",
-      "subjectAltName=IP:127.0.0.1",
-      "-keyout",
-      key,
-      "-out",
-      certificate,
-    ],
-    { stdio: "ignore", timeout: 10_000 },
-  );
-  assert.equal(generated.status, 0, "Synthetic certificate generation failed.");
+function certificateAuthority(directory) {
+  const key = join(directory, "ca-key.pem");
+  const certificate = join(directory, "ca-certificate.pem");
+  generateCertificate([
+    "req",
+    "-x509",
+    "-newkey",
+    "rsa:2048",
+    "-nodes",
+    "-days",
+    "1",
+    "-subj",
+    "/CN=synthetic-interruption-ca",
+    "-addext",
+    "basicConstraints=critical,CA:TRUE",
+    "-addext",
+    "keyUsage=critical,keyCertSign,cRLSign",
+    "-keyout",
+    key,
+    "-out",
+    certificate,
+  ]);
   chmodSync(key, 0o600);
   chmodSync(certificate, 0o600);
+  return { key, certificate };
+}
+
+/** @param {string} directory @param {{key: string, certificate: string}} ca */
+function serverCertificate(directory, ca) {
+  const key = join(directory, "server-key.pem");
+  const certificate = join(directory, "server-certificate.pem");
+  const request = join(directory, "server.csr");
+  const extensions = join(directory, "server.ext");
+  writeFileSync(
+    extensions,
+    "basicConstraints=critical,CA:FALSE\nkeyUsage=critical,digitalSignature,keyEncipherment\nextendedKeyUsage=serverAuth\nsubjectAltName=IP:127.0.0.1\n",
+    { mode: 0o600 },
+  );
+  generateCertificate([
+    "req",
+    "-new",
+    "-newkey",
+    "rsa:2048",
+    "-nodes",
+    "-subj",
+    "/CN=synthetic-interruption-server",
+    "-keyout",
+    key,
+    "-out",
+    request,
+  ]);
+  generateCertificate([
+    "x509",
+    "-req",
+    "-in",
+    request,
+    "-CA",
+    ca.certificate,
+    "-CAkey",
+    ca.key,
+    "-CAcreateserial",
+    "-days",
+    "1",
+    "-extfile",
+    extensions,
+    "-out",
+    certificate,
+  ]);
+  chmodSync(key, 0o600);
+  chmodSync(certificate, 0o600);
+  return { key, certificate };
+}
+
+/** @param {string} directory */
+function credentials(directory) {
+  const ca = certificateAuthority(directory);
+  const server = serverCertificate(directory, ca);
+  const secret = join(directory, "secret");
+  writeFileSync(secret, "synthetic-only-secret", { mode: 0o600 });
   return {
-    key: readFileSync(key),
-    certificate: readFileSync(certificate),
-    certificatePath: certificate,
+    key: readFileSync(server.key),
+    certificate: readFileSync(server.certificate),
+    certificatePath: ca.certificate,
     secret,
   };
 }

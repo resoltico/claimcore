@@ -1,3 +1,5 @@
+ClaimCore deterministic suite.CLI TLS trust.[CC-WEB-001] issuer TLS leaf requires server purpose
+ClaimCore deterministic suite.CLI TLS trust.private test trust root is confined to loopback
 ClaimCore deterministic suite.CLI private-file security.[CC-CLI-002] concurrent source replacement yields one complete inode or a safe refusal
 ClaimCore deterministic suite.CLI private-file security.[CC-CLI-002] private export is exclusive, owner-only, and removes its failed partial file
 ClaimCore deterministic suite.CLI private-file security.[CC-CLI-002] private export rejects leaf and ancestor links without changing targets
@@ -116,7 +118,6 @@ ClaimCore deterministic suite.authenticated CLI client foundation.authority unce
 ClaimCore deterministic suite.authenticated CLI client foundation.completed mutation response loss remains uncertain
 ClaimCore deterministic suite.authenticated CLI client foundation.host failure requires matching actual HTTP status
 ClaimCore deterministic suite.authenticated CLI client foundation.interactive code flow uses S256 PKCE and loopback state
-ClaimCore deterministic suite.authenticated CLI client foundation.private test trust root is confined to loopback
 ClaimCore deterministic suite.authenticated CLI client foundation.service response validation rejects schema drift
 ClaimCore deterministic suite.authenticated CLI client foundation.token response parsing is bounded and redacted
 ClaimCore deterministic suite.authenticated CLI client foundation.unsafe origins and missing automation secret fail closed

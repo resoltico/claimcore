@@ -24,8 +24,19 @@ Each fresh installation records an immutable `SYNTHETIC_ONLY` or `REAL_DATA` sco
 - Local Compose database connections may disable TLS only while bound to its loopback development
   port. Primary runtime/schema-owner and witness writer/auditor/schema-owner connections require `SSL Mode=VerifyFull` for a
   non-loopback PostgreSQL host and disable GSS encryption fallback; the server certificate and host
-  name must validate. Supply a trusted root certificate where needed and keep credentials private.
+  name must validate. Remote TLS checks certificate revocation on new handshakes, so its CA must
+  publish reachable revocation evidence. Supply a trusted root certificate where needed and keep credentials private.
   The current HTTPS case-work service remains loopback-bound; remote client access needs a separately qualified deployment design.
+
+Compromised transport or issuer credentials require an explicit closure: stop affected hosts and
+CLI sessions, revoke actor grants where their authority may be exposed, replace issuer signing
+keys, credentials and trust roots, restart hosts to discard cached issuer metadata and browser
+sessions, then perform exact current-pair audit and independent evidence review before reopening.
+TLS revocation acts at handshake, not on existing connections. Key-ring rotation must retain
+historical decryptors for witnessed audit and exact recovery; deleting an old key or renaming its
+ID cannot undo disclosure. A ring with reused or zero material refuses startup without changing
+its private file or stored evidence. Preserve matching old software and evidence for owner repair
+if an existing installation has such a ring; never reset or adopt it to evade the refusal.
 - Handle-first private-file operations are supported on macOS and Linux only. Windows source builds,
   tests, and configuration-free discovery work, but operations that need private credential or artifact files fail closed until an independently verified Windows handle/ACL implementation exists.
 - On macOS, use physical canonical paths; system aliases such as `/var` and `/tmp` have linked

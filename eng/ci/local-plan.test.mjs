@@ -77,6 +77,8 @@ test("changes select the jobs that can be affected by them", () => {
   assert.equal(affected(job("tests-postgres"), ["db/baseline.sql"]), true);
   assert.equal(affected(job("frontend-gates"), ["src/ClaimCore.Contracts/Endpoints.fs"]), true);
   assert.equal(affected(job("tests-dotnet"), ["eng/ci/suites/suite.mjs"]), true);
+  assert.equal(affected(job("published-cli"), ["eng/Generate-SyntheticWebTls.sh"]), true);
+  assert.equal(affected(job("published-cli"), ["eng/oidc/Run-SyntheticOidc.sh"]), true);
 });
 
 test("when the change set is unknown every job runs", () => {

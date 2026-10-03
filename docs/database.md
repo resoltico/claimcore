@@ -82,7 +82,11 @@ Terminal installation-loss retirement is the exception: its purpose-specific wit
 Primary runtime/schema-owner and witness writer/auditor/schema-owner connections refuse a non-loopback host unless its connection string selects
 `SSL Mode=VerifyFull`. Remote admission disables GSS encryption fallback so TLS verifies the server
 certificate and requested hostname. Loopback development connections may disable TLS; an omitted
-SSL mode is not sufficient for a remote host.
+SSL mode is not sufficient for a remote host. Remote TLS handshakes also require online
+certificate-revocation checking; the server CA must publish reachable revocation evidence.
+Unknown or unavailable revocation status can refuse opening, including owner administration.
+After certificate compromise, close admission and restart affected processes after replacing
+credentials and trust; an established connection is not retroactively revoked.
 
 Restored-pair audit uses `CLAIMCORE_WITNESS_AUDIT_CONNECTION_FILE`, an owner-private connection file
 for the separate `claimcore_witness_auditor` role. That role has audited SELECT access and no witness

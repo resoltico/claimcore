@@ -20,6 +20,7 @@ module PostgresTransport =
         else
             // GSS encryption can be selected before TLS. Require the verified TLS path.
             builder.GssEncryptionMode <- GssEncryptionMode.Disable
+            builder.CheckCertificateRevocation <- true
             true
 
     let connectionString (raw: string) =

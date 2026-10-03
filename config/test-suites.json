@@ -52,7 +52,8 @@
       "configuration": "Debug",
       "coverage": false,
       "platforms": [
-        "linux"
+        "linux",
+        "macos"
       ],
       "timeout": "25m",
       "msbuild": [

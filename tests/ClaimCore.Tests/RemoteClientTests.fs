@@ -238,16 +238,6 @@ let private hostStatusBinding () =
         (RemoteServiceCall.hostStatusMatches 403 document.RootElement)
         "Wrong HTTP status cannot be accepted from a valid body"
 
-let private trustRootScope () =
-    match
-        RemoteTls.Create(Some "/private/synthetic-ca.pem", Uri("https://remote.example.test/"))
-    with
-    | Ok value ->
-        (value :> IDisposable).Dispose()
-        failtest "A local test root must not authorize a remote production endpoint"
-    | Error reason ->
-        Expect.equal reason "TLS_TRUST_ROOT_SCOPE_INVALID" "No remote custom trust root"
-
 let private authorityUncertainty () =
     let eventId = Guid.Parse("10000000-0000-4000-8000-000000000001")
 
@@ -286,7 +276,6 @@ let tests =
             testCase "PKCE callback requires exact loopback host and state" callback
             testCase "service response validation rejects schema drift" serviceResponseSchema
             testCase "host failure requires matching actual HTTP status" hostStatusBinding
-            testCase "private test trust root is confined to loopback" trustRootScope
             testCase
                 "authority uncertainty retains exit-four recovery direction"
                 authorityUncertainty
