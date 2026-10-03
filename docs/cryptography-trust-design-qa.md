@@ -30,3 +30,11 @@ This separate pass tests the proposed boundaries against plausible failure seque
 
 Accepted with these constraints. Keep all test data synthetic, verify the final published bytes
 and complete suites, inspect the actual PR diff and protections, then merge as explicitly requested.
+
+The later npm advisory response challenges the delivery gate: a blanket `--omit=dev` would hide
+new toolchain advisories; a blanket allowlist of transitive package names would hide new root
+causes; `npm audit fix --force` offers only breaking parent downgrades and no patched versions of
+either vulnerable package. The revised gate must run both full and production audits, reject any
+unknown root advisory or unresolved indirect path, require each exact exception to be present
+and development-only, and expire automatically. Synthetic audit reports must prove those failures.
+Continue testing and publishing only if that narrow gate passes; do not call the dependencies safe.

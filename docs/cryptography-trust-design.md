@@ -60,3 +60,15 @@ Update local certificate fixtures to separate CA and server keys, add negative c
 purpose, root/key-ring shapes, reused material and remote revocation admission, update affected
 docs and Unreleased notes, regenerate inventories and contract lock only if the published
 diagnostic shape actually changes. No reset, adoption, format conversion or automatic key migration.
+
+## Newly published tooling advisories at verification
+
+The registry now reports two high-severity advisories with no patched versions: `braces`
+GHSA-vfj7-8cjw-p6xm, reached through Stylelint, and `http-cache-semantics`
+GHSA-ch52-4w7c-c8xp, reached through the license-checking tool. Both paths are development-only;
+the production dependency audit is clean. Removing Stylelint would discard CSS lint assurance,
+and downgrading either parent does not patch the vulnerable package. Keep the full audit visible,
+require a clean production audit, and permit only these two exact development advisory roots until
+a short review deadline. Resolve every indirect finding to one of those roots. Unknown advisories,
+malformed or unavailable audit results, production exposure, and stale exceptions refuse the gate.
+The exception is a time-bounded operational risk, not a claim that the vulnerable code is fixed.
