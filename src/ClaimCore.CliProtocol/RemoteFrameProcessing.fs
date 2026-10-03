@@ -84,17 +84,26 @@ type RemoteFrameProcessor(input: Stream, output: Stream, errors: Stream) =
     member _.Session(stopped: CancellationToken) =
         try
             let mutable running = true
+            let mutable exitCode = 0
 
             while running && not stopped.IsCancellationRequested do
                 delivery.BeginFrame()
 
-                match FrameReader.readLine 131072 input |> frame holder delivery stopped with
+                let incoming = FrameReader.readLine 131072 input
+
+                match incoming with
+                | InputFrame.Failure problem when problem.Reason = ProtocolProblem.FrameTooLarge ->
+                    running <- false
+                    exitCode <- 2
+                | _ -> ()
+
+                match incoming |> frame holder delivery stopped with
                 | None -> running <- false
                 | Some response ->
                     delivery.ObserveRendered()
                     delivery.Write response
 
-            if stopped.IsCancellationRequested then 130 else 0
+            if stopped.IsCancellationRequested then 130 else exitCode
         with error ->
             delivery.Failure error
 

@@ -263,6 +263,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-CLI-003 | unit | ClaimCore deterministic suite.CLI token lifetimes.[CC-CLI-003] delayed token delivery cannot create fresh reuse lifetime |
 | CC-CLI-003 | unit | ClaimCore deterministic suite.CLI token lifetimes.[CC-CLI-003] forward wall jumps retain conservative UTC expiry |
 | CC-CLI-003 | unit | ClaimCore deterministic suite.CLI token lifetimes.[CC-CLI-003] rollback cannot extend elapsed token reuse |
+| CC-CLI-003 | unit | ClaimCore deterministic suite.CLI v4 child-process contract.CLI v4 call and session.CLI v4 session and hard break.[CC-CLI-003] oversized session refuses while its input remains open |
 | CC-CLI-003 | unit | ClaimCore deterministic suite.CLI-v4 service exit contract.[CC-CLI-003] a refused dismissal preserves earlier submission uncertainty |
 | CC-CLI-003 | unit | ClaimCore deterministic suite.CLI-v4 service exit contract.[CC-CLI-003] nested faults preserve earlier exact-operation uncertainty |
 | CC-CLI-003 | unit | ClaimCore deterministic suite.CLI-v4 service exit contract.[CC-CLI-003] typed host phases preserve read and mutation delivery knowledge |
@@ -272,6 +273,8 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-CLI-003 | unit | ClaimCore deterministic suite.remote frame-local delivery diagnostics.[CC-CLI-003] interruption and mutation dispatch share one atomic gate |
 | CC-CLI-003 | unit | ClaimCore deterministic suite.remote frame-local delivery diagnostics.[CC-CLI-003] interruption before dispatch seals future work |
 | CC-CLI-003 | unit | ClaimCore deterministic suite.remote invocation contract.[CC-CLI-003] CLI v4 inputs bind exact noncancellable endpoints |
+| CC-CLI-003 | unit | ClaimCore deterministic suite.typed protocol diagnostic boundaries.[CC-CLI-003] oversized NDJSON frames stop at the first excess byte |
+| CC-CLI-003 | unit | ClaimCore deterministic suite.typed protocol diagnostic boundaries.[CC-CLI-003] oversized session frames terminate without admitting their tail |
 | CC-DB-001 | fresh-baseline-qualification | ClaimCore fresh baseline qualification.fresh installation qualification.[CC-DB-001] a different calendar is refused without rewriting installation identity |
 | CC-DB-001 | fresh-baseline-qualification | ClaimCore fresh baseline qualification.fresh installation qualification.[CC-DB-001] baseline DDL failure rolls back the entire namespace before commit |
 | CC-DB-001 | fresh-baseline-qualification | ClaimCore fresh baseline qualification.fresh installation qualification.[CC-DB-001] concurrent different calendars cannot both win initialization |

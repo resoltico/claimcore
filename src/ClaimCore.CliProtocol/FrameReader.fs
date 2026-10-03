@@ -34,14 +34,15 @@ module FrameReader =
         let mutable next = stream.ReadByte()
         let mutable oversized = false
 
-        while next >= 0 && next <> int '\n' do
+        while next >= 0 && next <> int '\n' && not oversized do
             if total < maximumBytes then
                 buffer[total] <- byte next
                 total <- total + 1
             else
                 oversized <- true
 
-            next <- stream.ReadByte()
+            if not oversized then
+                next <- stream.ReadByte()
 
         if total = 0 && next < 0 then
             InputFrame.EndOfInput

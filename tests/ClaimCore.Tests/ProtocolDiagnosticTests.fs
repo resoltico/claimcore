@@ -58,18 +58,44 @@ let private privateLocations () =
         Expect.equal failure.Path "/input" "Unknown member reports known containing object"
     | Ok _ -> failtest "Unexpected member must be refused"
 
-let private frameDrain () =
-    use input = new MemoryStream(Encoding.UTF8.GetBytes("12345\n{}\n"))
+let private boundedFrameRefusal () =
+    use input = new MemoryStream(Encoding.UTF8.GetBytes("123456789\n{}\n"))
 
     match FrameReader.readLine 4 input with
     | InputFrame.Failure failure ->
         Expect.equal failure.Reason ProtocolProblem.FrameTooLarge "Oversized frame refused"
+        Expect.equal input.Position 5L "Only the first excess byte is consumed"
     | _ -> failtest "Expected oversized frame"
 
-    match FrameReader.readLine 4 input with
-    | InputFrame.Bytes bytes ->
-        Expect.equal (Encoding.UTF8.GetString bytes) "{}" "Oversized line was drained completely"
-    | _ -> failtest "Next complete frame must remain readable"
+    for source in [ "1234\n"; "1234" ] do
+        use exact = new MemoryStream(Encoding.UTF8.GetBytes source)
+
+        match FrameReader.readLine 4 exact with
+        | InputFrame.Bytes bytes -> Expect.equal bytes.Length 4 "Exact limit remains admissible"
+        | _ -> failtest "Expected exact-limit frame"
+
+let private terminalFrameRefusal () =
+    let source = "\n" + String.replicate 131073 "x" + "\n{}\n"
+    use input = new MemoryStream(Encoding.UTF8.GetBytes source)
+    use output = new MemoryStream()
+    use errors = new MemoryStream()
+
+    let exitCode =
+        RemoteFrameProcessing.session input output errors System.Threading.CancellationToken.None
+
+    Expect.equal exitCode 2 "Oversized input terminates the session"
+    Expect.equal input.Position 131074L "Unread tail is never admitted as another invocation"
+    Expect.equal errors.Length 0L "Typed refusal stays on stdout"
+    let lines = Encoding.UTF8.GetString(output.ToArray()).TrimEnd().Split('\n')
+    Expect.equal lines.Length 2 "Prior frame and terminal refusal each have one response"
+
+    for line, code in List.zip (Array.toList lines) [ "BLANK_FRAME"; "FRAME_TOO_LARGE" ] do
+        use document = JsonDocument.Parse line
+
+        Expect.equal
+            (document.RootElement.GetProperty("code").GetString())
+            code
+            "Exact frame outcome"
 
 let private vocabulary () =
     let cases = FSharpType.GetUnionCases typeof<ProtocolProblem>
@@ -99,6 +125,11 @@ let tests =
                 "wrong scalar kinds are typed refusals rather than escaping exceptions"
                 scalarEmission
             testCase "untrusted property names cannot enter diagnostic locations" privateLocations
-            testCase "oversized NDJSON frames drain before admitting the next frame" frameDrain
+            testCase
+                "[CC-CLI-003] oversized NDJSON frames stop at the first excess byte"
+                boundedFrameRefusal
+            testCase
+                "[CC-CLI-003] oversized session frames terminate without admitting their tail"
+                terminalFrameRefusal
             testCase "protocol vocabulary is closed complete and presentation-free" vocabulary
         ]
