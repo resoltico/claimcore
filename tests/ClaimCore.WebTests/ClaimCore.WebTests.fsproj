@@ -60,6 +60,7 @@
     <ProjectReference Include="../../src/ClaimCore.Contracts/ClaimCore.Contracts.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Web/ClaimCore.Web.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Application/ClaimCore.Application.fsproj" />
   </ItemGroup>
   <ItemGroup>

@@ -35,7 +35,8 @@ type ManagedCopyCommitmentKey private (material: byte array) =
 
     static member Load(path: string) =
         match PrivateFileService.readBinary 32 path with
-        | Ok bytes when bytes.Length = 32 -> new ManagedCopyCommitmentKey(bytes)
+        | Ok bytes when bytes.Length = 32 && bytes |> Array.exists ((<>) 0uy) ->
+            new ManagedCopyCommitmentKey(bytes)
         | Ok bytes ->
             CryptographicOperations.ZeroMemory(bytes)
             invalidOp "Private managed-copy commitment key is invalid."

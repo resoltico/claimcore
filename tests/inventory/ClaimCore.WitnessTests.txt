@@ -19,3 +19,4 @@ ClaimCore witness PostgreSQL.[CC-WIT-001] unsafe durability fails before append
 ClaimCore witness PostgreSQL.[CC-WIT-001] weaker same-name constraint closes admission
 ClaimCore witness PostgreSQL.[CC-WIT-001] writer cannot invoke owner-only witness functions
 ClaimCore witness PostgreSQL.[CC-WIT-001] writer capability and pending handoff fence every append
+[CC-WIT-001] witness rotation rejects reused material and ambiguous key files

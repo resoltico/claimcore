@@ -5,6 +5,7 @@
     <Compile Include="PrivateFileFailure.fs" />
     <Compile Include="PosixPrivateFiles.fs" />
     <Compile Include="PrivateFileService.fs" />
+    <Compile Include="TlsCertificatePurpose.fs" />
     <Compile Include="SuppressionKeyFile.fs" />
     <Compile Include="WriterCapabilityFile.fs" />
     <Compile Include="ManagedCopyCommitmentKey.fs" />

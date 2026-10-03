@@ -10,7 +10,11 @@ open System.Text
 [<Sealed>]
 type Cipher(keyMaterial: byte array) =
     let key =
-        if keyMaterial.Length <> 32 then
+        if
+            isNull (box keyMaterial)
+            || keyMaterial.Length <> 32
+            || keyMaterial |> Array.forall ((=) 0uy)
+        then
             invalidArg (nameof keyMaterial) "Witness key must be 256 bits."
 
         Array.copy keyMaterial
@@ -52,25 +56,35 @@ type IKeyCustody =
 [<Sealed>]
 type KeyRing(activeKeyId: Guid, keys: seq<Guid * byte array>) =
     let ciphers = Dictionary<Guid, Cipher>()
+    let materials = ResizeArray<byte array>()
 
     do
         try
-            for keyId, bytes in keys do
-                if keyId = Guid.Empty || ciphers.ContainsKey(keyId) then
-                    invalidArg (nameof keys) "Witness key IDs must be unique and nonempty."
+            try
+                for keyId, bytes in keys do
+                    if keyId = Guid.Empty || ciphers.ContainsKey(keyId) || ciphers.Count >= 64 then
+                        invalidArg (nameof keys) "Witness key IDs must be unique and nonempty."
 
-                ciphers.Add(keyId, new Cipher(bytes))
+                    if
+                        materials
+                        |> Seq.exists (fun prior ->
+                            CryptographicOperations.FixedTimeEquals(prior, bytes))
+                    then
+                        invalidArg (nameof keys) "Witness key material must change on rotation."
 
-            if activeKeyId = Guid.Empty || not (ciphers.ContainsKey(activeKeyId)) then
-                invalidArg (nameof activeKeyId) "Active witness key is unavailable."
+                    ciphers.Add(keyId, new Cipher(bytes))
+                    materials.Add(Array.copy bytes)
 
-            if ciphers.Count > 64 then
-                invalidArg (nameof keys) "Witness key ring exceeds the bounded rotation limit."
-        with _ ->
-            for cipher in ciphers.Values do
-                (cipher :> IDisposable).Dispose()
+                if activeKeyId = Guid.Empty || not (ciphers.ContainsKey(activeKeyId)) then
+                    invalidArg (nameof activeKeyId) "Active witness key is unavailable."
+            with _ ->
+                for cipher in ciphers.Values do
+                    (cipher :> IDisposable).Dispose()
 
-            reraise ()
+                reraise ()
+        finally
+            for material in materials do
+                CryptographicOperations.ZeroMemory(material)
 
     interface IKeyCustody with
         member _.ActiveKeyId = activeKeyId

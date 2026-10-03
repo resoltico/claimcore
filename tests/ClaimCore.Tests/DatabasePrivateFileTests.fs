@@ -132,7 +132,17 @@ let private boundary () =
             let oversized =
                 privateSource directory "oversized.connection" (Array.create 8193 0x61uy)
 
-            expectRefused oversized)
+            expectRefused oversized
+
+            let unsafeRemote =
+                privateSource
+                    directory
+                    "unsafe-remote.connection"
+                    (Encoding.UTF8.GetBytes(
+                        "Host=database.example.invalid;SSL Mode=Prefer;Database=synthetic;Username=synthetic;Password=synthetic-admin-marker"
+                    ))
+
+            expectRefused unsafeRemote)
 
 let private witnessPruneProposalBoundary () =
     withSandbox (fun directory ->

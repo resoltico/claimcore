@@ -544,6 +544,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-WEB-001 | web | ClaimCore.Web.OIDC authentication foundation.[CC-WEB-001] middleware pins OIDC and JWT validation policy |
 | CC-WEB-001 | web | ClaimCore.Web.OIDC authentication foundation.[CC-WEB-001] production issuer requires HTTPS and exact URI |
 | CC-WEB-001 | web | ClaimCore.Web.OIDC configuration.[CC-WEB-001] OIDC configuration rejects HTTP issuer |
+| CC-WEB-001 | web | ClaimCore.Web.OIDC configuration.[CC-WEB-001] issuer TLS leaf requires server purpose |
 | CC-WEB-001 | web | ClaimCore.Web.OIDC configuration.[CC-WEB-001] private CA rejects malformed and broad-permission files |
 | CC-WEB-001 | web | ClaimCore.Web.OIDC configuration.[CC-WEB-001] private issuer CA rejects wrong purpose and validity window |
 | CC-WEB-001 | web | ClaimCore.Web.OIDC session route boundaries.[CC-WEB-001] OIDC challenge returns locally after PKCE callback |
@@ -707,4 +708,5 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-WIT-001 | witness-qualification | ClaimCore witness PostgreSQL.[CC-WIT-001] weaker same-name constraint closes admission |
 | CC-WIT-001 | witness-qualification | ClaimCore witness PostgreSQL.[CC-WIT-001] writer cannot invoke owner-only witness functions |
 | CC-WIT-001 | witness-qualification | ClaimCore witness PostgreSQL.[CC-WIT-001] writer capability and pending handoff fence every append |
+| CC-WIT-001 | witness-qualification | [CC-WIT-001] witness rotation rejects reused material and ambiguous key files |
 <!-- generated:end contract-tests -->

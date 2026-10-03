@@ -105,7 +105,7 @@ let private verifyOidcMetadata (configuration: OidcConfiguration) =
         use handler =
             configuration.TrustRoot
             |> Option.map AuthMiddleware.syntheticTrustHandler
-            |> Option.defaultWith (fun () -> new HttpClientHandler())
+            |> Option.defaultWith AuthMiddleware.productionTrustHandler
 
         handler.AllowAutoRedirect <- false
         use client = new HttpClient(handler, Timeout = TimeSpan.FromSeconds(10.))

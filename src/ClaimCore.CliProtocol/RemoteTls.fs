@@ -20,7 +20,16 @@ type RemoteTls private (handler: HttpClientHandler, root: X509Certificate2 optio
 
     static member Create(path: string option, endpoint: Uri) =
         match path with
-        | None -> Ok(new RemoteTls(new HttpClientHandler(AllowAutoRedirect = false), None))
+        | None ->
+            Ok(
+                new RemoteTls(
+                    new HttpClientHandler(
+                        AllowAutoRedirect = false,
+                        CheckCertificateRevocationList = true
+                    ),
+                    None
+                )
+            )
         | Some _ when not endpoint.IsLoopback -> Error "TLS_TRUST_ROOT_SCOPE_INVALID"
         | Some location ->
             match PrivateFileService.readUtf8Bytes 16384 location with
@@ -29,6 +38,10 @@ type RemoteTls private (handler: HttpClientHandler, root: X509Certificate2 optio
                 try
                     let certificate =
                         X509Certificate2.CreateFromPem(Encoding.UTF8.GetString(bytes).AsSpan())
+
+                    if not (TlsCertificatePurpose.validRoot certificate DateTime.UtcNow) then
+                        certificate.Dispose()
+                        invalidOp "Private TLS root is invalid."
 
                     let handler = new HttpClientHandler(AllowAutoRedirect = false)
 
@@ -50,9 +63,13 @@ type RemoteTls private (handler: HttpClientHandler, root: X509Certificate2 optio
 
                                     chain.ChainPolicy.CustomTrustStore.Add(certificate) |> ignore
                                     chain.ChainPolicy.RevocationMode <- X509RevocationMode.NoCheck
-                                    chain.Build(presented))
+                                    TlsCertificatePurpose.requireServerAuthentication chain
+
+                                    TlsCertificatePurpose.serverAuthentication presented
+                                    && chain.Build(presented))
 
                     Ok(new RemoteTls(handler, Some certificate))
                 with
                 | :? System.Security.Cryptography.CryptographicException
-                | :? ArgumentException -> Error "TLS_TRUST_ROOT_INVALID"
+                | :? ArgumentException
+                | :? InvalidOperationException -> Error "TLS_TRUST_ROOT_INVALID"

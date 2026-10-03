@@ -43,6 +43,10 @@ let assertRemoteTransport (writer: string) (identity: Identity) (capability: byt
         GssEncryptionMode.Disable
         "Verified TLS disables GSS fallback"
 
+    Expect.isTrue
+        verified.CheckCertificateRevocation
+        "Verified remote TLS checks certificate revocation"
+
 let run (connection: string) sql =
     use db = new NpgsqlConnection(connection)
     db.Open()

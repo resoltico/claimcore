@@ -5,6 +5,7 @@
     <Compile Include="PreparedCommand.fs" />
     <Compile Include="CatalogEpoch.fs" />
     <Compile Include="Cipher.fs" />
+    <Compile Include="KeyRingCodec.fs" />
     <Compile Include="WitnessIdentity.fs" />
     <Compile Include="WitnessInstallationUse.fs" />
     <Compile Include="WitnessTypes.fs" />

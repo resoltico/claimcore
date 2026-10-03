@@ -6,6 +6,7 @@ open System.Security.Cryptography
 open System.Security.Cryptography.X509Certificates
 open Expecto
 open ClaimCore.Web
+open ClaimCore.HostSecurity
 open ClaimCore.WebTests.ConfigurationTests
 
 let private oidcConfigurationTests () =
@@ -167,6 +168,34 @@ let private privateCaCertificateShape () =
             use accepted = OidcTrustRoot.load caPath
             Expect.isTrue (accepted.Extensions.Count > 0) "A current signing CA remains available")
 
+let private leafPurpose () =
+    use rsa = RSA.Create(2048)
+
+    let request =
+        CertificateRequest(
+            "CN=synthetic-leaf",
+            rsa,
+            HashAlgorithmName.SHA256,
+            RSASignaturePadding.Pkcs1
+        )
+
+    let addPurpose (purpose: string) =
+        let collection = OidCollection()
+        collection.Add(Oid(purpose)) |> ignore
+        request.CertificateExtensions.Add(X509EnhancedKeyUsageExtension(collection, true))
+
+    addPurpose "1.3.6.1.5.5.7.3.2"
+
+    use clientOnly =
+        request.CreateSelfSigned(
+            DateTimeOffset.UtcNow.AddDays(-1.),
+            DateTimeOffset.UtcNow.AddDays(1.)
+        )
+
+    Expect.isFalse
+        (TlsCertificatePurpose.serverAuthentication clientOnly)
+        "A client-auth-only leaf cannot authenticate the issuer server"
+
 let tests =
     testList
         "OIDC configuration"
@@ -178,4 +207,5 @@ let tests =
             testCase
                 "[CC-WEB-001] private issuer CA rejects wrong purpose and validity window"
                 privateCaCertificateShape
+            testCase "[CC-WEB-001] issuer TLS leaf requires server purpose" leafPurpose
         ]

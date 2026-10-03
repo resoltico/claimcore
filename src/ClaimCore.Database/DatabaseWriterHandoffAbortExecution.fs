@@ -16,7 +16,11 @@ module internal DatabaseWriterHandoffAbortExecution =
         | "" -> Error DatabaseInputProblem.ConnectionSettingMissing
         | path ->
             match PrivateFileService.readUtf8Text 8192 path with
-            | Ok value when not (String.IsNullOrWhiteSpace value) -> Ok(value.Trim())
+            | Ok value when not (String.IsNullOrWhiteSpace value) ->
+                try
+                    Ok(PostgresTransport.connectionString (value.Trim()))
+                with _ ->
+                    Error DatabaseInputProblem.ConnectionFileRefused
             | _ -> Error DatabaseInputProblem.ConnectionFileRefused
 
     let private separate (owner: string) (app: string) (audit: string) (witnessOwner: string) =

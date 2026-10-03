@@ -55,7 +55,11 @@ module internal RecoveryArtifactKeyCustody =
 
         let bytes = Convert.FromBase64String(encoded)
 
-        if bytes.Length <> 32 || Convert.ToBase64String(bytes) <> encoded then
+        if
+            bytes.Length <> 32
+            || bytes |> Array.forall ((=) 0uy)
+            || Convert.ToBase64String(bytes) <> encoded
+        then
             CryptographicOperations.ZeroMemory(bytes)
             invalid ()
 
@@ -188,6 +192,19 @@ module internal RecoveryArtifactKeyCustody =
                 || (keys |> List.map _.Id |> Set.ofList |> Set.count) <> keys.Length
             then
                 invalid ()
+
+            let materials =
+                keys |> List.collect (fun item -> [ item.Encryption; item.Mac ]) |> List.toArray
+
+            for first in 0 .. materials.Length - 1 do
+                for second in first + 1 .. materials.Length - 1 do
+                    if
+                        CryptographicOperations.FixedTimeEquals(
+                            ReadOnlySpan<byte>(materials[first]),
+                            ReadOnlySpan<byte>(materials[second])
+                        )
+                    then
+                        invalid ()
 
             new RecoveryArtifactKeyRing(active, lifetime, keys)
         with error ->
