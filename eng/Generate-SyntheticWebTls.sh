@@ -2,6 +2,7 @@
 set -euo pipefail
 
 state_dir="${1:?Pass the private fixture directory.}"
+umask 077
 
 openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
   -subj '/CN=ClaimCore Synthetic Web CA' \
