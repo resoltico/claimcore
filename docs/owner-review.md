@@ -13,8 +13,9 @@ label or agent declaration establishes it, and GitHub's merge event (actor, time
 
 ## Native rules on `main`
 
-Two rulesets implement the boundary; the settings procedure in [CI governance](ci-governance.md) plans, applies
-and reads them back.
+The required boundary uses two rulesets; the settings procedure in [CI governance](ci-governance.md) plans, applies
+and reads them back. These are required settings, not a statement that a source checkout has
+activated them; inspect native state with the read-only settings check before relying on enforcement.
 
 - The verification ruleset requires the strict Actions `Gate`, a PR, resolved review threads, no deletion and no
   non-fast-forward update, with **no bypass actors**.

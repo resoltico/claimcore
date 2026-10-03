@@ -129,3 +129,57 @@ test("concurrent settings changes stop publication instead of overwriting strong
   await assert.rejects(configureSettings(api, plan));
   assert.equal(writes, 0);
 });
+
+test("release plans preserve stronger valid reviewer and timer values", () => {
+  const state = snapshot();
+  state.environment = {
+    protection_rules: [
+      {
+        type: "required_reviewers",
+        prevent_self_review: true,
+        reviewers: [{ type: "Team", reviewer: { id: 456 } }],
+      },
+      { type: "wait_timer", wait_timer: 43200 },
+    ],
+    deployment_branch_policy: null,
+  };
+  const operation = must(
+    settingsPlan(state).operations.find((op) => op.path === "environments/release"),
+  );
+  assert.equal(operation.json.prevent_self_review, true);
+  assert.equal(operation.json.wait_timer, 43200);
+  assert.deepEqual(operation.json.reviewers, [{ type: "Team", id: 456 }]);
+});
+
+test("ambiguous or malformed release protections stop before writes", async () => {
+  const reviewer = { type: "User", reviewer: { id: 123 } };
+  const valid = { type: "required_reviewers", prevent_self_review: false, reviewers: [reviewer] };
+  const invalid = [
+    undefined,
+    [null],
+    [{ type: "wait_timer" }],
+    [
+      { type: "wait_timer", wait_timer: 0 },
+      { type: "wait_timer", wait_timer: 60 },
+    ],
+    [{ type: "wait_timer", wait_timer: "60" }],
+    [{ type: "wait_timer", wait_timer: -1 }],
+    [{ type: "wait_timer", wait_timer: 43201 }],
+    [{ ...valid, prevent_self_review: "false" }],
+    [{ ...valid, reviewers: [{ type: "User", reviewer: { id: 0 } }] }],
+    [{ ...valid, reviewers: [{ type: "Integration", reviewer: { id: 123 } }] }],
+    [{ ...valid, reviewers: [reviewer, reviewer] }],
+    [{ ...valid, reviewers: null }],
+    [{ ...valid, reviewers: [null] }],
+  ];
+  for (const rules of invalid) {
+    const state = snapshot();
+    state.environment = { protection_rules: rules, deployment_branch_policy: null };
+    let writes = 0;
+    await assert.rejects(
+      configureSettings(fakeApi(state, { write: () => writes++ }), "a".repeat(64)),
+      /owner reconciliation|reconcile with the owner/u,
+    );
+    assert.equal(writes, 0);
+  }
+});

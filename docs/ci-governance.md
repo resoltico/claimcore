@@ -97,7 +97,9 @@ replacement. Version tags become immutable against update/deletion; tag creation
 writers and release publication remains separately reviewed.
 
 The publisher references the `release` environment. The settings plan adds a main-only deployment policy and an
-explicit owner reviewer when absent. Existing reviewers and waiting/self-review rules are preserved, not weakened.
+explicit owner reviewer when absent. Existing reviewers and waiting/self-review rules are preserved, not weakened. Duplicate protection
+rule types, missing rule information, malformed timers/self-review settings, and invalid or duplicate
+reviewer identities refuse the plan before writes rather than being coerced or silently selected.
 The initial sole-owner policy allows approving one's own manual publication job; this is explicit owner
 authorization, not independent review. Ambiguous or inherited rules, existing bypass actors and unfamiliar
 environment restrictions require owner reconciliation.
