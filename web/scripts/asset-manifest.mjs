@@ -18,12 +18,20 @@ const hash = (contents) => createHash("sha256").update(contents).digest("hex");
 /** @param {string} path */
 const readHash = async (path) => hash(await readFile(path));
 
+/** @param {string} left @param {string} right */
+const compareOrdinal = (left, right) => {
+  if (left === right) {
+    return 0;
+  }
+  return left < right ? -1 : 1;
+};
+
 /** @param {string} directory @returns {Promise<string[]>} */
 const filesBelow = async (directory) => {
   const entries = await readdir(directory, { withFileTypes: true });
   const files = await Promise.all(
     entries
-      .sort((left, right) => left.name.localeCompare(right.name))
+      .sort((left, right) => compareOrdinal(left.name, right.name))
       .map((entry) => {
         const path = resolve(directory, entry.name);
         if (entry.isDirectory()) {
@@ -58,27 +66,27 @@ const sourceFiles = async () => {
   );
   return [...new Set([...source, ...scripts, ...fixed, ...compiler])]
     .filter((path) => !asRelativePath(path).startsWith("src/generated/"))
-    .sort((left, right) => asRelativePath(left).localeCompare(asRelativePath(right)));
+    .sort((left, right) => compareOrdinal(asRelativePath(left), asRelativePath(right)));
 };
 
 /** @param {string} root @param {string} [excluded] */
-const recordsFor = async (root, excluded) => {
+export const recordsFor = async (root, excluded) => {
   const files = await filesBelow(root);
   const records = await Promise.all(
     files
-      .filter((path) => basename(path) !== excluded)
+      .filter((path) => relative(root, path).split(sep).join("/") !== excluded)
       .map(async (path) => ({
         path: relative(root, path).split(sep).join("/"),
         sha256: await readHash(path),
         bytes: (await readFile(path)).byteLength,
       })),
   );
-  return records.sort((left, right) => left.path.localeCompare(right.path));
+  return records.sort((left, right) => compareOrdinal(left.path, right.path));
 };
 
 /** @param {{ path: string, sha256: string }[]} records */
-const treeHash = (records) =>
-  hash(records.map((record) => `${record.path}\n${record.sha256}\n`).join(""));
+export const treeHash = (records) =>
+  hash(JSON.stringify(records.map(({ path, sha256 }) => [path, sha256])));
 
 const requiredRuntime = async () => {
   const packageManifest = JSON.parse(await readFile(resolve(webDirectory, "package.json"), "utf8"));
@@ -112,7 +120,7 @@ const createManifest = async () => {
   ]);
   return {
     format: "claimcore-web-assets",
-    formatVersion: 1,
+    formatVersion: 2,
     runtime,
     inputs: { webSourceSha256: source, packageLockSha256, generatedContractSha256: contractSha256 },
     assets,

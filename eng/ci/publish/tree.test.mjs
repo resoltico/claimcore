@@ -87,3 +87,19 @@ test("an empty tree cannot be published", () => {
     rmSync(scratch, { recursive: true, force: true });
   }
 });
+
+test("an empty inventory cannot verify an empty published tree", () => {
+  const scratch = mkdtempSync(join(tmpdir(), "claimcore-publish-empty-consumer-"));
+  try {
+    const manifest = join(scratch, "manifest.json");
+    const root = join(scratch, "tree");
+    mkdirSync(root);
+    writeFileSync(
+      manifest,
+      JSON.stringify({ schemaVersion: 1, product: "cli", files: [], treeSha256: treeDigest([]) }),
+    );
+    assert.throws(() => verifyTree("cli", root, manifest), /malformed/u);
+  } finally {
+    rmSync(scratch, { recursive: true, force: true });
+  }
+});
