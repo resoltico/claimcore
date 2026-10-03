@@ -147,7 +147,6 @@ let private disposalCancelsActiveAudit () =
 
     Expect.isTrue cancelled.Task.IsCompleted "Disposal cancelled the active audit."
     Expect.isTrue cadence.Completion.IsCompletedSuccessfully "No audit worker survives disposal."
-    Task.Delay(60).GetAwaiter().GetResult()
     Expect.equal (Volatile.Read(&count)) 1 "Disposal prevents another scheduled audit."
 
 let private openRuntimeWithCadence app writer =

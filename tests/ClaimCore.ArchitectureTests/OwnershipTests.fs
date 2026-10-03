@@ -221,6 +221,19 @@ let private caseWorkHostsCannotAdminister () =
         Inspection.requireSelection model host |> ignore
         Inspection.check model (host.Should().NotDependOnAny(administration))
 
+    let schemaAdministration =
+        ArchRuleDefinition
+            .Types()
+            .That()
+            .HaveFullNameMatching(
+                @"^ClaimCore\.Postgres\.(?:SchemaBaseline|PreparationPruning)(?:[+/.].*)?$"
+            )
+
+    Inspection.requireSelection model schemaAdministration |> ignore
+    let composition = select "Hosting"
+    Inspection.requireSelection model composition |> ignore
+    Inspection.check model (composition.Should().NotDependOnAny(schemaAdministration))
+
 /// ClaimCore byte decoding has one owner; OIDC discovery is an explicit third-party protocol.
 let private requestDecodingIsContractOwned () =
     let model = architecture.Value

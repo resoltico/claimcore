@@ -3,11 +3,12 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <string.h>
+#include <stdint.h>
 #include <sys/file.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
-#define CLAIMCORE_PRIVATE_ABI_VERSION 1
+#define CLAIMCORE_PRIVATE_ABI_VERSION 2
 
 static int valid_leaf(const char *leaf) {
     return leaf != NULL && leaf[0] != '\0' && strchr(leaf, '/') == NULL &&
@@ -16,6 +17,55 @@ static int valid_leaf(const char *leaf) {
 
 int cc_private_abi_version(void) {
     return CLAIMCORE_PRIVATE_ABI_VERSION;
+}
+
+/* Fixed-width projections keep libc constants and struct stat layout native. */
+int cc_private_flags(int *values, int count) {
+    if (values == NULL || count != 5) {
+        errno = EINVAL;
+        return -1;
+    }
+    values[0] = O_DIRECTORY;
+    values[1] = O_NOFOLLOW;
+    values[2] = O_CLOEXEC;
+    values[3] = O_NONBLOCK;
+    values[4] = AT_REMOVEDIR;
+    return 0;
+}
+
+static void identity_values(const struct stat *value, uint64_t *values) {
+    values[0] = (uint64_t)value->st_dev;
+    values[1] = (uint64_t)value->st_ino;
+    values[2] = (uint64_t)value->st_uid;
+    values[3] = (uint64_t)value->st_mode;
+    values[4] = (uint64_t)value->st_nlink;
+    values[5] = (uint64_t)value->st_size;
+}
+
+int cc_private_fstat(int descriptor, uint64_t *values, int count) {
+    struct stat value;
+    if (values == NULL || count != 6) {
+        errno = EINVAL;
+        return -1;
+    }
+    if (fstat(descriptor, &value) != 0) {
+        return -1;
+    }
+    identity_values(&value, values);
+    return 0;
+}
+
+int cc_private_fstatat(int directory, const char *name, uint64_t *values, int count) {
+    struct stat value;
+    if (name == NULL || values == NULL || count != 6) {
+        errno = EINVAL;
+        return -1;
+    }
+    if (fstatat(directory, name, &value, AT_SYMLINK_NOFOLLOW) != 0) {
+        return -1;
+    }
+    identity_values(&value, values);
+    return 0;
 }
 
 int cc_openat_create(int parent, const char *leaf) {

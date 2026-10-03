@@ -101,6 +101,32 @@ let private pathTests =
             testCase "refuses a repository Git cannot list" refusesUnlistableRepository
         ]
 
+let private navigationTests =
+    testCase "documentation navigation rejects orphans and disconnected cycles"
+    <| fun _ ->
+        use repository = new TempRepository()
+        let map = loaded repository "docs/README.md" "# Map\n\n[owner](owner.md#owner)\n"
+        let owner = loaded repository "docs/owner.md" "# Owner\n"
+        Links.checkNavigation repository.Root [ map; owner ] |> requireOk |> ignore
+        let orphan = loaded repository "docs/orphan.md" "# Orphan\n\n[self](#orphan)\n"
+
+        Links.checkNavigation repository.Root [ map; owner; orphan ]
+        |> requireError
+        |> ignore
+
+        let first = loaded repository "docs/first.md" "# First\n\n[second](second.md)\n"
+        let second = loaded repository "docs/second.md" "# Second\n\n[first](first.md)\n"
+
+        Links.checkNavigation repository.Root [ map; owner; first; second ]
+        |> requireError
+        |> ignore
+
+        let linked = loaded repository "docs/owner.md" "# Owner\n\n[first](first.md)\n"
+
+        Links.checkNavigation repository.Root [ map; linked; first; second ]
+        |> requireOk
+        |> ignore
+
 let private linkTests =
     testList
         "local links and anchors"
@@ -164,4 +190,5 @@ let private linkTests =
                 Links.check repository.Root [ source ] |> requireError |> ignore
         ]
 
-let tests = testList "Path and link safety" [ pathTests; linkTests ]
+let tests =
+    testList "Path and link safety" [ pathTests; linkTests; navigationTests ]

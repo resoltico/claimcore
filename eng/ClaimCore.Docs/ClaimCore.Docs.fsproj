@@ -11,6 +11,7 @@
     <Compile Include="MarkdownTypes.fs" />
     <Compile Include="MarkdownPipeline.fs" />
     <Compile Include="MarkdownModel.fs" />
+    <Compile Include="DocumentationNavigation.fs" />
     <Compile Include="Links.fs" />
     <Compile Include="Contracts.fs" />
     <Compile Include="SuiteInventories.fs" />

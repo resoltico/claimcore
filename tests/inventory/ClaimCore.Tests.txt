@@ -1,4 +1,5 @@
 ClaimCore deterministic suite.CLI TLS trust.[CC-WEB-001] issuer TLS leaf requires server purpose
+ClaimCore deterministic suite.CLI TLS trust.[CC-WEB-001] private TLS root validity has exact boundaries
 ClaimCore deterministic suite.CLI TLS trust.private test trust root is confined to loopback
 ClaimCore deterministic suite.CLI private-file security.[CC-CLI-002] concurrent source replacement yields one complete inode or a safe refusal
 ClaimCore deterministic suite.CLI private-file security.[CC-CLI-002] private export is exclusive, owner-only, and removes its failed partial file
@@ -166,6 +167,7 @@ ClaimCore deterministic suite.current identity and durable encoding.all eight co
 ClaimCore deterministic suite.current identity and durable encoding.snapshot-2 encoding stays independent of advisory rendering metadata
 ClaimCore deterministic suite.domain accepted-state admission.[CC-DOM-001] restoration refuses invalid paid and chronological states
 ClaimCore deterministic suite.domain accepted-state admission.[CC-DOM-002] malformed payload admission precedes stale revision and eligibility
+ClaimCore deterministic suite.domain validation.[CC-DOM-001] business Unicode preserves joining and authored display controls through restoration
 ClaimCore deterministic suite.domain validation.chronology.decision before notification is rejected
 ClaimCore deterministic suite.domain validation.chronology.future payment is rejected
 ClaimCore deterministic suite.domain validation.chronology.payment before decision is rejected

@@ -17,8 +17,12 @@ changelog-derived plan; correct a historical release only through a separate, re
    customer-facing entries from `Unreleased` into the dated changelog section, and leave an empty
    `Unreleased` section.
 2. Merge the PR and require the exact merge commit's successful main `Gate`.
-3. Create and push a new annotated `vX.Y.Z` tag for that exact commit. Never move or overwrite a tag.
-4. Require the tag-push `Gate` for that exact tag and commit to pass.
+3. Dispatch `verify-properties.yml` on that exact main candidate with an explicit canonical base seed;
+   require its complete extended unit/fuzz profile to succeed and confirm the run's `headSha`.
+   A scheduled result on another commit is not release evidence. For example:
+   `gh workflow run verify-properties.yml --ref main -f base_seed=20261003`.
+4. Create and push a new annotated `vX.Y.Z` tag for that exact commit. Never move or overwrite a tag.
+5. Require the tag-push `Gate` for that exact tag and commit to pass.
 
 The tag must identify an ancestor of current `main`. The publisher reads `Directory.Build.props` and
 `CHANGELOG.md` by that immutable tag commit, not from the workflow checkout or later `main` state.

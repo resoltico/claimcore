@@ -7,6 +7,7 @@ ClaimCore documentation assurance.Markdown assurance.generated Markdown blocks.r
 ClaimCore documentation assurance.Markdown assurance.trusted block generators.trusted block failures.fails closed when the trusted producer writes stderr
 ClaimCore documentation assurance.Markdown assurance.trusted block generators.trusted block failures.requires registration in both directions
 ClaimCore documentation assurance.Markdown assurance.trusted block generators.trusted block output.normalizes only CLI CRLF and emits one final LF
+ClaimCore documentation assurance.Path and link safety.documentation navigation rejects orphans and disconnected cycles
 ClaimCore documentation assurance.Path and link safety.local links and anchors.accepts checked local external and explicit-anchor links
 ClaimCore documentation assurance.Path and link safety.local links and anchors.rejects duplicate explicit anchors
 ClaimCore documentation assurance.Path and link safety.local links and anchors.rejects missing targets fragments and traversal escapes

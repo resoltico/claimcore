@@ -17,8 +17,9 @@ trust boundaries. [Development](docs/development.md) owns commands and gates.
   OIDC principal to that facade and renders its outcomes; the browser and CLI are authenticated
   HTTPS clients, not database peers. They do not invent rules or receive stores, retained
   preparations, recovery ports, witness credentials, or transition callbacks.
-- `ClaimCore.Hosting` is the only case-work runtime composition root. A case-work host never links
-  `ClaimCore.Postgres` or reaches schema administration. `ClaimCore.CliProtocol` owns CLI-v4
+- `ClaimCore.Hosting` is the only case-work runtime composition root. A case-work host never
+  directly references `ClaimCore.Postgres` or reaches schema administration; Hosting owns the runtime
+  storage dependency. `ClaimCore.CliProtocol` owns CLI-v4
   framing, OIDC delivery, and response classification over the generated service contract;
   `ClaimCore.Cli` is only the process entry point. `ClaimCore.Database` is the separate owner-only
   administration surface, not a CLI or Web backdoor.

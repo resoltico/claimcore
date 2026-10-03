@@ -14,7 +14,9 @@ is read from its owning file; the tool table below is generated.
   frontend and engineering commands through that toolchain rather than an operating-system default.
 - Docker for PostgreSQL integration, published acceptance, and infrastructure checks.
 - A C compiler available as `cc` (Apple Command Line Tools on macOS or a distribution compiler on
-  Linux); locked .NET builds and publishes compile the private-file descriptor shim.
+  Linux); locked .NET builds and publishes compile the private-file descriptor shim. It projects
+  platform open flags and file metadata through a fixed-width ABI rather than managed guesses at
+  libc constants or structure offsets. Deploy the shim and managed host from the same publish tree.
 - Git, Bash, ShellCheck, `jq`, `curl`, and OpenSSL.
 - The pinned downloadable tools in [`config/tools.json`](../config/tools.json) (actionlint, Gitleaks,
   shfmt, uv). Each entry names a version and a SHA-256 per platform; `node eng/ci/tools.mjs`
@@ -429,7 +431,7 @@ value, so FSharpLint and the strict compiler remain the F# gates. F# mutation te
 covers the pure TypeScript operation-domain modules, and F# behavior is covered by the property, integration and
 qualification suites. Splitting `ClaimCore.Postgres` into runtime and administration assemblies was prototyped and
 rejected: the two halves share types and `internal` members across hundreds of files, so the split would move shared
-types without adding a safety property; the boundary that matters, case-work hosts never linking schema
+types without adding a safety property; the boundary that matters, case-work hosts having no direct compilation access to schema
 administration, is held by `ClaimCore.Hosting` and the architecture manifest.
 
 [`config/lint-exceptions.json`](../config/lint-exceptions.json) is the sole registry of lint, type, format and
@@ -455,7 +457,8 @@ a runtime branch was exercised.
 ### Documentation assurance
 
 Build the solution first, then check every Markdown file Git lists (tracked, plus untracked and not ignored),
-generated help block, exact-case local link and anchor, contract declaration, and the contract tokens in the test
+generated help block, exact-case local link and anchor, reachability of every `docs/` page from
+`docs/README.md`, contract declaration, and the contract tokens in the test
 inventories. The local gate also runs two byte-idle writes and proves neither changed any listed file relative to its
 starting state, so unrelated working-tree edits are preserved:
 
@@ -562,8 +565,8 @@ vulnerability warnings are errors, the frontend audit policy and `npm audit sign
 check for production dependencies. The frontend policy requires a clean production audit and
 checks the full graph against only two exact, development-only advisories with no patched versions:
 [`braces`](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) and
-[`http-cache-semantics`](https://github.com/advisories/GHSA-ch52-4w7c-c8xp). Their exception expires
-on 2026-11-03; a new advisory, production exposure, malformed audit, or stale exception fails.
+[`http-cache-semantics`](https://github.com/advisories/GHSA-ch52-4w7c-c8xp). Their expiry is owned by the
+[frontend audit policy](../eng/ci/policy/npm-audit.mjs); a new advisory, production exposure, malformed audit, or stale exception fails.
 These vulnerable build-tool dependencies remain a reviewed risk, not a security fix. Dependabot opens one grouped, 7-day-cooldown
 version-update pull request per ecosystem each week (npm for `web` and `eng`, NuGet, the .NET SDK, uv, GitHub Actions including the
 composite action, and the Compose image). The version cooldown does not delay security updates. An available update does not block an unrelated PR, and a vulnerability

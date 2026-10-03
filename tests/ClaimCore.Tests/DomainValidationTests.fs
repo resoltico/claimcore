@@ -178,10 +178,29 @@ let private currencyGrammarTests =
                         "Currency grammar")
         ]
 
+let private authoredUnicodeRoundTrip () =
+    for value in [ "نام\u200Cخانوادگی"; "اسم\u200D"; "A\u202E"; "A\u2028B" ] do
+        let facts =
+            { registration with
+                ClaimantName = value
+            }
+
+        let claim = Claim.decide today (request 0L (Command.Open facts)) None |> accepted
+        let snapshot = Claim.view claim
+        Expect.equal snapshot.Fields.ClaimantName value "Authored scalar content remains exact."
+
+        Expect.equal
+            (Claim.restore snapshot |> Result.map Claim.view)
+            (Ok snapshot)
+            "Historical restoration preserves the same text contract."
+
 let tests =
     testList
         "domain validation"
         [
+            testCase
+                "[CC-DOM-001] business Unicode preserves joining and authored display controls through restoration"
+                authoredUnicodeRoundTrip
             chronologyTests
             restorationTests
             precisionAndRoundTripTests

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { existsSync } from "node:fs";
+import { existsSync, mkdirSync, rmSync } from "node:fs";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { buildInputs } from "./build.mjs";
@@ -106,4 +106,29 @@ test("the required runner rejects recheck before restoring or creating evidence"
   assert.match(child.stderr, /Diagnostic property rechecks/u);
   assert.doesNotMatch(child.stdout, /Determining projects to restore|Running tests from/u);
   assert.equal(existsSync(new URL(`../../../${results}`, import.meta.url)), false);
+});
+
+test("stale suite results refuse before discovery and give a safe rerun command", () => {
+  const root = fileURLToPath(new URL("../../..", import.meta.url));
+  const results = `artifacts/runner-refusal-${randomUUID()}`;
+  const target = new URL(`../../../${results}/unit`, import.meta.url);
+  mkdirSync(target, { recursive: true });
+  try {
+    const child = spawnSync(
+      process.execPath,
+      ["eng/ci/suites/suite.mjs", "run", "unit", "--results-root", results],
+      { cwd: root, encoding: "utf8", timeout: 10_000 },
+    );
+    assert.equal(child.status, 1);
+    assert(child.stderr.includes(fileURLToPath(target)));
+    assert.match(child.stderr, /Preserve prior evidence/u);
+    assert.match(
+      child.stderr,
+      /node eng\/ci\/suites\/suite.mjs run unit --results-root artifacts\/results-\d+/u,
+    );
+    assert.equal(existsSync(target), true);
+    assert.doesNotMatch(child.stdout, /Running tests from/u);
+  } finally {
+    rmSync(new URL(`../../../${results}`, import.meta.url), { recursive: true });
+  }
 });

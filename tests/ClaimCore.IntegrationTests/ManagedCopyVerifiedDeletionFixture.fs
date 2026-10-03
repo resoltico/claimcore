@@ -86,7 +86,7 @@ let pendingCopy owner connection witness (copyKey: Key) algorithm copyKeyId dire
             directory
             (Some retain)
 
-    Thread.Sleep(4500)
+    DatabaseObservation.afterInstant connection retain
     let eventId = Guid.NewGuid()
 
     let previous =

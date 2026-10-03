@@ -9,11 +9,20 @@ module internal PosixPrivateNative =
     [<DllImport("libc", EntryPoint = "openat", SetLastError = true)>]
     extern int private openAt(int directory, string name, int flags, int mode)
 
-    [<DllImport("libc", EntryPoint = "fstat", SetLastError = true)>]
-    extern int private fileStat(int descriptor, byte[] buffer)
+    [<DllImport("claimcore_hostsecurity_native",
+                EntryPoint = "cc_private_flags",
+                SetLastError = true)>]
+    extern int private nativeFlags(int[] values, int count)
 
-    [<DllImport("libc", EntryPoint = "fstatat", SetLastError = true)>]
-    extern int private pathStat(int directory, string name, byte[] buffer, int flags)
+    [<DllImport("claimcore_hostsecurity_native",
+                EntryPoint = "cc_private_fstat",
+                SetLastError = true)>]
+    extern int private fileStat(int descriptor, uint64[] values, int count)
+
+    [<DllImport("claimcore_hostsecurity_native",
+                EntryPoint = "cc_private_fstatat",
+                SetLastError = true)>]
+    extern int private pathStat(int directory, string name, uint64[] values, int count)
 
     [<DllImport("libc", EntryPoint = "fsync", SetLastError = true)>]
     extern int private sync(int descriptor)
@@ -62,94 +71,56 @@ module internal PosixPrivateNative =
             NoFollow: int
             CloseOnExec: int
             NonBlock: int
-            AtNoFollow: int
             AtRemoveDirectory: int
         }
 
-    let flags () =
-        if OperatingSystem.IsMacOS() then
-            {
-                Directory = 0x00100000
-                NoFollow = 0x00000100
-                CloseOnExec = 0x01000000
-                NonBlock = 0x00000004
-                AtNoFollow = 0x0020
-                AtRemoveDirectory = 0x0080
-            }
-        elif OperatingSystem.IsLinux() then
-            {
-                Directory = 0x00010000
-                NoFollow = 0x00020000
-                CloseOnExec = 0x00080000
-                NonBlock = 0x00000800
-                AtNoFollow = 0x0100
-                AtRemoveDirectory = 0x0200
-            }
-        else
-            raise (PlatformNotSupportedException("Private files require supported POSIX APIs."))
+    let verifyShim () =
+        if shimVersion () <> 2 then
+            raise (PlatformNotSupportedException("Private-file native ABI is unsupported."))
 
-    let private identity (buffer: byte array) =
-        if not BitConverter.IsLittleEndian then
-            raise (PlatformNotSupportedException("Private-file metadata ABI is unsupported."))
+    let private platformFlags =
+        lazy
+            (verifyShim ()
+             let values = Array.zeroCreate<int> 5
 
-        let modeOffset, ownerOffset =
-            if OperatingSystem.IsMacOS() then
-                4, 16
-            elif
-                OperatingSystem.IsLinux()
-                && RuntimeInformation.ProcessArchitecture = Architecture.X64
-            then
-                24, 28
-            elif
-                OperatingSystem.IsLinux()
-                && RuntimeInformation.ProcessArchitecture = Architecture.Arm64
-            then
-                16, 24
-            else
-                raise (PlatformNotSupportedException("Private-file metadata ABI is unsupported."))
+             if nativeFlags (values, values.Length) <> 0 then
+                 raise (IOException("Private-file platform flags are unavailable."))
 
+             {
+                 Directory = values[0]
+                 NoFollow = values[1]
+                 CloseOnExec = values[2]
+                 NonBlock = values[3]
+                 AtRemoveDirectory = values[4]
+             })
+
+    let flags () = platformFlags.Value
+
+    let private identity (values: uint64 array) =
         {
-            Device =
-                if OperatingSystem.IsMacOS() then
-                    uint64 (BitConverter.ToUInt32(buffer, 0))
-                else
-                    BitConverter.ToUInt64(buffer, 0)
-            Inode = BitConverter.ToUInt64(buffer, 8)
-            Owner = BitConverter.ToUInt32(buffer, ownerOffset)
-            Mode =
-                if OperatingSystem.IsMacOS() then
-                    uint32 (BitConverter.ToUInt16(buffer, modeOffset))
-                else
-                    BitConverter.ToUInt32(buffer, modeOffset)
-            LinkCount =
-                if OperatingSystem.IsMacOS() then
-                    uint64 (BitConverter.ToUInt16(buffer, 6))
-                elif RuntimeInformation.ProcessArchitecture = Architecture.X64 then
-                    BitConverter.ToUInt64(buffer, 16)
-                else
-                    uint64 (BitConverter.ToUInt32(buffer, 20))
-            Size =
-                if OperatingSystem.IsMacOS() then
-                    BitConverter.ToInt64(buffer, 96)
-                else
-                    BitConverter.ToInt64(buffer, 48)
+            Device = values[0]
+            Inode = values[1]
+            Owner = uint32 values[2]
+            Mode = uint32 values[3]
+            LinkCount = values[4]
+            Size = int64 values[5]
         }
 
     let stat (descriptor: nativeint) =
-        let buffer = Array.zeroCreate<byte> 256
+        let values = Array.zeroCreate<uint64> 6
 
-        if fileStat (int descriptor, buffer) <> 0 then
+        if fileStat (int descriptor, values, values.Length) <> 0 then
             raise (IOException("Private-file descriptor metadata is unavailable."))
 
-        identity buffer
+        identity values
 
     let statEntry directory name =
-        let buffer = Array.zeroCreate<byte> 256
+        let values = Array.zeroCreate<uint64> 6
 
-        if pathStat (directory, name, buffer, (flags ()).AtNoFollow) <> 0 then
+        if pathStat (directory, name, values, values.Length) <> 0 then
             None
         else
-            Some(identity buffer)
+            Some(identity values)
 
     let sameFile left right =
         left.Device = right.Device && left.Inode = right.Inode
@@ -214,10 +185,6 @@ module internal PosixPrivateNative =
             raise (IOException("Private-file path cannot be opened safely."))
 
         new SafeFileHandle(nativeint descriptor, true)
-
-    let verifyShim () =
-        if shimVersion () <> 1 then
-            raise (PlatformNotSupportedException("Private-file native ABI is unsupported."))
 
     let createPrivateHandle parent name =
         verifyShim ()

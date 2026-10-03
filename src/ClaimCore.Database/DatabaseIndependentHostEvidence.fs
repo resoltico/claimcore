@@ -21,11 +21,11 @@ type internal IndependentHostDocuments =
 module internal DatabaseIndependentHostEvidence =
     let private directoryName = "CLAIMCORE_DEPLOYMENT_EVIDENCE_DIR"
 
-    let requireIndependentKeys (documents: IndependentHostDocuments) =
-        let roles =
-            set [ "archive"; "checkpoint"; "key"; "primary"; "witness"; "old-writer-fence" ]
+    let private signingRoles =
+        [ "archive"; "checkpoint"; "key"; "primary"; "witness"; "old-writer-fence" ]
 
-        if (documents.RolePublicKeys |> Map.keys |> Set.ofSeq) <> roles then
+    let requireIndependentKeys (documents: IndependentHostDocuments) =
+        if (documents.RolePublicKeys |> Map.keys |> Set.ofSeq) <> Set.ofList signingRoles then
             invalidOp "Independent signing-key roles are incomplete."
 
         let identities =
@@ -67,9 +67,6 @@ module internal DatabaseIndependentHostEvidence =
         | Ok() -> ()
         | Error _ -> invalidOp "Owner-private independent-host evidence directory is unsafe."
 
-        let roles =
-            [ "archive"; "checkpoint"; "key"; "primary"; "witness"; "old-writer-fence" ]
-
         let mutable loaded: byte array list = []
 
         let retain maximum exact name =
@@ -85,7 +82,7 @@ module internal DatabaseIndependentHostEvidence =
             let aggregatePublicKey = retain 512 false "aggregate.pub"
 
             let rolePublicKeys =
-                roles
+                signingRoles
                 |> List.map (fun role -> role, retain 512 false (role + ".pub"))
                 |> Map.ofList
 
