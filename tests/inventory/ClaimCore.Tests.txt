@@ -1,3 +1,4 @@
+ClaimCore deterministic suite.CLI TLS trust.[CC-WEB-001] issuer TLS leaf requires server purpose
 ClaimCore deterministic suite.CLI TLS trust.private test trust root is confined to loopback
 ClaimCore deterministic suite.CLI private-file security.[CC-CLI-002] concurrent source replacement yields one complete inode or a safe refusal
 ClaimCore deterministic suite.CLI private-file security.[CC-CLI-002] private export is exclusive, owner-only, and removes its failed partial file

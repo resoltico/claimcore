@@ -57,4 +57,7 @@ let private leafPurpose () =
 let tests =
     testList
         "CLI TLS trust"
-        [ testCase "private test trust root is confined to loopback" trustRootScope ]
+        [
+            testCase "private test trust root is confined to loopback" trustRootScope
+            testCase "[CC-WEB-001] issuer TLS leaf requires server purpose" leafPurpose
+        ]
