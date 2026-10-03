@@ -84,7 +84,7 @@ const refusals = [
   [
     "a missing entry set",
     () => trx(names).replace(/<TestEntries>[\s\S]*<\/TestEntries>/u, ""),
-    /test-entry set/u,
+    /TestEntries/u,
   ],
 ];
 for (const [name, build, message] of refusals) {
@@ -123,4 +123,59 @@ test("the XML reader keeps greater-than signs inside attribute values and reject
   assert.throws(() => parseXml('<a x="1" x="2"/>'), /Duplicate/u);
   assert.throws(() => parseXml("<a/><b/>"), /more than one/u);
   assert.throws(() => parseXml("<a>"), /incomplete/u);
+});
+
+test("duplicate names cannot replace an expected test or partition", () => {
+  assert.throws(
+    () => verifyTrx(trx(["a > b", "a > b", "plain"]), { assembly, names }),
+    /committed inventory/u,
+  );
+  assert.throws(
+    () =>
+      verifyPartitions(
+        [
+          { text: trx(["a"]), names: ["a"] },
+          { text: trx(["a", "c"]), names: ["a", "c"] },
+        ],
+        { assembly, names: ["a", "b", "c"] },
+      ),
+    /overlap/u,
+  );
+});
+
+test("contradictory duplicate or misplaced report records are refused", () => {
+  const source = trx(names);
+  for (const section of ["Results", "TestDefinitions", "TestEntries"]) {
+    const extra = source.replace(`</${section}>`, `</${section}><${section}/>`);
+    assert.throws(() => verifyTrx(extra, { assembly, names }), /exactly one/u);
+  }
+  for (const record of ["UnitTestResult", "UnitTest", "TestEntry"]) {
+    const extra = source.replace("</TestRun>", `<Unexpected><${record}/></Unexpected></TestRun>`);
+    assert.throws(() => verifyTrx(extra, { assembly, names }), /outside/u);
+  }
+});
+
+test("XML version declarations cannot loop or masquerade as other instructions", () => {
+  for (const source of [
+    '<?xml version="1.0"',
+    "<a/><?xml",
+    '<a/><?xml version="1.0"?>',
+    '<?xml-stylesheet href="x"?><a/>',
+  ]) {
+    assert.throws(() => parseXml(source), /declaration/u);
+  }
+  assert.equal(parseXml('<?xml version="1.0"?><a/>').name, "a");
+});
+
+test("prototype-named XML attributes remain visible and duplicates refuse", () => {
+  const root = parseXml('<a __proto__="value" constructor="method"/>');
+  assert.equal(Object.hasOwn(root.attributes, "__proto__"), true);
+  assert.equal(root.attributes["__proto__"], "value");
+  assert.equal(root.attributes["constructor"], "method");
+  assert.throws(() => parseXml('<a __proto__="one" __proto__="two"/>'), /Duplicate/u);
+  assert.throws(
+    () =>
+      verifyTrx(trx(names).replace('total="3"', 'total="3" __proto__="0"'), { assembly, names }),
+    /unexpected attributes/u,
+  );
 });

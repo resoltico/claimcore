@@ -18,12 +18,6 @@ type ProcessResult =
 
 let private root = RepositoryRoot.find ()
 
-let private removeCoverageEnvironment (startInfo: ProcessStartInfo) =
-    startInfo.Environment.Keys
-    |> Seq.filter (fun name -> name.StartsWith("COVERLET_", StringComparison.OrdinalIgnoreCase))
-    |> Seq.toArray
-    |> Array.iter (fun name -> startInfo.Environment.Remove(name) |> ignore)
-
 let runDotnet arguments input =
     let startInfo = ProcessStartInfo("dotnet")
     startInfo.WorkingDirectory <- root
@@ -31,8 +25,7 @@ let runDotnet arguments input =
     startInfo.RedirectStandardInput <- true
     startInfo.RedirectStandardOutput <- true
     startInfo.RedirectStandardError <- true
-    startInfo.Environment.Remove("CLAIMCORE_CONNECTION_FILE") |> ignore
-    removeCoverageEnvironment startInfo
+    CliProcessEnvironment.clearInherited startInfo
     startInfo.Environment["DOTNET_NOLOGO"] <- "1"
     arguments |> List.iter startInfo.ArgumentList.Add
     let bytes = Encoding.UTF8.GetBytes(input: string)
@@ -210,7 +203,7 @@ let private oversizedOpenSession () =
     start.RedirectStandardInput <- true
     start.RedirectStandardOutput <- true
     start.RedirectStandardError <- true
-    removeCoverageEnvironment start
+    CliProcessEnvironment.clearInherited start
     start.ArgumentList.Add cliPath.Value
     start.ArgumentList.Add "session"
 
@@ -236,10 +229,30 @@ let private oversizedOpenSession () =
             child.Kill(true)
             child.WaitForExit()
 
+let private isolatedEnvironment () =
+    let start = ProcessStartInfo("dotnet")
+
+    for name in [ "CLAIMCORE_SERVICE_URL"; "claimcore_oidc_issuer"; "COVERLET_TEST_FILE" ] do
+        start.Environment[name] <- "synthetic-ambient-value"
+
+    start.Environment["CLAIMCOREX_FIXTURE_MARKER"] <- "preserved"
+    CliProcessEnvironment.clearInherited start
+
+    for name in [ "CLAIMCORE_SERVICE_URL"; "claimcore_oidc_issuer"; "COVERLET_TEST_FILE" ] do
+        Expect.isFalse (start.Environment.ContainsKey name) "Ambient configuration is excluded"
+
+    Expect.equal
+        start.Environment["CLAIMCOREX_FIXTURE_MARKER"]
+        "preserved"
+        "Other environment remains"
+
 let private sessionTests =
     testList
         "CLI v4 session and hard break"
         [
+            testCase
+                "CLI fixture children exclude inherited credentials and coverage"
+                isolatedEnvironment
             testCase
                 "[CC-CLI-003] oversized session refuses while its input remains open"
                 oversizedOpenSession

@@ -11,6 +11,7 @@ ClaimCore deterministic suite.CLI token lifetimes.[CC-CLI-003] forward wall jump
 ClaimCore deterministic suite.CLI token lifetimes.[CC-CLI-003] rollback cannot extend elapsed token reuse
 ClaimCore deterministic suite.CLI v4 child-process contract.CLI v4 call and session.CLI v4 call.call refuses case work without authenticated service configuration
 ClaimCore deterministic suite.CLI v4 child-process contract.CLI v4 call and session.CLI v4 call.call reports strict frame errors as one protocol JSON response
+ClaimCore deterministic suite.CLI v4 child-process contract.CLI v4 call and session.CLI v4 session and hard break.CLI fixture children exclude inherited credentials and coverage
 ClaimCore deterministic suite.CLI v4 child-process contract.CLI v4 call and session.CLI v4 session and hard break.[CC-CLI-003] oversized session refuses while its input remains open
 ClaimCore deterministic suite.CLI v4 child-process contract.CLI v4 call and session.CLI v4 session and hard break.removed protocol-v2 verbs are unsupported process invocations
 ClaimCore deterministic suite.CLI v4 child-process contract.CLI v4 call and session.CLI v4 session and hard break.session emits a local protocol frame for a blank line and exits cleanly
