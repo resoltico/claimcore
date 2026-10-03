@@ -162,6 +162,10 @@ def _check_candidate_identity(config: JsonObject, candidate: JsonObject) -> None
         and is_sha256(candidate["checkpointCustodianCommitment"]),
         "checkpoint-candidate-identity",
     )
+
+
+def require_current_candidate(candidate: JsonObject) -> None:
+    """Freshness authorizes new signing, not exact historical ledger readback."""
     captured = timestamp(candidate["capturedAt"])
     require(
         abs((datetime.now(UTC) - captured).total_seconds()) <= MAX_CLOCK_SKEW_SECONDS,
@@ -185,8 +189,8 @@ def _check_barrier(candidate: JsonObject) -> None:
     )
 
 
-def admit_candidate(config: JsonObject, request: JsonObject) -> tuple[JsonObject, bytes]:
-    """Admit only the exact, current checkpoint candidate the request commits to."""
+def decode_candidate(config: JsonObject, request: JsonObject) -> tuple[JsonObject, bytes]:
+    """Validate the exact checkpoint identity and bytes before issuance or readback."""
     raw = _request_candidate(config, request)
     candidate = json.loads(raw)
     require(
@@ -194,5 +198,6 @@ def admit_candidate(config: JsonObject, request: JsonObject) -> tuple[JsonObject
         "checkpoint-candidate-shape",
     )
     _check_candidate_identity(config, candidate)
+    timestamp(candidate["capturedAt"])
     _check_barrier(candidate)
     return candidate, raw

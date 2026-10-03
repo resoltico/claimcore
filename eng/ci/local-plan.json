@@ -94,6 +94,8 @@
         "^tests/",
         "^db/",
         "^eng/ci/suites/",
+        "^eng/backup/.*\\.(py|sh)$",
+        "^eng/Install-BackupQualificationTools\\.sh$",
         "^config/test-suites\\.json$",
         "^eng/ClaimCore\\.Docs/",
         "\\.(props|targets)$",

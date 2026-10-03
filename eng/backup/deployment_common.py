@@ -17,6 +17,9 @@ from backup_types import Json, JsonObject
 
 SIGNATURE_BYTES = 64
 MAX_SIGNATURE_TEXT = 128
+ED25519_PREFIX = bytes.fromhex("302a300506032b6570032100")
+PUBLIC_KEY_LIMIT = 512
+KEY_PARSE_TIMEOUT_SECONDS = 10
 
 
 class DeploymentRefusalError(Exception):
@@ -113,6 +116,26 @@ def timestamp(value: Json) -> datetime:
 def utc(value: datetime) -> str:
     """Format `value` as a UTC ISO-8601 timestamp with second precision."""
     return value.astimezone(UTC).isoformat(timespec="seconds").replace("+00:00", "Z")
+
+
+def public_key_identity(path: str | os.PathLike[str]) -> bytes:
+    """Parse the raw Ed25519 public key; PEM wrapping is not signer identity."""
+    key = private_path(path)
+    require(key.stat().st_size <= PUBLIC_KEY_LIMIT, "signer-public-key-size")
+    result = subprocess.run(
+        ["openssl", "pkey", "-pubin", "-in", str(key), "-outform", "DER"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        timeout=KEY_PARSE_TIMEOUT_SECONDS,
+        check=False,
+    )
+    require(
+        result.returncode == 0
+        and len(result.stdout) == len(ED25519_PREFIX) + 32
+        and result.stdout.startswith(ED25519_PREFIX),
+        "signer-public-key-invalid",
+    )
+    return result.stdout[len(ED25519_PREFIX) :]
 
 
 def _run_signature(

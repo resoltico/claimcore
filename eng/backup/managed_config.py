@@ -3,19 +3,18 @@
 import json
 import os
 import re
-import uuid
 from pathlib import Path
 
 from backup_types import JsonObject
 from checkpoint_signer_policy import socket_directory
+from deployment_common import is_uuid, public_key_identity
 from managed_common import CLUSTERS, private_path, require
 from pg_service_policy import validate as validate_pg_service
 
 SECONDS_PER_DAY = 86400
 TEN_YEARS_SECONDS = 10 * 365 * SECONDS_PER_DAY
 MIN_CADENCE_SECONDS = 60
-MIN_COMMITMENT_KEY_BYTES = 32
-MAX_COMMITMENT_KEY_BYTES = 4096
+COMMITMENT_KEY_BYTES = 32
 MIN_BACKUP_BYTES = 1024 * 1024
 MAX_BACKUP_BYTES = 1024**4
 MAX_TAR_ENTRIES = 10_000_000
@@ -43,8 +42,11 @@ def _storage(config: JsonObject, archive: Path) -> None:
     _separate(inventory_root, archive, "inventory-storage-not-separate")
     config["inventoryRoot"] = inventory_root
     config["commitmentKey"] = private_path(config["commitmentKey"])
-    size = config["commitmentKey"].stat().st_size
-    require(MIN_COMMITMENT_KEY_BYTES <= size <= MAX_COMMITMENT_KEY_BYTES, "commitment-key-size")
+    descriptor = os.open(config["commitmentKey"], os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC)
+    with os.fdopen(descriptor, "rb") as stream:
+        material = stream.read(COMMITMENT_KEY_BYTES + 1)
+    require(len(material) == COMMITMENT_KEY_BYTES, "commitment-key-size")
+    require(any(material), "commitment-key-material")
 
 
 def _integer(value: object, minimum: int, maximum: int) -> bool:
@@ -53,7 +55,7 @@ def _integer(value: object, minimum: int, maximum: int) -> bool:
 
 def _policy(config: JsonObject) -> None:
     for name in ("signingKeyId", "checkpointSigningKeyId", "encryptionKeyId"):
-        uuid.UUID(config[name])
+        require(is_uuid(config[name]), "backup-key-identity")
     require(
         config["signingKeyId"] != config["checkpointSigningKeyId"], "checkpoint-signer-separation"
     )
@@ -110,7 +112,8 @@ def _signer(config: JsonObject) -> None:
         for name, target in REMOTE_TARGETS:
             config[target] = private_path(remote[name])
     require(
-        config["verificationKey"].read_bytes() != config["checkpointVerificationKey"].read_bytes(),
+        public_key_identity(config["verificationKey"])
+        != public_key_identity(config["checkpointVerificationKey"]),
         "checkpoint-signer-separation",
     )
 

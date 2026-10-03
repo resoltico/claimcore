@@ -1,20 +1,25 @@
 #!/usr/bin/env python3
 """Synthetic root-pinned six-observer aggregate and forgery negatives."""
 
+import hashlib
 import sys
 import tempfile
 import unittest
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from unittest.mock import patch
 
 sys.dont_write_bytecode = True
 from backup_types import JsonObject
 from deployment_aggregate import AggregateSubmission, make_aggregate
 from deployment_aggregate_fixture import AggregateFixture, document, fixture
+from deployment_aggregate_io import write_aggregate
 from deployment_aggregate_model import AggregateContext
 from deployment_aggregate_verify import verify_aggregate
-from deployment_common import DeploymentRefusalError, sign
+from deployment_common import DeploymentRefusalError, public_key_identity, sign
 from deployment_topology import ROLES, verify_topology
+from managed_common import sync_directory
 
 SHA256_LENGTH = 64
 
@@ -83,6 +88,77 @@ class DeploymentAggregateTests(unittest.TestCase):
             now=self.now,
             required_scope=scope,
         )
+
+    def _rewrapped_primary(self) -> Path:
+        source = (self.root / "primary.pub").read_text().splitlines()
+        encoded = "".join(source[1:-1])
+        wrapped = self.root / "rewrapped-primary.pub"
+        wrapped.write_text(
+            source[0]
+            + "\n"
+            + "\n".join(encoded[i : i + 20] for i in range(0, len(encoded), 20))
+            + "\n"
+            + source[-1]
+            + "\n"
+        )
+        wrapped.chmod(0o600)
+        self.assertNotEqual(wrapped.read_bytes(), (self.root / "primary.pub").read_bytes())
+        self.assertEqual(
+            public_key_identity(wrapped), public_key_identity(self.root / "primary.pub")
+        )
+        return wrapped
+
+    def test_topology_rejects_one_key_under_different_pem_wrapping(self) -> None:
+        wrapped = self._rewrapped_primary()
+        topology = {
+            **self.fx.topology,
+            "rolePins": [{**pin} for pin in self.fx.topology["rolePins"]],
+        }
+        pin = next(item for item in topology["rolePins"] if item["role"] == "witness")
+        pin["probePublicKeySha256"] = hashlib.sha256(wrapped.read_bytes()).hexdigest()
+        config = {**self.fx.config, "roles": {**self.fx.config["roles"]}}
+        config["roles"]["witness"] = {**config["roles"]["witness"], "probePublicKey": str(wrapped)}
+        paths = document(
+            self.root, "topology-reused-key", topology, self.root / "publication-root.key"
+        )
+        with self.assertRaisesRegex(DeploymentRefusalError, "topology-key-reused"):
+            verify_topology(self.fx.root_public, *paths, PUBLICATION_SHA, config, now=self.now)
+
+    def test_aggregate_signer_cannot_reuse_a_role_key(self) -> None:
+        wrapped = self._rewrapped_primary()
+        topology = {
+            **self.fx.topology,
+            "deploymentVerifierPublicKeySha256": hashlib.sha256(wrapped.read_bytes()).hexdigest(),
+        }
+        context = replace(self.context, topology=topology)
+        with self.assertRaisesRegex(DeploymentRefusalError, "aggregate-key-reused"):
+            make_aggregate(
+                context, _submission(self.fx), self.root / "primary.key", wrapped, now=self.now
+            )
+
+    def test_output_durability_failure_retains_partial_evidence(self) -> None:
+        raw, signature = self._make(_submission(self.fx))
+        output, detached = self.root / "aggregate.json", self.root / "aggregate.sig"
+        config: JsonObject = {
+            "aggregateOutputFile": str(output),
+            "aggregateSignatureFile": str(detached),
+        }
+        with (
+            patch("deployment_aggregate_io.sync_directory", side_effect=OSError),
+            self.assertRaises(OSError),
+        ):
+            write_aggregate(config, raw, signature)
+        self.assertEqual(output.read_bytes(), raw)
+        self.assertFalse(detached.exists())
+        with self.assertRaisesRegex(DeploymentRefusalError, "aggregate-output-exists"):
+            write_aggregate(config, raw, signature)
+        fresh: JsonObject = {
+            "aggregateOutputFile": str(self.root / "fresh.json"),
+            "aggregateSignatureFile": str(self.root / "fresh.sig"),
+        }
+        with patch("deployment_aggregate_io.sync_directory", wraps=sync_directory) as synced:
+            write_aggregate(fresh, raw, signature)
+            self.assertEqual(synced.call_count, 2)
 
     def test_root_pins_and_six_signatures(self) -> None:
         raw_proof, signature = self._make(_submission(self.fx))

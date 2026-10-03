@@ -10,6 +10,44 @@ open ClaimCore.Application
 /// Initial ownership is an explicit schema-owner operation against a fresh installation.
 /// No login path calls this and the runtime role cannot invoke it through the service API.
 module internal ActorGrantAdministration =
+    let private observeInitialOwner connection transaction witness principal =
+        task {
+            use command =
+                new NpgsqlCommand(
+                    "SELECT event_id FROM claimcore.actor_authority_events "
+                    + "WHERE revision=1 AND action_name='PROVISION_INITIAL_OWNER'",
+                    connection,
+                    transaction
+                )
+
+            let! stored = command.ExecuteScalarAsync()
+
+            match stored with
+            | :? Guid as eventId ->
+                let! found =
+                    ActorGrantRegistryQueries.existingEvent connection transaction witness eventId
+
+                let! actor = ActorGrantRegistryQueries.targetId connection transaction principal
+
+                return
+                    match found, actor with
+                    | Some action, Some actorId when
+                        action.Principal = Some principal
+                        && action.TargetActorId = actorId
+                        && action.Grant =
+                            Some
+                                {
+                                    Role = Role.Owner
+                                    Scope = GrantScope.Installation
+                                }
+                        && action.Enabled = Some true
+                        && action.ApproverActorId.IsNone
+                        ->
+                        AuthorityWriteOutcome.Applied(action.EventId, action.Revision)
+                    | _ -> AuthorityWriteOutcome.Refused
+            | _ -> return AuthorityWriteOutcome.Refused
+        }
+
     let private applyInitialOwner ownerConnection transaction witness principal =
         let actorId = Guid.NewGuid()
 
@@ -65,8 +103,10 @@ module internal ActorGrantAdministration =
                         true
                         CancellationToken.None
 
+                if revision <> 0L then
+                    return! observeInitialOwner ownerConnection transaction witness principal
                 // A restored pre-provisioning primary must not promote another first owner.
-                if revision <> 0L || witness.Snapshot().TipSequence <> 0L then
+                elif witness.Snapshot().TipSequence <> 0L then
                     return AuthorityWriteOutcome.Refused
                 else
                     use count =

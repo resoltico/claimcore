@@ -10,6 +10,7 @@ let private expectedRefusalStages =
     [
         "Owner-selected callback hash passed", "owner-verifier-hash"
         "A shared copy/checkpoint signing key passed", "shared-signing-key"
+        "One owner signing key under different PEM wrapping passed", "shared-promotion-key"
         "Linked private configuration passed", "linked-configuration"
         "Linked private ancestor passed", "linked-ancestor"
         "The unfenced owner capture CLI remained available", "unfenced-capture"
@@ -95,11 +96,38 @@ let private runScript tool scriptName =
 
     runner.ExitCode
 
+let private operatorEvidence =
+    testList
+        "operator evidence recovery"
+        [
+            testCase
+                "[CC-BACKUP-001] capture interruptions and checkpoint replay preserve exact evidence"
+                (fun _ ->
+                    for script in
+                        [
+                            "Test-ManagedConfig.py"
+                            "Test-BackupBarrier.py"
+                            "Test-CheckpointSigner.py"
+                        ] do
+                        Expect.equal
+                            (runScript "python3" script)
+                            0
+                            "Operator controls must complete")
+            testCase
+                "[CC-BACKUP-001] independent observer aggregate rejects key reuse and forged evidence"
+                (fun _ ->
+                    Expect.equal
+                        (runScript "python3" "Test-DeploymentAggregate.py")
+                        0
+                        "Independent aggregate controls must complete")
+        ]
+
 [<Tests>]
 let tests =
     testList
         "ClaimCore managed backup qualification"
         [
+            operatorEvidence
             testCase
                 "[CC-BACKUP-001] encrypted dual-cluster backup is verified by isolated restores and rejects altered evidence"
                 (fun _ ->

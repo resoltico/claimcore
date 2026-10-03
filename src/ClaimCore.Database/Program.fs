@@ -33,6 +33,7 @@ let private identity () =
 
 let private recoveryHelp () =
     printfn "  ClaimCore.Database purge-live <private-proposal-file>"
+    printfn "  ClaimCore.Database prune-witness-payload <private-proposal-file>"
     printfn "  ClaimCore.Database inspect-managed-copy <copy-id>"
     printfn "  ClaimCore.Database reconcile-lifecycle-event <event-id>"
 

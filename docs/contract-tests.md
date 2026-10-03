@@ -65,6 +65,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.[CC-AUTH-001] case-list cursor binds principal grant query and visible page |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.[CC-AUTH-001] voided and erasure-fenced identities share denial timing class |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.actor and grant storage.[CC-AUTH-001] exact authority replay detects a forged live actor projection |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.actor and grant storage.[CC-AUTH-001] exact initial-owner readback preserves receipt without restoring authority |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.actor and grant storage.[CC-AUTH-001] explicit grant revocation advances authority and invalidates stale snapshot |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.actor and grant storage.[CC-AUTH-001] initial owner is private and unknown login remains ungranted |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.actor and grant storage.[CC-AUTH-001] real-data roster needs a second distinct human owner or steward |
@@ -112,6 +113,8 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-AUTH-001 | unit | ClaimCore deterministic suite.case-list cursor contract.[CC-AUTH-001] list cursor binds caller grant query and expiry |
 | CC-BACKUP-001 | backup-qualification | ClaimCore managed backup qualification.[CC-BACKUP-001] deploy-time custody gate refuses same-host and self-certified evidence |
 | CC-BACKUP-001 | backup-qualification | ClaimCore managed backup qualification.[CC-BACKUP-001] encrypted dual-cluster backup is verified by isolated restores and rejects altered evidence |
+| CC-BACKUP-001 | backup-qualification | ClaimCore managed backup qualification.operator evidence recovery.[CC-BACKUP-001] capture interruptions and checkpoint replay preserve exact evidence |
+| CC-BACKUP-001 | backup-qualification | ClaimCore managed backup qualification.operator evidence recovery.[CC-BACKUP-001] independent observer aggregate rejects key reuse and forged evidence |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.Restore report owner roster.[CC-BACKUP-001] owner W1 commands refuse absent publication before authority access |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.Restore report owner roster.[CC-BACKUP-001] owner fenced-tail and activation grammar binds seven private files |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.Restore report owner roster.[CC-BACKUP-001] restore report owner roster binds current witnessed human grants |
@@ -119,7 +122,6 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.Restore report owner roster.[CC-BACKUP-001] source checkout cannot self-authorize a restore report |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.Restore report pair binding.[CC-BACKUP-001] stale or divergent restore pair facts refuse recheck |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.[CC-BACKUP-001] intermediate restore reports cannot claim deployment readiness |
-| CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.[CC-BACKUP-001] root-signed topology refuses an aggregate key reused by a host |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.advanced physical restored pair.[CC-BACKUP-001] original BASE pair replays later synthetic WAL before audit |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.authority operation fence.[CC-BACKUP-001] backup capture drains actor settlement and retains the complete authority fence |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.backup capture private files.[CC-BACKUP-001] owner hashes only private exact-root capture files |
@@ -141,6 +143,8 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.independent archive host proof.[CC-BACKUP-001] forged or stale archive observation is refused |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.independent archive host proof.[CC-BACKUP-001] signed archive observation binds every final WAL object |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.independent archive host proof.[CC-BACKUP-001] signed archive observation missing one final WAL object is refused |
+| CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.independent topology signing keys.[CC-BACKUP-001] PEM rewrapping cannot establish independent native signer keys |
+| CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.independent topology signing keys.[CC-BACKUP-001] root-signed topology refuses an aggregate key reused by a host |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.installation loss crash boundaries.[CC-BACKUP-001] W1 response loss reconciles only the historical terminal ticket |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.installation loss crash boundaries.[CC-BACKUP-001] primary COMMIT response loss before W1 preserves exact pending receipt |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.installation loss crash boundaries.[CC-BACKUP-001] terminated in-COMMIT primary transaction keeps W0 pending |
@@ -386,6 +390,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-ERASE-001 | integration | ClaimCore PostgreSQL integration.witness prune uncertainty.[CC-ERASE-001] exact settled prune replay survives witness key rotation |
 | CC-ERASE-001 | integration | ClaimCore PostgreSQL integration.witness prune uncertainty.[CC-ERASE-001] partial prune retries exact intent and refuses changed proposal |
 | CC-ERASE-001 | integration | ClaimCore PostgreSQL integration.witness prune uncertainty.[CC-ERASE-001] unexpected postcutoff CASE intent prevents witness ciphertext deletion |
+| CC-ERASE-001 | unit | ClaimCore deterministic suite.Database admin private-file boundary.[CC-ERASE-001] database-free help exposes the separate witness payload prune command |
 | CC-ERASE-001 | unit | ClaimCore deterministic suite.Database admin private-file boundary.[CC-ERASE-001] owner witness prune refuses unsafe private inputs before database access |
 | CC-ERASE-001 | unit | ClaimCore deterministic suite.administration diagnostic boundaries.[CC-ERASE-001] owner purge and prune accept only private proposal path |
 | CC-ERASE-001 | unit | ClaimCore deterministic suite.administration diagnostic boundaries.[CC-ERASE-001] terminal copy absence accepts only one private proposal path |

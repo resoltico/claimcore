@@ -67,3 +67,9 @@ The [failure semantics design](failure-semantics-design.md) and separate
 
 The [time and ordering design](time-ordering-design.md) and separate
 [design QA](time-ordering-design-qa.md) distinguish calendar, authority and elapsed clocks.
+
+The [cryptography and trust design](cryptography-trust-design.md) and separate
+[design QA](cryptography-trust-design-qa.md) examine certificate admission and key custody.
+
+The [operator workflows design](operator-workflows-design.md) and separate
+[design QA](operator-workflows-design-qa.md) trace interrupted procedures and independent qualification.

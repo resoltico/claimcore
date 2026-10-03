@@ -9,17 +9,16 @@ import subprocess
 import sys
 from collections.abc import Callable
 from pathlib import Path
-from types import TracebackType
 
 sys.dont_write_bytecode = True
-from backup_barrier import BarrierUnknownError, capture_with_barrier
+from backup_barrier import capture_with_barrier
 from backup_barrier_process import DatabaseBarrierController
 from backup_types import JsonObject
-from deployment_common import DeploymentRefusalError
+from capture_delivery import CaptureCompletedError, report_failure, write_result
 from fenced_backup_identity import expected_identity
 from managed_basebackup import postgres_control
 from managed_capture import capture
-from managed_common import BackupFailureError, metadata, pg_env, require, tool
+from managed_common import metadata, pg_env, require, tool
 from managed_config import configuration
 from synthetic_container_identity import system_id
 
@@ -133,47 +132,19 @@ def main() -> None:
     verify_synthetic_pair(args, config)
     expected = expected_identity(config)
     action = capture_action(config, tamper_primary=args.tamper_primary)
-    with DatabaseBarrierController(config["archiveRoot"], config["checkpointRoot"]) as owner:
-        result = capture_with_barrier(
-            owner, action, expected, checkpoint_root=config["checkpointRoot"]
-        )
-    sys.stdout.write(
-        json.dumps(
-            {
-                "status": "CAPTURED_UNVERIFIED",
-                "cycleReceiptId": result["receiptId"],
-                "realDataReady": False,
-            },
-            sort_keys=True,
-            separators=(",", ":"),
-        )
-        + "\n"
-    )
-
-
-def safe_error(
-    _kind: type[BaseException], error: BaseException, _traceback: TracebackType | None
-) -> None:
-    if isinstance(error, (DeploymentRefusalError, BackupFailureError, BarrierUnknownError)):
-        reason = error.args[0] if error.args else "capture-unavailable"
-    else:
-        reason = "capture-unavailable"
-    sys.stderr.write(
-        json.dumps(
-            {
-                "status": "CAPTURE_UNCONFIRMED"
-                if isinstance(error, BarrierUnknownError)
-                else "REFUSED",
-                "reason": reason,
-                "realDataReady": False,
-            },
-            sort_keys=True,
-            separators=(",", ":"),
-        )
-        + "\n"
-    )
+    result: JsonObject | None = None
+    try:
+        with DatabaseBarrierController(config["archiveRoot"], config["checkpointRoot"]) as owner:
+            result = capture_with_barrier(
+                owner, action, expected, checkpoint_root=config["checkpointRoot"]
+            )
+    except (Exception, KeyboardInterrupt) as error:
+        if result is not None:
+            raise CaptureCompletedError(result) from error
+        raise
+    write_result(result)
 
 
 if __name__ == "__main__":
-    sys.excepthook = safe_error
+    sys.excepthook = report_failure
     main()

@@ -62,3 +62,21 @@ if python3 "${repo_root}/eng/backup/managed.py" --config "${scratch}/promotion-c
 fi
 python3 "${repo_root}/eng/backup/managed.py" --config "${scratch}/promotion-config.json" review-promotion --report "${scratch}/promotion-report.json" --fence-report "${scratch}/fence-report.json" --approval "${scratch}/approval-one.json" --approval "${scratch}/approval-two.json" >"${scratch}/promotion-result.json"
 jq -e '.status == "synthetic-promotion-evidence-reviewed" and .promotionAuthorized == false and .productCutoverRequired == true and .approvals == 2' "${scratch}/promotion-result.json" >/dev/null
+python3 - "${scratch}/owner_one.pub" "${scratch}/owner-alias.pub" <<'PY'
+import sys
+from pathlib import Path
+source = Path(sys.argv[1]).read_text().splitlines()
+encoded = "".join(source[1:-1])
+wrapped = "\n".join(encoded[index:index + 20] for index in range(0, len(encoded), 20))
+Path(sys.argv[2]).write_text(source[0] + "\n" + wrapped + "\n" + source[-1] + "\n")
+PY
+jq -cS --arg key "${key_two}" --arg public "${scratch}/owner-alias.pub" \
+  '.approverKeys[$key].publicKey=$public' "${scratch}/promotion-config.json" >"${scratch}/alias-config.json"
+openssl pkeyutl -sign -rawin -inkey "${scratch}/owner_one.key" \
+  -in "${scratch}/approval-two.json" -out "${scratch}/approval-two.sig"
+if python3 "${repo_root}/eng/backup/managed.py" --config "${scratch}/alias-config.json" review-promotion \
+  --report "${scratch}/promotion-report.json" --fence-report "${scratch}/fence-report.json" \
+  --approval "${scratch}/approval-one.json" --approval "${scratch}/approval-two.json" >/dev/null 2>&1; then
+  echo 'One owner signing key under different PEM wrapping passed promotion review.' >&2
+  exit 1
+fi

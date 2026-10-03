@@ -3,6 +3,7 @@ module ClaimCore.IntegrationTests.IndependentHostTopologyTests
 open System
 open System.Collections.Generic
 open System.Text.Json
+open System.Text
 open Expecto
 open NSec.Cryptography
 open ClaimCore.Database
@@ -98,7 +99,7 @@ let private signedTopology
 
     canonical, SignatureAlgorithm.Ed25519.Sign(root, canonical)
 
-let tests =
+let private topologyPin =
     testCase
         "[CC-BACKUP-001] root-signed topology refuses an aggregate key reused by a host"
         (fun _ ->
@@ -133,3 +134,68 @@ let tests =
                     reusedSignature
                     now)
                 "Even a valid root signature cannot permit one key to sign both roles.")
+
+let private rawKeyIndependence () =
+    let roles =
+        [ "archive"; "checkpoint"; "key"; "primary"; "witness"; "old-writer-fence" ]
+
+    let keys = [ for _ in 0..6 -> Key.Create(SignatureAlgorithm.Ed25519) ]
+
+    let pem (key: Key) width =
+        let der =
+            Array.append
+                (Convert.FromHexString("302a300506032b6570032100"))
+                (key.PublicKey.Export(KeyBlobFormat.RawPublicKey))
+
+        let encoded = Convert.ToBase64String(der)
+        let lines = encoded |> Seq.chunkBySize width |> Seq.map String |> String.concat "\n"
+
+        Encoding.ASCII.GetBytes(
+            "-----BEGIN PUBLIC KEY-----\n" + lines + "\n-----END PUBLIC KEY-----\n"
+        )
+
+    try
+        let documents: IndependentHostDocuments =
+            {
+                Topology = [||]
+                TopologySignature = [||]
+                Aggregate = [||]
+                AggregateSignature = [||]
+                AggregatePublicKey = pem keys[6] 64
+                RolePublicKeys =
+                    (roles, keys[..5])
+                    ||> List.map2 (fun role key -> role, pem key 64)
+                    |> Map.ofList
+            }
+
+        DatabaseIndependentHostEvidence.requireIndependentKeys documents
+        let rewrapped = pem keys[0] 20
+        Expect.notEqual rewrapped documents.RolePublicKeys["archive"] "PEM file identities differ."
+
+        Expect.throws
+            (fun () ->
+                DatabaseIndependentHostEvidence.requireIndependentKeys
+                    { documents with
+                        RolePublicKeys = documents.RolePublicKeys.Add("witness", rewrapped)
+                    })
+            "One raw Ed25519 key cannot supply two independent observations."
+
+        Expect.throws
+            (fun () ->
+                DatabaseIndependentHostEvidence.requireIndependentKeys
+                    { documents with
+                        AggregatePublicKey = rewrapped
+                    })
+            "The aggregate signer cannot reuse an observer key."
+    finally
+        keys |> List.iter _.Dispose()
+
+let tests =
+    testList
+        "independent topology signing keys"
+        [
+            topologyPin
+            testCase
+                "[CC-BACKUP-001] PEM rewrapping cannot establish independent native signer keys"
+                (fun _ -> rawKeyIndependence ())
+        ]

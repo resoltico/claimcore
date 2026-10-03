@@ -18,6 +18,7 @@ from types import TracebackType
 sys.dont_write_bytecode = True
 import promotion
 from backup_types import JsonObject
+from deployment_common import DeploymentRefusalError
 from managed_common import CLUSTERS, BackupFailureError, private_path, require, tool
 from managed_config import configuration
 from managed_inspect import inspect
@@ -104,7 +105,9 @@ FAILURE_CATEGORIES: tuple[
 
 def failure_category(error: BaseException) -> str:
     """Map an exception to a bounded category that never carries payload."""
-    if isinstance(error, BackupFailureError | promotion.ReviewFailureError):
+    if isinstance(
+        error, BackupFailureError | promotion.ReviewFailureError | DeploymentRefusalError
+    ):
         candidate = error.args[0] if error.args else None
         if isinstance(candidate, str) and re.fullmatch(CATEGORY, candidate):
             return candidate

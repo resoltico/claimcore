@@ -21,6 +21,21 @@ type internal IndependentHostDocuments =
 module internal DatabaseIndependentHostEvidence =
     let private directoryName = "CLAIMCORE_DEPLOYMENT_EVIDENCE_DIR"
 
+    let requireIndependentKeys (documents: IndependentHostDocuments) =
+        let roles =
+            set [ "archive"; "checkpoint"; "key"; "primary"; "witness"; "old-writer-fence" ]
+
+        if (documents.RolePublicKeys |> Map.keys |> Set.ofSeq) <> roles then
+            invalidOp "Independent signing-key roles are incomplete."
+
+        let identities =
+            documents.AggregatePublicKey
+            :: (documents.RolePublicKeys |> Map.toList |> List.map snd)
+            |> List.map (DatabaseIndependentHostJson.rawPublicKey >> Convert.ToHexStringLower)
+
+        if (identities |> Set.ofList |> Set.count) <> identities.Length then
+            invalidOp "Independent roles reuse a signing key."
+
     let private read maximum exact directory name =
         let path = Path.Combine(directory, name)
 

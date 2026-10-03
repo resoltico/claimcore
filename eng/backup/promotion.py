@@ -10,6 +10,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from backup_types import Json, JsonObject
+from deployment_common import public_key_identity
 from inventory import canonical
 
 DOCUMENT_LIMIT = 128 * 1024
@@ -239,9 +240,7 @@ def _check_approval(
     _check_approval_content(approval, authority, evidence)
     actor: Json = approval.get("actorId")
     need(actor not in seen.actors and key_id not in seen.key_ids, "approvers-not-distinct")
-    fingerprint = hashlib.sha256(
-        tools.private_path(key_entry["publicKey"]).read_bytes()
-    ).hexdigest()
+    fingerprint = public_key_identity(tools.private_path(key_entry["publicKey"])).hex()
     need(fingerprint not in seen.fingerprints, "approver-key-reused")
     seen.actors.add(actor)
     seen.key_ids.add(key_id)

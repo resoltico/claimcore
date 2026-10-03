@@ -39,6 +39,7 @@ ClaimCore.Database 0.6.0 — schema and recovery-retention administration
   ClaimCore.Database retire-installation-after-loss <candidate-file> <evidence-report-file|MISSING> <checkpoint-file|MISSING> <known-operations-file> <first-signature-file> <second-signature-file>
   ClaimCore.Database reconcile-installation-loss-retirement <candidate-file> <evidence-report-file|MISSING> <checkpoint-file|MISSING> <known-operations-file> <first-signature-file> <second-signature-file>
   ClaimCore.Database purge-live <private-proposal-file>
+  ClaimCore.Database prune-witness-payload <private-proposal-file>
   ClaimCore.Database inspect-managed-copy <copy-id>
   ClaimCore.Database reconcile-lifecycle-event <event-id>
   ClaimCore.Database verify-restore-report <report> <signature> <evidence-index> <nonce>
@@ -120,6 +121,29 @@ or database access. Results distinguish `NOT_STARTED`, `NOT_COMMITTED`, `COMPLET
 `COMPLETED` and `COMPLETED_CLEANUP_FAILED`. An unconfirmed commit exits 4 and requires reconciliation,
 not an inferred rollback or automatic mutation retry. Definite admission/action failures exit 3.
 Use read-only `verify` after reconnecting for schema/role admission and `verify-data` for the full current primary-and-witness row/authority audit. Neither is a historical operation receipt, independently retained freshness checkpoint, or restored-pair certificate; neither can prove which caller created an installation. `verify-data` reports bounded safe counts (including witnessed terminal approvals/events, individual physical-copy verifications, copy-deletion approvals, and writer-handoff approvals, preparations, settlements, activations, and aborts), cutoff and hash, and distinguishes pending witness intents from a clean audit. A failed audit quarantines case-work admission until reconciled.
+
+### Interrupted owner procedures
+
+Keep the original private principal, candidate, signatures, evidence and matching verifier package
+before issuing an owner action. Run the steps in order: initialize the primary with its immutable
+zone, initialize the separate witness with matching installation identity and retained key/capability
+custody, provision the intended human owner, then use authenticated owner authority to establish
+individual grants and separately approved signers. A reviewed real-data build additionally stays
+in bootstrap until its signed activation plan, two human approvals and fresh health proof settle.
+
+| Interrupted phase | Safe next action | What it establishes |
+|---|---|---|
+| Primary or witness initialization | Preserve the databases and original private inputs. Run `verify` for primary schema admission and `verify-data` for the exact pair; an existing witness cannot be reinitialized as a completion receipt. | Current supported structure and paired evidence; no reset, migration or proof of who initialized it. |
+| Initial-owner response lost | Repeat `provision-initial-owner` with the exact original private principal file. | The original witnessed provisioning receipt if primary history exists. It adds no actor or authority event and does not re-enable a later disabled owner or restore a revoked grant. A different principal or missing history refuses; that refusal does not settle an earlier unknown result. |
+| Actor grant response lost | Use `authority.observe` with the original event ID, or retry that exact authenticated request. | Exact accepted authority; a new event ID would be new work. |
+| Signer approval or registration response lost | Retry the exact approval request with its original approval ID; retain the original owner registration files and IDs for exact execution retry. | Recorded approval/registration only. Source signatures alone do not prove independent human custody. |
+| Backup FINISH or OBSERVE interrupted | Preserve all cycle/checkpoint files and run `reconcile-backup-capture <lease-id>` using the reported lease ID. After a hard kill, the UUID-named directory immediately under the configured archive root is the lease locator; inspect each retained candidate independently. | Exact local capture receipt, never `RETAINED` or restore readiness. Missing or changed receipt remains unknown. |
+| CHECKPOINT signer response lost or signer killed | Retry the exact canonical checkpoint with the original cycle ID. Preserve the replay ledger. Before removing only a stale local socket, establish that its owning signer process has stopped. | The previously recorded signature, including after the new-signing time window. Changed or partial ledger evidence refuses; no new checkpoint or lease time is created. |
+| W1 preparation/settlement interrupted | Retain the canonical preparation/settlement and signatures; retry their exact command while required current proof remains valid. If W1 cannot finish, use the two-owner `draft-writer-handoff-abort` / `abort-writer-handoff` procedure below. | Exact W1/A1–A3 evidence. Timeout never releases a pending fence or authorizes the old runtime to resume. |
+| Restore report, aggregate or health output partial | Preserve partial files. Recheck signed restore files with `verify-restore-report`; use `reconcile-backup-health` for health publication state. A replacement evidence set requires fresh checks and new output paths. | Historical file/readback facts. An absent signature, expired proof or successful schema check cannot lift quarantine. |
+| W2 or real-data activation response lost | Repeat `activate-writer-handoff` with the original retained package/evidence for historical W2 reconciliation; use `reconcile-real-data-activation` for an already settled activation. | Original activation only. Readback cannot renew health, issue a fresh writer ticket or reinterpret an old publication under a rotated root. |
+| Retention or erasure interrupted | Inspect the exact managed copy and witnessed state. Preserve original proposals, event IDs, approvals and signatures for exact owner retry. For technical preparation pruning, `prune --dry-run` shows the remaining batch; a new batch is a separate decision. | Per-copy or per-phase progress. Live purge, `prune-witness-payload`, all-copy absence and the suppression horizon remain separate; unknown copies, holds or unsettled work keep the state pending. |
+| Irrecoverable installation loss | Keep it quarantined and use the exact two-owner retirement/reconciliation procedure below only when surviving witness/owner evidence permits it. | Terminal retirement, never reconstructed case history or permission for a same-lineage successor. |
 
 `verify-restore-report` is a separate read-only exact signed-report recheck. Its pre-handoff report
 binds the truthful `unfenced-capture` source cutoff, a later complete quiescent audit cutoff, and a registered WAL prefix; the source label alone does not prove a common cross-cluster cutoff. It
@@ -254,9 +278,10 @@ Host tzdata remains part of the operational environment; see [operations](operat
 
 ## Local development database
 
-[Getting started](getting-started.md) owns the source-checkout Compose sequence and private connection
-file setup. [`.env.example`](../.env.example) declares its required passwords and optional per-checkout
-project and host-port settings. The selected `CLAIMCORE_POSTGRES_PORT` must match both private
+[Getting started](getting-started.md) owns the supported disposable first-case qualification. The
+separate Compose service is one synthetic development primary; it cannot supply the required
+witness, authority and custody setup for case work. [`.env.example`](../.env.example) declares its
+required passwords and optional per-checkout project and host-port settings. The selected `CLAIMCORE_POSTGRES_PORT` must match both private
 connection files.
 
 The Compose dependency is the official PostgreSQL image, pinned by tag and digest in

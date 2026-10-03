@@ -94,6 +94,48 @@ let private revocation =
 
                 assertRevoked readerPrincipal before after))
 
+let private assertInitialReadback owner (witness: WitnessProtocol) principal expected =
+    let tip = witness.Snapshot().TipSequence
+    Expect.equal (provision owner witness principal) expected "Exact provisioning receipt."
+    Expect.equal (witness.Snapshot().TipSequence) tip "Readback adds no authority event."
+
+let private initialOwnerReadback =
+    testCase
+        "[CC-AUTH-001] exact initial-owner readback preserves receipt without restoring authority"
+        (fun _ ->
+            withAuthorityDatabase (fun owner app witness ->
+                let first = human "initial-owner-readback"
+                let second = human "replacement-owner"
+                let original = provision owner witness first
+                original |> applied
+                assertInitialReadback owner witness first original
+
+                use source = RuntimeDataSource.create app
+                let grants = new ActorGrantStore(source)
+                let registry = new ActorGrantRegistry(source, witness)
+                registry.RegisterActor(first, second) |> await |> applied
+
+                let ownerGrant =
+                    {
+                        Role = Role.Owner
+                        Scope = GrantScope.Installation
+                    }
+
+                registry.SetGrant(first, actorId grants second, ownerGrant, true)
+                |> await
+                |> applied
+
+                registry.SetEnabled(first, actorId grants first, false) |> await |> applied
+                assertInitialReadback owner witness first original
+
+                let current = load grants first ResourceScope.Installation |> Option.get
+                Expect.isFalse current.Enabled "Readback cannot revive the old owner."
+
+                Expect.equal
+                    (provision owner witness (human "unrelated-bootstrap"))
+                    AuthorityWriteOutcome.Refused
+                    "A different principal cannot replace the initial owner."))
+
 let private stalePrimary =
     testCase
         "[CC-AUTH-001] stale primary cannot repeat initial owner against surviving witness"
@@ -237,6 +279,7 @@ let tests =
         "actor and grant storage"
         [
             initialOwner
+            initialOwnerReadback
             revocation
             stalePrimary
             dualControlRoster

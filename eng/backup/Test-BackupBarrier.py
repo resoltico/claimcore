@@ -10,6 +10,7 @@ import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from unittest.mock import patch
 
 sys.dont_write_bytecode = True
 from backup_barrier import BarrierUnknownError, capture_with_barrier, decode, frame
@@ -175,6 +176,7 @@ class BackupBarrierTests(unittest.TestCase):
         self.assertEqual(result["status"], "captured-unverified-observed")
         self.assertFalse(result["retained"])
         self.assertFalse(result["realDataReady"])
+        self.assertEqual(result["leaseId"], controller.lease["leaseId"])
         self.assertEqual(controller.events, ["BEGIN", "FINISH", "OBSERVE"])
 
     def test_held_lease_refusals(self) -> None:
@@ -194,6 +196,16 @@ class BackupBarrierTests(unittest.TestCase):
             self._capture(before_finish, lambda _lease: {})
         self.assertEqual(before_finish.events, ["BEGIN", "ABORT"])
 
+    def test_interrupt_before_finish_aborts(self) -> None:
+        before_finish = self._controller()
+
+        def interrupted(_lease: JsonObject) -> JsonObject:
+            raise KeyboardInterrupt
+
+        with self.assertRaises(KeyboardInterrupt):
+            self._capture(before_finish, interrupted)
+        self.assertEqual(before_finish.events, ["BEGIN", "ABORT"])
+
     def test_uncertainty_after_finish_is_retained(self) -> None:
         cases = (
             (["BEGIN", "FINISH"], self._controller(finish_change={"receiptSha256": "invalid"})),
@@ -204,9 +216,36 @@ class BackupBarrierTests(unittest.TestCase):
             (["BEGIN", "FINISH"], self._controller(eof_at="FINISH")),
         )
         for events, controller in cases:
-            with self.assertRaisesRegex(BarrierUnknownError, "barrier-finish-uncertain"):
+            with self.assertRaisesRegex(BarrierUnknownError, "barrier-finish-uncertain") as failure:
                 self._capture(controller)
+            self.assertEqual(failure.exception.lease_id, controller.lease["leaseId"])
             self.assertEqual(controller.events, events)
+
+    def test_interrupts_preserve_phase_and_reconciliation_identity(self) -> None:
+        for stage, method in (("FINISH", "exchange"), ("OBSERVE", "observe")):
+            controller = self._controller()
+            original: Callable[[bytes], bytes] = getattr(controller, method)
+
+            def interrupted(
+                raw: bytes,
+                stage: str = stage,
+                controller: Controller = controller,
+                original: Callable[[bytes], bytes] = original,
+            ) -> bytes:
+                if decode(raw)["kind"] == stage:
+                    controller.events.append(stage)
+                    raise KeyboardInterrupt
+                result: bytes = original(raw)
+                return result
+
+            with (
+                patch.object(controller, method, side_effect=interrupted),
+                self.assertRaises(BarrierUnknownError) as failure,
+            ):
+                self._capture(controller)
+            self.assertEqual(failure.exception.lease_id, controller.lease["leaseId"])
+            self.assertNotIn("ABORT", controller.events)
+            self.assertTrue(any(self.cycle.iterdir()))
 
     def test_bytes_changed_during_finish_are_uncertain(self) -> None:
         changed = self._controller()

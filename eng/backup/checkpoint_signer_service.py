@@ -12,14 +12,16 @@ import tempfile
 from pathlib import Path
 
 from backup_types import JsonObject
-from checkpoint_signer_policy import admit_candidate
+from checkpoint_signer_policy import decode_candidate, require_current_candidate
 from deployment_common import (
     SIGNATURE_BYTES,
     DeploymentRefusalError,
     canonical,
     private_path,
     require,
+    verify,
 )
+from managed_common import sync_directory
 
 REQUEST_LIMIT = 32768
 RECEIVE_BLOCK = 4096
@@ -77,10 +79,25 @@ def _sign(config: JsonObject, source: bytes) -> bytes:
         return signature.read_bytes()
 
 
-def _recorded_signature(record: Path, request: JsonObject) -> str:
-    saved = json.loads(private_path(record).read_bytes())
+def _recorded_signature(
+    config: JsonObject, record: Path, request: JsonObject, candidate: JsonObject
+) -> str:
+    raw = private_path(record).read_bytes()
+    saved = json.loads(raw)
+    require(
+        isinstance(saved, dict)
+        and set(saved) == {"cycleId", "candidateSha256", "signatureBase64"}
+        and raw == canonical(saved)
+        and saved["cycleId"] == candidate["cycleId"],
+        "checkpoint-ledger-invalid",
+    )
     require(saved["candidateSha256"] == request["candidateSha256"], "checkpoint-cycle-reused")
     encoded: str = saved["signatureBase64"]
+    try:
+        verify({"report": candidate, "signatureBase64": encoded}, config["verificationKeyFile"])
+    except DeploymentRefusalError:
+        msg = "checkpoint-ledger-signature-invalid"
+        raise DeploymentRefusalError(msg) from None
     return encoded
 
 
@@ -105,12 +122,14 @@ def _record_signature(
 
 def sign_request(config: JsonObject, request: JsonObject) -> JsonObject:
     """Admit the candidate, sign it once per cycle, and return the signed response."""
-    candidate, raw = admit_candidate(config, request)
+    candidate, raw = decode_candidate(config, request)
     record = config["ledgerRoot"] / (candidate["cycleId"] + ".json")
     if record.exists():
-        encoded = _recorded_signature(record, request)
+        encoded = _recorded_signature(config, record, request, candidate)
     else:
+        require_current_candidate(candidate)
         encoded = _record_signature(config, record, candidate, request, raw)
+    sync_directory(record.parent)
     return {
         "format": "claimcore-checkpoint-sign-response-1",
         "status": "SIGNED",

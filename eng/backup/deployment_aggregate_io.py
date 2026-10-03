@@ -5,6 +5,7 @@ from pathlib import Path
 
 from backup_types import JsonObject
 from deployment_common import DeploymentRefusalError, private_path, require
+from managed_common import sync_directory
 
 
 def write_aggregate(config: JsonObject, raw: bytes, signature: bytes) -> None:
@@ -26,3 +27,4 @@ def write_aggregate(config: JsonObject, raw: bytes, signature: bytes) -> None:
             destination.write(data)
             destination.flush()
             os.fsync(destination.fileno())
+        sync_directory(target.parent)
