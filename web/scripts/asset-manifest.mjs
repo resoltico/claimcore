@@ -52,6 +52,7 @@ const sourceFiles = async () => {
   const fixed = [
     ".npmrc",
     "index.html",
+    "../LICENSE",
     "package.json",
     "tsconfig.app.json",
     "tsconfig.json",

@@ -11,6 +11,13 @@ Notable changes to this project are documented in this file. The format is based
 - Loopback private HTTPS roots must be current public-only signing CAs, and presented leaves must carry server-authentication purpose. Replace leaf-as-root or wrong-purpose synthetic certificates. Witness, suppression, recovery-export and managed-copy commitment custody refuse ambiguous duplicate members, zero material or repeated rotation material as applicable. Preserve historical keys and evidence for exact audit; changing an ID or deleting old material does not repair a compromised or unreadable history.
 - The frontend dependency gate now keeps a clean production audit and limits two unpatched, development-only advisory exceptions to exact `braces` and `http-cache-semantics` findings until 2026-11-03. These tooling dependencies remain vulnerable; review upstream fixes before that date. Unknown or production findings still fail verification.
 
+### Changed
+
+- Starting with v0.7.0, original ClaimCore work and incoming contributions use MPL-2.0.
+  Redistributors of covered binaries or browser assets must provide corresponding MPL-covered
+  source and tell recipients how to obtain it. Previously published v0.1.0–v0.6.0 retain Apache-2.0
+  terms; third-party licenses remain unchanged. See [distribution guidance](docs/releasing.md#licensing-and-source-distribution).
+
 ### Fixed
 
 - Browser warnings now identify every Unicode control, format, line-separator and paragraph-separator character without rewriting accepted text. Business input and historical snapshots retain their existing Unicode rules.
