@@ -80,6 +80,20 @@ let private temporalCertificateBounds =
                 let value = fixture.Claims
                 let canonical = fixture.Loaded.CertificateBytes
 
+                let futureWal =
+                    { value with
+                        PrimaryWal =
+                            { value.PrimaryWal with
+                                VerifiedAt = value.CheckedAt.AddSeconds(1.)
+                            }
+                    }
+
+                Expect.isNone
+                    (BackupHealthCertificate.parse
+                        (BackupHealthRuntimeActorRaceDocuments.certificate futureWal)
+                        value.CheckedAt)
+                    "An observation sampled after certificate capture cannot be hidden by a fixture clock"
+
                 Expect.isSome
                     (BackupHealthCertificate.parse canonical value.CheckedAt)
                     "Positive current certificate control"

@@ -1,13 +1,8 @@
-const isSuspiciousCodePoint = (value: number): boolean =>
-  value <= 0x1f ||
-  value === 0x7f ||
-  (value >= 0x200b && value <= 0x200f) ||
-  (value >= 0x202a && value <= 0x202e) ||
-  (value >= 0x2060 && value <= 0x206f);
+const suspiciousCategory = /[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/u;
 
 export const suspiciousCodePoints = (value: string): string[] =>
   Array.from(value)
-    .filter((point) => isSuspiciousCodePoint(point.codePointAt(0)!))
+    .filter((point) => suspiciousCategory.test(point))
     .map((point) => `U+${point.codePointAt(0)!.toString(16).toUpperCase()}`);
 
 export const hasSuspiciousCharacters = (value: string): boolean =>

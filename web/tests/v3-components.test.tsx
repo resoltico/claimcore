@@ -65,6 +65,13 @@ it("keeps generated endpoint inventory callable and presents suspicious Unicode 
   expect(hasSuspiciousCharacters("plain")).toBe(false);
   expect(hasSuspiciousCharacters("a\u202Eb")).toBe(true);
   expect(suspiciousCodePoints("a\u202Eb")).toEqual(["U+202E"]);
+  expect(suspiciousCodePoints("\u0085\u00AD\u2028\u2029")).toEqual([
+    "U+85",
+    "U+AD",
+    "U+2028",
+    "U+2029",
+  ]);
+  expect(suspiciousCodePoints("العربية\u200D")).toEqual(["U+200D"]);
 });
 
 it("renders absent and suspicious accepted values without changing the recorded text", () => {

@@ -108,6 +108,11 @@ that builder's eligible cache records, not just ClaimCore's, and prompts before 
 
 ## Complete verification
 
+Failed synthetic physical restores retain bounded PostgreSQL startup logs, container state and port
+mappings under ignored owner-private `artifacts/restore-failures/` before container/scratch cleanup.
+Console diagnostics remain stage-only; inspect retained files privately and do not paste or publish
+them as ordinary test output. They do not establish a successful restore.
+
 A complete result is conjunctive: locked restore, compiler build, repository policy, every required
 test suite, the generated semantic/CLI-v4/Web-v3 contract lock, frontend assurance, documentation,
 fresh-baseline creation/refusal database qualifications, published CLI acceptance, published browser

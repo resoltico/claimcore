@@ -1,7 +1,6 @@
 module internal ClaimCore.IntegrationTests.ManagedCopyAdoptedDeletionRequest
 
 open System
-open System.Threading
 open Expecto
 open Npgsql
 open NSec.Cryptography
@@ -33,8 +32,9 @@ let create
     (copyKey: Key)
     (algorithm: SignatureAlgorithm)
     =
-    while DateTimeOffset.UtcNow < origin.RetainUntil do
-        Thread.Sleep(100)
+    use retention = new NpgsqlConnection(owner)
+    retention.Open()
+    DatabaseObservation.afterInstant retention origin.RetainUntil
 
     let prior =
         ManagedCopyEventHash.compute origin.CopyEventHash unknownCanonical (Some unknownSignature)

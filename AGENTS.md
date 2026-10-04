@@ -1,6 +1,6 @@
 # Coding-agent instructions
 
-Apply these principles within the authorized task and governing instructions; resolve conflicts by instruction precedence and flag unresolved conflicts.
+Apply these principles within the authorized task and governing instructions; resolve conflicts by instruction precedence and flag unresolved conflicts. Treat audit claims and historical design records as leads, not authority over current contracts.
 
 Start with the [README](README.md) and [documentation map](docs/README.md) to find owner documents.
 Read [Contributing](CONTRIBUTING.md) before edits; read [domain](docs/domain.md) and
@@ -10,7 +10,7 @@ trust boundaries. [Development](docs/development.md) owns commands and gates.
 ## Product boundaries
 
 - `CaseFields` has exactly thirteen business fields. Revisions, operation IDs, timestamps,
-  attribution, and available commands remain outside it.
+  attribution, and available commands remain outside it. Business-text acceptance and display safety are distinct; follow the Domain contract.
 - Domain and Application own business rules, transitions, available commands, outcomes, actor
   authorization, and recovery decisions. Normal service callers use actor-bound `IActorClaimsCore`;
   recovery, lifecycle, tombstone and management work stays behind its typed members. Web binds an
@@ -62,7 +62,7 @@ trust boundaries. [Development](docs/development.md) owns commands and gates.
 - Follow [Owner review](docs/owner-review.md). Source review and green CI never grant owner approval.
   Publish a branch/PR and report its exact revisions; do not approve, merge, enable auto-merge or
   change native protections unless separately and explicitly authorized. Do not use shared owner
-  credentials as evidence of independent human review.
+  credentials as evidence of independent human review. Evaluate compiled permissions as well as actual runtime authority; do not infer either from filenames.
 - Test only with synthetic data in isolated databases. Preserve adopted cases, database volumes,
   private `.local` state, and retained old installation evidence. Never print secrets, connection strings,
   recovery bytes, or claimant payloads.

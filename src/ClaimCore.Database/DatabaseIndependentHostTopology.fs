@@ -26,7 +26,7 @@ module internal DatabaseIndependentHostTopology =
             + "primarySessionSetSha256|witnessSessionSetSha256"
         )
 
-    let private roles = [ "archive"; "checkpoint"; "key"; "primary"; "witness" ]
+    let private roles = IndependentHostRoles.hosts
 
     let private role (value: JsonElement) =
         DatabaseIndependentHostJson.exact roleFields value

@@ -157,9 +157,15 @@ let private blockedExecution
         Task.Run(fun () -> actor.Execute(request, CancellationToken.None) |> await)
 
     try
+        let ready = Task.WhenAny(checkedAt.Task :> Task, execution :> Task)
+
         Expect.isTrue
-            (checkedAt.Task.Wait(TimeSpan.FromSeconds 20.))
-            "The signed health check completed before the owner transition."
+            (ready.Wait(TimeSpan.FromSeconds 20.))
+            "Health checkpoint or execution completed."
+
+        if not checkedAt.Task.IsCompleted then
+            execution.GetAwaiter().GetResult() |> ignore
+            failtest "Actor execution ended before the signed health checkpoint."
 
         unknownPrimaryBase owner witness verified copyKey copyAlgorithm
         release.TrySetResult() |> ignore
@@ -249,8 +255,8 @@ let private run owner app writer (witness: WitnessProtocol) =
                 let canonical = certificate claims
 
                 Expect.isSome
-                    (BackupHealthCertificate.parse canonical DateTimeOffset.UtcNow)
-                    "Synthetic signed health claims are exact and current."
+                    (BackupHealthCertificate.parse canonical claims.CheckedAt)
+                    "Synthetic health claims are canonical and temporally consistent at their observation."
 
                 let signature = algorithm.Sign(key, canonical)
 

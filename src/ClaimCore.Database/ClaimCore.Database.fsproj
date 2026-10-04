@@ -44,8 +44,8 @@
     <Compile Include="DatabaseRestoreFencedTailSignatures.fs" />
     <Compile Include="DatabaseRestoreFencedTailVerification.fs" />
     <Compile Include="DatabaseIndependentHostJson.fs" />
-    <Compile Include="DatabaseIndependentHostEvidence.fs" />
     <Compile Include="DatabaseIndependentHostTopologyTypes.fs" />
+    <Compile Include="DatabaseIndependentHostEvidence.fs" />
     <Compile Include="DatabaseIndependentHostTopology.fs" />
     <Compile Include="DatabaseIndependentHostRaw.fs" />
     <Compile Include="DatabaseIndependentHostChildren.fs" />

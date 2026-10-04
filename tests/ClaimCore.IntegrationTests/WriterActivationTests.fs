@@ -166,10 +166,9 @@ let private verifyActivationRetry
     let id, sequence, hash = ticket
 
     if expireBeforeRetry then
-        let remaining = value.ValidUntil - DateTimeOffset.UtcNow
-
-        if remaining > TimeSpan.Zero then
-            Thread.Sleep(remaining.Add(TimeSpan.FromMilliseconds(100.0)))
+        use owner = new NpgsqlConnection(context.Access.Owner)
+        owner.Open()
+        DatabaseObservation.afterInstant owner value.ValidUntil
 
     let retryVerifier =
         if expireBeforeRetry then
