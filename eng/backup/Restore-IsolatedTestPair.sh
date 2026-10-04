@@ -15,7 +15,23 @@ export PATH="${pg_bin}:${PATH}"
 primary_restored=""
 witness_restored=""
 stage="source-validation"
+preserve_diagnostics() {
+  local directory current name
+  mkdir -p "${repo_root}/artifacts/restore-failures"
+  directory="$(mktemp -d "${repo_root}/artifacts/restore-failures/restore.XXXXXXXX")"
+  printf '%s\n' "${stage}" >"${directory}/stage.txt"
+  for name in primary witness; do
+    if [[ "${name}" == primary ]]; then current="${primary_restored}"; else current="${witness_restored}"; fi
+    if [[ -z "${current}" ]]; then continue; fi
+    docker exec "${current}" tail -c 65536 /tmp/claimcore-restore.log \
+      >"${directory}/${name}.postgres.log" 2>/dev/null || true
+    docker inspect --format 'status={{.State.Status}} exit={{.State.ExitCode}} oom={{.State.OOMKilled}}' \
+      "${current}" >"${directory}/${name}.state.txt" 2>/dev/null || true
+    docker port "${current}" 5432/tcp >"${directory}/${name}.port.txt" 2>/dev/null || true
+  done
+}
 cleanup_error() {
+  preserve_diagnostics >/dev/null 2>&1 || true
   printf 'restore-stage=%s\n' "${stage}" >&2
   for current in "${witness_restored}" "${primary_restored}"; do
     if [[ -n "${current}" ]]; then docker stop "${current}" >/dev/null 2>&1 || true; fi
@@ -101,14 +117,15 @@ start_one() {
     -o "-c fsync=on -c full_page_writes=on -c synchronous_commit=on -c listen_addresses='*'" \
     start >/dev/null
   local port
-  stage="${name}-port"
-  port="$(docker port "${container}" 5432/tcp |
-    sed -nE 's/^(0\.0\.0\.0|127\.0\.0\.1):([0-9]+)$/\2/p')"
-  [[ "${port}" =~ ^[0-9]+$ ]]
-  stage="${name}-ready"
-  # The published Docker port may lag a successful PostgreSQL start under concurrent drills.
+  # Port publication and TCP readiness are separate asynchronous Docker boundaries.
   for attempt in {1..30}; do
-    if pg_isready -q -h 127.0.0.1 -p "${port}" -t 2; then break; fi
+    stage="${name}-port"
+    port="$(docker port "${container}" 5432/tcp |
+      sed -nE 's/^(0\.0\.0\.0|127\.0\.0\.1):([0-9]+)$/\2/p' | sort -u)"
+    if [[ "${port}" =~ ^[0-9]+$ ]]; then
+      stage="${name}-ready"
+      if pg_isready -q -h 127.0.0.1 -p "${port}" -t 2; then break; fi
+    fi
     [[ "${attempt}" != 30 ]]
     sleep 0.5
   done

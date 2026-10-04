@@ -158,7 +158,7 @@ let private claims
         WitnessTipSequence = snapshot.TipSequence
         WitnessTipHash = Convert.ToHexStringLower(snapshot.TipHash)
         CheckedAt = now
-        ValidUntil = now.AddSeconds(60.)
+        ValidUntil = now.AddSeconds(90.)
         MaximumBackupAgeSeconds = 3600L
         MaximumWalLagSeconds = 3600L
         MaximumCheckpointAgeSeconds = 3600L
@@ -199,7 +199,7 @@ let build
     let primaryBase = one "PRIMARY" "BASE"
     let witnessBase = one "WITNESS" "BASE"
 
-    let wal cluster horizon =
+    let wal now cluster horizon =
         let ids =
             copies
             |> List.filter (fun item -> item.Cluster = cluster && item.Kind = "WAL")
@@ -210,17 +210,14 @@ let build
             CopyIds = ids
             RegisteredHorizon = horizon
             ArchiveInspectionSha256 = String('a', 64)
-            VerifiedAt =
-                DateTimeOffset.FromUnixTimeSeconds(DateTimeOffset.UtcNow.ToUnixTimeSeconds())
+            VerifiedAt = now
         }
 
     use transaction = connection.BeginTransaction(IsolationLevel.ReadCommitted)
     let _, inventory = ManagedCopyInventoryDigest.compute connection transaction
     transaction.Rollback()
     let snapshot = witness.Snapshot()
-
-    let now =
-        DateTimeOffset.FromUnixTimeSeconds(DateTimeOffset.UtcNow.ToUnixTimeSeconds())
+    let now = Sql.databaseNowSync connection Unchecked.defaultof<NpgsqlTransaction>
 
     claims
         connection
@@ -228,8 +225,8 @@ let build
         capture
         primaryBase
         witnessBase
-        (wal "PRIMARY" registered.PrimaryHorizon)
-        (wal "WITNESS" registered.WitnessHorizon)
+        (wal now "PRIMARY" registered.PrimaryHorizon)
+        (wal now "WITNESS" registered.WitnessHorizon)
         inventory
         now
         signerKeyId

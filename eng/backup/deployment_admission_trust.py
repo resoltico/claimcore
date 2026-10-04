@@ -11,7 +11,8 @@ from backup_test_support import ensure, refuses
 from backup_types import JsonObject
 from deployment_admission_fixture import SAME_MACHINE, Deployment, report
 from deployment_common import sign
-from deployment_trust import ROLES, ProbeExpectation, evaluate
+from deployment_topology import ROLES
+from deployment_trust import ProbeExpectation, evaluate
 
 STALE_ISSUE = "2000-01-01T00:00:00Z"
 STALE_EXPIRY = "2000-01-01T00:01:00Z"

@@ -10,7 +10,8 @@ from backup_test_support import ensure, keypair
 from backup_types import JsonObject
 from deployment_common import sign, utc, verify
 from deployment_fenced_objects import final_objects_digest
-from deployment_trust import ROLES, ProbeExpectation
+from deployment_topology import ROLES
+from deployment_trust import ProbeExpectation
 
 MIB = 1024 * 1024
 WAL_SEGMENT_BYTES = 16 * MIB

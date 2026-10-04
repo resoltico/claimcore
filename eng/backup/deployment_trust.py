@@ -6,8 +6,8 @@ from datetime import UTC, datetime, timedelta
 from backup_types import JsonObject
 from deployment_aggregate_model import AVAILABILITY
 from deployment_common import is_sha256, is_uuid, require, timestamp, verify
+from deployment_topology import ROLES
 
-ROLES = ("primary", "witness", "archive", "checkpoint", "key")
 MAX_SKEW_SECONDS = 30
 MAX_VALIDITY_SECONDS = 90
 MIN_FINAL_OBJECTS = 2

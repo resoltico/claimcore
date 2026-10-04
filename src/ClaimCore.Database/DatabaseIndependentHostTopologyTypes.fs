@@ -2,6 +2,10 @@ namespace ClaimCore.Database
 
 open System
 
+module internal IndependentHostRoles =
+    let hosts = [ "archive"; "checkpoint"; "key"; "primary"; "witness" ]
+    let signers = hosts @ [ "old-writer-fence" ]
+
 [<NoEquality; NoComparison>]
 type internal IndependentRolePin =
     {

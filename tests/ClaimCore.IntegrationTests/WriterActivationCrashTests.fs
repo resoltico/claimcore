@@ -55,13 +55,9 @@ let private reconcileAfterExpiry
     activationId
     ticket
     =
-    let remaining = value.ValidUntil - DateTimeOffset.UtcNow
-
-    if remaining > TimeSpan.Zero then
-        Thread.Sleep(remaining.Add(TimeSpan.FromMilliseconds(100.0)))
-
     use owner = new NpgsqlConnection(context.Access.Owner)
     owner.Open()
+    DatabaseObservation.afterInstant owner value.ValidUntil
     use dataSource = RuntimeDataSource.create context.Access.App
     let suppression = FixturePrivateFiles.syntheticCommitments context.Witness.Identity
 

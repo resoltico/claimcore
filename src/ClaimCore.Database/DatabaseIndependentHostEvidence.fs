@@ -21,8 +21,7 @@ type internal IndependentHostDocuments =
 module internal DatabaseIndependentHostEvidence =
     let private directoryName = "CLAIMCORE_DEPLOYMENT_EVIDENCE_DIR"
 
-    let private signingRoles =
-        [ "archive"; "checkpoint"; "key"; "primary"; "witness"; "old-writer-fence" ]
+    let private signingRoles = IndependentHostRoles.signers
 
     let requireIndependentKeys (documents: IndependentHostDocuments) =
         if (documents.RolePublicKeys |> Map.keys |> Set.ofSeq) <> Set.ofList signingRoles then

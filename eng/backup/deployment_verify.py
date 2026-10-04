@@ -29,8 +29,8 @@ from deployment_product import (
 )
 from deployment_report import pre_handoff_report
 from deployment_ssh import matching_text, ssh_command
-from deployment_topology import verify_topology
-from deployment_trust import ROLES, ProbeExpectation, evaluate
+from deployment_topology import ROLES, verify_topology
+from deployment_trust import ProbeExpectation, evaluate
 
 PROBE_OUTPUT_LIMIT = 16384
 PROBE_TIMEOUT_SECONDS = 30

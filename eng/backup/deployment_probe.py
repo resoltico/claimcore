@@ -28,8 +28,8 @@ from deployment_common import (
     utc,
 )
 from deployment_final_wal import read_final_wal
+from deployment_topology import ROLES
 
-ROLES = ("primary", "witness", "archive", "checkpoint", "key")
 CHALLENGE_LIMIT = 4096
 DATABASE_TIMEOUT_SECONDS = 10
 DATABASE_OUTPUT_LIMIT = 512

@@ -6,15 +6,18 @@ open System.Threading
 open Expecto
 open Npgsql
 
-let waitUntil message condition =
+let private waitUntilWithin budget message condition =
     let elapsed = Stopwatch.StartNew()
     let mutable found = condition ()
 
-    while not found && elapsed.Elapsed < TimeSpan.FromSeconds 15. do
+    while not found && elapsed.Elapsed < budget do
         Thread.Sleep 20
         found <- condition ()
 
     Expect.isTrue found message
+
+let waitUntil message condition =
+    waitUntilWithin (TimeSpan.FromSeconds 15.) message condition
 
 let blockedBy (connection: NpgsqlConnection) =
     use command =
@@ -51,5 +54,11 @@ let afterInstant (connection: NpgsqlConnection) (deadline: DateTimeOffset) =
     use command = new NpgsqlCommand("SELECT clock_timestamp() >= @deadline", connection)
     command.Parameters.AddWithValue("deadline", deadline) |> ignore
 
-    waitUntil "Independent database time reaches the retention deadline." (fun () ->
+    use clock = new NpgsqlCommand("SELECT clock_timestamp()", connection)
+    let now = DateTimeOffset(clock.ExecuteScalar() :?> DateTime)
+    let remaining = max TimeSpan.Zero (deadline - now)
+    Expect.isLessThanOrEqual remaining (TimeSpan.FromMinutes 1.) "Synthetic expiry stays bounded."
+    let budget = remaining + TimeSpan.FromSeconds 15.
+
+    waitUntilWithin budget "Independent database time reaches the deadline." (fun () ->
         command.ExecuteScalar() :?> bool)
