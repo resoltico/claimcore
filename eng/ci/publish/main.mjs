@@ -9,6 +9,7 @@ import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { flag, option } from "../process-support.mjs";
+import { packageNoticeReader } from "../policy/nuget-notices.mjs";
 import { productComponentNames, renderNotices } from "../policy/notices.mjs";
 import { verifyTree, writeManifest } from "./tree.mjs";
 
@@ -49,7 +50,7 @@ function run(command, args) {
 
 /**
  * @param {string} project
- * @returns {{ version: string, license: string }}
+ * @returns {{ version: string, license: string, assetsPath: string }}
  */
 function projectIdentity(project) {
   const values = run("dotnet", [
@@ -58,18 +59,24 @@ function projectIdentity(project) {
     "-nologo",
     "-verbosity:quiet",
     "-property:Configuration=Release",
-    "-getProperty:Version,PackageLicenseExpression",
+    "-getProperty:Version,PackageLicenseExpression,ProjectAssetsFile",
   ]);
-  const { Version: version, PackageLicenseExpression: license } = JSON.parse(values).Properties;
+  const {
+    Version: version,
+    PackageLicenseExpression: license,
+    ProjectAssetsFile: assetsPath,
+  } = JSON.parse(values).Properties;
   if (
     typeof version !== "string" ||
     version.trim() === "" ||
     typeof license !== "string" ||
-    license.trim() === ""
+    license.trim() === "" ||
+    typeof assetsPath !== "string" ||
+    assetsPath.trim() === ""
   ) {
     throw new Error(`${project} lacks version or license metadata.`);
   }
-  return { version, license };
+  return { version, license, assetsPath };
 }
 
 /**
@@ -97,26 +104,15 @@ export function licenseProjectComponents(sbom, license) {
 }
 
 /**
- * @param {(typeof products)[number]} item
- * @param {{ output: string, build: boolean }} options
+ * @param {{ product: string, project: string }} item
+ * @param {string} destination
+ * @param {{ version: string, license: string, assetsPath: string }} identity
  */
-function publishOne({ product, directory, project, frontendSbom }, { output, build }) {
-  const destination = join(output, directory);
-  if (existsSync(destination)) {
-    throw new Error(`The output ${destination} must start absent.`);
-  }
-  const { version, license } = projectIdentity(project);
-  run("dotnet", [
-    "publish",
-    project,
-    "--configuration",
-    "Release",
-    ...(build ? [] : ["--no-build"]),
-    "--no-restore",
-    "--output",
-    destination,
-    "-p:UseAppHost=false",
-  ]);
+function describePublishedDependencies(
+  { product, project },
+  destination,
+  { version, license, assetsPath },
+) {
   run("dotnet", [
     "tool",
     "run",
@@ -143,7 +139,38 @@ function publishOne({ product, directory, project, frontendSbom }, { output, bui
   const sbomPath = join(destination, `${product}.cdx.json`);
   const sbom = licenseProjectComponents(JSON.parse(readFileSync(sbomPath, "utf8")), license);
   writeFileSync(sbomPath, `${JSON.stringify(sbom, null, 2)}\n`);
-  writeFileSync(join(destination, "THIRD-PARTY-NOTICES.txt"), renderNotices(sbom));
+  writeFileSync(
+    join(destination, "THIRD-PARTY-NOTICES.txt"),
+    renderNotices(sbom, packageNoticeReader(assetsPath)),
+  );
+}
+
+/**
+ * @param {(typeof products)[number]} item
+ * @param {{ output: string, build: boolean }} options
+ */
+function publishOne({ product, directory, project, frontendSbom }, { output, build }) {
+  const destination = join(output, directory);
+  if (existsSync(destination)) {
+    throw new Error(`The output ${destination} must start absent.`);
+  }
+  const { version, license, assetsPath } = projectIdentity(project);
+  run("dotnet", [
+    "publish",
+    project,
+    "--configuration",
+    "Release",
+    ...(build ? [] : ["--no-build"]),
+    "--no-restore",
+    "--output",
+    destination,
+    "-p:UseAppHost=false",
+  ]);
+  describePublishedDependencies({ product, project }, destination, {
+    version,
+    license,
+    assetsPath,
+  });
   if (frontendSbom !== undefined) {
     copyFileSync(join(root, frontendSbom), join(destination, `${product}.frontend.cdx.json`));
   }

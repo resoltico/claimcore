@@ -2,29 +2,25 @@
 // third-party component must declare exactly one reviewed redistribution license; components are
 // grouped under the license text they must carry.
 import { readFileSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { compareOrdinal } from "../suites/inventory.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const licenseDirectory = resolve(here, "../../licenses");
 const architecture = /** @type {{ components: { name: string, tier: string }[] }} */ (
   JSON.parse(readFileSync(resolve(here, "../../../config/architecture.json"), "utf8"))
 );
 export const productComponentNames = new Set(
   architecture.components.filter(({ tier }) => tier === "product").map(({ name }) => name),
 );
-const reviewedLicenses = new Map([
-  ["MIT", "MIT-DOTNET.txt"],
-  ["PostgreSQL", "PostgreSQL-NPGSQL.txt"],
-  ["ISC", "ISC-LIBSODIUM.txt"],
-]);
+const reviewedLicenses = new Set(["MIT", "PostgreSQL", "ISC"]);
 const separator = `\n\n${"-".repeat(80)}\n\n`;
 
 /**
  * @typedef {object} Component
  * @property {string} [name]
  * @property {string} [version]
+ * @property {string} [copyright]
  * @property {{ license?: { id?: string } }[]} [licenses]
  * @property {{ type?: string, url?: string }[]} [externalReferences]
  */
@@ -71,9 +67,12 @@ function thirdParty(sbom) {
  * @returns {{ license: string, entry: string }} The license it declares and its notice entry.
  */
 function describe(component) {
-  const { name = "", version = "" } = component;
+  const { name = "", version = "", copyright = "" } = component;
   if (name.trim() === "" || version.trim() === "") {
     throw new Error("A .NET SBOM component lacks identity.");
+  }
+  if (copyright.trim() === "") {
+    throw new Error("A .NET SBOM component lacks copyright attribution.");
   }
   const license = declaredLicense(component);
   const upstream =
@@ -82,24 +81,24 @@ function describe(component) {
     )?.url ?? "Not supplied";
   return {
     license,
-    entry: `Package: ${name}@${version}\nDeclared license: ${license}\nUpstream: ${upstream}`,
+    entry: `Package: ${name}@${version}\nDeclared license: ${license}\nCopyright: ${copyright}\nUpstream: ${upstream}`,
   };
 }
 
 /**
  * @param {unknown} sbom A parsed CycloneDX document.
- * @param {(file: string) => string} [readLicense]
+ * @param {(component: Component) => string} readPackageNotice
  * @returns {string} The notices file's contents.
  */
-export function renderNotices(
-  sbom,
-  readLicense = (file) => readFileSync(join(licenseDirectory, file), "utf8"),
-) {
+export function renderNotices(sbom, readPackageNotice) {
   /** @type {Map<string, string[]>} */
   const groups = new Map();
   for (const component of thirdParty(sbom)) {
-    const { license, entry } = describe(component);
-    const text = readLicense(reviewedLicenses.get(license) ?? "").trim();
+    const { entry } = describe(component);
+    const text = readPackageNotice(component).trim();
+    if (text === "") {
+      throw new Error("Package redistribution material is empty.");
+    }
     groups.set(text, [...(groups.get(text) ?? []), entry]);
   }
   const sections = [...groups].map(([text, entries]) => `${entries.join("\n\n")}\n\n${text}`);
@@ -114,10 +113,14 @@ export function renderNotices(
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const [sbomPath, outputPath] = process.argv.slice(2);
-  if (sbomPath === undefined || outputPath === undefined) {
-    process.stderr.write("usage: notices.mjs <sbom.cdx.json> <output>\n");
+  const [sbomPath, assetsPath, outputPath] = process.argv.slice(2);
+  if (sbomPath === undefined || assetsPath === undefined || outputPath === undefined) {
+    process.stderr.write("usage: notices.mjs <sbom.cdx.json> <project.assets.json> <output>\n");
     process.exit(2);
   }
-  writeFileSync(outputPath, renderNotices(JSON.parse(readFileSync(sbomPath, "utf8"))));
+  const { packageNoticeReader } = await import("./nuget-notices.mjs");
+  writeFileSync(
+    outputPath,
+    renderNotices(JSON.parse(readFileSync(sbomPath, "utf8")), packageNoticeReader(assetsPath)),
+  );
 }

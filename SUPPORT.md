@@ -1,7 +1,7 @@
 # Support
 
-ClaimCore is pre-1.0 software maintained without a support SLA. There is no public packaged release;
-questions and reports should target the current source revision.
+ClaimCore is pre-1.0 software maintained without a support SLA. Public releases are source previews,
+without installable application packages; questions and reports should identify their source revision.
 
 - For first-run and usage questions, begin with the [documentation map](docs/README.md) and [Getting
   started](docs/getting-started.md).
