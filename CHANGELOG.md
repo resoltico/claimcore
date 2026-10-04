@@ -4,19 +4,23 @@ Notable changes to this project are documented in this file. The format is based
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-04
+
 ### Security
 
 - Backup and independent-host qualification compare raw Ed25519 keys for signing-role separation. One key under different PEM encodings can no longer supply separate COPY_ATTESTOR/CHECKPOINT, promotion, observer or aggregate roles. Native verification applies the same rule. Previously accepted evidence with aliased keys is now refused; provision genuinely distinct keys and renew the affected signed evidence. Exact topology file-hash pins and signed formats are unchanged.
 - Remote PostgreSQL owner/runtime/witness connections and system-trust HTTPS clients now check certificate revocation during TLS handshakes. Remote issuers and database CAs must publish reachable revocation evidence; missing or unknown status can prevent opening. Web OIDC discovery, token and signing-key backchannels no longer follow redirects. Existing TLS connections and cached issuer keys are not retroactively revoked; stop affected hosts and sessions during compromise response.
 - Loopback private HTTPS roots must be current public-only signing CAs, and presented leaves must carry server-authentication purpose. Replace leaf-as-root or wrong-purpose synthetic certificates. Witness, suppression, recovery-export and managed-copy commitment custody refuse ambiguous duplicate members, zero material or repeated rotation material as applicable. Preserve historical keys and evidence for exact audit; changing an ID or deleting old material does not repair a compromised or unreadable history.
-- The frontend dependency gate now keeps a clean production audit and limits two unpatched, development-only advisory exceptions to exact `braces` and `http-cache-semantics` findings until 2026-11-03. These tooling dependencies remain vulnerable; review upstream fixes before that date. Unknown or production findings still fail verification.
+- The frontend dependency gate now keeps a clean production audit and limits two known, development-only advisory exceptions to exact `braces` and `http-cache-semantics` findings until 2026-11-03. These tooling dependencies remain vulnerable; review upstream fixes before that date. Unknown or production findings still fail verification.
 
 ### Changed
 
-- Starting with v0.7.0, original ClaimCore work and incoming contributions use MPL-2.0.
-  Redistributors of covered binaries or browser assets must provide corresponding MPL-covered
-  source and tell recipients how to obtain it. Previously published v0.1.0–v0.6.0 retain Apache-2.0
-  terms; third-party licenses remain unchanged. See [distribution guidance](docs/releasing.md#licensing-and-source-distribution).
+- **License change for redistributors and contributors:** original ClaimCore work and incoming
+  contributions now use MPL-2.0 with file-level copyleft. Redistributors of covered binaries or
+  browser assets must provide corresponding MPL-covered source and tell recipients how to obtain
+  it. Qualified outputs carry the project license and source guidance; project SBOM declarations
+  identify MPL-2.0 while third-party licenses and notices remain distinct. Previously published
+  v0.1.0–v0.6.0 retain Apache-2.0 terms. See [distribution guidance](docs/releasing.md#licensing-and-source-distribution).
 
 ### Fixed
 
@@ -35,11 +39,14 @@ Notable changes to this project are documented in this file. The format is based
 - Failed runtime and Web startup release acquired pools, cursor custody, witness resources and certificates. Readiness precedes audit-worker startup, and the Web application is owned through route setup and shutdown. Cleanup retains bounded failure knowledge without changing admitted outcomes.
 - CLI SIGINT exits while blocked on process streams. Possible mutation dispatch or incomplete mutation output now exits 4, including sessions that previously could exit 130 after an uncertain mutation. Scripts must preserve the submitted identity and reconcile exact service evidence; interruption may leave no complete response frame. Pre-dispatch interruption exits 130 and cannot later dispatch work.
 - Backup-control frame deadlines cover the entire frame and observe capture cancellation, preventing trickled bytes from extending a held lease beyond its budget. Interrupted post-FINISH delivery still requires exact evidence reconciliation.
-- Case-scoped listing uses granted case IDs instead of scanning every inaccessible case, while retaining ordered installation-wide pages and current authority, disposition and privacy checks. Existing indexes and the fresh storage baseline are unchanged.
 - Long full audits leave one configured interval after completion before the next audit starts. Shutdown closes admission and requests audit cancellation before draining actor work; cleanup joins audit callbacks without cancelling admitted mutations or releasing their pools early.
 - Browser Return to case opens the accepted case, including a newly registered case, and rereads current state. Editing keeps navigation and logout unavailable until the explicit Back or return action, preserving draft context.
 - Uncertain browser submissions and non-reviewable preparations open Recovery with the exact operation ID and digest, clearing the editor's private state. Inspection works independently of pending-list membership; Operations retains the same ID for receipt observation. Recovery mutations lock navigation/logout during dispatch and invalidate stale inspected actions afterward.
 - Late browser session snapshots, operation observations and recovery reads cannot replace newer state or reopen closed details. Browser response waits expire after twenty seconds without aborting dispatched mutations or treating timeout as failure to commit. Core `RECOVER_EXACT` faults remain uncertain in browser and CLI classification, including nested prepare and failed-before-attempt faults; affected CLI results now exit 4 instead of 3. Scripts must handle that uncertainty and preserve the exact operation identity. Known browser acceptance with unconfirmed settlement also directs Recovery.
+
+### Performance
+
+- Case-scoped listing uses granted case IDs instead of scanning every inaccessible case, while retaining ordered installation-wide pages and current authority, disposition and privacy checks. Existing indexes and the fresh storage baseline are unchanged.
 
 ### Internal
 
@@ -51,9 +58,11 @@ Notable changes to this project are documented in this file. The format is based
 - Required suite runs reject diagnostic property rechecks before restore or report creation, preventing exact test counts from masking unexecuted properties. Use the native test executable directly for diagnostic replay; those results cannot establish complete verification.
 - HTTP overload qualification now exercises production limiter registration and detects an extra admitted request; configured limits, queue order and refusal responses are unchanged.
 - Web endpoint metadata owns its response schema directly; generated TypeScript response modules derive family membership from endpoint namespaces and reject duplicates or unknown families. Web JSON registration shares its admission setup while retaining explicit typed handlers and separate raw recovery handling. Adding an endpoint no longer requires matching a second response inventory and a presentation-only identifier list; generated contract bytes and mutation-safety classification remain unchanged.
-- Restore evidence keeps intermediate reports, independently qualified handoff readiness and writer activation distinct without duplicating readiness flags in local report/tail records. Independent qualification uses one host-role inventory per language and the single source-pinned root; historical reconciliation no longer performs a clock query whose value was unused. Public signed formats, readiness/refusal results and safety checks are unchanged. See [Copy custody and restore](docs/operations.md#managed-copy-custody-and-restore).
+- Restore evidence keeps intermediate reports, independently qualified handoff readiness and writer activation distinct. Independent qualification uses one host-role inventory per language and the single source-pinned root. Public signed formats, readiness/refusal results and safety checks are unchanged. See [Copy custody and restore](docs/operations.md#managed-copy-custody-and-restore).
 - Standalone architecture inspection includes its required Witness assembly; missing inputs still fail closed.
-- Documentation checks refuse pages unreachable from the documentation map, and suite rerun errors identify the refused path and suggest a fresh evidence directory. Release preparation requires a complete extended property/fuzz run on the exact candidate. Synthetic physical restores wait for Docker port publication as well as PostgreSQL readiness within their existing budget and retain bounded private startup diagnostics before cleanup on failure. PostgreSQL fence, retention and activation tests observe server blocking and time instead of host-clock estimates. Signed-health race fixtures use one database instant for related observations; future-evidence and exact-expiry controls remain explicit.
+- Documentation checks refuse pages unreachable from the documentation map, and suite rerun errors identify the refused path and suggest a fresh evidence directory.
+- Release preparation requires a complete extended property/fuzz run on the exact candidate.
+- Synthetic physical restores wait for Docker port publication as well as PostgreSQL readiness within their existing budget and retain bounded private startup diagnostics before cleanup on failure. PostgreSQL fence, retention and activation tests observe server blocking and time instead of host-clock estimates. Signed-health race fixtures use one database instant for related observations; future-evidence and exact-expiry controls remain explicit.
 
 ## [0.6.0] - 2026-10-02
 
