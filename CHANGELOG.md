@@ -15,12 +15,7 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Changed
 
-- **License change for redistributors and contributors:** original ClaimCore work and incoming
-  contributions now use MPL-2.0 with file-level copyleft. Redistributors of covered binaries or
-  browser assets must provide corresponding MPL-covered source and tell recipients how to obtain
-  it. Qualified outputs carry the project license and source guidance; project SBOM declarations
-  identify MPL-2.0 while third-party licenses and notices remain distinct. Previously published
-  v0.1.0–v0.6.0 retain Apache-2.0 terms. See [distribution guidance](docs/releasing.md#licensing-and-source-distribution).
+- **License change for redistributors and contributors:** original ClaimCore work and incoming contributions now use MPL-2.0 with file-level copyleft. Redistributors of covered binaries or browser assets must provide corresponding MPL-covered source and tell recipients how to obtain it. Qualified outputs carry the project license and source guidance; project SBOM declarations identify MPL-2.0 while third-party licenses and notices remain distinct. Previously published v0.1.0–v0.6.0 retain Apache-2.0 terms. See [distribution guidance](docs/releasing.md#licensing-and-source-distribution).
 
 ### Fixed
 
