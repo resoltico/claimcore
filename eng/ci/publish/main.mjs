@@ -9,7 +9,7 @@ import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { flag, option } from "../process-support.mjs";
-import { renderNotices } from "../policy/notices.mjs";
+import { productComponentNames, renderNotices } from "../policy/notices.mjs";
 import { verifyTree, writeManifest } from "./tree.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
@@ -49,21 +49,51 @@ function run(command, args) {
 
 /**
  * @param {string} project
- * @returns {string}
+ * @returns {{ version: string, license: string }}
  */
-function projectVersion(project) {
-  const version = run("dotnet", [
+function projectIdentity(project) {
+  const values = run("dotnet", [
     "msbuild",
     project,
     "-nologo",
     "-verbosity:quiet",
     "-property:Configuration=Release",
-    "-getProperty:Version",
-  ]).trim();
-  if (version === "") {
-    throw new Error(`${project} has no version.`);
+    "-getProperty:Version,PackageLicenseExpression",
+  ]);
+  const { Version: version, PackageLicenseExpression: license } = JSON.parse(values).Properties;
+  if (
+    typeof version !== "string" ||
+    version.trim() === "" ||
+    typeof license !== "string" ||
+    license.trim() === ""
+  ) {
+    throw new Error(`${project} lacks version or license metadata.`);
   }
-  return version;
+  return { version, license };
+}
+
+/**
+ * @typedef {{ name?: string, licenses?: unknown }} ProjectComponent
+ */
+/**
+ * @param {{ metadata?: { component?: ProjectComponent }, components?: ProjectComponent[] }} sbom
+ * @param {string} license The evaluated SPDX expression for the project.
+ */
+export function licenseProjectComponents(sbom, license) {
+  const product = sbom.metadata?.component;
+  if (
+    product === undefined ||
+    !productComponentNames.has(product.name ?? "") ||
+    license.trim() === ""
+  ) {
+    throw new Error("The SBOM lacks a registered product or project license.");
+  }
+  for (const component of [product, ...(sbom.components ?? [])]) {
+    if (productComponentNames.has(component.name ?? "")) {
+      component.licenses = [{ expression: license }];
+    }
+  }
+  return sbom;
 }
 
 /**
@@ -75,7 +105,7 @@ function publishOne({ product, directory, project, frontendSbom }, { output, bui
   if (existsSync(destination)) {
     throw new Error(`The output ${destination} must start absent.`);
   }
-  const version = projectVersion(project);
+  const { version, license } = projectIdentity(project);
   run("dotnet", [
     "publish",
     project,
@@ -110,7 +140,9 @@ function publishOne({ product, directory, project, frontendSbom }, { output, bui
     version,
     "--include-project-references",
   ]);
-  const sbom = JSON.parse(readFileSync(join(destination, `${product}.cdx.json`), "utf8"));
+  const sbomPath = join(destination, `${product}.cdx.json`);
+  const sbom = licenseProjectComponents(JSON.parse(readFileSync(sbomPath, "utf8")), license);
+  writeFileSync(sbomPath, `${JSON.stringify(sbom, null, 2)}\n`);
   writeFileSync(join(destination, "THIRD-PARTY-NOTICES.txt"), renderNotices(sbom));
   if (frontendSbom !== undefined) {
     copyFileSync(join(root, frontendSbom), join(destination, `${product}.frontend.cdx.json`));

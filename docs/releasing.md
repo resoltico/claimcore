@@ -16,6 +16,10 @@ changelog-derived plan; correct a historical release only through a separate, re
 1. Complete the release PR: set the sole product version in `Directory.Build.props`, move the reviewed
    customer-facing entries from `Unreleased` into the dated changelog section, and leave an empty
    `Unreleased` section.
+   When the numeric version changes in an existing checkout, clean both configurations before
+   rebuilding: `dotnet clean ClaimCore.slnx --configuration Release` and
+   `dotnet clean ClaimCore.slnx --configuration Debug`. Retained F# reference assemblies can otherwise
+   keep the old assembly identity even when implementation assemblies have the new version.
 2. Merge the PR and require the exact merge commit's successful main `Gate`.
 3. Dispatch `verify-properties.yml` on that exact main candidate with an explicit canonical base seed;
    require its complete extended unit/fuzz profile to succeed and confirm the run's `headSha`.
@@ -52,3 +56,24 @@ Run the offline policy tests with:
 ```sh
 node --test eng/release/*.test.mjs
 ```
+
+## Licensing and source distribution
+
+The v0.7.0 development line and subsequent releases use MPL-2.0 for original repository work.
+Previously published v0.1.0 through v0.6.0 keep their Apache-2.0 terms; do not rewrite their tags,
+license files, archives or release text. Third-party components retain their own licenses and
+notices. The repository [LICENSE](../LICENSE) carries the project-wide notice and governing text.
+
+Public releases currently distribute source previews through the matching immutable tag archives.
+Before distributing application binaries or browser HTML, CSS and JavaScript, provide recipients
+the actual corresponding MPL-covered source, build inputs and modifications, and a clear way to
+obtain it without charging more than distribution cost. For an unchanged official release, use
+its matching tagged source archive. A development version, dirty checkout or modified build
+requires its corresponding source; linking an older release or repository HEAD is insufficient.
+
+Qualified binary outputs carry LICENSE; browser assets carry LICENSE.txt and an HTML license/source
+notice. Preserve those notices and third-party attribution. When redistributing a modified build,
+update the source-availability notice to identify the source you actually provide. Do not put
+private configuration, credentials, data or generated test evidence in a source distribution.
+See [Mozilla's distribution guidance](https://www.mozilla.org/en-US/MPL/2.0/FAQ/) and
+[MPL sections 3.1–3.4](https://www.mozilla.org/en-US/MPL/2.0/) for the requirements.

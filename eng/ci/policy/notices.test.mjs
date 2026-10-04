@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import { renderNotices } from "./notices.mjs";
 
@@ -24,6 +25,7 @@ test("components are grouped under their license text, sorted, excluding ClaimCo
         component("Zeta", ["MIT"]),
         component("ClaimCore.Domain", ["MIT"]),
         component("Alpha", ["MIT"]),
+        component("ClaimCore.ExternalDependency", ["MIT"]),
         component("Npgsql", ["PostgreSQL"]),
       ],
     },
@@ -31,6 +33,7 @@ test("components are grouped under their license text, sorted, excluding ClaimCo
   );
   assert.ok(text.indexOf("Package: Alpha@") < text.indexOf("Package: Zeta@"));
   assert.ok(!text.includes("ClaimCore.Domain"));
+  assert.match(text, /Package: ClaimCore\.ExternalDependency@/u);
   assert.equal(text.match(/text of MIT-DOTNET\.txt/gu)?.length, 1);
   assert.match(text, /text of PostgreSQL-NPGSQL\.txt/u);
   assert.match(text, /Upstream: https:\/\/example\.test\/Alpha/u);
@@ -46,11 +49,29 @@ test("a component without one exact reviewed license is refused", () => {
   refuse(component("A", ["ISC"]), /ISC package identity/u);
   refuse({ name: "A", licenses: [{ license: { id: "MIT" } }] }, /lacks identity/u);
   assert.throws(
-    () => renderNotices({ components: [component("ClaimCore.X", ["MIT"])] }, license),
+    () => renderNotices({ components: [component("ClaimCore.Domain", ["MIT"])] }, license),
     /no third-party/u,
   );
   assert.match(
     renderNotices({ components: [component("libsodium", ["ISC"])] }, license),
     /ISC-LIBSODIUM/u,
   );
+});
+
+test("project license metadata agrees across .NET and npm without relicensing dependencies", () => {
+  const props = readFileSync(new URL("../../../Directory.Build.props", import.meta.url), "utf8");
+  const projectLicense = props.match(
+    /<PackageLicenseExpression>([^<]+)<\/PackageLicenseExpression>/u,
+  )?.[1];
+  assert.equal(projectLicense, "MPL-2.0");
+  for (const directory of ["eng", "web"]) {
+    const base = new URL(`../../../${directory}/`, import.meta.url);
+    const manifest = JSON.parse(readFileSync(new URL("package.json", base), "utf8"));
+    const lock = JSON.parse(readFileSync(new URL("package-lock.json", base), "utf8"));
+    assert.equal(manifest.license, projectLicense);
+    assert.equal(lock.packages[""].license, projectLicense);
+  }
+  const text = renderNotices({ components: [component("Dependency", ["MIT"])] }, license);
+  assert.match(text, /source availability.*LICENSE/u);
+  assert.match(text, /Declared license: MIT/u);
 });
