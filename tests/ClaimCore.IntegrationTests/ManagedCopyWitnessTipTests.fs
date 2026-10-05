@@ -1,5 +1,6 @@
 module ClaimCore.IntegrationTests.ManagedCopyWitnessTipTests
 
+open System.Threading
 open ClaimCore.Postgres.WitnessProtocolReconciliation
 
 open System
@@ -12,18 +13,42 @@ open ClaimCore.IntegrationTests.Fixtures
 open ClaimCore.IntegrationTests.FixtureWitnessWriterStore
 
 let private assertBadHashes (witness: WitnessProtocol) tip settled =
-    witness.VerifyHistoricalTip(tip.TipSequence, tip.TipHash)
-    witness.VerifyHistoricalTip(settled.TipSequence, settled.TipHash)
-    witness.VerifyHistoricalTip(0L, Array.zeroCreate<byte> 32)
+    (witness
+        .VerifyHistoricalTip(tip.TipSequence, tip.TipHash, CancellationToken.None)
+        .GetAwaiter()
+        .GetResult())
+
+    (witness
+        .VerifyHistoricalTip(settled.TipSequence, settled.TipHash, CancellationToken.None)
+        .GetAwaiter()
+        .GetResult())
+
+    (witness
+        .VerifyHistoricalTip(0L, Array.zeroCreate<byte> 32, CancellationToken.None)
+        .GetAwaiter()
+        .GetResult())
+
     let wrongHash = Array.copy settled.TipHash
     wrongHash[0] <- wrongHash[0] ^^^ 1uy
 
     Expect.throws
-        (fun () -> witness.VerifyHistoricalTip(settled.TipSequence, wrongHash))
+        (fun () ->
+            (witness
+                .VerifyHistoricalTip(settled.TipSequence, wrongHash, CancellationToken.None)
+                .GetAwaiter()
+                .GetResult()))
         "Changed historical hash is refused."
 
     Expect.throws
-        (fun () -> witness.VerifyHistoricalTip(settled.TipSequence + 1L, settled.TipHash))
+        (fun () ->
+            (witness
+                .VerifyHistoricalTip(
+                    settled.TipSequence + 1L,
+                    settled.TipHash,
+                    CancellationToken.None
+                )
+                .GetAwaiter()
+                .GetResult()))
         "Missing sequence is refused."
 
 let private assertWrongEpoch writer (witness: WitnessProtocol) settled =
@@ -40,7 +65,11 @@ let private assertWrongEpoch writer (witness: WitnessProtocol) settled =
     use wrongEpoch = new WitnessProtocol(wrongStore, custody, wrongIdentity)
 
     Expect.throws
-        (fun () -> wrongEpoch.VerifyHistoricalTip(settled.TipSequence, settled.TipHash))
+        (fun () ->
+            (wrongEpoch
+                .VerifyHistoricalTip(settled.TipSequence, settled.TipHash, CancellationToken.None)
+                .GetAwaiter()
+                .GetResult()))
         "Wrong witness epoch is refused."
 
 let private truncateSyntheticTip (writer: string) (witness: WitnessProtocol) (settled: Snapshot) =
@@ -79,7 +108,11 @@ let private truncateSyntheticTip (writer: string) (witness: WitnessProtocol) (se
     Expect.equal (truncate.ExecuteNonQuery()) 1 "Only disposable synthetic tip is removed."
 
     Expect.throws
-        (fun () -> witness.VerifyHistoricalTip(settled.TipSequence, settled.TipHash))
+        (fun () ->
+            (witness
+                .VerifyHistoricalTip(settled.TipSequence, settled.TipHash, CancellationToken.None)
+                .GetAwaiter()
+                .GetResult()))
         "Truncated witness history is refused."
 
 let private historicalTip =
@@ -87,12 +120,20 @@ let private historicalTip =
         "[CC-BACKUP-001] historical witness tip rejects wrong hash, epoch and truncation"
         (fun _ ->
             withAuthorityRuntimeDatabase (fun _ _ writer witness ->
-                let tip = witness.Snapshot()
+                let tip = (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
+
                 let operation = Guid.NewGuid()
                 let canonical = [| 0x43uy; 0x43uy; 0x54uy |]
-                let intent = witness.BeginAuthority(operation, canonical, None)
-                witness.SettleAuthority(operation, intent) |> ignore
-                let settled = witness.Snapshot()
+
+                let intent =
+                    (witness
+                        .BeginAuthority(operation, canonical, None, CancellationToken.None)
+                        .GetAwaiter()
+                        .GetResult())
+
+                witness.SettleAuthority(operation, intent) |> await |> ignore
+
+                let settled = (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
 
                 assertBadHashes witness tip settled
                 assertWrongEpoch writer witness settled

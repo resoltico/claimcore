@@ -327,6 +327,10 @@ ClaimCore PostgreSQL integration.restored writer activation reconciliation.[CC-B
 ClaimCore PostgreSQL integration.restored writer activation.[CC-BACKUP-001] W1 settlement alone leaves restored case work quarantined
 ClaimCore PostgreSQL integration.restored writer activation.[CC-BACKUP-001] W1 stays quarantined until exact witnessed W2 activation
 ClaimCore PostgreSQL integration.restored writer activation.[CC-BACKUP-001] test-only verifier exercises W2 activation and exact retry
+ClaimCore PostgreSQL integration.runtime I/O and diagnostics.[CC-AUDIT-001] failed audit emits one fixed quarantine signal
+ClaimCore PostgreSQL integration.runtime I/O and diagnostics.[CC-WIT-001] blocked witness admission cancels before dispatch
+ClaimCore PostgreSQL integration.runtime I/O and diagnostics.[CC-WIT-001] late cancellation preserves exact settlement readback
+ClaimCore PostgreSQL integration.runtime I/O and diagnostics.[CC-WIT-001] throwing observer preserves uncertain settlement and exact intent
 ClaimCore PostgreSQL integration.runtime cleanup ownership.[CC-RUN-001] deferred cleanup failure preserves admitted outcomes and safe completion
 ClaimCore PostgreSQL integration.runtime cleanup ownership.[CC-RUN-001] runtime cleanup attempts every resource despite disposal faults
 ClaimCore PostgreSQL integration.runtime cleanup ownership.[CC-RUN-001] runtime closes admission before cleanup completion

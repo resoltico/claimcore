@@ -68,7 +68,10 @@ let private primaryRollback (context: Context) (decision: Decision) caseReferenc
         |> ignore
 
         let intent =
-            context.Witness.EvidenceStore.TryReadEvidence(decision.Value.RetirementId, Intent)
+            (context.Witness.EvidenceStore
+                .TryReadEvidence(decision.Value.RetirementId, Intent, CancellationToken.None)
+                .GetAwaiter()
+                .GetResult())
             |> Option.defaultWith (fun () -> failtest "Surviving W0 was absent.")
 
         command.Parameters.AddWithValue("hash", intent.Ticket.EntryHash) |> ignore
@@ -132,6 +135,7 @@ let private stalePair (context: Context) =
             decision.KnownSource
             None
             None
+        |> await
     with
     | InstallationLossRetirementOutcome.Retired _ -> ()
     | _ -> failtest "Synthetic accepted operation was not terminally fenced."
@@ -141,10 +145,10 @@ let private stalePair (context: Context) =
     clean.Open()
     DataAudit.run clean context.Witness CancellationToken.None |> await |> ignore
     witnessRollback context decision
-    context.Witness.AdmitReadOnly()
+    (context.Witness.AdmitReadOnly(CancellationToken.None).GetAwaiter().GetResult())
 
     Expect.isFalse
-        (context.Witness.Snapshot().LossRetired)
+        ((context.Witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).LossRetired)
         "Only the synthetic witness state rolled back; its role/catalog remain admissible."
 
     auditRejected context

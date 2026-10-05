@@ -8,44 +8,53 @@ open ClaimCore.Application
 open DataAuditCommon
 
 module internal DataAuditTechnical =
-    let private verifyPreparationRow (witness: WitnessProtocol) cutoff (reader: NpgsqlDataReader) =
-        let operationId = reader.GetGuid(0)
-        let eventId = reader.GetGuid(1)
-        let sequence = reader.GetInt64(2)
-        let candidateDigest = reader.GetFieldValue<byte array>(5)
+    let private verifyPreparationRow
+        (witness: WitnessProtocol)
+        cutoff
+        (reader: NpgsqlDataReader)
+        ct
+        =
+        task {
+            let operationId = reader.GetGuid(0)
+            let eventId = reader.GetGuid(1)
+            let sequence = reader.GetInt64(2)
+            let candidateDigest = reader.GetFieldValue<byte array>(5)
 
-        if eventId <> WitnessEventIdentity.prepareEventId operationId || sequence > cutoff then
-            corrupt ()
-
-        let importer = if reader.IsDBNull(8) then None else Some(reader.GetGuid(8))
-
-        let candidate =
-            WitnessTechnical.prepareCandidate
-                operationId
-                (reader.GetGuid(6))
-                (reader.GetGuid(7))
-                importer
-                (reader.GetInt64(9))
-                (reader.GetString(10))
-                (reader.GetFieldValue<byte array>(11))
-                (reader.GetString(12))
-                (reader.GetString(13))
-
-        try
-            if SHA256.HashData(candidate) <> candidateDigest then
+            if eventId <> WitnessEventIdentity.prepareEventId operationId || sequence > cutoff then
                 corrupt ()
 
-            witnessProof (fun () ->
-                witness.VerifyAuthorityEvidenceForCase(
-                    eventId,
-                    sequence,
-                    reader.GetInt64(3),
-                    reader.GetFieldValue<byte array>(4),
-                    candidateDigest,
-                    reader.GetGuid(6)
-                ))
-        finally
-            CryptographicOperations.ZeroMemory(candidate)
+            let importer = if reader.IsDBNull(8) then None else Some(reader.GetGuid(8))
+
+            let candidate =
+                WitnessTechnical.prepareCandidate
+                    operationId
+                    (reader.GetGuid(6))
+                    (reader.GetGuid(7))
+                    importer
+                    (reader.GetInt64(9))
+                    (reader.GetString(10))
+                    (reader.GetFieldValue<byte array>(11))
+                    (reader.GetString(12))
+                    (reader.GetString(13))
+
+            try
+                if SHA256.HashData(candidate) <> candidateDigest then
+                    corrupt ()
+
+                do!
+                    witnessProofAsync (fun () ->
+                        witness.VerifyAuthorityEvidenceForCase(
+                            eventId,
+                            sequence,
+                            reader.GetInt64(3),
+                            reader.GetFieldValue<byte array>(4),
+                            candidateDigest,
+                            reader.GetGuid(6),
+                            ct
+                        ))
+            finally
+                CryptographicOperations.ZeroMemory(candidate)
+        }
 
     let verifyPreparations
         (connection: NpgsqlConnection)
@@ -75,60 +84,64 @@ module internal DataAuditTechnical =
                 reading <- found
 
                 if found then
-                    verifyPreparationRow witness cutoff reader
+                    do! verifyPreparationRow witness cutoff reader cancellationToken
         }
 
-    let private verifyAttemptRow (witness: WitnessProtocol) cutoff (reader: NpgsqlDataReader) =
-        let operationId = reader.GetGuid(0)
-        let attemptId = reader.GetGuid(1)
-        let ordinal = reader.GetInt64(2)
-        let eventId = reader.GetGuid(3)
-        let sequence = reader.GetInt64(4)
-        let submitter = if reader.IsDBNull(8) then None else Some(reader.GetGuid(8))
-        let resolver = if reader.IsDBNull(9) then None else Some(reader.GetGuid(9))
+    let private verifyAttemptRow (witness: WitnessProtocol) cutoff (reader: NpgsqlDataReader) ct =
+        task {
+            let operationId = reader.GetGuid(0)
+            let attemptId = reader.GetGuid(1)
+            let ordinal = reader.GetInt64(2)
+            let eventId = reader.GetGuid(3)
+            let sequence = reader.GetInt64(4)
+            let submitter = if reader.IsDBNull(8) then None else Some(reader.GetGuid(8))
+            let resolver = if reader.IsDBNull(9) then None else Some(reader.GetGuid(9))
 
-        if
-            eventId <> attemptId
-            || eventId <> WitnessEventIdentity.startEventId operationId ordinal
-            || sequence > cutoff
-            || submitter.IsSome = resolver.IsSome
-        then
-            corrupt ()
-
-        let actorId, role =
-            match submitter, resolver with
-            | Some value, None -> value, "SUBMITTER"
-            | None, Some value -> value, "RESOLVER"
-            | _ -> corrupt ()
-
-        let candidate =
-            WitnessTechnical.startCandidate
-                operationId
-                attemptId
-                ordinal
-                (reader.GetGuid(11))
-                actorId
-                role
-                (reader.GetInt64(10))
-                (reader.GetString(12))
-
-        let candidateDigest = reader.GetFieldValue<byte array>(7)
-
-        try
-            if SHA256.HashData(candidate) <> candidateDigest then
+            if
+                eventId <> attemptId
+                || eventId <> WitnessEventIdentity.startEventId operationId ordinal
+                || sequence > cutoff
+                || submitter.IsSome = resolver.IsSome
+            then
                 corrupt ()
 
-            witnessProof (fun () ->
-                witness.VerifyAuthorityEvidenceForCase(
-                    eventId,
-                    sequence,
-                    reader.GetInt64(5),
-                    reader.GetFieldValue<byte array>(6),
-                    candidateDigest,
-                    reader.GetGuid(11)
-                ))
-        finally
-            CryptographicOperations.ZeroMemory(candidate)
+            let actorId, role =
+                match submitter, resolver with
+                | Some value, None -> value, "SUBMITTER"
+                | None, Some value -> value, "RESOLVER"
+                | _ -> corrupt ()
+
+            let candidate =
+                WitnessTechnical.startCandidate
+                    operationId
+                    attemptId
+                    ordinal
+                    (reader.GetGuid(11))
+                    actorId
+                    role
+                    (reader.GetInt64(10))
+                    (reader.GetString(12))
+
+            let candidateDigest = reader.GetFieldValue<byte array>(7)
+
+            try
+                if SHA256.HashData(candidate) <> candidateDigest then
+                    corrupt ()
+
+                do!
+                    witnessProofAsync (fun () ->
+                        witness.VerifyAuthorityEvidenceForCase(
+                            eventId,
+                            sequence,
+                            reader.GetInt64(5),
+                            reader.GetFieldValue<byte array>(6),
+                            candidateDigest,
+                            reader.GetGuid(11),
+                            ct
+                        ))
+            finally
+                CryptographicOperations.ZeroMemory(candidate)
+        }
 
     let verifyAttempts
         (connection: NpgsqlConnection)
@@ -174,7 +187,7 @@ module internal DataAuditTechnical =
                     then
                         corrupt ()
 
-                    verifyAttemptRow witness cutoff reader
+                    do! verifyAttemptRow witness cutoff reader cancellationToken
                     previousOperation <- operation
                     previousOrdinal <- ordinal
         }

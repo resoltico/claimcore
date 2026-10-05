@@ -138,3 +138,23 @@ module internal CaseListCursorCodec =
             finally
                 CryptographicOperations.ZeroMemory bytes
         | None -> Error()
+
+    let page protection binding revision limit instant (rows: Claim list) : CasePage =
+        let items = rows |> List.truncate limit
+
+        let next =
+            if rows.Length > limit then
+                items
+                |> List.tryLast
+                |> Option.map (fun claim ->
+                    encode
+                        protection
+                        binding
+                        revision
+                        limit
+                        instant
+                        (Claim.view claim).Fields.CaseReference)
+            else
+                None
+
+        { Items = items; NextCursor = next }

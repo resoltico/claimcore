@@ -1,5 +1,6 @@
 namespace ClaimCore.Postgres
 
+open System.Threading
 open ClaimCore.Witness
 open DataAuditCommon
 
@@ -41,60 +42,80 @@ module internal CaseTombstonePrunePostcutoffAudit =
         elif approval ticket second then Kind.Second
         else prune ticket receipt
 
-    let private page (witness: WitnessProtocol) after previous cutoff =
-        witnessProof (fun () -> witness.EvidenceStore.ReadMetadataPage(after, previous, cutoff, 32))
+    let private page (witness: WitnessProtocol) after previous cutoff ct =
+        witnessProofAsync (fun () ->
+            witness.EvidenceStore.ReadMetadataPage(after, previous, cutoff, 32, ct))
+
+    let private requireSettlement
+        (witness: WitnessProtocol)
+        (receipt: StoredWitnessPruneReceipt)
+        ct
+        =
+        task {
+            let! observed =
+                witness.EvidenceStore.TryReadMetadataOperation(
+                    receipt.EventId,
+                    SettledAuthority,
+                    ct
+                )
+
+            let settled = observed |> Option.defaultWith corrupt
+
+            if
+                settled.Ticket.ScopeKind <> Case
+                || settled.Ticket.SubjectCaseId <> Some receipt.CaseId
+                || settled.Ticket.Sequence <= receipt.IntentSequence
+                || not settled.PayloadPresent
+            then
+                corrupt ()
+
+            return settled
+        }
 
     let verify
         (witness: WitnessProtocol)
         (receipt: StoredWitnessPruneReceipt)
         (approvals: PruneApprovalReceipt list)
+        (ct: CancellationToken)
         =
-        let settled =
-            witness.EvidenceStore.TryReadMetadataOperation(receipt.EventId, SettledAuthority)
-            |> Option.defaultWith corrupt
+        task {
+            let! settled = requireSettlement witness receipt ct
 
-        if
-            settled.Ticket.ScopeKind <> Case
-            || settled.Ticket.SubjectCaseId <> Some receipt.CaseId
-            || settled.Ticket.Sequence <= receipt.IntentSequence
-            || not settled.PayloadPresent
-        then
-            corrupt ()
+            let first = approvals[0]
+            let second = approvals[1]
+            let mutable one = 0
+            let mutable two = 0
+            let mutable prune = 0
+            let mutable after = receipt.CutoffSequence
+            let mutable previous = receipt.CutoffHash
 
-        let first = approvals[0]
-        let second = approvals[1]
-        let mutable one = 0
-        let mutable two = 0
-        let mutable prune = 0
-        let mutable after = receipt.CutoffSequence
-        let mutable previous = receipt.CutoffHash
+            while after < settled.Ticket.Sequence do
+                let! entries = page witness after previous settled.Ticket.Sequence ct
 
-        while after < settled.Ticket.Sequence do
-            let entries = page witness after previous settled.Ticket.Sequence
+                if entries.Items.IsEmpty then
+                    corrupt ()
 
-            if entries.Items.IsEmpty then
+                for item in entries.Items do
+                    let ticket = item.Ticket
+
+                    if ticket.ScopeKind = Case && ticket.SubjectCaseId = Some receipt.CaseId then
+                        if not item.PayloadPresent then
+                            corrupt ()
+
+                        match classify ticket first second receipt with
+                        | Kind.First -> one <- one + 1
+                        | Kind.Second -> two <- two + 1
+                        | Kind.Prune -> prune <- prune + 1
+
+                    after <- ticket.Sequence
+                    previous <- ticket.EntryHash
+
+            if
+                after <> settled.Ticket.Sequence
+                || previous <> settled.Ticket.EntryHash
+                || one <> 2
+                || two <> 2
+                || prune <> 2
+            then
                 corrupt ()
-
-            for item in entries.Items do
-                let ticket = item.Ticket
-
-                if ticket.ScopeKind = Case && ticket.SubjectCaseId = Some receipt.CaseId then
-                    if not item.PayloadPresent then
-                        corrupt ()
-
-                    match classify ticket first second receipt with
-                    | Kind.First -> one <- one + 1
-                    | Kind.Second -> two <- two + 1
-                    | Kind.Prune -> prune <- prune + 1
-
-                after <- ticket.Sequence
-                previous <- ticket.EntryHash
-
-        if
-            after <> settled.Ticket.Sequence
-            || previous <> settled.Ticket.EntryHash
-            || one <> 2
-            || two <> 2
-            || prune <> 2
-        then
-            corrupt ()
+        }

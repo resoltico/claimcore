@@ -1,5 +1,6 @@
 module ClaimCore.IntegrationTests.ManagedCopyTransitionRejectionTests
 
+open System.Threading
 open System
 open Expecto
 open Npgsql
@@ -31,7 +32,14 @@ let private attempt
     let eventId = Guid.NewGuid()
 
     let canonical =
-        transitionFromRegister registration eventId 2 kind state hash (witness.Snapshot())
+        transitionFromRegister
+            registration
+            eventId
+            2
+            kind
+            state
+            hash
+            ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()))
 
     eventId, canonical, algorithm.Sign(key, canonical)
 
@@ -111,7 +119,12 @@ let private exercise owner app writer witness =
     let copyId = Guid.NewGuid()
 
     let registration =
-        registerBase owner (witness.Snapshot()) keyId registrationEvent copyId
+        registerBase
+            owner
+            ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()))
+            keyId
+            registrationEvent
+            copyId
 
     let registrationSignature = algorithm.Sign(key, registration)
 

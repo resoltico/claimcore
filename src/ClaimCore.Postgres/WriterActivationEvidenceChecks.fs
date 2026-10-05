@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open System.Security.Cryptography
 open Npgsql
 open ClaimCore.Witness
@@ -137,49 +138,54 @@ module internal WriterActivationEvidenceChecks =
         (value: WriterActivationEvidence)
         requireCurrentProof
         now
+        (ct: CancellationToken)
         =
-        if
-            not (shapes value)
-            || (requireCurrentProof && value.ValidUntil <= now)
-            || value.InstallationId <> witness.Identity.InstallationId
-            || value.LineageId <> witness.Identity.LineageId
-            || value.Epoch <> witness.Identity.Epoch
-        then
-            invalidOp "Writer activation evidence is invalid."
+        task {
+            if
+                not (shapes value)
+                || (requireCurrentProof && value.ValidUntil <= now)
+                || value.InstallationId <> witness.Identity.InstallationId
+                || value.LineageId <> witness.Identity.LineageId
+                || value.Epoch <> witness.Identity.Epoch
+            then
+                invalidOp "Writer activation evidence is invalid."
 
-        let state = primary connection transaction value
+            let state = primary connection transaction value
 
-        let verifySignatures =
-            if requireCurrentProof then
-                WriterHandoffOwnerChecks.verifyActivationSignatures
-            else
-                WriterHandoffOwnerChecks.verifyHistoricalActivationSignatures
+            let verifySignatures =
+                if requireCurrentProof then
+                    WriterHandoffOwnerChecks.verifyActivationSignatures
+                else
+                    WriterHandoffOwnerChecks.verifyHistoricalActivationSignatures
 
-        verifySignatures
-            connection
-            transaction
-            value.CheckpointSigningKeyId
-            value.CheckpointHolderActorId
-            value.SignedFence
-            value.FenceSignature
-            value.SignedSupplement
-            value.SupplementSignature
+            verifySignatures
+                connection
+                transaction
+                value.CheckpointSigningKeyId
+                value.CheckpointHolderActorId
+                value.SignedFence
+                value.FenceSignature
+                value.SignedSupplement
+                value.SupplementSignature
 
-        WitnessProtocolHandoff.verifySettlement
-            witness
-            value.HandoffId
-            value.W1Sequence
-            value.W1Hash
+            do!
+                WitnessProtocolHandoff.verifySettlement
+                    witness
+                    value.HandoffId
+                    value.W1Sequence
+                    value.W1Hash
+                    ct
 
-        let snapshot = witness.Snapshot()
+            let! snapshot = witness.Snapshot(ct)
 
-        if snapshot.WriterGeneration <> value.WriterGeneration || snapshot.HandoffPending then
-            invalidOp "Writer activation witness generation diverged."
+            if snapshot.WriterGeneration <> value.WriterGeneration || snapshot.HandoffPending then
+                invalidOp "Writer activation witness generation diverged."
 
-        state, snapshot
+            return state, snapshot
+        }
 
-    let verify connection transaction witness value now =
-        verifyCore connection transaction witness value true now
+    let verify connection transaction witness value now ct =
+        verifyCore connection transaction witness value true now ct
 
-    let verifyHistorical connection transaction witness value =
-        verifyCore connection transaction witness value false DateTimeOffset.MinValue
+    let verifyHistorical connection transaction witness value ct =
+        verifyCore connection transaction witness value false DateTimeOffset.MinValue ct

@@ -1,6 +1,9 @@
-module internal ClaimCore.IntegrationTests.BackupHealthRuntimeActorRaceDocuments
+module internal ClaimCore.IntegrationTests.BackupHealthRuntimeActorRaceFixture
 
 open System
+open System.Threading.Tasks
+open Npgsql
+open ClaimCore.Hosting
 open ClaimCore.Postgres
 open ClaimCore.IntegrationTests.BackupHealthSourceMaterial
 
@@ -84,3 +87,89 @@ let certificate (value: BackupHealthClaims) =
     put document "signerKeyId" (value.SignerKeyId.ToString("D"))
     put document "signerHolderActorId" (value.SignerHolderActorId.ToString("D"))
     canonical document
+
+let private commitGuard witness profile policy canonical signature onLocked onRefused =
+    let guard =
+        { new ICaseMutationCommitHealth with
+            member _.VerifyLocked(connection, transaction, ct) =
+                task {
+                    onLocked ()
+
+                    try
+                        do!
+                            BackupHealthRuntimeAdmission.verifyLocked
+                                connection
+                                transaction
+                                witness
+                                profile
+                                policy
+                                canonical
+                                signature
+                                ct
+                    with :? InvalidOperationException as error ->
+                        onRefused ()
+                        return raise error
+                }
+                :> Task
+        }
+
+    guard
+
+let admittance
+    app
+    (witness: WitnessProtocol)
+    profile
+    policy
+    canonical
+    signature
+    (checkedAt: TaskCompletionSource<unit>)
+    (release: TaskCompletionSource<unit>)
+    onLocked
+    onRefused
+    =
+    let verifyCurrent ct =
+        task {
+            use connection = new NpgsqlConnection(app)
+            do! connection.OpenAsync(ct)
+
+            do!
+                BackupHealthRuntimeAdmission.verify
+                    connection
+                    witness
+                    profile
+                    policy
+                    canonical
+                    signature
+                    ct
+        }
+
+    let guard =
+        commitGuard witness profile policy canonical signature onLocked onRefused
+
+    new RuntimeAdmission(
+        { new IDisposable with
+            member _.Dispose() = ()
+        },
+        TimeSpan.FromSeconds 10.,
+        (fun ct -> witness.AdmitReadOnly(ct)),
+        (fun ct ->
+            task {
+                let! snapshot = witness.Snapshot(ct)
+                return! witness.AcquireReadFence(snapshot.WriterGeneration, ct)
+            }),
+        {
+            RequireCaseMutation =
+                (fun ct ->
+                    task {
+                        do! verifyCurrent ct
+                        checkedAt.TrySetResult() |> ignore
+
+                        do! release.Task.WaitAsync(TimeSpan.FromSeconds 30., ct)
+                    })
+            RequireCaseRead = (fun _ -> Task.FromResult(()))
+            RequireAuthoritySetup = (fun _ -> Task.FromResult(()))
+            RequireAuthorityRead = (fun _ -> Task.FromResult(()))
+            CommitHealth = guard
+            CommitHealthRequired = true
+        }
+    )

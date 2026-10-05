@@ -55,3 +55,34 @@ module internal DataAuditExportWitness =
             proof.EntryHash
             proof.CandidateDigest
             SettledAuthority
+
+    let verifyAdoption
+        connection
+        transaction
+        witness
+        cutoff
+        (proof: ExportProof)
+        cancellationToken
+        =
+        task {
+            let! adoption =
+                ManagedCopyAdoptionEvidence.verifyOrigin
+                    connection
+                    transaction
+                    witness
+                    cutoff
+                    proof.ExportId
+                    cancellationToken
+
+            match adoption with
+            | None when not proof.Advanced -> ()
+            | Some origin when
+                proof.Advanced
+                && origin.CopyId = proof.ExportId
+                && origin.CaseId = proof.CaseId
+                && origin.ProducerKind = "PRODUCT_EXPORT"
+                ->
+                ()
+            | _ -> corrupt ()
+
+        }

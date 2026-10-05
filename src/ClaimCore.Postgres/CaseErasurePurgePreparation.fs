@@ -32,7 +32,7 @@ module internal CaseErasurePurgePreparation =
             SchemaBaseline.requireCurrent connection
             DatabaseEnvironment.requireCompatible connection
             let! summary = DataAudit.runWithSuppression connection witness (Some commitments) ct
-            let tip = witness.Snapshot()
+            let! tip = witness.Snapshot(ct)
 
             if summary.WitnessCutoff <> tip.TipSequence then
                 invalid ()
@@ -175,6 +175,7 @@ module internal CaseErasurePurgePreparation =
                             change
                             draftHash
                             draft
+                            ct
                             commitments
                             instant
 

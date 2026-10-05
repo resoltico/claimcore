@@ -114,7 +114,7 @@ type internal DatabaseTerminalRecoveryFenceIssuer
             | Some value ->
                 OwnerConnection.requireIdentity connection
 
-                let row =
+                let! row =
                     DatabaseTerminalRecoveryFenceRows.verify
                         connection
                         transaction

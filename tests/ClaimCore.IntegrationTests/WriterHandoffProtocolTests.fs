@@ -98,22 +98,26 @@ let private postCommitDisclosureFence () =
                 member _.Dispose() = ()
             },
             TimeSpan.FromSeconds 1.,
-            (fun () -> ()),
-            (fun () ->
-                if settled then
-                    invalidOp "Synthetic handoff became pending."
+            (fun _ -> Task.FromResult(())),
+            (fun _ ->
+                task {
+                    return
+                        ((fun () ->
+                            if settled then
+                                invalidOp "Synthetic handoff became pending."
 
-                { new IDisposable with
-                    member _.Dispose() = ()
+                            { new IDisposable with
+                                member _.Dispose() = ()
+                            })) ()
                 }),
             {
-                RequireCaseMutation = (fun () -> ())
-                RequireCaseRead = (fun () -> ())
-                RequireAuthoritySetup = (fun () -> ())
-                RequireAuthorityRead = (fun () -> ())
+                RequireCaseMutation = (fun _ -> Task.FromResult(()))
+                RequireCaseRead = (fun _ -> Task.FromResult(()))
+                RequireAuthoritySetup = (fun _ -> Task.FromResult(()))
+                RequireAuthorityRead = (fun _ -> Task.FromResult(()))
                 CommitHealth =
                     { new ICaseMutationCommitHealth with
-                        member _.VerifyLocked(_, _) = ()
+                        member _.VerifyLocked(_, _, _) = Task.CompletedTask
                     }
                 CommitHealthRequired = false
             }

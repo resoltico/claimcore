@@ -20,67 +20,8 @@ open ClaimCore.IntegrationTests.ManagedCopyPhysicalOwnerSetup
 open ClaimCore.IntegrationTests.ManagedCopyPhysicalProcessTests
 open ClaimCore.IntegrationTests.BackupHealthSourceDocuments
 open ClaimCore.IntegrationTests.BackupHealthRuntimeActorRaceFacts
-open ClaimCore.IntegrationTests.BackupHealthRuntimeActorRaceDocuments
+open ClaimCore.IntegrationTests.BackupHealthRuntimeActorRaceFixture
 open ClaimCore.IntegrationTests.BackupHealthCommitInterleaving
-
-let private admittance
-    app
-    (witness: WitnessProtocol)
-    profile
-    policy
-    canonical
-    signature
-    (checkedAt: TaskCompletionSource<unit>)
-    (release: TaskCompletionSource<unit>)
-    onLocked
-    onRefused
-    =
-    let verifyCurrent () =
-        use connection = new NpgsqlConnection(app)
-        connection.Open()
-        BackupHealthRuntimeAdmission.verify connection witness profile policy canonical signature
-
-    let guard =
-        { new ICaseMutationCommitHealth with
-            member _.VerifyLocked(connection, transaction) =
-                onLocked ()
-
-                try
-                    BackupHealthRuntimeAdmission.verifyLocked
-                        connection
-                        transaction
-                        witness
-                        profile
-                        policy
-                        canonical
-                        signature
-                with :? InvalidOperationException ->
-                    onRefused ()
-                    reraise ()
-        }
-
-    new RuntimeAdmission(
-        { new IDisposable with
-            member _.Dispose() = ()
-        },
-        TimeSpan.FromSeconds 10.,
-        (fun () -> witness.AdmitReadOnly()),
-        (fun () -> witness.AcquireReadFence(witness.Snapshot().WriterGeneration)),
-        {
-            RequireCaseMutation =
-                (fun () ->
-                    verifyCurrent ()
-                    checkedAt.TrySetResult() |> ignore
-
-                    if not (release.Task.Wait(TimeSpan.FromSeconds 30.)) then
-                        invalidOp "Synthetic mutation race was not released.")
-            RequireCaseRead = (fun () -> ())
-            RequireAuthoritySetup = (fun () -> ())
-            RequireAuthorityRead = (fun () -> ())
-            CommitHealth = guard
-            CommitHealthRequired = true
-        }
-    )
 
 let private assertRefusal
     owner
@@ -114,11 +55,14 @@ let private assertRefusal
         "No accepted primary history follows stale health."
 
     Expect.isNone
-        (witness.EvidenceStore.TryReadEvidence(request.OperationId, Intent))
+        ((witness.EvidenceStore
+            .TryReadEvidence(request.OperationId, Intent, CancellationToken.None)
+            .GetAwaiter()
+            .GetResult()))
         "No actor witness INTENT follows stale health."
 
     Expect.equal
-        (witness.Snapshot().TipSequence)
+        ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
         (before + 2L)
         "Only the owner copy transition appended evidence."
 
@@ -151,7 +95,9 @@ let private blockedExecution
     =
     let actor = runtime.ForActorWithAdmission(principal, admission)
     let request = newRequest ()
-    let before = witness.Snapshot().TipSequence
+
+    let before =
+        (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence
 
     let execution =
         Task.Run(fun () -> actor.Execute(request, CancellationToken.None) |> await)

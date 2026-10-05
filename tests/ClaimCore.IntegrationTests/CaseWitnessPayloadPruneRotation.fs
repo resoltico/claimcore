@@ -1,5 +1,6 @@
 module internal ClaimCore.IntegrationTests.CaseWitnessPayloadPruneRotation
 
+open System.Threading
 open System
 open System.Security.Cryptography
 open Expecto
@@ -31,7 +32,9 @@ let private applyRotation
         |> ignore)
 
 let withRotatedWitness witnessOwner writer (witness: WitnessProtocol) action =
-    let oldKeyId, _ = witness.EvidenceStore.ReadKeyCheck()
+    let oldKeyId, _ =
+        (witness.EvidenceStore.ReadKeyCheck(CancellationToken.None).GetAwaiter().GetResult())
+
     let oldKey = witnessKey ()
     let newKey = RandomNumberGenerator.GetBytes(32)
 
@@ -64,7 +67,7 @@ let withRotatedWitness witnessOwner writer (witness: WitnessProtocol) action =
         applyRotation file witnessOwner identity rotationId oldKeyId newKeyId check envelope
         let store = file.Use(fun material -> new Store(writer, identity, material))
         use rotated = new WitnessProtocol(store, custody, identity)
-        rotated.Admit()
+        rotated.Admit(CancellationToken.None).GetAwaiter().GetResult()
         action rotated
     finally
         CryptographicOperations.ZeroMemory(oldKey)

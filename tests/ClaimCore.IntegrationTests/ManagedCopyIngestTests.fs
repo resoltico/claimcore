@@ -1,5 +1,6 @@
 module ClaimCore.IntegrationTests.ManagedCopyIngestTests
 
+open System.Threading
 open System
 open System.Security.Cryptography
 open Expecto
@@ -25,52 +26,6 @@ let internal acceptedCopy eventId =
     | AuthorityWriteOutcome.Unconfirmed _ -> failtest "Managed-copy ingest remained unconfirmed."
     | _ -> failtest "Exact managed-copy registration was not accepted."
 
-let private countCopy connection copyId =
-    use command =
-        new NpgsqlCommand(
-            "SELECT count(*) FROM claimcore.managed_copies WHERE copy_id=@copy",
-            connection
-        )
-
-    command.Parameters.AddWithValue("copy", copyId) |> ignore
-    command.ExecuteScalar() :?> int64
-
-let private lacksVerificationProof connection copyId =
-    use command =
-        new NpgsqlCommand(
-            "SELECT verification_proof_sha256 IS NULL FROM claimcore.managed_copies WHERE copy_id=@copy",
-            connection
-        )
-
-    command.Parameters.AddWithValue("copy", copyId) |> ignore
-    command.ExecuteScalar() :?> bool
-
-let internal registeredSigner runtime ownerPrincipal custodian purpose witness ownerConnection =
-    let algorithm = SignatureAlgorithm.Ed25519
-    let key = Key.Create(algorithm)
-    let raw = key.PublicKey.Export(KeyBlobFormat.RawPublicKey)
-    let keyId = Guid.NewGuid()
-    let digest = SHA256.HashData(raw)
-
-    let ownerApproval, custodianApproval =
-        approvePair runtime ownerPrincipal custodian keyId digest CopySignerAction.Register purpose
-
-    let eventId = Guid.NewGuid()
-
-    ManagedCopySignerAdministration.register
-        ownerConnection
-        witness
-        eventId
-        keyId
-        purpose
-        raw
-        ownerApproval
-        custodianApproval
-    |> await
-    |> appliedSigner eventId
-
-    key, algorithm, keyId, digest
-
 let private registerVerified
     owner
     (connection: NpgsqlConnection)
@@ -81,7 +36,15 @@ let private registerVerified
     =
     let eventId = Guid.NewGuid()
     let copyId = Guid.NewGuid()
-    let canonical = registerBase owner (witness.Snapshot()) keyId eventId copyId
+
+    let canonical =
+        registerBase
+            owner
+            ((witness.Snapshot(CancellationToken.None) |> await))
+            keyId
+            eventId
+            copyId
+
     let signature = algorithm.Sign(key, canonical)
 
     Expect.isTrue
@@ -144,7 +107,12 @@ let private rejectAltered
     |> refused
 
     let unregistered =
-        registerBase owner (witness.Snapshot()) (Guid.NewGuid()) (Guid.NewGuid()) (Guid.NewGuid())
+        registerBase
+            owner
+            ((witness.Snapshot(CancellationToken.None) |> await))
+            (Guid.NewGuid())
+            (Guid.NewGuid())
+            (Guid.NewGuid())
 
     ManagedCopyAdministration.ingest
         connection
@@ -153,6 +121,36 @@ let private rejectAltered
         (algorithm.Sign(key, unregistered))
     |> await
     |> refused
+
+let private rejectRetiredSigner
+    owner
+    (connection: NpgsqlConnection)
+    (witness: WitnessProtocol)
+    (key: Key)
+    (algorithm: SignatureAlgorithm)
+    keyId
+    =
+    let newEvent = Guid.NewGuid()
+    let newCopy = Guid.NewGuid()
+
+    let newCanonical =
+        registerBase
+            owner
+            ((witness.Snapshot(CancellationToken.None) |> await))
+            keyId
+            newEvent
+            newCopy
+
+    ManagedCopyAdministration.ingest
+        connection
+        witness
+        newCanonical
+        (algorithm.Sign(key, newCanonical))
+    |> await
+    |> refused
+
+    Expect.equal (countCopy connection newCopy) 0L "Retired signer cannot add a copy."
+
 
 let private retireAndReject
     owner
@@ -194,19 +192,7 @@ let private retireAndReject
         (ManagedCopyOwnerInspection.inspect connection witness copyId |> await)
         "Retired key remains available to verify old copy proof."
 
-    let newEvent = Guid.NewGuid()
-    let newCopy = Guid.NewGuid()
-    let newCanonical = registerBase owner (witness.Snapshot()) keyId newEvent newCopy
-
-    ManagedCopyAdministration.ingest
-        connection
-        witness
-        newCanonical
-        (algorithm.Sign(key, newCanonical))
-    |> await
-    |> refused
-
-    Expect.equal (countCopy connection newCopy) 0L "Retired signer cannot add a copy."
+    rejectRetiredSigner owner connection witness key algorithm keyId
 
 let private registeredCopy =
     testCase
@@ -277,9 +263,25 @@ let private orphanCopyIntent =
                 use key = key
                 let eventId = Guid.NewGuid()
                 let copyId = Guid.NewGuid()
-                let canonical = registerBase owner (witness.Snapshot()) keyId eventId copyId
+
+                let canonical =
+                    registerBase
+                        owner
+                        ((witness.Snapshot(CancellationToken.None) |> await))
+                        keyId
+                        eventId
+                        copyId
+
                 let signature = algorithm.Sign(key, canonical)
-                witness.BeginAuthority(eventId, [| 0x43uy; 0x43uy; 0x55uy |], None) |> ignore
+
+                (witness.BeginAuthority(
+                    eventId,
+                    [| 0x43uy; 0x43uy; 0x55uy |],
+                    None,
+                    CancellationToken.None
+                 )
+                 |> await)
+                |> ignore
 
                 for _ in 1..2 do
                     match

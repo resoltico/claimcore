@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open System.Data
 open System.Security.Cryptography
 open Npgsql
@@ -68,10 +69,10 @@ module internal CaseLifecycleStoreSupport =
                 && not (reader.Read())
         }
 
-    let lockCase connection transaction reference (eventId: Guid) =
+    let lockCase connection transaction reference (eventId: Guid) ct =
         task {
-            do! Sql.lockKeyAsync connection transaction ("operation:" + eventId.ToString("D"))
-            do! Sql.lockKeyAsync connection transaction ("case:" + reference)
+            do! Sql.lockKeyAsync connection transaction ("operation:" + eventId.ToString("D")) ct
+            do! Sql.lockKeyAsync connection transaction ("case:" + reference) ct
             return! CaseLifecycleRead.lockProjection connection transaction reference
         }
 
@@ -95,22 +96,32 @@ module internal CaseLifecycleStoreSupport =
                         revision
         }
 
-    let replayEvent (witness: WitnessProtocol) eventId draftHash (stored: LifecycleStoredEvent) =
-        if stored.DraftHash <> draftHash then
-            LifecycleWriteOutcome.ResourceUnavailable
-        else
-            try
-                witness.ReconcileAuthority(
-                    eventId,
-                    stored.WitnessSequence,
-                    stored.WitnessEpoch,
-                    stored.WitnessHash,
-                    stored.Canonical
-                )
+    let replayEvent
+        (witness: WitnessProtocol)
+        eventId
+        draftHash
+        (stored: LifecycleStoredEvent)
+        (ct: CancellationToken)
+        =
+        task {
+            if stored.DraftHash <> draftHash then
+                return LifecycleWriteOutcome.ResourceUnavailable
+            else
+                try
+                    do!
+                        witness.ReconcileAuthority(
+                            eventId,
+                            stored.WitnessSequence,
+                            stored.WitnessEpoch,
+                            stored.WitnessHash,
+                            stored.Canonical,
+                            ct
+                        )
 
-                LifecycleWriteOutcome.Applied(eventId, stored.Revision, stored.Sequence)
-            with _ ->
-                LifecycleWriteOutcome.Unconfirmed eventId
+                    return LifecycleWriteOutcome.Applied(eventId, stored.Revision, stored.Sequence)
+                with _ ->
+                    return LifecycleWriteOutcome.Unconfirmed eventId
+        }
 
     let replayApproval
         (witness: WitnessProtocol)
@@ -123,46 +134,51 @@ module internal CaseLifecycleStoreSupport =
         revision
         sequence
         (stored: LifecycleStoredApproval)
+        (ct: CancellationToken)
         =
-        let canonical =
-            CaseLifecycleCandidate.approval
-                approvalId
-                operationId
-                caseId
-                draftHash
-                approverId
-                stored.GrantRevision
-                stored.ApprovedAt
-                expiresAt
+        task {
+            let canonical =
+                CaseLifecycleCandidate.approval
+                    approvalId
+                    operationId
+                    caseId
+                    draftHash
+                    approverId
+                    stored.GrantRevision
+                    stored.ApprovedAt
+                    expiresAt
 
-        let exact = canonical = stored.Canonical
-        CryptographicOperations.ZeroMemory(canonical)
+            let exact = canonical = stored.Canonical
+            CryptographicOperations.ZeroMemory(canonical)
 
-        if
-            stored.OperationId <> operationId
-            || stored.CaseId <> caseId
-            || stored.DraftHash <> draftHash
-            || stored.ApproverId <> approverId
-            || stored.ExpiresAt <> expiresAt
-            || not exact
-        then
-            LifecycleWriteOutcome.ResourceUnavailable
-        else
-            try
-                witness.ReconcileAuthority(
-                    approvalId,
-                    stored.WitnessSequence,
-                    stored.WitnessEpoch,
-                    stored.WitnessHash,
-                    stored.Canonical
-                )
+            if
+                stored.OperationId <> operationId
+                || stored.CaseId <> caseId
+                || stored.DraftHash <> draftHash
+                || stored.ApproverId <> approverId
+                || stored.ExpiresAt <> expiresAt
+                || not exact
+            then
+                return LifecycleWriteOutcome.ResourceUnavailable
+            else
+                try
+                    do!
+                        witness.ReconcileAuthority(
+                            approvalId,
+                            stored.WitnessSequence,
+                            stored.WitnessEpoch,
+                            stored.WitnessHash,
+                            stored.Canonical,
+                            ct
+                        )
 
-                LifecycleWriteOutcome.Applied(approvalId, revision, sequence)
-            with _ ->
-                LifecycleWriteOutcome.Unconfirmed approvalId
+                    return LifecycleWriteOutcome.Applied(approvalId, revision, sequence)
+                with _ ->
+                    return LifecycleWriteOutcome.Unconfirmed approvalId
+        }
 
-    let beginTransaction (connection: NpgsqlConnection) =
-        connection.BeginTransaction(IsolationLevel.ReadCommitted)
+    let beginTransaction (connection: NpgsqlConnection) (ct: CancellationToken) =
+        connection.BeginTransactionAsync(IsolationLevel.ReadCommitted, ct)
 
     let clear (bytes: byte array) =
         CryptographicOperations.ZeroMemory(bytes)

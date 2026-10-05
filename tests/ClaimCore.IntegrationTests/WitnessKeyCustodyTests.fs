@@ -162,7 +162,10 @@ let tests =
                 "[CC-WIT-001] owner-private key-ring file admits and broad mode refuses"
                 (fun _ ->
                     let store = witnessStore (witnessConnection ()) (identity ())
-                    let keyId, _ = store.ReadKeyCheck()
+
+                    let keyId, _ =
+                        (store.ReadKeyCheck(CancellationToken.None).GetAwaiter().GetResult())
+
                     let path = keyPath ()
 
                     try

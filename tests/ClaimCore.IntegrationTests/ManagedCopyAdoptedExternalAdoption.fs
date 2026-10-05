@@ -67,7 +67,7 @@ let private verifyPreFence
             connection
             transaction
             witness
-            (witness.Snapshot().TipSequence)
+            ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
             approval
             ct
         |> await

@@ -199,7 +199,7 @@ let private run () =
         assets
         configuration
         (fun principal -> runtime.ForActor principal)
-        (fun () -> runtime.DataUseReadiness())
+        (fun ct -> runtime.DataUseReadiness(ct))
         application
 
     Console.WriteLine(

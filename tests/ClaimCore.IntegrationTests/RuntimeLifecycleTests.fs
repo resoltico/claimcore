@@ -154,7 +154,7 @@ let private thrownOpeningClosesOwnedSource () =
                 })
             (fun _ ->
                 Task.FromException<Result<int, RuntimeOpenFault>>(InvalidDataException(sentinel)))
-            (fun _ source -> source)
+            (fun _ source -> Task.FromResult source)
             (fun _ -> RuntimeOpenFault.RuntimeStoreUnavailable)
             CancellationToken.None
         |> await

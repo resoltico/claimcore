@@ -2,118 +2,45 @@ namespace ClaimCore.Postgres
 
 open System
 open System.Data
+open System.Threading
 open Npgsql
 open ClaimCore.Witness
 
 /// A2 is a deterministic primary-only reconciliation of immutable witnessed A1.
 module internal WriterHandoffOwnerAbortBackfill =
-    let private exactPrimary
-        (connection: NpgsqlConnection)
-        (transaction: NpgsqlTransaction)
-        (value: WriterHandoffAbort)
-        canonical
-        digest
-        (ticket: Ticket)
-        =
-        use command =
-            new NpgsqlCommand(
-                "SELECT abort_canonical,abort_candidate_sha256,abort_sequence,abort_hash,"
-                + "approval_one_id,approval_two_id FROM claimcore.writer_handoff_aborts "
-                + "WHERE handoff_id=@handoff",
-                connection,
-                transaction
-            )
-
-        Sql.uuid command "handoff" value.HandoffId
-        use reader = command.ExecuteReader()
-
-        if not (reader.Read()) then
-            false
-        else
-            let exact =
-                reader.GetFieldValue<byte array>(0) = canonical
-                && reader.GetFieldValue<byte array>(1) = digest
-                && reader.GetInt64(2) = ticket.Sequence
-                && reader.GetFieldValue<byte array>(3) = ticket.EntryHash
-                && reader.GetGuid(4) = value.ApprovalOneId
-                && reader.GetGuid(5) = value.ApprovalTwoId
-
-            if reader.Read() || not exact then
-                invalidOp "Primary abort receipt differs."
-
-            true
-
-    let private projection
-        (connection: NpgsqlConnection)
-        (transaction: NpgsqlTransaction)
-        (value: WriterHandoffAbort)
-        (ticket: Ticket)
-        =
-        use command =
-            new NpgsqlCommand(
-                "SELECT writer_generation,last_aborted_handoff_id,"
-                + "last_aborted_handoff_sequence,last_aborted_handoff_hash "
-                + "FROM claimcore.installation_lineage WHERE singleton",
-                connection,
-                transaction
-            )
-
-        use reader = command.ExecuteReader()
-
-        if not (reader.Read()) then
-            invalidOp "Primary abort projection is absent."
-
-        let generation = reader.GetInt64(0)
-        let id = if reader.IsDBNull(1) then None else Some(reader.GetGuid(1))
-
-        let sequence =
-            if reader.IsDBNull(2) then
-                None
-            else
-                Some(reader.GetInt64(2))
-
-        let hash =
-            if reader.IsDBNull(3) then
-                None
-            else
-                Some(reader.GetFieldValue<byte array>(3))
-
-        if reader.Read() || generation <> value.OldGeneration then
-            invalidOp "Primary writer generation differs at abort."
-
-        id = Some value.HandoffId
-        && sequence = Some ticket.Sequence
-        && hash = Some ticket.EntryHash
-
-    let verifyPrimary connection transaction value canonical digest ticket =
-        exactPrimary connection transaction value canonical digest ticket
-        && projection connection transaction value ticket
+    open WriterHandoffOwnerAbortWrite
 
     let private permittedWitness
         (witness: WitnessProtocol)
         (value: WriterHandoffAbort)
         (ticket: Ticket)
         =
-        let snapshot = witness.Snapshot()
+        task {
+            let! snapshot = witness.Snapshot(CancellationToken.None)
 
-        snapshot.HandoffPending
-        && snapshot.WriterGeneration = value.OldGeneration
-        && snapshot.TipSequence = ticket.Sequence
-        && snapshot.TipHash = ticket.EntryHash
+            return
+                snapshot.HandoffPending
+                && snapshot.WriterGeneration = value.OldGeneration
+                && snapshot.TipSequence = ticket.Sequence
+                && snapshot.TipHash = ticket.EntryHash
+        }
 
     let private releasedWitness
         (witness: WitnessProtocol)
         (value: WriterHandoffAbort)
         (ticket: Ticket)
         =
-        let snapshot = witness.Snapshot()
+        task {
+            let! snapshot = witness.Snapshot(CancellationToken.None)
 
-        not snapshot.HandoffPending
-        && snapshot.WriterGeneration = value.OldGeneration
-        && snapshot.LastAbortedHandoffId = Some value.HandoffId
-        && snapshot.LastAbortedHandoffSequence = Some ticket.Sequence
-        && snapshot.LastAbortedHandoffHash = Some ticket.EntryHash
-        && snapshot.TipSequence >= ticket.Sequence
+            return
+                not snapshot.HandoffPending
+                && snapshot.WriterGeneration = value.OldGeneration
+                && snapshot.LastAbortedHandoffId = Some value.HandoffId
+                && snapshot.LastAbortedHandoffSequence = Some ticket.Sequence
+                && snapshot.LastAbortedHandoffHash = Some ticket.EntryHash
+                && snapshot.TipSequence >= ticket.Sequence
+        }
 
     let private awaiting (value: WriterHandoffAbort) (ticket: Ticket) =
         WriterHandoffAbortOutcome.AwaitingRelease(
@@ -131,28 +58,46 @@ module internal WriterHandoffOwnerAbortBackfill =
         signatureOne
         signatureTwo
         =
-        let prepared =
-            WriterHandoffOwnerRead.preparation owner transaction witness value.HandoffId
-            |> Option.defaultWith (fun () -> invalidOp "Primary handoff is absent.")
+        task {
+            let! retained =
+                WriterHandoffOwnerRead.preparation
+                    owner
+                    transaction
+                    witness
+                    value.HandoffId
+                    CancellationToken.None
 
-        let ticket =
-            WriterHandoffOwnerAbortEvidence.read
-                witness
-                prepared
-                value
-                canonical
-                signatureOne
-                signatureTwo
-            |> Option.defaultWith (fun () -> invalidOp "Witness abort A1 is absent.")
+            let prepared =
+                retained
+                |> Option.defaultWith (fun () -> invalidOp "Primary handoff is absent.")
 
-        let digest =
-            WriterHandoffWitnessAbortCommands.candidate canonical signatureOne signatureTwo
+            let! evidence =
+                WriterHandoffOwnerAbortEvidence.read
+                    witness
+                    prepared
+                    value
+                    canonical
+                    signatureOne
+                    signatureTwo
+                    CancellationToken.None
 
-        ticket, digest
+            let ticket =
+                evidence
+                |> Option.defaultWith (fun () -> invalidOp "Witness abort A1 is absent.")
+
+            let digest =
+                WriterHandoffWitnessAbortCommands.candidate canonical signatureOne signatureTwo
+
+            return ticket, digest
+        }
 
     let private generationMatches owner transaction (value: WriterHandoffAbort) =
-        let generation, _, _, _ = WriterHandoffOwnerReconcile.primaryState owner transaction
-        generation = value.OldGeneration
+        task {
+            let! generation, _, _, _ =
+                WriterHandoffOwnerReconcile.primaryState owner transaction CancellationToken.None
+
+            return generation = value.OldGeneration
+        }
 
     let private apply
         owner
@@ -167,19 +112,19 @@ module internal WriterHandoffOwnerAbortBackfill =
         (started: bool ref)
         =
         task {
+            let! permitted = permittedWitness witness value ticket
+            let! released = releasedWitness witness value ticket
+            let! generationValid = generationMatches owner transaction value
+
             if exactPrimary owner transaction value canonical digest ticket then
                 return
-                    if
-                        projection owner transaction value ticket
-                        && (permittedWitness witness value ticket
-                            || releasedWitness witness value ticket)
-                    then
+                    if projection owner transaction value ticket && (permitted || released) then
                         awaiting value ticket
                     else
                         WriterHandoffAbortOutcome.Unconfirmed value.HandoffId
-            elif not (permittedWitness witness value ticket) then
+            elif not permitted then
                 return WriterHandoffAbortOutcome.Unconfirmed value.HandoffId
-            else if not (generationMatches owner transaction value) then
+            else if not generationValid then
                 return WriterHandoffAbortOutcome.Unconfirmed value.HandoffId
             else
                 do!
@@ -191,6 +136,7 @@ module internal WriterHandoffOwnerAbortBackfill =
                         canonical
                         signatureOne
                         signatureTwo
+                        CancellationToken.None
 
                 started.Value <- true
 
@@ -221,7 +167,7 @@ module internal WriterHandoffOwnerAbortBackfill =
             let! _ =
                 ActorGrantRead.lockRevision owner transaction true Threading.CancellationToken.None
 
-            let ticket, digest =
+            let! ticket, digest =
                 readReceipt owner transaction witness value canonical signatureOne signatureTwo
 
             return!
@@ -254,13 +200,13 @@ module internal WriterHandoffOwnerAbortBackfill =
                 try
                     OwnerConnection.requireIdentity primaryOwner
                     SchemaBaseline.requireCurrent primaryOwner
-                    witness.AdmitReadOnly()
+                    do! witness.AdmitReadOnly(CancellationToken.None)
 
                     use! _authorityFence =
                         AuthorityOperationFence.acquireShared
                             None
                             primaryOwner
-                            System.Threading.CancellationToken.None
+                            CancellationToken.None
 
                     use transaction = primaryOwner.BeginTransaction(IsolationLevel.ReadCommitted)
 

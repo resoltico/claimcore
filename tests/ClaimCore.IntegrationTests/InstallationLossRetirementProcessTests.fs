@@ -1,5 +1,6 @@
 module ClaimCore.IntegrationTests.InstallationLossRetirementProcessTests
 
+open System.Threading
 open System
 open System.IO
 open System.Text
@@ -126,13 +127,18 @@ let private rejectChangedList directory (witness: WitnessProtocol) decision =
             "altered-operations"
             (Encoding.ASCII.GetBytes(Guid.NewGuid().ToString("D") + "\n"))
 
-    let before = witness.Snapshot().TipSequence
+    let before =
+        (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence
 
     let code, failure =
         invoke "retire-installation-after-loss" (decisionArguments decision altered) decision.Inputs
 
     Expect.notEqual code 0 "Changed known-operation bytes are refused."
-    Expect.equal (witness.Snapshot().TipSequence) before "Pre-W0 refusal appends no authority."
+
+    Expect.equal
+        ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
+        before
+        "Pre-W0 refusal appends no authority."
 
     Expect.isFalse
         (failure.GetRawText().Contains(altered, StringComparison.Ordinal))
@@ -151,7 +157,8 @@ let private settleAndReadBack (witness: WitnessProtocol) decision =
         "COMPLETED"
         "Only W0, primary receipt, and W1 justify definite completion."
 
-    let settled = witness.Snapshot()
+    let settled = (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
+
     Expect.isTrue settled.LossRetired "Old writer authority is terminal."
 
     let replayCode, replay =
@@ -165,7 +172,7 @@ let private settleAndReadBack (witness: WitnessProtocol) decision =
         "Reconciliation does not invent a new decision."
 
     Expect.equal
-        (witness.Snapshot().TipSequence)
+        ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
         settled.TipSequence
         "Process reconciliation appends no duplicate authority."
 

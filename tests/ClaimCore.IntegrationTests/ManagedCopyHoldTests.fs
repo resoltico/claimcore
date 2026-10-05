@@ -43,7 +43,8 @@ let private registration
     =
     let eventId = Guid.NewGuid()
     let copyId = Guid.NewGuid()
-    let tip = witness.Snapshot()
+
+    let tip = (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
 
     let raw =
         if kind = "BASE" then
@@ -82,7 +83,7 @@ let private attemptDelete
             "DELETE_REQUEST"
             "DELETE_PENDING"
             previous
-            (witness.Snapshot())
+            ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()))
 
     let result =
         ManagedCopyTransitionAdministration.transition
@@ -143,13 +144,15 @@ let private heldCopies owner _ (witness: WitnessProtocol) (runtime: Runtime) pro
         |> acceptedCopy eventId
 
     DatabaseObservation.afterInstant connection (DateTimeOffset.Parse(retainUntil))
-    let before = witness.Snapshot().TipSequence
+
+    let before =
+        (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence
 
     for canonical, signature, _ in copies do
         attemptDelete connection witness key algorithm canonical signature |> ignore
 
     Expect.equal
-        (witness.Snapshot().TipSequence)
+        ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
         before
         "Hold refusal creates no new witness intent."
 

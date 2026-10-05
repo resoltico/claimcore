@@ -254,27 +254,23 @@ module internal DataAuditManagedCopies =
                     page connection transaction witness cutoff after cancellationToken
 
                 for proof in proofs do
-                    do! DataAuditExportWitness.verify connection transaction witness cutoff proof
-
-                    let! adoption =
-                        ManagedCopyAdoptionEvidence.verifyOrigin
+                    do!
+                        DataAuditExportWitness.verify
                             connection
                             transaction
                             witness
                             cutoff
-                            proof.ExportId
+                            proof
                             cancellationToken
 
-                    match adoption with
-                    | None when not proof.Advanced -> ()
-                    | Some origin when
-                        proof.Advanced
-                        && origin.CopyId = proof.ExportId
-                        && origin.CaseId = proof.CaseId
-                        && origin.ProducerKind = "PRODUCT_EXPORT"
-                        ->
-                        ()
-                    | _ -> corrupt ()
+                    do!
+                        DataAuditExportWitness.verifyAdoption
+                            connection
+                            transaction
+                            witness
+                            cutoff
+                            proof
+                            cancellationToken
 
                 count <- count + int64 proofs.Length
                 after <- last

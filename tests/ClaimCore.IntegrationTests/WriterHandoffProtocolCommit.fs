@@ -147,7 +147,10 @@ let private assertSettlement
     newCapability
     =
     let ticket =
-        witness.EvidenceStore.TryReadEvidence(context.Value.HandoffId, SettledAuthority)
+        (witness.EvidenceStore
+            .TryReadEvidence(context.Value.HandoffId, SettledAuthority, CancellationToken.None)
+            .GetAwaiter()
+            .GetResult())
         |> Option.map _.Ticket
         |> Option.defaultWith (fun () -> failtest "Confirmed handoff settlement is absent.")
 
@@ -156,19 +159,25 @@ let private assertSettlement
         (context.Ticket.Sequence + 1L)
         "COMMIT settles exact pending intent without a duplicate ticket."
 
-    Expect.equal (witness.Snapshot().WriterGeneration) 2L "W2 rotated the generation."
+    Expect.equal
+        ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).WriterGeneration)
+        2L
+        "W2 rotated the generation."
+
     assertCompleted owner app writer witness runtime first
     use newStore = new Store(writer, witness.Identity, newCapability)
-    let pending = newStore.Snapshot()
+
+    let pending = (newStore.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
+
     Expect.equal pending.WriterGeneration 2L "The replacement capability names generation two."
     Expect.isTrue pending.ActivationPending "W2 remains quarantined before separate activation."
 
     Expect.throwsT<InvalidOperationException>
-        (fun () -> newStore.Admit())
+        (fun () -> newStore.Admit(CancellationToken.None).GetAwaiter().GetResult())
         "The replacement writer cannot serve case work until W3 activation."
 
     Expect.throwsT<InvalidOperationException>
-        (fun () -> witness.Admit())
+        (fun () -> (witness.Admit(CancellationToken.None).GetAwaiter().GetResult()))
         "Old capability is no longer writer authority."
 
 let private submitAndRetry

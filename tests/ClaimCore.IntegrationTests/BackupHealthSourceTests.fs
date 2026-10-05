@@ -90,7 +90,7 @@ let private temporalCertificateBounds =
 
                 Expect.isNone
                     (BackupHealthCertificate.parse
-                        (BackupHealthRuntimeActorRaceDocuments.certificate futureWal)
+                        (BackupHealthRuntimeActorRaceFixture.certificate futureWal)
                         value.CheckedAt)
                     "An observation sampled after certificate capture cannot be hidden by a fixture clock"
 

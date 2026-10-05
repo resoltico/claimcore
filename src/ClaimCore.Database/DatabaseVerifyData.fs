@@ -118,49 +118,53 @@ module internal DatabaseVerifyData =
         (commitments: ISuppressionCommitments)
         (before: Snapshot)
         =
-        use auditConnection = new NpgsqlConnection(connectionString)
-        auditConnection.Open()
-        OwnerConnection.requireIdentity auditConnection
-        SchemaBaseline.requireCurrent auditConnection
-        DatabaseEnvironment.requireCompatible auditConnection
+        task {
+            use auditConnection = new NpgsqlConnection(connectionString)
+            auditConnection.Open()
+            OwnerConnection.requireIdentity auditConnection
+            SchemaBaseline.requireCurrent auditConnection
+            DatabaseEnvironment.requireCompatible auditConnection
 
-        let summary =
-            DataAudit.runWithSuppression
-                auditConnection
-                witness
-                (Some commitments)
-                CancellationToken.None
-            |> fun work -> work.GetAwaiter().GetResult()
+            let! summary =
+                DataAudit.runWithSuppression
+                    auditConnection
+                    witness
+                    (Some commitments)
+                    CancellationToken.None
 
-        let tip = witness.Snapshot()
+            let! tip = witness.Snapshot(CancellationToken.None)
 
-        if
-            tip.TipSequence <> summary.WitnessCutoff
-            || tip.TipSequence <> before.TipSequence
-        then
-            invalidOp "Witness tip moved during the audit."
+            if
+                tip.TipSequence <> summary.WitnessCutoff
+                || tip.TipSequence <> before.TipSequence
+            then
+                invalidOp "Witness tip moved during the audit."
 
-        summary, tip
+            return summary, tip
+        }
 
     let private witnessFence (witness: WitnessProtocol) requireWriterFence =
-        let before = witness.Snapshot()
+        task {
+            let! before = witness.Snapshot(CancellationToken.None)
 
-        // Pending owner phases already fence ordinary appends. The outer session and
-        // primary row locks drain allowed owner transitions before the cutoff is captured.
-        if
-            requireWriterFence
-            && not (
-                before.HandoffPending
-                || before.ActivationPending
-                || before.LossRetirementPending
-                || before.LossRetired
-            )
-        then
-            witness.AcquireReadFence(before.WriterGeneration)
-        else
-            { new IDisposable with
-                member _.Dispose() = ()
-            }
+            // Pending owner phases already fence ordinary appends. The outer session and
+            // primary row locks drain allowed owner transitions before the cutoff is captured.
+            if
+                requireWriterFence
+                && not (
+                    before.HandoffPending
+                    || before.ActivationPending
+                    || before.LossRetirementPending
+                    || before.LossRetired
+                )
+            then
+                return! witness.AcquireReadFence(before.WriterGeneration, CancellationToken.None)
+            else
+                return
+                    { new IDisposable with
+                        member _.Dispose() = ()
+                    }
+        }
 
     let private auditedUsing
         (ownerConnection: string)
@@ -170,59 +174,64 @@ module internal DatabaseVerifyData =
         requireWriterFence
         inspect
         =
-        let builder = OwnerConnection.builder ownerConnection
-        use barrier = new NpgsqlConnection(builder.ConnectionString)
-        barrier.Open()
-        OwnerConnection.requireIdentity barrier
-        SchemaBaseline.requireCurrent barrier
+        task {
+            let builder = OwnerConnection.builder ownerConnection
+            use barrier = new NpgsqlConnection(builder.ConnectionString)
+            barrier.Open()
+            OwnerConnection.requireIdentity barrier
+            SchemaBaseline.requireCurrent barrier
 
-        use _operationFence =
-            AuthorityOperationFence.acquireExclusive None barrier CancellationToken.None
-            |> fun work -> work.GetAwaiter().GetResult()
+            use! _operationFence =
+                AuthorityOperationFence.acquireExclusive None barrier CancellationToken.None
 
-        let installation, keyId, check = identity barrier
-        use transaction = barrier.BeginTransaction(IsolationLevel.ReadCommitted)
+            let installation, keyId, check = identity barrier
+            use transaction = barrier.BeginTransaction(IsolationLevel.ReadCommitted)
 
-        use lockCommand =
-            new NpgsqlCommand(
-                "SELECT revision FROM claimcore.authority_tip WHERE singleton FOR UPDATE",
-                barrier,
-                transaction
-            )
+            use lockCommand =
+                new NpgsqlCommand(
+                    "SELECT revision FROM claimcore.authority_tip WHERE singleton FOR UPDATE",
+                    barrier,
+                    transaction
+                )
 
-        if isNull (lockCommand.ExecuteScalar()) then
-            invalidOp "Authority barrier is unavailable."
+            if isNull (lockCommand.ExecuteScalar()) then
+                invalidOp "Authority barrier is unavailable."
 
-        let port = commitments key installation keyId check
+            let port = commitments key installation keyId check
 
-        let witnessStore = openStore installation
+            let witnessStore = openStore installation
 
-        use witness =
-            new WitnessProtocol(witnessStore, borrowedCustody custody, installation)
+            use witness =
+                new WitnessProtocol(witnessStore, borrowedCustody custody, installation)
 
-        witness.AdmitReadOnly()
-        use _fence = witnessFence witness requireWriterFence
+            do! witness.AdmitReadOnly(CancellationToken.None)
+            use! _fence = witnessFence witness requireWriterFence
 
-        let cutoff = witness.Snapshot()
-        let summary, tip = auditSnapshot builder.ConnectionString witness port cutoff
-        let inspected = inspect barrier transaction witness summary tip
-        transaction.Rollback()
-        summary, tip, inspected
+            let! cutoff = witness.Snapshot(CancellationToken.None)
+            let! summary, tip = auditSnapshot builder.ConnectionString witness port cutoff
+            let! inspected = inspect barrier transaction witness summary tip
+            do! transaction.RollbackAsync(CancellationToken.None)
+            return summary, tip, inspected
+        }
 
     let internal auditedWith ownerConnection witnessConnection custody key inspect =
-        use capability =
-            DatabaseWitnessInputs.writerCapability ()
-            |> Result.defaultWith (fun _ -> invalidOp "Private writer capability is unavailable.")
+        task {
+            use capability =
+                DatabaseWitnessInputs.writerCapability ()
+                |> Result.defaultWith (fun _ ->
+                    invalidOp "Private writer capability is unavailable.")
 
-        auditedUsing
-            ownerConnection
-            custody
-            key
-            (fun installation ->
-                capability.Use(fun material ->
-                    new Store(witnessConnection, installation, material)))
-            true
-            inspect
+            return!
+                auditedUsing
+                    ownerConnection
+                    custody
+                    key
+                    (fun installation ->
+                        capability.Use(fun material ->
+                            new Store(witnessConnection, installation, material)))
+                    true
+                    inspect
+        }
 
     let internal auditedRestoredWith
         ownerConnection
@@ -231,24 +240,30 @@ module internal DatabaseVerifyData =
         key
         inspect
         =
-        let witness = NpgsqlConnectionStringBuilder(witnessAuditConnection)
+        task {
+            let witness = NpgsqlConnectionStringBuilder(witnessAuditConnection)
 
-        if witness.Username <> "claimcore_witness_auditor" then
-            invalidOp "Restored-pair witness audit role is unavailable."
+            if witness.Username <> "claimcore_witness_auditor" then
+                invalidOp "Restored-pair witness audit role is unavailable."
 
-        auditedUsing
-            ownerConnection
-            custody
-            key
-            (fun installation -> Store.OpenAudit(witnessAuditConnection, installation))
-            false
-            inspect
+            return!
+                auditedUsing
+                    ownerConnection
+                    custody
+                    key
+                    (fun installation -> Store.OpenAudit(witnessAuditConnection, installation))
+                    false
+                    inspect
+        }
 
     let private audited ownerConnection witnessConnection custody key =
-        let summary, tip, _ =
-            auditedWith ownerConnection witnessConnection custody key (fun _ _ _ _ _ -> ())
+        task {
+            let! summary, tip, _ =
+                auditedWith ownerConnection witnessConnection custody key (fun _ _ _ _ _ ->
+                    System.Threading.Tasks.Task.FromResult(()))
 
-        summary, tip
+            return summary, tip
+        }
 
     let run ownerConnection =
         match DatabaseWitnessInputs.witnessWriterConnection () with
@@ -259,36 +274,25 @@ module internal DatabaseVerifyData =
             | Ok custody ->
                 use custody = custody
 
-                match Environment.GetEnvironmentVariable("CLAIMCORE_SUPPRESSION_KEY_FILE") with
-                | null
-                | "" ->
-                    VerifyDataOutcome.InputRefused DatabaseInputProblem.SuppressionKeyFileRefused
-                | keyPath ->
-                    let loaded =
-                        try
-                            Some(SuppressionKeyFile.Load(keyPath))
-                        with _ ->
-                            None
+                match DatabaseWitnessInputs.suppressionKey () with
+                | Error reason -> VerifyDataOutcome.InputRefused reason
+                | Ok key ->
+                    use key = key
 
-                    match loaded with
-                    | None ->
-                        VerifyDataOutcome.InputRefused
-                            DatabaseInputProblem.SuppressionKeyFileRefused
-                    | Some key ->
-                        use key = key
+                    try
+                        if not (separate ownerConnection witnessConnection) then
+                            VerifyDataOutcome.AuditFailed VerifyDataFailure.TopologyRefused
+                        else
+                            let summary, tip =
+                                (audited ownerConnection witnessConnection custody key)
+                                    .GetAwaiter()
+                                    .GetResult()
 
-                        try
-                            if not (separate ownerConnection witnessConnection) then
-                                VerifyDataOutcome.AuditFailed VerifyDataFailure.TopologyRefused
-                            else
-                                let summary, tip =
-                                    audited ownerConnection witnessConnection custody key
-
-                                VerifyDataOutcome.Verified(summary, tip)
-                        with
-                        | :? IO.InvalidDataException ->
-                            VerifyDataOutcome.AuditFailed VerifyDataFailure.EvidenceDivergence
-                        | :? NpgsqlException
-                        | :? TimeoutException ->
-                            VerifyDataOutcome.AuditFailed VerifyDataFailure.AuditUnavailable
-                        | _ -> VerifyDataOutcome.AuditFailed VerifyDataFailure.AuditFault
+                            VerifyDataOutcome.Verified(summary, tip)
+                    with
+                    | :? IO.InvalidDataException ->
+                        VerifyDataOutcome.AuditFailed VerifyDataFailure.EvidenceDivergence
+                    | :? NpgsqlException
+                    | :? TimeoutException ->
+                        VerifyDataOutcome.AuditFailed VerifyDataFailure.AuditUnavailable
+                    | _ -> VerifyDataOutcome.AuditFailed VerifyDataFailure.AuditFault

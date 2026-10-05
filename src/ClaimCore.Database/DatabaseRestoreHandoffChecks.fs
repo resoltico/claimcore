@@ -1,5 +1,6 @@
 namespace ClaimCore.Database
 
+open System.Threading
 open System
 open System.Security.Cryptography
 open ClaimCore.Postgres
@@ -111,21 +112,27 @@ module internal DatabaseRestoreHandoffChecks =
         transaction
         (witness: WitnessProtocol)
         =
-        WriterHandoffCutoff.verify witness proposal
-        historical publication report index facts proposal proposal.OldGeneration binarySha256
+        task {
+            do! WriterHandoffCutoff.verify witness proposal CancellationToken.None
+            historical publication report index facts proposal proposal.OldGeneration binarySha256
 
-        match witness.TryReadHashAtSequence(report.WitnessCutoff) with
-        | Some hash when Convert.ToHexStringLower(hash) = report.WitnessCutoffHash -> ()
-        | _ -> invalidOp "Pre-W1 cutoff is absent from the current witness."
+            let! observed =
+                witness.TryReadHashAtSequence(report.WitnessCutoff, CancellationToken.None)
 
-        DatabaseRestoreReportRecheck.signedEvidence
-            barrier
-            transaction
-            witness
-            files
-            report
-            index
-            facts
+            match observed with
+            | Some hash when Convert.ToHexStringLower(hash) = report.WitnessCutoffHash -> ()
+            | _ -> invalidOp "Pre-W1 cutoff is absent from the current witness."
+
+            return!
+                DatabaseRestoreReportRecheck.signedEvidence
+                    barrier
+                    transaction
+                    witness
+                    files
+                    report
+                    index
+                    facts
+        }
 
     let private ticketMatches summary (tip: Snapshot) (prepared: PrimaryWriterPreparation) ticket =
         summary.PendingIntents = 0L

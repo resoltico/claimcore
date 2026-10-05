@@ -5,7 +5,7 @@ open Npgsql
 open ClaimCore.Postgres
 
 /// Synthetic producer mode cannot be pointed at an adopted or nonloopback installation.
-module internal DatabaseRestoreProduceTarget =
+module internal DatabaseRestoreIsolation =
     let requireIsolated (owner: string) (witnessConnection: string) =
         let primary = OwnerConnection.builder owner
         let witness = NpgsqlConnectionStringBuilder(witnessConnection)

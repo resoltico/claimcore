@@ -34,7 +34,10 @@ let witnessCount writer identity eventId =
 
     [ Intent; SettledAuthority ]
     |> List.sumBy (fun phase ->
-        if store.TryReadEvidence(eventId, phase).IsSome then
+        if
+            (store.TryReadEvidence(eventId, phase, CancellationToken.None).GetAwaiter().GetResult())
+                .IsSome
+        then
             1
         else
             0)
@@ -63,7 +66,8 @@ let identity owner =
 let protocol owner writer fault =
     let installation = identity owner
     let store = FixtureWitnessWriterStore.current writer installation
-    let keyId, _ = store.ReadKeyCheck()
+
+    let keyId, _ = (store.ReadKeyCheck(CancellationToken.None).GetAwaiter().GetResult())
 
     new WitnessProtocol(
         store,

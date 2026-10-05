@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open System.Security.Cryptography
 open Npgsql
 open ClaimCore.Application
@@ -114,11 +115,14 @@ module internal ManagedCopySignerCommit =
             try
                 let previous = priorHash input
                 let eventHash = ManagedCopySignerCandidate.eventHash previous canonical
-                let intent = witness.BeginAuthority(input.EventId, canonical, None)
+
+                let! intent =
+                    witness.BeginAuthority(input.EventId, canonical, None, CancellationToken.None)
+
                 do! updateRoster connection transaction input eventHash
                 do! appendEvidence connection transaction input canonical previous eventHash intent
                 do! transaction.CommitAsync()
-                witness.SettleAuthority(input.EventId, intent) |> ignore
+                let! _ = witness.SettleAuthority(input.EventId, intent)
                 return AuthorityWriteOutcome.Applied(input.EventId, revision input)
             finally
                 CryptographicOperations.ZeroMemory(canonical)

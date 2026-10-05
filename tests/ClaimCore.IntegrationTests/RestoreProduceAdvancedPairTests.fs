@@ -1,5 +1,6 @@
 module ClaimCore.IntegrationTests.RestoreProduceAdvancedPairTests
 
+open System.Threading
 open System
 open Expecto
 open ClaimCore.IntegrationTests.ActorGrantTestSupport
@@ -32,7 +33,7 @@ let private advancedPair owner app writer witness =
                 (walPosition registered.WitnessHorizon > walPosition witnessBase.WalEndLsn.Value)
                 "Witness registered WAL horizon follows the captured BASE end"
 
-            let current = witness.Snapshot()
+            let current = (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
 
             withAdvancedPair capture owner app writer witness (fun facts _ _ ->
                 Expect.equal

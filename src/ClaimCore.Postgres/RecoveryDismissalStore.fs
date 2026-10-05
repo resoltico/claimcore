@@ -12,13 +12,6 @@ open WitnessProtocolReconciliation
 
 /// Durable dismissal closes future execution authority but keeps prior attempt knowledge intact.
 module internal RecoveryDismissalStore =
-    exception private ActorUnavailable
-
-    let private dismissed header value =
-        { header with
-            Lifecycle = PreparationLifecycle.Dismissed value.RevokedAt
-        }
-
     let private existingRevocation
         (connection: NpgsqlConnection)
         (transaction: NpgsqlTransaction)
@@ -31,7 +24,14 @@ module internal RecoveryDismissalStore =
             return
                 match preparation with
                 | Some header ->
-                    Ok(RecoveryDismissal.AlreadyDismissed(dismissed header value), None)
+                    Ok(
+                        RecoveryDismissal.AlreadyDismissed(
+                            { header with
+                                Lifecycle = PreparationLifecycle.Dismissed value.RevokedAt
+                            }
+                        ),
+                        None
+                    )
                 | None -> Ok(RecoveryDismissal.RevokedTombstone(project value), None)
         }
 
@@ -42,6 +42,7 @@ module internal RecoveryDismissalStore =
         requestSha256
         (actorEvidence: RevocationActorEvidence)
         (witness: WitnessProtocol)
+        ct
         =
         task {
             let! preparation = readHeader connection (Some transaction) operationId
@@ -53,7 +54,7 @@ module internal RecoveryDismissalStore =
             | Some header when header.CaseId <> actorEvidence.CaseId ->
                 return Error RecoveryStoreFailure.ResourceUnavailable
             | Some header ->
-                let intent = witness.BeginRevocation(operationId, requestSha256, actorEvidence)
+                let! intent = witness.BeginRevocation(operationId, requestSha256, actorEvidence, ct)
 
                 let! inserted =
                     insert
@@ -68,54 +69,15 @@ module internal RecoveryDismissalStore =
                 return
                     match inserted with
                     | Some value ->
-                        Ok(RecoveryDismissal.Dismissed(dismissed header value), Some intent)
+                        Ok(
+                            RecoveryDismissal.Dismissed(
+                                { header with
+                                    Lifecycle = PreparationLifecycle.Dismissed value.RevokedAt
+                                }
+                            ),
+                            Some intent
+                        )
                     | None -> Error RecoveryStoreFailure.TechnicalMutationUnknown
-        }
-
-    let private authorized
-        connection
-        transaction
-        operationId
-        revision
-        (actorContext: ActorCallContext)
-        =
-        task {
-            match actorContext.CaseId with
-            | None -> return false
-            | Some caseId ->
-                let! available =
-                    ActorGrantGateQueries.availableCase
-                        connection
-                        transaction
-                        caseId
-                        CancellationToken.None
-
-                let resource = ResourceScope.Operation(operationId, caseId)
-
-                let! current =
-                    ActorGrantRead.loadUnderLock
-                        connection
-                        transaction
-                        actorContext.Binding.Principal
-                        resource
-                        revision
-                        CancellationToken.None
-
-                return
-                    available
-                    && current
-                       |> Option.exists (fun value ->
-                           match
-                               ActorAuthorization.authorizeAtRevision
-                                   actorContext.Binding.Principal
-                                   value
-                                   actorContext.Binding.GrantRevision
-                                   EndpointAction.RecoveryDismiss
-                                   resource
-                           with
-                           | AuthorizationDecision.Available(actorId, _) ->
-                               actorId = actorContext.Binding.ActorId
-                           | AuthorizationDecision.Unavailable -> false)
         }
 
     let private actorEvidence (actorContext: ActorCallContext) =
@@ -135,6 +97,7 @@ module internal RecoveryDismissalStore =
         requestSha256
         (actorContext: ActorCallContext)
         (witness: WitnessProtocol)
+        ct
         =
         task {
             let! accepted =
@@ -144,6 +107,7 @@ module internal RecoveryDismissalStore =
                     witness
                     operationId
                     requestSha256
+                    ct
 
             match accepted with
             | Error failure -> return Error failure
@@ -155,7 +119,7 @@ module internal RecoveryDismissalStore =
                 | Some value when not (matches requestSha256 value) ->
                     return Error RecoveryStoreFailure.IdempotencyConflict
                 | Some value ->
-                    witness.ReconcileRevoked(connection, transaction, operationId)
+                    do! witness.ReconcileRevoked(connection, transaction, operationId, ct)
                     return! existingRevocation connection transaction operationId value
                 | None ->
                     return!
@@ -166,6 +130,7 @@ module internal RecoveryDismissalStore =
                             requestSha256
                             (actorEvidence actorContext)
                             witness
+                            ct
         }
 
     let private dismissInTransaction
@@ -176,11 +141,23 @@ module internal RecoveryDismissalStore =
         (actorContext: ActorCallContext)
         revision
         (witness: WitnessProtocol)
+        ct
         =
         task {
-            do! Sql.lockKeyAsync connection transaction ("operation:" + operationId.ToString("D"))
+            do!
+                Sql.lockKeyAsync
+                    connection
+                    transaction
+                    ("operation:" + operationId.ToString("D"))
+                    ct
 
-            let! allowed = authorized connection transaction operationId revision actorContext
+            let! allowed =
+                ActorMutationGuard.authorizeDismissal
+                    connection
+                    transaction
+                    operationId
+                    revision
+                    actorContext
 
             if not allowed then
                 return Error RecoveryStoreFailure.ResourceUnavailable
@@ -193,6 +170,7 @@ module internal RecoveryDismissalStore =
                         requestSha256
                         actorContext
                         witness
+                        ct
         }
 
     let private dismissWithContext
@@ -205,14 +183,13 @@ module internal RecoveryDismissalStore =
         (commitStarted: bool ref)
         =
         task {
-            active.Admit()
-            use! connection = RuntimeDatabase.openConnectionAsync dataSource
+            do! active.Admit(cancellationToken)
+
+            use! connection =
+                RuntimeDatabase.openConnectionAsyncWithCancellation dataSource cancellationToken
 
             use! _authorityLease =
-                AuthorityOperationFence.acquireShared
-                    (Some dataSource)
-                    connection
-                    System.Threading.CancellationToken.None
+                AuthorityOperationFence.acquireShared (Some dataSource) connection cancellationToken
 
             let! transaction =
                 connection.BeginTransactionAsync(
@@ -234,6 +211,7 @@ module internal RecoveryDismissalStore =
                     actor
                     revision
                     active
+                    cancellationToken
 
             match result with
             | Error failure -> return Error failure
@@ -242,9 +220,9 @@ module internal RecoveryDismissalStore =
                     commitBoundary cancellationToken commitStarted (fun () ->
                         transaction.CommitAsync(CancellationToken.None))
 
-                intent
-                |> Option.iter (fun value ->
-                    active.SettleRevoked(value.Ticket.OperationId, value) |> ignore)
+                match intent with
+                | Some value -> let! _ = active.SettleRevoked(value.Ticket.OperationId, value) in ()
+                | None -> ()
 
                 return Ok outcome
         }
@@ -269,22 +247,18 @@ module internal RecoveryDismissalStore =
                         |> Option.defaultWith (fun () ->
                             invalidOp "Witness is required for revocation.")
 
-                    let actor =
-                        actorContext |> Option.defaultWith (fun () -> raise ActorUnavailable)
-
-                    return!
-                        dismissWithContext
-                            dataSource
-                            operationId
-                            requestSha256
-                            cancellationToken
-                            active
-                            actor
-                            commitStarted
+                    match actorContext with
+                    | None -> return Error RecoveryStoreFailure.ResourceUnavailable
+                    | Some actor ->
+                        return!
+                            dismissWithContext
+                                dataSource
+                                operationId
+                                requestSha256
+                                cancellationToken
+                                active
+                                actor
+                                commitStarted
                 with error ->
-                    return
-                        match error with
-                        | ActorUnavailable -> Error RecoveryStoreFailure.ResourceUnavailable
-                        | :? WitnessPending -> Error RecoveryStoreFailure.TechnicalMutationUnknown
-                        | _ -> Error(mutationFailure commitStarted.Value error)
+                    return Error(mutationFailure commitStarted.Value error)
         }

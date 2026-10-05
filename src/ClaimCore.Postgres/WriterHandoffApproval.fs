@@ -11,24 +11,6 @@ open WitnessProtocolReconciliation
 
 /// Authenticated owner approval is witnessed before an owner process may prepare a handoff.
 module internal WriterHandoffApproval =
-    let private digest32 (value: byte array) =
-        not (isNull (box value)) && value.Length = 32
-
-    let private valid (context: ActorCallContext) (request: WriterHandoffApprovalRequest) =
-        context.Action = EndpointAction.ApproveWriterHandoff
-        && context.CaseId.IsNone
-        && PrincipalKey.isHuman context.Binding.Principal
-        && request.ApprovalId <> Guid.Empty
-        && request.HandoffId <> Guid.Empty
-        && request.CheckpointSigningKeyId <> Guid.Empty
-        && request.OldGeneration > 0L
-        && request.ExpectedWitnessSequence >= 0L
-        && digest32 request.ExpectedWitnessHash
-        && digest32 request.NewCapabilitySha256
-        && digest32 request.FenceReportSha256
-        && digest32 request.InventorySha256
-        && Sql.isUtcMicrosecond request.ExpiresAt
-
     let private currentOwner context (live: ActorAuthority) revision =
         let grant =
             ActorAuthorization.authorizeAtRevision
@@ -111,21 +93,25 @@ module internal WriterHandoffApproval =
                     None
         }
 
-    let private replay (witness: WitnessProtocol) approvalId (canonical: byte array) stored =
-        match stored with
-        | Some(bytes, digest, sequence, epoch, hash, _, originalRevision) when
-            bytes = canonical && digest = SHA256.HashData(canonical)
-            ->
-            witness.VerifyAuthorityEvidenceForInstallation(
-                approvalId,
-                sequence,
-                epoch,
-                hash,
-                digest
-            )
+    let private replay (witness: WitnessProtocol) approvalId (canonical: byte array) stored ct =
+        task {
+            match stored with
+            | Some(bytes, digest, sequence, epoch, hash, _, originalRevision) when
+                bytes = canonical && digest = SHA256.HashData(canonical)
+                ->
+                do!
+                    witness.VerifyAuthorityEvidenceForInstallation(
+                        approvalId,
+                        sequence,
+                        epoch,
+                        hash,
+                        digest,
+                        ct
+                    )
 
-            WriterHandoffApprovalOutcome.Approved(approvalId, originalRevision)
-        | _ -> WriterHandoffApprovalOutcome.ResourceUnavailable
+                return WriterHandoffApprovalOutcome.Approved(approvalId, originalRevision)
+            | _ -> return WriterHandoffApprovalOutcome.ResourceUnavailable
+        }
 
     let private insert
         (connection: NpgsqlConnection)
@@ -183,22 +169,27 @@ module internal WriterHandoffApproval =
         actorId
         revision
         canonical
+        ct
         =
         task {
             let! holder = checkpointHolder connection transaction request.CheckpointSigningKeyId
-            let! now = Sql.databaseNow connection transaction
-            let snapshot = witness.Snapshot()
+            let! now = Sql.databaseNow connection transaction ct
+            let! snapshot = witness.Snapshot(ct)
 
-            let historical =
-                try
-                    witness.VerifyHistoricalTip(
-                        request.ExpectedWitnessSequence,
-                        request.ExpectedWitnessHash
-                    )
+            let! historical =
+                task {
+                    try
+                        do!
+                            witness.VerifyHistoricalTip(
+                                request.ExpectedWitnessSequence,
+                                request.ExpectedWitnessHash,
+                                ct
+                            )
 
-                    true
-                with _ ->
-                    false
+                        return true
+                    with _ ->
+                        return false
+                }
 
             match holder with
             | None -> return WriterHandoffApprovalOutcome.ResourceUnavailable
@@ -213,10 +204,10 @@ module internal WriterHandoffApproval =
                 ->
                 return WriterHandoffApprovalOutcome.ResourceUnavailable
             | Some _ ->
-                let intent = witness.BeginAuthority(request.ApprovalId, canonical, None)
+                let! intent = witness.BeginAuthority(request.ApprovalId, canonical, None, ct)
                 do! insert connection transaction request actorId revision canonical intent
                 do! transaction.CommitAsync()
-                witness.SettleAuthority(request.ApprovalId, intent) |> ignore
+                let! _ = witness.SettleAuthority(request.ApprovalId, intent)
                 return WriterHandoffApprovalOutcome.Approved(request.ApprovalId, revision)
         }
 
@@ -226,6 +217,7 @@ module internal WriterHandoffApproval =
         (witness: WitnessProtocol)
         (context: ActorCallContext)
         (request: WriterHandoffApprovalRequest)
+        ct
         =
         task {
             let! revision =
@@ -257,7 +249,7 @@ module internal WriterHandoffApproval =
                 try
                     match stored with
                     | Some _ when originalRevision > 0L ->
-                        return replay witness request.ApprovalId canonical stored
+                        return! replay witness request.ApprovalId canonical stored ct
                     | Some _ -> return WriterHandoffApprovalOutcome.ResourceUnavailable
                     | None ->
                         return!
@@ -269,28 +261,30 @@ module internal WriterHandoffApproval =
                                 live.ActorId
                                 revision
                                 canonical
+                                ct
                 finally
                     CryptographicOperations.ZeroMemory(canonical)
             | _ -> return WriterHandoffApprovalOutcome.ResourceUnavailable
         }
 
-    let approve dataSource (witness: WitnessProtocol) context request =
+    let approve dataSource (witness: WitnessProtocol) context request ct =
         task {
-            if not (valid context request) then
+            if not (WriterHandoffApprovalCandidate.valid context request) then
                 return WriterHandoffApprovalOutcome.ResourceUnavailable
             else
                 try
-                    witness.Admit()
-                    use! connection = RuntimeDatabase.openConnectionAsync dataSource
+                    do! witness.Admit(ct)
+
+                    use! connection =
+                        RuntimeDatabase.openConnectionAsyncWithCancellation dataSource ct
 
                     use! _authorityLease =
-                        AuthorityOperationFence.acquireShared
-                            (Some dataSource)
-                            connection
-                            System.Threading.CancellationToken.None
+                        AuthorityOperationFence.acquireShared (Some dataSource) connection ct
 
-                    use transaction = connection.BeginTransaction(IsolationLevel.ReadCommitted)
-                    return! underLock connection transaction witness context request
+                    use! transaction =
+                        connection.BeginTransactionAsync(IsolationLevel.ReadCommitted, ct)
+
+                    return! underLock connection transaction witness context request ct
                 with _ ->
                     return WriterHandoffApprovalOutcome.StartedUnconfirmed request.ApprovalId
         }

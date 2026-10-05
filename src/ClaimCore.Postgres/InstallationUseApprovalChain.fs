@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open ClaimCore.Application
 open WitnessProtocolReconciliation
 
@@ -48,12 +49,15 @@ module internal InstallationUseApprovalChain =
         (b: InstallationUseApprovalEvidence)
         (plan: PublishedInstallationUsePlan)
         (witness: WitnessProtocol)
+        (ct: CancellationToken)
         =
-        witness.VerifyHistoricalTip(one.ReviewWitnessSequence, one.ReviewWitnessHash)
+        task {
+            do! witness.VerifyHistoricalTip(one.ReviewWitnessSequence, one.ReviewWitnessHash, ct)
 
-        if
-            not (samePlan one two plan)
-            || not (sameReview one two plan)
-            || not (linked a b two)
-        then
-            invalidOp "Two owner approvals do not form one reviewed chain."
+            if
+                not (samePlan one two plan)
+                || not (sameReview one two plan)
+                || not (linked a b two)
+            then
+                invalidOp "Two owner approvals do not form one reviewed chain."
+        }

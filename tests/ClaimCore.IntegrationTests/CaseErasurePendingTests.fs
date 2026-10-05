@@ -10,6 +10,7 @@ open ClaimCore.Postgres
 open ClaimCore.Witness
 open ClaimCore.IntegrationTests.Fixtures
 open ClaimCore.IntegrationTests.CaseLifecycleStoreTests
+open ClaimCore.IntegrationTests.CaseLifecycleStoreFixture
 
 let private cancellation = CancellationToken.None
 
@@ -35,32 +36,6 @@ let private requestErasure actor input =
         | _ -> failtest "Erasure request did not settle."
 
     review actor input.CaseReference
-
-let private caseId owner reference =
-    use connection = new NpgsqlConnection(owner)
-    connection.Open()
-
-    use command =
-        new NpgsqlCommand(
-            "SELECT case_id FROM claimcore.cases WHERE case_reference=@reference",
-            connection
-        )
-
-    Sql.text command "reference" reference
-    command.ExecuteScalar() :?> Guid
-
-let private denialCount owner id =
-    use connection = new NpgsqlConnection(owner)
-    connection.Open()
-
-    use command =
-        new NpgsqlCommand(
-            "SELECT count(*) FROM claimcore.case_erasure_operation_denials WHERE case_id=@case",
-            connection
-        )
-
-    Sql.uuid command "case" id
-    command.ExecuteScalar() :?> int64
 
 let private settledRequestAdvances =
     testCase "[CC-ERASE-001] only a settled erasure fence advances to pending" (fun _ ->
@@ -144,6 +119,17 @@ let private divergentRequestRefuses =
                 PrivacyPhase.ErasureRequested
                 "No transition can follow forged evidence"))
 
+let private assertCaseApprovalScope (witness: WitnessProtocol) approvalId =
+    for phase in [ Intent; SettledAuthority ] do
+        let ticket =
+            (witness.EvidenceStore.TryReadEvidence(approvalId, phase, CancellationToken.None)
+             |> await)
+            |> Option.defaultWith (fun () -> failtest "Purge approval witness missing")
+            |> _.Ticket
+
+        Expect.equal ticket.ScopeKind Case "Approval remains case-scoped"
+
+
 let private purgeApprovalsDoNotDelete =
     testCase
         "[CC-ERASE-001] two witnessed erasure approvals cannot impersonate owner purge"
@@ -189,14 +175,7 @@ let private purgeApprovalsDoNotDelete =
                     | LifecycleWriteOutcome.Applied(id, _, _) when id = approvalId -> ()
                     | _ -> failtest "Purge approval failed."
 
-                    for phase in [ Intent; SettledAuthority ] do
-                        let ticket =
-                            witness.EvidenceStore.TryReadEvidence(approvalId, phase)
-                            |> Option.defaultWith (fun () ->
-                                failtest "Purge approval witness missing")
-                            |> _.Ticket
-
-                        Expect.equal ticket.ScopeKind Case "Approval remains case-scoped"
+                    assertCaseApprovalScope witness approvalId
 
                 Expect.equal
                     (review proposerActor input.CaseReference).PrivacyPhase
@@ -223,7 +202,8 @@ let private witnessIntentDenials =
             connection.Open()
             use transaction = connection.BeginTransaction()
             let commitments = FixturePrivateFiles.syntheticCommitments witness.Identity
-            let cutoff = witness.Snapshot()
+
+            let cutoff = (witness.Snapshot(CancellationToken.None) |> await)
 
             let seal =
                 CaseErasureWitnessDenials.scan
@@ -233,6 +213,8 @@ let private witnessIntentDenials =
                     commitments
                     id
                     cutoff.TipSequence
+                    CancellationToken.None
+                |> await
 
             Expect.equal seal.CutoffHash cutoff.TipHash "Full global scan reaches exact tip"
             Expect.isGreaterThan seal.IntentCount 0L "Case intents are not skipped"
@@ -257,14 +239,21 @@ let private orphanIntentRefuses =
             let id = caseId owner input.CaseReference
             let before = denialCount owner id
 
-            witness.BeginAuthority(Guid.NewGuid(), [| 0x43uy; 0x43uy; 0x55uy |], Some id)
+            (witness.BeginAuthority(
+                Guid.NewGuid(),
+                [| 0x43uy; 0x43uy; 0x55uy |],
+                Some id,
+                CancellationToken.None
+             )
+             |> await)
             |> ignore
 
             use connection = new NpgsqlConnection(owner)
             connection.Open()
             use transaction = connection.BeginTransaction()
             let commitments = FixturePrivateFiles.syntheticCommitments witness.Identity
-            let cutoff = witness.Snapshot()
+
+            let cutoff = (witness.Snapshot(CancellationToken.None) |> await)
 
             Expect.throwsT<CaseIdentityCoverageUnknowable>
                 (fun () ->
@@ -275,6 +264,8 @@ let private orphanIntentRefuses =
                         commitments
                         id
                         cutoff.TipSequence
+                        CancellationToken.None
+                    |> await
                     |> ignore)
                 "Unknown orphan may hide a distinct business operation ID"
 

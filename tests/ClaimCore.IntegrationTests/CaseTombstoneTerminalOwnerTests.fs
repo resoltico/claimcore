@@ -45,7 +45,8 @@ let private syntheticFacts
     }
 
 let private syntheticCertificate (witness: WitnessProtocol) facts =
-    let tip = witness.Snapshot()
+    let tip = (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
+
     let testProof = SHA256.HashData(Encoding.ASCII.GetBytes("synthetic-zero-copy-only"))
     OwnerCopyAbsenceCertificate.FromVerifiedIssuer(facts, testProof, tip.TipSequence, tip.TipHash)
 
@@ -247,10 +248,14 @@ let private missingCopyProof =
             | _ -> failtest "Unknown copies were misclassified."
 
             Expect.isNone
-                (fixture.Witness.EvidenceStore.TryReadEvidence(
-                    TombstoneTerminalProposal.eventId draft,
-                    ClaimCore.Witness.Intent
-                ))
+                ((fixture.Witness.EvidenceStore
+                    .TryReadEvidence(
+                        TombstoneTerminalProposal.eventId draft,
+                        ClaimCore.Witness.Intent,
+                        CancellationToken.None
+                    )
+                    .GetAwaiter()
+                    .GetResult()))
                 "No terminal witness intent was emitted without copy proof"
 
             let audited = summary fixture

@@ -1,5 +1,6 @@
 namespace ClaimCore.Postgres
 
+open System.Threading
 open System.Security.Cryptography
 open Npgsql
 open ClaimCore.Application
@@ -8,21 +9,25 @@ open ClaimCore.Application
 /// independent SETTLED_AUTHORITY readback can produce a definite terminal response.
 module internal CaseTombstoneTerminalOwnerCommit =
     let private settle (witness: WitnessProtocol) (value: TerminalCopyProposal) intent phase =
-        try
-            witness.SettleAuthority(value.EventId, intent) |> ignore
+        task {
+            try
+                let! _ = witness.SettleAuthority(value.EventId, intent)
 
-            witness.VerifyAuthorityEvidenceForCase(
-                value.EventId,
-                intent.Ticket.Sequence,
-                intent.Ticket.Epoch,
-                intent.Ticket.EntryHash,
-                intent.CandidateHash,
-                value.CaseId
-            )
+                do!
+                    witness.VerifyAuthorityEvidenceForCase(
+                        value.EventId,
+                        intent.Ticket.Sequence,
+                        intent.Ticket.Epoch,
+                        intent.Ticket.EntryHash,
+                        intent.CandidateHash,
+                        value.CaseId,
+                        CancellationToken.None
+                    )
 
-            OwnerTerminalOutcome.Advanced(value.EventId, phase)
-        with _ ->
-            OwnerTerminalOutcome.Unconfirmed value.EventId
+                return OwnerTerminalOutcome.Advanced(value.EventId, phase)
+            with _ ->
+                return OwnerTerminalOutcome.Unconfirmed value.EventId
+        }
 
     let commit
         (connection: NpgsqlConnection)
@@ -49,7 +54,8 @@ module internal CaseTombstoneTerminalOwnerCommit =
 
             try
                 try
-                    let intent = witness.BeginAuthority(value.EventId, canonical, Some value.CaseId)
+                    let! intent =
+                        witness.BeginAuthority(value.EventId, canonical, Some value.CaseId, ct)
 
                     do!
                         CaseTombstoneTerminalEventWrite.persist
@@ -67,7 +73,7 @@ module internal CaseTombstoneTerminalOwnerCommit =
 
                     do! transaction.CommitAsync(ct)
 
-                    return settle witness value intent ready.NextPhase
+                    return! settle witness value intent ready.NextPhase
                 with _ ->
                     return OwnerTerminalOutcome.Unconfirmed value.EventId
             finally

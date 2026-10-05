@@ -1,5 +1,6 @@
 namespace ClaimCore.Database
 
+open System.Threading
 open Npgsql
 open ClaimCore.Application
 open ClaimCore.HostSecurity
@@ -54,6 +55,7 @@ module internal DatabaseWriterHandoffStages =
             inputs.FenceSignature
             (DatabaseWriterHandoffPrivate.binaryDigest ())
             now
+        |> fun work -> work.GetAwaiter().GetResult()
 
     let private executePrepared
         (inputs: WriterHandoffExecutionInputs)
@@ -114,7 +116,13 @@ module internal DatabaseWriterHandoffStages =
         use transaction = owner.BeginTransaction()
 
         let prepared =
-            WriterHandoffOwnerRead.preparation owner transaction witness handoffId
+            WriterHandoffOwnerRead.preparation
+                owner
+                transaction
+                witness
+                handoffId
+                CancellationToken.None
+            |> fun work -> work.GetAwaiter().GetResult()
             |> Option.defaultWith (fun () -> invalidOp "Exact pending W1 preparation is absent.")
 
         transaction.Rollback()
@@ -144,6 +152,7 @@ module internal DatabaseWriterHandoffStages =
             inputs.FenceSignature
             (DatabaseWriterHandoffPrivate.binaryDigest ())
             now
+        |> fun work -> work.GetAwaiter().GetResult()
 
     let private executeSettled
         (inputs: WriterHandoffExecutionInputs)
@@ -188,7 +197,7 @@ module internal DatabaseWriterHandoffStages =
                 identity
             )
 
-        witness.AdmitReadOnly()
+        witness.AdmitReadOnly(CancellationToken.None).GetAwaiter().GetResult()
         let prepared = readPrepared owner witness value.HandoffId
         let verifier = settledVerifier inputs owner prepared
         use source = RuntimeDataSource.create inputs.App

@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open System.Security.Cryptography
 open Npgsql
 open ClaimCore.Witness
@@ -8,40 +9,81 @@ open WitnessProtocolReconciliation
 
 /// Read-only exact proof of an already-committed witness handoff. Never appends W2.
 module internal WriterHandoffOwnerReconcile =
-    let primaryState connection transaction =
-        use command =
-            new NpgsqlCommand(
-                "SELECT writer_generation,writer_handoff_event_id,"
-                + "writer_handoff_sequence,writer_handoff_hash "
-                + "FROM claimcore.installation_lineage WHERE singleton",
-                connection,
-                transaction
-            )
+    let primaryState connection transaction (ct: CancellationToken) =
+        task {
+            use command =
+                new NpgsqlCommand(
+                    "SELECT writer_generation,writer_handoff_event_id,"
+                    + "writer_handoff_sequence,writer_handoff_hash "
+                    + "FROM claimcore.installation_lineage WHERE singleton",
+                    connection,
+                    transaction
+                )
 
-        use reader = command.ExecuteReader()
+            use! reader = command.ExecuteReaderAsync(ct)
 
-        if not (reader.Read()) then
-            invalidOp "Primary writer identity is absent."
+            let! found = reader.ReadAsync(ct)
 
-        let generation = reader.GetInt64(0)
-        let id = if reader.IsDBNull(1) then None else Some(reader.GetGuid(1))
+            if not found then
+                invalidOp "Primary writer identity is absent."
 
-        let sequence =
-            if reader.IsDBNull(2) then
-                None
+            let generation = reader.GetInt64(0)
+            let id = if reader.IsDBNull(1) then None else Some(reader.GetGuid(1))
+
+            let sequence =
+                if reader.IsDBNull(2) then
+                    None
+                else
+                    Some(reader.GetInt64(2))
+
+            let hash =
+                if reader.IsDBNull(3) then
+                    None
+                else
+                    Some(reader.GetFieldValue<byte array>(3))
+
+            let! extra = reader.ReadAsync(ct)
+
+            if extra then
+                invalidOp "Primary writer identity is ambiguous."
+
+            return generation, id, sequence, hash
+        }
+
+    let private priorGeneration
+        connection
+        transaction
+        (value: WriterHandoffSettlement)
+        (id: Guid option)
+        (sequence: int64 option)
+        (hash: byte array option)
+        ct
+        =
+        task {
+            if value.OldGeneration = 1L then
+                return id.IsNone && sequence.IsNone && hash.IsNone
             else
-                Some(reader.GetInt64(2))
+                match id, sequence, hash with
+                | Some priorId, Some priorSequence, Some priorHash ->
+                    use command =
+                        new NpgsqlCommand(
+                            "SELECT EXISTS (SELECT 1 FROM claimcore.writer_handoffs "
+                            + "WHERE handoff_id=@handoff AND new_generation=@generation "
+                            + "AND settlement_sequence=@sequence AND settlement_hash=@hash)",
+                            connection,
+                            transaction
+                        )
 
-        let hash =
-            if reader.IsDBNull(3) then
-                None
-            else
-                Some(reader.GetFieldValue<byte array>(3))
+                    Sql.uuid command "handoff" priorId
+                    Sql.integer command "generation" value.OldGeneration
+                    Sql.integer command "sequence" priorSequence
 
-        if reader.Read() then
-            invalidOp "Primary writer identity is ambiguous."
+                    Sql.add command "hash" NpgsqlTypes.NpgsqlDbType.Bytea (box priorHash)
 
-        generation, id, sequence, hash
+                    let! result = command.ExecuteScalarAsync(ct)
+                    return unbox<bool> result
+                | _ -> return false
+        }
 
     let verifyPrimary
         connection
@@ -50,87 +92,39 @@ module internal WriterHandoffOwnerReconcile =
         canonical
         signature
         (ticket: Ticket)
+        (ct: CancellationToken)
         =
-        match WriterHandoffOwnerRead.completed connection transaction value.HandoffId with
-        | Some(bytes, signed, sequence, hash) ->
-            let generation, id, recorded, entryHash = primaryState connection transaction
+        task {
+            let! completed =
+                WriterHandoffOwnerRead.completed connection transaction value.HandoffId ct
 
-            if
-                bytes <> canonical
-                || signed <> signature
-                || sequence <> ticket.Sequence
-                || hash <> ticket.EntryHash
-                || generation <> value.NewGeneration
-                || id <> Some value.HandoffId
-                || recorded <> Some ticket.Sequence
-                || entryHash <> Some ticket.EntryHash
-            then
-                invalidOp "Primary writer settlement differs."
+            match completed with
+            | Some(bytes, signed, sequence, hash) ->
+                let! generation, id, recorded, entryHash = primaryState connection transaction ct
 
-            true
-        | None ->
-            let generation, id, sequence, hash = primaryState connection transaction
+                if
+                    bytes <> canonical
+                    || signed <> signature
+                    || sequence <> ticket.Sequence
+                    || hash <> ticket.EntryHash
+                    || generation <> value.NewGeneration
+                    || id <> Some value.HandoffId
+                    || recorded <> Some ticket.Sequence
+                    || entryHash <> Some ticket.EntryHash
+                then
+                    invalidOp "Primary writer settlement differs."
 
-            let previous =
-                if value.OldGeneration = 1L then
-                    id.IsNone && sequence.IsNone && hash.IsNone
-                else
-                    match id, sequence, hash with
-                    | Some priorId, Some priorSequence, Some priorHash ->
-                        use command =
-                            new NpgsqlCommand(
-                                "SELECT EXISTS (SELECT 1 FROM claimcore.writer_handoffs "
-                                + "WHERE handoff_id=@handoff AND new_generation=@generation "
-                                + "AND settlement_sequence=@sequence AND settlement_hash=@hash)",
-                                connection,
-                                transaction
-                            )
+                return true
+            | None ->
+                let! generation, id, sequence, hash = primaryState connection transaction ct
 
-                        Sql.uuid command "handoff" priorId
-                        Sql.integer command "generation" value.OldGeneration
-                        Sql.integer command "sequence" priorSequence
-                        Sql.add command "hash" NpgsqlTypes.NpgsqlDbType.Bytea (box priorHash)
-                        unbox<bool>(command.ExecuteScalar())
-                    | _ -> false
+                let! previous = priorGeneration connection transaction value id sequence hash ct
 
-            if generation <> value.OldGeneration || not previous then
-                invalidOp "Primary writer generation cannot be backfilled."
+                if generation <> value.OldGeneration || not previous then
+                    invalidOp "Primary writer generation cannot be backfilled."
 
-            false
-
-    let private signatureKey connection transaction keyId =
-        use command =
-            new NpgsqlCommand(
-                "SELECT s.ed25519_public_key,s.signer_purpose,"
-                + "(SELECT r.witness_sequence FROM claimcore.managed_copy_signer_events r "
-                + "WHERE r.signing_key_id=s.signing_key_id AND r.revision=1),"
-                + "(SELECT r.witness_sequence FROM claimcore.managed_copy_signer_events r "
-                + "WHERE r.signing_key_id=s.signing_key_id AND r.revision=2) "
-                + "FROM claimcore.managed_copy_signers s WHERE s.signing_key_id=@key",
-                connection,
-                transaction
-            )
-
-        Sql.uuid command "key" keyId
-        use reader = command.ExecuteReader()
-
-        if not (reader.Read()) then
-            invalidOp "Historical checkpoint key is missing."
-
-        let publicKey = reader.GetFieldValue<byte array>(0)
-        let purpose = reader.GetString(1)
-        let registered = reader.GetInt64(2)
-
-        let retired =
-            if reader.IsDBNull(3) then
-                None
-            else
-                Some(reader.GetInt64(3))
-
-        if reader.Read() || publicKey.Length <> 32 || purpose <> "CHECKPOINT" then
-            invalidOp "Historical checkpoint key diverged."
-
-        publicKey, registered, retired
+                return false
+        }
 
     let private checkCiphertext
         (witness: WitnessProtocol)
@@ -178,47 +172,56 @@ module internal WriterHandoffOwnerReconcile =
         canonical
         signature
         (entry: WriterHandoffEvidence)
+        (ct: CancellationToken)
         =
-        if not (matchingSettlement prepared value canonical signature entry) then
-            invalidOp "Witness handoff evidence differs."
+        task {
+            if not (matchingSettlement prepared value canonical signature entry) then
+                invalidOp "Witness handoff evidence differs."
 
-        let sequence =
-            entry.SettlementSequence
-            |> Option.defaultWith (fun () -> invalidOp "No settlement.")
+            let sequence =
+                entry.SettlementSequence
+                |> Option.defaultWith (fun () -> invalidOp "No settlement.")
 
-        let hash =
-            entry.SettlementHash
-            |> Option.defaultWith (fun () -> invalidOp "No settlement hash.")
+            let hash =
+                entry.SettlementHash
+                |> Option.defaultWith (fun () -> invalidOp "No settlement hash.")
 
-        witness.VerifyHistoricalTip(sequence, hash)
+            do! witness.VerifyHistoricalTip(sequence, hash, ct)
 
-        let intent =
-            witness.EvidenceStore.TryReadEvidence(value.HandoffId, Intent)
-            |> Option.defaultWith (fun () -> invalidOp "Handoff intent is absent.")
+            let! retainedIntent =
+                witness.EvidenceStore.TryReadEvidence(value.HandoffId, Intent, ct)
 
-        let settled =
-            witness.EvidenceStore.TryReadEvidence(value.HandoffId, SettledAuthority)
-            |> Option.defaultWith (fun () -> invalidOp "Handoff settlement is absent.")
+            let intent =
+                retainedIntent
+                |> Option.defaultWith (fun () -> invalidOp "Handoff intent is absent.")
 
-        if
-            intent.Ticket.Sequence <> prepared.Intent.Sequence
-            || intent.Ticket.EntryHash <> prepared.Intent.EntryHash
-            || settled.Ticket.Sequence <> sequence
-            || settled.Ticket.EntryHash <> hash
-            || intent.Ticket.ScopeKind <> Installation
-            || settled.Ticket.ScopeKind <> Installation
-        then
-            invalidOp "Witness handoff tickets differ."
+            let! retainedSettled =
+                witness.EvidenceStore.TryReadEvidence(value.HandoffId, SettledAuthority, ct)
 
-        checkCiphertext witness value.HandoffId "INTENT" intent prepared.Canonical
-        let expected = WriterHandoffEvidenceHash.settlement prepared.Canonical canonical
+            let settled =
+                retainedSettled
+                |> Option.defaultWith (fun () -> invalidOp "Handoff settlement is absent.")
 
-        try
-            checkCiphertext witness value.HandoffId "SETTLED_AUTHORITY" settled expected
-        finally
-            CryptographicOperations.ZeroMemory(expected)
+            if
+                intent.Ticket.Sequence <> prepared.Intent.Sequence
+                || intent.Ticket.EntryHash <> prepared.Intent.EntryHash
+                || settled.Ticket.Sequence <> sequence
+                || settled.Ticket.EntryHash <> hash
+                || intent.Ticket.ScopeKind <> Installation
+                || settled.Ticket.ScopeKind <> Installation
+            then
+                invalidOp "Witness handoff tickets differ."
 
-        settled.Ticket
+            checkCiphertext witness value.HandoffId "INTENT" intent prepared.Canonical
+            let expected = WriterHandoffEvidenceHash.settlement prepared.Canonical canonical
+
+            try
+                checkCiphertext witness value.HandoffId "SETTLED_AUTHORITY" settled expected
+            finally
+                CryptographicOperations.ZeroMemory(expected)
+
+            return settled.Ticket
+        }
 
     let trySettled
         (connection: NpgsqlConnection)
@@ -228,31 +231,41 @@ module internal WriterHandoffOwnerReconcile =
         (value: WriterHandoffSettlement)
         canonical
         signature
+        (ct: CancellationToken)
         =
-        match witness.EvidenceStore.TryReadHandoff(value.HandoffId) with
-        | Some entry when entry.SettlementSequence.IsSome ->
-            let publicKey, registered, retired =
-                signatureKey connection transaction value.CheckpointSigningKeyId
+        task {
+            let! stored = witness.EvidenceStore.TryReadHandoff(value.HandoffId, ct)
 
-            let settlementSequence = entry.SettlementSequence.Value
+            match stored with
+            | Some entry when entry.SettlementSequence.IsSome ->
+                let publicKey, registered, retired =
+                    WriterHandoffOwnerChecks.historicalCheckpointKey
+                        connection
+                        transaction
+                        value.CheckpointSigningKeyId
 
-            if
-                registered >= prepared.Intent.Sequence
-                || (retired |> Option.exists (fun n -> n <= settlementSequence))
-                || not (ManagedCopySignature.verify publicKey prepared.Canonical prepared.Signature)
-                || not (ManagedCopySignature.verify publicKey canonical signature)
-            then
-                invalidOp "Historical checkpoint signature differs."
+                let settlementSequence = entry.SettlementSequence.Value
 
-            let ticket = exactWitness witness prepared value canonical signature entry
-            let current = witness.Snapshot()
+                if
+                    registered >= prepared.Intent.Sequence
+                    || (retired |> Option.exists (fun n -> n <= settlementSequence))
+                    || not (
+                        ManagedCopySignature.verify publicKey prepared.Canonical prepared.Signature
+                    )
+                    || not (ManagedCopySignature.verify publicKey canonical signature)
+                then
+                    invalidOp "Historical checkpoint signature differs."
 
-            if
-                current.HandoffPending
-                || current.WriterGeneration <> value.NewGeneration
-                || current.TipSequence < ticket.Sequence
-            then
-                invalidOp "Settled witness writer generation is unavailable."
+                let! ticket = exactWitness witness prepared value canonical signature entry ct
+                let! current = witness.Snapshot(ct)
 
-            Some ticket
-        | _ -> None
+                if
+                    current.HandoffPending
+                    || current.WriterGeneration <> value.NewGeneration
+                    || current.TipSequence < ticket.Sequence
+                then
+                    invalidOp "Settled witness writer generation is unavailable."
+
+                return Some ticket
+            | _ -> return None
+        }

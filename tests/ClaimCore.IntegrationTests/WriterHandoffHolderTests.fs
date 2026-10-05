@@ -29,36 +29,7 @@ let private changeCustodianGrant (runtime: Runtime) owner holder active =
     |> await
     |> appliedManagement eventId
 
-let private holderAuthority ownerConnection app writer (witness: WitnessProtocol) =
-    let owner = human "handoff-holder-owner"
-    let holder = human "handoff-holder-custodian"
-    provision ownerConnection witness owner |> applied
-    use runtime = openRuntime app writer
-    grantCustodian runtime owner holder
-    use connection = new NpgsqlConnection(ownerConnection)
-    connection.Open()
-
-    let key, _, keyId, digest =
-        registeredSigner runtime owner holder CopySignerPurpose.Checkpoint witness connection
-
-    use key = key
-
-    let approve action =
-        (runtime.ForActor owner).ApproveWriterHandoff(action, CancellationToken.None)
-        |> await
-
-    changeCustodianGrant runtime owner holder false
-    let beforeGrant = witness.Snapshot().TipSequence
-    let deniedGrant = request keyId (witness.Snapshot())
-
-    Expect.equal
-        (approve deniedGrant)
-        WriterHandoffApprovalOutcome.ResourceUnavailable
-        "Revoked checkpoint custodian grant refuses fresh handoff approval."
-
-    Expect.equal (witness.Snapshot().TipSequence) beforeGrant "Grant refusal creates no approval."
-    changeCustodianGrant runtime owner holder true
-
+let private retireCheckpointSigner runtime owner holder keyId digest connection witness =
     let first, second =
         approvePair
             runtime
@@ -82,8 +53,50 @@ let private holderAuthority ownerConnection app writer (witness: WitnessProtocol
     |> await
     |> appliedSigner retireId
 
-    let beforeRetired = witness.Snapshot().TipSequence
-    let deniedRetired = request keyId (witness.Snapshot())
+
+let private holderAuthority ownerConnection app writer (witness: WitnessProtocol) =
+    let owner = human "handoff-holder-owner"
+    let holder = human "handoff-holder-custodian"
+    provision ownerConnection witness owner |> applied
+    use runtime = openRuntime app writer
+    grantCustodian runtime owner holder
+    use connection = new NpgsqlConnection(ownerConnection)
+    connection.Open()
+
+    let key, _, keyId, digest =
+        registeredSigner runtime owner holder CopySignerPurpose.Checkpoint witness connection
+
+    use key = key
+
+    let approve action =
+        (runtime.ForActor owner).ApproveWriterHandoff(action, CancellationToken.None)
+        |> await
+
+    changeCustodianGrant runtime owner holder false
+
+    let beforeGrant = (witness.Snapshot(CancellationToken.None) |> await).TipSequence
+
+    let deniedGrant =
+        request keyId ((witness.Snapshot(CancellationToken.None) |> await))
+
+    Expect.equal
+        (approve deniedGrant)
+        WriterHandoffApprovalOutcome.ResourceUnavailable
+        "Revoked checkpoint custodian grant refuses fresh handoff approval."
+
+    Expect.equal
+        ((witness.Snapshot(CancellationToken.None) |> await).TipSequence)
+        beforeGrant
+        "Grant refusal creates no approval."
+
+    changeCustodianGrant runtime owner holder true
+
+    retireCheckpointSigner runtime owner holder keyId digest connection witness
+
+    let beforeRetired = (witness.Snapshot(CancellationToken.None) |> await).TipSequence
+
+    let deniedRetired =
+        request keyId ((witness.Snapshot(CancellationToken.None) |> await))
 
     Expect.equal
         (approve deniedRetired)
@@ -91,7 +104,7 @@ let private holderAuthority ownerConnection app writer (witness: WitnessProtocol
         "Retired CHECKPOINT signer refuses new handoff approval."
 
     Expect.equal
-        (witness.Snapshot().TipSequence)
+        ((witness.Snapshot(CancellationToken.None) |> await).TipSequence)
         beforeRetired
         "Retired-key refusal adds no intent."
 

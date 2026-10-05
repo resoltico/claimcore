@@ -124,7 +124,7 @@ module internal DataAudit =
 
             let evidence = readEvidence reader
             reader.Close()
-            let tip = witnessProof witness.Snapshot
+            let! tip = witnessProofAsync (fun () -> witness.Snapshot(cancellationToken))
 
             if not (matchesWitness tip evidence) then
                 corrupt ()
@@ -231,7 +231,7 @@ module internal DataAudit =
         (cancellationToken: CancellationToken)
         =
         task {
-            witnessProof witness.AdmitReadOnly
+            do! witnessProofAsync (fun () -> witness.AdmitReadOnly(cancellationToken))
 
             use! transaction =
                 connection.BeginTransactionAsync(IsolationLevel.RepeatableRead, cancellationToken)
@@ -255,7 +255,7 @@ module internal DataAudit =
             let! authority =
                 DataAuditAuthority.verify connection transaction witness tip cancellationToken
 
-            let finalTip = witnessProof witness.Snapshot
+            let! finalTip = witnessProofAsync (fun () -> witness.Snapshot(cancellationToken))
 
             if
                 finalTip.TipSequence <> tip.TipSequence
@@ -271,3 +271,12 @@ module internal DataAudit =
 
     let run connection witness cancellationToken =
         runWithSuppression connection witness None cancellationToken
+
+    let pendingHandoff dataSource (witness: WitnessProtocol) commitments expected =
+        task {
+            use! audit = RuntimeDatabase.openConnectionAsync dataSource
+
+            let! summary = runWithSuppression audit witness commitments CancellationToken.None
+
+            return summary.PendingIntents = 1L && summary.WitnessCutoff = expected
+        }

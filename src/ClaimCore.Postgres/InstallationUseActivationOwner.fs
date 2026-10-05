@@ -13,7 +13,8 @@ type internal InstallationUseHealthVerifier =
         -> WitnessProtocol
         -> ReviewedDeploymentProfile
         -> BackupHealthQualifiedEvidence
-        -> unit
+        -> CancellationToken
+        -> System.Threading.Tasks.Task<unit>
 
 /// Owner-only one-way real-data activation. Witness settlement precedes the primary projection;
 /// any ambiguous phase remains quarantined until this exact event is reconciled.
@@ -51,7 +52,7 @@ module internal InstallationUseActivationOwner =
 
             match published with
             | Some value when value.Plan.Canonical = plan.Canonical ->
-                let pair =
+                let! pair =
                     InstallationUseActivationApprovals.verify
                         primary
                         transaction
@@ -60,8 +61,9 @@ module internal InstallationUseActivationOwner =
                         firstId
                         secondId
                         now
+                        ct
 
-                verifyHealth primary transaction witness profile proof
+                do! verifyHealth primary transaction witness profile proof ct
 
                 return
                     if pair.Second.SettlementSequence <= snapshot.TipSequence then
@@ -77,28 +79,31 @@ module internal InstallationUseActivationOwner =
         (witness: WitnessProtocol)
         (proof: BackupHealthQualifiedEvidence)
         (plan: BackupHealthActivationPlan)
+        ct
         =
-        let identity, generation, scope, phase, priorId, priorSequence, priorHash =
-            InstallationUseActivationPrimary.state primary transaction
+        task {
+            let! identity, generation, scope, phase, priorId, priorSequence, priorHash =
+                InstallationUseActivationPrimary.state primary transaction ct
 
-        let state =
-            InstallationUseActivationPreflight.state scope phase priorId priorSequence priorHash
+            let state =
+                InstallationUseActivationPreflight.state scope phase priorId priorSequence priorHash
 
-        let snapshot = witness.Snapshot()
-        let now = Sql.databaseNowSync primary transaction
+            let! snapshot = witness.Snapshot(ct)
+            let! now = Sql.databaseNow primary transaction ct
 
-        let matches =
-            InstallationUseActivationPreflight.phaseMatches
-                proof
-                witness
-                plan
-                state
-                generation
-                identity
-                snapshot
-                now
+            let matches =
+                InstallationUseActivationPreflight.phaseMatches
+                    proof
+                    witness
+                    plan
+                    state
+                    generation
+                    identity
+                    snapshot
+                    now
 
-        matches, now, snapshot
+            return matches, now, snapshot
+        }
 
     let private phaseUnderLock
         (primary: NpgsqlConnection)
@@ -115,18 +120,20 @@ module internal InstallationUseActivationOwner =
         task {
             let! _ = ActorGrantRead.lockRevision primary transaction true ct
 
-            let matches, now, snapshot = currentPhase primary transaction witness proof plan
+            let! matches, now, snapshot = currentPhase primary transaction witness proof plan ct
 
             if not matches then
                 return None
             else
                 // A loss decision cannot be bootstrapped after a failed audit has closed
                 // actor authority. Require two independently held retirement keys now.
-                InstallationLossRetirementSigners.requireReady
-                    primary
-                    transaction
-                    witness
-                    snapshot.TipSequence
+                do!
+                    InstallationLossRetirementSigners.requireReady
+                        primary
+                        transaction
+                        witness
+                        snapshot.TipSequence
+                        ct
 
                 return!
                     approvedProof
@@ -160,7 +167,9 @@ module internal InstallationUseActivationOwner =
         =
         task {
             use! _authorityFence = AuthorityOperationFence.acquireShared None primaryOwner ct
-            use transaction = primaryOwner.BeginTransaction(IsolationLevel.ReadCommitted)
+
+            use! transaction =
+                primaryOwner.BeginTransactionAsync(IsolationLevel.ReadCommitted, ct)
 
             let! approvals =
                 phaseUnderLock
@@ -178,23 +187,18 @@ module internal InstallationUseActivationOwner =
             match approvals with
             | None -> return InstallationUseActivationOutcome.Refused
             | Some pair ->
-                let canonical = InstallationUseActivationCandidate.encodeFinal plan proof pair
-
-                try
-                    return!
-                        InstallationUseActivationCommit.settleAndPersist
-                            primaryOwner
-                            transaction
-                            ownerWitnessConnection
-                            witness
-                            proof
-                            plan
-                            pair
-                            eventId
-                            canonical
-                            started
-                finally
-                    CryptographicOperations.ZeroMemory(canonical)
+                return!
+                    InstallationUseActivationCommit.commitApprovalPair
+                        primaryOwner
+                        transaction
+                        ownerWitnessConnection
+                        witness
+                        proof
+                        plan
+                        pair
+                        eventId
+                        started
+                        ct
         }
 
     /// Internal qualification seam; only isolated tests inject a verifier. Product callers use
@@ -226,7 +230,7 @@ module internal InstallationUseActivationOwner =
                 try
                     OwnerConnection.requireIdentity primaryOwner
                     SchemaBaseline.requireCurrent primaryOwner
-                    witness.AdmitReadOnly()
+                    do! witness.AdmitReadOnly(ct)
 
                     return!
                         inTransaction

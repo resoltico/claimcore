@@ -1,5 +1,6 @@
 namespace ClaimCore.Postgres
 
+open System.Threading
 open System.Security.Cryptography
 open ClaimCore.Witness
 open DataAuditCommon
@@ -38,18 +39,20 @@ module internal DataAuditInstallationLossWitness =
         && row.KnownOperationDigest = value.KnownOperationDigest
         && row.IntentSequence = value.PreviousSequence + 1L
 
-    let read (witness: WitnessProtocol) (tip: Snapshot) id =
-        let row =
-            witness.EvidenceStore.TryReadLossRetirement(id) |> Option.defaultWith corrupt
+    let read (witness: WitnessProtocol) (tip: Snapshot) id (ct: CancellationToken) =
+        task {
+            let! retained = witness.EvidenceStore.TryReadLossRetirement(id, ct)
+            let row = retained |> Option.defaultWith corrupt
 
-        let value =
-            InstallationLossRetirementCandidate.parse row.Canonical
-            |> Option.defaultWith corrupt
+            let value =
+                InstallationLossRetirementCandidate.parse row.Canonical
+                |> Option.defaultWith corrupt
 
-        if not (identityMatches tip row value id && decisionMatches row value) then
-            corrupt ()
+            if not (identityMatches tip row value id && decisionMatches row value) then
+                corrupt ()
 
-        row, value
+            return row, value
+        }
 
     let private decrypt (witness: WitnessProtocol) (ticket: Ticket) encrypted expected =
         let name = ClaimCore.Witness.Encoding.phase ticket.Phase
@@ -68,61 +71,72 @@ module internal DataAuditInstallationLossWitness =
             CryptographicOperations.ZeroMemory(plain)
             CryptographicOperations.ZeroMemory(expected)
 
-    let intent (witness: WitnessProtocol) (row: LossRetirementEvidence) (ticket: Ticket) =
-        if
-            ticket.Phase <> Intent
-            || ticket.ScopeKind <> Installation
-            || ticket.SubjectCaseId.IsSome
-            || ticket.Sequence <> row.IntentSequence
-            || ticket.EntryHash <> row.IntentHash
-        then
-            corrupt ()
+    let intent
+        (witness: WitnessProtocol)
+        (row: LossRetirementEvidence)
+        (ticket: Ticket)
+        (ct: CancellationToken)
+        =
+        task {
+            if
+                ticket.Phase <> Intent
+                || ticket.ScopeKind <> Installation
+                || ticket.SubjectCaseId.IsSome
+                || ticket.Sequence <> row.IntentSequence
+                || ticket.EntryHash <> row.IntentHash
+            then
+                corrupt ()
 
-        let expected =
-            InstallationLossRetirementWitness.candidateDigest
-                row.Canonical
-                row.SignatureOne
-                row.SignatureTwo
-                row.KnownOperationDigest
+            let expected =
+                InstallationLossRetirementWitness.candidateDigest
+                    row.Canonical
+                    row.SignatureOne
+                    row.SignatureTwo
+                    row.KnownOperationDigest
 
-        let evidence =
-            witness.EvidenceStore.TryReadEvidence(row.RetirementId, Intent)
-            |> Option.defaultWith corrupt
+            let! observed = witness.EvidenceStore.TryReadEvidence(row.RetirementId, Intent, ct)
+            let evidence = observed |> Option.defaultWith corrupt
 
-        if evidence.Ticket <> ticket then
-            corrupt ()
+            if evidence.Ticket <> ticket then
+                corrupt ()
 
-        decrypt witness ticket evidence.EncryptedPayload expected
+            decrypt witness ticket evidence.EncryptedPayload expected
+        }
 
     let settlement
         (witness: WitnessProtocol)
         (tip: Snapshot)
         (row: LossRetirementEvidence)
         (ticket: Ticket)
+        (ct: CancellationToken)
         =
-        if
-            row.SettlementSequence <> Some ticket.Sequence
-            || row.SettlementHash <> Some ticket.EntryHash
-            || ticket.Sequence <> row.IntentSequence + 1L
-            || not tip.LossRetired
-            || tip.LossRetirementPending
-            || tip.LossRetirementSequence <> Some ticket.Sequence
-            || tip.LossRetirementHash <> Some ticket.EntryHash
-        then
-            corrupt ()
+        task {
+            if
+                row.SettlementSequence <> Some ticket.Sequence
+                || row.SettlementHash <> Some ticket.EntryHash
+                || ticket.Sequence <> row.IntentSequence + 1L
+                || not tip.LossRetired
+                || tip.LossRetirementPending
+                || tip.LossRetirementSequence <> Some ticket.Sequence
+                || tip.LossRetirementHash <> Some ticket.EntryHash
+            then
+                corrupt ()
 
-        let intent =
-            witness.EvidenceStore.TryReadEvidence(row.RetirementId, Intent)
-            |> Option.defaultWith corrupt
+            let! observedIntent =
+                witness.EvidenceStore.TryReadEvidence(row.RetirementId, Intent, ct)
 
-        let expected =
-            InstallationLossRetirementWitness.settlementDigest row.Canonical intent.Ticket
+            let intent = observedIntent |> Option.defaultWith corrupt
 
-        let evidence =
-            witness.EvidenceStore.TryReadEvidence(row.RetirementId, SettledAuthority)
-            |> Option.defaultWith corrupt
+            let expected =
+                InstallationLossRetirementWitness.settlementDigest row.Canonical intent.Ticket
 
-        if evidence.Ticket <> ticket then
-            corrupt ()
+            let! observed =
+                witness.EvidenceStore.TryReadEvidence(row.RetirementId, SettledAuthority, ct)
 
-        decrypt witness ticket evidence.EncryptedPayload expected
+            let evidence = observed |> Option.defaultWith corrupt
+
+            if evidence.Ticket <> ticket then
+                corrupt ()
+
+            decrypt witness ticket evidence.EncryptedPayload expected
+        }

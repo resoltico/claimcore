@@ -12,32 +12,12 @@ open NSec.Cryptography
 open ClaimCore.Application
 open ClaimCore.Postgres
 open ClaimCore.IntegrationTests.Fixtures
+open ClaimCore.IntegrationTests.ManagedCopyAuditTestSupport
 open ClaimCore.IntegrationTests.ManagedCopyAttestationFixture
 open ClaimCore.IntegrationTests.ManagedCopyInventoryFixture
 open ClaimCore.IntegrationTests.ManagedCopyPhysicalProcessDocuments
 open ClaimCore.IntegrationTests.ManagedCopyPhysicalOwnerSetup
 open ClaimCore.IntegrationTests.ManagedCopyPhysicalOwnerRefusals
-
-let private copyState (connection: NpgsqlConnection) transaction copyId =
-    use command =
-        match transaction with
-        | Some current ->
-            new NpgsqlCommand(
-                "SELECT state FROM claimcore.managed_copies WHERE copy_id=@copy",
-                connection,
-                current
-            )
-        | None ->
-            new NpgsqlCommand(
-                "SELECT state FROM claimcore.managed_copies WHERE copy_id=@copy",
-                connection
-            )
-
-    Sql.uuid command "copy" copyId
-
-    match command.ExecuteScalar() with
-    | :? string as state -> state
-    | _ -> failtest "Verified physical copy row is absent."
 
 let private eventHash (connection: NpgsqlConnection) copyId =
     use command =
@@ -95,7 +75,7 @@ let private unknownTransition
             "UNKNOWN"
             "UNKNOWN"
             previous
-            (witness.Snapshot())
+            ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()))
         |> fun source ->
             changed
                 source
@@ -156,9 +136,12 @@ let private actorAttempt
 
         let guard =
             { new ICaseMutationCommitHealth with
-                member _.VerifyLocked(connection, current) =
-                    if copyState connection (Some current) copyId <> "RETAINED" then
-                        invalidOp "Signed retained-copy health became stale."
+                member _.VerifyLocked(connection, current, _) =
+                    task {
+                        if copyState connection (Some current) copyId <> "RETAINED" then
+                            invalidOp "Signed retained-copy health became stale."
+                    }
+                    :> Task
             }
 
         use _scope = CaseMutationCommitHealth.enter guard
@@ -167,7 +150,11 @@ let private actorAttempt
         |> await
         |> ignore
 
-        witness.BeginAuthority(Guid.NewGuid(), [| 1uy |], None) |> ignore)
+        (witness
+            .BeginAuthority(Guid.NewGuid(), [| 1uy |], None, CancellationToken.None)
+            .GetAwaiter()
+            .GetResult())
+        |> ignore)
 
 let private settledRace
     owner
@@ -210,7 +197,7 @@ let private settledRace
         "The owner transition is visible before the actor health recheck."
 
     Expect.equal
-        (witness.Snapshot().TipSequence)
+        ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
         (before + 2L)
         "Only the owner copy transition appended witness evidence."
 
@@ -260,7 +247,9 @@ let verify
         "RETAINED"
         "The concurrency oracle begins from a genuinely verified retained copy."
 
-    let before = witness.Snapshot().TipSequence
+    let before =
+        (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence
+
     use held = blocker.BeginTransaction(IsolationLevel.ReadCommitted)
 
     ActorGrantRead.lockRevision blocker held true CancellationToken.None

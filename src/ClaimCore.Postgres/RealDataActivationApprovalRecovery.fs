@@ -1,11 +1,13 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open System.Globalization
 open System.Security.Cryptography
 open System.Text.Json
 open ClaimCore.Application
 open ClaimCore.Witness
+open WitnessProtocolReconciliation
 
 [<NoEquality; NoComparison>]
 type internal PendingRealDataActivationApproval =
@@ -69,7 +71,7 @@ module internal RealDataActivationApprovalRecovery =
                 |> Option.ofObj
                 |> Option.defaultWith (fun () -> invalidOp "Approval time is absent.")
 
-            DateTimeOffset.Parse(text, CultureInfo.InvariantCulture)
+            DateTimeOffset.ParseExact(text, "O", CultureInfo.InvariantCulture, DateTimeStyles.None)
 
         let expected =
             RealDataActivationApprovalCandidate.canonical request actorId revision approvedAt
@@ -95,18 +97,67 @@ module internal RealDataActivationApprovalRecovery =
         finally
             CryptographicOperations.ZeroMemory(expected)
 
-    let tryRead (witness: WitnessProtocol) (request: RealDataActivationApprovalRequest) actorId =
-        match witness.EvidenceStore.TryReadEvidence(request.ApprovalId, Intent) with
-        | None -> None
-        | Some evidence ->
-            let plain =
-                witness.KeyCustody.Decrypt(
-                    evidence.Ticket.KeyId,
-                    witness.AssociatedData(request.ApprovalId, "INTENT"),
-                    evidence.EncryptedPayload
-                )
+    let tryRead
+        (witness: WitnessProtocol)
+        (request: RealDataActivationApprovalRequest)
+        actorId
+        (ct: CancellationToken)
+        =
+        task {
+            let! observed = witness.EvidenceStore.TryReadEvidence(request.ApprovalId, Intent, ct)
 
+            match observed with
+            | None -> return None
+            | Some evidence ->
+                let plain =
+                    witness.KeyCustody.Decrypt(
+                        evidence.Ticket.KeyId,
+                        witness.AssociatedData(request.ApprovalId, "INTENT"),
+                        evidence.EncryptedPayload
+                    )
+
+                try
+                    return Some(decode request actorId evidence plain)
+                finally
+                    CryptographicOperations.ZeroMemory(plain)
+        }
+
+    let requireSettled
+        (witness: WitnessProtocol)
+        (request: RealDataActivationApprovalRequest)
+        (stored: RealDataActivationApprovalRow)
+        canonical
+        ct
+        =
+        task {
             try
-                Some(decode request actorId evidence plain)
-            finally
-                CryptographicOperations.ZeroMemory(plain)
+                do!
+                    witness.VerifyAuthorityEvidenceForInstallation(
+                        request.ApprovalId,
+                        stored.WitnessSequence,
+                        stored.WitnessEpoch,
+                        stored.WitnessHash,
+                        stored.CandidateHash,
+                        ct
+                    )
+            with _ ->
+                do!
+                    witness.ReconcileAuthority(
+                        request.ApprovalId,
+                        stored.WitnessSequence,
+                        stored.WitnessEpoch,
+                        stored.WitnessHash,
+                        canonical,
+                        ct
+                    )
+
+                do!
+                    witness.VerifyAuthorityEvidenceForInstallation(
+                        request.ApprovalId,
+                        stored.WitnessSequence,
+                        stored.WitnessEpoch,
+                        stored.WitnessHash,
+                        stored.CandidateHash,
+                        ct
+                    )
+        }

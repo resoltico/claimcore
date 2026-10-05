@@ -56,28 +56,27 @@ module internal InstallationLossRetirementState =
         | _ -> invalidOp "Loss decision owner authority is unavailable."
 
     let databaseNow primaryOwner transaction =
-        Sql.databaseNow primaryOwner transaction
-        |> fun work -> work.GetAwaiter().GetResult()
+        Sql.databaseNow primaryOwner transaction CancellationToken.None
 
     let verifiedOwnerAuthority primaryOwner transaction witness cutoff =
-        let projection =
-            DataAuditWitness.verifyAuthorityEvents
-                primaryOwner
-                transaction
-                witness
-                cutoff
-                CancellationToken.None
-            |> fun work -> work.GetAwaiter().GetResult()
+        task {
+            let! projection =
+                DataAuditWitness.verifyAuthorityEvents
+                    primaryOwner
+                    transaction
+                    witness
+                    cutoff
+                    CancellationToken.None
 
-        DataAuditAuthorityProjection.verify
-            primaryOwner
-            transaction
-            projection
-            CancellationToken.None
-        |> fun work -> work.GetAwaiter().GetResult()
-        |> ignore
+            let! _ =
+                DataAuditAuthorityProjection.verify
+                    primaryOwner
+                    transaction
+                    projection
+                    CancellationToken.None
 
-        projection.Revision
+            return projection.Revision
+        }
 
     let matchingIdentity (identity: Identity) (witness: WitnessProtocol) =
         identity = witness.Identity
@@ -92,10 +91,13 @@ module internal InstallationLossRetirementState =
         (value: InstallationLossRetirementDecision)
         (settlement: Ticket)
         =
-        let snapshot = witness.Snapshot()
+        task {
+            let! snapshot = witness.Snapshot(CancellationToken.None)
 
-        snapshot.LossRetired
-        && not snapshot.LossRetirementPending
-        && snapshot.LossRetirementId = Some value.RetirementId
-        && snapshot.LossRetirementSequence = Some settlement.Sequence
-        && snapshot.LossRetirementHash = Some settlement.EntryHash
+            return
+                snapshot.LossRetired
+                && not snapshot.LossRetirementPending
+                && snapshot.LossRetirementId = Some value.RetirementId
+                && snapshot.LossRetirementSequence = Some settlement.Sequence
+                && snapshot.LossRetirementHash = Some settlement.EntryHash
+        }

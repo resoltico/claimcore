@@ -3,6 +3,7 @@ namespace ClaimCore.Postgres
 open System
 open System.Security.Cryptography
 open Npgsql
+open ClaimCore.Application
 
 [<NoEquality; NoComparison>]
 type internal CopyAdoptionSignerEvidence =
@@ -83,3 +84,48 @@ module internal ManagedCopyAdoptionSignatureEvidence =
         && custodian.HolderId <> inspector.HolderId
         && registry.HolderId <> inspector.HolderId
         && owner <> inspector.HolderId
+
+    let owners
+        connection
+        transaction
+        (request: CopyAdoptionApprovalRequest)
+        (submission: CopyAdoptionSubmission)
+        ownerActorId
+        cutoff
+        =
+        task {
+            let! custodian =
+                verify
+                    connection
+                    transaction
+                    request.CustodianSigningKeyId
+                    "COPY_ATTESTOR"
+                    submission.Custodian.Canonical
+                    submission.Custodian.Signature
+                    cutoff
+
+            let! registry =
+                verify
+                    connection
+                    transaction
+                    request.RegistrySigningKeyId
+                    "LOCATION_REGISTRY"
+                    submission.Registry.Canonical
+                    submission.Registry.Signature
+                    cutoff
+
+            let! inspector =
+                verify
+                    connection
+                    transaction
+                    request.InspectorSigningKeyId
+                    "LOCATION_INSPECTOR"
+                    submission.Inspection.Canonical
+                    submission.Inspection.Signature
+                    cutoff
+
+            return
+                match custodian, registry, inspector with
+                | Some c, Some r, Some i when distinct ownerActorId c r i -> Some(c, r, i)
+                | _ -> None
+        }

@@ -69,7 +69,7 @@ let private transition (request: Request) =
         "VERIFY"
         "RETAINED"
         prior
-        (request.Witness.Snapshot())
+        ((request.Witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()))
     |> fun source ->
         changed
             source
@@ -112,7 +112,7 @@ let private inputs (request: Request) transition =
 
 let private audit (request: Request) before =
     Expect.equal
-        (request.Witness.Snapshot().TipSequence)
+        ((request.Witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
         (before + 2L)
         "VERIFY adds one intent and one settlement."
 
@@ -147,7 +147,9 @@ let private result (request: Request) =
 let run request =
     let canonical = transition request
     let root, attestation, signature, files = inputs request canonical
-    let before = request.Witness.Snapshot().TipSequence
+
+    let before =
+        (request.Witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence
 
     if request.CheckNegatives then
         exercise

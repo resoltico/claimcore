@@ -159,7 +159,12 @@ let registerCopyUntil
     let eventId = Guid.NewGuid()
 
     let registration =
-        registerBase owner (witness.Snapshot()) keyId eventId copyId
+        registerBase
+            owner
+            ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()))
+            keyId
+            eventId
+            copyId
         |> fun source ->
             changed
                 source
@@ -179,7 +184,14 @@ let registerCopyUntil
     |> await
     |> acceptedCopy eventId
 
-    copyId, custodianId, copyPath, ciphertext, keyPath, witness.Snapshot(), registration, signature
+    copyId,
+    custodianId,
+    copyPath,
+    ciphertext,
+    keyPath,
+    (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()),
+    registration,
+    signature
 
 let registerCopy owner connection witness key algorithm keyId directory =
     let copyId, custodianId, copyPath, ciphertext, keyPath, tip, _, _ =

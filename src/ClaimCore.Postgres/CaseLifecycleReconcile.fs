@@ -109,25 +109,31 @@ module internal CaseLifecycleReconcile =
                 row
             |> ignore
 
-            witness.ReconcileAuthority(
-                row.EventId,
-                row.WitnessSequence,
-                row.WitnessEpoch,
-                row.WitnessHash,
-                row.Canonical
-            )
+            do!
+                witness.ReconcileAuthority(
+                    row.EventId,
+                    row.WitnessSequence,
+                    row.WitnessEpoch,
+                    row.WitnessHash,
+                    row.Canonical,
+                    ct
+                )
         }
 
-    let private settleApproval (witness: WitnessProtocol) (row: LifecycleAuditApprovalRow) =
-        CaseLifecycleAuditEvidence.validateApproval Int64.MaxValue row.CaseId row
+    let private settleApproval (witness: WitnessProtocol) (row: LifecycleAuditApprovalRow) ct =
+        task {
+            CaseLifecycleAuditEvidence.validateApproval Int64.MaxValue row.CaseId row
 
-        witness.ReconcileAuthority(
-            row.ApprovalId,
-            row.WitnessSequence,
-            row.WitnessEpoch,
-            row.WitnessHash,
-            row.Canonical
-        )
+            do!
+                witness.ReconcileAuthority(
+                    row.ApprovalId,
+                    row.WitnessSequence,
+                    row.WitnessEpoch,
+                    row.WitnessHash,
+                    row.Canonical,
+                    ct
+                )
+        }
 
     let reconcile
         (connection: NpgsqlConnection)
@@ -144,7 +150,7 @@ module internal CaseLifecycleReconcile =
                 try
                     OwnerConnection.requireIdentity connection
                     RuntimeSchema.requireCompatible connection
-                    witness.Admit()
+                    do! witness.Admit(ct)
                     use! _authorityLease = AuthorityOperationFence.acquireShared None connection ct
                     use transaction = connection.BeginTransaction(IsolationLevel.RepeatableRead)
 
@@ -165,7 +171,7 @@ module internal CaseLifecycleReconcile =
                         do! settleEvent connection transaction witness row ct
                         return LifecycleReconcileOutcome.Settled eventId
                     | None, Some row ->
-                        settleApproval witness row
+                        do! settleApproval witness row ct
                         return LifecycleReconcileOutcome.Settled eventId
                 with
                 | :? InvalidDataException ->

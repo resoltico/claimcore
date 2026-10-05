@@ -1,11 +1,13 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open System.IO
 open System.Security.Cryptography
 open System.Text.Json
 open Npgsql
 open ClaimCore.Application
+open ClaimCore.Domain
 
 [<NoEquality; NoComparison>]
 type private ExistingTerminalApproval =
@@ -97,32 +99,37 @@ module internal CaseTombstoneTerminalApprovalSet =
         expected
         proposal
         (row: ExistingTerminalApproval)
+        ct
         =
-        if row.CandidateHash <> SHA256.HashData(row.Canonical) then
-            raise (InvalidDataException("Terminal approval candidate hash diverged."))
+        task {
+            if row.CandidateHash <> SHA256.HashData(row.Canonical) then
+                raise (InvalidDataException("Terminal approval candidate hash diverged."))
 
-        let embedded = proposalBytes row.Canonical
+            let embedded = proposalBytes row.Canonical
 
-        try
-            if embedded <> expected then
-                false
-            else
-                requireCanonical proposal row
+            try
+                if embedded <> expected then
+                    return false
+                else
+                    requireCanonical proposal row
 
-                witness.VerifyAuthorityEvidenceForCase(
-                    row.ApprovalId,
-                    row.WitnessSequence,
-                    row.WitnessEpoch,
-                    row.WitnessHash,
-                    row.CandidateHash,
-                    caseId
-                )
+                    do!
+                        witness.VerifyAuthorityEvidenceForCase(
+                            row.ApprovalId,
+                            row.WitnessSequence,
+                            row.WitnessEpoch,
+                            row.WitnessHash,
+                            row.CandidateHash,
+                            caseId,
+                            ct
+                        )
 
-                true
-        finally
-            CryptographicOperations.ZeroMemory(embedded)
+                    return true
+            finally
+                CryptographicOperations.ZeroMemory(embedded)
+        }
 
-    let matches connection transaction witness proposal =
+    let matches connection transaction witness proposal ct =
         task {
             let value = TombstoneTerminalProposal.copy proposal
             let expected = CaseTombstoneTerminalCandidate.proposal proposal
@@ -133,7 +140,50 @@ module internal CaseTombstoneTerminalApprovalSet =
                 if existing.Length > 2 then
                     raise (InvalidDataException("Terminal approval capacity was exceeded."))
 
-                return existing |> List.forall (same witness value.CaseId expected proposal)
+                let mutable matching = true
+
+                for row in existing do
+                    if matching then
+                        let! accepted = same witness value.CaseId expected proposal row ct
+                        matching <- accepted
+
+                return matching
             finally
                 CryptographicOperations.ZeroMemory(expected)
+        }
+
+    let available
+        connection
+        transaction
+        (witness: WitnessProtocol)
+        (context: ActorCallContext)
+        proposal
+        ct
+        =
+        task {
+            let value = TombstoneTerminalProposal.copy proposal
+            let! holds = CaseTombstoneRead.activeHolds connection transaction value.CaseId
+
+            let! approvers =
+                CaseTombstoneTerminalRead.approvers connection transaction value.EventId
+
+            let! sameDraft = matches connection transaction witness proposal ct
+
+            if not holds.IsEmpty then
+                return Error LifecycleRefusal.HoldActive
+            elif not sameDraft then
+                return Error LifecycleRefusal.ApprovalMismatch
+            elif approvers |> List.contains context.Binding.ActorId then
+                return Error LifecycleRefusal.ApprovalMismatch
+            elif approvers.Length >= 2 then
+                return Error LifecycleRefusal.ApprovalCapacityExceeded
+            else
+                do!
+                    witness.RequireSettled(
+                        value.PruneEventId,
+                        ClaimCore.Witness.SettledAuthority,
+                        ct
+                    )
+
+                return Ok()
         }

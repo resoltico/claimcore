@@ -1,5 +1,6 @@
 module ClaimCore.IntegrationTests.MutationDisclosureTests
 
+open System.Threading
 open System
 open System.Security.Cryptography
 open Expecto
@@ -44,7 +45,10 @@ let private executeFence privacy =
                 "The interleaving occurs after primary COMMIT"
 
             Expect.isSome
-                (witness.EvidenceStore.TryReadEvidence(request.OperationId, SettledAccepted))
+                ((witness.EvidenceStore
+                    .TryReadEvidence(request.OperationId, SettledAccepted, CancellationToken.None)
+                    .GetAwaiter()
+                    .GetResult()))
                 "The acceptance is independently settled"
 
             if privacy then

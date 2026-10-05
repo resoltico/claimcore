@@ -238,6 +238,7 @@ module internal DataAuditOwnerCopyTransitions =
                             witness
                             cutoff
                             proof
+                            ct
 
                 reading <- proofs.Length = 100
 

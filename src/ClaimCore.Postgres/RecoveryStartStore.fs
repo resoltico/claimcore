@@ -17,17 +17,22 @@ module internal RecoveryStartStore =
     let private requireActorAndWitness
         (actorContext: ActorCallContext option)
         (witness: WitnessProtocol option)
+        ct
         =
-        let actor =
-            actorContext
-            |> Option.defaultWith (fun () -> invalidOp "Actor is required for attempt admission.")
+        task {
+            let actor =
+                actorContext
+                |> Option.defaultWith (fun () ->
+                    invalidOp "Actor is required for attempt admission.")
 
-        let active =
-            witness
-            |> Option.defaultWith (fun () -> invalidOp "Witness is required for attempt admission.")
+            let active =
+                witness
+                |> Option.defaultWith (fun () ->
+                    invalidOp "Witness is required for attempt admission.")
 
-        active.Admit()
-        actor, active
+            do! active.Admit(ct)
+            return actor, active
+        }
 
     let private startWithoutAccepted
         (connection: NpgsqlConnection)
@@ -38,6 +43,7 @@ module internal RecoveryStartStore =
         (actorContext: ActorCallContext)
         (witness: WitnessProtocol)
         (pending: (Guid * WitnessIntent) option ref)
+        ct
         =
         task {
             let! revoked = find connection transaction operationId
@@ -63,6 +69,7 @@ module internal RecoveryStartStore =
                         actorContext
                         witness
                         pending
+                        ct
         }
 
     let private startResource operationId (actorContext: ActorCallContext) =
@@ -81,6 +88,7 @@ module internal RecoveryStartStore =
         (actorContext: ActorCallContext)
         (witness: WitnessProtocol)
         (pending: (Guid * WitnessIntent) option ref)
+        ct
         =
         task {
             let! preparation = readHeader connection (Some transaction) operationId
@@ -93,7 +101,7 @@ module internal RecoveryStartStore =
                 ->
                 return Error RecoveryStoreFailure.ResourceUnavailable
             | Some header ->
-                WitnessTechnical.reconcilePrepare witness connection transaction header
+                do! WitnessTechnical.reconcilePrepare witness connection transaction header ct
 
                 let! accepted =
                     RecoveryAcceptedObservation.read
@@ -102,6 +110,7 @@ module internal RecoveryStartStore =
                         witness
                         operationId
                         header.RequestSha256
+                        ct
 
                 match accepted with
                 | Ok(Some receipt) -> return Ok(RecoveryStart.ObservedAccepted receipt)
@@ -117,6 +126,17 @@ module internal RecoveryStartStore =
                             actorContext
                             witness
                             pending
+                            ct
+        }
+
+    let private availableCase connection transaction (actorContext: ActorCallContext) ct =
+        task {
+            let! available =
+                match actorContext.CaseId with
+                | Some id -> ActorGrantGateQueries.availableCase connection transaction id ct
+                | None -> task { return false }
+
+            return available
         }
 
     let private startInTransaction
@@ -127,25 +147,22 @@ module internal RecoveryStartStore =
         (actorContext: ActorCallContext)
         (witness: WitnessProtocol)
         (pending: (Guid * WitnessIntent) option ref)
+        ct
         =
         task {
-            let! revision =
-                ActorGrantRead.lockRevision connection transaction true CancellationToken.None
+            let! revision = ActorGrantRead.lockRevision connection transaction true ct
 
-            do! Sql.lockKeyAsync connection transaction ("operation:" + operationId.ToString("D"))
+            do!
+                Sql.lockKeyAsync
+                    connection
+                    transaction
+                    ("operation:" + operationId.ToString("D"))
+                    ct
 
             match startResource operationId actorContext with
             | None -> return Error RecoveryStoreFailure.ResourceUnavailable
             | Some resource ->
-                let! available =
-                    match actorContext.CaseId with
-                    | Some id ->
-                        ActorGrantGateQueries.availableCase
-                            connection
-                            transaction
-                            id
-                            CancellationToken.None
-                    | None -> task { return false }
+                let! available = availableCase connection transaction actorContext ct
 
                 let! allowed =
                     ActorMutationGuard.authorizeScope
@@ -167,6 +184,7 @@ module internal RecoveryStartStore =
                             actorContext
                             witness
                             pending
+                            ct
         }
 
     let start
@@ -185,15 +203,19 @@ module internal RecoveryStartStore =
                 let pending: (Guid * WitnessIntent) option ref = ref None
 
                 try
-                    let actor, active = requireActorAndWitness actorContext witness
+                    let! actor, active =
+                        requireActorAndWitness actorContext witness cancellationToken
 
-                    use! connection = RuntimeDatabase.openConnectionAsync dataSource
+                    use! connection =
+                        RuntimeDatabase.openConnectionAsyncWithCancellation
+                            dataSource
+                            cancellationToken
 
                     use! _authorityLease =
                         AuthorityOperationFence.acquireShared
                             (Some dataSource)
                             connection
-                            System.Threading.CancellationToken.None
+                            cancellationToken
 
                     let! result =
                         withTransaction
@@ -208,20 +230,18 @@ module internal RecoveryStartStore =
                                     operationId
                                     actor
                                     active
-                                    pending)
+                                    pending
+                                    cancellationToken)
 
                     match pending.Value with
-                    | Some(eventId, intent) -> active.SettleAuthority(eventId, intent) |> ignore
+                    | Some(eventId, intent) ->
+                        let! _ = active.SettleAuthority(eventId, intent) in ()
                     | None -> ()
 
                     return result
                 with error ->
                     return
-                        match pending.Value, error with
-                        | Some _, _
-                        | _, :? WitnessPending ->
-                            Error RecoveryStoreFailure.TechnicalMutationUnknown
-                        | _ -> Error(mutationFailure commitStarted.Value error)
+                        Error(mutationFailure (commitStarted.Value || pending.Value.IsSome) error)
         }
 
 
@@ -238,13 +258,16 @@ module internal RecoveryStartStore =
                 let commitStarted = ref false
 
                 try
-                    use! connection = RuntimeDatabase.openConnectionAsync dataSource
+                    use! connection =
+                        RuntimeDatabase.openConnectionAsyncWithCancellation
+                            dataSource
+                            cancellationToken
 
                     use! _authorityLease =
                         AuthorityOperationFence.acquireShared
                             (Some dataSource)
                             connection
-                            System.Threading.CancellationToken.None
+                            cancellationToken
 
                     return!
                         withTransaction

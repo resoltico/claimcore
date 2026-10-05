@@ -113,7 +113,7 @@ module internal DatabaseTerminalCopyAbsenceRows =
         (witness: WitnessProtocol)
         tip
         (row: DeletionProof)
-        (_ct: CancellationToken)
+        (ct: CancellationToken)
         =
         task {
             let proof operation sequence epoch entryHash candidate =
@@ -131,18 +131,21 @@ module internal DatabaseTerminalCopyAbsenceRows =
                         entryHash
                         candidate
                         SettledAuthority
+                        ct
                 | None ->
                     task {
-                        witness.VerifyAuthorityEvidenceForInstallation(
-                            operation,
-                            sequence,
-                            epoch,
-                            entryHash,
-                            candidate
-                        )
+                        do!
+                            witness.VerifyAuthorityEvidenceForInstallation(
+                                operation,
+                                sequence,
+                                epoch,
+                                entryHash,
+                                candidate,
+                                ct
+                            )
                     }
 
-            witness.VerifyHistoricalTip(row.ApprovalCutoff, row.ApprovalCutoffHash)
+            do! witness.VerifyHistoricalTip(row.ApprovalCutoff, row.ApprovalCutoffHash, ct)
 
             do! proof row.EventId row.EventSequence row.EventEpoch row.EventHash row.EventCandidate
 

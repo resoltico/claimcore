@@ -73,7 +73,10 @@ let private stagePartial
     rejectedProposal files path
 
     Expect.isNone
-        (witness.EvidenceStore.TryReadEvidence(request.EventId, SettledAuthority))
+        ((witness.EvidenceStore
+            .TryReadEvidence(request.EventId, SettledAuthority, CancellationToken.None)
+            .GetAwaiter()
+            .GetResult()))
         "Changed proposal did not settle the original intent"
 
 let private livePurgedReview
@@ -238,7 +241,8 @@ let private run
     let commitments, reviewed =
         livePurgedReview owner ownerConnection witness runtime proposer first second
 
-    let tip = witness.Snapshot()
+    let tip = (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
+
     Expect.equal tip.TipSequence reviewed.CutoffSequence "Inventory binds the reviewed cutoff"
     let now = DateTimeOffset.UtcNow
     let registry = registryBodyForEntries tip registryKeyId [] [] now

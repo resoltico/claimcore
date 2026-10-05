@@ -1,5 +1,6 @@
 module ClaimCore.IntegrationTests.AcceptedReplayWitnessTests
 
+open System.Threading
 open System
 open Expecto
 open ClaimCore.Application
@@ -65,7 +66,8 @@ let private replay =
                 new PostgresStore(source, faulty, submitter, CaseListCursorTestSupport.protection)
 
             match
-                (uncertain :> IClaimStore).Accepted(request.OperationId, material.RequestSha256)
+                (uncertain :> IClaimStore)
+                    .Accepted(request.OperationId, material.RequestSha256, CancellationToken.None)
                 |> await
             with
             | Error(CoreFailure.CommitOutcomeUnknown id) ->
@@ -81,13 +83,17 @@ let private replay =
                 )
 
             match
-                (healthy :> IClaimStore).Accepted(request.OperationId, material.RequestSha256)
+                (healthy :> IClaimStore)
+                    .Accepted(request.OperationId, material.RequestSha256, CancellationToken.None)
                 |> await
             with
             | Ok(Some receipt) -> Expect.equal (Claim.view receipt.Case).Version 1L "One revision"
             | _ -> failtest "Healthy exact replay reconciles the committed candidate."
 
-            witness.RequireSettled(request.OperationId, SettledAccepted)
+            (witness
+                .RequireSettled(request.OperationId, SettledAccepted, CancellationToken.None)
+                .GetAwaiter()
+                .GetResult())
 
             Expect.equal
                 (rowCount owner "case_changes" request.OperationId)
@@ -148,8 +154,11 @@ let private caseReads source witness (gate: IActorGate) principal (request: Comm
 
         checkRead source witness request context query
 
-    read EndpointAction.GetCase (fun claims -> claims.Get request.CaseReference)
-    read EndpointAction.HistorySummary (fun claims -> claims.History(request.CaseReference, 0L))
+    read EndpointAction.GetCase (fun claims ->
+        claims.Get(request.CaseReference, CancellationToken.None))
+
+    read EndpointAction.HistorySummary (fun claims ->
+        claims.History(request.CaseReference, 0L, CancellationToken.None))
 
 let private otherReads source witness (gate: IActorGate) principal (request: CommandRequest) =
     let context =
@@ -162,7 +171,8 @@ let private otherReads source witness (gate: IActorGate) principal (request: Com
         |> await
         |> Option.defaultWith (fun () -> failtest "Operation context is authorised.")
 
-    checkRead source witness request context (fun claims -> claims.Operation request.OperationId)
+    checkRead source witness request context (fun claims ->
+        claims.Operation(request.OperationId, CancellationToken.None))
 
     let listing =
         gate.List(principal, cancellation)
@@ -170,7 +180,7 @@ let private otherReads source witness (gate: IActorGate) principal (request: Com
         |> Option.defaultWith (fun () -> failtest "List context is authorised.")
 
     checkRead source witness request listing (fun claims ->
-        claims.List { AfterCursor = None; Limit = 10 })
+        claims.List({ AfterCursor = None; Limit = 10 }, CancellationToken.None))
 
 let private readRefusals =
     testCase
@@ -182,7 +192,9 @@ let private readRefusals =
                 acceptedWithMissingSettlement owner source writer witness principal request
                 |> ignore
 
-                let before = witness.Snapshot().TipSequence
+                let before =
+                    (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
+                        .TipSequence
 
                 let gate =
                     new PostgresActorGate(
@@ -195,7 +207,8 @@ let private readRefusals =
                 otherReads source witness gate principal request
 
                 Expect.equal
-                    (witness.Snapshot().TipSequence)
+                    ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
+                        .TipSequence)
                     before
                     "Read-only checks append no settlement"))
 

@@ -131,6 +131,7 @@ let internal auditRestored owner app writer (witness: WitnessProtocol) primaryPo
                         protocol
                         audit
                         snapshot)
+            |> await
 
         Expect.equal
             summary.PendingIntents
@@ -233,7 +234,9 @@ let private describedCapture
     primaryPort
     witnessPort
     =
-    let afterCapture = witness.Snapshot()
+    let afterCapture =
+        (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
+
     Expect.equal afterCapture.TipSequence captured.TipSequence "Physical capture cutoff moved"
     Expect.equal afterCapture.TipHash captured.TipHash "Physical capture hash moved"
     let facts = auditRestored owner app writer witness primaryPort witnessPort
@@ -255,7 +258,9 @@ let private describedCapture
 
 let withCapturedPrimary callback owner app writer (witness: WitnessProtocol) =
     acceptedCase owner app writer witness
-    let captured = witness.Snapshot()
+
+    let captured = (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
+
     let scratch = privateScratch ()
     let sourcePrimary, sourceWitness = containerIds ()
     let mutable primaryRestore = ""

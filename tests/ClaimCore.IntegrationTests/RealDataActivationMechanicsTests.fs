@@ -24,52 +24,6 @@ let private refused =
     | InstallationUseActivationOutcome.Refused -> ()
     | _ -> failtest "Rejected synthetic activation must have a definite refusal."
 
-let private registerLossOwners owner app writer witness first second =
-    use runtime =
-        ClaimCore.IntegrationTests.ManagedCopySignerTestSupport.openRuntime app writer
-
-    let management = (runtime.ForActor first).Management
-
-    for holder in [ first; second ] do
-        let eventId = Guid.NewGuid()
-
-        management.SetGrant(
-            eventId,
-            holder,
-            Role.AuditorCustodian,
-            GrantTarget.Installation,
-            true,
-            CancellationToken.None
-        )
-        |> await
-        |> ClaimCore.IntegrationTests.ManagedCopySignerTestSupport.appliedManagement eventId
-
-    use connection = new NpgsqlConnection(owner)
-    connection.Open()
-
-    let firstKey, _, _, _ =
-        registeredSigner
-            runtime
-            first
-            second
-            CopySignerPurpose.InstallationLossRetirement
-            witness
-            connection
-
-    use _firstKey = firstKey
-
-    let secondKey, _, _, _ =
-        registeredSigner
-            runtime
-            second
-            first
-            CopySignerPurpose.InstallationLossRetirement
-            witness
-            connection
-
-    use _secondKey = secondKey
-    ()
-
 let private requireLossOwnerPrerequisite
     activate
     qualified
@@ -77,13 +31,37 @@ let private requireLossOwnerPrerequisite
     plan
     (witness: WitnessProtocol)
     =
-    let before = witness.Snapshot().TipSequence
+    let before = (witness.Snapshot(CancellationToken.None) |> await).TipSequence
+
     activate qualified profile plan |> refused
 
     Expect.equal
-        (witness.Snapshot().TipSequence)
+        ((witness.Snapshot(CancellationToken.None) |> await).TipSequence)
         before
         "Real-data activation without prepositioned loss owners appended no authority."
+
+let private verifyActivatedPair primary witness hash =
+    let paired =
+        (InstallationUseScopeRead.requirePair primary witness CancellationToken.None)
+        |> await
+
+    Expect.equal paired.Phase InstallationUsePhase.Active "Both clusters released together."
+    Expect.equal paired.ActivationHash (Some hash) "Both clusters retain exact ticket hash."
+
+
+let private verifyActivationReplay primary (witness: WitnessProtocol) eventId sequence =
+    let replay =
+        InstallationUseActivationReconcile.run primary witness CancellationToken.None
+        |> await
+        |> outcome
+
+    Expect.equal (let id, _, _ = replay in id) eventId "Exact historical repair read back event."
+
+    Expect.equal
+        ((witness.Snapshot(CancellationToken.None) |> await).TipSequence)
+        sequence
+        "Exact retry added no witness event."
+
 
 let private mechanics owner app writer (witness: WitnessProtocol) profile =
     let first = human "activation-mechanics-one"
@@ -95,11 +73,14 @@ let private mechanics owner app writer (witness: WitnessProtocol) profile =
     let firstId, secondId =
         approvePair app writer witness first second planId activationId plan
 
-    let qualified = proof plan (witness.Snapshot())
+    let qualified = proof plan ((witness.Snapshot(CancellationToken.None) |> await))
+
     let ownerWitness = witnessOwnerFor writer
     use primary = new NpgsqlConnection(owner)
     primary.Open()
-    let syntheticHealth _ _ _ _ _ = ()
+
+    let syntheticHealth _ _ _ _ _ _ =
+        System.Threading.Tasks.Task.FromResult(())
 
     let activate value selectedProfile selectedPlan =
         InstallationUseActivationOwner.activateWithReviewedProfile
@@ -118,9 +99,10 @@ let private mechanics owner app writer (witness: WitnessProtocol) profile =
     requireLossOwnerPrerequisite activate qualified profile plan witness
 
     registerLossOwners owner app writer witness first second
-    let qualified = proof plan (witness.Snapshot())
 
-    let before = witness.Snapshot().TipSequence
+    let qualified = proof plan ((witness.Snapshot(CancellationToken.None) |> await))
+
+    let before = (witness.Snapshot(CancellationToken.None) |> await).TipSequence
 
     let expired =
         { qualified with
@@ -143,23 +125,21 @@ let private mechanics owner app writer (witness: WitnessProtocol) profile =
 
     activate qualified profile altered |> refused
 
-    Expect.equal (witness.Snapshot().TipSequence) before "Denied activation appended no ticket."
+    Expect.equal
+        ((witness.Snapshot(CancellationToken.None) |> await).TipSequence)
+        before
+        "Denied activation appended no ticket."
+
     let eventId, sequence, hash = activate qualified profile plan |> outcome
     Expect.equal eventId activationId "Activation reused published deterministic identity."
     Expect.equal sequence (before + 2L) "One exact witness INTENT and settlement were appended."
-    let paired = InstallationUseScopeRead.requirePair primary witness
-    Expect.equal paired.Phase InstallationUsePhase.Active "Both clusters released together."
-    Expect.equal paired.ActivationHash (Some hash) "Both clusters retain exact ticket hash."
+
+    verifyActivatedPair primary witness hash
 
     activate qualified profile plan |> refused
 
-    let replay =
-        InstallationUseActivationReconcile.run primary witness CancellationToken.None
-        |> await
-        |> outcome
+    verifyActivationReplay primary witness eventId sequence
 
-    Expect.equal (let id, _, _ = replay in id) eventId "Exact historical repair read back event."
-    Expect.equal (witness.Snapshot().TipSequence) sequence "Exact retry added no witness event."
     use source = RuntimeDataSource.create app
     use audit = RuntimeDatabase.openConnection source
     DataAudit.run audit witness CancellationToken.None |> await |> ignore
@@ -192,6 +172,8 @@ let private stageWitnessActivation
             firstId
             secondId
             DateTimeOffset.UtcNow
+            CancellationToken.None
+        |> await
 
     transaction.Rollback()
 
@@ -208,6 +190,8 @@ let private stageWitnessActivation
             snapshot.TipSequence
             snapshot.TipHash
             canonical
+            CancellationToken.None
+        |> await
 
     Expect.equal (fst settled) (fst intent + 1L) "Witness W2 settled atomically."
     settled
@@ -222,7 +206,8 @@ let private witnessSettledPrimaryMissing owner app writer (witness: WitnessProto
     let firstId, secondId =
         approvePair app writer witness first second planId activationId plan
 
-    let snapshot = witness.Snapshot()
+    let snapshot = (witness.Snapshot(CancellationToken.None) |> await)
+
     let qualified = proof plan snapshot
     use primary = new NpgsqlConnection(owner)
     primary.Open()
@@ -241,7 +226,10 @@ let private witnessSettledPrimaryMissing owner app writer (witness: WitnessProto
             snapshot
 
     Expect.throws
-        (fun () -> InstallationUseScopeRead.requirePair primary witness |> ignore)
+        (fun () ->
+            (InstallationUseScopeRead.requirePair primary witness CancellationToken.None)
+            |> await
+            |> ignore)
         "Witness-only ACTIVE cannot open a case-work pair."
 
     let eventId, sequence, _ =
@@ -253,7 +241,7 @@ let private witnessSettledPrimaryMissing owner app writer (witness: WitnessProto
     Expect.equal sequence (fst settled) "Repair used original witness ticket."
 
     Expect.equal
-        (witness.Snapshot().TipSequence)
+        ((witness.Snapshot(CancellationToken.None) |> await).TipSequence)
         (fst settled)
         "Primary repair did not append a second witness event."
 

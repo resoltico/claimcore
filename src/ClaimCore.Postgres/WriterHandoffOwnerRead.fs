@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open Npgsql
 open ClaimCore.Witness
 
@@ -15,78 +16,65 @@ type internal PrimaryWriterPreparation =
 
 /// Owner readback of the exact primary PREPARE target; no repair or adoption occurs here.
 module internal WriterHandoffOwnerRead =
-    let completed (connection: NpgsqlConnection) (transaction: NpgsqlTransaction) handoffId =
-        use command =
-            new NpgsqlCommand(
-                "SELECT settlement_canonical,settlement_signature,"
-                + "settlement_sequence,settlement_hash "
-                + "FROM claimcore.writer_handoffs WHERE handoff_id=@handoff",
-                connection,
-                transaction
-            )
-
-        Sql.uuid command "handoff" handoffId
-        use reader = command.ExecuteReader()
-
-        if not (reader.Read()) then
-            None
-        else
-            let result =
-                reader.GetFieldValue<byte array>(0),
-                reader.GetFieldValue<byte array>(1),
-                reader.GetInt64(2),
-                reader.GetFieldValue<byte array>(3)
-
-            if reader.Read() then
-                invalidOp "Primary writer handoff is duplicated."
-
-            Some result
-
-    let preparation
+    let completed
         (connection: NpgsqlConnection)
         (transaction: NpgsqlTransaction)
+        handoffId
+        (ct: CancellationToken)
+        =
+        task {
+            use command =
+                new NpgsqlCommand(
+                    "SELECT settlement_canonical,settlement_signature,"
+                    + "settlement_sequence,settlement_hash "
+                    + "FROM claimcore.writer_handoffs WHERE handoff_id=@handoff",
+                    connection,
+                    transaction
+                )
+
+            Sql.uuid command "handoff" handoffId
+            use! reader = command.ExecuteReaderAsync(ct)
+
+            let! found = reader.ReadAsync(ct)
+
+            if not found then
+                return None
+            else
+                let result =
+                    reader.GetFieldValue<byte array>(0),
+                    reader.GetFieldValue<byte array>(1),
+                    reader.GetInt64(2),
+                    reader.GetFieldValue<byte array>(3)
+
+                let! duplicated = reader.ReadAsync(ct)
+
+                if duplicated then
+                    invalidOp "Primary writer handoff is duplicated."
+
+                return Some result
+        }
+
+    let private witnessedPreparation
         (witness: WitnessProtocol)
         handoffId
+        proposal
+        canonical
+        signature
+        sequence
+        hash
+        ct
         =
-        use command =
-            new NpgsqlCommand(
-                "SELECT canonical_action,ed25519_signature,candidate_sha256,"
-                + "witness_sequence,witness_epoch,witness_entry_hash "
-                + "FROM claimcore.writer_handoff_preparations WHERE handoff_id=@handoff",
-                connection,
-                transaction
-            )
+        task {
+            let! retained = witness.EvidenceStore.TryReadEvidence(handoffId, Intent, ct)
 
-        Sql.uuid command "handoff" handoffId
-        use reader = command.ExecuteReader()
+            let observed =
+                retained
+                |> Option.defaultWith (fun () -> invalidOp "Witness writer intent is absent.")
 
-        if not (reader.Read()) then
-            None
-        else
-            let canonical = reader.GetFieldValue<byte array>(0)
-            let signature = reader.GetFieldValue<byte array>(1)
-            let candidate = reader.GetFieldValue<byte array>(2)
-            let sequence = reader.GetInt64(3)
-            let epoch = reader.GetInt64(4)
-            let hash = reader.GetFieldValue<byte array>(5)
-            let value = WriterHandoffPreparation.parse canonical
+            if observed.Ticket.Sequence <> sequence || observed.Ticket.EntryHash <> hash then
+                invalidOp "Primary writer preparation ticket differs."
 
-            if reader.Read() then
-                invalidOp "Primary writer preparation is duplicated."
-
-            match value with
-            | Some proposal when
-                proposal.HandoffId = handoffId
-                && epoch = witness.Identity.Epoch
-                && candidate = Security.Cryptography.SHA256.HashData(canonical)
-                ->
-                let observed =
-                    witness.EvidenceStore.TryReadEvidence(handoffId, Intent)
-                    |> Option.defaultWith (fun () -> invalidOp "Witness writer intent is absent.")
-
-                if observed.Ticket.Sequence <> sequence || observed.Ticket.EntryHash <> hash then
-                    invalidOp "Primary writer preparation ticket differs."
-
+            return
                 Some
                     {
                         Value = proposal
@@ -94,4 +82,61 @@ module internal WriterHandoffOwnerRead =
                         Signature = signature
                         Intent = observed.Ticket
                     }
-            | _ -> invalidOp "Primary writer preparation is invalid."
+        }
+
+    let preparation
+        (connection: NpgsqlConnection)
+        (transaction: NpgsqlTransaction)
+        (witness: WitnessProtocol)
+        handoffId
+        (ct: CancellationToken)
+        =
+        task {
+            use command =
+                new NpgsqlCommand(
+                    "SELECT canonical_action,ed25519_signature,candidate_sha256,"
+                    + "witness_sequence,witness_epoch,witness_entry_hash "
+                    + "FROM claimcore.writer_handoff_preparations WHERE handoff_id=@handoff",
+                    connection,
+                    transaction
+                )
+
+            Sql.uuid command "handoff" handoffId
+            use! reader = command.ExecuteReaderAsync(ct)
+
+            let! found = reader.ReadAsync(ct)
+
+            if not found then
+                return None
+            else
+                let canonical = reader.GetFieldValue<byte array>(0)
+                let signature = reader.GetFieldValue<byte array>(1)
+                let candidate = reader.GetFieldValue<byte array>(2)
+                let sequence = reader.GetInt64(3)
+                let epoch = reader.GetInt64(4)
+                let hash = reader.GetFieldValue<byte array>(5)
+                let value = WriterHandoffPreparation.parse canonical
+
+                let! duplicated = reader.ReadAsync(ct)
+
+                if duplicated then
+                    invalidOp "Primary writer preparation is duplicated."
+
+                match value with
+                | Some proposal when
+                    proposal.HandoffId = handoffId
+                    && epoch = witness.Identity.Epoch
+                    && candidate = Security.Cryptography.SHA256.HashData(canonical)
+                    ->
+                    return!
+                        witnessedPreparation
+                            witness
+                            handoffId
+                            proposal
+                            canonical
+                            signature
+                            sequence
+                            hash
+                            ct
+                | _ -> return invalidOp "Primary writer preparation is invalid."
+        }

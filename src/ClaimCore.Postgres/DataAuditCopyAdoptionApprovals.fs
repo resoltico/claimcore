@@ -103,8 +103,9 @@ module internal DataAuditCopyAdoptionApprovals =
         (ct: CancellationToken)
         =
         task {
-            witnessProof (fun () ->
-                witness.VerifyHistoricalTip(row.PreFenceSequence, row.PreFenceHash))
+            do!
+                witnessProofAsync (fun () ->
+                    witness.VerifyHistoricalTip(row.PreFenceSequence, row.PreFenceHash, ct))
 
             match decoded.Request.Origin with
             | CopyAdoptionOrigin.ProductExport _ -> ()
@@ -167,6 +168,7 @@ module internal DataAuditCopyAdoptionApprovals =
                     row.WitnessHash
                     row.CandidateHash
                     SettledAuthority
+                    ct
         }
 
     let private verifyRow connection transaction witness cutoff row ct =

@@ -121,12 +121,12 @@ module internal CaseTombstoneTerminalOwnerApprovals =
                 | _ -> invalid ()
         }
 
-    let read connection transaction witness revision proposal observedAt =
+    let read connection transaction witness revision proposal observedAt ct =
         task {
             let value = TombstoneTerminalProposal.copy proposal
 
             let! same =
-                CaseTombstoneTerminalApprovalSet.matches connection transaction witness proposal
+                CaseTombstoneTerminalApprovalSet.matches connection transaction witness proposal ct
 
             let! approvals = rows connection transaction value.EventId
 

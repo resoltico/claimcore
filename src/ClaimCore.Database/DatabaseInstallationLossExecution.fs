@@ -150,6 +150,7 @@ module internal DatabaseInstallationLossExecution =
                             checkpoint
                             known
                             (mode operationSet)
+                        |> fun work -> work.GetAwaiter().GetResult()
 
                     match candidate with
                     | None ->
@@ -204,6 +205,7 @@ module internal DatabaseInstallationLossExecution =
                                                     known
                                                     evidence
                                                     checkpoint
+                                                |> fun work -> work.GetAwaiter().GetResult()
                                                 |> outcome
                                                 |> Ok)
                                     finally

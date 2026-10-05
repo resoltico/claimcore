@@ -83,22 +83,72 @@ module internal ManagedCopyAdministration =
         signature
         (stored: ManagedCopyEventEvidence)
         =
-        if
-            stored.CopyId <> value.CopyId
-            || stored.Canonical <> canonical
-            || stored.Signature <> signature
-        then
-            AuthorityWriteOutcome.Refused
-        else
-            witness.VerifyAuthorityEvidence(
-                value.EventId,
-                stored.WitnessSequence,
-                stored.WitnessEpoch,
-                stored.WitnessEntryHash,
-                stored.CandidateSha256
-            )
+        task {
+            if
+                stored.CopyId <> value.CopyId
+                || stored.Canonical <> canonical
+                || stored.Signature <> signature
+            then
+                return AuthorityWriteOutcome.Refused
+            else
+                do!
+                    witness.VerifyAuthorityEvidence(
+                        value.EventId,
+                        stored.WitnessSequence,
+                        stored.WitnessEpoch,
+                        stored.WitnessEntryHash,
+                        stored.CandidateSha256,
+                        CancellationToken.None
+                    )
 
-            AuthorityWriteOutcome.Applied(value.EventId, 1L)
+                return AuthorityWriteOutcome.Applied(value.EventId, 1L)
+        }
+
+    let private persistRegistration
+        connection
+        (transaction: NpgsqlTransaction)
+        (witness: WitnessProtocol)
+        (value: ManagedCopyAttestation)
+        canonical
+        signature
+        =
+        task {
+            let exact = candidate value canonical signature
+
+            try
+                let eventHash =
+                    ManagedCopyEventHash.compute
+                        (Array.zeroCreate<byte> 32)
+                        canonical
+                        (Some signature)
+
+                let! intent =
+                    witness.BeginAuthority(
+                        value.EventId,
+                        exact,
+                        value.SourceCaseId,
+                        CancellationToken.None
+                    )
+
+                do! ManagedCopyOwnerWrite.insertCopy connection transaction value eventHash
+
+                do!
+                    ManagedCopyOwnerWrite.insertEvent
+                        connection
+                        transaction
+                        value
+                        canonical
+                        signature
+                        (Array.zeroCreate<byte> 32)
+                        eventHash
+                        intent
+
+                do! transaction.CommitAsync()
+                let! _ = witness.SettleAuthority(value.EventId, intent)
+                return AuthorityWriteOutcome.Applied(value.EventId, 1L)
+            finally
+                CryptographicOperations.ZeroMemory(exact)
+        }
 
     let private register
         (connection: NpgsqlConnection)
@@ -111,7 +161,9 @@ module internal ManagedCopyAdministration =
         task {
             let! present = ManagedCopyOwnerRead.copyExists connection transaction value.CopyId
             let! signer = ManagedCopyOwnerRead.signer connection transaction value.SigningKeyId
-            let! instant = Sql.databaseNow connection transaction
+
+            let! instant = Sql.databaseNow connection transaction CancellationToken.None
+
             let! blocked = caseRegistrationBlocked connection transaction value.SourceCaseId
 
             match signer with
@@ -123,34 +175,7 @@ module internal ManagedCopyAdministration =
                 && value.CapturedAt <= instant.AddMinutes(5.0)
                 && value.RetainUntil > instant
                 ->
-                let exact = candidate value canonical signature
-
-                try
-                    let eventHash =
-                        ManagedCopyEventHash.compute
-                            (Array.zeroCreate<byte> 32)
-                            canonical
-                            (Some signature)
-
-                    let intent = witness.BeginAuthority(value.EventId, exact, value.SourceCaseId)
-                    do! ManagedCopyOwnerWrite.insertCopy connection transaction value eventHash
-
-                    do!
-                        ManagedCopyOwnerWrite.insertEvent
-                            connection
-                            transaction
-                            value
-                            canonical
-                            signature
-                            (Array.zeroCreate<byte> 32)
-                            eventHash
-                            intent
-
-                    do! transaction.CommitAsync()
-                    witness.SettleAuthority(value.EventId, intent) |> ignore
-                    return AuthorityWriteOutcome.Applied(value.EventId, 1L)
-                finally
-                    CryptographicOperations.ZeroMemory(exact)
+                return! persistRegistration connection transaction witness value canonical signature
             | _ -> return AuthorityWriteOutcome.Refused
         }
 
@@ -169,7 +194,7 @@ module internal ManagedCopyAdministration =
                 try
                     OwnerConnection.requireIdentity connection
                     SchemaBaseline.requireCurrent connection
-                    witness.Admit()
+                    do! witness.Admit(CancellationToken.None)
 
                     use! _authorityFence =
                         AuthorityOperationFence.acquireShared None connection CancellationToken.None
@@ -188,16 +213,18 @@ module internal ManagedCopyAdministration =
                     if not sameInstallation then
                         return AuthorityWriteOutcome.Refused
                     else
-                        witness.VerifyHistoricalTip(
-                            value.WitnessCutoffSequence,
-                            value.WitnessCutoffHash
-                        )
+                        do!
+                            witness.VerifyHistoricalTip(
+                                value.WitnessCutoffSequence,
+                                value.WitnessCutoffHash,
+                                CancellationToken.None
+                            )
 
                         let! prior =
                             ManagedCopyOwnerRead.existingEvent connection transaction value.EventId
 
                         match prior with
-                        | Some stored -> return replay witness value canonical signature stored
+                        | Some stored -> return! replay witness value canonical signature stored
                         | None ->
                             return!
                                 register connection transaction witness value canonical signature

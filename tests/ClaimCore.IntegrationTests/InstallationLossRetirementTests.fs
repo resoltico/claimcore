@@ -33,19 +33,6 @@ let internal setup owner app writer (witness: WitnessProtocol) test =
 let private knownFile (operationId: Guid) =
     Encoding.ASCII.GetBytes(operationId.ToString("D") + "\n")
 
-let private candidate (context: Context) known mode =
-    InstallationLossRetirementAdministration.draft
-        context.Primary
-        context.Witness
-        context.Suppression
-        context.FirstKey
-        context.SecondKey
-        None
-        None
-        known
-        mode
-    |> Option.defaultWith (fun () -> failtest "Loss candidate draft was refused.")
-
 let private signed (context: Context) (canonical: byte array) =
     context.Algorithm.Sign(context.KeyOne, ReadOnlySpan<byte>(canonical)),
     context.Algorithm.Sign(context.KeyTwo, ReadOnlySpan<byte>(canonical))
@@ -67,6 +54,7 @@ let private accepted (context: Context) canonical firstSignature secondSignature
             known
             None
             None
+        |> await
 
     match result with
     | InstallationLossRetirementOutcome.Retired(id, sequence, _) ->
@@ -89,13 +77,14 @@ let private exactReplay (context: Context) canonical firstSignature secondSignat
             known
             None
             None
+        |> await
 
     match replay with
     | InstallationLossRetirementOutcome.Retired _ -> ()
     | _ -> failtest "Exact retirement reconciliation changed identity."
 
     Expect.equal
-        (context.Witness.Snapshot().TipSequence)
+        ((context.Witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
         tip.TipSequence
         "Exact retry appends no authority event."
 
@@ -104,7 +93,7 @@ let private fencedAndAudited (context: Context) tip =
     Expect.isFalse tip.LossRetirementPending "W1 settled the pending fence."
 
     Expect.throwsT<InvalidOperationException>
-        (fun () -> context.Witness.Admit())
+        (fun () -> (context.Witness.Admit(CancellationToken.None).GetAwaiter().GetResult()))
         "Old writer cannot readmit after W1."
 
     Expect.throwsT<InvalidOperationException>
@@ -141,12 +130,16 @@ let private terminalCase (context: Context) =
     let known = knownFile (Guid.NewGuid())
     let canonical = candidate context known InstallationLossOperationSet.Known
     let firstSignature, secondSignature = signed context canonical
-    let before = context.Witness.Snapshot().TipSequence
+
+    let before =
+        (context.Witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence
 
     let decision =
         accepted context canonical firstSignature secondSignature known before
 
-    let tip = context.Witness.Snapshot()
+    let tip =
+        (context.Witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
+
     exactReplay context canonical firstSignature secondSignature known tip
     fencedAndAudited context tip
     knownDenial context decision.RetirementId
@@ -171,13 +164,14 @@ let private refusedBeforeW0
             known
             None
             None
+        |> await
 
     match result with
     | InstallationLossRetirementOutcome.Refused -> ()
     | _ -> failtest "Invalid signed incident input was not a pre-W0 refusal."
 
     Expect.equal
-        (context.Witness.Snapshot().TipSequence)
+        ((context.Witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
         before
         "Invalid signed input cannot append a witness intent."
 
@@ -186,7 +180,10 @@ let private alteredCase (context: Context) =
     let altered = knownFile (Guid.NewGuid())
     let canonical = candidate context original InstallationLossOperationSet.Known
     let firstSignature, secondSignature = signed context canonical
-    let before = context.Witness.Snapshot().TipSequence
+
+    let before =
+        (context.Witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence
+
     refusedBeforeW0 context canonical firstSignature secondSignature altered before
     refusedBeforeW0 context canonical secondSignature firstSignature original before
 
@@ -202,9 +199,13 @@ let private pendingUnknown (context: Context) canonical firstSignature secondSig
         canonical
         firstSignature
         secondSignature
+        CancellationToken.None
+    |> await
     |> ignore
 
-    let pending = context.Witness.Snapshot()
+    let pending =
+        (context.Witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
+
     Expect.isTrue pending.LossRetirementPending "W0 alone closes the old writer."
     Expect.isFalse pending.LossRetired "W0 is not a settled receipt."
 
@@ -240,6 +241,7 @@ let private settleUnknown
             Array.empty
             None
             None
+        |> await
 
     match result with
     | InstallationLossRetirementOutcome.Retired(id, _, _) ->

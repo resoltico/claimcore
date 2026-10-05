@@ -24,14 +24,7 @@ module KeyRotation =
                 transaction
             )
 
-        command.Parameters.AddWithValue("installation", NpgsqlDbType.Uuid, identity.InstallationId)
-        |> ignore
-
-        command.Parameters.AddWithValue("lineage", NpgsqlDbType.Uuid, identity.LineageId)
-        |> ignore
-
-        command.Parameters.AddWithValue("epoch", NpgsqlDbType.Bigint, identity.Epoch)
-        |> ignore
+        WitnessDatabaseAdmission.bindIdentity command identity
 
         command.Parameters.AddWithValue("operation", NpgsqlDbType.Uuid, operationId)
         |> ignore

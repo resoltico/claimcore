@@ -161,7 +161,7 @@ module internal RecoveryArtifactImportProof =
                             return false
                         else
                             try
-                                RecoveryArtifactExportRead.requireSettled witness row
+                                do! RecoveryArtifactExportRead.requireSettled witness row ct
                                 return true
                             with _ ->
                                 return false

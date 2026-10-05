@@ -118,11 +118,17 @@ let private partial owner writer (witness: WitnessProtocol) caseId action commit
     Expect.isTrue (receipt.ExecuteScalar() :?> bool) "Primary accepted exact prune receipt"
 
     Expect.isSome
-        (witness.EvidenceStore.TryReadEvidence(action.EventId, Intent))
+        ((witness.EvidenceStore
+            .TryReadEvidence(action.EventId, Intent, CancellationToken.None)
+            .GetAwaiter()
+            .GetResult()))
         "Prune intent remains durable"
 
     Expect.isNone
-        (witness.EvidenceStore.TryReadEvidence(action.EventId, SettledAuthority))
+        ((witness.EvidenceStore
+            .TryReadEvidence(action.EventId, SettledAuthority, CancellationToken.None)
+            .GetAwaiter()
+            .GetResult()))
         "No false settlement was inferred"
 
     execute
@@ -190,14 +196,21 @@ let private unexpectedCaseIntent
     let candidate =
         CaseTombstoneCandidate.proposal { action with EventId = unexpectedId }
 
-    witness.BeginAuthority(unexpectedId, candidate, Some caseId) |> ignore
+    (witness
+        .BeginAuthority(unexpectedId, candidate, Some caseId, CancellationToken.None)
+        .GetAwaiter()
+        .GetResult())
+    |> ignore
 
     match execute (ownerWitness writer) action with
     | OwnerWitnessPruneOutcome.Unconfirmed id when id = action.EventId -> ()
     | _ -> failtest "Unexpected CASE intent did not halt prune."
 
     Expect.isNone
-        (witness.EvidenceStore.TryReadEvidence(action.EventId, SettledAuthority))
+        ((witness.EvidenceStore
+            .TryReadEvidence(action.EventId, SettledAuthority, CancellationToken.None)
+            .GetAwaiter()
+            .GetResult()))
         "Closed postcutoff authority set did not settle"
 
 let private rotationRetry

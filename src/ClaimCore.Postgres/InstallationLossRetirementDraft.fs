@@ -54,17 +54,26 @@ module internal InstallationLossRetirementDraft =
         firstKey
         secondKey
         =
-        if
-            InstallationLossRetirementState.verifiedOwnerAuthority
-                primaryOwner
-                transaction
-                witness
-                cutoff
-            <> revision
-        then
-            invalidOp "Loss owner authority projection diverged."
+        task {
+            let! observed =
+                InstallationLossRetirementState.verifiedOwnerAuthority
+                    primaryOwner
+                    transaction
+                    witness
+                    cutoff
 
-        InstallationLossRetirementSigners.pair primaryOwner transaction witness firstKey secondKey
+            if observed <> revision then
+                invalidOp "Loss owner authority projection diverged."
+
+            return!
+                InstallationLossRetirementSigners.pair
+                    primaryOwner
+                    transaction
+                    witness
+                    firstKey
+                    secondKey
+                    CancellationToken.None
+        }
 
     let private candidate
         primaryOwner
@@ -82,58 +91,62 @@ module internal InstallationLossRetirementDraft =
         revision
         now
         =
-        let first, second =
-            verifiedSigners
-                primaryOwner
-                transaction
-                witness
-                snapshot.TipSequence
-                revision
-                firstKey
-                secondKey
+        task {
+            let! first, second =
+                verifiedSigners
+                    primaryOwner
+                    transaction
+                    witness
+                    snapshot.TipSequence
+                    revision
+                    firstKey
+                    secondKey
 
-        let count, digest, _ =
-            InstallationLossOperationCommitments.commitments suppression mode knownOperations
+            let count, digest, _ =
+                InstallationLossOperationCommitments.commitments suppression mode knownOperations
 
-        let canonical =
-            value
-                identity
-                snapshot
-                revision
-                now
-                mode
-                count
-                digest
-                evidenceReport
-                checkpoint
-                first
-                second
-            |> InstallationLossRetirementCandidate.encode
+            let canonical =
+                value
+                    identity
+                    snapshot
+                    revision
+                    now
+                    mode
+                    count
+                    digest
+                    evidenceReport
+                    checkpoint
+                    first
+                    second
+                |> InstallationLossRetirementCandidate.encode
 
-        if InstallationLossRetirementCandidate.parse canonical |> Option.isNone then
-            None
-        else
-            Some canonical
+            if InstallationLossRetirementCandidate.parse canonical |> Option.isNone then
+                return None
+            else
+                return Some canonical
+        }
 
     let private currentDecisionState primaryOwner transaction (witness: WitnessProtocol) =
-        let identity, retired =
-            InstallationLossRetirementState.primaryIdentity primaryOwner transaction
+        task {
+            let identity, retired =
+                InstallationLossRetirementState.primaryIdentity primaryOwner transaction
 
-        let revision =
-            InstallationLossRetirementState.authorityRevision primaryOwner transaction
+            let revision =
+                InstallationLossRetirementState.authorityRevision primaryOwner transaction
 
-        let now = InstallationLossRetirementState.databaseNow primaryOwner transaction
-        let snapshot = witness.Snapshot()
+            let! now = InstallationLossRetirementState.databaseNow primaryOwner transaction
+            let! snapshot = witness.Snapshot(CancellationToken.None)
 
-        if
-            retired
-            || snapshot.LossRetirementPending
-            || snapshot.LossRetired
-            || not (InstallationLossRetirementState.matchingIdentity identity witness)
-        then
-            None
-        else
-            Some(identity, snapshot, revision, now)
+            if
+                retired
+                || snapshot.LossRetirementPending
+                || snapshot.LossRetired
+                || not (InstallationLossRetirementState.matchingIdentity identity witness)
+            then
+                return None
+            else
+                return Some(identity, snapshot, revision, now)
+        }
 
     let create
         (primaryOwner: NpgsqlConnection)
@@ -146,35 +159,38 @@ module internal InstallationLossRetirementDraft =
         knownOperations
         mode
         =
-        try
-            OwnerConnection.requireIdentity primaryOwner
-            SchemaBaseline.requireCurrent primaryOwner
-            witness.AdmitReadOnly()
+        task {
+            try
+                OwnerConnection.requireIdentity primaryOwner
+                SchemaBaseline.requireCurrent primaryOwner
+                do! witness.AdmitReadOnly(CancellationToken.None)
 
-            use _authorityFence =
-                (AuthorityOperationFence.acquireShared None primaryOwner CancellationToken.None)
-                    .GetAwaiter()
-                    .GetResult()
+                use! _authorityFence =
+                    AuthorityOperationFence.acquireShared None primaryOwner CancellationToken.None
 
-            use transaction = primaryOwner.BeginTransaction(IsolationLevel.ReadCommitted)
+                use transaction = primaryOwner.BeginTransaction(IsolationLevel.ReadCommitted)
 
-            match currentDecisionState primaryOwner transaction witness with
-            | None -> None
-            | Some(identity, snapshot, revision, now) ->
-                candidate
-                    primaryOwner
-                    transaction
-                    witness
-                    suppression
-                    firstKey
-                    secondKey
-                    evidenceReport
-                    checkpoint
-                    knownOperations
-                    mode
-                    identity
-                    snapshot
-                    revision
-                    now
-        with _ ->
-            None
+                let! current = currentDecisionState primaryOwner transaction witness
+
+                match current with
+                | None -> return None
+                | Some(identity, snapshot, revision, now) ->
+                    return!
+                        candidate
+                            primaryOwner
+                            transaction
+                            witness
+                            suppression
+                            firstKey
+                            secondKey
+                            evidenceReport
+                            checkpoint
+                            knownOperations
+                            mode
+                            identity
+                            snapshot
+                            revision
+                            now
+            with _ ->
+                return None
+        }

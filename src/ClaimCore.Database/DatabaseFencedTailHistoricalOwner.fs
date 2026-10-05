@@ -54,6 +54,7 @@ module internal DatabaseFencedTailHistoricalOwner =
             loaded
             host.ProbeEvidenceSha256
             archiveRoot
+        |> fun work -> work.GetAwaiter().GetResult()
 
     let tryCandidate ownerConnection (paths: FencedTailPaths) =
         if DatabaseRestorePublication.reviewedRootKey () |> Option.isNone then

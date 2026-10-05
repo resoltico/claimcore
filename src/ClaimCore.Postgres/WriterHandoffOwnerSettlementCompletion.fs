@@ -41,7 +41,7 @@ module internal WriterHandoffOwnerSettlementCompletion =
         (ticket: Ticket)
         =
         task {
-            let alreadyPrimary =
+            let! alreadyPrimary =
                 WriterHandoffOwnerReconcile.verifyPrimary
                     connection
                     transaction
@@ -49,8 +49,11 @@ module internal WriterHandoffOwnerSettlementCompletion =
                     canonical
                     signature
                     ticket
+                    CancellationToken.None
 
-            if not alreadyPrimary && witness.Snapshot().TipSequence <> ticket.Sequence then
+            let! snapshot = witness.Snapshot(CancellationToken.None)
+
+            if not alreadyPrimary && snapshot.TipSequence <> ticket.Sequence then
                 return WriterHandoffOwnerOutcome.Unconfirmed value.HandoffId
             else
                 if not alreadyPrimary then
@@ -85,7 +88,7 @@ module internal WriterHandoffOwnerSettlementCompletion =
         newCapability
         =
         task {
-            let ticket =
+            let! ticket =
                 WriterHandoffWitnessCommands.commit
                     ownerWitnessConnection
                     witness
@@ -95,6 +98,7 @@ module internal WriterHandoffOwnerSettlementCompletion =
                     signature
                     oldCapability
                     newCapability
+                    CancellationToken.None
 
             WriterHandoffOwnerWrite.settlement
                 connection

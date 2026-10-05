@@ -23,7 +23,9 @@ let private faultProtocol writer (witness: WitnessProtocol) =
 
     use file = WriterCapabilityFile.Load(path)
     let store = file.Use(fun material -> new Store(writer, witness.Identity, material))
-    let keyId, _ = store.ReadKeyCheck()
+
+    let keyId, _ = (store.ReadKeyCheck(CancellationToken.None).GetAwaiter().GetResult())
+
     let material = witnessKey ()
 
     try
@@ -59,11 +61,17 @@ let private assertUnsettled (fixture: PruneFixture) approvalId =
     Expect.equal (row.ExecuteScalar() :?> int64) 1L "Primary approval committed once"
 
     Expect.isSome
-        (fixture.Witness.EvidenceStore.TryReadEvidence(approvalId, Intent))
+        ((fixture.Witness.EvidenceStore
+            .TryReadEvidence(approvalId, Intent, CancellationToken.None)
+            .GetAwaiter()
+            .GetResult()))
         "Witness intent is retained"
 
     Expect.isNone
-        (fixture.Witness.EvidenceStore.TryReadEvidence(approvalId, SettledAuthority))
+        ((fixture.Witness.EvidenceStore
+            .TryReadEvidence(approvalId, SettledAuthority, CancellationToken.None)
+            .GetAwaiter()
+            .GetResult()))
         "Lost settlement is not fabricated"
 
     Expect.throws
@@ -92,7 +100,8 @@ let private run =
                         context source fault first fixture.CaseId,
                         draft,
                         approvalId,
-                        expiry
+                        expiry,
+                        ct
                     )
                     |> await
                 with

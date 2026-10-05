@@ -24,22 +24,31 @@ module internal CaseTombstonePruneReceiptAudit =
             ValidUntil = receipt.ValidUntil
         }
 
+    let private requireReceipt
+        (witness: WitnessProtocol)
+        (receipt: StoredWitnessPruneReceipt)
+        value
+        =
+        if
+            not (CaseTombstonePruneOwnerChecks.validProposal value)
+            || receipt.CopyInventoryDigest.Length <> 32
+            || receipt.IntentEpoch <> witness.Identity.Epoch
+            || receipt.IntentSequence <= receipt.CutoffSequence
+        then
+            corrupt ()
+
+
     let private canonical
         connection
         transaction
         (witness: WitnessProtocol)
         (receipt: StoredWitnessPruneReceipt)
+        ct
         =
         task {
             let value = proposal receipt
 
-            if
-                not (CaseTombstonePruneOwnerChecks.validProposal value)
-                || receipt.CopyInventoryDigest.Length <> 32
-                || receipt.IntentEpoch <> witness.Identity.Epoch
-                || receipt.IntentSequence <= receipt.CutoffSequence
-            then
-                corrupt ()
+            requireReceipt witness receipt value
 
             let! approvals =
                 CaseTombstonePruneOwnerApprovals.read
@@ -50,6 +59,7 @@ module internal CaseTombstonePruneReceiptAudit =
                     value
                     false
                     receipt.ValidUntil
+                    ct
 
             let bytes =
                 CaseTombstonePruneExecutionCandidate.encode
@@ -63,17 +73,19 @@ module internal CaseTombstonePruneReceiptAudit =
                 then
                     corrupt ()
 
-                witnessProof (fun () ->
-                    witness.VerifyAuthorityEvidenceForCase(
-                        receipt.EventId,
-                        receipt.IntentSequence,
-                        receipt.IntentEpoch,
-                        receipt.IntentHash,
-                        receipt.CandidateHash,
-                        receipt.CaseId
-                    ))
+                do!
+                    witnessProofAsync (fun () ->
+                        witness.VerifyAuthorityEvidenceForCase(
+                            receipt.EventId,
+                            receipt.IntentSequence,
+                            receipt.IntentEpoch,
+                            receipt.IntentHash,
+                            receipt.CandidateHash,
+                            receipt.CaseId,
+                            ct
+                        ))
 
-                CaseTombstonePrunePostcutoffAudit.verify witness receipt approvals
+                do! CaseTombstonePrunePostcutoffAudit.verify witness receipt approvals ct
                 return ()
             finally
                 CryptographicOperations.ZeroMemory(bytes)
@@ -85,6 +97,7 @@ module internal CaseTombstonePruneReceiptAudit =
         (witness: WitnessProtocol)
         cutoff
         caseId
+        ct
         =
         task {
             let! found = CaseTombstonePrunePrimaryRead.find connection transaction caseId
@@ -95,10 +108,10 @@ module internal CaseTombstonePruneReceiptAudit =
                 if receipt.IntentSequence > cutoff then
                     corrupt ()
 
-                do! canonical connection transaction witness receipt
+                do! canonical connection transaction witness receipt ct
 
                 let! count =
-                    CaseTombstonePruneTargetAudit.verify connection transaction witness receipt
+                    CaseTombstonePruneTargetAudit.verify connection transaction witness receipt ct
 
                 if count <> receipt.TargetCount then
                     corrupt ()

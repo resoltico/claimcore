@@ -64,9 +64,16 @@ module internal RecoveryExecutionDecision =
         (retained: RetainedPreparation)
         (actorContext: ActorCallContext)
         revision
+        cancellationToken
         =
         task {
-            do! Sql.lockKeyAsync connection transaction ("case:" + request.CaseReference)
+            do!
+                Sql.lockKeyAsync
+                    connection
+                    transaction
+                    ("case:" + request.CaseReference)
+                    cancellationToken
+
             let! current = StoreData.readCase connection transaction request.CaseReference
 
             let! caseId =
@@ -115,7 +122,14 @@ module internal RecoveryExecutionDecision =
                 return Error RecoveryStoreFailure.NotFound
             else
                 let! current =
-                    currentAuthorized connection transaction request retained actorContext revision
+                    currentAuthorized
+                        connection
+                        transaction
+                        request
+                        retained
+                        actorContext
+                        revision
+                        cancellationToken
 
                 match current with
                 | None -> return Error RecoveryStoreFailure.ResourceUnavailable
@@ -201,7 +215,7 @@ module internal RecoveryExecutionDecision =
             | Some value when matches fingerprint value ->
                 knownRevocation.Value <- true
 
-                return! revokeExisting connection transaction request witness
+                return! revokeExisting connection transaction request witness cancellationToken
             | Some _ -> return Error RecoveryStoreFailure.IdempotencyConflict
             | None ->
                 return!

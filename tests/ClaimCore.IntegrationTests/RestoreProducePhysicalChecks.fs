@@ -1,5 +1,6 @@
 module ClaimCore.IntegrationTests.RestoreProducePhysicalChecks
 
+open System.Threading
 open System
 open System.IO
 open Expecto
@@ -71,7 +72,7 @@ let internal newerTipRefusesOldPair app (witness: WitnessProtocol) (facts: Resto
     |> await
     |> applied
 
-    let newer = witness.Snapshot()
+    let newer = (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
 
     Expect.isGreaterThan
         newer.TipSequence
@@ -81,7 +82,7 @@ let internal newerTipRefusesOldPair app (witness: WitnessProtocol) (facts: Resto
     let report, index, publication = reportedPair facts
 
     Expect.isTrue
-        (DatabaseRestoreReportRecheck.matchesLivePair
+        (DatabaseRestoreLive.matchesLivePair
             publication
             report
             index
@@ -96,7 +97,7 @@ let internal newerTipRefusesOldPair app (witness: WitnessProtocol) (facts: Resto
         }
 
     Expect.isFalse
-        (DatabaseRestoreReportRecheck.matchesLivePair
+        (DatabaseRestoreLive.matchesLivePair
             publication
             report
             index

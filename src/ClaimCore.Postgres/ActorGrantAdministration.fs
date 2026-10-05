@@ -25,7 +25,12 @@ module internal ActorGrantAdministration =
             match stored with
             | :? Guid as eventId ->
                 let! found =
-                    ActorGrantRegistryQueries.existingEvent connection transaction witness eventId
+                    ActorGrantRegistryQueries.existingEvent
+                        connection
+                        transaction
+                        witness
+                        eventId
+                        CancellationToken.None
 
                 let! actor = ActorGrantRegistryQueries.targetId connection transaction principal
 
@@ -69,12 +74,31 @@ module internal ActorGrantAdministration =
                 Enabled = Some true
             }
 
-        ActorGrantWrite.run ownerConnection transaction witness action (fun () ->
-            task {
-                do! ActorGrantWrite.insertActor ownerConnection transaction actorId principal 1L
+        ActorGrantWrite.run
+            ownerConnection
+            transaction
+            witness
+            action
+            (fun () ->
+                task {
+                    do!
+                        ActorGrantWrite.insertActor
+                            ownerConnection
+                            transaction
+                            actorId
+                            principal
+                            1L
 
-                do! ActorGrantWrite.setGrant ownerConnection transaction actorId ownerGrant true 1L
-            })
+                    do!
+                        ActorGrantWrite.setGrant
+                            ownerConnection
+                            transaction
+                            actorId
+                            ownerGrant
+                            true
+                            1L
+                })
+            CancellationToken.None
 
     let provisionInitialOwner
         (ownerConnection: NpgsqlConnection)
@@ -86,7 +110,7 @@ module internal ActorGrantAdministration =
                 return AuthorityWriteOutcome.Refused
             else
                 OwnerConnection.requireIdentity ownerConnection
-                witness.Admit()
+                do! witness.Admit(CancellationToken.None)
 
                 use! _authorityLease =
                     AuthorityOperationFence.acquireShared
@@ -105,22 +129,25 @@ module internal ActorGrantAdministration =
 
                 if revision <> 0L then
                     return! observeInitialOwner ownerConnection transaction witness principal
-                // A restored pre-provisioning primary must not promote another first owner.
-                elif witness.Snapshot().TipSequence <> 0L then
-                    return AuthorityWriteOutcome.Refused
                 else
-                    use count =
-                        new NpgsqlCommand(
-                            "SELECT (SELECT count(*) FROM claimcore.actors) + "
-                            + "(SELECT count(*) FROM claimcore.actor_authority_events)",
-                            ownerConnection,
-                            transaction
-                        )
+                    // A restored pre-provisioning primary cannot promote another first owner.
+                    let! tip = witness.Snapshot(CancellationToken.None)
 
-                    let! existing = count.ExecuteScalarAsync()
-
-                    if existing :?> int64 <> 0L then
+                    if tip.TipSequence <> 0L then
                         return AuthorityWriteOutcome.Refused
                     else
-                        return! applyInitialOwner ownerConnection transaction witness principal
+                        use count =
+                            new NpgsqlCommand(
+                                "SELECT (SELECT count(*) FROM claimcore.actors) + "
+                                + "(SELECT count(*) FROM claimcore.actor_authority_events)",
+                                ownerConnection,
+                                transaction
+                            )
+
+                        let! existing = count.ExecuteScalarAsync()
+
+                        if existing :?> int64 <> 0L then
+                            return AuthorityWriteOutcome.Refused
+                        else
+                            return! applyInitialOwner ownerConnection transaction witness principal
         }

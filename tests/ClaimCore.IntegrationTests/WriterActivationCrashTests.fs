@@ -34,6 +34,8 @@ let private witnessOnlyActivation (context: SettledW1Context) =
                 context.W1Sequence
                 context.W1Hash
                 canonical
+                CancellationToken.None
+            |> await
         finally
             CryptographicOperations.ZeroMemory(canonical)
 
@@ -80,7 +82,7 @@ let private reconcileAfterExpiry
         Expect.equal hash ticket.Settlement.EntryHash "Reconciliation preserves W2 hash."
 
         Expect.equal
-            (context.Witness.Snapshot().TipSequence)
+            ((context.Witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
             sequence
             "Reconciliation appends no second W2 event."
 

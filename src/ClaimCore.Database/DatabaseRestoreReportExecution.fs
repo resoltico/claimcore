@@ -70,6 +70,7 @@ module internal DatabaseRestoreReportExecution =
                                     nonce
                                     (binarySha ())
                                     DateTimeOffset.UtcNow
+                                |> fun work -> work.GetAwaiter().GetResult()
                             with _ ->
                                 Error RestoreRecheckFailure.EvidenceMismatch
                 finally

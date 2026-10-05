@@ -8,11 +8,11 @@ open ClaimCore.Application
 type internal PostgresCaseLifecycleStore
     (dataSource: NpgsqlDataSource, witness: WitnessProtocol, commitments: ISuppressionCommitments) =
     interface ICaseLifecycleStore with
-        member _.Review(actor, caseReference) =
-            CaseLifecycleReview.review dataSource witness actor caseReference
+        member _.Review(actor, caseReference, ct) =
+            CaseLifecycleReview.review dataSource witness actor caseReference ct
 
-        member _.Apply(actor, change) =
-            CaseLifecycleApply.apply dataSource witness commitments actor change
+        member _.Apply(actor, change, ct) =
+            CaseLifecycleApply.apply dataSource witness commitments actor change ct
 
-        member _.Approve(actor, change, approvalId, expiresAt) =
-            CaseLifecycleApprove.approve dataSource witness actor change approvalId expiresAt
+        member _.Approve(actor, change, approvalId, expiresAt, ct) =
+            CaseLifecycleApprove.approve dataSource witness actor change approvalId expiresAt ct

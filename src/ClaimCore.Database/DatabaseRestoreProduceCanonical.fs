@@ -252,3 +252,10 @@ module internal DatabaseRestoreProduceCanonical =
             ReportSha256 = SHA256.HashData(reportBytes) |> Convert.ToHexStringLower
             EvidenceIndexSha256 = indexDigest
         }
+
+    let requireValidity (validUntil: DateTimeOffset) =
+        if
+            validUntil.Offset <> TimeSpan.Zero
+            || validUntil.UtcTicks % TimeSpan.TicksPerSecond <> 0L
+        then
+            invalidOp "Restore report validity instant is not exact UTC seconds."

@@ -41,6 +41,7 @@ let private inspect owner _ writer (witness: ClaimCore.Postgres.WitnessProtocol)
                         proof
                         audit
                         snapshot)
+            |> await
 
         Expect.equal summary.PendingIntents 0L "Read-only restored-pair audit has no pending work"
         Expect.equal facts.WitnessCutoff tip.TipSequence "Audited pair binds one exact cutoff"

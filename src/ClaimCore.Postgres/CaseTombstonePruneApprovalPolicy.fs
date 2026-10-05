@@ -1,6 +1,8 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
+open System.Threading.Tasks
 open ClaimCore.Application
 
 module internal CaseTombstonePruneApprovalPolicy =
@@ -55,16 +57,25 @@ module internal CaseTombstonePruneApprovalPolicy =
         && stored.AuthorityHash =
             (digest value.ExpectedAuthorityHash |> Option.defaultValue Array.empty)
 
-    let targetMatches (witness: WitnessProtocol) (value: TombstonePruneProposal) =
-        let cutoffHash = digest value.CutoffHash |> Option.defaultValue Array.empty
+    let targetMatches
+        (witness: WitnessProtocol)
+        (value: TombstonePruneProposal)
+        (ct: CancellationToken)
+        =
+        task {
+            let cutoffHash = digest value.CutoffHash |> Option.defaultValue Array.empty
 
-        let seal =
-            CaseWitnessPayloadTargets.scan
-                witness
-                value.CaseId
-                value.CutoffSequence
-                cutoffHash
-                ignore
+            let! seal =
+                CaseWitnessPayloadTargets.scan
+                    witness
+                    value.CaseId
+                    value.CutoffSequence
+                    cutoffHash
+                    (fun _ -> Task.FromResult())
+                    ct
 
-        seal.TargetCount = value.TargetCount
-        && seal.TargetDigest = (digest value.TargetDigest |> Option.defaultValue Array.empty)
+            return
+                seal.TargetCount = value.TargetCount
+                && seal.TargetDigest =
+                    (digest value.TargetDigest |> Option.defaultValue Array.empty)
+        }

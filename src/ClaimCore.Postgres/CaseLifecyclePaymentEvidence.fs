@@ -1,11 +1,12 @@
 namespace ClaimCore.Postgres
 
+open System.Threading
 open Npgsql
 
 /// Historical payment assertions cannot disappear from a void-approval decision after
 /// CLEAR_PAYMENT. The query runs under the same case and authority locks as the transition.
 module internal CaseLifecyclePaymentEvidence =
-    let historicalPayment connection transaction caseId =
+    let historicalPayment connection transaction caseId (ct: CancellationToken) =
         task {
             use command =
                 new NpgsqlCommand(
@@ -17,6 +18,6 @@ module internal CaseLifecyclePaymentEvidence =
                 )
 
             Sql.uuid command "caseId" caseId
-            let! result = command.ExecuteScalarAsync()
+            let! result = command.ExecuteScalarAsync(ct)
             return result :?> bool
         }

@@ -71,6 +71,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.owner full data audit command.[CC-AUDIT-001] owner verify-data reports full counts and quarantines a changed case |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.postprune external publication audit.[CC-AUDIT-001] changed postprune publication marker breaks signed target digest |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.postprune external publication audit.[CC-AUDIT-001] pruned publication intent still requires immutable primary receipt |
+| CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.runtime I/O and diagnostics.[CC-AUDIT-001] failed audit emits one fixed quarantine signal |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.runtime full-audit cadence.[CC-AUDIT-001] overdue complete audit closes admission persistently |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.runtime full-audit cadence.[CC-AUDIT-001] runtime disposal cancels active scheduled audit |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.runtime full-audit cadence.[CC-AUDIT-001] scheduled audit quarantines post-opening row tamper |
@@ -703,6 +704,9 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-WIT-001 | integration | ClaimCore PostgreSQL integration.Storage boundary qualification.catalog change token behavior.catalog change token.[CC-WIT-001] structural and privilege changes move the witness catalog token |
 | CC-WIT-001 | integration | ClaimCore PostgreSQL integration.[CC-REC-001] [CC-WIT-001] revocation fences future authority without rewriting an orphan acceptance |
 | CC-WIT-001 | integration | ClaimCore PostgreSQL integration.owner-private witness key custody.[CC-WIT-001] owner-private key-ring file admits and broad mode refuses |
+| CC-WIT-001 | integration | ClaimCore PostgreSQL integration.runtime I/O and diagnostics.[CC-WIT-001] blocked witness admission cancels before dispatch |
+| CC-WIT-001 | integration | ClaimCore PostgreSQL integration.runtime I/O and diagnostics.[CC-WIT-001] late cancellation preserves exact settlement readback |
+| CC-WIT-001 | integration | ClaimCore PostgreSQL integration.runtime I/O and diagnostics.[CC-WIT-001] throwing observer preserves uncertain settlement and exact intent |
 | CC-WIT-001 | integration | ClaimCore PostgreSQL integration.technical witness phases.[CC-WIT-001] PREPARE commit without settlement stays unknown then reconciles |
 | CC-WIT-001 | integration | ClaimCore PostgreSQL integration.technical witness phases.[CC-WIT-001] START commit without settlement returns same attempt once |
 | CC-WIT-001 | integration | ClaimCore PostgreSQL integration.technical witness phases.[CC-WIT-001] forked primary PREPARE ticket refuses exact replay |

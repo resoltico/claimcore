@@ -237,18 +237,28 @@ let private conflictPrecedesSnapshotProjection =
                 replaceSnapshot input.OperationId [| 123uy; 125uy |]
 
                 match
-                    (claims :> IClaimStore).Accepted(input.OperationId, wrongDigest) |> await
+                    (claims :> IClaimStore)
+                        .Accepted(input.OperationId, wrongDigest, CancellationToken.None)
+                    |> await
                 with
                 | Error CoreFailure.IdempotencyConflict -> ()
                 | _ -> failtest "Wrong digest must be refused without snapshot decoding."
 
-                match (claims :> IClaimStore).Accepted(input.OperationId, digest) |> await with
+                match
+                    (claims :> IClaimStore)
+                        .Accepted(input.OperationId, digest, CancellationToken.None)
+                    |> await
+                with
                 | Error CoreFailure.StoreCorrupt -> ()
                 | _ -> failtest "Exact digest must still fail closed on corrupt snapshot."
 
                 replaceSnapshot input.OperationId (Array.append original [| 32uy |])
 
-                match (claims :> IClaimStore).Accepted(input.OperationId, digest) |> await with
+                match
+                    (claims :> IClaimStore)
+                        .Accepted(input.OperationId, digest, CancellationToken.None)
+                    |> await
+                with
                 | Error CoreFailure.StoreCorrupt -> ()
                 | _ -> failtest "Semantically valid noncanonical snapshot bytes must fail closed."
             finally

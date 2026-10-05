@@ -83,19 +83,6 @@ let private emptyLease () =
         member _.Dispose() = ()
     }
 
-let private useGate: RuntimeUseGate =
-    {
-        RequireCaseRead = ignore
-        RequireCaseMutation = ignore
-        RequireAuthorityRead = ignore
-        RequireAuthoritySetup = ignore
-        CommitHealthRequired = false
-        CommitHealth =
-            { new ICaseMutationCommitHealth with
-                member _.VerifyLocked(_, _) = ()
-            }
-    }
-
 let private stopBeforeActorDrain () =
     let auditEntered = signal ()
     let auditStopped = signal ()
@@ -123,7 +110,13 @@ let private stopBeforeActorDrain () =
         }
 
     use admission =
-        new RuntimeAdmission(resources, TimeSpan.FromSeconds 2., ignore, emptyLease, useGate)
+        new RuntimeAdmission(
+            resources,
+            TimeSpan.FromSeconds 2.,
+            (fun _ -> Task.FromResult(())),
+            (fun _ -> task { return (emptyLease) () }),
+            RuntimeAdmissionFixture.gate ignore
+        )
 
     let pending = admission.RunRead(fun () -> actorRelease.Task)
 

@@ -81,7 +81,10 @@ let private assertGranted (grants: ActorGrantStore) reader (input: CommandReques
 let private assertCaseWitness (witness: WitnessProtocol) eventId caseId =
     for phase in [ Intent; SettledAuthority ] do
         let ticket =
-            witness.EvidenceStore.TryReadEvidence(eventId, phase)
+            (witness.EvidenceStore
+                .TryReadEvidence(eventId, phase, CancellationToken.None)
+                .GetAwaiter()
+                .GetResult())
             |> Option.defaultWith (fun () -> failtest "Case grant witness phase is absent.")
             |> _.Ticket
 

@@ -1,5 +1,6 @@
 namespace ClaimCore.Database
 
+open System.Threading
 open System
 open System.Security.Cryptography
 open Npgsql
@@ -272,7 +273,7 @@ module internal DatabaseCopyExecution =
                             new Store(witnessConnection, identity, material))
 
                     use witness = new WitnessProtocol(store, custody, identity)
-                    witness.Admit()
+                    witness.Admit(CancellationToken.None).GetAwaiter().GetResult()
                     let builder = OwnerConnection.builder ownerConnection
                     use connection = new NpgsqlConnection(builder.ConnectionString)
                     connection.Open()

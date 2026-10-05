@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open Npgsql
 open ClaimCore.Application
 open WitnessProtocolReconciliation
@@ -56,20 +57,22 @@ module internal ManagedCopyAdoptionApprovalPolicy =
         | CopyAdoptionOrigin.ProductExport(_, sequence, hash)
         | CopyAdoptionOrigin.AdoptedExternal(sequence, hash) -> sequence, hash
 
-    let historical (witness: WitnessProtocol) (stored: StoredCaseTombstone) request =
-        let sequence, hash = preFence request.Origin
+    let historical (witness: WitnessProtocol) (stored: StoredCaseTombstone) request ct =
+        task {
+            let sequence, hash = preFence request.Origin
 
-        if
-            sequence >= stored.RequestWitnessSequence
-            || request.CapturedAt >= stored.RequestedAt
-        then
-            false
-        else
-            try
-                witness.VerifyHistoricalTip(sequence, hash)
-                true
-            with _ ->
-                false
+            if
+                sequence >= stored.RequestWitnessSequence
+                || request.CapturedAt >= stored.RequestedAt
+            then
+                return false
+            else
+                try
+                    do! witness.VerifyHistoricalTip(sequence, hash, ct)
+                    return true
+                with _ ->
+                    return false
+        }
 
     let private exportSql =
         "SELECT c.source_case_id,c.producer_kind,c.state,c.revision,c.ciphertext_sha256,"
@@ -129,6 +132,7 @@ module internal ManagedCopyAdoptionApprovalPolicy =
         transaction
         (witness: WitnessProtocol)
         (request: CopyAdoptionApprovalRequest)
+        ct
         =
         match request.Origin with
         | CopyAdoptionOrigin.ProductExport(exportId, sequence, hash) ->
@@ -140,12 +144,33 @@ module internal ManagedCopyAdoptionApprovalPolicy =
                 if not absent then
                     return false
                 else
+                    let! snapshot = witness.Snapshot(ct)
+
                     return!
                         ManagedCopyExternalPublicationOrigin.verify
                             connection
                             transaction
                             witness
-                            (witness.Snapshot().TipSequence)
+                            snapshot.TipSequence
                             request
-                            Threading.CancellationToken.None
+                            ct
             }
+
+    let authorized (context: ActorCallContext) (authority: ActorAuthority) caseId =
+        let owner =
+            authority.Grants
+            |> List.exists (fun grant ->
+                grant.Role = Role.Owner
+                && (grant.Scope = GrantScope.Installation || grant.Scope = GrantScope.Case caseId))
+
+        owner
+        && (match
+                ActorAuthorization.authorizeAtRevision
+                    context.Binding.Principal
+                    authority
+                    context.Binding.GrantRevision
+                    EndpointAction.ApproveCopyAdoption
+                    (ResourceScope.Case caseId)
+            with
+            | AuthorizationDecision.Available(actorId, _) -> actorId = context.Binding.ActorId
+            | _ -> false)

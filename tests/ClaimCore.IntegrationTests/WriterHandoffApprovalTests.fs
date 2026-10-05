@@ -39,7 +39,8 @@ let private denyUntrusted
         (runtime.ForActor actor).ApproveWriterHandoff(value, CancellationToken.None)
         |> await
 
-    let before = witness.Snapshot().TipSequence
+    let before =
+        (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence
 
     Expect.equal
         (approve holder action)
@@ -51,7 +52,10 @@ let private denyUntrusted
         WriterHandoffApprovalOutcome.ResourceUnavailable
         "Service identity cannot approve a handoff."
 
-    Expect.equal (witness.Snapshot().TipSequence) before "Definite denials append no witness row."
+    Expect.equal
+        ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
+        before
+        "Definite denials append no witness row."
 
 let private denyInvalid
     (runtime: Runtime)
@@ -63,7 +67,8 @@ let private denyInvalid
         (runtime.ForActor principal).ApproveWriterHandoff(value, CancellationToken.None)
         |> await
 
-    let before = witness.Snapshot().TipSequence
+    let before =
+        (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence
 
     let invalid =
         [
@@ -88,7 +93,7 @@ let private denyInvalid
             "Expired, distant or stale-tip approval is refused."
 
     Expect.equal
-        (witness.Snapshot().TipSequence)
+        ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
         before
         "Invalid approvals create no witness intent."
 
@@ -125,7 +130,8 @@ let private approveAndRetry
     |> await
     |> appliedManagement grantEvent
 
-    let after = witness.Snapshot().TipSequence
+    let after =
+        (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence
 
     match approve principal action with
     | WriterHandoffApprovalOutcome.Approved(id, revision) when
@@ -134,7 +140,10 @@ let private approveAndRetry
         ()
     | _ -> failtest "Exact owner handoff approval retry diverged."
 
-    Expect.equal (witness.Snapshot().TipSequence) after "Exact retry appends no second intent."
+    Expect.equal
+        ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
+        after
+        "Exact retry appends no second intent."
 
     let changed =
         { action with
@@ -146,7 +155,10 @@ let private approveAndRetry
         WriterHandoffApprovalOutcome.ResourceUnavailable
         "An existing approval ID cannot authorize changed inventory bytes."
 
-    Expect.equal (witness.Snapshot().TipSequence) after "Changed-byte replay appends no event."
+    Expect.equal
+        ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
+        after
+        "Changed-byte replay appends no event."
 
 let private checkpointHolderEnabled connectionString keyId =
     use connection = new NpgsqlConnection(connectionString)
@@ -201,7 +213,8 @@ let private disableAndDeny
         action.ApprovalId
         "A new approval identity is tested."
 
-    let beforeDenied = witness.Snapshot().TipSequence
+    let beforeDenied =
+        (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence
 
     Expect.equal
         (approve principal disabledRequest)
@@ -209,7 +222,7 @@ let private disableAndDeny
         "Disabled checkpoint holder cannot back a new owner approval."
 
     Expect.equal
-        (witness.Snapshot().TipSequence)
+        ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
         beforeDenied
         "Disabled-holder refusal appends no witness intent."
 
@@ -265,7 +278,10 @@ let private ownerApproval owner app writer (witness: WitnessProtocol) =
         registeredSigner runtime principal holder CopySignerPurpose.Checkpoint witness connection
 
     use key = key
-    let action = request keyId (witness.Snapshot())
+
+    let action =
+        request keyId ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()))
+
     denyUntrusted runtime witness holder action
     denyInvalid runtime witness principal action
     approveAndRetry runtime witness principal holder action

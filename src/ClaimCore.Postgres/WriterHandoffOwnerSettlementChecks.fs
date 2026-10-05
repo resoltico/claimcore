@@ -126,8 +126,9 @@ module internal WriterHandoffOwnerSettlementChecks =
         newCapability
         =
         task {
-            let! now = Sql.databaseNow connection transaction
-            let snapshot = witness.Snapshot()
+            let! now = Sql.databaseNow connection transaction CancellationToken.None
+
+            let! snapshot = witness.Snapshot(CancellationToken.None)
             let! evidence = verifier.VerifySettlement(value, canonical, CancellationToken.None)
 
             if

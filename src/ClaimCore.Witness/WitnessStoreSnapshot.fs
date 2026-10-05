@@ -1,5 +1,6 @@
 namespace ClaimCore.Witness
 
+open System.Threading
 open Npgsql
 open NpgsqlTypes
 
@@ -24,63 +25,62 @@ module internal WitnessStoreSnapshot =
                 connection
             )
 
-        command.Parameters.AddWithValue("installation", NpgsqlDbType.Uuid, identity.InstallationId)
-        |> ignore
-
-        command.Parameters.AddWithValue("lineage", NpgsqlDbType.Uuid, identity.LineageId)
-        |> ignore
-
-        command.Parameters.AddWithValue("epoch", NpgsqlDbType.Bigint, identity.Epoch)
-        |> ignore
+        WitnessDatabaseAdmission.bindIdentity command identity
 
         command
 
-    let read writerConnection (identity: Identity) =
-        use connection = PostgresTransport.connection writerConnection
-        connection.Open()
-        WitnessStoreRead.checkAdmission identity connection
+    let read writerConnection (identity: Identity) (ct: CancellationToken) =
+        task {
+            use connection = PostgresTransport.connection writerConnection
+            do! connection.OpenAsync(ct)
+            do! WitnessDatabaseAdmission.checkAsync identity connection ct
 
-        use command = query connection identity
+            use command = query connection identity
 
-        use reader = command.ExecuteReader()
+            use! reader = command.ExecuteReaderAsync(ct)
 
-        if not (reader.Read()) then
-            invalidOp "Witness tip is missing."
+            let! found = reader.ReadAsync(ct)
 
-        let result =
-            {
-                Identity = identity
-                Use =
-                    {
-                        Scope = InstallationUse.parseScope (reader.GetString(13))
-                        Phase = InstallationUse.parsePhase (reader.GetString(14))
-                        ActivationEventId = optional reader 15 reader.GetGuid
-                        ActivationSequence = optional reader 16 reader.GetInt64
-                        ActivationHash = optional reader 17 reader.GetFieldValue<byte array>
-                    }
-                InitialKeyId = reader.GetGuid(0)
-                ActiveKeyId = reader.GetGuid(1)
-                WriterGeneration = reader.GetInt64(2)
-                HandoffPending = reader.GetBoolean(3)
-                ActivationPending = reader.GetBoolean(4)
-                LossRetirementPending = reader.GetBoolean(18)
-                LossRetired = reader.GetBoolean(19)
-                LossRetirementId = optional reader 20 reader.GetGuid
-                LossRetirementIntentSequence = optional reader 21 reader.GetInt64
-                LossRetirementIntentHash = optional reader 22 reader.GetFieldValue<byte array>
-                LossRetirementSequence = optional reader 23 reader.GetInt64
-                LossRetirementHash = optional reader 24 reader.GetFieldValue<byte array>
-                ActivationEventId = optional reader 5 reader.GetGuid
-                ActivationSequence = optional reader 6 reader.GetInt64
-                ActivationHash = optional reader 7 reader.GetFieldValue<byte array>
-                TipSequence = reader.GetInt64(8)
-                TipHash = reader.GetFieldValue<byte array>(9)
-                LastAbortedHandoffId = optional reader 10 reader.GetGuid
-                LastAbortedHandoffSequence = optional reader 11 reader.GetInt64
-                LastAbortedHandoffHash = optional reader 12 reader.GetFieldValue<byte array>
-            }
+            if not found then
+                invalidOp "Witness tip is missing."
 
-        if reader.Read() then
-            invalidOp "Witness tip is duplicated."
+            let result =
+                {
+                    Identity = identity
+                    Use =
+                        {
+                            Scope = InstallationUse.parseScope (reader.GetString(13))
+                            Phase = InstallationUse.parsePhase (reader.GetString(14))
+                            ActivationEventId = optional reader 15 reader.GetGuid
+                            ActivationSequence = optional reader 16 reader.GetInt64
+                            ActivationHash = optional reader 17 reader.GetFieldValue<byte array>
+                        }
+                    InitialKeyId = reader.GetGuid(0)
+                    ActiveKeyId = reader.GetGuid(1)
+                    WriterGeneration = reader.GetInt64(2)
+                    HandoffPending = reader.GetBoolean(3)
+                    ActivationPending = reader.GetBoolean(4)
+                    LossRetirementPending = reader.GetBoolean(18)
+                    LossRetired = reader.GetBoolean(19)
+                    LossRetirementId = optional reader 20 reader.GetGuid
+                    LossRetirementIntentSequence = optional reader 21 reader.GetInt64
+                    LossRetirementIntentHash = optional reader 22 reader.GetFieldValue<byte array>
+                    LossRetirementSequence = optional reader 23 reader.GetInt64
+                    LossRetirementHash = optional reader 24 reader.GetFieldValue<byte array>
+                    ActivationEventId = optional reader 5 reader.GetGuid
+                    ActivationSequence = optional reader 6 reader.GetInt64
+                    ActivationHash = optional reader 7 reader.GetFieldValue<byte array>
+                    TipSequence = reader.GetInt64(8)
+                    TipHash = reader.GetFieldValue<byte array>(9)
+                    LastAbortedHandoffId = optional reader 10 reader.GetGuid
+                    LastAbortedHandoffSequence = optional reader 11 reader.GetInt64
+                    LastAbortedHandoffHash = optional reader 12 reader.GetFieldValue<byte array>
+                }
 
-        result
+            let! duplicated = reader.ReadAsync(ct)
+
+            if duplicated then
+                invalidOp "Witness tip is duplicated."
+
+            return result
+        }

@@ -41,7 +41,15 @@ let private register
     (algorithm: NSec.Cryptography.SignatureAlgorithm)
     =
     let copyId, eventId = Guid.NewGuid(), Guid.NewGuid()
-    let bytes = registerBase owner (witness.Snapshot()) copyKeyId eventId copyId
+
+    let bytes =
+        registerBase
+            owner
+            ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()))
+            copyKeyId
+            eventId
+            copyId
+
     let signature = algorithm.Sign(copyKey, bytes)
 
     ManagedCopyAdministration.ingest connection witness bytes signature
@@ -64,7 +72,8 @@ let private signedTransition
         ManagedCopyRegistrationAttestation.parse registration
         |> Option.defaultWith (fun () -> failtest "Synthetic BASE registration is invalid.")
 
-    let actionTip = witness.Snapshot()
+    let actionTip = (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
+
     let verifyEventId = Guid.NewGuid()
 
     let proof, proofSignature, checkedAt =
@@ -111,7 +120,8 @@ let private assertWitnessedVerify
     (transition: byte array)
     (transitionSignature: byte array)
     =
-    let before = witness.Snapshot().TipSequence
+    let before =
+        (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence
 
     match
         ManagedCopyVerifiedRestore.execute
@@ -126,7 +136,7 @@ let private assertWitnessedVerify
     | _ -> failtest "Missing physical proof did not refuse."
 
     Expect.equal
-        (witness.Snapshot().TipSequence)
+        ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
         before
         "A missing physical proof appends no witness event."
 

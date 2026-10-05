@@ -126,6 +126,20 @@ module internal ManagedCopyAdoptionEvidence =
         && w.ValidUntil > w.AdoptedAt
         && w.ValidUntil = authority.Documents.Custody.ValidUntil
 
+    let private expectedCandidate (receipt: CopyAdoptionReceipt) authority =
+        let w = receipt.Witness
+
+        let revision, hash, privateExpiry =
+            ManagedCopyAdoptionOwnerCodec.authorityTip w.Canonical
+            |> Option.defaultWith corrupt
+
+        let expected =
+            ManagedCopyAdoptionOwnerCandidate.encode (
+                candidate receipt authority revision hash privateExpiry
+            )
+
+        expected, revision, hash
+
     let private verifyWitness
         connection
         transaction
@@ -133,19 +147,13 @@ module internal ManagedCopyAdoptionEvidence =
         cutoff
         (receipt: CopyAdoptionReceipt)
         (authority: CopyAdoptionAuthorityProof)
+        ct
         =
         task {
             let c = receipt.Core
             let w = receipt.Witness
 
-            let revision, hash, privateExpiry =
-                ManagedCopyAdoptionOwnerCodec.authorityTip w.Canonical
-                |> Option.defaultWith corrupt
-
-            let expected =
-                ManagedCopyAdoptionOwnerCandidate.encode (
-                    candidate receipt authority revision hash privateExpiry
-                )
+            let expected, revision, hash = expectedCandidate receipt authority
 
             try
                 if not (witnessShape witness cutoff receipt authority expected) then
@@ -161,8 +169,9 @@ module internal ManagedCopyAdoptionEvidence =
                         w.AdoptedAt
                         w.Sequence
 
-                witnessProof (fun () ->
-                    witness.VerifyHistoricalTip(c.PreFenceSequence, c.PreFenceHash))
+                do!
+                    witnessProofAsync (fun () ->
+                        witness.VerifyHistoricalTip(c.PreFenceSequence, c.PreFenceHash, ct))
 
                 do!
                     CaseWitnessAuditEvidence.verify
@@ -177,6 +186,7 @@ module internal ManagedCopyAdoptionEvidence =
                         w.EntryHash
                         w.CandidateHash
                         SettledAuthority
+                        ct
             finally
                 CryptographicOperations.ZeroMemory(expected)
         }
@@ -275,7 +285,7 @@ module internal ManagedCopyAdoptionEvidence =
 
                 do! verifyExternalOrigin connection transaction witness cutoff receipt authority ct
 
-                do! verifyWitness connection transaction witness cutoff receipt authority
+                do! verifyWitness connection transaction witness cutoff receipt authority ct
 
                 do!
                     ManagedCopyAdoptionEventEvidence.verify

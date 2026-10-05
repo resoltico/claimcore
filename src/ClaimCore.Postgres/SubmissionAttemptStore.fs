@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open System.IO
 open System.Threading.Tasks
 open Npgsql
@@ -101,6 +102,7 @@ module internal SubmissionAttemptStore =
         (pending: (Guid * WitnessIntent) option ref)
         ordinal
         wasPreviouslyStarted
+        ct
         =
         task {
             let actorId = actorContext.Binding.ActorId
@@ -111,7 +113,7 @@ module internal SubmissionAttemptStore =
                 else
                     "SUBMITTER"
 
-            let attemptId, intent =
+            let! attemptId, intent =
                 WitnessTechnical.beginStart
                     witness
                     retained
@@ -119,6 +121,7 @@ module internal SubmissionAttemptStore =
                     actorId
                     role
                     actorContext.Binding.GrantRevision
+                    ct
 
             pending.Value <- Some(attemptId, intent)
 
@@ -148,6 +151,7 @@ module internal SubmissionAttemptStore =
         witness
         pending
         count
+        ct
         =
         task {
             let! lifecycle = admitSubmission connection transaction operationId preparation
@@ -166,6 +170,7 @@ module internal SubmissionAttemptStore =
                         pending
                         (count + 1L)
                         false
+                        ct
             | SubmissionLifecycle.AlreadyStarted retained ->
                 return!
                     persistStarted
@@ -178,6 +183,7 @@ module internal SubmissionAttemptStore =
                         pending
                         (count + 1L)
                         true
+                        ct
         }
 
     let start
@@ -189,14 +195,16 @@ module internal SubmissionAttemptStore =
         (actorContext: ActorCallContext)
         (witness: WitnessProtocol)
         (pending: (Guid * WitnessIntent) option ref)
+        ct
         : Task<Result<RecoveryStart, RecoveryStoreFailure>> =
         task {
-            let recovered =
+            let! recovered =
                 WitnessTechnicalStartReconcile.reconcileLatestStart
                     witness
                     connection
                     transaction
                     preparation
+                    ct
 
             let requestedRole =
                 if actorContext.Action = EndpointAction.RecoveryResolve then
@@ -225,6 +233,7 @@ module internal SubmissionAttemptStore =
                             witness
                             pending
                             count
+                            ct
         }
 
     let settle connection transaction attemptId outcome =

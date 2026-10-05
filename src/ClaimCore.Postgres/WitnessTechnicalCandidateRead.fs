@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open System.Security.Cryptography
 open System.Text.Json
 open ClaimCore.Witness
@@ -132,14 +133,16 @@ module internal WitnessTechnicalCandidateRead =
     type WitnessProtocol with
         member this.ReadTechnicalCandidate(record: JournalRecord) = readCandidate this record
 
-        member this.ReadTechnicalCandidate(eventId: Guid) =
-            let evidence =
-                this.EvidenceStore.TryReadEvidence(eventId, Intent)
-                |> Option.defaultWith (fun () -> raise WitnessPending)
+        member this.ReadTechnicalCandidate(eventId: Guid, ct: CancellationToken) =
+            task {
+                let! retained = this.EvidenceStore.TryReadEvidence(eventId, Intent, ct)
+                let evidence = retained |> Option.defaultWith (fun () -> raise WitnessPending)
 
-            readCandidate
-                this
-                {
-                    Evidence = evidence
-                    PreviousHash = Array.zeroCreate<byte> 32
-                }
+                return
+                    readCandidate
+                        this
+                        {
+                            Evidence = evidence
+                            PreviousHash = Array.zeroCreate<byte> 32
+                        }
+            }

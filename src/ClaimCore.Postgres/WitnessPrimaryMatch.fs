@@ -1,6 +1,11 @@
 namespace ClaimCore.Postgres
 
+open Npgsql
+open System.Threading
+open NpgsqlTypes
+
 open System
+open System.Security.Cryptography
 open System.Data.Common
 open System.Text.Json
 open ClaimCore.Witness
@@ -56,3 +61,112 @@ module internal WitnessPrimaryMatch =
         && attribution root reader
         && payload root reader
         && ticket intentTicket reader
+
+    let requireAccepted
+        (connection: NpgsqlConnection)
+        (transaction: NpgsqlTransaction)
+        operationId
+        intentTicket
+        root
+        (ct: CancellationToken)
+        =
+        task {
+            use command =
+                new NpgsqlCommand(
+                    "SELECT case_reference,revision,canonical_request,snapshot,"
+                    + "effective_business_date::text,observed_utc_instant,rule_revision,"
+                    + "witness_sequence,witness_epoch,witness_entry_hash,case_id,"
+                    + "preparer_actor_id,importer_actor_id,submitter_actor_id,resolver_actor_id,"
+                    + "accepted_actor_id,grant_revision "
+                    + "FROM claimcore.case_changes WHERE operation_id=@operation",
+                    connection,
+                    transaction
+                )
+
+            command.Parameters.AddWithValue("operation", NpgsqlDbType.Uuid, operationId)
+            |> ignore
+
+            use! reader = command.ExecuteReaderAsync(ct)
+
+            let! found = reader.ReadAsync(ct)
+
+            if not found then
+                raise WitnessPending
+
+            let matches = accepted operationId intentTicket root reader
+            let! duplicated = reader.ReadAsync(ct)
+
+            if not matches || duplicated then
+                raise WitnessPending
+
+            reader.Close()
+
+        }
+
+    let private revokedMatches
+        operationId
+        (ticket: Ticket)
+        (plain: byte array)
+        (reader: DbDataReader)
+        =
+        let expected =
+            WitnessCandidate.revoked
+                operationId
+                (reader.GetString(0))
+                {
+                    CaseId = reader.GetGuid(6)
+                    RevokingActorId = reader.GetGuid(4)
+                    GrantRevision = reader.GetInt64(5)
+                }
+
+        try
+            plain = expected
+            && reader.GetInt64(1) = ticket.Sequence
+            && reader.GetInt64(2) = ticket.Epoch
+            && reader.GetFieldValue<byte array>(3) = ticket.EntryHash
+
+        finally
+            CryptographicOperations.ZeroMemory(expected)
+
+
+    let requireRevoked
+        (connection: NpgsqlConnection)
+        (transaction: NpgsqlTransaction)
+        operationId
+        eventId
+        intentTicket
+        plain
+        (ct: CancellationToken)
+        =
+        task {
+            use command =
+                new NpgsqlCommand(
+                    "SELECT request_sha256,witness_sequence,witness_epoch,witness_entry_hash,"
+                    + "revoking_actor_id,grant_revision,case_id,witness_event_id "
+                    + "FROM claimcore.operation_revocations WHERE operation_id=@operation",
+                    connection,
+                    transaction
+                )
+
+            command.Parameters.AddWithValue("operation", NpgsqlDbType.Uuid, operationId)
+            |> ignore
+
+            use! reader = command.ExecuteReaderAsync(ct)
+
+            let! found = reader.ReadAsync(ct)
+
+            if not found then
+                raise WitnessPending
+
+            let matches =
+                reader.GetGuid(7) = eventId
+                && revokedMatches operationId intentTicket plain reader
+
+            let! duplicated = reader.ReadAsync(ct)
+
+            if not matches || duplicated then
+                raise WitnessPending
+
+            reader.Close()
+
+        }

@@ -99,7 +99,8 @@ let private delayedApproval () =
         let deadline = expiry owner 3.
 
         let outcome =
-            afterExpiry owner deadline (fun () -> store.Approve(actor, change, id, deadline))
+            afterExpiry owner deadline (fun () ->
+                store.Approve(actor, change, id, deadline, CancellationToken.None))
 
         Expect.equal
             outcome
@@ -143,7 +144,9 @@ let private delayedConsumption () =
             )
             :> ICaseLifecycleStore
 
-        let outcome = afterExpiry owner deadline (fun () -> store.Apply(actor, change))
+        let outcome =
+            afterExpiry owner deadline (fun () ->
+                store.Apply(actor, change, CancellationToken.None))
 
         Expect.equal
             outcome

@@ -71,3 +71,44 @@ let assertOwnerCopyAudit owner app writer witness copyId =
     with
     | Error RuntimeOpenFault.RuntimeStoreIntegrityError -> ()
     | _ -> failtest "Startup must quarantine altered managed-copy evidence."
+
+let copyState (connection: NpgsqlConnection) transaction copyId =
+    use command =
+        match transaction with
+        | Some current ->
+            new NpgsqlCommand(
+                "SELECT state FROM claimcore.managed_copies WHERE copy_id=@copy",
+                connection,
+                current
+            )
+        | None ->
+            new NpgsqlCommand(
+                "SELECT state FROM claimcore.managed_copies WHERE copy_id=@copy",
+                connection
+            )
+
+    Sql.uuid command "copy" copyId
+
+    match command.ExecuteScalar() with
+    | :? string as state -> state
+    | _ -> failtest "Verified physical copy row is absent."
+
+let countCopy connection copyId =
+    use command =
+        new NpgsqlCommand(
+            "SELECT count(*) FROM claimcore.managed_copies WHERE copy_id=@copy",
+            connection
+        )
+
+    command.Parameters.AddWithValue("copy", copyId) |> ignore
+    command.ExecuteScalar() :?> int64
+
+let lacksVerificationProof connection copyId =
+    use command =
+        new NpgsqlCommand(
+            "SELECT verification_proof_sha256 IS NULL FROM claimcore.managed_copies WHERE copy_id=@copy",
+            connection
+        )
+
+    command.Parameters.AddWithValue("copy", copyId) |> ignore
+    command.ExecuteScalar() :?> bool

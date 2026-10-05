@@ -73,19 +73,28 @@ module internal ManagedCopyAdoptionOwner =
             match prepared with
             | Error refusal -> return refusal
             | Ok ready ->
-                let! fresh = Sql.databaseNow connection transaction
+                let! fresh = Sql.databaseNow connection transaction ct
 
                 if not (stillValid fresh ready) then
                     return CopyAdoptionOwnerOutcome.ResourceUnavailable
-                elif
-                    witness.EvidenceStore
-                        .TryReadMetadataOperation(submission.AdoptionEventId, Intent)
-                        .IsSome
-                then
-                    return CopyAdoptionOwnerOutcome.Unconfirmed submission.AdoptionEventId
                 else
-                    return!
-                        ManagedCopyAdoptionOwnerCommit.commit connection transaction witness ready
+                    let! pending =
+                        witness.EvidenceStore.TryReadMetadataOperation(
+                            submission.AdoptionEventId,
+                            Intent,
+                            ct
+                        )
+
+                    if pending.IsSome then
+                        return CopyAdoptionOwnerOutcome.Unconfirmed submission.AdoptionEventId
+                    else
+                        return!
+                            ManagedCopyAdoptionOwnerCommit.commit
+                                connection
+                                transaction
+                                witness
+                                ready
+                                ct
         }
 
     let private transact
@@ -139,7 +148,7 @@ module internal ManagedCopyAdoptionOwner =
                 return CopyAdoptionOwnerOutcome.ResourceUnavailable
             else
                 try
-                    witness.Admit()
+                    do! witness.Admit(ct)
                     commitments.Admit()
                     use fenceConnection = new NpgsqlConnection(ownerConnection)
                     do! fenceConnection.OpenAsync(ct)

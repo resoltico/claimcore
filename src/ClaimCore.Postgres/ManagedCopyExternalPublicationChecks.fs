@@ -62,7 +62,8 @@ module internal ManagedCopyExternalPublicationChecks =
         (submission: ExternalCopyPublicationSubmission)
         =
         task {
-            let cutoff = witness.Snapshot().TipSequence
+            let! snapshot = witness.Snapshot(CancellationToken.None)
+            let cutoff = snapshot.TipSequence
 
             let! registry =
                 ManagedCopyAdoptionSignatureEvidence.verify
@@ -220,7 +221,7 @@ module internal ManagedCopyExternalPublicationChecks =
                 let! signers =
                     signed connection transaction witness registration inspection submission
 
-                let! now = Sql.databaseNow connection transaction
+                let! now = Sql.databaseNow connection transaction ct
 
                 match revision, signers with
                 | Some caseRevision, Some(registry, inspector) when absent ->

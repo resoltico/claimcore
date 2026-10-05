@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open System.Data
 open Npgsql
 open ClaimCore.Application
@@ -27,17 +28,12 @@ module internal CaseLifecycleReview =
                 VoidRequiresTwoApprovals = historicalPayment || snapshot.Fields.PaymentDate.IsSome
             }
 
-    let private read dataSource (context: ActorCallContext) reference =
+    let private read dataSource (context: ActorCallContext) reference ct =
         task {
-            use! connection = RuntimeDatabase.openConnectionAsync dataSource
-            use transaction = connection.BeginTransaction(IsolationLevel.ReadCommitted)
+            use! connection = RuntimeDatabase.openConnectionAsyncWithCancellation dataSource ct
+            use! transaction = connection.BeginTransactionAsync(IsolationLevel.ReadCommitted, ct)
 
-            let! revision =
-                ActorGrantRead.lockRevision
-                    connection
-                    transaction
-                    false
-                    System.Threading.CancellationToken.None
+            let! revision = ActorGrantRead.lockRevision connection transaction false ct
 
             let! found = CaseLifecycleRead.lockProjection connection transaction reference
 
@@ -60,11 +56,12 @@ module internal CaseLifecycleReview =
                             connection
                             transaction
                             projection.CaseId
+                            ct
 
                     return summary historicalPayment projection
         }
 
-    let review dataSource (witness: WitnessProtocol) (context: ActorCallContext) reference =
+    let review dataSource (witness: WitnessProtocol) (context: ActorCallContext) reference ct =
         task {
             if
                 context.Action <> EndpointAction.ReviewLifecycle
@@ -73,9 +70,11 @@ module internal CaseLifecycleReview =
                 return LifecycleReviewOutcome.ResourceUnavailable
             else
                 try
-                    witness.Admit()
-                    return! read dataSource context reference
+                    do! witness.Admit(ct)
+                    return! read dataSource context reference ct
                 with
+                | :? System.OperationCanceledException when ct.IsCancellationRequested ->
+                    return LifecycleReviewOutcome.Cancelled
                 | :? System.IO.InvalidDataException ->
                     return LifecycleReviewOutcome.Failed CoreFault.StoreIntegrityError
                 | _ -> return LifecycleReviewOutcome.Failed CoreFault.StoreUnavailable

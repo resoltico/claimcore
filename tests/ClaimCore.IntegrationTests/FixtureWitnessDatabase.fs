@@ -1,5 +1,6 @@
 module internal ClaimCore.IntegrationTests.FixtureWitnessDatabase
 
+open System.Threading
 open System
 open System.Security.Cryptography
 open Npgsql
@@ -83,7 +84,7 @@ let start (admin: string) (suffix: string) =
             )
 
         protocol <- Some active
-        active.Admit()
+        (active.Admit(CancellationToken.None).GetAwaiter().GetResult())
 
         {
             Container = container

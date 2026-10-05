@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open System.Security.Cryptography
 open ClaimCore.Application
 open ClaimCore.Domain
@@ -16,36 +17,14 @@ module internal WitnessAcceptedProtocol =
         (caseId: Guid)
         (attribution: ExecutionAttribution)
         (claim: Claim)
+        (ct: CancellationToken)
         =
-        let request = Operation.request operation
-        let store = witness.EvidenceStore
-        let custody = witness.KeyCustody
+        task {
+            let request = Operation.request operation
+            let plain = WitnessProof.candidate operation context caseId attribution claim
 
-        // An intent with no primary receipt remains unresolved, never a new request to replay.
-        try
-            if store.TryReadEvidence(request.OperationId, Intent).IsSome then
-                raise WitnessPending
-        with _ ->
-            raise WitnessPending
-
-        let plain = WitnessProof.candidate operation context caseId attribution claim
-
-        try
-            let digest = SHA256.HashData(plain)
-            let keyId = custody.ActiveKeyId
-
-            let encrypted =
-                custody.Encrypt(keyId, witness.AssociatedData(request.OperationId, "INTENT"), plain)
-
-            let ticket =
-                try
-                    store.Append(request.OperationId, Some caseId, Intent, keyId, encrypted)
-                with _ ->
-                    raise WitnessPending
-
-            {
-                Ticket = ticket
-                CandidateHash = digest
-            }
-        finally
-            CryptographicOperations.ZeroMemory(plain)
+            try
+                return! witness.BeginAuthority(request.OperationId, plain, Some caseId, ct)
+            finally
+                CryptographicOperations.ZeroMemory(plain)
+        }

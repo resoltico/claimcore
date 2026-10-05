@@ -65,7 +65,17 @@ module internal CoreApi =
     let private prepareForActor store recovery clock commandAuthority request cancellationToken =
         match commandAuthority with
         | Some authority ->
-            TypedPreparation.prepare store recovery clock authority request cancellationToken
+            TypedQueries.cancelObservation
+                cancellationToken
+                (PrepareOutcome.CancelledBeforeAdmission request.OperationId)
+                (fun () ->
+                    TypedPreparation.prepare
+                        store
+                        recovery
+                        clock
+                        authority
+                        request
+                        cancellationToken)
         | None ->
             Task.FromResult(
                 PrepareOutcome.PrepareRejected(request.OperationId, Rejection.ResourceUnavailable)
@@ -107,16 +117,20 @@ module internal CoreApi =
                     )
 
             member _.Get(reference, cancellationToken) =
-                TypedQueries.get store reference cancellationToken
+                TypedQueries.cancelObservation cancellationToken QueryOutcome.Cancelled (fun () ->
+                    TypedQueries.get store reference cancellationToken)
 
             member _.List(request, cancellationToken) =
-                TypedQueries.list store request cancellationToken
+                TypedQueries.cancelObservation cancellationToken QueryOutcome.Cancelled (fun () ->
+                    TypedQueries.list store request cancellationToken)
 
             member _.History(request, cancellationToken) =
-                TypedQueries.history store request cancellationToken
+                TypedQueries.cancelObservation cancellationToken QueryOutcome.Cancelled (fun () ->
+                    TypedQueries.history store request cancellationToken)
 
             member _.ObserveOperation(operationId, cancellationToken) =
-                TypedQueries.observe store operationId cancellationToken
+                TypedQueries.cancelObservation cancellationToken QueryOutcome.Cancelled (fun () ->
+                    TypedQueries.observe store operationId cancellationToken)
 
             member _.Recovery = recoveryWorkflow
         }

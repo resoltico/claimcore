@@ -30,25 +30,28 @@ module internal WriterHandoffOwnerAbortRelease =
         (ticket: Ticket)
         (oldCapability: byte array)
         =
-        let snapshot = witness.Snapshot()
+        task {
+            let! snapshot = witness.Snapshot(CancellationToken.None)
 
-        WriterHandoffOwnerAbortBackfill.verifyPrimary
-            owner
-            transaction
-            value
-            canonical
-            digest
-            ticket
-        && SHA256.HashData(oldCapability) = value.OldCapabilitySha256
-        && snapshot.WriterGeneration = value.OldGeneration
-        && ((snapshot.HandoffPending
-             && snapshot.TipSequence = ticket.Sequence
-             && snapshot.TipHash = ticket.EntryHash)
-            || (not snapshot.HandoffPending
-                && snapshot.LastAbortedHandoffId = Some value.HandoffId
-                && snapshot.LastAbortedHandoffSequence = Some ticket.Sequence
-                && snapshot.LastAbortedHandoffHash = Some ticket.EntryHash
-                && snapshot.TipSequence >= ticket.Sequence))
+            return
+                WriterHandoffOwnerAbortWrite.verifyPrimary
+                    owner
+                    transaction
+                    value
+                    canonical
+                    digest
+                    ticket
+                && SHA256.HashData(oldCapability) = value.OldCapabilitySha256
+                && snapshot.WriterGeneration = value.OldGeneration
+                && ((snapshot.HandoffPending
+                     && snapshot.TipSequence = ticket.Sequence
+                     && snapshot.TipHash = ticket.EntryHash)
+                    || (not snapshot.HandoffPending
+                        && snapshot.LastAbortedHandoffId = Some value.HandoffId
+                        && snapshot.LastAbortedHandoffSequence = Some ticket.Sequence
+                        && snapshot.LastAbortedHandoffHash = Some ticket.EntryHash
+                        && snapshot.TipSequence >= ticket.Sequence))
+        }
 
     let private finish
         dataSource
@@ -60,15 +63,19 @@ module internal WriterHandoffOwnerAbortRelease =
         oldCapability
         =
         task {
-            if witness.Snapshot().HandoffPending then
-                WriterHandoffWitnessAbortCommands.release
-                    ownerWitnessConnection
-                    witness
-                    value.HandoffId
-                    ticket
-                    oldCapability
+            let! before = witness.Snapshot(CancellationToken.None)
 
-            let after = witness.Snapshot()
+            if before.HandoffPending then
+                do!
+                    WriterHandoffWitnessAbortCommands.release
+                        ownerWitnessConnection
+                        witness
+                        value.HandoffId
+                        ticket
+                        oldCapability
+                        CancellationToken.None
+
+            let! after = witness.Snapshot(CancellationToken.None)
 
             if
                 after.HandoffPending
@@ -106,19 +113,10 @@ module internal WriterHandoffOwnerAbortRelease =
         (started: bool ref)
         =
         task {
-            if
-                not (
-                    pairMatches
-                        owner
-                        transaction
-                        witness
-                        value
-                        canonical
-                        digest
-                        ticket
-                        oldCapability
-                )
-            then
+            let! matched =
+                pairMatches owner transaction witness value canonical digest ticket oldCapability
+
+            if not matched then
                 return WriterHandoffAbortOutcome.Unconfirmed value.HandoffId
             else
                 started.Value <- true
@@ -151,7 +149,7 @@ module internal WriterHandoffOwnerAbortRelease =
         task {
             let! _ = ActorGrantRead.lockRevision owner transaction true CancellationToken.None
 
-            let ticket, digest =
+            let! ticket, digest =
                 WriterHandoffOwnerAbortBackfill.readReceipt
                     owner
                     transaction
@@ -197,7 +195,7 @@ module internal WriterHandoffOwnerAbortRelease =
                 try
                     OwnerConnection.requireIdentity primaryOwner
                     SchemaBaseline.requireCurrent primaryOwner
-                    witness.AdmitReadOnly()
+                    do! witness.AdmitReadOnly(CancellationToken.None)
 
                     use! _authorityFence =
                         AuthorityOperationFence.acquireExclusive

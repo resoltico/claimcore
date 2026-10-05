@@ -10,21 +10,7 @@ open DataAuditCommon
 /// Accepted command rows are replayed through Application/Domain with authenticated
 /// disposition-only revisions interleaved from bounded independent witness-verified pages.
 module internal DataAuditReplay =
-    let private verifyRow
-        zone
-        (witness: WitnessProtocol)
-        cutoff
-        caseId
-        previous
-        (row: AcceptedAuditRow)
-        =
-        if
-            row.CaseId <> caseId
-            || row.RuleRevision <> int16 DomainRules.version
-            || row.WitnessSequence > cutoff
-        then
-            corrupt ()
-
+    let private requireBusinessDate zone (row: AcceptedAuditRow) =
         let localDate =
             TimeZoneInfo.ConvertTime(row.ObservedInstant, zone).DateTime
             |> DateOnly.FromDateTime
@@ -32,35 +18,58 @@ module internal DataAuditReplay =
         if row.BusinessDate <> localDate then
             corrupt ()
 
-        let digest =
-            witnessProof (fun () ->
-                WitnessCandidate.acceptedDigestFromEvidence
-                    row.Request.OperationId
-                    row.ActorEvidence
-                    row.Request.CaseReference
-                    row.Request.ExpectedVersion
-                    (Claim.view row.Receipt.Case).Version
-                    row.Receipt.CommandName
-                    row.BusinessDate
-                    row.ObservedInstant
-                    row.CanonicalRequest
-                    row.Snapshot)
 
-        witnessProof (fun () ->
-            witness.VerifyAcceptedEvidenceForCase(
-                row.Request.OperationId,
-                row.WitnessSequence,
-                row.WitnessEpoch,
-                row.WitnessEntryHash,
-                digest,
-                caseId
-            ))
+    let private verifyRow
+        zone
+        (witness: WitnessProtocol)
+        cutoff
+        caseId
+        previous
+        (row: AcceptedAuditRow)
+        (ct: CancellationToken)
+        =
+        task {
+            if
+                row.CaseId <> caseId
+                || row.RuleRevision <> int16 DomainRules.version
+                || row.WitnessSequence > cutoff
+            then
+                corrupt ()
 
-        match
-            AcceptedHistoryAudit.replay row.BusinessDate row.Request previous row.Receipt.Case
-        with
-        | Some replayed -> replayed
-        | None -> corrupt ()
+            requireBusinessDate zone row
+
+            let digest =
+                witnessProof (fun () ->
+                    WitnessCandidate.acceptedDigestFromEvidence
+                        row.Request.OperationId
+                        row.ActorEvidence
+                        row.Request.CaseReference
+                        row.Request.ExpectedVersion
+                        (Claim.view row.Receipt.Case).Version
+                        row.Receipt.CommandName
+                        row.BusinessDate
+                        row.ObservedInstant
+                        row.CanonicalRequest
+                        row.Snapshot)
+
+            do!
+                witnessProofAsync (fun () ->
+                    witness.VerifyAcceptedEvidenceForCase(
+                        row.Request.OperationId,
+                        row.WitnessSequence,
+                        row.WitnessEpoch,
+                        row.WitnessEntryHash,
+                        digest,
+                        caseId,
+                        ct
+                    ))
+
+            match
+                AcceptedHistoryAudit.replay row.BusinessDate row.Request previous row.Receipt.Case
+            with
+            | Some replayed -> return replayed
+            | None -> return corrupt ()
+        }
 
     let private replayPage
         connection
@@ -92,7 +101,8 @@ module internal DataAuditReplay =
                         last
                         ct
 
-                last <- Some(verifyRow zone witness cutoff caseId advanced row)
+                let! replayed = verifyRow zone witness cutoff caseId advanced row ct
+                last <- Some replayed
 
             return last
         }

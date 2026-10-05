@@ -17,14 +17,26 @@ module internal ManagedCopyDeletionApproval =
         (canonical: byte array)
         (prior: (byte array * byte array * int64 * int64 * byte array) option)
         (revision: int64)
+        ct
         =
-        match prior with
-        | Some(bytes, digest, sequence, epoch, entryHash) when
-            bytes = canonical && digest = SHA256.HashData(canonical)
-            ->
-            witness.VerifyAuthorityEvidence(request.ApprovalId, sequence, epoch, entryHash, digest)
-            CopyDeletionApprovalOutcome.Approved(request.ApprovalId, revision)
-        | _ -> CopyDeletionApprovalOutcome.ResourceUnavailable
+        task {
+            match prior with
+            | Some(bytes, digest, sequence, epoch, entryHash) when
+                bytes = canonical && digest = SHA256.HashData(canonical)
+                ->
+                do!
+                    witness.VerifyAuthorityEvidence(
+                        request.ApprovalId,
+                        sequence,
+                        epoch,
+                        entryHash,
+                        digest,
+                        ct
+                    )
+
+                return CopyDeletionApprovalOutcome.Approved(request.ApprovalId, revision)
+            | _ -> return CopyDeletionApprovalOutcome.ResourceUnavailable
+        }
 
     let private fresh
         (connection: NpgsqlConnection)
@@ -34,6 +46,7 @@ module internal ManagedCopyDeletionApproval =
         actorId
         revision
         canonical
+        ct
         =
         task {
             let! copy =
@@ -43,18 +56,22 @@ module internal ManagedCopyDeletionApproval =
             | None -> return CopyDeletionApprovalOutcome.ResourceUnavailable
             | Some value ->
                 let! held = activeHold connection transaction value.SourceCaseId
-                let! time = Sql.databaseNow connection transaction
+                let! time = Sql.databaseNow connection transaction ct
 
-                let historical =
-                    try
-                        witness.VerifyHistoricalTip(
-                            request.WitnessCutoffSequence,
-                            request.WitnessCutoffHash
-                        )
+                let! historical =
+                    task {
+                        try
+                            do!
+                                witness.VerifyHistoricalTip(
+                                    request.WitnessCutoffSequence,
+                                    request.WitnessCutoffHash,
+                                    ct
+                                )
 
-                        true
-                    with _ ->
-                        false
+                            return true
+                        with _ ->
+                            return false
+                    }
 
                 if not historical || not (admissible request value actorId time held) then
                     return CopyDeletionApprovalOutcome.ResourceUnavailable
@@ -69,6 +86,7 @@ module internal ManagedCopyDeletionApproval =
                             revision
                             value
                             canonical
+                            ct
         }
 
     let private persistOrReplay
@@ -79,14 +97,15 @@ module internal ManagedCopyDeletionApproval =
         actorId
         revision
         canonical
+        ct
         =
         task {
             let! prior = existing connection transaction request.ApprovalId
 
             match prior with
-            | Some _ -> return replay witness request canonical prior revision
+            | Some _ -> return! replay witness request canonical prior revision ct
             | None ->
-                return! fresh connection transaction witness request actorId revision canonical
+                return! fresh connection transaction witness request actorId revision canonical ct
         }
 
     let private underLock
@@ -95,6 +114,7 @@ module internal ManagedCopyDeletionApproval =
         (witness: WitnessProtocol)
         context
         (request: CopyDeletionApprovalRequest)
+        ct
         =
         task {
             let! revision =
@@ -124,6 +144,7 @@ module internal ManagedCopyDeletionApproval =
                             live.ActorId
                             revision
                             canonical
+                            ct
                 finally
                     CryptographicOperations.ZeroMemory(canonical)
             | _ -> return CopyDeletionApprovalOutcome.ResourceUnavailable
@@ -134,23 +155,25 @@ module internal ManagedCopyDeletionApproval =
         (witness: WitnessProtocol)
         (context: ActorCallContext)
         (request: CopyDeletionApprovalRequest)
+        ct
         =
         task {
             if not (validRequest context request) then
                 return CopyDeletionApprovalOutcome.ResourceUnavailable
             else
                 try
-                    witness.Admit()
-                    use! connection = RuntimeDatabase.openConnectionAsync dataSource
+                    do! witness.Admit(ct)
+
+                    use! connection =
+                        RuntimeDatabase.openConnectionAsyncWithCancellation dataSource ct
 
                     use! _authorityLease =
-                        AuthorityOperationFence.acquireShared
-                            (Some dataSource)
-                            connection
-                            System.Threading.CancellationToken.None
+                        AuthorityOperationFence.acquireShared (Some dataSource) connection ct
 
-                    use transaction = connection.BeginTransaction(IsolationLevel.ReadCommitted)
-                    return! underLock connection transaction witness context request
+                    use! transaction =
+                        connection.BeginTransactionAsync(IsolationLevel.ReadCommitted, ct)
+
+                    return! underLock connection transaction witness context request ct
                 with _ ->
                     return CopyDeletionApprovalOutcome.StartedUnconfirmed request.ApprovalId
         }

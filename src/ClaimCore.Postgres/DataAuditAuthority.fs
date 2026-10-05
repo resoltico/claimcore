@@ -7,7 +7,13 @@ open ClaimCore.Witness
 module internal DataAuditAuthority =
     let private verifyHandoffs connection transaction witness cutoff cancellationToken =
         task {
-            DataAuditInstallationUse.verify connection transaction witness cutoff
+            do!
+                DataAuditInstallationUse.verify
+                    connection
+                    transaction
+                    witness
+                    cutoff
+                    cancellationToken
 
             let! handoffs =
                 DataAuditWriterHandoffs.verify

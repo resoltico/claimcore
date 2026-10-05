@@ -1,5 +1,6 @@
 namespace ClaimCore.Database
 
+open System.Threading
 open System
 open System.Globalization
 open Npgsql
@@ -75,26 +76,28 @@ module internal DatabaseFencedTailHistorical =
         (probeEvidenceSha: string)
         (archiveRoot: string)
         =
-        let atIssuance, report, index, fence = parsed publication loaded
+        task {
+            let atIssuance, report, index, fence = parsed publication loaded
 
-        let builder = OwnerConnection.builder ownerConnection
-        use owner = new NpgsqlConnection(builder.ConnectionString)
-        owner.Open()
-        witness.AdmitReadOnly()
-        use transaction = owner.BeginTransaction()
+            let builder = OwnerConnection.builder ownerConnection
+            use owner = new NpgsqlConnection(builder.ConnectionString)
+            owner.Open()
+            do! witness.AdmitReadOnly(CancellationToken.None)
+            use transaction = owner.BeginTransaction()
 
-        let proof =
-            DatabaseRestoreFencedTailVerification.verifyHistorical
-                owner
-                transaction
-                witness
-                report
-                index
-                fence.IndependentProbeSha256
-                probeEvidenceSha
-                archiveRoot
-                loaded.Evidence
-                atIssuance
+            let! proof =
+                DatabaseRestoreFencedTailVerification.verifyHistorical
+                    owner
+                    transaction
+                    witness
+                    report
+                    index
+                    fence.IndependentProbeSha256
+                    probeEvidenceSha
+                    archiveRoot
+                    loaded.Evidence
+                    atIssuance
 
-        transaction.Rollback()
-        proof
+            transaction.Rollback()
+            return proof
+        }

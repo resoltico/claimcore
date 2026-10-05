@@ -9,19 +9,23 @@ let private admission source timeout =
     new RuntimeAdmission(
         source,
         timeout,
-        ignore,
-        (fun () ->
-            { new IDisposable with
-                member _.Dispose() = ()
+        (fun _ -> Task.FromResult(())),
+        (fun _ ->
+            task {
+                return
+                    ((fun () ->
+                        { new IDisposable with
+                            member _.Dispose() = ()
+                        })) ()
             }),
         {
-            RequireCaseMutation = ignore
-            RequireCaseRead = ignore
-            RequireAuthoritySetup = ignore
-            RequireAuthorityRead = ignore
+            RequireCaseMutation = (fun _ -> Task.FromResult(()))
+            RequireCaseRead = (fun _ -> Task.FromResult(()))
+            RequireAuthoritySetup = (fun _ -> Task.FromResult(()))
+            RequireAuthorityRead = (fun _ -> Task.FromResult(()))
             CommitHealth =
                 { new ClaimCore.Postgres.ICaseMutationCommitHealth with
-                    member _.VerifyLocked(_, _) = ()
+                    member _.VerifyLocked(_, _, _) = Task.CompletedTask
                 }
             CommitHealthRequired = false
         }

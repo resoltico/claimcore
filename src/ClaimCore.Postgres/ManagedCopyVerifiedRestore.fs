@@ -35,18 +35,16 @@ module internal ManagedCopyVerifiedRestore =
             Sql.integer command "revision" transition.Revision
             let! proof = command.ExecuteScalarAsync()
 
-            return
-                match proof with
-                | :? (byte array) as digest when
-                    transition.Copy.VerificationProofSha256 = Some digest
-                    ->
+            match proof with
+            | :? (byte array) as digest when transition.Copy.VerificationProofSha256 = Some digest ->
+                return!
                     ManagedCopyTransitionAdministration.exactRetry
                         witness
                         transition
                         canonical
                         signature
                         stored
-                | _ -> AuthorityWriteOutcome.Unconfirmed transition.Copy.EventId
+            | _ -> return AuthorityWriteOutcome.Unconfirmed transition.Copy.EventId
         }
 
     let private signedTransition
@@ -88,7 +86,13 @@ module internal ManagedCopyVerifiedRestore =
             let candidate = ManagedCopyTransitionPolicy.candidate transition canonical signature
 
             try
-                let intent = witness.BeginAuthority(transition.Copy.EventId, candidate, None)
+                let! intent =
+                    witness.BeginAuthority(
+                        transition.Copy.EventId,
+                        candidate,
+                        None,
+                        CancellationToken.None
+                    )
 
                 let eventHash =
                     ManagedCopyEventHash.compute
@@ -108,7 +112,7 @@ module internal ManagedCopyVerifiedRestore =
                         intent
 
                 do! transaction.CommitAsync()
-                witness.SettleAuthority(transition.Copy.EventId, intent) |> ignore
+                let! _ = witness.SettleAuthority(transition.Copy.EventId, intent)
                 return AuthorityWriteOutcome.Applied(transition.Copy.EventId, transition.Revision)
             finally
                 CryptographicOperations.ZeroMemory(candidate)
@@ -146,10 +150,12 @@ module internal ManagedCopyVerifiedRestore =
         now
         =
         task {
-            witness.VerifyHistoricalTip(
-                transition.ActionWitnessCutoffSequence,
-                transition.ActionWitnessCutoffHash
-            )
+            do!
+                witness.VerifyHistoricalTip(
+                    transition.ActionWitnessCutoffSequence,
+                    transition.ActionWitnessCutoffHash,
+                    CancellationToken.None
+                )
 
             let! physical =
                 verifier.Verify(
@@ -166,7 +172,7 @@ module internal ManagedCopyVerifiedRestore =
             | Some proof when
                 proofMatches connection transaction witness transition state original proof now
                 ->
-                let! fresh = Sql.databaseNow connection transaction
+                let! fresh = Sql.databaseNow connection transaction CancellationToken.None
 
                 if proof.Proof.ValidUntil <= fresh || state.RetainUntil <= fresh then
                     return AuthorityWriteOutcome.Refused
@@ -192,7 +198,7 @@ module internal ManagedCopyVerifiedRestore =
             let! signer =
                 ManagedCopyOwnerRead.signer connection transaction transition.Copy.SigningKeyId
 
-            let! now = Sql.databaseNow connection transaction
+            let! now = Sql.databaseNow connection transaction CancellationToken.None
 
             match current, signer with
             | Some state, Some(publicKey, publicDigest, true, CopySignerPurpose.CopyAttestor) ->
@@ -271,7 +277,7 @@ module internal ManagedCopyVerifiedRestore =
                 try
                     OwnerConnection.requireIdentity connection
                     SchemaBaseline.requireCurrent connection
-                    witness.Admit()
+                    do! witness.Admit(CancellationToken.None)
                     return! underLock connection witness verifier value canonical signature
                 with _ ->
                     return AuthorityWriteOutcome.Unconfirmed value.Copy.EventId

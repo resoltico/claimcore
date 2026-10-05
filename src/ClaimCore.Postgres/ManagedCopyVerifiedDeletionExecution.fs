@@ -25,16 +25,16 @@ module internal ManagedCopyVerifiedDeletionExecution =
                     approvalId
                     transition.Copy.EventId
 
-            return
-                if consumed then
+            if consumed then
+                return!
                     ManagedCopyTransitionAdministration.exactRetry
                         witness
                         transition
                         canonical
                         signature
                         stored
-                else
-                    AuthorityWriteOutcome.Unconfirmed transition.Copy.EventId
+            else
+                return AuthorityWriteOutcome.Unconfirmed transition.Copy.EventId
         }
 
     let private underLock
@@ -95,7 +95,7 @@ module internal ManagedCopyVerifiedDeletionExecution =
                 try
                     OwnerConnection.requireIdentity connection
                     SchemaBaseline.requireCurrent connection
-                    witness.Admit()
+                    do! witness.Admit(CancellationToken.None)
 
                     use! _authorityFence =
                         AuthorityOperationFence.acquireShared None connection CancellationToken.None

@@ -159,28 +159,32 @@ module internal DatabaseRestoreProduceLive =
             CryptographicOperations.ZeroMemory(checkpointKey)
 
     let private derive owner witnessOwner witnessAudit custody suppression input =
-        let _, _, result =
-            DatabaseVerifyData.auditedRestoredWith
-                owner
-                witnessAudit
-                custody
-                suppression
-                (fun barrier transaction witness audit tip ->
-                    let facts =
-                        DatabaseRestoreLive.inspect
-                            barrier
-                            transaction
-                            witnessOwner
-                            witness
-                            audit
-                            tip
+        task {
+            let! _, _, result =
+                DatabaseVerifyData.auditedRestoredWith
+                    owner
+                    witnessAudit
+                    custody
+                    suppression
+                    (fun barrier transaction witness audit tip ->
+                        task {
+                            let! facts =
+                                DatabaseRestoreLive.inspect
+                                    barrier
+                                    transaction
+                                    witnessOwner
+                                    witness
+                                    audit
+                                    tip
 
-                    if facts.PendingIntents <> 0L then
-                        invalidOp "A restored pair has unsettled witness authority."
+                            if facts.PendingIntents <> 0L then
+                                invalidOp "A restored pair has unsettled witness authority."
 
-                    witnessedSigners input barrier transaction facts)
+                            return witnessedSigners input barrier transaction facts
+                        })
 
-        result
+            return result
+        }
 
     let private signAndRecheck
         owner
@@ -193,44 +197,49 @@ module internal DatabaseRestoreProduceLive =
         (produced: RestoreProducedEvidence)
         reportKey
         =
-        let signature = input.ReportSigner produced.Report
+        task {
+            let signature = input.ReportSigner produced.Report
 
-        if
-            signature.Length <> 64
-            || not (ManagedCopySignature.verify reportKey produced.Report signature)
-        then
-            invalidOp "Private restore report signer does not match its witnessed roster."
+            if
+                signature.Length <> 64
+                || not (ManagedCopySignature.verify reportKey produced.Report signature)
+            then
+                invalidOp "Private restore report signer does not match its witnessed roster."
 
-        let files: RestoreReportFiles =
-            {
-                Report = produced.Report
-                Signature = signature
-                EvidenceIndex = produced.EvidenceIndex
-                ReportSha256 = produced.ReportSha256
-                EvidenceIndexSha256 = produced.EvidenceIndexSha256
-            }
+            let files: RestoreReportFiles =
+                {
+                    Report = produced.Report
+                    Signature = signature
+                    EvidenceIndex = produced.EvidenceIndex
+                    ReportSha256 = produced.ReportSha256
+                    EvidenceIndexSha256 = produced.EvidenceIndexSha256
+                }
 
-        let nonce = Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(32))
+            let nonce = Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(32))
 
-        match
-            DatabaseRestoreReportRecheck.evaluateSynthetic
-                (Some input.Publication)
-                owner
-                witnessAudit
-                witnessOwner
-                custody
-                suppression
-                files
-                nonce
-                bound.VerifierBinarySha256
-                DateTimeOffset.UtcNow
-        with
-        | Ok _ ->
-            {
-                Evidence = produced
-                ReportSignature = signature
-            }
-        | Error _ -> invalidOp "Produced restored-pair evidence failed independent recheck."
+            let! rechecked =
+                DatabaseRestoreReportRecheck.evaluateSynthetic
+                    (Some input.Publication)
+                    owner
+                    witnessAudit
+                    witnessOwner
+                    custody
+                    suppression
+                    files
+                    nonce
+                    bound.VerifierBinarySha256
+                    DateTimeOffset.UtcNow
+
+            match rechecked with
+            | Ok _ ->
+                return
+                    {
+                        Evidence = produced
+                        ReportSignature = signature
+                    }
+            | Error _ ->
+                return invalidOp "Produced restored-pair evidence failed independent recheck."
+        }
 
     let produceSynthetic
         owner
@@ -240,50 +249,52 @@ module internal DatabaseRestoreProduceLive =
         (suppression: SuppressionKeyFile)
         (input: RestoreProduceInput)
         =
-        DatabaseRestoreProduceTarget.requireIsolated owner witnessAudit
+        task {
+            DatabaseRestoreIsolation.requireIsolated owner witnessAudit
 
-        if
-            input.ValidUntil.Offset <> TimeSpan.Zero
-            || input.ValidUntil.UtcTicks % TimeSpan.TicksPerSecond <> 0L
-        then
-            invalidOp "Restore report validity instant is not exact UTC seconds."
+            DatabaseRestoreProduceCanonical.requireValidity input.ValidUntil
 
-        let facts, owners, reportKey, checkpointPublicSha =
-            derive owner witnessOwner witnessAudit custody suppression input
+            let! facts, owners, reportKey, checkpointPublicSha =
+                derive owner witnessOwner witnessAudit custody suppression input
 
-        try
-            let instant = DateTimeOffset.UtcNow
+            try
+                let instant = DateTimeOffset.UtcNow
 
-            let checkedAt =
-                DateTimeOffset(
-                    instant.UtcTicks - instant.UtcTicks % TimeSpan.TicksPerSecond,
-                    TimeSpan.Zero
-                )
+                let checkedAt =
+                    DateTimeOffset(
+                        instant.UtcTicks - instant.UtcTicks % TimeSpan.TicksPerSecond,
+                        TimeSpan.Zero
+                    )
 
-            let unsigned = claims input facts owners checkedAt checkpointPublicSha
+                let unsigned = claims input facts owners checkedAt checkpointPublicSha
 
-            let indexBytes =
-                DatabaseRestoreProduceCanonical.evidenceIndex unsigned input.Index input.Publication
+                let indexBytes =
+                    DatabaseRestoreProduceCanonical.evidenceIndex
+                        unsigned
+                        input.Index
+                        input.Publication
 
-            let indexSha = SHA256.HashData(indexBytes) |> Convert.ToHexStringLower
+                let indexSha = SHA256.HashData(indexBytes) |> Convert.ToHexStringLower
 
-            let bound =
-                { unsigned with
-                    EvidenceIndexSha256 = indexSha
-                }
+                let bound =
+                    { unsigned with
+                        EvidenceIndexSha256 = indexSha
+                    }
 
-            let produced =
-                DatabaseRestoreProduceCanonical.produce bound input.Index input.Publication
+                let produced =
+                    DatabaseRestoreProduceCanonical.produce bound input.Index input.Publication
 
-            signAndRecheck
-                owner
-                witnessAudit
-                witnessOwner
-                custody
-                suppression
-                input
-                bound
-                produced
-                reportKey
-        finally
-            CryptographicOperations.ZeroMemory(reportKey)
+                return!
+                    signAndRecheck
+                        owner
+                        witnessAudit
+                        witnessOwner
+                        custody
+                        suppression
+                        input
+                        bound
+                        produced
+                        reportKey
+            finally
+                CryptographicOperations.ZeroMemory(reportKey)
+        }

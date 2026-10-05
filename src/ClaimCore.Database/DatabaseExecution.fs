@@ -1,5 +1,6 @@
 namespace ClaimCore.Database
 
+open System.Threading
 open System
 open System.IO
 open Npgsql
@@ -96,7 +97,7 @@ module DatabaseExecution =
             capability.Use(fun material -> new Store(witnessWriter, identity, material))
 
         use witness = new WitnessProtocol(store, custody, identity)
-        witness.Admit()
+        witness.Admit(CancellationToken.None).GetAwaiter().GetResult()
         let builder = OwnerConnection.builder ownerConnection
         use connection = new NpgsqlConnection(builder.ConnectionString)
         connection.Open()

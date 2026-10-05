@@ -1,5 +1,6 @@
 module ClaimCore.IntegrationTests.StorageDateTests
 
+open System.Threading
 open System
 open Npgsql
 open Expecto
@@ -59,7 +60,7 @@ let private persistDateExtrema (value: string) =
     |> ignore
 
     let fields =
-        service.Get(request.CaseReference)
+        service.Get(request.CaseReference, CancellationToken.None)
         |> await
         |> accepted
         |> Option.defaultWith (fun () -> failtest "Expected the stored case.")

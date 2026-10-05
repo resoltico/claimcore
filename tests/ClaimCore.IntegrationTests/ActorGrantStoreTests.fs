@@ -95,9 +95,15 @@ let private revocation =
                 assertRevoked readerPrincipal before after))
 
 let private assertInitialReadback owner (witness: WitnessProtocol) principal expected =
-    let tip = witness.Snapshot().TipSequence
+    let tip =
+        (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence
+
     Expect.equal (provision owner witness principal) expected "Exact provisioning receipt."
-    Expect.equal (witness.Snapshot().TipSequence) tip "Readback adds no authority event."
+
+    Expect.equal
+        ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
+        tip
+        "Readback adds no authority event."
 
 let private initialOwnerReadback =
     testCase

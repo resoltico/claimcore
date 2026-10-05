@@ -1,5 +1,6 @@
 module ClaimCore.IntegrationTests.ManagedCopyAdoptedTransitionTests
 
+open System.Threading
 open System
 open Expecto
 open Npgsql
@@ -38,7 +39,10 @@ let private earlyRefusal
         "External copy retention blocks early deletion"
 
     Expect.isNone
-        (witness.EvidenceStore.TryReadEvidence(premature.EventId, ClaimCore.Witness.Intent))
+        ((witness.EvidenceStore
+            .TryReadEvidence(premature.EventId, ClaimCore.Witness.Intent, CancellationToken.None)
+            .GetAwaiter()
+            .GetResult()))
         "Early external deletion has no witness intent"
 
 let private recordUnknown

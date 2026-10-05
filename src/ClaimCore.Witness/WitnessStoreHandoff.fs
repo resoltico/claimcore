@@ -1,6 +1,7 @@
 namespace ClaimCore.Witness
 
 open System
+open System.Threading
 open System.Data.Common
 open Npgsql
 open NpgsqlTypes
@@ -68,26 +69,32 @@ module internal WitnessStoreHandoff =
                 optional reader 28 (fun value index -> value.GetFieldValue<DateTimeOffset>(index))
         }
 
-    let read writerConnection (identity: Identity) handoffId =
-        if handoffId = Guid.Empty then
-            invalidArg (nameof handoffId) "Writer handoff identity is invalid."
+    let read writerConnection (identity: Identity) handoffId (ct: CancellationToken) =
+        task {
+            if handoffId = Guid.Empty then
+                invalidArg (nameof handoffId) "Writer handoff identity is invalid."
 
-        use connection = PostgresTransport.connection writerConnection
-        connection.Open()
-        WitnessStoreRead.checkAdmission identity connection
-        use command = new NpgsqlCommand(query, connection)
+            use connection = PostgresTransport.connection writerConnection
+            do! connection.OpenAsync(ct)
+            do! WitnessDatabaseAdmission.checkAsync identity connection ct
+            use command = new NpgsqlCommand(query, connection)
 
-        command.Parameters.AddWithValue("handoff", NpgsqlDbType.Uuid, handoffId)
-        |> ignore
+            command.Parameters.AddWithValue("handoff", NpgsqlDbType.Uuid, handoffId)
+            |> ignore
 
-        use reader = command.ExecuteReader()
+            use! reader = command.ExecuteReaderAsync(ct)
 
-        if not (reader.Read()) then
-            None
-        else
-            let result = decoded reader
+            let! found = reader.ReadAsync(ct)
 
-            if reader.Read() then
-                invalidOp "Writer handoff evidence is duplicated."
+            if not found then
+                return None
+            else
+                let result = decoded reader
 
-            Some result
+                let! duplicated = reader.ReadAsync(ct)
+
+                if duplicated then
+                    invalidOp "Writer handoff evidence is duplicated."
+
+                return Some result
+        }

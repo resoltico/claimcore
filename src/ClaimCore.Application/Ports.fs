@@ -1,6 +1,7 @@
 namespace ClaimCore.Application
 
 open System
+open System.Threading
 open System.Threading.Tasks
 open ClaimCore.Domain
 
@@ -53,18 +54,27 @@ type internal BusinessContext =
 
 /// Read and exact-receipt observations. IRecoveryStore alone owns command mutation and its locks.
 type internal IClaimStore =
-    abstract Get: reference: string -> Task<Result<Claim option, CoreFailure>>
-    abstract List: request: CaseListRequest -> Task<Result<CasePage, CoreFailure>>
+    abstract Get:
+        reference: string * cancellationToken: CancellationToken ->
+            Task<Result<Claim option, CoreFailure>>
+
+    abstract List:
+        request: CaseListRequest * cancellationToken: CancellationToken ->
+            Task<Result<CasePage, CoreFailure>>
 
     abstract History:
-        reference: string * afterVersion: int64 -> Task<Result<HistoryPage, CoreFailure>>
+        reference: string * afterVersion: int64 * cancellationToken: CancellationToken ->
+            Task<Result<HistoryPage, CoreFailure>>
 
-    abstract Operation: operationId: Guid -> Task<Result<Receipt option, CoreFailure>>
+    abstract Operation:
+        operationId: Guid * cancellationToken: CancellationToken ->
+            Task<Result<Receipt option, CoreFailure>>
 
     /// Verify the candidate's content identity before disclosing an accepted receipt.
     /// Accepted history outlives optional technical preparation retention.
     abstract Accepted:
-        operationId: Guid * requestSha256: string -> Task<Result<Receipt option, CoreFailure>>
+        operationId: Guid * requestSha256: string * cancellationToken: CancellationToken ->
+            Task<Result<Receipt option, CoreFailure>>
 
 /// Runtime-owned authenticated encryption. Application defines what the token means; the runtime
 /// owns nonce generation and an ephemeral key that is discarded on restart.

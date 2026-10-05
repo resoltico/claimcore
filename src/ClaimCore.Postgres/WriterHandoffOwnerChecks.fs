@@ -177,13 +177,15 @@ module internal WriterHandoffOwnerChecks =
                 invalidOp "Independent checkpoint signature is unavailable."
 
             for row in approvals do
-                witness.VerifyAuthorityEvidenceForInstallation(
-                    row.ApprovalId,
-                    row.WitnessSequence,
-                    row.WitnessEpoch,
-                    row.WitnessHash,
-                    row.Candidate
-                )
+                do!
+                    witness.VerifyAuthorityEvidenceForInstallation(
+                        row.ApprovalId,
+                        row.WitnessSequence,
+                        row.WitnessEpoch,
+                        row.WitnessHash,
+                        row.Candidate,
+                        ct
+                    )
         }
 
     let verifySettlementSignature connection transaction keyId canonical (signature: byte array) =
@@ -249,3 +251,37 @@ module internal WriterHandoffOwnerChecks =
 
         if reader.Read() || not matching then
             invalidOp "Historical checkpoint signatures diverged."
+
+    let historicalCheckpointKey connection transaction keyId =
+        use command =
+            new NpgsqlCommand(
+                "SELECT s.ed25519_public_key,s.signer_purpose,"
+                + "(SELECT r.witness_sequence FROM claimcore.managed_copy_signer_events r "
+                + "WHERE r.signing_key_id=s.signing_key_id AND r.revision=1),"
+                + "(SELECT r.witness_sequence FROM claimcore.managed_copy_signer_events r "
+                + "WHERE r.signing_key_id=s.signing_key_id AND r.revision=2) "
+                + "FROM claimcore.managed_copy_signers s WHERE s.signing_key_id=@key",
+                connection,
+                transaction
+            )
+
+        Sql.uuid command "key" keyId
+        use reader = command.ExecuteReader()
+
+        if not (reader.Read()) then
+            invalidOp "Historical checkpoint key is missing."
+
+        let publicKey = reader.GetFieldValue<byte array>(0)
+        let purpose = reader.GetString(1)
+        let registered = reader.GetInt64(2)
+
+        let retired =
+            if reader.IsDBNull(3) then
+                None
+            else
+                Some(reader.GetInt64(3))
+
+        if reader.Read() || publicKey.Length <> 32 || purpose <> "CHECKPOINT" then
+            invalidOp "Historical checkpoint key diverged."
+
+        publicKey, registered, retired

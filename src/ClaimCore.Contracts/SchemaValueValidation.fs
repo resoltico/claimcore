@@ -37,15 +37,13 @@ module SchemaValueValidation =
                 &date
             )
         | Some "date-time" ->
-            match
-                DateTimeOffset.TryParse(
-                    value,
-                    CultureInfo.InvariantCulture,
-                    DateTimeStyles.RoundtripKind
-                )
-            with
-            | true, _ -> true
-            | _ -> false
+            // Explicit seconds and offset prevent the parser from supplying a host calendar
+            // or local zone. Wire schemas separately require canonical UTC round-trip spelling.
+            matchesPattern
+                @"\A[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt][0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?([Zz]|[+-][0-9]{2}:[0-9]{2})\z"
+                value
+            && (DateTimeOffset.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.None)
+                |> fst)
         | Some "uri" ->
             match Uri.TryCreate(value, UriKind.Absolute) with
             | true, _ -> true

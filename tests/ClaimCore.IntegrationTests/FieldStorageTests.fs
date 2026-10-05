@@ -1,5 +1,6 @@
 module ClaimCore.IntegrationTests.FieldStorageTests
 
+open System.Threading
 open System
 open Npgsql
 open Expecto
@@ -186,7 +187,7 @@ let private verifyLifecycle () =
     use reopened = store ()
 
     let actual =
-        (reopened :> IClaimStore).Get(initial.CaseReference)
+        (reopened :> IClaimStore).Get(initial.CaseReference, CancellationToken.None)
         |> await
         |> accepted
         |> Option.defaultWith (fun () -> failtest "Persisted case missing")

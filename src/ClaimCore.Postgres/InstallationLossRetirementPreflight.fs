@@ -1,5 +1,6 @@
 namespace ClaimCore.Postgres
 
+open System.Threading
 open System
 open Npgsql
 open ClaimCore.Application
@@ -72,26 +73,28 @@ module internal InstallationLossRetirementPreflight =
         && snapshotMatches value snapshot retired now
 
     let private authority primaryOwner transaction (witness: WitnessProtocol) =
-        let identity, retired =
-            InstallationLossRetirementState.primaryIdentity primaryOwner transaction
+        task {
+            let identity, retired =
+                InstallationLossRetirementState.primaryIdentity primaryOwner transaction
 
-        let revision =
-            InstallationLossRetirementState.authorityRevision primaryOwner transaction
+            let revision =
+                InstallationLossRetirementState.authorityRevision primaryOwner transaction
 
-        let now = InstallationLossRetirementState.databaseNow primaryOwner transaction
-        let snapshot = witness.Snapshot()
+            let! now = InstallationLossRetirementState.databaseNow primaryOwner transaction
+            let! snapshot = witness.Snapshot(CancellationToken.None)
 
-        if
-            InstallationLossRetirementState.verifiedOwnerAuthority
-                primaryOwner
-                transaction
-                witness
-                snapshot.TipSequence
-            <> revision
-        then
-            invalidOp "Loss owner authority projection diverged."
+            let! observed =
+                InstallationLossRetirementState.verifiedOwnerAuthority
+                    primaryOwner
+                    transaction
+                    witness
+                    snapshot.TipSequence
 
-        identity, retired, revision, now, snapshot
+            if observed <> revision then
+                invalidOp "Loss owner authority projection diverged."
+
+            return identity, retired, revision, now, snapshot
+        }
 
     let check
         (primaryOwner: NpgsqlConnection)
@@ -100,41 +103,44 @@ module internal InstallationLossRetirementPreflight =
         (suppression: ISuppressionCommitments)
         (input: LossRetirementCommitInput)
         =
-        let value = input.Decision
+        task {
+            let value = input.Decision
 
-        let identity, retired, revision, now, snapshot =
-            authority primaryOwner transaction witness
+            let! identity, retired, revision, now, snapshot =
+                authority primaryOwner transaction witness
 
-        let count, digest, commitments =
-            InstallationLossOperationCommitments.commitments
-                suppression
-                value.OperationSet
-                input.OperationIdentitySource
+            let count, digest, commitments =
+                InstallationLossOperationCommitments.commitments
+                    suppression
+                    value.OperationSet
+                    input.OperationIdentitySource
 
-        let first, second =
-            InstallationLossRetirementSigners.pair
-                primaryOwner
-                transaction
-                witness
-                value.SignerOneId
-                value.SignerTwoId
-
-        if
-            not (
-                matches
-                    identity
+            let! first, second =
+                InstallationLossRetirementSigners.pair
+                    primaryOwner
+                    transaction
                     witness
-                    revision
-                    count
-                    digest
-                    first
-                    second
-                    input
-                    snapshot
-                    retired
-                    now
-            )
-        then
-            invalidOp "Loss retirement evidence diverged."
+                    value.SignerOneId
+                    value.SignerTwoId
+                    CancellationToken.None
 
-        commitments, retired
+            if
+                not (
+                    matches
+                        identity
+                        witness
+                        revision
+                        count
+                        digest
+                        first
+                        second
+                        input
+                        snapshot
+                        retired
+                        now
+                )
+            then
+                invalidOp "Loss retirement evidence diverged."
+
+            return commitments, retired
+        }

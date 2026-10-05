@@ -13,6 +13,7 @@
     <Compile Include="RuntimeConstruction.fs" />
     <Compile Include="RuntimeResources.fs" />
     <Compile Include="RuntimeFullAudit.fs" />
+    <Compile Include="RuntimeOperationalSignals.fs" />
     <Compile Include="RuntimeAuditCadence.fs" />
     <Compile Include="RuntimeBackupHealthFiles.fs" />
     <Compile Include="RuntimeSafetySupervisor.fs" />

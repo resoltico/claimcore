@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open Npgsql
 open ClaimCore.Witness
 open DataAuditCommon
@@ -69,15 +70,16 @@ module internal CaseTombstonePruneTargetAudit =
             IsExternalPublication = marker
         }
 
-    let private metadataPage (witness: WitnessProtocol) after previousHash cutoff =
-        witnessProof (fun () ->
-            witness.EvidenceStore.ReadMetadataPage(after, previousHash, cutoff, 32))
+    let private metadataPage (witness: WitnessProtocol) after previousHash cutoff ct =
+        witnessProofAsync (fun () ->
+            witness.EvidenceStore.ReadMetadataPage(after, previousHash, cutoff, 32, ct))
 
     let verify
         (connection: NpgsqlConnection)
         (transaction: NpgsqlTransaction)
         (witness: WitnessProtocol)
         (receipt: StoredWitnessPruneReceipt)
+        ct
         =
         task {
             let cursor =
@@ -95,7 +97,7 @@ module internal CaseTombstonePruneTargetAudit =
             let mutable digest = CaseWitnessPayloadTargets.initialDigest ()
 
             while after < receipt.CutoffSequence do
-                let page = metadataPage witness after previousHash receipt.CutoffSequence
+                let! page = metadataPage witness after previousHash receipt.CutoffSequence ct
 
                 if page.Items.IsEmpty then
                     corrupt ()

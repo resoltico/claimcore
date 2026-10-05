@@ -76,6 +76,17 @@ module internal DataAuditCopyPhysicalVerifications =
             | "UNKNOWN", Some instant -> instant >= row.Proof.CheckedAt
             | _ -> false)
 
+    let private verifyCheckpoints (witness: WitnessProtocol) (row: CopyPhysicalAuditRow) ct =
+        witnessProofAsync (fun () ->
+            task {
+                for sequence, hash in
+                    [
+                        row.Proof.WitnessCutoffSequence, row.Proof.WitnessCutoffHash
+                        row.EventWitnessSequence, row.EventWitnessHash
+                    ] do
+                    do! witness.VerifyHistoricalTip(sequence, hash, ct)
+            })
+
     let private verifyRow
         connection
         transaction
@@ -107,13 +118,7 @@ module internal DataAuditCopyPhysicalVerifications =
             then
                 corrupt ()
 
-            witnessProof (fun () ->
-                witness.VerifyHistoricalTip(
-                    row.Proof.WitnessCutoffSequence,
-                    row.Proof.WitnessCutoffHash
-                )
-
-                witness.VerifyHistoricalTip(row.EventWitnessSequence, row.EventWitnessHash))
+            do! verifyCheckpoints witness row ct
 
             do!
                 DataAuditCopyPhysicalVerifierRole.verify

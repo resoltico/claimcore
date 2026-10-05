@@ -32,33 +32,48 @@ module internal DatabaseFencedTailQualification =
         (configuredArchiveRoot: string)
         (now: DateTimeOffset)
         =
-        let _, _, proof =
-            DatabaseVerifyData.auditedRestoredWith
-                owner
-                witnessAudit
-                custody
-                suppression
-                (fun barrier transaction witness summary tip ->
-                    if
-                        summary.PendingIntents <> 0L
-                        || tip.TipSequence <> ticket.Sequence
-                        || tip.TipHash <> ticket.EntryHash
-                    then
-                        invalidOp "Final WAL tail current authority differs from W1."
+        task {
+            let! _, _, proof =
+                DatabaseVerifyData.auditedRestoredWith
+                    owner
+                    witnessAudit
+                    custody
+                    suppression
+                    (fun barrier transaction witness summary tip ->
+                        if
+                            summary.PendingIntents <> 0L
+                            || tip.TipSequence <> ticket.Sequence
+                            || tip.TipHash <> ticket.EntryHash
+                        then
+                            invalidOp "Final WAL tail current authority differs from W1."
 
-                    DatabaseRestoreFencedTailVerification.verify
-                        barrier
-                        transaction
-                        witness
-                        historical.Report
-                        historical.Index
-                        expectedProbeSha
-                        probeEvidenceSha
-                        configuredArchiveRoot
-                        loaded.Evidence
-                        now)
+                        DatabaseRestoreFencedTailVerification.verify
+                            barrier
+                            transaction
+                            witness
+                            historical.Report
+                            historical.Index
+                            expectedProbeSha
+                            probeEvidenceSha
+                            configuredArchiveRoot
+                            loaded.Evidence
+                            now)
 
-        proof
+            return proof
+        }
+
+    let private requireSettlement
+        (settlement: WriterHandoffSettlement)
+        (ticket: Ticket)
+        (tail: FencedTailClaims)
+        =
+        if
+            settlement.HandoffId <> tail.HandoffId
+            || ticket.Sequence <> tail.W1Sequence
+            || Convert.ToHexStringLower(ticket.EntryHash) <> tail.W1Hash
+        then
+            invalidOp "Signed final WAL tail differs from historical W1."
+
 
     let verify
         (publication: TrustedRestorePublication)
@@ -74,40 +89,38 @@ module internal DatabaseFencedTailQualification =
         (configuredArchiveRoot: string)
         (now: DateTimeOffset)
         =
-        let tail =
-            DatabaseRestoreFencedTailClaims.parse loaded.Evidence.Supplement now
-            |> Option.defaultWith (fun () -> invalidOp "Signed final WAL tail is invalid.")
+        task {
+            let tail =
+                DatabaseRestoreFencedTailClaims.parse loaded.Evidence.Supplement now
+                |> Option.defaultWith (fun () -> invalidOp "Signed final WAL tail is invalid.")
 
-        let historical, settlement, ticket =
-            DatabaseRestoreHandoffRecheck.afterSettlement
-                publication
-                scope
-                owner
-                witnessAudit
-                witnessOwner
-                custody
-                suppression
-                loaded.ReportFiles
-                tail.HandoffId
-                (binaryDigest ())
-                now
+            let! historical, settlement, ticket =
+                DatabaseRestoreHandoffRecheck.afterSettlement
+                    publication
+                    scope
+                    owner
+                    witnessAudit
+                    witnessOwner
+                    custody
+                    suppression
+                    loaded.ReportFiles
+                    tail.HandoffId
+                    (binaryDigest ())
+                    now
 
-        if
-            settlement.HandoffId <> tail.HandoffId
-            || ticket.Sequence <> tail.W1Sequence
-            || Convert.ToHexStringLower(ticket.EntryHash) <> tail.W1Hash
-        then
-            invalidOp "Signed final WAL tail differs from historical W1."
+            requireSettlement settlement ticket tail
 
-        currentAudit
-            owner
-            witnessAudit
-            custody
-            suppression
-            loaded
-            historical
-            ticket
-            expectedProbeSha
-            probeEvidenceSha
-            configuredArchiveRoot
-            now
+            return!
+                currentAudit
+                    owner
+                    witnessAudit
+                    custody
+                    suppression
+                    loaded
+                    historical
+                    ticket
+                    expectedProbeSha
+                    probeEvidenceSha
+                    configuredArchiveRoot
+                    now
+        }

@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open System.Security.Cryptography
 open Npgsql
 open System.Data.Common
@@ -87,30 +88,64 @@ module internal ManagedCopyDeletionEvidenceRead =
         approvalId
         (reader: DbDataReader)
         (approval: CopyDeletionApprovalRequest)
+        ct
         =
-        try
-            match transition.SourceCaseId with
-            | Some caseId ->
-                witness.VerifyAuthorityEvidenceForCase(
-                    approvalId,
-                    reader.GetInt64(13),
-                    reader.GetInt64(14),
-                    bytes reader 15,
-                    bytes reader 12,
-                    caseId
-                )
-            | None ->
-                witness.VerifyAuthorityEvidenceForInstallation(
-                    approvalId,
-                    reader.GetInt64(13),
-                    reader.GetInt64(14),
-                    bytes reader 15,
-                    bytes reader 12
-                )
+        task {
+            try
+                match transition.SourceCaseId with
+                | Some caseId ->
+                    do!
+                        witness.VerifyAuthorityEvidenceForCase(
+                            approvalId,
+                            reader.GetInt64(13),
+                            reader.GetInt64(14),
+                            bytes reader 15,
+                            bytes reader 12,
+                            caseId,
+                            ct
+                        )
+                | None ->
+                    do!
+                        witness.VerifyAuthorityEvidenceForInstallation(
+                            approvalId,
+                            reader.GetInt64(13),
+                            reader.GetInt64(14),
+                            bytes reader 15,
+                            bytes reader 12,
+                            ct
+                        )
 
-            Some approval.ExpiresAt
-        with _ ->
-            None
+                return Some approval.ExpiresAt
+            with _ ->
+                return None
+        }
+
+    let private bindingDiffers
+        (witness: WitnessProtocol)
+        transition
+        absence
+        currentRevision
+        copyLocation
+        copyHolderActorId
+        now
+        reader
+        approval
+        canonical
+        =
+        not (
+            exact
+                transition
+                absence
+                currentRevision
+                copyLocation
+                copyHolderActorId
+                now
+                reader
+                approval
+                canonical
+        )
+        || reader.GetInt64(13) <= approval.WitnessCutoffSequence
+        || reader.GetInt64(14) <> witness.Identity.Epoch
 
     let verifyBinding
         (connection: NpgsqlConnection)
@@ -122,6 +157,7 @@ module internal ManagedCopyDeletionEvidenceRead =
         copyLocation
         copyHolderActorId
         now
+        (ct: CancellationToken)
         =
         task {
             match transition.ApprovalId with
@@ -129,9 +165,11 @@ module internal ManagedCopyDeletionEvidenceRead =
             | Some approvalId ->
                 use command = new NpgsqlCommand(query, connection, transaction)
                 Sql.uuid command "approval" approvalId
-                use! reader = command.ExecuteReaderAsync()
+                use! reader = command.ExecuteReaderAsync(ct)
 
-                if not (reader.Read()) then
+                let! found = reader.ReadAsync(ct)
+
+                if not found then
                     return None
                 else
                     let approval = request approvalId reader
@@ -144,24 +182,22 @@ module internal ManagedCopyDeletionEvidenceRead =
 
                     try
                         if
-                            not (
-                                exact
-                                    transition
-                                    absence
-                                    currentRevision
-                                    copyLocation
-                                    copyHolderActorId
-                                    now
-                                    reader
-                                    approval
-                                    canonical
-                            )
-                            || reader.GetInt64(13) <= approval.WitnessCutoffSequence
-                            || reader.GetInt64(14) <> witness.Identity.Epoch
+                            bindingDiffers
+                                witness
+                                transition
+                                absence
+                                currentRevision
+                                copyLocation
+                                copyHolderActorId
+                                now
+                                reader
+                                approval
+                                canonical
                         then
                             return None
                         else
-                            return witnessedApproval witness transition approvalId reader approval
+                            return!
+                                witnessedApproval witness transition approvalId reader approval ct
                     finally
                         CryptographicOperations.ZeroMemory(canonical)
         }
@@ -176,6 +212,7 @@ module internal ManagedCopyDeletionEvidenceRead =
         copyLocation
         copyHolderActorId
         now
+        ct
         =
         verifyBinding
             connection
@@ -194,3 +231,4 @@ module internal ManagedCopyDeletionEvidenceRead =
             copyLocation
             copyHolderActorId
             now
+            ct

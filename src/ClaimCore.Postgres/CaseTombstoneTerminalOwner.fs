@@ -42,14 +42,13 @@ module internal CaseTombstoneTerminalOwner =
         task {
             let value = TombstoneTerminalProposal.copy proposal
 
-            if
-                witness.EvidenceStore
-                    .TryReadEvidence(value.EventId, ClaimCore.Witness.Intent)
-                    .IsSome
-            then
+            let! pending =
+                witness.EvidenceStore.TryReadEvidence(value.EventId, ClaimCore.Witness.Intent, ct)
+
+            if pending.IsSome then
                 return OwnerTerminalOutcome.Unconfirmed value.EventId
             else
-                let! instant = Sql.databaseNow connection transaction
+                let! instant = Sql.databaseNow connection transaction ct
 
                 let! prepared =
                     CaseTombstoneTerminalOwnerPrepare.prepare
@@ -167,7 +166,7 @@ module internal CaseTombstoneTerminalOwner =
             let eventId = TombstoneTerminalProposal.eventId proposal
 
             try
-                witness.Admit()
+                do! witness.Admit(ct)
                 commitments.Admit()
                 use fenceConnection = new NpgsqlConnection(ownerConnection)
                 do! fenceConnection.OpenAsync(ct)

@@ -177,6 +177,17 @@ as cancellation or failure by concurrent disposal.
 Deferred cleanup completion retains a success/failure value, never a faulted task carrying provider
 details. A later disposer observes a settled cleanup failure without repeating resource disposal.
 
+Actor admission, primary/witness read fences, live readiness observations and their evidence reads
+await native asynchronous database I/O with the caller's cancellation token. `ForActor` constructs
+its facade under a lifetime lease; it does not perform network admission synchronously. Each
+endpoint checks live authority while its lease is held. Native callers must await
+`DataUseReadiness` and witness `Store` operations, pass an explicit token to witness reads/appends,
+and await subject-page callbacks before consuming the next page.
+Cancellation before witness dispatch remains distinct. Once an append or atomic owner procedure
+can commit, its completion and exact independent readback use uncancelled tokens; request
+cancellation cannot declare that it failed or mint a replacement operation. Post-COMMIT settlement
+and claimant-bearing disclosure remain inside the admitted lifetime.
+
 ## Public boundary
 
 Application's public service boundary is `IActorClaimsCore`, obtained through

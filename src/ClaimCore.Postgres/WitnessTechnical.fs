@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open System.IO
 open System.Security.Cryptography
 open System.Text
@@ -88,25 +89,32 @@ module internal WitnessTechnical =
             writer.WriteString("requestSha256", requestSha)
             writer.WriteEndObject())
 
-    let beginPrepare (witness: WitnessProtocol) (draft: RecoveryPreparationDraft) =
-        let eventId = WitnessEventIdentity.prepareEventId draft.OperationId
+    let beginPrepare
+        (witness: WitnessProtocol)
+        (draft: RecoveryPreparationDraft)
+        (ct: CancellationToken)
+        =
+        task {
+            let eventId = WitnessEventIdentity.prepareEventId draft.OperationId
 
-        let bytes =
-            prepareCandidate
-                draft.OperationId
-                draft.CaseId
-                draft.PreparerActorId
-                draft.ImporterActorId
-                draft.PreparerGrantRevision
-                draft.RequestSha256
-                draft.CanonicalRequest
-                draft.PreparingApplicationVersion
-                draft.PreparingContractFingerprint
+            let bytes =
+                prepareCandidate
+                    draft.OperationId
+                    draft.CaseId
+                    draft.PreparerActorId
+                    draft.ImporterActorId
+                    draft.PreparerGrantRevision
+                    draft.RequestSha256
+                    draft.CanonicalRequest
+                    draft.PreparingApplicationVersion
+                    draft.PreparingContractFingerprint
 
-        try
-            eventId, witness.BeginAuthority(eventId, bytes, Some draft.CaseId)
-        finally
-            CryptographicOperations.ZeroMemory(bytes)
+            try
+                let! intent = witness.BeginAuthority(eventId, bytes, Some draft.CaseId, ct)
+                return eventId, intent
+            finally
+                CryptographicOperations.ZeroMemory(bytes)
+        }
 
     let beginStart
         (witness: WitnessProtocol)
@@ -115,78 +123,86 @@ module internal WitnessTechnical =
         actorId
         role
         grantRevision
+        (ct: CancellationToken)
         =
-        let attemptId = WitnessEventIdentity.startEventId header.OperationId ordinal
+        task {
+            let attemptId = WitnessEventIdentity.startEventId header.OperationId ordinal
 
-        let bytes =
-            startCandidate
-                header.OperationId
-                attemptId
-                ordinal
-                header.CaseId
-                actorId
-                role
-                grantRevision
-                header.RequestSha256
+            let bytes =
+                startCandidate
+                    header.OperationId
+                    attemptId
+                    ordinal
+                    header.CaseId
+                    actorId
+                    role
+                    grantRevision
+                    header.RequestSha256
 
-        try
-            attemptId, witness.BeginAuthority(attemptId, bytes, Some header.CaseId)
-        finally
-            CryptographicOperations.ZeroMemory(bytes)
+            try
+                let! intent = witness.BeginAuthority(attemptId, bytes, Some header.CaseId, ct)
+                return attemptId, intent
+            finally
+                CryptographicOperations.ZeroMemory(bytes)
+        }
 
     let reconcilePrepare
         (witness: WitnessProtocol)
         (connection: NpgsqlConnection)
         (transaction: NpgsqlTransaction)
         (header: RetainedPreparation)
+        (ct: CancellationToken)
         =
-        use command =
-            new NpgsqlCommand(
-                "SELECT witness_event_id,witness_sequence,witness_epoch,witness_entry_hash,"
-                + "witness_candidate_sha256 FROM claimcore.request_preparations "
-                + "WHERE operation_id=@operation",
-                connection,
-                transaction
-            )
+        task {
+            use command =
+                new NpgsqlCommand(
+                    "SELECT witness_event_id,witness_sequence,witness_epoch,witness_entry_hash,"
+                    + "witness_candidate_sha256 FROM claimcore.request_preparations "
+                    + "WHERE operation_id=@operation",
+                    connection,
+                    transaction
+                )
 
-        command.Parameters.AddWithValue("operation", NpgsqlDbType.Uuid, header.OperationId)
-        |> ignore
+            command.Parameters.AddWithValue("operation", NpgsqlDbType.Uuid, header.OperationId)
+            |> ignore
 
-        use reader = command.ExecuteReader()
+            use! reader = command.ExecuteReaderAsync(ct)
 
-        if not (reader.Read()) then
-            raise WitnessPending
+            let! found = reader.ReadAsync(ct)
 
-        let eventId = reader.GetGuid(0)
-        let sequence = reader.GetInt64(1)
-        let epoch = reader.GetInt64(2)
-        let hash = reader.GetFieldValue<byte array>(3)
-        let candidateHash = reader.GetFieldValue<byte array>(4)
-
-        if
-            reader.Read()
-            || eventId <> WitnessEventIdentity.prepareEventId header.OperationId
-        then
-            raise WitnessPending
-
-        reader.Close()
-
-        let bytes =
-            prepareCandidate
-                header.OperationId
-                header.CaseId
-                header.PreparerActorId
-                header.ImporterActorId
-                header.PreparerGrantRevision
-                header.RequestSha256
-                header.CanonicalRequest
-                header.PreparingApplicationVersion
-                header.PreparingContractFingerprint
-
-        try
-            if SHA256.HashData(bytes) <> candidateHash then
+            if not found then
                 raise WitnessPending
 
-            witness.ReconcileAuthority(eventId, sequence, epoch, hash, bytes)
-        finally
-            CryptographicOperations.ZeroMemory(bytes)
+            let eventId = reader.GetGuid(0)
+            let sequence = reader.GetInt64(1)
+            let epoch = reader.GetInt64(2)
+            let hash = reader.GetFieldValue<byte array>(3)
+            let candidateHash = reader.GetFieldValue<byte array>(4)
+
+            let! duplicated = reader.ReadAsync(ct)
+
+            if duplicated || eventId <> WitnessEventIdentity.prepareEventId header.OperationId then
+                raise WitnessPending
+
+            reader.Close()
+
+            let bytes =
+                prepareCandidate
+                    header.OperationId
+                    header.CaseId
+                    header.PreparerActorId
+                    header.ImporterActorId
+                    header.PreparerGrantRevision
+                    header.RequestSha256
+                    header.CanonicalRequest
+                    header.PreparingApplicationVersion
+                    header.PreparingContractFingerprint
+
+            try
+                if SHA256.HashData(bytes) <> candidateHash then
+                    raise WitnessPending
+
+                do! witness.ReconcileAuthority(eventId, sequence, epoch, hash, bytes, ct)
+            finally
+                CryptographicOperations.ZeroMemory(bytes)
+        }

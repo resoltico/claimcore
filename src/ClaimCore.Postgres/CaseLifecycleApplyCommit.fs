@@ -1,5 +1,6 @@
 namespace ClaimCore.Postgres
 
+open System.Threading
 open System.Security.Cryptography
 open Npgsql
 open ClaimCore.Application
@@ -74,7 +75,7 @@ module internal CaseLifecycleApplyCommit =
                         caseId
                         commitments
                         false
-                        System.Threading.CancellationToken.None
+                        CancellationToken.None
 
                 return Some(count, digest)
             }
@@ -116,13 +117,15 @@ module internal CaseLifecycleApplyCommit =
 
                 do! transaction.CommitAsync()
 
-                witness.ReconcileAuthority(
-                    change.EventId,
-                    intent.Ticket.Sequence,
-                    intent.Ticket.Epoch,
-                    intent.Ticket.EntryHash,
-                    candidate.Canonical
-                )
+                do!
+                    witness.ReconcileAuthority(
+                        change.EventId,
+                        intent.Ticket.Sequence,
+                        intent.Ticket.Epoch,
+                        intent.Ticket.EntryHash,
+                        candidate.Canonical,
+                        CancellationToken.None
+                    )
 
                 return LifecycleWriteOutcome.Applied(change.EventId, revision, sequence)
             with _ ->
@@ -141,6 +144,7 @@ module internal CaseLifecycleApplyCommit =
         (decision: LifecycleDecisionResult)
         approvals
         instant
+        ct
         =
         task {
             let! denials =
@@ -149,11 +153,12 @@ module internal CaseLifecycleApplyCommit =
             let candidate = build context projection change decision approvals instant
 
             try
-                let intent =
+                let! intent =
                     witness.BeginAuthority(
                         change.EventId,
                         candidate.Canonical,
-                        Some projection.CaseId
+                        Some projection.CaseId,
+                        ct
                     )
 
                 return!

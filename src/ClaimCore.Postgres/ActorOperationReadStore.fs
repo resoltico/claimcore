@@ -29,50 +29,39 @@ module internal ActorOperationReadStore =
         | EndpointAction.ExecuteNewCase -> true
         | _ -> false
 
-    let private operationCaseId connection transaction (context: ActorCallContext) operationId =
+    let private operationCaseId connection transaction (context: ActorCallContext) operationId ct =
         if recoveryAction context.Action then
-            ActorGrantGateQueries.operationCaseId
-                connection
-                transaction
-                operationId
-                CancellationToken.None
+            ActorGrantGateQueries.operationCaseId connection transaction operationId ct
         else
-            ActorGrantGateQueries.acceptedCaseId
-                connection
-                transaction
-                operationId
-                CancellationToken.None
+            ActorGrantGateQueries.acceptedCaseId connection transaction operationId ct
 
     let private mutatesEvidence (context: ActorCallContext) =
         freshCommand context.Action
         || context.Action = EndpointAction.RecoveryResolve
         || context.Action = EndpointAction.RecoveryDismiss
 
-    let private snapshot dataSource context action =
+    let private snapshot dataSource context ct action =
         if not (mutatesEvidence context) then
-            ActorReadStore.snapshot dataSource action
+            ActorReadStore.snapshot dataSource ct action
         else
             task {
                 let! result =
-                    StoreData.read dataSource (fun connection ->
+                    StoreData.read dataSource ct (fun connection ->
                         task {
                             use! _lease =
                                 AuthorityOperationFence.acquireShared
                                     (Some dataSource)
                                     connection
-                                    CancellationToken.None
+                                    ct
 
-                            use transaction =
-                                connection.BeginTransaction(
-                                    System.Data.IsolationLevel.ReadCommitted
+                            use! transaction =
+                                connection.BeginTransactionAsync(
+                                    System.Data.IsolationLevel.ReadCommitted,
+                                    ct
                                 )
 
                             let! revision =
-                                ActorGrantRead.lockRevision
-                                    connection
-                                    transaction
-                                    true
-                                    CancellationToken.None
+                                ActorGrantRead.lockRevision connection transaction true ct
 
                             return! action connection transaction revision
                         })
@@ -87,22 +76,33 @@ module internal ActorOperationReadStore =
         transaction
         (operationId: Guid)
         receipt
+        (ct: CancellationToken)
         =
-        try
-            if mutatesEvidence context then
-                Sql.lockKey connection transaction ("operation:" + operationId.ToString("D"))
-                witness.ReconcileAccepted(connection, transaction, operationId)
-            else
-                witness.VerifyAccepted(connection, transaction, operationId)
+        task {
+            try
+                if mutatesEvidence context then
+                    do!
+                        Sql.lockKeyAsync
+                            connection
+                            transaction
+                            ("operation:" + operationId.ToString("D"))
+                            ct
 
-            Ok receipt
-        with _ ->
-            Error(CoreFailure.CommitOutcomeUnknown operationId)
+                    do! witness.ReconcileAccepted(connection, transaction, operationId, ct)
+                else
+                    do! witness.VerifyAccepted(connection, transaction, operationId, ct)
 
-    let operation dataSource witness (context: ActorCallContext) operationId =
-        snapshot dataSource context (fun connection transaction revision ->
+                return Ok receipt
+            with
+            | :? OperationCanceledException as error when ct.IsCancellationRequested ->
+                return raise error
+            | _ -> return Error(CoreFailure.CommitOutcomeUnknown operationId)
+        }
+
+    let operation dataSource witness (context: ActorCallContext) operationId ct =
+        snapshot dataSource context ct (fun connection transaction revision ->
             task {
-                let! found = operationCaseId connection transaction context operationId
+                let! found = operationCaseId connection transaction context operationId ct
 
                 match found with
                 | None when freshCommand context.Action -> return Ok None
@@ -124,6 +124,7 @@ module internal ActorOperationReadStore =
                             context
                             (ResourceScope.Operation(operationId, id))
                             action
+                            ct
 
                     if not canRead then
                         return Error CoreFailure.ResourceUnavailable
@@ -134,20 +135,24 @@ module internal ActorOperationReadStore =
                         match receipt with
                         | None -> return Ok None
                         | Some(value, _) ->
-                            return
-                                witnessed witness context connection transaction operationId value
-                                |> Result.map Some
+                            let! proof =
+                                witnessed
+                                    witness
+                                    context
+                                    connection
+                                    transaction
+                                    operationId
+                                    value
+                                    ct
+
+                            return proof |> Result.map Some
             })
 
-    let accepted dataSource witness (context: ActorCallContext) operationId digest =
-        snapshot dataSource context (fun connection transaction revision ->
+    let accepted dataSource witness (context: ActorCallContext) operationId digest ct =
+        snapshot dataSource context ct (fun connection transaction revision ->
             task {
                 let! found =
-                    ActorGrantGateQueries.acceptedCaseId
-                        connection
-                        transaction
-                        operationId
-                        CancellationToken.None
+                    ActorGrantGateQueries.acceptedCaseId connection transaction operationId ct
 
                 match found with
                 | None -> return Ok None
@@ -165,7 +170,14 @@ module internal ActorOperationReadStore =
                     let action = if recovery then context.Action else EndpointAction.GetCase
 
                     let! canRead =
-                        ActorReadStore.allowed connection transaction revision context scope action
+                        ActorReadStore.allowed
+                            connection
+                            transaction
+                            revision
+                            context
+                            scope
+                            action
+                            ct
 
                     if not canRead then
                         return Error CoreFailure.ResourceUnavailable
@@ -179,7 +191,7 @@ module internal ActorOperationReadStore =
 
                         match observed with
                         | Ok(Some receipt) ->
-                            return
+                            let! proof =
                                 witnessed
                                     witness
                                     context
@@ -187,6 +199,8 @@ module internal ActorOperationReadStore =
                                     transaction
                                     operationId
                                     receipt
-                                |> Result.map Some
+                                    ct
+
+                            return proof |> Result.map Some
                         | other -> return other
             })

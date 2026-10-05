@@ -141,24 +141,27 @@ module internal DatabaseWriterHandoffQualification =
         binarySha256
         now
         =
-        let reviewed =
-            DatabaseRestoreHandoffRecheck.preparation
-                publication
-                scope
-                owner
-                witnessAudit
-                witnessOwner
-                custody
-                suppression
-                files
-                proposal
-                binarySha256
-                now
+        task {
+            let! reviewed =
+                DatabaseRestoreHandoffRecheck.preparation
+                    publication
+                    scope
+                    owner
+                    witnessAudit
+                    witnessOwner
+                    custody
+                    suppression
+                    files
+                    proposal
+                    binarySha256
+                    now
 
-        let attestation = fence owner proposal reviewed fenceBytes fenceSignature now
+            let attestation = fence owner proposal reviewed fenceBytes fenceSignature now
 
-        proof proposal reviewed attestation
-        |> fun value -> fixedVerifier value canonical "PREPARE"
+            return
+                proof proposal reviewed attestation
+                |> fun value -> fixedVerifier value canonical "PREPARE"
+        }
 
     let settlement
         publication
@@ -176,21 +179,24 @@ module internal DatabaseWriterHandoffQualification =
         binarySha256
         now
         =
-        let reviewed =
-            DatabaseRestoreHandoffRecheck.settlement
-                publication
-                scope
-                owner
-                witnessAudit
-                witnessOwner
-                custody
-                suppression
-                files
-                prepared
-                binarySha256
-                now
+        task {
+            let! reviewed =
+                DatabaseRestoreHandoffRecheck.settlement
+                    publication
+                    scope
+                    owner
+                    witnessAudit
+                    witnessOwner
+                    custody
+                    suppression
+                    files
+                    prepared
+                    binarySha256
+                    now
 
-        let attestation = fence owner prepared.Value reviewed fenceBytes fenceSignature now
+            let attestation = fence owner prepared.Value reviewed fenceBytes fenceSignature now
 
-        proof prepared.Value reviewed attestation
-        |> fun value -> fixedVerifier value canonical "COMMIT"
+            return
+                proof prepared.Value reviewed attestation
+                |> fun value -> fixedVerifier value canonical "COMMIT"
+        }

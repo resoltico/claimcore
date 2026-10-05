@@ -222,7 +222,7 @@ module internal RecoveryReadOperations =
             Task.FromResult(ResolveOutcome.ResolveCancelledBeforeAdmission operationId)
         else
             task {
-                match! store.Accepted(operationId, requestSha256) with
+                match! store.Accepted(operationId, requestSha256, cancellationToken) with
                 | Ok(Some receipt) ->
                     return ResolveOutcome.ResolveObservedAccepted(TypedProjection.receipt receipt)
                 | Error CoreFailure.IdempotencyConflict ->

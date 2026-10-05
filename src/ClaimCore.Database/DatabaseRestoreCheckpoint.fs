@@ -1,5 +1,6 @@
 namespace ClaimCore.Database
 
+open System.Threading
 open System
 open System.Globalization
 open System.IO
@@ -81,50 +82,58 @@ module internal DatabaseRestoreCheckpoint =
         (checkpointKey: byte array)
         (witness: WitnessProtocol)
         =
-        match PrivateFileService.requirePrivateDirectory index.CheckpointRoot with
-        | Ok() -> ()
-        | Error _ -> invalidOp "Independent checkpoint root is not owner-private."
+        task {
+            match PrivateFileService.requirePrivateDirectory index.CheckpointRoot with
+            | Ok() -> ()
+            | Error _ -> invalidOp "Independent checkpoint root is not owner-private."
 
-        use current =
-            DatabaseRestoreSignedEvidence.verifyFile
-                16384
-                report.CheckpointSha256
-                checkpointKey
-                index.CheckpointFile
-                index.CheckpointSignatureFile
-
-        let currentTip = require report current.RootElement
-
-        if
-            currentTip <> (report.Epoch, report.WitnessCutoff, report.WitnessCutoffHash)
-            || text "cycleId" current.RootElement <> report.CycleId.ToString("D")
-        then
-            invalidOp "The signed checkpoint does not bind the restored cutoff."
-
-        match witness.TryReadHashAtSequence(report.BackupCaptureSequence) with
-        | Some historical when Convert.ToHexStringLower(historical) = report.BackupCaptureHash -> ()
-        | _ -> invalidOp "The captured backup cutoff is absent from the restored witness chain."
-
-        let retained =
-            Directory.EnumerateFiles(index.CheckpointRoot, "*.json")
-            |> Seq.truncate 1001
-            |> Seq.toList
-
-        if retained.Length = 0 || retained.Length > 1000 then
-            invalidOp "Independent checkpoint inventory is absent or unbounded."
-
-        for path in retained do
-            use document =
-                DatabaseRestoreSignedEvidence.verifyFileWith
+            use current =
+                DatabaseRestoreSignedEvidence.verifyFile
                     16384
-                    None
+                    report.CheckpointSha256
                     checkpointKey
-                    path
-                    (checkpointSignature path)
+                    index.CheckpointFile
+                    index.CheckpointSignatureFile
 
-            let epoch, sequence, hash = require report document.RootElement
-            compareTip report (epoch, sequence, hash)
+            let currentTip = require report current.RootElement
 
-            match witness.TryReadHashAtSequence(sequence) with
-            | Some witnessed when Convert.ToHexStringLower(witnessed) = hash -> ()
-            | _ -> invalidOp "Signed checkpoint diverges from witnessed historical chain."
+            if
+                currentTip <> (report.Epoch, report.WitnessCutoff, report.WitnessCutoffHash)
+                || text "cycleId" current.RootElement <> report.CycleId.ToString("D")
+            then
+                invalidOp "The signed checkpoint does not bind the restored cutoff."
+
+            let! captured =
+                witness.TryReadHashAtSequence(report.BackupCaptureSequence, CancellationToken.None)
+
+            match captured with
+            | Some historical when Convert.ToHexStringLower(historical) = report.BackupCaptureHash ->
+                ()
+            | _ -> invalidOp "The captured backup cutoff is absent from the restored witness chain."
+
+            let retained =
+                Directory.EnumerateFiles(index.CheckpointRoot, "*.json")
+                |> Seq.truncate 1001
+                |> Seq.toList
+
+            if retained.Length = 0 || retained.Length > 1000 then
+                invalidOp "Independent checkpoint inventory is absent or unbounded."
+
+            for path in retained do
+                use document =
+                    DatabaseRestoreSignedEvidence.verifyFileWith
+                        16384
+                        None
+                        checkpointKey
+                        path
+                        (checkpointSignature path)
+
+                let epoch, sequence, hash = require report document.RootElement
+                compareTip report (epoch, sequence, hash)
+
+                let! observed = witness.TryReadHashAtSequence(sequence, CancellationToken.None)
+
+                match observed with
+                | Some witnessed when Convert.ToHexStringLower(witnessed) = hash -> ()
+                | _ -> invalidOp "Signed checkpoint diverges from witnessed historical chain."
+        }

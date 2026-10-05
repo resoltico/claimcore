@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open Npgsql
 open ClaimCore.Application
 
@@ -61,39 +62,45 @@ module internal ManagedCopySignerPolicy =
         (first: SignerApprovalEvidence)
         (second: SignerApprovalEvidence)
         =
-        if
-            first.ApprovalId = second.ApprovalId
-            || first.ActorId = second.ActorId
-            || not (
-                exactApproval now keyId action purpose publicHash first
-                && exactApproval now keyId action purpose publicHash second
-            )
-        then
-            None
-        else
-            match ordered first second with
-            | None -> None
-            | Some(owner, custodian) ->
-                if
-                    owner.HolderApprovalId <> Some custodian.ApprovalId
-                    || custodian.HolderApprovalId.IsSome
-                then
-                    None
-                else
-                    witness.VerifyAuthorityEvidence(
-                        owner.ApprovalId,
-                        owner.WitnessSequence,
-                        owner.WitnessEpoch,
-                        owner.WitnessEntryHash,
-                        owner.CandidateSha256
-                    )
+        task {
+            if
+                first.ApprovalId = second.ApprovalId
+                || first.ActorId = second.ActorId
+                || not (
+                    exactApproval now keyId action purpose publicHash first
+                    && exactApproval now keyId action purpose publicHash second
+                )
+            then
+                return None
+            else
+                match ordered first second with
+                | None -> return None
+                | Some(owner, custodian) ->
+                    if
+                        owner.HolderApprovalId <> Some custodian.ApprovalId
+                        || custodian.HolderApprovalId.IsSome
+                    then
+                        return None
+                    else
+                        do!
+                            witness.VerifyAuthorityEvidence(
+                                owner.ApprovalId,
+                                owner.WitnessSequence,
+                                owner.WitnessEpoch,
+                                owner.WitnessEntryHash,
+                                owner.CandidateSha256,
+                                CancellationToken.None
+                            )
 
-                    witness.VerifyAuthorityEvidence(
-                        custodian.ApprovalId,
-                        custodian.WitnessSequence,
-                        custodian.WitnessEpoch,
-                        custodian.WitnessEntryHash,
-                        custodian.CandidateSha256
-                    )
+                        do!
+                            witness.VerifyAuthorityEvidence(
+                                custodian.ApprovalId,
+                                custodian.WitnessSequence,
+                                custodian.WitnessEpoch,
+                                custodian.WitnessEntryHash,
+                                custodian.CandidateSha256,
+                                CancellationToken.None
+                            )
 
-                    Some(owner, custodian)
+                        return Some(owner, custodian)
+        }

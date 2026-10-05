@@ -41,10 +41,16 @@ module internal DataAuditOwnerCopyWitnessProof =
         (witness: WitnessProtocol)
         cutoff
         (proof: OwnerCopyTransitionProof)
+        ct
         =
         task {
-            witnessProof (fun () ->
-                witness.VerifyHistoricalTip(proof.ActionCutoffSequence, proof.ActionCutoffHash))
+            do!
+                witnessProofAsync (fun () ->
+                    witness.VerifyHistoricalTip(
+                        proof.ActionCutoffSequence,
+                        proof.ActionCutoffHash,
+                        ct
+                    ))
 
             match proof.SourceCaseId with
             | Some caseId ->
@@ -61,13 +67,16 @@ module internal DataAuditOwnerCopyWitnessProof =
                         proof.EntryHash
                         proof.CandidateDigest
                         SettledAuthority
+                        ct
             | None ->
-                witnessProof (fun () ->
-                    witness.VerifyAuthorityEvidenceForInstallation(
-                        proof.EventId,
-                        proof.Sequence,
-                        proof.Epoch,
-                        proof.EntryHash,
-                        proof.CandidateDigest
-                    ))
+                do!
+                    witnessProofAsync (fun () ->
+                        witness.VerifyAuthorityEvidenceForInstallation(
+                            proof.EventId,
+                            proof.Sequence,
+                            proof.Epoch,
+                            proof.EntryHash,
+                            proof.CandidateDigest,
+                            ct
+                        ))
         }

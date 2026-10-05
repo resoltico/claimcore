@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open System.Data
 open System.Security.Cryptography
 open Npgsql
@@ -122,25 +123,29 @@ module internal ManagedCopyTransitionAdministration =
         signature
         (stored: ManagedCopyEventEvidence)
         =
-        let expected = ManagedCopyTransitionPolicy.candidate transition canonical signature
+        task {
+            let expected = ManagedCopyTransitionPolicy.candidate transition canonical signature
 
-        if
-            stored.CopyId <> transition.Copy.CopyId
-            || stored.Canonical <> canonical
-            || stored.Signature <> signature
-            || stored.CandidateSha256 <> SHA256.HashData(expected)
-        then
-            AuthorityWriteOutcome.Refused
-        else
-            witness.VerifyAuthorityEvidence(
-                transition.Copy.EventId,
-                stored.WitnessSequence,
-                stored.WitnessEpoch,
-                stored.WitnessEntryHash,
-                stored.CandidateSha256
-            )
+            if
+                stored.CopyId <> transition.Copy.CopyId
+                || stored.Canonical <> canonical
+                || stored.Signature <> signature
+                || stored.CandidateSha256 <> SHA256.HashData(expected)
+            then
+                return AuthorityWriteOutcome.Refused
+            else
+                do!
+                    witness.VerifyAuthorityEvidence(
+                        transition.Copy.EventId,
+                        stored.WitnessSequence,
+                        stored.WitnessEpoch,
+                        stored.WitnessEntryHash,
+                        stored.CandidateSha256,
+                        CancellationToken.None
+                    )
 
-            AuthorityWriteOutcome.Applied(transition.Copy.EventId, transition.Revision)
+                return AuthorityWriteOutcome.Applied(transition.Copy.EventId, transition.Revision)
+        }
 
     let private permitted
         (witness: WitnessProtocol)
@@ -178,16 +183,17 @@ module internal ManagedCopyTransitionAdministration =
             let exact = ManagedCopyTransitionPolicy.candidate transition canonical signature
 
             try
-                let intent =
+                let! intent =
                     witness.BeginAuthority(
                         transition.Copy.EventId,
                         exact,
-                        transition.Copy.SourceCaseId
+                        transition.Copy.SourceCaseId,
+                        CancellationToken.None
                     )
 
                 do! write connection transaction transition canonical signature intent
                 do! transaction.CommitAsync()
-                witness.SettleAuthority(transition.Copy.EventId, intent) |> ignore
+                let! _ = witness.SettleAuthority(transition.Copy.EventId, intent)
                 return AuthorityWriteOutcome.Applied(transition.Copy.EventId, transition.Revision)
             finally
                 CryptographicOperations.ZeroMemory(exact)
@@ -209,18 +215,23 @@ module internal ManagedCopyTransitionAdministration =
                 ManagedCopyOwnerRead.signer connection transaction transition.Copy.SigningKeyId
 
             let! heldCopy = held connection transaction transition.Copy.SourceCaseId
-            let! now = Sql.databaseNow connection transaction
 
-            let historical =
-                try
-                    witness.VerifyHistoricalTip(
-                        transition.ActionWitnessCutoffSequence,
-                        transition.ActionWitnessCutoffHash
-                    )
+            let! now = Sql.databaseNow connection transaction CancellationToken.None
 
-                    true
-                with _ ->
-                    false
+            let! historical =
+                task {
+                    try
+                        do!
+                            witness.VerifyHistoricalTip(
+                                transition.ActionWitnessCutoffSequence,
+                                transition.ActionWitnessCutoffHash,
+                                CancellationToken.None
+                            )
+
+                        return true
+                    with _ ->
+                        return false
+                }
 
             match current, signer with
             | Some state, Some(publicKey, publicDigest, true, CopySignerPurpose.CopyAttestor) when
@@ -256,13 +267,10 @@ module internal ManagedCopyTransitionAdministration =
                 try
                     OwnerConnection.requireIdentity connection
                     SchemaBaseline.requireCurrent connection
-                    witness.Admit()
+                    do! witness.Admit(CancellationToken.None)
 
                     use! _authorityFence =
-                        AuthorityOperationFence.acquireShared
-                            None
-                            connection
-                            System.Threading.CancellationToken.None
+                        AuthorityOperationFence.acquireShared None connection CancellationToken.None
 
                     use transaction = connection.BeginTransaction(IsolationLevel.ReadCommitted)
 
@@ -280,7 +288,8 @@ module internal ManagedCopyTransitionAdministration =
                             transition.Copy.EventId
 
                     match existing with
-                    | Some stored -> return exactRetry witness transition canonical signature stored
+                    | Some stored ->
+                        return! exactRetry witness transition canonical signature stored
                     | None ->
                         return!
                             newEvent connection transaction witness transition canonical signature

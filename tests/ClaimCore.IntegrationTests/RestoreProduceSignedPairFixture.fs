@@ -63,6 +63,7 @@ let private advanced
             custody
             suppression
             input
+        |> await
 
     verifyInventory input produced facts checkpointKey
     reportScope produced

@@ -69,7 +69,7 @@ let private verifyOne (session: CopySession) afterVerify index copy =
             session.Capture
             copy
             original
-            (session.Witness.Snapshot())
+            ((session.Witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()))
             session.VerifierKeyId
             (holder session.Connection session.VerifierKeyId)
             eventId

@@ -1,6 +1,8 @@
 namespace ClaimCore.Witness
 
 open System
+open System.Threading
+open System.Threading.Tasks
 open System.Security.Cryptography
 open Npgsql
 open NpgsqlTypes
@@ -79,69 +81,83 @@ module internal WitnessStoreMetadata =
         (expectedPreviousHash: byte array)
         cutoffSequence
         limit
-        : MetadataPage =
-        if
-            afterSequence < 0L
-            || cutoffSequence < afterSequence
-            || limit < 1
-            || limit > 32
-            || expectedPreviousHash.Length <> 32
-        then
-            invalidArg (nameof limit) "Witness metadata page bounds are invalid."
+        (ct: CancellationToken)
+        : Task<MetadataPage> =
+        task {
+            if
+                afterSequence < 0L
+                || cutoffSequence < afterSequence
+                || limit < 1
+                || limit > 32
+                || expectedPreviousHash.Length <> 32
+            then
+                invalidArg (nameof limit) "Witness metadata page bounds are invalid."
 
-        use connection = PostgresTransport.connection writerConnection
-        connection.Open()
-        WitnessStoreRead.checkAdmission identity connection
-        use command = pageCommand connection identity afterSequence cutoffSequence limit
-        use reader = command.ExecuteReader()
-        let items = ResizeArray<MetadataRecord>()
-        let mutable nextSequence = afterSequence + 1L
-        let mutable previousHash = expectedPreviousHash
+            use connection = PostgresTransport.connection writerConnection
+            do! connection.OpenAsync(ct)
+            do! WitnessDatabaseAdmission.checkAsync identity connection ct
+            use command = pageCommand connection identity afterSequence cutoffSequence limit
+            use! reader = command.ExecuteReaderAsync(ct)
+            let items = ResizeArray<MetadataRecord>()
+            let mutable nextSequence = afterSequence + 1L
+            let mutable previousHash = expectedPreviousHash
 
-        while reader.Read() do
-            let item = record identity nextSequence previousHash reader
-            items.Add(item)
-            nextSequence <- item.Ticket.Sequence + 1L
-            previousHash <- item.Ticket.EntryHash
+            while! reader.ReadAsync(ct) do
+                let item = record identity nextSequence previousHash reader
+                items.Add(item)
+                nextSequence <- item.Ticket.Sequence + 1L
+                previousHash <- item.Ticket.EntryHash
 
-        if items.Count = 0 && afterSequence < cutoffSequence then
-            invalidOp "Witness metadata page has a missing sequence."
+            if items.Count = 0 && afterSequence < cutoffSequence then
+                invalidOp "Witness metadata page has a missing sequence."
 
-        {
-            Items = items |> Seq.toList
-            NextAfter =
-                if nextSequence - 1L < cutoffSequence then
-                    Some(nextSequence - 1L)
-                else
-                    None
+            return
+                {
+                    Items = items |> Seq.toList
+                    NextAfter =
+                        if nextSequence - 1L < cutoffSequence then
+                            Some(nextSequence - 1L)
+                        else
+                            None
+                }
         }
 
-    let private readOne writerConnection identity sql bind =
-        use connection = PostgresTransport.connection writerConnection
-        connection.Open()
-        WitnessStoreRead.checkAdmission identity connection
-        use command = new NpgsqlCommand(metadataSelect + sql, connection)
+    let private readOne writerConnection identity sql bind (ct: CancellationToken) =
+        task {
+            use connection = PostgresTransport.connection writerConnection
+            do! connection.OpenAsync(ct)
+            do! WitnessDatabaseAdmission.checkAsync identity connection ct
+            use command = new NpgsqlCommand(metadataSelect + sql, connection)
 
-        command.Parameters.AddWithValue("installation", NpgsqlDbType.Uuid, identity.InstallationId)
-        |> ignore
+            command.Parameters.AddWithValue(
+                "installation",
+                NpgsqlDbType.Uuid,
+                identity.InstallationId
+            )
+            |> ignore
 
-        bind command
-        use reader = command.ExecuteReader()
+            bind command
+            use! reader = command.ExecuteReaderAsync(ct)
 
-        if not (reader.Read()) then
-            None
-        else
-            let sequence = reader.GetInt64(0)
-            let previous = reader.GetFieldValue<byte array>(6)
-            let value = record identity sequence previous reader
+            let! found = reader.ReadAsync(ct)
 
-            if reader.Read() then
-                invalidOp "Witness metadata identity is duplicated."
+            if not found then
+                return None
+            else
+                let sequence = reader.GetInt64(0)
+                let previous = reader.GetFieldValue<byte array>(6)
+                let value = record identity sequence previous reader
 
-            Some value
+                let! duplicated = reader.ReadAsync(ct)
+
+                if duplicated then
+                    invalidOp "Witness metadata identity is duplicated."
+
+                return Some value
+        }
 
     /// Local row/hash proof only. A caller must also complete the global chain/cutoff audit.
-    let readAt writerConnection identity sequence =
+    let readAt writerConnection identity sequence ct =
         if sequence < 1L then
             invalidArg (nameof sequence) "Witness metadata sequence is invalid."
 
@@ -152,15 +168,21 @@ module internal WitnessStoreMetadata =
             (fun command ->
                 command.Parameters.AddWithValue("sequence", NpgsqlDbType.Bigint, sequence)
                 |> ignore)
+            ct
 
-    let readOperation writerConnection identity operation phase =
+    let readOperation writerConnection identity operation phase ct =
         let sql =
             "WHERE j.installation_id=@installation AND j.operation_id=@operation "
             + "AND j.phase=@phase"
 
-        readOne writerConnection identity sql (fun command ->
-            command.Parameters.AddWithValue("operation", NpgsqlDbType.Uuid, operation)
-            |> ignore
+        readOne
+            writerConnection
+            identity
+            sql
+            (fun command ->
+                command.Parameters.AddWithValue("operation", NpgsqlDbType.Uuid, operation)
+                |> ignore
 
-            command.Parameters.AddWithValue("phase", NpgsqlDbType.Text, Encoding.phase phase)
-            |> ignore)
+                command.Parameters.AddWithValue("phase", NpgsqlDbType.Text, Encoding.phase phase)
+                |> ignore)
+            ct

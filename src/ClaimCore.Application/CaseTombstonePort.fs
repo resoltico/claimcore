@@ -145,21 +145,26 @@ type ITombstoneWorkflow =
             Task<TombstoneWriteOutcome>
 
 type internal ITombstoneStore =
-    abstract Review: actor: ActorCallContext * caseId: Guid -> Task<TombstoneReviewOutcome>
+    abstract Review:
+        actor: ActorCallContext * caseId: Guid * cancellationToken: CancellationToken ->
+            Task<TombstoneReviewOutcome>
 
     abstract ApproveWitnessPrune:
         actor: ActorCallContext *
         proposal: TombstonePruneProposal *
         approvalId: Guid *
-        expiresAt: DateTimeOffset ->
+        expiresAt: DateTimeOffset *
+        cancellationToken: CancellationToken ->
             Task<TombstoneWriteOutcome>
 
     abstract ApproveTerminal:
         actor: ActorCallContext *
         proposal: TombstoneTerminalProposal *
         approvalId: Guid *
-        expiresAt: DateTimeOffset ->
+        expiresAt: DateTimeOffset *
+        cancellationToken: CancellationToken ->
             Task<TombstoneWriteOutcome>
 
     abstract ChangeHold:
-        actor: ActorCallContext * change: TombstoneHoldChange -> Task<TombstoneWriteOutcome>
+        actor: ActorCallContext * change: TombstoneHoldChange * cancellationToken: CancellationToken ->
+            Task<TombstoneWriteOutcome>

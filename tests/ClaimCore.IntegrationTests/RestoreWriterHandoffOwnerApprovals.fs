@@ -32,7 +32,9 @@ let approveOwners
     =
     let first = human "physical-restore-owner"
     let second = human "physical-report-second-owner"
-    let reviewed = witness.Snapshot()
+
+    let reviewed = (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
+
     let handoffId = Guid.NewGuid()
     let template = request checkpointKeyId reviewed
 
@@ -73,7 +75,7 @@ let approveOwners
         (fun () -> (runtime.ForActor first).Definition(CancellationToken.None) |> await |> ignore)
         "Disposed old casework runtime cannot remain an active endpoint"
 
-    let after = witness.Snapshot()
+    let after = (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
 
     Expect.equal
         (after.TipSequence - reviewed.TipSequence)

@@ -2,6 +2,7 @@
   <ItemGroup>
     <Compile Include="../RepositoryRoot.fs" Link="RepositoryRoot.fs" />
     <Compile Include="WitnessTestSupport.fs" />
+    <Compile Include="WitnessAppendTests.fs" />
     <Compile Include="Suite.fs" />
     <Compile Include="KeyRingAdmissionTests.fs" />
     <Compile Include="WitnessAuditContinuationTests.fs" />

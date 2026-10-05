@@ -96,8 +96,9 @@ module internal WriterHandoffOwnerPreparation =
             let! _ =
                 ActorGrantRead.lockRevision connection transaction true CancellationToken.None
 
-            let! now = Sql.databaseNow connection transaction
-            let snapshot = witness.Snapshot()
+            let! now = Sql.databaseNow connection transaction CancellationToken.None
+
+            let! snapshot = witness.Snapshot(CancellationToken.None)
             let! verified = verifier.VerifyPreparation(value, canonical, CancellationToken.None)
 
             if
@@ -112,7 +113,7 @@ module internal WriterHandoffOwnerPreparation =
             then
                 return false
             else
-                WriterHandoffCutoff.verify witness value
+                do! WriterHandoffCutoff.verify witness value CancellationToken.None
                 let! audit = fullAudit dataSource witness commitments value.ExpectedTipSequence
 
                 if not audit then
@@ -147,7 +148,7 @@ module internal WriterHandoffOwnerPreparation =
         task {
             started.Value <- true
 
-            let ticket =
+            let! ticket =
                 WriterHandoffWitnessCommands.prepare
                     ownerWitnessConnection
                     witness
@@ -155,6 +156,7 @@ module internal WriterHandoffOwnerPreparation =
                     canonical
                     signature
                     oldCapability
+                    CancellationToken.None
 
             WriterHandoffOwnerWrite.preparation
                 primaryOwner
@@ -190,7 +192,7 @@ module internal WriterHandoffOwnerPreparation =
         (started: bool ref)
         =
         task {
-            witness.Admit()
+            do! witness.Admit(CancellationToken.None)
 
             use! _authorityFence =
                 AuthorityOperationFence.acquireExclusive None primaryOwner CancellationToken.None
@@ -247,7 +249,12 @@ module internal WriterHandoffOwnerPreparation =
                 try
                     OwnerConnection.requireIdentity primaryOwner
                     SchemaBaseline.requireCurrent primaryOwner
-                    let existing = witness.EvidenceStore.TryReadHandoff(value.HandoffId)
+
+                    let! existing =
+                        witness.EvidenceStore.TryReadHandoff(
+                            value.HandoffId,
+                            CancellationToken.None
+                        )
 
                     if existing.IsSome then
                         return WriterHandoffOwnerOutcome.Unconfirmed value.HandoffId

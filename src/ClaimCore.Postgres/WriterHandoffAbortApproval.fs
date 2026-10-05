@@ -1,6 +1,8 @@
 namespace ClaimCore.Postgres
 
 open System
+open ClaimCore.Application
+open System.Threading
 open System.Security.Cryptography
 open Npgsql
 open ClaimCore.Witness
@@ -129,23 +131,79 @@ module internal WriterHandoffAbortApproval =
         (canonical: byte array)
         (signatureOne: byte array)
         (signatureTwo: byte array)
+        (ct: CancellationToken)
         =
-        let first = current connection transaction value.AbortSigningKeyOneId
-        let second = current connection transaction value.AbortSigningKeyTwoId
+        task {
+            let first = current connection transaction value.AbortSigningKeyOneId
+            let second = current connection transaction value.AbortSigningKeyTwoId
 
-        if
-            not (holdersMatch first second value)
-            || not (signaturesMatch first second value canonical signatureOne signatureTwo)
-        then
-            invalidOp "Two independent current abort owner signatures are unavailable."
+            if
+                not (holdersMatch first second value)
+                || not (signaturesMatch first second value canonical signatureOne signatureTwo)
+            then
+                invalidOp "Two independent current abort owner signatures are unavailable."
 
-        for signer in [ first; second ] do
-            witness.VerifyAuthorityEvidenceForInstallation(
-                signer.RegisteredEventId,
-                signer.RegisteredSequence,
-                signer.RegisteredEpoch,
-                signer.RegisteredHash,
-                signer.RegisteredCandidate
-            )
+            for signer in [ first; second ] do
+                do!
+                    witness.VerifyAuthorityEvidenceForInstallation(
+                        signer.RegisteredEventId,
+                        signer.RegisteredSequence,
+                        signer.RegisteredEpoch,
+                        signer.RegisteredHash,
+                        signer.RegisteredCandidate,
+                        ct
+                    )
 
-        first, second
+            return first, second
+        }
+
+    let requireCurrentApprovals
+        primaryOwner
+        transaction
+        witness
+        value
+        canonical
+        signatureOne
+        signatureTwo
+        =
+        task {
+            let! _ =
+                verifyCurrent
+                    primaryOwner
+                    transaction
+                    witness
+                    value
+                    canonical
+                    signatureOne
+                    signatureTwo
+                    CancellationToken.None
+
+            return ()
+        }
+
+    let matchesPending
+        (witness: WitnessProtocol)
+        (prepared: PrimaryWriterPreparation)
+        (value: WriterHandoffAbort)
+        (snapshot: Snapshot)
+        authorityRevision
+        (oldCapability: byte array)
+        now
+        =
+        value.InstallationId = witness.Identity.InstallationId
+        && value.LineageId = witness.Identity.LineageId
+        && value.Epoch = witness.Identity.Epoch
+        && value.HandoffId = prepared.Value.HandoffId
+        && value.OldGeneration = prepared.Value.OldGeneration
+        && value.PrepareSequence = prepared.Intent.Sequence
+        && value.PrepareHash = prepared.Intent.EntryHash
+        && value.PrepareCanonicalSha256 = SHA256.HashData(prepared.Canonical)
+        && value.NewCapabilitySha256 = prepared.Value.NewCapabilitySha256
+        && value.OldCapabilitySha256 = SHA256.HashData(oldCapability)
+        && value.ExpectedAuthorityRevision = authorityRevision
+        && value.ValidUntil > now
+        && value.ValidUntil <= now.AddMinutes(10.)
+        && snapshot.HandoffPending
+        && snapshot.WriterGeneration = value.OldGeneration
+        && snapshot.TipSequence = value.PrepareSequence
+        && snapshot.TipHash = value.PrepareHash

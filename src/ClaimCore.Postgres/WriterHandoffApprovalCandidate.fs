@@ -43,3 +43,21 @@ module internal WriterHandoffApprovalCandidate =
         writer.WriteEndObject()
         writer.Flush()
         stream.ToArray()
+
+    let private digest32 (value: byte array) =
+        not (isNull (box value)) && value.Length = 32
+
+    let valid (context: ActorCallContext) (request: WriterHandoffApprovalRequest) =
+        context.Action = EndpointAction.ApproveWriterHandoff
+        && context.CaseId.IsNone
+        && PrincipalKey.isHuman context.Binding.Principal
+        && request.ApprovalId <> Guid.Empty
+        && request.HandoffId <> Guid.Empty
+        && request.CheckpointSigningKeyId <> Guid.Empty
+        && request.OldGeneration > 0L
+        && request.ExpectedWitnessSequence >= 0L
+        && digest32 request.ExpectedWitnessHash
+        && digest32 request.NewCapabilitySha256
+        && digest32 request.FenceReportSha256
+        && digest32 request.InventorySha256
+        && Sql.isUtcMicrosecond request.ExpiresAt

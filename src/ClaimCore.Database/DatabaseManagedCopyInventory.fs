@@ -108,21 +108,23 @@ type internal DatabaseManagedCopyInventory
                 | _ -> None
         }
 
-    let signedEvidence (witness: WitnessProtocol) cutoffSequence cutoffHash now =
-        if disposed then
-            None
-        else
-            try
-                let evidence =
-                    DatabaseManagedCopyInventoryEvidence.parse registryBytes inspectionBytes now
+    let signedEvidence (witness: WitnessProtocol) cutoffSequence cutoffHash now ct =
+        task {
+            if disposed then
+                return None
+            else
+                try
+                    let evidence =
+                        DatabaseManagedCopyInventoryEvidence.parse registryBytes inspectionBytes now
 
-                if identityMatches witness evidence cutoffSequence cutoffHash then
-                    witness.VerifyHistoricalTip(cutoffSequence, cutoffHash)
-                    Some evidence
-                else
-                    None
-            with _ ->
-                None
+                    if identityMatches witness evidence cutoffSequence cutoffHash then
+                        do! witness.VerifyHistoricalTip(cutoffSequence, cutoffHash, ct)
+                        return Some evidence
+                    else
+                        return None
+                with _ ->
+                    return None
+        }
 
     let privateSeal caseId cutoffSequence cutoffHash (evidence: SignedCopyLocationEvidence) count =
         {
@@ -147,7 +149,9 @@ type internal DatabaseManagedCopyInventory
             try
                 let! now = databaseNow connection transaction
 
-                match signedEvidence witness cutoffSequence cutoffHash now with
+                let! signed = signedEvidence witness cutoffSequence cutoffHash now ct
+
+                match signed with
                 | None -> return None
                 | Some evidence ->
                     let! signers =
@@ -214,7 +218,9 @@ type internal DatabaseManagedCopyInventory
         =
         task {
             try
-                match signedEvidence witness cutoffSequence cutoffHash checkedAt with
+                let! signed = signedEvidence witness cutoffSequence cutoffHash checkedAt ct
+
+                match signed with
                 | None -> return None
                 | Some evidence ->
                     let! signers =

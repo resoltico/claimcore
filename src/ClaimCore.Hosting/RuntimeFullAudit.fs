@@ -45,10 +45,11 @@ module internal RuntimeFullAudit =
                 invalidOp "Primary audit barrier is unavailable."
 
             let witness = resources.Witness
-            let generation = witness.Snapshot().WriterGeneration
+            let! initial = witness.Snapshot(cancellationToken)
+            let generation = initial.WriterGeneration
             do! beforeWitnessFence ()
-            use _fence = witness.AcquireReadFence(generation)
-            let before = witness.Snapshot()
+            use! _fence = witness.AcquireReadFence(generation, cancellationToken)
+            let! before = witness.Snapshot(cancellationToken)
             do! afterFence ()
 
             let! summary =
@@ -58,7 +59,7 @@ module internal RuntimeFullAudit =
                     (Some resources.Suppression)
                     cancellationToken
 
-            let after = witness.Snapshot()
+            let! after = witness.Snapshot(cancellationToken)
 
             if
                 summary.WitnessCutoff <> before.TipSequence

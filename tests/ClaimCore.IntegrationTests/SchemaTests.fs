@@ -1,5 +1,6 @@
 module ClaimCore.IntegrationTests.SchemaTests
 
+open System.Threading
 open System
 open Npgsql
 open Expecto
@@ -179,14 +180,20 @@ let private requireOwnerRollback (admin: NpgsqlConnection) reference =
         transaction.Rollback()
 
 let private requireOriginalState (service: IClaimStore) reference =
-    let current = service.Get(reference) |> await |> accepted |> Option.map Claim.view
+    let current =
+        service.Get(reference, CancellationToken.None)
+        |> await
+        |> accepted
+        |> Option.map Claim.view
 
     Expect.equal
         (current |> Option.map (fun value -> value.Version, value.Fields.Status))
         (Some(1L, CaseStatus.Opened))
         "The failed update transaction rolled back"
 
-    let history = service.History(reference, 0L) |> await |> accepted
+    let history =
+        service.History(reference, 0L, CancellationToken.None) |> await |> accepted
+
     Expect.equal history.Items.Length 1 "No partial history; normal reads resumed"
 
 let private atomicityTests =

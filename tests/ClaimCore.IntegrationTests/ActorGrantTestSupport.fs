@@ -47,10 +47,12 @@ let withAuthorityRuntimeDatabase action =
         withWitnessFor owner (fun witnessWriter capability ->
             let installation = identity owner
             let store = new Store(witnessWriter, installation, capability)
-            let keyId, _ = store.ReadKeyCheck()
+
+            let keyId, _ = (store.ReadKeyCheck(CancellationToken.None).GetAwaiter().GetResult())
+
             use custody = new KeyRing(keyId, [ keyId, witnessKey () ]) :> IKeyCustody
             use witness = new WitnessProtocol(store, custody, installation)
-            witness.Admit()
+            (witness.Admit(CancellationToken.None).GetAwaiter().GetResult())
             action owner app witnessWriter witness))
 
 let withAuthorityDatabase action =

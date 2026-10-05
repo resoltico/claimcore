@@ -1,5 +1,6 @@
 namespace ClaimCore.Database
 
+open System.Threading
 open System
 open System.Security.Cryptography
 open Npgsql
@@ -36,16 +37,18 @@ module internal DatabaseTerminalRecoveryFenceRows =
         settlementHash
         (proposal: TerminalFinalProposal)
         =
-        let snapshot = witness.Snapshot()
+        task {
+            let! snapshot = witness.Snapshot(CancellationToken.None)
 
-        if
-            snapshot.ActivationPending
-            || snapshot.ActivationEventId <> Some activationId
-            || snapshot.ActivationSequence <> Some settlementSequence
-            || snapshot.ActivationHash <> Some settlementHash
-            || snapshot.WriterGeneration <> proposal.NewWriterGeneration
-        then
-            invalidOp "Terminal writer activation is not current."
+            if
+                snapshot.ActivationPending
+                || snapshot.ActivationEventId <> Some activationId
+                || snapshot.ActivationSequence <> Some settlementSequence
+                || snapshot.ActivationHash <> Some settlementHash
+                || snapshot.WriterGeneration <> proposal.NewWriterGeneration
+            then
+                invalidOp "Terminal writer activation is not current."
+        }
 
     let private activation
         (connection: NpgsqlConnection)
@@ -54,55 +57,58 @@ module internal DatabaseTerminalRecoveryFenceRows =
         (candidate: WriterActivationEvidence)
         (proposal: TerminalFinalProposal)
         =
-        let activationId = WriterActivationCandidate.activationId candidate.HandoffId
-        let canonical = WriterActivationCandidate.encode candidate
+        task {
+            let activationId = WriterActivationCandidate.activationId candidate.HandoffId
+            let canonical = WriterActivationCandidate.encode candidate
 
-        try
-            use command = new NpgsqlCommand(activationSql, connection, transaction)
-            Sql.uuid command "activation" activationId
-            use reader = command.ExecuteReader()
+            try
+                use command = new NpgsqlCommand(activationSql, connection, transaction)
+                Sql.uuid command "activation" activationId
+                use reader = command.ExecuteReader()
 
-            if not (reader.Read()) then
-                invalidOp "Terminal W2 activation is absent."
+                if not (reader.Read()) then
+                    invalidOp "Terminal W2 activation is absent."
 
-            let intentSequence = reader.GetInt64(2)
-            let intentHash = reader.GetFieldValue<byte array>(3)
-            let settlementSequence = reader.GetInt64(4)
-            let epoch = reader.GetInt64(5)
-            let settlementHash = reader.GetFieldValue<byte array>(6)
+                let intentSequence = reader.GetInt64(2)
+                let intentHash = reader.GetFieldValue<byte array>(3)
+                let settlementSequence = reader.GetInt64(4)
+                let epoch = reader.GetInt64(5)
+                let settlementHash = reader.GetFieldValue<byte array>(6)
 
-            let valid =
-                reader.GetFieldValue<byte array>(0) = canonical
-                && reader.GetFieldValue<byte array>(1) = SHA256.HashData(canonical)
-                && epoch = witness.Identity.Epoch
-                && reader.GetInt64(7) = candidate.WriterGeneration
-                && not (reader.GetBoolean(8))
-                && reader.GetGuid(9) = activationId
-                && reader.GetInt64(10) = settlementSequence
-                && reader.GetFieldValue<byte array>(11) = settlementHash
-                && reader.GetInt64(12) = proposal.OldWriterGeneration
-                && reader.GetInt64(13) = proposal.NewWriterGeneration
-                && settlementSequence > intentSequence
-                && not (reader.Read())
+                let valid =
+                    reader.GetFieldValue<byte array>(0) = canonical
+                    && reader.GetFieldValue<byte array>(1) = SHA256.HashData(canonical)
+                    && epoch = witness.Identity.Epoch
+                    && reader.GetInt64(7) = candidate.WriterGeneration
+                    && not (reader.GetBoolean(8))
+                    && reader.GetGuid(9) = activationId
+                    && reader.GetInt64(10) = settlementSequence
+                    && reader.GetFieldValue<byte array>(11) = settlementHash
+                    && reader.GetInt64(12) = proposal.OldWriterGeneration
+                    && reader.GetInt64(13) = proposal.NewWriterGeneration
+                    && settlementSequence > intentSequence
+                    && not (reader.Read())
 
-            if not valid then
-                invalidOp "Terminal W2 authority diverged."
+                if not valid then
+                    invalidOp "Terminal W2 authority diverged."
 
-            reader.Close()
+                reader.Close()
 
-            WriterActivationWitness.verifyHistorical
-                witness
-                activationId
-                canonical
-                (intentSequence, intentHash)
-                (settlementSequence, settlementHash)
-            |> ignore
+                let! _ =
+                    WriterActivationWitness.verifyHistorical
+                        witness
+                        activationId
+                        canonical
+                        (intentSequence, intentHash)
+                        (settlementSequence, settlementHash)
+                        CancellationToken.None
 
-            currentW2 witness activationId settlementSequence settlementHash proposal
+                do! currentW2 witness activationId settlementSequence settlementHash proposal
 
-            activationId, settlementSequence, settlementHash
-        finally
-            CryptographicOperations.ZeroMemory(canonical)
+                return activationId, settlementSequence, settlementHash
+            finally
+                CryptographicOperations.ZeroMemory(canonical)
+        }
 
     let private tombstone
         (connection: NpgsqlConnection)
@@ -173,20 +179,23 @@ module internal DatabaseTerminalRecoveryFenceRows =
         cutoff
 
     let verify connection transaction witness candidate proposal observedAt =
-        let activationId, settlementSequence, settlementHash =
-            activation connection transaction witness candidate proposal
+        task {
+            let! activationId, settlementSequence, settlementHash =
+                activation connection transaction witness candidate proposal
 
-        let revision, hash = tombstone connection transaction proposal
-        let cutoff = artifactCutoff connection transaction proposal.Copy.CaseId observedAt
+            let revision, hash = tombstone connection transaction proposal
+            let cutoff = artifactCutoff connection transaction proposal.Copy.CaseId observedAt
 
-        if cutoff >= settlementSequence then
-            invalidOp "Terminal recovery artifact was issued after writer fencing."
+            if cutoff >= settlementSequence then
+                invalidOp "Terminal recovery artifact was issued after writer fencing."
 
-        {
-            ActivationId = activationId
-            SettlementSequence = settlementSequence
-            SettlementHash = settlementHash
-            ArtifactCutoffSequence = cutoff
-            AuthorityRevision = revision
-            AuthorityHash = hash
+            return
+                {
+                    ActivationId = activationId
+                    SettlementSequence = settlementSequence
+                    SettlementHash = settlementHash
+                    ArtifactCutoffSequence = cutoff
+                    AuthorityRevision = revision
+                    AuthorityHash = hash
+                }
         }

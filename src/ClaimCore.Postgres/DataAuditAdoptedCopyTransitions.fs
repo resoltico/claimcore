@@ -102,11 +102,13 @@ module internal DataAuditAdoptedCopyTransitions =
             then
                 corrupt ()
 
-            witnessProof (fun () ->
-                witness.VerifyHistoricalTip(
-                    next.ActionWitnessCutoffSequence,
-                    next.ActionWitnessCutoffHash
-                ))
+            do!
+                witnessProofAsync (fun () ->
+                    witness.VerifyHistoricalTip(
+                        next.ActionWitnessCutoffSequence,
+                        next.ActionWitnessCutoffHash,
+                        ct
+                    ))
 
             do!
                 CaseWitnessAuditEvidence.verify
@@ -121,6 +123,7 @@ module internal DataAuditAdoptedCopyTransitions =
                     row.WitnessEntryHash
                     row.CandidateDigest
                     SettledAuthority
+                    ct
         }
 
     let private verifyRow

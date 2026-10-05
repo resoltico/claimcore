@@ -58,7 +58,7 @@ module internal ActorLifecycleApi =
             let! admission = admit gate principal EndpointAction.ReviewLifecycle reference ct
 
             match admission with
-            | LifecycleAdmission.Available context -> return! store.Review(context, reference)
+            | LifecycleAdmission.Available context -> return! store.Review(context, reference, ct)
             | LifecycleAdmission.Unavailable -> return LifecycleReviewOutcome.ResourceUnavailable
             | LifecycleAdmission.Cancelled -> return LifecycleReviewOutcome.Cancelled
             | LifecycleAdmission.Failed ->
@@ -79,7 +79,7 @@ module internal ActorLifecycleApi =
                 let! admission = admit gate principal (action change.Action) change.CaseReference ct
 
                 match admission with
-                | LifecycleAdmission.Available context -> return! store.Apply(context, change)
+                | LifecycleAdmission.Available context -> return! store.Apply(context, change, ct)
                 | LifecycleAdmission.Unavailable -> return LifecycleWriteOutcome.ResourceUnavailable
                 | LifecycleAdmission.Cancelled ->
                     return LifecycleWriteOutcome.CancelledBeforeAdmission change.EventId
@@ -106,7 +106,7 @@ module internal ActorLifecycleApi =
 
             match admission with
             | LifecycleAdmission.Available context ->
-                return! store.Approve(context, change, approvalId, expiresAt)
+                return! store.Approve(context, change, approvalId, expiresAt, ct)
             | LifecycleAdmission.Unavailable -> return LifecycleWriteOutcome.ResourceUnavailable
             | LifecycleAdmission.Cancelled ->
                 return LifecycleWriteOutcome.CancelledBeforeAdmission approvalId

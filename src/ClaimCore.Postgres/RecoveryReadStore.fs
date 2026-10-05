@@ -76,8 +76,17 @@ module internal RecoveryReadStore =
                         actorContext |> Option.defaultWith (fun () -> raise ActorContextMissing)
 
                     cancellationToken.ThrowIfCancellationRequested()
-                    use! connection = RuntimeDatabase.openConnectionAsync dataSource
-                    use transaction = connection.BeginTransaction(IsolationLevel.RepeatableRead)
+
+                    use! connection =
+                        RuntimeDatabase.openConnectionAsyncWithCancellation
+                            dataSource
+                            cancellationToken
+
+                    use! transaction =
+                        connection.BeginTransactionAsync(
+                            IsolationLevel.RepeatableRead,
+                            cancellationToken
+                        )
 
                     let! revision =
                         ActorGrantRead.lockRevision connection transaction false cancellationToken
@@ -109,8 +118,12 @@ module internal RecoveryReadStore =
         =
         task {
             cancellationToken.ThrowIfCancellationRequested()
-            use! connection = RuntimeDatabase.openConnectionAsync dataSource
-            use transaction = connection.BeginTransaction(IsolationLevel.RepeatableRead)
+
+            use! connection =
+                RuntimeDatabase.openConnectionAsyncWithCancellation dataSource cancellationToken
+
+            use! transaction =
+                connection.BeginTransactionAsync(IsolationLevel.RepeatableRead, cancellationToken)
 
             let! revision =
                 ActorGrantRead.lockRevision connection transaction false cancellationToken
@@ -187,8 +200,10 @@ module internal RecoveryReadStore =
         =
         task {
             ct.ThrowIfCancellationRequested()
-            use! connection = RuntimeDatabase.openConnectionAsync dataSource
-            use transaction = connection.BeginTransaction(IsolationLevel.RepeatableRead)
+            use! connection = RuntimeDatabase.openConnectionAsyncWithCancellation dataSource ct
+
+            use! transaction =
+                connection.BeginTransactionAsync(IsolationLevel.RepeatableRead, ct)
 
             let! revision = ActorGrantRead.lockRevision connection transaction false ct
 
@@ -200,7 +215,7 @@ module internal RecoveryReadStore =
                     ResourceScope.Installation
                     revision
 
-            let! now = Sql.databaseNow connection transaction
+            let! now = Sql.databaseNow connection transaction ct
 
             let cursorBound =
                 after

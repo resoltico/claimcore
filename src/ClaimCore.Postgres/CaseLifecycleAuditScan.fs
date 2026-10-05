@@ -24,7 +24,7 @@ module internal CaseLifecycleAuditScan =
                 | rows ->
                     for row in rows do
                         ct.ThrowIfCancellationRequested()
-                        CaseLifecycleAuditEvidence.approval witness cutoff caseId row
+                        do! CaseLifecycleAuditEvidence.approval witness cutoff caseId row ct
                         count <- count + 1L
 
                     after <- rows |> List.last |> fun row -> Some row.ApprovalId
@@ -44,7 +44,7 @@ module internal CaseLifecycleAuditScan =
         (ct: CancellationToken)
         =
         task {
-            let event =
+            let! event =
                 CaseLifecycleAuditEvidence.event
                     witness
                     cutoff
@@ -52,6 +52,7 @@ module internal CaseLifecycleAuditScan =
                     state.EventHash
                     (state.Sequence + 1L)
                     row
+                    ct
 
             let! before =
                 CaseLifecycleAuditCursor.advanceTo cursor event.Change.ExpectedRevision state ct

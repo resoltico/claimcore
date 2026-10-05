@@ -42,7 +42,11 @@ module internal ActorGrantRead =
                 if forMutation then
                     // The same primary authority lock is held through witness intent and
                     // primary COMMIT; owner copy transitions cannot overtake this check.
-                    CaseMutationCommitHealth.verifyLocked connection transaction
+                    do!
+                        CaseMutationCommitHealth.verifyLocked
+                            connection
+                            transaction
+                            cancellationToken
 
                 return revision
             | _ -> return raise (InvalidDataException("Authority revision is absent."))

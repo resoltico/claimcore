@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open ClaimCore.Application
 open ClaimCore.Domain
 open ClaimCore.Witness
@@ -59,29 +60,40 @@ module internal RealDataActivationApprovalChecks =
         now
         requireUnexpired
         first
+        (ct: CancellationToken)
         =
-        match first with
-        | None ->
-            request.ExpectedWitnessSequence = request.ReviewWitnessSequence
-            && request.ExpectedWitnessHash = request.ReviewWitnessHash
-        | Some(first: FirstRealDataActivationApproval) ->
-            first.ApproverActorId <> actorId
-            && first.PlanSha256 = request.ActivationPlanSha256
-            && first.ReviewSequence = request.ReviewWitnessSequence
-            && first.ReviewHash = request.ReviewWitnessHash
-            && first.ExpectedSequence = request.ReviewWitnessSequence
-            && first.ExpectedHash = request.ReviewWitnessHash
-            && (not requireUnexpired || first.ExpiresAt > now)
-            && first.WitnessSequence + 1L = request.ExpectedWitnessSequence
-            && (witness.VerifyAuthorityEvidenceForInstallation(
-                    first.ApprovalId,
-                    first.WitnessSequence,
-                    first.WitnessEpoch,
-                    first.WitnessHash,
-                    first.CandidateHash
-                )
+        task {
+            match first with
+            | None ->
+                return
+                    request.ExpectedWitnessSequence = request.ReviewWitnessSequence
+                    && request.ExpectedWitnessHash = request.ReviewWitnessHash
+            | Some(first: FirstRealDataActivationApproval) ->
+                let matching =
+                    first.ApproverActorId <> actorId
+                    && first.PlanSha256 = request.ActivationPlanSha256
+                    && first.ReviewSequence = request.ReviewWitnessSequence
+                    && first.ReviewHash = request.ReviewWitnessHash
+                    && first.ExpectedSequence = request.ReviewWitnessSequence
+                    && first.ExpectedHash = request.ReviewWitnessHash
+                    && (not requireUnexpired || first.ExpiresAt > now)
+                    && first.WitnessSequence + 1L = request.ExpectedWitnessSequence
 
-                true)
+                if not matching then
+                    return false
+                else
+                    do!
+                        witness.VerifyAuthorityEvidenceForInstallation(
+                            first.ApprovalId,
+                            first.WitnessSequence,
+                            first.WitnessEpoch,
+                            first.WitnessHash,
+                            first.CandidateHash,
+                            ct
+                        )
+
+                    return true
+        }
 
     let matchesSnapshot (request: RealDataActivationApprovalRequest) (snapshot: Snapshot) =
         let identity =
@@ -117,14 +129,32 @@ module internal RealDataActivationApprovalChecks =
         && pending.ApprovedAt < request.ExpiresAt
         && request.ExpiresAt <= pending.ApprovedAt.AddHours(24.)
 
-    let historicalReview (witness: WitnessProtocol) (request: RealDataActivationApprovalRequest) =
-        try
-            witness.VerifyHistoricalTip(request.ReviewWitnessSequence, request.ReviewWitnessHash)
-            true
-        with _ ->
-            false
+    let historicalReview
+        (witness: WitnessProtocol)
+        (request: RealDataActivationApprovalRequest)
+        ct
+        =
+        task {
+            try
+                do!
+                    witness.VerifyHistoricalTip(
+                        request.ReviewWitnessSequence,
+                        request.ReviewWitnessHash,
+                        ct
+                    )
 
-    let baseEligible witness request actorId now requireUnexpired first snapshot =
-        historicalReview witness request
-        && matchesSnapshot request snapshot
-        && chain witness request actorId now requireUnexpired first
+                return true
+            with
+            | :? OperationCanceledException -> return raise (OperationCanceledException(ct))
+            | _ -> return false
+        }
+
+    let baseEligible witness request actorId now requireUnexpired first snapshot ct =
+        task {
+            let! historical = historicalReview witness request ct
+
+            if not historical || not (matchesSnapshot request snapshot) then
+                return false
+            else
+                return! chain witness request actorId now requireUnexpired first ct
+        }

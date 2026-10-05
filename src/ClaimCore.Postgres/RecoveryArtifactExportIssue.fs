@@ -51,7 +51,7 @@ module internal RecoveryArtifactExportIssue =
                 return Error CoreFault.RecoveryMutationUnknown
             else
                 try
-                    RecoveryArtifactExportRead.reconcileSettled witness row
+                    do! RecoveryArtifactExportRead.reconcileSettled witness row ct
                     return Ok row.ArtifactBytes
                 with _ ->
                     return Error CoreFault.RecoveryMutationUnknown
@@ -72,6 +72,7 @@ module internal RecoveryArtifactExportIssue =
                     connection
                     transaction
                     ("operation:" + retained.OperationId.ToString("D"))
+                    ct
 
             let! available =
                 RecoveryArtifactExportAdmission.activeCase connection transaction retained ct

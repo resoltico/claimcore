@@ -1,6 +1,7 @@
 namespace ClaimCore.Witness
 
 open System
+open System.Threading
 open Npgsql
 open NpgsqlTypes
 
@@ -39,43 +40,51 @@ module internal WitnessStoreLossRetirement =
                     Some(reader.GetFieldValue<byte array>(20))
         }
 
-    let read connectionString (identity: Identity) retirementId =
-        use connection = PostgresTransport.connection connectionString
-        connection.Open()
-        WitnessStoreRead.checkAdmission identity connection
+    let read connectionString (identity: Identity) retirementId (ct: CancellationToken) =
+        task {
+            use connection = PostgresTransport.connection connectionString
+            do! connection.OpenAsync(ct)
+            do! WitnessDatabaseAdmission.checkAsync identity connection ct
 
-        use count =
-            new NpgsqlCommand(
-                "SELECT count(*) FROM claimcore_witness.installation_loss_retirements",
-                connection
-            )
+            use count =
+                new NpgsqlCommand(
+                    "SELECT count(*) FROM claimcore_witness.installation_loss_retirements",
+                    connection
+                )
 
-        if count.ExecuteScalar() :?> int64 > 1L then
-            invalidOp "Witness loss retirement is not unique."
+            let! total = count.ExecuteScalarAsync(ct)
 
-        use command =
-            new NpgsqlCommand(
-                "SELECT retirement_id,installation_id,lineage_id,old_epoch,previous_sequence,"
-                + "previous_hash,canonical_decision,canonical_sha256,signature_one,signature_two,"
-                + "signer_one_id,signer_two_id,owner_one_actor_id,owner_two_actor_id,"
-                + "operation_set_kind,known_operation_count,known_operation_digest,"
-                + "intent_sequence,intent_hash,settlement_sequence,settlement_hash "
-                + "FROM claimcore_witness.installation_loss_retirements "
-                + "WHERE retirement_id=@retirement",
-                connection
-            )
+            if unbox<int64> total > 1L then
+                invalidOp "Witness loss retirement is not unique."
 
-        command.Parameters.AddWithValue("retirement", NpgsqlDbType.Uuid, retirementId)
-        |> ignore
+            use command =
+                new NpgsqlCommand(
+                    "SELECT retirement_id,installation_id,lineage_id,old_epoch,previous_sequence,"
+                    + "previous_hash,canonical_decision,canonical_sha256,signature_one,signature_two,"
+                    + "signer_one_id,signer_two_id,owner_one_actor_id,owner_two_actor_id,"
+                    + "operation_set_kind,known_operation_count,known_operation_digest,"
+                    + "intent_sequence,intent_hash,settlement_sequence,settlement_hash "
+                    + "FROM claimcore_witness.installation_loss_retirements "
+                    + "WHERE retirement_id=@retirement",
+                    connection
+                )
 
-        use reader = command.ExecuteReader()
+            command.Parameters.AddWithValue("retirement", NpgsqlDbType.Uuid, retirementId)
+            |> ignore
 
-        if not (reader.Read()) then
-            None
-        else
-            let value = decode reader
+            use! reader = command.ExecuteReaderAsync(ct)
 
-            if reader.Read() then
-                invalidOp "Witness loss retirement is duplicated."
+            let! found = reader.ReadAsync(ct)
 
-            Some value
+            if not found then
+                return None
+            else
+                let value = decode reader
+
+                let! duplicated = reader.ReadAsync(ct)
+
+                if duplicated then
+                    invalidOp "Witness loss retirement is duplicated."
+
+                return Some value
+        }

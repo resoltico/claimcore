@@ -124,7 +124,7 @@ let private index =
     }
 
 let private matches candidateReport candidateIndex candidateFacts candidatePublication =
-    DatabaseRestoreReportRecheck.matchesLivePair
+    DatabaseRestoreLive.matchesLivePair
         candidatePublication
         candidateReport
         candidateIndex

@@ -3,6 +3,8 @@ module ClaimCore.WitnessTests.KeyRingAdmissionTests
 open System
 open System.Security.Cryptography
 open System.Text
+open Npgsql
+open ClaimCore.WitnessTests.WitnessTestSupport
 open Expecto
 open ClaimCore.Witness
 
@@ -36,3 +38,83 @@ let tests =
             Expect.throws
                 (fun () -> KeyRingCodec.parse (Encoding.UTF8.GetBytes(duplicate)) |> ignore)
                 "Duplicate root properties cannot select ambiguous authority")
+
+let private assertRotationEvidence
+    (store: Store)
+    (custody: IKeyCustody)
+    (identity: Identity)
+    rotation
+    newId
+    =
+    let evidence =
+        (store.TryReadEvidence(rotation, KeyRotated, cancellation) |> await)
+        |> Option.defaultWith (fun () -> failtest "Rotation evidence must exist.")
+
+    KeyCheck.verifyRotation
+        custody
+        identity.InstallationId
+        identity.LineageId
+        identity.Epoch
+        rotation
+        keyId
+        newId
+        evidence.EncryptedPayload
+
+    Expect.equal
+        (fst ((store.ReadKeyCheck(cancellation) |> await)))
+        newId
+        "New key marker is active"
+
+
+let rotation =
+    testCase "[CC-WIT-001] owner rotation advances journal and fences old key" (fun _ ->
+        fixture (fun owner writer identity capability ->
+            use store = new Store(writer, identity, capability)
+
+            let first =
+                (store.Append(Guid.NewGuid(), None, Intent, keyId, payload 1uy, cancellation)
+                 |> await)
+
+            let newId = Guid.NewGuid()
+            let newKey = RandomNumberGenerator.GetBytes(32)
+            use custody = new KeyRing(newId, [ newId, newKey ]) :> IKeyCustody
+            let keyCheck = KeyCheck.create custody identity.InstallationId identity.LineageId
+            let rotation = Guid.NewGuid()
+
+            let encrypted =
+                KeyCheck.rotationEnvelope
+                    custody
+                    identity.InstallationId
+                    identity.LineageId
+                    identity.Epoch
+                    rotation
+                    keyId
+                    newId
+
+            let ticket =
+                KeyRotation.rotateKey
+                    owner
+                    identity
+                    rotation
+                    keyId
+                    newId
+                    keyCheck
+                    encrypted
+                    capability
+
+            Expect.equal ticket.Sequence (first.Sequence + 1L) "Rotation is journaled"
+
+            assertRotationEvidence store custody identity rotation newId
+
+            Expect.throws
+                (fun () ->
+                    (store.Append(Guid.NewGuid(), None, Intent, keyId, payload 4uy, cancellation)
+                     |> await)
+                    |> ignore)
+                "Stale writer key is fenced"
+
+            let after =
+                (store.Append(Guid.NewGuid(), None, Intent, newId, payload 5uy, cancellation)
+                 |> await)
+
+            Expect.equal after.Sequence (ticket.Sequence + 1L) "New key appends after rotation"))

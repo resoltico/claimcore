@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open System.Security.Cryptography
 open System.Text
 open ClaimCore.Application
@@ -63,53 +64,54 @@ module internal WitnessProof =
         (epoch: int64)
         (entryHash: byte array)
         (candidateDigest: byte array)
+        (ct: CancellationToken)
         =
-        if candidateDigest.Length <> 32 || entryHash.Length <> 32 then
-            raise WitnessPending
-
-        let intent =
-            store.TryReadEvidence(operationId, Intent)
-            |> Option.defaultWith (fun () -> raise WitnessPending)
-
-        let outcome =
-            store.TryReadEvidence(operationId, settlement)
-            |> Option.defaultWith (fun () -> raise WitnessPending)
-
-        if
-            intent.Ticket.Sequence <> sequence
-            || intent.Ticket.Epoch <> epoch
-            || intent.Ticket.EntryHash <> entryHash
-            || outcome.Ticket.Sequence <= intent.Ticket.Sequence
-        then
-            raise WitnessPending
-
-        let plain =
-            custody.Decrypt(
-                intent.Ticket.KeyId,
-                associatedData identity operationId "INTENT",
-                intent.EncryptedPayload
-            )
-
-        try
-            if SHA256.HashData(plain) <> candidateDigest then
+        task {
+            if candidateDigest.Length <> 32 || entryHash.Length <> 32 then
                 raise WitnessPending
 
-            let settled =
+            let! retainedIntent = store.TryReadEvidence(operationId, Intent, ct)
+            let intent = retainedIntent |> Option.defaultWith (fun () -> raise WitnessPending)
+
+            let! retainedOutcome = store.TryReadEvidence(operationId, settlement, ct)
+            let outcome = retainedOutcome |> Option.defaultWith (fun () -> raise WitnessPending)
+
+            if
+                intent.Ticket.Sequence <> sequence
+                || intent.Ticket.Epoch <> epoch
+                || intent.Ticket.EntryHash <> entryHash
+                || outcome.Ticket.Sequence <= intent.Ticket.Sequence
+            then
+                raise WitnessPending
+
+            let plain =
                 custody.Decrypt(
-                    outcome.Ticket.KeyId,
-                    associatedData identity operationId (settlementName settlement),
-                    outcome.EncryptedPayload
+                    intent.Ticket.KeyId,
+                    associatedData identity operationId "INTENT",
+                    intent.EncryptedPayload
                 )
 
             try
-                if settled <> candidateDigest then
+                if SHA256.HashData(plain) <> candidateDigest then
                     raise WitnessPending
-            finally
-                CryptographicOperations.ZeroMemory(settled)
-        finally
-            CryptographicOperations.ZeroMemory(plain)
 
-        intent.Ticket, outcome.Ticket
+                let settled =
+                    custody.Decrypt(
+                        outcome.Ticket.KeyId,
+                        associatedData identity operationId (settlementName settlement),
+                        outcome.EncryptedPayload
+                    )
+
+                try
+                    if settled <> candidateDigest then
+                        raise WitnessPending
+                finally
+                    CryptographicOperations.ZeroMemory(settled)
+            finally
+                CryptographicOperations.ZeroMemory(plain)
+
+            return intent.Ticket, outcome.Ticket
+        }
 
     let requireScope expectedSubject (intent: Ticket, outcome: Ticket) =
         let expectedKind =

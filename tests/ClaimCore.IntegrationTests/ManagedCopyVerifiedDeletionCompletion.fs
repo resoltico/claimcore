@@ -1,5 +1,6 @@
 module internal ClaimCore.IntegrationTests.ManagedCopyVerifiedDeletionCompletion
 
+open System.Threading
 open System
 open System.IO
 open Expecto
@@ -87,7 +88,8 @@ let private verifyPrivateInputRefusals directory custodianId attestationPath sig
     rejected linkedPath
 
 let private assertExactRetry (witness: WitnessProtocol) attestationPath signaturePath inputs =
-    let beforeRetry = witness.Snapshot().TipSequence
+    let beforeRetry =
+        (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence
 
     let retryCode, retry =
         runCommand "verify-delete-managed-copy" [ attestationPath; signaturePath ] inputs
@@ -101,7 +103,7 @@ let private assertExactRetry (witness: WitnessProtocol) attestationPath signatur
         "Exact retry reuses the one witnessed deletion event."
 
     Expect.equal
-        (witness.Snapshot().TipSequence)
+        ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
         beforeRetry
         "Exact retry creates no second witness event or approval use."
 
@@ -169,7 +171,8 @@ let finishPending
     (pending: PendingSyntheticCopy)
     =
     File.Delete(pending.CopyPath)
-    let tip = witness.Snapshot()
+
+    let tip = (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
 
     let registryPath, reportPath, observedAt, approval =
         prepareEvidence

@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open System.Security.Cryptography
 open Npgsql
 open ClaimCore.Application
@@ -70,43 +71,50 @@ module internal CaseTombstoneHoldReplay =
         (context: ActorCallContext)
         (change: TombstoneHoldChange)
         (receipt: TombstoneHoldReceipt)
+        (ct: CancellationToken)
         =
-        let expectedHash =
-            try
-                Convert.FromHexString(change.ExpectedAuthorityHash)
-            with _ ->
-                Array.empty
-
-        let canonical =
-            CaseTombstoneCandidate.hold
-                change
-                receipt.ActorId
-                receipt.GrantRevision
-                receipt.PreviousHash
-                receipt.ObservedAt
-
-        try
-            if
-                receipt.CaseId <> change.CaseId
-                || receipt.ActorId <> context.Binding.ActorId
-                || receipt.Revision <> change.ExpectedAuthorityRevision + 1L
-                || receipt.PreviousHash <> expectedHash
-                || receipt.Canonical <> canonical
-                || receipt.CandidateHash <> SHA256.HashData(canonical)
-            then
-                TombstoneWriteOutcome.Refused ClaimCore.Domain.LifecycleRefusal.VersionConflict
-            else
+        task {
+            let expectedHash =
                 try
-                    witness.ReconcileAuthority(
-                        change.EventId,
-                        receipt.WitnessSequence,
-                        receipt.WitnessEpoch,
-                        receipt.WitnessHash,
-                        receipt.Canonical
-                    )
-
-                    TombstoneWriteOutcome.Applied(change.EventId, receipt.Revision)
+                    Convert.FromHexString(change.ExpectedAuthorityHash)
                 with _ ->
-                    TombstoneWriteOutcome.Unconfirmed change.EventId
-        finally
-            CryptographicOperations.ZeroMemory(canonical)
+                    Array.empty
+
+            let canonical =
+                CaseTombstoneCandidate.hold
+                    change
+                    receipt.ActorId
+                    receipt.GrantRevision
+                    receipt.PreviousHash
+                    receipt.ObservedAt
+
+            try
+                if
+                    receipt.CaseId <> change.CaseId
+                    || receipt.ActorId <> context.Binding.ActorId
+                    || receipt.Revision <> change.ExpectedAuthorityRevision + 1L
+                    || receipt.PreviousHash <> expectedHash
+                    || receipt.Canonical <> canonical
+                    || receipt.CandidateHash <> SHA256.HashData(canonical)
+                then
+                    return
+                        TombstoneWriteOutcome.Refused
+                            ClaimCore.Domain.LifecycleRefusal.VersionConflict
+                else
+                    try
+                        do!
+                            witness.ReconcileAuthority(
+                                change.EventId,
+                                receipt.WitnessSequence,
+                                receipt.WitnessEpoch,
+                                receipt.WitnessHash,
+                                receipt.Canonical,
+                                ct
+                            )
+
+                        return TombstoneWriteOutcome.Applied(change.EventId, receipt.Revision)
+                    with _ ->
+                        return TombstoneWriteOutcome.Unconfirmed change.EventId
+            finally
+                CryptographicOperations.ZeroMemory(canonical)
+        }

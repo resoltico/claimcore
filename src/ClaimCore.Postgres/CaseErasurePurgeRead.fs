@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open System.IO
 open System.Security.Cryptography
 open Npgsql
@@ -76,6 +77,7 @@ module internal CaseErasurePurgeRead =
         (stored: StoredErasurePurge)
         eventId
         (canonicalDraft: byte array)
+        ct
         =
         task {
             let expected = commitments.PurgeProposal canonicalDraft
@@ -103,16 +105,18 @@ module internal CaseErasurePurgeRead =
                 ->
                 do! CaseErasurePurgeDelete.verifyAbsent connection transaction stored.CaseId
 
-                witness.ReconcileAuthority(id, sequence, epoch, hash, canonical)
+                do! witness.ReconcileAuthority(id, sequence, epoch, hash, canonical, ct)
 
-                witness.VerifyAuthorityEvidenceForCase(
-                    id,
-                    sequence,
-                    epoch,
-                    hash,
-                    digest,
-                    stored.CaseId
-                )
+                do!
+                    witness.VerifyAuthorityEvidenceForCase(
+                        id,
+                        sequence,
+                        epoch,
+                        hash,
+                        digest,
+                        stored.CaseId,
+                        CancellationToken.None
+                    )
 
                 return true
             | _ -> return false

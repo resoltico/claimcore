@@ -36,7 +36,9 @@ module internal DataAuditJournalTechnical =
         =
         task {
             let eventId = ticket.OperationId
-            let candidate = witnessProof (fun () -> witness.ReadTechnicalCandidate(eventId))
+
+            let! candidate =
+                witnessProofAsync (fun () -> witness.ReadTechnicalCandidate(eventId, ct))
 
             if
                 candidate.WitnessEventId <> eventId

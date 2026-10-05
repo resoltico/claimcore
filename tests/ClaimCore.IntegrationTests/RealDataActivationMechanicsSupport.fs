@@ -68,14 +68,17 @@ let private approval
 
 let approvePair app writer (witness: WitnessProtocol) first second planId activationId plan =
     use runtime = openRuntime app writer
-    let anchor = witness.Snapshot()
+
+    let anchor = (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
+
     let one = approval planId activationId plan anchor anchor
 
     runtime.ForActor(first).ApproveRealDataActivation(one, CancellationToken.None)
     |> await
     |> approved
 
-    let prior = witness.Snapshot()
+    let prior = (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
+
     let two = approval planId activationId plan anchor prior
 
     runtime.ForActor(second).ApproveRealDataActivation(two, CancellationToken.None)
@@ -106,3 +109,49 @@ let proof (plan: BackupHealthActivationPlan) (tip: Snapshot) =
         Canonical = canonical
         Signature = Array.create 64 0x31uy
     }
+
+let registerLossOwners owner app writer witness first second =
+    use runtime =
+        ClaimCore.IntegrationTests.ManagedCopySignerTestSupport.openRuntime app writer
+
+    let management = (runtime.ForActor first).Management
+
+    for holder in [ first; second ] do
+        let eventId = Guid.NewGuid()
+
+        management.SetGrant(
+            eventId,
+            holder,
+            Role.AuditorCustodian,
+            GrantTarget.Installation,
+            true,
+            CancellationToken.None
+        )
+        |> await
+        |> ClaimCore.IntegrationTests.ManagedCopySignerTestSupport.appliedManagement eventId
+
+    use connection = new NpgsqlConnection(owner)
+    connection.Open()
+
+    let firstKey, _, _, _ =
+        registeredSigner
+            runtime
+            first
+            second
+            CopySignerPurpose.InstallationLossRetirement
+            witness
+            connection
+
+    use _firstKey = firstKey
+
+    let secondKey, _, _, _ =
+        registeredSigner
+            runtime
+            second
+            first
+            CopySignerPurpose.InstallationLossRetirement
+            witness
+            connection
+
+    use _secondKey = secondKey
+    ()

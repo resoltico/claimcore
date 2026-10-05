@@ -1,5 +1,6 @@
 namespace ClaimCore.Database
 
+open System.Threading
 open System
 open System.Security.Cryptography
 open Npgsql
@@ -138,7 +139,7 @@ module internal DatabaseWriterHandoffAbortExecution =
         use source = RuntimeDataSource.create app
         let store = Store.OpenAudit(audit, identity)
         use witness = new WitnessProtocol(store, custody, identity)
-        witness.AdmitReadOnly()
+        witness.AdmitReadOnly(CancellationToken.None).GetAwaiter().GetResult()
 
         use capability =
             DatabaseWitnessInputs.writerCapability ()

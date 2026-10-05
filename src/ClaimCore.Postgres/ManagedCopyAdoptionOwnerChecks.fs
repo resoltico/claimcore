@@ -18,54 +18,6 @@ type private AdoptionCheckContext =
 /// All checks run after the owner has locked actor authority, tombstone and exact approval.
 /// No private location, signer claim or pre-fence origin can be inferred from a hash alone.
 module internal ManagedCopyAdoptionOwnerChecks =
-    let private signatures
-        connection
-        transaction
-        (request: CopyAdoptionApprovalRequest)
-        (submission: CopyAdoptionSubmission)
-        ownerActorId
-        cutoff
-        =
-        task {
-            let! custodian =
-                ManagedCopyAdoptionSignatureEvidence.verify
-                    connection
-                    transaction
-                    request.CustodianSigningKeyId
-                    "COPY_ATTESTOR"
-                    submission.Custodian.Canonical
-                    submission.Custodian.Signature
-                    cutoff
-
-            let! registry =
-                ManagedCopyAdoptionSignatureEvidence.verify
-                    connection
-                    transaction
-                    request.RegistrySigningKeyId
-                    "LOCATION_REGISTRY"
-                    submission.Registry.Canonical
-                    submission.Registry.Signature
-                    cutoff
-
-            let! inspector =
-                ManagedCopyAdoptionSignatureEvidence.verify
-                    connection
-                    transaction
-                    request.InspectorSigningKeyId
-                    "LOCATION_INSPECTOR"
-                    submission.Inspection.Canonical
-                    submission.Inspection.Signature
-                    cutoff
-
-            return
-                match custodian, registry, inspector with
-                | Some c, Some r, Some i when
-                    ManagedCopyAdoptionSignatureEvidence.distinct ownerActorId c r i
-                    ->
-                    Some(c, r, i)
-                | _ -> None
-        }
-
     let private assemble
         (approved: ApprovedCopyAdoption)
         (submission: CopyAdoptionSubmission)
@@ -157,14 +109,16 @@ module internal ManagedCopyAdoptionOwnerChecks =
         ct
         =
         task {
+            let! snapshot = witness.Snapshot(ct)
+
             let! signed =
-                signatures
+                ManagedCopyAdoptionSignatureEvidence.owners
                     connection
                     transaction
                     approved.Request
                     submission
                     approved.ActorId
-                    (witness.Snapshot().TipSequence)
+                    snapshot.TipSequence
 
             match signed with
             | None -> return Error CopyAdoptionOwnerOutcome.ResourceUnavailable
@@ -265,7 +219,7 @@ module internal ManagedCopyAdoptionOwnerChecks =
         (ct: CancellationToken)
         =
         task {
-            let! now = Sql.databaseNow connection transaction
+            let! now = Sql.databaseNow connection transaction ct
 
             let! held =
                 ManagedCopyTransitionAdministration.held connection transaction (Some stored.CaseId)
@@ -278,6 +232,7 @@ module internal ManagedCopyAdoptionOwnerChecks =
                     actorRevision
                     submission
                     now
+                    ct
 
             match approved with
             | None -> return Error CopyAdoptionOwnerOutcome.ResourceUnavailable

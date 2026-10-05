@@ -104,7 +104,8 @@ let private inspectAbsence
     use _extraCopyKey = extraCopyKey
     use _registryKey = registryKey
     use _verifierKey = verifierKey
-    let cutoff = witness.Snapshot()
+
+    let cutoff = (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
 
     let registryPath, reportPath, report, observed =
         signedAbsence

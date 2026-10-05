@@ -307,6 +307,9 @@ ClaimCore deterministic suite.remote frame-local delivery diagnostics.service ac
 ClaimCore deterministic suite.remote frame-local delivery diagnostics.uncertain import without an operation ID does not invent one
 ClaimCore deterministic suite.remote frame-local delivery diagnostics.validated response observation precedes output
 ClaimCore deterministic suite.remote invocation contract.[CC-CLI-003] CLI v4 inputs bind exact noncancellable endpoints
+ClaimCore deterministic suite.schema timestamp formats.date-time accepts explicit representable RFC 3339 instants
+ClaimCore deterministic suite.schema timestamp formats.date-time refuses implicit calendar and local-zone inputs
+ClaimCore deterministic suite.schema timestamp formats.format validation preserves canonical wire restrictions
 ClaimCore deterministic suite.service response bounds.[CC-CLI-001] CLI bounds service JSON buffering before parsing
 ClaimCore deterministic suite.service response bounds.[CC-CLI-001] CLI reads a full history with maximum-length Unicode fields
 ClaimCore deterministic suite.signed recovery import attribution.[CC-REC-001] signed import preserves A and records importer B

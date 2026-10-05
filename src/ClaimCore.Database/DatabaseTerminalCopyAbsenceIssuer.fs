@@ -18,23 +18,25 @@ type internal DatabaseTerminalCopyAbsenceIssuer
     =
     let mutable disposed = false
 
-    let signedEvidence (witness: WitnessProtocol) (tip: Snapshot) observedAt =
-        let evidence =
-            DatabaseManagedCopyInventoryEvidence.parse registryBytes inspectionBytes observedAt
+    let signedEvidence (witness: WitnessProtocol) (tip: Snapshot) observedAt ct =
+        task {
+            let evidence =
+                DatabaseManagedCopyInventoryEvidence.parse registryBytes inspectionBytes observedAt
 
-        if
-            evidence.InstallationId <> witness.Identity.InstallationId
-            || evidence.LineageId <> witness.Identity.LineageId
-            || evidence.Epoch <> witness.Identity.Epoch
-            || evidence.CutoffSequence > tip.TipSequence
-            || evidence.CutoffSequence < 1L
-            || not evidence.KnownUnmanaged.IsEmpty
-            || (evidence.Observations |> List.exists (fun item -> item.Status <> "ABSENT"))
-        then
-            None
-        else
-            witness.VerifyHistoricalTip(evidence.CutoffSequence, evidence.CutoffHash)
-            Some evidence
+            if
+                evidence.InstallationId <> witness.Identity.InstallationId
+                || evidence.LineageId <> witness.Identity.LineageId
+                || evidence.Epoch <> witness.Identity.Epoch
+                || evidence.CutoffSequence > tip.TipSequence
+                || evidence.CutoffSequence < 1L
+                || not evidence.KnownUnmanaged.IsEmpty
+                || (evidence.Observations |> List.exists (fun item -> item.Status <> "ABSENT"))
+            then
+                return None
+            else
+                do! witness.VerifyHistoricalTip(evidence.CutoffSequence, evidence.CutoffHash, ct)
+                return Some evidence
+        }
 
     let exactRows
         connection
@@ -88,7 +90,7 @@ type internal DatabaseTerminalCopyAbsenceIssuer
         =
         task {
             let! _, pending = DataAuditJournal.scan connection transaction witness tip ct
-            let latest = witness.Snapshot()
+            let! latest = witness.Snapshot(ct)
 
             return
                 pending = 0L
@@ -159,7 +161,7 @@ type internal DatabaseTerminalCopyAbsenceIssuer
         task {
             OwnerConnection.requireIdentity connection
             SchemaBaseline.requireCurrent connection
-            witness.AdmitReadOnly()
+            do! witness.AdmitReadOnly(ct)
             do! DatabaseTerminalCopyAbsenceAdmission.lockCopies connection transaction ct
 
             return!
@@ -179,18 +181,11 @@ type internal DatabaseTerminalCopyAbsenceIssuer
         connection
         transaction
         (witness: WitnessProtocol)
-        caseId
-        pruneEventId
-        cutoffSequence
-        (cutoffHash: byte array)
-        policyId
-        suppressionUntil
-        writerGeneration
-        observedAt
+        (request: TerminalCopyAbsenceRequest)
         ct
         =
         task {
-            if disposed || cutoffHash.Length <> 32 then
+            if disposed || request.CutoffHash.Length <> 32 then
                 return None
             else
                 let! allowed =
@@ -198,33 +193,23 @@ type internal DatabaseTerminalCopyAbsenceIssuer
                         connection
                         transaction
                         witness
-                        caseId
-                        pruneEventId
-                        cutoffSequence
-                        cutoffHash
-                        writerGeneration
+                        request.CaseId
+                        request.PruneEventId
+                        request.CutoffSequence
+                        request.CutoffHash
+                        request.WriterGeneration
                         ct
 
                 if not allowed then
                     return None
                 else
-                    witness.VerifyHistoricalTip(cutoffSequence, cutoffHash)
-                    let tip = witness.Snapshot()
+                    do! witness.VerifyHistoricalTip(request.CutoffSequence, request.CutoffHash, ct)
+                    let! tip = witness.Snapshot(ct)
+                    let! signed = signedEvidence witness tip request.ObservedAt ct
 
-                    match signedEvidence witness tip observedAt with
+                    match signed with
                     | None -> return None
                     | Some evidence ->
-                        let request =
-                            DatabaseTerminalCopyAbsenceCertificate.bind
-                                caseId
-                                pruneEventId
-                                cutoffSequence
-                                cutoffHash
-                                policyId
-                                suppressionUntil
-                                writerGeneration
-                                observedAt
-
                         return!
                             certifyEvidence connection transaction witness request tip evidence ct
         }
@@ -247,11 +232,8 @@ type internal DatabaseTerminalCopyAbsenceIssuer
             ) =
             task {
                 try
-                    return!
-                        issue
-                            primary
-                            transaction
-                            witness
+                    let request =
+                        DatabaseTerminalCopyAbsenceCertificate.bind
                             caseId
                             pruneEventId
                             cutoffSequence
@@ -260,7 +242,8 @@ type internal DatabaseTerminalCopyAbsenceIssuer
                             suppressionUntil
                             writerGeneration
                             observedAt
-                            ct
+
+                    return! issue primary transaction witness request ct
                 with _ ->
                     return None
             }

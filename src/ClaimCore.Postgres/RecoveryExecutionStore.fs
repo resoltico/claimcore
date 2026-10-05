@@ -1,5 +1,6 @@
 namespace ClaimCore.Postgres
 
+open System.Threading
 open System
 open System.Data
 open System.IO
@@ -40,6 +41,7 @@ module internal RecoveryExecutionStore =
                     witness
                     request.OperationId
                     (Operation.fingerprint operation)
+                    cancellationToken
 
             match accepted with
             | Ok(Some receipt) ->
@@ -65,6 +67,27 @@ module internal RecoveryExecutionStore =
                         witness
         }
 
+    let private authorizedCase
+        connection
+        transaction
+        (actorContext: ActorCallContext)
+        request
+        revision
+        =
+        task {
+            match actorContext.CaseId with
+            | None -> return false
+            | Some caseId ->
+                return!
+                    ActorMutationGuard.authorize
+                        connection
+                        transaction
+                        actorContext
+                        request
+                        caseId
+                        revision
+        }
+
     let private executeInTransaction
         connection
         transaction
@@ -82,38 +105,34 @@ module internal RecoveryExecutionStore =
         =
         task {
             let request = Operation.request operation
-            do! Sql.lockKeyAsync connection transaction (operationKey request.OperationId)
 
-            match actorContext.CaseId with
-            | None -> return Error RecoveryStoreFailure.ResourceUnavailable
-            | Some caseId ->
-                let! allowed =
-                    ActorMutationGuard.authorize
+            do!
+                Sql.lockKeyAsync
+                    connection
+                    transaction
+                    (operationKey request.OperationId)
+                    cancellationToken
+
+            let! allowed = authorizedCase connection transaction actorContext request revision
+
+            if not allowed then
+                return Error RecoveryStoreFailure.ResourceUnavailable
+            else
+                return!
+                    executeKnown
                         connection
                         transaction
+                        operation
+                        attemptId
+                        capture
+                        decide
+                        cancellationToken
+                        commitStarted
+                        knownRejection
+                        knownRevocation
                         actorContext
-                        request
-                        caseId
                         revision
-
-                if not allowed then
-                    return Error RecoveryStoreFailure.ResourceUnavailable
-                else
-                    return!
-                        executeKnown
-                            connection
-                            transaction
-                            operation
-                            attemptId
-                            capture
-                            decide
-                            cancellationToken
-                            commitStarted
-                            knownRejection
-                            knownRevocation
-                            actorContext
-                            revision
-                            witness
+                        witness
         }
 
     let private executeWithTransaction
@@ -137,7 +156,7 @@ module internal RecoveryExecutionStore =
                 AuthorityOperationFence.acquireShared
                     (Some dataSource)
                     connection
-                    System.Threading.CancellationToken.None
+                    CancellationToken.None
 
             let! transaction =
                 connection.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken)
@@ -190,7 +209,7 @@ module internal RecoveryExecutionStore =
                     witness
                     |> Option.defaultWith (fun () -> invalidOp "Witness is required for mutation.")
 
-                active.Admit()
+                do! active.Admit(cancellationToken)
 
                 let actor =
                     actorContext

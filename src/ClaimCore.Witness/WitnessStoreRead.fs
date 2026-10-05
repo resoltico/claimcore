@@ -1,6 +1,7 @@
 namespace ClaimCore.Witness
 
 open System
+open System.Threading
 open System.Data.Common
 open System.Security.Cryptography
 open Npgsql
@@ -12,195 +13,137 @@ module internal WitnessStoreRead =
         (capability: byte array)
         (connection: NpgsqlConnection)
         (transaction: NpgsqlTransaction)
+        (ct: CancellationToken)
         =
-        use command =
-            new NpgsqlCommand(
-                "SELECT claimcore_witness.acquire_read_fence("
-                + "@installation,@lineage,@epoch,@writerCapability)",
-                connection,
-                transaction
-            )
+        task {
+            use command =
+                new NpgsqlCommand(
+                    "SELECT claimcore_witness.acquire_read_fence("
+                    + "@installation,@lineage,@epoch,@writerCapability)",
+                    connection,
+                    transaction
+                )
 
-        command.Parameters.AddWithValue("installation", NpgsqlDbType.Uuid, identity.InstallationId)
-        |> ignore
+            WitnessDatabaseAdmission.bindIdentity command identity
 
-        command.Parameters.AddWithValue("lineage", NpgsqlDbType.Uuid, identity.LineageId)
-        |> ignore
+            command.Parameters.AddWithValue("writerCapability", NpgsqlDbType.Bytea, capability)
+            |> ignore
 
-        command.Parameters.AddWithValue("epoch", NpgsqlDbType.Bigint, identity.Epoch)
-        |> ignore
+            let! result = command.ExecuteScalarAsync(ct)
 
-        command.Parameters.AddWithValue("writerCapability", NpgsqlDbType.Bytea, capability)
-        |> ignore
-
-        match command.ExecuteScalar() with
-        | :? int64 as generation when generation > 0L -> generation
-        | _ -> invalidOp "Witness writer generation is fenced."
+            match result with
+            | :? int64 as generation when generation > 0L -> return generation
+            | _ -> return invalidOp "Witness writer generation is fenced."
+        }
 
     let checkWriterAdmission
         (identity: Identity)
         (capability: byte array)
         (connection: NpgsqlConnection)
+        (ct: CancellationToken)
         =
-        use command =
-            new NpgsqlCommand(
-                "SELECT writer_generation,writer_capability_sha256,handoff_pending,activation_pending,"
-                + "loss_retirement_pending,loss_retired "
-                + "FROM claimcore_witness.installation WHERE singleton "
-                + "AND installation_id=@installation AND lineage_id=@lineage AND epoch=@epoch "
-                + "AND current_user='claimcore_witness_writer'",
-                connection
-            )
-
-        command.Parameters.AddWithValue("installation", NpgsqlDbType.Uuid, identity.InstallationId)
-        |> ignore
-
-        command.Parameters.AddWithValue("lineage", NpgsqlDbType.Uuid, identity.LineageId)
-        |> ignore
-
-        command.Parameters.AddWithValue("epoch", NpgsqlDbType.Bigint, identity.Epoch)
-        |> ignore
-
-        use reader = command.ExecuteReader()
-
-        if not (reader.Read()) then
-            invalidOp "Witness writer identity is unavailable."
-
-        let generation = reader.GetInt64(0)
-        let expected = reader.GetFieldValue<byte array>(1)
-        let pending = reader.GetBoolean(2)
-        let activationPending = reader.GetBoolean(3)
-        let lossPending = reader.GetBoolean(4)
-        let lossRetired = reader.GetBoolean(5)
-        let actual = SHA256.HashData(capability)
-
-        try
-            if
-                reader.Read()
-                || generation < 1L
-                || pending
-                || activationPending
-                || lossPending
-                || lossRetired
-                || expected.Length <> 32
-                || not (CryptographicOperations.FixedTimeEquals(expected.AsSpan(), actual.AsSpan()))
-            then
-                invalidOp "Witness writer generation is unavailable."
-        finally
-            CryptographicOperations.ZeroMemory(actual)
-
-        generation
-
-    let private baselineDigest = lazy (snd (Baseline.script ()))
-    let private catalogScript = lazy (Baseline.catalogScript ())
-    let private catalogDigest = lazy (Baseline.catalogDigest ())
-
-    let private witnessSchema = "claimcore_witness"
-
-    /// The frozen catalog and every catalog-derived privilege answer, verified only when the
-    /// catalog has changed since they last held (see `CatalogEpoch`).
-    let private requireStructure (role: string | null) (connection: NpgsqlConnection) =
-        use catalog = new NpgsqlCommand(catalogScript.Value, connection)
-
-        let liveCatalog =
-            match catalog.ExecuteScalar() with
-            | :? string as value -> value
-            | _ -> invalidOp "Witness catalog is unavailable."
-
-        if liveCatalog <> catalogDigest.Value then
-            invalidOp "Witness live catalog differs from the frozen manifest."
-
-        let admission =
-            match role with
-            | "claimcore_witness_writer" -> WitnessAdmission.script ()
-            | "claimcore_witness_auditor" -> WitnessAuditAdmission.script ()
-            | _ -> invalidOp "Witness role is not admitted."
-
-        use command = new NpgsqlCommand(admission.Structure, connection)
-
-        if command.ExecuteScalar() :?> bool |> not then
-            invalidOp "Witness database admission failed."
-
-    let checkAdmission (identity: Identity) (connection: NpgsqlConnection) =
-        use roleCommand = PreparedCommand.create connection "SELECT current_user"
-
-        let role: string | null =
-            match roleCommand.ExecuteScalar() with
-            | :? string as value -> value
-            | _ -> null
-
-        CatalogEpoch.admit "witness" witnessSchema connection (fun () ->
-            requireStructure role connection)
-
-        // The role is admitted here: the guarded verification above raised otherwise.
-        let admission =
-            match role with
-            | "claimcore_witness_writer" -> WitnessAdmission.script ()
-            | _ -> WitnessAuditAdmission.script ()
-
-        use command = new NpgsqlCommand(admission.Liveness, connection)
-
-        command.Parameters.AddWithValue("installation", NpgsqlDbType.Uuid, identity.InstallationId)
-        |> ignore
-
-        command.Parameters.AddWithValue("lineage", NpgsqlDbType.Uuid, identity.LineageId)
-        |> ignore
-
-        command.Parameters.AddWithValue("epoch", NpgsqlDbType.Bigint, identity.Epoch)
-        |> ignore
-
-        command.Parameters.AddWithValue("digest", NpgsqlDbType.Text, baselineDigest.Value)
-        |> ignore
-
-        command.Prepare()
-
-        if command.ExecuteScalar() :?> bool |> not then
-            invalidOp "Witness database admission failed."
-
-    let tryReadEntryHash writerConnection (identity: Identity) sequence =
-        if sequence < 0L then
-            invalidArg (nameof sequence) "Witness sequence is invalid."
-
-        if sequence = 0L then
-            Some(Array.zeroCreate<byte> 32)
-        else
-            use connection = PostgresTransport.connection writerConnection
-            connection.Open()
-            checkAdmission identity connection
-
+        task {
             use command =
                 new NpgsqlCommand(
-                    "SELECT entry_hash,epoch,lineage_id FROM claimcore_witness.journal "
-                    + "WHERE installation_id=@installation AND sequence=@sequence",
+                    "SELECT writer_generation,writer_capability_sha256,handoff_pending,activation_pending,"
+                    + "loss_retirement_pending,loss_retired "
+                    + "FROM claimcore_witness.installation WHERE singleton "
+                    + "AND installation_id=@installation AND lineage_id=@lineage AND epoch=@epoch "
+                    + "AND current_user='claimcore_witness_writer'",
                     connection
                 )
 
-            command.Parameters.AddWithValue(
-                "installation",
-                NpgsqlDbType.Uuid,
-                identity.InstallationId
-            )
-            |> ignore
+            WitnessDatabaseAdmission.bindIdentity command identity
 
-            command.Parameters.AddWithValue("sequence", NpgsqlDbType.Bigint, sequence)
-            |> ignore
+            use! reader = command.ExecuteReaderAsync(ct)
 
-            use reader = command.ExecuteReader()
+            let! found = reader.ReadAsync(ct)
 
-            if not (reader.Read()) then
-                None
-            else
-                let hash = reader.GetFieldValue<byte array>(0)
+            if not found then
+                invalidOp "Witness writer identity is unavailable."
+
+            let generation = reader.GetInt64(0)
+            let expected = reader.GetFieldValue<byte array>(1)
+            let pending = reader.GetBoolean(2)
+            let activationPending = reader.GetBoolean(3)
+            let lossPending = reader.GetBoolean(4)
+            let lossRetired = reader.GetBoolean(5)
+            let actual = SHA256.HashData(capability)
+
+            try
+                let! duplicated = reader.ReadAsync(ct)
 
                 if
-                    reader.GetInt64(1) <> identity.Epoch
-                    || reader.GetGuid(2) <> identity.LineageId
-                    || hash.Length <> 32
-                    || reader.Read()
+                    duplicated
+                    || generation < 1L
+                    || pending
+                    || activationPending
+                    || lossPending
+                    || lossRetired
+                    || expected.Length <> 32
+                    || not (
+                        CryptographicOperations.FixedTimeEquals(expected.AsSpan(), actual.AsSpan())
+                    )
                 then
-                    invalidOp "Witness historical entry identity diverged."
+                    invalidOp "Witness writer generation is unavailable."
+            finally
+                CryptographicOperations.ZeroMemory(actual)
 
-                Some hash
+            return generation
+        }
+
+    let tryReadEntryHash writerConnection (identity: Identity) sequence (ct: CancellationToken) =
+        task {
+            if sequence < 0L then
+                invalidArg (nameof sequence) "Witness sequence is invalid."
+
+            if sequence = 0L then
+                return Some(Array.zeroCreate<byte> 32)
+            else
+                use connection = PostgresTransport.connection writerConnection
+                do! connection.OpenAsync(ct)
+                do! WitnessDatabaseAdmission.checkAsync identity connection ct
+
+                use command =
+                    new NpgsqlCommand(
+                        "SELECT entry_hash,epoch,lineage_id FROM claimcore_witness.journal "
+                        + "WHERE installation_id=@installation AND sequence=@sequence",
+                        connection
+                    )
+
+                command.Parameters.AddWithValue(
+                    "installation",
+                    NpgsqlDbType.Uuid,
+                    identity.InstallationId
+                )
+                |> ignore
+
+                command.Parameters.AddWithValue("sequence", NpgsqlDbType.Bigint, sequence)
+                |> ignore
+
+                use! reader = command.ExecuteReaderAsync(ct)
+
+                let! found = reader.ReadAsync(ct)
+
+                if not found then
+                    return None
+                else
+                    let hash = reader.GetFieldValue<byte array>(0)
+
+                    let epoch = reader.GetInt64(1)
+                    let lineage = reader.GetGuid(2)
+                    let! duplicated = reader.ReadAsync(ct)
+
+                    if
+                        epoch <> identity.Epoch
+                        || lineage <> identity.LineageId
+                        || hash.Length <> 32
+                        || duplicated
+                    then
+                        invalidOp "Witness historical entry identity diverged."
+
+                    return Some hash
+        }
 
     let private readCommitted
         (identity: Identity)
@@ -243,56 +186,84 @@ module internal WitnessStoreRead =
             EncryptedPayload = encryptedPayload
         }
 
-    let readEvidence (identity: Identity) (connection: NpgsqlConnection) operation phase =
-        use command =
-            new NpgsqlCommand(
-                "SELECT j.sequence,j.entry_hash,j.payload_sha256,j.epoch,j.lineage_id,"
-                + "p.encrypted_payload,j.key_id,j.scope_kind,j.subject_case_id FROM claimcore_witness.journal j "
-                + "LEFT JOIN claimcore_witness.journal_payloads p ON p.installation_id=j.installation_id "
-                + "AND p.sequence=j.sequence AND p.subject_case_id IS NOT DISTINCT FROM j.subject_case_id "
-                + "WHERE j.installation_id=@installation "
-                + "AND j.operation_id=@operation AND j.phase=@phase",
-                connection
+    let readEvidence
+        (identity: Identity)
+        (connection: NpgsqlConnection)
+        operation
+        phase
+        (ct: CancellationToken)
+        =
+        task {
+            use command =
+                new NpgsqlCommand(
+                    "SELECT j.sequence,j.entry_hash,j.payload_sha256,j.epoch,j.lineage_id,"
+                    + "p.encrypted_payload,j.key_id,j.scope_kind,j.subject_case_id FROM claimcore_witness.journal j "
+                    + "LEFT JOIN claimcore_witness.journal_payloads p ON p.installation_id=j.installation_id "
+                    + "AND p.sequence=j.sequence AND p.subject_case_id IS NOT DISTINCT FROM j.subject_case_id "
+                    + "WHERE j.installation_id=@installation "
+                    + "AND j.operation_id=@operation AND j.phase=@phase",
+                    connection
+                )
+
+            command.Parameters.AddWithValue(
+                "installation",
+                NpgsqlDbType.Uuid,
+                identity.InstallationId
             )
+            |> ignore
 
-        command.Parameters.AddWithValue("installation", NpgsqlDbType.Uuid, identity.InstallationId)
-        |> ignore
+            command.Parameters.AddWithValue("operation", NpgsqlDbType.Uuid, operation)
+            |> ignore
 
-        command.Parameters.AddWithValue("operation", NpgsqlDbType.Uuid, operation)
-        |> ignore
+            command.Parameters.AddWithValue("phase", NpgsqlDbType.Text, Encoding.phase phase)
+            |> ignore
 
-        command.Parameters.AddWithValue("phase", NpgsqlDbType.Text, Encoding.phase phase)
-        |> ignore
+            use! reader = command.ExecuteReaderAsync(ct)
 
-        use reader = command.ExecuteReader()
+            let! found = reader.ReadAsync(ct)
 
-        if not (reader.Read()) then
-            None
-        else
-            let evidence = readCommitted identity operation phase reader
+            if not found then
+                return None
+            else
+                let evidence = readCommitted identity operation phase reader
 
-            if reader.Read() then
-                invalidOp "Duplicate witness row."
+                let! duplicated = reader.ReadAsync(ct)
 
-            Some evidence
+                if duplicated then
+                    invalidOp "Duplicate witness row."
 
-    let readTipEvidence (identity: Identity) (connection: NpgsqlConnection) =
-        use command =
-            new NpgsqlCommand(
-                "SELECT operation_id,phase FROM claimcore_witness.journal "
-                + "WHERE installation_id=@installation ORDER BY sequence DESC LIMIT 1",
-                connection
+                return Some evidence
+        }
+
+    let readTipEvidence
+        (identity: Identity)
+        (connection: NpgsqlConnection)
+        (ct: CancellationToken)
+        =
+        task {
+            use command =
+                new NpgsqlCommand(
+                    "SELECT operation_id,phase FROM claimcore_witness.journal "
+                    + "WHERE installation_id=@installation ORDER BY sequence DESC LIMIT 1",
+                    connection
+                )
+
+            command.Parameters.AddWithValue(
+                "installation",
+                NpgsqlDbType.Uuid,
+                identity.InstallationId
             )
+            |> ignore
 
-        command.Parameters.AddWithValue("installation", NpgsqlDbType.Uuid, identity.InstallationId)
-        |> ignore
+            use! reader = command.ExecuteReaderAsync(ct)
 
-        use reader = command.ExecuteReader()
+            let! found = reader.ReadAsync(ct)
 
-        if not (reader.Read()) then
-            None
-        else
-            let operation = reader.GetGuid(0)
-            let phase = Encoding.parsePhase (reader.GetString(1))
-            reader.Close()
-            readEvidence identity connection operation phase
+            if not found then
+                return None
+            else
+                let operation = reader.GetGuid(0)
+                let phase = Encoding.parsePhase (reader.GetString(1))
+                reader.Close()
+                return! readEvidence identity connection operation phase ct
+        }

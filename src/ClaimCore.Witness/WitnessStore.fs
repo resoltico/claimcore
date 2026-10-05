@@ -2,6 +2,7 @@ namespace ClaimCore.Witness
 
 open System
 open System.Security.Cryptography
+open System.Threading
 open System.Threading.Tasks
 open Npgsql
 open NpgsqlTypes
@@ -35,12 +36,13 @@ type Store private (writerConnection: string, identity: Identity, material: byte
                 capability |> Option.iter CryptographicOperations.ZeroMemory
                 reraise ())
 
+    let ownership = obj ()
     let mutable disposed = false
 
     let conn () =
         PostgresTransport.connection writerConnection
 
-    let checkAdmission = WitnessStoreRead.checkAdmission identity
+    let checkAdmission = WitnessDatabaseAdmission.checkAsync identity
     let readEvidence = WitnessStoreRead.readEvidence identity
 
     new(writerConnection: string, identity: Identity, writerCapability: byte array) =
@@ -50,13 +52,14 @@ type Store private (writerConnection: string, identity: Identity, material: byte
         new Store(auditConnection, identity, None)
 
     member internal _.WithWriterCapability<'value>(action: byte array -> Task<'value>) =
-        if disposed then
-            invalidOp "Witness writer capability is unavailable."
-
         let privateCopy =
-            capability
-            |> Option.map Array.copy
-            |> Option.defaultWith (fun () -> invalidOp "Auditor cannot use writer capability.")
+            lock ownership (fun () ->
+                if disposed then
+                    invalidOp "Witness writer capability is unavailable."
+
+                capability
+                |> Option.map Array.copy
+                |> Option.defaultWith (fun () -> invalidOp "Auditor cannot use writer capability."))
 
         task {
             try
@@ -67,150 +70,116 @@ type Store private (writerConnection: string, identity: Identity, material: byte
 
     /// The payload must already be an authenticated encryption envelope from the key custodian.
     /// This adapter stores opaque bytes and does not hold or derive an encryption key.
-    member _.Append
+    member this.Append
         (
             operation: Guid,
             subjectCaseId: Guid option,
             phase: Phase,
             keyId: Guid,
-            encryptedPayload: byte array
+            encryptedPayload: byte array,
+            ct: CancellationToken
         ) =
-        let active =
-            capability
-            |> Option.defaultWith (fun () -> invalidOp "Auditor cannot append witness events.")
+        this.WithWriterCapability(fun active ->
+            WitnessStoreAppend.append
+                writerConnection
+                identity
+                active
+                operation
+                subjectCaseId
+                phase
+                keyId
+                encryptedPayload
+                ct)
 
-        WitnessStoreAppend.append
-            writerConnection
-            identity
-            active
-            operation
-            subjectCaseId
-            phase
-            keyId
-            encryptedPayload
+    member _.TryReadEvidence(operation: Guid, phase: Phase, ct: CancellationToken) =
+        task {
+            use connection = conn ()
+            do! connection.OpenAsync(ct)
+            do! checkAdmission connection ct
+            return! readEvidence connection operation phase ct
+        }
 
-    member _.TryReadEvidence(operation: Guid, phase: Phase) =
-        use connection = conn ()
-        connection.Open()
-        checkAdmission connection
-        readEvidence connection operation phase
-
-    member internal _.TryReadLossRetirement(retirementId: Guid) =
-        WitnessStoreLossRetirement.read writerConnection identity retirementId
+    member internal _.TryReadLossRetirement(retirementId: Guid, ct: CancellationToken) =
+        WitnessStoreLossRetirement.read writerConnection identity retirementId ct
 
     interface IDisposable with
         member _.Dispose() =
-            if not disposed then
-                disposed <- true
-                capability |> Option.iter CryptographicOperations.ZeroMemory
+            let close =
+                lock ownership (fun () ->
+                    if disposed then
+                        false
+                    else
+                        disposed <- true
+                        capability |> Option.iter CryptographicOperations.ZeroMemory
+                        true)
+
+            if close then
                 readFenceSource |> Option.iter (fun source -> source.Dispose())
 
-    member this.Read(operation: Guid, phase: Phase) =
-        this.TryReadEvidence(operation, phase)
-        |> Option.map _.Ticket
-        |> Option.defaultWith (fun () -> invalidOp "Witness committed row is missing.")
+    member this.Read(operation: Guid, phase: Phase, ct: CancellationToken) =
+        task {
+            let! evidence = this.TryReadEvidence(operation, phase, ct)
 
-    member _.Admit() =
-        use connection = conn ()
-        connection.Open()
-        checkAdmission connection
+            return
+                evidence
+                |> Option.map _.Ticket
+                |> Option.defaultWith (fun () -> invalidOp "Witness committed row is missing.")
+        }
 
-        let active =
-            capability
-            |> Option.defaultWith (fun () -> invalidOp "Auditor cannot admit case work.")
+    member this.Admit(ct: CancellationToken) =
+        this.WithWriterCapability(fun active ->
+            task {
+                use connection = conn ()
+                do! connection.OpenAsync(ct)
+                do! checkAdmission connection ct
+                let! _ = WitnessStoreRead.checkWriterAdmission identity active connection ct
+                return ()
+            })
 
-        WitnessStoreRead.checkWriterAdmission identity active connection |> ignore
-
-    member _.AdmitReadOnly() =
-        use connection = conn ()
-        connection.Open()
-        checkAdmission connection
+    member _.AdmitReadOnly(ct: CancellationToken) =
+        task {
+            use connection = conn ()
+            do! connection.OpenAsync(ct)
+            do! checkAdmission connection ct
+        }
 
     /// Holds a witness row-share lock for the duration of a claimant-bearing read. A handoff
     /// requires the exclusive tip lock and therefore cannot pass this read's linearization point.
-    member _.AcquireReadFence(expectedGeneration: int64) =
-        if expectedGeneration < 1L || disposed then
+    member this.AcquireReadFence(expectedGeneration: int64, ct: CancellationToken) =
+        if expectedGeneration < 1L then
             invalidOp "Witness read fence is unavailable."
 
-        let active =
-            capability
-            |> Option.defaultWith (fun () -> invalidOp "Auditor cannot acquire a writer lease.")
+        this.WithWriterCapability(fun active ->
+            let source =
+                readFenceSource
+                |> Option.defaultWith (fun () -> invalidOp "Witness read fence is unavailable.")
 
-        let source =
-            readFenceSource
-            |> Option.defaultWith (fun () -> invalidOp "Witness read fence is unavailable.")
+            WitnessStoreReadLease.acquire source identity active expectedGeneration ct)
 
-        WitnessStoreReadLease.acquire source identity active expectedGeneration
+    member _.ReadKeyCheck(ct: CancellationToken) =
+        WitnessStoreKeyRequirements.readCheck writerConnection identity ct
 
-    member _.ReadKeyCheck() =
-        use connection = conn ()
-        connection.Open()
-        checkAdmission connection
+    member _.RequiredKeyIds(ct: CancellationToken) =
+        WitnessStoreKeyRequirements.requiredIds writerConnection identity ct
 
-        use command =
-            new NpgsqlCommand(
-                "SELECT active_key_id,key_check_envelope FROM claimcore_witness.installation "
-                + "WHERE singleton AND installation_id=@installation AND lineage_id=@lineage",
-                connection
-            )
+    member _.Snapshot(ct: CancellationToken) =
+        WitnessStoreSnapshot.read writerConnection identity ct
 
-        command.Parameters.AddWithValue("installation", NpgsqlDbType.Uuid, identity.InstallationId)
-        |> ignore
-
-        command.Parameters.AddWithValue("lineage", NpgsqlDbType.Uuid, identity.LineageId)
-        |> ignore
-
-        use reader = command.ExecuteReader()
-
-        if not (reader.Read()) then
-            invalidOp "Witness key marker is missing."
-
-        let result = reader.GetGuid(0), reader.GetFieldValue<byte array>(1)
-
-        if reader.Read() then
-            invalidOp "Witness key marker is duplicated."
-
-        result
-
-    member _.RequiredKeyIds() =
-        use connection = conn ()
-        connection.Open()
-        checkAdmission connection
-
-        use command =
-            new NpgsqlCommand(
-                "SELECT DISTINCT key_id FROM claimcore_witness.journal "
-                + "WHERE installation_id=@installation LIMIT 65",
-                connection
-            )
-
-        command.Parameters.AddWithValue("installation", NpgsqlDbType.Uuid, identity.InstallationId)
-        |> ignore
-
-        use reader = command.ExecuteReader()
-        let ids = ResizeArray<Guid>()
-
-        while reader.Read() do
-            ids.Add(reader.GetGuid(0))
-
-        if ids.Count > 64 then
-            invalidOp "Witness key rotation limit is exceeded."
-
-        ids |> Seq.toList
-
-    member _.Snapshot() =
-        WitnessStoreSnapshot.read writerConnection identity
-
-    member internal _.ReadDataUseActivation() =
-        WitnessDataUseActivation.read writerConnection identity
+    member internal _.ReadDataUseActivation(ct: CancellationToken) =
+        WitnessDataUseActivation.read writerConnection identity ct
 
     /// Historical checkpoint lookup is deliberately not a full journal-chain audit.
-    member _.TryReadEntryHash(sequence: int64) =
-        WitnessStoreRead.tryReadEntryHash writerConnection identity sequence
+    member _.TryReadEntryHash(sequence: int64, ct: CancellationToken) =
+        WitnessStoreRead.tryReadEntryHash writerConnection identity sequence ct
 
     member _.ReadPage
-        (afterSequence: int64, expectedPreviousHash: byte array, cutoffSequence: int64, limit: int)
-        : JournalPage =
+        (
+            afterSequence: int64,
+            expectedPreviousHash: byte array,
+            cutoffSequence: int64,
+            limit: int,
+            ct: CancellationToken
+        ) : Task<JournalPage> =
         WitnessStorePayloadPage.read
             writerConnection
             identity
@@ -218,13 +187,19 @@ type Store private (writerConnection: string, identity: Identity, material: byte
             expectedPreviousHash
             cutoffSequence
             limit
+            ct
 
     /// The global immutable chain is verified even when authorized CASE ciphertext is absent.
     /// PayloadPresent is evidence state, not a deletion authorization; auditors must prove the
     /// exact witnessed prune receipt before tolerating false.
     member _.ReadMetadataPage
-        (afterSequence: int64, expectedPreviousHash: byte array, cutoffSequence: int64, limit: int)
-        : MetadataPage =
+        (
+            afterSequence: int64,
+            expectedPreviousHash: byte array,
+            cutoffSequence: int64,
+            limit: int,
+            ct: CancellationToken
+        ) : Task<MetadataPage> =
         WitnessStoreMetadata.readPage
             writerConnection
             identity
@@ -232,43 +207,63 @@ type Store private (writerConnection: string, identity: Identity, material: byte
             expectedPreviousHash
             cutoffSequence
             limit
+            ct
 
     /// Local exact ticket/hash read; full-audit callers must still verify the whole chain.
-    member _.TryReadMetadataAtSequence(sequence: int64) =
-        WitnessStoreMetadata.readAt writerConnection identity sequence
+    member _.TryReadMetadataAtSequence(sequence: int64, ct: CancellationToken) =
+        WitnessStoreMetadata.readAt writerConnection identity sequence ct
 
-    member _.TryReadMetadataOperation(operation: Guid, phase: Phase) =
-        WitnessStoreMetadata.readOperation writerConnection identity operation phase
+    member _.TryReadMetadataOperation(operation: Guid, phase: Phase, ct: CancellationToken) =
+        WitnessStoreMetadata.readOperation writerConnection identity operation phase ct
 
-    member internal _.TryReadHandoff(handoffId: Guid) =
-        WitnessStoreHandoff.read writerConnection identity handoffId
+    member internal _.TryReadHandoff(handoffId: Guid, ct: CancellationToken) =
+        WitnessStoreHandoff.read writerConnection identity handoffId ct
 
     /// Emits tentative bounded pages of case INTENT operations. The caller must not commit
     /// dependent mutations until the complete global chain and cutoff have been verified.
     member _.ReadSubjectOperations
-        (subjectCaseId: Guid, cutoffSequence: int64, emitPage: SubjectOperation list -> unit)
-        =
+        (
+            subjectCaseId: Guid,
+            cutoffSequence: int64,
+            emitPage: SubjectOperation list -> Task<unit>,
+            ct: CancellationToken
+        ) =
         WitnessSubjectOperations.scan
             writerConnection
             identity
             (Some subjectCaseId)
             cutoffSequence
             emitPage
+            ct
 
     /// Verifies every global metadata link through the requested sequence, including rows whose
     /// ciphertext has been authorized for pruning. A missing/forked row fails rather than returning None.
-    member this.TryReadVerifiedEntryHash(sequence: int64) =
-        if sequence < 0L then
-            invalidArg (nameof sequence) "Witness sequence is invalid."
+    member this.TryReadVerifiedEntryHash(sequence: int64, ct: CancellationToken) =
+        task {
+            if sequence < 0L then
+                invalidArg (nameof sequence) "Witness sequence is invalid."
 
-        if sequence > (this.Snapshot()).TipSequence then
-            None
-        else
-            WitnessSubjectOperations.scan writerConnection identity None sequence ignore
-            |> fun result -> Some result.CutoffHash
+            let! tip = this.Snapshot(ct)
 
-    member _.TryReadTipEvidence() =
-        use connection = conn ()
-        connection.Open()
-        checkAdmission connection
-        WitnessStoreRead.readTipEvidence identity connection
+            if sequence > tip.TipSequence then
+                return None
+            else
+                let! result =
+                    WitnessSubjectOperations.scan
+                        writerConnection
+                        identity
+                        None
+                        sequence
+                        (fun _ -> Task.FromResult())
+                        ct
+
+                return Some result.CutoffHash
+        }
+
+    member _.TryReadTipEvidence(ct: CancellationToken) =
+        task {
+            use connection = conn ()
+            do! connection.OpenAsync(ct)
+            do! checkAdmission connection ct
+            return! WitnessStoreRead.readTipEvidence identity connection ct
+        }

@@ -84,6 +84,7 @@ module internal ActorManagementGrant =
         actorId
         grant
         active
+        ct
         =
         task {
             let action: ActorAuthorityAction =
@@ -99,14 +100,20 @@ module internal ActorManagementGrant =
                 }
 
             let! outcome =
-                ActorGrantWrite.run connection transaction witness action (fun () ->
-                    ActorGrantWrite.setGrant
-                        connection
-                        transaction
-                        actorId
-                        grant
-                        active
-                        action.Revision)
+                ActorGrantWrite.run
+                    connection
+                    transaction
+                    witness
+                    action
+                    (fun () ->
+                        ActorGrantWrite.setGrant
+                            connection
+                            transaction
+                            actorId
+                            grant
+                            active
+                            action.Revision)
+                    ct
 
             return
                 match outcome with
@@ -123,6 +130,7 @@ module internal ActorManagementGrant =
         role
         scope
         active
+        ct
         connection
         transaction
         revision
@@ -137,7 +145,7 @@ module internal ActorManagementGrant =
             | _, None -> return ActorManagementOutcome.ResourceUnavailable
             | Some actorId, Some grantScope ->
                 let grant = { Role = role; Scope = grantScope }
-                let! seen = existingEvent connection transaction witness eventId
+                let! seen = existingEvent connection transaction witness eventId ct
 
                 match seen with
                 | Some action when observed eventId actorId approverId role grantScope active action ->
@@ -160,4 +168,5 @@ module internal ActorManagementGrant =
                                 actorId
                                 grant
                                 active
+                                ct
         }

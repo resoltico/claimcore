@@ -1,5 +1,6 @@
 module ClaimCore.IntegrationTests.StorageBoundaryTests
 
+open System.Threading
 open System
 open System.IO
 open System.Transactions
@@ -162,26 +163,6 @@ let private scalarTests =
             testCase "non-finite stored money is refused" (fun () -> rejectDriftedAmount "NaN")
         ]
 
-let private assertRemoteOwnerTransport (builder: NpgsqlConnectionStringBuilder) =
-    builder.Options <- ""
-    builder.Host <- "database.example.invalid"
-
-    for mode in [ SslMode.Disable; SslMode.Prefer; SslMode.Require; SslMode.VerifyCA ] do
-        builder.SslMode <- mode
-
-        SchemaBaseline.verify builder.ConnectionString
-        |> refusedAdministration AdministrationFailure.OwnerConnectionInvalid
-
-    builder.SslMode <- SslMode.VerifyFull
-    let verified = OwnerConnection.builder builder.ConnectionString
-
-    Expect.equal
-        verified.GssEncryptionMode
-        GssEncryptionMode.Disable
-        "A remote owner connection must use authenticated TLS rather than GSS fallback"
-
-    Expect.isTrue verified.CheckCertificateRevocation "Remote owner TLS checks revocation"
-
 let private environmentTests =
     testList
         "database environment"
@@ -196,7 +177,7 @@ let private environmentTests =
                         CommandExecution.executeAsync service clock request |> await |> accepted
 
                     let current =
-                        service.Get(request.CaseReference)
+                        service.Get(request.CaseReference, CancellationToken.None)
                         |> await
                         |> accepted
                         |> Option.defaultWith (fun () -> failtest "Expected the stored case.")
@@ -224,7 +205,7 @@ let private environmentTests =
                     syntheticSuppressionCheck
                 |> refusedAdministration AdministrationFailure.OwnerConnectionInvalid
 
-                assertRemoteOwnerTransport builder)
+                FreshBaselineSupport.assertRemoteOwnerTransport builder)
         ]
 
 let private transactionTests =
@@ -249,7 +230,9 @@ let private transactionTests =
                 use database = store ()
 
                 let current =
-                    (database :> IClaimStore).Get(request.CaseReference) |> await |> accepted
+                    (database :> IClaimStore).Get(request.CaseReference, CancellationToken.None)
+                    |> await
+                    |> accepted
 
                 Expect.isSome current "Commit ownership stays inside core/store boundary")
             testCase "runtime rejects installed script hash mismatch" (fun () ->

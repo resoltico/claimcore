@@ -1,5 +1,6 @@
 module internal ClaimCore.IntegrationTests.WriterHandoffProtocolPreparation
 
+open System.Threading
 open System
 open System.Security.Cryptography
 open Expecto
@@ -18,7 +19,8 @@ open ClaimCore.IntegrationTests.WriterHandoffSyntheticVerifier
 open ClaimCore.IntegrationTests.FixturePrivateFiles
 
 let private approvePair (runtime: Runtime) (witness: WitnessProtocol) first second keyId newHash =
-    let reviewed = witness.Snapshot()
+    let reviewed = (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
+
     let handoffId = Guid.NewGuid()
     let template = request keyId reviewed
 
@@ -45,7 +47,8 @@ let private document
     (secondApproval: WriterHandoffApprovalRequest)
     newHash
     =
-    let current = witness.Snapshot()
+    let current = (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
+
     let report = SHA256.HashData(Array.create 32 0x74uy)
     let validUntil = DateTimeOffset.UtcNow.AddMinutes(10.)
 
@@ -130,7 +133,10 @@ let private context
     }
 
 let private intentTicket (witness: WitnessProtocol) handoffId =
-    witness.EvidenceStore.TryReadEvidence(handoffId, Intent)
+    (witness.EvidenceStore
+        .TryReadEvidence(handoffId, Intent, CancellationToken.None)
+        .GetAwaiter()
+        .GetResult())
     |> Option.map _.Ticket
     |> Option.defaultWith (fun () -> failtest "Confirmed handoff INTENT is absent.")
 
@@ -175,7 +181,11 @@ let prepareHandoff
     let ticket = intentTicket witness handoffId
 
     Expect.equal ticket.Sequence (current.TipSequence + 1L) "PREPARE reserves one tip."
-    Expect.isTrue (witness.Snapshot().HandoffPending) "PREPARE fences every writer."
+
+    Expect.isTrue
+        ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).HandoffPending)
+        "PREPARE fences every writer."
+
     assertPending owner app writer witness runtime first
 
     context

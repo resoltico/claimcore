@@ -40,6 +40,7 @@ module internal PreparationData =
             RecoveryStoreFailure.TechnicalMutationUnknown
         else
             match error with
+            | :? WitnessPending -> RecoveryStoreFailure.TechnicalMutationUnknown
             | :? OperationCanceledException -> RecoveryStoreFailure.CancelledBeforeCommit
             | _ -> fail error
 

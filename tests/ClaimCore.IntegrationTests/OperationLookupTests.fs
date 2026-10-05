@@ -1,5 +1,6 @@
 module ClaimCore.IntegrationTests.OperationLookupTests
 
+open System.Threading
 open Expecto
 open ClaimCore.Application
 open ClaimCore.Domain
@@ -20,7 +21,10 @@ let tests =
                 |> accepted
                 |> ignore
 
-                let result = service.Operation(request.OperationId) |> await |> accepted
+                let result =
+                    service.Operation(request.OperationId, CancellationToken.None)
+                    |> await
+                    |> accepted
 
                 let reference =
                     result
