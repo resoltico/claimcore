@@ -51,8 +51,7 @@ let private revokeOwner owner app writer (witness: WitnessProtocol) =
 
     use key = key
 
-    let action =
-        request keyId ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()))
+    let action = request keyId ((witness.Snapshot(CancellationToken.None) |> await))
 
     match
         (runtime.ForActor first).ApproveWriterHandoff(action, CancellationToken.None)
@@ -75,8 +74,7 @@ let private revokeOwner owner app writer (witness: WitnessProtocol) =
     |> await
     |> appliedManagement revokeId
 
-    let before =
-        (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence
+    let before = (witness.Snapshot(CancellationToken.None) |> await).TipSequence
 
     for actor in [ first; second ] do
         Expect.equal
@@ -86,7 +84,7 @@ let private revokeOwner owner app writer (witness: WitnessProtocol) =
             "Revoked owner or changed actor cannot replay another owner’s approval."
 
     Expect.equal
-        ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
+        ((witness.Snapshot(CancellationToken.None) |> await).TipSequence)
         before
         "Denied replay appends no witness event."
 

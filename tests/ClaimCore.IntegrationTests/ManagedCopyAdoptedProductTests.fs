@@ -19,7 +19,7 @@ let internal origin owner (witness: WitnessProtocol) copyId =
     connection.Open()
     use transaction = connection.BeginTransaction(IsolationLevel.ReadCommitted)
 
-    let tip = (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
+    let tip = (witness.Snapshot(CancellationToken.None) |> await)
 
     let result =
         ManagedCopyAdoptionEvidence.verifyOrigin
@@ -143,6 +143,27 @@ let private corruptHistory owner witness commitments eventId =
         (fun () -> audit owner witness commitments)
         "Full audit rejects a changed post-adoption history link"
 
+let private rejectPrematureDeletion
+    owner
+    (witness: WitnessProtocol)
+    fixture
+    (premature: AdoptedCopyTransition)
+    =
+    Expect.equal
+        (apply owner witness fixture premature)
+        AuthorityWriteOutcome.Refused
+        "Retention still active keeps adopted product deletion pending"
+
+    Expect.isNone
+        ((witness.EvidenceStore.TryReadEvidence(
+            premature.EventId,
+            ClaimCore.Witness.Intent,
+            CancellationToken.None
+          )
+          |> await))
+        "Early deletion did not reserve witness authority"
+
+
 let private product
     owner
     _
@@ -164,17 +185,7 @@ let private product
     let unknown = draft verified tip "UNKNOWN" "UNKNOWN"
     let premature = draft verified tip "DELETE_REQUEST" "DELETE_PENDING"
 
-    Expect.equal
-        (apply owner witness fixture premature)
-        AuthorityWriteOutcome.Refused
-        "Retention still active keeps adopted product deletion pending"
-
-    Expect.isNone
-        ((witness.EvidenceStore
-            .TryReadEvidence(premature.EventId, ClaimCore.Witness.Intent, CancellationToken.None)
-            .GetAwaiter()
-            .GetResult()))
-        "Early deletion did not reserve witness authority"
+    rejectPrematureDeletion owner witness fixture premature
 
     let forged = ManagedCopyAdoptedTransitionAttestation.encode unknown
     use connection = new NpgsqlConnection(owner)

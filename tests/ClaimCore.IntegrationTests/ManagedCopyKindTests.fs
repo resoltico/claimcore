@@ -14,6 +14,24 @@ open ClaimCore.IntegrationTests.ManagedCopyAttestationFixture
 open ClaimCore.IntegrationTests.ManagedCopyIngestTests
 open ClaimCore.IntegrationTests.ManagedCopySignerTestSupport
 
+let private verifyWitnessScope (witness: WitnessProtocol) eventId source scoped =
+    for phase in [ Intent; SettledAuthority ] do
+        let evidence =
+            (witness.EvidenceStore.TryReadEvidence(eventId, phase, CancellationToken.None)
+             |> await)
+            |> Option.defaultWith (fun () -> failtest "Signed copy witness phase is absent.")
+
+        Expect.equal
+            evidence.Ticket.SubjectCaseId
+            source
+            "Witness phase inherits exact copy subject"
+
+        Expect.equal
+            evidence.Ticket.ScopeKind
+            (if scoped then Case else Installation)
+            "Case copies have case-scoped witness ciphertext"
+
+
 let private verifyKind
     owner
     (connection: NpgsqlConnection)
@@ -31,7 +49,7 @@ let private verifyKind
     let canonical =
         registerVariant
             owner
-            ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()))
+            ((witness.Snapshot(CancellationToken.None) |> await))
             keyId
             eventId
             copyId
@@ -47,7 +65,7 @@ let private verifyKind
     let wrong =
         registerVariant
             owner
-            ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()))
+            ((witness.Snapshot(CancellationToken.None) |> await))
             keyId
             (Guid.NewGuid())
             (Guid.NewGuid())
@@ -61,23 +79,7 @@ let private verifyKind
     |> await
     |> acceptedCopy eventId
 
-    for phase in [ Intent; SettledAuthority ] do
-        let evidence =
-            (witness.EvidenceStore
-                .TryReadEvidence(eventId, phase, CancellationToken.None)
-                .GetAwaiter()
-                .GetResult())
-            |> Option.defaultWith (fun () -> failtest "Signed copy witness phase is absent.")
-
-        Expect.equal
-            evidence.Ticket.SubjectCaseId
-            source
-            "Witness phase inherits exact copy subject"
-
-        Expect.equal
-            evidence.Ticket.ScopeKind
-            (if scoped then Case else Installation)
-            "Case copies have case-scoped witness ciphertext"
+    verifyWitnessScope witness eventId source scoped
 
     Expect.isTrue
         (ManagedCopyOwnerInspection.inspect connection witness copyId |> await)

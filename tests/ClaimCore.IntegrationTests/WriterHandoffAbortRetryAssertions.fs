@@ -44,13 +44,13 @@ let private assertChangedA1
     | _ -> ()
 
     Expect.equal
-        ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
+        ((witness.Snapshot(CancellationToken.None) |> await).TipSequence)
         afterA1
         "A1 retries append no ticket."
 
-let assertA1Retry
+let private requireA1Readback
     (context: PreparedSyntheticHandoff)
-    (primary: NpgsqlConnection)
+    primary
     source
     (witness: WitnessProtocol)
     (value: WriterHandoffAbort)
@@ -58,24 +58,8 @@ let assertA1Retry
     signatureOne
     signatureTwo
     oldCapability
+    afterA1
     =
-    let afterA1 =
-        (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence
-
-    let exactTicket =
-        WriterHandoffWitnessAbortCommands.abort
-            context.OwnerWitness
-            witness
-            value
-            canonical
-            signatureOne
-            signatureTwo
-            oldCapability
-            CancellationToken.None
-        |> await
-
-    Expect.equal exactTicket.Sequence afterA1 "Lost A1 response reuses exact ciphertext."
-
     match
         WriterHandoffOwnerAbortStage.start
             primary
@@ -94,6 +78,46 @@ let assertA1Retry
         ->
         ()
     | _ -> failtest "Exact A1 readback did not reconcile."
+
+
+let assertA1Retry
+    (context: PreparedSyntheticHandoff)
+    (primary: NpgsqlConnection)
+    source
+    (witness: WitnessProtocol)
+    (value: WriterHandoffAbort)
+    canonical
+    signatureOne
+    signatureTwo
+    oldCapability
+    =
+    let afterA1 = (witness.Snapshot(CancellationToken.None) |> await).TipSequence
+
+    let exactTicket =
+        WriterHandoffWitnessAbortCommands.abort
+            context.OwnerWitness
+            witness
+            value
+            canonical
+            signatureOne
+            signatureTwo
+            oldCapability
+            CancellationToken.None
+        |> await
+
+    Expect.equal exactTicket.Sequence afterA1 "Lost A1 response reuses exact ciphertext."
+
+    requireA1Readback
+        context
+        primary
+        source
+        witness
+        value
+        canonical
+        signatureOne
+        signatureTwo
+        oldCapability
+        afterA1
 
     assertChangedA1
         context
@@ -133,5 +157,5 @@ let assertMissingA2
     | _ -> ()
 
     Expect.isTrue
-        ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).HandoffPending)
+        ((witness.Snapshot(CancellationToken.None) |> await).HandoffPending)
         "Missing A2 remains quarantined."

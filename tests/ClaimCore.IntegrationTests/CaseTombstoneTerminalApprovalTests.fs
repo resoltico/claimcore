@@ -160,6 +160,13 @@ let private revokedGrant =
 
             fullAudit fixture))
 
+let private terminalAtReview draft (current: TombstoneReview) =
+    TombstoneTerminalProposal.ConfirmManagedPayloadAbsence
+        { TombstoneTerminalProposal.copy draft with
+            ExpectedAuthorityRevision = current.AuthorityRevision
+            ExpectedAuthorityHash = current.AuthorityHash
+        }
+
 let private holdsBoundApproval =
     testCase
         "[CC-ERASE-001] active hold blocks new terminal approval without rewriting old one"
@@ -180,12 +187,7 @@ let private holdsBoundApproval =
 
                 let held = reviewed runtime first fixture.CaseId
 
-                let heldDraft =
-                    TombstoneTerminalProposal.ConfirmManagedPayloadAbsence
-                        { TombstoneTerminalProposal.copy draft with
-                            ExpectedAuthorityRevision = held.AuthorityRevision
-                            ExpectedAuthorityHash = held.AuthorityHash
-                        }
+                let heldDraft = terminalAtReview draft held
 
                 let deniedId = Guid.NewGuid()
 
@@ -195,10 +197,12 @@ let private holdsBoundApproval =
                     "Active hold prevents a new terminal approval"
 
                 Expect.isNone
-                    ((fixture.Witness.EvidenceStore
-                        .TryReadEvidence(deniedId, Intent, CancellationToken.None)
-                        .GetAwaiter()
-                        .GetResult()))
+                    ((fixture.Witness.EvidenceStore.TryReadEvidence(
+                        deniedId,
+                        Intent,
+                        CancellationToken.None
+                      )
+                      |> await))
                     "Hold refusal wrote no witness intent"
 
                 changeHold
@@ -209,12 +213,7 @@ let private holdsBoundApproval =
 
                 let current = reviewed runtime first fixture.CaseId
 
-                let revised =
-                    TombstoneTerminalProposal.ConfirmManagedPayloadAbsence
-                        { TombstoneTerminalProposal.copy draft with
-                            ExpectedAuthorityRevision = current.AuthorityRevision
-                            ExpectedAuthorityHash = current.AuthorityHash
-                        }
+                let revised = terminalAtReview draft current
 
                 let acceptedId = Guid.NewGuid()
                 approve runtime first revised acceptedId expiry |> applied acceptedId

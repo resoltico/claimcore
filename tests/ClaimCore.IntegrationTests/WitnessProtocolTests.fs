@@ -228,7 +228,15 @@ let private beginOrphanIntent
             Phase = AttemptActorPhase.NormalSubmit
         }
 
-    WitnessAcceptedProtocol.beginAccepted witness prepared context caseId attribution claim
+    WitnessAcceptedProtocol.beginAccepted
+        witness
+        prepared
+        context
+        caseId
+        attribution
+        claim
+        CancellationToken.None
+    |> await
     |> ignore
 
     actor

@@ -39,6 +39,33 @@ let tests =
                 (fun () -> KeyRingCodec.parse (Encoding.UTF8.GetBytes(duplicate)) |> ignore)
                 "Duplicate root properties cannot select ambiguous authority")
 
+let private assertRotationEvidence
+    (store: Store)
+    (custody: IKeyCustody)
+    (identity: Identity)
+    rotation
+    newId
+    =
+    let evidence =
+        (store.TryReadEvidence(rotation, KeyRotated, cancellation) |> await)
+        |> Option.defaultWith (fun () -> failtest "Rotation evidence must exist.")
+
+    KeyCheck.verifyRotation
+        custody
+        identity.InstallationId
+        identity.LineageId
+        identity.Epoch
+        rotation
+        keyId
+        newId
+        evidence.EncryptedPayload
+
+    Expect.equal
+        (fst ((store.ReadKeyCheck(cancellation) |> await)))
+        newId
+        "New key marker is active"
+
+
 let rotation =
     testCase "[CC-WIT-001] owner rotation advances journal and fences old key" (fun _ ->
         fixture (fun owner writer identity capability ->
@@ -77,24 +104,7 @@ let rotation =
 
             Expect.equal ticket.Sequence (first.Sequence + 1L) "Rotation is journaled"
 
-            let evidence =
-                (store.TryReadEvidence(rotation, KeyRotated, cancellation) |> await)
-                |> Option.defaultWith (fun () -> failtest "Rotation evidence must exist.")
-
-            KeyCheck.verifyRotation
-                custody
-                identity.InstallationId
-                identity.LineageId
-                identity.Epoch
-                rotation
-                keyId
-                newId
-                evidence.EncryptedPayload
-
-            Expect.equal
-                (fst ((store.ReadKeyCheck(cancellation) |> await)))
-                newId
-                "New key marker is active"
+            assertRotationEvidence store custody identity rotation newId
 
             Expect.throws
                 (fun () ->

@@ -7,6 +7,43 @@ open ClaimCore.Witness
 open ClaimCore.WitnessTests.WitnessTestSupport
 
 
+let private seedSubjectJournal (store: Store) subject unrelated =
+    let first =
+        (store.Append(Guid.NewGuid(), Some subject, Intent, keyId, payload 1uy, cancellation)
+         |> await)
+
+    for i in 2..35 do
+        (store.Append(Guid.NewGuid(), Some subject, Intent, keyId, payload (byte i), cancellation)
+         |> await)
+        |> ignore
+
+    (store.Append(Guid.NewGuid(), None, Intent, keyId, payload 36uy, cancellation)
+     |> await)
+    |> ignore
+
+    (store.Append(Guid.NewGuid(), Some unrelated, Intent, keyId, payload 37uy, cancellation)
+     |> await)
+    |> ignore
+
+    let tip = (store.Snapshot(cancellation) |> await)
+
+    first, tip
+
+let private requirePrunedMetadata (store: Store) (tip: Snapshot) (first: Ticket) =
+    let metadata =
+        (store.ReadMetadataPage(0L, Array.zeroCreate<byte> 32, tip.TipSequence, 32, cancellation)
+         |> await)
+
+    Expect.isFalse
+        metadata.Items.Head.PayloadPresent
+        "Metadata-only global scan exposes absent ciphertext without dropping the row"
+
+    Expect.equal
+        ((store.TryReadVerifiedEntryHash(first.Sequence, cancellation) |> await))
+        (Some first.EntryHash)
+        "Pruned ciphertext does not prevent exact historical metadata proof"
+
+
 let private witnessCase17 =
     testCase "[CC-WIT-001] subject scan retains orphan intents after payload pruning" (fun _ ->
         fixture (fun owner writer identity capability ->
@@ -14,45 +51,7 @@ let private witnessCase17 =
             let subject = Guid.NewGuid()
             let unrelated = Guid.NewGuid()
 
-            let first =
-                (store.Append(
-                    Guid.NewGuid(),
-                    Some subject,
-                    Intent,
-                    keyId,
-                    payload 1uy,
-                    cancellation
-                 )
-                 |> await)
-
-            for i in 2..35 do
-                (store.Append(
-                    Guid.NewGuid(),
-                    Some subject,
-                    Intent,
-                    keyId,
-                    payload (byte i),
-                    cancellation
-                 )
-                 |> await)
-                |> ignore
-
-            (store.Append(Guid.NewGuid(), None, Intent, keyId, payload 36uy, cancellation)
-             |> await)
-            |> ignore
-
-            (store.Append(
-                Guid.NewGuid(),
-                Some unrelated,
-                Intent,
-                keyId,
-                payload 37uy,
-                cancellation
-             )
-             |> await)
-            |> ignore
-
-            let tip = (store.Snapshot(cancellation) |> await)
+            let first, tip = seedSubjectJournal store subject unrelated
 
             run
                 owner
@@ -69,24 +68,7 @@ let private witnessCase17 =
                  )
                  |> await)
 
-            let metadata =
-                (store.ReadMetadataPage(
-                    0L,
-                    Array.zeroCreate<byte> 32,
-                    tip.TipSequence,
-                    32,
-                    cancellation
-                 )
-                 |> await)
-
-            Expect.isFalse
-                metadata.Items.Head.PayloadPresent
-                "Metadata-only global scan exposes absent ciphertext without dropping the row"
-
-            Expect.equal
-                ((store.TryReadVerifiedEntryHash(first.Sequence, cancellation) |> await))
-                (Some first.EntryHash)
-                "Pruned ciphertext does not prevent exact historical metadata proof"
+            requirePrunedMetadata store tip first
 
             Expect.equal result.CutoffSequence tip.TipSequence "Exact cutoff was scanned"
             Expect.equal result.CutoffHash tip.TipHash "Global hash reaches observed tip"
@@ -116,6 +98,21 @@ let private witnessCase17 =
 
             Expect.equal first.ScopeKind Case "Intent is explicitly case-scoped"
             Expect.equal first.SubjectCaseId (Some subject) "Ticket binds exact case"))
+
+let private rejectForgedMetadata (store: Store) (tip: Snapshot) =
+    let firstPage =
+        (store.ReadMetadataPage(0L, Array.zeroCreate<byte> 32, tip.TipSequence, 32, cancellation)
+         |> await)
+
+    let last = firstPage.Items |> List.last
+
+    Expect.throws
+        (fun () ->
+            (store.ReadMetadataPage(32L, last.Ticket.EntryHash, tip.TipSequence, 32, cancellation)
+             |> await)
+            |> ignore)
+        "Metadata page rejects a changed middle CASE link"
+
 
 let private witnessCase18 =
     testCase "[CC-WIT-001] subject scan rejects intervening tamper and scope weakening" (fun _ ->
@@ -161,30 +158,7 @@ let private witnessCase18 =
                     |> ignore)
                 "Historical hash lookup cannot skip a forged middle row"
 
-            let firstPage =
-                (store.ReadMetadataPage(
-                    0L,
-                    Array.zeroCreate<byte> 32,
-                    tip.TipSequence,
-                    32,
-                    cancellation
-                 )
-                 |> await)
-
-            let last = firstPage.Items |> List.last
-
-            Expect.throws
-                (fun () ->
-                    (store.ReadMetadataPage(
-                        32L,
-                        last.Ticket.EntryHash,
-                        tip.TipSequence,
-                        32,
-                        cancellation
-                     )
-                     |> await)
-                    |> ignore)
-                "Metadata page rejects a changed middle CASE link"
+            rejectForgedMetadata store tip
 
             Expect.equal tentative 32 "Earlier emitted pages were tentative, not clearance"))
 

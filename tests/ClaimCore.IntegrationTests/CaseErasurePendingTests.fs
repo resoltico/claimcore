@@ -119,6 +119,17 @@ let private divergentRequestRefuses =
                 PrivacyPhase.ErasureRequested
                 "No transition can follow forged evidence"))
 
+let private assertCaseApprovalScope (witness: WitnessProtocol) approvalId =
+    for phase in [ Intent; SettledAuthority ] do
+        let ticket =
+            (witness.EvidenceStore.TryReadEvidence(approvalId, phase, CancellationToken.None)
+             |> await)
+            |> Option.defaultWith (fun () -> failtest "Purge approval witness missing")
+            |> _.Ticket
+
+        Expect.equal ticket.ScopeKind Case "Approval remains case-scoped"
+
+
 let private purgeApprovalsDoNotDelete =
     testCase
         "[CC-ERASE-001] two witnessed erasure approvals cannot impersonate owner purge"
@@ -164,17 +175,7 @@ let private purgeApprovalsDoNotDelete =
                     | LifecycleWriteOutcome.Applied(id, _, _) when id = approvalId -> ()
                     | _ -> failtest "Purge approval failed."
 
-                    for phase in [ Intent; SettledAuthority ] do
-                        let ticket =
-                            (witness.EvidenceStore
-                                .TryReadEvidence(approvalId, phase, CancellationToken.None)
-                                .GetAwaiter()
-                                .GetResult())
-                            |> Option.defaultWith (fun () ->
-                                failtest "Purge approval witness missing")
-                            |> _.Ticket
-
-                        Expect.equal ticket.ScopeKind Case "Approval remains case-scoped"
+                    assertCaseApprovalScope witness approvalId
 
                 Expect.equal
                     (review proposerActor input.CaseReference).PrivacyPhase
@@ -202,7 +203,7 @@ let private witnessIntentDenials =
             use transaction = connection.BeginTransaction()
             let commitments = FixturePrivateFiles.syntheticCommitments witness.Identity
 
-            let cutoff = (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
+            let cutoff = (witness.Snapshot(CancellationToken.None) |> await)
 
             let seal =
                 CaseErasureWitnessDenials.scan
@@ -238,15 +239,13 @@ let private orphanIntentRefuses =
             let id = caseId owner input.CaseReference
             let before = denialCount owner id
 
-            (witness
-                .BeginAuthority(
-                    Guid.NewGuid(),
-                    [| 0x43uy; 0x43uy; 0x55uy |],
-                    Some id,
-                    CancellationToken.None
-                )
-                .GetAwaiter()
-                .GetResult())
+            (witness.BeginAuthority(
+                Guid.NewGuid(),
+                [| 0x43uy; 0x43uy; 0x55uy |],
+                Some id,
+                CancellationToken.None
+             )
+             |> await)
             |> ignore
 
             use connection = new NpgsqlConnection(owner)
@@ -254,7 +253,7 @@ let private orphanIntentRefuses =
             use transaction = connection.BeginTransaction()
             let commitments = FixturePrivateFiles.syntheticCommitments witness.Identity
 
-            let cutoff = (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
+            let cutoff = (witness.Snapshot(CancellationToken.None) |> await)
 
             Expect.throwsT<CaseIdentityCoverageUnknowable>
                 (fun () ->

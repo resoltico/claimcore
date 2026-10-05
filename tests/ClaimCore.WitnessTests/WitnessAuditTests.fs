@@ -163,6 +163,15 @@ let private witnessCase15 =
                     |> ignore)
                 "Missing first row is not hidden by surviving tip"))
 
+let private assertAuthorityReplay (store: Store) operation settledSequence =
+    Expect.equal
+        ((store.Append(operation, None, SettledAuthority, keyId, payload 13uy, cancellation)
+          |> await)
+            .Sequence)
+        settledSequence
+        "Exact settlement retry returns its original ticket"
+
+
 let private witnessCase16 =
     testCase "[CC-WIT-001] authority settlement binds one exact intent" (fun _ ->
         fixture (fun owner writer identity capability ->
@@ -189,19 +198,7 @@ let private witnessCase16 =
                 (first.Sequence + 1L)
                 "Authority settlement consumes one global sequence"
 
-            Expect.equal
-                ((store.Append(
-                    operation,
-                    None,
-                    SettledAuthority,
-                    keyId,
-                    payload 13uy,
-                    cancellation
-                  )
-                  |> await)
-                    .Sequence)
-                settled.Sequence
-                "Exact settlement retry returns its original ticket"
+            assertAuthorityReplay store operation settled.Sequence
 
             Expect.throws
                 (fun () ->

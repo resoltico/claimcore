@@ -66,10 +66,8 @@ let private stagedAttempt owner (witness: WitnessProtocol) context request prima
 
     try
         let intent =
-            (witness
-                .BeginAuthority(request.ApprovalId, canonical, None, CancellationToken.None)
-                .GetAwaiter()
-                .GetResult())
+            (witness.BeginAuthority(request.ApprovalId, canonical, None, CancellationToken.None)
+             |> await)
 
         if primaryCommitted then
             RealDataActivationApprovalRows.insert
@@ -107,6 +105,32 @@ let private retainedCanonical owner approvalId =
     |> Option.defaultWith (fun () -> failtest "Retained approval canonical is absent.")
     :?> byte array
 
+let private rejectUnalignedExpiry
+    source
+    (witness: WitnessProtocol)
+    context
+    (action: RealDataActivationApprovalRequest)
+    =
+    let unaligned =
+        { action with
+            ApprovalId = Guid.NewGuid()
+            ExpiresAt = action.ExpiresAt.AddTicks(1L)
+        }
+
+    let before = (witness.Snapshot(CancellationToken.None) |> await).TipSequence
+
+    Expect.equal
+        (RealDataActivationApproval.approve source witness context unaligned CancellationToken.None
+         |> await)
+        RealDataActivationApprovalOutcome.ResourceUnavailable
+        "Sub-microsecond expiry cannot create unroundtrippable activation evidence."
+
+    Expect.equal
+        ((witness.Snapshot(CancellationToken.None) |> await).TipSequence)
+        before
+        "Invalid activation expiry creates no witness authority."
+
+
 let private retryBoundary primaryCommitted owner app _writer (witness: WitnessProtocol) profile =
     let principal =
         human (
@@ -120,39 +144,17 @@ let private retryBoundary primaryCommitted owner app _writer (witness: WitnessPr
     let planId, activationId, plan = publishSyntheticPlan owner witness profile
 
     let action =
-        request
-            planId
-            activationId
-            plan
-            ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()))
+        request planId activationId plan ((witness.Snapshot(CancellationToken.None) |> await))
 
     let dataSource, context = actorContext app witness principal
     use source = dataSource
 
-    let unaligned =
-        { action with
-            ApprovalId = Guid.NewGuid()
-            ExpiresAt = action.ExpiresAt.AddTicks(1L)
-        }
-
-    let before =
-        (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence
-
-    Expect.equal
-        (RealDataActivationApproval.approve source witness context unaligned CancellationToken.None
-         |> await)
-        RealDataActivationApprovalOutcome.ResourceUnavailable
-        "Sub-microsecond expiry cannot create unroundtrippable activation evidence."
-
-    Expect.equal
-        ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
-        before
-        "Invalid activation expiry creates no witness authority."
+    rejectUnalignedExpiry source witness context action
 
     let intent, originalCanonical =
         stagedAttempt owner witness context action primaryCommitted
 
-    let pendingTip = (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
+    let pendingTip = (witness.Snapshot(CancellationToken.None) |> await)
 
     Expect.equal pendingTip.TipSequence intent.Ticket.Sequence "Only an INTENT exists before retry."
 
@@ -172,7 +174,7 @@ let private retryBoundary primaryCommitted owner app _writer (witness: WitnessPr
         "Retry retained original DB-clock canonical bytes."
 
     Expect.equal
-        ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
+        ((witness.Snapshot(CancellationToken.None) |> await).TipSequence)
         (intent.Ticket.Sequence + 1L)
         "Retry adds only the missing settlement."
 

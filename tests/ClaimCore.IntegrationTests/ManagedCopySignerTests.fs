@@ -60,8 +60,7 @@ let private refuseSubMicrosecondApproval
             ExpiresAt = request.ExpiresAt.AddTicks(1L)
         }
 
-    let before =
-        (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence
+    let before = (witness.Snapshot(CancellationToken.None) |> await).TipSequence
 
     Expect.equal
         ((runtime.ForActor custodian).ApproveCopySigner(unaligned, CancellationToken.None)
@@ -70,7 +69,7 @@ let private refuseSubMicrosecondApproval
         "Sub-microsecond expiry cannot create an unusable witnessed approval."
 
     Expect.equal
-        ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
+        ((witness.Snapshot(CancellationToken.None) |> await).TipSequence)
         before
         "Invalid expiry creates no witness authority."
 
@@ -147,6 +146,20 @@ let private refusedActors =
                 CopySignerApprovalOutcome.ResourceUnavailable
                 "Service principal cannot impersonate a human approval."))
 
+let private assertNoSignerApproval owner approvalId =
+    use connection = new NpgsqlConnection(owner)
+    connection.Open()
+
+    use count =
+        new NpgsqlCommand(
+            "SELECT count(*) FROM claimcore.managed_copy_signer_approvals "
+            + "WHERE approval_id=@approval",
+            connection
+        )
+
+    count.Parameters.AddWithValue("approval", approvalId) |> ignore
+    Expect.equal (count.ExecuteScalar() :?> int64) 0L "No primary approval is invented."
+
 let private orphanApproval =
     testCase "[CC-BACKUP-001] orphan signer approval intent stays unknown" (fun _ ->
         withAuthorityRuntimeDatabase (fun owner app writer witness ->
@@ -182,15 +195,13 @@ let private orphanApproval =
                     ExpiresAt = holderRequest.ExpiresAt
                 }
 
-            (witness
-                .BeginAuthority(
-                    approvalId,
-                    [| 0x43uy; 0x43uy; 0x41uy |],
-                    None,
-                    CancellationToken.None
-                )
-                .GetAwaiter()
-                .GetResult())
+            (witness.BeginAuthority(
+                approvalId,
+                [| 0x43uy; 0x43uy; 0x41uy |],
+                None,
+                CancellationToken.None
+             )
+             |> await)
             |> ignore
 
             for _ in 1..2 do
@@ -201,18 +212,7 @@ let private orphanApproval =
                     (CopySignerApprovalOutcome.StartedUnconfirmed approvalId)
                     "The same witnessed orphan cannot be silently retried."
 
-            use connection = new NpgsqlConnection(owner)
-            connection.Open()
-
-            use count =
-                new NpgsqlCommand(
-                    "SELECT count(*) FROM claimcore.managed_copy_signer_approvals "
-                    + "WHERE approval_id=@approval",
-                    connection
-                )
-
-            count.Parameters.AddWithValue("approval", approvalId) |> ignore
-            Expect.equal (count.ExecuteScalar() :?> int64) 0L "No primary approval is invented."))
+            assertNoSignerApproval owner approvalId))
 
 let tests =
     testList "managed-copy signer authority" [ dualHumanRoster; refusedActors; orphanApproval ]

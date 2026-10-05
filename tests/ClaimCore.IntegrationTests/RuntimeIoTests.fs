@@ -81,7 +81,7 @@ let private cancelledAdmission _ _ writer (witness: WitnessProtocol) =
     Expect.equal (journalCount owner) before "Cancellation appended no authority evidence."
 
 let private observedProtocol writer (original: WitnessProtocol) beforeSettlement observer =
-    let store = witnessStore writer original.Identity
+    let store = FixtureWitnessWriterStore.current writer original.Identity
     let keyId, _ = store.ReadKeyCheck(CancellationToken.None).GetAwaiter().GetResult()
     let material = witnessKey ()
 

@@ -88,6 +88,33 @@ let certificate (value: BackupHealthClaims) =
     put document "signerHolderActorId" (value.SignerHolderActorId.ToString("D"))
     canonical document
 
+let private commitGuard witness profile policy canonical signature onLocked onRefused =
+    let guard =
+        { new ICaseMutationCommitHealth with
+            member _.VerifyLocked(connection, transaction, ct) =
+                task {
+                    onLocked ()
+
+                    try
+                        do!
+                            BackupHealthRuntimeAdmission.verifyLocked
+                                connection
+                                transaction
+                                witness
+                                profile
+                                policy
+                                canonical
+                                signature
+                                ct
+                    with :? InvalidOperationException as error ->
+                        onRefused ()
+                        return raise error
+                }
+                :> Task
+        }
+
+    guard
+
 let admittance
     app
     (witness: WitnessProtocol)
@@ -117,28 +144,7 @@ let admittance
         }
 
     let guard =
-        { new ICaseMutationCommitHealth with
-            member _.VerifyLocked(connection, transaction, ct) =
-                task {
-                    onLocked ()
-
-                    try
-                        do!
-                            BackupHealthRuntimeAdmission.verifyLocked
-                                connection
-                                transaction
-                                witness
-                                profile
-                                policy
-                                canonical
-                                signature
-                                ct
-                    with :? InvalidOperationException as error ->
-                        onRefused ()
-                        return raise error
-                }
-                :> Task
-        }
+        commitGuard witness profile policy canonical signature onLocked onRefused
 
     new RuntimeAdmission(
         { new IDisposable with

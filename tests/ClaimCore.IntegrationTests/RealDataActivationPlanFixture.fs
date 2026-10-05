@@ -117,7 +117,7 @@ let publishSyntheticPlan owner (witness: WitnessProtocol) profile =
     Sql.integer command "witnessEpoch" intent.Ticket.Epoch
     Sql.add command "hash" NpgsqlDbType.Bytea (box intent.Ticket.EntryHash)
     Expect.equal (command.ExecuteNonQuery()) 1 "One isolated plan projection was staged."
-    witness.SettleAuthority(planId, intent) |> ignore
+    witness.SettleAuthority(planId, intent) |> await |> ignore
     planId, activationId, plan
 
 let withRealDataBootstrap action =

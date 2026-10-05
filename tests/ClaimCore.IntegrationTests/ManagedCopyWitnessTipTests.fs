@@ -131,7 +131,7 @@ let private historicalTip =
                         .GetAwaiter()
                         .GetResult())
 
-                witness.SettleAuthority(operation, intent) |> ignore
+                witness.SettleAuthority(operation, intent) |> await |> ignore
 
                 let settled = (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
 
