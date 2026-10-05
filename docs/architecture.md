@@ -11,8 +11,9 @@ ClaimCore's case-work boundary is one authenticated HTTPS service over a primary
 [`config/architecture.json`](../config/architecture.json) is this repository's single architecture contract. It
 classifies every `.fsproj` the repository builds — product, tooling, and test — and records each
 component's layer, responsibility, permitted direct dependencies, permitted NuGet packages, and
-reviewed `InternalsVisibleTo` grants. Nothing restates it: the compiled architecture suite enforces
-it, and the table below is generated from it.
+reviewed `InternalsVisibleTo` grants. Layer and responsibility describe the components; permitted
+edges, packages and grants are enforced exactly by the compiled architecture suite. The table below
+is generated from the same manifest.
 
 Removing an edge, a package, or an internals grant from the manifest requires no compatibility
 allowance. Adding one is a reviewed change to the architecture, not an implementation detail.
@@ -74,6 +75,12 @@ A composition root is the one place that knows how a case-work runtime is wired.
 
 `ClaimCore.CliProtocol` owns CLI-v4 framing, discovery, OIDC/PKCE and authenticated HTTPS delivery, while `ClaimCore.Cli` owns only the process entry point and standard streams. Neither project references `Hosting` or `Postgres`; a CLI frame cannot open a database runtime. `ClaimCore.Database` is a separate owner-only administration entry point with no case-work facade. These boundaries keep a service credential and an individual actor grant from being mistaken for schema-owner authority.
 
+The protocol and process assemblies share the `ClaimCore.Cli` namespace because they serve the
+same CLI context. Assembly references enforce their different responsibilities; a namespace is
+neither an access restriction nor a separate authority. Postgres likewise keeps runtime storage,
+auditing and owner administration in one assembly: internal modules cooperate on the same durable
+evidence. Hosting's internals grant permits composition, not actor or schema-owner authority.
+
 ## Compiled architecture enforcement
 
 <a id="cc-arch-001"></a>
@@ -100,6 +107,8 @@ The suite checks the manifest from five independent directions:
   Database consumes; the compiler needs that type closure even though the emitted Database assembly
   has no Domain reference. An imported conditional forbidden reference and an unused literal
   reference fail their negative controls.
+  Web's Domain edge is a runtime edge: its emitted assembly does reference Domain even when no
+  source file explicitly qualifies that namespace.
 - **Compiled internals grants.** `internal` is this architecture's primary encapsulation mechanism,
   so every `InternalsVisibleToAttribute` on a product assembly must match the manifest exactly, must
   name a classified component, and must follow a declared project edge. A grant added in source and
@@ -107,6 +116,8 @@ The suite checks the manifest from five independent directions:
 - **Published surface.** The composition root exports exactly one entry point, storage exports
   only its schema-owner administration surface, Application's storage ports never become public, and
   the CLI protocol exposes no runtime factory or store and publishes only client transport seams.
+  Lifecycle transition functions remain internal to Domain and its reviewed Application/test
+  friends; ordinary-consumer compiler probes and reflected visibility check that boundary.
 - **Compiled type and call rules.** The suite inspects non-optimised Debug implementation
   assemblies, including F# generated types, and compares ArchUnitNET's loaded type set to reflection
   for every product assembly on that same run. Domain, RecordFormat, Application, and Contracts must
@@ -118,13 +129,21 @@ The suite checks the manifest from five independent directions:
   parsing rejects duplicate/unknown fields and escaped project paths before loading assemblies.
   Each of these rules asserts its positive counterpart as well, so none can pass vacuously.
 
+The selected effect policy includes cryptographic randomness, `Guid.CreateVersion7`,
+`Stopwatch.GetTimestamp`/start operations and `TimeProvider` elapsed/local-clock reads. Compiled
+fixtures exercise that same policy against effects and deterministic counterparts, including
+SHA-256. It does not forbid deterministic cryptography or claim an exhaustive framework allowlist.
+Calendar and non-owner construction/decision selectors derive subjects from the classified product
+components, so adding a component cannot silently omit it from these universal boundaries.
+
 Primary storage additionally forbids ambient wall-clock reads, including TimeProvider.GetUtcNow.
 Its authority deadlines and list windows use current primary SQL time; Hosting's actual calendar
 capture is the positive counterpart. Local session/token budgets and full-audit scheduling retain
 their own process elapsed clocks rather than making PostgreSQL an application scheduler.
 
 Each platform's passing suite emits a bounded, sorted report of the actual inspected assembly type
-counts and cross-component edges. Counts are observations, not thresholds. The inspection builds the
+counts and cross-component edges corroborated by CLR assembly references, using the same filter as
+the exact graph check. Counts are observations, not thresholds. The inspection builds the
 report from the manifest's own product inventory and fails when a required assembly is omitted or no
 cross-product edge is observed; CI shows a concise graph in its job summary. A rule violation fails its
 named test with an actionable source/target diagnostic; a report alone is not proof of correct behavior.

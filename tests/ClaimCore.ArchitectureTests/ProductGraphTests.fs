@@ -171,7 +171,7 @@ let private inspectedReport () =
     for assembly in ProductModel.assemblies.Value do
         Inspection.requireCompleteTypes model assembly
 
-    let report = InspectionReport.create ProductPolicy.names model
+    let report = InspectionReport.create ProductPolicy.names assemblyReferences model
     let bytes = InspectionReport.encode report
 
     Expect.equal
@@ -179,13 +179,32 @@ let private inspectedReport () =
         ProductPolicy.names.Length
         "The report must cover every classified product assembly"
 
+    let expected =
+        ProductPolicy.product
+        |> Seq.collect (fun item ->
+            item.DependsOn
+            |> List.except item.CompileOnlyDependsOn
+            |> List.map (fun target -> item.Name, target))
+        |> Set.ofSeq
+
+    Expect.equal
+        (report.Edges |> List.map (fun edge -> edge.Source, edge.Target) |> Set.ofList)
+        expected
+        "The emitted graph must contain exactly the corroborated runtime edges"
+
     InspectionReport.writeRequired bytes
 
 let tests =
     testList
         "product graph evidence"
         [
-            testCase "evaluated Debug and Release dependencies obey component policy" evaluatedGraph
-            testCase "every permitted product edge is actually used" observedEdgesMatchManifest
-            testCase "compiled model covers every type and emits a bounded graph" inspectedReport
+            testCase
+                "[CC-ARCH-001] evaluated Debug and Release dependencies obey component policy"
+                evaluatedGraph
+            testCase
+                "[CC-ARCH-001] every permitted product edge is actually used"
+                observedEdgesMatchManifest
+            testCase
+                "[CC-ARCH-001] compiled model covers every type and emits a bounded graph"
+                inspectedReport
         ]

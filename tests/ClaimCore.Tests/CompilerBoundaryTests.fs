@@ -142,6 +142,14 @@ let tests =
             testCase "ordinary caller can use the actor-bound core" requirePositive
             testCase "CLI excludes storage from compilation and deployment" hostCompileClosures
             inaccessible
+                "ordinary caller cannot request a lifecycle transition directly"
+                "requestErasure"
+                "let decision = ClaimCore.Domain.CaseLifecycle.requestErasure"
+            inaccessible
+                "ordinary caller cannot invoke owner erasure decisions"
+                "CaseLifecycleOwnerErasure"
+                "let decision = ClaimCore.Domain.CaseLifecycleOwnerErasure.confirmManagedPayloadAbsence"
+            inaccessible
                 "ordinary caller cannot see the store port"
                 "IClaimStore"
                 "let value = typeof<ClaimCore.Application.IClaimStore>"

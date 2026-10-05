@@ -8,6 +8,14 @@ Notable changes to this project are documented in this file. The format is based
 
 - Generated .NET redistribution notices retain each package's own copyright and supplied license/NOTICE files, including NSec's embedded BSD/ISC notices. The former generic MIT attribution and incomplete notice collection are replaced. Regenerate application publish outputs before redistribution; published source releases and their licenses remain unchanged.
 
+### Changed
+
+- Lifecycle transition functions are internal to Domain's reviewed Application/test consumers. Native integrations that called them directly must use the actor-bound core instead; lifecycle inspection remains public.
+
+### Internal
+
+- Compiled architecture checks reject cryptographic randomness, version-7 identity minting and elapsed/local-clock reads in the value-computing core. Calendar and non-owner selectors include every classified product component; the contract-test map now names the graph, internals and public-surface checks alongside their compiled negative controls. Inspection reports omit false generic edges not corroborated by CLR assembly references.
+
 ## [0.7.0] - 2026-10-04
 
 ### Security

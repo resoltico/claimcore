@@ -17,7 +17,7 @@ type Report =
 let private ordinal left right =
     StringComparer.Ordinal.Compare(left, right)
 
-let create (names: string list) (architecture: Architecture) =
+let create (names: string list) assemblyReferences (architecture: Architecture) =
     let ordered = names |> List.sortWith ordinal
 
     if ordered.IsEmpty || ordered.Length <> (Set.ofList ordered).Count then
@@ -48,7 +48,10 @@ let create (names: string list) (architecture: Architecture) =
 
                 dependency.Origin.Assembly.Name, dependency.Target.Assembly.Name))
         |> Seq.filter (fun (source, target) ->
-            source <> target && selected.Contains source && selected.Contains target)
+            source <> target
+            && selected.Contains source
+            && selected.Contains target
+            && Set.contains target (Map.find source assemblyReferences))
         |> Set.ofSeq
         |> Set.toList
         |> List.sortWith (fun (leftSource, leftTarget) (rightSource, rightTarget) ->
