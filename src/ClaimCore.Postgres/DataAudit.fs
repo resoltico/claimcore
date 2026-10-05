@@ -276,8 +276,7 @@ module internal DataAudit =
         task {
             use! audit = RuntimeDatabase.openConnectionAsync dataSource
 
-            let! summary =
-                runWithSuppression audit witness commitments CancellationToken.None
+            let! summary = runWithSuppression audit witness commitments CancellationToken.None
 
             return summary.PendingIntents = 1L && summary.WitnessCutoff = expected
         }

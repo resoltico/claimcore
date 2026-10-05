@@ -173,6 +173,24 @@ module internal CaseWitnessAuditEvidence =
             do! target connection transaction value settled ct
         }
 
+    let private requireProofIdentity
+        cutoff
+        caseId
+        operation
+        sequence
+        (entryHash: byte array)
+        (candidateDigest: byte array)
+        =
+        if
+            caseId = Guid.Empty
+            || operation = Guid.Empty
+            || sequence < 1L
+            || sequence > cutoff
+            || entryHash.Length <> 32
+            || candidateDigest.Length <> 32
+        then
+            corrupt ()
+
     let verify
         (connection: NpgsqlConnection)
         (transaction: NpgsqlTransaction)
@@ -188,15 +206,7 @@ module internal CaseWitnessAuditEvidence =
         (ct: CancellationToken)
         =
         task {
-            if
-                caseId = Guid.Empty
-                || operation = Guid.Empty
-                || sequence < 1L
-                || sequence > cutoff
-                || entryHash.Length <> 32
-                || candidateDigest.Length <> 32
-            then
-                corrupt ()
+            requireProofIdentity cutoff caseId operation sequence entryHash candidateDigest
 
             let! intent = metadata witness cutoff caseId operation Intent ct
             let! settled = metadata witness cutoff caseId operation settlement ct

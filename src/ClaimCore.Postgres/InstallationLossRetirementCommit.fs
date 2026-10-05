@@ -277,4 +277,5 @@ module internal InstallationLossRetirementCommit =
                         return InstallationLossRetirementOutcome.Refused
         }
 
-    let record (primaryOwner: NpgsqlConnection) = recordWithSettlementObservation ignore primaryOwner
+    let record (primaryOwner: NpgsqlConnection) =
+        recordWithSettlementObservation ignore primaryOwner

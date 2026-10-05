@@ -98,7 +98,8 @@ module internal WriterHandoffOwnerAbortStage =
                         signatureOne
                         signatureTwo
 
-                return! DataAudit.pendingHandoff dataSource witness commitments value.PrepareSequence
+                return!
+                    DataAudit.pendingHandoff dataSource witness commitments value.PrepareSequence
         }
 
     let private fresh
