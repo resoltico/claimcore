@@ -1,5 +1,6 @@
 module ClaimCore.IntegrationTests.WitnessAuditorTests
 
+open System.Threading
 open System
 open System.Security.Cryptography
 open Expecto
@@ -18,35 +19,55 @@ let private checkConstrainedReadPool (writer: string) (witness: WitnessProtocol)
     let constrained = NpgsqlConnectionStringBuilder(writer)
     constrained.MaxPoolSize <- 1
     use limited = new Store(constrained.ConnectionString, witness.Identity, raw)
-    limited.Admit()
-    use _readFence = limited.AcquireReadFence(witness.Snapshot().WriterGeneration)
+    (limited.Admit(CancellationToken.None).GetAwaiter().GetResult())
+
+    use _readFence =
+        (limited
+            .AcquireReadFence(
+                (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).WriterGeneration,
+                CancellationToken.None
+            )
+            .GetAwaiter()
+            .GetResult())
 
     Expect.equal
-        (limited.Snapshot().TipSequence)
-        (witness.Snapshot().TipSequence)
+        ((limited.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
+        ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
         "A held read fence cannot exhaust the snapshot connection pool."
 
 let private noWriterAuthority _ _ writer (witness: WitnessProtocol) =
     let auditorConnection = auditorFor writer
     use store = Store.OpenAudit(auditorConnection, witness.Identity)
-    store.AdmitReadOnly()
+    (store.AdmitReadOnly(CancellationToken.None).GetAwaiter().GetResult())
 
     Expect.equal
-        (store.Snapshot().TipSequence)
-        (witness.Snapshot().TipSequence)
+        ((store.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
+        ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
         "Auditor reads the exact current witness tip."
 
     Expect.throwsT<InvalidOperationException>
-        (fun () -> store.Admit())
+        (fun () -> (store.Admit(CancellationToken.None).GetAwaiter().GetResult()))
         "Auditor cannot admit case-work writer authority."
 
     Expect.throwsT<InvalidOperationException>
-        (fun () -> store.AcquireReadFence(1L) |> ignore)
+        (fun () ->
+            (store.AcquireReadFence(1L, CancellationToken.None).GetAwaiter().GetResult())
+            |> ignore)
         "Auditor cannot hold a writer-generation lease."
 
     Expect.throwsT<InvalidOperationException>
         (fun () ->
-            store.Append(Guid.NewGuid(), None, Intent, Guid.NewGuid(), [| 0x43uy |])
+            (store
+                .Append(
+                    Guid.NewGuid(),
+                    None,
+                    Intent,
+                    Guid.NewGuid(),
+                    [| 0x43uy |],
+                    CancellationToken.None
+                )
+                .GetAwaiter()
+                .GetResult())
             |> ignore)
         "Auditor append is refused before SQL."
 
@@ -84,7 +105,7 @@ let private noWriterAuthority _ _ writer (witness: WitnessProtocol) =
         use wrongMode = new Store(auditorConnection, witness.Identity, raw)
 
         Expect.throwsT<InvalidOperationException>
-            (fun () -> wrongMode.Admit())
+            (fun () -> wrongMode.Admit(CancellationToken.None).GetAwaiter().GetResult())
             "Supplying a writer token cannot turn the auditor login into a writer."
     finally
         CryptographicOperations.ZeroMemory(raw)

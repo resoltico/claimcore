@@ -104,44 +104,27 @@ type internal Store() =
             }
 
     interface IClaimStore with
-        member _.Get(reference) =
-            invoke
-                (gate.Case(principal, EndpointAction.GetCase, reference, CancellationToken.None))
-                (fun adapter -> adapter.Get(reference))
+        member _.Get(reference, ct) =
+            invoke (gate.Case(principal, EndpointAction.GetCase, reference, ct)) (fun adapter ->
+                adapter.Get(reference, ct))
 
-        member _.List(request) =
-            invoke (gate.List(principal, CancellationToken.None)) (fun adapter ->
-                adapter.List(request))
+        member _.List(request, ct) =
+            invoke (gate.List(principal, ct)) (fun adapter -> adapter.List(request, ct))
 
-        member _.History(reference, afterVersion) =
+        member _.History(reference, afterVersion, ct) =
             invoke
-                (gate.Case(
-                    principal,
-                    EndpointAction.HistorySummary,
-                    reference,
-                    CancellationToken.None
-                ))
-                (fun adapter -> adapter.History(reference, afterVersion))
+                (gate.Case(principal, EndpointAction.HistorySummary, reference, ct))
+                (fun adapter -> adapter.History(reference, afterVersion, ct))
 
-        member _.Operation(operationId) =
+        member _.Operation(operationId, ct) =
             invoke
-                (gate.Operation(
-                    principal,
-                    EndpointAction.ObserveOperation,
-                    operationId,
-                    CancellationToken.None
-                ))
-                (fun adapter -> adapter.Operation(operationId))
+                (gate.Operation(principal, EndpointAction.ObserveOperation, operationId, ct))
+                (fun adapter -> adapter.Operation(operationId, ct))
 
-        member _.Accepted(operationId, requestSha256) =
+        member _.Accepted(operationId, requestSha256, ct) =
             invoke
-                (gate.Operation(
-                    principal,
-                    EndpointAction.ObserveOperation,
-                    operationId,
-                    CancellationToken.None
-                ))
-                (fun adapter -> adapter.Accepted(operationId, requestSha256))
+                (gate.Operation(principal, EndpointAction.ObserveOperation, operationId, ct))
+                (fun adapter -> adapter.Accepted(operationId, requestSha256, ct))
 
     interface IDisposable with
         member _.Dispose() = ()

@@ -36,7 +36,7 @@ module internal WriterHandoffActivation =
         =
         task {
             let activationId = WriterActivationCandidate.activationId value.HandoffId
-            let snapshot = witness.Snapshot()
+            let! snapshot = witness.Snapshot(ct)
 
             if not snapshot.ActivationPending then
                 return
@@ -140,7 +140,7 @@ module internal WriterHandoffActivation =
         task {
             started.Value <- true
 
-            let tickets =
+            let! tickets =
                 WriterActivationWitness.activate
                     ownerWitnessConnection
                     witness
@@ -149,6 +149,7 @@ module internal WriterHandoffActivation =
                     value.W1Sequence
                     value.W1Hash
                     canonical
+                    CancellationToken.None
 
             do!
                 persistPrimary
@@ -162,7 +163,9 @@ module internal WriterHandoffActivation =
 
             let updated = WriterActivationPrimary.current primaryOwner
 
-            if activated updated (witness.Snapshot()) activationId tickets then
+            let! snapshot = witness.Snapshot(CancellationToken.None)
+
+            if activated updated snapshot activationId tickets then
                 return
                     WriterActivationOutcome.Activated(
                         activationId,
@@ -173,27 +176,36 @@ module internal WriterHandoffActivation =
                 return WriterActivationOutcome.Unconfirmed activationId
         }
 
-    let private checkedState primaryOwner transaction witness value readiness now =
-        let state, snapshot =
-            match readiness with
-            | Historical ->
-                WriterActivationEvidenceChecks.verifyHistorical
-                    primaryOwner
-                    transaction
-                    witness
-                    value
-            | Fresh _ ->
-                WriterActivationEvidenceChecks.verify primaryOwner transaction witness value now
+    let private checkedState primaryOwner transaction witness value readiness now ct =
+        task {
+            let! state, snapshot =
+                match readiness with
+                | Historical ->
+                    WriterActivationEvidenceChecks.verifyHistorical
+                        primaryOwner
+                        transaction
+                        witness
+                        value
+                        ct
+                | Fresh _ ->
+                    WriterActivationEvidenceChecks.verify
+                        primaryOwner
+                        transaction
+                        witness
+                        value
+                        now
+                        ct
 
-        let qualifiedNow =
-            match readiness with
-            | Historical ->
-                not snapshot.ActivationPending
-                && snapshot.ActivationEventId =
-                    Some(WriterActivationCandidate.activationId value.HandoffId)
-            | Fresh(proof, _) -> WriterActivationEvidenceChecks.qualified value proof now
+            let qualifiedNow =
+                match readiness with
+                | Historical ->
+                    not snapshot.ActivationPending
+                    && snapshot.ActivationEventId =
+                        Some(WriterActivationCandidate.activationId value.HandoffId)
+                | Fresh(proof, _) -> WriterActivationEvidenceChecks.qualified value proof now
 
-        state, snapshot, qualifiedNow
+            return state, snapshot, qualifiedNow
+        }
 
     let private underLock
         (primaryOwner: NpgsqlConnection)
@@ -207,10 +219,10 @@ module internal WriterHandoffActivation =
         =
         task {
             let! _ = ActorGrantRead.lockRevision primaryOwner transaction true ct
-            let! now = Sql.databaseNow primaryOwner transaction
+            let! now = Sql.databaseNow primaryOwner transaction ct
 
-            let state, snapshot, qualifiedNow =
-                checkedState primaryOwner transaction witness value readiness now
+            let! state, snapshot, qualifiedNow =
+                checkedState primaryOwner transaction witness value readiness now ct
 
             if not qualifiedNow then
                 return WriterActivationOutcome.Refused
@@ -259,7 +271,7 @@ module internal WriterHandoffActivation =
             try
                 OwnerConnection.requireIdentity primaryOwner
                 SchemaBaseline.requireCurrent primaryOwner
-                witness.AdmitReadOnly()
+                do! witness.AdmitReadOnly(ct)
                 use! _authorityFence = AuthorityOperationFence.acquireExclusive None primaryOwner ct
                 let! readiness = preflight dataSource witness verifier commitments value ct
 

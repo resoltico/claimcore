@@ -8,10 +8,10 @@ open ClaimCore.Postgres
 [<NoEquality; NoComparison>]
 type internal RuntimeUseGate =
     {
-        RequireCaseMutation: unit -> unit
-        RequireCaseRead: unit -> unit
-        RequireAuthoritySetup: unit -> unit
-        RequireAuthorityRead: unit -> unit
+        RequireCaseMutation: CancellationToken -> Task<unit>
+        RequireCaseRead: CancellationToken -> Task<unit>
+        RequireAuthoritySetup: CancellationToken -> Task<unit>
+        RequireAuthorityRead: CancellationToken -> Task<unit>
         CommitHealth: ICaseMutationCommitHealth
         CommitHealthRequired: bool
     }
@@ -21,8 +21,8 @@ type internal RuntimeAdmission
     (
         dataSource: IDisposable,
         drainTimeout: TimeSpan,
-        requireCurrent: unit -> unit,
-        acquireReadFence: unit -> IDisposable,
+        requireCurrent: CancellationToken -> Task<unit>,
+        acquireReadFence: CancellationToken -> Task<IDisposable>,
         useGate: RuntimeUseGate
     ) =
     let gate = obj ()
@@ -89,67 +89,142 @@ type internal RuntimeAdmission
                             release ()
                 })
 
-        try
-            requireCurrent ()
-            lease
-        with _ ->
-            lease.Dispose()
-            reraise ()
+        lease
 
     member this.RunClassified
         (
             work: unit -> Task<'value>,
             isPreAdmissionRefusal: 'value -> bool,
-            ?validateDisclosure: 'value -> Task
+            ?validateDisclosure: 'value -> Task,
+            ?cancellationToken: CancellationToken,
+            ?onCancelled: unit -> 'value
         ) =
         task {
-            use _lease = this.Admit()
-            useGate.RequireCaseMutation()
-            use _commitHealth = CaseMutationCommitHealth.enter useGate.CommitHealth
-            let! outcome = work ()
+            let mutable dispatched = false
 
-            if useGate.CommitHealthRequired && not (isPreAdmissionRefusal outcome) then
-                CaseMutationCommitHealth.requireVerified ()
-            // A witnessed mutation can settle just before a handoff fences disclosure.
-            // Recheck after settlement so no claimant-bearing outcome escapes this core boundary.
-            use _disclosureFence = acquireReadFence ()
+            try
+                let ct = defaultArg cancellationToken CancellationToken.None
+                use _lease = this.Admit()
+                do! requireCurrent ct
+                do! useGate.RequireCaseMutation ct
+                use _commitHealth = CaseMutationCommitHealth.enter useGate.CommitHealth
+                dispatched <- true
+                let! outcome = work ()
 
-            match validateDisclosure with
-            | Some validate -> do! validate outcome
-            | None -> ()
+                if useGate.CommitHealthRequired && not (isPreAdmissionRefusal outcome) then
+                    CaseMutationCommitHealth.requireVerified ()
+                // A witnessed mutation can settle just before a handoff fences disclosure.
+                // Recheck after settlement so no claimant-bearing outcome escapes this core boundary.
+                use! _disclosureFence = acquireReadFence CancellationToken.None
 
-            return outcome
+                match validateDisclosure with
+                | Some validate -> do! validate outcome
+                | None -> ()
+
+                return outcome
+            with :? OperationCanceledException as error when
+                (defaultArg cancellationToken CancellationToken.None).IsCancellationRequested
+                && not dispatched ->
+                match onCancelled with
+                | Some outcome -> return outcome ()
+                | None -> return raise error
         }
 
-    member this.Run(work: unit -> Task<'value>) =
-        this.RunClassified(work, fun _ -> false)
+    member this.Run(work: unit -> Task<'value>, ?cancellationToken, ?onCancelled) =
+        this.RunClassified(
+            work,
+            (fun _ -> false),
+            ?cancellationToken = cancellationToken,
+            ?onCancelled = onCancelled
+        )
 
-    member this.RunDisclosing(work: unit -> Task<'value>, validateDisclosure: 'value -> Task) =
-        this.RunClassified(work, (fun _ -> false), validateDisclosure)
+    member this.RunDisclosing
+        (
+            work: unit -> Task<'value>,
+            validateDisclosure: 'value -> Task,
+            ?cancellationToken,
+            ?onCancelled
+        ) =
+        this.RunClassified(
+            work,
+            (fun _ -> false),
+            validateDisclosure,
+            ?cancellationToken = cancellationToken,
+            ?onCancelled = onCancelled
+        )
 
-    member this.RunRead(work: unit -> Task<'value>) =
+    member this.RunRead
+        (
+            work: unit -> Task<'value>,
+            ?cancellationToken: CancellationToken,
+            ?onCancelled: unit -> 'value
+        ) =
         task {
-            use _lease = this.Admit()
-            useGate.RequireCaseRead()
-            use _fence = acquireReadFence ()
-            return! work ()
+            let mutable dispatched = false
+
+            try
+                let ct = defaultArg cancellationToken CancellationToken.None
+                use _lease = this.Admit()
+                do! requireCurrent ct
+                do! useGate.RequireCaseRead ct
+                use! _fence = acquireReadFence ct
+                dispatched <- true
+                return! work ()
+            with :? OperationCanceledException as error when
+                (defaultArg cancellationToken CancellationToken.None).IsCancellationRequested ->
+                match onCancelled with
+                | Some outcome -> return outcome ()
+                | None -> return raise error
         }
 
-    member this.RunAuthoritySetup(work: unit -> Task<'value>) =
+    member this.RunAuthoritySetup
+        (
+            work: unit -> Task<'value>,
+            ?cancellationToken: CancellationToken,
+            ?onCancelled: unit -> 'value
+        ) =
         task {
-            use _lease = this.Admit()
-            useGate.RequireAuthoritySetup()
-            let! outcome = work ()
-            use _fence = acquireReadFence ()
-            return outcome
+            let mutable dispatched = false
+
+            try
+                let ct = defaultArg cancellationToken CancellationToken.None
+                use _lease = this.Admit()
+                do! requireCurrent ct
+                do! useGate.RequireAuthoritySetup ct
+                dispatched <- true
+                let! outcome = work ()
+                use! _fence = acquireReadFence CancellationToken.None
+                return outcome
+            with :? OperationCanceledException as error when
+                (defaultArg cancellationToken CancellationToken.None).IsCancellationRequested
+                && not dispatched ->
+                match onCancelled with
+                | Some outcome -> return outcome ()
+                | None -> return raise error
         }
 
-    member this.RunAuthorityRead(work: unit -> Task<'value>) =
+    member this.RunAuthorityRead
+        (
+            work: unit -> Task<'value>,
+            ?cancellationToken: CancellationToken,
+            ?onCancelled: unit -> 'value
+        ) =
         task {
-            use _lease = this.Admit()
-            useGate.RequireAuthorityRead()
-            use _fence = acquireReadFence ()
-            return! work ()
+            let mutable dispatched = false
+
+            try
+                let ct = defaultArg cancellationToken CancellationToken.None
+                use _lease = this.Admit()
+                do! requireCurrent ct
+                do! useGate.RequireAuthorityRead ct
+                use! _fence = acquireReadFence ct
+                dispatched <- true
+                return! work ()
+            with :? OperationCanceledException as error when
+                (defaultArg cancellationToken CancellationToken.None).IsCancellationRequested ->
+                match onCancelled with
+                | Some outcome -> return outcome ()
+                | None -> return raise error
         }
 
     member _.CleanupCompletion = drained.Task

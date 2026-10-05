@@ -16,9 +16,10 @@ module internal RetainedPreparationReview =
         (store: IClaimStore)
         (clock: IBusinessTime)
         (request: CommandRequest)
+        cancellationToken
         : Task<PreviewResult> =
         task {
-            match! store.Get request.CaseReference with
+            match! store.Get(request.CaseReference, cancellationToken) with
             | Error failure -> return PreviewFailed(TypedProjection.coreFault failure)
             | Ok current ->
                 let context = clock.Capture()
@@ -36,9 +37,11 @@ module internal RetainedPreparationReview =
         (request: CommandRequest)
         (retained: RetainedPreparation)
         (details: PreparationDetails)
+        cancellationToken
         : Task<PrepareOutcome> =
         task {
-            let! verified = ObservedReceiptVerification.verify store retained details.Summary
+            let! verified =
+                ObservedReceiptVerification.verify store retained details.Summary cancellationToken
 
             match verified with
             | RetainedResolution.ObservedReceipt receipt ->
@@ -67,10 +70,11 @@ module internal RetainedPreparationReview =
             match TypedProjection.details retained with
             | Error fault -> return PrepareOutcome.PrepareFailed(request.OperationId, fault)
             | Ok details ->
-                let! observed = store.Operation request.OperationId
+                let! observed = store.Operation(request.OperationId, cancellationToken)
 
                 match observed with
-                | Ok(Some _) -> return! observedOutcome store request retained details
+                | Ok(Some _) ->
+                    return! observedOutcome store request retained details cancellationToken
                 | _ when cancellationToken.IsCancellationRequested ->
                     return PrepareOutcome.CancelledBeforeAdmission request.OperationId
                 | Error failure ->
@@ -80,7 +84,7 @@ module internal RetainedPreparationReview =
                             TypedProjection.coreFault failure
                         )
                 | Ok None ->
-                    match! preview store clock request with
+                    match! preview store clock request cancellationToken with
                     | Previewed review -> return PrepareOutcome.Prepared(details, review)
                     | PreviewRejected reason ->
                         match!
@@ -88,6 +92,7 @@ module internal RetainedPreparationReview =
                                 store
                                 request.OperationId
                                 retained.RequestSha256
+                                cancellationToken
                         with
                         | Some outcome -> return outcome
                         | None -> return PrepareOutcome.RetainedForRecovery(details, reason)

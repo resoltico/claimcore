@@ -174,18 +174,18 @@ module internal DataAuditWriterHandoffAborts =
         task {
             let value = WriterHandoffAbort.parse row.Canonical |> Option.defaultWith corrupt
 
-            let prepared =
-                WriterHandoffOwnerRead.preparation connection transaction witness row.HandoffId
-                |> Option.defaultWith corrupt
+            let! preparation =
+                WriterHandoffOwnerRead.preparation connection transaction witness row.HandoffId ct
 
-            let entry =
-                witness.EvidenceStore.TryReadHandoff(row.HandoffId)
-                |> Option.defaultWith corrupt
+            let prepared = preparation |> Option.defaultWith corrupt
+
+            let! retained = witness.EvidenceStore.TryReadHandoff(row.HandoffId, ct)
+            let entry = retained |> Option.defaultWith corrupt
 
             let signatureOne = entry.AbortSignatureOne |> Option.defaultWith corrupt
             let signatureTwo = entry.AbortSignatureTwo |> Option.defaultWith corrupt
 
-            let ticket =
+            let! observed =
                 WriterHandoffOwnerAbortEvidence.read
                     witness
                     prepared
@@ -193,7 +193,9 @@ module internal DataAuditWriterHandoffAborts =
                     row.Canonical
                     signatureOne
                     signatureTwo
-                |> Option.defaultWith corrupt
+                    ct
+
+            let ticket = observed |> Option.defaultWith corrupt
 
             let expected =
                 WriterHandoffWitnessAbortCommands.candidate row.Canonical signatureOne signatureTwo
@@ -212,6 +214,7 @@ module internal DataAuditWriterHandoffAborts =
                     row.Canonical
                     signatureOne
                     signatureTwo
+                    ct
         }
 
     let verify connection transaction witness cutoff (ct: CancellationToken) =
@@ -233,7 +236,7 @@ module internal DataAuditWriterHandoffAborts =
 
                 more <- rows.Length = 50
 
-            let snapshot = witness.Snapshot()
+            let! snapshot = witness.Snapshot(ct)
 
             let primaryAbort =
                 use command =

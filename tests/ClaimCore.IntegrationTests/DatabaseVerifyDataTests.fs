@@ -96,7 +96,10 @@ let internal files directory owner writer (witness: WitnessProtocol) =
     let ringPath = Path.Combine(directory, "witness.keys")
     privateFile directory ownerPath owner
     privateFile directory writerPath writer
-    let keyId, _ = witness.EvidenceStore.ReadKeyCheck()
+
+    let keyId, _ =
+        (witness.EvidenceStore.ReadKeyCheck(CancellationToken.None).GetAwaiter().GetResult())
+
     let material = witnessKey ()
 
     try
@@ -180,7 +183,10 @@ let private tamper owner reference =
     Expect.equal (command.ExecuteNonQuery()) 1 "One isolated projection changed."
 
 let private assertPendingIntent (witness: WitnessProtocol) inputs expectedCaseTips =
-    witness.BeginAuthority(Guid.NewGuid(), [| 0x43uy; 0x43uy; 0x50uy |], None)
+    (witness
+        .BeginAuthority(Guid.NewGuid(), [| 0x43uy; 0x43uy; 0x50uy |], None, CancellationToken.None)
+        .GetAwaiter()
+        .GetResult())
     |> ignore
 
     let code, result = run inputs

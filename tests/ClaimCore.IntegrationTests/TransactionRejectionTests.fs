@@ -66,9 +66,13 @@ let tests =
                 |> accepted
                 |> ignore
 
-                let beforeCase = service.Get(initial.CaseReference) |> await |> accepted
+                let beforeCase =
+                    service.Get(initial.CaseReference, CancellationToken.None) |> await |> accepted
 
-                let beforeHistory = service.History(initial.CaseReference, 0L) |> await |> accepted
+                let beforeHistory =
+                    service.History(initial.CaseReference, 0L, CancellationToken.None)
+                    |> await
+                    |> accepted
 
                 let result =
                     CommandExecution.executeAsync
@@ -83,9 +87,13 @@ let tests =
 
                 requireTypedDecisionRejection initial
 
-                let afterCase = service.Get(initial.CaseReference) |> await |> accepted
+                let afterCase =
+                    service.Get(initial.CaseReference, CancellationToken.None) |> await |> accepted
 
-                let afterHistory = service.History(initial.CaseReference, 0L) |> await |> accepted
+                let afterHistory =
+                    service.History(initial.CaseReference, 0L, CancellationToken.None)
+                    |> await
+                    |> accepted
 
                 Expect.equal
                     (afterCase |> Option.map caseDigest)

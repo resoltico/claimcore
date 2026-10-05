@@ -1,6 +1,7 @@
 module internal ClaimCore.WitnessTests.WitnessTestSupport
 
 open System
+open System.Threading
 open System.Security.Cryptography
 open Npgsql
 open Expecto
@@ -21,6 +22,10 @@ let image =
     baseline.RootElement.GetProperty("containerImage").GetString()
     |> Option.ofObj
     |> Option.defaultWith (fun () -> failwith "The baseline containerImage must be text.")
+
+let await (work: System.Threading.Tasks.Task<'value>) = work.GetAwaiter().GetResult()
+
+let cancellation = CancellationToken.None
 
 let keyId = Guid.Parse("7f271edd-e72d-4147-9c71-570845ff6f95")
 

@@ -1,5 +1,6 @@
 module ClaimCore.IntegrationTests.SettledAttemptExecutionTests
 
+open System.Threading
 open System
 open Expecto
 open ClaimCore.Application
@@ -59,7 +60,10 @@ let private rejectThenRetry source witness principal request =
     Expect.equal calls 0 "No Domain decision after terminal attempt admission"
 
     Expect.isNone
-        (witness.EvidenceStore.TryReadEvidence(request.OperationId, Intent))
+        ((witness.EvidenceStore
+            .TryReadEvidence(request.OperationId, Intent, CancellationToken.None)
+            .GetAwaiter()
+            .GetResult()))
         "No orphan acceptance intent"
 
     let fresh = start port request.OperationId

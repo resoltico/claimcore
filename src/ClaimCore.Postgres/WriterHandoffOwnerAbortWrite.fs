@@ -163,3 +163,85 @@ module internal WriterHandoffOwnerAbortWrite =
         receipt connection transaction value canonical digest ticket
         uses connection transaction value
         lineage connection transaction value ticket
+
+    let exactPrimary
+        (connection: NpgsqlConnection)
+        (transaction: NpgsqlTransaction)
+        (value: WriterHandoffAbort)
+        canonical
+        digest
+        (ticket: Ticket)
+        =
+        use command =
+            new NpgsqlCommand(
+                "SELECT abort_canonical,abort_candidate_sha256,abort_sequence,abort_hash,"
+                + "approval_one_id,approval_two_id FROM claimcore.writer_handoff_aborts "
+                + "WHERE handoff_id=@handoff",
+                connection,
+                transaction
+            )
+
+        Sql.uuid command "handoff" value.HandoffId
+        use reader = command.ExecuteReader()
+
+        if not (reader.Read()) then
+            false
+        else
+            let exact =
+                reader.GetFieldValue<byte array>(0) = canonical
+                && reader.GetFieldValue<byte array>(1) = digest
+                && reader.GetInt64(2) = ticket.Sequence
+                && reader.GetFieldValue<byte array>(3) = ticket.EntryHash
+                && reader.GetGuid(4) = value.ApprovalOneId
+                && reader.GetGuid(5) = value.ApprovalTwoId
+
+            if reader.Read() || not exact then
+                invalidOp "Primary abort receipt differs."
+
+            true
+
+    let projection
+        (connection: NpgsqlConnection)
+        (transaction: NpgsqlTransaction)
+        (value: WriterHandoffAbort)
+        (ticket: Ticket)
+        =
+        use command =
+            new NpgsqlCommand(
+                "SELECT writer_generation,last_aborted_handoff_id,"
+                + "last_aborted_handoff_sequence,last_aborted_handoff_hash "
+                + "FROM claimcore.installation_lineage WHERE singleton",
+                connection,
+                transaction
+            )
+
+        use reader = command.ExecuteReader()
+
+        if not (reader.Read()) then
+            invalidOp "Primary abort projection is absent."
+
+        let generation = reader.GetInt64(0)
+        let id = if reader.IsDBNull(1) then None else Some(reader.GetGuid(1))
+
+        let sequence =
+            if reader.IsDBNull(2) then
+                None
+            else
+                Some(reader.GetInt64(2))
+
+        let hash =
+            if reader.IsDBNull(3) then
+                None
+            else
+                Some(reader.GetFieldValue<byte array>(3))
+
+        if reader.Read() || generation <> value.OldGeneration then
+            invalidOp "Primary writer generation differs at abort."
+
+        id = Some value.HandoffId
+        && sequence = Some ticket.Sequence
+        && hash = Some ticket.EntryHash
+
+    let verifyPrimary connection transaction value canonical digest ticket =
+        exactPrimary connection transaction value canonical digest ticket
+        && projection connection transaction value ticket

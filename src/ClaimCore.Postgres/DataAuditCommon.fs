@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading.Tasks
 open System.Collections.Generic
 open System.IO
 open System.Security.Cryptography
@@ -20,6 +21,19 @@ module internal DataAuditCommon =
         | :? JsonException
         | :? KeyNotFoundException
         | :? FormatException -> corrupt ()
+
+    let witnessProofAsync (action: unit -> Task<'value>) =
+        task {
+            try
+                return! action ()
+            with
+            | WitnessPending
+            | :? InvalidOperationException
+            | :? CryptographicException
+            | :? JsonException
+            | :? KeyNotFoundException
+            | :? FormatException -> return corrupt ()
+        }
 
     let businessZone zoneId =
         try

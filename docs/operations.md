@@ -103,6 +103,22 @@ The separate PostgreSQL witness serializes one installation's authority events t
 
 Opening a runtime performs a fenced full audit. While it remains open, a bounded scheduled full audit repeats six hours after each preceding completion by default; `CLAIMCORE_FULL_AUDIT_INTERVAL_SECONDS` accepts 60–86400. It first drains complete primary authority operations through post-COMMIT witness settlement using an exclusive cross-process session lease, then takes the primary authority lock and independent witness ticket fence before capturing one stable cutoff and snapshot. Long audits do not accumulate catch-up runs. Its separate two-connection audit pool cannot be exhausted by queued actor work. Owner `verify-data` uses that same witness fence during ordinary writer activity; pending handoff, activation or loss phases already fence ordinary witness appends, and its primary lock plus before/after tip check prevent a moving pending transition from being reported as a stable audit. A failed or overdue audit closes actor-bound case and authority access; the owner Database reconciliation path remains separate. Read-only `verify-data` reports the witnessed cutoff, safe counts, a digest of verified opaque case tips, and a safe failure category. Those observations are not a backup freshness certificate.
 
+Runtime diagnostics use the `ClaimCore.Runtime` meter. `claimcore.witness.failures` counts fixed
+`stage` values (`read`, `append`, `settlement`) and fixed `cause` values (`pending_evidence`,
+`transport`, `schema`, `authority`, `integrity`, `unexpected`). One stderr notice per stage/cause
+combination is emitted per process; repeated events remain counted. These causes do not determine
+whether a dispatched operation committed. Preserve its identity and exact bytes and use the
+operation's recovery workflow to reconcile evidence.
+
+`claimcore.audit.quarantines` records `reason=failed` or `reason=overdue` once when a scheduled-audit
+worker closes admission. Quarantine remains sticky until owner reconciliation and runtime
+reopening. Use owner `verify-data` and the relevant recovery procedure before reopening; a
+counter or notice does not replace their evidence. Instruments have no case, operation, principal,
+path or provider-message labels. Delivery is best effort: a failing listener or stderr sink cannot
+change operation outcomes or reopen quarantined access. No metrics HTTP endpoint or general
+framework logging provider is enabled by these signals, and source-preview readiness remains
+unqualified.
+
 ## Data and recovery
 
 History preserves prior facts after corrections. `VOID_DATA_ENTRY_ERROR` is an audited business disposition, not deletion; authorized reinstatement creates another witnessed event. A privacy erasure request is a separate fence on ordinary reads and work. Live payload purge and managed-copy deletion require distinct steward approvals, holds and uncertain-attempt checks, inventory, and independent verification; a pending phase must not be called erased. Minimal keyed suppression evidence is pseudonymous data with its own retention purpose. There is no claim of physical-media sanitization or deletion of an undiscovered human-held copy.

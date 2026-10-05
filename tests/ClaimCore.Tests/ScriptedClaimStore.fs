@@ -27,14 +27,16 @@ type internal Store(mode: ExecutionMode) =
             | FailsBeforeCommit -> Task.FromResult(Error CoreFailure.StoreUnavailable)
 
     interface IClaimStore with
-        member _.Get reference = (inner :> IClaimStore).Get reference
-        member _.List after = (inner :> IClaimStore).List after
+        member _.Get(reference, ct) =
+            (inner :> IClaimStore).Get(reference, ct)
 
-        member _.History(reference, after) =
-            (inner :> IClaimStore).History(reference, after)
+        member _.List(after, ct) = (inner :> IClaimStore).List(after, ct)
 
-        member _.Operation operationId =
-            (inner :> IClaimStore).Operation operationId
+        member _.History(reference, after, ct) =
+            (inner :> IClaimStore).History(reference, after, ct)
 
-        member _.Accepted(operationId, requestSha256) =
-            (inner :> IClaimStore).Accepted(operationId, requestSha256)
+        member _.Operation(operationId, ct) =
+            (inner :> IClaimStore).Operation(operationId, ct)
+
+        member _.Accepted(operationId, requestSha256, ct) =
+            (inner :> IClaimStore).Accepted(operationId, requestSha256, ct)

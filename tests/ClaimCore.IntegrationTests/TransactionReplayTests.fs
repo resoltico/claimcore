@@ -1,5 +1,6 @@
 module ClaimCore.IntegrationTests.TransactionReplayTests
 
+open System.Threading
 open System
 open System.Threading.Tasks
 open Expecto
@@ -23,7 +24,7 @@ let private reopenPersistenceTest =
         use reopened = store ()
 
         let snapshot =
-            (reopened :> IClaimStore).Get(request.CaseReference)
+            (reopened :> IClaimStore).Get(request.CaseReference, CancellationToken.None)
             |> await
             |> accepted
             |> Option.map Claim.view
@@ -59,7 +60,10 @@ let private exactReplayTest =
         Expect.equal replay.RecordedAt original.RecordedAt "Original acceptance time"
 
         let current =
-            service.Get(request.CaseReference) |> await |> accepted |> Option.map Claim.view
+            service.Get(request.CaseReference, CancellationToken.None)
+            |> await
+            |> accepted
+            |> Option.map Claim.view
 
         Expect.equal
             (current |> Option.map (fun value -> value.Version))

@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Security.Cryptography
 open Npgsql
 open ClaimCore.Application
 
@@ -29,6 +30,7 @@ module internal ManagedCopySignerApprovalHolder =
         (witness: WitnessProtocol)
         (request: CopySignerApprovalRequest)
         actorId
+        ct
         =
         task {
             match request.Role with
@@ -38,14 +40,48 @@ module internal ManagedCopySignerApprovalHolder =
 
                 match prior with
                 | Some holder when exact request actorId holder ->
-                    witness.VerifyAuthorityEvidence(
-                        holder.ApprovalId,
-                        holder.WitnessSequence,
-                        holder.WitnessEpoch,
-                        holder.WitnessEntryHash,
-                        holder.CandidateSha256
-                    )
+                    do!
+                        witness.VerifyAuthorityEvidence(
+                            holder.ApprovalId,
+                            holder.WitnessSequence,
+                            holder.WitnessEpoch,
+                            holder.WitnessEntryHash,
+                            holder.CandidateSha256,
+                            ct
+                        )
 
                     return true
                 | _ -> return false
+        }
+
+    let matchingSigner connection transaction (request: CopySignerApprovalRequest) actorId =
+        task {
+            use command =
+                new NpgsqlCommand(
+                    "SELECT active,public_key_sha256,signer_purpose,holder_actor_id "
+                    + "FROM claimcore.managed_copy_signers "
+                    + "WHERE signing_key_id=@key",
+                    connection,
+                    transaction
+                )
+
+            Sql.uuid command "key" request.SigningKeyId
+            let! rows = command.ExecuteReaderAsync()
+            use reader = rows
+            let! found = reader.ReadAsync()
+
+            return
+                match request.Action, found with
+                | CopySignerAction.Register, false -> true
+                | CopySignerAction.Retire, true ->
+                    reader.GetBoolean(0)
+                    && reader.GetString(2) = ManagedCopySignerCandidate.purposeName request.Purpose
+                    && (match request.Role with
+                        | CopySignerApprovalRole.Custodian -> reader.GetGuid(3) = actorId
+                        | CopySignerApprovalRole.Owner _ -> true)
+                    && CryptographicOperations.FixedTimeEquals(
+                        ReadOnlySpan<byte>(reader.GetFieldValue<byte array>(1)),
+                        ReadOnlySpan<byte>(request.PublicKeySha256)
+                    )
+                | _ -> false
         }

@@ -14,16 +14,24 @@ type internal RecoveryWorkflow
     ) =
     interface IRecoveryWorkflow with
         member _.List(view, afterCursor, limit, cancellationToken) =
-            RecoveryReadOperations.list recovery view afterCursor limit cancellationToken
+            TypedQueries.cancelObservation
+                cancellationToken
+                RecoveryQueryOutcome.RecoveryCancelled
+                (fun () ->
+                    RecoveryReadOperations.list recovery view afterCursor limit cancellationToken)
 
         member _.Inspect(operationId, afterCursor, limit, cancellationToken) =
-            RecoveryReadOperations.inspect
-                store
-                recovery
-                operationId
-                afterCursor
-                limit
+            TypedQueries.cancelObservation
                 cancellationToken
+                RecoveryQueryOutcome.RecoveryCancelled
+                (fun () ->
+                    RecoveryReadOperations.inspect
+                        store
+                        recovery
+                        operationId
+                        afterCursor
+                        limit
+                        cancellationToken)
 
         member _.Resolve(operationId, requestSha256, cancellationToken) =
             RecoveryReadOperations.resolve

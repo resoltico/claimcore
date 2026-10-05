@@ -67,7 +67,13 @@ let private extraRevision (connection: NpgsqlConnection) (witness: WitnessProtoc
         Sql.add command name NpgsqlDbType.Bytea (box (RandomNumberGenerator.GetBytes(size)))
 
     Sql.add command "previous" NpgsqlDbType.Bytea (box previous)
-    Sql.integer command "sequence" (witness.Snapshot().TipSequence + 1000L)
+
+    Sql.integer
+        command
+        "sequence"
+        ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence
+         + 1000L)
+
     Sql.integer command "epoch" witness.Identity.Epoch
     Expect.equal (command.ExecuteNonQuery()) 1 "One synthetic extra revision was inserted."
 

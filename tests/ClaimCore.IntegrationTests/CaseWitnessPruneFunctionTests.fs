@@ -1,5 +1,6 @@
 module ClaimCore.IntegrationTests.CaseWitnessPruneFunctionTests
 
+open System.Threading
 open System
 open Expecto
 open Npgsql
@@ -90,6 +91,8 @@ let private bindProof
             fixture.CaseId
             stored.CutoffSequence
             stored.CutoffHash
+            CancellationToken.None
+        |> await
 
     Expect.equal targetCount stored.TargetCount "Witness and primary target counts agree"
     Sql.add command "targetDigest" NpgsqlDbType.Bytea (box witnessDigest)
@@ -129,7 +132,10 @@ let private run owner source witness runtime proposer first second _ writer =
     let approvals = approvalTickets fixture
 
     let settled =
-        witness.EvidenceStore.TryReadEvidence(fixture.Action.EventId, SettledAuthority)
+        (witness.EvidenceStore
+            .TryReadEvidence(fixture.Action.EventId, SettledAuthority, CancellationToken.None)
+            .GetAwaiter()
+            .GetResult())
         |> Option.defaultWith (fun () -> failtest "Settled prune evidence is missing")
 
     let path =

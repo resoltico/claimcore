@@ -3,6 +3,7 @@ namespace ClaimCore.Postgres
 open System
 open System.Security.Cryptography
 open System.Threading
+open System.Threading.Tasks
 open Npgsql
 open ClaimCore.Application
 open ClaimCore.Domain
@@ -16,6 +17,7 @@ module internal CaseTombstonePruneOwnerCommit =
         (seal: WitnessPruneSeal)
         (intent: WitnessIntent)
         (approvals: PruneApprovalReceipt list)
+        ct
         =
         task {
             try
@@ -30,6 +32,7 @@ module internal CaseTombstonePruneOwnerCommit =
                         seal
                         intent
                         approvals
+                        ct
 
                 return
                     OwnerWitnessPruneOutcome.WitnessPayloadPruned(
@@ -57,8 +60,13 @@ module internal CaseTombstonePruneOwnerCommit =
 
             try
                 try
-                    let intent =
-                        witness.BeginAuthority(proposal.EventId, canonical, Some proposal.CaseId)
+                    let! intent =
+                        witness.BeginAuthority(
+                            proposal.EventId,
+                            canonical,
+                            Some proposal.CaseId,
+                            ct
+                        )
 
                     do!
                         CaseTombstonePrunePrimaryWrite.persist
@@ -69,76 +77,23 @@ module internal CaseTombstonePruneOwnerCommit =
                             copyDigest
                             canonical
                             intent
+                            ct
 
                     do! transaction.CommitAsync(ct)
-                    return! settle ownerWitnessConnection witness proposal seal intent approvals
+
+                    return!
+                        settle
+                            ownerWitnessConnection
+                            witness
+                            proposal
+                            seal
+                            intent
+                            approvals
+                            CancellationToken.None
                 with _ ->
                     return OwnerWitnessPruneOutcome.Unconfirmed proposal.EventId
             finally
                 CryptographicOperations.ZeroMemory(canonical)
-        }
-
-    let private targetMatches (witness: WitnessProtocol) (proposal: TombstonePruneProposal) =
-        let seal = targetSeal proposal
-
-        let observed =
-            CaseWitnessPayloadTargets.scan
-                witness
-                proposal.CaseId
-                seal.CutoffSequence
-                seal.CutoffHash
-                ignore
-
-        if
-            observed.TargetCount = seal.TargetCount
-            && observed.TargetDigest = seal.TargetDigest
-        then
-            Some seal
-        else
-            None
-
-    let private preflight
-        connection
-        transaction
-        (witness: WitnessProtocol)
-        authorityRevision
-        (stored: StoredCaseTombstone)
-        (proposal: TombstonePruneProposal)
-        observedAt
-        =
-        task {
-            let! holds = CaseTombstoneRead.activeHolds connection transaction proposal.CaseId
-
-            if not holds.IsEmpty then
-                return Error(OwnerWitnessPruneOutcome.Refused LifecycleRefusal.HoldActive)
-            else
-                witness.VerifyAuthorityEvidenceForCase(
-                    stored.PurgeEventId,
-                    stored.PurgeWitnessSequence,
-                    stored.PurgeWitnessEpoch,
-                    stored.PurgeWitnessHash,
-                    stored.PurgeCandidateHash,
-                    proposal.CaseId
-                )
-
-                let! approvals =
-                    CaseTombstonePruneOwnerApprovals.read
-                        connection
-                        transaction
-                        witness
-                        authorityRevision
-                        proposal
-                        true
-                        observedAt
-
-                match targetMatches witness proposal with
-                | None ->
-                    return
-                        Error(
-                            OwnerWitnessPruneOutcome.Refused
-                                LifecycleRefusal.ErasureEvidenceIncomplete
-                        )
-                | Some seal -> return Ok(approvals, seal)
         }
 
     let private commitWithInventory
@@ -209,6 +164,7 @@ module internal CaseTombstonePruneOwnerCommit =
                         stored
                         proposal
                         observedAt
+                        ct
 
                 match preparation with
                 | Error refusal -> return refusal
@@ -226,7 +182,7 @@ module internal CaseTombstonePruneOwnerCommit =
                             ct
         }
 
-    let private historicalApprovals connection transaction witness revision proposal observedAt =
+    let private historicalApprovals connection transaction witness revision proposal observedAt ct =
         CaseTombstonePruneOwnerApprovals.read
             connection
             transaction
@@ -235,12 +191,14 @@ module internal CaseTombstonePruneOwnerCommit =
             proposal
             false
             observedAt
+            ct
 
     let private acceptedIntent
         witness
         (proposal: TombstonePruneProposal)
         (stored: StoredWitnessPruneReceipt)
         canonical
+        ct
         =
         CaseWitnessPayloadPrune.readExactIntent
             witness
@@ -249,6 +207,7 @@ module internal CaseTombstonePruneOwnerCommit =
             stored.IntentSequence
             stored.IntentHash
             canonical
+            ct
 
     let retry
         witnessOwnerConnection
@@ -259,6 +218,7 @@ module internal CaseTombstonePruneOwnerCommit =
         (proposal: TombstonePruneProposal)
         (stored: StoredWitnessPruneReceipt)
         (observedAt: DateTimeOffset)
+        ct
         =
         task {
             if not (matchesStoredFields proposal stored) then
@@ -272,6 +232,7 @@ module internal CaseTombstonePruneOwnerCommit =
                         authorityRevision
                         proposal
                         observedAt
+                        ct
 
                 let canonical =
                     CaseTombstonePruneExecutionCandidate.encode
@@ -283,7 +244,7 @@ module internal CaseTombstonePruneOwnerCommit =
                     if not (matchesStored proposal canonical stored) then
                         return OwnerWitnessPruneOutcome.Refused LifecycleRefusal.ApprovalMismatch
                     else
-                        let intent = acceptedIntent witness proposal stored canonical
+                        let! intent = acceptedIntent witness proposal stored canonical ct
 
                         do! transaction.CommitAsync()
 
@@ -295,6 +256,7 @@ module internal CaseTombstonePruneOwnerCommit =
                                 (targetSeal proposal)
                                 intent
                                 approvals
+                                CancellationToken.None
                 finally
                     CryptographicOperations.ZeroMemory(canonical)
         }

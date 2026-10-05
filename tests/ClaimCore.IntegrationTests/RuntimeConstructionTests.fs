@@ -90,6 +90,7 @@ let private custodyFailureClosesStore () =
                     (witnessFactory created)
                     (fun _ -> invalidOp "Synthetic custody refusal")
                     identity
+                |> fun work -> work.GetAwaiter().GetResult()
                 |> ignore)
             "Failed custody prevents ownership transfer"
 
@@ -111,7 +112,11 @@ let private successTransfersStoreAndCustody () =
         }
 
     let witness =
-        RuntimeOpening.createWitness (witnessFactory created) (fun _ -> custody) identity
+        RuntimeOpening.createWitness
+            (witnessFactory created)
+            (fun _ -> Task.FromResult custody)
+            identity
+        |> fun work -> work.GetAwaiter().GetResult()
 
     try
         Expect.isTrue

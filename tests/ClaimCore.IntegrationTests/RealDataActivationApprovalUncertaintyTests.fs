@@ -53,7 +53,9 @@ let private stagedAttempt owner (witness: WitnessProtocol) context request prima
     use connection = new NpgsqlConnection(owner)
     connection.Open()
     use transaction = connection.BeginTransaction(IsolationLevel.ReadCommitted)
-    let approvedAt = Sql.databaseNow connection transaction |> await
+
+    let approvedAt =
+        Sql.databaseNow connection transaction CancellationToken.None |> await
 
     let canonical =
         RealDataActivationApprovalCandidate.canonical
@@ -63,7 +65,11 @@ let private stagedAttempt owner (witness: WitnessProtocol) context request prima
             approvedAt
 
     try
-        let intent = witness.BeginAuthority(request.ApprovalId, canonical, None)
+        let intent =
+            (witness
+                .BeginAuthority(request.ApprovalId, canonical, None, CancellationToken.None)
+                .GetAwaiter()
+                .GetResult())
 
         if primaryCommitted then
             RealDataActivationApprovalRows.insert
@@ -112,7 +118,14 @@ let private retryBoundary primaryCommitted owner app _writer (witness: WitnessPr
 
     provision owner witness principal |> applied
     let planId, activationId, plan = publishSyntheticPlan owner witness profile
-    let action = request planId activationId plan (witness.Snapshot())
+
+    let action =
+        request
+            planId
+            activationId
+            plan
+            ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()))
+
     let dataSource, context = actorContext app witness principal
     use source = dataSource
 
@@ -122,25 +135,31 @@ let private retryBoundary primaryCommitted owner app _writer (witness: WitnessPr
             ExpiresAt = action.ExpiresAt.AddTicks(1L)
         }
 
-    let before = witness.Snapshot().TipSequence
+    let before =
+        (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence
 
     Expect.equal
-        (RealDataActivationApproval.approve source witness context unaligned |> await)
+        (RealDataActivationApproval.approve source witness context unaligned CancellationToken.None
+         |> await)
         RealDataActivationApprovalOutcome.ResourceUnavailable
         "Sub-microsecond expiry cannot create unroundtrippable activation evidence."
 
     Expect.equal
-        (witness.Snapshot().TipSequence)
+        ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
         before
         "Invalid activation expiry creates no witness authority."
 
     let intent, originalCanonical =
         stagedAttempt owner witness context action primaryCommitted
 
-    let pendingTip = witness.Snapshot()
+    let pendingTip = (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
+
     Expect.equal pendingTip.TipSequence intent.Ticket.Sequence "Only an INTENT exists before retry."
 
-    match RealDataActivationApproval.approve source witness context action |> await with
+    match
+        RealDataActivationApproval.approve source witness context action CancellationToken.None
+        |> await
+    with
     | RealDataActivationApprovalOutcome.Approved(id, revision) when
         id = action.ApprovalId && revision = context.Binding.GrantRevision
         ->
@@ -153,7 +172,7 @@ let private retryBoundary primaryCommitted owner app _writer (witness: WitnessPr
         "Retry retained original DB-clock canonical bytes."
 
     Expect.equal
-        (witness.Snapshot().TipSequence)
+        ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
         (intent.Ticket.Sequence + 1L)
         "Retry adds only the missing settlement."
 

@@ -1,5 +1,6 @@
 module ClaimCore.IntegrationTests.RevocationIntentIdentityTests
 
+open System.Threading
 open System
 open Expecto
 open ClaimCore.Application
@@ -79,6 +80,8 @@ let private orphan
         material.CaseId
         evidence
         claim
+        CancellationToken.None
+    |> await
 
 let private dismiss
     source
@@ -135,7 +138,10 @@ let tests =
                     "No invented primary acceptance"
 
                 let retained =
-                    witness.EvidenceStore.TryReadEvidence(request.OperationId, Intent)
+                    (witness.EvidenceStore
+                        .TryReadEvidence(request.OperationId, Intent, CancellationToken.None)
+                        .GetAwaiter()
+                        .GetResult())
                     |> Option.defaultWith (fun () ->
                         failtest "Original acceptance intent survives.")
 

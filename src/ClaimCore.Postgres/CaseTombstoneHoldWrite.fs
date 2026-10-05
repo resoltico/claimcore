@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open System.Data
 open System.IO
 open Npgsql
@@ -94,6 +95,7 @@ module internal CaseTombstoneHoldWrite =
         (change: TombstoneHoldChange)
         (stored: StoredCaseTombstone)
         instant
+        ct
         =
         task {
             do! CaseErasurePurgeDelete.verifyAbsent connection transaction change.CaseId
@@ -108,8 +110,8 @@ module internal CaseTombstoneHoldWrite =
 
             try
                 try
-                    let intent =
-                        witness.BeginAuthority(change.EventId, canonical, Some change.CaseId)
+                    let! intent =
+                        witness.BeginAuthority(change.EventId, canonical, Some change.CaseId, ct)
 
                     do!
                         CaseTombstoneHoldPersistence.persist
@@ -125,7 +127,7 @@ module internal CaseTombstoneHoldWrite =
                     do! transaction.CommitAsync()
 
                     try
-                        witness.SettleAuthority(change.EventId, intent) |> ignore
+                        let! _ = witness.SettleAuthority(change.EventId, intent)
 
                         return
                             TombstoneWriteOutcome.Applied(
@@ -148,13 +150,14 @@ module internal CaseTombstoneHoldWrite =
         (change: TombstoneHoldChange)
         (stored: StoredCaseTombstone)
         (instant: DateTimeOffset)
+        ct
         =
         task {
             let! prior = CaseTombstoneHoldReplay.find connection transaction change.EventId
 
             match prior with
             | Some receipt ->
-                return CaseTombstoneHoldReplay.reconcile witness context change receipt
+                return! CaseTombstoneHoldReplay.reconcile witness context change receipt ct
             | None when stored.Phase = "ERASURE_FINAL" ->
                 return TombstoneWriteOutcome.Refused LifecycleRefusal.WrongPrivacyPhase
             | None ->
@@ -166,7 +169,8 @@ module internal CaseTombstoneHoldWrite =
                     match outcome with
                     | Error refusal -> return TombstoneWriteOutcome.Refused refusal
                     | Ok() ->
-                        return! commit connection transaction witness context change stored instant
+                        return!
+                            commit connection transaction witness context change stored instant ct
         }
 
     let private pruneReady
@@ -175,18 +179,22 @@ module internal CaseTombstoneHoldWrite =
         (witness: WitnessProtocol)
         (stored: StoredCaseTombstone)
         caseId
+        ct
         =
         task {
             if stored.PruneEventId.IsNone then
                 return true
             else
+                let! snapshot = witness.Snapshot(ct)
+
                 let! proof =
                     CaseTombstonePruneReceiptAudit.verify
                         connection
                         transaction
                         witness
-                        (witness.Snapshot()).TipSequence
+                        snapshot.TipSequence
                         caseId
+                        ct
 
                 return proof.IsSome
         }
@@ -196,31 +204,24 @@ module internal CaseTombstoneHoldWrite =
         (witness: WitnessProtocol)
         (context: ActorCallContext)
         (change: TombstoneHoldChange)
+        ct
         =
         task {
-            use! connection = RuntimeDatabase.openConnectionAsync dataSource
+            use! connection = RuntimeDatabase.openConnectionAsyncWithCancellation dataSource ct
 
             use! _authorityLease =
-                AuthorityOperationFence.acquireShared
-                    (Some dataSource)
-                    connection
-                    System.Threading.CancellationToken.None
+                AuthorityOperationFence.acquireShared (Some dataSource) connection ct
 
-            use transaction = connection.BeginTransaction(IsolationLevel.ReadCommitted)
+            use! transaction = connection.BeginTransactionAsync(IsolationLevel.ReadCommitted, ct)
 
-            let! revision =
-                ActorGrantRead.lockRevision
-                    connection
-                    transaction
-                    true
-                    System.Threading.CancellationToken.None
+            let! revision = ActorGrantRead.lockRevision connection transaction true ct
 
             let! found = CaseTombstoneRead.lock connection transaction change.CaseId
 
             match found with
             | None -> return TombstoneWriteOutcome.ResourceUnavailable
             | Some stored ->
-                let! available = pruneReady connection transaction witness stored change.CaseId
+                let! available = pruneReady connection transaction witness stored change.CaseId ct
 
                 if not available then
                     return TombstoneWriteOutcome.ResourceUnavailable
@@ -236,7 +237,7 @@ module internal CaseTombstoneHoldWrite =
                     if not allowed then
                         return TombstoneWriteOutcome.ResourceUnavailable
                     else
-                        let! instant = Sql.databaseNow connection transaction
+                        let! instant = Sql.databaseNow connection transaction ct
 
                         return!
                             afterAuthorization
@@ -247,6 +248,7 @@ module internal CaseTombstoneHoldWrite =
                                 change
                                 stored
                                 instant
+                                ct
         }
 
     let change
@@ -254,6 +256,7 @@ module internal CaseTombstoneHoldWrite =
         (witness: WitnessProtocol)
         (context: ActorCallContext)
         (request: TombstoneHoldChange)
+        ct
         =
         task {
             if
@@ -263,9 +266,11 @@ module internal CaseTombstoneHoldWrite =
                 return TombstoneWriteOutcome.ResourceUnavailable
             else
                 try
-                    witness.Admit()
-                    return! write dataSource witness context request
+                    do! witness.Admit(ct)
+                    return! write dataSource witness context request ct
                 with
+                | :? System.OperationCanceledException when ct.IsCancellationRequested ->
+                    return TombstoneWriteOutcome.CancelledBeforeAdmission request.EventId
                 | :? InvalidDataException ->
                     return TombstoneWriteOutcome.Failed CoreFault.StoreIntegrityError
                 | _ -> return TombstoneWriteOutcome.Failed CoreFault.StoreUnavailable

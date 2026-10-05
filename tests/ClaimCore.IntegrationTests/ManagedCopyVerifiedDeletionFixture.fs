@@ -100,7 +100,7 @@ let pendingCopy owner connection witness (copyKey: Key) algorithm copyKeyId dire
             "DELETE_REQUEST"
             "DELETE_PENDING"
             previous
-            (witness.Snapshot())
+            ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()))
 
     let deleteSignature = algorithm.Sign(copyKey, deleteRequest)
 

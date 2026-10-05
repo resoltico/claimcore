@@ -81,7 +81,7 @@ let private saturatedOrdinaryPool () =
 
             Expect.equal
                 summary.WitnessCutoff
-                (witness.Snapshot().TipSequence)
+                ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
                 "Audit completes at its fixed tip."
 
             Expect.equal
@@ -191,11 +191,19 @@ let private cancelledAudit queued =
 let private witnessAdvancesBeforeFence () =
     withAuthorityRuntimeDatabase (fun _ app _ witness ->
         use runtime = resources app witness
-        let before = witness.Snapshot().TipSequence
+
+        let before =
+            (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence
+
         let intent = Guid.NewGuid()
 
         let append () =
-            witness.BeginAuthority(intent, [| 0x43uy; 0x43uy |], None) |> ignore
+            (witness
+                .BeginAuthority(intent, [| 0x43uy; 0x43uy |], None, CancellationToken.None)
+                .GetAwaiter()
+                .GetResult())
+            |> ignore
+
             Task.CompletedTask
 
         let summary =
@@ -214,7 +222,7 @@ let private witnessAdvancesBeforeFence () =
 
         Expect.equal
             summary.WitnessCutoff
-            (witness.Snapshot().TipSequence)
+            ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
             "Audit includes the newly fenced witness tip.")
 
 let tests =

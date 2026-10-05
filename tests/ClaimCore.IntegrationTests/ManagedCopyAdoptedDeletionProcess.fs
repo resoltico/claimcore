@@ -1,5 +1,6 @@
 module internal ClaimCore.IntegrationTests.ManagedCopyAdoptedDeletionProcess
 
+open System.Threading
 open System
 open Expecto
 open ClaimCore.Postgres
@@ -50,9 +51,10 @@ let execute
             "Private inventory path stays out of response"
 
         if pass = 1 then
-            acceptedTip <- witness.Snapshot().TipSequence
+            acceptedTip <-
+                (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence
         else
             Expect.equal
-                (witness.Snapshot().TipSequence)
+                ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
                 acceptedTip
                 "Exact retry adds no witness event after approval and deletion"

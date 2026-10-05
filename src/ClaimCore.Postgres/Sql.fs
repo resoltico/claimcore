@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open System.Threading.Tasks
 open Npgsql
 open NpgsqlTypes
@@ -18,10 +19,10 @@ module internal Sql =
     let private clockCommand (connection: NpgsqlConnection) (transaction: NpgsqlTransaction) =
         new NpgsqlCommand("SELECT clock_timestamp()", connection, transaction)
 
-    let databaseNow connection transaction =
+    let databaseNow connection transaction (ct: CancellationToken) =
         task {
             use command = clockCommand connection transaction
-            let! value = command.ExecuteScalarAsync()
+            let! value = command.ExecuteScalarAsync(ct)
             return utcInstant value
         }
 
@@ -210,7 +211,12 @@ ORDER BY c.case_reference COLLATE "C" LIMIT @window
         text command "key" key
         command.ExecuteNonQuery() |> ignore
 
-    let lockKeyAsync (connection: NpgsqlConnection) (transaction: NpgsqlTransaction) key =
+    let lockKeyAsync
+        (connection: NpgsqlConnection)
+        (transaction: NpgsqlTransaction)
+        key
+        (ct: Threading.CancellationToken)
+        =
         task {
             use command =
                 new NpgsqlCommand(
@@ -220,6 +226,6 @@ ORDER BY c.case_reference COLLATE "C" LIMIT @window
                 )
 
             text command "key" key
-            let! _ = command.ExecuteNonQueryAsync()
+            let! _ = command.ExecuteNonQueryAsync(ct)
             return ()
         }

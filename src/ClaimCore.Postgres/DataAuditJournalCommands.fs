@@ -1,6 +1,8 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
+open DataAuditCommon
 open Npgsql
 
 /// One bounded journal scan owns all of its prepared primary lookup commands.
@@ -86,3 +88,12 @@ module internal DataAuditJournalCommands =
                 command.Dispose()
 
             reraise ()
+
+    let requirePrimary (command: NpgsqlCommand) operationId (cancellationToken: CancellationToken) =
+        task {
+            command.Parameters["operation"].Value <- operationId
+            let! value = command.ExecuteScalarAsync(cancellationToken)
+
+            if not (unbox<bool> value) then
+                corrupt ()
+        }

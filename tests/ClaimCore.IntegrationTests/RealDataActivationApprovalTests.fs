@@ -94,13 +94,17 @@ let private unavailableApproval =
     | _ -> failtest "Activation approval must refuse without disclosing authority."
 
 let private approvalDenials (witness: WitnessProtocol) coreOutsider coreService firstApproval =
-    let before = witness.Snapshot().TipSequence
+    let before =
+        (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence
 
     approve coreOutsider firstApproval |> unavailableApproval
 
     approve coreService firstApproval |> unavailableApproval
 
-    Expect.equal (witness.Snapshot().TipSequence) before "Denied actors append no approval."
+    Expect.equal
+        ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
+        before
+        "Denied actors append no approval."
 
 let private approvePair
     (witness: WitnessProtocol)
@@ -108,12 +112,13 @@ let private approvePair
     coreTwo
     (firstApproval: RealDataActivationApprovalRequest)
     =
-    let before = witness.Snapshot().TipSequence
+    let before =
+        (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence
 
     let firstRevision =
         approve coreOne firstApproval |> requireApproved firstApproval.ApprovalId
 
-    let settledOne = witness.Snapshot()
+    let settledOne = (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
 
     Expect.equal
         settledOne.TipSequence
@@ -130,7 +135,7 @@ let private approvePair
     approve coreOne duplicate |> unavailableApproval
 
     Expect.equal
-        (witness.Snapshot().TipSequence)
+        ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
         settledOne.TipSequence
         "Duplicate owner denial appends nothing."
 
@@ -143,7 +148,7 @@ let private approvePair
     |> requireApproved secondApproval.ApprovalId
     |> ignore
 
-    let settledTwo = witness.Snapshot()
+    let settledTwo = (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
 
     Expect.equal
         settledTwo.TipSequence
@@ -166,7 +171,10 @@ let private exactRetry
         ()
     | _ -> failtest "Exact first approval retry was not definite."
 
-    Expect.equal (witness.Snapshot().TipSequence) finalSequence "Exact retry does not append."
+    Expect.equal
+        ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
+        finalSequence
+        "Exact retry does not append."
 
     let changed =
         { firstApproval with
@@ -196,7 +204,8 @@ let private twoHumanOwners owner app writer (witness: WitnessProtocol) profile =
 
     reviewDenials runtime outsider nonhuman planId
 
-    let anchor = witness.Snapshot()
+    let anchor = (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
+
     let firstApproval = request value anchor
     approvalDenials witness (runtime.ForActor outsider) (runtime.ForActor nonhuman) firstApproval
     let firstRevision, finalSequence = approvePair witness coreOne coreTwo firstApproval
@@ -235,16 +244,21 @@ let private staleTipAndPlanTamper owner app writer (witness: WitnessProtocol) pr
     let planId, _, _ = publishSyntheticPlan owner witness profile
     use runtime = openRuntime app writer
     let review = reviewed runtime principal planId
-    let requestAtReview = request review (witness.Snapshot())
+
+    let requestAtReview =
+        request review ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()))
+
     use source = RuntimeDataSource.create app
     let registry = new ActorGrantRegistry(source, witness)
     registry.RegisterActor(principal, other) |> await |> applied
-    let advancedTip = witness.Snapshot().TipSequence
+
+    let advancedTip =
+        (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence
 
     approve (runtime.ForActor principal) requestAtReview |> unavailableApproval
 
     Expect.equal
-        (witness.Snapshot().TipSequence)
+        ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
         advancedTip
         "Stale review tip appends no approval."
 

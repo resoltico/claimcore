@@ -1,5 +1,6 @@
 module internal ClaimCore.IntegrationTests.BackupHealthRuntimeActorRaceFacts
 
+open System.Threading
 open System
 open System.Data
 open System.Security.Cryptography
@@ -214,9 +215,16 @@ let build
         }
 
     use transaction = connection.BeginTransaction(IsolationLevel.ReadCommitted)
-    let _, inventory = ManagedCopyInventoryDigest.compute connection transaction
+
+    let _, inventory =
+        (ManagedCopyInventoryDigest.compute connection transaction CancellationToken.None)
+            .GetAwaiter()
+            .GetResult()
+
     transaction.Rollback()
-    let snapshot = witness.Snapshot()
+
+    let snapshot = (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
+
     let now = Sql.databaseNowSync connection Unchecked.defaultof<NpgsqlTransaction>
 
     claims

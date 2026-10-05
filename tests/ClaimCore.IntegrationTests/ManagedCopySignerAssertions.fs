@@ -1,5 +1,6 @@
 module internal ClaimCore.IntegrationTests.ManagedCopySignerAssertions
 
+open System.Threading
 open System
 open Expecto
 open Npgsql
@@ -26,13 +27,17 @@ let verifyApprovals (connection: NpgsqlConnection) (witness: WitnessProtocol) id
             (ManagedCopySignerApprovalRead.canonicalMatches evidence)
             "Approval row binds its exact canonical candidate."
 
-        witness.VerifyAuthorityEvidence(
-            approvalId,
-            evidence.WitnessSequence,
-            evidence.WitnessEpoch,
-            evidence.WitnessEntryHash,
-            evidence.CandidateSha256
-        )
+        (witness
+            .VerifyAuthorityEvidence(
+                approvalId,
+                evidence.WitnessSequence,
+                evidence.WitnessEpoch,
+                evidence.WitnessEntryHash,
+                evidence.CandidateSha256,
+                CancellationToken.None
+            )
+            .GetAwaiter()
+            .GetResult())
 
     transaction.Rollback()
 

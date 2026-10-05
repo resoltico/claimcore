@@ -168,20 +168,22 @@ module internal RecoveryArtifactExportRead =
             return result :?> bool
         }
 
-    let requireSettled (witness: WitnessProtocol) row =
+    let requireSettled (witness: WitnessProtocol) row ct =
         witness.VerifyAuthorityEvidence(
             row.ExportId,
             row.WitnessSequence,
             row.WitnessEpoch,
             row.WitnessEntryHash,
-            row.WitnessCandidateSha256
+            row.WitnessCandidateSha256,
+            ct
         )
 
-    let reconcileSettled (witness: WitnessProtocol) row =
+    let reconcileSettled (witness: WitnessProtocol) row ct =
         witness.ReconcileAuthority(
             row.ExportId,
             row.WitnessSequence,
             row.WitnessEpoch,
             row.WitnessEntryHash,
-            row.CanonicalAction
+            row.CanonicalAction,
+            ct
         )

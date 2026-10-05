@@ -122,26 +122,32 @@ type internal ActorGrantRegistry(dataSource: NpgsqlDataSource, witness: WitnessP
                     }
 
                 return!
-                    ActorGrantWrite.run connection transaction witness action (fun () ->
-                        ActorGrantWrite.setGrant
-                            connection
-                            transaction
-                            targetId
-                            grant
-                            active
-                            action.Revision)
+                    ActorGrantWrite.run
+                        connection
+                        transaction
+                        witness
+                        action
+                        (fun () ->
+                            ActorGrantWrite.setGrant
+                                connection
+                                transaction
+                                targetId
+                                grant
+                                active
+                                action.Revision)
+                        CancellationToken.None
         }
 
     member _.RegisterActor(approverPrincipal: PrincipalKey, targetPrincipal: PrincipalKey) =
         task {
-            witness.Admit()
+            do! witness.Admit(CancellationToken.None)
             use! connection = RuntimeDatabase.openConnectionAsync dataSource
 
             use! _authorityLease =
                 AuthorityOperationFence.acquireShared
                     (Some dataSource)
                     connection
-                    System.Threading.CancellationToken.None
+                    CancellationToken.None
 
             use transaction = connection.BeginTransaction(IsolationLevel.ReadCommitted)
 
@@ -168,14 +174,14 @@ type internal ActorGrantRegistry(dataSource: NpgsqlDataSource, witness: WitnessP
             if targetId = Guid.Empty then
                 return AuthorityWriteOutcome.Refused
             else
-                witness.Admit()
+                do! witness.Admit(CancellationToken.None)
                 use! connection = RuntimeDatabase.openConnectionAsync dataSource
 
                 use! _authorityLease =
                     AuthorityOperationFence.acquireShared
                         (Some dataSource)
                         connection
-                        System.Threading.CancellationToken.None
+                        CancellationToken.None
 
                 use transaction = connection.BeginTransaction(IsolationLevel.ReadCommitted)
 
@@ -196,26 +202,28 @@ type internal ActorGrantRegistry(dataSource: NpgsqlDataSource, witness: WitnessP
                     if not safe then
                         return AuthorityWriteOutcome.Refused
                     else
-                        let action: ActorAuthorityAction =
-                            {
-                                EventId = Guid.NewGuid()
-                                Revision = revision + 1L
-                                ActionName = if enabled then "ENABLE_ACTOR" else "DISABLE_ACTOR"
-                                TargetActorId = targetId
-                                ApproverActorId = Some authority.ActorId
-                                Principal = None
-                                Grant = None
-                                Enabled = Some enabled
-                            }
+                        let action =
+                            ActorGrantCandidate.enabledAction
+                                (Guid.NewGuid())
+                                (revision + 1L)
+                                targetId
+                                authority.ActorId
+                                enabled
 
                         return!
-                            ActorGrantWrite.run connection transaction witness action (fun () ->
-                                ActorGrantWrite.setEnabled
-                                    connection
-                                    transaction
-                                    targetId
-                                    enabled
-                                    action.Revision)
+                            ActorGrantWrite.run
+                                connection
+                                transaction
+                                witness
+                                action
+                                (fun () ->
+                                    ActorGrantWrite.setEnabled
+                                        connection
+                                        transaction
+                                        targetId
+                                        enabled
+                                        action.Revision)
+                                CancellationToken.None
                 | _ -> return AuthorityWriteOutcome.Refused
         }
 
@@ -231,14 +239,14 @@ type internal ActorGrantRegistry(dataSource: NpgsqlDataSource, witness: WitnessP
             then
                 return AuthorityWriteOutcome.Refused
             else
-                witness.Admit()
+                do! witness.Admit(CancellationToken.None)
                 use! connection = RuntimeDatabase.openConnectionAsync dataSource
 
                 use! _authorityLease =
                     AuthorityOperationFence.acquireShared
                         (Some dataSource)
                         connection
-                        System.Threading.CancellationToken.None
+                        CancellationToken.None
 
                 use transaction = connection.BeginTransaction(IsolationLevel.ReadCommitted)
 

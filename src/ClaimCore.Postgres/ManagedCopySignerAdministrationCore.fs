@@ -21,24 +21,28 @@ module internal ManagedCopySignerAdministration =
         secondId
         (prior: SignerEventEvidence)
         =
-        if
-            prior.SigningKeyId <> keyId
-            || prior.Action <> ManagedCopySignerCandidate.actionName action
-            || prior.Purpose <> purpose
-            || Set.ofList [ prior.OwnerApprovalId; prior.CustodianApprovalId ]
-               <> Set.ofList [ firstId; secondId ]
-        then
-            AuthorityWriteOutcome.Refused
-        else
-            witness.VerifyAuthorityEvidence(
-                eventId,
-                prior.WitnessSequence,
-                prior.WitnessEpoch,
-                prior.WitnessEntryHash,
-                prior.CandidateSha256
-            )
+        task {
+            if
+                prior.SigningKeyId <> keyId
+                || prior.Action <> ManagedCopySignerCandidate.actionName action
+                || prior.Purpose <> purpose
+                || Set.ofList [ prior.OwnerApprovalId; prior.CustodianApprovalId ]
+                   <> Set.ofList [ firstId; secondId ]
+            then
+                return AuthorityWriteOutcome.Refused
+            else
+                do!
+                    witness.VerifyAuthorityEvidence(
+                        eventId,
+                        prior.WitnessSequence,
+                        prior.WitnessEpoch,
+                        prior.WitnessEntryHash,
+                        prior.CandidateSha256,
+                        CancellationToken.None
+                    )
 
-            AuthorityWriteOutcome.Applied(eventId, prior.Revision)
+                return AuthorityWriteOutcome.Applied(eventId, prior.Revision)
+        }
 
     let private validInput eventId keyId action (publicKey: byte array option) firstId secondId =
         eventId <> Guid.Empty
@@ -81,10 +85,10 @@ module internal ManagedCopySignerAdministration =
             let! first = ManagedCopySignerApprovalRead.load connection transaction firstId
             let! second = ManagedCopySignerApprovalRead.load connection transaction secondId
 
-            return
-                match first, second with
-                | Some one, Some two -> approved witness now keyId action purpose publicHash one two
-                | _ -> None
+            match first, second with
+            | Some one, Some two ->
+                return! approved witness now keyId action purpose publicHash one two
+            | _ -> return None
         }
 
     let private commitInput
@@ -136,7 +140,7 @@ module internal ManagedCopySignerAdministration =
             match target action purpose publicKey previous with
             | None -> return AuthorityWriteOutcome.Refused
             | Some publicHash ->
-                let! now = Sql.databaseNow connection transaction
+                let! now = Sql.databaseNow connection transaction CancellationToken.None
 
                 let! pair =
                     loadPair
@@ -214,11 +218,11 @@ module internal ManagedCopySignerAdministration =
                         | None, Some _ -> true
                         | _ -> false
 
-                    return
-                        if sameKey then
+                    if sameKey then
+                        return!
                             replay witness eventId keyId action purpose firstId secondId previous
-                        else
-                            AuthorityWriteOutcome.Refused
+                    else
+                        return AuthorityWriteOutcome.Refused
         }
 
     let private run
@@ -239,7 +243,7 @@ module internal ManagedCopySignerAdministration =
                 try
                     OwnerConnection.requireIdentity connection
                     SchemaBaseline.requireCurrent connection
-                    witness.Admit()
+                    do! witness.Admit(CancellationToken.None)
 
                     use! _authorityFence =
                         AuthorityOperationFence.acquireShared None connection CancellationToken.None

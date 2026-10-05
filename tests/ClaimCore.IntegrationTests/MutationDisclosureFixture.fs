@@ -45,7 +45,16 @@ let fencedAdmission app (witness: WitnessProtocol) beforeFence =
             )
 
         command.ExecuteScalar() |> ignore
-        let witnessFence = witness.AcquireReadFence(witness.Snapshot().WriterGeneration)
+
+        let witnessFence =
+            (witness
+                .AcquireReadFence(
+                    (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
+                        .WriterGeneration,
+                    CancellationToken.None
+                )
+                .GetAwaiter()
+                .GetResult())
 
         { new IDisposable with
             member _.Dispose() =
@@ -59,16 +68,16 @@ let fencedAdmission app (witness: WitnessProtocol) beforeFence =
             member _.Dispose() = ()
         },
         TimeSpan.FromSeconds 10.,
-        witness.AdmitReadOnly,
-        fence,
+        (fun ct -> witness.AdmitReadOnly(ct)),
+        (fun _ -> task { return (fence) () }),
         {
-            RequireCaseMutation = (fun () -> ())
-            RequireCaseRead = (fun () -> ())
-            RequireAuthoritySetup = (fun () -> ())
-            RequireAuthorityRead = (fun () -> ())
+            RequireCaseMutation = (fun _ -> Task.FromResult(()))
+            RequireCaseRead = (fun _ -> Task.FromResult(()))
+            RequireAuthoritySetup = (fun _ -> Task.FromResult(()))
+            RequireAuthorityRead = (fun _ -> Task.FromResult(()))
             CommitHealth =
                 { new ICaseMutationCommitHealth with
-                    member _.VerifyLocked(_, _) = ()
+                    member _.VerifyLocked(_, _, _) = Task.CompletedTask
                 }
             CommitHealthRequired = false
         }

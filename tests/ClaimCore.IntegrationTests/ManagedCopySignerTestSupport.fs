@@ -5,6 +5,7 @@ open System.Security.Cryptography
 open System.Threading
 open Expecto
 open Npgsql
+open NSec.Cryptography
 open ClaimCore.Application
 open ClaimCore.Hosting
 open ClaimCore.Postgres
@@ -150,3 +151,29 @@ let diagnosticCounts owner witnessOwner keyId eventId =
             eventId
 
     signer, intent
+
+let registeredSigner runtime ownerPrincipal custodian purpose witness ownerConnection =
+    let algorithm = SignatureAlgorithm.Ed25519
+    let key = Key.Create(algorithm)
+    let raw = key.PublicKey.Export(KeyBlobFormat.RawPublicKey)
+    let keyId = Guid.NewGuid()
+    let digest = SHA256.HashData(raw)
+
+    let ownerApproval, custodianApproval =
+        approvePair runtime ownerPrincipal custodian keyId digest CopySignerAction.Register purpose
+
+    let eventId = Guid.NewGuid()
+
+    ManagedCopySignerAdministration.register
+        ownerConnection
+        witness
+        eventId
+        keyId
+        purpose
+        raw
+        ownerApproval
+        custodianApproval
+    |> await
+    |> appliedSigner eventId
+
+    key, algorithm, keyId, digest

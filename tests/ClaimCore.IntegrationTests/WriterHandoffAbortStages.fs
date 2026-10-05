@@ -145,7 +145,10 @@ let retainPending (evidence: Evidence) =
         evidence.SignatureTwo
         scenario.OldCapability
 
-    Expect.isTrue (scenario.Witness.Snapshot().HandoffPending) "A1 leaves witness quarantined."
+    Expect.isTrue
+        ((scenario.Witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).HandoffPending)
+        "A1 leaves witness quarantined."
+
     assertAudit scenario 1L 0L
 
     assertMissingA2

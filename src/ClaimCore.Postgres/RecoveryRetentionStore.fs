@@ -30,17 +30,20 @@ module internal RecoveryRetentionStore =
     let private requireActorAndWitness
         (actorContext: ActorCallContext option)
         (witness: WitnessProtocol option)
+        ct
         =
-        let actor =
-            actorContext
-            |> Option.defaultWith (fun () -> invalidOp "Actor is required for preparation.")
+        task {
+            let actor =
+                actorContext
+                |> Option.defaultWith (fun () -> invalidOp "Actor is required for preparation.")
 
-        let active =
-            witness
-            |> Option.defaultWith (fun () -> invalidOp "Witness is required for preparation.")
+            let active =
+                witness
+                |> Option.defaultWith (fun () -> invalidOp "Witness is required for preparation.")
 
-        active.Admit()
-        actor, active
+            do! active.Admit(ct)
+            return actor, active
+        }
 
     let private retainAbsent
         (connection: NpgsqlConnection)
@@ -49,6 +52,7 @@ module internal RecoveryRetentionStore =
         (draft: RecoveryPreparationDraft)
         (witness: WitnessProtocol)
         (pending: (Guid * WitnessIntent) option ref)
+        ct
         =
         task {
             match PreparationIntegrity.validateDraft draft with
@@ -63,7 +67,7 @@ module internal RecoveryRetentionStore =
                 then
                     return Error RecoveryStoreFailure.CapacityExceeded
                 else
-                    let eventId, intent = WitnessTechnical.beginPrepare witness draft
+                    let! eventId, intent = WitnessTechnical.beginPrepare witness draft ct
                     pending.Value <- Some(eventId, intent)
                     let! inserted = insertPreparation connection transaction draft eventId intent
                     return Ok(RecoveryRetain.Created inserted)
@@ -77,6 +81,7 @@ module internal RecoveryRetentionStore =
         (request: CommandRequest)
         (witness: WitnessProtocol)
         (pending: (Guid * WitnessIntent) option ref)
+        ct
         =
         task {
             let! revoked = find connection transaction draft.OperationId
@@ -98,10 +103,11 @@ module internal RecoveryRetentionStore =
                     ->
                     return Error RecoveryStoreFailure.ResourceUnavailable
                 | Some value when sameImmutable draft value ->
-                    WitnessTechnical.reconcilePrepare witness connection transaction value
+                    do! WitnessTechnical.reconcilePrepare witness connection transaction value ct
                     return Ok(RecoveryRetain.Existing value)
                 | Some _ -> return Error RecoveryStoreFailure.IdempotencyConflict
-                | None -> return! retainAbsent connection transaction limits draft witness pending
+                | None ->
+                    return! retainAbsent connection transaction limits draft witness pending ct
         }
 
     let private lockRetention
@@ -109,20 +115,21 @@ module internal RecoveryRetentionStore =
         transaction
         (draft: RecoveryPreparationDraft)
         (request: CommandRequest)
+        ct
         =
         task {
-            let! revision =
-                ActorGrantRead.lockRevision connection transaction true CancellationToken.None
+            let! revision = ActorGrantRead.lockRevision connection transaction true ct
 
-            do! Sql.lockKeyAsync connection transaction "claimcore:request-preparation-capacity"
+            do! Sql.lockKeyAsync connection transaction "claimcore:request-preparation-capacity" ct
 
             do!
                 Sql.lockKeyAsync
                     connection
                     transaction
                     ("operation:" + draft.OperationId.ToString("D"))
+                    ct
 
-            do! Sql.lockKeyAsync connection transaction ("case:" + request.CaseReference)
+            do! Sql.lockKeyAsync connection transaction ("case:" + request.CaseReference) ct
 
             return revision
         }
@@ -136,9 +143,10 @@ module internal RecoveryRetentionStore =
         (actorContext: ActorCallContext)
         (witness: WitnessProtocol)
         (pending: (Guid * WitnessIntent) option ref)
+        ct
         =
         task {
-            let! revision = lockRetention connection transaction draft request
+            let! revision = lockRetention connection transaction draft request ct
 
             let! authorized =
                 ActorMutationGuard.authorize
@@ -159,6 +167,7 @@ module internal RecoveryRetentionStore =
                         witness
                         draft.OperationId
                         draft.RequestSha256
+                        ct
 
                 match accepted with
                 | Ok(Some receipt) -> return Ok(RecoveryRetain.ObservedAccepted receipt)
@@ -173,6 +182,14 @@ module internal RecoveryRetentionStore =
                             request
                             witness
                             pending
+                            ct
+        }
+
+    let private settleRetainedPreparation (witness: WitnessProtocol) pending =
+        task {
+            match pending with
+            | Some(eventId, intent) -> let! _ = witness.SettleAuthority(eventId, intent) in ()
+            | None -> ()
         }
 
     let retain
@@ -191,15 +208,19 @@ module internal RecoveryRetentionStore =
                 let pending: (Guid * WitnessIntent) option ref = ref None
 
                 try
-                    let actor, active = requireActorAndWitness actorContext witness
+                    let! actor, active =
+                        requireActorAndWitness actorContext witness cancellationToken
 
-                    use! connection = RuntimeDatabase.openConnectionAsync dataSource
+                    use! connection =
+                        RuntimeDatabase.openConnectionAsyncWithCancellation
+                            dataSource
+                            cancellationToken
 
                     use! _authorityLease =
                         AuthorityOperationFence.acquireShared
                             (Some dataSource)
                             connection
-                            System.Threading.CancellationToken.None
+                            cancellationToken
 
                     let! result =
                         withTransaction
@@ -215,18 +236,13 @@ module internal RecoveryRetentionStore =
                                     request
                                     actor
                                     active
-                                    pending)
+                                    pending
+                                    cancellationToken)
 
-                    match pending.Value with
-                    | Some(eventId, intent) -> active.SettleAuthority(eventId, intent) |> ignore
-                    | None -> ()
+                    do! settleRetainedPreparation active pending.Value
 
                     return result
                 with error ->
                     return
-                        match pending.Value, error with
-                        | Some _, _
-                        | _, :? WitnessPending ->
-                            Error RecoveryStoreFailure.TechnicalMutationUnknown
-                        | _ -> Error(mutationFailure commitStarted.Value error)
+                        Error(mutationFailure (commitStarted.Value || pending.Value.IsSome) error)
         }

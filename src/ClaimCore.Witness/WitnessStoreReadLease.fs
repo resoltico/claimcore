@@ -1,32 +1,49 @@
 namespace ClaimCore.Witness
 
 open System
+open System.Threading
 open Npgsql
 
 /// A claimant-bearing read holds the definer-acquired row lock through its core response.
 module internal WitnessStoreReadLease =
-    let acquire (source: NpgsqlDataSource) identity (capability: byte array) expectedGeneration =
-        let connection = source.OpenConnection()
-
-        try
-            WitnessStoreRead.checkAdmission identity connection
-            let transaction = connection.BeginTransaction()
+    let acquire
+        (source: NpgsqlDataSource)
+        identity
+        (capability: byte array)
+        expectedGeneration
+        (ct: CancellationToken)
+        =
+        task {
+            let! connection = source.OpenConnectionAsync(ct)
 
             try
-                let current =
-                    WitnessStoreRead.lockWriterAdmission identity capability connection transaction
+                do! WitnessDatabaseAdmission.checkAsync identity connection ct
+                let! transaction = connection.BeginTransactionAsync(ct)
 
-                if current <> expectedGeneration then
-                    invalidOp "Witness writer generation changed."
+                try
+                    let! current =
+                        WitnessStoreRead.lockWriterAdmission
+                            identity
+                            capability
+                            connection
+                            transaction
+                            ct
 
-                { new IDisposable with
-                    member _.Dispose() =
-                        transaction.Dispose()
-                        connection.Dispose()
-                }
-            with _ ->
-                transaction.Dispose()
-                reraise ()
-        with _ ->
-            connection.Dispose()
-            reraise ()
+                    if current <> expectedGeneration then
+                        invalidOp "Witness writer generation changed."
+
+                    return
+                        { new IDisposable with
+                            member _.Dispose() =
+                                try
+                                    transaction.Dispose()
+                                finally
+                                    connection.Dispose()
+                        }
+                with error ->
+                    transaction.Dispose()
+                    return raise error
+            with error ->
+                connection.Dispose()
+                return raise error
+        }

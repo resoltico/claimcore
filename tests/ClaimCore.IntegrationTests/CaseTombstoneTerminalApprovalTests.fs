@@ -195,7 +195,10 @@ let private holdsBoundApproval =
                     "Active hold prevents a new terminal approval"
 
                 Expect.isNone
-                    (fixture.Witness.EvidenceStore.TryReadEvidence(deniedId, Intent))
+                    ((fixture.Witness.EvidenceStore
+                        .TryReadEvidence(deniedId, Intent, CancellationToken.None)
+                        .GetAwaiter()
+                        .GetResult()))
                     "Hold refusal wrote no witness intent"
 
                 changeHold

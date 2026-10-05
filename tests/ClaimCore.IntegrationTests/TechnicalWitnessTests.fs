@@ -151,7 +151,11 @@ let private orphanPrepareIntent =
 
             let candidate = draft request context
             use healthy = protocol owner writer (fun () -> ())
-            let eventId, _ = WitnessTechnical.beginPrepare healthy candidate
+
+            let eventId, _ =
+                (WitnessTechnical.beginPrepare healthy candidate cancellation)
+                    .GetAwaiter()
+                    .GetResult()
 
             match (recovery source healthy context).Retain(candidate, cancellation) |> await with
             | Error RecoveryStoreFailure.TechnicalMutationUnknown -> ()
@@ -198,6 +202,8 @@ let private orphanStartIntent =
                     executeContext.Binding.ActorId
                     "SUBMITTER"
                     executeContext.Binding.GrantRevision
+                    CancellationToken.None
+                |> await
 
             match
                 (recovery source healthy executeContext).Start(request.OperationId, cancellation)

@@ -192,15 +192,17 @@ module internal DataAuditErasure =
             then
                 corrupt ()
 
-            witnessProof (fun () ->
-                witness.VerifyAuthorityEvidenceForCase(
-                    value.EventId,
-                    value.WitnessSequence,
-                    value.WitnessEpoch,
-                    value.WitnessHash,
-                    value.CandidateHash,
-                    value.CaseId
-                ))
+            do!
+                witnessProofAsync (fun () ->
+                    witness.VerifyAuthorityEvidenceForCase(
+                        value.EventId,
+                        value.WitnessSequence,
+                        value.WitnessEpoch,
+                        value.WitnessHash,
+                        value.CandidateHash,
+                        value.CaseId,
+                        ct
+                    ))
 
             do! verifyDenials connection transaction commitments value ct
         }

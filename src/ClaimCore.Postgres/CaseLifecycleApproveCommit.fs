@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open Npgsql
 open ClaimCore.Application
 open ClaimCore.Domain
@@ -38,13 +39,15 @@ module internal CaseLifecycleApproveCommit =
 
             do! transaction.CommitAsync()
 
-            witness.ReconcileAuthority(
-                approvalId,
-                intent.Ticket.Sequence,
-                intent.Ticket.Epoch,
-                intent.Ticket.EntryHash,
-                canonical
-            )
+            do!
+                witness.ReconcileAuthority(
+                    approvalId,
+                    intent.Ticket.Sequence,
+                    intent.Ticket.Epoch,
+                    intent.Ticket.EntryHash,
+                    canonical,
+                    CancellationToken.None
+                )
 
             return
                 LifecycleWriteOutcome.Applied(
@@ -65,6 +68,7 @@ module internal CaseLifecycleApproveCommit =
         expiresAt
         instant
         draftHash
+        ct
         =
         task {
             let canonical =
@@ -79,7 +83,8 @@ module internal CaseLifecycleApproveCommit =
                     expiresAt
 
             try
-                let intent = witness.BeginAuthority(approvalId, canonical, Some projection.CaseId)
+                let! intent =
+                    witness.BeginAuthority(approvalId, canonical, Some projection.CaseId, ct)
 
                 try
                     return!

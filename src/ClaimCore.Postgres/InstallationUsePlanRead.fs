@@ -126,21 +126,24 @@ module internal InstallationUsePlanRead =
             | Some row ->
                 let plan = validateRow witness planId row
 
+                let! observed = witness.EvidenceStore.TryReadEvidence(planId, SettledAuthority, ct)
+
                 let settled =
-                    witness.EvidenceStore.TryReadEvidence(planId, SettledAuthority)
+                    observed
                     |> Option.defaultWith (fun () ->
                         invalidOp "Published plan is not witnessed settled.")
 
                 if settled.Ticket.Sequence <= row.IntentSequence then
                     invalidOp "Published plan settlement order is invalid."
 
-                WriterActivationWitness.verifyHistorical
-                    witness
-                    planId
-                    row.CanonicalPlan
-                    (row.IntentSequence, row.IntentHash)
-                    (settled.Ticket.Sequence, settled.Ticket.EntryHash)
-                |> ignore
+                let! _ =
+                    WriterActivationWitness.verifyHistorical
+                        witness
+                        planId
+                        row.CanonicalPlan
+                        (row.IntentSequence, row.IntentHash)
+                        (settled.Ticket.Sequence, settled.Ticket.EntryHash)
+                        ct
 
                 return
                     Some

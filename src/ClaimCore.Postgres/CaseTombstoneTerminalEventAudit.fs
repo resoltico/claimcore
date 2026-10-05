@@ -59,18 +59,19 @@ module internal CaseTombstoneTerminalEventAudit =
             CaseTombstoneTerminalEventCandidate.eventHash previousHash event.Canonical
         && event.RecordedAt = decoded.ObservedAt
 
-    let private witnessEvent (witness: WitnessProtocol) cutoff (event: StoredTerminalEvent) =
+    let private witnessEvent (witness: WitnessProtocol) cutoff (event: StoredTerminalEvent) ct =
         if event.WitnessSequence > cutoff || event.WitnessEpoch <> witness.Identity.Epoch then
             corrupt ()
 
-        witnessProof (fun () ->
+        witnessProofAsync (fun () ->
             witness.VerifyAuthorityEvidenceForCase(
                 event.EventId,
                 event.WitnessSequence,
                 event.WitnessEpoch,
                 event.WitnessHash,
                 event.CandidateHash,
-                event.CaseId
+                event.CaseId,
+                ct
             ))
 
     let verify
@@ -83,6 +84,7 @@ module internal CaseTombstoneTerminalEventAudit =
         previousHash
         previousPhase
         hasActiveHold
+        ct
         =
         task {
             let! found = CaseTombstoneTerminalEventRead.find connection transaction eventId
@@ -106,7 +108,8 @@ module internal CaseTombstoneTerminalEventAudit =
                     witness
                     event
                     decoded
+                    ct
 
-            witnessEvent witness cutoff event
+            do! witnessEvent witness cutoff event ct
             return event.ResultingPhase, event.EventId, event.PolicyId, event.SuppressionUntil
         }

@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open System.Data
 open System.Security.Cryptography
 open Npgsql
@@ -11,74 +12,78 @@ open WitnessProtocolReconciliation
 /// Actor-bound HUMAN OWNER adoption approval. It only witnesses a draft; the later owner
 /// command verifies signed custody/provenance and consumes this approval atomically.
 module internal ManagedCopyAdoptionApprovalWrite =
-    let private authorized (context: ActorCallContext) (authority: ActorAuthority) caseId =
-        let owner =
-            authority.Grants
-            |> List.exists (fun grant ->
-                grant.Role = Role.Owner
-                && (grant.Scope = GrantScope.Installation || grant.Scope = GrantScope.Case caseId))
+    let private requireCaseIntent
+        (witness: WitnessProtocol)
+        (request: CopyAdoptionApprovalRequest)
+        ct
+        =
+        task {
+            let! retained =
+                witness.EvidenceStore.TryReadEvidence(
+                    request.ApprovalId,
+                    ClaimCore.Witness.Intent,
+                    ct
+                )
 
-        owner
-        && (match
-                ActorAuthorization.authorizeAtRevision
-                    context.Binding.Principal
-                    authority
-                    context.Binding.GrantRevision
-                    EndpointAction.ApproveCopyAdoption
-                    (ResourceScope.Case caseId)
-            with
-            | AuthorizationDecision.Available(actorId, _) -> actorId = context.Binding.ActorId
-            | _ -> false)
+            let intent = retained |> Option.defaultWith (fun () -> raise WitnessPending)
+
+            if
+                intent.Ticket.ScopeKind <> ClaimCore.Witness.Case
+                || intent.Ticket.SubjectCaseId <> Some request.CaseId
+            then
+                raise WitnessPending
+
+        }
 
     let private replay
         (witness: WitnessProtocol)
         (request: CopyAdoptionApprovalRequest)
         (prior: StoredAdoptionApproval)
         canonical
+        ct
         =
-        if
-            prior.CaseId <> request.CaseId
-            || prior.CopyId <> request.CopyId
-            || prior.AdoptionEventId <> request.AdoptionEventId
-            || prior.Canonical <> canonical
-            || prior.CandidateHash <> SHA256.HashData(canonical)
-        then
-            CopyAdoptionApprovalOutcome.ResourceUnavailable
-        else
-            try
-                let intent =
-                    witness.EvidenceStore.TryReadEvidence(
-                        request.ApprovalId,
-                        ClaimCore.Witness.Intent
-                    )
-                    |> Option.defaultWith (fun () -> raise WitnessPending)
+        task {
+            if
+                prior.CaseId <> request.CaseId
+                || prior.CopyId <> request.CopyId
+                || prior.AdoptionEventId <> request.AdoptionEventId
+                || prior.Canonical <> canonical
+                || prior.CandidateHash <> SHA256.HashData(canonical)
+            then
+                return CopyAdoptionApprovalOutcome.ResourceUnavailable
+            else
+                try
+                    do! requireCaseIntent witness request ct
 
-                if
-                    intent.Ticket.ScopeKind <> ClaimCore.Witness.Case
-                    || intent.Ticket.SubjectCaseId <> Some request.CaseId
-                then
-                    raise WitnessPending
+                    do!
+                        witness.ReconcileAuthority(
+                            request.ApprovalId,
+                            prior.WitnessSequence,
+                            prior.WitnessEpoch,
+                            prior.WitnessHash,
+                            canonical,
+                            ct
+                        )
 
-                witness.ReconcileAuthority(
-                    request.ApprovalId,
-                    prior.WitnessSequence,
-                    prior.WitnessEpoch,
-                    prior.WitnessHash,
-                    canonical
-                )
+                    do!
+                        witness.VerifyAuthorityEvidenceForCase(
+                            request.ApprovalId,
+                            prior.WitnessSequence,
+                            prior.WitnessEpoch,
+                            prior.WitnessHash,
+                            prior.CandidateHash,
+                            request.CaseId,
+                            CancellationToken.None
+                        )
 
-                witness.VerifyAuthorityEvidenceForCase(
-                    request.ApprovalId,
-                    prior.WitnessSequence,
-                    prior.WitnessEpoch,
-                    prior.WitnessHash,
-                    prior.CandidateHash,
-                    request.CaseId
-                )
-
-                CopyAdoptionApprovalOutcome.Approved(request.ApprovalId, prior.GrantRevision)
-            with _ ->
-                CopyAdoptionApprovalOutcome.StartedUnconfirmed request.ApprovalId
+                    return
+                        CopyAdoptionApprovalOutcome.Approved(
+                            request.ApprovalId,
+                            prior.GrantRevision
+                        )
+                with _ ->
+                    return CopyAdoptionApprovalOutcome.StartedUnconfirmed request.ApprovalId
+        }
 
     let private commit
         connection
@@ -88,11 +93,12 @@ module internal ManagedCopyAdoptionApprovalWrite =
         (request: CopyAdoptionApprovalRequest)
         now
         canonical
+        ct
         =
         task {
             try
-                let intent =
-                    witness.BeginAuthority(request.ApprovalId, canonical, Some request.CaseId)
+                let! intent =
+                    witness.BeginAuthority(request.ApprovalId, canonical, Some request.CaseId, ct)
 
                 do!
                     ManagedCopyAdoptionApprovalPersistence.persist
@@ -107,16 +113,18 @@ module internal ManagedCopyAdoptionApprovalWrite =
                 do! transaction.CommitAsync()
 
                 try
-                    witness.SettleAuthority(request.ApprovalId, intent) |> ignore
+                    let! _ = witness.SettleAuthority(request.ApprovalId, intent)
 
-                    witness.VerifyAuthorityEvidenceForCase(
-                        request.ApprovalId,
-                        intent.Ticket.Sequence,
-                        intent.Ticket.Epoch,
-                        intent.Ticket.EntryHash,
-                        intent.CandidateHash,
-                        request.CaseId
-                    )
+                    do!
+                        witness.VerifyAuthorityEvidenceForCase(
+                            request.ApprovalId,
+                            intent.Ticket.Sequence,
+                            intent.Ticket.Epoch,
+                            intent.Ticket.EntryHash,
+                            intent.CandidateHash,
+                            request.CaseId,
+                            CancellationToken.None
+                        )
 
                     return
                         CopyAdoptionApprovalOutcome.Approved(
@@ -136,12 +144,13 @@ module internal ManagedCopyAdoptionApprovalWrite =
         context
         (request: CopyAdoptionApprovalRequest)
         (stored: StoredCaseTombstone)
+        ct
         =
         task {
             let! holds = CaseTombstoneRead.activeHolds connection transaction request.CaseId
 
             let! source =
-                ManagedCopyAdoptionApprovalPolicy.source connection transaction witness request
+                ManagedCopyAdoptionApprovalPolicy.source connection transaction witness request ct
 
             let! signers =
                 ManagedCopyAdoptionApprovalSigners.valid connection transaction request
@@ -152,7 +161,10 @@ module internal ManagedCopyAdoptionApprovalWrite =
                     transaction
                     request.AdoptionEventId
 
-            let! now = Sql.databaseNow connection transaction
+            let! now = Sql.databaseNow connection transaction ct
+
+            let! historical =
+                ManagedCopyAdoptionApprovalPolicy.historical witness stored request ct
 
             if
                 stored.Phase <> "ERASURE_PENDING"
@@ -160,7 +172,7 @@ module internal ManagedCopyAdoptionApprovalWrite =
                 || not source
                 || not signers
                 || not slot
-                || not (ManagedCopyAdoptionApprovalPolicy.historical witness stored request)
+                || not historical
                 || request.ExpiresAt <= now
                 || request.ExpiresAt > now.AddHours(24.0)
             then
@@ -174,7 +186,7 @@ module internal ManagedCopyAdoptionApprovalWrite =
                         now
 
                 try
-                    return! commit connection transaction witness context request now canonical
+                    return! commit connection transaction witness context request now canonical ct
                 finally
                     CryptographicOperations.ZeroMemory(canonical)
         }
@@ -186,6 +198,7 @@ module internal ManagedCopyAdoptionApprovalWrite =
         (context: ActorCallContext)
         (request: CopyAdoptionApprovalRequest)
         stored
+        ct
         =
         task {
             let! prior =
@@ -201,10 +214,10 @@ module internal ManagedCopyAdoptionApprovalWrite =
                         receipt.ApprovedAt
 
                 try
-                    return replay witness request receipt canonical
+                    return! replay witness request receipt canonical ct
                 finally
                     CryptographicOperations.ZeroMemory(canonical)
-            | None -> return! fresh connection transaction witness context request stored
+            | None -> return! fresh connection transaction witness context request stored ct
         }
 
     let private underLock
@@ -213,14 +226,10 @@ module internal ManagedCopyAdoptionApprovalWrite =
         witness
         (context: ActorCallContext)
         (request: CopyAdoptionApprovalRequest)
+        ct
         =
         task {
-            let! revision =
-                ActorGrantRead.lockRevision
-                    connection
-                    transaction
-                    true
-                    Threading.CancellationToken.None
+            let! revision = ActorGrantRead.lockRevision connection transaction true ct
 
             let! found = CaseTombstoneRead.lock connection transaction request.CaseId
 
@@ -234,14 +243,17 @@ module internal ManagedCopyAdoptionApprovalWrite =
                         context.Binding.Principal
                         (ResourceScope.Case request.CaseId)
                         revision
-                        Threading.CancellationToken.None
+                        ct
 
                 match actor with
                 | None -> return CopyAdoptionApprovalOutcome.ResourceUnavailable
-                | Some live when not (authorized context live request.CaseId) ->
+                | Some live when
+                    not (ManagedCopyAdoptionApprovalPolicy.authorized context live request.CaseId)
+                    ->
                     return CopyAdoptionApprovalOutcome.ResourceUnavailable
                 | Some _ ->
-                    return! afterAuthorization connection transaction witness context request stored
+                    return!
+                        afterAuthorization connection transaction witness context request stored ct
         }
 
     let approve
@@ -249,23 +261,25 @@ module internal ManagedCopyAdoptionApprovalWrite =
         (witness: WitnessProtocol)
         (context: ActorCallContext)
         (request: CopyAdoptionApprovalRequest)
+        ct
         =
         task {
             if not (ManagedCopyAdoptionApprovalPolicy.valid context request) then
                 return CopyAdoptionApprovalOutcome.ResourceUnavailable
             else
                 try
-                    witness.Admit()
-                    use! connection = RuntimeDatabase.openConnectionAsync dataSource
+                    do! witness.Admit(ct)
+
+                    use! connection =
+                        RuntimeDatabase.openConnectionAsyncWithCancellation dataSource ct
 
                     use! _authorityLease =
-                        AuthorityOperationFence.acquireShared
-                            (Some dataSource)
-                            connection
-                            System.Threading.CancellationToken.None
+                        AuthorityOperationFence.acquireShared (Some dataSource) connection ct
 
-                    use transaction = connection.BeginTransaction(IsolationLevel.ReadCommitted)
-                    return! underLock connection transaction witness context request
+                    use! transaction =
+                        connection.BeginTransactionAsync(IsolationLevel.ReadCommitted, ct)
+
+                    return! underLock connection transaction witness context request ct
                 with _ ->
                     return CopyAdoptionApprovalOutcome.StartedUnconfirmed request.ApprovalId
         }

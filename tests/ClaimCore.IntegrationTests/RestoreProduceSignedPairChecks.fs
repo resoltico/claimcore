@@ -30,7 +30,8 @@ let auditBorrowed (access: RestoredPairAccess) (witness: WitnessProtocol) =
                     access.WitnessAudit
                     borrowed
                     suppression
-                    (fun _ _ _ _ tip -> tip.TipSequence)
+                    (fun _ _ _ _ tip -> System.Threading.Tasks.Task.FromResult tip.TipSequence)
+                |> await
 
             tip.TipSequence, tip.TipHash
 
@@ -105,6 +106,7 @@ let private inspect
         nonce
         input.Publication.VerifierBinarySha256
         DateTimeOffset.UtcNow
+    |> await
 
 let private changedSignature
     (access: RestoredPairAccess)
@@ -168,6 +170,7 @@ let verifyRecheck
             nonce
             input.Publication.VerifierBinarySha256
             DateTimeOffset.UtcNow
+        |> await
     with
     | Error RestoreRecheckFailure.TrustAnchorUnavailable -> ()
     | _ -> failtest "Missing publication root must refuse owner admission"

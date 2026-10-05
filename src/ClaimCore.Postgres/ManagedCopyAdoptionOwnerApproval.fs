@@ -126,6 +126,26 @@ module internal ManagedCopyAdoptionOwnerApproval =
         && submission.ApprovalId = request.ApprovalId
         && submission.AdoptionEventId = request.AdoptionEventId
 
+    let private verifyApproval
+        (witness: WitnessProtocol)
+        (submission: CopyAdoptionSubmission)
+        (stored: StoredAdoptionApproval)
+        ct
+        =
+        task {
+            do!
+                witness.VerifyAuthorityEvidenceForCase(
+                    submission.ApprovalId,
+                    stored.WitnessSequence,
+                    stored.WitnessEpoch,
+                    stored.WitnessHash,
+                    stored.CandidateHash,
+                    stored.CaseId,
+                    ct
+                )
+
+        }
+
     let read
         connection
         transaction
@@ -133,6 +153,7 @@ module internal ManagedCopyAdoptionOwnerApproval =
         revision
         (submission: CopyAdoptionSubmission)
         now
+        ct
         =
         task {
             let! locked = lockApproval connection transaction submission.ApprovalId
@@ -161,14 +182,7 @@ module internal ManagedCopyAdoptionOwnerApproval =
                     if not current then
                         return None
                     else
-                        witness.VerifyAuthorityEvidenceForCase(
-                            submission.ApprovalId,
-                            stored.WitnessSequence,
-                            stored.WitnessEpoch,
-                            stored.WitnessHash,
-                            stored.CandidateHash,
-                            stored.CaseId
-                        )
+                        do! verifyApproval witness submission stored ct
 
                         return
                             Some

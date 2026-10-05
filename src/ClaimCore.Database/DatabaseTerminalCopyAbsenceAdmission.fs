@@ -35,7 +35,7 @@ module internal DatabaseTerminalCopyAbsenceAdmission =
         cutoffSequence
         cutoffHash
         writerGeneration
-        _ct
+        ct
         =
         task {
             let! stored = CaseTombstoneTerminalRead.lock connection transaction caseId
@@ -44,7 +44,7 @@ module internal DatabaseTerminalCopyAbsenceAdmission =
             let! unadopted =
                 DataAuditExternalPublications.hasUnadoptedForCase connection transaction caseId
 
-            let tip = witness.Snapshot()
+            let! tip = witness.Snapshot(ct)
 
             return
                 match stored with

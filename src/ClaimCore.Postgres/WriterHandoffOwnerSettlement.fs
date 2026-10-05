@@ -29,43 +29,49 @@ module internal WriterHandoffOwnerSettlement =
         (prepared: PrimaryWriterPreparation)
         (value: WriterHandoffSettlement)
         =
-        match
-            WriterHandoffOwnerReconcile.trySettled
-                owner
-                transaction
-                context.Witness
-                prepared
-                value
-                context.Canonical
-                context.Signature
-        with
-        | Some ticket ->
-            WriterHandoffOwnerSettlementCompletion.existing
-                owner
-                transaction
-                context.DataSource
-                context.Witness
-                context.Commitments
-                prepared
-                value
-                context.Canonical
-                context.Signature
-                ticket
-        | None ->
-            WriterHandoffOwnerSettlementCompletion.fresh
-                owner
-                transaction
-                context.DataSource
-                context.OwnerWitnessConnection
-                context.Witness
-                context.Verifier
-                context.Commitments
-                prepared
-                value
-                context.Canonical
-                context.Signature
-                context.OldCapability
-                context.NewCapability
+        task {
+            let! observed =
+                WriterHandoffOwnerReconcile.trySettled
+                    owner
+                    transaction
+                    context.Witness
+                    prepared
+                    value
+                    context.Canonical
+                    context.Signature
+                    CancellationToken.None
+
+            match observed with
+            | Some ticket ->
+                return!
+                    WriterHandoffOwnerSettlementCompletion.existing
+                        owner
+                        transaction
+                        context.DataSource
+                        context.Witness
+                        context.Commitments
+                        prepared
+                        value
+                        context.Canonical
+                        context.Signature
+                        ticket
+            | None ->
+                return!
+                    WriterHandoffOwnerSettlementCompletion.fresh
+                        owner
+                        transaction
+                        context.DataSource
+                        context.OwnerWitnessConnection
+                        context.Witness
+                        context.Verifier
+                        context.Commitments
+                        prepared
+                        value
+                        context.Canonical
+                        context.Signature
+                        context.OldCapability
+                        context.NewCapability
+        }
 
     let private underLock
         (owner: NpgsqlConnection)
@@ -77,12 +83,24 @@ module internal WriterHandoffOwnerSettlement =
         task {
             let! _ = ActorGrantRead.lockRevision owner transaction true CancellationToken.None
 
-            match
-                WriterHandoffOwnerRead.preparation owner transaction context.Witness value.HandoffId
-            with
+            let! preparation =
+                WriterHandoffOwnerRead.preparation
+                    owner
+                    transaction
+                    context.Witness
+                    value.HandoffId
+                    CancellationToken.None
+
+            match preparation with
             | None ->
+                let! existing =
+                    context.Witness.EvidenceStore.TryReadHandoff(
+                        value.HandoffId,
+                        CancellationToken.None
+                    )
+
                 return
-                    if context.Witness.EvidenceStore.TryReadHandoff(value.HandoffId).IsSome then
+                    if existing.IsSome then
                         WriterHandoffOwnerOutcome.Unconfirmed value.HandoffId
                     else
                         WriterHandoffOwnerOutcome.Refused
@@ -112,7 +130,7 @@ module internal WriterHandoffOwnerSettlement =
                 try
                     OwnerConnection.requireIdentity primaryOwner
                     SchemaBaseline.requireCurrent primaryOwner
-                    witness.AdmitReadOnly()
+                    do! witness.AdmitReadOnly(CancellationToken.None)
 
                     use! _authorityFence =
                         AuthorityOperationFence.acquireExclusive

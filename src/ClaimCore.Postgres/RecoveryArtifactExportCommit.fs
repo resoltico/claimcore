@@ -143,17 +143,19 @@ module internal RecoveryArtifactExportCommit =
 
             try
                 uncertainStarted.Value <- true
-                let intent = witness.BeginAuthority(exportId, canonical, Some retained.CaseId)
+                let! intent = witness.BeginAuthority(exportId, canonical, Some retained.CaseId, ct)
 
                 do! commitPrimary connection transaction witness evidence canonical intent ct
 
-                witness.ReconcileAuthority(
-                    exportId,
-                    intent.Ticket.Sequence,
-                    intent.Ticket.Epoch,
-                    intent.Ticket.EntryHash,
-                    canonical
-                )
+                do!
+                    witness.ReconcileAuthority(
+                        exportId,
+                        intent.Ticket.Sequence,
+                        intent.Ticket.Epoch,
+                        intent.Ticket.EntryHash,
+                        canonical,
+                        CancellationToken.None
+                    )
 
                 return bytes
             finally

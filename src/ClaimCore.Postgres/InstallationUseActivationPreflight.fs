@@ -71,7 +71,14 @@ module internal InstallationUseActivationPreflight =
         && snapshot.TipSequence = proof.WitnessTipSequence
         && snapshot.TipHash = proof.WitnessTipHash
 
-    let healthUnderLock primary transaction witness profile (proof: BackupHealthQualifiedEvidence) =
+    let healthUnderLock
+        primary
+        transaction
+        witness
+        profile
+        (proof: BackupHealthQualifiedEvidence)
+        ct
+        =
         BackupHealthRuntimeAdmission.verifyLocked
             primary
             transaction
@@ -80,3 +87,4 @@ module internal InstallationUseActivationPreflight =
             proof.PolicyCanonical
             proof.Canonical
             proof.Signature
+            ct

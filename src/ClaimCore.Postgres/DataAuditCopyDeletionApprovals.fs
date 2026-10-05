@@ -133,10 +133,11 @@ module internal DataAuditCopyDeletionApprovals =
             CutoffHash = approval.WitnessCutoffHash
         }
 
-    let private verifyWitness connection transaction (witness: WitnessProtocol) cutoff proof =
+    let private verifyWitness connection transaction (witness: WitnessProtocol) cutoff proof ct =
         task {
-            witnessProof (fun () ->
-                witness.VerifyHistoricalTip(proof.CutoffSequence, proof.CutoffHash))
+            do!
+                witnessProofAsync (fun () ->
+                    witness.VerifyHistoricalTip(proof.CutoffSequence, proof.CutoffHash, ct))
 
             match proof.SourceCaseId with
             | Some caseId ->
@@ -153,15 +154,18 @@ module internal DataAuditCopyDeletionApprovals =
                         proof.EntryHash
                         proof.CandidateDigest
                         SettledAuthority
+                        ct
             | None ->
-                witnessProof (fun () ->
-                    witness.VerifyAuthorityEvidenceForInstallation(
-                        proof.ApprovalId,
-                        proof.Sequence,
-                        proof.Epoch,
-                        proof.EntryHash,
-                        proof.CandidateDigest
-                    ))
+                do!
+                    witnessProofAsync (fun () ->
+                        witness.VerifyAuthorityEvidenceForInstallation(
+                            proof.ApprovalId,
+                            proof.Sequence,
+                            proof.Epoch,
+                            proof.EntryHash,
+                            proof.CandidateDigest,
+                            ct
+                        ))
         }
 
     let private verifyRow (witness: WitnessProtocol) cutoff (reader: NpgsqlDataReader) =
@@ -212,7 +216,7 @@ module internal DataAuditCopyDeletionApprovals =
                     }
 
                 for proof in proofs do
-                    do! verifyWitness connection transaction witness cutoff proof
+                    do! verifyWitness connection transaction witness cutoff proof ct
 
                 count <- count + int64 proofs.Length
                 more <- proofs.Length = 50

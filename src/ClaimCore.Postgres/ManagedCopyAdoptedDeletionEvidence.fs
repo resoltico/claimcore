@@ -52,11 +52,12 @@ module internal ManagedCopyAdoptedDeletionEvidence =
                     origin.LocationCommitment
                     origin.CustodianHolderActorId
                     now
+                    CancellationToken.None
 
             match expiry with
             | None -> return false
             | Some approvalExpiry ->
-                let! fresh = Sql.databaseNow connection transaction
+                let! fresh = Sql.databaseNow connection transaction CancellationToken.None
 
                 return
                     fresh < approvalExpiry

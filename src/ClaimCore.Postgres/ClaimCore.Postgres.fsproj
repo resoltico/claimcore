@@ -30,9 +30,12 @@
     <Compile Include="PreparationEvidence.fs" />
     <Compile Include="WitnessEventIdentity.fs" />
     <Compile Include="WitnessCandidate.fs" />
+    <Compile Include="WitnessFailures.fs" />
     <Compile Include="WitnessProof.fs" />
     <Compile Include="WitnessCustodyAdmission.fs" />
     <Compile Include="WitnessPrimaryMatch.fs" />
+    <Compile Include="WitnessIntentAdmission.fs" />
+    <Compile Include="WitnessSettlement.fs" />
     <Compile Include="WitnessProtocol.fs" />
     <Compile Include="InstallationUseScopeRead.fs" />
     <Compile Include="WitnessProtocolHandoff.fs" />
@@ -241,8 +244,8 @@
     <Compile Include="InstallationUsePlanCodec.fs" />
     <Compile Include="InstallationUsePlanRead.fs" />
     <Compile Include="RealDataActivationApprovalCandidate.fs" />
-    <Compile Include="RealDataActivationApprovalRecovery.fs" />
     <Compile Include="RealDataActivationApprovalRows.fs" />
+    <Compile Include="RealDataActivationApprovalRecovery.fs" />
     <Compile Include="RealDataActivationApprovalChecks.fs" />
     <Compile Include="RealDataActivationPlanReview.fs" />
     <Compile Include="RealDataActivationApproval.fs" />

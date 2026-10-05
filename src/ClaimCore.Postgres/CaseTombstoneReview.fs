@@ -1,6 +1,8 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
+open System.Threading.Tasks
 open System.Data
 open System.IO
 open System.Security.Cryptography
@@ -17,6 +19,7 @@ module internal CaseTombstoneReview =
         (witness: WitnessProtocol)
         cutoff
         (stored: StoredCaseTombstone)
+        ct
         =
         task {
             if
@@ -39,6 +42,7 @@ module internal CaseTombstoneReview =
                     stored.PurgeWitnessHash
                     stored.PurgeCandidateHash
                     ClaimCore.Witness.SettledAuthority
+                    ct
         }
 
     let private targetSeal
@@ -48,17 +52,19 @@ module internal CaseTombstoneReview =
         (caseId: Guid)
         (stored: StoredCaseTombstone)
         (snapshot: ClaimCore.Witness.Snapshot)
+        ct
         =
         task {
             match stored.PruneEventId with
             | None ->
-                let seal =
+                let! seal =
                     CaseWitnessPayloadTargets.scan
                         witness
                         caseId
                         snapshot.TipSequence
                         snapshot.TipHash
-                        ignore
+                        (fun _ -> Task.FromResult())
+                        ct
 
                 return seal, false
             | Some _ ->
@@ -69,6 +75,7 @@ module internal CaseTombstoneReview =
                         witness
                         snapshot.TipSequence
                         caseId
+                        ct
 
                 if proof.IsNone then
                     raise (InvalidDataException("Prune receipt was not independently verified."))
@@ -127,17 +134,12 @@ module internal CaseTombstoneReview =
                 ManagedCopyCertificationPending = privacy = PrivacyPhase.ErasurePending
             }
 
-    let private read dataSource (witness: WitnessProtocol) (context: ActorCallContext) caseId =
+    let private read dataSource (witness: WitnessProtocol) (context: ActorCallContext) caseId ct =
         task {
-            use! connection = RuntimeDatabase.openConnectionAsync dataSource
-            use transaction = connection.BeginTransaction(IsolationLevel.ReadCommitted)
+            use! connection = RuntimeDatabase.openConnectionAsyncWithCancellation dataSource ct
+            use! transaction = connection.BeginTransactionAsync(IsolationLevel.ReadCommitted, ct)
 
-            let! revision =
-                ActorGrantRead.lockRevision
-                    connection
-                    transaction
-                    false
-                    System.Threading.CancellationToken.None
+            let! revision = ActorGrantRead.lockRevision connection transaction false ct
 
             let! found = CaseTombstoneRead.lock connection transaction caseId
 
@@ -155,19 +157,19 @@ module internal CaseTombstoneReview =
                 if not allowed then
                     return TombstoneReviewOutcome.ResourceUnavailable
                 else
-                    let snapshot = witness.Snapshot()
-                    do! verifyPurge connection transaction witness snapshot.TipSequence stored
+                    let! snapshot = witness.Snapshot(ct)
+                    do! verifyPurge connection transaction witness snapshot.TipSequence stored ct
                     do! CaseErasurePurgeDelete.verifyAbsent connection transaction caseId
 
                     let! seal, pruned =
-                        targetSeal connection transaction witness caseId stored snapshot
+                        targetSeal connection transaction witness caseId stored snapshot ct
 
                     let! holds = CaseTombstoneRead.activeHolds connection transaction caseId
 
                     return summary stored seal pruned holds
         }
 
-    let review dataSource (witness: WitnessProtocol) (context: ActorCallContext) caseId =
+    let review dataSource (witness: WitnessProtocol) (context: ActorCallContext) caseId ct =
         task {
             if
                 context.Action <> EndpointAction.ReviewTombstone
@@ -176,9 +178,11 @@ module internal CaseTombstoneReview =
                 return TombstoneReviewOutcome.ResourceUnavailable
             else
                 try
-                    witness.Admit()
-                    return! read dataSource witness context caseId
+                    do! witness.Admit(ct)
+                    return! read dataSource witness context caseId ct
                 with
+                | :? System.OperationCanceledException when ct.IsCancellationRequested ->
+                    return TombstoneReviewOutcome.Cancelled
                 | :? InvalidDataException ->
                     return TombstoneReviewOutcome.Failed CoreFault.StoreIntegrityError
                 | _ -> return TombstoneReviewOutcome.Failed CoreFault.StoreUnavailable

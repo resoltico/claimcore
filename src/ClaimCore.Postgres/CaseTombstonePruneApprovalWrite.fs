@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open System.Data
 open System.IO
 open System.Security.Cryptography
@@ -18,41 +19,50 @@ module internal CaseTombstonePruneApprovalWrite =
         (approvalId: Guid)
         (expiresAt: DateTimeOffset)
         (prior: StoredPruneApproval)
+        ct
         =
-        let canonical =
-            CaseTombstoneCandidate.approval
-                value
-                approvalId
-                prior.ActorId
-                prior.GrantRevision
-                prior.ApprovedAt
-                prior.ExpiresAt
+        task {
+            let canonical =
+                CaseTombstoneCandidate.approval
+                    value
+                    approvalId
+                    prior.ActorId
+                    prior.GrantRevision
+                    prior.ApprovedAt
+                    prior.ExpiresAt
 
-        try
-            if
-                prior.CaseId <> value.CaseId
-                || prior.PruneEventId <> value.EventId
-                || prior.ActorId <> context.Binding.ActorId
-                || prior.ExpiresAt <> expiresAt
-                || prior.Canonical <> canonical
-                || prior.CandidateHash <> SHA256.HashData(canonical)
-            then
-                TombstoneWriteOutcome.Refused LifecycleRefusal.ApprovalMismatch
-            else
-                try
-                    witness.ReconcileAuthority(
-                        approvalId,
-                        prior.WitnessSequence,
-                        prior.WitnessEpoch,
-                        prior.WitnessHash,
-                        canonical
-                    )
+            try
+                if
+                    prior.CaseId <> value.CaseId
+                    || prior.PruneEventId <> value.EventId
+                    || prior.ActorId <> context.Binding.ActorId
+                    || prior.ExpiresAt <> expiresAt
+                    || prior.Canonical <> canonical
+                    || prior.CandidateHash <> SHA256.HashData(canonical)
+                then
+                    return TombstoneWriteOutcome.Refused LifecycleRefusal.ApprovalMismatch
+                else
+                    try
+                        do!
+                            witness.ReconcileAuthority(
+                                approvalId,
+                                prior.WitnessSequence,
+                                prior.WitnessEpoch,
+                                prior.WitnessHash,
+                                canonical,
+                                ct
+                            )
 
-                    TombstoneWriteOutcome.Applied(approvalId, value.ExpectedAuthorityRevision)
-                with _ ->
-                    TombstoneWriteOutcome.Unconfirmed approvalId
-        finally
-            CryptographicOperations.ZeroMemory(canonical)
+                        return
+                            TombstoneWriteOutcome.Applied(
+                                approvalId,
+                                value.ExpectedAuthorityRevision
+                            )
+                    with _ ->
+                        return TombstoneWriteOutcome.Unconfirmed approvalId
+            finally
+                CryptographicOperations.ZeroMemory(canonical)
+        }
 
     let private slotDecision
         connection
@@ -60,6 +70,7 @@ module internal CaseTombstonePruneApprovalWrite =
         (witness: WitnessProtocol)
         (context: ActorCallContext)
         (value: TombstonePruneProposal)
+        ct
         =
         task {
             let! holds = CaseTombstoneRead.activeHolds connection transaction value.CaseId
@@ -73,10 +84,14 @@ module internal CaseTombstonePruneApprovalWrite =
                 return Error LifecycleRefusal.ApprovalMismatch
             elif approvers.Length >= 2 then
                 return Error LifecycleRefusal.ApprovalCapacityExceeded
-            elif not (targetMatches witness value) then
-                return Error LifecycleRefusal.ErasureEvidenceIncomplete
             else
-                return Ok()
+                let! matches = targetMatches witness value ct
+
+                return
+                    if matches then
+                        Ok()
+                    else
+                        Error LifecycleRefusal.ErasureEvidenceIncomplete
         }
 
     let private commitApproval
@@ -89,6 +104,7 @@ module internal CaseTombstonePruneApprovalWrite =
         expiresAt
         instant
         authorityRevision
+        ct
         =
         task {
             do! CaseErasurePurgeDelete.verifyAbsent connection transaction value.CaseId
@@ -104,7 +120,8 @@ module internal CaseTombstonePruneApprovalWrite =
 
             try
                 try
-                    let intent = witness.BeginAuthority(approvalId, canonical, Some value.CaseId)
+                    let! intent =
+                        witness.BeginAuthority(approvalId, canonical, Some value.CaseId, ct)
 
                     do!
                         CaseTombstonePruneApprovalPersistence.persist
@@ -121,7 +138,7 @@ module internal CaseTombstonePruneApprovalWrite =
                     do! transaction.CommitAsync()
 
                     try
-                        witness.SettleAuthority(approvalId, intent) |> ignore
+                        let! _ = witness.SettleAuthority(approvalId, intent)
                         return TombstoneWriteOutcome.Applied(approvalId, authorityRevision)
                     with _ ->
                         return TombstoneWriteOutcome.Unconfirmed approvalId
@@ -141,18 +158,19 @@ module internal CaseTombstonePruneApprovalWrite =
         expiresAt
         instant
         (stored: StoredCaseTombstone)
+        ct
         =
         task {
             let! prior = CaseTombstonePruneApprovalRead.find connection transaction approvalId
 
             match prior with
-            | Some receipt -> return replay witness context value approvalId expiresAt receipt
+            | Some receipt -> return! replay witness context value approvalId expiresAt receipt ct
             | None when not (matches stored value) ->
                 return TombstoneWriteOutcome.Refused LifecycleRefusal.VersionConflict
             | None when not (valid value approvalId expiresAt instant) ->
                 return TombstoneWriteOutcome.Refused LifecycleRefusal.InvalidTime
             | None ->
-                let! slots = slotDecision connection transaction witness context value
+                let! slots = slotDecision connection transaction witness context value ct
 
                 match slots with
                 | Error refusal -> return TombstoneWriteOutcome.Refused refusal
@@ -168,6 +186,7 @@ module internal CaseTombstonePruneApprovalWrite =
                             expiresAt
                             instant
                             stored.AuthorityRevision
+                            ct
         }
 
     let private apply
@@ -177,24 +196,17 @@ module internal CaseTombstonePruneApprovalWrite =
         (value: TombstonePruneProposal)
         (approvalId: Guid)
         (expiresAt: DateTimeOffset)
+        ct
         =
         task {
-            use! connection = RuntimeDatabase.openConnectionAsync dataSource
+            use! connection = RuntimeDatabase.openConnectionAsyncWithCancellation dataSource ct
 
             use! _authorityLease =
-                AuthorityOperationFence.acquireShared
-                    (Some dataSource)
-                    connection
-                    System.Threading.CancellationToken.None
+                AuthorityOperationFence.acquireShared (Some dataSource) connection ct
 
-            use transaction = connection.BeginTransaction(IsolationLevel.ReadCommitted)
+            use! transaction = connection.BeginTransactionAsync(IsolationLevel.ReadCommitted, ct)
 
-            let! revision =
-                ActorGrantRead.lockRevision
-                    connection
-                    transaction
-                    true
-                    Threading.CancellationToken.None
+            let! revision = ActorGrantRead.lockRevision connection transaction true ct
 
             let! found = CaseTombstoneRead.lock connection transaction value.CaseId
 
@@ -212,7 +224,7 @@ module internal CaseTombstonePruneApprovalWrite =
                 if not allowed then
                     return TombstoneWriteOutcome.ResourceUnavailable
                 else
-                    let! instant = Sql.databaseNow connection transaction
+                    let! instant = Sql.databaseNow connection transaction ct
 
                     return!
                         afterAuthorization
@@ -225,6 +237,7 @@ module internal CaseTombstonePruneApprovalWrite =
                             expiresAt
                             instant
                             stored
+                            ct
         }
 
     let approve
@@ -234,6 +247,7 @@ module internal CaseTombstonePruneApprovalWrite =
         (value: TombstonePruneProposal)
         (approvalId: Guid)
         (expiresAt: DateTimeOffset)
+        ct
         =
         task {
             if
@@ -243,9 +257,11 @@ module internal CaseTombstonePruneApprovalWrite =
                 return TombstoneWriteOutcome.ResourceUnavailable
             else
                 try
-                    witness.Admit()
-                    return! apply dataSource witness context value approvalId expiresAt
+                    do! witness.Admit(ct)
+                    return! apply dataSource witness context value approvalId expiresAt ct
                 with
+                | :? System.OperationCanceledException when ct.IsCancellationRequested ->
+                    return TombstoneWriteOutcome.CancelledBeforeAdmission approvalId
                 | :? InvalidDataException ->
                     return TombstoneWriteOutcome.Failed CoreFault.StoreIntegrityError
                 | _ -> return TombstoneWriteOutcome.Failed CoreFault.StoreUnavailable

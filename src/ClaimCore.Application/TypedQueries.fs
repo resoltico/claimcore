@@ -6,6 +6,14 @@ open System.Threading.Tasks
 open ClaimCore.Domain
 
 module internal TypedQueries =
+    let cancelObservation (ct: CancellationToken) cancelled invoke =
+        task {
+            try
+                return! invoke ()
+            with :? OperationCanceledException when ct.IsCancellationRequested ->
+                return cancelled
+        }
+
     let private limit = SemanticContract.current.MaximumPageSize
 
     let get
@@ -21,7 +29,7 @@ module internal TypedQueries =
                 Task.FromResult(QueryOutcome.Rejected(TypedProjection.rejection rejection))
             | Ok() ->
                 task {
-                    let! result = store.Get reference
+                    let! result = store.Get(reference, cancellationToken)
 
                     if cancellationToken.IsCancellationRequested then
                         return QueryOutcome.Cancelled
@@ -68,7 +76,7 @@ module internal TypedQueries =
             Task.FromResult(QueryOutcome.Rejected(Rejection.PageLimitOutOfRange limit))
         else
             task {
-                let! result = store.List request
+                let! result = store.List(request, cancellationToken)
 
                 if cancellationToken.IsCancellationRequested then
                     return QueryOutcome.Cancelled
@@ -132,7 +140,7 @@ module internal TypedQueries =
         (cancellationToken: CancellationToken)
         : Task<QueryOutcome<Lookup<HistoryResultPage, string>>> =
         task {
-            let! current = store.Get request.CaseReference
+            let! current = store.Get(request.CaseReference, cancellationToken)
 
             if cancellationToken.IsCancellationRequested then
                 return QueryOutcome.Cancelled
@@ -143,7 +151,7 @@ module internal TypedQueries =
                 | Error failure -> return QueryOutcome.Failed(TypedProjection.coreFault failure)
                 | Ok None -> return QueryOutcome.Succeeded(Lookup.NotFound request.CaseReference)
                 | Ok(Some _) ->
-                    let! result = store.History(request.CaseReference, after)
+                    let! result = store.History(request.CaseReference, after, cancellationToken)
 
                     if cancellationToken.IsCancellationRequested then
                         return QueryOutcome.Cancelled
@@ -198,7 +206,7 @@ module internal TypedQueries =
             )
         else
             task {
-                let! result = store.Operation operationId
+                let! result = store.Operation(operationId, cancellationToken)
 
                 match result with
                 | Ok(Some value) ->

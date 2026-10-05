@@ -138,30 +138,31 @@ module internal CaseLifecycleAudit =
                     limit
                     ct
 
-            let items =
-                rows
-                |> List.map (fun row ->
-                    ct.ThrowIfCancellationRequested()
+            let items = ResizeArray<int64 * byte array>()
 
-                    let event =
-                        CaseLifecycleAuditEvidence.event
-                            witness
-                            cutoff
-                            caseId
-                            row.PreviousHash
-                            row.Sequence
-                            row
+            for row in rows do
+                ct.ThrowIfCancellationRequested()
 
-                    match event.Snapshot with
-                    | Some bytes -> row.BusinessRevision, bytes
-                    | None -> reject ())
+                let! event =
+                    CaseLifecycleAuditEvidence.event
+                        witness
+                        cutoff
+                        caseId
+                        row.PreviousHash
+                        row.Sequence
+                        row
+                        ct
+
+                match event.Snapshot with
+                | Some bytes -> items.Add(row.BusinessRevision, bytes)
+                | None -> reject ()
 
             return
                 {
-                    Items = items
+                    Items = List.ofSeq items
                     NextAfter =
                         if rows.Length = limit then
-                            items |> List.tryLast |> Option.map fst
+                            items |> Seq.tryLast |> Option.map fst
                         else
                             None
                 }

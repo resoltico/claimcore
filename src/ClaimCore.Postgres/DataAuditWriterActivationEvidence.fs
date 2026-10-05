@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open System.Security.Cryptography
 open DataAuditCommon
 open WitnessProtocolReconciliation
@@ -26,37 +27,56 @@ module internal DataAuditWriterActivationEvidence =
             value.SignedSupplement
             value.SupplementSignature
 
-    let verify (witness: WitnessProtocol) cutoff (row: WriterActivationAuditRow) =
-        let value = row.Evidence
-        let canonical = WriterActivationCandidate.encode value
+    let verify
+        (witness: WitnessProtocol)
+        cutoff
+        (row: WriterActivationAuditRow)
+        (ct: CancellationToken)
+        =
+        task {
+            let value = row.Evidence
+            let canonical = WriterActivationCandidate.encode value
 
-        try
-            if
-                not (signed row)
-                || value.WriterGeneration <> row.HandoffGeneration
-                || value.W1Sequence <> row.HandoffSequence
-                || value.W1Hash <> row.HandoffHash
-                || row.ActivationId <> WriterActivationCandidate.activationId value.HandoffId
-                || row.Canonical <> canonical
-                || row.CandidateSha256 <> SHA256.HashData(canonical)
-                || row.IntentSequence <> value.W1Sequence + 1L
-                || row.SettlementSequence <> row.IntentSequence + 1L
-                || row.SettlementSequence > cutoff
-                || row.SettlementEpoch <> witness.Identity.Epoch
-            then
-                corrupt ()
+            try
+                if
+                    not (signed row)
+                    || value.WriterGeneration <> row.HandoffGeneration
+                    || value.W1Sequence <> row.HandoffSequence
+                    || value.W1Hash <> row.HandoffHash
+                    || row.ActivationId <> WriterActivationCandidate.activationId value.HandoffId
+                    || row.Canonical <> canonical
+                    || row.CandidateSha256 <> SHA256.HashData(canonical)
+                    || row.IntentSequence <> value.W1Sequence + 1L
+                    || row.SettlementSequence <> row.IntentSequence + 1L
+                    || row.SettlementSequence > cutoff
+                    || row.SettlementEpoch <> witness.Identity.Epoch
+                then
+                    corrupt ()
 
-            witnessProof (fun () ->
-                witness.VerifyHistoricalTip(value.W1Sequence, value.W1Hash)
-                witness.VerifyHistoricalTip(row.IntentSequence, row.IntentHash)
-                witness.VerifyHistoricalTip(row.SettlementSequence, row.SettlementHash)
+                let! _ =
+                    witnessProofAsync (fun () ->
+                        task {
+                            do! witness.VerifyHistoricalTip(value.W1Sequence, value.W1Hash, ct)
+                            do! witness.VerifyHistoricalTip(row.IntentSequence, row.IntentHash, ct)
 
-                WriterActivationWitness.verifyHistorical
-                    witness
-                    row.ActivationId
-                    canonical
-                    (row.IntentSequence, row.IntentHash)
-                    (row.SettlementSequence, row.SettlementHash)
-                |> ignore)
-        finally
-            CryptographicOperations.ZeroMemory(canonical)
+                            do!
+                                witness.VerifyHistoricalTip(
+                                    row.SettlementSequence,
+                                    row.SettlementHash,
+                                    ct
+                                )
+
+                            return!
+                                WriterActivationWitness.verifyHistorical
+                                    witness
+                                    row.ActivationId
+                                    canonical
+                                    (row.IntentSequence, row.IntentHash)
+                                    (row.SettlementSequence, row.SettlementHash)
+                                    ct
+                        })
+
+                return ()
+            finally
+                CryptographicOperations.ZeroMemory(canonical)
+        }

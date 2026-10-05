@@ -28,31 +28,40 @@ module internal CaseTombstoneTerminalApprovalAudit =
                 corrupt ()
         }
 
-    let private verifyWitness (witness: WitnessProtocol) cutoff (row: TerminalApprovalAuditRow) =
-        let copy = TombstoneTerminalProposal.copy row.Proposal
+    let private verifyWitness (witness: WitnessProtocol) cutoff (row: TerminalApprovalAuditRow) ct =
+        task {
+            let copy = TombstoneTerminalProposal.copy row.Proposal
 
-        let prune =
-            witness.EvidenceStore.TryReadMetadataOperation(copy.PruneEventId, SettledAuthority)
-            |> Option.defaultWith corrupt
+            let! observed =
+                witness.EvidenceStore.TryReadMetadataOperation(
+                    copy.PruneEventId,
+                    SettledAuthority,
+                    ct
+                )
 
-        if
-            prune.Ticket.ScopeKind <> Case
-            || prune.Ticket.SubjectCaseId <> Some copy.CaseId
-            || row.WitnessSequence <= prune.Ticket.Sequence
-            || row.WitnessSequence > cutoff
-            || row.WitnessEpoch <> witness.Identity.Epoch
-        then
-            corrupt ()
+            let prune = observed |> Option.defaultWith corrupt
 
-        witnessProof (fun () ->
-            witness.VerifyAuthorityEvidenceForCase(
-                row.ApprovalId,
-                row.WitnessSequence,
-                row.WitnessEpoch,
-                row.WitnessHash,
-                row.CandidateHash,
-                copy.CaseId
-            ))
+            if
+                prune.Ticket.ScopeKind <> Case
+                || prune.Ticket.SubjectCaseId <> Some copy.CaseId
+                || row.WitnessSequence <= prune.Ticket.Sequence
+                || row.WitnessSequence > cutoff
+                || row.WitnessEpoch <> witness.Identity.Epoch
+            then
+                corrupt ()
+
+            do!
+                witnessProofAsync (fun () ->
+                    witness.VerifyAuthorityEvidenceForCase(
+                        row.ApprovalId,
+                        row.WitnessSequence,
+                        row.WitnessEpoch,
+                        row.WitnessHash,
+                        row.CandidateHash,
+                        copy.CaseId,
+                        ct
+                    ))
+        }
 
     let private verifyRow
         connection
@@ -61,6 +70,7 @@ module internal CaseTombstoneTerminalApprovalAudit =
         cutoff
         caseId
         (row: TerminalApprovalAuditRow)
+        ct
         =
         task {
             let copy = TombstoneTerminalProposal.copy row.Proposal
@@ -101,9 +111,9 @@ module internal CaseTombstoneTerminalApprovalAudit =
                         row.ActorId
                         caseId
                         row.GrantRevision
-                        Threading.CancellationToken.None
+                        ct
 
-                verifyWitness witness cutoff row
+                do! verifyWitness witness cutoff row ct
                 do! verifySlots connection transaction row
             finally
                 CryptographicOperations.ZeroMemory(canonical)
@@ -115,6 +125,7 @@ module internal CaseTombstoneTerminalApprovalAudit =
         (witness: WitnessProtocol)
         cutoff
         caseId
+        ct
         =
         task {
             let mutable after = Guid.Empty
@@ -126,7 +137,7 @@ module internal CaseTombstoneTerminalApprovalAudit =
                     CaseTombstoneTerminalApprovalAuditRows.page connection transaction caseId after
 
                 for row in rows do
-                    do! verifyRow connection transaction witness cutoff caseId row
+                    do! verifyRow connection transaction witness cutoff caseId row ct
                     count <- count + 1L
 
                 match List.tryLast rows with

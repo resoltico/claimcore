@@ -104,6 +104,7 @@ module internal CaseTombstoneTerminalEventProof =
         expectedSlot
         expectedApproval
         (row: TerminalUseAuditRow)
+        ct
         =
         task {
             requireUseShape witness event decoded expectedSlot expectedApproval row
@@ -130,22 +131,24 @@ module internal CaseTombstoneTerminalEventProof =
                         row.ActorId
                         event.CaseId
                         event.ActorAuthorityRevision
-                        Threading.CancellationToken.None
+                        ct
 
-                witnessProof (fun () ->
-                    witness.VerifyAuthorityEvidenceForCase(
-                        row.ApprovalId,
-                        row.WitnessSequence,
-                        row.WitnessEpoch,
-                        row.WitnessHash,
-                        row.CandidateHash,
-                        event.CaseId
-                    ))
+                do!
+                    witnessProofAsync (fun () ->
+                        witness.VerifyAuthorityEvidenceForCase(
+                            row.ApprovalId,
+                            row.WitnessSequence,
+                            row.WitnessEpoch,
+                            row.WitnessHash,
+                            row.CandidateHash,
+                            event.CaseId,
+                            ct
+                        ))
             finally
                 CryptographicOperations.ZeroMemory(canonical)
         }
 
-    let verifyApprovals connection transaction witness (event: StoredTerminalEvent) decoded =
+    let verifyApprovals connection transaction witness (event: StoredTerminalEvent) decoded ct =
         task {
             let! uses = rows connection transaction event.EventId
 
@@ -163,6 +166,7 @@ module internal CaseTombstoneTerminalEventProof =
                         1
                         event.ApprovalOneId
                         first
+                        ct
 
                 do!
                     verifyUse
@@ -174,5 +178,6 @@ module internal CaseTombstoneTerminalEventProof =
                         2
                         event.ApprovalTwoId
                         second
+                        ct
             | _ -> corrupt ()
         }

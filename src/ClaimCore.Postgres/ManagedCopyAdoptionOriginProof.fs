@@ -21,12 +21,13 @@ module internal ManagedCopyAdoptionOriginProof =
             match request.Origin with
             | CopyAdoptionOrigin.ProductExport(_, sequence, hash) ->
                 try
-                    witness.VerifyHistoricalTip(sequence, hash)
+                    do! witness.VerifyHistoricalTip(sequence, hash, ct)
                     return true
                 with _ ->
                     return false
             | CopyAdoptionOrigin.AdoptedExternal _ ->
-                let cutoff = witness.Snapshot().TipSequence
+                let! snapshot = witness.Snapshot(ct)
+                let cutoff = snapshot.TipSequence
 
                 let! exact =
                     ManagedCopyExternalPublicationOrigin.verify

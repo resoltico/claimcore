@@ -25,29 +25,24 @@ type internal PostgresActorManagement
         | AuthorityWriteOutcome.Refused -> ActorManagementOutcome.ResourceUnavailable
         | AuthorityWriteOutcome.Unconfirmed _ -> ActorManagementOutcome.Unconfirmed eventId
 
-    let run eventId action =
+    let run eventId ct action =
         task {
             if eventId = Guid.Empty then
                 return ActorManagementOutcome.ResourceUnavailable
             else
                 try
-                    witness.Admit()
-                    use! connection = RuntimeDatabase.openConnectionAsync dataSource
+                    do! witness.Admit(ct)
+
+                    use! connection =
+                        RuntimeDatabase.openConnectionAsyncWithCancellation dataSource ct
 
                     use! _authorityLease =
-                        AuthorityOperationFence.acquireShared
-                            (Some dataSource)
-                            connection
-                            System.Threading.CancellationToken.None
+                        AuthorityOperationFence.acquireShared (Some dataSource) connection ct
 
-                    use transaction = connection.BeginTransaction(IsolationLevel.ReadCommitted)
+                    use! transaction =
+                        connection.BeginTransactionAsync(IsolationLevel.ReadCommitted, ct)
 
-                    let! revision =
-                        ActorGrantRead.lockRevision
-                            connection
-                            transaction
-                            true
-                            CancellationToken.None
+                    let! revision = ActorGrantRead.lockRevision connection transaction true ct
 
                     let! owner = loadApprover connection transaction revision ownerPrincipal
 
@@ -67,9 +62,9 @@ type internal PostgresActorManagement
         && action.ApproverActorId = Some approverId
         && (targetId |> Option.forall ((=) action.TargetActorId))
 
-    let registered eventId target connection transaction revision approverId =
+    let registered eventId target ct connection transaction revision approverId =
         task {
-            let! seen = existingEvent connection transaction witness eventId
+            let! seen = existingEvent connection transaction witness eventId ct
 
             match seen with
             | Some action when
@@ -100,25 +95,31 @@ type internal PostgresActorManagement
                         }
 
                     let! applied =
-                        ActorGrantWrite.run connection transaction witness action (fun () ->
-                            ActorGrantWrite.insertActor
-                                connection
-                                transaction
-                                actorId
-                                target
-                                action.Revision)
+                        ActorGrantWrite.run
+                            connection
+                            transaction
+                            witness
+                            action
+                            (fun () ->
+                                ActorGrantWrite.insertActor
+                                    connection
+                                    transaction
+                                    actorId
+                                    target
+                                    action.Revision)
+                            ct
 
                     return result eventId actorId applied
         }
 
-    let setEnabled eventId target enabled connection transaction revision approverId =
+    let setEnabled eventId target enabled ct connection transaction revision approverId =
         task {
             let! target = targetId connection transaction target
 
             match target with
             | None -> return ActorManagementOutcome.ResourceUnavailable
             | Some actorId ->
-                let! seen = existingEvent connection transaction witness eventId
+                let! seen = existingEvent connection transaction witness eventId ct
                 let actionName = if enabled then "ENABLE_ACTOR" else "DISABLE_ACTOR"
 
                 match seen with
@@ -139,54 +140,59 @@ type internal PostgresActorManagement
 
                     match current with
                     | Some(state, _) when state <> enabled && ownerSafe ->
-                        let action: ActorAuthorityAction =
-                            {
-                                EventId = eventId
-                                Revision = revision + 1L
-                                ActionName = actionName
-                                TargetActorId = actorId
-                                ApproverActorId = Some approverId
-                                Principal = None
-                                Grant = None
-                                Enabled = Some enabled
-                            }
+                        let action =
+                            ActorGrantCandidate.enabledAction
+                                eventId
+                                (revision + 1L)
+                                actorId
+                                approverId
+                                enabled
 
                         let! applied =
-                            ActorGrantWrite.run connection transaction witness action (fun () ->
-                                ActorGrantWrite.setEnabled
-                                    connection
-                                    transaction
-                                    actorId
-                                    enabled
-                                    action.Revision)
+                            ActorGrantWrite.run
+                                connection
+                                transaction
+                                witness
+                                action
+                                (fun () ->
+                                    ActorGrantWrite.setEnabled
+                                        connection
+                                        transaction
+                                        actorId
+                                        enabled
+                                        action.Revision)
+                                ct
 
                         return result eventId actorId applied
                     | _ -> return ActorManagementOutcome.ResourceUnavailable
         }
 
     interface IActorManagement with
-        member _.RegisterActor(eventId, target, _) =
+        member _.RegisterActor(eventId, target, ct) =
             if not (sameIssuer target) then
                 Task.FromResult ActorManagementOutcome.ResourceUnavailable
             else
-                run eventId (registered eventId target)
+                run eventId ct (registered eventId target ct)
 
-        member _.SetGrant(eventId, target, role, scope, active, _) =
+        member _.SetGrant(eventId, target, role, scope, active, ct) =
             if not (sameIssuer target) then
                 Task.FromResult ActorManagementOutcome.ResourceUnavailable
             else
-                run eventId (ActorManagementGrant.setGrant witness eventId target role scope active)
+                run
+                    eventId
+                    ct
+                    (ActorManagementGrant.setGrant witness eventId target role scope active ct)
 
-        member _.SetEnabled(eventId, target, enabled, _) =
+        member _.SetEnabled(eventId, target, enabled, ct) =
             if not (sameIssuer target) then
                 Task.FromResult ActorManagementOutcome.ResourceUnavailable
             else
-                run eventId (setEnabled eventId target enabled)
+                run eventId ct (setEnabled eventId target enabled ct)
 
-        member _.Observe(eventId, _) =
-            run eventId (fun connection transaction _ _ ->
+        member _.Observe(eventId, ct) =
+            run eventId ct (fun connection transaction _ _ ->
                 task {
-                    let! seen = existingEvent connection transaction witness eventId
+                    let! seen = existingEvent connection transaction witness eventId ct
 
                     match seen with
                     | Some action ->
@@ -197,7 +203,8 @@ type internal PostgresActorManagement
                                 action.TargetActorId
                             )
                     | None ->
-                        let pending = witness.EvidenceStore.TryReadEvidence(eventId, Intent).IsSome
+                        let! evidence = witness.EvidenceStore.TryReadEvidence(eventId, Intent, ct)
+                        let pending = evidence.IsSome
 
                         return
                             if pending then

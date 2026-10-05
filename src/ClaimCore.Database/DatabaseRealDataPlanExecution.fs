@@ -84,6 +84,7 @@ module internal DatabaseRealDataPlanExecution =
                 ownerConnection
                 policyPath
                 originalEvidencePath
+            |> fun work -> work.GetAwaiter().GetResult()
         with
         | Error reason -> Error reason
         | Ok None -> Ok(AdministrationOutcome.NotStarted AdministrationFailure.OperationFailed)

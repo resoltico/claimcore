@@ -67,46 +67,12 @@ module internal WriterHandoffOwnerAbortEvidence =
         && entry.AbortSigningKeyOne = Some value.AbortSigningKeyOneId
         && entry.AbortSigningKeyTwo = Some value.AbortSigningKeyTwoId
 
-    let private exactEntry
+    let private verifyCiphertext
         (witness: WitnessProtocol)
-        (prepared: PrimaryWriterPreparation)
         (value: WriterHandoffAbort)
-        canonical
-        signatureOne
-        signatureTwo
-        (entry: WriterHandoffEvidence)
+        (evidence: Evidence)
+        digest
         =
-        let digest =
-            WriterHandoffWitnessAbortCommands.candidate canonical signatureOne signatureTwo
-
-        let sequence =
-            entry.AbortSequence
-            |> Option.defaultWith (fun () -> invalidOp "Abort A1 is absent.")
-
-        let hash =
-            entry.AbortHash
-            |> Option.defaultWith (fun () -> invalidOp "Abort A1 hash is absent.")
-
-        if
-            not (identityMatches witness prepared value entry)
-            || not (preparationMatches prepared entry sequence)
-            || not (signedAbortMatches value entry digest canonical signatureOne signatureTwo)
-        then
-            invalidOp "Witness abort differs from signed owner candidate."
-
-        let evidence =
-            witness.EvidenceStore.TryReadEvidence(value.HandoffId, AbortedBeforeCommit)
-            |> Option.defaultWith (fun () -> invalidOp "Witness abort journal evidence is absent.")
-
-        if
-            evidence.Ticket.Sequence <> sequence
-            || evidence.Ticket.EntryHash <> hash
-            || evidence.Ticket.ScopeKind <> Installation
-        then
-            invalidOp "Witness abort journal ticket differs."
-
-        witness.VerifyHistoricalTip(sequence, hash)
-
         let plain =
             witness.KeyCustody.Decrypt(
                 evidence.Ticket.KeyId,
@@ -121,7 +87,57 @@ module internal WriterHandoffOwnerAbortEvidence =
             CryptographicOperations.ZeroMemory(plain)
             CryptographicOperations.ZeroMemory(digest)
 
-        evidence.Ticket
+
+    let private exactEntry
+        (witness: WitnessProtocol)
+        (prepared: PrimaryWriterPreparation)
+        (value: WriterHandoffAbort)
+        canonical
+        signatureOne
+        signatureTwo
+        (entry: WriterHandoffEvidence)
+        (ct: CancellationToken)
+        =
+        task {
+            let digest =
+                WriterHandoffWitnessAbortCommands.candidate canonical signatureOne signatureTwo
+
+            let sequence =
+                entry.AbortSequence
+                |> Option.defaultWith (fun () -> invalidOp "Abort A1 is absent.")
+
+            let hash =
+                entry.AbortHash
+                |> Option.defaultWith (fun () -> invalidOp "Abort A1 hash is absent.")
+
+            if
+                not (identityMatches witness prepared value entry)
+                || not (preparationMatches prepared entry sequence)
+                || not (signedAbortMatches value entry digest canonical signatureOne signatureTwo)
+            then
+                invalidOp "Witness abort differs from signed owner candidate."
+
+            let! observed =
+                witness.EvidenceStore.TryReadEvidence(value.HandoffId, AbortedBeforeCommit, ct)
+
+            let evidence =
+                observed
+                |> Option.defaultWith (fun () ->
+                    invalidOp "Witness abort journal evidence is absent.")
+
+            if
+                evidence.Ticket.Sequence <> sequence
+                || evidence.Ticket.EntryHash <> hash
+                || evidence.Ticket.ScopeKind <> Installation
+            then
+                invalidOp "Witness abort journal ticket differs."
+
+            do! witness.VerifyHistoricalTip(sequence, hash, ct)
+
+            verifyCiphertext witness value evidence digest
+
+            return evidence.Ticket
+        }
 
     let read
         (witness: WitnessProtocol)
@@ -130,11 +146,19 @@ module internal WriterHandoffOwnerAbortEvidence =
         canonical
         signatureOne
         signatureTwo
+        (ct: CancellationToken)
         =
-        match witness.EvidenceStore.TryReadHandoff(value.HandoffId) with
-        | Some entry when entry.AbortSequence.IsSome ->
-            Some(exactEntry witness prepared value canonical signatureOne signatureTwo entry)
-        | _ -> None
+        task {
+            let! stored = witness.EvidenceStore.TryReadHandoff(value.HandoffId, ct)
+
+            match stored with
+            | Some entry when entry.AbortSequence.IsSome ->
+                let! ticket =
+                    exactEntry witness prepared value canonical signatureOne signatureTwo entry ct
+
+                return Some ticket
+            | _ -> return None
+        }
 
     let private readHistoricalSigner connection transaction keyId =
         use command =
@@ -192,6 +216,7 @@ module internal WriterHandoffOwnerAbortEvidence =
         grantRevision
         canonical
         signature
+        ct
         =
         task {
             let row = readHistoricalSigner connection transaction keyId
@@ -208,13 +233,15 @@ module internal WriterHandoffOwnerAbortEvidence =
             then
                 invalidOp "Historical abort signer differs."
 
-            witness.VerifyAuthorityEvidenceForInstallation(
-                row.EventId,
-                row.Registration,
-                row.Epoch,
-                row.Hash,
-                row.Candidate
-            )
+            do!
+                witness.VerifyAuthorityEvidenceForInstallation(
+                    row.EventId,
+                    row.Registration,
+                    row.Epoch,
+                    row.Hash,
+                    row.Candidate,
+                    ct
+                )
 
             do!
                 DataAuditHandoffOwnerRole.verify
@@ -241,6 +268,7 @@ module internal WriterHandoffOwnerAbortEvidence =
         canonical
         signatureOne
         signatureTwo
+        ct
         =
         task {
             do!
@@ -254,6 +282,7 @@ module internal WriterHandoffOwnerAbortEvidence =
                     value.OwnerOneGrantRevision
                     canonical
                     signatureOne
+                    ct
 
             do!
                 historicalSigner
@@ -266,4 +295,5 @@ module internal WriterHandoffOwnerAbortEvidence =
                     value.OwnerTwoGrantRevision
                     canonical
                     signatureTwo
+                    ct
         }

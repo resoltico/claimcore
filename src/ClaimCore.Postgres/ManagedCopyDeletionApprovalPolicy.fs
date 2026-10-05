@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open System.Data
 open System.Security.Cryptography
 open System.Threading
@@ -224,13 +225,14 @@ module internal ManagedCopyDeletionApprovalPolicy =
         revision
         (copy: CopyDeletionTarget)
         canonical
+        ct
         =
         task {
-            let intent =
-                witness.BeginAuthority(request.ApprovalId, canonical, copy.SourceCaseId)
+            let! intent =
+                witness.BeginAuthority(request.ApprovalId, canonical, copy.SourceCaseId, ct)
 
             do! insert connection transaction request actorId revision canonical intent
             do! transaction.CommitAsync()
-            witness.SettleAuthority(request.ApprovalId, intent) |> ignore
+            let! _ = witness.SettleAuthority(request.ApprovalId, intent)
             return CopyDeletionApprovalOutcome.Approved(request.ApprovalId, revision)
         }

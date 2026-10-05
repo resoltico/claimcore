@@ -17,53 +17,57 @@ module internal DatabaseRestoreFencedTailSignatures =
         (tail: FencedTailClaims)
         (evidence: SignedFencedTailEvidence)
         =
-        let signer id purpose =
-            if historical then
-                DatabaseRestoreSignedEvidence.historicalSigner
-                    owner
-                    transaction
-                    witness
-                    id
-                    purpose
-                    tail.Epoch
-                    tail.W1Sequence
-            else
-                DatabaseRestoreSignedEvidence.signer owner transaction id purpose
+        task {
+            let signer id purpose =
+                if historical then
+                    DatabaseRestoreSignedEvidence.historicalSigner
+                        owner
+                        transaction
+                        witness
+                        id
+                        purpose
+                        tail.Epoch
+                        tail.W1Sequence
+                else
+                    System.Threading.Tasks.Task.FromResult(
+                        DatabaseRestoreSignedEvidence.signer owner transaction id purpose
+                    )
 
-        let reportKey, reportHolder =
-            signer report.SignerKeyId CopySignerPurpose.RestoreReport
-
-        try
-            let checkpointKey, checkpointHolder =
-                signer index.CheckpointSignerKeyId CopySignerPurpose.Checkpoint
+            let! reportKey, reportHolder =
+                signer report.SignerKeyId CopySignerPurpose.RestoreReport
 
             try
-                if
-                    reportHolder = checkpointHolder
-                    || CryptographicOperations.FixedTimeEquals(reportKey, checkpointKey)
-                    || not (
-                        ManagedCopySignature.verify
-                            reportKey
-                            evidence.Report
-                            evidence.ReportSignature
-                    )
-                    || not (
-                        ManagedCopySignature.verify
-                            checkpointKey
-                            evidence.Fence
-                            evidence.FenceSignature
-                    )
-                    || not (
-                        ManagedCopySignature.verify
-                            checkpointKey
-                            evidence.Supplement
-                            evidence.SupplementSignature
-                    )
-                then
-                    invalidOp "Fenced recovery tail lacks an independent registered signer."
+                let! checkpointKey, checkpointHolder =
+                    signer index.CheckpointSignerKeyId CopySignerPurpose.Checkpoint
 
-                checkpointHolder
+                try
+                    if
+                        reportHolder = checkpointHolder
+                        || CryptographicOperations.FixedTimeEquals(reportKey, checkpointKey)
+                        || not (
+                            ManagedCopySignature.verify
+                                reportKey
+                                evidence.Report
+                                evidence.ReportSignature
+                        )
+                        || not (
+                            ManagedCopySignature.verify
+                                checkpointKey
+                                evidence.Fence
+                                evidence.FenceSignature
+                        )
+                        || not (
+                            ManagedCopySignature.verify
+                                checkpointKey
+                                evidence.Supplement
+                                evidence.SupplementSignature
+                        )
+                    then
+                        invalidOp "Fenced recovery tail lacks an independent registered signer."
+
+                    return checkpointHolder
+                finally
+                    CryptographicOperations.ZeroMemory(checkpointKey)
             finally
-                CryptographicOperations.ZeroMemory(checkpointKey)
-        finally
-            CryptographicOperations.ZeroMemory(reportKey)
+                CryptographicOperations.ZeroMemory(reportKey)
+        }

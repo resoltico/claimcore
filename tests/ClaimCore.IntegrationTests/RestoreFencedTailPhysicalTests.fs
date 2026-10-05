@@ -76,6 +76,7 @@ let private inspect
             context.Capture.ArchiveRoot
             evidence
             DateTimeOffset.UtcNow
+        |> await
 
     transaction.Rollback()
     verified
@@ -97,6 +98,7 @@ let private verifyHistoricalReport (context: SettledW1Context) now =
             context.HandoffId
             context.Input.Publication.VerifierBinarySha256
             now
+        |> await
 
     Expect.equal
         historical.ReportSha256
@@ -155,6 +157,7 @@ let private verifyEvidence (context: SettledW1Context) report index supplement s
             historical
             proof.ProbeEvidenceSha256
             context.Capture.ArchiveRoot
+        |> await
 
     Expect.equal
         reconstructed.FinalWalObjectSha256

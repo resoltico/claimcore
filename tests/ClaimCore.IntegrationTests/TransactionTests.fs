@@ -1,5 +1,6 @@
 module ClaimCore.IntegrationTests.TransactionTests
 
+open System.Threading
 open System
 open System.Threading.Tasks
 open Expecto
@@ -44,7 +45,10 @@ let private sameIdConcurrencyTests =
                     1
                     "Only one new commit"
 
-                let history = service.History(request.CaseReference, 0L) |> await |> accepted
+                let history =
+                    service.History(request.CaseReference, 0L, CancellationToken.None)
+                    |> await
+                    |> accepted
 
                 Expect.equal history.Items.Length 1 "One audit row")
         ]
@@ -101,7 +105,10 @@ let private absentCaseConcurrencyTests =
                         ("The contender observes revision one; safe categories: "
                          + String.concat "," categories)
 
-                    let history = service.History(first.CaseReference, 0L) |> await |> accepted
+                    let history =
+                        service.History(first.CaseReference, 0L, CancellationToken.None)
+                        |> await
+                        |> accepted
 
                     Expect.equal history.Items.Length 1 "One current row and one retained receipt")
         ]
@@ -192,12 +199,15 @@ let private lifecycleTests =
                     |> accepted
                     |> ignore
 
-                let history = service.History(initial.CaseReference, 0L) |> await |> accepted
+                let history =
+                    service.History(initial.CaseReference, 0L, CancellationToken.None)
+                    |> await
+                    |> accepted
 
                 Expect.equal history.Items.Length 6 "Every accepted version retained"
 
                 let current =
-                    service.Get(initial.CaseReference)
+                    service.Get(initial.CaseReference, CancellationToken.None)
                     |> await
                     |> accepted
                     |> Option.map Claim.view

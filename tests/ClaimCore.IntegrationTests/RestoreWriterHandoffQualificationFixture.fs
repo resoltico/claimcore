@@ -51,3 +51,4 @@ let verifyProspectiveFence
         signedFence
         input.Publication.VerifierBinarySha256
         DateTimeOffset.UtcNow
+    |> fun work -> work.GetAwaiter().GetResult()

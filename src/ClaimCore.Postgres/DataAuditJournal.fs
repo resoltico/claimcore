@@ -19,19 +19,6 @@ module internal DataAuditJournal =
             mutable LossSettlementObserved: bool
         }
 
-    let private requirePrimary
-        (command: NpgsqlCommand)
-        operationId
-        (cancellationToken: CancellationToken)
-        =
-        task {
-            command.Parameters["operation"].Value <- operationId
-            let! value = command.ExecuteScalarAsync(cancellationToken)
-
-            if not (unbox<bool> value) then
-                corrupt ()
-        }
-
     let private sealedBeforePurge (command: NpgsqlCommand) (ticket: Ticket) ct =
         task {
             match ticket.ScopeKind, ticket.SubjectCaseId with
@@ -43,25 +30,28 @@ module internal DataAuditJournal =
             | _ -> return false
         }
 
-    let private rotate (witness: WitnessProtocol) (state: ScanState) (item: MetadataRecord) =
-        let ticket = item.Ticket
+    let private rotate (witness: WitnessProtocol) (state: ScanState) (item: MetadataRecord) ct =
+        task {
+            let ticket = item.Ticket
 
-        let evidence =
-            witness.EvidenceStore.TryReadEvidence(ticket.OperationId, KeyRotated)
-            |> Option.defaultWith corrupt
+            let! retained =
+                witness.EvidenceStore.TryReadEvidence(ticket.OperationId, KeyRotated, ct)
 
-        if evidence.Ticket <> ticket then
-            corrupt ()
+            let evidence = retained |> Option.defaultWith corrupt
 
-        state.CurrentKeyId <-
-            witnessProof (fun () ->
-                witness.VerifyKeyRotated(
-                    {
-                        Evidence = evidence
-                        PreviousHash = item.PreviousHash
-                    },
-                    state.CurrentKeyId
-                ))
+            if evidence.Ticket <> ticket then
+                corrupt ()
+
+            state.CurrentKeyId <-
+                witnessProof (fun () ->
+                    witness.VerifyKeyRotated(
+                        {
+                            Evidence = evidence
+                            PreviousHash = item.PreviousHash
+                        },
+                        state.CurrentKeyId
+                    ))
+        }
 
     let private settledAuthority witness (queries: DataAuditJournalCommands) (ticket: Ticket) ct =
         task {
@@ -97,29 +87,37 @@ module internal DataAuditJournal =
                         ct
 
                 if required then
-                    do! requirePrimary queries.ExternalPublication ticket.OperationId ct
+                    do!
+                        DataAuditJournalCommands.requirePrimary
+                            queries.ExternalPublication
+                            ticket.OperationId
+                            ct
         }
 
     let private lossIntent connection transaction witness tip state (ticket: Ticket) ct =
-        state.Intents <- state.Intents + 1L
+        task {
+            state.Intents <- state.Intents + 1L
 
-        if tip.LossRetirementId = Some ticket.OperationId then
-            if state.LossIntentObserved then
-                corrupt ()
+            if tip.LossRetirementId = Some ticket.OperationId then
+                if state.LossIntentObserved then
+                    corrupt ()
 
-            DataAuditInstallationLoss.verify connection transaction witness tip ticket ct
-            state.LossIntentObserved <- true
+                do! DataAuditInstallationLoss.verify connection transaction witness tip ticket ct
+                state.LossIntentObserved <- true
+        }
 
     let private lossSettlement connection transaction witness tip state (ticket: Ticket) ct =
-        if tip.LossRetirementId = Some ticket.OperationId then
-            if state.LossSettlementObserved then
-                corrupt ()
+        task {
+            if tip.LossRetirementId = Some ticket.OperationId then
+                if state.LossSettlementObserved then
+                    corrupt ()
 
-            DataAuditInstallationLoss.verify connection transaction witness tip ticket ct
-            state.LossSettlementObserved <- true
-            true
-        else
-            false
+                do! DataAuditInstallationLoss.verify connection transaction witness tip ticket ct
+                state.LossSettlementObserved <- true
+                return true
+            else
+                return false
+        }
 
     let private verifyPhaseKind
         (connection: NpgsqlConnection)
@@ -136,36 +134,37 @@ module internal DataAuditJournal =
             let ticket = item.Ticket
 
             match ticket.Phase with
-            | Intent -> lossIntent connection transaction witness tip state ticket cancellationToken
+            | Intent ->
+                do! lossIntent connection transaction witness tip state ticket cancellationToken
             | SettledAccepted ->
                 state.Settled <- state.Settled + 1L
 
                 if not sealedCase then
-                    do! requirePrimary queries.Accepted ticket.OperationId cancellationToken
+                    do!
+                        DataAuditJournalCommands.requirePrimary
+                            queries.Accepted
+                            ticket.OperationId
+                            cancellationToken
             | SettledRevoked ->
                 state.Settled <- state.Settled + 1L
 
                 if not sealedCase then
-                    do! requirePrimary queries.Revoked ticket.OperationId cancellationToken
+                    do!
+                        DataAuditJournalCommands.requirePrimary
+                            queries.Revoked
+                            ticket.OperationId
+                            cancellationToken
             | AbortedBeforeCommit ->
                 state.Settled <- state.Settled + 1L
                 do! DataAuditJournalAbort.verify tip queries.Abort ticket cancellationToken
-            | KeyRotated -> rotate witness state item
+            | KeyRotated -> do! rotate witness state item cancellationToken
             | SettledAuthority ->
                 state.Settled <- state.Settled + 1L
 
-                if
-                    not (
-                        lossSettlement
-                            connection
-                            transaction
-                            witness
-                            tip
-                            state
-                            ticket
-                            cancellationToken
-                    )
-                then
+                let! loss =
+                    lossSettlement connection transaction witness tip state ticket cancellationToken
+
+                if not loss then
                     do! verifyAuthorityPhase witness queries ticket sealedCase cancellationToken
         }
 
@@ -213,13 +212,14 @@ module internal DataAuditJournal =
         (cancellationToken: CancellationToken)
         =
         task {
-            let page =
-                witnessProof (fun () ->
+            let! page =
+                witnessProofAsync (fun () ->
                     witness.EvidenceStore.ReadMetadataPage(
                         state.After,
                         state.PreviousHash,
                         tip.TipSequence,
-                        32
+                        32,
+                        cancellationToken
                     ))
 
             if page.Items.IsEmpty then

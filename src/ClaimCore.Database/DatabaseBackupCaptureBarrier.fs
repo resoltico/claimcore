@@ -29,7 +29,7 @@ module private DatabaseBackupCaptureAdmission =
         (cancellationToken: CancellationToken)
         =
         task {
-            let held = witness.Snapshot()
+            let! held = witness.Snapshot(cancellationToken)
 
             if
                 held.HandoffPending
@@ -73,12 +73,12 @@ module private DatabaseBackupCaptureAdmission =
             let! authorityLease = AuthorityOperationFence.acquireExclusive None owner ct
 
             try
-                let before = witness.Snapshot()
+                let! before = witness.Snapshot(ct)
 
                 if before.HandoffPending || before.ActivationPending then
                     invalidOp "Writer authority is not active for backup capture."
 
-                let witnessLease = witness.AcquireReadFence(before.WriterGeneration)
+                let! witnessLease = witness.AcquireReadFence(before.WriterGeneration, ct)
 
                 try
                     let! cutoff =
@@ -117,7 +117,7 @@ type internal DatabaseBackupCaptureBarrier
             if disposed then
                 invalidOp "Backup capture authority fence is closed."
 
-            let before = witness.Snapshot()
+            let! before = witness.Snapshot(cancellationToken)
 
             if
                 before.WriterGeneration <> cutoff.WriterGeneration
@@ -133,7 +133,7 @@ type internal DatabaseBackupCaptureBarrier
             let! summary =
                 DataAudit.runWithSuppression connection witness (Some commitments) cancellationToken
 
-            let after = witness.Snapshot()
+            let! after = witness.Snapshot(cancellationToken)
 
             if
                 summary.PendingIntents <> 0L
@@ -165,7 +165,7 @@ type internal DatabaseBackupCaptureBarrier
         task {
             OwnerConnection.requireIdentity owner
             SchemaBaseline.requireCurrent owner
-            witness.Admit()
+            do! witness.Admit(cancellationToken)
 
             let! cutoff, lease =
                 DatabaseBackupCaptureAdmission.acquire

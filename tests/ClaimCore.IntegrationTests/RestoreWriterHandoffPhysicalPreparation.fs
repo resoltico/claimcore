@@ -1,5 +1,6 @@
 module internal ClaimCore.IntegrationTests.RestoreWriterHandoffPhysicalPreparation
 
+open System.Threading
 open System
 open System.IO
 open System.Security.Cryptography
@@ -138,7 +139,7 @@ let withPrepared
     try
         let newCapabilityPath = rawCapability root newCapability
         use witness = restoredWitness access capture.CaptureTip.Identity keyId
-        witness.AdmitReadOnly()
+        (witness.AdmitReadOnly(CancellationToken.None).GetAwaiter().GetResult())
 
         approvedContext
             root

@@ -31,6 +31,13 @@ type internal RuntimeAuditCadence
     let mutable failed = 0
     let mutable lastCompletedTicks = clock.Timestamp()
 
+    let quarantine overdue =
+        if Interlocked.Exchange(&failed, 1) = 0 then
+            try
+                RuntimeOperationalSignals.audit overdue
+            with _ ->
+                ()
+
     let worker =
         task {
             try
@@ -50,11 +57,11 @@ type internal RuntimeAuditCadence
                     | :? OperationCanceledException when cancellation.IsCancellationRequested ->
                         running <- false
                     | _ ->
-                        Interlocked.Exchange(&failed, 1) |> ignore
+                        quarantine false
                         running <- false
             with
             | :? OperationCanceledException when cancellation.IsCancellationRequested -> ()
-            | _ -> Interlocked.Exchange(&failed, 1) |> ignore
+            | _ -> quarantine false
         }
 
     member _.RequestStop() =
@@ -69,7 +76,7 @@ type internal RuntimeAuditCadence
         let elapsed = clock.Elapsed(Volatile.Read(&lastCompletedTicks))
 
         if elapsed > interval + TimeSpan.FromHours 2. then
-            Interlocked.Exchange(&failed, 1) |> ignore
+            quarantine true
             invalidOp "Scheduled full audit is overdue; case-work admission is quarantined."
 
     member _.Completion = worker :> Task

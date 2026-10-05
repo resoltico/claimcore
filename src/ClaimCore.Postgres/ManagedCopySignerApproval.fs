@@ -22,38 +22,6 @@ module internal ManagedCopySignerApproval =
         | CopySignerApprovalRole.Custodian when contains Role.DataSteward -> Some "DATA_STEWARD"
         | _ -> None
 
-    let private matchingSigner connection transaction (request: CopySignerApprovalRequest) actorId =
-        task {
-            use command =
-                new NpgsqlCommand(
-                    "SELECT active,public_key_sha256,signer_purpose,holder_actor_id "
-                    + "FROM claimcore.managed_copy_signers "
-                    + "WHERE signing_key_id=@key",
-                    connection,
-                    transaction
-                )
-
-            Sql.uuid command "key" request.SigningKeyId
-            let! rows = command.ExecuteReaderAsync()
-            use reader = rows
-            let! found = reader.ReadAsync()
-
-            return
-                match request.Action, found with
-                | CopySignerAction.Register, false -> true
-                | CopySignerAction.Retire, true ->
-                    reader.GetBoolean(0)
-                    && reader.GetString(2) = ManagedCopySignerCandidate.purposeName request.Purpose
-                    && (match request.Role with
-                        | CopySignerApprovalRole.Custodian -> reader.GetGuid(3) = actorId
-                        | CopySignerApprovalRole.Owner _ -> true)
-                    && CryptographicOperations.FixedTimeEquals(
-                        ReadOnlySpan<byte>(reader.GetFieldValue<byte array>(1)),
-                        ReadOnlySpan<byte>(request.PublicKeySha256)
-                    )
-                | _ -> false
-        }
-
     let private existing connection transaction approvalId =
         task {
             use command =
@@ -169,6 +137,55 @@ module internal ManagedCopySignerApproval =
         else
             roleName request live
 
+    let private approveFresh
+        connection
+        transaction
+        (witness: WitnessProtocol)
+        (request: CopySignerApprovalRequest)
+        actorId
+        actorRole
+        revision
+        canonical
+        ct
+        =
+        task {
+            let! holder =
+                ManagedCopySignerApprovalHolder.approved
+                    connection
+                    transaction
+                    witness
+                    request
+                    actorId
+                    ct
+
+            let! target =
+                ManagedCopySignerApprovalHolder.matchingSigner
+                    connection
+                    transaction
+                    request
+                    actorId
+
+            if not target || not holder then
+                return CopySignerApprovalOutcome.ResourceUnavailable
+            else
+                let! intent = witness.BeginAuthority(request.ApprovalId, canonical, None, ct)
+
+                do!
+                    append
+                        connection
+                        transaction
+                        request
+                        actorId
+                        actorRole
+                        revision
+                        canonical
+                        intent
+
+                do! transaction.CommitAsync()
+                let! _ = witness.SettleAuthority(request.ApprovalId, intent)
+                return CopySignerApprovalOutcome.Approved(request.ApprovalId, revision)
+        }
+
     let private persistOrReplay
         (connection: NpgsqlConnection)
         (transaction: NpgsqlTransaction)
@@ -178,55 +195,40 @@ module internal ManagedCopySignerApproval =
         (actorRole: string)
         (revision: int64)
         (canonical: byte array)
+        ct
         =
         task {
             let! prior = existing connection transaction request.ApprovalId
 
             match prior with
             | Some(bytes, digest, sequence, epoch, entryHash) when bytes = canonical ->
-                witness.VerifyAuthorityEvidence(
-                    request.ApprovalId,
-                    sequence,
-                    epoch,
-                    entryHash,
-                    digest
-                )
+                do!
+                    witness.VerifyAuthorityEvidence(
+                        request.ApprovalId,
+                        sequence,
+                        epoch,
+                        entryHash,
+                        digest,
+                        ct
+                    )
 
                 return CopySignerApprovalOutcome.Approved(request.ApprovalId, revision)
             | Some _ -> return CopySignerApprovalOutcome.ResourceUnavailable
             | None ->
-                let! holder =
-                    ManagedCopySignerApprovalHolder.approved
+                return!
+                    approveFresh
                         connection
                         transaction
                         witness
                         request
                         actorId
-
-                let! target = matchingSigner connection transaction request actorId
-
-                if not target || not holder then
-                    return CopySignerApprovalOutcome.ResourceUnavailable
-                else
-                    let intent = witness.BeginAuthority(request.ApprovalId, canonical, None)
-
-                    do!
-                        append
-                            connection
-                            transaction
-                            request
-                            actorId
-                            actorRole
-                            revision
-                            canonical
-                            intent
-
-                    do! transaction.CommitAsync()
-                    witness.SettleAuthority(request.ApprovalId, intent) |> ignore
-                    return CopySignerApprovalOutcome.Approved(request.ApprovalId, revision)
+                        actorRole
+                        revision
+                        canonical
+                        ct
         }
 
-    let private underLock connection transaction witness context request =
+    let private underLock connection transaction witness context request ct =
         task {
             let! revision =
                 ActorGrantRead.lockRevision connection transaction true CancellationToken.None
@@ -243,7 +245,7 @@ module internal ManagedCopySignerApproval =
             match authority with
             | None -> return CopySignerApprovalOutcome.ResourceUnavailable
             | Some live ->
-                let! now = Sql.databaseNow connection transaction
+                let! now = Sql.databaseNow connection transaction ct
 
                 match authorizedRole context request revision live now with
                 | None -> return CopySignerApprovalOutcome.ResourceUnavailable
@@ -262,6 +264,7 @@ module internal ManagedCopySignerApproval =
                                 actorRole
                                 revision
                                 canonical
+                                ct
                     finally
                         CryptographicOperations.ZeroMemory(canonical)
         }
@@ -271,23 +274,25 @@ module internal ManagedCopySignerApproval =
         (witness: WitnessProtocol)
         (context: ActorCallContext)
         (request: CopySignerApprovalRequest)
+        ct
         =
         task {
             if not (validRequest context request) then
                 return CopySignerApprovalOutcome.ResourceUnavailable
             else
                 try
-                    witness.Admit()
-                    use! connection = RuntimeDatabase.openConnectionAsync dataSource
+                    do! witness.Admit(ct)
+
+                    use! connection =
+                        RuntimeDatabase.openConnectionAsyncWithCancellation dataSource ct
 
                     use! _authorityLease =
-                        AuthorityOperationFence.acquireShared
-                            (Some dataSource)
-                            connection
-                            System.Threading.CancellationToken.None
+                        AuthorityOperationFence.acquireShared (Some dataSource) connection ct
 
-                    use transaction = connection.BeginTransaction(IsolationLevel.ReadCommitted)
-                    return! underLock connection transaction witness context request
+                    use! transaction =
+                        connection.BeginTransactionAsync(IsolationLevel.ReadCommitted, ct)
+
+                    return! underLock connection transaction witness context request ct
                 with _ ->
                     return CopySignerApprovalOutcome.StartedUnconfirmed request.ApprovalId
         }

@@ -125,28 +125,35 @@ module internal DatabaseBackupHealthReconciliation =
         bytes
 
     let private evaluated owner policyPath evidencePath outputPath =
-        match ReviewedDeploymentRoot.current () with
-        | None -> BackupHealthPublicationState.Unknown, None
-        | Some profile ->
-            try
+        task {
+            match ReviewedDeploymentRoot.current () with
+            | None -> return BackupHealthPublicationState.Unknown, None
+            | Some profile ->
                 try
-                    let loaded = DatabaseBackupHealthEvidenceInputs.load policyPath evidencePath
-
                     try
-                        let certificateSha =
-                            DatabaseBackupHealthHistorical.verify owner profile loaded
+                        let loaded = DatabaseBackupHealthEvidenceInputs.load policyPath evidencePath
 
-                        inspect outputPath loaded.CertificateBytes loaded.CertificateSignature,
-                        Some certificateSha
-                    finally
-                        DatabaseBackupHealthEvidenceInputs.dispose loaded
-                with _ ->
-                    BackupHealthPublicationState.Unknown, None
-            finally
-                CryptographicOperations.ZeroMemory(profile.PublicationRootKey)
+                        try
+                            let! certificateSha =
+                                DatabaseBackupHealthHistorical.verify owner profile loaded
+
+                            return
+                                inspect
+                                    outputPath
+                                    loaded.CertificateBytes
+                                    loaded.CertificateSignature,
+                                Some certificateSha
+                        finally
+                            DatabaseBackupHealthEvidenceInputs.dispose loaded
+                    with _ ->
+                        return BackupHealthPublicationState.Unknown, None
+                finally
+                    CryptographicOperations.ZeroMemory(profile.PublicationRootKey)
+        }
 
     let run owner policyPath evidencePath outputPath (output: Stream) (errors: Stream) =
-        let state, certificateSha = evaluated owner policyPath evidencePath outputPath
+        let state, certificateSha =
+            (evaluated owner policyPath evidencePath outputPath).GetAwaiter().GetResult()
 
         let target =
             if state = BackupHealthPublicationState.Unknown then

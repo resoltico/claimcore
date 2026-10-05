@@ -73,47 +73,55 @@ module internal CaseTombstonePruneApprovalAudit =
         prunedCutoff
         purgeEventId
         (row: TombstonePruneApprovalAuditRow)
+        ct
         =
-        if
-            row.PurgeEventId <> purgeEventId
-            || row.WitnessSequence > cutoff
-            || row.WitnessEpoch <> witness.Identity.Epoch
-        then
-            corrupt ()
-
-        let value = proposal row
-
-        if not (matches row value) then
-            corrupt ()
-
-        let canonical =
-            CaseTombstoneCandidate.approval
-                value
-                row.ApprovalId
-                row.ActorId
-                row.GrantRevision
-                row.ApprovedAt
-                row.ExpiresAt
-
-        try
-            if canonical <> row.Canonical || row.CandidateHash <> SHA256.HashData(canonical) then
+        task {
+            if
+                row.PurgeEventId <> purgeEventId
+                || row.WitnessSequence > cutoff
+                || row.WitnessEpoch <> witness.Identity.Epoch
+            then
                 corrupt ()
 
-            if
-                not (
-                    prunedCutoff |> Option.exists (fun sealedAt -> row.WitnessSequence <= sealedAt)
-                )
-            then
-                witness.VerifyAuthorityEvidenceForCase(
-                    row.ApprovalId,
-                    row.WitnessSequence,
-                    row.WitnessEpoch,
-                    row.WitnessHash,
-                    row.CandidateHash,
-                    row.CaseId
-                )
-        finally
-            CryptographicOperations.ZeroMemory(canonical)
+            let value = proposal row
+
+            if not (matches row value) then
+                corrupt ()
+
+            let canonical =
+                CaseTombstoneCandidate.approval
+                    value
+                    row.ApprovalId
+                    row.ActorId
+                    row.GrantRevision
+                    row.ApprovedAt
+                    row.ExpiresAt
+
+            try
+                if
+                    canonical <> row.Canonical || row.CandidateHash <> SHA256.HashData(canonical)
+                then
+                    corrupt ()
+
+                if
+                    not (
+                        prunedCutoff
+                        |> Option.exists (fun sealedAt -> row.WitnessSequence <= sealedAt)
+                    )
+                then
+                    do!
+                        witness.VerifyAuthorityEvidenceForCase(
+                            row.ApprovalId,
+                            row.WitnessSequence,
+                            row.WitnessEpoch,
+                            row.WitnessHash,
+                            row.CandidateHash,
+                            row.CaseId,
+                            ct
+                        )
+            finally
+                CryptographicOperations.ZeroMemory(canonical)
+        }
 
     let private verifySlots connection transaction (row: TombstonePruneApprovalAuditRow) =
         use command =
@@ -139,6 +147,7 @@ module internal CaseTombstonePruneApprovalAudit =
         prunedCutoff
         caseId
         purgeEventId
+        ct
         =
         task {
             let mutable after = Guid.Empty
@@ -150,7 +159,7 @@ module internal CaseTombstonePruneApprovalAudit =
                     CaseTombstonePruneApprovalAuditRows.page connection transaction caseId after
 
                 for row in rows do
-                    verifyRow witness cutoff prunedCutoff purgeEventId row
+                    do! verifyRow witness cutoff prunedCutoff purgeEventId row ct
                     verifySlots connection transaction row
                     count <- count + 1L
 

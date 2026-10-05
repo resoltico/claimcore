@@ -66,13 +66,20 @@ let private grantFence =
                 let secondId = actorId grants second
                 registry.SetGrant(proposer, firstId, grant, true) |> await |> applied
                 requestErasure actor input
-                let before = witness.Snapshot().TipSequence
+
+                let before =
+                    (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
+                        .TipSequence
 
                 match registry.SetGrant(proposer, secondId, grant, true) |> await with
                 | AuthorityWriteOutcome.Refused -> ()
                 | _ -> failtest "New case grant crossed the erasure fence"
 
-                Expect.equal (witness.Snapshot().TipSequence) before "Refused grant has no intent"
+                Expect.equal
+                    ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
+                        .TipSequence)
+                    before
+                    "Refused grant has no intent"
 
                 registry.SetGrant(proposer, firstId, grant, false) |> await |> applied))
 
@@ -105,7 +112,7 @@ let private copyFence =
                 let canonical =
                     registerVariant
                         owner
-                        (witness.Snapshot())
+                        ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()))
                         keyId
                         eventId
                         (Guid.NewGuid())
@@ -114,7 +121,10 @@ let private copyFence =
                         (Some id)
 
                 let signature = algorithm.Sign(key, canonical)
-                let before = witness.Snapshot().TipSequence
+
+                let before =
+                    (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
+                        .TipSequence
 
                 match
                     ManagedCopyAdministration.ingest connection witness canonical signature
@@ -123,6 +133,10 @@ let private copyFence =
                 | AuthorityWriteOutcome.Refused -> ()
                 | _ -> failtest "New case-linked copy crossed the erasure fence"
 
-                Expect.equal (witness.Snapshot().TipSequence) before "No copy intent was appended"))
+                Expect.equal
+                    ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
+                        .TipSequence)
+                    before
+                    "No copy intent was appended"))
 
 let tests = testList "case erasure authority fences" [ grantFence; copyFence ]

@@ -94,6 +94,7 @@ module internal ManagedCopyAdoptionEvidenceAuthority =
         cutoff
         (receipt: CopyAdoptionReceipt)
         (stored: StoredAdoptionApproval)
+        ct
         =
         CaseWitnessAuditEvidence.verify
             connection
@@ -107,6 +108,7 @@ module internal ManagedCopyAdoptionEvidenceAuthority =
             stored.WitnessHash
             stored.CandidateHash
             SettledAuthority
+            ct
 
     let private ownerRoles connection transaction (receipt: CopyAdoptionReceipt) revision ct =
         task {
@@ -158,7 +160,7 @@ module internal ManagedCopyAdoptionEvidenceAuthority =
 
             do! ownerRoles connection transaction receipt stored.GrantRevision ct
 
-            do! approvalWitness connection transaction witness cutoff receipt stored
+            do! approvalWitness connection transaction witness cutoff receipt stored ct
 
             do! useRow connection transaction receipt
 

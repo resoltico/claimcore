@@ -84,74 +84,97 @@ module internal InstallationUseActivationApprovals =
             Human = reader.GetBoolean(24)
         }
 
-    let private rows connection transaction firstId secondId lockRows =
-        use command =
-            new NpgsqlCommand((if lockRows then query else readOnlyQuery), connection, transaction)
+    let private rows connection transaction firstId secondId lockRows (ct: CancellationToken) =
+        task {
+            use command =
+                new NpgsqlCommand(
+                    (if lockRows then query else readOnlyQuery),
+                    connection,
+                    transaction
+                )
 
-        Sql.uuid command "first" firstId
-        Sql.uuid command "second" secondId
-        use reader = command.ExecuteReader()
-        let found = ResizeArray<StoredUseApproval>()
+            Sql.uuid command "first" firstId
+            Sql.uuid command "second" secondId
+            use! reader = command.ExecuteReaderAsync(ct)
+            let found = ResizeArray<StoredUseApproval>()
 
-        while reader.Read() do
-            found.Add(read reader)
+            while! reader.ReadAsync(ct) do
+                found.Add(read reader)
 
-        found |> Seq.toList
+            return found |> Seq.toList
+        }
 
-    let internal evidence (witness: WitnessProtocol) (row: StoredUseApproval) now historical =
+    let private invalidEvidence
+        (witness: WitnessProtocol)
+        (row: StoredUseApproval)
+        now
+        historical
+        canonical
+        =
         let request = row.Request
 
-        let canonical =
-            RealDataActivationApprovalCandidate.canonical
-                request
-                row.ActorId
-                row.GrantRevision
-                row.ApprovedAt
+        row.Canonical <> canonical
+        || row.CandidateHash <> SHA256.HashData(canonical)
+        || row.IntentEpoch <> witness.Identity.Epoch
+        || row.GrantRevision < 1L
+        || not row.Human
+        || request.ExpiresAt > row.ApprovedAt.AddHours(24.)
+        || row.IntentSequence <> request.ExpectedWitnessSequence + 1L
+        || (not historical
+            && (not row.CurrentHumanOwner
+                || row.Used
+                || row.ApprovedAt > now
+                || request.ExpiresAt <= now))
 
-        try
-            if
-                row.Canonical <> canonical
-                || row.CandidateHash <> SHA256.HashData(canonical)
-                || row.IntentEpoch <> witness.Identity.Epoch
-                || row.GrantRevision < 1L
-                || not row.Human
-                || request.ExpiresAt > row.ApprovedAt.AddHours(24.)
-                || row.IntentSequence <> request.ExpectedWitnessSequence + 1L
-                || (not historical
-                    && (not row.CurrentHumanOwner
-                        || row.Used
-                        || row.ApprovedAt > now
-                        || request.ExpiresAt <= now))
-            then
-                invalidOp "Human owner activation approval is invalid."
+    let internal evidence (witness: WitnessProtocol) (row: StoredUseApproval) now historical ct =
+        task {
+            let request = row.Request
 
-            witness.VerifyAuthorityEvidenceForInstallation(
-                request.ApprovalId,
-                row.IntentSequence,
-                row.IntentEpoch,
-                row.IntentHash,
-                row.CandidateHash
-            )
+            let canonical =
+                RealDataActivationApprovalCandidate.canonical
+                    request
+                    row.ActorId
+                    row.GrantRevision
+                    row.ApprovedAt
 
-            let settled =
-                witness.EvidenceStore.TryReadEvidence(request.ApprovalId, SettledAuthority)
-                |> Option.defaultWith (fun () -> invalidOp "Owner approval did not settle.")
+            try
+                if invalidEvidence witness row now historical canonical then
+                    invalidOp "Human owner activation approval is invalid."
 
-            if settled.Ticket.Sequence <> row.IntentSequence + 1L then
-                invalidOp "Owner approval ticket chain diverged."
+                do!
+                    witness.VerifyAuthorityEvidenceForInstallation(
+                        request.ApprovalId,
+                        row.IntentSequence,
+                        row.IntentEpoch,
+                        row.IntentHash,
+                        row.CandidateHash,
+                        ct
+                    )
 
-            {
-                ApprovalId = request.ApprovalId
-                ActorId = row.ActorId
-                GrantRevision = row.GrantRevision
-                IntentSequence = row.IntentSequence
-                IntentHash = row.IntentHash
-                SettlementSequence = settled.Ticket.Sequence
-                SettlementHash = settled.Ticket.EntryHash
-                ExpiresAt = request.ExpiresAt
-            }
-        finally
-            CryptographicOperations.ZeroMemory(canonical)
+                let! observed =
+                    witness.EvidenceStore.TryReadEvidence(request.ApprovalId, SettledAuthority, ct)
+
+                let settled =
+                    observed
+                    |> Option.defaultWith (fun () -> invalidOp "Owner approval did not settle.")
+
+                if settled.Ticket.Sequence <> row.IntentSequence + 1L then
+                    invalidOp "Owner approval ticket chain diverged."
+
+                return
+                    {
+                        ApprovalId = request.ApprovalId
+                        ActorId = row.ActorId
+                        GrantRevision = row.GrantRevision
+                        IntentSequence = row.IntentSequence
+                        IntentHash = row.IntentHash
+                        SettlementSequence = settled.Ticket.Sequence
+                        SettlementHash = settled.Ticket.EntryHash
+                        ExpiresAt = request.ExpiresAt
+                    }
+            finally
+                CryptographicOperations.ZeroMemory(canonical)
+        }
 
     let verify
         connection
@@ -161,25 +184,38 @@ module internal InstallationUseActivationApprovals =
         firstId
         secondId
         now
+        (ct: CancellationToken)
         =
-        if firstId = secondId then
-            invalidOp "Distinct owner approvals are required."
+        task {
+            if firstId = secondId then
+                invalidOp "Distinct owner approvals are required."
 
-        let found = rows connection transaction firstId secondId true
+            let! found = rows connection transaction firstId secondId true ct
 
-        match found with
-        | [ first; second ] ->
-            let a = evidence witness first now false
-            let b = evidence witness second now false
-            InstallationUseApprovalChain.verify first.Request second.Request a b plan witness
+            match found with
+            | [ first; second ] ->
+                let! a = evidence witness first now false ct
+                let! b = evidence witness second now false ct
 
-            {
-                First = a
-                Second = b
-                ReviewSequence = first.Request.ReviewWitnessSequence
-                ReviewHash = first.Request.ReviewWitnessHash
-            }
-        | _ -> invalidOp "Two witnessed human owner approvals are unavailable."
+                do!
+                    InstallationUseApprovalChain.verify
+                        first.Request
+                        second.Request
+                        a
+                        b
+                        plan
+                        witness
+                        ct
+
+                return
+                    {
+                        First = a
+                        Second = b
+                        ReviewSequence = first.Request.ReviewWitnessSequence
+                        ReviewHash = first.Request.ReviewWitnessHash
+                    }
+            | _ -> return invalidOp "Two witnessed human owner approvals are unavailable."
+        }
 
     let private sameEvidence
         (left: InstallationUseApprovalEvidence)
@@ -200,42 +236,58 @@ module internal InstallationUseActivationApprovals =
         (witness: WitnessProtocol)
         (plan: PublishedInstallationUsePlan)
         (record: InstallationUseActivationRecord)
+        (ct: CancellationToken)
         =
-        let found =
-            rows
-                connection
-                transaction
-                record.Approvals.First.ApprovalId
-                record.Approvals.Second.ApprovalId
-                false
+        task {
+            let! found =
+                rows
+                    connection
+                    transaction
+                    record.Approvals.First.ApprovalId
+                    record.Approvals.Second.ApprovalId
+                    false
+                    ct
 
-        match found with
-        | [ first; second ] ->
-            let a = evidence witness first record.HealthCheckedAt true
-            let b = evidence witness second record.HealthCheckedAt true
-            InstallationUseApprovalChain.verify first.Request second.Request a b plan witness
+            match found with
+            | [ first; second ] ->
+                let! a = evidence witness first record.HealthCheckedAt true ct
+                let! b = evidence witness second record.HealthCheckedAt true ct
 
-            if
-                record.Approvals.ReviewSequence <> first.Request.ReviewWitnessSequence
-                || record.Approvals.ReviewHash <> first.Request.ReviewWitnessHash
-                || not (sameEvidence a record.Approvals.First)
-                || not (sameEvidence b record.Approvals.Second)
-            then
-                invalidOp "Historical owner approvals diverged from activation."
+                do!
+                    InstallationUseApprovalChain.verify
+                        first.Request
+                        second.Request
+                        a
+                        b
+                        plan
+                        witness
+                        ct
 
-            {
-                First = a
-                Second = b
-                ReviewSequence = first.Request.ReviewWitnessSequence
-                ReviewHash = first.Request.ReviewWitnessHash
-            }
-        | _ -> invalidOp "Historical owner approvals are missing."
+                if
+                    record.Approvals.ReviewSequence <> first.Request.ReviewWitnessSequence
+                    || record.Approvals.ReviewHash <> first.Request.ReviewWitnessHash
+                    || not (sameEvidence a record.Approvals.First)
+                    || not (sameEvidence b record.Approvals.Second)
+                then
+                    invalidOp "Historical owner approvals diverged from activation."
+
+                return
+                    {
+                        First = a
+                        Second = b
+                        ReviewSequence = first.Request.ReviewWitnessSequence
+                        ReviewHash = first.Request.ReviewWitnessHash
+                    }
+            | _ -> return invalidOp "Historical owner approvals are missing."
+        }
 
     let verifyOneReadOnly connection transaction (witness: WitnessProtocol) approvalId cutoff ct =
         task {
-            match rows connection transaction approvalId approvalId false with
+            let! found = rows connection transaction approvalId approvalId false ct
+
+            match found with
             | [ row ] when row.IntentSequence <= cutoff ->
-                evidence witness row DateTimeOffset.MinValue true |> ignore
+                let! _ = evidence witness row DateTimeOffset.MinValue true ct
 
                 do!
                     DataAuditHandoffOwnerRole.verify
@@ -246,25 +298,3 @@ module internal InstallationUseActivationApprovals =
                         ct
             | _ -> invalidOp "Witnessed activation approval is missing or beyond audit cutoff."
         }
-
-    let consume
-        (connection: NpgsqlConnection)
-        (transaction: NpgsqlTransaction)
-        activationId
-        (approvals: InstallationUseApprovalPair)
-        =
-        for slot, approval in [ 1, approvals.First; 2, approvals.Second ] do
-            use command =
-                new NpgsqlCommand(
-                    "INSERT INTO claimcore.installation_data_use_approval_uses "
-                    + "(approval_id,activation_id,slot) VALUES (@approval,@activation,@slot)",
-                    connection,
-                    transaction
-                )
-
-            Sql.uuid command "approval" approval.ApprovalId
-            Sql.uuid command "activation" activationId
-            Sql.add command "slot" NpgsqlDbType.Integer (box slot)
-
-            if command.ExecuteNonQuery() <> 1 then
-                invalidOp "Owner activation approval was not consumed exactly once."

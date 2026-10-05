@@ -1,5 +1,7 @@
 module internal ClaimCore.IntegrationTests.CaseLifecycleStoreFixture
 
+open System
+open Npgsql
 open System.Threading
 open ClaimCore.Application
 open ClaimCore.Postgres
@@ -61,3 +63,29 @@ let setup action =
             secondApprover
             ungranted
             writer)
+
+let caseId owner reference =
+    use connection = new NpgsqlConnection(owner)
+    connection.Open()
+
+    use command =
+        new NpgsqlCommand(
+            "SELECT case_id FROM claimcore.cases WHERE case_reference=@reference",
+            connection
+        )
+
+    Sql.text command "reference" reference
+    command.ExecuteScalar() :?> Guid
+
+let denialCount owner id =
+    use connection = new NpgsqlConnection(owner)
+    connection.Open()
+
+    use command =
+        new NpgsqlCommand(
+            "SELECT count(*) FROM claimcore.case_erasure_operation_denials WHERE case_id=@case",
+            connection
+        )
+
+    Sql.uuid command "case" id
+    command.ExecuteScalar() :?> int64

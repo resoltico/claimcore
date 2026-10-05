@@ -26,7 +26,8 @@ module internal CaseErasurePurgeCommit =
             intent.Ticket.Sequence,
             intent.Ticket.Epoch,
             intent.Ticket.EntryHash,
-            canonical
+            canonical,
+            CancellationToken.None
         )
 
     let private candidate
@@ -80,8 +81,8 @@ module internal CaseErasurePurgeCommit =
             try
                 intentAttempted.Value <- true
 
-                let intent =
-                    witness.BeginAuthority(change.EventId, canonical, Some projection.CaseId)
+                let! intent =
+                    witness.BeginAuthority(change.EventId, canonical, Some projection.CaseId, ct)
 
                 let proof =
                     {
@@ -102,9 +103,9 @@ module internal CaseErasurePurgeCommit =
 
                 do! CaseErasurePurgeWrite.persist connection transaction proof
                 let! deleted = CaseErasurePurgeDelete.purge connection transaction projection.CaseId
-                do! transaction.CommitAsync(ct)
+                do! transaction.CommitAsync(CancellationToken.None)
 
-                settle witness change intent canonical
+                do! settle witness change intent canonical
 
                 return OwnerPurgeOutcome.Purged(change.EventId, deleted)
             finally
@@ -132,7 +133,7 @@ module internal CaseErasurePurgeCommit =
         task {
             stage.Value <- "WITNESS_COVERAGE"
 
-            let seal =
+            let! seal =
                 CaseErasureWitnessDenials.scan
                     connection
                     transaction
@@ -140,8 +141,9 @@ module internal CaseErasurePurgeCommit =
                     commitments
                     projection.CaseId
                     tip.TipSequence
+                    ct
 
-            let currentTip = witness.Snapshot()
+            let! currentTip = witness.Snapshot(ct)
 
             if currentTip.TipSequence <> tip.TipSequence || currentTip.TipHash <> tip.TipHash then
                 invalid ()

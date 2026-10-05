@@ -50,7 +50,9 @@ let private revokeOwner owner app writer (witness: WitnessProtocol) =
         registeredSigner runtime first holder CopySignerPurpose.Checkpoint witness connection
 
     use key = key
-    let action = request keyId (witness.Snapshot())
+
+    let action =
+        request keyId ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()))
 
     match
         (runtime.ForActor first).ApproveWriterHandoff(action, CancellationToken.None)
@@ -73,7 +75,8 @@ let private revokeOwner owner app writer (witness: WitnessProtocol) =
     |> await
     |> appliedManagement revokeId
 
-    let before = witness.Snapshot().TipSequence
+    let before =
+        (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence
 
     for actor in [ first; second ] do
         Expect.equal
@@ -82,7 +85,10 @@ let private revokeOwner owner app writer (witness: WitnessProtocol) =
             WriterHandoffApprovalOutcome.ResourceUnavailable
             "Revoked owner or changed actor cannot replay another owner’s approval."
 
-    Expect.equal (witness.Snapshot().TipSequence) before "Denied replay appends no witness event."
+    Expect.equal
+        ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
+        before
+        "Denied replay appends no witness event."
 
     use source = RuntimeDataSource.create app
     use audit = RuntimeDatabase.openConnection source

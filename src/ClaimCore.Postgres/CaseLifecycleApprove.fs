@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open System.Security.Cryptography
 open Npgsql
 open ClaimCore.Application
@@ -28,6 +29,7 @@ module internal CaseLifecycleApprove =
         expiresAt
         instant
         draftHash
+        ct
         =
         task {
             let! ready =
@@ -40,6 +42,7 @@ module internal CaseLifecycleApprove =
                     change
                     draftHash
                     instant
+                    ct
 
             match ready with
             | Error outcome -> return outcome
@@ -56,7 +59,32 @@ module internal CaseLifecycleApprove =
                         expiresAt
                         instant
                         draftHash
+                        ct
         }
+
+    let private replay
+        witness
+        approvalId
+        (change: LifecycleChange)
+        (projection: LifecycleProjection)
+        draftHash
+        (context: ActorCallContext)
+        expiresAt
+        stored
+        ct
+        =
+        CaseLifecycleStoreSupport.replayApproval
+            witness
+            approvalId
+            change.EventId
+            projection.CaseId
+            draftHash
+            context.Binding.ActorId
+            expiresAt
+            (Claim.view projection.Claim).Version
+            projection.Sequence
+            stored
+            ct
 
     let private approveUnderLock
         connection
@@ -67,6 +95,7 @@ module internal CaseLifecycleApprove =
         (change: LifecycleChange)
         approvalId
         expiresAt
+        ct
         =
         task {
             let draft = CaseLifecycleCandidate.draft projection.CaseId change
@@ -77,20 +106,19 @@ module internal CaseLifecycleApprove =
 
                 match existing with
                 | Some stored ->
-                    return
-                        CaseLifecycleStoreSupport.replayApproval
+                    return!
+                        replay
                             witness
                             approvalId
-                            change.EventId
-                            projection.CaseId
+                            change
+                            projection
                             draftHash
-                            context.Binding.ActorId
+                            context
                             expiresAt
-                            (Claim.view projection.Claim).Version
-                            projection.Sequence
                             stored
+                            ct
                 | None ->
-                    let! instant = Sql.databaseNow connection transaction
+                    let! instant = Sql.databaseNow connection transaction ct
 
                     if not (approvalTime change instant expiresAt) then
                         return LifecycleWriteOutcome.Refused LifecycleRefusal.ApprovalMismatch
@@ -107,18 +135,14 @@ module internal CaseLifecycleApprove =
                                 expiresAt
                                 instant
                                 draftHash
+                                ct
             finally
                 CaseLifecycleStoreSupport.clear draft
         }
 
-    let private authorizedProjection connection transaction context (change: LifecycleChange) =
+    let private authorizedProjection connection transaction context (change: LifecycleChange) ct =
         task {
-            let! revision =
-                ActorGrantRead.lockRevision
-                    connection
-                    transaction
-                    true
-                    System.Threading.CancellationToken.None
+            let! revision = ActorGrantRead.lockRevision connection transaction true ct
 
             let! found =
                 CaseLifecycleStoreSupport.lockCase
@@ -126,6 +150,7 @@ module internal CaseLifecycleApprove =
                     transaction
                     change.CaseReference
                     change.EventId
+                    ct
 
             match found with
             | None -> return None
@@ -148,19 +173,17 @@ module internal CaseLifecycleApprove =
         (change: LifecycleChange)
         approvalId
         expiresAt
+        ct
         =
         task {
-            use! connection = RuntimeDatabase.openConnectionAsync dataSource
+            use! connection = RuntimeDatabase.openConnectionAsyncWithCancellation dataSource ct
 
             use! _authorityLease =
-                AuthorityOperationFence.acquireShared
-                    (Some dataSource)
-                    connection
-                    System.Threading.CancellationToken.None
+                AuthorityOperationFence.acquireShared (Some dataSource) connection ct
 
-            use transaction = CaseLifecycleStoreSupport.beginTransaction connection
+            use! transaction = CaseLifecycleStoreSupport.beginTransaction connection ct
 
-            let! found = authorizedProjection connection transaction context change
+            let! found = authorizedProjection connection transaction context change ct
 
             match found with
             | None -> return LifecycleWriteOutcome.ResourceUnavailable
@@ -175,6 +198,7 @@ module internal CaseLifecycleApprove =
                         change
                         approvalId
                         expiresAt
+                        ct
         }
 
     let private approvalIdentity (context: ActorCallContext) (change: LifecycleChange) approvalId =
@@ -195,6 +219,7 @@ module internal CaseLifecycleApprove =
         (change: LifecycleChange)
         (approvalId: Guid)
         (expiresAt: DateTimeOffset)
+        ct
         =
         task {
             let utcExpiry = CaseLifecycleStoreSupport.validInstant expiresAt
@@ -208,9 +233,11 @@ module internal CaseLifecycleApprove =
                 return LifecycleWriteOutcome.Refused LifecycleRefusal.ApprovalMismatch
             else
                 try
-                    witness.Admit()
-                    return! transact dataSource witness context change approvalId expiresAt
+                    do! witness.Admit(ct)
+                    return! transact dataSource witness context change approvalId expiresAt ct
                 with
+                | :? System.OperationCanceledException when ct.IsCancellationRequested ->
+                    return LifecycleWriteOutcome.CancelledBeforeAdmission approvalId
                 | WitnessPending -> return LifecycleWriteOutcome.Unconfirmed approvalId
                 | :? System.IO.InvalidDataException ->
                     return LifecycleWriteOutcome.Failed CoreFault.StoreIntegrityError

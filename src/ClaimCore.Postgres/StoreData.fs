@@ -26,10 +26,12 @@ module internal StoreData =
                 CoreFailure.SchemaMismatch
             | _ -> CoreFailure.StoreUnavailable
 
-    let read (dataSource: NpgsqlDataSource) action =
+    let read (dataSource: NpgsqlDataSource) cancellationToken action =
         task {
             try
-                use! connection = RuntimeDatabase.openConnectionAsync dataSource
+                use! connection =
+                    RuntimeDatabase.openConnectionAsyncWithCancellation dataSource cancellationToken
+
                 let! result = action connection
                 return Ok result
             with

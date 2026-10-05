@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open System.Security.Cryptography
 open Npgsql
 open NpgsqlTypes
@@ -257,3 +258,31 @@ module internal InstallationLossRetirementPrimary =
             signatureTwo
             intent
             commitments
+
+    let commitReceipt
+        (primaryOwner: NpgsqlConnection)
+        (transaction: NpgsqlTransaction)
+        alreadyRetired
+        decision
+        canonical
+        signatureOne
+        signatureTwo
+        intent
+        commitments
+        =
+        task {
+            if alreadyRetired then
+                do! transaction.RollbackAsync(CancellationToken.None)
+            else
+                insert
+                    primaryOwner
+                    transaction
+                    decision
+                    canonical
+                    signatureOne
+                    signatureTwo
+                    intent
+                    commitments
+
+                do! transaction.CommitAsync(CancellationToken.None)
+        }

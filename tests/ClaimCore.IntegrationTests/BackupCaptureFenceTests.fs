@@ -62,7 +62,12 @@ let private caseWork
     try
         DatabaseObservation.blockedBy ownerConnection
         Expect.isFalse submitted.IsCompleted "No accepted case commits behind capture fence."
-        Expect.equal (witness.Snapshot().TipSequence) cutoff "Witness cutoff is fixed."
+
+        Expect.equal
+            ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
+            cutoff
+            "Witness cutoff is fixed."
+
         let summary = first.Verify(CancellationToken.None) |> await
         Expect.equal summary.PendingIntents 0L "Held capture audit is complete."
     finally
@@ -92,7 +97,12 @@ let private grantChange
     try
         DatabaseObservation.blockedBy ownerConnection
         Expect.isFalse changed.IsCompleted "Owner grant mutation waits behind capture fence."
-        Expect.equal (witness.Snapshot().TipSequence) cutoff "Owner authority cutoff is fixed."
+
+        Expect.equal
+            ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
+            cutoff
+            "Owner authority cutoff is fixed."
+
         second.Verify(CancellationToken.None) |> await |> ignore
     finally
         (second :> IDisposable).Dispose()
@@ -138,15 +148,25 @@ let private assertTicketBlocked
     (release: TaskCompletionSource<unit>)
     (audit: Task<DataAuditSummary>)
     =
-    let cutoff = witness.Snapshot().TipSequence
+    let cutoff =
+        (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence
 
     let append =
         Task.Run(fun () ->
-            witness.BeginAuthority(Guid.NewGuid(), [| 0x43uy; 0x43uy |], None) |> ignore)
+            (witness
+                .BeginAuthority(Guid.NewGuid(), [| 0x43uy; 0x43uy |], None, CancellationToken.None)
+                .GetAwaiter()
+                .GetResult())
+            |> ignore)
 
     DatabaseObservation.lockWait writer "transactionid"
     Expect.isFalse append.IsCompleted "New witness tickets wait for the full audit."
-    Expect.equal (witness.Snapshot().TipSequence) cutoff "Audit cutoff remains fixed."
+
+    Expect.equal
+        ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
+        cutoff
+        "Audit cutoff remains fixed."
+
     release.SetResult()
     let summary = audit.GetAwaiter().GetResult()
     Expect.equal summary.WitnessCutoff cutoff "Complete snapshot used the fenced cutoff."

@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open System.Data
 open System.Security.Cryptography
 open System.Threading
@@ -93,11 +94,12 @@ module internal ManagedCopyVerifiedDeletion =
             let exact = ManagedCopyTransitionPolicy.candidate transition canonical signature
 
             try
-                let intent =
+                let! intent =
                     witness.BeginAuthority(
                         transition.Copy.EventId,
                         exact,
-                        transition.Copy.SourceCaseId
+                        transition.Copy.SourceCaseId,
+                        CancellationToken.None
                     )
 
                 do!
@@ -111,7 +113,7 @@ module internal ManagedCopyVerifiedDeletion =
                         intent
 
                 do! transaction.CommitAsync()
-                witness.SettleAuthority(transition.Copy.EventId, intent) |> ignore
+                let! _ = witness.SettleAuthority(transition.Copy.EventId, intent)
                 return AuthorityWriteOutcome.Applied(transition.Copy.EventId, transition.Revision)
             finally
                 CryptographicOperations.ZeroMemory(exact)
@@ -144,11 +146,12 @@ module internal ManagedCopyVerifiedDeletion =
                         transition.Copy.LocationCommitment
                         holderId
                         now
+                        CancellationToken.None
 
                 match approvalExpiry with
                 | None -> return AuthorityWriteOutcome.Refused
                 | Some expires ->
-                    let! fresh = Sql.databaseNow connection transaction
+                    let! fresh = Sql.databaseNow connection transaction CancellationToken.None
 
                     if
                         fresh >= expires
@@ -169,6 +172,21 @@ module internal ManagedCopyVerifiedDeletion =
             | _ -> return AuthorityWriteOutcome.Refused
         }
 
+    let private knownCutoff (witness: WitnessProtocol) (transition: ManagedCopyTransition) =
+        task {
+            try
+                do!
+                    witness.VerifyHistoricalTip(
+                        transition.ActionWitnessCutoffSequence,
+                        transition.ActionWitnessCutoffHash,
+                        CancellationToken.None
+                    )
+
+                return true
+            with _ ->
+                return false
+        }
+
     let private verifyAbsence
         connection
         transaction
@@ -181,16 +199,7 @@ module internal ManagedCopyVerifiedDeletion =
         now
         =
         task {
-            let historical =
-                try
-                    witness.VerifyHistoricalTip(
-                        transition.ActionWitnessCutoffSequence,
-                        transition.ActionWitnessCutoffHash
-                    )
-
-                    true
-                with _ ->
-                    false
+            let! historical = knownCutoff witness transition
 
             if not historical then
                 return AuthorityWriteOutcome.Refused
@@ -239,7 +248,7 @@ module internal ManagedCopyVerifiedDeletion =
             let! signer =
                 ManagedCopyOwnerRead.signer connection transaction transition.Copy.SigningKeyId
 
-            let! now = Sql.databaseNow connection transaction
+            let! now = Sql.databaseNow connection transaction CancellationToken.None
 
             let! held =
                 ManagedCopyTransitionAdministration.held

@@ -48,7 +48,7 @@ module internal InstallationLossRetirementSigners =
         command
 
     let private decode keyId (reader: System.Data.Common.DbDataReader) =
-        if not (reader.Read()) then
+        if not (reader.HasRows) then
             invalidOp "Loss owner signing key is absent."
 
         let publicKey = reader.GetFieldValue<byte array>(0)
@@ -67,8 +67,7 @@ module internal InstallationLossRetirementSigners =
         let retired = not (reader.IsDBNull(13))
 
         if
-            reader.Read()
-            || not active
+            not active
             || retired
             || not human
             || not enabled
@@ -93,31 +92,53 @@ module internal InstallationLossRetirementSigners =
 
         value
 
-    let private readCurrent (connection: NpgsqlConnection) transaction keyId =
-        use command = query connection transaction keyId
-        use reader = command.ExecuteReader()
-        decode keyId reader
+    let private readCurrent
+        (connection: NpgsqlConnection)
+        transaction
+        keyId
+        (ct: CancellationToken)
+        =
+        task {
+            use command = query connection transaction keyId
+            use! reader = command.ExecuteReaderAsync(ct)
+            let! found = reader.ReadAsync(ct)
 
-    let pair connection transaction (witness: WitnessProtocol) firstKey secondKey =
-        if firstKey = Guid.Empty || secondKey = Guid.Empty || firstKey = secondKey then
-            invalidOp "Two distinct loss owner signing keys are required."
+            if not found then
+                invalidOp "Loss owner signing key is absent."
 
-        let first = readCurrent connection transaction firstKey
-        let second = readCurrent connection transaction secondKey
+            let value = decode keyId reader
+            let! duplicated = reader.ReadAsync(ct)
 
-        if first.Holder = second.Holder then
-            invalidOp "Loss retirement requires two distinct human owners."
+            if duplicated then
+                invalidOp "Loss owner signing key is duplicated."
 
-        for signer in [ first; second ] do
-            witness.VerifyAuthorityEvidenceForInstallation(
-                signer.RegisteredEventId,
-                signer.RegisteredSequence,
-                signer.RegisteredEpoch,
-                signer.RegisteredHash,
-                signer.RegisteredCandidate
-            )
+            return value
+        }
 
-        first, second
+    let pair connection transaction (witness: WitnessProtocol) firstKey secondKey ct =
+        task {
+            if firstKey = Guid.Empty || secondKey = Guid.Empty || firstKey = secondKey then
+                invalidOp "Two distinct loss owner signing keys are required."
+
+            let! first = readCurrent connection transaction firstKey ct
+            let! second = readCurrent connection transaction secondKey ct
+
+            if first.Holder = second.Holder then
+                invalidOp "Loss retirement requires two distinct human owners."
+
+            for signer in [ first; second ] do
+                do!
+                    witness.VerifyAuthorityEvidenceForInstallation(
+                        signer.RegisteredEventId,
+                        signer.RegisteredSequence,
+                        signer.RegisteredEpoch,
+                        signer.RegisteredHash,
+                        signer.RegisteredCandidate,
+                        ct
+                    )
+
+            return first, second
+        }
 
     /// Real-data activation must prequalify this owner-only incident lane while the
     /// complete actor/grant authority chain is still independently auditable.
@@ -126,57 +147,54 @@ module internal InstallationLossRetirementSigners =
         (transaction: NpgsqlTransaction)
         (witness: WitnessProtocol)
         cutoff
+        (ct: CancellationToken)
         =
-        let projection =
-            DataAuditWitness.verifyAuthorityEvents
-                connection
-                transaction
-                witness
-                cutoff
-                CancellationToken.None
-            |> fun work -> work.GetAwaiter().GetResult()
+        task {
+            let! projection =
+                DataAuditWitness.verifyAuthorityEvents connection transaction witness cutoff ct
 
-        DataAuditAuthorityProjection.verify connection transaction projection CancellationToken.None
-        |> fun work -> work.GetAwaiter().GetResult()
-        |> ignore
+            let! _ = DataAuditAuthorityProjection.verify connection transaction projection ct
 
-        use command =
-            new NpgsqlCommand(
-                "SELECT s.signing_key_id,s.holder_actor_id "
-                + "FROM claimcore.managed_copy_signers s "
-                + "JOIN claimcore.actors a ON a.actor_id=s.holder_actor_id "
-                + "JOIN claimcore.actor_grants g ON g.actor_id=a.actor_id "
-                + "AND g.scope_kind='INSTALLATION' "
-                + "AND g.scope_case_id='00000000-0000-0000-0000-000000000000'::uuid "
-                + "AND g.role_name='OWNER' AND g.active "
-                + "WHERE s.signer_purpose='INSTALLATION_LOSS_RETIREMENT' AND s.active "
-                + "AND a.enabled AND a.principal_kind='HUMAN' ORDER BY s.signing_key_id LIMIT 1001",
-                connection,
-                transaction
-            )
+            use command =
+                new NpgsqlCommand(
+                    "SELECT s.signing_key_id,s.holder_actor_id "
+                    + "FROM claimcore.managed_copy_signers s "
+                    + "JOIN claimcore.actors a ON a.actor_id=s.holder_actor_id "
+                    + "JOIN claimcore.actor_grants g ON g.actor_id=a.actor_id "
+                    + "AND g.scope_kind='INSTALLATION' "
+                    + "AND g.scope_case_id='00000000-0000-0000-0000-000000000000'::uuid "
+                    + "AND g.role_name='OWNER' AND g.active "
+                    + "WHERE s.signer_purpose='INSTALLATION_LOSS_RETIREMENT' AND s.active "
+                    + "AND a.enabled AND a.principal_kind='HUMAN' ORDER BY s.signing_key_id LIMIT 1001",
+                    connection,
+                    transaction
+                )
 
-        use reader = command.ExecuteReader()
-        let rows = ResizeArray<Guid * Guid>()
+            use! reader = command.ExecuteReaderAsync(ct)
+            let rows = ResizeArray<Guid * Guid>()
 
-        while reader.Read() do
-            rows.Add(reader.GetGuid(0), reader.GetGuid(1))
+            while! reader.ReadAsync(ct) do
+                rows.Add(reader.GetGuid(0), reader.GetGuid(1))
 
-        if rows.Count > 1000 then
-            invalidOp "Loss owner signer roster exceeds its bound."
+            if rows.Count > 1000 then
+                invalidOp "Loss owner signer roster exceeds its bound."
 
-        let first =
-            rows
-            |> Seq.tryHead
-            |> Option.defaultWith (fun () -> invalidOp "Loss owner signer roster is incomplete.")
+            let first =
+                rows
+                |> Seq.tryHead
+                |> Option.defaultWith (fun () ->
+                    invalidOp "Loss owner signer roster is incomplete.")
 
-        let second =
-            rows
-            |> Seq.tryFind (fun (_, holder) -> holder <> snd first)
-            |> Option.defaultWith (fun () ->
-                invalidOp "Two independent loss owners are unavailable.")
+            let second =
+                rows
+                |> Seq.tryFind (fun (_, holder) -> holder <> snd first)
+                |> Option.defaultWith (fun () ->
+                    invalidOp "Two independent loss owners are unavailable.")
 
-        reader.Close()
-        pair connection transaction witness (fst first) (fst second) |> ignore
+            reader.Close()
+            let! _ = pair connection transaction witness (fst first) (fst second) ct
+            return ()
+        }
 
     let verify
         (first: InstallationLossSigner)

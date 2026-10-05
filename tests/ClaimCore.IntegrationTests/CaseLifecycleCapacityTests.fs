@@ -96,7 +96,9 @@ let private holdCapacityUnderLock =
             seedHolds owner source proposer input.CaseReference
             let current = review actor input.CaseReference
             Expect.equal current.ActiveHolds.Length 256 "Bounded review exposes all active holds"
-            let before = witness.Snapshot().TipSequence
+
+            let before =
+                (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence
 
             let proposed =
                 change
@@ -114,7 +116,7 @@ let private holdCapacityUnderLock =
             | _ -> failtest "Excess hold was not refused."
 
             Expect.equal
-                (witness.Snapshot().TipSequence)
+                ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
                 before
                 "A refused hold cannot append authority evidence"))
 

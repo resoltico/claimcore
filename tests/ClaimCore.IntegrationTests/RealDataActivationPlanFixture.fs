@@ -1,5 +1,6 @@
 module internal ClaimCore.IntegrationTests.RealDataActivationPlanFixture
 
+open System.Threading
 open System
 open System.Collections.Generic
 open System.Security.Cryptography
@@ -72,7 +73,9 @@ let private canonicalPlan (profile: ReviewedDeploymentProfile) (tip: Snapshot) =
     |> Option.defaultWith (fun () -> failtest "Synthetic activation plan is not canonical.")
 
 let publishSyntheticPlan owner (witness: WitnessProtocol) profile =
-    let plan = canonicalPlan profile (witness.Snapshot())
+    let plan =
+        canonicalPlan profile ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()))
+
     let digestBytes = Convert.FromHexString plan.PlanSha256
 
     let planId =
@@ -81,7 +84,12 @@ let publishSyntheticPlan owner (witness: WitnessProtocol) profile =
     let activationId =
         InstallationUseActivationCandidate.eventIdFromPlan plan.InstallationId digestBytes
 
-    let intent = witness.BeginAuthority(planId, plan.Canonical, None)
+    let intent =
+        (witness
+            .BeginAuthority(planId, plan.Canonical, None, CancellationToken.None)
+            .GetAwaiter()
+            .GetResult())
+
     use connection = new NpgsqlConnection(owner)
     connection.Open()
 
@@ -151,8 +159,10 @@ let withRealDataBootstrap action =
 
             reader.Close()
             let store = new Store(writer, identity, capability)
-            let keyId, _ = store.ReadKeyCheck()
+
+            let keyId, _ = (store.ReadKeyCheck(CancellationToken.None).GetAwaiter().GetResult())
+
             use custody = new KeyRing(keyId, [ keyId, witnessKey () ]) :> IKeyCustody
             use witness = new WitnessProtocol(store, custody, identity)
-            witness.Admit()
+            (witness.Admit(CancellationToken.None).GetAwaiter().GetResult())
             action owner app writer witness profile))

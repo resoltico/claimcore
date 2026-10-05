@@ -163,38 +163,43 @@ module internal CaseTombstonePruneOwnerApprovals =
         requireCurrent
         instant
         (value: OwnerPruneApprovalRow)
+        ct
         =
-        let receipt = value.Receipt
+        task {
+            let receipt = value.Receipt
 
-        let canonical =
-            CaseTombstoneCandidate.approval
-                proposal
-                receipt.ApprovalId
-                receipt.ActorId
-                receipt.GrantRevision
-                value.ApprovedAt
-                value.ExpiresAt
+            let canonical =
+                CaseTombstoneCandidate.approval
+                    proposal
+                    receipt.ApprovalId
+                    receipt.ActorId
+                    receipt.GrantRevision
+                    value.ApprovedAt
+                    value.ExpiresAt
 
-        try
-            if
-                not (bound proposal value)
-                || not (validTime requireCurrent instant proposal value)
-                || value.Canonical <> canonical
-                || value.StoredCandidateHash <> SHA256.HashData(canonical)
-                || receipt.WitnessEpoch <> witness.Identity.Epoch
-            then
-                invalid ()
+            try
+                if
+                    not (bound proposal value)
+                    || not (validTime requireCurrent instant proposal value)
+                    || value.Canonical <> canonical
+                    || value.StoredCandidateHash <> SHA256.HashData(canonical)
+                    || receipt.WitnessEpoch <> witness.Identity.Epoch
+                then
+                    invalid ()
 
-            witness.VerifyAuthorityEvidenceForCase(
-                receipt.ApprovalId,
-                receipt.WitnessSequence,
-                receipt.WitnessEpoch,
-                receipt.WitnessHash,
-                receipt.CandidateHash,
-                proposal.CaseId
-            )
-        finally
-            CryptographicOperations.ZeroMemory(canonical)
+                do!
+                    witness.VerifyAuthorityEvidenceForCase(
+                        receipt.ApprovalId,
+                        receipt.WitnessSequence,
+                        receipt.WitnessEpoch,
+                        receipt.WitnessHash,
+                        receipt.CandidateHash,
+                        proposal.CaseId,
+                        ct
+                    )
+            finally
+                CryptographicOperations.ZeroMemory(canonical)
+        }
 
     let read
         connection
@@ -204,6 +209,7 @@ module internal CaseTombstonePruneOwnerApprovals =
         (proposal: TombstonePruneProposal)
         requireCurrent
         instant
+        ct
         =
         task {
             let! rows = load connection transaction proposal
@@ -212,7 +218,7 @@ module internal CaseTombstonePruneOwnerApprovals =
                 invalid ()
 
             for value in rows do
-                exact witness proposal requireCurrent instant value
+                do! exact witness proposal requireCurrent instant value ct
 
                 if requireCurrent then
                     do! currentGrant connection transaction revision proposal.CaseId value

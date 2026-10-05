@@ -2,6 +2,7 @@ namespace ClaimCore.Postgres
 
 open System
 open System.Data
+open System.Threading
 open Npgsql
 
 /// The real-data mutation gate reopens short-lived signed evidence at the database clock,
@@ -31,35 +32,45 @@ module internal BackupHealthRuntimeAdmission =
         then
             invalidOp "Backup health policy or freshness diverges."
 
-    let private witnessBound (witness: WitnessProtocol) (claim: BackupHealthClaims) =
-        let lease = witness.AcquireReadFence(claim.WriterGeneration)
+    let private witnessBound
+        (witness: WitnessProtocol)
+        (claim: BackupHealthClaims)
+        (ct: CancellationToken)
+        =
+        task {
+            let! lease = witness.AcquireReadFence(claim.WriterGeneration, ct)
 
-        try
-            let snapshot = witness.Snapshot()
+            try
+                let! snapshot = witness.Snapshot(ct)
 
-            if
-                snapshot.Identity.InstallationId <> claim.InstallationId
-                || snapshot.Identity.LineageId <> claim.LineageId
-                || snapshot.Identity.Epoch <> claim.Epoch
-                || snapshot.WriterGeneration <> claim.WriterGeneration
-                || snapshot.HandoffPending
-                || snapshot.ActivationPending
-                || snapshot.TipSequence < claim.WitnessTipSequence
-            then
-                invalidOp "Backup health witness authority is unavailable."
+                if
+                    snapshot.Identity.InstallationId <> claim.InstallationId
+                    || snapshot.Identity.LineageId <> claim.LineageId
+                    || snapshot.Identity.Epoch <> claim.Epoch
+                    || snapshot.WriterGeneration <> claim.WriterGeneration
+                    || snapshot.HandoffPending
+                    || snapshot.ActivationPending
+                    || snapshot.TipSequence < claim.WitnessTipSequence
+                then
+                    invalidOp "Backup health witness authority is unavailable."
 
-            let require sequence digest =
-                match witness.TryReadHashAtSequence(sequence) with
-                | Some hash when Convert.ToHexStringLower(hash) = digest -> ()
-                | _ -> invalidOp "Backup health witness ancestor changed."
+                let require sequence digest =
+                    task {
+                        let! observed = witness.TryReadHashAtSequence(sequence, ct)
 
-            require claim.WitnessTipSequence claim.WitnessTipHash
-            require claim.Checkpoint.Sequence claim.Checkpoint.Hash
-            require claim.TestRestore.WitnessCutoff claim.TestRestore.WitnessCutoffHash
-            lease
-        with _ ->
-            lease.Dispose()
-            reraise ()
+                        match observed with
+                        | Some hash when Convert.ToHexStringLower(hash) = digest -> return ()
+                        | _ -> return invalidOp "Backup health witness ancestor changed."
+                    }
+
+                do! require claim.WitnessTipSequence claim.WitnessTipHash
+                do! require claim.Checkpoint.Sequence claim.Checkpoint.Hash
+                do! require claim.TestRestore.WitnessCutoff claim.TestRestore.WitnessCutoffHash
+                return lease
+            with error ->
+                lease.Dispose()
+                return raise error
+        }
 
     let verifyLocked
         (connection: NpgsqlConnection)
@@ -69,30 +80,43 @@ module internal BackupHealthRuntimeAdmission =
         (policyBytes: byte array)
         (canonical: byte array)
         (signature: byte array)
+        (ct: CancellationToken)
         =
-        let policy =
-            BackupHealthPolicyCodec.parse policyBytes profile.BackupHealthPolicySha256
-            |> Option.defaultWith (fun () -> invalidOp "Reviewed backup health policy is absent.")
+        task {
+            let policy =
+                BackupHealthPolicyCodec.parse policyBytes profile.BackupHealthPolicySha256
+                |> Option.defaultWith (fun () ->
+                    invalidOp "Reviewed backup health policy is absent.")
 
-        let now = Sql.databaseNowSync connection transaction
+            let! now = Sql.databaseNow connection transaction ct
 
-        let claim =
-            BackupHealthCertificate.parse canonical now
-            |> Option.defaultWith (fun () ->
-                invalidOp "Signed backup health is expired or invalid.")
+            let claim =
+                BackupHealthCertificate.parse canonical now
+                |> Option.defaultWith (fun () ->
+                    invalidOp "Signed backup health is expired or invalid.")
 
-        policyBound policy claim now
-        use _witnessLease = witnessBound witness claim
-        BackupHealthRuntimeAuthority.verifyLineage connection transaction claim
-        BackupHealthRuntimeAuthority.verifyRevision connection transaction claim
-        BackupHealthRuntimeAuthority.verifySigner connection transaction claim canonical signature
-        let _, inventorySha = ManagedCopyInventoryDigest.compute connection transaction
+            policyBound policy claim now
+            use! _witnessLease = witnessBound witness claim ct
+            do! BackupHealthRuntimeAuthority.verifyLineage connection transaction claim ct
+            do! BackupHealthRuntimeAuthority.verifyRevision connection transaction claim ct
 
-        if inventorySha <> claim.KnownCopyInventorySha256 then
-            invalidOp "Backup health known copy inventory changed."
+            do!
+                BackupHealthRuntimeAuthority.verifySigner
+                    connection
+                    transaction
+                    claim
+                    canonical
+                    signature
+                    ct
 
-        let copies = BackupHealthRuntimeCopies.verify connection transaction claim now
-        BackupHealthRuntimeWalCoverage.verify claim copies
+            let! _, inventorySha = ManagedCopyInventoryDigest.compute connection transaction ct
+
+            if inventorySha <> claim.KnownCopyInventorySha256 then
+                invalidOp "Backup health known copy inventory changed."
+
+            let! copies = BackupHealthRuntimeCopies.verify connection transaction claim now ct
+            BackupHealthRuntimeWalCoverage.verify claim copies
+        }
 
     let verify
         (connection: NpgsqlConnection)
@@ -101,7 +125,22 @@ module internal BackupHealthRuntimeAdmission =
         (policyBytes: byte array)
         (canonical: byte array)
         (signature: byte array)
+        (ct: CancellationToken)
         =
-        use transaction = connection.BeginTransaction(IsolationLevel.RepeatableRead)
-        verifyLocked connection transaction witness profile policyBytes canonical signature
-        transaction.Rollback()
+        task {
+            use! transaction =
+                connection.BeginTransactionAsync(IsolationLevel.RepeatableRead, ct)
+
+            do!
+                verifyLocked
+                    connection
+                    transaction
+                    witness
+                    profile
+                    policyBytes
+                    canonical
+                    signature
+                    ct
+
+            do! transaction.RollbackAsync(CancellationToken.None)
+        }

@@ -1,5 +1,7 @@
 namespace ClaimCore.Postgres
 
+open DataAuditCommon
+
 open System
 open Npgsql
 
@@ -83,4 +85,27 @@ module internal CaseTombstoneHoldAuditRows =
                     }
 
             return rows |> Seq.toList
+        }
+
+    let readTip (connection: NpgsqlConnection) (transaction: NpgsqlTransaction) caseId =
+        task {
+            use command =
+                new NpgsqlCommand(
+                    "SELECT revision,event_hash FROM claimcore.case_erasure_authority_tip WHERE case_id=@case",
+                    connection,
+                    transaction
+                )
+
+            Sql.uuid command "case" caseId
+            use! reader = command.ExecuteReaderAsync()
+
+            if not (reader.Read()) then
+                corrupt ()
+
+            let value = reader.GetInt64(0), reader.GetFieldValue<byte array>(1)
+
+            if reader.Read() then
+                corrupt ()
+
+            return value
         }

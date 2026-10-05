@@ -28,7 +28,8 @@ let assertUnalignedPurgeRefused
             }
         | _ -> failtest "Synthetic purge action is absent."
 
-    let before = witness.Snapshot().TipSequence
+    let before =
+        (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence
 
     Expect.equal
         (CaseErasurePurge.execute
@@ -44,6 +45,6 @@ let assertUnalignedPurgeRefused
         "Unroundtrippable purge deadline is refused before authority intent."
 
     Expect.equal
-        (witness.Snapshot().TipSequence)
+        ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
         before
         "Invalid purge deadline does not advance witness authority."

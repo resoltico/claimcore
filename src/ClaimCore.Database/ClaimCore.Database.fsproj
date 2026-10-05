@@ -105,10 +105,10 @@
     <Compile Include="DatabasePurgeExecution.fs" />
     <Compile Include="DatabasePruneWitnessExecution.fs" />
     <Compile Include="DatabaseRestoreRecheckTypes.fs" />
+    <Compile Include="DatabaseRestoreIsolation.fs" />
     <Compile Include="DatabaseRestoreReportRecheck.fs" />
     <Compile Include="DatabaseRestoreProduceCanonical.fs" />
     <Compile Include="DatabaseRestoreReportExecution.fs" />
-    <Compile Include="DatabaseRestoreProduceTarget.fs" />
     <Compile Include="DatabaseRestoreHandoffChecks.fs" />
     <Compile Include="DatabaseRestoreHandoffSettlement.fs" />
     <Compile Include="DatabaseRestoreHandoffRecheck.fs" />

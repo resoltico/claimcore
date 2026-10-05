@@ -136,7 +136,7 @@ module internal ActorGrantRegistryQueries =
             return value :?> bool
         }
 
-    let existingEvent connection transaction (witness: WitnessProtocol) eventId =
+    let existingEvent connection transaction (witness: WitnessProtocol) eventId ct =
         task {
             use command =
                 new NpgsqlCommand(
@@ -178,6 +178,6 @@ module internal ActorGrantRegistryQueries =
                     raise WitnessPending
 
                 reader.Close()
-                witness.ReconcileAuthority(eventId, sequence, epoch, hash, canonical)
+                do! witness.ReconcileAuthority(eventId, sequence, epoch, hash, canonical, ct)
                 return Some action
         }

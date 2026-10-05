@@ -106,7 +106,10 @@ let private assertNoAdoption owner (witness: WitnessProtocol) eventId =
     Expect.equal (useCheck.ExecuteScalar() :?> int64) 0L "Refused input did not consume an approval"
 
     Expect.isNone
-        (witness.EvidenceStore.TryReadEvidence(eventId, Intent))
+        ((witness.EvidenceStore
+            .TryReadEvidence(eventId, Intent, CancellationToken.None)
+            .GetAwaiter()
+            .GetResult()))
         "Refused input did not reserve witness intent"
 
 let private purge owner (witness: WitnessProtocol) change caseId =

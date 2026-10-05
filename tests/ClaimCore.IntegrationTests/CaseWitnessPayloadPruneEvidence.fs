@@ -192,11 +192,17 @@ let assertFirstPrune (fixture: PruneFixture) =
         let primary = probe.ExecuteScalar() :?> bool
 
         let intent =
-            fixture.Witness.EvidenceStore.TryReadEvidence(fixture.Action.EventId, Intent).IsSome
+            (fixture.Witness.EvidenceStore
+                .TryReadEvidence(fixture.Action.EventId, Intent, CancellationToken.None)
+                .GetAwaiter()
+                .GetResult())
+                .IsSome
 
         let settled =
-            fixture.Witness.EvidenceStore
-                .TryReadEvidence(fixture.Action.EventId, SettledAuthority)
+            (fixture.Witness.EvidenceStore
+                .TryReadEvidence(fixture.Action.EventId, SettledAuthority, CancellationToken.None)
+                .GetAwaiter()
+                .GetResult())
                 .IsSome
 
         failtestf
@@ -218,12 +224,16 @@ let assertPrunedMetadata (fixture: PruneFixture) =
 
     while after < fixture.Action.CutoffSequence do
         let page =
-            fixture.Witness.EvidenceStore.ReadMetadataPage(
-                after,
-                previous,
-                fixture.Action.CutoffSequence,
-                32
-            )
+            (fixture.Witness.EvidenceStore
+                .ReadMetadataPage(
+                    after,
+                    previous,
+                    fixture.Action.CutoffSequence,
+                    32,
+                    CancellationToken.None
+                )
+                .GetAwaiter()
+                .GetResult())
 
         for row in page.Items do
             if row.Ticket.SubjectCaseId = Some fixture.CaseId then

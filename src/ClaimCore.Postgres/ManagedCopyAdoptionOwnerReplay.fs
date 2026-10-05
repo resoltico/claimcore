@@ -35,22 +35,26 @@ module internal ManagedCopyAdoptionOwnerReplay =
                 return CopyAdoptionOwnerOutcome.ResourceUnavailable
             else
                 try
-                    witness.ReconcileAuthority(
-                        submission.AdoptionEventId,
-                        stored.WitnessSequence,
-                        stored.WitnessEpoch,
-                        stored.WitnessHash,
-                        stored.Canonical
-                    )
+                    do!
+                        witness.ReconcileAuthority(
+                            submission.AdoptionEventId,
+                            stored.WitnessSequence,
+                            stored.WitnessEpoch,
+                            stored.WitnessHash,
+                            stored.Canonical,
+                            ct
+                        )
 
-                    witness.VerifyAuthorityEvidenceForCase(
-                        submission.AdoptionEventId,
-                        stored.WitnessSequence,
-                        stored.WitnessEpoch,
-                        stored.WitnessHash,
-                        stored.CandidateHash,
-                        stored.CaseId
-                    )
+                    do!
+                        witness.VerifyAuthorityEvidenceForCase(
+                            submission.AdoptionEventId,
+                            stored.WitnessSequence,
+                            stored.WitnessEpoch,
+                            stored.WitnessHash,
+                            stored.CandidateHash,
+                            stored.CaseId,
+                            CancellationToken.None
+                        )
 
                     use connection = new NpgsqlConnection(ownerConnection)
                     do! connection.OpenAsync(ct)

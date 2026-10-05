@@ -2,12 +2,13 @@ namespace ClaimCore.Postgres
 
 open System
 open System.Threading
+open System.Threading.Tasks
 open Npgsql
 
 /// Only the Hosting composition root can install this scoped, typed guard. Owner
 /// administration has no scope and remains able to repair stale backup health.
 type internal ICaseMutationCommitHealth =
-    abstract VerifyLocked: NpgsqlConnection * NpgsqlTransaction -> unit
+    abstract VerifyLocked: NpgsqlConnection * NpgsqlTransaction * CancellationToken -> Task
 
 module internal CaseMutationCommitHealth =
     type private Scope(guard: ICaseMutationCommitHealth) =
@@ -16,22 +17,24 @@ module internal CaseMutationCommitHealth =
         let mutable entered = 0
         let mutable verified = 0
 
-        member _.Verify(connection, transaction) =
-            if Volatile.Read(&active) = 0 then
-                invalidOp "Case mutation health scope has ended."
-
-            if Interlocked.CompareExchange(&checking, 1, 0) <> 0 then
-                invalidOp "Case mutation health recheck is reentrant."
-
-            try
+        member _.Verify(connection, transaction, ct) =
+            task {
                 if Volatile.Read(&active) = 0 then
                     invalidOp "Case mutation health scope has ended."
 
-                Interlocked.Increment(&entered) |> ignore
-                guard.VerifyLocked(connection, transaction)
-                Interlocked.Increment(&verified) |> ignore
-            finally
-                Volatile.Write(&checking, 0)
+                if Interlocked.CompareExchange(&checking, 1, 0) <> 0 then
+                    invalidOp "Case mutation health recheck is reentrant."
+
+                try
+                    if Volatile.Read(&active) = 0 then
+                        invalidOp "Case mutation health scope has ended."
+
+                    Interlocked.Increment(&entered) |> ignore
+                    do! guard.VerifyLocked(connection, transaction, ct)
+                    Interlocked.Increment(&verified) |> ignore
+                finally
+                    Volatile.Write(&checking, 0)
+            }
 
         member _.Entered = Volatile.Read(&entered) > 0
         member _.Verified = Volatile.Read(&verified) > 0
@@ -55,10 +58,10 @@ module internal CaseMutationCommitHealth =
                 current.Value <- prior
         }
 
-    let verifyLocked connection transaction =
+    let verifyLocked connection transaction ct =
         match current.Value with
-        | None -> ()
-        | Some scope -> scope.Verify(connection, transaction)
+        | None -> Task.CompletedTask
+        | Some scope -> scope.Verify(connection, transaction, ct) :> Task
 
     let requireVerified () =
         match current.Value with

@@ -73,6 +73,7 @@
     <Compile Include="ConfigurationTests.fs" />
     <Compile Include="CliProcessTests.fs" />
     <Compile Include="BoundedProcessTests.fs" />
+    <Compile Include="SchemaFormatTests.fs" />
     <Compile Include="RemoteClientTests.fs" />
     <Compile Include="RemoteTlsTests.fs" />
     <Compile Include="TokenLifetimeTests.fs" />

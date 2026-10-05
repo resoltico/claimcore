@@ -94,3 +94,49 @@ module internal ActorMutationGuard =
 
                 return! authorizeScope connection transaction context resource revision
         }
+
+    let authorizeDismissal
+        connection
+        transaction
+        operationId
+        revision
+        (actorContext: ActorCallContext)
+        =
+        task {
+            match actorContext.CaseId with
+            | None -> return false
+            | Some caseId ->
+                let! available =
+                    ActorGrantGateQueries.availableCase
+                        connection
+                        transaction
+                        caseId
+                        CancellationToken.None
+
+                let resource = ResourceScope.Operation(operationId, caseId)
+
+                let! current =
+                    ActorGrantRead.loadUnderLock
+                        connection
+                        transaction
+                        actorContext.Binding.Principal
+                        resource
+                        revision
+                        CancellationToken.None
+
+                return
+                    available
+                    && current
+                       |> Option.exists (fun value ->
+                           match
+                               ActorAuthorization.authorizeAtRevision
+                                   actorContext.Binding.Principal
+                                   value
+                                   actorContext.Binding.GrantRevision
+                                   EndpointAction.RecoveryDismiss
+                                   resource
+                           with
+                           | AuthorizationDecision.Available(actorId, _) ->
+                               actorId = actorContext.Binding.ActorId
+                           | AuthorizationDecision.Unavailable -> false)
+        }

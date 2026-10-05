@@ -20,9 +20,16 @@ module internal RecoveryExecutionOutcomes =
         (transaction: NpgsqlTransaction)
         (request: CommandRequest)
         (witness: WitnessProtocol)
+        cancellationToken
         =
         task {
-            witness.ReconcileRevoked(connection, transaction, request.OperationId)
+            do!
+                witness.ReconcileRevoked(
+                    connection,
+                    transaction,
+                    request.OperationId,
+                    cancellationToken
+                )
 
             // Revocation closes future authority; it does not settle a historical attempt.
             return Ok(AdmittedExecution.RevokedBeforeExecution SettlementConfirmation.Unconfirmed)
@@ -122,7 +129,7 @@ module internal RecoveryExecutionOutcomes =
 
             let actorEvidence = attribution caseId retained actorContext
 
-            let intent =
+            let! intent =
                 WitnessAcceptedProtocol.beginAccepted
                     witness
                     operation
@@ -130,6 +137,7 @@ module internal RecoveryExecutionOutcomes =
                     caseId
                     actorEvidence
                     claim
+                    cancellationToken
 
             let! receipt =
                 persistAccepted
@@ -145,6 +153,6 @@ module internal RecoveryExecutionOutcomes =
 
             do! settleRequired connection transaction attemptId RecoverySettlement.Accepted
             do! commit transaction cancellationToken commitStarted
-            witness.SettleAccepted(request.OperationId, intent) |> ignore
+            let! _ = witness.SettleAccepted(request.OperationId, intent)
             return Ok(AdmittedExecution.Accepted receipt)
         }

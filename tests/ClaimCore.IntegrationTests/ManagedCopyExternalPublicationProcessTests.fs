@@ -100,7 +100,10 @@ let private noReceipt owner (witness: WitnessProtocol) publicationId =
     Expect.equal (command.ExecuteScalar() :?> int64) 0L "Refusal wrote no publication receipt"
 
     Expect.isNone
-        (witness.EvidenceStore.TryReadEvidence(publicationId, Intent))
+        ((witness.EvidenceStore
+            .TryReadEvidence(publicationId, Intent, CancellationToken.None)
+            .GetAwaiter()
+            .GetResult()))
         "Refusal reserved no witness intent"
 
 let private refusals

@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open System.Security.Cryptography
 open Npgsql
 open ClaimCore.Application
@@ -22,21 +23,25 @@ module internal ManagedCopyAdoptedTransitionChecks =
             let! signer =
                 ManagedCopyOwnerRead.signer connection transaction origin.CustodianSigningKeyId
 
-            let! now = Sql.databaseNow connection transaction
+            let! now = Sql.databaseNow connection transaction CancellationToken.None
 
             let! held =
                 ManagedCopyTransitionAdministration.held connection transaction (Some origin.CaseId)
 
-            let historical =
-                try
-                    witness.VerifyHistoricalTip(
-                        value.ActionWitnessCutoffSequence,
-                        value.ActionWitnessCutoffHash
-                    )
+            let! historical =
+                task {
+                    try
+                        do!
+                            witness.VerifyHistoricalTip(
+                                value.ActionWitnessCutoffSequence,
+                                value.ActionWitnessCutoffHash,
+                                CancellationToken.None
+                            )
 
-                    true
-                with _ ->
-                    false
+                        return true
+                    with _ ->
+                        return false
+                }
 
             match signer with
             | Some(publicKey, digest, true, CopySignerPurpose.CopyAttestor) when

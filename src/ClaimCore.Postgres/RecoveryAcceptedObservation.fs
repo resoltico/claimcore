@@ -6,7 +6,7 @@ open WitnessProtocolReconciliation
 /// Caller holds current actor authority and the operation lock. Content conflict precedes
 /// receipt decoding; a definite recovery result additionally needs exact independent settlement.
 module internal RecoveryAcceptedObservation =
-    let read connection transaction (witness: WitnessProtocol) operationId digest =
+    let read connection transaction (witness: WitnessProtocol) operationId digest ct =
         task {
             match! StoreData.readAcceptedUnderLock connection transaction operationId digest with
             | Error CoreFailure.IdempotencyConflict ->
@@ -14,6 +14,6 @@ module internal RecoveryAcceptedObservation =
             | Error _ -> return Error RecoveryStoreFailure.StoreCorrupt
             | Ok None -> return Ok None
             | Ok(Some receipt) ->
-                witness.ReconcileAccepted(connection, transaction, operationId)
+                do! witness.ReconcileAccepted(connection, transaction, operationId, ct)
                 return Ok(Some receipt)
         }

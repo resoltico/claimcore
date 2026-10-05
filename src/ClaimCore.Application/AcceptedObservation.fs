@@ -6,9 +6,14 @@ open System.Threading.Tasks
 module internal AcceptedObservation =
     let idempotencyConflict: Rejection = Rejection.IdempotencyConflict
 
-    let prepare (store: IClaimStore) operationId digest : Task<PrepareOutcome option> =
+    let prepare
+        (store: IClaimStore)
+        operationId
+        digest
+        cancellationToken
+        : Task<PrepareOutcome option> =
         task {
-            match! store.Accepted(operationId, digest) with
+            match! store.Accepted(operationId, digest, cancellationToken) with
             | Ok None -> return None
             | Ok(Some receipt) ->
                 return Some(PrepareOutcome.ObservedAccepted(TypedProjection.receipt receipt))

@@ -17,41 +17,45 @@ module internal ManagedCopyAdoptedTransitionAdministration =
         (signature: byte array)
         (stored: AdoptedCopyStoredEvent)
         =
-        let candidate =
-            ManagedCopyAdoptedTransitionPolicy.candidate value canonical signature
+        task {
+            let candidate =
+                ManagedCopyAdoptedTransitionPolicy.candidate value canonical signature
 
-        try
-            if
-                stored.CopyId <> value.CopyId
-                || stored.AdoptionEventId <> value.AdoptionEventId
-                || stored.Revision <> value.Revision
-                || stored.EventKind <> value.EventKind
-                || stored.ProducerKind <> value.ProducerKind
-                || stored.SigningKeyId <> stored.CustodianKeyId
-                || stored.Canonical <> canonical
-                || stored.Signature <> signature
-                || stored.PreviousHash <> value.PreviousEventHash
-                || stored.EventHash
-                   <> ManagedCopyEventHash.compute
-                       value.PreviousEventHash
-                       canonical
-                       (Some signature)
-                || stored.CandidateSha256 <> SHA256.HashData(candidate)
-            then
-                AuthorityWriteOutcome.Refused
-            else
-                witness.VerifyAuthorityEvidenceForCase(
-                    value.EventId,
-                    stored.WitnessSequence,
-                    stored.WitnessEpoch,
-                    stored.WitnessEntryHash,
-                    stored.CandidateSha256,
-                    value.SourceCaseId
-                )
+            try
+                if
+                    stored.CopyId <> value.CopyId
+                    || stored.AdoptionEventId <> value.AdoptionEventId
+                    || stored.Revision <> value.Revision
+                    || stored.EventKind <> value.EventKind
+                    || stored.ProducerKind <> value.ProducerKind
+                    || stored.SigningKeyId <> stored.CustodianKeyId
+                    || stored.Canonical <> canonical
+                    || stored.Signature <> signature
+                    || stored.PreviousHash <> value.PreviousEventHash
+                    || stored.EventHash
+                       <> ManagedCopyEventHash.compute
+                           value.PreviousEventHash
+                           canonical
+                           (Some signature)
+                    || stored.CandidateSha256 <> SHA256.HashData(candidate)
+                then
+                    return AuthorityWriteOutcome.Refused
+                else
+                    do!
+                        witness.VerifyAuthorityEvidenceForCase(
+                            value.EventId,
+                            stored.WitnessSequence,
+                            stored.WitnessEpoch,
+                            stored.WitnessEntryHash,
+                            stored.CandidateSha256,
+                            value.SourceCaseId,
+                            CancellationToken.None
+                        )
 
-                AuthorityWriteOutcome.Applied(value.EventId, value.Revision)
-        finally
-            CryptographicOperations.ZeroMemory(candidate)
+                    return AuthorityWriteOutcome.Applied(value.EventId, value.Revision)
+            finally
+                CryptographicOperations.ZeroMemory(candidate)
+        }
 
     let private deletionReady
         connection
@@ -184,12 +188,11 @@ module internal ManagedCopyAdoptedTransitionAdministration =
                         (value.DeletionApprovalId |> Option.get)
                         value.EventId
 
-                return
-                    if consumed then
-                        exactRetry witness value canonical signature stored
-                    else
-                        AuthorityWriteOutcome.Unconfirmed value.EventId
-            | Some stored -> return exactRetry witness value canonical signature stored
+                if consumed then
+                    return! exactRetry witness value canonical signature stored
+                else
+                    return AuthorityWriteOutcome.Unconfirmed value.EventId
+            | Some stored -> return! exactRetry witness value canonical signature stored
             | None ->
                 return! newEvent connection transaction witness verifier value canonical signature
         }
@@ -210,7 +213,7 @@ module internal ManagedCopyAdoptedTransitionAdministration =
                 try
                     OwnerConnection.requireIdentity connection
                     SchemaBaseline.requireCurrent connection
-                    witness.Admit()
+                    do! witness.Admit(CancellationToken.None)
 
                     use! _authorityFence =
                         AuthorityOperationFence.acquireShared None connection CancellationToken.None

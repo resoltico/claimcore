@@ -10,7 +10,7 @@ module internal RuntimeSourceOwnership =
     let openOwned<'source, 'core, 'runtime when 'source :> IDisposable>
         (create: unit -> 'source)
         (initialize: 'source -> Task<Result<'core, RuntimeOpenFault>>)
-        (adopt: 'core -> 'source -> 'runtime)
+        (adopt: 'core -> 'source -> Task<'runtime>)
         (fault: exn -> RuntimeOpenFault)
         (cancellationToken: CancellationToken)
         =
@@ -28,7 +28,7 @@ module internal RuntimeSourceOwnership =
                     | Error reason -> return Error reason
                     | Ok core ->
                         cancellationToken.ThrowIfCancellationRequested()
-                        let runtime = adopt core source
+                        let! runtime = adopt core source
                         borrowedSource <- None
                         return Ok runtime
                 with error ->

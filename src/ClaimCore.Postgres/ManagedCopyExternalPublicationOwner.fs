@@ -56,6 +56,45 @@ module internal ManagedCopyExternalPublicationOwner =
         && row.InspectionSignature = submission.Inspection.Signature
         && row.CandidateHash = SHA256.HashData(row.Canonical)
 
+    let private reconcileWitness
+        (witness: WitnessProtocol)
+        (row: StoredExternalCopyPublication)
+        ct
+        =
+        task {
+            let! observedIntent =
+                witness.EvidenceStore.TryReadMetadataOperation(row.PublicationId, Intent, ct)
+
+            let intent = observedIntent |> Option.defaultWith (fun () -> raise WitnessPending)
+
+            if
+                intent.Ticket.Sequence <> row.WitnessSequence
+                || intent.Ticket.Epoch <> row.Epoch
+                || intent.Ticket.EntryHash <> row.WitnessHash
+                || intent.Ticket.SubjectCaseId <> Some row.CaseId
+            then
+                raise WitnessPending
+
+            let! settlement =
+                witness.EvidenceStore.TryReadMetadataOperation(
+                    row.PublicationId,
+                    SettledAuthority,
+                    ct
+                )
+
+            if settlement.IsNone then
+                do!
+                    witness.ReconcileAuthority(
+                        row.PublicationId,
+                        row.WitnessSequence,
+                        row.Epoch,
+                        row.WitnessHash,
+                        row.Canonical,
+                        ct
+                    )
+
+        }
+
     let private replay
         ownerConnection
         (witness: WitnessProtocol)
@@ -69,30 +108,7 @@ module internal ManagedCopyExternalPublicationOwner =
                 return ExternalCopyPublicationOutcome.ResourceUnavailable
             else
                 try
-                    let intent =
-                        witness.EvidenceStore.TryReadMetadataOperation(row.PublicationId, Intent)
-                        |> Option.defaultWith (fun () -> raise WitnessPending)
-
-                    if
-                        intent.Ticket.Sequence <> row.WitnessSequence
-                        || intent.Ticket.Epoch <> row.Epoch
-                        || intent.Ticket.EntryHash <> row.WitnessHash
-                        || intent.Ticket.SubjectCaseId <> Some row.CaseId
-                    then
-                        raise WitnessPending
-
-                    if
-                        witness.EvidenceStore
-                            .TryReadMetadataOperation(row.PublicationId, SettledAuthority)
-                            .IsNone
-                    then
-                        witness.ReconcileAuthority(
-                            row.PublicationId,
-                            row.WitnessSequence,
-                            row.Epoch,
-                            row.WitnessHash,
-                            row.Canonical
-                        )
+                    do! reconcileWitness witness row ct
 
                     use connection = new NpgsqlConnection(ownerConnection)
                     do! connection.OpenAsync(ct)
@@ -112,6 +128,7 @@ module internal ManagedCopyExternalPublicationOwner =
         transaction
         (witness: WitnessProtocol)
         (ready: ExternalCopyPublicationEvidence)
+        ct
         =
         task {
             let canonical = ManagedCopyExternalPublicationCandidate.encode ready
@@ -120,8 +137,13 @@ module internal ManagedCopyExternalPublicationOwner =
                 try
                     let publicationId = ready.Registry.PublicationId
 
-                    let intent =
-                        witness.BeginAuthority(publicationId, canonical, Some ready.Registry.CaseId)
+                    let! intent =
+                        witness.BeginAuthority(
+                            publicationId,
+                            canonical,
+                            Some ready.Registry.CaseId,
+                            ct
+                        )
 
                     do!
                         ManagedCopyExternalPublicationWrite.insert
@@ -132,16 +154,18 @@ module internal ManagedCopyExternalPublicationOwner =
                             intent
 
                     do! transaction.CommitAsync(CancellationToken.None)
-                    witness.SettleAuthority(publicationId, intent) |> ignore
+                    let! _ = witness.SettleAuthority(publicationId, intent)
 
-                    witness.VerifyAuthorityEvidenceForCase(
-                        publicationId,
-                        intent.Ticket.Sequence,
-                        intent.Ticket.Epoch,
-                        intent.Ticket.EntryHash,
-                        intent.CandidateHash,
-                        ready.Registry.CaseId
-                    )
+                    do!
+                        witness.VerifyAuthorityEvidenceForCase(
+                            publicationId,
+                            intent.Ticket.Sequence,
+                            intent.Ticket.Epoch,
+                            intent.Ticket.EntryHash,
+                            intent.CandidateHash,
+                            ready.Registry.CaseId,
+                            CancellationToken.None
+                        )
 
                     return
                         ExternalCopyPublicationOutcome.Published(
@@ -182,7 +206,7 @@ module internal ManagedCopyExternalPublicationOwner =
             match prepared with
             | Error refusal -> return refusal
             | Ok ready ->
-                let! now = Sql.databaseNow connection transaction
+                let! now = Sql.databaseNow connection transaction ct
 
                 if
                     now >= ready.Registry.ValidUntil
@@ -190,14 +214,18 @@ module internal ManagedCopyExternalPublicationOwner =
                     || now >= ready.PrivateLocationExpiresAt
                 then
                     return ExternalCopyPublicationOutcome.ResourceUnavailable
-                elif
-                    witness.EvidenceStore
-                        .TryReadMetadataOperation(submission.PublicationId, Intent)
-                        .IsSome
-                then
-                    return ExternalCopyPublicationOutcome.Unconfirmed submission.PublicationId
                 else
-                    return! commit connection transaction witness ready
+                    let! pending =
+                        witness.EvidenceStore.TryReadMetadataOperation(
+                            submission.PublicationId,
+                            Intent,
+                            ct
+                        )
+
+                    if pending.IsSome then
+                        return ExternalCopyPublicationOutcome.Unconfirmed submission.PublicationId
+                    else
+                        return! commit connection transaction witness ready ct
         }
 
     let publish
@@ -217,7 +245,7 @@ module internal ManagedCopyExternalPublicationOwner =
                 return ExternalCopyPublicationOutcome.ResourceUnavailable
             else
                 try
-                    witness.Admit()
+                    do! witness.Admit(ct)
                     commitments.Admit()
                     use fenceConnection = new NpgsqlConnection(ownerConnection)
                     do! fenceConnection.OpenAsync(ct)

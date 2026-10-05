@@ -168,11 +168,16 @@ module internal TypedResolution =
                 match TypedProjection.summary true preparation with
                 | Error fault -> return ResolutionFailedBeforeAttempt(None, fault)
                 | Ok summary ->
-                    let! observed = store.Operation operationId
+                    let! observed = store.Operation(operationId, cancellationToken)
 
                     match observed with
                     | Ok(Some _) ->
-                        return! ObservedReceiptVerification.verify store preparation summary
+                        return!
+                            ObservedReceiptVerification.verify
+                                store
+                                preparation
+                                summary
+                                cancellationToken
                     | _ when cancellationToken.IsCancellationRequested ->
                         return ResolutionCancelledBeforeAttempt summary
                     | Error failure ->

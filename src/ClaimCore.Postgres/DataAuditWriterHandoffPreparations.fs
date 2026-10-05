@@ -57,52 +57,70 @@ module internal DataAuditWriterHandoffPreparations =
         && row.WitnessSequence <= cutoff
         && row.WitnessSequence = row.PreviousSequence + 1L
 
-    let private evidence (witness: WitnessProtocol) cutoff (row: WriterHandoffPreparationAuditRow) =
-        let value =
-            WriterHandoffPreparation.parse row.Canonical |> Option.defaultWith corrupt
+    let private verifyCheckpoints
+        (witness: WitnessProtocol)
+        (row: WriterHandoffPreparationAuditRow)
+        ct
+        =
+        witnessProofAsync (fun () ->
+            task {
+                for sequence, hash in
+                    [
+                        row.ReviewedCutoffSequence, row.ReviewedCutoffHash
+                        row.PreviousSequence, row.PreviousHash
+                        row.WitnessSequence, row.WitnessHash
+                    ] do
+                    do! witness.VerifyHistoricalTip(sequence, hash, ct)
+            })
 
-        let witnessed =
-            witness.EvidenceStore.TryReadHandoff(row.HandoffId)
-            |> Option.defaultWith corrupt
+    let private evidence
+        (witness: WitnessProtocol)
+        cutoff
+        (row: WriterHandoffPreparationAuditRow)
+        (ct: CancellationToken)
+        =
+        task {
+            let value =
+                WriterHandoffPreparation.parse row.Canonical |> Option.defaultWith corrupt
 
-        if
-            not (matches row value)
-            || not (identityMatches witness value row cutoff)
-            || not (witnessedMatches row witnessed)
-            || not (signerMatches row)
-            || value.ValidUntil <= row.RecordedAt
-        then
-            corrupt ()
+            let! stored = witness.EvidenceStore.TryReadHandoff(row.HandoffId, ct)
+            let witnessed = stored |> Option.defaultWith corrupt
 
-        witnessProof (fun () ->
-            witness.VerifyHistoricalTip(row.ReviewedCutoffSequence, row.ReviewedCutoffHash)
-            witness.VerifyHistoricalTip(row.PreviousSequence, row.PreviousHash)
-            witness.VerifyHistoricalTip(row.WitnessSequence, row.WitnessHash))
-
-        let intent =
-            witness.EvidenceStore.TryReadEvidence(row.HandoffId, Intent)
-            |> Option.defaultWith corrupt
-
-        if
-            intent.Ticket.Sequence <> row.WitnessSequence
-            || intent.Ticket.EntryHash <> row.WitnessHash
-            || intent.Ticket.ScopeKind <> Installation
-            || intent.Ticket.SubjectCaseId.IsSome
-        then
-            corrupt ()
-
-        let plain =
-            witness.KeyCustody.Decrypt(
-                intent.Ticket.KeyId,
-                witness.AssociatedData(row.HandoffId, "INTENT"),
-                intent.EncryptedPayload
-            )
-
-        try
-            if plain <> row.Canonical then
+            if
+                not (matches row value)
+                || not (identityMatches witness value row cutoff)
+                || not (witnessedMatches row witnessed)
+                || not (signerMatches row)
+                || value.ValidUntil <= row.RecordedAt
+            then
                 corrupt ()
-        finally
-            CryptographicOperations.ZeroMemory(plain)
+
+            do! verifyCheckpoints witness row ct
+
+            let! retained = witness.EvidenceStore.TryReadEvidence(row.HandoffId, Intent, ct)
+            let intent = retained |> Option.defaultWith corrupt
+
+            if
+                intent.Ticket.Sequence <> row.WitnessSequence
+                || intent.Ticket.EntryHash <> row.WitnessHash
+                || intent.Ticket.ScopeKind <> Installation
+                || intent.Ticket.SubjectCaseId.IsSome
+            then
+                corrupt ()
+
+            let plain =
+                witness.KeyCustody.Decrypt(
+                    intent.Ticket.KeyId,
+                    witness.AssociatedData(row.HandoffId, "INTENT"),
+                    intent.EncryptedPayload
+                )
+
+            try
+                if plain <> row.Canonical then
+                    corrupt ()
+            finally
+                CryptographicOperations.ZeroMemory(plain)
+        }
 
     let private uses
         (connection: NpgsqlConnection)
@@ -163,7 +181,7 @@ module internal DataAuditWriterHandoffPreparations =
                     if row.WitnessSequence <= after then
                         corrupt ()
 
-                    evidence witness cutoff row
+                    do! evidence witness cutoff row ct
                     do! uses connection transaction row ct
                     after <- row.WitnessSequence
                     count <- count + 1L

@@ -102,7 +102,7 @@ let private observeSettlementFence
 
         Expect.equal
             summary.WitnessCutoff
-            (witness.Snapshot().TipSequence)
+            ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
             "Audit includes the settlement rather than an earlier cutoff."
     finally
         release.TrySetResult() |> ignore
@@ -199,7 +199,7 @@ let private verifyCaptureSettlement
 
         Expect.equal
             capture.Cutoff.WitnessSequence
-            (witness.Snapshot().TipSequence)
+            ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
             "Capture includes settled W1."
 
         let summary = capture.Verify(token) |> completed

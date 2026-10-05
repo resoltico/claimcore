@@ -3,6 +3,7 @@ namespace ClaimCore.Postgres
 open System
 open System.IO
 open System.Security.Cryptography
+open System.Threading
 open System.Threading.Tasks
 open Npgsql
 open NpgsqlTypes
@@ -94,6 +95,7 @@ module internal ActorGrantWrite =
         (witness: WitnessProtocol)
         (action: ActorAuthorityAction)
         (apply: unit -> Task<unit>)
+        (ct: CancellationToken)
         =
         task {
             let! correct = matchesInstallation connection transaction witness
@@ -110,14 +112,14 @@ module internal ActorGrantWrite =
 
                 try
                     try
-                        let intent =
-                            witness.BeginAuthority(action.EventId, canonical, subjectCaseId)
+                        let! intent =
+                            witness.BeginAuthority(action.EventId, canonical, subjectCaseId, ct)
 
                         try
                             do! apply ()
                             do! persistEvent connection transaction action canonical intent
                             do! transaction.CommitAsync()
-                            witness.SettleAuthority(action.EventId, intent) |> ignore
+                            let! _ = witness.SettleAuthority(action.EventId, intent)
                             return AuthorityWriteOutcome.Applied(action.EventId, action.Revision)
                         with _ ->
                             return AuthorityWriteOutcome.Unconfirmed action.EventId

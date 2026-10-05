@@ -91,8 +91,24 @@ module internal ManagedCopyOwnerInspection =
         entryHash
         digest
         =
-        witness.VerifyHistoricalTip(value.WitnessCutoffSequence, value.WitnessCutoffHash)
-        witness.VerifyAuthorityEvidence(value.EventId, sequence, epoch, entryHash, digest)
+        task {
+            do!
+                witness.VerifyHistoricalTip(
+                    value.WitnessCutoffSequence,
+                    value.WitnessCutoffHash,
+                    CancellationToken.None
+                )
+
+            do!
+                witness.VerifyAuthorityEvidence(
+                    value.EventId,
+                    sequence,
+                    epoch,
+                    entryHash,
+                    digest,
+                    CancellationToken.None
+                )
+        }
 
     let inspect (connection: NpgsqlConnection) (witness: WitnessProtocol) copyId =
         task {
@@ -102,7 +118,7 @@ module internal ManagedCopyOwnerInspection =
                 try
                     OwnerConnection.requireIdentity connection
                     SchemaBaseline.requireCurrent connection
-                    witness.Admit()
+                    do! witness.Admit(CancellationToken.None)
 
                     use! _authorityFence =
                         AuthorityOperationFence.acquireShared None connection CancellationToken.None
@@ -149,7 +165,7 @@ module internal ManagedCopyOwnerInspection =
                             else
                                 reader.Close()
 
-                                verifyWitness witness value sequence epoch entryHash digest
+                                do! verifyWitness witness value sequence epoch entryHash digest
 
                                 do! transaction.CommitAsync()
                                 return true

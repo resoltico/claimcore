@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open System.Security.Cryptography
 open Npgsql
 open ClaimCore.Application
@@ -17,6 +18,7 @@ module internal CaseLifecycleApply =
         change
         draftHash
         instant
+        ct
         =
         task {
             let! correct =
@@ -36,6 +38,7 @@ module internal CaseLifecycleApply =
                         context.Binding.ActorId
                         draftHash
                         instant
+                        ct
 
                 match result with
                 | Error refusal -> return LifecycleWriteOutcome.Refused refusal
@@ -53,6 +56,7 @@ module internal CaseLifecycleApply =
                             decision
                             approvals
                             instant
+                            ct
         }
 
     let private applyUnderLock
@@ -63,6 +67,7 @@ module internal CaseLifecycleApply =
         (context: ActorCallContext)
         (projection: LifecycleProjection)
         (change: LifecycleChange)
+        ct
         =
         task {
             let draft = CaseLifecycleCandidate.draft projection.CaseId change
@@ -73,16 +78,17 @@ module internal CaseLifecycleApply =
 
                 match existing with
                 | Some stored ->
-                    return
+                    return!
                         CaseLifecycleStoreSupport.replayEvent
                             witness
                             change.EventId
                             draftHash
                             stored
+                            ct
                 | None when not (CaseLifecycleStoreSupport.matchesProjection change projection) ->
                     return LifecycleWriteOutcome.Refused LifecycleRefusal.VersionConflict
                 | None ->
-                    let! instant = Sql.databaseNow connection transaction
+                    let! instant = Sql.databaseNow connection transaction ct
 
                     return!
                         applyFresh
@@ -95,18 +101,14 @@ module internal CaseLifecycleApply =
                             change
                             draftHash
                             instant
+                            ct
             finally
                 CaseLifecycleStoreSupport.clear draft
         }
 
-    let private authorizedProjection connection transaction context (change: LifecycleChange) =
+    let private authorizedProjection connection transaction context (change: LifecycleChange) ct =
         task {
-            let! revision =
-                ActorGrantRead.lockRevision
-                    connection
-                    transaction
-                    true
-                    System.Threading.CancellationToken.None
+            let! revision = ActorGrantRead.lockRevision connection transaction true ct
 
             let! found =
                 CaseLifecycleStoreSupport.lockCase
@@ -114,6 +116,7 @@ module internal CaseLifecycleApply =
                     transaction
                     change.CaseReference
                     change.EventId
+                    ct
 
             match found with
             | None -> return None
@@ -135,19 +138,17 @@ module internal CaseLifecycleApply =
         commitments
         (context: ActorCallContext)
         (change: LifecycleChange)
+        ct
         =
         task {
-            use! connection = RuntimeDatabase.openConnectionAsync dataSource
+            use! connection = RuntimeDatabase.openConnectionAsyncWithCancellation dataSource ct
 
             use! _authorityLease =
-                AuthorityOperationFence.acquireShared
-                    (Some dataSource)
-                    connection
-                    System.Threading.CancellationToken.None
+                AuthorityOperationFence.acquireShared (Some dataSource) connection ct
 
-            use transaction = CaseLifecycleStoreSupport.beginTransaction connection
+            use! transaction = CaseLifecycleStoreSupport.beginTransaction connection ct
 
-            let! found = authorizedProjection connection transaction context change
+            let! found = authorizedProjection connection transaction context change ct
 
             match found with
             | None -> return LifecycleWriteOutcome.ResourceUnavailable
@@ -161,6 +162,7 @@ module internal CaseLifecycleApply =
                         context
                         projection
                         change
+                        ct
         }
 
     let apply
@@ -169,6 +171,7 @@ module internal CaseLifecycleApply =
         (commitments: ISuppressionCommitments)
         (context: ActorCallContext)
         (change: LifecycleChange)
+        ct
         =
         task {
             if
@@ -181,9 +184,11 @@ module internal CaseLifecycleApply =
                 return LifecycleWriteOutcome.Refused LifecycleRefusal.InvalidIdentity
             else
                 try
-                    witness.Admit()
-                    return! transact dataSource witness commitments context change
+                    do! witness.Admit(ct)
+                    return! transact dataSource witness commitments context change ct
                 with
+                | :? System.OperationCanceledException when ct.IsCancellationRequested ->
+                    return LifecycleWriteOutcome.CancelledBeforeAdmission change.EventId
                 | WitnessPending -> return LifecycleWriteOutcome.Unconfirmed change.EventId
                 | :? System.IO.InvalidDataException ->
                     return LifecycleWriteOutcome.Failed CoreFault.StoreIntegrityError

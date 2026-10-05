@@ -15,6 +15,7 @@ module internal CaseLifecycleApplyDecision =
         (change: LifecycleChange)
         (draftHash: byte array)
         (approval: LifecycleApprovalEvidence)
+        ct
         =
         task {
             let! row = CaseLifecycleRead.approvalById connection transaction approval.ApprovalId
@@ -39,13 +40,15 @@ module internal CaseLifecycleApplyDecision =
                 finally
                     CaseLifecycleStoreSupport.clear expected
 
-                witness.ReconcileAuthority(
-                    approval.ApprovalId,
-                    evidence.WitnessSequence,
-                    evidence.WitnessEpoch,
-                    evidence.WitnessHash,
-                    evidence.Canonical
-                )
+                do!
+                    witness.ReconcileAuthority(
+                        approval.ApprovalId,
+                        evidence.WitnessSequence,
+                        evidence.WitnessEpoch,
+                        evidence.WitnessHash,
+                        evidence.Canonical,
+                        ct
+                    )
         }
 
     let private historicalPayment
@@ -53,10 +56,15 @@ module internal CaseLifecycleApplyDecision =
         transaction
         (projection: LifecycleProjection)
         (change: LifecycleChange)
+        ct
         =
         match change.Action with
         | LifecycleMutation.VoidDataEntryError _ ->
-            CaseLifecyclePaymentEvidence.historicalPayment connection transaction projection.CaseId
+            CaseLifecyclePaymentEvidence.historicalPayment
+                connection
+                transaction
+                projection.CaseId
+                ct
         | _ -> System.Threading.Tasks.Task.FromResult false
 
     let private witnessedRequest
@@ -66,6 +74,7 @@ module internal CaseLifecycleApplyDecision =
         (commitments: ISuppressionCommitments)
         (projection: LifecycleProjection)
         (change: LifecycleChange)
+        ct
         =
         match change.Action with
         | LifecycleMutation.MarkErasurePending _ ->
@@ -76,7 +85,7 @@ module internal CaseLifecycleApplyDecision =
                 commitments
                 projection.CaseId
                 change.CaseReference
-                System.Threading.CancellationToken.None
+                ct
         | _ -> System.Threading.Tasks.Task.FromResult None
 
     let private approvals
@@ -87,6 +96,7 @@ module internal CaseLifecycleApplyDecision =
         (change: LifecycleChange)
         (draftHash: byte array)
         (instant: DateTimeOffset)
+        ct
         =
         task {
             let! selected =
@@ -108,6 +118,7 @@ module internal CaseLifecycleApplyDecision =
                         change
                         draftHash
                         approval
+                        ct
 
             return selected
         }
@@ -122,15 +133,16 @@ module internal CaseLifecycleApplyDecision =
         actorId
         (draftHash: byte array)
         instant
+        ct
         =
         task {
-            let! payment = historicalPayment connection transaction projection change
+            let! payment = historicalPayment connection transaction projection change ct
 
             let! witnessed =
-                witnessedRequest connection transaction witness commitments projection change
+                witnessedRequest connection transaction witness commitments projection change ct
 
             let! selected =
-                approvals connection transaction witness projection change draftHash instant
+                approvals connection transaction witness projection change draftHash instant ct
 
             let result =
                 CaseLifecycleDecisions.decide

@@ -229,7 +229,7 @@ module internal TypedSubmission =
                 let canonical = RequestRecord.encode request
                 let digest = canonical |> SHA256.HashData |> System.Convert.ToHexStringLower
 
-                let! accepted = store.Accepted(request.OperationId, digest)
+                let! accepted = store.Accepted(request.OperationId, digest, cancellationToken)
 
                 match acceptedRetryResult accepted with
                 | Some outcome -> return Some outcome

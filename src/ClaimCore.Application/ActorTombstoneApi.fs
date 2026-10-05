@@ -31,7 +31,7 @@ module internal ActorTombstoneApi =
             let! admission = admit gate principal EndpointAction.ReviewTombstone caseId ct
 
             match admission with
-            | TombstoneAdmission.Available context -> return! store.Review(context, caseId)
+            | TombstoneAdmission.Available context -> return! store.Review(context, caseId, ct)
             | TombstoneAdmission.Unavailable -> return TombstoneReviewOutcome.ResourceUnavailable
             | TombstoneAdmission.Cancelled -> return TombstoneReviewOutcome.Cancelled
             | TombstoneAdmission.Failed ->
@@ -53,7 +53,7 @@ module internal ActorTombstoneApi =
 
             match admission with
             | TombstoneAdmission.Available context ->
-                return! store.ApproveWitnessPrune(context, proposal, approvalId, expiresAt)
+                return! store.ApproveWitnessPrune(context, proposal, approvalId, expiresAt, ct)
             | TombstoneAdmission.Unavailable -> return TombstoneWriteOutcome.ResourceUnavailable
             | TombstoneAdmission.Cancelled ->
                 return TombstoneWriteOutcome.CancelledBeforeAdmission approvalId
@@ -73,7 +73,7 @@ module internal ActorTombstoneApi =
                 admit gate principal EndpointAction.ManageTombstoneHold change.CaseId ct
 
             match admission with
-            | TombstoneAdmission.Available context -> return! store.ChangeHold(context, change)
+            | TombstoneAdmission.Available context -> return! store.ChangeHold(context, change, ct)
             | TombstoneAdmission.Unavailable -> return TombstoneWriteOutcome.ResourceUnavailable
             | TombstoneAdmission.Cancelled ->
                 return TombstoneWriteOutcome.CancelledBeforeAdmission change.EventId
@@ -97,7 +97,7 @@ module internal ActorTombstoneApi =
 
             match admission with
             | TombstoneAdmission.Available context ->
-                return! store.ApproveTerminal(context, proposal, approvalId, expiresAt)
+                return! store.ApproveTerminal(context, proposal, approvalId, expiresAt, ct)
             | TombstoneAdmission.Unavailable -> return TombstoneWriteOutcome.ResourceUnavailable
             | TombstoneAdmission.Cancelled ->
                 return TombstoneWriteOutcome.CancelledBeforeAdmission approvalId

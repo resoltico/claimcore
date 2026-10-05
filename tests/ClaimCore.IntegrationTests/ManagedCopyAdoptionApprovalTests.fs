@@ -172,7 +172,9 @@ let private assertRefusals
     (draft: CopyAdoptionApprovalRequest)
     =
     let actor = runtime.ForActor proposer
-    let before = witness.Snapshot().TipSequence
+
+    let before =
+        (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence
 
     let wrong =
         { draft with
@@ -184,7 +186,10 @@ let private assertRefusals
         CopyAdoptionApprovalOutcome.ResourceUnavailable
         "Changed source bytes cannot gain owner approval"
 
-    Expect.equal (witness.Snapshot().TipSequence) before "Definite source refusal wrote no intent"
+    Expect.equal
+        ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
+        before
+        "Definite source refusal wrote no intent"
 
     Expect.equal
         ((runtime.ForActor first).ApproveCopyAdoption(draft, ct) |> await)

@@ -77,7 +77,9 @@ let internal signedDocuments
 
     use _registry = registryKey
     use _verifier = verifierKey
-    let tip = witness.Snapshot()
+
+    let tip = (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
+
     let now = DateTimeOffset.UtcNow
     let registry = registryBodyForEntries tip registryId [] knownUnmanaged now
 

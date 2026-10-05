@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open System.Buffers.Binary
 open System.IO
 open System.Security.Cryptography
@@ -53,53 +54,60 @@ module internal CaseErasureWitnessDenials =
         (transaction: NpgsqlTransaction)
         eventId
         caseId
+        (ct: CancellationToken)
         =
-        use command =
-            new NpgsqlCommand(
-                "SELECT revision,action_name,target_actor_id,approver_actor_id,canonical_action "
-                + "FROM claimcore.actor_authority_events WHERE event_id=@event",
-                connection,
-                transaction
-            )
+        task {
+            use command =
+                new NpgsqlCommand(
+                    "SELECT revision,action_name,target_actor_id,approver_actor_id,canonical_action "
+                    + "FROM claimcore.actor_authority_events WHERE event_id=@event",
+                    connection,
+                    transaction
+                )
 
-        Sql.uuid command "event" eventId
-        use reader = command.ExecuteReader()
+            Sql.uuid command "event" eventId
+            use! reader = command.ExecuteReaderAsync(ct)
 
-        if not (reader.Read()) then
-            false
-        else
-            let approver = if reader.IsDBNull(3) then None else Some(reader.GetGuid(3))
+            let! found = reader.ReadAsync(ct)
 
-            let action =
-                ActorGrantCandidate.decodeStored
-                    (reader.GetFieldValue<byte array>(4))
-                    (reader.GetInt64(0))
-                    eventId
-                    (reader.GetString(1))
-                    (reader.GetGuid(2))
-                    approver
-
-            if reader.Read() then
-                raise CaseIdentityCoverageUnknowable
-
-            match action |> Option.bind _.Grant with
-            | Some { Scope = GrantScope.Case bound } when bound = caseId -> true
-            | _ -> false
-
-    let private requireSource connection transaction eventId caseId =
-        use command = new NpgsqlCommand(sourceSql, connection, transaction)
-        Sql.uuid command "case" caseId
-        Sql.uuid command "event" eventId
-        let regularCount = command.ExecuteScalar() :?> int64
-
-        let actorCount =
-            if actorSource connection transaction eventId caseId then
-                1L
+            if not found then
+                return false
             else
-                0L
+                let approver = if reader.IsDBNull(3) then None else Some(reader.GetGuid(3))
 
-        if regularCount + actorCount <> 1L then
-            raise CaseIdentityCoverageUnknowable
+                let action =
+                    ActorGrantCandidate.decodeStored
+                        (reader.GetFieldValue<byte array>(4))
+                        (reader.GetInt64(0))
+                        eventId
+                        (reader.GetString(1))
+                        (reader.GetGuid(2))
+                        approver
+
+                let! duplicated = reader.ReadAsync(ct)
+
+                if duplicated then
+                    raise CaseIdentityCoverageUnknowable
+
+                match action |> Option.bind _.Grant with
+                | Some { Scope = GrantScope.Case bound } when bound = caseId -> return true
+                | _ -> return false
+        }
+
+    let private requireSource connection transaction eventId caseId (ct: CancellationToken) =
+        task {
+            use command = new NpgsqlCommand(sourceSql, connection, transaction)
+            Sql.uuid command "case" caseId
+            Sql.uuid command "event" eventId
+            let! result = command.ExecuteScalarAsync(ct)
+            let regularCount = unbox<int64> result
+
+            let! actor = actorSource connection transaction eventId caseId ct
+            let actorCount = if actor then 1L else 0L
+
+            if regularCount + actorCount <> 1L then
+                raise CaseIdentityCoverageUnknowable
+        }
 
     let private retain
         (connection: NpgsqlConnection)
@@ -107,38 +115,43 @@ module internal CaseErasureWitnessDenials =
         caseId
         (commitments: ISuppressionCommitments)
         (intent: SubjectOperation)
+        (ct: CancellationToken)
         =
-        let digest = commitments.Operation intent.OperationId
+        task {
+            let digest = commitments.Operation intent.OperationId
 
-        if digest.Length <> 32 then
-            invalidOp "Witnessed intent commitment is invalid."
+            if digest.Length <> 32 then
+                invalidOp "Witnessed intent commitment is invalid."
 
-        use command =
-            new NpgsqlCommand(
-                "INSERT INTO claimcore.case_erasure_operation_denials "
-                + "(operation_commitment,case_id,knowledge,witness_intent_sequence,"
-                + "witness_intent_epoch,witness_intent_entry_hash) "
-                + "VALUES (@digest,@case,'WITNESSED_INTENT',@sequence,@epoch,@hash) "
-                + "ON CONFLICT (operation_commitment) DO UPDATE SET "
-                + "witness_intent_sequence=EXCLUDED.witness_intent_sequence,"
-                + "witness_intent_epoch=EXCLUDED.witness_intent_epoch,"
-                + "witness_intent_entry_hash=EXCLUDED.witness_intent_entry_hash "
-                + "WHERE claimcore.case_erasure_operation_denials.case_id=EXCLUDED.case_id "
-                + "AND claimcore.case_erasure_operation_denials.witness_intent_sequence IS NULL",
-                connection,
-                transaction
-            )
+            use command =
+                new NpgsqlCommand(
+                    "INSERT INTO claimcore.case_erasure_operation_denials "
+                    + "(operation_commitment,case_id,knowledge,witness_intent_sequence,"
+                    + "witness_intent_epoch,witness_intent_entry_hash) "
+                    + "VALUES (@digest,@case,'WITNESSED_INTENT',@sequence,@epoch,@hash) "
+                    + "ON CONFLICT (operation_commitment) DO UPDATE SET "
+                    + "witness_intent_sequence=EXCLUDED.witness_intent_sequence,"
+                    + "witness_intent_epoch=EXCLUDED.witness_intent_epoch,"
+                    + "witness_intent_entry_hash=EXCLUDED.witness_intent_entry_hash "
+                    + "WHERE claimcore.case_erasure_operation_denials.case_id=EXCLUDED.case_id "
+                    + "AND claimcore.case_erasure_operation_denials.witness_intent_sequence IS NULL",
+                    connection,
+                    transaction
+                )
 
-        Sql.add command "digest" NpgsqlDbType.Bytea (box digest)
-        Sql.uuid command "case" caseId
-        Sql.integer command "sequence" intent.Intent.Sequence
-        Sql.integer command "epoch" intent.Intent.Epoch
-        Sql.add command "hash" NpgsqlDbType.Bytea (box intent.Intent.EntryHash)
+            Sql.add command "digest" NpgsqlDbType.Bytea (box digest)
+            Sql.uuid command "case" caseId
+            Sql.integer command "sequence" intent.Intent.Sequence
+            Sql.integer command "epoch" intent.Intent.Epoch
+            Sql.add command "hash" NpgsqlDbType.Bytea (box intent.Intent.EntryHash)
 
-        if command.ExecuteNonQuery() <> 1 then
-            raise CaseIdentityCoverageUnknowable
+            let! written = command.ExecuteNonQueryAsync(ct)
 
-        digest
+            if written <> 1 then
+                raise CaseIdentityCoverageUnknowable
+
+            return digest
+        }
 
     let appendIntentDigest
         (hash: IncrementalHash)
@@ -151,49 +164,51 @@ module internal CaseErasureWitnessDenials =
         hash.AppendData(intent.Intent.EntryHash)
         hash.AppendData(commitment)
 
-    let denialDigest connection transaction caseId =
-        use hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256)
-        hash.AppendData(Encoding.ASCII.GetBytes("CLAIMCORE_ERASURE_DENIAL_SET_V2\000"))
-        let mutable after: byte array option = None
-        let mutable count = 0L
-        let mutable more = true
+    let denialDigest connection transaction caseId (ct: CancellationToken) =
+        task {
+            use hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256)
+            hash.AppendData(Encoding.ASCII.GetBytes("CLAIMCORE_ERASURE_DENIAL_SET_V2\000"))
+            let mutable after: byte array option = None
+            let mutable count = 0L
+            let mutable more = true
 
-        while more do
-            use command =
-                new NpgsqlCommand(
-                    "SELECT operation_commitment,knowledge,witness_intent_sequence,"
-                    + "witness_intent_epoch,witness_intent_entry_hash "
-                    + "FROM claimcore.case_erasure_operation_denials "
-                    + "WHERE case_id=@case AND (@after IS NULL OR operation_commitment>@after) "
-                    + "ORDER BY operation_commitment LIMIT 50",
-                    connection,
-                    transaction
-                )
+            while more do
+                use command =
+                    new NpgsqlCommand(
+                        "SELECT operation_commitment,knowledge,witness_intent_sequence,"
+                        + "witness_intent_epoch,witness_intent_entry_hash "
+                        + "FROM claimcore.case_erasure_operation_denials "
+                        + "WHERE case_id=@case AND (@after IS NULL OR operation_commitment>@after) "
+                        + "ORDER BY operation_commitment LIMIT 50",
+                        connection,
+                        transaction
+                    )
 
-            Sql.uuid command "case" caseId
-            Sql.optional command "after" NpgsqlDbType.Bytea after
-            use reader = command.ExecuteReader()
-            let mutable last = None
+                Sql.uuid command "case" caseId
+                Sql.optional command "after" NpgsqlDbType.Bytea after
+                use! reader = command.ExecuteReaderAsync(ct)
+                let mutable last = None
 
-            while reader.Read() do
-                let commitment = reader.GetFieldValue<byte array>(0)
-                hash.AppendData(commitment)
-                hash.AppendData(Encoding.ASCII.GetBytes(reader.GetString(1)))
+                while! reader.ReadAsync(ct) do
+                    let commitment = reader.GetFieldValue<byte array>(0)
+                    hash.AppendData(commitment)
+                    hash.AppendData(Encoding.ASCII.GetBytes(reader.GetString(1)))
 
-                if not (reader.IsDBNull(2)) then
-                    let sequence = Array.zeroCreate<byte> 8
-                    BinaryPrimitives.WriteInt64BigEndian(sequence, reader.GetInt64(2))
-                    hash.AppendData(sequence)
-                    hash.AppendData(reader.GetFieldValue<byte array>(4))
+                    if not (reader.IsDBNull(2)) then
+                        let sequence = Array.zeroCreate<byte> 8
+                        BinaryPrimitives.WriteInt64BigEndian(sequence, reader.GetInt64(2))
+                        hash.AppendData(sequence)
+                        hash.AppendData(reader.GetFieldValue<byte array>(4))
 
-                last <- Some commitment
-                count <- count + 1L
+                    last <- Some commitment
+                    count <- count + 1L
 
-            match last with
-            | None -> more <- false
-            | Some digest -> after <- Some digest
+                match last with
+                | None -> more <- false
+                | Some digest -> after <- Some digest
 
-        count, hash.GetHashAndReset()
+            return count, hash.GetHashAndReset()
+        }
 
     let scan
         (connection: NpgsqlConnection)
@@ -202,29 +217,45 @@ module internal CaseErasureWitnessDenials =
         (commitments: ISuppressionCommitments)
         caseId
         cutoff
+        (ct: CancellationToken)
         =
-        commitments.Admit()
-        use intentHash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256)
-        intentHash.AppendData(Encoding.ASCII.GetBytes("CLAIMCORE_ERASURE_CASE_INTENTS_V1\000"))
+        task {
+            commitments.Admit()
+            use intentHash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256)
+            intentHash.AppendData(Encoding.ASCII.GetBytes("CLAIMCORE_ERASURE_CASE_INTENTS_V1\000"))
 
-        let observed =
-            witness.EvidenceStore.ReadSubjectOperations(
-                caseId,
-                cutoff,
-                fun page ->
-                    for intent in page do
-                        requireSource connection transaction intent.OperationId caseId
-                        let commitment = retain connection transaction caseId commitments intent
-                        appendIntentDigest intentHash intent commitment
-            )
+            let! observed =
+                witness.EvidenceStore.ReadSubjectOperations(
+                    caseId,
+                    cutoff,
+                    (fun page ->
+                        task {
+                            for intent in page do
+                                do!
+                                    requireSource
+                                        connection
+                                        transaction
+                                        intent.OperationId
+                                        caseId
+                                        ct
 
-        let denialCount, denialRoot = denialDigest connection transaction caseId
+                                let! commitment =
+                                    retain connection transaction caseId commitments intent ct
 
-        {
-            CutoffSequence = observed.CutoffSequence
-            CutoffHash = observed.CutoffHash
-            IntentCount = observed.IntentCount
-            IntentDigest = intentHash.GetHashAndReset()
-            DenialCount = denialCount
-            DenialDigest = denialRoot
+                                appendIntentDigest intentHash intent commitment
+                        }),
+                    ct
+                )
+
+            let! denialCount, denialRoot = denialDigest connection transaction caseId ct
+
+            return
+                {
+                    CutoffSequence = observed.CutoffSequence
+                    CutoffHash = observed.CutoffHash
+                    IntentCount = observed.IntentCount
+                    IntentDigest = intentHash.GetHashAndReset()
+                    DenialCount = denialCount
+                    DenialDigest = denialRoot
+                }
         }

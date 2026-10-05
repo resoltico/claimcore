@@ -52,7 +52,7 @@ module internal DataAuditWriterHandoffs =
                     if row.OldGeneration <> generation || row.NewGeneration <> generation + 1L then
                         corrupt ()
 
-                    DataAuditWriterHandoffEvidence.verify witness cutoff row |> ignore
+                    let! _ = DataAuditWriterHandoffEvidence.verify witness cutoff row ct
 
                     generation <- row.NewGeneration
                     last <- Some(row.HandoffId, row.SettlementSequence, row.SettlementHash)
@@ -63,7 +63,7 @@ module internal DataAuditWriterHandoffs =
             let storedGeneration, storedId, storedSequence, storedHash =
                 projection connection transaction
 
-            let tip = witness.Snapshot()
+            let! tip = witness.Snapshot(ct)
 
             if
                 storedGeneration <> generation

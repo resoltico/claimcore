@@ -131,19 +131,26 @@ module internal DataAuditWriterHandoffApprovals =
                         row.GrantRevision
                         ct
 
-                witnessProof (fun () ->
-                    witness.VerifyHistoricalTip(
-                        request.ExpectedWitnessSequence,
-                        request.ExpectedWitnessHash
-                    )
+                do!
+                    witnessProofAsync (fun () ->
+                        task {
+                            do!
+                                witness.VerifyHistoricalTip(
+                                    request.ExpectedWitnessSequence,
+                                    request.ExpectedWitnessHash,
+                                    ct
+                                )
 
-                    witness.VerifyAuthorityEvidenceForInstallation(
-                        request.ApprovalId,
-                        row.WitnessSequence,
-                        row.WitnessEpoch,
-                        row.WitnessHash,
-                        row.Candidate
-                    ))
+                            do!
+                                witness.VerifyAuthorityEvidenceForInstallation(
+                                    request.ApprovalId,
+                                    row.WitnessSequence,
+                                    row.WitnessEpoch,
+                                    row.WitnessHash,
+                                    row.Candidate,
+                                    ct
+                                )
+                        })
             finally
                 CryptographicOperations.ZeroMemory(canonical)
         }

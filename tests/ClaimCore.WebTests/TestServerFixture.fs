@@ -272,7 +272,7 @@ type Host
             assets
             configuration
             (fun _ -> runtime.ActorCore)
-            (fun () -> "SYNTHETIC_ONLY", "ACTIVE", false)
+            (fun _ -> Task.FromResult("SYNTHETIC_ONLY", "ACTIVE", false))
             application
 
         application.StartAsync().GetAwaiter().GetResult()

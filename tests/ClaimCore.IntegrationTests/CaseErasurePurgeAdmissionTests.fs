@@ -42,7 +42,9 @@ let private inventoryUnknown =
         "[CC-ERASE-001] missing complete copy inventory refuses live purge before intent"
         (fun _ ->
             pending (fun owner witness _ _ _ id draft commitments connection ->
-                let before = witness.Snapshot().TipSequence
+                let before =
+                    (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
+                        .TipSequence
 
                 match
                     CaseErasurePurge.execute
@@ -59,7 +61,8 @@ let private inventoryUnknown =
                 | _ -> failtest "Unknown inventory was not refused."
 
                 Expect.equal
-                    (witness.Snapshot().TipSequence)
+                    ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
+                        .TipSequence)
                     before
                     "No purge intent was appended"
 
@@ -85,7 +88,8 @@ let private holdAfterApprovals =
             | LifecycleWriteOutcome.Applied _ -> ()
             | _ -> failtest "Synthetic hold did not settle."
 
-            let before = witness.Snapshot().TipSequence
+            let before =
+                (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence
 
             match
                 CaseErasurePurge.execute
@@ -101,16 +105,29 @@ let private holdAfterApprovals =
             | OwnerPurgeOutcome.Refused OwnerPurgeRefusal.HoldActive -> ()
             | _ -> failtest "Active hold was not retained."
 
-            Expect.equal (witness.Snapshot().TipSequence) before "Hold refusal appended no purge"
+            Expect.equal
+                ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
+                before
+                "Hold refusal appended no purge"
+
             liveCaseRemains connection id))
 
 let private orphanIntent =
     testCase "[CC-ERASE-001] orphan CASE intent keeps owner purge unknowable" (fun _ ->
         pending (fun owner witness _ _ _ id draft commitments connection ->
-            witness.BeginAuthority(Guid.NewGuid(), [| 0x43uy; 0x43uy; 0x55uy |], Some id)
+            (witness
+                .BeginAuthority(
+                    Guid.NewGuid(),
+                    [| 0x43uy; 0x43uy; 0x55uy |],
+                    Some id,
+                    CancellationToken.None
+                )
+                .GetAwaiter()
+                .GetResult())
             |> ignore
 
-            let before = witness.Snapshot().TipSequence
+            let before =
+                (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence
 
             match
                 CaseErasurePurge.execute
@@ -126,7 +143,11 @@ let private orphanIntent =
             | OwnerPurgeOutcome.IdentityCoverageUnknowable -> ()
             | _ -> failtest "Unknown case intent was not preserved."
 
-            Expect.equal (witness.Snapshot().TipSequence) before "No purge intent followed orphan"
+            Expect.equal
+                ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
+                before
+                "No purge intent followed orphan"
+
             liveCaseRemains connection id))
 
 let tests =

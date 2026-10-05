@@ -9,40 +9,49 @@ open ClaimCore.Application
 open DataAuditCommon
 
 module internal DataAuditWitness =
-    let private verifyRevocationRow (witness: WitnessProtocol) cutoff (reader: NpgsqlDataReader) =
-        let operationId = reader.GetGuid(0)
-        let sequence = reader.GetInt64(5)
-        let eventId = reader.GetGuid(8)
+    let private verifyRevocationRow
+        (witness: WitnessProtocol)
+        cutoff
+        (reader: NpgsqlDataReader)
+        ct
+        =
+        task {
+            let operationId = reader.GetGuid(0)
+            let sequence = reader.GetInt64(5)
+            let eventId = reader.GetGuid(8)
 
-        if
-            sequence > cutoff
-            || eventId <> WitnessEventIdentity.revocationEventId operationId
-        then
-            corrupt ()
+            if
+                sequence > cutoff
+                || eventId <> WitnessEventIdentity.revocationEventId operationId
+            then
+                corrupt ()
 
-        let evidence: RevocationActorEvidence =
-            {
-                CaseId = reader.GetGuid(2)
-                RevokingActorId = reader.GetGuid(3)
-                GrantRevision = reader.GetInt64(4)
-            }
+            let evidence: RevocationActorEvidence =
+                {
+                    CaseId = reader.GetGuid(2)
+                    RevokingActorId = reader.GetGuid(3)
+                    GrantRevision = reader.GetInt64(4)
+                }
 
-        let digest =
-            witnessProof (fun () ->
-                WitnessCandidate.revokedDigestFromEvidence
-                    operationId
-                    (reader.GetString(1))
-                    evidence)
+            let digest =
+                witnessProof (fun () ->
+                    WitnessCandidate.revokedDigestFromEvidence
+                        operationId
+                        (reader.GetString(1))
+                        evidence)
 
-        witnessProof (fun () ->
-            witness.VerifyRevokedEvidenceForCase(
-                eventId,
-                sequence,
-                reader.GetInt64(6),
-                reader.GetFieldValue<byte array>(7),
-                digest,
-                evidence.CaseId
-            ))
+            do!
+                witnessProofAsync (fun () ->
+                    witness.VerifyRevokedEvidenceForCase(
+                        eventId,
+                        sequence,
+                        reader.GetInt64(6),
+                        reader.GetFieldValue<byte array>(7),
+                        digest,
+                        evidence.CaseId,
+                        ct
+                    ))
+        }
 
     let verifyRevocations
         (connection: NpgsqlConnection)
@@ -69,7 +78,7 @@ module internal DataAuditWitness =
                 reading <- hasRow
 
                 if hasRow then
-                    verifyRevocationRow witness cutoff reader
+                    do! verifyRevocationRow witness cutoff reader cancellationToken
                     count <- count + 1L
 
             return count
@@ -92,6 +101,7 @@ module internal DataAuditWitness =
         cutoff
         expected
         (row: ActorAuthorityAuditRow)
+        (cancellationToken: CancellationToken)
         =
         task {
             let digest = SHA256.HashData(row.Canonical)
@@ -120,15 +130,18 @@ module internal DataAuditWitness =
                         row.WitnessHash
                         digest
                         SettledAuthority
+                        cancellationToken
             | _ ->
-                witnessProof (fun () ->
-                    witness.VerifyAuthorityEvidenceForInstallation(
-                        row.EventId,
-                        row.WitnessSequence,
-                        row.WitnessEpoch,
-                        row.WitnessHash,
-                        digest
-                    ))
+                do!
+                    witnessProofAsync (fun () ->
+                        witness.VerifyAuthorityEvidenceForInstallation(
+                            row.EventId,
+                            row.WitnessSequence,
+                            row.WitnessEpoch,
+                            row.WitnessHash,
+                            digest,
+                            cancellationToken
+                        ))
 
             return action
         }
@@ -170,6 +183,7 @@ module internal DataAuditWitness =
                             cutoff
                             (projection.Revision + 1L)
                             row
+                            cancellationToken
 
                     projection <-
                         AuthorityHistory.apply projection action

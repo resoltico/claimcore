@@ -175,7 +175,7 @@ module internal DatabaseBackupCaptureExecution =
         let commitments = DatabaseVerifyData.commitments suppression identity keyId check
         let store = capability.Use(fun material -> new Store(writer, identity, material))
         use witness = new WitnessProtocol(store, custody, identity)
-        witness.Admit()
+        witness.Admit(CancellationToken.None).GetAwaiter().GetResult()
         use source = (new NpgsqlDataSourceBuilder(app)).Build()
         use witnessOwner = new NpgsqlConnection(witnessOwnerConnection)
         witnessOwner.Open()
@@ -228,9 +228,10 @@ module internal DatabaseBackupCaptureExecution =
             use witness =
                 new WitnessProtocol(Store.OpenAudit(audit, identity), custody, identity)
 
-            witness.AdmitReadOnly()
+            witness.AdmitReadOnly(CancellationToken.None).GetAwaiter().GetResult()
 
             DatabaseBackupCaptureReconciliation.inspect owner witness archive checkpoint leaseId
+            |> fun work -> work.GetAwaiter().GetResult()
             |> ignore
 
             AdministrationOutcome.Completed None

@@ -1,6 +1,7 @@
 module internal ClaimCore.IntegrationTests.InstallationLossRetirementFixture
 
 open System
+open Expecto
 open System.Threading
 open Npgsql
 open NSec.Cryptography
@@ -105,3 +106,17 @@ let run owner app writer (witness: WitnessProtocol) action =
             SecondKey = secondKey
             Writer = writer
         }
+
+let candidate (context: Context) known mode =
+    InstallationLossRetirementAdministration.draft
+        context.Primary
+        context.Witness
+        context.Suppression
+        context.FirstKey
+        context.SecondKey
+        None
+        None
+        known
+        mode
+    |> await
+    |> Option.defaultWith (fun () -> failtest "Loss candidate draft was refused.")

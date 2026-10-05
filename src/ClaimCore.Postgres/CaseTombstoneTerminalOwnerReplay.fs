@@ -30,33 +30,38 @@ module internal CaseTombstoneTerminalOwnerReplay =
         finally
             CryptographicOperations.ZeroMemory(expected)
 
-    let private reconcile (witness: WitnessProtocol) (stored: StoredTerminalEvent) =
-        let intent =
-            witness.EvidenceStore.TryReadEvidence(stored.EventId, Intent)
-            |> Option.defaultWith (fun () -> raise WitnessPending)
+    let private reconcile (witness: WitnessProtocol) (stored: StoredTerminalEvent) ct =
+        task {
+            let! observed = witness.EvidenceStore.TryReadEvidence(stored.EventId, Intent, ct)
+            let intent = observed |> Option.defaultWith (fun () -> raise WitnessPending)
 
-        if
-            intent.Ticket.ScopeKind <> Case
-            || intent.Ticket.SubjectCaseId <> Some stored.CaseId
-        then
-            raise WitnessPending
+            if
+                intent.Ticket.ScopeKind <> Case
+                || intent.Ticket.SubjectCaseId <> Some stored.CaseId
+            then
+                raise WitnessPending
 
-        witness.ReconcileAuthority(
-            stored.EventId,
-            stored.WitnessSequence,
-            stored.WitnessEpoch,
-            stored.WitnessHash,
-            stored.Canonical
-        )
+            do!
+                witness.ReconcileAuthority(
+                    stored.EventId,
+                    stored.WitnessSequence,
+                    stored.WitnessEpoch,
+                    stored.WitnessHash,
+                    stored.Canonical,
+                    ct
+                )
 
-        witness.VerifyAuthorityEvidenceForCase(
-            stored.EventId,
-            stored.WitnessSequence,
-            stored.WitnessEpoch,
-            stored.WitnessHash,
-            stored.CandidateHash,
-            stored.CaseId
-        )
+            do!
+                witness.VerifyAuthorityEvidenceForCase(
+                    stored.EventId,
+                    stored.WitnessSequence,
+                    stored.WitnessEpoch,
+                    stored.WitnessHash,
+                    stored.CandidateHash,
+                    stored.CaseId,
+                    CancellationToken.None
+                )
+        }
 
     let private audit ownerConnection witness commitments ct =
         task {
@@ -73,7 +78,7 @@ module internal CaseTombstoneTerminalOwnerReplay =
                     OwnerTerminalOutcome.Refused ClaimCore.Domain.LifecycleRefusal.ApprovalMismatch
             else
                 try
-                    reconcile witness stored
+                    do! reconcile witness stored ct
                     do! audit ownerConnection witness commitments ct
 
                     let phase =

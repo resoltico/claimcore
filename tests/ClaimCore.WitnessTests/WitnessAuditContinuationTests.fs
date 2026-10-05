@@ -1,5 +1,6 @@
 module internal ClaimCore.WitnessTests.WitnessAuditContinuationTests
 
+open System.Threading
 open System
 open Expecto
 open ClaimCore.Witness
@@ -13,18 +14,45 @@ let private witnessCase17 =
             let subject = Guid.NewGuid()
             let unrelated = Guid.NewGuid()
 
-            let first = store.Append(Guid.NewGuid(), Some subject, Intent, keyId, payload 1uy)
+            let first =
+                (store.Append(
+                    Guid.NewGuid(),
+                    Some subject,
+                    Intent,
+                    keyId,
+                    payload 1uy,
+                    cancellation
+                 )
+                 |> await)
 
             for i in 2..35 do
-                store.Append(Guid.NewGuid(), Some subject, Intent, keyId, payload (byte i))
+                (store.Append(
+                    Guid.NewGuid(),
+                    Some subject,
+                    Intent,
+                    keyId,
+                    payload (byte i),
+                    cancellation
+                 )
+                 |> await)
                 |> ignore
 
-            store.Append(Guid.NewGuid(), None, Intent, keyId, payload 36uy) |> ignore
-
-            store.Append(Guid.NewGuid(), Some unrelated, Intent, keyId, payload 37uy)
+            (store.Append(Guid.NewGuid(), None, Intent, keyId, payload 36uy, cancellation)
+             |> await)
             |> ignore
 
-            let tip = store.Snapshot()
+            (store.Append(
+                Guid.NewGuid(),
+                Some unrelated,
+                Intent,
+                keyId,
+                payload 37uy,
+                cancellation
+             )
+             |> await)
+            |> ignore
+
+            let tip = (store.Snapshot(cancellation) |> await)
 
             run
                 owner
@@ -32,17 +60,31 @@ let private witnessCase17 =
 
             let pages = ResizeArray<SubjectOperation list>()
 
-            let result = store.ReadSubjectOperations(subject, tip.TipSequence, pages.Add)
+            let result =
+                (store.ReadSubjectOperations(
+                    subject,
+                    tip.TipSequence,
+                    (fun page -> task { pages.Add(page) }),
+                    cancellation
+                 )
+                 |> await)
 
             let metadata =
-                store.ReadMetadataPage(0L, Array.zeroCreate<byte> 32, tip.TipSequence, 32)
+                (store.ReadMetadataPage(
+                    0L,
+                    Array.zeroCreate<byte> 32,
+                    tip.TipSequence,
+                    32,
+                    cancellation
+                 )
+                 |> await)
 
             Expect.isFalse
                 metadata.Items.Head.PayloadPresent
                 "Metadata-only global scan exposes absent ciphertext without dropping the row"
 
             Expect.equal
-                (store.TryReadVerifiedEntryHash(first.Sequence))
+                ((store.TryReadVerifiedEntryHash(first.Sequence, cancellation) |> await))
                 (Some first.EntryHash)
                 "Pruned ciphertext does not prevent exact historical metadata proof"
 
@@ -50,7 +92,7 @@ let private witnessCase17 =
             Expect.equal result.CutoffHash tip.TipHash "Global hash reaches observed tip"
 
             Expect.equal
-                (store.TryReadVerifiedEntryHash(tip.TipSequence + 1L))
+                ((store.TryReadVerifiedEntryHash(tip.TipSequence + 1L, cancellation) |> await))
                 None
                 "A future checkpoint has no historical hash"
 
@@ -82,10 +124,18 @@ let private witnessCase18 =
             let subject = Guid.NewGuid()
 
             for i in 1..34 do
-                store.Append(Guid.NewGuid(), Some subject, Intent, keyId, payload (byte i))
+                (store.Append(
+                    Guid.NewGuid(),
+                    Some subject,
+                    Intent,
+                    keyId,
+                    payload (byte i),
+                    cancellation
+                 )
+                 |> await)
                 |> ignore
 
-            let tip = store.Snapshot()
+            let tip = (store.Snapshot(cancellation) |> await)
 
             run
                 owner
@@ -98,23 +148,41 @@ let private witnessCase18 =
                     store.ReadSubjectOperations(
                         subject,
                         tip.TipSequence,
-                        fun page -> tentative <- tentative + page.Length
+                        (fun page -> task { tentative <- tentative + page.Length }),
+                        cancellation
                     )
+                    |> await
                     |> ignore)
                 "An intervening bad global row is rejected"
 
             Expect.throws
-                (fun () -> store.TryReadVerifiedEntryHash(tip.TipSequence) |> ignore)
+                (fun () ->
+                    (store.TryReadVerifiedEntryHash(tip.TipSequence, cancellation) |> await)
+                    |> ignore)
                 "Historical hash lookup cannot skip a forged middle row"
 
             let firstPage =
-                store.ReadMetadataPage(0L, Array.zeroCreate<byte> 32, tip.TipSequence, 32)
+                (store.ReadMetadataPage(
+                    0L,
+                    Array.zeroCreate<byte> 32,
+                    tip.TipSequence,
+                    32,
+                    cancellation
+                 )
+                 |> await)
 
             let last = firstPage.Items |> List.last
 
             Expect.throws
                 (fun () ->
-                    store.ReadMetadataPage(32L, last.Ticket.EntryHash, tip.TipSequence, 32)
+                    (store.ReadMetadataPage(
+                        32L,
+                        last.Ticket.EntryHash,
+                        tip.TipSequence,
+                        32,
+                        cancellation
+                     )
+                     |> await)
                     |> ignore)
                 "Metadata page rejects a changed middle CASE link"
 
@@ -127,7 +195,15 @@ let private witnessCase19 =
 
             Expect.throws
                 (fun () ->
-                    store.Append(Guid.NewGuid(), Some Guid.Empty, Intent, keyId, payload 1uy)
+                    (store.Append(
+                        Guid.NewGuid(),
+                        Some Guid.Empty,
+                        Intent,
+                        keyId,
+                        payload 1uy,
+                        cancellation
+                     )
+                     |> await)
                     |> ignore)
                 "Empty case identity is not an installation event"
 
@@ -135,7 +211,9 @@ let private witnessCase19 =
                 owner
                 "ALTER TABLE claimcore_witness.journal DROP CONSTRAINT journal_installation_id_operation_id_phase_key"
 
-            Expect.throws (fun () -> store.Admit()) "Removed uniqueness closes admission"))
+            Expect.throws
+                (fun () -> (store.Admit(cancellation) |> await))
+                "Removed uniqueness closes admission"))
 
 
 let continuationCases = [ witnessCase17; witnessCase18; witnessCase19 ]

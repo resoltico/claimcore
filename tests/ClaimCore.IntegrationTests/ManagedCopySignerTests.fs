@@ -60,7 +60,8 @@ let private refuseSubMicrosecondApproval
             ExpiresAt = request.ExpiresAt.AddTicks(1L)
         }
 
-    let before = witness.Snapshot().TipSequence
+    let before =
+        (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence
 
     Expect.equal
         ((runtime.ForActor custodian).ApproveCopySigner(unaligned, CancellationToken.None)
@@ -69,7 +70,7 @@ let private refuseSubMicrosecondApproval
         "Sub-microsecond expiry cannot create an unusable witnessed approval."
 
     Expect.equal
-        (witness.Snapshot().TipSequence)
+        ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
         before
         "Invalid expiry creates no witness authority."
 
@@ -181,7 +182,16 @@ let private orphanApproval =
                     ExpiresAt = holderRequest.ExpiresAt
                 }
 
-            witness.BeginAuthority(approvalId, [| 0x43uy; 0x43uy; 0x41uy |], None) |> ignore
+            (witness
+                .BeginAuthority(
+                    approvalId,
+                    [| 0x43uy; 0x43uy; 0x41uy |],
+                    None,
+                    CancellationToken.None
+                )
+                .GetAwaiter()
+                .GetResult())
+            |> ignore
 
             for _ in 1..2 do
                 Expect.equal

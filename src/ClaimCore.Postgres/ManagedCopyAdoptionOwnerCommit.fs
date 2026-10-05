@@ -7,19 +7,17 @@ open ClaimCore.Witness
 /// A CASE witness intent precedes the one primary transaction containing projection,
 /// immutable signed event, adoption receipt and one-use human approval consumption.
 module internal ManagedCopyAdoptionOwnerCommit =
-    let private persist
+    let private writeProjection
         connection
-        (transaction: Npgsql.NpgsqlTransaction)
-        (witness: WitnessProtocol)
+        transaction
+        witness
         (value: CopyAdoptionOwnerEventData)
         canonical
+        intent
         =
         task {
             let request = value.Approval.Request
             let submission = value.Submission
-
-            let intent =
-                witness.BeginAuthority(submission.AdoptionEventId, canonical, Some request.CaseId)
 
             do!
                 ManagedCopyAdoptionOwnerProjectionWrite.apply
@@ -57,6 +55,30 @@ module internal ManagedCopyAdoptionOwnerCommit =
                     submission.AdoptionEventId
                     request.CaseId
 
+        }
+
+    let private persist
+        connection
+        (transaction: Npgsql.NpgsqlTransaction)
+        (witness: WitnessProtocol)
+        (value: CopyAdoptionOwnerEventData)
+        canonical
+        ct
+        =
+        task {
+            let request = value.Approval.Request
+            let submission = value.Submission
+
+            let! intent =
+                witness.BeginAuthority(
+                    submission.AdoptionEventId,
+                    canonical,
+                    Some request.CaseId,
+                    ct
+                )
+
+            do! writeProjection connection transaction witness value canonical intent
+
             do! transaction.CommitAsync(CancellationToken.None)
             return intent
         }
@@ -66,32 +88,36 @@ module internal ManagedCopyAdoptionOwnerCommit =
         (value: CopyAdoptionOwnerEventData)
         (intent: WitnessIntent)
         =
-        try
-            let request = value.Approval.Request
-            let eventId = value.Submission.AdoptionEventId
-            witness.SettleAuthority(eventId, intent) |> ignore
+        task {
+            try
+                let request = value.Approval.Request
+                let eventId = value.Submission.AdoptionEventId
+                let! _ = witness.SettleAuthority(eventId, intent)
 
-            witness.VerifyAuthorityEvidenceForCase(
-                eventId,
-                intent.Ticket.Sequence,
-                intent.Ticket.Epoch,
-                intent.Ticket.EntryHash,
-                intent.CandidateHash,
-                request.CaseId
-            )
+                do!
+                    witness.VerifyAuthorityEvidenceForCase(
+                        eventId,
+                        intent.Ticket.Sequence,
+                        intent.Ticket.Epoch,
+                        intent.Ticket.EntryHash,
+                        intent.CandidateHash,
+                        request.CaseId,
+                        CancellationToken.None
+                    )
 
-            CopyAdoptionOwnerOutcome.Adopted(eventId, value.Documents.Custody.Revision)
-        with _ ->
-            CopyAdoptionOwnerOutcome.Unconfirmed value.Submission.AdoptionEventId
+                return CopyAdoptionOwnerOutcome.Adopted(eventId, value.Documents.Custody.Revision)
+            with _ ->
+                return CopyAdoptionOwnerOutcome.Unconfirmed value.Submission.AdoptionEventId
+        }
 
-    let commit connection transaction witness (value: CopyAdoptionOwnerEventData) =
+    let commit connection transaction witness (value: CopyAdoptionOwnerEventData) ct =
         task {
             let canonical = ManagedCopyAdoptionOwnerCandidate.encode value
 
             try
                 try
-                    let! intent = persist connection transaction witness value canonical
-                    return settle witness value intent
+                    let! intent = persist connection transaction witness value canonical ct
+                    return! settle witness value intent
                 with _ ->
                     return CopyAdoptionOwnerOutcome.Unconfirmed value.Submission.AdoptionEventId
             finally

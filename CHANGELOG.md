@@ -6,11 +6,18 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Fixed
 
+- Witness, recovery and full-audit runtime paths await database I/O and honor cancellation before dispatch. A caller cancelling after an append can commit still receives completion or exact uncertainty; retries retain the original operation identity and bytes.
+- Generic JSON Schema `date-time` validation requires an explicit RFC 3339 date, time and offset before .NET representability checks. Activation-approval recovery requires its canonical round-trip timestamp spelling. The service's stricter canonical UTC timestamp schema is unchanged.
 - Generated .NET redistribution notices retain each package's own copyright and supplied license/NOTICE files, including NSec's embedded BSD/ISC notices. The former generic MIT attribution and incomplete notice collection are replaced. Regenerate application publish outputs before redistribution; published source releases and their licenses remain unchanged.
 
 ### Changed
 
+- Native witness `Store` operations and subject-page callbacks are asynchronous and require explicit cancellation tokens. Native integrations must await them; `Runtime.DataUseReadiness` also returns an awaited live observation. Authenticated service contract shapes and stored canonical formats are unchanged.
 - Lifecycle transition functions are internal to Domain's reviewed Application/test consumers. Native integrations that called them directly must use the actor-bound core instead; lifecycle inspection remains public.
+
+### Added
+
+- Fixed runtime witness cause/stage counters and bounded stderr notices identify transport, authority, schema, integrity and pending-evidence failures without provider details or claimant identifiers. Failed or overdue scheduled audits emit a fixed quarantine signal; these diagnostics do not prove non-commit, repair evidence or qualify source-preview readiness. See [operator guidance](docs/operations.md).
 
 ### Internal
 

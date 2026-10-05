@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open System.IO
 open System.Security.Cryptography
 open ClaimCore.Witness
@@ -77,7 +78,7 @@ module internal CaseLifecycleAuditEvidence =
         finally
             CryptographicOperations.ZeroMemory(expected)
 
-    let approval (witness: WitnessProtocol) cutoff caseId (row: LifecycleAuditApprovalRow) =
+    let approval (witness: WitnessProtocol) cutoff caseId (row: LifecycleAuditApprovalRow) ct =
         validateApproval cutoff caseId row
 
         witness.VerifyAuthorityEvidenceForCase(
@@ -86,7 +87,8 @@ module internal CaseLifecycleAuditEvidence =
             row.WitnessEpoch,
             row.WitnessHash,
             row.CandidateHash,
-            caseId
+            caseId,
+            ct
         )
 
     let validateEvent cutoff caseId previousHash sequence (row: LifecycleAuditEventRow) =
@@ -120,16 +122,21 @@ module internal CaseLifecycleAuditEvidence =
         previousHash
         sequence
         (row: LifecycleAuditEventRow)
+        (ct: CancellationToken)
         =
-        let decoded, candidateHash = validateEvent cutoff caseId previousHash sequence row
+        task {
+            let decoded, candidateHash = validateEvent cutoff caseId previousHash sequence row
 
-        witness.VerifyAuthorityEvidenceForCase(
-            row.EventId,
-            row.WitnessSequence,
-            row.WitnessEpoch,
-            row.WitnessHash,
-            candidateHash,
-            caseId
-        )
+            do!
+                witness.VerifyAuthorityEvidenceForCase(
+                    row.EventId,
+                    row.WitnessSequence,
+                    row.WitnessEpoch,
+                    row.WitnessHash,
+                    candidateHash,
+                    caseId,
+                    ct
+                )
 
-        decoded
+            return decoded
+        }

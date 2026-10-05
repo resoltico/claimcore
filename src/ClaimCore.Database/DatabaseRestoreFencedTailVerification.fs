@@ -1,5 +1,6 @@
 namespace ClaimCore.Database
 
+open System.Threading
 open System
 open System.Security.Cryptography
 open Npgsql
@@ -146,6 +147,17 @@ module internal DatabaseRestoreFencedTailVerification =
         then
             invalidOp "Signed fenced-tail evidence exceeds reviewed bounds."
 
+    let private parseEvidence (evidence: SignedFencedTailEvidence) now =
+        let fence =
+            DatabaseRestoreWriterFenceClaims.parse evidence.Fence now
+            |> Option.defaultWith (fun () -> invalidOp "Writer fence document is invalid.")
+
+        let tail =
+            DatabaseRestoreFencedTailClaims.parse evidence.Supplement now
+            |> Option.defaultWith (fun () -> invalidOp "Fenced tail document is invalid.")
+
+        fence, tail
+
     let private verifyUsing
         historical
         (owner: NpgsqlConnection)
@@ -159,52 +171,51 @@ module internal DatabaseRestoreFencedTailVerification =
         (evidence: SignedFencedTailEvidence)
         now
         =
-        requireShapes evidence
+        task {
+            requireShapes evidence
 
-        let fence =
-            DatabaseRestoreWriterFenceClaims.parse evidence.Fence now
-            |> Option.defaultWith (fun () -> invalidOp "Writer fence document is invalid.")
+            let fence, tail = parseEvidence evidence now
 
-        let tail =
-            DatabaseRestoreFencedTailClaims.parse evidence.Supplement now
-            |> Option.defaultWith (fun () -> invalidOp "Fenced tail document is invalid.")
+            bound report index fence tail expectedProbeSha evidence
 
-        bound report index fence tail expectedProbeSha evidence
+            let! checkpointHolder =
+                DatabaseRestoreFencedTailSignatures.holder
+                    historical
+                    owner
+                    transaction
+                    witness
+                    report
+                    index
+                    tail
+                    evidence
 
-        let checkpointHolder =
-            DatabaseRestoreFencedTailSignatures.holder
-                historical
-                owner
-                transaction
-                witness
+            DatabaseRestoreFencedTailLive.primaryW1 owner transaction tail
+
+            let! observed =
+                witness.TryReadHashAtSequence(tail.W1Sequence, CancellationToken.None)
+
+            match observed with
+            | Some hash when Convert.ToHexStringLower(hash) = tail.W1Hash -> ()
+            | _ -> invalidOp "Independent witness W1 settlement is missing or changed."
+
+            let segments =
+                tail.WalObjects
+                |> List.map (fun item -> item.Cluster, item.Segment, item.SegmentBytes)
+
+            DatabaseRestoreWalCoverage.verifyFencedTail
                 report
-                index
-                tail
-                evidence
+                tail.PrimaryFinalWalEndpoint
+                tail.WitnessFinalWalEndpoint
+                segments
 
-        DatabaseRestoreFencedTailLive.primaryW1 owner transaction tail
+            if configuredArchiveRoot <> tail.ArchiveRoot then
+                invalidOp "Historical final WAL archive identity changed."
 
-        match witness.TryReadHashAtSequence(tail.W1Sequence) with
-        | Some hash when Convert.ToHexStringLower(hash) = tail.W1Hash -> ()
-        | _ -> invalidOp "Independent witness W1 settlement is missing or changed."
+            if not historical then
+                DatabaseRestoreFencedTailLive.archiveObjects configuredArchiveRoot tail
 
-        let segments =
-            tail.WalObjects
-            |> List.map (fun item -> item.Cluster, item.Segment, item.SegmentBytes)
-
-        DatabaseRestoreWalCoverage.verifyFencedTail
-            report
-            tail.PrimaryFinalWalEndpoint
-            tail.WitnessFinalWalEndpoint
-            segments
-
-        if configuredArchiveRoot <> tail.ArchiveRoot then
-            invalidOp "Historical final WAL archive identity changed."
-
-        if not historical then
-            DatabaseRestoreFencedTailLive.archiveObjects configuredArchiveRoot tail
-
-        proof tail fence index checkpointHolder probeEvidenceSha evidence
+            return proof tail fence index checkpointHolder probeEvidenceSha evidence
+        }
 
     let verify
         owner

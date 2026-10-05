@@ -204,7 +204,7 @@ module internal TypedPreparation =
         (cancellationToken: CancellationToken)
         : Task<PrepareOutcome> =
         task {
-            match! RetainedPreparationReview.preview store clock request with
+            match! RetainedPreparationReview.preview store clock request cancellationToken with
             | PreviewFailed fault -> return PrepareOutcome.PrepareFailed(request.OperationId, fault)
             | PreviewRejected rejection ->
                 match!
@@ -212,7 +212,13 @@ module internal TypedPreparation =
                 with
                 | Some outcome -> return outcome
                 | None ->
-                    match! AcceptedObservation.prepare store request.OperationId digest with
+                    match!
+                        AcceptedObservation.prepare
+                            store
+                            request.OperationId
+                            digest
+                            cancellationToken
+                    with
                     | Some outcome -> return outcome
                     | None -> return PrepareOutcome.PrepareRejected(request.OperationId, rejection)
             | Previewed _ when cancellationToken.IsCancellationRequested ->
@@ -253,7 +259,9 @@ module internal TypedPreparation =
             task {
                 let canonical, digest = requestIdentity request
 
-                match! AcceptedObservation.prepare store request.OperationId digest with
+                match!
+                    AcceptedObservation.prepare store request.OperationId digest cancellationToken
+                with
                 | Some outcome -> return outcome
                 | None ->
                     match!

@@ -11,38 +11,40 @@ open DataAuditCommon
 /// The prune target's publication marker is bound into the signed v2 target-set digest.
 /// It survives removal of encrypted CASE payload and still requires the immutable receipt.
 module internal DataAuditJournalExternalPublication =
-    let private classifyLive (witness: WitnessProtocol) (ticket: Ticket) =
-        let intent =
-            witness.EvidenceStore.TryReadEvidence(ticket.OperationId, Intent)
-            |> Option.defaultWith corrupt
+    let private classifyLive (witness: WitnessProtocol) (ticket: Ticket) ct =
+        task {
+            let! retained = witness.EvidenceStore.TryReadEvidence(ticket.OperationId, Intent, ct)
+            let intent = retained |> Option.defaultWith corrupt
 
-        if
-            intent.Ticket.ScopeKind <> Case
-            || intent.Ticket.SubjectCaseId <> ticket.SubjectCaseId
-            || intent.Ticket.Sequence >= ticket.Sequence
-        then
-            corrupt ()
+            if
+                intent.Ticket.ScopeKind <> Case
+                || intent.Ticket.SubjectCaseId <> ticket.SubjectCaseId
+                || intent.Ticket.Sequence >= ticket.Sequence
+            then
+                corrupt ()
 
-        let plain =
-            witness.KeyCustody.Decrypt(
-                intent.Ticket.KeyId,
-                witness.AssociatedData(ticket.OperationId, "INTENT"),
-                intent.EncryptedPayload
-            )
+            let plain =
+                witness.KeyCustody.Decrypt(
+                    intent.Ticket.KeyId,
+                    witness.AssociatedData(ticket.OperationId, "INTENT"),
+                    intent.EncryptedPayload
+                )
 
-        try
             try
-                use document = JsonDocument.Parse(ReadOnlyMemory<byte>(plain))
-                let mutable action = Unchecked.defaultof<JsonElement>
+                try
+                    use document = JsonDocument.Parse(ReadOnlyMemory<byte>(plain))
+                    let mutable action = Unchecked.defaultof<JsonElement>
 
-                document.RootElement.ValueKind = JsonValueKind.Object
-                && document.RootElement.TryGetProperty("action", &action)
-                && action.ValueKind = JsonValueKind.String
-                && action.GetString() = "PUBLISH_EXTERNAL_COPY"
-            with :? JsonException ->
-                false
-        finally
-            CryptographicOperations.ZeroMemory(plain)
+                    return
+                        document.RootElement.ValueKind = JsonValueKind.Object
+                        && document.RootElement.TryGetProperty("action", &action)
+                        && action.ValueKind = JsonValueKind.String
+                        && action.GetString() = "PUBLISH_EXTERNAL_COPY"
+                with :? JsonException ->
+                    return false
+            finally
+                CryptographicOperations.ZeroMemory(plain)
+        }
 
     let command connection transaction =
         let value =
@@ -70,9 +72,8 @@ module internal DataAuditJournalExternalPublication =
             command.Parameters["operation"].Value <- ticket.OperationId
             let! result = command.ExecuteScalarAsync(ct)
 
-            return
-                match result with
-                | :? bool as marked -> marked
-                | null -> classifyLive witness ticket
-                | _ -> corrupt ()
+            match result with
+            | :? bool as marked -> return marked
+            | null -> return! classifyLive witness ticket ct
+            | _ -> return corrupt ()
         }

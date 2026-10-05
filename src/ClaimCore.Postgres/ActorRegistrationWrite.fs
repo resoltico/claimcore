@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open Npgsql
 open ClaimCore.Application
 
@@ -47,11 +48,17 @@ module internal ActorRegistrationWrite =
                     }
 
                 return!
-                    ActorGrantWrite.run connection transaction witness action (fun () ->
-                        ActorGrantWrite.insertActor
-                            connection
-                            transaction
-                            targetId
-                            targetPrincipal
-                            action.Revision)
+                    ActorGrantWrite.run
+                        connection
+                        transaction
+                        witness
+                        action
+                        (fun () ->
+                            ActorGrantWrite.insertActor
+                                connection
+                                transaction
+                                targetId
+                                targetPrincipal
+                                action.Revision)
+                        CancellationToken.None
         }

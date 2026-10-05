@@ -54,10 +54,10 @@ type internal Store
             )
 
     interface IClaimStore with
-        member _.Get reference =
+        member _.Get(reference, _ct) =
             Task.FromResult(lock gate (fun () -> Ok(Map.tryFind reference cases)))
 
-        member _.List request =
+        member _.List(request, _ct) =
             Task.FromResult(
                 lock gate (fun () ->
                     let after =
@@ -100,7 +100,7 @@ type internal Store
                         Ok { Items = page; NextCursor = next })
             )
 
-        member _.History(reference, afterVersion) =
+        member _.History(reference, afterVersion, _ct) =
             Task.FromResult(
                 lock gate (fun () ->
                     let items =
@@ -130,7 +130,7 @@ type internal Store
                         })
             )
 
-        member _.Operation operationId =
+        member _.Operation(operationId, _ct) =
             let result =
                 lock gate (fun () ->
                     Ok(
@@ -141,7 +141,7 @@ type internal Store
             onOperation |> Option.iter (fun callback -> callback ())
             Task.FromResult result
 
-        member _.Accepted(operationId, requestSha256) =
+        member _.Accepted(operationId, requestSha256, _ct) =
             let result =
                 lock gate (fun () ->
                     match acceptedFailure with

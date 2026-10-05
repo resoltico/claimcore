@@ -76,6 +76,7 @@ module internal CaseErasurePurgeApprovalRead =
         (draftCommitment: byte array)
         (commitments: ISuppressionCommitments)
         (approval: LifecycleApprovalEvidence)
+        ct
         =
         task {
             let! found =
@@ -84,14 +85,16 @@ module internal CaseErasurePurgeApprovalRead =
             let stored = found |> Option.defaultWith corrupt
             exactApproval projection change draftHash approval stored
 
-            witness.VerifyAuthorityEvidenceForCase(
-                approval.ApprovalId,
-                stored.WitnessSequence,
-                stored.WitnessEpoch,
-                stored.WitnessHash,
-                stored.CandidateHash,
-                projection.CaseId
-            )
+            do!
+                witness.VerifyAuthorityEvidenceForCase(
+                    approval.ApprovalId,
+                    stored.WitnessSequence,
+                    stored.WitnessEpoch,
+                    stored.WitnessHash,
+                    stored.CandidateHash,
+                    projection.CaseId,
+                    ct
+                )
 
             return receipt commitments draftCommitment approval stored
         }
@@ -104,6 +107,7 @@ module internal CaseErasurePurgeApprovalRead =
         (change: LifecycleChange)
         (draftHash: byte array)
         (canonicalDraft: byte array)
+        ct
         (commitments: ISuppressionCommitments)
         (instant: DateTimeOffset)
         =
@@ -137,6 +141,7 @@ module internal CaseErasurePurgeApprovalRead =
                         draftCommitment
                         commitments
                         approval
+                        ct
 
                 receipts.Add(value)
 

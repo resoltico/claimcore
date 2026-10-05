@@ -1,5 +1,6 @@
 module internal ClaimCore.IntegrationTests.RestoreWriterHandoffTypedSettlement
 
+open System.Threading
 open System
 open System.Security.Cryptography
 open Expecto
@@ -18,7 +19,13 @@ let private prepared (owner: NpgsqlConnection) (witness: WitnessProtocol) handof
     use transaction = owner.BeginTransaction()
 
     let value =
-        WriterHandoffOwnerRead.preparation owner transaction witness handoffId
+        WriterHandoffOwnerRead.preparation
+            owner
+            transaction
+            witness
+            handoffId
+            CancellationToken.None
+        |> await
         |> Option.defaultWith (fun () -> failtest "Confirmed W1 PREPARE row is absent")
 
     transaction.Rollback()
@@ -32,7 +39,10 @@ let private signedSettlement
     validUntil
     =
     let intent =
-        witness.EvidenceStore.TryReadEvidence(proposal.HandoffId, Intent)
+        (witness.EvidenceStore
+            .TryReadEvidence(proposal.HandoffId, Intent, CancellationToken.None)
+            .GetAwaiter()
+            .GetResult())
         |> Option.map _.Ticket
         |> Option.defaultWith (fun () -> failtest "W1 PREPARE intent is absent")
 
@@ -94,6 +104,7 @@ let private qualifiedSettlement
         fenceSignature
         input.Publication.VerifierBinarySha256
         DateTimeOffset.UtcNow
+    |> await
 
 let private commit
     owner
@@ -123,8 +134,16 @@ let private commit
         |> await
     with
     | WriterHandoffOwnerOutcome.Settled(id, sequence, hash) when id = proposal.HandoffId ->
-        Expect.equal (witness.Snapshot().TipSequence) sequence "Exact W1 witness sequence"
-        Expect.equal (witness.Snapshot().TipHash) hash "Exact W1 witness hash"
+        Expect.equal
+            ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
+            sequence
+            "Exact W1 witness sequence"
+
+        Expect.equal
+            ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipHash)
+            hash
+            "Exact W1 witness hash"
+
         id, sequence, hash
     | _ -> failtest "Typed synthetic W1 SETTLE did not complete"
 

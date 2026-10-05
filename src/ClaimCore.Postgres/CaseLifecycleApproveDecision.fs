@@ -27,6 +27,7 @@ module internal CaseLifecycleApproveDecision =
         actorId
         (draftHash: byte array)
         instant
+        ct
         =
         task {
             let! historicalPayment =
@@ -36,6 +37,7 @@ module internal CaseLifecycleApproveDecision =
                         connection
                         transaction
                         projection.CaseId
+                        ct
                 | _ -> System.Threading.Tasks.Task.FromResult false
 
             let result =
@@ -129,6 +131,7 @@ module internal CaseLifecycleApproveDecision =
         (change: LifecycleChange)
         draftHash
         instant
+        ct
         =
         task {
             let expectedAction =
@@ -152,6 +155,7 @@ module internal CaseLifecycleApproveDecision =
                         context.Binding.ActorId
                         draftHash
                         instant
+                        ct
 
                 match valid with
                 | Error refusal -> return Error(LifecycleWriteOutcome.Refused refusal)

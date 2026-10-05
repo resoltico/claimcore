@@ -48,15 +48,23 @@ let private holderAuthority ownerConnection app writer (witness: WitnessProtocol
         |> await
 
     changeCustodianGrant runtime owner holder false
-    let beforeGrant = witness.Snapshot().TipSequence
-    let deniedGrant = request keyId (witness.Snapshot())
+
+    let beforeGrant =
+        (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence
+
+    let deniedGrant =
+        request keyId ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()))
 
     Expect.equal
         (approve deniedGrant)
         WriterHandoffApprovalOutcome.ResourceUnavailable
         "Revoked checkpoint custodian grant refuses fresh handoff approval."
 
-    Expect.equal (witness.Snapshot().TipSequence) beforeGrant "Grant refusal creates no approval."
+    Expect.equal
+        ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
+        beforeGrant
+        "Grant refusal creates no approval."
+
     changeCustodianGrant runtime owner holder true
 
     let first, second =
@@ -82,8 +90,11 @@ let private holderAuthority ownerConnection app writer (witness: WitnessProtocol
     |> await
     |> appliedSigner retireId
 
-    let beforeRetired = witness.Snapshot().TipSequence
-    let deniedRetired = request keyId (witness.Snapshot())
+    let beforeRetired =
+        (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence
+
+    let deniedRetired =
+        request keyId ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()))
 
     Expect.equal
         (approve deniedRetired)
@@ -91,7 +102,7 @@ let private holderAuthority ownerConnection app writer (witness: WitnessProtocol
         "Retired CHECKPOINT signer refuses new handoff approval."
 
     Expect.equal
-        (witness.Snapshot().TipSequence)
+        ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
         beforeRetired
         "Retired-key refusal adds no intent."
 

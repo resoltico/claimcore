@@ -1,5 +1,6 @@
 namespace ClaimCore.Database
 
+open System.Threading
 open System
 open System.Security.Cryptography
 open System.Text.Json
@@ -73,48 +74,53 @@ module internal DatabaseRestoreSignedEvidence =
         epoch
         cutoff
         =
-        use command =
-            new NpgsqlCommand(
-                "SELECT s.ed25519_public_key,s.holder_actor_id,s.signer_purpose,"
-                + "e.witness_sequence,e.witness_entry_hash "
-                + "FROM claimcore.managed_copy_signers s "
-                + "JOIN claimcore.managed_copy_signer_events e "
-                + "ON e.signing_key_id=s.signing_key_id AND e.action_name='REGISTER' "
-                + "WHERE s.signing_key_id=@key AND e.witness_epoch=@epoch "
-                + "AND e.witness_sequence<=@cutoff",
-                connection,
-                transaction
-            )
+        task {
+            use command =
+                new NpgsqlCommand(
+                    "SELECT s.ed25519_public_key,s.holder_actor_id,s.signer_purpose,"
+                    + "e.witness_sequence,e.witness_entry_hash "
+                    + "FROM claimcore.managed_copy_signers s "
+                    + "JOIN claimcore.managed_copy_signer_events e "
+                    + "ON e.signing_key_id=s.signing_key_id AND e.action_name='REGISTER' "
+                    + "WHERE s.signing_key_id=@key AND e.witness_epoch=@epoch "
+                    + "AND e.witness_sequence<=@cutoff",
+                    connection,
+                    transaction
+                )
 
-        command.Parameters.AddWithValue("key", NpgsqlDbType.Uuid, id) |> ignore
-        command.Parameters.AddWithValue("epoch", NpgsqlDbType.Bigint, epoch) |> ignore
-        command.Parameters.AddWithValue("cutoff", NpgsqlDbType.Bigint, cutoff) |> ignore
-        use reader = command.ExecuteReader()
+            command.Parameters.AddWithValue("key", NpgsqlDbType.Uuid, id) |> ignore
+            command.Parameters.AddWithValue("epoch", NpgsqlDbType.Bigint, epoch) |> ignore
+            command.Parameters.AddWithValue("cutoff", NpgsqlDbType.Bigint, cutoff) |> ignore
+            use reader = command.ExecuteReader()
 
-        if not (reader.Read()) then
-            invalidOp "Historical signer registration is absent."
+            if not (reader.Read()) then
+                invalidOp "Historical signer registration is absent."
 
-        let key = reader.GetFieldValue<byte array>(0)
-        let holder = reader.GetGuid(1)
-        let registeredPurpose = reader.GetString(2)
-        let sequence = reader.GetInt64(3)
-        let entryHash = reader.GetFieldValue<byte array>(4)
+            let key = reader.GetFieldValue<byte array>(0)
+            let holder = reader.GetGuid(1)
+            let registeredPurpose = reader.GetString(2)
+            let sequence = reader.GetInt64(3)
+            let entryHash = reader.GetFieldValue<byte array>(4)
 
-        if
-            reader.Read()
-            || key.Length <> 32
-            || registeredPurpose <> ManagedCopySignerCandidate.purposeName purpose
-        then
-            CryptographicOperations.ZeroMemory(key)
-            invalidOp "Historical signer registration is ambiguous."
+            if
+                reader.Read()
+                || key.Length <> 32
+                || registeredPurpose <> ManagedCopySignerCandidate.purposeName purpose
+            then
+                CryptographicOperations.ZeroMemory(key)
+                invalidOp "Historical signer registration is ambiguous."
 
-        reader.Close()
+            reader.Close()
 
-        match witness.TryReadHashAtSequence(sequence) with
-        | Some hash when CryptographicOperations.FixedTimeEquals(hash, entryHash) -> key, holder
-        | _ ->
-            CryptographicOperations.ZeroMemory(key)
-            invalidOp "Historical signer registration lacks a witness entry."
+            let! observed = witness.TryReadHashAtSequence(sequence, CancellationToken.None)
+
+            match observed with
+            | Some hash when CryptographicOperations.FixedTimeEquals(hash, entryHash) ->
+                return key, holder
+            | _ ->
+                CryptographicOperations.ZeroMemory(key)
+                return invalidOp "Historical signer registration lacks a witness entry."
+        }
 
     let verifyBytes key (bytes: byte array) (signatureBytes: byte array) =
         if not (ManagedCopySignature.verify key bytes signatureBytes) then
@@ -181,3 +187,25 @@ module internal DatabaseRestoreSignedEvidence =
     let exactNumber name (root: JsonElement) expected =
         if DatabaseRestoreCanonical.number name root <> expected then
             invalidOp "Restored-pair evidence cutoff differs."
+
+    let signerPair
+        connection
+        transaction
+        (report: RestoreReportClaims)
+        (index: RestoreEvidenceIndex)
+        =
+        let reportKey, reportHolder =
+            signer connection transaction report.SignerKeyId CopySignerPurpose.RestoreReport
+
+        try
+            let checkpointKey, checkpointHolder =
+                signer
+                    connection
+                    transaction
+                    index.CheckpointSignerKeyId
+                    CopySignerPurpose.Checkpoint
+
+            reportKey, reportHolder, checkpointKey, checkpointHolder
+        with _ ->
+            CryptographicOperations.ZeroMemory(reportKey)
+            reraise ()

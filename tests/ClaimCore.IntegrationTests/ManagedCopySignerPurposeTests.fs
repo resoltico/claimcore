@@ -12,7 +12,8 @@ open ClaimCore.IntegrationTests.Fixtures
 open ClaimCore.IntegrationTests.ManagedCopySignerTestSupport
 
 let private denied (runtime: Runtime) principal request (witness: WitnessProtocol) category =
-    let before = witness.Snapshot().TipSequence
+    let before =
+        (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence
 
     let result =
         (runtime.ForActor principal).ApproveCopySigner(request, CancellationToken.None)
@@ -21,7 +22,7 @@ let private denied (runtime: Runtime) principal request (witness: WitnessProtoco
     Expect.equal result CopySignerApprovalOutcome.ResourceUnavailable category
 
     Expect.equal
-        (witness.Snapshot().TipSequence)
+        ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
         before
         "Refused approval creates no witness event."
 

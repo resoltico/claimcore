@@ -19,6 +19,7 @@ let private coreAndRecovery =
         RuntimeResourceCleanupTests.tests
         RuntimeConstructionTests.tests
         CliInterruptionProcessTests.tests
+        RuntimeIoTests.tests
         RuntimeAuditCadenceTests.tests
         RuntimeSchedulingTests.tests
         AuthorityOperationFenceTests.tests

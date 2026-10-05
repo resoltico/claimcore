@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open System.Security.Cryptography
 open System.Text
 open Npgsql
@@ -16,33 +17,42 @@ module internal CaseErasurePurgedDenialsAudit =
         (commitments: ISuppressionCommitments)
         caseId
         (intent: ClaimCore.Witness.SubjectOperation)
+        (ct: CancellationToken)
         =
-        let digest = commitments.Operation intent.OperationId
+        task {
+            let digest = commitments.Operation intent.OperationId
 
-        use command =
-            new NpgsqlCommand(
-                "SELECT witness_intent_sequence,witness_intent_epoch,witness_intent_entry_hash "
-                + "FROM claimcore.case_erasure_operation_denials "
-                + "WHERE case_id=@case AND operation_commitment=@digest",
-                connection,
-                transaction
-            )
+            use command =
+                new NpgsqlCommand(
+                    "SELECT witness_intent_sequence,witness_intent_epoch,witness_intent_entry_hash "
+                    + "FROM claimcore.case_erasure_operation_denials "
+                    + "WHERE case_id=@case AND operation_commitment=@digest",
+                    connection,
+                    transaction
+                )
 
-        Sql.uuid command "case" caseId
-        Sql.add command "digest" NpgsqlDbType.Bytea (box digest)
-        use reader = command.ExecuteReader()
+            Sql.uuid command "case" caseId
+            Sql.add command "digest" NpgsqlDbType.Bytea (box digest)
+            use! reader = command.ExecuteReaderAsync(ct)
 
-        if
-            not (reader.Read())
-            || reader.IsDBNull(0)
-            || reader.GetInt64(0) <> intent.Intent.Sequence
-            || reader.GetInt64(1) <> intent.Intent.Epoch
-            || reader.GetFieldValue<byte array>(2) <> intent.Intent.EntryHash
-            || reader.Read()
-        then
-            invalidOp "Purged case witness intent denial differs."
+            let! found = reader.ReadAsync(ct)
 
-        digest
+            if not found then
+                invalidOp "Purged case witness intent denial is missing."
+
+            let matching =
+                not (reader.IsDBNull(0))
+                && reader.GetInt64(0) = intent.Intent.Sequence
+                && reader.GetInt64(1) = intent.Intent.Epoch
+                && reader.GetFieldValue<byte array>(2) = intent.Intent.EntryHash
+
+            let! duplicated = reader.ReadAsync(ct)
+
+            if not matching || duplicated then
+                invalidOp "Purged case witness intent denial differs."
+
+            return digest
+        }
 
     let verify
         (connection: NpgsqlConnection)
@@ -56,31 +66,45 @@ module internal CaseErasurePurgedDenialsAudit =
         (expectedIntentDigest: byte array)
         expectedDenialCount
         (expectedDenialDigest: byte array)
+        (ct: CancellationToken)
         =
-        commitments.Admit()
-        use intents = IncrementalHash.CreateHash(HashAlgorithmName.SHA256)
-        intents.AppendData(Encoding.ASCII.GetBytes("CLAIMCORE_ERASURE_CASE_INTENTS_V1\000"))
+        task {
+            commitments.Admit()
+            use intents = IncrementalHash.CreateHash(HashAlgorithmName.SHA256)
+            intents.AppendData(Encoding.ASCII.GetBytes("CLAIMCORE_ERASURE_CASE_INTENTS_V1\000"))
 
-        let observed =
-            witness.EvidenceStore.ReadSubjectOperations(
-                caseId,
-                cutoff,
-                fun page ->
-                    for intent in page do
-                        let digest = requireIntent connection transaction commitments caseId intent
-                        CaseErasureWitnessDenials.appendIntentDigest intents intent digest
-            )
+            let! observed =
+                witness.EvidenceStore.ReadSubjectOperations(
+                    caseId,
+                    cutoff,
+                    (fun page ->
+                        task {
+                            for intent in page do
+                                let! digest =
+                                    requireIntent
+                                        connection
+                                        transaction
+                                        commitments
+                                        caseId
+                                        intent
+                                        ct
 
-        let denialCount, denialDigest =
-            CaseErasureWitnessDenials.denialDigest connection transaction caseId
+                                CaseErasureWitnessDenials.appendIntentDigest intents intent digest
+                        }),
+                    ct
+                )
 
-        if
-            observed.CutoffHash <> expectedCutoffHash
-            || observed.IntentCount <> expectedIntentCount
-            || intents.GetHashAndReset() <> expectedIntentDigest
-            || denialCount <> expectedDenialCount
-            || denialDigest <> expectedDenialDigest
-        then
-            invalidOp "Purged case denial seal differs."
+            let! denialCount, denialDigest =
+                CaseErasureWitnessDenials.denialDigest connection transaction caseId ct
 
-        denialCount
+            if
+                observed.CutoffHash <> expectedCutoffHash
+                || observed.IntentCount <> expectedIntentCount
+                || intents.GetHashAndReset() <> expectedIntentDigest
+                || denialCount <> expectedDenialCount
+                || denialDigest <> expectedDenialDigest
+            then
+                invalidOp "Purged case denial seal differs."
+
+            return denialCount
+        }

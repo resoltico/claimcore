@@ -39,7 +39,11 @@ module internal Validation =
             false
 
     let private matches (grammar: string) (value: string) =
-        Regex(@"\A" + grammar + @"\z", RegexOptions.CultureInvariant).IsMatch(value)
+        Regex.IsMatch(
+            value,
+            @"\A" + grammar + @"\z",
+            RegexOptions.CultureInvariant ||| RegexOptions.NonBacktracking
+        )
 
     let text field (value: string) =
         let constraints =

@@ -1,5 +1,6 @@
 module internal ClaimCore.IntegrationTests.ManagedCopyPhysicalOwnerRefusals
 
+open System.Threading
 open System
 open System.IO
 open System.Security.Cryptography
@@ -30,7 +31,11 @@ let private wrongEvent
 
     let code, _ = invoke inputs path signature
     Expect.notEqual code 0 "Valid proof cannot verify a different copy event."
-    Expect.equal (witness.Snapshot().TipSequence) before "Wrong event leaves witness tip unchanged."
+
+    Expect.equal
+        ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
+        before
+        "Wrong event leaves witness tip unchanged."
 
 let private wrongLocation
     (witness: WitnessProtocol)
@@ -72,7 +77,7 @@ let private wrongLocation
         Expect.notEqual code 0 "Valid proof cannot bypass owner HMAC location custody."
 
         Expect.equal
-            (witness.Snapshot().TipSequence)
+            ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
             before
             "Wrong location key leaves witness tip unchanged."
     finally

@@ -1,5 +1,6 @@
 module internal ClaimCore.IntegrationTests.ManagedCopyAdoptedDeletionRequest
 
+open System.Threading
 open System
 open Expecto
 open Npgsql
@@ -39,7 +40,7 @@ let create
     let prior =
         ManagedCopyEventHash.compute origin.CopyEventHash unknownCanonical (Some unknownSignature)
 
-    let tip = witness.Snapshot()
+    let tip = (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
 
     let request =
         { unknown with

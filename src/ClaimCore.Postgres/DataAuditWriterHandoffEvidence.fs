@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open System.Security.Cryptography
 open ClaimCore.Witness
 open DataAuditCommon
@@ -58,55 +59,77 @@ module internal DataAuditWriterHandoffEvidence =
         finally
             CryptographicOperations.ZeroMemory(decoded)
 
-    let verify (witness: WitnessProtocol) cutoff (row: WriterHandoffAuditRow) =
-        let witnessRow =
-            witness.EvidenceStore.TryReadHandoff(row.HandoffId)
-            |> Option.defaultWith corrupt
+    let private verifyCheckpoints
+        (witness: WitnessProtocol)
+        (witnessRow: WriterHandoffEvidence)
+        (row: WriterHandoffAuditRow)
+        ct
+        =
+        witnessProofAsync (fun () ->
+            task {
+                for sequence, hash in
+                    [
+                        witnessRow.PreviousSequence, witnessRow.PreviousHash
+                        row.PrepareSequence, row.PrepareHash
+                        row.SettlementSequence, row.SettlementHash
+                    ] do
+                    do! witness.VerifyHistoricalTip(sequence, hash, ct)
+            })
 
-        if
-            not (same row witnessRow)
-            || not (signed row)
-            || row.OldGeneration < 1L
-            || row.NewGeneration <> row.OldGeneration + 1L
-            || row.PrepareSequence <> witnessRow.PreviousSequence + 1L
-            || row.SettlementSequence <> row.PrepareSequence + 1L
-            || row.SettlementSequence > cutoff
-            || row.ApprovalOneId = row.ApprovalTwoId
-        then
-            corrupt ()
+    let verify
+        (witness: WitnessProtocol)
+        cutoff
+        (row: WriterHandoffAuditRow)
+        (ct: CancellationToken)
+        =
+        task {
+            let! retained = witness.EvidenceStore.TryReadHandoff(row.HandoffId, ct)
+            let witnessRow = retained |> Option.defaultWith corrupt
 
-        witnessProof (fun () ->
-            witness.VerifyHistoricalTip(witnessRow.PreviousSequence, witnessRow.PreviousHash)
-            witness.VerifyHistoricalTip(row.PrepareSequence, row.PrepareHash)
-            witness.VerifyHistoricalTip(row.SettlementSequence, row.SettlementHash))
+            if
+                not (same row witnessRow)
+                || not (signed row)
+                || row.OldGeneration < 1L
+                || row.NewGeneration <> row.OldGeneration + 1L
+                || row.PrepareSequence <> witnessRow.PreviousSequence + 1L
+                || row.SettlementSequence <> row.PrepareSequence + 1L
+                || row.SettlementSequence > cutoff
+                || row.ApprovalOneId = row.ApprovalTwoId
+            then
+                corrupt ()
 
-        let intent =
-            witness.EvidenceStore.TryReadEvidence(row.HandoffId, Intent)
-            |> Option.defaultWith corrupt
+            do! verifyCheckpoints witness witnessRow row ct
 
-        let settled =
-            witness.EvidenceStore.TryReadEvidence(row.HandoffId, SettledAuthority)
-            |> Option.defaultWith corrupt
+            let! retainedIntent =
+                witness.EvidenceStore.TryReadEvidence(row.HandoffId, Intent, ct)
 
-        if
-            intent.Ticket.Sequence <> row.PrepareSequence
-            || intent.Ticket.EntryHash <> row.PrepareHash
-            || intent.Ticket.ScopeKind <> Installation
-            || settled.Ticket.Sequence <> row.SettlementSequence
-            || settled.Ticket.EntryHash <> row.SettlementHash
-            || settled.Ticket.ScopeKind <> Installation
-            || settled.Ticket.KeyId <> intent.Ticket.KeyId
-        then
-            corrupt ()
+            let intent = retainedIntent |> Option.defaultWith corrupt
 
-        plaintext witness row.HandoffId "INTENT" intent row.PrepareCanonical
+            let! retainedSettlement =
+                witness.EvidenceStore.TryReadEvidence(row.HandoffId, SettledAuthority, ct)
 
-        let settlement =
-            WriterHandoffEvidenceHash.settlement row.PrepareCanonical row.SettlementCanonical
+            let settled = retainedSettlement |> Option.defaultWith corrupt
 
-        try
-            plaintext witness row.HandoffId "SETTLED_AUTHORITY" settled settlement
-        finally
-            CryptographicOperations.ZeroMemory(settlement)
+            if
+                intent.Ticket.Sequence <> row.PrepareSequence
+                || intent.Ticket.EntryHash <> row.PrepareHash
+                || intent.Ticket.ScopeKind <> Installation
+                || settled.Ticket.Sequence <> row.SettlementSequence
+                || settled.Ticket.EntryHash <> row.SettlementHash
+                || settled.Ticket.ScopeKind <> Installation
+                || settled.Ticket.KeyId <> intent.Ticket.KeyId
+            then
+                corrupt ()
 
-        witnessRow.PrepareRecordedAt, witnessRow.NewCapabilitySha256
+            plaintext witness row.HandoffId "INTENT" intent row.PrepareCanonical
+
+            let settlement =
+                WriterHandoffEvidenceHash.settlement row.PrepareCanonical row.SettlementCanonical
+
+            try
+                plaintext witness row.HandoffId "SETTLED_AUTHORITY" settled settlement
+            finally
+                CryptographicOperations.ZeroMemory(settlement)
+
+            return witnessRow.PrepareRecordedAt, witnessRow.NewCapabilitySha256
+        }

@@ -14,25 +14,26 @@ type internal PostgresStore
         cursorProtection: ICaseListCursorProtection
     ) =
     interface IClaimStore with
-        member _.Get(reference) =
-            ActorReadStore.get dataSource witness actorContext reference
+        member _.Get(reference, ct) =
+            ActorReadStore.get dataSource witness actorContext reference ct
 
-        member _.List(request) =
-            ActorReadStore.list dataSource witness actorContext cursorProtection request
+        member _.List(request, ct) =
+            ActorReadStore.list dataSource witness actorContext cursorProtection request ct
 
-        member _.History(reference, afterVersion) =
-            ActorReadStore.history dataSource witness actorContext reference afterVersion
+        member _.History(reference, afterVersion, ct) =
+            ActorReadStore.history dataSource witness actorContext reference afterVersion ct
 
-        member _.Operation(operationId) =
-            ActorOperationReadStore.operation dataSource witness actorContext operationId
+        member _.Operation(operationId, ct) =
+            ActorOperationReadStore.operation dataSource witness actorContext operationId ct
 
-        member _.Accepted(operationId, requestSha256) =
+        member _.Accepted(operationId, requestSha256, ct) =
             ActorOperationReadStore.accepted
                 dataSource
                 witness
                 actorContext
                 operationId
                 requestSha256
+                ct
 
     interface IDisposable with
         member _.Dispose() = ()

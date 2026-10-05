@@ -1,6 +1,7 @@
 namespace ClaimCore.Application
 
 open System
+open System.Threading
 open System.Threading.Tasks
 open ClaimCore.Domain
 
@@ -58,13 +59,18 @@ type LifecycleWriteOutcome =
 /// Application owns lifecycle decisions, while this port owns primary locks, grant rechecks,
 /// exact witness intent, co-commit and settlement. No caller receives a table or witness handle.
 type internal ICaseLifecycleStore =
-    abstract Review: actor: ActorCallContext * caseReference: string -> Task<LifecycleReviewOutcome>
+    abstract Review:
+        actor: ActorCallContext * caseReference: string * cancellationToken: CancellationToken ->
+            Task<LifecycleReviewOutcome>
 
-    abstract Apply: actor: ActorCallContext * change: LifecycleChange -> Task<LifecycleWriteOutcome>
+    abstract Apply:
+        actor: ActorCallContext * change: LifecycleChange * cancellationToken: CancellationToken ->
+            Task<LifecycleWriteOutcome>
 
     abstract Approve:
         actor: ActorCallContext *
         change: LifecycleChange *
         approvalId: Guid *
-        expiresAt: DateTimeOffset ->
+        expiresAt: DateTimeOffset *
+        cancellationToken: CancellationToken ->
             Task<LifecycleWriteOutcome>

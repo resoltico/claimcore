@@ -156,7 +156,7 @@ module HostRoutes =
         assets
         configuration
         (forActor: ClaimCore.Application.PrincipalKey -> IActorClaimsCore)
-        (readiness: unit -> string * string * bool)
+        (readiness: System.Threading.CancellationToken -> Task<string * string * bool>)
         (application: WebApplication)
         =
         useStaticAssets application
@@ -182,16 +182,18 @@ module HostRoutes =
 
         application.MapGet(
             "/health/ready",
-            Func<HttpContext, IResult>(fun context ->
-                HttpHeaders.noStore context
-                let scope, phase, ready = readiness ()
-                context.Response.Headers["X-ClaimCore-Data-Use-Scope"] <- scope
-                context.Response.Headers["X-ClaimCore-Data-Use-Phase"] <- phase
+            Func<HttpContext, Task<IResult>>(fun context ->
+                task {
+                    HttpHeaders.noStore context
+                    let! scope, phase, ready = readiness context.RequestAborted
+                    context.Response.Headers["X-ClaimCore-Data-Use-Scope"] <- scope
+                    context.Response.Headers["X-ClaimCore-Data-Use-Phase"] <- phase
 
-                context.Response.Headers["X-ClaimCore-Real-Data-Ready"] <-
-                    if ready then "true" else "false"
+                    context.Response.Headers["X-ClaimCore-Real-Data-Ready"] <-
+                        if ready then "true" else "false"
 
-                Results.StatusCode(if ready then 200 else 503))
+                    return Results.StatusCode(if ready then 200 else 503)
+                })
         )
         |> ignore
 

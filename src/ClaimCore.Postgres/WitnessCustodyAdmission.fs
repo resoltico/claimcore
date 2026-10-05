@@ -1,33 +1,40 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open System.Security.Cryptography
 open ClaimCore.Witness
 
 /// Shared key and tip proof for mutation admission and owner read-only quarantine audit.
 module internal WitnessCustodyAdmission =
-    let verify (store: Store) (custody: IKeyCustody) (identity: Identity) =
-        let keyId, check = store.ReadKeyCheck()
+    let verify (store: Store) (custody: IKeyCustody) (identity: Identity) (ct: CancellationToken) =
+        task {
+            let! keyId, check = store.ReadKeyCheck(ct)
 
-        if keyId <> custody.ActiveKeyId then
-            invalidOp "Witness active key differs from custody."
+            if keyId <> custody.ActiveKeyId then
+                invalidOp "Witness active key differs from custody."
 
-        KeyCheck.verify custody identity.InstallationId identity.LineageId keyId check
+            KeyCheck.verify custody identity.InstallationId identity.LineageId keyId check
 
-        for required in store.RequiredKeyIds() do
-            if not (custody.HasKey required) then
-                invalidOp "Retained witness evidence key is unavailable."
+            let! requiredKeys = store.RequiredKeyIds(ct)
 
-        match store.TryReadTipEvidence() with
-        | None -> ()
-        | Some evidence ->
-            let phase = ClaimCore.Witness.Encoding.phase evidence.Ticket.Phase
+            for required in requiredKeys do
+                if not (custody.HasKey required) then
+                    invalidOp "Retained witness evidence key is unavailable."
 
-            let plain =
-                custody.Decrypt(
-                    evidence.Ticket.KeyId,
-                    WitnessProof.associatedData identity evidence.Ticket.OperationId phase,
-                    evidence.EncryptedPayload
-                )
+            let! tip = store.TryReadTipEvidence(ct)
 
-            CryptographicOperations.ZeroMemory(plain)
+            match tip with
+            | None -> ()
+            | Some evidence ->
+                let phase = ClaimCore.Witness.Encoding.phase evidence.Ticket.Phase
+
+                let plain =
+                    custody.Decrypt(
+                        evidence.Ticket.KeyId,
+                        WitnessProof.associatedData identity evidence.Ticket.OperationId phase,
+                        evidence.EncryptedPayload
+                    )
+
+                CryptographicOperations.ZeroMemory(plain)
+        }

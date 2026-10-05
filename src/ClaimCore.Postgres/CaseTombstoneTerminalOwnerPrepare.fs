@@ -144,10 +144,12 @@ module internal CaseTombstoneTerminalOwnerPrepare =
             match verifiedCopy with
             | None -> return Error OwnerTerminalOutcome.InventoryUnknown
             | Some certificate ->
-                witness.VerifyHistoricalTip(
-                    certificate.WitnessTipSequence,
-                    certificate.WitnessTipHash
-                )
+                do!
+                    witness.VerifyHistoricalTip(
+                        certificate.WitnessTipSequence,
+                        certificate.WitnessTipHash,
+                        ct
+                    )
 
                 let! verifiedFence =
                     fence
@@ -202,6 +204,7 @@ module internal CaseTombstoneTerminalOwnerPrepare =
                             actorAuthorityRevision
                             proposal
                             observedAt
+                            ct
 
                     return!
                         checkedEvidence

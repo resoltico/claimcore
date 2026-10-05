@@ -31,7 +31,8 @@ let knownSource (operationId: Guid) =
     Encoding.ASCII.GetBytes(operationId.ToString("D") + "\n")
 
 let prepare (context: Context) known mode =
-    let before = context.Witness.Snapshot().TipSequence
+    let before =
+        (context.Witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence
 
     let canonical =
         InstallationLossRetirementAdministration.draft
@@ -44,6 +45,7 @@ let prepare (context: Context) known mode =
             None
             known
             mode
+        |> await
         |> Option.defaultWith (fun () -> failwith "Synthetic incident draft was refused.")
 
     let value =
@@ -71,6 +73,8 @@ let w0 (context: Context) (decision: Decision) =
         decision.Canonical
         decision.FirstSignature
         decision.SecondSignature
+        CancellationToken.None
+    |> await
 
 let commitPrimary (connection: NpgsqlConnection) (decision: Decision) intent =
     use transaction = connection.BeginTransaction()
@@ -99,6 +103,7 @@ let reconcile (context: Context) (connection: NpgsqlConnection) (decision: Decis
         decision.KnownSource
         None
         None
+    |> await
 
 let private grant (context: Context) principal role =
     let eventId = Guid.NewGuid()

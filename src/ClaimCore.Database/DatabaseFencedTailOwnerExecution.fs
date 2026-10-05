@@ -71,6 +71,7 @@ module internal DatabaseFencedTailOwnerExecution =
                 host.ProbeEvidenceSha256
                 (privatePath "CLAIMCORE_RESTORE_ARCHIVE_ROOT")
                 now
+            |> fun work -> work.GetAwaiter().GetResult()
 
         if DatabaseFencedTailHostBinding.matchesLocal host local now then
             Ok(local, publication)

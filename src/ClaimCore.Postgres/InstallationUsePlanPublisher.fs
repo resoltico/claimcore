@@ -44,34 +44,50 @@ module internal InstallationUsePlanPublisher =
         activationId
         (plan: BackupHealthActivationPlan)
         (intent: WitnessIntent)
+        (ct: CancellationToken)
         =
-        use command =
-            new NpgsqlCommand(
-                "INSERT INTO claimcore.installation_data_use_plans "
-                + "(plan_id,activation_id,installation_id,lineage_id,witness_epoch,writer_generation,"
-                + "policy_sha256,plan_sha256,canonical_plan,published_at,"
-                + "witness_intent_sequence,witness_epoch_at_publication,witness_intent_hash) "
-                + "VALUES (@plan,@activation,@installation,@lineage,@epoch,@generation,"
-                + "@policy,@digest,@canonical,clock_timestamp(),@sequence,@witnessEpoch,@hash)",
-                connection,
-                transaction
-            )
+        task {
+            use command =
+                new NpgsqlCommand(
+                    "INSERT INTO claimcore.installation_data_use_plans "
+                    + "(plan_id,activation_id,installation_id,lineage_id,witness_epoch,writer_generation,"
+                    + "policy_sha256,plan_sha256,canonical_plan,published_at,"
+                    + "witness_intent_sequence,witness_epoch_at_publication,witness_intent_hash) "
+                    + "VALUES (@plan,@activation,@installation,@lineage,@epoch,@generation,"
+                    + "@policy,@digest,@canonical,clock_timestamp(),@sequence,@witnessEpoch,@hash)",
+                    connection,
+                    transaction
+                )
 
-        Sql.uuid command "plan" planId
-        Sql.uuid command "activation" activationId
-        Sql.uuid command "installation" plan.InstallationId
-        Sql.uuid command "lineage" plan.LineageId
-        Sql.integer command "epoch" plan.Epoch
-        Sql.integer command "generation" plan.WriterGeneration
-        Sql.add command "policy" NpgsqlDbType.Bytea (box (Convert.FromHexString plan.PolicySha256))
-        Sql.add command "digest" NpgsqlDbType.Bytea (box (Convert.FromHexString plan.PlanSha256))
-        Sql.add command "canonical" NpgsqlDbType.Bytea (box plan.Canonical)
-        Sql.integer command "sequence" intent.Ticket.Sequence
-        Sql.integer command "witnessEpoch" intent.Ticket.Epoch
-        Sql.add command "hash" NpgsqlDbType.Bytea (box intent.Ticket.EntryHash)
+            Sql.uuid command "plan" planId
+            Sql.uuid command "activation" activationId
+            Sql.uuid command "installation" plan.InstallationId
+            Sql.uuid command "lineage" plan.LineageId
+            Sql.integer command "epoch" plan.Epoch
+            Sql.integer command "generation" plan.WriterGeneration
 
-        if command.ExecuteNonQuery() <> 1 then
-            invalidOp "Reviewed plan did not persist."
+            Sql.add
+                command
+                "policy"
+                NpgsqlDbType.Bytea
+                (box (Convert.FromHexString plan.PolicySha256))
+
+            Sql.add
+                command
+                "digest"
+                NpgsqlDbType.Bytea
+                (box (Convert.FromHexString plan.PlanSha256))
+
+            Sql.add command "canonical" NpgsqlDbType.Bytea (box plan.Canonical)
+            Sql.integer command "sequence" intent.Ticket.Sequence
+            Sql.integer command "witnessEpoch" intent.Ticket.Epoch
+            Sql.add command "hash" NpgsqlDbType.Bytea (box intent.Ticket.EntryHash)
+
+            let! written = command.ExecuteNonQueryAsync(ct)
+
+            if written <> 1 then
+                invalidOp "Reviewed plan did not persist."
+        }
 
     let private existing
         (connection: NpgsqlConnection)
@@ -79,43 +95,72 @@ module internal InstallationUsePlanPublisher =
         (witness: WitnessProtocol)
         planId
         (plan: BackupHealthActivationPlan)
+        (ct: CancellationToken)
         =
-        use command =
-            new NpgsqlCommand(
-                "SELECT canonical_plan,witness_intent_sequence,witness_epoch_at_publication,"
-                + "witness_intent_hash FROM claimcore.installation_data_use_plans "
-                + "WHERE plan_id=@plan",
-                connection,
-                transaction
-            )
-
-        Sql.uuid command "plan" planId
-        use reader = command.ExecuteReader()
-
-        let value =
-            if reader.Read() then
-                Some(
-                    reader.GetFieldValue<byte array>(0),
-                    reader.GetInt64(1),
-                    reader.GetInt64(2),
-                    reader.GetFieldValue<byte array>(3)
+        task {
+            use command =
+                new NpgsqlCommand(
+                    "SELECT canonical_plan,witness_intent_sequence,witness_epoch_at_publication,"
+                    + "witness_intent_hash FROM claimcore.installation_data_use_plans "
+                    + "WHERE plan_id=@plan",
+                    connection,
+                    transaction
                 )
-            else
-                None
 
-        if reader.Read() then
-            invalidOp "Reviewed plan is duplicated."
+            Sql.uuid command "plan" planId
+            use! reader = command.ExecuteReaderAsync(ct)
 
-        reader.Close()
+            let! found = reader.ReadAsync(ct)
 
-        match value with
-        | None -> false
-        | Some(canonical, sequence, epoch, hash) ->
-            if canonical <> plan.Canonical then
-                invalidOp "Reviewed plan retry changed bytes."
+            let value =
+                if found then
+                    Some(
+                        reader.GetFieldValue<byte array>(0),
+                        reader.GetInt64(1),
+                        reader.GetInt64(2),
+                        reader.GetFieldValue<byte array>(3)
+                    )
+                else
+                    None
 
-            witness.ReconcileAuthority(planId, sequence, epoch, hash, canonical)
-            true
+            let! duplicated = reader.ReadAsync(ct)
+
+            if duplicated then
+                invalidOp "Reviewed plan is duplicated."
+
+            reader.Close()
+
+            match value with
+            | None -> return false
+            | Some(canonical, sequence, epoch, hash) ->
+                if canonical <> plan.Canonical then
+                    invalidOp "Reviewed plan retry changed bytes."
+
+                do! witness.ReconcileAuthority(planId, sequence, epoch, hash, canonical, ct)
+                return true
+        }
+
+    let private requireReplay
+        primaryOwner
+        transaction
+        witness
+        planId
+        (plan: BackupHealthActivationPlan)
+        activationId
+        ct
+        =
+        task {
+            let! reviewed =
+                InstallationUsePlanRead.verified primaryOwner transaction witness planId ct
+
+            match reviewed with
+            | Some value when
+                value.ActivationId = activationId && value.Plan.Canonical = plan.Canonical
+                ->
+                ()
+            | _ -> invalidOp "Published activation plan replay diverged."
+
+        }
 
     let private underLock
         (primaryOwner: NpgsqlConnection)
@@ -128,13 +173,16 @@ module internal InstallationUsePlanPublisher =
         =
         task {
             use! _authorityFence = AuthorityOperationFence.acquireShared None primaryOwner ct
-            use transaction = primaryOwner.BeginTransaction(IsolationLevel.ReadCommitted)
+
+            use! transaction =
+                primaryOwner.BeginTransactionAsync(IsolationLevel.ReadCommitted, ct)
+
             let! _ = ActorGrantRead.lockRevision primaryOwner transaction true ct
 
-            let identity, generation, scope, phase, _, _, _ =
-                InstallationUseActivationPrimary.state primaryOwner transaction
+            let! identity, generation, scope, phase, _, _, _ =
+                InstallationUseActivationPrimary.state primaryOwner transaction ct
 
-            let snapshot = witness.Snapshot()
+            let! snapshot = witness.Snapshot(ct)
 
             if
                 identity <> (plan.InstallationId, plan.LineageId, plan.Epoch)
@@ -145,26 +193,31 @@ module internal InstallationUsePlanPublisher =
                 || snapshot.Use.Phase <> InstallationUsePhase.BootstrapNoCases
             then
                 return InstallationUsePlanOutcome.Refused
-            elif existing primaryOwner transaction witness planId plan then
-                let! reviewed =
-                    InstallationUsePlanRead.verified primaryOwner transaction witness planId ct
-
-                match reviewed with
-                | Some value when
-                    value.ActivationId = activationId && value.Plan.Canonical = plan.Canonical
-                    ->
-                    ()
-                | _ -> invalidOp "Published activation plan replay diverged."
-
-                do! transaction.RollbackAsync(ct)
-                return InstallationUsePlanOutcome.Published(planId, activationId)
             else
-                started.Value <- true
-                let intent = witness.BeginAuthority(planId, plan.Canonical, None)
-                insert primaryOwner transaction planId activationId plan intent
-                do! transaction.CommitAsync(CancellationToken.None)
-                witness.SettleAuthority(planId, intent) |> ignore
-                return InstallationUsePlanOutcome.Published(planId, activationId)
+                let! seen = existing primaryOwner transaction witness planId plan ct
+
+                if seen then
+                    do! requireReplay primaryOwner transaction witness planId plan activationId ct
+
+                    do! transaction.RollbackAsync(ct)
+                    return InstallationUsePlanOutcome.Published(planId, activationId)
+                else
+                    started.Value <- true
+                    let! intent = witness.BeginAuthority(planId, plan.Canonical, None, ct)
+
+                    do!
+                        insert
+                            primaryOwner
+                            transaction
+                            planId
+                            activationId
+                            plan
+                            intent
+                            CancellationToken.None
+
+                    do! transaction.CommitAsync(CancellationToken.None)
+                    let! _ = witness.SettleAuthority(planId, intent)
+                    return InstallationUsePlanOutcome.Published(planId, activationId)
         }
 
     let publish
@@ -188,7 +241,7 @@ module internal InstallationUsePlanPublisher =
                 else
                     OwnerConnection.requireIdentity primaryOwner
                     SchemaBaseline.requireCurrent primaryOwner
-                    witness.Admit()
+                    do! witness.Admit(ct)
                     return! underLock primaryOwner witness plan planId activationId started ct
             with _ ->
                 return

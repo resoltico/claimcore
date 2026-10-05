@@ -88,6 +88,7 @@ module internal DataAuditPurgedErasure =
         commitments
         (value: PurgedErasureAuditRow)
         approvals
+        ct
         =
         task {
             DataAuditPurgedErasureCandidate.verify value approvals
@@ -105,21 +106,25 @@ module internal DataAuditPurgedErasure =
                     value.PurgeWitnessHash
                     value.CandidateHash
                     ClaimCore.Witness.SettledAuthority
+                    ct
 
-            witnessProof (fun () ->
-                CaseErasurePurgedDenialsAudit.verify
-                    connection
-                    transaction
-                    witness
-                    commitments
-                    value.CaseId
-                    value.CutoffSequence
-                    value.CutoffHash
-                    value.SubjectIntentCount
-                    value.SubjectIntentDigest
-                    value.DenialCount
-                    value.DenialDigest
-                |> ignore)
+            let! _ =
+                witnessProofAsync (fun () ->
+                    CaseErasurePurgedDenialsAudit.verify
+                        connection
+                        transaction
+                        witness
+                        commitments
+                        value.CaseId
+                        value.CutoffSequence
+                        value.CutoffHash
+                        value.SubjectIntentCount
+                        value.SubjectIntentDigest
+                        value.DenialCount
+                        value.DenialDigest
+                        ct)
+
+            return ()
         }
 
     let private verifySubjectAuthority
@@ -128,6 +133,7 @@ module internal DataAuditPurgedErasure =
         witness
         cutoff
         (value: PurgedErasureAuditRow)
+        ct
         =
         task {
             let! prunedCutoff =
@@ -137,6 +143,7 @@ module internal DataAuditPurgedErasure =
                     witness
                     cutoff
                     value.CaseId
+                    ct
 
             let! _ =
                 CaseTombstoneHoldAudit.verify
@@ -146,6 +153,7 @@ module internal DataAuditPurgedErasure =
                     cutoff
                     prunedCutoff
                     value.CaseId
+                    ct
 
             let! _ =
                 CaseTombstonePruneApprovalAudit.verify
@@ -156,6 +164,7 @@ module internal DataAuditPurgedErasure =
                     prunedCutoff
                     value.CaseId
                     value.PurgeEventId
+                    ct
 
             let! _ =
                 CaseTombstoneTerminalApprovalAudit.verifyCase
@@ -164,6 +173,7 @@ module internal DataAuditPurgedErasure =
                     witness
                     cutoff
                     value.CaseId
+                    ct
 
             return ()
         }
@@ -175,6 +185,7 @@ module internal DataAuditPurgedErasure =
         cutoff
         (commitments: ISuppressionCommitments)
         (value: PurgedErasureAuditRow)
+        ct
         =
         task {
             commitments.Admit()
@@ -190,10 +201,10 @@ module internal DataAuditPurgedErasure =
                 corrupt ()
 
             do! CaseErasurePurgeDelete.verifyAbsent connection transaction value.CaseId
-            do! verifySubjectAuthority connection transaction witness cutoff value
+            do! verifySubjectAuthority connection transaction witness cutoff value ct
 
             let! approvals = receipts connection transaction commitments value
-            do! witnessed connection transaction witness cutoff commitments value approvals
+            do! witnessed connection transaction witness cutoff commitments value approvals ct
         }
 
     let verify
@@ -214,7 +225,7 @@ module internal DataAuditPurgedErasure =
 
                 for row in rows do
                     let port = commitments |> Option.defaultWith corrupt
-                    do! verifyRow connection transaction witness cutoff port row
+                    do! verifyRow connection transaction witness cutoff port row ct
                     count <- count + 1L
 
                 match List.tryLast rows with

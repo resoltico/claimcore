@@ -24,7 +24,8 @@ let private auditedIsolation (access: RestoredPairAccess) custody suppression ap
             access.WitnessAudit
             custody
             suppression
-            (fun _ _ _ _ stable -> stable.TipSequence)
+            (fun _ _ _ _ stable -> System.Threading.Tasks.Task.FromResult stable.TipSequence)
+        |> await
 
     Expect.equal tip.TipSequence approved "Post-isolation full audit found no unreviewed authority"
 

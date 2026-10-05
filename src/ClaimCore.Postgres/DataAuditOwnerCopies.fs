@@ -111,12 +111,18 @@ module internal DataAuditOwnerCopies =
         (witness: WitnessProtocol)
         cutoff
         (proof: OwnerCopyRegistrationProof)
+        ct
         =
         task {
             let value = proof.Copy
 
-            witnessProof (fun () ->
-                witness.VerifyHistoricalTip(value.WitnessCutoffSequence, value.WitnessCutoffHash))
+            do!
+                witnessProofAsync (fun () ->
+                    witness.VerifyHistoricalTip(
+                        value.WitnessCutoffSequence,
+                        value.WitnessCutoffHash,
+                        ct
+                    ))
 
             match value.SourceCaseId with
             | Some caseId ->
@@ -133,15 +139,18 @@ module internal DataAuditOwnerCopies =
                         proof.EntryHash
                         proof.CandidateDigest
                         SettledAuthority
+                        ct
             | None ->
-                witnessProof (fun () ->
-                    witness.VerifyAuthorityEvidenceForInstallation(
-                        value.EventId,
-                        proof.Sequence,
-                        proof.Epoch,
-                        proof.EntryHash,
-                        proof.CandidateDigest
-                    ))
+                do!
+                    witnessProofAsync (fun () ->
+                        witness.VerifyAuthorityEvidenceForInstallation(
+                            value.EventId,
+                            proof.Sequence,
+                            proof.Epoch,
+                            proof.EntryHash,
+                            proof.CandidateDigest,
+                            ct
+                        ))
         }
 
     let private projection
@@ -218,7 +227,7 @@ module internal DataAuditOwnerCopies =
                 }
 
             for projection, proof in projections do
-                do! witnessRegistration connection transaction witness cutoff proof
+                do! witnessRegistration connection transaction witness cutoff proof ct
 
                 do!
                     DataAuditOwnerCopyTransitions.verify

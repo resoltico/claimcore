@@ -1,5 +1,6 @@
 module internal ClaimCore.IntegrationTests.RestoreWriterHandoffPhysicalSettlement
 
+open System.Threading
 open System
 open System.Security.Cryptography
 open Expecto
@@ -50,7 +51,8 @@ type PhysicalW1Settlement =
     }
 
 let private signedFence (value: PhysicalW1Settlement) =
-    let before = value.Witness.Snapshot().TipSequence
+    let before =
+        (value.Witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence
 
     Expect.throws
         (fun () ->
@@ -67,7 +69,7 @@ let private signedFence (value: PhysicalW1Settlement) =
         "Unsigned prospective fence cannot qualify W1 PREPARE"
 
     Expect.equal
-        (value.Witness.Snapshot().TipSequence)
+        ((value.Witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
         before
         "Missing independent fence signature appended no witness authority"
 
@@ -97,7 +99,7 @@ let private signedFence (value: PhysicalW1Settlement) =
     |> requireClosedOwnerCommand
 
     Expect.equal
-        (value.Witness.Snapshot().TipSequence)
+        ((value.Witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
         before
         "Root-closed owner command appended no witness authority"
 
@@ -126,12 +128,12 @@ let private typedSettlement (value: PhysicalW1Settlement) signedFence =
     Expect.equal settledId value.HandoffId "Typed W1 settlement kept the exact handoff ID"
 
     Expect.equal
-        (value.Witness.Snapshot().WriterGeneration)
+        ((value.Witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).WriterGeneration)
         (value.Facts.WriterGeneration + 1L)
         "W1 advanced the exact restored writer generation"
 
     Expect.isTrue
-        (value.Witness.Snapshot().ActivationPending)
+        ((value.Witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).ActivationPending)
         "W1 SETTLE leaves case work activation-pending"
 
     requireRegisteredHorizonSegments value.Capture value.Registered value.Containers

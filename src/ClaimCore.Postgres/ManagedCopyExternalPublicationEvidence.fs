@@ -239,6 +239,7 @@ module internal ManagedCopyExternalPublicationEvidence =
                     row.WitnessHash
                     row.CandidateHash
                     SettledAuthority
+                    ct
 
             return projected row
         }

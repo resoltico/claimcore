@@ -65,14 +65,16 @@ module internal DataAuditSignerApprovals =
             then
                 corrupt ()
 
-            witnessProof (fun () ->
-                witness.VerifyAuthorityEvidenceForInstallation(
-                    approval.ApprovalId,
-                    approval.WitnessSequence,
-                    approval.WitnessEpoch,
-                    approval.WitnessEntryHash,
-                    approval.CandidateSha256
-                ))
+            do!
+                witnessProofAsync (fun () ->
+                    witness.VerifyAuthorityEvidenceForInstallation(
+                        approval.ApprovalId,
+                        approval.WitnessSequence,
+                        approval.WitnessEpoch,
+                        approval.WitnessEntryHash,
+                        approval.CandidateSha256,
+                        ct
+                    ))
 
             return approval
         }

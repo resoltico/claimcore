@@ -113,7 +113,7 @@ module internal DataAuditWriterActivations =
                     if value.Evidence.WriterGeneration <> expected then
                         corrupt ()
 
-                    DataAuditWriterActivationEvidence.verify witness cutoff value
+                    do! DataAuditWriterActivationEvidence.verify witness cutoff value ct
                     last <- Some(value.ActivationId, value.SettlementSequence, value.SettlementHash)
                     expected <- expected + 1L
                     scanned <- scanned + 1L
@@ -121,6 +121,7 @@ module internal DataAuditWriterActivations =
             if scanned <> count connection transaction then
                 corrupt ()
 
-            finalState (projection connection transaction) (witness.Snapshot()) expected last
+            let! snapshot = witness.Snapshot(ct)
+            finalState (projection connection transaction) snapshot expected last
             return scanned
         }

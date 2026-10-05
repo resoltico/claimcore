@@ -1,6 +1,8 @@
 namespace ClaimCore.Postgres
 
+open System
 open System.IO
+open System.Threading
 open System.Security.Cryptography
 open System.Text.Json
 open Npgsql
@@ -61,39 +63,54 @@ module internal CaseReadLifecycleEvidence =
                 digest
             )
 
-    let verify (witness: WitnessProtocol) connection transaction (view: CaseView) acceptedRevision =
-        use command =
-            new NpgsqlCommand(
-                "SELECT c.case_id,c.lifecycle_sequence,l.event_id,c.lifecycle_event_hash,"
-                + "l.business_revision,l.canonical_action,l.candidate_sha256,l.witness_sequence,"
-                + "l.witness_epoch,l.witness_entry_hash,c.disposition,c.privacy_phase "
-                + "FROM claimcore.cases c LEFT JOIN claimcore.case_lifecycle_events l "
-                + "ON l.case_id=c.case_id AND l.lifecycle_sequence=c.lifecycle_sequence "
-                + "WHERE c.case_reference=@reference",
-                connection,
-                transaction
-            )
-
-        Sql.text command "reference" view.Fields.CaseReference
-        use reader = command.ExecuteReader()
-        require (reader.Read())
-        let evidence = validate reader acceptedRevision view.Version
-        require (not (reader.Read()))
-        reader.Close()
-
-        match evidence with
-        | None -> Ok()
-        | Some(eventId, caseId, sequence, epoch, hash, digest) ->
-            try
-                witness.VerifyAuthorityEvidenceForCase(
-                    eventId,
-                    sequence,
-                    epoch,
-                    hash,
-                    digest,
-                    caseId
+    let verify
+        (witness: WitnessProtocol)
+        connection
+        transaction
+        (view: CaseView)
+        acceptedRevision
+        (ct: CancellationToken)
+        =
+        task {
+            use command =
+                new NpgsqlCommand(
+                    "SELECT c.case_id,c.lifecycle_sequence,l.event_id,c.lifecycle_event_hash,"
+                    + "l.business_revision,l.canonical_action,l.candidate_sha256,l.witness_sequence,"
+                    + "l.witness_epoch,l.witness_entry_hash,c.disposition,c.privacy_phase "
+                    + "FROM claimcore.cases c LEFT JOIN claimcore.case_lifecycle_events l "
+                    + "ON l.case_id=c.case_id AND l.lifecycle_sequence=c.lifecycle_sequence "
+                    + "WHERE c.case_reference=@reference",
+                    connection,
+                    transaction
                 )
 
-                Ok()
-            with _ ->
-                Error CoreFailure.StoreUnavailable
+            Sql.text command "reference" view.Fields.CaseReference
+            use! reader = command.ExecuteReaderAsync(ct)
+            let! found = reader.ReadAsync(ct)
+            require found
+            let evidence = validate reader acceptedRevision view.Version
+            let! duplicated = reader.ReadAsync(ct)
+            require (not duplicated)
+            reader.Close()
+
+            match evidence with
+            | None -> return Ok()
+            | Some(eventId, caseId, sequence, epoch, hash, digest) ->
+                try
+                    do!
+                        witness.VerifyAuthorityEvidenceForCase(
+                            eventId,
+                            sequence,
+                            epoch,
+                            hash,
+                            digest,
+                            caseId,
+                            ct
+                        )
+
+                    return Ok()
+                with
+                | :? OperationCanceledException as error when ct.IsCancellationRequested ->
+                    return raise error
+                | _ -> return Error CoreFailure.StoreUnavailable
+        }

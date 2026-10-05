@@ -103,6 +103,7 @@ let private syntheticCannotPromote =
                 (String('5', 64))
                 publication.VerifierBinarySha256
                 claims.CheckedAt
+            |> fun work -> work.GetAwaiter().GetResult()
 
         match result with
         | Error RestoreRecheckFailure.ReportInvalid -> ()

@@ -38,7 +38,8 @@ let private faultProtocol owner writer =
         }
 
     let store = FixtureWitnessWriterStore.current writer identity
-    let keyId, _ = store.ReadKeyCheck()
+
+    let keyId, _ = (store.ReadKeyCheck(CancellationToken.None).GetAwaiter().GetResult())
 
     new WitnessProtocol(
         store,
@@ -79,7 +80,7 @@ let private uncertainVoid owner source writer proposer (actor: IActorClaimsCore)
         :> ICaseLifecycleStore
 
     match
-        storage.Apply(context source fault proposer opened.CaseReference, action)
+        storage.Apply(context source fault proposer opened.CaseReference, action, cancellation)
         |> await
     with
     | LifecycleWriteOutcome.Unconfirmed id when id = action.EventId -> ()
@@ -107,7 +108,9 @@ let private reconcileCommitted owner source witness (action: LifecycleChange) =
 
     let orphan = Guid.NewGuid()
     let bytes = Encoding.UTF8.GetBytes("synthetic orphan lifecycle intent")
-    witness.BeginAuthority(orphan, bytes, None) |> ignore
+
+    (witness.BeginAuthority(orphan, bytes, None, CancellationToken.None).GetAwaiter().GetResult())
+    |> ignore
 
     match
         CaseLifecycleReconcile.reconcile ownerConnection witness orphan cancellation

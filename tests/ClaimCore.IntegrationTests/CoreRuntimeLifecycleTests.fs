@@ -21,19 +21,6 @@ let private countedSource (disposeCount: DisposeCounter) =
         member _.Dispose() = disposeCount.Increment()
     }
 
-let private useGate requireMutation =
-    {
-        RequireCaseMutation = requireMutation
-        RequireCaseRead = (fun () -> ())
-        RequireAuthoritySetup = (fun () -> ())
-        RequireAuthorityRead = (fun () -> ())
-        CommitHealth =
-            { new ICaseMutationCommitHealth with
-                member _.VerifyLocked(_, _) = ()
-            }
-        CommitHealthRequired = false
-    }
-
 let private disposalClosesAdmission () =
     let disposeCount = DisposeCounter()
 
@@ -41,9 +28,9 @@ let private disposalClosesAdmission () =
         new RuntimeAdmission(
             countedSource disposeCount,
             TimeSpan.FromSeconds 2.,
-            (fun () -> ()),
-            (fun () -> countedSource (DisposeCounter())),
-            useGate (fun () -> ())
+            (fun _ -> Task.FromResult(())),
+            (fun _ -> Task.FromResult(countedSource (DisposeCounter()))),
+            RuntimeAdmissionFixture.gate (fun () -> ())
         )
 
     use held = admission.Admit()
@@ -74,9 +61,9 @@ let private boundedDisposalDefersCleanup () =
         new RuntimeAdmission(
             countedSource disposeCount,
             TimeSpan.FromMilliseconds 50.,
-            (fun () -> ()),
-            (fun () -> countedSource (DisposeCounter())),
-            useGate (fun () -> ())
+            (fun _ -> Task.FromResult(())),
+            (fun _ -> Task.FromResult(countedSource (DisposeCounter()))),
+            RuntimeAdmissionFixture.gate (fun () -> ())
         )
 
     use held = admission.Admit()
@@ -137,9 +124,9 @@ let private staleHealthStopsNewMutation () =
         new RuntimeAdmission(
             countedSource (DisposeCounter()),
             TimeSpan.FromSeconds 1.,
-            (fun () -> ()),
-            (fun () -> countedSource (DisposeCounter())),
-            useGate (fun () -> invalidOp "Backup health needs owner renewal.")
+            (fun _ -> Task.FromResult(())),
+            (fun _ -> Task.FromResult(countedSource (DisposeCounter()))),
+            RuntimeAdmissionFixture.gate (fun () -> invalidOp "Backup health needs owner renewal.")
         )
 
     Expect.throwsT<InvalidOperationException>
@@ -171,16 +158,16 @@ let private bootstrapPermitsAuthorityOnly () =
         new RuntimeAdmission(
             countedSource (DisposeCounter()),
             TimeSpan.FromSeconds 1.,
-            (fun () -> ()),
-            (fun () -> countedSource (DisposeCounter())),
+            (fun _ -> Task.FromResult(())),
+            (fun _ -> Task.FromResult(countedSource (DisposeCounter()))),
             {
-                RequireCaseMutation = denied
-                RequireCaseRead = denied
-                RequireAuthoritySetup = (fun () -> ())
-                RequireAuthorityRead = (fun () -> ())
+                RequireCaseMutation = (fun _ -> task { denied () })
+                RequireCaseRead = (fun _ -> task { denied () })
+                RequireAuthoritySetup = (fun _ -> Task.FromResult(()))
+                RequireAuthorityRead = (fun _ -> Task.FromResult(()))
                 CommitHealth =
                     { new ICaseMutationCommitHealth with
-                        member _.VerifyLocked(_, _) = ()
+                        member _.VerifyLocked(_, _, _) = Task.CompletedTask
                     }
                 CommitHealthRequired = false
             }
@@ -209,7 +196,9 @@ let private endedCommitHealthScopeRefusesLateChild () =
 
     let guard =
         { new ICaseMutationCommitHealth with
-            member _.VerifyLocked(_, _) = checks <- checks + 1
+            member _.VerifyLocked(_, _, _) =
+                checks <- checks + 1
+                Task.CompletedTask
         }
 
     let connection = Unchecked.defaultof<NpgsqlConnection>
@@ -219,12 +208,18 @@ let private endedCommitHealthScopeRefusesLateChild () =
         TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
 
     let scope = CaseMutationCommitHealth.enter guard
-    CaseMutationCommitHealth.verifyLocked connection transaction
+
+    (CaseMutationCommitHealth.verifyLocked connection transaction CancellationToken.None)
+        .GetAwaiter()
+        .GetResult()
 
     let late =
         Task.Run(fun () ->
             release.Task.GetAwaiter().GetResult()
-            CaseMutationCommitHealth.verifyLocked connection transaction)
+
+            (CaseMutationCommitHealth.verifyLocked connection transaction CancellationToken.None)
+                .GetAwaiter()
+                .GetResult())
 
     scope.Dispose()
     release.SetResult()
@@ -240,9 +235,9 @@ let private unguardedRealDataOutcomeRefuses () =
         new RuntimeAdmission(
             countedSource (DisposeCounter()),
             TimeSpan.FromSeconds 1.,
-            (fun () -> ()),
-            (fun () -> countedSource (DisposeCounter())),
-            { useGate (fun () -> ()) with
+            (fun _ -> Task.FromResult(())),
+            (fun _ -> Task.FromResult(countedSource (DisposeCounter()))),
+            { RuntimeAdmissionFixture.gate (fun () -> ()) with
                 CommitHealthRequired = true
             }
         )
@@ -267,6 +262,8 @@ let private unguardedRealDataOutcomeRefuses () =
     CaseMutationCommitHealth.verifyLocked
         (Unchecked.defaultof<NpgsqlConnection>)
         (Unchecked.defaultof<NpgsqlTransaction>)
+        CancellationToken.None
+    |> fun work -> work.GetAwaiter().GetResult()
 
 let runtimeAdmissionTests =
     testList

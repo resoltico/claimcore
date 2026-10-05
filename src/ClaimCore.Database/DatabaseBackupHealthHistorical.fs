@@ -1,5 +1,6 @@
 namespace ClaimCore.Database
 
+open System.Threading
 open System
 open System.Data
 open System.Security.Cryptography
@@ -64,9 +65,13 @@ module internal DatabaseBackupHealthHistorical =
             reraise ()
 
     let private ancestor (witness: WitnessProtocol) sequence expected =
-        match witness.TryReadHashAtSequence(sequence) with
-        | Some hash when Convert.ToHexStringLower(hash) = expected -> ()
-        | _ -> invalidOp "Historical backup health witness ancestor differs."
+        task {
+            let! observed = witness.TryReadHashAtSequence(sequence, CancellationToken.None)
+
+            match observed with
+            | Some hash when Convert.ToHexStringLower(hash) = expected -> ()
+            | _ -> invalidOp "Historical backup health witness ancestor differs."
+        }
 
     let verifyIssuer
         publicKey
@@ -86,47 +91,49 @@ module internal DatabaseBackupHealthHistorical =
             invalidOp "Historical backup health issuer signature differs."
 
     let verify ownerConnection profile loaded =
-        let builder = OwnerConnection.builder ownerConnection
-        use owner = new NpgsqlConnection(builder.ConnectionString)
-        owner.Open()
-        OwnerConnection.requireIdentity owner
-        SchemaBaseline.requireCurrent owner
-        let identity, _, _ = DatabaseVerifyData.identity owner
-        let _, source, claim = verifiedDocuments profile loaded (databaseNow owner)
+        task {
+            let builder = OwnerConnection.builder ownerConnection
+            use owner = new NpgsqlConnection(builder.ConnectionString)
+            owner.Open()
+            OwnerConnection.requireIdentity owner
+            SchemaBaseline.requireCurrent owner
+            let identity, _, _ = DatabaseVerifyData.identity owner
+            let _, source, claim = verifiedDocuments profile loaded (databaseNow owner)
 
-        if
-            claim.InstallationId <> identity.InstallationId
-            || claim.LineageId <> identity.LineageId
-            || claim.Epoch <> identity.Epoch
-            || source.InstallationId <> identity.InstallationId
-            || source.LineageId <> identity.LineageId
-            || source.Epoch <> identity.Epoch
-            || claim.Checkpoint.Sequence < 1L
-            || claim.TestRestore.WitnessCutoff < 1L
-        then
-            invalidOp "Historical backup health installation differs."
+            if
+                claim.InstallationId <> identity.InstallationId
+                || claim.LineageId <> identity.LineageId
+                || claim.Epoch <> identity.Epoch
+                || source.InstallationId <> identity.InstallationId
+                || source.LineageId <> identity.LineageId
+                || source.Epoch <> identity.Epoch
+                || claim.Checkpoint.Sequence < 1L
+                || claim.TestRestore.WitnessCutoff < 1L
+            then
+                invalidOp "Historical backup health installation differs."
 
-        use witness = witnessFor identity
-        witness.AdmitReadOnly()
-        ancestor witness claim.WitnessTipSequence claim.WitnessTipHash
-        ancestor witness claim.Checkpoint.Sequence claim.Checkpoint.Hash
-        ancestor witness claim.TestRestore.WitnessCutoff claim.TestRestore.WitnessCutoffHash
-        use transaction = owner.BeginTransaction(IsolationLevel.RepeatableRead)
+            use witness = witnessFor identity
+            do! witness.AdmitReadOnly(CancellationToken.None)
+            do! ancestor witness claim.WitnessTipSequence claim.WitnessTipHash
+            do! ancestor witness claim.Checkpoint.Sequence claim.Checkpoint.Hash
+            do! ancestor witness claim.TestRestore.WitnessCutoff claim.TestRestore.WitnessCutoffHash
+            use transaction = owner.BeginTransaction(IsolationLevel.RepeatableRead)
 
-        let key, holder =
-            DatabaseRestoreSignedEvidence.historicalSigner
-                owner
-                transaction
-                witness
-                claim.SignerKeyId
-                CopySignerPurpose.Checkpoint
-                claim.Epoch
-                claim.WitnessTipSequence
+            let! key, holder =
+                DatabaseRestoreSignedEvidence.historicalSigner
+                    owner
+                    transaction
+                    witness
+                    claim.SignerKeyId
+                    CopySignerPurpose.Checkpoint
+                    claim.Epoch
+                    claim.WitnessTipSequence
 
-        try
-            verifyIssuer key holder claim loaded
-        finally
-            CryptographicOperations.ZeroMemory(key)
+            try
+                verifyIssuer key holder claim loaded
+            finally
+                CryptographicOperations.ZeroMemory(key)
 
-        transaction.Rollback()
-        SHA256.HashData(loaded.CertificateBytes) |> Convert.ToHexStringLower
+            transaction.Rollback()
+            return SHA256.HashData(loaded.CertificateBytes) |> Convert.ToHexStringLower
+        }

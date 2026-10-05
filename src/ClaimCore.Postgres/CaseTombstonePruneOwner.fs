@@ -62,6 +62,7 @@ module internal CaseTombstonePruneOwner =
                             proposal
                             accepted
                             instant
+                            ct
                 with _ ->
                     return OwnerWitnessPruneOutcome.Unconfirmed proposal.EventId
             | None ->
@@ -102,7 +103,7 @@ module internal CaseTombstonePruneOwner =
             match found with
             | None -> return OwnerWitnessPruneOutcome.ResourceUnavailable
             | Some stored ->
-                let! instant = Sql.databaseNow connection transaction
+                let! instant = Sql.databaseNow connection transaction ct
 
                 return!
                     resume
@@ -146,7 +147,7 @@ module internal CaseTombstonePruneOwner =
                 return OwnerWitnessPruneOutcome.Refused LifecycleRefusal.InvalidIdentity
             else
                 try
-                    witness.Admit()
+                    do! witness.Admit(ct)
                     commitments.Admit()
                     use fenceConnection = new NpgsqlConnection(ownerConnection)
                     do! fenceConnection.OpenAsync(ct)

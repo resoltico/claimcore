@@ -37,6 +37,26 @@ module internal CaseErasurePurge =
             return ()
         }
 
+    let private lockedProjection
+        owner
+        transaction
+        (change: LifecycleChange)
+        (stage: string ref)
+        ct
+        =
+        task {
+            stage.Value <- "CASE_PROJECTION"
+
+            return!
+                CaseLifecycleStoreSupport.lockCase
+                    owner
+                    transaction
+                    change.CaseReference
+                    change.EventId
+                    ct
+
+        }
+
     let private pending
         ownerConnectionString
         (owner: NpgsqlConnection)
@@ -58,21 +78,14 @@ module internal CaseErasurePurge =
             let! tip =
                 CaseErasurePurgePreparation.audit ownerConnectionString witness commitments ct
 
-            stage.Value <- "CASE_PROJECTION"
-
-            let! found =
-                CaseLifecycleStoreSupport.lockCase
-                    owner
-                    transaction
-                    change.CaseReference
-                    change.EventId
+            let! found = lockedProjection owner transaction change stage ct
 
             match found with
             | None -> return OwnerPurgeOutcome.AuditUnavailable "CASE_PROJECTION"
             | Some projection when projection.CaseId <> caseId ->
                 return OwnerPurgeOutcome.AuditUnavailable "CASE_IDENTITY"
             | Some projection ->
-                let! instant = Sql.databaseNow owner transaction
+                let! instant = Sql.databaseNow owner transaction ct
                 stage.Value <- "PURGE_PROOF"
 
                 return!
@@ -117,6 +130,7 @@ module internal CaseErasurePurge =
                     value
                     change.EventId
                     canonicalDraft
+                    CancellationToken.None
 
             return
                 if exact then
@@ -192,7 +206,7 @@ module internal CaseErasurePurge =
                 OwnerConnection.requireIdentity owner
                 SchemaBaseline.requireCurrent owner
                 DatabaseEnvironment.requireCompatible owner
-                witness.Admit()
+                do! witness.Admit(ct)
                 commitments.Admit()
                 use! _authorityFence = AuthorityOperationFence.acquireExclusive None owner ct
                 use transaction = owner.BeginTransaction(IsolationLevel.ReadCommitted)

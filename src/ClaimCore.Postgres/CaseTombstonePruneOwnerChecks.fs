@@ -1,9 +1,11 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading.Tasks
 open System.IO
 open System.Security.Cryptography
 open ClaimCore.Application
+open ClaimCore.Domain
 
 module internal CaseTombstonePruneOwnerChecks =
     let private invalid () =
@@ -72,3 +74,75 @@ module internal CaseTombstonePruneOwnerChecks =
         matchesStoredFields value stored
         && stored.Canonical = canonical
         && stored.CandidateHash = SHA256.HashData(canonical)
+
+    let private targetMatches (witness: WitnessProtocol) (proposal: TombstonePruneProposal) ct =
+        task {
+            let seal = targetSeal proposal
+
+            let! observed =
+                CaseWitnessPayloadTargets.scan
+                    witness
+                    proposal.CaseId
+                    seal.CutoffSequence
+                    seal.CutoffHash
+                    (fun _ -> Task.FromResult())
+                    ct
+
+            if
+                observed.TargetCount = seal.TargetCount
+                && observed.TargetDigest = seal.TargetDigest
+            then
+                return Some seal
+            else
+                return None
+        }
+
+    let preflight
+        connection
+        transaction
+        (witness: WitnessProtocol)
+        authorityRevision
+        (stored: StoredCaseTombstone)
+        (proposal: TombstonePruneProposal)
+        observedAt
+        ct
+        =
+        task {
+            let! holds = CaseTombstoneRead.activeHolds connection transaction proposal.CaseId
+
+            if not holds.IsEmpty then
+                return Error(OwnerWitnessPruneOutcome.Refused LifecycleRefusal.HoldActive)
+            else
+                do!
+                    witness.VerifyAuthorityEvidenceForCase(
+                        stored.PurgeEventId,
+                        stored.PurgeWitnessSequence,
+                        stored.PurgeWitnessEpoch,
+                        stored.PurgeWitnessHash,
+                        stored.PurgeCandidateHash,
+                        proposal.CaseId,
+                        ct
+                    )
+
+                let! approvals =
+                    CaseTombstonePruneOwnerApprovals.read
+                        connection
+                        transaction
+                        witness
+                        authorityRevision
+                        proposal
+                        true
+                        observedAt
+                        ct
+
+                let! matches = targetMatches witness proposal ct
+
+                match matches with
+                | None ->
+                    return
+                        Error(
+                            OwnerWitnessPruneOutcome.Refused
+                                LifecycleRefusal.ErasureEvidenceIncomplete
+                        )
+                | Some seal -> return Ok(approvals, seal)
+        }

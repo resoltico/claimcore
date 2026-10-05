@@ -145,6 +145,8 @@ let private requirePairEvidence
         activationId
         sequence
         hash
+        CancellationToken.None
+    |> await
 
     use writer =
         new ClaimCore.Witness.Store(
@@ -153,7 +155,7 @@ let private requirePairEvidence
             context.NewCapability
         )
 
-    writer.Admit()
+    writer.Admit(CancellationToken.None).GetAwaiter().GetResult()
 
 let private verifyActivationRetry
     (context: SettledW1Context)
@@ -185,7 +187,7 @@ let private verifyActivationRetry
     | _ -> failtest "An exact W2 retry must reconcile without a second activation."
 
     Expect.equal
-        (context.Witness.Snapshot().TipSequence)
+        ((context.Witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
         sequence
         "Exact W2 retry cannot append another authority event."
 
@@ -219,14 +221,16 @@ let private activationFlow expireBeforeRetry (context: SettledW1Context) source 
         |> await
 
     requireClosed context
-    let before = context.Witness.Snapshot().TipSequence
+
+    let before =
+        (context.Witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence
 
     match activate (testVerifier None) with
     | WriterActivationOutcome.Refused -> ()
     | _ -> failtest "Without independent qualification W2 must refuse before mutation."
 
     Expect.equal
-        (context.Witness.Snapshot().TipSequence)
+        ((context.Witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
         before
         "Refused activation appends no witness event."
 
@@ -238,7 +242,8 @@ let private activationFlow expireBeforeRetry (context: SettledW1Context) source 
     let id, sequence, hash = ticket
 
     Expect.isFalse
-        (context.Witness.Snapshot().ActivationPending)
+        ((context.Witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
+            .ActivationPending)
         "W2 settles restored writer authority."
 
     requireAuditedActivation dataSource context suppression sequence

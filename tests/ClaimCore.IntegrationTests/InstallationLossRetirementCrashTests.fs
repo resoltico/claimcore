@@ -19,7 +19,9 @@ open ClaimCore.IntegrationTests.InstallationLossRetirementCommitFault
 open ClaimCore.IntegrationTests.InstallationLossRetirementReadOrder
 
 let private checkPending (context: Context) =
-    let tip = context.Witness.Snapshot()
+    let tip =
+        (context.Witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
+
     Expect.isTrue tip.LossRetirementPending "W0 still fences the old installation."
     Expect.isFalse tip.LossRetired "Missing W1 is not a settled retirement."
     use audit = new NpgsqlConnection(context.OwnerConnectionString)
@@ -58,7 +60,8 @@ let private heldOwnerAudit
                     if not (release.Wait(TimeSpan.FromSeconds 30.)) then
                         failtest "Synthetic owner audit was not released."
 
-                    summary.PendingIntents)
+                    Task.FromResult summary.PendingIntents)
+            |> await
 
         Expect.equal summary.PendingIntents 1L "Owner audit retains pending W0 knowledge."
         inspected)
@@ -92,7 +95,8 @@ let private settleBehindAuthorityLock
             context.Witness
             input
             intent
-            decision.Commitments)
+            decision.Commitments
+        |> await)
 
 let private waitingForAuthority (observer: NpgsqlConnection) pid =
     use command =
@@ -117,7 +121,8 @@ let private auditSerializesW1 (context: Context) (decision: Decision) intent =
         audit.GetAwaiter().GetResult() |> ignore
         failtest "Owner audit did not acquire its primary barrier."
 
-    let prior = context.Witness.Snapshot().TipSequence
+    let prior =
+        (context.Witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence
 
     let started =
         TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously)
@@ -133,7 +138,9 @@ let private auditSerializesW1 (context: Context) (decision: Decision) intent =
             let waiting =
                 SpinWait.SpinUntil((fun () -> waitingForAuthority observer pid), 10000)
 
-            waiting, context.Witness.Snapshot().TipSequence = prior
+            waiting,
+            (context.Witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence =
+                prior
         finally
             release.Set()
 
@@ -201,19 +208,22 @@ let private lostW1Response (context: Context) =
             decision.KnownSource
             None
             None
+        |> await
 
     match observed with
     | InstallationLossRetirementOutcome.Unconfirmed id ->
         Expect.equal id decision.Value.RetirementId "Lost W1 response is not called definite."
     | _ -> failtest "Post-W1 response loss was not classified as uncertain."
 
-    let tip = context.Witness.Snapshot()
+    let tip =
+        (context.Witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
+
     Expect.isTrue tip.LossRetired "W1 durably settled before the response fault."
 
     checkReconciled context context.Primary decision
 
     Expect.equal
-        (context.Witness.Snapshot().TipSequence)
+        ((context.Witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
         tip.TipSequence
         "Lost output retry appends no new witness authority."
 

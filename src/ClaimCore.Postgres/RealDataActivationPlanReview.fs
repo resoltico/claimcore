@@ -63,6 +63,7 @@ module internal RealDataActivationPlanReview =
         (witness: WitnessProtocol)
         (context: ActorCallContext)
         planId
+        ct
         =
         task {
             let! revision =
@@ -75,7 +76,7 @@ module internal RealDataActivationPlanReview =
                     context.Binding.Principal
                     ResourceScope.Installation
                     revision
-                    CancellationToken.None
+                    ct
 
             match authority with
             | Some live when
@@ -86,22 +87,19 @@ module internal RealDataActivationPlanReview =
                     EndpointAction.ReviewRealDataActivation
                 ->
                 let! published =
-                    InstallationUsePlanRead.verified
-                        connection
-                        transaction
-                        witness
-                        planId
-                        CancellationToken.None
+                    InstallationUsePlanRead.verified connection transaction witness planId ct
+
+                let! snapshot = witness.Snapshot(ct)
 
                 match published with
-                | Some plan when eligible (witness.Snapshot()) plan ->
-                    let! now = Sql.databaseNow connection transaction
+                | Some plan when eligible snapshot plan ->
+                    let! now = Sql.databaseNow connection transaction ct
                     return RealDataActivationPlanReviewOutcome.Reviewed(project plan now)
                 | _ -> return RealDataActivationPlanReviewOutcome.ResourceUnavailable
             | _ -> return RealDataActivationPlanReviewOutcome.ResourceUnavailable
         }
 
-    let review dataSource (witness: WitnessProtocol) (context: ActorCallContext) planId =
+    let review dataSource (witness: WitnessProtocol) (context: ActorCallContext) planId ct =
         task {
             if
                 context.Action <> EndpointAction.ReviewRealDataActivation
@@ -112,17 +110,18 @@ module internal RealDataActivationPlanReview =
                 return RealDataActivationPlanReviewOutcome.ResourceUnavailable
             else
                 try
-                    witness.Admit()
-                    use! connection = RuntimeDatabase.openConnectionAsync dataSource
+                    do! witness.Admit(ct)
+
+                    use! connection =
+                        RuntimeDatabase.openConnectionAsyncWithCancellation dataSource ct
 
                     use! _authorityLease =
-                        AuthorityOperationFence.acquireShared
-                            (Some dataSource)
-                            connection
-                            System.Threading.CancellationToken.None
+                        AuthorityOperationFence.acquireShared (Some dataSource) connection ct
 
-                    use transaction = connection.BeginTransaction(IsolationLevel.ReadCommitted)
-                    return! underLock connection transaction witness context planId
+                    use! transaction =
+                        connection.BeginTransactionAsync(IsolationLevel.ReadCommitted, ct)
+
+                    return! underLock connection transaction witness context planId ct
                 with _ ->
                     return RealDataActivationPlanReviewOutcome.ResourceUnavailable
         }

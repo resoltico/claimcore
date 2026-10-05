@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open System.Security.Cryptography
 open Npgsql
 open NpgsqlTypes
@@ -140,12 +141,17 @@ module internal ManagedCopyAdoptedTransitionWrite =
                 ManagedCopyAdoptedTransitionPolicy.candidate value canonical signature
 
             try
-                let intent =
-                    witness.BeginAuthority(value.EventId, candidate, Some value.SourceCaseId)
+                let! intent =
+                    witness.BeginAuthority(
+                        value.EventId,
+                        candidate,
+                        Some value.SourceCaseId,
+                        CancellationToken.None
+                    )
 
                 do! write connection transaction signingKeyId value canonical signature intent
                 do! transaction.CommitAsync()
-                witness.SettleAuthority(value.EventId, intent) |> ignore
+                let! _ = witness.SettleAuthority(value.EventId, intent)
                 return AuthorityWriteOutcome.Applied(value.EventId, value.Revision)
             finally
                 CryptographicOperations.ZeroMemory(candidate)

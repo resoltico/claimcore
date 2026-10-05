@@ -18,7 +18,8 @@ let internal origin owner (witness: WitnessProtocol) copyId =
     use connection = new NpgsqlConnection(owner)
     connection.Open()
     use transaction = connection.BeginTransaction(IsolationLevel.ReadCommitted)
-    let tip = witness.Snapshot()
+
+    let tip = (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
 
     let result =
         ManagedCopyAdoptionEvidence.verifyOrigin
@@ -169,7 +170,10 @@ let private product
         "Retention still active keeps adopted product deletion pending"
 
     Expect.isNone
-        (witness.EvidenceStore.TryReadEvidence(premature.EventId, ClaimCore.Witness.Intent))
+        ((witness.EvidenceStore
+            .TryReadEvidence(premature.EventId, ClaimCore.Witness.Intent, CancellationToken.None)
+            .GetAwaiter()
+            .GetResult()))
         "Early deletion did not reserve witness authority"
 
     let forged = ManagedCopyAdoptedTransitionAttestation.encode unknown

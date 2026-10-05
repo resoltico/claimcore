@@ -112,14 +112,14 @@ let private openAuditor (writer: string) (witness: WitnessProtocol) =
                 witness.Identity
             )
 
-        protocol.AdmitReadOnly()
+        (protocol.AdmitReadOnly(CancellationToken.None).GetAwaiter().GetResult())
         custody, protocol
     with error ->
         custody.Dispose()
         raise error
 
 let private capturedCutoff (witness: WitnessProtocol) =
-    let tip = witness.Snapshot()
+    let tip = (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
 
     {
         InstallationId = witness.Identity.InstallationId
@@ -178,7 +178,8 @@ let private performCapture
                 auditedWitness
                 archive
                 checkpoint
-                held.LeaseId)
+                held.LeaseId
+            |> await)
         (fun () -> processStatus configured held.LeaseId)
 
 let private run owner app writer (witness: WitnessProtocol) =

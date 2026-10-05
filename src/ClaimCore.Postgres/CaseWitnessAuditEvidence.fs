@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open Npgsql
 open ClaimCore.Witness
 open DataAuditCommon
@@ -25,8 +26,9 @@ module internal CaseWitnessAuditEvidence =
         hash
         digest
         caseId
+        ct
         =
-        witnessProof (fun () ->
+        witnessProofAsync (fun () ->
             match settlement with
             | SettledAccepted ->
                 witness.VerifyAcceptedEvidenceForCase(
@@ -35,7 +37,8 @@ module internal CaseWitnessAuditEvidence =
                     epoch,
                     hash,
                     digest,
-                    caseId
+                    caseId,
+                    ct
                 )
             | SettledRevoked ->
                 witness.VerifyRevokedEvidenceForCase(
@@ -44,7 +47,8 @@ module internal CaseWitnessAuditEvidence =
                     epoch,
                     hash,
                     digest,
-                    caseId
+                    caseId,
+                    ct
                 )
             | SettledAuthority ->
                 witness.VerifyAuthorityEvidenceForCase(
@@ -53,66 +57,84 @@ module internal CaseWitnessAuditEvidence =
                     epoch,
                     hash,
                     digest,
-                    caseId
+                    caseId,
+                    ct
                 )
             | _ -> corrupt ())
 
-    let private metadata (witness: WitnessProtocol) cutoff caseId operation phase =
-        let row =
-            witness.EvidenceStore.TryReadMetadataOperation(operation, phase)
-            |> Option.defaultWith corrupt
+    let private metadata
+        (witness: WitnessProtocol)
+        cutoff
+        caseId
+        operation
+        phase
+        (ct: CancellationToken)
+        =
+        task {
+            let! observed = witness.EvidenceStore.TryReadMetadataOperation(operation, phase, ct)
+            let row = observed |> Option.defaultWith corrupt
 
-        if
-            row.Ticket.Sequence > cutoff
-            || row.Ticket.Epoch <> witness.Identity.Epoch
-            || row.Ticket.OperationId <> operation
-            || row.Ticket.Phase <> phase
-            || row.Ticket.ScopeKind <> Case
-            || row.Ticket.SubjectCaseId <> Some caseId
-        then
-            corrupt ()
+            if
+                row.Ticket.Sequence > cutoff
+                || row.Ticket.Epoch <> witness.Identity.Epoch
+                || row.Ticket.OperationId <> operation
+                || row.Ticket.Phase <> phase
+                || row.Ticket.ScopeKind <> Case
+                || row.Ticket.SubjectCaseId <> Some caseId
+            then
+                corrupt ()
 
-        row
+            return row
+        }
 
     let private target
         (connection: NpgsqlConnection)
         (transaction: NpgsqlTransaction)
         (receipt: StoredWitnessPruneReceipt)
         (row: MetadataRecord)
+        (ct: CancellationToken)
         =
-        use command =
-            new NpgsqlCommand(
-                "SELECT prune_event_id,operation_id,phase,witness_epoch,entry_hash,"
-                + "payload_sha256 FROM claimcore.case_erasure_prune_targets "
-                + "WHERE case_id=@case AND sequence=@sequence",
-                connection,
-                transaction
-            )
+        task {
+            use command =
+                new NpgsqlCommand(
+                    "SELECT prune_event_id,operation_id,phase,witness_epoch,entry_hash,"
+                    + "payload_sha256 FROM claimcore.case_erasure_prune_targets "
+                    + "WHERE case_id=@case AND sequence=@sequence",
+                    connection,
+                    transaction
+                )
 
-        Sql.uuid command "case" receipt.CaseId
-        Sql.integer command "sequence" row.Ticket.Sequence
-        use reader = command.ExecuteReader()
+            Sql.uuid command "case" receipt.CaseId
+            Sql.integer command "sequence" row.Ticket.Sequence
+            use! reader = command.ExecuteReaderAsync(ct)
 
-        if not (reader.Read()) then
-            corrupt ()
+            let! found = reader.ReadAsync(ct)
 
-        let ticket = row.Ticket
+            if not found then
+                corrupt ()
 
-        if
-            reader.GetGuid(0) <> receipt.EventId
-            || reader.GetGuid(1) <> ticket.OperationId
-            || reader.GetString(2)
-               <> (if ticket.Phase = Intent then
-                       "INTENT"
-                   else
-                       phaseName ticket.Phase)
-            || reader.GetInt64(3) <> ticket.Epoch
-            || reader.GetFieldValue<byte array>(4) <> ticket.EntryHash
-            || reader.GetFieldValue<byte array>(5) <> ticket.PayloadHash
-            || reader.Read()
-            || ticket.Sequence > receipt.CutoffSequence
-        then
-            corrupt ()
+            let ticket = row.Ticket
+
+            let matches =
+                not (
+                    reader.GetGuid(0) <> receipt.EventId
+                    || reader.GetGuid(1) <> ticket.OperationId
+                    || reader.GetString(2)
+                       <> (if ticket.Phase = Intent then
+                               "INTENT"
+                           else
+                               phaseName ticket.Phase)
+                    || reader.GetInt64(3) <> ticket.Epoch
+                    || reader.GetFieldValue<byte array>(4) <> ticket.EntryHash
+                    || reader.GetFieldValue<byte array>(5) <> ticket.PayloadHash
+                    || ticket.Sequence > receipt.CutoffSequence
+                )
+
+            let! duplicated = reader.ReadAsync(ct)
+
+            if not matches || duplicated then
+                corrupt ()
+        }
 
     let private pruned
         connection
@@ -121,6 +143,7 @@ module internal CaseWitnessAuditEvidence =
         caseId
         (intent: MetadataRecord)
         (settled: MetadataRecord)
+        (ct: CancellationToken)
         =
         task {
             let! receipt = CaseTombstonePrunePrimaryRead.find connection transaction caseId
@@ -134,18 +157,20 @@ module internal CaseWitnessAuditEvidence =
             then
                 corrupt ()
 
-            witnessProof (fun () ->
-                witness.VerifyAuthorityEvidenceForCase(
-                    value.EventId,
-                    value.IntentSequence,
-                    value.IntentEpoch,
-                    value.IntentHash,
-                    value.CandidateHash,
-                    caseId
-                ))
+            do!
+                witnessProofAsync (fun () ->
+                    witness.VerifyAuthorityEvidenceForCase(
+                        value.EventId,
+                        value.IntentSequence,
+                        value.IntentEpoch,
+                        value.IntentHash,
+                        value.CandidateHash,
+                        caseId,
+                        ct
+                    ))
 
-            target connection transaction value intent
-            target connection transaction value settled
+            do! target connection transaction value intent ct
+            do! target connection transaction value settled ct
         }
 
     let verify
@@ -160,6 +185,7 @@ module internal CaseWitnessAuditEvidence =
         (entryHash: byte array)
         (candidateDigest: byte array)
         settlement
+        (ct: CancellationToken)
         =
         task {
             if
@@ -172,8 +198,8 @@ module internal CaseWitnessAuditEvidence =
             then
                 corrupt ()
 
-            let intent = metadata witness cutoff caseId operation Intent
-            let settled = metadata witness cutoff caseId operation settlement
+            let! intent = metadata witness cutoff caseId operation Intent ct
+            let! settled = metadata witness cutoff caseId operation settlement ct
 
             if
                 intent.Ticket.Sequence <> sequence
@@ -185,7 +211,17 @@ module internal CaseWitnessAuditEvidence =
 
             match intent.PayloadPresent, settled.PayloadPresent with
             | true, true ->
-                full witness settlement operation sequence epoch entryHash candidateDigest caseId
-            | false, false -> do! pruned connection transaction witness caseId intent settled
+                do!
+                    full
+                        witness
+                        settlement
+                        operation
+                        sequence
+                        epoch
+                        entryHash
+                        candidateDigest
+                        caseId
+                        ct
+            | false, false -> do! pruned connection transaction witness caseId intent settled ct
             | _ -> corrupt ()
         }

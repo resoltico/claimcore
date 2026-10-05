@@ -38,16 +38,16 @@ let private failedAuditQuarantinesActorLanes () =
         new RuntimeAdmission(
             emptyLease (),
             TimeSpan.FromSeconds 1.,
-            (fun () -> ()),
-            emptyLease,
+            (fun _ -> Task.FromResult(())),
+            (fun _ -> task { return (emptyLease) () }),
             {
-                RequireCaseMutation = denied
-                RequireCaseRead = denied
-                RequireAuthoritySetup = denied
-                RequireAuthorityRead = denied
+                RequireCaseMutation = (fun _ -> task { denied () })
+                RequireCaseRead = (fun _ -> task { denied () })
+                RequireAuthoritySetup = (fun _ -> task { denied () })
+                RequireAuthorityRead = (fun _ -> task { denied () })
                 CommitHealth =
                     { new ICaseMutationCommitHealth with
-                        member _.VerifyLocked(_, _) = ()
+                        member _.VerifyLocked(_, _, _) = Task.CompletedTask
                     }
                 CommitHealthRequired = false
             }
@@ -224,7 +224,8 @@ let private assertActorQuarantine
             |> ignore)
         "Authority observation closes after audit failure."
 
-    let cutoff = witness.Snapshot().TipSequence
+    let cutoff =
+        (witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence
 
     Expect.throwsT<InvalidOperationException>
         (fun () ->
@@ -240,7 +241,10 @@ let private assertActorQuarantine
             |> ignore)
         "Actor authority mutation closes after audit failure."
 
-    Expect.equal (witness.Snapshot().TipSequence) cutoff "No new authority ticket escaped."
+    Expect.equal
+        ((witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult()).TipSequence)
+        cutoff
+        "No new authority ticket escaped."
 
 let private scheduledAuditQuarantinesTamperedCase () =
     withAuthorityRuntimeDatabase (fun owner app writer witness ->

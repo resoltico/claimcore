@@ -62,19 +62,31 @@ module private RuntimeActorFactory =
 
 /// Trusted local composition root. No store, mutable accepted state or credential is exposed.
 [<Sealed>]
-type Runtime private (resources: RuntimeResources) =
-    let safety = new RuntimeSafetySupervisor(resources)
-
-    let realDataScope = safety.CurrentUseState().Scope = InstallationUseScope.RealData
+type Runtime
+    private
+    (
+        resources: RuntimeResources,
+        safety: RuntimeSafetySupervisor,
+        initialState: InstallationUseState
+    ) =
+    let realDataScope = initialState.Scope = InstallationUseScope.RealData
 
     let auditCadence =
         new RuntimeAuditCadence(resources, RuntimeAuditInterval.configured ())
 
     let commitHealth =
         { new ICaseMutationCommitHealth with
-            member _.VerifyLocked(connection, transaction) =
-                if realDataScope then
-                    RuntimeBackupHealthFiles.requireLocked resources connection transaction
+            member _.VerifyLocked(connection, transaction, ct) =
+                task {
+                    if realDataScope then
+                        do!
+                            RuntimeBackupHealthFiles.requireLocked
+                                resources
+                                connection
+                                transaction
+                                ct
+                }
+                :> Task
         }
 
     let admission =
@@ -91,48 +103,66 @@ type Runtime private (resources: RuntimeResources) =
             safety.AcquireReadFence,
             {
                 RequireCaseMutation =
-                    (fun () ->
-                        auditCadence.RequireHealthy()
-                        safety.RequireCaseMutation())
+                    (fun ct ->
+                        task {
+                            auditCadence.RequireHealthy()
+                            do! safety.RequireCaseMutation(ct)
+                        })
                 RequireCaseRead =
-                    (fun () ->
-                        auditCadence.RequireHealthy()
-                        safety.RequireCaseRead())
+                    (fun ct ->
+                        task {
+                            auditCadence.RequireHealthy()
+                            do! safety.RequireCaseRead(ct)
+                        })
                 RequireAuthoritySetup =
-                    (fun () ->
-                        auditCadence.RequireHealthy()
-                        safety.RequireAuthoritySetup())
+                    (fun ct ->
+                        task {
+                            auditCadence.RequireHealthy()
+                            do! safety.RequireAuthoritySetup(ct)
+                        })
                 RequireAuthorityRead =
-                    (fun () ->
-                        auditCadence.RequireHealthy()
-                        safety.RequireAuthorityRead())
+                    (fun ct ->
+                        task {
+                            auditCadence.RequireHealthy()
+                            do! safety.RequireAuthorityRead(ct)
+                        })
                 CommitHealth = commitHealth
                 CommitHealthRequired = realDataScope
             }
         )
 
     /// Safe operator-facing scope/phase observation; no case data or private evidence leaves.
-    member _.DataUseReadiness() =
-        try
-            let state = safety.CurrentUseState()
+    member _.DataUseReadiness(?cancellationToken: CancellationToken) =
+        task {
+            let ct = defaultArg cancellationToken CancellationToken.None
+            use _lease = admission.Admit()
 
-            let ready =
-                if
-                    state.Scope <> InstallationUseScope.RealData
-                    || state.Phase <> InstallationUsePhase.Active
-                then
-                    false
-                else
-                    try
-                        auditCadence.RequireHealthy()
-                        safety.RequireCaseMutation()
-                        true
-                    with _ ->
-                        false
+            try
+                let! state = safety.CurrentUseState(ct)
 
-            InstallationUse.scopeToken state.Scope, InstallationUse.phaseToken state.Phase, ready
-        with _ ->
-            "UNKNOWN", "QUARANTINED", false
+                let! ready =
+                    task {
+                        if
+                            state.Scope <> InstallationUseScope.RealData
+                            || state.Phase <> InstallationUsePhase.Active
+                        then
+                            return false
+                        else
+                            try
+                                auditCadence.RequireHealthy()
+                                do! safety.RequireCaseMutation(ct)
+                                return true
+                            with _ ->
+                                return false
+                    }
+
+                return
+                    InstallationUse.scopeToken state.Scope,
+                    InstallationUse.phaseToken state.Phase,
+                    ready
+            with _ ->
+                return "UNKNOWN", "QUARANTINED", false
+        }
 
     /// The caller passes a PrincipalKey obtained from validated OIDC/OAuth, not a display
     /// name or group claim. A fresh scoped core is composed for each admitted endpoint call.
@@ -198,7 +228,7 @@ type Runtime private (resources: RuntimeResources) =
         (
             connectionString: string,
             witnessConnection: string,
-            custodyFactory: Store -> IKeyCustody,
+            custodyFactory: Store -> Task<IKeyCustody>,
             suppressionKeyFilePath: string,
             artifactKeyRingPath: string,
             cancellationToken: CancellationToken
@@ -216,7 +246,12 @@ type Runtime private (resources: RuntimeResources) =
                     custodyFactory
                     suppressionKeyFilePath
                     cancellationToken)
-            (fun () resources -> new Runtime(resources))
+            (fun () resources ->
+                task {
+                    let safety = new RuntimeSafetySupervisor(resources)
+                    let! state = safety.Initialize(cancellationToken)
+                    return new Runtime(resources, safety, state)
+                })
             RuntimeOpening.fault
             cancellationToken
 
@@ -233,8 +268,10 @@ type Runtime private (resources: RuntimeResources) =
             connectionString,
             witnessConnection,
             (fun store ->
-                let activeKeyId, _ = store.ReadKeyCheck()
-                new KeyRing(activeKeyId, [ activeKeyId, witnessKey ]) :> IKeyCustody),
+                task {
+                    let! activeKeyId, _ = store.ReadKeyCheck(cancellationToken)
+                    return new KeyRing(activeKeyId, [ activeKeyId, witnessKey ]) :> IKeyCustody
+                }),
             suppressionKeyFilePath,
             artifactKeyRingPath,
             cancellationToken
@@ -252,7 +289,7 @@ type Runtime private (resources: RuntimeResources) =
         Runtime.OpenWithCustody(
             connectionString,
             witnessConnection,
-            (fun _ -> WitnessKeyCustody.load witnessKeyRingFilePath),
+            (fun _ -> Task.FromResult(WitnessKeyCustody.load witnessKeyRingFilePath)),
             suppressionKeyFilePath,
             artifactKeyRingPath,
             cancellationToken

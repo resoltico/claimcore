@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open System.IO
 open Npgsql
 open ClaimCore.Application
@@ -10,50 +11,78 @@ open WitnessProtocolReconciliation
 
 /// Claimant-bearing reads prove one recorded projection without appending under a witness read fence.
 module internal CaseReadEvidence =
-    let receipt (witness: WitnessProtocol) connection transaction operationId =
-        try
-            witness.VerifyAccepted(connection, transaction, operationId)
-            Ok()
-        with _ ->
-            Error(CoreFailure.CommitOutcomeUnknown operationId)
+    let receipt (witness: WitnessProtocol) connection transaction operationId ct =
+        task {
+            try
+                do! witness.VerifyAccepted(connection, transaction, operationId, ct)
+                return Ok()
+            with
+            | :? OperationCanceledException as error when ct.IsCancellationRequested ->
+                return raise error
+            | _ -> return Error(CoreFailure.CommitOutcomeUnknown operationId)
+        }
 
-    let current witness connection transaction claim =
-        let view = Claim.view claim
+    let current witness connection transaction claim (ct: CancellationToken) =
+        task {
+            let view = Claim.view claim
 
-        use command =
-            new NpgsqlCommand(
-                "SELECT operation_id,snapshot FROM claimcore.case_changes "
-                + "WHERE case_reference=@reference ORDER BY revision DESC LIMIT 1",
-                connection,
-                transaction
-            )
+            use command =
+                new NpgsqlCommand(
+                    "SELECT operation_id,snapshot FROM claimcore.case_changes "
+                    + "WHERE case_reference=@reference ORDER BY revision DESC LIMIT 1",
+                    connection,
+                    transaction
+                )
 
-        Sql.text command "reference" view.Fields.CaseReference
-        use reader = command.ExecuteReader()
+            Sql.text command "reference" view.Fields.CaseReference
+            use! reader = command.ExecuteReaderAsync(ct)
 
-        if not (reader.Read()) then
-            raise (InvalidDataException("Current projection lacks accepted evidence."))
+            let! found = reader.ReadAsync(ct)
 
-        let operationId = reader.GetGuid(0)
-        let expected = reader.GetFieldValue<byte array>(1)
+            if not found then
+                raise (InvalidDataException("Current projection lacks accepted evidence."))
 
-        let prior =
-            match CaseRecord.decodeSnapshot expected with
-            | Ok snapshot when CaseRecord.encodeSnapshot snapshot = expected -> snapshot
-            | _ -> raise (InvalidDataException("Accepted projection encoding is invalid."))
+            let operationId = reader.GetGuid(0)
+            let expected = reader.GetFieldValue<byte array>(1)
 
-        if prior.Fields <> view.Fields || prior.Version > view.Version || reader.Read() then
-            raise (InvalidDataException("Current projection differs from accepted evidence."))
+            let prior =
+                match CaseRecord.decodeSnapshot expected with
+                | Ok snapshot when CaseRecord.encodeSnapshot snapshot = expected -> snapshot
+                | _ -> raise (InvalidDataException("Accepted projection encoding is invalid."))
 
-        reader.Close()
+            let! duplicated = reader.ReadAsync(ct)
 
-        match receipt witness connection transaction operationId with
-        | Error failure -> Error failure
-        | Ok() -> CaseReadLifecycleEvidence.verify witness connection transaction view prior.Version
+            if prior.Fields <> view.Fields || prior.Version > view.Version || duplicated then
+                raise (InvalidDataException("Current projection differs from accepted evidence."))
 
-    let page witness connection transaction claims =
-        claims
-        |> List.tryPick (fun claim ->
-            match current witness connection transaction claim with
-            | Ok() -> None
-            | Error failure -> Some failure)
+            reader.Close()
+
+            let! proof = receipt witness connection transaction operationId ct
+
+            match proof with
+            | Error failure -> return Error failure
+            | Ok() ->
+                return!
+                    CaseReadLifecycleEvidence.verify
+                        witness
+                        connection
+                        transaction
+                        view
+                        prior.Version
+                        ct
+        }
+
+    let page witness connection transaction claims ct =
+        task {
+            let mutable failure = None
+
+            for claim in claims do
+                if failure.IsNone then
+                    let! result = current witness connection transaction claim ct
+
+                    match result with
+                    | Ok() -> ()
+                    | Error cause -> failure <- Some cause
+
+            return failure
+        }

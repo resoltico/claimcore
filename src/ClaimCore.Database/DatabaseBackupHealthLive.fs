@@ -1,5 +1,6 @@
 namespace ClaimCore.Database
 
+open System.Threading
 open System
 open System.Security.Cryptography
 open Npgsql
@@ -34,17 +35,22 @@ module internal DatabaseBackupHealthLive =
         | _ -> invalidOp "Backup health database clock is unavailable."
 
     let private witnessAncestors (witness: WitnessProtocol) (claim: BackupHealthClaims) =
-        let require sequence expected =
-            match witness.TryReadHashAtSequence(sequence) with
-            | Some hash when Convert.ToHexStringLower(hash) = expected -> ()
-            | _ -> invalidOp "Backup health witness ancestor differs."
+        task {
+            if claim.Checkpoint.Sequence < 1L || claim.TestRestore.WitnessCutoff < 1L then
+                invalidOp "Backup health lacks a surviving checkpoint or restored cutoff."
 
-        if claim.Checkpoint.Sequence < 1L || claim.TestRestore.WitnessCutoff < 1L then
-            invalidOp "Backup health lacks a surviving checkpoint or restored cutoff."
+            for sequence, expected in
+                [
+                    claim.WitnessTipSequence, claim.WitnessTipHash
+                    claim.Checkpoint.Sequence, claim.Checkpoint.Hash
+                    claim.TestRestore.WitnessCutoff, claim.TestRestore.WitnessCutoffHash
+                ] do
+                let! observed = witness.TryReadHashAtSequence(sequence, CancellationToken.None)
 
-        require claim.WitnessTipSequence claim.WitnessTipHash
-        require claim.Checkpoint.Sequence claim.Checkpoint.Hash
-        require claim.TestRestore.WitnessCutoff claim.TestRestore.WitnessCutoffHash
+                match observed with
+                | Some hash when Convert.ToHexStringLower(hash) = expected -> ()
+                | _ -> invalidOp "Backup health witness ancestor differs."
+        }
 
     let private signer
         (owner: NpgsqlConnection)
@@ -106,55 +112,68 @@ module internal DatabaseBackupHealthLive =
         && facts.PendingIntents = 0L
         && facts.InstallationId = evidence.InstallationId
 
+    let private inspectCurrent
+        policy
+        evidence
+        loaded
+        witnessOwner
+        owner
+        transaction
+        witness
+        summary
+        tip
+        =
+        task {
+            let now = databaseNow owner transaction
+
+            let claim =
+                BackupHealthCertificate.parse loaded.CertificateBytes now
+                |> Option.defaultWith (fun () ->
+                    invalidOp "Signed backup health certificate is invalid or stale.")
+
+            let! facts =
+                DatabaseRestoreLive.inspect owner transaction witnessOwner witness summary tip
+
+            if not (matchingPair facts claim evidence) then
+                invalidOp "Backup health current pair differs from signed source."
+
+            DatabaseBackupHealthBinding.verify policy evidence claim loaded.SourceBytes now
+
+            DatabaseBackupHealthWalCoverage.verify evidence
+            DatabaseBackupHealthWriterFence.verify owner transaction claim
+
+            DatabaseBackupHealthCopyRows.verify owner transaction policy evidence now
+
+            do! witnessAncestors witness claim
+            signer owner transaction policy claim loaded
+            return claim, now
+        }
+
     let verify
         ownerConnection
         (policy: BackupHealthPolicy)
         (evidence: BackupHealthEvidence)
         (loaded: LoadedBackupHealthEvidence)
         =
-        let witnessAudit, witnessOwner, custody = source ()
-        use custody = custody
+        task {
+            let witnessAudit, witnessOwner, custody = source ()
+            use custody = custody
 
-        let suppressionPath =
-            Environment.GetEnvironmentVariable("CLAIMCORE_SUPPRESSION_KEY_FILE")
-            |> Option.ofObj
-            |> Option.defaultWith (fun () ->
-                invalidOp "Backup health suppression key is unavailable.")
+            let suppressionPath =
+                Environment.GetEnvironmentVariable("CLAIMCORE_SUPPRESSION_KEY_FILE")
+                |> Option.ofObj
+                |> Option.defaultWith (fun () ->
+                    invalidOp "Backup health suppression key is unavailable.")
 
-        use suppression = SuppressionKeyFile.Load(suppressionPath)
+            use suppression = SuppressionKeyFile.Load(suppressionPath)
 
-        let _, _, qualified =
-            DatabaseVerifyData.auditedRestoredWith
-                ownerConnection
-                witnessAudit
-                custody
-                suppression
-                (fun owner transaction witness summary tip ->
-                    let now = databaseNow owner transaction
+            let! _, _, qualified =
+                DatabaseVerifyData.auditedRestoredWith
+                    ownerConnection
+                    witnessAudit
+                    custody
+                    suppression
+                    (inspectCurrent policy evidence loaded witnessOwner)
 
-                    let claim =
-                        BackupHealthCertificate.parse loaded.CertificateBytes now
-                        |> Option.defaultWith (fun () ->
-                            invalidOp "Signed backup health certificate is invalid or stale.")
-
-                    let facts =
-                        DatabaseRestoreLive.inspect
-                            owner
-                            transaction
-                            witnessOwner
-                            witness
-                            summary
-                            tip
-
-                    if not (matchingPair facts claim evidence) then
-                        invalidOp "Backup health current pair differs from signed source."
-
-                    DatabaseBackupHealthBinding.verify policy evidence claim loaded.SourceBytes now
-                    DatabaseBackupHealthWalCoverage.verify evidence
-                    DatabaseBackupHealthWriterFence.verify owner transaction claim
-                    DatabaseBackupHealthCopyRows.verify owner transaction policy evidence now
-                    witnessAncestors witness claim
-                    signer owner transaction policy claim loaded
-                    claim, now)
-
-        qualified
+            return qualified
+        }

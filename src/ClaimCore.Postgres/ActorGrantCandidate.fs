@@ -281,3 +281,15 @@ module internal ActorGrantCandidate =
     let verifyStored canonical revision eventId actionName targetActorId approverActorId =
         decodeStored canonical revision eventId actionName targetActorId approverActorId
         |> Option.isSome
+
+    let enabledAction eventId revision actorId approverId enabled : ActorAuthorityAction =
+        {
+            EventId = eventId
+            Revision = revision
+            ActionName = if enabled then "ENABLE_ACTOR" else "DISABLE_ACTOR"
+            TargetActorId = actorId
+            ApproverActorId = Some approverId
+            Principal = None
+            Grant = None
+            Enabled = Some enabled
+        }

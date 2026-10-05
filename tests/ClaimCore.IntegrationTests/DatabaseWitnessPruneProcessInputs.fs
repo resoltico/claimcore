@@ -124,7 +124,10 @@ let wrongCapabilityRefused
             "No primary prune receipt was written"
 
         Expect.isNone
-            (witness.EvidenceStore.TryReadEvidence(request.EventId, Intent))
+            ((witness.EvidenceStore
+                .TryReadEvidence(request.EventId, Intent, CancellationToken.None)
+                .GetAwaiter()
+                .GetResult()))
             "No witness prune intent was written"
     finally
         CryptographicOperations.ZeroMemory(wrong)

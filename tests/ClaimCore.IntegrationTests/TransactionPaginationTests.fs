@@ -1,5 +1,6 @@
 module ClaimCore.IntegrationTests.TransactionPaginationTests
 
+open System.Threading
 open System
 open System.Threading.Tasks
 open Expecto
@@ -37,7 +38,11 @@ let private verifyPagination () =
 
     expected |> List.chunkBySize insertBatchSize |> List.iter (openBatch service)
 
-    let first = service.List({ AfterCursor = None; Limit = 50 }) |> await |> accepted
+    let first =
+        service.List({ AfterCursor = None; Limit = 50 }, CancellationToken.None)
+        |> await
+        |> accepted
+
     Expect.equal first.Items.Length 50 "Page size"
     Expect.equal (references first) (expected |> List.take 50) "C-collation order"
 
@@ -52,7 +57,8 @@ let private verifyPagination () =
             {
                 AfterCursor = Some cursor
                 Limit = 50
-            }
+            },
+            CancellationToken.None
         )
         |> await
         |> accepted

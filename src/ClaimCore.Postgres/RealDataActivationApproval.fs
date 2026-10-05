@@ -11,69 +11,49 @@ open WitnessProtocolReconciliation
 
 /// Actor-bound installation approval; owner activation later consumes two distinct witnessed rows.
 module internal RealDataActivationApproval =
-    let private settled
-        (witness: WitnessProtocol)
-        (request: RealDataActivationApprovalRequest)
-        (stored: RealDataActivationApprovalRow)
-        canonical
-        =
-        try
-            witness.VerifyAuthorityEvidenceForInstallation(
-                request.ApprovalId,
-                stored.WitnessSequence,
-                stored.WitnessEpoch,
-                stored.WitnessHash,
-                stored.CandidateHash
-            )
-        with _ ->
-            witness.ReconcileAuthority(
-                request.ApprovalId,
-                stored.WitnessSequence,
-                stored.WitnessEpoch,
-                stored.WitnessHash,
-                canonical
-            )
-
-            witness.VerifyAuthorityEvidenceForInstallation(
-                request.ApprovalId,
-                stored.WitnessSequence,
-                stored.WitnessEpoch,
-                stored.WitnessHash,
-                stored.CandidateHash
-            )
-
     let private replay
         (witness: WitnessProtocol)
         (request: RealDataActivationApprovalRequest)
         actorId
         (stored: RealDataActivationApprovalRow)
+        ct
         =
-        let canonical =
-            RealDataActivationApprovalCandidate.canonical
-                request
-                actorId
-                stored.ApproverGrantRevision
-                stored.ApprovedAt
+        task {
+            let canonical =
+                RealDataActivationApprovalCandidate.canonical
+                    request
+                    actorId
+                    stored.ApproverGrantRevision
+                    stored.ApprovedAt
 
-        try
-            if
-                stored.ApproverActorId <> actorId
-                || stored.Canonical <> canonical
-                || stored.CandidateHash <> SHA256.HashData(canonical)
-            then
-                RealDataActivationApprovalOutcome.ResourceUnavailable
-            else
-                try
-                    settled witness request stored canonical
+            try
+                if
+                    stored.ApproverActorId <> actorId
+                    || stored.Canonical <> canonical
+                    || stored.CandidateHash <> SHA256.HashData(canonical)
+                then
+                    return RealDataActivationApprovalOutcome.ResourceUnavailable
+                else
+                    try
+                        do!
+                            RealDataActivationApprovalRecovery.requireSettled
+                                witness
+                                request
+                                stored
+                                canonical
+                                ct
 
-                    RealDataActivationApprovalOutcome.Approved(
-                        request.ApprovalId,
-                        stored.ApproverGrantRevision
-                    )
-                with _ ->
-                    RealDataActivationApprovalOutcome.StartedUnconfirmed request.ApprovalId
-        finally
-            CryptographicOperations.ZeroMemory(canonical)
+                        return
+                            RealDataActivationApprovalOutcome.Approved(
+                                request.ApprovalId,
+                                stored.ApproverGrantRevision
+                            )
+                    with _ ->
+                        return
+                            RealDataActivationApprovalOutcome.StartedUnconfirmed request.ApprovalId
+            finally
+                CryptographicOperations.ZeroMemory(canonical)
+        }
 
     let private retain
         (connection: NpgsqlConnection)
@@ -103,7 +83,7 @@ module internal RealDataActivationApproval =
                             intent
 
                     do! transaction.CommitAsync()
-                    witness.SettleAuthority(request.ApprovalId, intent) |> ignore
+                    let! _ = witness.SettleAuthority(request.ApprovalId, intent)
                     return RealDataActivationApprovalOutcome.Approved(request.ApprovalId, revision)
                 with _ ->
                     return RealDataActivationApprovalOutcome.StartedUnconfirmed request.ApprovalId
@@ -119,6 +99,7 @@ module internal RealDataActivationApproval =
         actorId
         revision
         approvedAt
+        ct
         =
         task {
             let canonical =
@@ -126,7 +107,7 @@ module internal RealDataActivationApproval =
 
             try
                 try
-                    let intent = witness.BeginAuthority(request.ApprovalId, canonical, None)
+                    let! intent = witness.BeginAuthority(request.ApprovalId, canonical, None, ct)
 
                     return!
                         retain
@@ -144,6 +125,44 @@ module internal RealDataActivationApproval =
                 CryptographicOperations.ZeroMemory(canonical)
         }
 
+    let private resumeOrBegin
+        connection
+        transaction
+        witness
+        (request: RealDataActivationApprovalRequest)
+        actorId
+        revision
+        snapshot
+        pending
+        now
+        ct
+        =
+        task {
+            match pending with
+            | Some original when
+                RealDataActivationApprovalChecks.pendingValid request snapshot original now
+                ->
+                return!
+                    retain
+                        connection
+                        transaction
+                        witness
+                        request
+                        actorId
+                        original.GrantRevision
+                        original.ApprovedAt
+                        original.Intent
+            | Some _ -> return RealDataActivationApprovalOutcome.ResourceUnavailable
+            | None when
+                RealDataActivationApprovalChecks.freshTip request snapshot
+                && request.ExpiresAt > now
+                && request.ExpiresAt <= now.AddHours(24.)
+                ->
+                return!
+                    beginAndRetain connection transaction witness request actorId revision now ct
+            | None -> return RealDataActivationApprovalOutcome.ResourceUnavailable
+        }
+
     let private fresh
         (connection: NpgsqlConnection)
         (transaction: NpgsqlTransaction)
@@ -151,14 +170,15 @@ module internal RealDataActivationApproval =
         (request: RealDataActivationApprovalRequest)
         actorId
         revision
+        ct
         =
         task {
-            let! now = Sql.databaseNow connection transaction
-            let snapshot = witness.Snapshot()
+            let! now = Sql.databaseNow connection transaction ct
+            let! snapshot = witness.Snapshot(ct)
             let! first = RealDataActivationApprovalRows.first connection transaction request
-            let pending = RealDataActivationApprovalRecovery.tryRead witness request actorId
+            let! pending = RealDataActivationApprovalRecovery.tryRead witness request actorId ct
 
-            let common =
+            let! common =
                 RealDataActivationApprovalChecks.baseEligible
                     witness
                     request
@@ -167,33 +187,23 @@ module internal RealDataActivationApproval =
                     pending.IsNone
                     first
                     snapshot
+                    ct
 
             if not common then
                 return RealDataActivationApprovalOutcome.ResourceUnavailable
             else
-                match pending with
-                | Some original when
-                    RealDataActivationApprovalChecks.pendingValid request snapshot original now
-                    ->
-                    return!
-                        retain
-                            connection
-                            transaction
-                            witness
-                            request
-                            actorId
-                            original.GrantRevision
-                            original.ApprovedAt
-                            original.Intent
-                | Some _ -> return RealDataActivationApprovalOutcome.ResourceUnavailable
-                | None when
-                    RealDataActivationApprovalChecks.freshTip request snapshot
-                    && request.ExpiresAt > now
-                    && request.ExpiresAt <= now.AddHours(24.)
-                    ->
-                    return!
-                        beginAndRetain connection transaction witness request actorId revision now
-                | None -> return RealDataActivationApprovalOutcome.ResourceUnavailable
+                return!
+                    resumeOrBegin
+                        connection
+                        transaction
+                        witness
+                        request
+                        actorId
+                        revision
+                        snapshot
+                        pending
+                        now
+                        ct
         }
 
     let private underLock
@@ -202,6 +212,7 @@ module internal RealDataActivationApproval =
         (witness: WitnessProtocol)
         (context: ActorCallContext)
         (request: RealDataActivationApprovalRequest)
+        ct
         =
         task {
             let! revision =
@@ -230,7 +241,7 @@ module internal RealDataActivationApproval =
                         transaction
                         witness
                         request.PlanId
-                        CancellationToken.None
+                        ct
 
                 match published with
                 | Some plan when RealDataActivationApprovalChecks.matchesPublished request plan ->
@@ -241,33 +252,32 @@ module internal RealDataActivationApproval =
                             request.ApprovalId
 
                     match stored with
-                    | Some row -> return replay witness request live.ActorId row
+                    | Some row -> return! replay witness request live.ActorId row ct
                     | None ->
-                        return! fresh connection transaction witness request live.ActorId revision
+                        return!
+                            fresh connection transaction witness request live.ActorId revision ct
                 | _ -> return RealDataActivationApprovalOutcome.ResourceUnavailable
             | _ -> return RealDataActivationApprovalOutcome.ResourceUnavailable
         }
 
-    let approve dataSource (witness: WitnessProtocol) context request =
+    let approve dataSource (witness: WitnessProtocol) context request ct =
         task {
             if not (RealDataActivationApprovalChecks.valid context request) then
                 return RealDataActivationApprovalOutcome.ResourceUnavailable
             else
                 try
-                    witness.Admit()
-                    use! connection = RuntimeDatabase.openConnectionAsync dataSource
+                    do! witness.Admit(ct)
+
+                    use! connection =
+                        RuntimeDatabase.openConnectionAsyncWithCancellation dataSource ct
 
                     use! _authorityLease =
-                        AuthorityOperationFence.acquireShared
-                            (Some dataSource)
-                            connection
-                            System.Threading.CancellationToken.None
+                        AuthorityOperationFence.acquireShared (Some dataSource) connection ct
 
-                    use transaction = connection.BeginTransaction(IsolationLevel.ReadCommitted)
-                    return! underLock connection transaction witness context request
+                    use! transaction =
+                        connection.BeginTransactionAsync(IsolationLevel.ReadCommitted, ct)
+
+                    return! underLock connection transaction witness context request ct
                 with _ ->
                     return RealDataActivationApprovalOutcome.ResourceUnavailable
         }
-
-    let review dataSource witness context planId =
-        RealDataActivationPlanReview.review dataSource witness context planId

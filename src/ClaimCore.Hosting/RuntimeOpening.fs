@@ -49,7 +49,9 @@ module internal RuntimeOpening =
 
             use! reader = command.ExecuteReaderAsync(cancellationToken)
 
-            if not (reader.Read()) then
+            let! found = reader.ReadAsync(cancellationToken)
+
+            if not found then
                 invalidOp "Primary installation identity is missing."
 
             let identity =
@@ -78,15 +80,28 @@ module internal RuntimeOpening =
             invalidOp "Real-data bootstrap contains claimant or pending authority."
 
     let createWitness createStore custodyFactory identity =
-        use construction = new RuntimeConstruction()
-        let store = construction.Own(createStore ())
-        let custody = construction.Own(custodyFactory store)
-        construction.Transfer(new WitnessProtocol(store, custody, identity))
+        task {
+            use construction = new RuntimeConstruction()
+            let store = construction.Own(createStore ())
+            let! loaded = custodyFactory store
+            let custody = construction.Own(loaded)
+
+            return
+                construction.Transfer(
+                    new WitnessProtocol(
+                        store,
+                        custody,
+                        identity,
+                        ignore,
+                        RuntimeOperationalSignals.witness
+                    )
+                )
+        }
 
     let core
         (resources: RuntimeResources)
         (witnessConnection: string)
-        (custodyFactory: Store -> IKeyCustody)
+        (custodyFactory: Store -> Task<IKeyCustody>)
         (suppressionKeyFilePath: string)
         (cancellationToken: CancellationToken)
         =
@@ -115,7 +130,7 @@ module internal RuntimeOpening =
 
             use writerCapability = WriterCapabilityFile.Load(writerCapabilityPath ())
 
-            let witness =
+            let! witness =
                 createWitness
                     (fun () ->
                         writerCapability.Use(fun material ->
@@ -124,7 +139,7 @@ module internal RuntimeOpening =
                     identity
 
             resources.Attach(witness)
-            witness.Admit()
+            do! witness.Admit(cancellationToken)
 
             cancellationToken.ThrowIfCancellationRequested()
 
@@ -137,7 +152,9 @@ module internal RuntimeOpening =
                 // independent witness before any actor-bound case work becomes available.
                 let! audit = RuntimeFullAudit.run resources cancellationToken
 
-                let useState = InstallationUseScopeRead.requirePair _connection witness
+                let! useState =
+                    InstallationUseScopeRead.requirePair _connection witness cancellationToken
+
                 requireBootstrapNoCases useState audit
 
                 let clock = businessTime businessTimeZone TimeProvider.System

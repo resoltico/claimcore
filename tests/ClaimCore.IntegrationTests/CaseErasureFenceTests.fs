@@ -80,7 +80,11 @@ let private assertFence owner (witness: WitnessProtocol) (request: CommandReques
     let hash = reader.GetFieldValue<byte array>(8)
     Expect.isFalse (reader.Read()) "Exactly one erasure fence exists."
     reader.Close()
-    witness.VerifyAuthorityEvidence(eventId, sequence, epoch, hash, candidate)
+
+    (witness
+        .VerifyAuthorityEvidence(eventId, sequence, epoch, hash, candidate, CancellationToken.None)
+        .GetAwaiter()
+        .GetResult())
 
     let commitments = FixturePrivateFiles.syntheticCommitments witness.Identity
 

@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open System.IO
 open System.Security.Cryptography
 open Npgsql
@@ -51,6 +52,7 @@ module internal CaseTombstonePrunePrimaryWrite =
         (copyDigest: byte array)
         (canonical: byte array)
         (intent: WitnessIntent)
+        ct
         =
         task {
             use command = new NpgsqlCommand(updateSql, connection, transaction)
@@ -76,7 +78,7 @@ module internal CaseTombstonePrunePrimaryWrite =
             Sql.add command "validUntil" NpgsqlDbType.TimestampTz (box proposal.ValidUntil)
             Sql.uuid command "case" proposal.CaseId
             Sql.uuid command "purge" proposal.PurgeEventId
-            let! changed = command.ExecuteNonQueryAsync()
+            let! changed = command.ExecuteNonQueryAsync(ct)
 
             if changed <> 1 then
                 invalid ()
@@ -87,21 +89,26 @@ module internal CaseTombstonePrunePrimaryWrite =
         transaction
         (proposal: TombstonePruneProposal)
         (targets: WitnessPruneTarget list)
+        (ct: CancellationToken)
         =
-        for target in targets do
-            use command = new NpgsqlCommand(insertSql, connection, transaction)
-            Sql.uuid command "case" proposal.CaseId
-            Sql.uuid command "event" proposal.EventId
-            Sql.integer command "sequence" target.Sequence
-            Sql.uuid command "operation" target.OperationId
-            Sql.text command "phase" (phase target.Phase)
-            Sql.integer command "epoch" target.Epoch
-            Sql.add command "hash" NpgsqlDbType.Bytea (box target.EntryHash)
-            Sql.add command "payload" NpgsqlDbType.Bytea (box target.PayloadHash)
-            Sql.add command "external" NpgsqlDbType.Boolean (box target.IsExternalPublication)
+        task {
+            for target in targets do
+                use command = new NpgsqlCommand(insertSql, connection, transaction)
+                Sql.uuid command "case" proposal.CaseId
+                Sql.uuid command "event" proposal.EventId
+                Sql.integer command "sequence" target.Sequence
+                Sql.uuid command "operation" target.OperationId
+                Sql.text command "phase" (phase target.Phase)
+                Sql.integer command "epoch" target.Epoch
+                Sql.add command "hash" NpgsqlDbType.Bytea (box target.EntryHash)
+                Sql.add command "payload" NpgsqlDbType.Bytea (box target.PayloadHash)
+                Sql.add command "external" NpgsqlDbType.Boolean (box target.IsExternalPublication)
 
-            if command.ExecuteNonQuery() <> 1 then
-                invalid ()
+                let! count = command.ExecuteNonQueryAsync(ct)
+
+                if count <> 1 then
+                    invalid ()
+        }
 
     let persist
         connection
@@ -111,6 +118,7 @@ module internal CaseTombstonePrunePrimaryWrite =
         (copyDigest: byte array)
         (canonical: byte array)
         (intent: WitnessIntent)
+        ct
         =
         task {
             if
@@ -124,15 +132,16 @@ module internal CaseTombstonePrunePrimaryWrite =
             then
                 invalid ()
 
-            do! update connection transaction proposal copyDigest canonical intent
+            do! update connection transaction proposal copyDigest canonical intent ct
 
-            let seal =
+            let! seal =
                 CaseWitnessPayloadTargets.scan
                     witness
                     proposal.CaseId
                     proposal.CutoffSequence
                     (digest proposal.CutoffHash)
-                    (insertPage connection transaction proposal)
+                    (fun page -> insertPage connection transaction proposal page ct)
+                    ct
 
             if
                 seal.TargetCount <> proposal.TargetCount

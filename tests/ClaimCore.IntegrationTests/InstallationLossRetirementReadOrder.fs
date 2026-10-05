@@ -50,7 +50,10 @@ let intentWhileReadWaits (context: Context) (decision: Decision) =
     let completed, pending =
         try
             let finished = preparing.Wait(TimeSpan.FromSeconds 10.)
-            finished, context.Witness.Snapshot().LossRetirementPending
+
+            finished,
+            (context.Witness.Snapshot(CancellationToken.None).GetAwaiter().GetResult())
+                .LossRetirementPending
         finally
             transaction.Rollback()
 

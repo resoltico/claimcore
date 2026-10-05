@@ -134,14 +134,16 @@ module internal DataAuditSignerEvents =
             if not (eventMatches witness cutoff expectedRevision previous canonical hash row) then
                 corrupt ()
 
-            witnessProof (fun () ->
-                witness.VerifyAuthorityEvidenceForInstallation(
-                    row.EventId,
-                    row.WitnessSequence,
-                    row.WitnessEpoch,
-                    row.WitnessHash,
-                    row.CandidateHash
-                ))
+            do!
+                witnessProofAsync (fun () ->
+                    witness.VerifyAuthorityEvidenceForInstallation(
+                        row.EventId,
+                        row.WitnessSequence,
+                        row.WitnessEpoch,
+                        row.WitnessHash,
+                        row.CandidateHash,
+                        ct
+                    ))
 
             return hash
         }

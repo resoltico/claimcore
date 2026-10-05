@@ -26,6 +26,7 @@ module internal ObservedReceiptVerification =
         (store: IClaimStore)
         (preparation: RetainedPreparation)
         (summary: PreparationSummary)
+        cancellationToken
         : Task<RetainedResolution> =
         task {
             match identity preparation with
@@ -35,7 +36,8 @@ module internal ObservedReceiptVerification =
                     let! result =
                         store.Accepted(
                             (Operation.request operation).OperationId,
-                            Operation.fingerprint operation
+                            Operation.fingerprint operation,
+                            cancellationToken
                         )
 
                     match result with

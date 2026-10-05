@@ -66,7 +66,10 @@ let execute source witness context operation capture decide =
 
         let operationId = (Operation.request operation).OperationId
 
-        match! (claims :> IClaimStore).Accepted(operationId, Operation.fingerprint operation) with
+        match!
+            (claims :> IClaimStore)
+                .Accepted(operationId, Operation.fingerprint operation, CancellationToken.None)
+        with
         | Error error -> return Error error
         | Ok(Some receipt) -> return Ok receipt
         | Ok None ->

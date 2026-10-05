@@ -49,7 +49,7 @@ module internal CaseLifecycleAuditEventCheck =
                 then
                     reject ()
 
-                CaseLifecycleAuditEvidence.approval witness cutoff caseId approval
+                do! CaseLifecycleAuditEvidence.approval witness cutoff caseId approval ct
 
                 values.Add
                     {

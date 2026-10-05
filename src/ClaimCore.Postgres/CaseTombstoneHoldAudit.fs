@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open System
+open System.Threading
 open System.Security.Cryptography
 open Npgsql
 open ClaimCore.Application
@@ -20,29 +21,6 @@ module internal CaseTombstoneHoldAudit =
             mutable FinalEvent: Guid option
             mutable Policy: string option
             mutable Horizon: DateTimeOffset option
-        }
-
-    let private readTip (connection: NpgsqlConnection) (transaction: NpgsqlTransaction) caseId =
-        task {
-            use command =
-                new NpgsqlCommand(
-                    "SELECT revision,event_hash FROM claimcore.case_erasure_authority_tip WHERE case_id=@case",
-                    connection,
-                    transaction
-                )
-
-            Sql.uuid command "case" caseId
-            use! reader = command.ExecuteReaderAsync()
-
-            if not (reader.Read()) then
-                corrupt ()
-
-            let value = reader.GetInt64(0), reader.GetFieldValue<byte array>(1)
-
-            if reader.Read() then
-                corrupt ()
-
-            return value
         }
 
     let private mutation (row: TombstoneHoldAuditRow) =
@@ -76,18 +54,25 @@ module internal CaseTombstoneHoldAudit =
         prunedCutoff
         caseId
         (row: TombstoneHoldAuditRow)
+        ct
         =
-        if
-            not (prunedCutoff |> Option.exists (fun sealedAt -> row.WitnessSequence <= sealedAt))
-        then
-            witness.VerifyAuthorityEvidenceForCase(
-                row.EventId,
-                row.WitnessSequence,
-                row.WitnessEpoch,
-                row.WitnessHash,
-                row.CandidateHash,
-                caseId
-            )
+        task {
+            if
+                not (
+                    prunedCutoff |> Option.exists (fun sealedAt -> row.WitnessSequence <= sealedAt)
+                )
+            then
+                do!
+                    witness.VerifyAuthorityEvidenceForCase(
+                        row.EventId,
+                        row.WitnessSequence,
+                        row.WitnessEpoch,
+                        row.WitnessHash,
+                        row.CandidateHash,
+                        caseId,
+                        ct
+                    )
+        }
 
     let private checkHoldRow
         (witness: WitnessProtocol)
@@ -97,45 +82,48 @@ module internal CaseTombstoneHoldAudit =
         revision
         (previousHash: byte array)
         (row: TombstoneHoldAuditRow)
+        ct
         =
-        if
-            row.Revision <> revision + 1L
-            || row.PreviousHash <> previousHash
-            || row.WitnessSequence > cutoff
-            || row.WitnessEpoch <> witness.Identity.Epoch
-            || row.ActorId = Guid.Empty
-            || row.GrantRevision < 1L
-        then
-            corrupt ()
-
-        let change =
-            {
-                EventId = row.EventId
-                CaseId = caseId
-                ExpectedAuthorityRevision = revision
-                ExpectedAuthorityHash = Convert.ToHexStringLower previousHash
-                Mutation = mutation row
-            }
-
-        let canonical =
-            CaseTombstoneCandidate.hold
-                change
-                row.ActorId
-                row.GrantRevision
-                previousHash
-                row.ObservedAt
-
-        try
+        task {
             if
-                canonical <> row.Canonical
-                || row.CandidateHash <> SHA256.HashData(canonical)
-                || row.EventHash <> CaseTombstoneCandidate.eventHash previousHash canonical
+                row.Revision <> revision + 1L
+                || row.PreviousHash <> previousHash
+                || row.WitnessSequence > cutoff
+                || row.WitnessEpoch <> witness.Identity.Epoch
+                || row.ActorId = Guid.Empty
+                || row.GrantRevision < 1L
             then
                 corrupt ()
 
-            requireWitness witness prunedCutoff caseId row
-        finally
-            CryptographicOperations.ZeroMemory(canonical)
+            let change =
+                {
+                    EventId = row.EventId
+                    CaseId = caseId
+                    ExpectedAuthorityRevision = revision
+                    ExpectedAuthorityHash = Convert.ToHexStringLower previousHash
+                    Mutation = mutation row
+                }
+
+            let canonical =
+                CaseTombstoneCandidate.hold
+                    change
+                    row.ActorId
+                    row.GrantRevision
+                    previousHash
+                    row.ObservedAt
+
+            try
+                if
+                    canonical <> row.Canonical
+                    || row.CandidateHash <> SHA256.HashData(canonical)
+                    || row.EventHash <> CaseTombstoneCandidate.eventHash previousHash canonical
+                then
+                    corrupt ()
+
+                do! requireWitness witness prunedCutoff caseId row ct
+            finally
+                CryptographicOperations.ZeroMemory(canonical)
+        }
 
     let private checkRow
         connection
@@ -149,6 +137,7 @@ module internal CaseTombstoneHoldAudit =
         previousPhase
         (active: Map<Guid, DateOnly>)
         (row: TombstoneHoldAuditRow)
+        ct
         =
         task {
             if
@@ -171,10 +160,11 @@ module internal CaseTombstoneHoldAudit =
                         previousHash
                         previousPhase
                         (not active.IsEmpty)
+                        ct
 
                 return Some next
             else
-                checkHoldRow witness cutoff prunedCutoff caseId revision previousHash row
+                do! checkHoldRow witness cutoff prunedCutoff caseId revision previousHash row ct
                 return None
         }
 
@@ -187,6 +177,7 @@ module internal CaseTombstoneHoldAudit =
         caseId
         (state: ReplayState)
         row
+        ct
         =
         task {
             let! terminal =
@@ -202,6 +193,7 @@ module internal CaseTombstoneHoldAudit =
                     state.Phase
                     state.Holds
                     row
+                    ct
 
             match terminal with
             | None -> state.Holds <- advanceHolds state.Holds row
@@ -219,6 +211,19 @@ module internal CaseTombstoneHoldAudit =
             state.Hash <- row.EventHash
         }
 
+    let private initialState () =
+        {
+            Revision = 0L
+            Hash = Array.zeroCreate<byte> 32
+            Holds = Map.empty
+            Phase = "ERASURE_PENDING"
+            CopyEvent = None
+            FinalEvent = None
+            Policy = None
+            Horizon = None
+        }
+
+
     let verify
         (connection: NpgsqlConnection)
         (transaction: NpgsqlTransaction)
@@ -226,19 +231,10 @@ module internal CaseTombstoneHoldAudit =
         cutoff
         prunedCutoff
         caseId
+        ct
         =
         task {
-            let state =
-                {
-                    Revision = 0L
-                    Hash = Array.zeroCreate<byte> 32
-                    Holds = Map.empty
-                    Phase = "ERASURE_PENDING"
-                    CopyEvent = None
-                    FinalEvent = None
-                    Policy = None
-                    Horizon = None
-                }
+            let state = initialState ()
 
             let mutable more = true
 
@@ -247,11 +243,22 @@ module internal CaseTombstoneHoldAudit =
                     CaseTombstoneHoldAuditRows.page connection transaction caseId state.Revision
 
                 for row in rows do
-                    do! foldRow connection transaction witness cutoff prunedCutoff caseId state row
+                    do!
+                        foldRow
+                            connection
+                            transaction
+                            witness
+                            cutoff
+                            prunedCutoff
+                            caseId
+                            state
+                            row
+                            ct
 
                 more <- rows.Length = 50
 
-            let! storedRevision, storedHash = readTip connection transaction caseId
+            let! storedRevision, storedHash =
+                CaseTombstoneHoldAuditRows.readTip connection transaction caseId
 
             if storedRevision <> state.Revision || storedHash <> state.Hash then
                 corrupt ()

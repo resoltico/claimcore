@@ -109,3 +109,13 @@ module internal DatabaseWitnessInputs =
                     match PrincipalKey.human issuer subject with
                     | Ok principal -> Ok principal
                     | Error _ -> Error DatabaseInputProblem.PrincipalFileInvalid)
+
+    let suppressionKey () =
+        match Environment.GetEnvironmentVariable("CLAIMCORE_SUPPRESSION_KEY_FILE") with
+        | null
+        | "" -> Error DatabaseInputProblem.SuppressionKeyFileRefused
+        | path ->
+            try
+                Ok(SuppressionKeyFile.Load(path))
+            with _ ->
+                Error DatabaseInputProblem.SuppressionKeyFileRefused
