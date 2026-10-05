@@ -64,6 +64,11 @@ let build (assemblies: System.Reflection.Assembly array) =
             )
             .LoadNamespacesWithinAssembly(typeof<Console>.Assembly, [| "System" |])
             .LoadNamespacesWithinAssembly(
+                typeof<System.Security.Cryptography.RandomNumberGenerator>.Assembly,
+                [| "System.Security.Cryptography" |]
+            )
+            .LoadNamespacesWithinAssembly(typeof<Stopwatch>.Assembly, [| "System.Diagnostics" |])
+            .LoadNamespacesWithinAssembly(
                 typeof<System.Text.Json.Utf8JsonWriter>.Assembly,
                 [| "System.Text.Json" |]
             )

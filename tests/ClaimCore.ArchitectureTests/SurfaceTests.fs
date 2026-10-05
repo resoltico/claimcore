@@ -89,14 +89,61 @@ let private protocolUsesRemoteSeam () =
          |> Set.exists (fun name -> name.StartsWith("ClaimCore.Hosting", StringComparison.Ordinal)))
         "No runtime factory reaches the protocol surface"
 
+/// Lifecycle inspection stays public; only Application may invoke the transition kernel.
+let private lifecycleDecisionsStayInternal () =
+    let domain =
+        ProductModel.assemblies.Value
+        |> Array.find (fun candidate -> candidate.GetName().Name = "ClaimCore.Domain")
+
+    for moduleName, methods in
+        [
+            "CaseLifecycle",
+            [
+                "voidDataEntryError"
+                "reinstateVoided"
+                "recordHold"
+                "releaseHold"
+                "requestErasure"
+                "markErasurePending"
+                "authorizeLivePurge"
+                "authorizeOwnerLivePurge"
+            ]
+            "CaseLifecycleOwnerErasure",
+            [ "confirmManagedPayloadAbsence"; "completeSuppressionHorizon" ]
+        ] do
+        let target = nonNull (domain.GetType("ClaimCore.Domain." + moduleName, true))
+
+        for methodName in methods do
+            let method' =
+                target.GetMethod(
+                    methodName,
+                    Reflection.BindingFlags.Static
+                    ||| Reflection.BindingFlags.Public
+                    ||| Reflection.BindingFlags.NonPublic
+                )
+                |> nonNull
+
+            Expect.isFalse
+                (target.IsPublic && method'.IsPublic)
+                (moduleName + "." + methodName + " cannot be an ordinary-consumer decision seam")
+
 let tests =
     testList
         "published component surface"
         [
-            testCase "the composition root exports one entry point" compositionSurfaceIsSingular
             testCase
-                "storage exports only schema-owner administration"
+                "[CC-ARCH-001] the composition root exports one entry point"
+                compositionSurfaceIsSingular
+            testCase
+                "[CC-ARCH-001] storage exports only schema-owner administration"
                 storageSurfaceIsAdministrationOnly
-            testCase "application storage ports stay private" applicationSurfaceIsClosed
-            testCase "the CLI protocol exposes only remote service seams" protocolUsesRemoteSeam
+            testCase
+                "[CC-ARCH-001] application storage ports stay private"
+                applicationSurfaceIsClosed
+            testCase
+                "[CC-ARCH-001] lifecycle transitions remain internal to their decision owner"
+                lifecycleDecisionsStayInternal
+            testCase
+                "[CC-ARCH-001] the CLI protocol exposes only remote service seams"
+                protocolUsesRemoteSeam
         ]

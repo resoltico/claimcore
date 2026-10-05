@@ -165,6 +165,18 @@ let private requestDecoderControls =
                 "The decoder rule detects actual JSON dependency")
     ]
 
+let private effectPair shape =
+    let failures side =
+        EffectPolicy.violations architecture.Value (select (side + shape))
+
+    [
+        testCase
+            (shape + " permits deterministic counterpart under the product effect policy")
+            (fun () -> Expect.isEmpty (failures "Good") "Value-only operations remain permitted")
+        testCase (shape + " detects the ambient effect under the product effect policy") (fun () ->
+            Expect.isNonEmpty (failures "Bad") "The actual product policy rejects the effect")
+    ]
+
 let tests =
     let forms =
         [
@@ -191,4 +203,12 @@ let tests =
          @ memberForms
          @ (preflight @ requestDecoderControls)
          @ platformPair "Clock" typeof<DateTime> "get_UtcNow"
-         @ platformPair "Io" typeof<File> "ReadAllText")
+         @ platformPair "Io" typeof<File> "ReadAllText"
+         @ ([
+             "RandomBytes"
+             "Version7"
+             "Timestamp"
+             "ProviderTimestamp"
+             "ProviderLocalNow"
+            ]
+            |> List.collect effectPair))

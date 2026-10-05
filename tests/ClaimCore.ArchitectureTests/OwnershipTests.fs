@@ -1,9 +1,7 @@
 module ClaimCore.ArchitectureTests.OwnershipTests
 
 open System
-open System.IO
 open System.Text.Json
-open System.Threading
 open Expecto
 open ArchUnitNET.Fluent
 
@@ -13,37 +11,12 @@ let private select = ProductModel.select
 /// Components with no permitted effect boundary: they compute over values supplied by a caller.
 let private pureParts = [ "Domain"; "RecordFormat"; "Application"; "Contracts" ]
 
-let private forbiddenTypes =
-    [
-        typeof<Console>
-        typeof<File>
-        typeof<Directory>
-        typeof<Environment>
-        typeof<Random>
-        typeof<Thread>
-    ]
-
-/// Ambient identity and calendar reads that would bypass the caller-supplied operation ID or the
-/// installation's stored business zone.
-let private clockCalls =
-    [
-        typeof<DateTime>, "get_Now"
-        typeof<DateTime>, "get_UtcNow"
-        typeof<DateTime>, "get_Today"
-        typeof<DateTimeOffset>, "get_Now"
-        typeof<DateTimeOffset>, "get_UtcNow"
-        typeof<TimeProvider>, "GetUtcNow"
-    ]
-
-let private forbiddenCalls =
-    clockCalls @ [ typeof<TimeZoneInfo>, "get_Local"; typeof<Guid>, "NewGuid" ]
-
 let private primaryStorageUsesDatabaseTime () =
     let model = architecture.Value
     let storage = select "Postgres"
     Inspection.requireSelection model storage |> ignore
 
-    for target, methodName in clockCalls do
+    for target, methodName in EffectPolicy.clockCalls do
         let forbidden =
             ArchRuleDefinition
                 .MethodMembers()
@@ -72,22 +45,9 @@ let private deterministic subject =
         let model = architecture.Value
         let subjects = select subject
 
-        for target in forbiddenTypes do
-            let forbidden = ArchRuleDefinition.Types().That().Are(target)
-            Inspection.requireSelection model forbidden |> ignore
-            Inspection.check model (subjects.Should().NotDependOnAny(forbidden))
-
-        for target, methodName in forbiddenCalls do
-            let forbidden =
-                ArchRuleDefinition
-                    .MethodMembers()
-                    .That()
-                    .AreDeclaredIn(target)
-                    .And()
-                    .HaveNameContaining(methodName)
-
-            Inspection.requireSelection model forbidden |> ignore
-            Inspection.check model (subjects.Should().NotCallAny(forbidden)))
+        match EffectPolicy.violations model subjects with
+        | [] -> ()
+        | failures -> failtest (String.concat Environment.NewLine failures))
 
 /// The Web host is one assembly, so its composition root is confined by a compiled rule rather
 /// than by a project edge. The selector is anchored to the `Program` module the author declared,
@@ -134,17 +94,7 @@ let private installationOwnsTheCalendar () =
             (Inspection.violations model (component'.Should().NotDependOnAny(zones)))
             ("The installation calendar owner must resolve zones: " + owner)
 
-    for subject in
-        [
-            "Domain"
-            "RecordFormat"
-            "Application"
-            "Contracts"
-            "Cli"
-            "CliProtocol"
-            "Web"
-            "Database"
-        ] do
+    for subject in ProductPolicy.parts |> List.except [ "Hosting"; "Postgres" ] do
         let other = select subject
         Inspection.requireSelection model other |> ignore
         Inspection.check model (other.Should().NotDependOnAny(zones))
@@ -169,7 +119,7 @@ let private adaptersDoNotDecide () =
 
     Inspection.requireSelection model decision |> ignore
 
-    for subject in [ "Cli"; "CliProtocol"; "Web"; "Database"; "Hosting" ] do
+    for subject in ProductPolicy.parts |> List.except [ "Domain"; "Application" ] do
         let adapter = select subject
         Inspection.requireSelection model adapter |> ignore
         Inspection.check model (adapter.Should().NotCallAny(decision))
@@ -196,7 +146,7 @@ let private compositionOwnsCoreConstruction () =
         (Inspection.violations model (composition.Should().NotCallAny(construction)))
         "The composition root must be the component that constructs the typed core"
 
-    for subject in [ "Cli"; "CliProtocol"; "Web"; "Database"; "Contracts"; "Postgres" ] do
+    for subject in ProductPolicy.parts |> List.except [ "Hosting" ] do
         let other = select subject
         Inspection.requireSelection model other |> ignore
         Inspection.check model (other.Should().NotCallAny(construction))

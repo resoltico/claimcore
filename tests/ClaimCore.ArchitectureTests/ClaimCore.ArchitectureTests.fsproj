@@ -6,6 +6,7 @@
     <Compile Include="../RepositoryRoot.fs" Link="RepositoryRoot.fs" />
     <Compile Include="Inspection.fs" />
     <Compile Include="InspectionReport.fs" />
+    <Compile Include="EffectPolicy.fs" />
     <Compile Include="ProjectReferences.fs" />
     <Compile Include="ProjectEvaluation.fs" />
     <Compile Include="ProductPolicy.fs" />

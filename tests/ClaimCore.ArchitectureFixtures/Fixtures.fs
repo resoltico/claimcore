@@ -123,3 +123,38 @@ type GoodRequestCodec =
 type BadRequestCodec =
     static member Decode(bytes: byte array) =
         System.Text.Json.JsonDocument.Parse(System.ReadOnlyMemory<byte>(bytes))
+
+module GoodRandomBytes =
+    let invoke (bytes: byte array) =
+        System.Security.Cryptography.SHA256.HashData bytes
+
+module BadRandomBytes =
+    let invoke () =
+        System.Security.Cryptography.RandomNumberGenerator.GetBytes(16)
+
+module GoodVersion7 =
+    let invoke (bytes: byte array) = System.Guid(bytes)
+
+module BadVersion7 =
+    let invoke () = System.Guid.CreateVersion7()
+
+module GoodTimestamp =
+    let invoke (ticks: int64) = System.TimeSpan.FromTicks ticks
+
+module BadTimestamp =
+    let invoke () =
+        System.Diagnostics.Stopwatch.GetTimestamp()
+
+module GoodProviderTimestamp =
+    let invoke (ticks: int64) = System.TimeSpan.FromTicks ticks
+
+module BadProviderTimestamp =
+    let invoke () =
+        System.TimeProvider.System.GetTimestamp()
+
+module GoodProviderLocalNow =
+    let invoke (instant: System.DateTimeOffset) = instant.Date
+
+module BadProviderLocalNow =
+    let invoke () =
+        System.TimeProvider.System.GetLocalNow()

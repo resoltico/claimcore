@@ -137,7 +137,7 @@ module CaseLifecycle =
             Snapshot = { snapshot with Version = nextRevision }
         }
 
-    let voidDataEntryError state snapshot paymentEvidence decision =
+    let internal voidDataEntryError state snapshot paymentEvidence decision =
         match checkBinding state snapshot decision LifecycleAction.VoidDataEntryError with
         | Error refusal -> Error refusal
         | Ok() when state.Privacy <> PrivacyPhase.Active -> Error LifecycleRefusal.ErasureHasBegun
@@ -157,7 +157,7 @@ module CaseLifecycle =
             | Error refusal -> Error refusal
             | Ok() -> Ok(acceptedDisposition state snapshot CaseDisposition.VoidedDataEntryError)
 
-    let reinstateVoided state snapshot decision =
+    let internal reinstateVoided state snapshot decision =
         match checkBinding state snapshot decision LifecycleAction.ReinstateVoided with
         | Error refusal -> Error refusal
         | Ok() when state.Privacy <> PrivacyPhase.Active -> Error LifecycleRefusal.ErasureHasBegun
@@ -168,7 +168,7 @@ module CaseLifecycle =
             | Error refusal -> Error refusal
             | Ok() -> Ok(acceptedDisposition state snapshot CaseDisposition.Active)
 
-    let recordHold state hold =
+    let internal recordHold state hold =
         match checkHold hold with
         | Error refusal -> Error refusal
         | Ok() when state.Privacy = PrivacyPhase.ErasureFinal ->
@@ -181,7 +181,7 @@ module CaseLifecycle =
                     Holds = state.Holds.Add(hold.Id, hold)
                 }
 
-    let releaseHold state holdId actorId at reason =
+    let internal releaseHold state holdId actorId at reason =
         if actorId = Guid.Empty || holdId = Guid.Empty then
             Error LifecycleRefusal.InvalidIdentity
         elif not (validInstant at) then
@@ -196,7 +196,7 @@ module CaseLifecycle =
                     Holds = state.Holds.Remove holdId
                 }
 
-    let requestErasure state actorId at reason =
+    let internal requestErasure state actorId at reason =
         if actorId = Guid.Empty then
             Error LifecycleRefusal.InvalidIdentity
         elif not (validInstant at) then
@@ -211,7 +211,7 @@ module CaseLifecycle =
                     Privacy = PrivacyPhase.ErasureRequested
                 }
 
-    let markErasurePending state witnessedFence actorId at reason =
+    let internal markErasurePending state witnessedFence actorId at reason =
         if actorId = Guid.Empty then
             Error LifecycleRefusal.InvalidIdentity
         elif not (validInstant at) then
@@ -229,7 +229,7 @@ module CaseLifecycle =
                 }
 
     /// Owner-only live purge leaves the case in ERASURE_PENDING until every managed copy is verified absent.
-    let authorizeLivePurge state decision =
+    let internal authorizeLivePurge state decision =
         if state.Privacy <> PrivacyPhase.ErasurePending then
             Error LifecycleRefusal.WrongPrivacyPhase
         elif not state.Holds.IsEmpty then
@@ -247,7 +247,7 @@ module CaseLifecycle =
                 decision
                 LifecycleAction.PurgeLivePayload
 
-    let authorizeOwnerLivePurge state decision =
+    let internal authorizeOwnerLivePurge state decision =
         if state.Privacy <> PrivacyPhase.ErasurePending then
             Error LifecycleRefusal.WrongPrivacyPhase
         elif not state.Holds.IsEmpty then

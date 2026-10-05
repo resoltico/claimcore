@@ -21,9 +21,25 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-APP-002 | unit | ClaimCore deterministic suite.accepted receipt first.[CC-APP-002] accepted replay needs no retained preparation or recovery read |
 | CC-APP-002 | unit | ClaimCore deterministic suite.accepted receipt first.[CC-APP-002] accepted-history read failure refuses before fresh preparation |
 | CC-APP-002 | unit | ClaimCore deterministic suite.accepted receipt first.[CC-APP-002] cancellation after accepted observation preserves definite receipt |
+| CC-ARCH-001 | architecture | ClaimCore architecture suite.architecture manifest.[CC-ARCH-001] compiled internals grants match the manifest exactly |
+| CC-ARCH-001 | architecture | ClaimCore architecture suite.architecture manifest.[CC-ARCH-001] declared project edges match the manifest exactly |
+| CC-ARCH-001 | architecture | ClaimCore architecture suite.architecture manifest.[CC-ARCH-001] every repository project is classified |
+| CC-ARCH-001 | architecture | ClaimCore architecture suite.architecture manifest.[CC-ARCH-001] internals grants follow declared project edges |
+| CC-ARCH-001 | architecture | ClaimCore architecture suite.architecture manifest.[CC-ARCH-001] internals grants name classified components |
+| CC-ARCH-001 | architecture | ClaimCore architecture suite.architecture manifest.[CC-ARCH-001] product components depend only on product components |
 | CC-ARCH-001 | architecture | ClaimCore architecture suite.architecture manifest.[CC-ARCH-001] restore publication trust is invisible to ordinary consumers |
+| CC-ARCH-001 | architecture | ClaimCore architecture suite.architecture manifest.[CC-ARCH-001] stale permissions and empty grant sets are detected |
+| CC-ARCH-001 | architecture | ClaimCore architecture suite.architecture manifest.[CC-ARCH-001] the reviewed component graph is acyclic |
 | CC-ARCH-001 | architecture | ClaimCore architecture suite.component effect ownership.[CC-ARCH-001] Web bindings cannot decode ClaimCore JSON bytes |
 | CC-ARCH-001 | architecture | ClaimCore architecture suite.component effect ownership.[CC-ARCH-001] primary storage uses database time without ambient host clock reads |
+| CC-ARCH-001 | architecture | ClaimCore architecture suite.product graph evidence.[CC-ARCH-001] compiled model covers every type and emits a bounded graph |
+| CC-ARCH-001 | architecture | ClaimCore architecture suite.product graph evidence.[CC-ARCH-001] evaluated Debug and Release dependencies obey component policy |
+| CC-ARCH-001 | architecture | ClaimCore architecture suite.product graph evidence.[CC-ARCH-001] every permitted product edge is actually used |
+| CC-ARCH-001 | architecture | ClaimCore architecture suite.published component surface.[CC-ARCH-001] application storage ports stay private |
+| CC-ARCH-001 | architecture | ClaimCore architecture suite.published component surface.[CC-ARCH-001] lifecycle transitions remain internal to their decision owner |
+| CC-ARCH-001 | architecture | ClaimCore architecture suite.published component surface.[CC-ARCH-001] storage exports only schema-owner administration |
+| CC-ARCH-001 | architecture | ClaimCore architecture suite.published component surface.[CC-ARCH-001] the CLI protocol exposes only remote service seams |
+| CC-ARCH-001 | architecture | ClaimCore architecture suite.published component surface.[CC-ARCH-001] the composition root exports one entry point |
 | CC-ARCH-001 | fuzz | ClaimCore fuzz qualification.boundary decoding totality.[CC-ARCH-001] contract-owned HTTP codecs refuse hostile bytes without throwing |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.[CC-AUDIT-001] authority lease cleanup preserves an observed result and retires its connector |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.adopted external copy transitions.[CC-AUDIT-001] adopted external signed origin and transition replay |

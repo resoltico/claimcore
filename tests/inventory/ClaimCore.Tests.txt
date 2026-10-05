@@ -146,6 +146,8 @@ ClaimCore deterministic suite.compiler-enforced core boundary.ordinary caller ca
 ClaimCore deterministic suite.compiler-enforced core boundary.ordinary caller cannot create the core callback
 ClaimCore deterministic suite.compiler-enforced core boundary.ordinary caller cannot forge a prepared operation
 ClaimCore deterministic suite.compiler-enforced core boundary.ordinary caller cannot instantiate PostgreSQL storage
+ClaimCore deterministic suite.compiler-enforced core boundary.ordinary caller cannot invoke owner erasure decisions
+ClaimCore deterministic suite.compiler-enforced core boundary.ordinary caller cannot request a lifecycle transition directly
 ClaimCore deterministic suite.compiler-enforced core boundary.ordinary caller cannot see the store port
 ClaimCore deterministic suite.compiler-enforced core boundary.unbound core cannot be supplied by an ordinary caller
 ClaimCore deterministic suite.configuration projections.Compose uses the canonical digest-pinned PostgreSQL image

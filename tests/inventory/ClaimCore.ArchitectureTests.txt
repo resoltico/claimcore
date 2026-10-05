@@ -25,6 +25,12 @@ ClaimCore architecture suite.F# inspection qualification.Nested accepts pure cou
 ClaimCore architecture suite.F# inspection qualification.Nested detects forbidden dependency
 ClaimCore architecture suite.F# inspection qualification.Nested detects forbidden member call
 ClaimCore architecture suite.F# inspection qualification.Nested permits noncalling member counterpart
+ClaimCore architecture suite.F# inspection qualification.ProviderLocalNow detects the ambient effect under the product effect policy
+ClaimCore architecture suite.F# inspection qualification.ProviderLocalNow permits deterministic counterpart under the product effect policy
+ClaimCore architecture suite.F# inspection qualification.ProviderTimestamp detects the ambient effect under the product effect policy
+ClaimCore architecture suite.F# inspection qualification.ProviderTimestamp permits deterministic counterpart under the product effect policy
+ClaimCore architecture suite.F# inspection qualification.RandomBytes detects the ambient effect under the product effect policy
+ClaimCore architecture suite.F# inspection qualification.RandomBytes permits deterministic counterpart under the product effect policy
 ClaimCore architecture suite.F# inspection qualification.Sequence accepts pure counterpart
 ClaimCore architecture suite.F# inspection qualification.Sequence detects forbidden dependency
 ClaimCore architecture suite.F# inspection qualification.Sequence detects forbidden member call
@@ -35,8 +41,12 @@ ClaimCore architecture suite.F# inspection qualification.Task accepts pure count
 ClaimCore architecture suite.F# inspection qualification.Task detects forbidden dependency
 ClaimCore architecture suite.F# inspection qualification.Task detects forbidden member call
 ClaimCore architecture suite.F# inspection qualification.Task permits noncalling member counterpart
+ClaimCore architecture suite.F# inspection qualification.Timestamp detects the ambient effect under the product effect policy
+ClaimCore architecture suite.F# inspection qualification.Timestamp permits deterministic counterpart under the product effect policy
 ClaimCore architecture suite.F# inspection qualification.Union accepts pure counterpart
 ClaimCore architecture suite.F# inspection qualification.Union detects forbidden dependency
+ClaimCore architecture suite.F# inspection qualification.Version7 detects the ambient effect under the product effect policy
+ClaimCore architecture suite.F# inspection qualification.Version7 permits deterministic counterpart under the product effect policy
 ClaimCore architecture suite.F# inspection qualification.duplicate inputs are refused
 ClaimCore architecture suite.F# inspection qualification.empty input set is refused
 ClaimCore architecture suite.F# inspection qualification.empty required selector is refused
@@ -46,15 +56,15 @@ ClaimCore architecture suite.F# inspection qualification.missing input fails bef
 ClaimCore architecture suite.F# inspection qualification.omitted reflected type fails completeness
 ClaimCore architecture suite.F# inspection qualification.request codec accepts pure counterpart
 ClaimCore architecture suite.F# inspection qualification.request codec detects forbidden JSON dependency
+ClaimCore architecture suite.architecture manifest.[CC-ARCH-001] compiled internals grants match the manifest exactly
+ClaimCore architecture suite.architecture manifest.[CC-ARCH-001] declared project edges match the manifest exactly
+ClaimCore architecture suite.architecture manifest.[CC-ARCH-001] every repository project is classified
+ClaimCore architecture suite.architecture manifest.[CC-ARCH-001] internals grants follow declared project edges
+ClaimCore architecture suite.architecture manifest.[CC-ARCH-001] internals grants name classified components
+ClaimCore architecture suite.architecture manifest.[CC-ARCH-001] product components depend only on product components
 ClaimCore architecture suite.architecture manifest.[CC-ARCH-001] restore publication trust is invisible to ordinary consumers
-ClaimCore architecture suite.architecture manifest.compiled internals grants match the manifest exactly
-ClaimCore architecture suite.architecture manifest.declared project edges match the manifest exactly
-ClaimCore architecture suite.architecture manifest.every repository project is classified
-ClaimCore architecture suite.architecture manifest.internals grants follow declared project edges
-ClaimCore architecture suite.architecture manifest.internals grants name classified components
-ClaimCore architecture suite.architecture manifest.product components depend only on product components
-ClaimCore architecture suite.architecture manifest.stale permissions and empty grant sets are detected
-ClaimCore architecture suite.architecture manifest.the reviewed component graph is acyclic
+ClaimCore architecture suite.architecture manifest.[CC-ARCH-001] stale permissions and empty grant sets are detected
+ClaimCore architecture suite.architecture manifest.[CC-ARCH-001] the reviewed component graph is acyclic
 ClaimCore architecture suite.architecture policy admission.duplicate and unknown root fields are refused
 ClaimCore architecture suite.architecture policy admission.escaped and wrongly classified project paths are refused
 ClaimCore architecture suite.architecture policy admission.malformed list entries cannot disappear during parsing
@@ -88,10 +98,11 @@ ClaimCore architecture suite.product component policy.Witness respects owned com
 ClaimCore architecture suite.product component policy.endpoint helpers cannot reach runtime composition
 ClaimCore architecture suite.product component policy.production assemblies do not depend on test tooling
 ClaimCore architecture suite.product component policy.unused forbidden declared reference is detected
-ClaimCore architecture suite.product graph evidence.compiled model covers every type and emits a bounded graph
-ClaimCore architecture suite.product graph evidence.evaluated Debug and Release dependencies obey component policy
-ClaimCore architecture suite.product graph evidence.every permitted product edge is actually used
-ClaimCore architecture suite.published component surface.application storage ports stay private
-ClaimCore architecture suite.published component surface.storage exports only schema-owner administration
-ClaimCore architecture suite.published component surface.the CLI protocol exposes only remote service seams
-ClaimCore architecture suite.published component surface.the composition root exports one entry point
+ClaimCore architecture suite.product graph evidence.[CC-ARCH-001] compiled model covers every type and emits a bounded graph
+ClaimCore architecture suite.product graph evidence.[CC-ARCH-001] evaluated Debug and Release dependencies obey component policy
+ClaimCore architecture suite.product graph evidence.[CC-ARCH-001] every permitted product edge is actually used
+ClaimCore architecture suite.published component surface.[CC-ARCH-001] application storage ports stay private
+ClaimCore architecture suite.published component surface.[CC-ARCH-001] lifecycle transitions remain internal to their decision owner
+ClaimCore architecture suite.published component surface.[CC-ARCH-001] storage exports only schema-owner administration
+ClaimCore architecture suite.published component surface.[CC-ARCH-001] the CLI protocol exposes only remote service seams
+ClaimCore architecture suite.published component surface.[CC-ARCH-001] the composition root exports one entry point

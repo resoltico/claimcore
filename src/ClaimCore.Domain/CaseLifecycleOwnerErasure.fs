@@ -1,8 +1,8 @@
 namespace ClaimCore.Domain
 
 /// Technical owner transitions only. A public case-work request cannot obtain the sealed
-/// copy-absence or recovery-fence proofs needed to call these decisions.
-module CaseLifecycleOwnerErasure =
+/// copy-absence or recovery-fence proofs needed to call these Application-owned decisions.
+module internal CaseLifecycleOwnerErasure =
     let confirmManagedPayloadAbsence state decision copySeal =
         let caseId, revision, privacy, holdsEmpty, payloadSuppressed =
             CaseLifecycle.ownerErasureContext state

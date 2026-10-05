@@ -184,24 +184,26 @@ let tests =
     testList
         "architecture manifest"
         [
-            testCase "every repository project is classified" everyProjectIsClassified
+            testCase "[CC-ARCH-001] every repository project is classified" everyProjectIsClassified
             testCase
-                "declared project edges match the manifest exactly"
+                "[CC-ARCH-001] declared project edges match the manifest exactly"
                 declaredGraphMatchesManifest
             testCase
-                "product components depend only on product components"
+                "[CC-ARCH-001] product components depend only on product components"
                 productNeverDependsOnNonProduct
-            testCase "the reviewed component graph is acyclic" graphIsAcyclic
+            testCase "[CC-ARCH-001] the reviewed component graph is acyclic" graphIsAcyclic
             testCase
-                "compiled internals grants match the manifest exactly"
+                "[CC-ARCH-001] compiled internals grants match the manifest exactly"
                 internalsVisibilityIsReviewed
             testCase
-                "internals grants name classified components"
+                "[CC-ARCH-001] internals grants name classified components"
                 internalsGrantsNameClassifiedComponents
             testCase
-                "internals grants follow declared project edges"
+                "[CC-ARCH-001] internals grants follow declared project edges"
                 internalsGrantsFollowDeclaredEdges
-            testCase "stale permissions and empty grant sets are detected" negativeControls
+            testCase
+                "[CC-ARCH-001] stale permissions and empty grant sets are detected"
+                negativeControls
             testCase
                 "[CC-ARCH-001] restore publication trust is invisible to ordinary consumers"
                 restorePublicationIsTestOnly
