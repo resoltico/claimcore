@@ -14,19 +14,17 @@ separate terms. Third-party components retain their own licenses; see
 THIRD-PARTY-NOTICES.txt and accompanying software bills of materials in
 qualified application outputs.
 
-The v0.7.0 development line and subsequent releases use MPL-2.0.
-Previously published v0.1.0 through v0.6.0 remain under Apache-2.0;
-this change does not withdraw rights already granted for those copies.
-
 Source availability
 -------------------
+Source repository: https://github.com/resoltico/claimcore
 Official release source archives are available without charge at:
 https://github.com/resoltico/claimcore/releases
 Select the tag matching the release version (for example, v0.7.0).
 The repository includes the preferred source and build instructions.
 
 Development and modified builds may differ from a published release.
-Their distributor must provide recipients the actual corresponding
+When distributing outside their organization, distributors must provide
+recipients the actual corresponding
 MPL-covered source, including modifications, and tell them how to obtain
 it. A published release archive does not cover unpublished changes.
 This also applies to browser-delivered HTML, CSS and JavaScript.

@@ -68,11 +68,10 @@ not record approval and settings declarations are not active native enforcement.
 
 ## Licensing contributions
 
-Intentional contributions submitted for inclusion in the v0.7.0 development line and later
-releases are provided under the [Mozilla Public License 2.0](LICENSE). Submit only work that you
+Intentional contributions submitted for inclusion in ClaimCore are provided under the [Mozilla Public License 2.0](LICENSE). Submit only work that you
 have the right to license under those terms. Contributors retain copyright; submission does not
 transfer ownership. Retain applicable third-party copyright, attribution and license notices,
 and identify externally sourced work and its terms in the PR.
 
-Previously published releases retain their original Apache-2.0 terms. A contribution designated
+A contribution designated
 as excluded from the project's license cannot be incorporated without separately agreed terms.

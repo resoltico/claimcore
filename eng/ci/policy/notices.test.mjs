@@ -3,8 +3,8 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import { renderNotices } from "./notices.mjs";
 
-/** @param {string} file */
-const license = (file) => `text of ${file}\n`;
+/** @param {import("./notices.mjs").Component} component */
+const license = (component) => `text of ${component.licenses?.[0]?.license?.id}.txt\n`;
 
 /**
  * @param {string} name
@@ -14,6 +14,7 @@ const license = (file) => `text of ${file}\n`;
 const component = (name, ids, version = "1.0.0") => ({
   name,
   version,
+  copyright: `Copyright ${name} owners`,
   licenses: ids.map((id) => ({ license: { id } })),
   externalReferences: [{ type: "website", url: `https://example.test/${name}` }],
 });
@@ -34,9 +35,11 @@ test("components are grouped under their license text, sorted, excluding ClaimCo
   assert.ok(text.indexOf("Package: Alpha@") < text.indexOf("Package: Zeta@"));
   assert.ok(!text.includes("ClaimCore.Domain"));
   assert.match(text, /Package: ClaimCore\.ExternalDependency@/u);
-  assert.equal(text.match(/text of MIT-DOTNET\.txt/gu)?.length, 1);
-  assert.match(text, /text of PostgreSQL-NPGSQL\.txt/u);
+  assert.equal(text.match(/text of MIT\.txt/gu)?.length, 1);
+  assert.match(text, /text of PostgreSQL\.txt/u);
   assert.match(text, /Upstream: https:\/\/example\.test\/Alpha/u);
+  assert.match(text, /Copyright: Copyright Alpha owners/u);
+  assert.match(text, /Copyright: Copyright Zeta owners/u);
   assert.ok(text.endsWith("\n"));
 });
 
@@ -52,10 +55,7 @@ test("a component without one exact reviewed license is refused", () => {
     () => renderNotices({ components: [component("ClaimCore.Domain", ["MIT"])] }, license),
     /no third-party/u,
   );
-  assert.match(
-    renderNotices({ components: [component("libsodium", ["ISC"])] }, license),
-    /ISC-LIBSODIUM/u,
-  );
+  assert.match(renderNotices({ components: [component("libsodium", ["ISC"])] }, license), /ISC/u);
 });
 
 test("project license metadata agrees across .NET and npm without relicensing dependencies", () => {
@@ -74,4 +74,15 @@ test("project license metadata agrees across .NET and npm without relicensing de
   const text = renderNotices({ components: [component("Dependency", ["MIT"])] }, license);
   assert.match(text, /source availability.*LICENSE/u);
   assert.match(text, /Declared license: MIT/u);
+});
+
+test("redistribution refuses missing attribution and empty package material", () => {
+  assert.throws(
+    () => renderNotices({ components: [{ ...component("A", ["MIT"]), copyright: "" }] }, license),
+    /copyright attribution/u,
+  );
+  assert.throws(
+    () => renderNotices({ components: [component("A", ["MIT"])] }, () => ""),
+    /material is empty/u,
+  );
 });

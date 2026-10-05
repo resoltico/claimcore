@@ -105,15 +105,7 @@ issue. Do not include claimant data, credentials or recovery artifacts in public
 
 ## License
 
-[Mozilla Public License 2.0](LICENSE), starting with the v0.7.0 development line.
-Published v0.1.0 through v0.6.0 retain their Apache-2.0 terms. Original work © 2026 Ervins
-Strauhmanis; contributors retain copyright in their contributions. Third-party components retain
-their own licenses; qualified publish outputs include notices and software bills of materials.
-
-MPL applies copyleft at file level. Distributing covered binaries or browser assets requires
-providing their corresponding MPL-covered source and informing recipients how to obtain it;
-unrelated files in a larger work may use other licenses. Official release source is available in
-the [matching tagged archive](https://github.com/resoltico/claimcore/releases). Development or
-modified distributions must provide their actual corresponding source, including unpublished
-changes. See [distribution guidance](docs/releasing.md#licensing-and-source-distribution) and the
-[license text](LICENSE) for the governing terms. Release outcomes are in the [changelog](CHANGELOG.md).
+Original ClaimCore code and accompanying documentation are available under the
+[Mozilla Public License 2.0](LICENSE). Third-party components retain their own licenses and notices.
+See [source and redistribution guidance](docs/releasing.md#licensing-and-source-distribution)
+for distributed binaries and browser assets, and the [changelog](CHANGELOG.md) for release history.

@@ -59,20 +59,24 @@ node --test eng/release/*.test.mjs
 
 ## Licensing and source distribution
 
-The v0.7.0 development line and subsequent releases use MPL-2.0 for original repository work.
-Previously published v0.1.0 through v0.6.0 keep their Apache-2.0 terms; do not rewrite their tags,
-license files, archives or release text. Third-party components retain their own licenses and
-notices. The repository [LICENSE](../LICENSE) carries the project-wide notice and governing text.
+The repository [LICENSE](../LICENSE) carries the current project-wide notice and governing text.
+Earlier revisions keep the terms in their own license files; the [changelog](../CHANGELOG.md)
+records release transitions. Do not rewrite published tags, license files, archives or release text.
+Third-party components retain their own licenses and notices.
 
 Public releases currently distribute source previews through the matching immutable tag archives.
-Before distributing application binaries or browser HTML, CSS and JavaScript, provide recipients
+Before distributing application binaries or browser HTML, CSS and JavaScript outside your
+organization, provide recipients
 the actual corresponding MPL-covered source, build inputs and modifications, and a clear way to
 obtain it without charging more than distribution cost. For an unchanged official release, use
 its matching tagged source archive. A development version, dirty checkout or modified build
 requires its corresponding source; linking an older release or repository HEAD is insufficient.
 
 Qualified binary outputs carry LICENSE; browser assets carry LICENSE.txt and an HTML license/source
-notice. Preserve those notices and third-party attribution. When redistributing a modified build,
+notice. .NET publication preserves each restored package's declared copyright, license files,
+NOTICE and third-party notices; a top-level SPDX identifier does not replace embedded notices.
+Packages without license files use reviewed permission text alongside their own attribution.
+Preserve those notices and third-party attribution. When redistributing a modified build,
 update the source-availability notice to identify the source you actually provide. Do not put
 private configuration, credentials, data or generated test evidence in a source distribution.
 See [Mozilla's distribution guidance](https://www.mozilla.org/en-US/MPL/2.0/FAQ/) and
