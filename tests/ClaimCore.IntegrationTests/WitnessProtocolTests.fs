@@ -48,7 +48,7 @@ let private count connectionString table operationId =
 let private protocol identity fault =
     let store = witnessStore (witnessConnection ()) identity
 
-    let keyId, _ = (store.ReadKeyCheck(CancellationToken.None).GetAwaiter().GetResult())
+    let keyId, _ = (store.ReadKeyCheck(CancellationToken.None) |> await)
 
     new WitnessProtocol(
         store,
@@ -142,15 +142,13 @@ let private retryAfterCompetingSettlement
             primary.Open()
             use transaction = primary.BeginTransaction()
 
-            (competing
-                .ReconcileAccepted(
-                    primary,
-                    transaction,
-                    operation.OperationId,
-                    CancellationToken.None
-                )
-                .GetAwaiter()
-                .GetResult())
+            (competing.ReconcileAccepted(
+                primary,
+                transaction,
+                operation.OperationId,
+                CancellationToken.None
+             )
+             |> await)
 
             transaction.Rollback())
 
