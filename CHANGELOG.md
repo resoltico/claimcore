@@ -6,11 +6,15 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Fixed
 
+- Updated the build-only HTTP cache dependency to its patched release and retired its advisory exception; reverting to the affected versions fails dependency auditing.
+
 - Witness, recovery and full-audit runtime paths await database I/O and honor cancellation before dispatch. A caller cancelling after an append can commit still receives completion or exact uncertainty; retries retain the original operation identity and bytes.
 - Generic JSON Schema `date-time` validation requires an explicit RFC 3339 date, time and offset before .NET representability checks. Activation-approval recovery requires its canonical round-trip timestamp spelling. The service's stricter canonical UTC timestamp schema is unchanged.
 - Generated .NET redistribution notices retain each package's own copyright and supplied license/NOTICE files, including NSec's embedded BSD/ISC notices. The former generic MIT attribution and incomplete notice collection are replaced. Regenerate application publish outputs before redistribution; published source releases and their licenses remain unchanged.
 
 ### Changed
+
+- Source builds and the shipped operating images require Node 26.10.0; npm remains 11.19.1. Frontend, engineering and Python tooling dependencies, including uv 0.12.23, are refreshed to their current stable releases. The synthetic OIDC provider uses Keycloak 26.8.0 with an explicit custom API audience, and published-process coverage uses Coverlet console 10.1.0, matching the native testing-platform collector. Before upgrading an existing local Keycloak realm, change its CLI and service API audience mappers to Included Custom Audience; startup import does not update a persisted realm.
 
 - Web can explicitly configure a public HTTPS origin and separate listener address/port. Native defaults remain loopback; TLS identity, exact Host/origin, OIDC and actor grants remain required. The unsupported single-primary development Compose layout is removed; existing volumes are not migrated or deleted.
 
@@ -34,7 +38,7 @@ Notable changes to this project are documented in this file. The format is based
 - Backup and independent-host qualification compare raw Ed25519 keys for signing-role separation. One key under different PEM encodings can no longer supply separate COPY_ATTESTOR/CHECKPOINT, promotion, observer or aggregate roles. Native verification applies the same rule. Previously accepted evidence with aliased keys is now refused; provision genuinely distinct keys and renew the affected signed evidence. Exact topology file-hash pins and signed formats are unchanged.
 - Remote PostgreSQL owner/runtime/witness connections and system-trust HTTPS clients now check certificate revocation during TLS handshakes. Remote issuers and database CAs must publish reachable revocation evidence; missing or unknown status can prevent opening. Web OIDC discovery, token and signing-key backchannels no longer follow redirects. Existing TLS connections and cached issuer keys are not retroactively revoked; stop affected hosts and sessions during compromise response.
 - Loopback private HTTPS roots must be current public-only signing CAs, and presented leaves must carry server-authentication purpose. Replace leaf-as-root or wrong-purpose synthetic certificates. Witness, suppression, recovery-export and managed-copy commitment custody refuse ambiguous duplicate members, zero material or repeated rotation material as applicable. Preserve historical keys and evidence for exact audit; changing an ID or deleting old material does not repair a compromised or unreadable history.
-- The frontend dependency gate now keeps a clean production audit and limits two known, development-only advisory exceptions to exact `braces` and `http-cache-semantics` findings until 2026-11-03. These tooling dependencies remain vulnerable; review upstream fixes before that date. Unknown or production findings still fail verification.
+- The frontend dependency gate now keeps a clean production audit and limits the remaining known, development-only advisory exception to the exact `braces` finding until 2026-11-03. This tooling dependency remains vulnerable; review upstream fixes before that date. Unknown or production findings still fail verification.
 
 ### Changed
 

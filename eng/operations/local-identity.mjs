@@ -79,7 +79,7 @@ function audience() {
     protocolMapper: "oidc-audience-mapper",
     consentRequired: false,
     config: {
-      "included.client.audience": "claimcore-api",
+      "included.custom.audience": "claimcore-api",
       "id.token.claim": "false",
       "access.token.claim": "true",
     },

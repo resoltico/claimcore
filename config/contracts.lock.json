@@ -349,7 +349,7 @@
     {
       "path": "contracts-manifest.json",
       "bytes": 7158,
-      "sha256": "6c29da9db01a040535c1d14e08960738b894aebac24811a3dd97c82d10fb90bd"
+      "sha256": "fee3e9a48ba17725c49f0362ec0c1ff865d9be80a0aaad70a08767b6bf71d0f6"
     },
     {
       "path": "local-diagnostics.parsed-value-corpus.json",
@@ -644,7 +644,7 @@
     {
       "path": "web-v3.validators.NOTICE.txt",
       "bytes": 5357,
-      "sha256": "3f1d522d127a523324a92ef9f61db3def66e7e600952df75a6ccd3bcba213b04"
+      "sha256": "ab7118245ffacfe5e8d01ccd5096d62daaf6e298f09191291dfd3635eacaaa60"
     },
     {
       "path": "web-v3.validators.core.d.mts",

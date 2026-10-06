@@ -29,7 +29,7 @@ is read from its owning file; the tool table below is generated.
 | actionlint | 1.7.12 | darwin-arm64, darwin-x64, linux-arm64, linux-x64, win32-x64 |
 | gitleaks | 8.30.1 | darwin-arm64, darwin-x64, linux-arm64, linux-x64, win32-arm64, win32-x64 |
 | shfmt | 3.14.1 | darwin-arm64, darwin-x64, linux-arm64, linux-x64, win32-x64 |
-| uv | 0.12.21 | darwin-arm64, darwin-x64, linux-arm64, linux-x64, win32-x64 |
+| uv | 0.12.23 | darwin-arm64, darwin-x64, linux-arm64, linux-x64, win32-x64 |
 <!-- generated:end pinned-tools -->
 
 Run commands from the repository root. Use only synthetic data and isolated test databases.
@@ -581,11 +581,10 @@ Security checking uses each ecosystem's own tool, all required: NuGet Audit runs
 vulnerability warnings are errors, the frontend audit policy and `npm audit signatures` run for `web`,
 `npm audit` and signatures run for `eng`, `uv audit` for the Python graph, and the frontend license
 check for production dependencies. The frontend policy requires a clean production audit and
-checks the full graph against only two exact, development-only advisories with no patched versions:
-[`braces`](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) and
-[`http-cache-semantics`](https://github.com/advisories/GHSA-ch52-4w7c-c8xp). Their expiry is owned by the
+checks the full graph against the one remaining exact, development-only advisory with no patched version:
+[`braces`](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm). Its expiry is owned by the
 [frontend audit policy](../eng/ci/policy/npm-audit.mjs); a new advisory, production exposure, malformed audit, or stale exception fails.
-These vulnerable build-tool dependencies remain a reviewed risk, not a security fix. Dependabot opens one grouped, 7-day-cooldown
+This vulnerable build-tool dependency remains a reviewed risk, not a security fix. Dependabot opens one grouped, 7-day-cooldown
 version-update pull request per ecosystem each week (npm for `web` and `eng`, NuGet, the .NET SDK, uv, GitHub Actions including the
 composite action, and the Compose image). The version cooldown does not delay security updates. An available update does not block an unrelated PR, and a vulnerability
 finding is never a reason for a blanket gate waiver.

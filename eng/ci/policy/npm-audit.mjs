@@ -1,15 +1,12 @@
-// Preserve full npm audit coverage while upstream has no patched release for two build-only
-// dependencies. Every indirect finding must resolve to one of these exact advisory roots.
+// Preserve full npm audit coverage while upstream has no patched release for one build-only
+// dependency. Every indirect finding must resolve to one of these exact advisory roots.
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL("../../..", import.meta.url));
 const reviewDate = "2026-11-03";
 const reviewBefore = Date.parse(`${reviewDate}T00:00:00Z`);
-const exceptions = new Map([
-  ["braces", "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm"],
-  ["http-cache-semantics", "https://github.com/advisories/GHSA-ch52-4w7c-c8xp"],
-]);
+const exceptions = new Map([["braces", "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm"]]);
 
 /** @param {unknown} report */
 function vulnerabilities(report) {

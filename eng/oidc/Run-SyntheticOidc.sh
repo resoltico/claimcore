@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Disposable local OIDC qualification. The only persistent output is a caller's
 # own test result; this script removes its labeled container and private files.
-image='quay.io/keycloak/keycloak:26.7.4@sha256:82a77884f3af238beab1e7afd63b5f530e1b5c0590bd7aa60b40a40463e29b2c'
+image='quay.io/keycloak/keycloak:26.8.0@sha256:b0f60d489d51c5d113390bdf5461d4c06e6051be026c05549f2e1e10ec352bcc'
 container=''
 workdir=''
 proxy_pid=''
@@ -124,14 +124,14 @@ jq -n \
        attributes:{"pkce.code.challenge.method":"S256"},
        protocolMappers:[{name:"claimcore-api-audience",protocol:"openid-connect",
          protocolMapper:"oidc-audience-mapper",consentRequired:false,
-         config:{"included.client.audience":"claimcore-api",
+         config:{"included.custom.audience":"claimcore-api",
            "id.token.claim":"false","access.token.claim":"true"}}]},
       {clientId:"claimcore-service",enabled:true,publicClient:false,secret:$serviceSecret,
        standardFlowEnabled:false,directAccessGrantsEnabled:false,
        implicitFlowEnabled:false,serviceAccountsEnabled:true,
        protocolMappers:[{name:"claimcore-api-audience",protocol:"openid-connect",
          protocolMapper:"oidc-audience-mapper",consentRequired:false,
-         config:{"included.client.audience":"claimcore-api",
+         config:{"included.custom.audience":"claimcore-api",
            "id.token.claim":"false","access.token.claim":"true"}}]},
       {clientId:"claimcore-unscoped",enabled:true,publicClient:false,secret:$unscopedSecret,
        standardFlowEnabled:false,directAccessGrantsEnabled:false,
@@ -153,7 +153,7 @@ jq -n --arg realm "${foreign_realm}" --arg secret "${foreign_secret}" \
       implicitFlowEnabled:false,serviceAccountsEnabled:true,
       protocolMappers:[{name:"claimcore-api-audience",protocol:"openid-connect",
         protocolMapper:"oidc-audience-mapper",consentRequired:false,
-        config:{"included.client.audience":"claimcore-api",
+        config:{"included.custom.audience":"claimcore-api",
           "id.token.claim":"false","access.token.claim":"true"}}]}]}' \
   >"${workdir}/foreign.json"
 

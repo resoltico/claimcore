@@ -15,19 +15,10 @@ const approved = report({
     via: [{ name: "braces", url: "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm" }],
   },
   micromatch: { via: ["braces"] },
-  "http-cache-semantics": {
-    via: [
-      {
-        name: "http-cache-semantics",
-        url: "https://github.com/advisories/GHSA-ch52-4w7c-c8xp",
-      },
-    ],
-  },
-  "make-fetch-happen": { via: ["http-cache-semantics"] },
 });
 
-test("only the two reviewed development advisory roots pass", () => {
-  assert.equal(assess(approved, clean, Date.parse("2026-10-03T00:00:00Z")), 2);
+test("only the reviewed unpatched development advisory root passes", () => {
+  assert.equal(assess(approved, clean, Date.parse("2026-10-03T00:00:00Z")), 1);
 });
 
 test("production exposure and a new indirect advisory fail closed", () => {
@@ -58,4 +49,15 @@ test("missing, malformed, cyclic, and expired exceptions fail closed", () => {
   micromatch.via = ["micromatch"];
   assert.throws(() => assess(cyclic, clean), /cyclic/u);
   assert.throws(() => assess(approved, clean, Date.parse("2026-11-03T00:00:00Z")), /review/u);
+});
+
+test("the patched cache advisory cannot reuse its retired exception", () => {
+  const reverted = structuredClone(approved);
+  reverted.vulnerabilities["http-cache-semantics"] = {
+    via: [
+      { name: "http-cache-semantics", url: "https://github.com/advisories/GHSA-ch52-4w7c-c8xp" },
+    ],
+  };
+  reverted.metadata.vulnerabilities.total += 1;
+  assert.throws(() => assess(reverted, clean), /unreviewed/u);
 });
