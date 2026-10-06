@@ -48,7 +48,7 @@ let private syntheticConfiguration issuer (root: X509Certificate2) (credentials:
 
 let private webConfiguration oidc (root: X509Certificate2) =
     {
-        Origin = Uri("https://localhost:5443")
+        Binding = WebBindings.create (Uri("https://localhost:5443")) "127.0.0.1" 5443
         ConnectionString = "synthetic-not-opened"
         WitnessConnectionString = "synthetic-not-opened"
         WitnessKeyRingPath = "synthetic-not-opened"

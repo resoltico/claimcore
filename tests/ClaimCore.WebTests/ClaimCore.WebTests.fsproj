@@ -12,6 +12,7 @@
     <Compile Include="WebConfigurationFixture.fs" />
     <Compile Include="ConfigurationTests.fs" />
     <Compile Include="OriginConfigurationTests.fs" />
+    <Compile Include="BindingAdmissionTests.fs" />
     <Compile Include="WitnessConfigurationTests.fs" />
     <Compile Include="OidcConfigurationTests.fs" />
     <Compile Include="OidcLiveKeys.fs" />
@@ -21,6 +22,7 @@
     <Compile Include="OidcLiveFixture.fs" />
     <Compile Include="AuthFoundationTests.fs" />
     <Compile Include="OidcStartupTests.fs" />
+    <Compile Include="OidcStartupCancellationTests.fs" />
     <Compile Include="PrincipalAdmissionTests.fs" />
     <Compile Include="AuthTrustTests.fs" />
     <Compile Include="AdmissionEdgeTests.fs" />
@@ -54,6 +56,9 @@
     <Compile Include="TestServerBoundaryTests.fs" />
     <Compile Include="TransportDiagnosticTests.fs" />
     <Compile Include="AsyncTransportTests.fs" />
+    <Compile Include="ProbeHttpsFixture.fs" />
+    <Compile Include="ProbeTransportTests.fs" />
+    <Compile Include="ProbeProcessTests.fs" />
     <Compile Include="Suite.fs" />
   </ItemGroup>
   <ItemGroup>

@@ -9,7 +9,7 @@ Choose the shortest path for the work you are doing:
 | Understand project dependencies and trust boundaries | [Architecture](architecture.md) |
 | Consume structured core outcomes or extend diagnostic presentation | [Core outcome diagnostics](diagnostics.md) |
 | Automate ClaimCore or recover an uncertain CLI request | [CLI and protocol](cli.md) |
-| Configure or operate the browser host | [Web](web.md) |
+| Configure HTTPS and operate the service | [Service operation](service.md), [Web](web.md) |
 | Manage PostgreSQL schema or technical preparation retention | [Database](database.md) |
 | Build, test, lint, update dependencies, or qualify a change | [Development](development.md) |
 | Publish a PR, diagnose CI, or activate repository governance | [CI governance](ci-governance.md) |
@@ -77,3 +77,6 @@ The [cryptography and trust design](cryptography-trust-design.md) and separate
 
 The [operator workflows design](operator-workflows-design.md) and separate
 [design QA](operator-workflows-design-qa.md) trace interrupted procedures and independent qualification.
+
+The [service operating-model design](service-operations-design.md) and separate
+[design challenge](service-operations-design-qa.md) record the Docker operating-model decisions.

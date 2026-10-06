@@ -88,10 +88,17 @@ let private cookieContext provider =
     request
 
 let private actorGet request =
-    Admission.actorGet configuration origin request |> _.GetAwaiter().GetResult()
+    Admission.actorGet configuration (WebBindings.create origin "127.0.0.1" origin.Port) request
+    |> _.GetAwaiter().GetResult()
 
 let private actorPostWith selectedAntiforgery request =
-    Admission.actorPost configuration origin RequestBody.Json 32 selectedAntiforgery request
+    Admission.actorPost
+        configuration
+        (WebBindings.create origin "127.0.0.1" origin.Port)
+        RequestBody.Json
+        32
+        selectedAntiforgery
+        request
     |> _.GetAwaiter().GetResult()
 
 let private actorPost request = actorPostWith antiforgery request

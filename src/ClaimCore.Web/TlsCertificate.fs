@@ -7,7 +7,7 @@ open ClaimCore.Contracts
 open ClaimCore.HostSecurity
 
 module internal TlsCertificate =
-    let load path =
+    let load hostname path =
 
         let bytes =
             match PrivateFileService.readBinary (8 * 1024 * 1024) path with
@@ -57,7 +57,7 @@ module internal TlsCertificate =
 
                     loaded.NotBefore.ToUniversalTime() <= now
                     && now < loaded.NotAfter.ToUniversalTime()
-                    && loaded.MatchesHostname("localhost", false, false)
+                    && loaded.MatchesHostname(hostname, true, false)
                     && serverAuthentication
                 with :? CryptographicException ->
                     false

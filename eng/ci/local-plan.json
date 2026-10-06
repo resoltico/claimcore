@@ -78,7 +78,7 @@
         "\\.(props|targets|slnx|slnf)$",
         "^global\\.json$",
         "packages\\.lock\\.json$",
-        "^compose\\.yaml$",
+        "^deployment/",
         "^config/"
       ]
     },
@@ -119,6 +119,23 @@
         "^eng/oidc/",
         "^eng/ci/publish/",
         "^web/"
+      ]
+    },
+    {
+      "id": "container-operation",
+      "title": "Persistent HTTPS Docker operation and authority separation",
+      "mirrors": ["deployment"],
+      "after": ["frontend-gates", "quality", "docs-check"],
+      "argv": ["node", "eng/ci/deployment/qualify.mjs"],
+      "tools": ["docker"],
+      "scope": [
+        "^deployment/",
+        "^eng/operations/",
+        "^eng/ci/deployment/",
+        "^src/",
+        "^config/",
+        "^global\\.json$",
+        "^\\.dockerignore$"
       ]
     }
   ],

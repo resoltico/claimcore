@@ -349,12 +349,12 @@
     {
       "path": "contracts-manifest.json",
       "bytes": 7158,
-      "sha256": "e79f497492457ba211b286fea283c2a42f078d5cdf82cdeab99a6f01b7b4302b"
+      "sha256": "6c29da9db01a040535c1d14e08960738b894aebac24811a3dd97c82d10fb90bd"
     },
     {
       "path": "local-diagnostics.parsed-value-corpus.json",
-      "bytes": 283895,
-      "sha256": "8ee9c9b6ef6832955c0d98ebe8cbdc5d47b4a96b4054651cb31a141bca9b247f"
+      "bytes": 332129,
+      "sha256": "d033ad7d85fe309b37eb1ff7c188d2d04ceffa120535448e865e44d722dee4a1"
     },
     {
       "path": "recovery-artifact-v3.schema.json",
@@ -373,8 +373,8 @@
     },
     {
       "path": "web-v3.catalog.json",
-      "bytes": 3213875,
-      "sha256": "559b4f0f1d7a118b366d7653cc994cb70c1c8262714201f9621e21d1af1b2a3a"
+      "bytes": 3214308,
+      "sha256": "b7ea061f474e6d778c6307db00a1aedf0221c53c2108278669b7086b983019bb"
     },
     {
       "path": "web-v3.endpoint-catalog.authority.ts",
@@ -389,7 +389,7 @@
     {
       "path": "web-v3.endpoint-catalog.ts",
       "bytes": 729,
-      "sha256": "dcce7e5f1431e6f67045b16b3dc28984a8405b52212ede9ccc29cf99ea3bbc8d"
+      "sha256": "117a27044ed0a1fbf347578418389aec0bec5658d8096bb020194a0f447e76ab"
     },
     {
       "path": "web-v3.endpoint.authority.approveCopyAdoption.response.schema.json",
@@ -564,12 +564,12 @@
     {
       "path": "web-v3.parsed-value-corpus.json",
       "bytes": 1984569,
-      "sha256": "b4682fcad8050b93bae11d2324bf6dddd63f3d56ec991734ee27f32586f51944"
+      "sha256": "66f1df7a1b9223c2385d8d30f31b669ab73fc4ae424a534069822c65b8a065ab"
     },
     {
       "path": "web-v3.process-failure.schema.json",
-      "bytes": 2405,
-      "sha256": "35218c1effd2ab8449bf5153b1414006f800dfdd29bf49a3e152e9e4d9ac2138"
+      "bytes": 2838,
+      "sha256": "1ba134e2802a03de577b21f04dc5e81defa71d6a3d1a0914b20332a3cd8d0206"
     },
     {
       "path": "web-v3.responses.schema.json",

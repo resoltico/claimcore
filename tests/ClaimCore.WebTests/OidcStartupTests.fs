@@ -62,7 +62,9 @@ let private discoveryPaths () =
         let issuer = Uri source
         use handler = new DiscoveryHandler(issuer, false)
         use client = new HttpClient(handler, false)
-        OidcStartup.verify client (configuration issuer)
+
+        OidcStartup.verify client (configuration issuer) System.Threading.CancellationToken.None
+        |> _.GetAwaiter().GetResult()
 
         Expect.equal
             handler.Observed
@@ -79,7 +81,12 @@ let private suspendedStartup () =
     let work =
         Task.Run(fun () ->
             try
-                OidcStartup.verify client (configuration issuer)
+                OidcStartup.verify
+                    client
+                    (configuration issuer)
+                    System.Threading.CancellationToken.None
+                |> _.GetAwaiter().GetResult()
+
                 false
             with WebStartupException WebStartupProblem.OidcConfigurationInvalid ->
                 true)

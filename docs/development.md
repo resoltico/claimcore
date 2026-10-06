@@ -116,7 +116,7 @@ them as ordinary test output. They do not establish a successful restore.
 A complete result is conjunctive: locked restore, compiler build, repository policy, every required
 test suite, the generated semantic/CLI-v4/Web-v3 contract lock, frontend assurance, documentation,
 fresh-baseline creation/refusal database qualifications, published CLI acceptance, published browser
-lifecycle, and merged coverage must all succeed for the same source. Do not relabel one green family
+lifecycle, actual container operation, and merged coverage must all succeed for the same source. Do not relabel one green family
 as the whole gate. CI's `Gate` job succeeds only when every family it lists in `needs` succeeded.
 
 Required tests must be zero-retry and unfiltered. Focused, pending, skipped, expected-failure,
@@ -133,7 +133,7 @@ node eng/ci/run-local.mjs
 runs, in order and stopping before spending more time once a job has failed, the CI jobs that can run on
 one machine: the locked restore and strict-compiler build, the documentation check, the source and
 dependency gates, the frontend product and gates, the cross-platform suites for this platform, and the
-partitioned PostgreSQL suites. Each job runs the command CI runs. The jobs are registered in
+partitioned PostgreSQL suites and persistent Docker operation qualification. Each job runs the command CI runs. The jobs are registered in
 [`eng/ci/local-plan.json`](../eng/ci/local-plan.json), which also lists every CI family with no local
 equivalent (the other operating systems, the published-browser lifecycles and merged coverage) with the
 reason, and a test holds that list to `ci.yml`. Jobs run exclusively one after another because they share one working
@@ -211,7 +211,7 @@ independent encoding/digest vectors; they do not replace byte expectations or re
 
 The integration and qualification processes create exactly labelled isolated PostgreSQL containers from the
 official, digest-pinned image named in [`db/postgresql-baseline.json`](../db/postgresql-baseline.json) (the same
-reference `compose.yaml` uses, held equal by a test). The separate qualification executables prevent a generic
+reference `deployment/local.compose.yaml` uses, held equal by a test). The separate qualification executables prevent a generic
 integration pass from being reported as recovery, concurrency, or fresh-baseline evidence. Linux CI installs
 PGDG-signed PostgreSQL 18.6 tools and checksum-pinned age 1.3.2 for the backup drills; it disables automatic
 creation of a host PostgreSQL cluster. A local backup qualification needs the same PostgreSQL 18.6 tools in
@@ -377,10 +377,9 @@ The table shows each stage's arguments and additional inputs; run the plan to re
 | actionlint | actionlint -color | requires actionlint |
 | workflow-security | uv run --frozen zizmor --persona pedantic --config .github/zizmor.yml --no-progress --format=plain .github | requires uv |
 | workflow-policy | node eng/ci/check-workflows.mjs |  |
-| shfmt | shfmt -d | requires shfmt; append .sh source under eng, db |
-| shellcheck | shellcheck -x | requires shellcheck; append .sh source under eng, db |
-| compose-config | CLAIMCORE_COMPOSE_PROJECT="claimcore-config-{runId}" POSTGRES_PASSWORD="owner-policy-value" CLAIMCORE_APP_PASSWORD="runtime-policy-value" CLAIMCORE_POSTGRES_PORT="0" docker compose --file compose.yaml config --quiet | requires docker |
-| compose-health | bash eng/Test-ComposePolicy.sh | requires docker; resource docker |
+| shfmt | shfmt -d | requires shfmt; append .sh source under eng, db, deployment |
+| shellcheck | shellcheck -x | requires shellcheck; append .sh source under eng, db, deployment |
+| compose-config | CLAIMCORE_COMPOSE_PROJECT="claimcore-config-{runId}" CLAIMCORE_CONFIG_DIR="/tmp/claimcore-config-{runId}" CLAIMCORE_SERVICE_UID="1654" CLAIMCORE_SERVICE_GID="1654" CLAIMCORE_HOST_PORT="0" docker compose --file deployment/compose.yaml config --quiet | requires docker |
 | docker-cleanup-assurance | bash eng/Test-LabeledTestContainerCleanup.sh | requires docker; resource docker |
 <!-- generated:end quality-stages -->
 

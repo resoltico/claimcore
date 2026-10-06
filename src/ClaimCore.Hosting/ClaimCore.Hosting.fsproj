@@ -19,6 +19,7 @@
     <Compile Include="RuntimeSafetySupervisor.fs" />
     <Compile Include="RuntimeActorApprovalStores.fs" />
     <Compile Include="RuntimeOpening.fs" />
+    <Compile Include="RuntimeActorFactory.fs" />
     <Compile Include="Runtime.fsi" />
     <Compile Include="Runtime.fs" />
   </ItemGroup>

@@ -21,7 +21,7 @@ let private validAndBoundedConfiguration () =
         else
             let loaded = Configuration.load ()
             use _certificate = loaded.Certificate
-            Expect.equal loaded.Origin.Port 5443 "Default origin"
+            Expect.equal loaded.Binding.Origin.Port 5443 "Default origin"
             Expect.equal loaded.Admission.CorePermitLimit 4 "Default permits"
 
         for name, value in

@@ -1,0 +1,9 @@
+services:
+  web:
+    build:
+      additional_contexts:
+        publication: ${CLAIMCORE_PUBLISHED_CONTEXT:?Pass the verified publication context}
+  administration:
+    build:
+      additional_contexts:
+        publication: ${CLAIMCORE_PUBLISHED_CONTEXT}

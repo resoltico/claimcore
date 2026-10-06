@@ -24,7 +24,11 @@ let private jsonShapeTests () =
     accepted.Request.Headers["Sec-Fetch-Site"] <- "same-origin"
 
     Expect.equal
-        (Admission.postShape origin RequestBody.Json 32 accepted)
+        (Admission.postShape
+            (WebBindings.create origin "127.0.0.1" origin.Port)
+            RequestBody.Json
+            32
+            accepted)
         (Ok())
         "JSON admission accepts the exact local shape"
 
@@ -33,7 +37,11 @@ let private jsonShapeTests () =
     duplicateHost.Request.Headers["Host"] <- StringValues([| origin.Authority; origin.Authority |])
 
     Expect.equal
-        (Admission.postShape origin RequestBody.Json 32 duplicateHost)
+        (Admission.postShape
+            (WebBindings.create origin "127.0.0.1" origin.Port)
+            RequestBody.Json
+            32
+            duplicateHost)
         (Error AdmissionFailure.UntrustedConnection)
         "Host header cardinality is exact"
 
@@ -41,7 +49,11 @@ let private jsonShapeTests () =
     wrongMedia.Request.ContentType <- "application/jsonx"
 
     Expect.equal
-        (Admission.postShape origin RequestBody.Json 32 wrongMedia)
+        (Admission.postShape
+            (WebBindings.create origin "127.0.0.1" origin.Port)
+            RequestBody.Json
+            32
+            wrongMedia)
         (Error AdmissionFailure.UnsupportedMediaType)
         "JSON media is not prefix matched"
 
@@ -52,7 +64,7 @@ let private rawShapeTests () =
 
     Expect.equal
         (Admission.postShape
-            origin
+            (WebBindings.create origin "127.0.0.1" origin.Port)
             (RequestBody.Raw "application/vnd.claimcore.recovery+json")
             131072
             envelope)
@@ -63,7 +75,7 @@ let private rawShapeTests () =
 
     Expect.equal
         (Admission.postShape
-            origin
+            (WebBindings.create origin "127.0.0.1" origin.Port)
             (RequestBody.Raw "application/vnd.claimcore.recovery+json")
             131072
             envelope)
@@ -75,7 +87,11 @@ let private connectionRefusals () =
     absentPeer.Connection.RemoteIpAddress <- null
 
     Expect.equal
-        (Admission.postShape origin RequestBody.Json 32 absentPeer)
+        (Admission.postShape
+            (WebBindings.create origin "127.0.0.1" origin.Port)
+            RequestBody.Json
+            32
+            absentPeer)
         (Error AdmissionFailure.UntrustedConnection)
         "An absent remote address is never assumed local"
 
@@ -83,7 +99,11 @@ let private connectionRefusals () =
     remotePeer.Connection.RemoteIpAddress <- IPAddress.Parse("192.0.2.1")
 
     Expect.equal
-        (Admission.postShape origin RequestBody.Json 32 remotePeer)
+        (Admission.postShape
+            (WebBindings.create origin "127.0.0.1" origin.Port)
+            RequestBody.Json
+            32
+            remotePeer)
         (Error AdmissionFailure.UntrustedConnection)
         "A non-loopback peer cannot submit work"
 
@@ -91,7 +111,11 @@ let private connectionRefusals () =
     wrongHost.Request.Headers.Host <- "attacker.example"
 
     Expect.equal
-        (Admission.postShape origin RequestBody.Json 32 wrongHost)
+        (Admission.postShape
+            (WebBindings.create origin "127.0.0.1" origin.Port)
+            RequestBody.Json
+            32
+            wrongHost)
         (Error AdmissionFailure.UntrustedConnection)
         "A loopback peer cannot redirect the host authority"
 
@@ -100,7 +124,11 @@ let private browserOriginRefusals () =
     missingOrigin.Request.Headers.Remove("Origin") |> ignore
 
     Expect.equal
-        (Admission.postShape origin RequestBody.Json 32 missingOrigin)
+        (Admission.postShape
+            (WebBindings.create origin "127.0.0.1" origin.Port)
+            RequestBody.Json
+            32
+            missingOrigin)
         (Error AdmissionFailure.OriginRejected)
         "A browser mutation requires an explicit origin"
 
@@ -115,7 +143,11 @@ let private browserOriginRefusals () =
         )
 
     Expect.equal
-        (Admission.postShape origin RequestBody.Json 32 duplicateOrigin)
+        (Admission.postShape
+            (WebBindings.create origin "127.0.0.1" origin.Port)
+            RequestBody.Json
+            32
+            duplicateOrigin)
         (Error AdmissionFailure.OriginRejected)
         "Duplicated origin headers are not accepted"
 
@@ -123,7 +155,11 @@ let private browserOriginRefusals () =
     crossSite.Request.Headers["Sec-Fetch-Site"] <- "cross-site"
 
     Expect.equal
-        (Admission.postShape origin RequestBody.Json 32 crossSite)
+        (Admission.postShape
+            (WebBindings.create origin "127.0.0.1" origin.Port)
+            RequestBody.Json
+            32
+            crossSite)
         (Error AdmissionFailure.FetchMetadataRejected)
         "Cross-site fetch metadata is refused"
 
@@ -132,7 +168,11 @@ let private mediaAndLengthBoundaries () =
     missingMedia.Request.ContentType <- null
 
     Expect.equal
-        (Admission.postShape origin RequestBody.Json 32 missingMedia)
+        (Admission.postShape
+            (WebBindings.create origin "127.0.0.1" origin.Port)
+            RequestBody.Json
+            32
+            missingMedia)
         (Error AdmissionFailure.UnsupportedMediaType)
         "Missing media type does not default to JSON"
 
@@ -140,7 +180,11 @@ let private mediaAndLengthBoundaries () =
     parameterizedJson.Request.ContentType <- "Application/Json; charset=utf-8"
 
     Expect.equal
-        (Admission.postShape origin RequestBody.Json 32 parameterizedJson)
+        (Admission.postShape
+            (WebBindings.create origin "127.0.0.1" origin.Port)
+            RequestBody.Json
+            32
+            parameterizedJson)
         (Ok())
         "JSON permits a standard charset parameter without changing the media type"
 
@@ -148,7 +192,11 @@ let private mediaAndLengthBoundaries () =
     atLimit.Request.ContentLength <- Nullable 32L
 
     Expect.equal
-        (Admission.postShape origin RequestBody.Json 32 atLimit)
+        (Admission.postShape
+            (WebBindings.create origin "127.0.0.1" origin.Port)
+            RequestBody.Json
+            32
+            atLimit)
         (Ok())
         "An exact endpoint Content-Length is admitted"
 
@@ -156,7 +204,11 @@ let private mediaAndLengthBoundaries () =
     overLimit.Request.ContentLength <- Nullable 33L
 
     Expect.equal
-        (Admission.postShape origin RequestBody.Json 32 overLimit)
+        (Admission.postShape
+            (WebBindings.create origin "127.0.0.1" origin.Port)
+            RequestBody.Json
+            32
+            overLimit)
         (Error AdmissionFailure.BodyTooLarge)
         "Oversized Content-Length is refused before body reads"
 

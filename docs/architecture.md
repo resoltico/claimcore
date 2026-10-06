@@ -293,7 +293,7 @@ halves are deliberate, and the second is the harder one.
 
 **Refuse early.** Configuration, admission, and identity are checked before any work is admitted. The
 Web host loads and validates its whole configuration - required private paths, one exact HTTPS
-localhost origin, every bounded admission limit - before it opens a runtime, and the runtime opens
+origin and listener binding, every bounded admission limit - before it opens a runtime, and the runtime opens
 only after connection, role, ACL, schema, and lineage admission all succeed. Compiled assemblies must
 match the product release, the baseline identity must match its frozen checksum, and the installation must
 have an explicit stored IANA business zone. None of these degrade into a default.
@@ -328,4 +328,4 @@ cannot silently encode a zero operation ID.
 
 F# access control protects ordinary callers from accidental bypass; it is not authentication or a sandbox. The HTTPS host authenticates browser sessions and CLI bearer principals through OIDC, then ClaimCore applies current actor grants to each requested action and resource. The browser and CLI receive no database credential. Host, primary schema-owner, witness schema-owner, and storage administrators remain trusted; direct SQL by those authorities can bypass application checks.
 
-The current host is loopback-bound. A remote or real-data deployment additionally requires separate-host witness and key custody, signed backup/checkpoint publication, restored-pair qualification, and a reviewed single-writer handoff; local synthetic containers do not supply that evidence. See [Security and operations](operations.md).
+The host defaults to loopback and supports explicit HTTPS interface binding. A qualified real-data deployment additionally requires separate-host witness and key custody, signed backup/checkpoint publication, restored-pair qualification, and a reviewed single-writer handoff; local synthetic containers do not supply that evidence. See [Security and operations](operations.md).

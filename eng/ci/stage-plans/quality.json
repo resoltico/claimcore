@@ -114,7 +114,7 @@
       "id": "shfmt",
       "argv": ["shfmt", "-d"],
       "appendFiles": {
-        "directories": ["eng", "db"],
+        "directories": ["eng", "db", "deployment"],
         "suffix": ".sh"
       },
       "requires": ["shfmt"]
@@ -123,26 +123,21 @@
       "id": "shellcheck",
       "argv": ["shellcheck", "-x"],
       "appendFiles": {
-        "directories": ["eng", "db"],
+        "directories": ["eng", "db", "deployment"],
         "suffix": ".sh"
       },
       "requires": ["shellcheck"]
     },
     {
       "id": "compose-config",
-      "argv": ["docker", "compose", "--file", "compose.yaml", "config", "--quiet"],
+      "argv": ["docker", "compose", "--file", "deployment/compose.yaml", "config", "--quiet"],
       "env": {
         "CLAIMCORE_COMPOSE_PROJECT": "claimcore-config-{runId}",
-        "POSTGRES_PASSWORD": "owner-policy-value",
-        "CLAIMCORE_APP_PASSWORD": "runtime-policy-value",
-        "CLAIMCORE_POSTGRES_PORT": "0"
+        "CLAIMCORE_CONFIG_DIR": "/tmp/claimcore-config-{runId}",
+        "CLAIMCORE_SERVICE_UID": "1654",
+        "CLAIMCORE_SERVICE_GID": "1654",
+        "CLAIMCORE_HOST_PORT": "0"
       },
-      "requires": ["docker"]
-    },
-    {
-      "id": "compose-health",
-      "argv": ["bash", "eng/Test-ComposePolicy.sh"],
-      "group": "docker",
       "requires": ["docker"]
     },
     {

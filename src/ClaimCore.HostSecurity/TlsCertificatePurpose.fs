@@ -42,3 +42,12 @@ module TlsCertificatePurpose =
             System.Security.Cryptography.Oid("1.3.6.1.5.5.7.3.1")
         )
         |> ignore
+
+    /// The caller retains hostname validation and owns the admitted public root.
+    let customRootServerAuthentication (root: X509Certificate2) (certificate: X509Certificate2) =
+        use chain = new X509Chain()
+        chain.ChainPolicy.TrustMode <- X509ChainTrustMode.CustomRootTrust
+        chain.ChainPolicy.CustomTrustStore.Add(root) |> ignore
+        chain.ChainPolicy.RevocationMode <- X509RevocationMode.NoCheck
+        requireServerAuthentication chain
+        serverAuthentication certificate && chain.Build(certificate)

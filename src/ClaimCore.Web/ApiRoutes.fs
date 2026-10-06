@@ -31,7 +31,7 @@ module ApiRoutes =
                 match!
                     Admission.actorPost
                         oidc
-                        configuration.Origin
+                        configuration.Binding
                         body
                         maximumBytes
                         antiforgery

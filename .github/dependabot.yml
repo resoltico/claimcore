@@ -73,7 +73,14 @@ updates:
       toolchain-actions:
         patterns: ["*"]
   - package-ecosystem: docker-compose
-    directory: /
+    directory: /deployment
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 2
+  - package-ecosystem: docker
+    directory: /deployment
     schedule:
       interval: weekly
     cooldown:

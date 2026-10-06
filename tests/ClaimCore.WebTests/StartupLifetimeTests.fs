@@ -55,7 +55,12 @@ let private certificatesCloseWhenMetadataFails () =
             use certificates = Configuration.ownCertificates configuration
             configuration.Certificate.GetCertHash() |> ignore
             root.GetCertHash() |> ignore
-            OidcStartup.verify client configuration.Oidc.Value)
+
+            OidcStartup.verify
+                client
+                configuration.Oidc.Value
+                System.Threading.CancellationToken.None
+            |> _.GetAwaiter().GetResult())
         "Refused metadata unwinds startup ownership"
 
     for certificate in [ configuration.Certificate; root ] do

@@ -85,7 +85,6 @@
   "mustRemainVisible": [
     ".gitignore",
     "web/.gitignore",
-    ".env.example",
     ".config/dotnet-tools.json",
     ".editorconfig",
     ".gitattributes",
@@ -102,7 +101,9 @@
     "Directory.Packages.props",
     "NuGet.Config",
     "config/lint-exceptions.json",
-    "compose.yaml",
+    "deployment/compose.yaml",
+    "deployment/local.compose.yaml",
+    "deployment/Dockerfile",
     "db/baseline.sql",
     "db/schema-baseline.json",
     "docs/development.md",

@@ -14,6 +14,7 @@
     <Compile Include="OidcTrustRoot.fs" />
     <Compile Include="WebPrivateKeyPaths.fs" />
     <Compile Include="TlsCertificate.fs" />
+    <Compile Include="WebBinding.fs" />
     <Compile Include="Configuration.fs" />
     <Compile Include="OidcStartup.fs" />
     <Compile Include="Security.fs" />
@@ -36,6 +37,9 @@
     <Compile Include="RealDataActivationRoutes.fs" />
     <Compile Include="ApiRoutes.fs" />
     <Compile Include="HostRoutes.fs" />
+    <Compile Include="WebProbeTransport.fs" />
+    <Compile Include="WebProbe.fs" />
+    <Compile Include="WebProcessLifetime.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>

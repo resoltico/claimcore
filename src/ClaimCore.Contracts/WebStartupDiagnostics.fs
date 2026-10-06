@@ -14,6 +14,19 @@ type WebSetting =
     | CertificatePath
     | StateDirectory
     | Origin
+    | ListenAddress
+    | ListenPort
+    | ProbeCaCertFile
+    | WriterCapabilityFile
+    | FullAuditInterval
+    | BackupHealthPolicyFile
+    | BackupHealthCertificateFile
+    | OidcIssuer
+    | OidcClientId
+    | OidcClientSecretFile
+    | OidcApiAudience
+    | OidcCliClientId
+    | OidcServiceClientId
     | JsonLimit
     | CorePermits
     | CoreQueue
@@ -33,6 +46,19 @@ module WebSettings =
             WebSetting.CertificatePath, "CLAIMCORE_WEB_CERTIFICATE_PATH"
             WebSetting.StateDirectory, "CLAIMCORE_WEB_STATE_DIR"
             WebSetting.Origin, "CLAIMCORE_WEB_ORIGIN"
+            WebSetting.ListenAddress, "CLAIMCORE_WEB_LISTEN_ADDRESS"
+            WebSetting.ListenPort, "CLAIMCORE_WEB_LISTEN_PORT"
+            WebSetting.ProbeCaCertFile, "CLAIMCORE_WEB_PROBE_CA_CERT_FILE"
+            WebSetting.WriterCapabilityFile, "CLAIMCORE_WRITER_CAPABILITY_FILE"
+            WebSetting.FullAuditInterval, "CLAIMCORE_FULL_AUDIT_INTERVAL_SECONDS"
+            WebSetting.BackupHealthPolicyFile, "CLAIMCORE_BACKUP_HEALTH_POLICY_FILE"
+            WebSetting.BackupHealthCertificateFile, "CLAIMCORE_BACKUP_HEALTH_CERTIFICATE_FILE"
+            WebSetting.OidcIssuer, "CLAIMCORE_OIDC_ISSUER"
+            WebSetting.OidcClientId, "CLAIMCORE_OIDC_CLIENT_ID"
+            WebSetting.OidcClientSecretFile, "CLAIMCORE_OIDC_CLIENT_SECRET_FILE"
+            WebSetting.OidcApiAudience, "CLAIMCORE_OIDC_API_AUDIENCE"
+            WebSetting.OidcCliClientId, "CLAIMCORE_OIDC_CLI_CLIENT_ID"
+            WebSetting.OidcServiceClientId, "CLAIMCORE_OIDC_SERVICE_CLIENT_ID"
             WebSetting.JsonLimit, "CLAIMCORE_WEB_MAX_JSON_BYTES"
             WebSetting.CorePermits, "CLAIMCORE_WEB_CORE_PERMITS"
             WebSetting.CoreQueue, "CLAIMCORE_WEB_CORE_QUEUE"
@@ -43,6 +69,31 @@ module WebSettings =
         ]
 
     let all = entries |> List.map fst
+
+    let required =
+        [
+            WebSetting.ConnectionFile
+            WebSetting.WitnessConnectionFile
+            WebSetting.WitnessKeyFile
+            WebSetting.WriterCapabilityFile
+            WebSetting.SuppressionKeyFile
+            WebSetting.RecoveryArtifactKeyFile
+            WebSetting.CertificatePath
+            WebSetting.StateDirectory
+            WebSetting.OidcIssuer
+            WebSetting.OidcClientId
+            WebSetting.OidcClientSecretFile
+            WebSetting.OidcApiAudience
+            WebSetting.OidcCliClientId
+            WebSetting.OidcServiceClientId
+        ]
+
+    let realData =
+        [ WebSetting.BackupHealthPolicyFile; WebSetting.BackupHealthCertificateFile ]
+
+    let optional =
+        all
+        |> List.filter (fun setting -> not (List.contains setting (required @ realData)))
 
     let token setting =
         entries |> List.find (fst >> (=) setting) |> snd
@@ -80,7 +131,7 @@ module WebStartupDiagnostics =
         [
             WebStartupProblem.OriginInvalid,
             ("WEB_ORIGIN_CONFIGURATION_INVALID",
-             "Configure one HTTPS localhost origin without a path.")
+             "Configure one HTTPS origin without a path, credentials or fragment.")
             WebStartupProblem.SessionLifetimeInvalid,
             ("WEB_SESSION_LIFETIME_INVALID", "Session lifetimes must be positive and ordered.")
             WebStartupProblem.OidcConfigurationInvalid,
@@ -99,7 +150,8 @@ module WebStartupDiagnostics =
             ("WEB_CERTIFICATE_ACCESS_REFUSED",
              "The certificate must be a bounded private PKCS#12 file.")
             WebStartupProblem.CertificateInvalid,
-            ("WEB_CERTIFICATE_INVALID", "The certificate is not valid for localhost HTTPS.")
+            ("WEB_CERTIFICATE_INVALID",
+             "The certificate is not valid for the configured HTTPS identity.")
             WebStartupProblem.CertificateKeyMissing,
             ("WEB_CERTIFICATE_KEY_MISSING", "The certificate must include a private key.")
             WebStartupProblem.ConnectionFileRefused,
@@ -131,7 +183,7 @@ module WebStartupDiagnostics =
             ("WEB_INVOCATION_UNSUPPORTED", "Run ClaimCore.Web help for supported arguments.")
             WebStartupProblem.UnexpectedFailure,
             ("WEB_PROCESS_FAILED",
-             "The local Web host failed. Preserve operation identities and do not infer command outcomes from this process failure.")
+             "The Web host failed. Preserve operation identities and do not infer command outcomes from this process failure.")
         ]
 
     let private entries = group0 @ group1 @ group2

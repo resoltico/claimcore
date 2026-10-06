@@ -1,0 +1,257 @@
+services:
+  configure:
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile
+      target: configuration
+    image: claimcore-configuration:source
+    profiles:
+      - configuration
+    user: 0:0
+    volumes:
+      - type: volume
+        source: configuration
+        target: /configuration
+        volume:
+          nocopy: true
+      - type: bind
+        source: ${CLAIMCORE_CONFIG_DIR:?}
+        target: /metadata
+        bind:
+          create_host_path: false
+    restart: no
+  revocation:
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile
+      target: revocation
+    image: claimcore-revocation:source
+    user: ${CLAIMCORE_SERVICE_UID:?}:${CLAIMCORE_SERVICE_GID:?}
+    volumes:
+      - type: volume
+        source: configuration
+        target: /publication
+        read_only: true
+        volume:
+          nocopy: true
+          subpath: installation/revocation
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:8000/ca.crl').then(r => process.exit(r.status === 200 ? 0 :
+          1)).catch(() => process.exit(1))"
+      interval: 5s
+      timeout: 5s
+      retries: 12
+  primary:
+    image: postgres:18.6@sha256:5a5a84b19854a9ffaa54082c166ff4ec27473a361e496e5ea167f298f2da9722
+    environment:
+      POSTGRES_DB: claimcore
+      POSTGRES_USER: claimcore_primary_owner
+      POSTGRES_PASSWORD_FILE: /etc/claimcore-postgres/owner.password
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+    command:
+      - postgres
+      - -c
+      - ssl=on
+      - -c
+      - ssl_cert_file=/etc/claimcore-postgres/server.pem
+      - -c
+      - ssl_key_file=/etc/claimcore-postgres/server.key
+    volumes:
+      - primary-data:/var/lib/postgresql
+      - type: volume
+        source: configuration
+        target: /etc/claimcore-postgres
+        read_only: true
+        volume:
+          nocopy: true
+          subpath: installation/primary
+      - ./postgres-roles.sh:/docker-entrypoint-initdb.d/10-claimcore-roles.sh:ro
+    healthcheck:
+      test:
+        - CMD
+        - pg_isready
+        - -h
+        - 127.0.0.1
+        - -U
+        - claimcore_primary_owner
+        - -d
+        - claimcore
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+  witness:
+    image: postgres:18.6@sha256:5a5a84b19854a9ffaa54082c166ff4ec27473a361e496e5ea167f298f2da9722
+    environment:
+      POSTGRES_DB: claimcore_witness
+      POSTGRES_USER: claimcore_witness_owner
+      POSTGRES_PASSWORD_FILE: /etc/claimcore-postgres/owner.password
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+    command:
+      - postgres
+      - -c
+      - ssl=on
+      - -c
+      - ssl_cert_file=/etc/claimcore-postgres/server.pem
+      - -c
+      - ssl_key_file=/etc/claimcore-postgres/server.key
+    volumes:
+      - witness-data:/var/lib/postgresql
+      - type: volume
+        source: configuration
+        target: /etc/claimcore-postgres
+        read_only: true
+        volume:
+          nocopy: true
+          subpath: installation/witness
+      - ./postgres-roles.sh:/docker-entrypoint-initdb.d/10-claimcore-roles.sh:ro
+    healthcheck:
+      test:
+        - CMD
+        - pg_isready
+        - -h
+        - 127.0.0.1
+        - -U
+        - claimcore_witness_owner
+        - -d
+        - claimcore_witness
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+  identity:
+    image: quay.io/keycloak/keycloak:26.7.4@sha256:82a77884f3af238beab1e7afd63b5f530e1b5c0590bd7aa60b40a40463e29b2c
+    entrypoint:
+      - bash
+      - /etc/claimcore-identity-entrypoint.sh
+    command:
+      - start
+      - --db=dev-file
+      - --http-management-scheme=http
+      - --health-enabled=true
+      - --http-enabled=false
+      - --https-port=5444
+      - --https-certificate-file=/etc/claimcore-identity/server.pem
+      - --https-certificate-key-file=/etc/claimcore-identity/server.key
+      - --hostname=https://identity.localhost:5444
+      - --import-realm
+    networks:
+      default:
+        aliases:
+          - identity.localhost
+    ports:
+      - 127.0.0.1:${CLAIMCORE_IDENTITY_HOST_PORT:-5444}:5444
+    volumes:
+      - identity-data:/opt/keycloak/data
+      - ./identity-entrypoint.sh:/etc/claimcore-identity-entrypoint.sh:ro
+      - type: volume
+        source: configuration
+        target: /etc/claimcore-identity
+        read_only: true
+        volume:
+          nocopy: true
+          subpath: installation/identity
+      - type: volume
+        source: configuration
+        target: /opt/keycloak/data/import
+        read_only: true
+        volume:
+          nocopy: true
+          subpath: installation/identity
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - "exec 3<>/dev/tcp/127.0.0.1/9000; printf 'GET /health/ready HTTP/1.0\\r\\nHost:
+          localhost\\r\\n\\r\\n' >&3; head -n 1 <&3 | grep -q ' 200 '"
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 30s
+  administration:
+    environment:
+      CLAIMCORE_ADMIN_CONNECTION_FILE: /etc/claimcore/administration/primary-owner.connection
+      CLAIMCORE_WITNESS_ADMIN_CONNECTION_FILE: /etc/claimcore/administration/witness-owner.connection
+      CLAIMCORE_WITNESS_CONNECTION_FILE: /etc/claimcore/runtime/witness.connection
+      CLAIMCORE_WITNESS_KEY_FILE: /etc/claimcore/runtime/witness-key.json
+      CLAIMCORE_WRITER_CAPABILITY_FILE: /etc/claimcore/runtime/writer.capability
+      CLAIMCORE_SUPPRESSION_KEY_FILE: /etc/claimcore/runtime/suppression-key.json
+    depends_on:
+      revocation:
+        condition: service_healthy
+      primary:
+        condition: service_healthy
+      witness:
+        condition: service_healthy
+    volumes: &a1
+      - type: volume
+        source: configuration
+        target: /etc/claimcore/administration
+        read_only: true
+        volume:
+          nocopy: true
+          subpath: installation/administration
+      - type: volume
+        source: configuration
+        target: /etc/claimcore/runtime
+        read_only: true
+        volume:
+          nocopy: true
+          subpath: installation/web
+  initialize:
+    extends:
+      file: administration.compose.yaml
+      service: administration
+    profiles:
+      - initialization
+    entrypoint:
+      - bash
+      - /app/initialize-local.sh
+    depends_on:
+      revocation:
+        condition: service_healthy
+      primary:
+        condition: service_healthy
+      witness:
+        condition: service_healthy
+    volumes: *a1
+  web:
+    depends_on:
+      revocation:
+        condition: service_healthy
+      primary:
+        condition: service_healthy
+      witness:
+        condition: service_healthy
+      identity:
+        condition: service_healthy
+    volumes:
+      - type: volume
+        source: configuration
+        target: /etc/claimcore/runtime
+        read_only: true
+        volume:
+          nocopy: true
+          subpath: installation/web
+      - type: volume
+        source: configuration
+        target: /var/lib/claimcore
+        read_only: false
+        volume:
+          nocopy: true
+          subpath: installation/web-state
+volumes:
+  primary-data: null
+  witness-data: null
+  identity-data: null
+  configuration: null

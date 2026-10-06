@@ -60,6 +60,11 @@ jobs:
     needs: [suites, integration, browser, acceptance]
     uses: ./.github/workflows/verify-coverage.yml
 
+  deployment:
+    name: Container operation
+    needs: [publish]
+    uses: ./.github/workflows/verify-deployment.yml
+
   gate:
     name: Gate
     if: always()
@@ -74,6 +79,7 @@ jobs:
       - acceptance
       - browser
       - coverage
+      - deployment
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
