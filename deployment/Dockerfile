@@ -9,7 +9,7 @@ WORKDIR /source
 COPY . .
 RUN --mount=type=cache,target=/root/.nuget/packages --mount=type=cache,target=/root/.npm test "$(dotnet --version)" = "$(node -p 'require("./global.json").sdk.version')" \
     && test "$(node --version)" = "v$(cat .node-version)" \
-    && npm install --global --ignore-scripts "npm@$(node -p 'require("./web/package.json").engines.npm')" \
+    && npm install --global "npm@$(node -p 'require("./web/package.json").engines.npm')" \
     && dotnet restore ClaimCore.slnx --locked-mode \
     && dotnet tool restore \
     && npm --prefix eng ci \
