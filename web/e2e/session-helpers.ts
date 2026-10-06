@@ -52,7 +52,7 @@ type Cookies = Awaited<ReturnType<BrowserContext["cookies"]>>;
 
 export const openApplication = async (page: Page, heading: string | RegExp): Promise<void> => {
   await observeStartup(page, async () => {
-    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.goto("/", { waitUntil: "commit" });
     await expect(page.getByRole("heading", { name: heading, exact: true })).toBeVisible();
   });
 };
