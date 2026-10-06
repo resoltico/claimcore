@@ -8,6 +8,7 @@ import { runner } from "./commands.mjs";
 import { probe } from "./http.mjs";
 import { databaseChecks } from "./database.mjs";
 import { contextChecks } from "./context.mjs";
+import { browserTrustQualification } from "./browser-trust-qualification.mjs";
 import { lifecycleChecks } from "./lifecycle.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
@@ -42,6 +43,7 @@ if (publication !== undefined) {
 const { docker, compose } = runner(root, join(state, "commands.log"), env);
 
 let passed = false;
+let browserTrust;
 try {
   contextChecks(root, state, docker);
   compose(["build", "web", "administration", "configure", "revocation"]);
@@ -95,6 +97,7 @@ try {
     "-c",
     "test ! -e /app/ClaimCore.Database.dll && test ! -e /app/initialize-local.sh && test ! -e /etc/claimcore/runtime/../administration && test ! -e /etc/claimcore/runtime/../authority && test ! -e /etc/claimcore/runtime/../identity",
   ]);
+  browserTrust = browserTrustQualification(docker, compose, configuration, run);
   const installation = databaseChecks(compose);
   const initialInstallation = installation();
   await lifecycleChecks(compose, docker, configuration);
@@ -116,6 +119,21 @@ try {
   passed = true;
 } finally {
   compose(["down"]);
+  const auxiliary = docker([
+    "ps",
+    "--all",
+    "--quiet",
+    "--filter",
+    `label=org.claimcore.test-run=${run}`,
+  ])
+    .trim()
+    .split("\n")
+    .filter(Boolean);
+  for (const container of auxiliary) {
+    const [owned] = JSON.parse(docker(["inspect", container]));
+    assert.equal(owned.Config.Labels["org.claimcore.test-run"], run);
+    docker(["rm", "--force", container]);
+  }
   if (passed) {
     const volumes = docker([
       "volume",
@@ -143,6 +161,7 @@ writeFileSync(
     run,
     result: "passed",
     liveness: true,
+    browserTrust,
     syntheticReadinessRefused: true,
     exactHostRefusal: true,
     tlsNameRefusal: true,

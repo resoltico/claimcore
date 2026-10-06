@@ -33,10 +33,10 @@ describe("metadata-driven drafts", () => {
 
   it("uses descriptor-only presentation hints", () => {
     expect(fieldHint(definition.fields[0]!)).toContain("80");
-    expect(fieldHint(definition.fields[1]!)).toContain("yyyy-MM-dd");
+    expect(fieldHint(definition.fields[1]!)).toContain("YYYY-MM-DD");
     expect(fieldHint(definition.fields[2]!)).toContain("decimal");
     expect(fieldHint(definition.fields[3]!)).toContain("3");
-    expect(fieldHint(definition.fields[4]!)).toContain("OPENED");
+    expect(fieldHint(definition.fields[4]!)).toContain("Open");
     expect(() => commandFor(definition, "CLOSE")).toThrow("CLOSE");
   });
 });

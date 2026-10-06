@@ -110,13 +110,13 @@ own lower limit before allocation. `GET /health/live` is an HTTPS host liveness 
 The browser offers English, Latvian and Arabic interface text, with right-to-left layout for Arabic.
 Language and display format are separate controls: the available formats are `en-GB`, `lv-LV` and
 `ar-EG`. The defaults are English and `en-GB`, regardless of the host or browser locale. Expanded
-English (`en-XA`) is a layout-test pseudolocale, not a translation for case work.
+English (`en-XA`) is a layout-test pseudolocale supported by the normal preference parser. Ordinary controls offer the three real languages; a seeded diagnostic preference shows a truthful current option until a real language is selected.
 
 Changing either preference does not submit a command or clear a draft, prepared review, consent or
-recovery identity. Preferences are stored locally in the browser when storage is available; they do
-not change the installation's business time zone or recorded currency. Displayed dates and accepted
+recovery identity. Preference events update one choice against current state, including rapid alternating events. Preferences are stored locally in the browser when storage is available; they do
+not change the installation's business time zone or recorded currency. Each tab loads preferences when opened; cross-tab synchronization is not provided. Displayed dates and accepted
 amounts follow the selected format, but authored dates and amounts retain their canonical input
-syntax. Copied canonical values and downloaded recovery artifacts remain exact.
+syntax. Copied canonical values and downloaded recovery artifacts remain exact. Read-only business values use directional isolation and code-point warnings for suspicious characters; review, recovery and import target summaries provide the same protection for exact case references. Warning and presentation markers never enter canonical requests or exports.
 
 The case detail reads disposition and privacy status through the authorized lifecycle review. It
 shows active holds as a separate erasure blocker and warns when a data-entry-error void requires

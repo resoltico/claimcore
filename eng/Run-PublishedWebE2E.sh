@@ -86,7 +86,7 @@ run_engine() (
       fi
     fi
     if [[ -f "${state_dir}/diagnostics/safe-browser-failure.json" ]] &&
-      jq -e --arg app 'https://localhost:5443' --arg idp "${issuer_base}" \
+      jq -e --arg app "${origin}" --arg idp "${issuer_base}" \
         'keys == ["callbackStatus","origin","pathname"] and
           (.callbackStatus | type == "number" and . >= 0 and . <= 599) and
           (.origin == $app or .origin == $idp) and
@@ -137,10 +137,13 @@ run_engine() (
       kill "${host_pid}" 2>/dev/null
       wait "${host_pid}" 2>/dev/null
     fi
-    scan_output || {
+    if ! scan_output; then
       printf 'Sensitive browser output was rejected.\n' >&2
       status=1
-    }
+    elif [[ "${status}" != 0 ]]; then
+      node "${repo_root}/eng/ci/retain-browser-failure.mjs" "${state_dir}/diagnostics" \
+        "${repo_root}/artifacts/browser-failures/${run_label}" || status=1
+    fi
     bash "${repo_root}/eng/Remove-LabeledTestContainers.sh" "${run_label}" || status=1
     if [[ "${state_dir}" == */claimcore-web-e2e."${engine}".* && -d "${state_dir}" ]]; then
       rm -r -- "${state_dir}" || status=1
@@ -158,7 +161,7 @@ run_engine() (
     >"${state_dir}/oidc-client.secret"
   printf '%s\n' 'Synthetic claimant canary' >"${state_dir}/claimant.canary"
   bash "${repo_root}/eng/Generate-SyntheticWebTls.sh" "${state_dir}"
-  origin='https://localhost:5443'
+  origin="${CLAIMCORE_TEST_WEB_ORIGIN:?Synthetic Web origin was not allocated.}"
   CLAIMCORE_CONNECTION_FILE="${state_dir}/primary-app.connection" \
     CLAIMCORE_WITNESS_CONNECTION_FILE="${state_dir}/witness-writer.connection" \
     CLAIMCORE_WITNESS_KEY_FILE="${state_dir}/witness-key.json" \

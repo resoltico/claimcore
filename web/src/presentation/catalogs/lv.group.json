@@ -1,8 +1,8 @@
 {
   "group.registration.label": "Reģistrācija",
-  "group.registration.meaning": "Saglabāt pieņemtos reģistrācijas faktus vai kopā aizstāt visus septiņus ievades laukus.",
+  "group.registration.meaning": "Saglabāt pašreizējos reģistrācijas datus vai aizstāt visus septiņus datus kopā.",
   "group.decision.label": "Izmaksas lēmums",
-  "group.decision.meaning": "Saglabāt pieņemto lēmumu, kopā aizstāt tā datumu, summu un valūtu vai to dzēst.",
+  "group.decision.meaning": "Saglabāt pašreizējo izmaksas lēmumu, kopā aizstāt tā datumu, summu un valūtu vai dzēst lēmumu.",
   "group.payment.label": "Maksājuma ieraksts",
-  "group.payment.meaning": "Saglabāt pieņemto maksājuma ierakstu, aizstāt tā datumu vai dzēst reģistrēto datumu; dzēšana neatceļ ārēju pārskaitījumu."
+  "group.payment.meaning": "Saglabāt pašreizējo maksājuma datumu, aizstāt to vai dzēst reģistrēto datumu. Datuma dzēšana neatmaksā naudu."
 }

@@ -36,10 +36,10 @@ it("locks navigation and logout while a prepared mutation is dispatched", async 
     throw new Error("Open-case incident date input was not rendered.");
   }
   await user.type(incidentDate, "2026-09-09");
-  await user.click(screen.getByRole("button", { name: "Prepare exact request" }));
+  await user.click(screen.getByRole("button", { name: "Review changes" }));
   await waitFor(() => {
     expect(screen.getByRole("button", { name: "Recovery" })).toBeDisabled();
   });
   expect(screen.getByRole("button", { name: "Sign out" })).toBeDisabled();
-  expect(screen.getByRole("button", { name: "Back without preparing" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Back to cases" })).toBeDisabled();
 });

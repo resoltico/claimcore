@@ -1,8 +1,8 @@
 import { createContext, useContext } from "react";
 import type { createPresenter } from "./presenter";
-import type { Preferences } from "./preferences";
+import type { PreferenceChange } from "./preferences";
 export type Presentation = ReturnType<typeof createPresenter> & {
-  setPreferences: (next: Preferences) => void;
+  setPreferences: (change: PreferenceChange) => void;
   persistenceFailed: boolean;
   changed: boolean;
 };

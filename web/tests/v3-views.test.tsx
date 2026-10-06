@@ -148,7 +148,7 @@ it("reports a failed list as a request-local error without manufacturing rows", 
     ),
   );
   render(<CaseList token="token" onSelect={vi.fn()} onOpen={vi.fn()} />);
-  expect(await screen.findByRole("alert")).toHaveTextContent("The local host is busy.");
+  expect(await screen.findByRole("alert")).toHaveTextContent("Request admission is busy.");
   expect(screen.queryByRole("listitem")).toBeNull();
 });
 
@@ -170,7 +170,7 @@ it("fails closed when the server definition is rejected or has a different Web f
   const first = render(
     <Dashboard token="token" sessionEpoch={2} onLogout={vi.fn(() => Promise.resolve())} />,
   );
-  expect(await screen.findByRole("alert")).toHaveTextContent("The session was refused.");
+  expect(await screen.findByRole("alert")).toHaveTextContent("Session was refused.");
   first.unmount();
   fetch.mockResolvedValueOnce(
     response("definition", "DESCRIBED", { ...definition, webFingerprint: "0".repeat(64) }),
@@ -198,7 +198,7 @@ it("routes dashboard list selections and the new-case command into the typed edi
   render(<Dashboard token="token" sessionEpoch={4} onLogout={vi.fn(() => Promise.resolve())} />);
   await user.click(await screen.findByRole("button", { name: "Open new case" }));
   expect(screen.getByRole("heading", { name: "Open a case" })).toBeVisible();
-  await user.click(screen.getByRole("button", { name: "Back without preparing" }));
+  await user.click(screen.getByRole("button", { name: "Back to cases" }));
   await user.click(screen.getByRole("button", { name: "CASE-1" }));
   expect(await screen.findByRole("heading", { name: "Case detail" })).toBeVisible();
 });

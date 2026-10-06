@@ -45,6 +45,21 @@ let private catalogueCoverage () =
     for expected, rejection in RejectionExamples.all do
         Expect.equal (token rejection) expected "Stable explicit token"
         Expect.isNonEmpty (RejectionPresentation.render rejection) "Total outward presentation"
+
+        let holes =
+            RejectionPresentation.template (
+                RejectionDiagnostics.describe rejection |> RejectionDiagnostics.identifier
+            )
+            |> List.choose (function
+                | DiagnosticTextPart.Hole hole -> Some(RejectionPresentation.holeName hole)
+                | DiagnosticTextPart.Literal _ -> None)
+
+        let parameters =
+            RejectionDiagnostics.describe rejection
+            |> RejectionDiagnostics.values
+            |> List.map fst
+
+        Expect.equal holes parameters "Template holes and typed numeric parameters agree"
         ignore rejection.Code
         ignore rejection.Action
 
@@ -242,10 +257,22 @@ let private cultures () =
         CultureInfo.CurrentCulture <- beforeCulture
         CultureInfo.CurrentUICulture <- beforeUi
 
+let private literalEncoding () =
+    let encode = ClaimCore.ContractGeneration.DefaultPresentation.icuLiteral
+    Expect.equal (encode "Handler's claim") "Handler''s claim" "Apostrophe remains literal"
+
+    Expect.equal
+        (encode "Use {literal} and {}")
+        "Use '{'literal'}' and '{}'"
+        "Braces cannot create parameters"
+
+    Expect.equal (encode "'{name}'") "'''{'name'}'''" "Quotes around braces remain literal"
+
 let tests =
     testList
         "typed rejection diagnostics"
         [
+            testCase "build-only ICU export escapes literal syntax [CC-WEB-001]" literalEncoding
             testCase
                 "every closed identity has one explicit token and a complete projection"
                 catalogueCoverage

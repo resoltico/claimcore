@@ -1,3 +1,4 @@
+import { ReferenceSummary } from "../../components/ReferenceSummary";
 import { NoticeView } from "../../presentation/Message";
 import { usePresentation } from "../../presentation/context";
 import { Button } from "react-aria-components/Button";
@@ -58,7 +59,6 @@ const CommandPicker = ({ model }: Pick<OperationFormProps, "model">) => {
 };
 
 const Reference = ({ current, model }: Pick<OperationFormProps, "current" | "model">) => {
-  const p = usePresentation();
   if (current === null && model.referenceField !== undefined) {
     return (
       <DescriptorField
@@ -74,7 +74,9 @@ const Reference = ({ current, model }: Pick<OperationFormProps, "current" | "mod
     );
   }
   return current === null ? null : (
-    <p>{p.text("ui.reference", { reference: model.state.caseReference })}</p>
+    <p>
+      <ReferenceSummary id="ui.reference" values={{ reference: model.state.caseReference }} />
+    </p>
   );
 };
 
@@ -130,7 +132,7 @@ const CorrectionMode = ({
         }}
       >
         {actions.map((action) => (
-          <option key={p.token(action)} value={p.token(action)}>
+          <option key={action} value={action}>
             {p.token(action)}
           </option>
         ))}
@@ -229,10 +231,11 @@ const CorrectionFields = ({ model }: Pick<OperationFormProps, "model">) => {
 };
 
 const Actions = ({
+  current,
   model,
   onClose,
   prepareButtonRef,
-}: Pick<OperationFormProps, "model" | "onClose" | "prepareButtonRef">) => {
+}: Pick<OperationFormProps, "current" | "model" | "onClose" | "prepareButtonRef">) => {
   const p = usePresentation();
   return (
     <div className="actions">
@@ -243,7 +246,7 @@ const Actions = ({
         <Button onPress={() => void model.prepare()}>{p.text("ui.retryPrepare")}</Button>
       ) : null}
       <Button className="secondary-button" onPress={onClose} isDisabled={model.locked}>
-        {p.text("ui.backWithoutPreparing")}
+        {p.text(current === null ? "ui.backToCases" : "ui.backToCase")}
       </Button>
     </div>
   );
@@ -270,6 +273,11 @@ export const OperationForm = ({
         <NoticeView value={model.state.message} />
       </p>
     )}
-    <Actions model={model} onClose={onClose} prepareButtonRef={prepareButtonRef} />
+    <Actions
+      current={current}
+      model={model}
+      onClose={onClose}
+      prepareButtonRef={prepareButtonRef}
+    />
   </Form>
 );

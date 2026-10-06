@@ -66,9 +66,7 @@ export const deferredResponse = () => {
   return { promise, resolve, reject };
 };
 export const languageControl = (): HTMLSelectElement => {
-  const result = screen
-    .getAllByRole("combobox")
-    .find((item) => item.querySelector('option[value="en-XA"]'));
+  const result = screen.getAllByRole("combobox").find((item) => item.id.endsWith("-language"));
   if (!(result instanceof HTMLSelectElement)) {
     throw new Error("Expected the accessible language selector.");
   }

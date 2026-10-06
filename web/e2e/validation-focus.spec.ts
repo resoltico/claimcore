@@ -10,7 +10,7 @@ test("focuses and describes the named field after a published core rejection", a
   await startOpen(page, `INVALID-${randomUUID()}`);
   const amount = page.getByLabel("Amount claimed", { exact: true });
   await amount.fill("00.10");
-  await page.getByRole("button", { name: "Prepare exact request" }).click();
+  await page.getByRole("button", { name: "Review changes" }).click();
   await expect(page.getByRole("alert")).toBeVisible();
   await expect(amount).toBeFocused();
   await expect(amount).toHaveAttribute("aria-invalid", "true");

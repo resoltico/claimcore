@@ -3,6 +3,7 @@
     <Compile Include="../CliProcessEnvironment.fs" Link="CliProcessEnvironment.fs" />
     <Compile Include="../BoundedProcess.fs" Link="BoundedProcess.fs" />
     <Compile Include="../../eng/RejectionExamples.fs" Link="RejectionExamples.fs" />
+    <Compile Include="../../eng/ClaimCore.ContractGenerator/DefaultPresentation.fs" Link="DefaultPresentation.fs" />
     <Compile Include="../RepositoryRoot.fs" Link="RepositoryRoot.fs" />
     <Compile Include="../CommandExecution.fs" Link="CommandExecution.fs" />
     <Compile Include="PropertyHarness.fs" />

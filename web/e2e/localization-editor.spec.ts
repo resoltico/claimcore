@@ -26,7 +26,7 @@ test("preserves authored Unicode and invalid calendar text while localizing real
   });
   const originalNode = await name.elementHandle();
   const requests = trackRequests(page);
-  for (const language of ["lv", "ar", "en-XA", "en"] as const) {
+  for (const language of ["lv", "ar", "en"] as const) {
     await selectLanguage(page, language);
   }
   expect(await name.evaluate((element, prior) => element === prior, originalNode)).toBe(true);
@@ -41,7 +41,7 @@ test("preserves authored Unicode and invalid calendar text while localizing real
   expect(requests).toHaveLength(0);
   const pending = await pauseJsonReply(page, "command.prepare");
   try {
-    await page.getByRole("button", { name: "Prepare exact request" }).click();
+    await page.getByRole("button", { name: "Review changes" }).click();
     const captured = await pending.ready;
     expect(captured.reply.outcome.tag).toBe("REJECTED");
     await selectLanguage(page, "lv");
@@ -67,7 +67,7 @@ test("switches language and independent display format through native preparatio
   const requests = trackRequests(page);
   const pending = await pauseJsonReply(page, "command.prepare");
   try {
-    await page.getByRole("button", { name: "Prepare exact request" }).click();
+    await page.getByRole("button", { name: "Review changes" }).click();
     const captured = await pending.ready;
     const identity = preparedFrom(captured.reply);
     await selectLanguage(page, "lv");
@@ -81,7 +81,7 @@ test("switches language and independent display format through native preparatio
     const confirmation = dialog.getByRole("checkbox");
     await confirmPrepared(page);
     await expectKeyboardContained(page, dialog);
-    await selectLanguage(page, "en-XA");
+    await selectLanguage(page, "lv");
     await selectFormat(page, "lv-LV");
     expect(await dialog.evaluate((element, prior) => element === prior, originalDialog)).toBe(true);
     await expect(confirmation).toBeChecked();
@@ -91,8 +91,8 @@ test("switches language and independent display format through native preparatio
     await expectAccessible(page);
     await selectLanguage(page, "en");
     await expect(confirmation).toBeChecked();
-    await page.getByRole("button", { name: "Keep for Recovery" }).click();
-    await expect(page.getByRole("button", { name: "Prepare exact request" })).toBeFocused();
+    await page.getByRole("button", { name: "Back to editing; keep for Recovery" }).click();
+    await expect(page.getByRole("button", { name: "Review changes" })).toBeFocused();
   } finally {
     pending.release();
   }

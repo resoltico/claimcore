@@ -1,7 +1,7 @@
 {
   "command.OPEN.label": [{ "type": 0, "value": "فتح ملف" }],
   "command.OPEN.meaning": [
-    { "type": 0, "value": "إنشاء السجل الأساسي. لا يُستنتج منه قرار أو دفع." }
+    { "type": 0, "value": "تسجيل الواقعة والمطالب وشركة التأمين والمبلغ المطالب به." }
   ],
   "command.AMEND_REGISTRATION.label": [{ "type": 0, "value": "تعديل التسجيل" }],
   "command.AMEND_REGISTRATION.meaning": [
@@ -11,7 +11,7 @@
   "command.CORRECT_CASE.meaning": [
     {
       "type": 0,
-      "value": "تصحيح وقائع ملف تقرّر بشأنه أو دُفع أو أُغلق، في عملية ذرّية واحدة. الإبقاء يستخدم القيم المعتمدة؛ ومسح سجل الدفع لا يعكس تحويلًا خارجيًا."
+      "value": "تصحيح التفاصيل المسجّلة في ملف به قرار أو دفع أو حالة مغلقة. تُسجّل جميع التغييرات معًا. مسح تاريخ الدفع لا يعيد الأموال."
     }
   ],
   "command.DECIDE.label": [{ "type": 0, "value": "تسجيل قرار الدفع" }],
@@ -75,7 +75,7 @@
     { "type": 0, "value": " أرقام كسرية؛ دون إشارة أو أس." }
   ],
   "diagnostic.INPUT_CURRENCY_FORMAT": [
-    { "type": 0, "value": "استخدم معرّف عملة من ثلاثة أحرف لاتينية كبيرة." }
+    { "type": 0, "value": "استخدم ثلاثة أحرف ASCII كبيرة من A إلى Z لمعرّف العملة." }
   ],
   "diagnostic.INPUT_AMOUNT_NOT_REPRESENTABLE": [
     { "type": 0, "value": "لا يمكن تمثيل المبلغ العشري بدقة." }
@@ -333,7 +333,7 @@
     { "type": 0, "value": "نتيجة الطلب المُحال غير مؤكدة. افحص الاسترداد قبل إجراء تعديل آخر." }
   ],
   "diagnostic.WEB_HOST_COMPLETED_RESPONSE_FAILED": [
-    { "type": 0, "value": "اكتملت العملية، لكن تعذر تسليم استجابتها." }
+    { "type": 0, "value": "اكتملت معالجة الطلب، لكن تعذّر تسليم الردّ." }
   ],
   "diagnostic.WEB_HOST_SESSION_FORBIDDEN": [
     { "type": 0, "value": "لا يُسمح لهذه الجلسة بالوصول إلى المورد." }
@@ -409,30 +409,27 @@
   ],
   "field.claimantName.label": [{ "type": 0, "value": "اسم المطالب" }],
   "field.claimantName.meaning": [
-    {
-      "type": 0,
-      "value": "اسم المطالب، سواء كان شخصًا أو شركة. لا توجد حقول منفصلة لنوع الطرف أو هويته القانونية."
-    }
+    { "type": 0, "value": "اسم الشخص أو الشركة التي تقدّم المطالبة." }
   ],
-  "field.insurerName.label": [{ "type": 0, "value": "شركة التأمين المدّعى مسؤوليتها" }],
+  "field.insurerName.label": [{ "type": 0, "value": "شركة التأمين المسؤولة" }],
   "field.insurerName.meaning": [
     {
       "type": 0,
-      "value": "اسم شركة التأمين المدّعى مسؤوليتها. لا يثبت ذلك المسؤولية النهائية أو موقعها في سلسلة الرجوع."
+      "value": "شركة التأمين التي سجّلها معالج المطالبات باعتبارها مسؤولة عن هذه المطالبة."
     }
   ],
   "field.claimedAmount.label": [{ "type": 0, "value": "المبلغ المطالب به" }],
   "field.claimedAmount.meaning": [
     {
       "type": 0,
-      "value": "المبلغ الذي يطالب به المطالب، كنص عشري دقيق غير سالب. الصفر مبلغ مسجّل وليس بديلًا للقيمة المجهولة."
+      "value": "المبلغ الذي يطلبه المطالب. أدخل صفرًا فقط إذا كان المبلغ المطالب به صفرًا."
     }
   ],
   "field.claimedCurrency.label": [{ "type": 0, "value": "عملة المبلغ المطالب به" }],
   "field.claimedCurrency.meaning": [
     {
       "type": 0,
-      "value": "معرّف من ثلاثة أحرف لاتينية كبيرة؛ لا يُجرى تحويل للعملة أو استنتاج من سجل عملات."
+      "value": "العملة التي يُطالب بها بالمبلغ. استخدم ثلاثة أحرف ASCII كبيرة من A إلى Z، مثل EUR."
     }
   ],
   "field.caseReference.label": [{ "type": 0, "value": "مرجع الملف لدى المعالج" }],
@@ -453,7 +450,7 @@
   "field.payableAmount.meaning": [
     {
       "type": 0,
-      "value": "المبلغ المقرر دفعه كنص عشري دقيق غير سالب. فارغ حتى اتخاذ القرار؛ وقد يختلف عن المبلغ المطالب به."
+      "value": "المبلغ الذي قرّر المعالج دفعه. غير مسجّل حتى اتخاذ القرار؛ وقد يختلف عن المبلغ المطالب به."
     }
   ],
   "field.payableCurrency.label": [{ "type": 0, "value": "عملة المبلغ الواجب دفعه" }],
@@ -472,27 +469,24 @@
   ],
   "field.status.label": [{ "type": 0, "value": "حالة الملف" }],
   "field.status.meaning": [
-    {
-      "type": 0,
-      "value": "الحالة الإدارية مفتوح أو مغلق، مستقلة عن القرار والدفع. لا توجد حالات إضافية للملف."
-    }
+    { "type": 0, "value": "هل الملف مفتوح أم مغلق. إغلاق الملف لا يعني أن الدفع قد تمّ." }
   ],
   "group.registration.label": [{ "type": 0, "value": "التسجيل" }],
   "group.registration.meaning": [
-    { "type": 0, "value": "الإبقاء على وقائع التسجيل المعتمدة أو استبدال حقولها السبعة معًا." }
+    { "type": 0, "value": "إبقاء تفاصيل التسجيل الحالية أو استبدال التفاصيل السبعة معًا." }
   ],
   "group.decision.label": [{ "type": 0, "value": "قرار الدفع" }],
   "group.decision.meaning": [
     {
       "type": 0,
-      "value": "الإبقاء على القرار المعتمد أو استبدال تاريخه ومبلغه وعملته معًا أو مسحه."
+      "value": "إبقاء قرار الدفع الحالي أو استبدال تاريخه ومبلغه وعملته معًا أو مسح القرار."
     }
   ],
   "group.payment.label": [{ "type": 0, "value": "سجل الدفع" }],
   "group.payment.meaning": [
     {
       "type": 0,
-      "value": "الإبقاء على سجل الدفع المعتمد أو استبدال تاريخه أو مسح التاريخ المسجّل؛ المسح لا يعكس تحويلًا خارجيًا."
+      "value": "إبقاء تاريخ الدفع الحالي أو استبداله أو مسح التاريخ المسجّل. مسح التاريخ لا يعيد الأموال."
     }
   ],
   "notice.responseTimeout": [{ "type": 0, "value": "انتهت مهلة انتظار استجابة الخدمة." }],
@@ -511,7 +505,12 @@
   "notice.exportInvalid": [
     { "type": 0, "value": "لم تجتز استجابة تصدير الاسترداد فحوص البروتوكول." }
   ],
-  "notice.incomplete": [{ "type": 0, "value": "لم تكتمل العملية." }],
+  "notice.incomplete": [
+    {
+      "type": 0,
+      "value": "تحقّق من النتيجة المُبلّغ عنها قبل المحاولة مجددًا. إذا لم تُؤكّد، فافحص الاسترداد."
+    }
+  ],
   "notice.definitionMismatch": [
     {
       "type": 0,
@@ -570,22 +569,27 @@
   ],
   "token.OPENED": [{ "type": 0, "value": "مفتوح" }],
   "token.CLOSED": [{ "type": 0, "value": "مغلق" }],
-  "token.KEEP": [{ "type": 0, "value": "إبقاء" }],
-  "token.REPLACE": [{ "type": 0, "value": "استبدال" }],
-  "token.CLEAR": [{ "type": 0, "value": "مسح" }],
+  "token.KEEP": [{ "type": 0, "value": "إبقاء التفاصيل الحالية" }],
+  "token.REPLACE": [{ "type": 0, "value": "استبدال التفاصيل" }],
+  "token.CLEAR": [{ "type": 0, "value": "مسح القيمة المسجّلة" }],
   "token.PENDING": [{ "type": 0, "value": "معلّقة" }],
   "token.ACCEPTED": [{ "type": 0, "value": "معتمدة" }],
   "token.REVOKED": [{ "type": 0, "value": "مسحوبة" }],
   "token.REJECTED": [{ "type": 0, "value": "مرفوضة" }],
   "token.ERROR": [{ "type": 0, "value": "خطأ في التنفيذ" }],
-  "token.REVOKED_BEFORE_EXECUTION": [{ "type": 0, "value": "أُلغي قبل التنفيذ" }],
+  "token.REVOKED_BEFORE_EXECUTION": [
+    { "type": 0, "value": "سُحبت صلاحية التنفيذ قبل بدء التنفيذ" }
+  ],
   "token.ENVELOPE": [{ "type": 0, "value": "حافظة" }],
-  "token.FOUND": [{ "type": 0, "value": "موجودة" }],
-  "token.NOT_FOUND": [{ "type": 0, "value": "غير موجودة" }],
+  "token.FOUND": [{ "type": 0, "value": "وُجدت عملية معتمدة" }],
+  "token.NOT_FOUND": [{ "type": 0, "value": "لم تُرصد العملية" }],
   "ui.language": [{ "type": 0, "value": "لغة الواجهة" }],
-  "ui.displayLocale": [{ "type": 0, "value": "تنسيق العرض" }],
+  "ui.displayLocale": [{ "type": 0, "value": "تنسيق التواريخ والأرقام" }],
   "ui.preferencesHint": [
-    { "type": 0, "value": "للعرض فقط. تبقى التواريخ والمبالغ المدخلة بالصيغة المعيارية." }
+    {
+      "type": 0,
+      "value": "لغة الواجهة تغيّر النص؛ وتنسيق التواريخ والأرقام يغيّر القيم المعروضة. أدخل التواريخ والمبالغ بالتنسيق المطلوب."
+    }
   ],
   "ui.preferencesChanged": [{ "type": 0, "value": "تم تغيير تفضيلات العرض." }],
   "ui.preferencesNotSaved": [
@@ -594,7 +598,6 @@
   "ui.pseudo": [{ "type": 0, "value": "الإنجليزية الموسعة (اختبار التخطيط)" }],
   "ui.loadingSession": [{ "type": 0, "value": "جارٍ تحميل الجلسة المحلية…" }],
   "ui.tryAgain": [{ "type": 0, "value": "المحاولة مجددًا" }],
-  "ui.trustedInstallation": [{ "type": 0, "value": "تثبيت محلي موثوق" }],
   "ui.signOut": [{ "type": 0, "value": "تسجيل الخروج" }],
   "ui.primary": [{ "type": 0, "value": "التنقل الرئيسي" }],
   "ui.cases": [{ "type": 0, "value": "الملفات" }],
@@ -679,10 +682,12 @@
   "ui.lifecycleErasureFinal": [
     { "type": 0, "value": "اكتمل محو النسخ المُدارة مع الاحتفاظ بدليل منع الاستعادة" }
   ],
-  "ui.lifecycleNoHolds": [{ "type": 0, "value": "لا يوجد تعليق نشط مسجّل." }],
-  "ui.lifecycleHeld": [{ "type": 0, "value": "معلّق: تمنع التعليقات النشطة محو البيانات." }],
+  "ui.lifecycleNoHolds": [{ "type": 0, "value": "لا يوجد قيد احتفاظ نشط مسجّل." }],
+  "ui.lifecycleHeld": [
+    { "type": 0, "value": "مقيّد للاحتفاظ: تمنع قيود الاحتفاظ النشطة محو البيانات." }
+  ],
   "ui.lifecycleHoldReview": [
-    { "type": 0, "value": "مراجعة التعليق بحلول " },
+    { "type": 0, "value": "مراجعة قيد الاحتفاظ بحلول " },
     { "type": 1, "value": "date" }
   ],
   "ui.lifecycleVoidApproval": [
@@ -693,9 +698,7 @@
     { "type": 0, "value": "المرجع الدقيق: " },
     { "type": 1, "value": "reference" }
   ],
-  "ui.unchangedUntilSubmit": [
-    { "type": 0, "value": "لا تتغير الحالة المعتمدة حتى يُرسل الطلب المحضّر نفسه صراحةً." }
-  ],
+  "ui.unchangedUntilSubmit": [{ "type": 0, "value": "راجع تغييراتك قبل تسجيلها." }],
   "ui.observedReceipt": [
     { "type": 0, "value": "العملية المعتمدة " },
     { "type": 1, "value": "operationId" },
@@ -749,35 +752,39 @@
     { "type": 1, "value": "maximum" },
     { "type": 0, "value": " محرفًا." }
   ],
-  "ui.dateHint": [{ "type": 0, "value": "استخدم yyyy-MM-dd (تاريخ ميلادي)." }],
+  "ui.dateHint": [
+    { "type": 0, "value": "استخدم أرقام ASCII بالتنسيق YYYY-MM-DD، مثل 2026-10-06." }
+  ],
   "ui.amountHint": [
-    { "type": 0, "value": "نص عشري دقيق؛ حتى " },
+    { "type": 0, "value": "استخدم أرقام ASCII ونقطة، مثل 125.50؛ حتى " },
     { "type": 1, "value": "maximum" },
-    { "type": 0, "value": " منازل عشرية. استخدم النقطة، لا الفاصلة." }
+    { "type": 0, "value": " منازل عشرية. دون إشارات أو فواصل." }
   ],
   "ui.currencyHint": [
     { "type": 1, "value": "length" },
-    { "type": 0, "value": " أحرف لاتينية كبيرة." }
+    { "type": 0, "value": " أحرف ASCII كبيرة من A إلى Z." }
   ],
-  "ui.command": [{ "type": 0, "value": "الأمر" }],
+  "ui.command": [{ "type": 0, "value": "إجراء الملف" }],
   "ui.reference": [
     { "type": 0, "value": "مرجع الملف: " },
     { "type": 1, "value": "reference" }
   ],
-  "ui.noAuthoredValues": [{ "type": 0, "value": "لا توجد قيم لإدخالها لهذا الأمر." }],
+  "ui.noAuthoredValues": [{ "type": 0, "value": "لا يحتاج هذا الإجراء إلى تفاصيل إضافية." }],
   "ui.action": [{ "type": 0, "value": "الإجراء" }],
   "ui.correctionHint": [
-    { "type": 0, "value": "تُحدّد كل مجموعة تصحيح صراحةً. الإبقاء يحافظ على قيمها المعتمدة." }
+    {
+      "type": 0,
+      "value": "اختر التفاصيل التي تريد إبقاءها أو استبدالها أو مسحها. تُؤخذ التفاصيل المُبقى عليها من الملف الحالي عند تسجيل التغييرات."
+    }
   ],
-  "ui.preparing": [{ "type": 0, "value": "جارٍ التحضير…" }],
-  "ui.prepareExact": [{ "type": 0, "value": "تحضير الطلب الدقيق" }],
-  "ui.retryPrepare": [{ "type": 0, "value": "إعادة تحضير الطلب نفسه" }],
-  "ui.backWithoutPreparing": [{ "type": 0, "value": "العودة دون تحضير" }],
-  "ui.changeCommandTitle": [{ "type": 0, "value": "تجاهل مسودة هذا الأمر؟" }],
+  "ui.preparing": [{ "type": 0, "value": "جارٍ إعداد المراجعة…" }],
+  "ui.prepareExact": [{ "type": 0, "value": "مراجعة التغييرات" }],
+  "ui.retryPrepare": [{ "type": 0, "value": "إعادة طلب المراجعة نفسه" }],
+  "ui.changeCommandTitle": [{ "type": 0, "value": "تجاهل هذه التغييرات المسودة؟" }],
   "ui.changeCommandDescription": [
-    { "type": 0, "value": "يؤدي تغيير الأمر إلى تجاهل القيم المدخلة وإنشاء معرّف عملية جديد." }
+    { "type": 0, "value": "تغيير الإجراء يتجاهل تفاصيل هذه المسودة ويبدأ طلبًا مختلفًا." }
   ],
-  "ui.discardAndChange": [{ "type": 0, "value": "تجاهل وتغيير الأمر" }],
+  "ui.discardAndChange": [{ "type": 0, "value": "تجاهل وتغيير الإجراء" }],
   "ui.acceptedOperation": [{ "type": 0, "value": "العملية المعتمدة" }],
   "ui.operationAccepted": [
     { "type": 0, "value": "اعتُمدت العملية " },
@@ -789,11 +796,11 @@
     { "type": 1, "value": "operationId" }
   ],
   "ui.returnToCase": [{ "type": 0, "value": "العودة إلى الملف" }],
-  "ui.reviewTitle": [{ "type": 0, "value": "مراجعة العملية المحضّرة" }],
+  "ui.reviewTitle": [{ "type": 0, "value": "مراجعة التغييرات" }],
   "ui.reviewDescription": [
     {
       "type": 0,
-      "value": "حُضّر الطلب لكنه لم يغيّر الملف المعتمد. إرساله يبدأ تعديلًا لا يمكن إلغاؤه."
+      "value": "تحقّق من التفاصيل وأكّدها، ثم اختر «تسجيل التغييرات». إذا لم يُؤكّد الناتج، فتحقّق من الاسترداد قبل المحاولة مجددًا."
     }
   ],
   "ui.reviewTarget": [
@@ -808,10 +815,10 @@
     { "type": 0, "value": " · البصمة " },
     { "type": 1, "value": "digest" }
   ],
-  "ui.reviewConfirmation": [{ "type": 0, "value": "سأرسل هذا الطلب المحضّر نفسه تمامًا." }],
-  "ui.keepForRecovery": [{ "type": 0, "value": "الاحتفاظ للاسترداد" }],
-  "ui.submitting": [{ "type": 0, "value": "جارٍ الإرسال…" }],
-  "ui.submitExact": [{ "type": 0, "value": "إرسال الطلب نفسه" }],
+  "ui.reviewConfirmation": [{ "type": 0, "value": "أؤكّد هذه التغييرات." }],
+  "ui.keepForRecovery": [{ "type": 0, "value": "العودة إلى التحرير؛ الاحتفاظ للاسترداد" }],
+  "ui.submitting": [{ "type": 0, "value": "جارٍ التسجيل…" }],
+  "ui.submitExact": [{ "type": 0, "value": "تسجيل التغييرات" }],
   "ui.before": [
     { "type": 0, "value": "قبل: " },
     { "type": 1, "value": "value" }
@@ -915,7 +922,7 @@
     { "type": 1, "value": "format" }
   ],
   "ui.provenance": [
-    { "type": 0, "value": "مصدر التحضير: " },
+    { "type": 0, "value": "أُعدّ باستخدام " },
     { "type": 1, "value": "version" },
     { "type": 0, "value": " · " },
     { "type": 1, "value": "contract" }
@@ -938,7 +945,10 @@
   "ui.exportEnvelope": [{ "type": 0, "value": "تصدير حافظة الاسترداد" }],
   "ui.recoveryDetails": [{ "type": 0, "value": "تفاصيل الاسترداد" }],
   "ui.recoveryDetailsHint": [
-    { "type": 0, "value": "قدّم الخادم الصلاحية الحالية والأدلة وحالة الرصد." }
+    {
+      "type": 0,
+      "value": "صلاحية الطلب الحالية وأدلة المحاولات من الخادم. تحتفظ تفاصيل الطلب أدناه بالقيم المُدخلة كما هي بالضبط."
+    }
   ],
   "ui.observation": [
     { "type": 0, "value": "الرصد: " },
@@ -986,11 +996,12 @@
     { "type": 0, "value": "يُحتفظ بالأثر لإجراء استرداد صريح؛ لا يُرسل تلقائيًا مطلقًا." }
   ],
   "ui.importEnvelope": [{ "type": 0, "value": "استيراد حافظة الاسترداد" }],
-  "ui.importRecord": [{ "type": 0, "value": "استيراد السجل المعياري" }],
   "ui.importTitle": [{ "type": 0, "value": "الاحتفاظ بمادة الاسترداد المستوردة؟" }],
   "ui.importDescription": [
     { "type": 0, "value": "يُحتفظ بالمعاينة بعد التأكيد فقط، ولا تُرسل تلقائيًا مطلقًا." }
   ],
   "ui.retainForRecovery": [{ "type": 0, "value": "الاحتفاظ للاسترداد" }],
-  "ui.keepEditing": [{ "type": 0, "value": "متابعة التحرير" }]
+  "ui.keepEditing": [{ "type": 0, "value": "متابعة التحرير" }],
+  "ui.backToCase": [{ "type": 0, "value": "العودة إلى الملف" }],
+  "ui.registerLabel": [{ "type": 0, "value": "سجل ملفات المطالبات ClaimCore" }]
 }

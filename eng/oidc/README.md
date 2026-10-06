@@ -32,7 +32,7 @@ separately as source policy. This fixture does not grant case-work authority.
 To keep the issuer alive during another qualification, pass a command after
 `--`.
 
-The command receives `CLAIMCORE_TEST_OIDC_ISSUER`,
+The command receives `CLAIMCORE_TEST_WEB_ORIGIN` (an allocated loopback HTTPS origin with an exact matching browser redirect), `CLAIMCORE_TEST_OIDC_ISSUER`,
 `CLAIMCORE_TEST_OIDC_CREDENTIALS`, `CLAIMCORE_TEST_OIDC_DISCOVERY`,
 `CLAIMCORE_TEST_OIDC_JWKS`, and `CLAIMCORE_TEST_OIDC_CA_CERT`. The private
 certificate path is passed explicitly to clients; no system trust store is

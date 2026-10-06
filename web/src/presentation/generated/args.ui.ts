@@ -8,7 +8,6 @@ export type UiArgs = {
   "ui.pseudo": Readonly<Record<string, never>>;
   "ui.loadingSession": Readonly<Record<string, never>>;
   "ui.tryAgain": Readonly<Record<string, never>>;
-  "ui.trustedInstallation": Readonly<Record<string, never>>;
   "ui.signOut": Readonly<Record<string, never>>;
   "ui.primary": Readonly<Record<string, never>>;
   "ui.cases": Readonly<Record<string, never>>;
@@ -101,7 +100,6 @@ export type UiArgs = {
   "ui.preparing": Readonly<Record<string, never>>;
   "ui.prepareExact": Readonly<Record<string, never>>;
   "ui.retryPrepare": Readonly<Record<string, never>>;
-  "ui.backWithoutPreparing": Readonly<Record<string, never>>;
   "ui.changeCommandTitle": Readonly<Record<string, never>>;
   "ui.changeCommandDescription": Readonly<Record<string, never>>;
   "ui.discardAndChange": Readonly<Record<string, never>>;
@@ -177,9 +175,10 @@ export type UiArgs = {
   };
   "ui.importHint": Readonly<Record<string, never>>;
   "ui.importEnvelope": Readonly<Record<string, never>>;
-  "ui.importRecord": Readonly<Record<string, never>>;
   "ui.importTitle": Readonly<Record<string, never>>;
   "ui.importDescription": Readonly<Record<string, never>>;
   "ui.retainForRecovery": Readonly<Record<string, never>>;
   "ui.keepEditing": Readonly<Record<string, never>>;
+  "ui.backToCase": Readonly<Record<string, never>>;
+  "ui.registerLabel": Readonly<Record<string, never>>;
 };

@@ -104,28 +104,28 @@ module FieldDefinitions =
                 "claimantName"
                 "ClaimantName"
                 "Claimant name"
-                "Name of the claimant, whether a private person or a company. No separate party-type or legal-identity fields."
+                "Name of the person or company making the claim."
                 (ScalarRule.Text(text 200))
                 false
             field
                 "insurerName"
                 "InsurerName"
-                "Allegedly responsible insurer"
-                "Name of the insurer claimed to be responsible. This does not establish ultimate liability or a recourse-chain position."
+                "Responsible insurer"
+                "Insurer recorded by the claims handler as responsible for this claim."
                 (ScalarRule.Text(text 200))
                 false
             field
                 "claimedAmount"
                 "ClaimedAmount"
                 "Amount claimed"
-                "Amount claimed by the claimant, encoded as exact non-negative decimal text. Zero is a recorded amount, not a substitute for unknown."
+                "Amount requested by the claimant. Enter zero only when the claimed amount is zero."
                 amount
                 false
             field
                 "claimedCurrency"
                 "ClaimedCurrency"
                 "Currency of claimed amount"
-                "Three-letter uppercase identifier for the claimed amount; no currency conversion or registry inference."
+                "Currency in which the amount is claimed. Use three uppercase ASCII letters (A–Z), for example EUR."
                 currency
                 false
         ]
@@ -147,35 +147,35 @@ module FieldDefinitions =
                 "paymentDecisionDate"
                 "PaymentDecisionDate"
                 "Payment decision date"
-                "Date when this claims handler decided the amount to be paid. Null until a decision is recorded; not a payment or bank instruction."
+                "Date when this claims handler decided the amount to be paid. Not recorded until a decision is made."
                 calendarDate
                 true
             field
                 "payableAmount"
                 "PayableAmount"
                 "Amount to be paid"
-                "Decided amount to be paid, in exact non-negative decimal text. Null until decided; may differ from the claimed amount."
+                "Amount the handler decided should be paid. Not recorded until decided; may differ from the claimed amount."
                 amount
                 true
             field
                 "payableCurrency"
                 "PayableCurrency"
                 "Currency of amount to be paid"
-                "Currency of the decided amount. Null until decided; it need not equal the claimed currency."
+                "Currency of the amount to be paid. Not recorded until decided; may differ from the claimed currency."
                 currency
                 true
             field
                 "paymentDate"
                 "PaymentDate"
                 "Payment date"
-                "Date when the decided amount was actually paid, as recorded by the operator. Null while unpaid or unknown. One full payment only; recording does not execute or independently verify a bank transfer."
+                "Date when the full decided amount was paid, as recorded by the handler. Leave unrecorded if unpaid or unknown. Recording payment does not make or verify a bank transfer."
                 calendarDate
                 true
             field
                 "status"
                 "Status"
                 "Case status"
-                "Administrative state OPENED or CLOSED, independent of decision and payment. No additional case statuses."
+                "Whether the case is open or closed. Closing a case does not mean that payment was made."
                 status
                 false
         ]

@@ -12,7 +12,7 @@ export const LoginScreen = ({ message }: LoginScreenProps) => {
   return (
     <main className="login-shell">
       <section aria-labelledby="login-title" className="login-card">
-        <p className="eyebrow">{p.text("ui.trustedInstallation")}</p>
+        <p className="eyebrow">{p.text("ui.registerLabel")}</p>
         <h1 id="login-title">ClaimCore</h1>
         <p>{p.text("ui.loginInstructions")}</p>
         {message === null ? null : (

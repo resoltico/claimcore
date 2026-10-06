@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import http from "node:http";
 import process from "node:process";
 import { URL, URLSearchParams } from "node:url";
-import { chromium } from "playwright";
+import { chromium } from "@playwright/test";
 
 let authorization;
 let redirect;

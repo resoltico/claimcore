@@ -4,14 +4,17 @@
     "src/domain/metadata.ts",
     "src/domain/operationInitial.ts",
     "src/domain/operationReducer.ts",
-    "src/domain/operationRequest.ts"
+    "src/domain/operationRequest.ts",
+    "src/presentation/preferences.ts",
+    "src/presentation/presenter.ts",
+    "src/presentation/messages.ts"
   ],
   "testRunner": "vitest",
   "vitest": {
     "configFile": "vite.config.ts",
     "related": true
   },
-  "concurrency": 4,
+  "concurrency": 1,
   "ignorePatterns": ["artifacts/**"],
   "tempDirName": "artifacts/stryker-tmp",
   "cleanTempDir": "always",

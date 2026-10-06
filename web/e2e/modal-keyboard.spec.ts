@@ -12,10 +12,10 @@ test("contains keyboard focus and returns it after safely dismissing a prepared 
   await page.getByRole("button", { name: "Open new case" }).focus();
   await page.keyboard.press("Enter");
   await expect(page.getByRole("heading", { name: "Open a case" })).toBeVisible();
-  await page.getByRole("button", { name: "Back without preparing" }).click();
+  await page.getByRole("button", { name: "Back to cases" }).click();
   await startOpen(page, `KEYBOARD-${randomUUID()}`);
   await prepare(page);
-  const review = page.getByRole("dialog", { name: "Review prepared operation" });
+  const review = page.getByRole("dialog", { name: "Review changes" });
   await expectAccessible(page);
   await review.getByRole("checkbox").focus();
   for (let index = 0; index < 4; index += 1) {
@@ -24,5 +24,5 @@ test("contains keyboard focus and returns it after safely dismissing a prepared 
   }
   await page.keyboard.press("Escape");
   await expect(review).not.toBeVisible();
-  await expect(page.getByRole("button", { name: "Prepare exact request" })).toBeFocused();
+  await expect(page.getByRole("button", { name: "Review changes" })).toBeFocused();
 });

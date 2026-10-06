@@ -12,6 +12,7 @@ import {
   validateCatalog,
   validateCoverage,
 } from "./localization-policy.mjs";
+import { businessMessages, icuLiteral } from "./localization-metadata.mjs";
 import { renderedTokens, validateTokens } from "./localization-tokens.mjs";
 const root = resolve(import.meta.dirname, "../src");
 /** @param {string} path */
@@ -24,7 +25,12 @@ const requirements = diagnosticRequirements(
 /** @param {string} language @returns {Record<string, string>} */
 const catalog = (language) =>
   Object.assign(
-    {},
+    language === "en"
+      ? {
+          ...businessMessages(semantic),
+          ...json("generated/contracts/default-presentation.en.json"),
+        }
+      : {},
     ...readdirSync(resolve(root, "presentation/catalogs"))
       .filter((name) => name.startsWith(`${language}.`))
       .map((name) => json(`presentation/catalogs/${name}`)),
@@ -138,4 +144,40 @@ test("missing or obsolete metadata, diagnostic parameters and rendered tokens fa
   );
   assert.throws(() => validateTokens({ ...en, "token.UNREVIEWED": "unknown" }, []));
   assert.throws(() => renderedTokens({ fields: [], commands: [] }, "export type Missing = never;"));
+});
+
+test("default business projection preserves literal apostrophes and braces without admitting interpolation", () => {
+  for (const text of [
+    "Handler's claim",
+    "Use {literal} and {}",
+    "'{name}'",
+    "A }{ B",
+    "{id, plural, other {unsafe}}",
+  ]) {
+    const { ast, args } = messageShape(icuLiteral(text), "en");
+    assert.deepEqual(args, {});
+    assert.equal(new IntlMessageFormat(ast, "en").format(), text);
+  }
+  const descriptors = {
+    fields: [
+      { name: "insurerName", label: "Responsible insurer", meaning: "Recorded insurer {role}." },
+    ],
+    commands: [
+      {
+        kind: "OPEN",
+        label: "Register case",
+        meaning: "Register the case.",
+        inputs: { groups: [] },
+      },
+    ],
+  };
+  assert.deepEqual(businessMessages(descriptors), {
+    "field.insurerName.label": "Responsible insurer",
+    "field.insurerName.meaning": "Recorded insurer '{'role'}'.",
+    "command.OPEN.label": "Register case",
+    "command.OPEN.meaning": "Register the case.",
+  });
+  assert.throws(() =>
+    businessMessages({ ...descriptors, fields: [...descriptors.fields, ...descriptors.fields] }),
+  );
 });

@@ -75,12 +75,10 @@ const acceptsOperation = async (): Promise<void> => {
       onMutationLockChange={vi.fn()}
     />,
   );
-  await user.click(screen.getByRole("button", { name: "Prepare exact request" }));
-  expect(await screen.findByRole("dialog", { name: "Review prepared operation" })).toBeVisible();
-  await user.click(
-    screen.getByRole("checkbox", { name: "I will submit this exact prepared request." }),
-  );
-  await user.click(screen.getByRole("button", { name: "Submit exact request" }));
+  await user.click(screen.getByRole("button", { name: "Review changes" }));
+  expect(await screen.findByRole("dialog", { name: "Review changes" })).toBeVisible();
+  await user.click(screen.getByRole("checkbox", { name: "I confirm these changes." }));
+  await user.click(screen.getByRole("button", { name: "Record changes" }));
   expect(await screen.findByRole("heading", { name: "Accepted operation" })).toBeVisible();
   expect(screen.getByText(`Operation ${operationId} is accepted.`)).toBeVisible();
   await user.click(screen.getByRole("button", { name: "Return to case" }));
@@ -125,15 +123,17 @@ describe("metadata-driven dirty command behavior", () => {
         onMutationLockChange={vi.fn()}
       />,
     );
-    await user.click(screen.getByRole("button", { name: "Prepare exact request" }));
-    await user.click(await screen.findByRole("button", { name: "Keep for Recovery" }));
-    await user.selectOptions(screen.getByLabelText("Command"), "OPEN");
+    await user.click(screen.getByRole("button", { name: "Review changes" }));
+    await user.click(
+      await screen.findByRole("button", { name: "Back to editing; keep for Recovery" }),
+    );
+    await user.selectOptions(screen.getByLabelText("Case action"), "OPEN");
     await user.type(screen.getByLabelText(/Incident date/u), "2026-09-09");
-    await user.selectOptions(screen.getByLabelText("Command"), "CLOSE");
+    await user.selectOptions(screen.getByLabelText("Case action"), "CLOSE");
     expect(
-      await screen.findByRole("dialog", { name: "Discard this command draft?" }),
+      await screen.findByRole("dialog", { name: "Discard these draft changes?" }),
     ).toBeVisible();
-    await user.click(screen.getByRole("button", { name: "Discard and change command" }));
+    await user.click(screen.getByRole("button", { name: "Discard and change action" }));
     expect(screen.getByRole("heading", { name: "Close the case" })).toBeVisible();
   });
 });

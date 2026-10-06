@@ -1,0 +1,5 @@
+{
+  "registration.action": "registration",
+  "decision.action": "decision",
+  "payment.action": "payment"
+}

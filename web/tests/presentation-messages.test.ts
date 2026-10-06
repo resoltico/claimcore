@@ -5,7 +5,7 @@ import {
   type Diagnostic,
   type LocalNoticeReason,
 } from "../src/api/notices";
-import { hasMessage, renderKey, translate } from "../src/presentation/messages";
+import { hasMessage, renderKey, renderReference, translate } from "../src/presentation/messages";
 import { renderNotice } from "../src/presentation/notice";
 import { defaults, languages } from "../src/presentation/preferences";
 import shapes from "../src/presentation/generated/arguments.json";
@@ -43,6 +43,21 @@ it("keeps ICU plural grammar independent from the number-display locale", () => 
     "2",
   );
   expect(translate({ ...defaults, language: "en-XA" }, "ui.caseReference")).toMatch(/^⟦.+⟧$/u);
+});
+
+it("crosses English and Arabic grammar with independent displayed digits", () => {
+  expect(
+    translate({ language: "en", displayLocale: "ar-EG" }, "ui.attemptCount", { count: 1 }),
+  ).toBe("١ attempt shown.");
+  expect(
+    translate({ language: "en", displayLocale: "ar-EG" }, "ui.attemptCount", { count: 3 }),
+  ).toBe("٣ attempts shown.");
+  expect(
+    translate({ language: "ar", displayLocale: "en-GB" }, "ui.attemptCount", { count: 3 }),
+  ).toBe("أدلة المحاولات: 3 محاولات معروضة.");
+  expect(
+    translate({ language: "ar", displayLocale: "en-GB" }, "ui.attemptCount", { count: 2 }),
+  ).toBe("أدلة المحاولات: محاولتان معروضتان.");
 });
 
 it("refuses unknown or malformed message arguments without echoing the supplied material", () => {
@@ -129,4 +144,18 @@ it("retains local, accepted and uncertain notices as language-neutral data", () 
   expect(renderNotice(defaults, { kind: "accepted", operationId: "unchanged-id" })).toContain(
     "unchanged-id",
   );
+});
+
+it("refuses reference message parts with missing, wrong-role or foreign holes [CC-WEB-001]", () => {
+  const preferences = { language: "en" as const, displayLocale: "en-GB" as const };
+  const fallback = [renderKey(preferences, "notice.unknownDiagnostic")];
+  const reference = { exact: "Synthetic reference" };
+  expect(renderReference(preferences, "ui.reviewTarget", {}, reference)).toEqual(fallback);
+  expect(
+    renderReference(preferences, "ui.reviewTarget", { reference: 1, revision: "1" }, reference),
+  ).toEqual(fallback);
+  expect(
+    renderReference(preferences, "ui.reference", { reference: "S", extra: "foreign" }, reference),
+  ).toEqual(fallback);
+  expect(renderReference(preferences, "ui.action", {}, reference)).toEqual(fallback);
 });

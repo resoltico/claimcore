@@ -3,12 +3,20 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { I18nProvider } from "react-aria-components/I18nProvider";
 import { PresentationContext } from "./context";
 import { createPresenter } from "./presenter";
-import { loadPreferences, savePreferences, type Preferences } from "./preferences";
+import {
+  loadPreferences,
+  savePreferences,
+  changePreferences,
+  type PreferenceChange,
+} from "./preferences";
 
 export const PresentationProvider = ({ children }: { children: ReactNode }) => {
-  const [preferences, setPreferences] = useState(loadPreferences);
-  const [persistenceFailed, setPersistenceFailed] = useState(false);
-  const [changed, setChanged] = useState(false);
+  const [state, setState] = useState(() => ({
+    preferences: loadPreferences(),
+    persistenceFailed: false,
+    changed: false,
+  }));
+  const { preferences, persistenceFailed, changed } = state;
   const presenter = useMemo(() => createPresenter(preferences), [preferences]);
   const language = preferences.language === "en-XA" ? "en" : preferences.language;
   useEffect(() => {
@@ -20,10 +28,11 @@ export const PresentationProvider = ({ children }: { children: ReactNode }) => {
     ...presenter,
     persistenceFailed,
     changed,
-    setPreferences: (next: Preferences): void => {
-      setPreferences(next);
-      setPersistenceFailed(!savePreferences(next));
-      setChanged(true);
+    setPreferences: (change: PreferenceChange): void => {
+      setState((current) => {
+        const next = changePreferences(current.preferences, change);
+        return { preferences: next, persistenceFailed: !savePreferences(next), changed: true };
+      });
     },
   };
   return (

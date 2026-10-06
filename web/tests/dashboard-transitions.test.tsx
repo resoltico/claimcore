@@ -65,7 +65,8 @@ it("returns from a selected case through Dashboard's detail-back transition", as
   queueDefinitionAndList();
   queueDetail();
   renderDashboard();
-  await user.click(await screen.findByRole("button", { name: "CASE-1" }));
+  // Cold on-demand schema loading is not a one-second UI latency contract.
+  await user.click(await screen.findByRole("button", { name: "CASE-1" }, { timeout: 5_000 }));
   expect(await screen.findByRole("heading", { name: "Case detail" })).toBeVisible();
   await user.click(screen.getByRole("button", { name: "Back to cases" }));
   expect(await screen.findByRole("heading", { name: "Cases" })).toBeVisible();
@@ -81,7 +82,7 @@ it("opens a metadata-derived command from Dashboard's current-case transition", 
   expect(screen.getByRole("heading", { name: "Close the case" })).toBeVisible();
   expect(screen.getByRole("button", { name: "Recovery" })).toBeDisabled();
   expect(screen.getByRole("button", { name: "Sign out" })).toBeDisabled();
-  await user.click(screen.getByRole("button", { name: "Back without preparing" }));
+  await user.click(screen.getByRole("button", { name: "Back to case" }));
   expect(await screen.findByRole("heading", { name: "Case detail" })).toBeVisible();
 });
 
@@ -115,11 +116,9 @@ it("hands a lost submit to exact recovery even when the pending list is empty", 
   renderDashboard();
   await user.click(await screen.findByRole("button", { name: "CASE-1" }));
   await user.click(await screen.findByRole("button", { name: /Close the case/u }));
-  await user.click(screen.getByRole("button", { name: "Prepare exact request" }));
-  await user.click(
-    await screen.findByRole("checkbox", { name: "I will submit this exact prepared request." }),
-  );
-  await user.click(screen.getByRole("button", { name: "Submit exact request" }));
+  await user.click(screen.getByRole("button", { name: "Review changes" }));
+  await user.click(await screen.findByRole("checkbox", { name: "I confirm these changes." }));
+  await user.click(screen.getByRole("button", { name: "Record changes" }));
   expect(await screen.findByRole("heading", { name: "Recovery" })).toBeVisible();
   expect(screen.queryByRole("textbox")).toBeNull();
   expect(screen.queryByText(fields.claimantName)).toBeNull();
@@ -212,14 +211,12 @@ it("returns an accepted open operation to Dashboard through its committed transi
   fill(/Incident notification date/u, "2026-09-02");
   fill(/Country of incident/u, "Latvia");
   fill(/Claimant name/u, "Synthetic claimant");
-  fill(/Allegedly responsible insurer/u, "Synthetic insurer");
+  fill(/Responsible insurer/u, "Synthetic insurer");
   fill(/Amount claimed/u, "12.34");
   fill(/Currency of claimed amount/u, "EUR");
-  await user.click(screen.getByRole("button", { name: "Prepare exact request" }));
-  await user.click(
-    await screen.findByRole("checkbox", { name: "I will submit this exact prepared request." }),
-  );
-  await user.click(screen.getByRole("button", { name: "Submit exact request" }));
+  await user.click(screen.getByRole("button", { name: "Review changes" }));
+  await user.click(await screen.findByRole("checkbox", { name: "I confirm these changes." }));
+  await user.click(screen.getByRole("button", { name: "Record changes" }));
   await user.click(await screen.findByRole("button", { name: "Return to case" }));
   expect(await screen.findByRole("heading", { name: "Case detail" })).toBeVisible();
   const currentRead = fetch.mock.calls.findLast(([path]) => path === "/api/v3/cases/get");

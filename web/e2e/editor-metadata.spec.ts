@@ -17,14 +17,14 @@ test("prefills metadata fields and confirms dirty command changes before review"
   await expect(claimant).toHaveValue("Synthetic claimant");
   await claimant.fill("Synthetic amended claimant");
   await progress("metadata-dirty-change");
-  await page.getByLabel("Command", { exact: true }).selectOption("DECIDE");
-  const discard = page.getByRole("dialog", { name: "Discard this command draft?" });
+  await page.getByLabel("Case action", { exact: true }).selectOption("DECIDE");
+  const discard = page.getByRole("dialog", { name: "Discard these draft changes?" });
   await expectAccessible(page);
   await discard.getByRole("button", { name: "Keep editing" }).click();
   await progress("metadata-kept-editing");
   await expect(claimant).toHaveValue("Synthetic amended claimant");
-  await page.getByLabel("Command", { exact: true }).selectOption("DECIDE");
-  await discard.getByRole("button", { name: "Discard and change command" }).click();
+  await page.getByLabel("Case action", { exact: true }).selectOption("DECIDE");
+  await discard.getByRole("button", { name: "Discard and change action" }).click();
   await progress("metadata-discarded");
   await expect(page.getByLabel("Payment decision date")).toHaveValue("");
   await prepare(page, {
@@ -32,7 +32,7 @@ test("prefills metadata fields and confirms dirty command changes before review"
     "Amount to be paid": "300.25",
     "Currency of amount to be paid": "EUR",
   });
-  const review = page.getByRole("dialog", { name: "Review prepared operation" });
+  const review = page.getByRole("dialog", { name: "Review changes" });
   await expect(review).toContainText("Payment decision date");
   await expect(review).toContainText("300.25");
   await expectAccessible(page);

@@ -206,6 +206,10 @@ module ContractArtifacts =
         @ cliEndpointArtifacts projection
         @ cliEndpointResponseArtifacts projection
         @ [
+            {
+                Name = "default-presentation.en.json"
+                Bytes = DefaultPresentation.bytes ()
+            }
             artifact "web-v3.catalog.json" web
             artifact
                 "cli-v4.process-failure.schema.json"

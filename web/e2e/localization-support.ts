@@ -5,12 +5,25 @@ import type { WebV3EndpointId } from "../src/generated/contracts/web-v3.endpoint
 import { webV3Endpoints } from "../src/generated/contracts/web-v3.endpoint-catalog";
 import type { WebV3Response } from "../src/generated/contracts/web-v3.types";
 import { isWebV3Response } from "../src/generated/contracts/web-v3.validation";
+import { preferenceKey } from "../src/presentation/preferences";
 import type { Language, DisplayLocale } from "../src/presentation/preferences";
 import en from "../src/presentation/catalogs/en.ui.json" with { type: "json" };
 import lv from "../src/presentation/catalogs/lv.ui.json" with { type: "json" };
 import ar from "../src/presentation/catalogs/ar.ui.json" with { type: "json" };
 import type { PreparedIdentity } from "./case-workflow";
 
+export const seedPresentation = async (
+  page: Page,
+  language: Language,
+  displayLocale: DisplayLocale,
+): Promise<void> => {
+  await page.addInitScript(
+    ({ key, preferences }) => {
+      localStorage.setItem(key, JSON.stringify(preferences));
+    },
+    { key: preferenceKey, preferences: { version: 1, language, displayLocale } },
+  );
+};
 export const ui = (language: "en" | "lv" | "ar", key: keyof typeof en): string =>
   ({ en, lv, ar })[language][key];
 // Role lookup includes inert background controls; require the active native control.
@@ -18,7 +31,7 @@ export const selectLanguage = async (page: Page, language: Language): Promise<vo
   const control = page
     .getByRole("combobox")
     .and(page.locator("select:not([inert], [inert] *)"))
-    .filter({ has: page.locator('option[value="en-XA"]') });
+    .and(page.locator('select[id$="-language"]'));
   await expect(control).toHaveCount(1);
   await control.selectOption(language);
   await expect(control).toHaveValue(language);
@@ -32,7 +45,7 @@ export const selectFormat = async (page: Page, locale: DisplayLocale): Promise<v
   const control = page
     .getByRole("combobox")
     .and(page.locator("select:not([inert], [inert] *)"))
-    .filter({ has: page.locator('option[value="en-GB"]') });
+    .and(page.locator('select[id$="-format"]'));
   await expect(control).toHaveCount(1);
   await control.selectOption(locale);
   await expect(control).toHaveValue(locale);

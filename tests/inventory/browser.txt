@@ -1,8 +1,10 @@
+authors and prepares in seeded pseudolocale then switches out with draft, identity and consent intact
 bounds repeated published login admission and recovers after its window
 contains keyboard focus and returns it after safely dismissing a prepared review
 exports and retains the encrypted recovery artifact through published Web
 focuses and describes the named field after a published core rejection
 hides absent case and operation identities behind neutral access refusals
+keeps expanded accepted-value layout and canonical clipboard on the normal published bytes
 keeps inspected recovery authority and confirmation stable while language changes during native resolution
 keeps published login, editor, review, receipt and history accessible at narrow and zoomed viewports
 prefills metadata fields and confirms dirty command changes before review
@@ -12,10 +14,145 @@ preserves operation identity after a dropped published submit response
 publishes open, amendment, decision, withdrawal, full history and operation lookup
 publishes payment, correction, close and reopen with current-case parity
 recovers an exact preparation after its published response is dropped
+recovers and replays exact grouped correction bytes after unconfirmed delivery in ar [CC-APP-002]
+recovers and replays exact grouped correction bytes after unconfirmed delivery in en [CC-APP-002]
+recovers and replays exact grouped correction bytes after unconfirmed delivery in lv [CC-APP-002]
+refuses corrections of missing recorded values in ar [CC-DOM-002]
+refuses corrections of missing recorded values in en [CC-DOM-002]
+refuses corrections of missing recorded values in lv [CC-DOM-002]
+refuses localized authoring digits and currency alphabets in ar [CC-DOM-001]
+refuses localized authoring digits and currency alphabets in en [CC-DOM-001]
+refuses localized authoring digits and currency alphabets in lv [CC-DOM-001]
 rejects retired routes and malformed published Web v3 admission before mutation
 renders exact accepted amounts with RTL and pseudolocale accessibility while canonical copy remains unchanged
 resolves and dismisses exact preparations with observed server state
 retains unchanged encrypted artifact bytes through localized import without automatic execution
 rotates a retained OPEN identity when only its target reference changes
+submits literal CORRECT_CASE KEEP/CLEAR/CLEAR in ar with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE KEEP/CLEAR/CLEAR in en with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE KEEP/CLEAR/CLEAR in lv with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE KEEP/CLEAR/KEEP in ar with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE KEEP/CLEAR/KEEP in en with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE KEEP/CLEAR/KEEP in lv with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE KEEP/CLEAR/REPLACE in ar with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE KEEP/CLEAR/REPLACE in en with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE KEEP/CLEAR/REPLACE in lv with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE KEEP/KEEP/CLEAR in ar with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE KEEP/KEEP/CLEAR in en with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE KEEP/KEEP/CLEAR in lv with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE KEEP/KEEP/KEEP in ar with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE KEEP/KEEP/KEEP in en with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE KEEP/KEEP/KEEP in lv with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE KEEP/KEEP/REPLACE in ar with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE KEEP/KEEP/REPLACE in en with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE KEEP/KEEP/REPLACE in lv with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE KEEP/REPLACE/CLEAR in ar with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE KEEP/REPLACE/CLEAR in en with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE KEEP/REPLACE/CLEAR in lv with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE KEEP/REPLACE/KEEP in ar with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE KEEP/REPLACE/KEEP in en with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE KEEP/REPLACE/KEEP in lv with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE KEEP/REPLACE/REPLACE in ar with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE KEEP/REPLACE/REPLACE in en with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE KEEP/REPLACE/REPLACE in lv with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE REPLACE/CLEAR/CLEAR in ar with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE REPLACE/CLEAR/CLEAR in en with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE REPLACE/CLEAR/CLEAR in lv with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE REPLACE/CLEAR/KEEP in ar with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE REPLACE/CLEAR/KEEP in en with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE REPLACE/CLEAR/KEEP in lv with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE REPLACE/CLEAR/REPLACE in ar with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE REPLACE/CLEAR/REPLACE in en with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE REPLACE/CLEAR/REPLACE in lv with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE REPLACE/KEEP/CLEAR in ar with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE REPLACE/KEEP/CLEAR in en with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE REPLACE/KEEP/CLEAR in lv with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE REPLACE/KEEP/KEEP in ar with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE REPLACE/KEEP/KEEP in en with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE REPLACE/KEEP/KEEP in lv with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE REPLACE/KEEP/REPLACE in ar with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE REPLACE/KEEP/REPLACE in en with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE REPLACE/KEEP/REPLACE in lv with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE REPLACE/REPLACE/CLEAR in ar with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE REPLACE/REPLACE/CLEAR in en with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE REPLACE/REPLACE/CLEAR in lv with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE REPLACE/REPLACE/KEEP in ar with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE REPLACE/REPLACE/KEEP in en with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE REPLACE/REPLACE/KEEP in lv with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE REPLACE/REPLACE/REPLACE in ar with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE REPLACE/REPLACE/REPLACE in en with authoritative outcome [CC-DOM-002]
+submits literal CORRECT_CASE REPLACE/REPLACE/REPLACE in lv with authoritative outcome [CC-DOM-002]
 switches language and independent display format through native preparation without changing review consent
+updates visible anonymous text from ar to ar with ar-EG
+updates visible anonymous text from ar to ar with en-GB
+updates visible anonymous text from ar to ar with lv-LV
+updates visible anonymous text from ar to en with ar-EG
+updates visible anonymous text from ar to en with en-GB
+updates visible anonymous text from ar to en with lv-LV
+updates visible anonymous text from ar to lv with ar-EG
+updates visible anonymous text from ar to lv with en-GB
+updates visible anonymous text from ar to lv with lv-LV
+updates visible anonymous text from en to ar with ar-EG
+updates visible anonymous text from en to ar with en-GB
+updates visible anonymous text from en to ar with lv-LV
+updates visible anonymous text from en to en with ar-EG
+updates visible anonymous text from en to en with en-GB
+updates visible anonymous text from en to en with lv-LV
+updates visible anonymous text from en to lv with ar-EG
+updates visible anonymous text from en to lv with en-GB
+updates visible anonymous text from en to lv with lv-LV
+updates visible anonymous text from en-XA to ar with ar-EG
+updates visible anonymous text from en-XA to ar with en-GB
+updates visible anonymous text from en-XA to ar with lv-LV
+updates visible anonymous text from en-XA to en with ar-EG
+updates visible anonymous text from en-XA to en with en-GB
+updates visible anonymous text from en-XA to en with lv-LV
+updates visible anonymous text from en-XA to lv with ar-EG
+updates visible anonymous text from en-XA to lv with en-GB
+updates visible anonymous text from en-XA to lv with lv-LV
+updates visible anonymous text from lv to ar with ar-EG
+updates visible anonymous text from lv to ar with en-GB
+updates visible anonymous text from lv to ar with lv-LV
+updates visible anonymous text from lv to en with ar-EG
+updates visible anonymous text from lv to en with en-GB
+updates visible anonymous text from lv to en with lv-LV
+updates visible anonymous text from lv to lv with ar-EG
+updates visible anonymous text from lv to lv with en-GB
+updates visible anonymous text from lv to lv with lv-LV
+updates visible authenticated text from ar to ar with ar-EG
+updates visible authenticated text from ar to ar with en-GB
+updates visible authenticated text from ar to ar with lv-LV
+updates visible authenticated text from ar to en with ar-EG
+updates visible authenticated text from ar to en with en-GB
+updates visible authenticated text from ar to en with lv-LV
+updates visible authenticated text from ar to lv with ar-EG
+updates visible authenticated text from ar to lv with en-GB
+updates visible authenticated text from ar to lv with lv-LV
+updates visible authenticated text from en to ar with ar-EG
+updates visible authenticated text from en to ar with en-GB
+updates visible authenticated text from en to ar with lv-LV
+updates visible authenticated text from en to en with ar-EG
+updates visible authenticated text from en to en with en-GB
+updates visible authenticated text from en to en with lv-LV
+updates visible authenticated text from en to lv with ar-EG
+updates visible authenticated text from en to lv with en-GB
+updates visible authenticated text from en to lv with lv-LV
+updates visible authenticated text from en-XA to ar with ar-EG
+updates visible authenticated text from en-XA to ar with en-GB
+updates visible authenticated text from en-XA to ar with lv-LV
+updates visible authenticated text from en-XA to en with ar-EG
+updates visible authenticated text from en-XA to en with en-GB
+updates visible authenticated text from en-XA to en with lv-LV
+updates visible authenticated text from en-XA to lv with ar-EG
+updates visible authenticated text from en-XA to lv with en-GB
+updates visible authenticated text from en-XA to lv with lv-LV
+updates visible authenticated text from lv to ar with ar-EG
+updates visible authenticated text from lv to ar with en-GB
+updates visible authenticated text from lv to ar with lv-LV
+updates visible authenticated text from lv to en with ar-EG
+updates visible authenticated text from lv to en with en-GB
+updates visible authenticated text from lv to en with lv-LV
+updates visible authenticated text from lv to lv with ar-EG
+updates visible authenticated text from lv to lv with en-GB
+updates visible authenticated text from lv to lv with lv-LV
 uses OIDC sign-in and the accessible actor-bound case workspace

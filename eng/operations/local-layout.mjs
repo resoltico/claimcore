@@ -24,15 +24,21 @@ export function prepareLayout(root, uid, gid) {
   for (const name of ["ca.pem", "ca.key"]) {
     chownSync(join(root, "authority", name), uid, gid);
   }
-  /** @type {[string, string, number, number][]} */
+  /** @type {[string, string, "browser" | "postgres", number, number][]} */
   const certificates = [
-    ["web", "app.localhost", uid, gid],
-    ["primary", "primary", 999, 999],
-    ["witness", "witness", 999, 999],
-    ["identity", "identity.localhost", 1000, 0],
+    ["web", "app.localhost", "browser", uid, gid],
+    ["primary", "primary", "postgres", 999, 999],
+    ["witness", "witness", "postgres", 999, 999],
+    ["identity", "identity.localhost", "browser", 1000, 0],
   ];
-  for (const [folder, hostname, owner, group] of certificates) {
-    serverCertificate(join(root, "authority"), join(root, folder), hostname, owner, group);
+  for (const [folder, hostname, recipient, owner, group] of certificates) {
+    serverCertificate(
+      join(root, "authority"),
+      join(root, folder),
+      { hostname, recipient },
+      owner,
+      group,
+    );
   }
   webCertificate(join(root, "web"));
   chownSync(join(root, "web", "web.pfx"), uid, gid);

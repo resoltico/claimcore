@@ -1,9 +1,9 @@
 {
   "token.OPENED": "ATVĒRTA",
   "token.CLOSED": "SLĒGTA",
-  "token.KEEP": "SAGLABĀT",
-  "token.REPLACE": "AIZSTĀT",
-  "token.CLEAR": "DZĒST",
+  "token.KEEP": "Saglabāt pašreizējos datus",
+  "token.REPLACE": "Aizstāt datus",
+  "token.CLEAR": "Dzēst reģistrēto vērtību",
   "token.PENDING": "GAIDOŠA",
   "token.ACCEPTED": "PIEŅEMTA",
   "token.REVOKED": "ATSAUKTA",
@@ -11,6 +11,6 @@
   "token.ERROR": "Izpildes kļūda",
   "token.REVOKED_BEFORE_EXECUTION": "Atsaukts pirms izpildes",
   "token.ENVELOPE": "APLOKSNE",
-  "token.FOUND": "ATRASTA",
-  "token.NOT_FOUND": "NAV ATRASTA"
+  "token.FOUND": "Atrasta pieņemta operācija",
+  "token.NOT_FOUND": "Operācija nav novērota"
 }

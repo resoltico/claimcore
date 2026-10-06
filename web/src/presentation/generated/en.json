@@ -1,569 +1,4 @@
 {
-  "command.OPEN.label": [{ "type": 0, "value": "Open a case" }],
-  "command.OPEN.meaning": [
-    { "type": 0, "value": "Create the basic record. No decision or payment is inferred." }
-  ],
-  "command.AMEND_REGISTRATION.label": [{ "type": 0, "value": "Amend registration" }],
-  "command.AMEND_REGISTRATION.meaning": [
-    {
-      "type": 0,
-      "value": "Replace the initial facts. The handler's case reference remains unchanged."
-    }
-  ],
-  "command.CORRECT_CASE.label": [{ "type": 0, "value": "Correct case facts" }],
-  "command.CORRECT_CASE.meaning": [
-    {
-      "type": 0,
-      "value": "Correct existing decided, paid, or closed case facts atomically. Keep reads accepted values; clearing a payment record does not reverse an external transfer."
-    }
-  ],
-  "command.DECIDE.label": [{ "type": 0, "value": "Record payment decision" }],
-  "command.DECIDE.meaning": [
-    {
-      "type": 0,
-      "value": "Record or replace the decided amount and currency. This does not send money."
-    }
-  ],
-  "command.WITHDRAW_DECISION.label": [{ "type": 0, "value": "Withdraw payment decision" }],
-  "command.WITHDRAW_DECISION.meaning": [
-    { "type": 0, "value": "Remove the unpaid decision tuple while retaining its earlier history." }
-  ],
-  "command.RECORD_PAYMENT.label": [{ "type": 0, "value": "Record actual payment" }],
-  "command.RECORD_PAYMENT.meaning": [
-    {
-      "type": 0,
-      "value": "Record the date the full decided amount was actually paid. This does not execute or verify a transfer."
-    }
-  ],
-  "command.CLEAR_PAYMENT.label": [{ "type": 0, "value": "Correct an erroneous payment record" }],
-  "command.CLEAR_PAYMENT.meaning": [
-    {
-      "type": 0,
-      "value": "Remove an erroneously recorded payment date. This is not a refund or reversal of an actual transfer. Earlier history remains."
-    }
-  ],
-  "command.CLOSE.label": [{ "type": 0, "value": "Close the case" }],
-  "command.CLOSE.meaning": [
-    { "type": 0, "value": "Set the case status to CLOSED. Closing does not imply any payment." }
-  ],
-  "command.REOPEN.label": [{ "type": 0, "value": "Reopen the case" }],
-  "command.REOPEN.meaning": [
-    { "type": 0, "value": "Set the case status to OPENED, retaining its other fields and history." }
-  ],
-  "diagnostic.INPUT_TEXT_REQUIRED": [{ "type": 0, "value": "A non-blank value is required." }],
-  "diagnostic.INPUT_MALFORMED_UNICODE": [
-    { "type": 0, "value": "Malformed Unicode is not accepted." }
-  ],
-  "diagnostic.INPUT_SURROUNDING_WHITESPACE": [
-    { "type": 0, "value": "Leading or trailing whitespace is not accepted." }
-  ],
-  "diagnostic.INPUT_TEXT_TOO_SHORT": [
-    { "type": 0, "value": "The value must contain at least " },
-    { "type": 1, "value": "minimumCharacters" },
-    { "type": 0, "value": " Unicode characters." }
-  ],
-  "diagnostic.INPUT_TEXT_TOO_LONG": [
-    { "type": 0, "value": "The value must not exceed " },
-    { "type": 1, "value": "maximumCharacters" },
-    { "type": 0, "value": " Unicode characters." }
-  ],
-  "diagnostic.INPUT_CONTROL_CHARACTERS": [
-    { "type": 0, "value": "Control characters are not accepted." }
-  ],
-  "diagnostic.INPUT_CALENDAR_DATE_REQUIRED": [
-    { "type": 0, "value": "Use one valid calendar date in YYYY-MM-DD format." }
-  ],
-  "diagnostic.INPUT_DATE_ORDER": [
-    { "type": 0, "value": "The dates are in an invalid chronological order." }
-  ],
-  "diagnostic.INPUT_FUTURE_DATE": [
-    { "type": 0, "value": "A future date cannot record an event that has already occurred." }
-  ],
-  "diagnostic.INPUT_DECIMAL_FORMAT": [
-    { "type": 0, "value": "Use non-negative decimal text: up to " },
-    { "type": 1, "value": "maximumIntegerDigits" },
-    { "type": 0, "value": " integer digits and " },
-    { "type": 1, "value": "maximumFractionalDigits" },
-    { "type": 0, "value": " fractional digits; no sign or exponent." }
-  ],
-  "diagnostic.INPUT_CURRENCY_FORMAT": [
-    { "type": 0, "value": "Use a three-letter uppercase currency identifier." }
-  ],
-  "diagnostic.INPUT_AMOUNT_NOT_REPRESENTABLE": [
-    { "type": 0, "value": "The decimal amount cannot be represented exactly." }
-  ],
-  "diagnostic.COMMAND_OPERATION_ID_REQUIRED": [{ "type": 0, "value": "Use a non-empty UUID." }],
-  "diagnostic.COMMAND_EXPECTED_REVISION_RANGE": [
-    { "type": 0, "value": "Use a non-negative version below Int64.MaxValue." }
-  ],
-  "diagnostic.STATE_STORED_REVISION_RANGE": [
-    { "type": 0, "value": "Stored versions must be positive and below Int64.MaxValue." }
-  ],
-  "diagnostic.STATE_REVISION_EXHAUSTED": [
-    { "type": 0, "value": "The case revision cannot advance below Int64.MaxValue." }
-  ],
-  "diagnostic.STATE_CASE_REFERENCE_MISMATCH": [
-    { "type": 0, "value": "The loaded case does not match this command." }
-  ],
-  "diagnostic.STATE_TRANSITION_MISMATCH": [
-    { "type": 0, "value": "The state guard and payment transition disagree." }
-  ],
-  "diagnostic.INPUT_EXACT_FIELDS_REQUIRED": [
-    { "type": 0, "value": "Supply each declared command input exactly once, with no extra fields." }
-  ],
-  "diagnostic.COMMAND_GROUPED_CORRECTION_REQUIRED": [
-    { "type": 0, "value": "Supply all three tagged correction groups." }
-  ],
-  "diagnostic.CORRECTION_COMPLETE_DECISION_REQUIRED": [
-    {
-      "type": 0,
-      "value": "Decision date, payable amount and payable currency must be present together or all absent."
-    }
-  ],
-  "diagnostic.CORRECTION_PAYMENT_CLEAR_REQUIRED": [
-    { "type": 0, "value": "Clearing a paid decision requires clearing the payment record." }
-  ],
-  "diagnostic.CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED": [
-    {
-      "type": 0,
-      "value": "Replacing a paid decision requires explicit payment reaffirmation or clearing the payment record."
-    }
-  ],
-  "diagnostic.CORRECTION_PAYMENT_DECISION_REQUIRED": [
-    { "type": 0, "value": "A payment record requires a complete payment decision." }
-  ],
-  "diagnostic.CORRECTION_REPLACEMENT_FIELDS_REQUIRED": [
-    { "type": 0, "value": "Use REPLACE with every declared field." }
-  ],
-  "diagnostic.CORRECTION_REGISTRATION_CLEAR_FORBIDDEN": [
-    { "type": 0, "value": "Registration cannot be cleared." }
-  ],
-  "diagnostic.CASE_NOT_FOUND": [{ "type": 0, "value": "The case reference was not found." }],
-  "diagnostic.CASE_ALREADY_EXISTS": [{ "type": 0, "value": "The case reference already exists." }],
-  "diagnostic.CASE_REVISION_CONFLICT": [
-    { "type": 0, "value": "Read the current case before making a changed request." }
-  ],
-  "diagnostic.CASE_CLOSED": [{ "type": 0, "value": "Reopen the case before changing its facts." }],
-  "diagnostic.CASE_ALREADY_CLOSED": [{ "type": 0, "value": "The case is already closed." }],
-  "diagnostic.CASE_ALREADY_OPENED": [{ "type": 0, "value": "The case is already open." }],
-  "diagnostic.CASE_AMENDMENT_REQUIRES_UNDECIDED": [
-    { "type": 0, "value": "Withdraw an unpaid decision before amending registration." }
-  ],
-  "diagnostic.CORRECTION_NO_CHANGES": [
-    { "type": 0, "value": "Choose at least one factual correction that changes the current case." }
-  ],
-  "diagnostic.CORRECTION_EXISTING_VALUE_REQUIRED": [
-    {
-      "type": 0,
-      "value": "A correction can only replace or clear a value already recorded on this case."
-    }
-  ],
-  "diagnostic.CASE_DECISION_REQUIRED": [{ "type": 0, "value": "Record a payment decision first." }],
-  "diagnostic.CASE_PAYMENT_ALREADY_RECORDED": [
-    { "type": 0, "value": "ClaimCore records one full payment." }
-  ],
-  "diagnostic.CASE_PAYMENT_NOT_RECORDED": [
-    { "type": 0, "value": "There is no payment record to clear." }
-  ],
-  "diagnostic.CASE_DECISION_ALREADY_PAID": [
-    { "type": 0, "value": "A recorded payment prevents changing its decision." }
-  ],
-  "diagnostic.CASE_ZERO_DECISION_CANNOT_BE_PAID": [
-    { "type": 0, "value": "A zero decision is not a payment." }
-  ],
-  "diagnostic.QUERY_PAGE_LIMIT_RANGE": [
-    { "type": 0, "value": "Use a value from 1 through " },
-    { "type": 1, "value": "maximumPageSize" },
-    { "type": 0, "value": "." }
-  ],
-  "diagnostic.QUERY_CASE_LIST_CURSOR_INVALID": [
-    {
-      "type": 0,
-      "value": "Start a new case list. The cursor is invalid, expired, or belongs to another account or page size."
-    }
-  ],
-  "diagnostic.QUERY_HISTORY_CURSOR_INVALID": [
-    { "type": 0, "value": "Use one opaque history cursor returned by ClaimCore." }
-  ],
-  "diagnostic.OPERATION_CONTENT_CONFLICT": [
-    {
-      "type": 0,
-      "value": "This operation ID belongs to different command content. Do not reuse it."
-    }
-  ],
-  "diagnostic.OPERATION_REVOKED": [
-    {
-      "type": 0,
-      "value": "Authority for future execution of this exact operation was durably revoked. Earlier attempt uncertainty is unchanged; inspect its exact evidence."
-    }
-  ],
-  "diagnostic.OPERATION_RECOVERY_ATTEMPT_LIMIT": [
-    {
-      "type": 0,
-      "value": "This operation has reached its recovery attempt limit. Inspect its exact evidence and reconcile unresolved attempts before authoring new work."
-    }
-  ],
-  "diagnostic.ACCESS_RESOURCE_UNAVAILABLE": [
-    { "type": 0, "value": "This resource is unavailable." }
-  ],
-  "diagnostic.RESOURCE_UNAVAILABLE": [
-    { "type": 0, "value": "This recovery resource is unavailable." }
-  ],
-  "diagnostic.CORE_OPERATION_CONTENT_CONFLICT": [
-    { "type": 0, "value": "The operation ID belongs to different request content." }
-  ],
-  "diagnostic.CORE_STORE_UNAVAILABLE": [
-    { "type": 0, "value": "The store was unavailable before completion was confirmed." }
-  ],
-  "diagnostic.CORE_COMMIT_OUTCOME_UNKNOWN": [
-    { "type": 0, "value": "Commit completion was not confirmed." }
-  ],
-  "diagnostic.CORE_STORE_INTEGRITY_ERROR": [
-    { "type": 0, "value": "Stored data failed integrity validation." }
-  ],
-  "diagnostic.CORE_SCHEMA_MISMATCH": [
-    { "type": 0, "value": "The runtime schema or database settings are incompatible." }
-  ],
-  "diagnostic.RECOVERY_STORE_RESPONSE_INVALID": [
-    { "type": 0, "value": "Recovery storage returned an invalid technical response." }
-  ],
-  "diagnostic.RECOVERY_STORE_CONTENT_CONFLICT": [
-    { "type": 0, "value": "Recovery identity conflicts with retained data." }
-  ],
-  "diagnostic.RECOVERY_STORE_PREPARATION_MISSING": [
-    { "type": 0, "value": "Recovery storage lost an expected preparation." }
-  ],
-  "diagnostic.RECOVERY_CAPACITY_EXHAUSTED": [
-    { "type": 0, "value": "Recovery capacity is exhausted." }
-  ],
-  "diagnostic.RECOVERY_SCHEMA_MISMATCH": [
-    { "type": 0, "value": "Recovery storage is incompatible with this runtime." }
-  ],
-  "diagnostic.RECOVERY_STORE_UNAVAILABLE": [
-    { "type": 0, "value": "Recovery storage was unavailable before completion was confirmed." }
-  ],
-  "diagnostic.RECOVERY_STORE_INTEGRITY_ERROR": [
-    { "type": 0, "value": "Recovery storage failed integrity validation." }
-  ],
-  "diagnostic.RECOVERY_READ_CANCELLED": [
-    { "type": 0, "value": "The recovery read was cancelled." }
-  ],
-  "diagnostic.RECOVERY_MUTATION_CANCELLED_BEFORE_COMMIT": [
-    { "type": 0, "value": "The technical mutation was cancelled before commit." }
-  ],
-  "diagnostic.RECOVERY_MUTATION_OUTCOME_UNKNOWN": [
-    {
-      "type": 0,
-      "value": "The recovery-state mutation may have committed but could not be confirmed."
-    }
-  ],
-  "diagnostic.RECOVERY_RETAINED_CANONICAL_INVALID": [
-    { "type": 0, "value": "Retained canonical request bytes failed integrity validation." }
-  ],
-  "diagnostic.RECOVERY_RETAINED_DOMAIN_SHAPE_INVALID": [
-    { "type": 0, "value": "Retained request did not satisfy its closed domain shape." }
-  ],
-  "diagnostic.RECOVERY_RETAINED_PREPARATION_UNVERIFIABLE": [
-    { "type": 0, "value": "An exact retained preparation could not be verified." }
-  ],
-  "diagnostic.RECOVERY_NEW_PREPARATION_MISSING": [
-    { "type": 0, "value": "A newly retained preparation was not available for execution." }
-  ],
-  "diagnostic.RECOVERY_PREPARATION_DISMISSED_BEFORE_EXECUTION": [
-    { "type": 0, "value": "The preparation was dismissed before execution could begin." }
-  ],
-  "diagnostic.RECOVERY_RETAINED_DIGEST_MISMATCH": [
-    { "type": 0, "value": "The retained preparation digest does not match the submitted draft." }
-  ],
-  "diagnostic.RECOVERY_STORED_DATA_INVALID": [
-    { "type": 0, "value": "Stored recovery data failed validation." }
-  ],
-  "diagnostic.RECOVERY_OPERATION_ID_REQUIRED": [
-    { "type": 0, "value": "A non-empty recovery operation ID is required." }
-  ],
-  "diagnostic.RECOVERY_REQUEST_DIGEST_INVALID": [
-    { "type": 0, "value": "The recovery request digest must be a lowercase SHA-256 digest." }
-  ],
-  "diagnostic.RECOVERY_PAGE_LIMIT_RANGE": [
-    { "type": 0, "value": "The recovery page limit is outside the supported range." }
-  ],
-  "diagnostic.RECOVERY_LIST_CURSOR_INVALID": [
-    { "type": 0, "value": "The recovery list cursor is invalid." }
-  ],
-  "diagnostic.RECOVERY_LIST_CURSOR_VIEW_MISMATCH": [
-    { "type": 0, "value": "The recovery list cursor belongs to a different view." }
-  ],
-  "diagnostic.RECOVERY_ATTEMPT_CURSOR_INVALID": [
-    { "type": 0, "value": "The recovery attempt cursor is invalid." }
-  ],
-  "diagnostic.RECOVERY_ATTEMPT_CURSOR_OPERATION_MISMATCH": [
-    { "type": 0, "value": "The recovery attempt cursor belongs to a different operation." }
-  ],
-  "diagnostic.RECOVERY_DISMISSAL_CONFIRMATION_REQUIRED": [
-    { "type": 0, "value": "Explicit confirmation is required to dismiss a recovery preparation." }
-  ],
-  "diagnostic.RECOVERY_PREPARATION_NOT_FOUND": [
-    { "type": 0, "value": "The recovery preparation was not found." }
-  ],
-  "diagnostic.RECOVERY_OPERATION_CONTENT_CONFLICT": [
-    { "type": 0, "value": "The supplied recovery identity conflicts with an existing operation." }
-  ],
-  "diagnostic.RECOVERY_PREPARATION_DISMISSED": [
-    { "type": 0, "value": "A dismissed preparation cannot be submitted." }
-  ],
-  "diagnostic.RECOVERY_SUBMISSION_ALREADY_STARTED": [
-    {
-      "type": 0,
-      "value": "The preparation has already started submission and must be resolved exactly."
-    }
-  ],
-  "diagnostic.RECOVERY_ACCEPTED_OPERATION_DISMISSAL_FORBIDDEN": [
-    {
-      "type": 0,
-      "value": "An accepted operation cannot be dismissed. Inspect its retained receipt."
-    }
-  ],
-  "diagnostic.RECOVERY_SOURCE_DIGEST_MISMATCH": [
-    { "type": 0, "value": "The supplied source digest does not match the exact import bytes." }
-  ],
-  "diagnostic.RECOVERY_REQUEST_DIGEST_MISMATCH": [
-    { "type": 0, "value": "The supplied digest does not match the exact retained request bytes." }
-  ],
-  "diagnostic.RECOVERY_INSTALLATION_MISMATCH": [
-    { "type": 0, "value": "The recovery envelope belongs to a different ClaimCore installation." }
-  ],
-  "diagnostic.RECOVERY_ENVELOPE_INVALID_OR_UNSUPPORTED": [
-    { "type": 0, "value": "The recovery envelope is unsupported or failed canonical decoding." }
-  ],
-  "diagnostic.RECOVERY_OPERATION_REVOKED": [
-    {
-      "type": 0,
-      "value": "Authority for future execution of this exact operation was durably revoked. Earlier attempt uncertainty is unchanged; inspect its exact evidence."
-    }
-  ],
-  "diagnostic.RECOVERY_ATTEMPT_LIMIT_REACHED": [
-    {
-      "type": 0,
-      "value": "This operation has reached its recovery attempt limit. Inspect its exact evidence and reconcile unresolved attempts before authoring new work."
-    }
-  ],
-  "diagnostic.WEB_HOST_CONNECTION_REJECTED": [
-    { "type": 0, "value": "The host refused this connection." }
-  ],
-  "diagnostic.WEB_HOST_ORIGIN_REJECTED": [
-    { "type": 0, "value": "The request origin was refused." }
-  ],
-  "diagnostic.WEB_HOST_MEDIA_TYPE_REJECTED": [
-    { "type": 0, "value": "The request media type is unsupported." }
-  ],
-  "diagnostic.WEB_HOST_BODY_TOO_LARGE": [
-    { "type": 0, "value": "The request exceeds the configured byte limit." }
-  ],
-  "diagnostic.WEB_INPUT_BODY_TOO_LARGE": [
-    { "type": 0, "value": "The request exceeds the configured byte limit." }
-  ],
-  "diagnostic.WEB_HOST_SESSION_REJECTED": [
-    { "type": 0, "value": "The session was refused. Sign in to the local installation." }
-  ],
-  "diagnostic.WEB_HOST_ANTIFORGERY_REJECTED": [
-    { "type": 0, "value": "The antiforgery check failed." }
-  ],
-  "diagnostic.WEB_HOST_ENDPOINT_MISSING": [
-    { "type": 0, "value": "The requested endpoint was not found." }
-  ],
-  "diagnostic.WEB_HOST_BUSY": [{ "type": 0, "value": "The local host is busy." }],
-  "diagnostic.WEB_HOST_EXPORT_METADATA_INVALID": [
-    { "type": 0, "value": "Recovery export metadata failed validation." }
-  ],
-  "diagnostic.WEB_HOST_BEFORE_DISPATCH_FAILED": [
-    { "type": 0, "value": "The host failed before dispatching the request." }
-  ],
-  "diagnostic.WEB_HOST_DISPATCH_UNCONFIRMED": [
-    {
-      "type": 0,
-      "value": "The dispatched request outcome is unconfirmed. Inspect Recovery before another mutation."
-    }
-  ],
-  "diagnostic.WEB_HOST_COMPLETED_RESPONSE_FAILED": [
-    { "type": 0, "value": "The operation completed, but its response could not be delivered." }
-  ],
-  "diagnostic.WEB_HOST_SESSION_FORBIDDEN": [
-    { "type": 0, "value": "This session is not permitted to access the resource." }
-  ],
-  "diagnostic.WEB_HOST_METHOD_REJECTED": [
-    { "type": 0, "value": "The request method is not supported by this endpoint." }
-  ],
-  "diagnostic.WEB_INPUT_EXPECTED_OBJECT": [{ "type": 0, "value": "A JSON object is required." }],
-  "diagnostic.WEB_INPUT_DUPLICATE_PROPERTY": [
-    { "type": 0, "value": "Duplicate request properties are not accepted." }
-  ],
-  "diagnostic.WEB_INPUT_UNKNOWN_PROPERTY": [
-    { "type": 0, "value": "The request contains an undeclared property." }
-  ],
-  "diagnostic.WEB_INPUT_MISSING_PROPERTY": [
-    { "type": 0, "value": "A required request property is missing." }
-  ],
-  "diagnostic.WEB_INPUT_EXPECTED_STRING": [{ "type": 0, "value": "A text value is required." }],
-  "diagnostic.WEB_INPUT_NULL_FORBIDDEN": [
-    { "type": 0, "value": "Null is not accepted at this request location." }
-  ],
-  "diagnostic.WEB_INPUT_EXPECTED_BOOLEAN": [{ "type": 0, "value": "A Boolean value is required." }],
-  "diagnostic.WEB_INPUT_EXPECTED_INTEGER": [
-    { "type": 0, "value": "An integer value is required." }
-  ],
-  "diagnostic.WEB_INPUT_INVALID_REVISION": [
-    { "type": 0, "value": "Supply a canonical supported revision." }
-  ],
-  "diagnostic.WEB_INPUT_INVALID_UUID": [
-    { "type": 0, "value": "Supply a canonical non-empty operation UUID." }
-  ],
-  "diagnostic.WEB_INPUT_INVALID_DIGEST": [
-    { "type": 0, "value": "Supply a canonical lowercase SHA-256 digest." }
-  ],
-  "diagnostic.WEB_INPUT_INVALID_UNICODE": [
-    { "type": 0, "value": "The request contains malformed Unicode." }
-  ],
-  "diagnostic.WEB_INPUT_INVALID_UTF8": [{ "type": 0, "value": "The request is not valid UTF-8." }],
-  "diagnostic.WEB_INPUT_INVALID_JSON": [{ "type": 0, "value": "The request is not valid JSON." }],
-  "diagnostic.WEB_INPUT_BODY_UNREADABLE": [
-    { "type": 0, "value": "The request body could not be read." }
-  ],
-  "diagnostic.WEB_INPUT_BODY_CANCELLED": [
-    { "type": 0, "value": "Reading the request body was cancelled." }
-  ],
-  "diagnostic.WEB_INPUT_UNKNOWN_COMMAND": [
-    { "type": 0, "value": "The command is not recognized." }
-  ],
-  "diagnostic.WEB_INPUT_MISSING_COMMAND_VALUE": [
-    { "type": 0, "value": "A required command value is missing." }
-  ],
-  "diagnostic.WEB_INPUT_CORRECTION_ACTION": [
-    { "type": 0, "value": "The correction action is not valid for this group." }
-  ],
-  "diagnostic.WEB_INPUT_LOGOUT_SHAPE": [
-    { "type": 0, "value": "The sign-out request has an invalid shape." }
-  ],
-  "diagnostic.WEB_INPUT_PAGE_RANGE": [
-    { "type": 0, "value": "The requested page size is outside its permitted range." }
-  ],
-  "diagnostic.WEB_INPUT_HISTORY_DETAIL": [
-    { "type": 0, "value": "The requested history detail is unsupported." }
-  ],
-  "diagnostic.WEB_INPUT_RECOVERY_VIEW": [
-    { "type": 0, "value": "The requested recovery view is unsupported." }
-  ],
-  "diagnostic.WEB_INPUT_SOURCE_DIGEST_HEADER": [
-    { "type": 0, "value": "The source-digest header is absent or invalid." }
-  ],
-  "field.incidentDate.label": [{ "type": 0, "value": "Incident date" }],
-  "field.incidentDate.meaning": [{ "type": 0, "value": "Date on which the incident occurred." }],
-  "field.incidentNotificationDate.label": [
-    { "type": 0, "value": "Incident notification date (FNOL)" }
-  ],
-  "field.incidentNotificationDate.meaning": [
-    {
-      "type": 0,
-      "value": "Date when this claims handler was first notified of the incident by anyone, not necessarily the claimant. Not the date another insurer or organisation was notified."
-    }
-  ],
-  "field.incidentCountry.label": [{ "type": 0, "value": "Country of incident" }],
-  "field.incidentCountry.meaning": [
-    {
-      "type": 0,
-      "value": "Country where the incident occurred; recorded as entered without inferring applicable law."
-    }
-  ],
-  "field.claimantName.label": [{ "type": 0, "value": "Claimant name" }],
-  "field.claimantName.meaning": [
-    {
-      "type": 0,
-      "value": "Name of the claimant, whether a private person or a company. No separate party-type or legal-identity fields."
-    }
-  ],
-  "field.insurerName.label": [{ "type": 0, "value": "Allegedly responsible insurer" }],
-  "field.insurerName.meaning": [
-    {
-      "type": 0,
-      "value": "Name of the insurer claimed to be responsible. This does not establish ultimate liability or a recourse-chain position."
-    }
-  ],
-  "field.claimedAmount.label": [{ "type": 0, "value": "Amount claimed" }],
-  "field.claimedAmount.meaning": [
-    {
-      "type": 0,
-      "value": "Amount claimed by the claimant, encoded as exact non-negative decimal text. Zero is a recorded amount, not a substitute for unknown."
-    }
-  ],
-  "field.claimedCurrency.label": [{ "type": 0, "value": "Currency of claimed amount" }],
-  "field.claimedCurrency.meaning": [
-    {
-      "type": 0,
-      "value": "Three-letter uppercase identifier for the claimed amount; no currency conversion or registry inference."
-    }
-  ],
-  "field.caseReference.label": [{ "type": 0, "value": "Handler's case reference" }],
-  "field.caseReference.meaning": [
-    {
-      "type": 0,
-      "value": "Reference assigned by the claims handler operating this register, not an insurer reference. Unique, immutable and case-sensitive within one installation."
-    }
-  ],
-  "field.paymentDecisionDate.label": [{ "type": 0, "value": "Payment decision date" }],
-  "field.paymentDecisionDate.meaning": [
-    {
-      "type": 0,
-      "value": "Date when this claims handler decided the amount to be paid. Null until a decision is recorded; not a payment or bank instruction."
-    }
-  ],
-  "field.payableAmount.label": [{ "type": 0, "value": "Amount to be paid" }],
-  "field.payableAmount.meaning": [
-    {
-      "type": 0,
-      "value": "Decided amount to be paid, in exact non-negative decimal text. Null until decided; may differ from the claimed amount."
-    }
-  ],
-  "field.payableCurrency.label": [{ "type": 0, "value": "Currency of amount to be paid" }],
-  "field.payableCurrency.meaning": [
-    {
-      "type": 0,
-      "value": "Currency of the decided amount. Null until decided; it need not equal the claimed currency."
-    }
-  ],
-  "field.paymentDate.label": [{ "type": 0, "value": "Payment date" }],
-  "field.paymentDate.meaning": [
-    {
-      "type": 0,
-      "value": "Date when the decided amount was actually paid, as recorded by the operator. Null while unpaid or unknown. One full payment only; recording does not execute or independently verify a bank transfer."
-    }
-  ],
-  "field.status.label": [{ "type": 0, "value": "Case status" }],
-  "field.status.meaning": [
-    {
-      "type": 0,
-      "value": "Administrative state OPENED or CLOSED, independent of decision and payment. No additional case statuses."
-    }
-  ],
-  "group.registration.label": [{ "type": 0, "value": "Registration" }],
-  "group.registration.meaning": [
-    {
-      "type": 0,
-      "value": "Keep the accepted registration facts or replace all seven registration inputs together."
-    }
-  ],
-  "group.decision.label": [{ "type": 0, "value": "Payment decision" }],
-  "group.decision.meaning": [
-    {
-      "type": 0,
-      "value": "Keep the accepted decision, replace its complete date, amount, and currency tuple, or clear it."
-    }
-  ],
-  "group.payment.label": [{ "type": 0, "value": "Payment record" }],
-  "group.payment.meaning": [
-    {
-      "type": 0,
-      "value": "Keep the accepted payment record, replace its date, or clear the recorded payment date; clearing does not reverse an external transfer."
-    }
-  ],
   "notice.responseTimeout": [{ "type": 0, "value": "The service response timed out." }],
   "notice.unreachable": [{ "type": 0, "value": "The local service could not be reached." }],
   "notice.invalidHttp": [
@@ -580,7 +15,12 @@
   "notice.exportInvalid": [
     { "type": 0, "value": "The recovery export response failed its protocol checks." }
   ],
-  "notice.incomplete": [{ "type": 0, "value": "The operation did not complete." }],
+  "notice.incomplete": [
+    {
+      "type": 0,
+      "value": "Check the reported outcome before trying again. If it is unconfirmed, inspect Recovery."
+    }
+  ],
   "notice.definitionMismatch": [
     {
       "type": 0,
@@ -645,26 +85,26 @@
       "value": "This request was cancelled before a new attempt. Inspect exact evidence for any earlier unresolved attempts."
     }
   ],
-  "token.OPENED": [{ "type": 0, "value": "OPENED" }],
-  "token.CLOSED": [{ "type": 0, "value": "CLOSED" }],
-  "token.KEEP": [{ "type": 0, "value": "KEEP" }],
-  "token.REPLACE": [{ "type": 0, "value": "REPLACE" }],
-  "token.CLEAR": [{ "type": 0, "value": "CLEAR" }],
-  "token.PENDING": [{ "type": 0, "value": "PENDING" }],
-  "token.ACCEPTED": [{ "type": 0, "value": "ACCEPTED" }],
-  "token.REVOKED": [{ "type": 0, "value": "REVOKED" }],
-  "token.REJECTED": [{ "type": 0, "value": "REJECTED" }],
+  "token.OPENED": [{ "type": 0, "value": "Open" }],
+  "token.CLOSED": [{ "type": 0, "value": "Closed" }],
+  "token.KEEP": [{ "type": 0, "value": "Keep current details" }],
+  "token.REPLACE": [{ "type": 0, "value": "Replace details" }],
+  "token.CLEAR": [{ "type": 0, "value": "Clear recorded value" }],
+  "token.PENDING": [{ "type": 0, "value": "Pending" }],
+  "token.ACCEPTED": [{ "type": 0, "value": "Recorded" }],
+  "token.REVOKED": [{ "type": 0, "value": "Execution authority revoked" }],
+  "token.REJECTED": [{ "type": 0, "value": "Refused" }],
   "token.ERROR": [{ "type": 0, "value": "Execution error" }],
   "token.REVOKED_BEFORE_EXECUTION": [{ "type": 0, "value": "Revoked before execution" }],
-  "token.ENVELOPE": [{ "type": 0, "value": "ENVELOPE" }],
-  "token.FOUND": [{ "type": 0, "value": "FOUND" }],
-  "token.NOT_FOUND": [{ "type": 0, "value": "NOT_FOUND" }],
+  "token.ENVELOPE": [{ "type": 0, "value": "Recovery envelope" }],
+  "token.FOUND": [{ "type": 0, "value": "Accepted operation found" }],
+  "token.NOT_FOUND": [{ "type": 0, "value": "Operation not observed" }],
   "ui.language": [{ "type": 0, "value": "Interface language" }],
-  "ui.displayLocale": [{ "type": 0, "value": "Display format" }],
+  "ui.displayLocale": [{ "type": 0, "value": "Date and number format" }],
   "ui.preferencesHint": [
     {
       "type": 0,
-      "value": "Presentation only. Authored dates and amounts remain in canonical format."
+      "value": "Interface language changes text; date and number format changes displayed values. Enter dates and amounts in the required input format."
     }
   ],
   "ui.preferencesChanged": [{ "type": 0, "value": "Presentation preferences changed." }],
@@ -677,7 +117,6 @@
   "ui.pseudo": [{ "type": 0, "value": "Expanded English (layout test)" }],
   "ui.loadingSession": [{ "type": 0, "value": "Loading local session…" }],
   "ui.tryAgain": [{ "type": 0, "value": "Try again" }],
-  "ui.trustedInstallation": [{ "type": 0, "value": "Trusted local installation" }],
   "ui.signOut": [{ "type": 0, "value": "Sign out" }],
   "ui.primary": [{ "type": 0, "value": "Primary" }],
   "ui.cases": [{ "type": 0, "value": "Cases" }],
@@ -781,12 +220,7 @@
     { "type": 0, "value": "Exact reference: " },
     { "type": 1, "value": "reference" }
   ],
-  "ui.unchangedUntilSubmit": [
-    {
-      "type": 0,
-      "value": "Accepted state is unchanged until the exact prepared request is explicitly submitted."
-    }
-  ],
+  "ui.unchangedUntilSubmit": [{ "type": 0, "value": "Review your changes before recording them." }],
   "ui.observedReceipt": [
     { "type": 0, "value": "Accepted operation " },
     { "type": 1, "value": "operationId" },
@@ -838,38 +272,42 @@
     { "type": 1, "value": "maximum" },
     { "type": 0, "value": " characters." }
   ],
-  "ui.dateHint": [{ "type": 0, "value": "Use yyyy-MM-dd (Gregorian date)." }],
+  "ui.dateHint": [
+    { "type": 0, "value": "Use ASCII digits in YYYY-MM-DD format, for example 2026-10-06." }
+  ],
   "ui.amountHint": [
-    { "type": 0, "value": "Exact decimal text; up to " },
+    { "type": 0, "value": "Use ASCII digits and a dot, for example 125.50; up to " },
     { "type": 1, "value": "maximum" },
-    { "type": 0, "value": " decimal places. Use a dot, not a comma." }
+    { "type": 0, "value": " decimal places. No signs or commas." }
   ],
   "ui.currencyHint": [
     { "type": 1, "value": "length" },
-    { "type": 0, "value": " uppercase letters." }
+    { "type": 0, "value": " uppercase ASCII letters (A–Z)." }
   ],
-  "ui.command": [{ "type": 0, "value": "Command" }],
+  "ui.command": [{ "type": 0, "value": "Case action" }],
   "ui.reference": [
     { "type": 0, "value": "Case reference: " },
     { "type": 1, "value": "reference" }
   ],
-  "ui.noAuthoredValues": [{ "type": 0, "value": "This command has no authored values." }],
+  "ui.noAuthoredValues": [{ "type": 0, "value": "This action needs no additional details." }],
   "ui.action": [{ "type": 0, "value": "Action" }],
   "ui.correctionHint": [
-    { "type": 0, "value": "Each correction group is explicit. KEEP preserves its accepted values." }
+    {
+      "type": 0,
+      "value": "Choose which details to keep, replace or clear. Kept details come from the current case when changes are recorded."
+    }
   ],
-  "ui.preparing": [{ "type": 0, "value": "Preparing…" }],
-  "ui.prepareExact": [{ "type": 0, "value": "Prepare exact request" }],
-  "ui.retryPrepare": [{ "type": 0, "value": "Retry exact prepare" }],
-  "ui.backWithoutPreparing": [{ "type": 0, "value": "Back without preparing" }],
-  "ui.changeCommandTitle": [{ "type": 0, "value": "Discard this command draft?" }],
+  "ui.preparing": [{ "type": 0, "value": "Preparing review…" }],
+  "ui.prepareExact": [{ "type": 0, "value": "Review changes" }],
+  "ui.retryPrepare": [{ "type": 0, "value": "Retry the same review request" }],
+  "ui.changeCommandTitle": [{ "type": 0, "value": "Discard these draft changes?" }],
   "ui.changeCommandDescription": [
     {
       "type": 0,
-      "value": "Changing command discards these authored values and creates a new operation ID."
+      "value": "Changing the action discards these draft details and starts a different request."
     }
   ],
-  "ui.discardAndChange": [{ "type": 0, "value": "Discard and change command" }],
+  "ui.discardAndChange": [{ "type": 0, "value": "Discard and change action" }],
   "ui.acceptedOperation": [{ "type": 0, "value": "Accepted operation" }],
   "ui.operationAccepted": [
     { "type": 0, "value": "Operation " },
@@ -881,11 +319,11 @@
     { "type": 1, "value": "operationId" }
   ],
   "ui.returnToCase": [{ "type": 0, "value": "Return to case" }],
-  "ui.reviewTitle": [{ "type": 0, "value": "Review prepared operation" }],
+  "ui.reviewTitle": [{ "type": 0, "value": "Review changes" }],
   "ui.reviewDescription": [
     {
       "type": 0,
-      "value": "The request is prepared but has not changed the accepted case. Submitting it starts a mutation that cannot be cancelled."
+      "value": "Check the details, confirm them, then select “Record changes”. If the result is not confirmed, check Recovery before trying again."
     }
   ],
   "ui.reviewTarget": [
@@ -900,10 +338,10 @@
     { "type": 0, "value": " · digest " },
     { "type": 1, "value": "digest" }
   ],
-  "ui.reviewConfirmation": [{ "type": 0, "value": "I will submit this exact prepared request." }],
-  "ui.keepForRecovery": [{ "type": 0, "value": "Keep for Recovery" }],
-  "ui.submitting": [{ "type": 0, "value": "Submitting…" }],
-  "ui.submitExact": [{ "type": 0, "value": "Submit exact request" }],
+  "ui.reviewConfirmation": [{ "type": 0, "value": "I confirm these changes." }],
+  "ui.keepForRecovery": [{ "type": 0, "value": "Back to editing; keep for Recovery" }],
+  "ui.submitting": [{ "type": 0, "value": "Recording…" }],
+  "ui.submitExact": [{ "type": 0, "value": "Record changes" }],
   "ui.before": [
     { "type": 0, "value": "Before: " },
     { "type": 1, "value": "value" }
@@ -956,20 +394,8 @@
       "type": 6,
       "value": "count",
       "options": {
-        "one": {
-          "value": [
-            { "type": 0, "value": "Attempt evidence: " },
-            { "type": 7 },
-            { "type": 0, "value": " shown." }
-          ]
-        },
-        "other": {
-          "value": [
-            { "type": 0, "value": "Attempt evidence: " },
-            { "type": 7 },
-            { "type": 0, "value": " shown." }
-          ]
-        }
+        "one": { "value": [{ "type": 7 }, { "type": 0, "value": " attempt shown." }] },
+        "other": { "value": [{ "type": 7 }, { "type": 0, "value": " attempts shown." }] }
       },
       "offset": 0,
       "pluralType": "cardinal"
@@ -997,7 +423,7 @@
     { "type": 1, "value": "format" }
   ],
   "ui.provenance": [
-    { "type": 0, "value": "Preparing provenance: " },
+    { "type": 0, "value": "Prepared with " },
     { "type": 1, "value": "version" },
     { "type": 0, "value": " · " },
     { "type": 1, "value": "contract" }
@@ -1025,7 +451,7 @@
   "ui.recoveryDetailsHint": [
     {
       "type": 0,
-      "value": "The server supplied the current authority, evidence, and observation state."
+      "value": "Current request authority and attempt evidence from the server. The request details below keep the exact entered values."
     }
   ],
   "ui.observation": [
@@ -1077,7 +503,6 @@
     }
   ],
   "ui.importEnvelope": [{ "type": 0, "value": "Import recovery envelope" }],
-  "ui.importRecord": [{ "type": 0, "value": "Import canonical record" }],
   "ui.importTitle": [{ "type": 0, "value": "Retain imported recovery material?" }],
   "ui.importDescription": [
     {
@@ -1086,5 +511,554 @@
     }
   ],
   "ui.retainForRecovery": [{ "type": 0, "value": "Retain for Recovery" }],
-  "ui.keepEditing": [{ "type": 0, "value": "Keep editing" }]
+  "ui.keepEditing": [{ "type": 0, "value": "Keep editing" }],
+  "ui.backToCase": [{ "type": 0, "value": "Back to case" }],
+  "ui.registerLabel": [{ "type": 0, "value": "ClaimCore case register" }],
+  "field.incidentDate.label": [{ "type": 0, "value": "Incident date" }],
+  "field.incidentDate.meaning": [{ "type": 0, "value": "Date on which the incident occurred." }],
+  "field.incidentNotificationDate.label": [
+    { "type": 0, "value": "Incident notification date (FNOL)" }
+  ],
+  "field.incidentNotificationDate.meaning": [
+    {
+      "type": 0,
+      "value": "Date when this claims handler was first notified of the incident by anyone, not necessarily the claimant. Not the date another insurer or organisation was notified."
+    }
+  ],
+  "field.incidentCountry.label": [{ "type": 0, "value": "Country of incident" }],
+  "field.incidentCountry.meaning": [
+    {
+      "type": 0,
+      "value": "Country where the incident occurred; recorded as entered without inferring applicable law."
+    }
+  ],
+  "field.claimantName.label": [{ "type": 0, "value": "Claimant name" }],
+  "field.claimantName.meaning": [
+    { "type": 0, "value": "Name of the person or company making the claim." }
+  ],
+  "field.insurerName.label": [{ "type": 0, "value": "Responsible insurer" }],
+  "field.insurerName.meaning": [
+    { "type": 0, "value": "Insurer recorded by the claims handler as responsible for this claim." }
+  ],
+  "field.claimedAmount.label": [{ "type": 0, "value": "Amount claimed" }],
+  "field.claimedAmount.meaning": [
+    {
+      "type": 0,
+      "value": "Amount requested by the claimant. Enter zero only when the claimed amount is zero."
+    }
+  ],
+  "field.claimedCurrency.label": [{ "type": 0, "value": "Currency of claimed amount" }],
+  "field.claimedCurrency.meaning": [
+    {
+      "type": 0,
+      "value": "Currency in which the amount is claimed. Use three uppercase ASCII letters (A–Z), for example EUR."
+    }
+  ],
+  "field.caseReference.label": [{ "type": 0, "value": "Handler's case reference" }],
+  "field.caseReference.meaning": [
+    {
+      "type": 0,
+      "value": "Reference assigned by the claims handler operating this register, not an insurer reference. Unique, immutable and case-sensitive within one installation."
+    }
+  ],
+  "field.paymentDecisionDate.label": [{ "type": 0, "value": "Payment decision date" }],
+  "field.paymentDecisionDate.meaning": [
+    {
+      "type": 0,
+      "value": "Date when this claims handler decided the amount to be paid. Not recorded until a decision is made."
+    }
+  ],
+  "field.payableAmount.label": [{ "type": 0, "value": "Amount to be paid" }],
+  "field.payableAmount.meaning": [
+    {
+      "type": 0,
+      "value": "Amount the handler decided should be paid. Not recorded until decided; may differ from the claimed amount."
+    }
+  ],
+  "field.payableCurrency.label": [{ "type": 0, "value": "Currency of amount to be paid" }],
+  "field.payableCurrency.meaning": [
+    {
+      "type": 0,
+      "value": "Currency of the amount to be paid. Not recorded until decided; may differ from the claimed currency."
+    }
+  ],
+  "field.paymentDate.label": [{ "type": 0, "value": "Payment date" }],
+  "field.paymentDate.meaning": [
+    {
+      "type": 0,
+      "value": "Date when the full decided amount was paid, as recorded by the handler. Leave unrecorded if unpaid or unknown. Recording payment does not make or verify a bank transfer."
+    }
+  ],
+  "field.status.label": [{ "type": 0, "value": "Case status" }],
+  "field.status.meaning": [
+    {
+      "type": 0,
+      "value": "Whether the case is open or closed. Closing a case does not mean that payment was made."
+    }
+  ],
+  "command.OPEN.label": [{ "type": 0, "value": "Open a case" }],
+  "command.OPEN.meaning": [
+    { "type": 0, "value": "Register the incident, claimant, insurer and amount claimed." }
+  ],
+  "command.AMEND_REGISTRATION.label": [{ "type": 0, "value": "Amend registration" }],
+  "command.AMEND_REGISTRATION.meaning": [
+    {
+      "type": 0,
+      "value": "Replace the initial facts. The handler's case reference remains unchanged."
+    }
+  ],
+  "command.CORRECT_CASE.label": [{ "type": 0, "value": "Correct case facts" }],
+  "command.CORRECT_CASE.meaning": [
+    {
+      "type": 0,
+      "value": "Correct recorded details on a case with a decision, payment or closed status. All changes are recorded together. Clearing a payment date does not refund money."
+    }
+  ],
+  "group.registration.label": [{ "type": 0, "value": "Registration" }],
+  "group.registration.meaning": [
+    {
+      "type": 0,
+      "value": "Keep the current registration details or replace all seven details together."
+    }
+  ],
+  "group.decision.label": [{ "type": 0, "value": "Payment decision" }],
+  "group.decision.meaning": [
+    {
+      "type": 0,
+      "value": "Keep the current payment decision, replace its date, amount and currency together, or clear the decision."
+    }
+  ],
+  "group.payment.label": [{ "type": 0, "value": "Payment record" }],
+  "group.payment.meaning": [
+    {
+      "type": 0,
+      "value": "Keep the current payment date, replace it, or clear the recorded date. Clearing the date does not refund money."
+    }
+  ],
+  "command.DECIDE.label": [{ "type": 0, "value": "Record payment decision" }],
+  "command.DECIDE.meaning": [
+    {
+      "type": 0,
+      "value": "Record or replace the decided amount and currency. This does not send money."
+    }
+  ],
+  "command.WITHDRAW_DECISION.label": [{ "type": 0, "value": "Withdraw payment decision" }],
+  "command.WITHDRAW_DECISION.meaning": [
+    { "type": 0, "value": "Clear the unpaid decision while preserving its history." }
+  ],
+  "command.RECORD_PAYMENT.label": [{ "type": 0, "value": "Record actual payment" }],
+  "command.RECORD_PAYMENT.meaning": [
+    {
+      "type": 0,
+      "value": "Record the date the full decided amount was actually paid. This does not execute or verify a transfer."
+    }
+  ],
+  "command.CLEAR_PAYMENT.label": [{ "type": 0, "value": "Correct an erroneous payment record" }],
+  "command.CLEAR_PAYMENT.meaning": [
+    {
+      "type": 0,
+      "value": "Remove an erroneously recorded payment date. This is not a refund or reversal of an actual transfer. Earlier history remains."
+    }
+  ],
+  "command.CLOSE.label": [{ "type": 0, "value": "Close the case" }],
+  "command.CLOSE.meaning": [
+    { "type": 0, "value": "Close the case. Closing does not mean that payment was made." }
+  ],
+  "command.REOPEN.label": [{ "type": 0, "value": "Reopen the case" }],
+  "command.REOPEN.meaning": [
+    { "type": 0, "value": "Reopen the case, preserving its details and history." }
+  ],
+  "diagnostic.ACCESS_RESOURCE_UNAVAILABLE": [
+    { "type": 0, "value": "The requested resource is unavailable." }
+  ],
+  "diagnostic.CASE_ALREADY_CLOSED": [{ "type": 0, "value": "The case is already closed." }],
+  "diagnostic.CASE_ALREADY_EXISTS": [{ "type": 0, "value": "The case reference already exists." }],
+  "diagnostic.CASE_ALREADY_OPENED": [{ "type": 0, "value": "The case is already open." }],
+  "diagnostic.CASE_AMENDMENT_REQUIRES_UNDECIDED": [
+    { "type": 0, "value": "Withdraw an unpaid decision before amending registration." }
+  ],
+  "diagnostic.CASE_CLOSED": [{ "type": 0, "value": "Reopen the case before changing its facts." }],
+  "diagnostic.CASE_DECISION_ALREADY_PAID": [
+    { "type": 0, "value": "A recorded payment prevents changing its decision." }
+  ],
+  "diagnostic.CASE_DECISION_REQUIRED": [{ "type": 0, "value": "Record a payment decision first." }],
+  "diagnostic.CASE_NOT_FOUND": [{ "type": 0, "value": "The case reference was not found." }],
+  "diagnostic.CASE_PAYMENT_ALREADY_RECORDED": [
+    { "type": 0, "value": "ClaimCore records one full payment." }
+  ],
+  "diagnostic.CASE_PAYMENT_NOT_RECORDED": [
+    { "type": 0, "value": "There is no payment record to clear." }
+  ],
+  "diagnostic.CASE_REVISION_CONFLICT": [
+    { "type": 0, "value": "Read the current case before making a changed request." }
+  ],
+  "diagnostic.CASE_ZERO_DECISION_CANNOT_BE_PAID": [
+    { "type": 0, "value": "A zero decision is not a payment." }
+  ],
+  "diagnostic.COMMAND_EXPECTED_REVISION_RANGE": [
+    { "type": 0, "value": "Use a non-negative revision below Int64.MaxValue." }
+  ],
+  "diagnostic.COMMAND_GROUPED_CORRECTION_REQUIRED": [
+    { "type": 0, "value": "Supply all three tagged correction groups." }
+  ],
+  "diagnostic.COMMAND_OPERATION_ID_REQUIRED": [{ "type": 0, "value": "Use a non-empty UUID." }],
+  "diagnostic.CORE_COMMIT_OUTCOME_UNKNOWN": [
+    { "type": 0, "value": "Commit completion was not confirmed." }
+  ],
+  "diagnostic.CORE_OPERATION_CONTENT_CONFLICT": [
+    { "type": 0, "value": "The operation ID belongs to different request content." }
+  ],
+  "diagnostic.CORE_SCHEMA_MISMATCH": [
+    { "type": 0, "value": "The runtime schema or database settings are incompatible." }
+  ],
+  "diagnostic.CORE_STORE_INTEGRITY_ERROR": [
+    { "type": 0, "value": "Stored data failed integrity validation." }
+  ],
+  "diagnostic.CORE_STORE_UNAVAILABLE": [
+    { "type": 0, "value": "The store was unavailable before completion was confirmed." }
+  ],
+  "diagnostic.CORRECTION_COMPLETE_DECISION_REQUIRED": [
+    {
+      "type": 0,
+      "value": "Decision date, payable amount and payable currency must be present together or all absent."
+    }
+  ],
+  "diagnostic.CORRECTION_EXISTING_VALUE_REQUIRED": [
+    {
+      "type": 0,
+      "value": "A correction can only replace or clear a value already recorded on this case."
+    }
+  ],
+  "diagnostic.CORRECTION_NO_CHANGES": [
+    { "type": 0, "value": "Choose at least one factual correction that changes the current case." }
+  ],
+  "diagnostic.CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED": [
+    {
+      "type": 0,
+      "value": "Replacing a paid decision requires explicit payment reaffirmation or clearing the payment record."
+    }
+  ],
+  "diagnostic.CORRECTION_PAYMENT_CLEAR_REQUIRED": [
+    { "type": 0, "value": "Clearing a paid decision requires clearing the payment record." }
+  ],
+  "diagnostic.CORRECTION_PAYMENT_DECISION_REQUIRED": [
+    { "type": 0, "value": "A payment record requires a complete payment decision." }
+  ],
+  "diagnostic.CORRECTION_REGISTRATION_CLEAR_FORBIDDEN": [
+    { "type": 0, "value": "Registration cannot be cleared." }
+  ],
+  "diagnostic.CORRECTION_REPLACEMENT_FIELDS_REQUIRED": [
+    { "type": 0, "value": "Use REPLACE with every declared field." }
+  ],
+  "diagnostic.INPUT_AMOUNT_NOT_REPRESENTABLE": [
+    { "type": 0, "value": "The decimal amount cannot be represented exactly." }
+  ],
+  "diagnostic.INPUT_CALENDAR_DATE_REQUIRED": [
+    { "type": 0, "value": "Use one valid calendar date in YYYY-MM-DD format." }
+  ],
+  "diagnostic.INPUT_CONTROL_CHARACTERS": [
+    { "type": 0, "value": "Control characters are not accepted." }
+  ],
+  "diagnostic.INPUT_CURRENCY_FORMAT": [
+    { "type": 0, "value": "Use three uppercase ASCII letters (A–Z) for the currency identifier." }
+  ],
+  "diagnostic.INPUT_DATE_ORDER": [
+    { "type": 0, "value": "The dates are in an invalid chronological order." }
+  ],
+  "diagnostic.INPUT_DECIMAL_FORMAT": [
+    { "type": 0, "value": "Use non-negative decimal text: up to " },
+    { "type": 1, "value": "maximumIntegerDigits" },
+    { "type": 0, "value": " integer digits and " },
+    { "type": 1, "value": "maximumFractionalDigits" },
+    { "type": 0, "value": " fractional digits; no sign or exponent." }
+  ],
+  "diagnostic.INPUT_EXACT_FIELDS_REQUIRED": [
+    { "type": 0, "value": "Supply each declared command input exactly once, with no extra fields." }
+  ],
+  "diagnostic.INPUT_FUTURE_DATE": [
+    { "type": 0, "value": "A future date cannot record an event that has already occurred." }
+  ],
+  "diagnostic.INPUT_MALFORMED_UNICODE": [
+    { "type": 0, "value": "Malformed Unicode is not accepted." }
+  ],
+  "diagnostic.INPUT_SURROUNDING_WHITESPACE": [
+    { "type": 0, "value": "Leading or trailing whitespace is not accepted." }
+  ],
+  "diagnostic.INPUT_TEXT_REQUIRED": [{ "type": 0, "value": "A non-blank value is required." }],
+  "diagnostic.INPUT_TEXT_TOO_LONG": [
+    { "type": 0, "value": "The value must not exceed " },
+    { "type": 1, "value": "maximumCharacters" },
+    { "type": 0, "value": " Unicode characters." }
+  ],
+  "diagnostic.INPUT_TEXT_TOO_SHORT": [
+    { "type": 0, "value": "The value must contain at least " },
+    { "type": 1, "value": "minimumCharacters" },
+    { "type": 0, "value": " Unicode characters." }
+  ],
+  "diagnostic.OPERATION_CONTENT_CONFLICT": [
+    {
+      "type": 0,
+      "value": "This operation ID belongs to different command content. Do not reuse it."
+    }
+  ],
+  "diagnostic.OPERATION_RECOVERY_ATTEMPT_LIMIT": [
+    {
+      "type": 0,
+      "value": "This operation has reached its recovery attempt limit. Inspect its exact evidence and reconcile unresolved attempts before authoring new work."
+    }
+  ],
+  "diagnostic.OPERATION_REVOKED": [
+    {
+      "type": 0,
+      "value": "Authority for future execution of this exact operation was durably revoked. Earlier attempt uncertainty is unchanged; inspect its exact evidence."
+    }
+  ],
+  "diagnostic.QUERY_CASE_LIST_CURSOR_INVALID": [
+    {
+      "type": 0,
+      "value": "Use one current opaque case-list cursor returned for this account and page size."
+    }
+  ],
+  "diagnostic.QUERY_HISTORY_CURSOR_INVALID": [
+    { "type": 0, "value": "Use one opaque history cursor returned by ClaimCore." }
+  ],
+  "diagnostic.QUERY_PAGE_LIMIT_RANGE": [
+    { "type": 0, "value": "Use a value from 1 through " },
+    { "type": 1, "value": "maximumPageSize" },
+    { "type": 0, "value": "." }
+  ],
+  "diagnostic.RECOVERY_ACCEPTED_OPERATION_DISMISSAL_FORBIDDEN": [
+    {
+      "type": 0,
+      "value": "An accepted operation cannot be dismissed. Inspect its retained receipt."
+    }
+  ],
+  "diagnostic.RECOVERY_ATTEMPT_CURSOR_INVALID": [
+    { "type": 0, "value": "The recovery attempt cursor is invalid." }
+  ],
+  "diagnostic.RECOVERY_ATTEMPT_CURSOR_OPERATION_MISMATCH": [
+    { "type": 0, "value": "The recovery attempt cursor belongs to a different operation." }
+  ],
+  "diagnostic.RECOVERY_ATTEMPT_LIMIT_REACHED": [
+    {
+      "type": 0,
+      "value": "This operation has reached its recovery attempt limit. Inspect its exact evidence and reconcile unresolved attempts before authoring new work."
+    }
+  ],
+  "diagnostic.RECOVERY_CAPACITY_EXHAUSTED": [
+    { "type": 0, "value": "Recovery capacity is exhausted." }
+  ],
+  "diagnostic.RECOVERY_DISMISSAL_CONFIRMATION_REQUIRED": [
+    { "type": 0, "value": "Explicit confirmation is required to dismiss a recovery preparation." }
+  ],
+  "diagnostic.RECOVERY_ENVELOPE_INVALID_OR_UNSUPPORTED": [
+    { "type": 0, "value": "The recovery envelope is unsupported or failed canonical decoding." }
+  ],
+  "diagnostic.RECOVERY_INSTALLATION_MISMATCH": [
+    { "type": 0, "value": "The recovery envelope belongs to a different ClaimCore installation." }
+  ],
+  "diagnostic.RECOVERY_LIST_CURSOR_INVALID": [
+    { "type": 0, "value": "The recovery list cursor is invalid." }
+  ],
+  "diagnostic.RECOVERY_LIST_CURSOR_VIEW_MISMATCH": [
+    { "type": 0, "value": "The recovery list cursor belongs to a different view." }
+  ],
+  "diagnostic.RECOVERY_MUTATION_CANCELLED_BEFORE_COMMIT": [
+    { "type": 0, "value": "The technical mutation was cancelled before commit." }
+  ],
+  "diagnostic.RECOVERY_MUTATION_OUTCOME_UNKNOWN": [
+    {
+      "type": 0,
+      "value": "The recovery-state mutation may have committed but could not be confirmed."
+    }
+  ],
+  "diagnostic.RECOVERY_NEW_PREPARATION_MISSING": [
+    { "type": 0, "value": "A newly retained preparation was not available for execution." }
+  ],
+  "diagnostic.RECOVERY_OPERATION_CONTENT_CONFLICT": [
+    { "type": 0, "value": "The supplied recovery identity conflicts with an existing operation." }
+  ],
+  "diagnostic.RECOVERY_OPERATION_ID_REQUIRED": [
+    { "type": 0, "value": "A non-empty recovery operation ID is required." }
+  ],
+  "diagnostic.RECOVERY_OPERATION_REVOKED": [
+    {
+      "type": 0,
+      "value": "Authority for future execution of this exact operation was durably revoked. Earlier attempt uncertainty is unchanged; inspect its exact evidence."
+    }
+  ],
+  "diagnostic.RECOVERY_PAGE_LIMIT_RANGE": [
+    { "type": 0, "value": "The recovery page limit is outside the supported range." }
+  ],
+  "diagnostic.RECOVERY_PREPARATION_DISMISSED": [
+    { "type": 0, "value": "A dismissed preparation cannot be submitted." }
+  ],
+  "diagnostic.RECOVERY_PREPARATION_DISMISSED_BEFORE_EXECUTION": [
+    { "type": 0, "value": "The preparation was dismissed before execution could begin." }
+  ],
+  "diagnostic.RECOVERY_PREPARATION_NOT_FOUND": [
+    { "type": 0, "value": "The recovery preparation was not found." }
+  ],
+  "diagnostic.RECOVERY_READ_CANCELLED": [
+    { "type": 0, "value": "The recovery read was cancelled." }
+  ],
+  "diagnostic.RECOVERY_REQUEST_DIGEST_INVALID": [
+    { "type": 0, "value": "The recovery request digest must be a lowercase SHA-256 digest." }
+  ],
+  "diagnostic.RECOVERY_REQUEST_DIGEST_MISMATCH": [
+    { "type": 0, "value": "The supplied digest does not match the exact retained request bytes." }
+  ],
+  "diagnostic.RECOVERY_RETAINED_CANONICAL_INVALID": [
+    { "type": 0, "value": "Retained canonical request bytes failed integrity validation." }
+  ],
+  "diagnostic.RECOVERY_RETAINED_DIGEST_MISMATCH": [
+    { "type": 0, "value": "The retained preparation digest does not match the submitted draft." }
+  ],
+  "diagnostic.RECOVERY_RETAINED_DOMAIN_SHAPE_INVALID": [
+    { "type": 0, "value": "Retained request did not satisfy its closed domain shape." }
+  ],
+  "diagnostic.RECOVERY_RETAINED_PREPARATION_UNVERIFIABLE": [
+    { "type": 0, "value": "An exact retained preparation could not be verified." }
+  ],
+  "diagnostic.RECOVERY_SCHEMA_MISMATCH": [
+    { "type": 0, "value": "Recovery storage is incompatible with this runtime." }
+  ],
+  "diagnostic.RECOVERY_SOURCE_DIGEST_MISMATCH": [
+    { "type": 0, "value": "The supplied source digest does not match the exact import bytes." }
+  ],
+  "diagnostic.RECOVERY_STORED_DATA_INVALID": [
+    { "type": 0, "value": "Stored recovery data failed validation." }
+  ],
+  "diagnostic.RECOVERY_STORE_CONTENT_CONFLICT": [
+    { "type": 0, "value": "Recovery identity conflicts with retained data." }
+  ],
+  "diagnostic.RECOVERY_STORE_INTEGRITY_ERROR": [
+    { "type": 0, "value": "Recovery storage failed integrity validation." }
+  ],
+  "diagnostic.RECOVERY_STORE_PREPARATION_MISSING": [
+    { "type": 0, "value": "Recovery storage lost an expected preparation." }
+  ],
+  "diagnostic.RECOVERY_STORE_RESPONSE_INVALID": [
+    { "type": 0, "value": "Recovery storage returned an invalid technical response." }
+  ],
+  "diagnostic.RECOVERY_STORE_UNAVAILABLE": [
+    { "type": 0, "value": "Recovery storage was unavailable before completion was confirmed." }
+  ],
+  "diagnostic.RECOVERY_SUBMISSION_ALREADY_STARTED": [
+    {
+      "type": 0,
+      "value": "The preparation has already started submission and must be resolved exactly."
+    }
+  ],
+  "diagnostic.RESOURCE_UNAVAILABLE": [
+    { "type": 0, "value": "The requested resource is unavailable." }
+  ],
+  "diagnostic.STATE_CASE_REFERENCE_MISMATCH": [
+    { "type": 0, "value": "The loaded case does not match this command." }
+  ],
+  "diagnostic.STATE_REVISION_EXHAUSTED": [
+    { "type": 0, "value": "The case revision cannot advance below Int64.MaxValue." }
+  ],
+  "diagnostic.STATE_STORED_REVISION_RANGE": [
+    { "type": 0, "value": "Stored revisions must be positive and below Int64.MaxValue." }
+  ],
+  "diagnostic.STATE_TRANSITION_MISMATCH": [
+    { "type": 0, "value": "The state guard and payment transition disagree." }
+  ],
+  "diagnostic.WEB_HOST_ANTIFORGERY_REJECTED": [
+    { "type": 0, "value": "Request verification was refused." }
+  ],
+  "diagnostic.WEB_HOST_BEFORE_DISPATCH_FAILED": [
+    { "type": 0, "value": "Request processing failed before dispatch." }
+  ],
+  "diagnostic.WEB_HOST_BODY_TOO_LARGE": [{ "type": 0, "value": "Request body is too large." }],
+  "diagnostic.WEB_HOST_BUSY": [{ "type": 0, "value": "Request admission is busy." }],
+  "diagnostic.WEB_HOST_COMPLETED_RESPONSE_FAILED": [
+    { "type": 0, "value": "Request processing completed but its response could not be delivered." }
+  ],
+  "diagnostic.WEB_HOST_CONNECTION_REJECTED": [{ "type": 0, "value": "Connection was refused." }],
+  "diagnostic.WEB_HOST_DISPATCH_UNCONFIRMED": [
+    {
+      "type": 0,
+      "value": "The dispatched operation could not be confirmed. Preserve its exact identity."
+    }
+  ],
+  "diagnostic.WEB_HOST_ENDPOINT_MISSING": [{ "type": 0, "value": "Endpoint was not found." }],
+  "diagnostic.WEB_HOST_EXPORT_METADATA_INVALID": [
+    { "type": 0, "value": "Recovery export metadata was invalid." }
+  ],
+  "diagnostic.WEB_HOST_MEDIA_TYPE_REJECTED": [
+    { "type": 0, "value": "The endpoint media type was refused." }
+  ],
+  "diagnostic.WEB_HOST_METHOD_REJECTED": [
+    { "type": 0, "value": "The request method is not supported by this endpoint." }
+  ],
+  "diagnostic.WEB_HOST_ORIGIN_REJECTED": [{ "type": 0, "value": "Request origin was refused." }],
+  "diagnostic.WEB_HOST_SESSION_FORBIDDEN": [{ "type": 0, "value": "Session access was refused." }],
+  "diagnostic.WEB_HOST_SESSION_REJECTED": [{ "type": 0, "value": "Session was refused." }],
+  "diagnostic.WEB_INPUT_BODY_CANCELLED": [
+    { "type": 0, "value": "The request body read was cancelled." }
+  ],
+  "diagnostic.WEB_INPUT_BODY_TOO_LARGE": [
+    { "type": 0, "value": "The request exceeds the configured byte limit." }
+  ],
+  "diagnostic.WEB_INPUT_BODY_UNREADABLE": [
+    { "type": 0, "value": "The request body could not be read." }
+  ],
+  "diagnostic.WEB_INPUT_CORRECTION_ACTION": [
+    { "type": 0, "value": "The correction action is not declared by the semantic contract." }
+  ],
+  "diagnostic.WEB_INPUT_DUPLICATE_PROPERTY": [
+    { "type": 0, "value": "Duplicate JSON properties are not accepted." }
+  ],
+  "diagnostic.WEB_INPUT_EXPECTED_BOOLEAN": [{ "type": 0, "value": "Expected a JSON boolean." }],
+  "diagnostic.WEB_INPUT_EXPECTED_INTEGER": [{ "type": 0, "value": "Expected a JSON integer." }],
+  "diagnostic.WEB_INPUT_EXPECTED_OBJECT": [{ "type": 0, "value": "Expected a JSON object." }],
+  "diagnostic.WEB_INPUT_EXPECTED_STRING": [{ "type": 0, "value": "Expected a JSON string." }],
+  "diagnostic.WEB_INPUT_HISTORY_DETAIL": [
+    { "type": 0, "value": "The history detail is not supported." }
+  ],
+  "diagnostic.WEB_INPUT_INVALID_DIGEST": [
+    { "type": 0, "value": "Use one lowercase SHA-256 digest." }
+  ],
+  "diagnostic.WEB_INPUT_INVALID_JSON": [
+    { "type": 0, "value": "Malformed JSON or an unsupported JSON shape." }
+  ],
+  "diagnostic.WEB_INPUT_INVALID_REVISION": [
+    { "type": 0, "value": "Expected a canonical non-negative revision below Int64.MaxValue." }
+  ],
+  "diagnostic.WEB_INPUT_INVALID_UNICODE": [
+    { "type": 0, "value": "Malformed Unicode escape in JSON text." }
+  ],
+  "diagnostic.WEB_INPUT_INVALID_UTF8": [{ "type": 0, "value": "The request must be valid UTF-8." }],
+  "diagnostic.WEB_INPUT_INVALID_UUID": [
+    { "type": 0, "value": "Use one non-empty canonical lowercase UUID." }
+  ],
+  "diagnostic.WEB_INPUT_LOGOUT_SHAPE": [
+    { "type": 0, "value": "Logout requires an empty JSON object." }
+  ],
+  "diagnostic.WEB_INPUT_MISSING_COMMAND_VALUE": [
+    { "type": 0, "value": "A required command value is missing." }
+  ],
+  "diagnostic.WEB_INPUT_MISSING_PROPERTY": [
+    { "type": 0, "value": "A required JSON property is missing." }
+  ],
+  "diagnostic.WEB_INPUT_NULL_FORBIDDEN": [
+    { "type": 0, "value": "JSON null is not accepted here." }
+  ],
+  "diagnostic.WEB_INPUT_PAGE_RANGE": [
+    { "type": 0, "value": "The requested page size is outside the supported range." }
+  ],
+  "diagnostic.WEB_INPUT_RECOVERY_VIEW": [
+    { "type": 0, "value": "Use PENDING or TERMINAL recovery view." }
+  ],
+  "diagnostic.WEB_INPUT_SOURCE_DIGEST_HEADER": [
+    { "type": 0, "value": "A canonical source digest header is required." }
+  ],
+  "diagnostic.WEB_INPUT_UNKNOWN_COMMAND": [
+    { "type": 0, "value": "The command token is not supported." }
+  ],
+  "diagnostic.WEB_INPUT_UNKNOWN_PROPERTY": [
+    { "type": 0, "value": "The JSON object contains an unknown property." }
+  ]
 }

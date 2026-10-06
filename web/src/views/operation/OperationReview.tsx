@@ -1,11 +1,19 @@
 import { usePresentation } from "../../presentation/context";
 import { Button } from "react-aria-components/Button";
 import { Checkbox } from "react-aria-components/Checkbox";
-import type { AdvisoryReview, PreparationDetails } from "../../api/v3";
+import { BusinessValue } from "../../components/BusinessValue";
+import { ReferenceSummary } from "../../components/ReferenceSummary";
+import type { AdvisoryReview, PreparationDetails, FieldDescriptor } from "../../api/v3";
 import { AccessibleModal } from "../../components/AccessibleModal";
 import type { OperationEditorModel } from "./editorTypes";
 
-const ReviewValues = ({ review }: { review: AdvisoryReview }) => {
+const ReviewValues = ({
+  review,
+  fields,
+}: {
+  review: AdvisoryReview;
+  fields: ReadonlyArray<FieldDescriptor>;
+}) => {
   const p = usePresentation();
   return (
     <dl className="review-values">
@@ -13,12 +21,20 @@ const ReviewValues = ({ review }: { review: AdvisoryReview }) => {
         <div key={change.fieldName}>
           <dt>{p.fieldLabel(change.fieldName)}</dt>
           <dd>
-            <span>{p.text("ui.before", { value: change.before ?? p.text("ui.notRecorded") })}</span>
+            <BusinessValue
+              value={change.before}
+              field={fields.find((field) => field.name === change.fieldName)!}
+              context="ui.before"
+            />
             <span className="review-arrow" aria-hidden="true">
               {" "}
               →{" "}
             </span>
-            <span>{p.text("ui.after", { value: change.after ?? p.text("ui.notRecorded") })}</span>
+            <BusinessValue
+              value={change.after}
+              field={fields.find((field) => field.name === change.fieldName)!}
+              context="ui.after"
+            />
           </dd>
         </div>
       ))}
@@ -31,10 +47,13 @@ const PreparedIdentity = ({ preparation }: { preparation: PreparationDetails }) 
   return (
     <>
       <p>
-        {p.text("ui.reviewTarget", {
-          reference: preparation.summary.caseReference,
-          revision: p.integer(preparation.expectedRevision),
-        })}
+        <ReferenceSummary
+          id="ui.reviewTarget"
+          values={{
+            reference: preparation.summary.caseReference,
+            revision: p.integer(preparation.expectedRevision),
+          }}
+        />
       </p>
       <p>
         {p.text("ui.operationDigest", {
@@ -92,7 +111,13 @@ const ReviewConfirmation = ({ model }: { model: OperationEditorModel }) => {
   );
 };
 
-export const OperationReview = ({ model }: { model: OperationEditorModel }) => {
+export const OperationReview = ({
+  model,
+  fields,
+}: {
+  model: OperationEditorModel;
+  fields: ReadonlyArray<FieldDescriptor>;
+}) => {
   const p = usePresentation();
   if (model.state.preparation === null) {
     return null;
@@ -109,7 +134,7 @@ export const OperationReview = ({ model }: { model: OperationEditorModel }) => {
     >
       <>
         <PreparedIdentity preparation={model.state.preparation} />
-        <ReviewValues review={model.state.review!} />
+        <ReviewValues review={model.state.review!} fields={fields} />
         <ReviewConfirmation model={model} />
         <ReviewActions model={model} />
       </>

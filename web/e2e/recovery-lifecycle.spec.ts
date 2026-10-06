@@ -123,7 +123,8 @@ test("resolves and dismisses exact preparations with observed server state", asy
   await resolveAndObserve(page, prepared);
 
   await page.getByRole("button", { name: "Cases", exact: true }).click();
-  await page.getByRole("button", { name: caseReference }).click();
+  await page.locator("#case-lookup").fill(caseReference);
+  await page.getByRole("button", { name: "Find case", exact: true }).click();
   await startCommand(page, "Close the case");
   const dismissible = await prepare(page);
   await keepForRecovery(page);
@@ -176,13 +177,13 @@ const retryExactPrepare = async (
     sameBody = route.request().postData() === originalBody;
     await route.continue();
   });
-  await page.getByRole("button", { name: "Retry exact prepare" }).click();
-  const review = page.getByRole("dialog", { name: "Review prepared operation" });
+  await page.getByRole("button", { name: "Retry the same review request" }).click();
+  const review = page.getByRole("dialog", { name: "Review changes" });
   await expect(review).toContainText(operationId);
   expect(calls).toBe(1);
   expect(sameBody).toBe(true);
   await page.unroute("**/api/v3/operations/prepare");
-  await review.getByRole("button", { name: "Keep for Recovery" }).click();
+  await review.getByRole("button", { name: "Back to editing; keep for Recovery" }).click();
 };
 
 const observeAcceptedPrepareReplay = async (
@@ -225,7 +226,7 @@ test("recovers an exact preparation after its published response is dropped", as
     await route.abort("connectionfailed");
   });
   await startOpen(page, `PREPARE-LOSS-${randomUUID()}`);
-  await page.getByRole("button", { name: "Prepare exact request" }).click();
+  await page.getByRole("button", { name: "Review changes" }).click();
   await expect(page.getByRole("alert")).toContainText("Recovery");
   expect(calls).toBe(1);
   expect(forwarded).toBe(true);

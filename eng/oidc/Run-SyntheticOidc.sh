@@ -96,6 +96,7 @@ proxy_port="$(<"${workdir}/proxy-port")"
 }
 realm="claimcore-synthetic-${run_id}"
 foreign_realm="claimcore-foreign-${run_id}"
+web_origin="$(node eng/oidc/Allocate-WebOrigin.mjs)"
 admin_password="$(openssl rand -base64 36 | tr -d '\n')"
 client_secret="$(openssl rand -base64 36 | tr -d '\n')"
 unscoped_secret="$(openssl rand -base64 36 | tr -d '\n')"
@@ -106,6 +107,7 @@ steward_password="$(openssl rand -base64 36 | tr -d '\n')"
 
 jq -n \
   --arg realm "${realm}" \
+  --arg webOrigin "${web_origin}" \
   --arg serviceSecret "${client_secret}" \
   --arg unscopedSecret "${unscoped_secret}" \
   --arg webSecret "${web_secret}" \
@@ -116,7 +118,7 @@ jq -n \
     clients:[
       {clientId:"claimcore-web",enabled:true,publicClient:false,secret:$webSecret,
        standardFlowEnabled:true,directAccessGrantsEnabled:false,implicitFlowEnabled:false,
-       serviceAccountsEnabled:false,redirectUris:["https://localhost:5443/signin-oidc"],
+       serviceAccountsEnabled:false,redirectUris:[($webOrigin + "/signin-oidc")],
        attributes:{"pkce.code.challenge.method":"S256"}},
       {clientId:"claimcore-cli",enabled:true,publicClient:true,standardFlowEnabled:true,
        directAccessGrantsEnabled:false,implicitFlowEnabled:false,serviceAccountsEnabled:false,
@@ -257,7 +259,8 @@ printf 'Synthetic OIDC discovery, JWKS, and client-credentials grant passed.\n'
 if [[ $# -gt 0 ]]; then
   # The hook lets a browser or service integration test exercise PKCE while the
   # disposable issuer remains live. It receives file paths, never secret values.
-  CLAIMCORE_TEST_OIDC_ISSUER="${issuer}" \
+  CLAIMCORE_TEST_WEB_ORIGIN="${web_origin}" \
+    CLAIMCORE_TEST_OIDC_ISSUER="${issuer}" \
     CLAIMCORE_TEST_OIDC_CREDENTIALS="${workdir}/credentials.json" \
     CLAIMCORE_TEST_OIDC_DISCOVERY="${workdir}/discovery.json" \
     CLAIMCORE_TEST_OIDC_JWKS="${workdir}/jwks.json" \

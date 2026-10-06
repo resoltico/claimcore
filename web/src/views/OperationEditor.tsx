@@ -64,7 +64,7 @@ const OperationEditorLayout = ({
         onClose={props.onClose}
         prepareButtonRef={prepareButtonRef}
       />
-      <OperationReview model={model} />
+      <OperationReview model={model} fields={props.definition.definition.fields} />
       <CommandChangeDialog model={model} />
       <AcceptedOperation
         definition={props.definition}

@@ -12,7 +12,7 @@
         "incidentNotificationDate": "2026-08-03",
         "incidentCountry": "Lithuania",
         "claimantName": "Example Translation Services Ltd",
-        "insurerName": "Example Alleged Insurer",
+        "insurerName": "Example Responsible Insurer",
         "claimedAmount": "1000.00",
         "claimedCurrency": "EUR"
       }

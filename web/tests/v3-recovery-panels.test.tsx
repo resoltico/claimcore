@@ -291,7 +291,7 @@ it("requests the next server attempt page only from an inspected retained item",
       actions={action}
     />,
   );
-  expect(screen.getByRole("listitem")).toHaveTextContent("PENDING");
+  expect(screen.getByRole("listitem")).toHaveTextContent("Pending");
   await user.click(screen.getByRole("button", { name: "Load more attempts" }));
   expect(action.loadAttempts).toHaveBeenCalledWith(operationId, "next-attempt");
 });

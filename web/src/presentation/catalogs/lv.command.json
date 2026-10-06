@@ -1,10 +1,10 @@
 {
   "command.OPEN.label": "Atvērt lietu",
-  "command.OPEN.meaning": "Izveidot pamata ierakstu. Netiek pieņemts lēmums vai maksājums.",
+  "command.OPEN.meaning": "Reģistrēt notikumu, prasītāju, apdrošinātāju un pieprasīto summu.",
   "command.AMEND_REGISTRATION.label": "Grozīt reģistrāciju",
   "command.AMEND_REGISTRATION.meaning": "Aizstāt sākotnējos faktus. Administratora lietas numurs nemainās.",
   "command.CORRECT_CASE.label": "Labot lietas faktus",
-  "command.CORRECT_CASE.meaning": "Vienotā darbībā labot izlemtas, apmaksātas vai slēgtas lietas faktus. Saglabāšana izmanto pieņemtās vērtības; maksājuma ieraksta dzēšana neatceļ ārēju pārskaitījumu.",
+  "command.CORRECT_CASE.meaning": "Labot reģistrētos datus lietā ar lēmumu, maksājumu vai slēgtu statusu. Visas izmaiņas reģistrē kopā. Maksājuma datuma dzēšana neatmaksā naudu.",
   "command.DECIDE.label": "Reģistrēt izmaksas lēmumu",
   "command.DECIDE.meaning": "Reģistrēt vai aizstāt nolemto summu un valūtu. Tas nepārskaita naudu.",
   "command.WITHDRAW_DECISION.label": "Atsaukt izmaksas lēmumu",

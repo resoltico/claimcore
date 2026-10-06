@@ -1,16 +1,16 @@
 {
   "token.OPENED": "مفتوح",
   "token.CLOSED": "مغلق",
-  "token.KEEP": "إبقاء",
-  "token.REPLACE": "استبدال",
-  "token.CLEAR": "مسح",
+  "token.KEEP": "إبقاء التفاصيل الحالية",
+  "token.REPLACE": "استبدال التفاصيل",
+  "token.CLEAR": "مسح القيمة المسجّلة",
   "token.PENDING": "معلّقة",
   "token.ACCEPTED": "معتمدة",
   "token.REVOKED": "مسحوبة",
   "token.REJECTED": "مرفوضة",
   "token.ERROR": "خطأ في التنفيذ",
-  "token.REVOKED_BEFORE_EXECUTION": "أُلغي قبل التنفيذ",
+  "token.REVOKED_BEFORE_EXECUTION": "سُحبت صلاحية التنفيذ قبل بدء التنفيذ",
   "token.ENVELOPE": "حافظة",
-  "token.FOUND": "موجودة",
-  "token.NOT_FOUND": "غير موجودة"
+  "token.FOUND": "وُجدت عملية معتمدة",
+  "token.NOT_FOUND": "لم تُرصد العملية"
 }

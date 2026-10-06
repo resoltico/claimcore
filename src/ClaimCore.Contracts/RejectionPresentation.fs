@@ -3,8 +3,21 @@ namespace ClaimCore.Contracts
 open System.Globalization
 open ClaimCore.Application
 
+[<RequireQualifiedAccess>]
+type DiagnosticHole =
+    | MinimumCharacters
+    | MaximumCharacters
+    | MaximumIntegerDigits
+    | MaximumFractionalDigits
+    | MaximumPageSize
+
+[<RequireQualifiedAccess>]
+type DiagnosticTextPart =
+    | Literal of string
+    | Hole of DiagnosticHole
+
 /// The existing English presentation belongs to the outward adapter, never to core meaning.
-/// A future catalog selects by identity and typed arguments; no English-to-key lookup is permitted.
+/// Native rendering and build-only catalog projection share literal text and closed parameter holes.
 module RejectionPresentation =
     let private integer (value: int) =
         value.ToString(CultureInfo.InvariantCulture)
@@ -27,7 +40,7 @@ module RejectionPresentation =
             RejectionDiagnosticId.FutureDate,
             "A future date cannot record an event that has already occurred."
             RejectionDiagnosticId.CurrencyFormat,
-            "Use a three-letter uppercase currency identifier."
+            "Use three uppercase ASCII letters (A–Z) for the currency identifier."
             RejectionDiagnosticId.AmountNotRepresentable,
             "The decimal amount cannot be represented exactly."
         ]
@@ -36,9 +49,9 @@ module RejectionPresentation =
         [
             RejectionDiagnosticId.EmptyOperationId, "Use a non-empty UUID."
             RejectionDiagnosticId.ExpectedVersionOutOfRange,
-            "Use a non-negative version below Int64.MaxValue."
+            "Use a non-negative revision below Int64.MaxValue."
             RejectionDiagnosticId.StoredVersionOutOfRange,
-            "Stored versions must be positive and below Int64.MaxValue."
+            "Stored revisions must be positive and below Int64.MaxValue."
             RejectionDiagnosticId.RevisionExhausted,
             "The case revision cannot advance below Int64.MaxValue."
             RejectionDiagnosticId.CaseReferenceMismatch,
@@ -111,18 +124,65 @@ module RejectionPresentation =
     let private messages =
         text @ scalar @ command @ correction @ case @ progress @ operation
 
+    let template identifier =
+        let literal = DiagnosticTextPart.Literal
+        let hole = DiagnosticTextPart.Hole
+
+        match identifier with
+        | RejectionDiagnosticId.TextTooShort ->
+            [
+                literal "The value must contain at least "
+                hole DiagnosticHole.MinimumCharacters
+                literal " Unicode characters."
+            ]
+        | RejectionDiagnosticId.TextTooLong ->
+            [
+                literal "The value must not exceed "
+                hole DiagnosticHole.MaximumCharacters
+                literal " Unicode characters."
+            ]
+        | RejectionDiagnosticId.DecimalFormat ->
+            [
+                literal "Use non-negative decimal text: up to "
+                hole DiagnosticHole.MaximumIntegerDigits
+                literal " integer digits and "
+                hole DiagnosticHole.MaximumFractionalDigits
+                literal " fractional digits; no sign or exponent."
+            ]
+        | RejectionDiagnosticId.PageLimitOutOfRange ->
+            [
+                literal "Use a value from 1 through "
+                hole DiagnosticHole.MaximumPageSize
+                literal "."
+            ]
+        | _ -> [ messages |> List.find (fst >> (=) identifier) |> snd |> literal ]
+
+    let holeName =
+        function
+        | DiagnosticHole.MinimumCharacters -> "minimumCharacters"
+        | DiagnosticHole.MaximumCharacters -> "maximumCharacters"
+        | DiagnosticHole.MaximumIntegerDigits -> "maximumIntegerDigits"
+        | DiagnosticHole.MaximumFractionalDigits -> "maximumFractionalDigits"
+        | DiagnosticHole.MaximumPageSize -> "maximumPageSize"
+
+    let private holeValue parameters hole =
+        match hole, parameters with
+        | DiagnosticHole.MinimumCharacters, DiagnosticParameters.MinimumCharacters value
+        | DiagnosticHole.MaximumCharacters, DiagnosticParameters.MaximumCharacters value
+        | DiagnosticHole.MaximumPageSize, DiagnosticParameters.MaximumPageSize value ->
+            integer value
+        | DiagnosticHole.MaximumIntegerDigits, DiagnosticParameters.DecimalDigits(value, _) ->
+            integer value
+        | DiagnosticHole.MaximumFractionalDigits, DiagnosticParameters.DecimalDigits(_, value) ->
+            integer value
+        | _ -> invalidOp "Diagnostic template and typed parameters disagree."
+
     let render (rejection: Rejection) =
         let diagnostic = RejectionDiagnostics.describe rejection
 
-        match RejectionDiagnostics.parameters diagnostic with
-        | DiagnosticParameters.MinimumCharacters minimum ->
-            $"The value must contain at least {integer minimum} Unicode characters."
-        | DiagnosticParameters.MaximumCharacters maximum ->
-            $"The value must not exceed {integer maximum} Unicode characters."
-        | DiagnosticParameters.DecimalDigits(integral, fractional) ->
-            $"Use non-negative decimal text: up to {integer integral} integer digits and {integer fractional} fractional digits; no sign or exponent."
-        | DiagnosticParameters.MaximumPageSize maximum ->
-            $"Use a value from 1 through {integer maximum}."
-        | DiagnosticParameters.None ->
-            let identifier = RejectionDiagnostics.identifier diagnostic
-            messages |> List.find (fst >> (=) identifier) |> snd
+        template (RejectionDiagnostics.identifier diagnostic)
+        |> List.map (function
+            | DiagnosticTextPart.Literal value -> value
+            | DiagnosticTextPart.Hole hole ->
+                holeValue (RejectionDiagnostics.parameters diagnostic) hole)
+        |> String.concat ""

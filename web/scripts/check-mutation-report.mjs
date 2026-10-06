@@ -6,6 +6,9 @@ export const targets = [
   "src/domain/operationInitial.ts",
   "src/domain/operationReducer.ts",
   "src/domain/operationRequest.ts",
+  "src/presentation/preferences.ts",
+  "src/presentation/presenter.ts",
+  "src/presentation/messages.ts",
 ];
 const minimumScore = 92;
 

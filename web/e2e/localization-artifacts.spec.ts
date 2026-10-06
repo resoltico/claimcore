@@ -83,7 +83,7 @@ test("renders exact accepted amounts with RTL and pseudolocale accessibility whi
   await page.getByLabel("Amount claimed", { exact: true }).fill(amount);
   await prepare(page);
   await confirmPrepared(page);
-  await page.getByRole("button", { name: "Submit exact request" }).click();
+  await page.getByRole("button", { name: "Record changes" }).click();
   await expect(
     page.getByRole("heading", { name: "Accepted operation", exact: true }),
   ).toBeVisible();
@@ -108,7 +108,7 @@ test("renders exact accepted amounts with RTL and pseudolocale accessibility whi
   await selectFormat(page, "lv-LV");
   await expect(page.locator("html")).toHaveAttribute("lang", "ar");
   await expect(row.getByRole("textbox")).toHaveValue(amount);
-  await selectLanguage(page, "en-XA");
+  await selectLanguage(page, "en");
   await expectAccessible(page);
   await page.setViewportSize({ width: 640, height: 900 });
   await page.evaluate(() => {
