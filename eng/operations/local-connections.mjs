@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { join } from "node:path";
-import { privateFile } from "./local-files.mjs";
+import { privateFile, runtimeRoot } from "./local-files.mjs";
 
 const password = () => randomBytes(32).toString("hex");
 
@@ -60,7 +60,7 @@ export function connectionFiles(root, uid, gid) {
   ownerConnections(root, uid, gid, { owner, witnessOwner, auditor });
   privateFile(
     join(root, "web", "primary.connection"),
-    connection("primary", "claimcore", "claimcore_app", app, "/etc/claimcore/ca.pem"),
+    connection("primary", "claimcore", "claimcore_app", app, `${runtimeRoot}/ca.pem`),
     uid,
     gid,
   );
@@ -71,7 +71,7 @@ export function connectionFiles(root, uid, gid) {
       "claimcore_witness",
       "claimcore_witness_writer",
       writer,
-      "/etc/claimcore/ca.pem",
+      `${runtimeRoot}/ca.pem`,
     ),
     uid,
     gid,

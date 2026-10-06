@@ -16,7 +16,7 @@ services:
           create_host_path: false
       - type: bind
         source: ${CLAIMCORE_CONFIG_DIR}/web
-        target: /etc/claimcore/web
+        target: /etc/claimcore/runtime
         read_only: true
         bind:
           create_host_path: false

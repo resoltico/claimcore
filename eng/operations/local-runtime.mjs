@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { join } from "node:path";
-import { jsonFile, privateFile } from "./local-files.mjs";
+import { jsonFile, privateFile, runtimeRoot } from "./local-files.mjs";
 
 const material = () => randomBytes(32).toString("base64");
 
@@ -58,18 +58,18 @@ export function webEnvironment(issuer) {
     CLAIMCORE_WEB_LISTEN_ADDRESS: "0.0.0.0",
     CLAIMCORE_WEB_LISTEN_PORT: "5443",
     CLAIMCORE_WEB_STATE_DIR: "/var/lib/claimcore/web",
-    CLAIMCORE_WEB_CERTIFICATE_PATH: "/etc/claimcore/web.pfx",
-    CLAIMCORE_CONNECTION_FILE: "/etc/claimcore/primary.connection",
-    CLAIMCORE_WITNESS_CONNECTION_FILE: "/etc/claimcore/witness.connection",
-    CLAIMCORE_WITNESS_KEY_FILE: "/etc/claimcore/witness-key.json",
-    CLAIMCORE_WRITER_CAPABILITY_FILE: "/etc/claimcore/writer.capability",
-    CLAIMCORE_SUPPRESSION_KEY_FILE: "/etc/claimcore/suppression-key.json",
-    CLAIMCORE_RECOVERY_ARTIFACT_KEY_FILE: "/etc/claimcore/recovery-artifact-key.json",
+    CLAIMCORE_WEB_CERTIFICATE_PATH: `${runtimeRoot}/web.pfx`,
+    CLAIMCORE_CONNECTION_FILE: `${runtimeRoot}/primary.connection`,
+    CLAIMCORE_WITNESS_CONNECTION_FILE: `${runtimeRoot}/witness.connection`,
+    CLAIMCORE_WITNESS_KEY_FILE: `${runtimeRoot}/witness-key.json`,
+    CLAIMCORE_WRITER_CAPABILITY_FILE: `${runtimeRoot}/writer.capability`,
+    CLAIMCORE_SUPPRESSION_KEY_FILE: `${runtimeRoot}/suppression-key.json`,
+    CLAIMCORE_RECOVERY_ARTIFACT_KEY_FILE: `${runtimeRoot}/recovery-artifact-key.json`,
     CLAIMCORE_OIDC_ISSUER: issuer,
-    CLAIMCORE_OIDC_CA_CERT_FILE: "/etc/claimcore/ca.pem",
-    CLAIMCORE_WEB_PROBE_CA_CERT_FILE: "/etc/claimcore/ca.pem",
+    CLAIMCORE_OIDC_CA_CERT_FILE: `${runtimeRoot}/ca.pem`,
+    CLAIMCORE_WEB_PROBE_CA_CERT_FILE: `${runtimeRoot}/ca.pem`,
     CLAIMCORE_OIDC_CLIENT_ID: "claimcore-web",
-    CLAIMCORE_OIDC_CLIENT_SECRET_FILE: "/etc/claimcore/oidc-client.secret",
+    CLAIMCORE_OIDC_CLIENT_SECRET_FILE: `${runtimeRoot}/oidc-client.secret`,
     CLAIMCORE_OIDC_API_AUDIENCE: "claimcore-api",
     CLAIMCORE_OIDC_CLI_CLIENT_ID: "claimcore-cli",
     CLAIMCORE_OIDC_SERVICE_CLIENT_ID: "claimcore-service",

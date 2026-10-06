@@ -1,7 +1,7 @@
 import { lstatSync, mkdirSync, readdirSync, writeFileSync, chownSync } from "node:fs";
 import { join } from "node:path";
 
-export const runtimeRoot = "/etc/claimcore";
+export const runtimeRoot = "/etc/claimcore/runtime";
 
 /** @param {string} path @param {number} uid @param {number} gid */
 export function privateDirectory(path, uid, gid) {

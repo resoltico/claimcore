@@ -152,10 +152,10 @@ services:
     environment:
       CLAIMCORE_ADMIN_CONNECTION_FILE: /etc/claimcore/administration/primary-owner.connection
       CLAIMCORE_WITNESS_ADMIN_CONNECTION_FILE: /etc/claimcore/administration/witness-owner.connection
-      CLAIMCORE_WITNESS_CONNECTION_FILE: /etc/claimcore/web/witness.connection
-      CLAIMCORE_WITNESS_KEY_FILE: /etc/claimcore/web/witness-key.json
-      CLAIMCORE_WRITER_CAPABILITY_FILE: /etc/claimcore/web/writer.capability
-      CLAIMCORE_SUPPRESSION_KEY_FILE: /etc/claimcore/web/suppression-key.json
+      CLAIMCORE_WITNESS_CONNECTION_FILE: /etc/claimcore/runtime/witness.connection
+      CLAIMCORE_WITNESS_KEY_FILE: /etc/claimcore/runtime/witness-key.json
+      CLAIMCORE_WRITER_CAPABILITY_FILE: /etc/claimcore/runtime/writer.capability
+      CLAIMCORE_SUPPRESSION_KEY_FILE: /etc/claimcore/runtime/suppression-key.json
     depends_on:
       revocation:
         condition: service_healthy

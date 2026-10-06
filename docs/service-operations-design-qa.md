@@ -93,3 +93,12 @@ namespace-adoption command. The deployment initializer therefore refuses an exis
 before any initialization write. Ordinary replacement never reruns initialization; qualification
 checks that an explicit repeat refuses without changing the installation identity. A partial
 primary/witness setup remains owner reconciliation work, preserving the original evidence.
+
+## Shared runtime credential paths
+
+Actual initialization opened both schemas, then stopped at initial-owner provisioning because
+the witness writer connection's CA path differed between Web and the administration container.
+The runtime input mount is now `/etc/claimcore/runtime` in both processes. Owner inputs remain
+a separate mount. One runtime connection file therefore retains the same certificate path
+for runtime and explicitly authorized owner work, without duplicating credentials or mounting
+schema-owner inputs into Web.
