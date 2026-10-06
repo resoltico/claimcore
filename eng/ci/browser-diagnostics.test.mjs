@@ -67,7 +67,7 @@ test("startup evidence admits only bounded status and readiness observations", (
 });
 
 test("startup evidence refuses arbitrary attachment fields and unbounded observations", () => {
-  const request = startup.requests[0];
+  const [request] = startup.requests;
   for (const value of [
     { ...startup, url: "PRIVATE-URL-SECRET" },
     { ...startup, authenticated: "PRIVATE-TOKEN-SECRET" },
