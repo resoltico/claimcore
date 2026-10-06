@@ -12,10 +12,14 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Changed
 
+- Web can explicitly configure a public HTTPS origin and separate listener address/port. Native defaults remain loopback; TLS identity, exact Host/origin, OIDC and actor grants remain required. The unsupported single-primary development Compose layout is removed; existing volumes are not migrated or deleted.
+
 - Native witness `Store` operations and subject-page callbacks are asynchronous and require explicit cancellation tokens. Native integrations must await them; `Runtime.DataUseReadiness` also returns an awaited live observation. Authenticated service contract shapes and stored canonical formats are unchanged.
 - Lifecycle transition functions are internal to Domain's reviewed Application/test consumers. Native integrations that called them directly must use the actor-bound core instead; lifecycle inspection remains public.
 
 ### Added
+
+- Docker operating model with separate Web and owner-administration images, persistent synthetic local dependencies, strict private-input ownership, HTTPS liveness/readiness probes and managed stop/restart. See [Service operation](docs/service.md). Local deployment does not establish independent real-data qualification.
 
 - Fixed runtime witness cause/stage counters and bounded stderr notices identify transport, authority, schema, integrity and pending-evidence failures without provider details or claimant identifiers. Failed or overdue scheduled audits emit a fixed quarantine signal; these diagnostics do not prove non-commit, repair evidence or qualify source-preview readiness. See [operator guidance](docs/operations.md).
 

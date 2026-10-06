@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <Compile Include="HttpsOrigins.fs" />
     <Compile Include="SchemaAst.fs" />
     <Compile Include="SchemaValueValidation.fs" />
     <Compile Include="SchemaRendering.fs" />

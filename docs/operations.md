@@ -4,7 +4,7 @@
 
 ClaimCore has one installation-wide, case-sensitive reference namespace and one HTTPS case-work service. Browser login uses OIDC Authorization Code/S256 PKCE; interactive CLI uses its own public client, while automation uses distinct client credentials. ClaimCore—not the identity provider—owns default-deny actor and case grants. The browser and CLI receive neither PostgreSQL credentials nor witness/key-custody material. Owner administration is a separate executable and credential boundary.
 
-The primary schema owner, witness superuser and host/storage administrators remain trusted authorities. Direct SQL by those actors can bypass application checks; internal F# types and a second witness cluster do not defeat a person who controls both authorities or all backups and keys. The current Web service is loopback-bound, not a qualified internet-facing or active-active deployment. Synthetic primary/witness containers on one Mac prove functionality, not physical or administrative independence. Do not place real or adopted data under this build until the separate-host, backup, restore, audit, and retention admission requirements below are fulfilled.
+The primary schema owner, witness superuser and host/storage administrators remain trusted authorities. Direct SQL by those actors can bypass application checks; internal F# types and a second witness cluster do not defeat a person who controls both authorities or all backups and keys. The Web service defaults to loopback and supports explicit HTTPS interface binding; this is not independent deployment or active-active qualification. Synthetic primary/witness containers on one Mac prove functionality, not physical or administrative independence. Do not place real or adopted data under this build until the separate-host, backup, restore, audit, and retention admission requirements below are fulfilled.
 
 Each fresh installation records an immutable `SYNTHETIC_ONLY` or `REAL_DATA` scope in both primary and witness. The generic build has no reviewed publication root and creates only synthetic installations. An operator-reviewed real-data build begins in `BOOTSTRAP_NO_CASES`: only the bounded owner/authority setup needed to establish independently verified backup health is allowed, never claimant case work or recovery. Activation is a one-way witnessed decision tied to a published, human-reviewed plan, two distinct current human owner approvals, and a fresh signed health certificate; mismatched primary/witness phase or an uncertain activation stays quarantined. A later stale health certificate stops claimant mutations while owner/custodian repair remains available under its separate authority lane. Do not treat local synthetic activation tests as real-data qualification.
 
@@ -21,12 +21,12 @@ Each fresh installation records an immutable `SYNTHETIC_ONLY` or `REAL_DATA` sco
 - Do not print or upload connection strings, passwords, request bodies, claimant data, cookies,
   clipboard contents, downloaded recovery artifacts, canonical requests, or private terminal
   captures. CLI delivery diagnostics may contain only bounded safe identity and recovery direction after mutation dispatch.
-- Local Compose database connections may disable TLS only while bound to its loopback development
-  port. Primary runtime/schema-owner and witness writer/auditor/schema-owner connections require `SSL Mode=VerifyFull` for a
+- The persistent local Compose deployment uses TLS with its explicit local CA.
+  Primary runtime/schema-owner and witness writer/auditor/schema-owner connections require `SSL Mode=VerifyFull` for a
   non-loopback PostgreSQL host and disable GSS encryption fallback; the server certificate and host
   name must validate. Remote TLS checks certificate revocation on new handshakes, so its CA must
   publish reachable revocation evidence. Supply a trusted root certificate where needed and keep credentials private.
-  The current HTTPS case-work service remains loopback-bound; remote client access needs a separately qualified deployment design.
+  HTTPS listener and publication are explicit operating choices; real-data operation still needs a separately qualified deployment.
 
 Compromised transport or issuer credentials require an explicit closure: stop affected hosts and
 CLI sessions, revoke actor grants where their authority may be exposed, replace issuer signing
@@ -37,6 +37,7 @@ historical decryptors for witnessed audit and exact recovery; deleting an old ke
 ID cannot undo disclosure. A ring with reused or zero material refuses startup without changing
 its private file or stored evidence. Preserve matching old software and evidence for owner repair
 if an existing installation has such a ring; never reset or adopt it to evade the refusal.
+
 - Handle-first private-file operations are supported on macOS and Linux only. Windows source builds,
   tests, and configuration-free discovery work, but operations that need private credential or artifact files fail closed until an independently verified Windows handle/ACL implementation exists.
 - On macOS, use physical canonical paths; system aliases such as `/var` and `/tmp` have linked

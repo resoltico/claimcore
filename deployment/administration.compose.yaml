@@ -1,0 +1,28 @@
+services:
+  administration:
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile
+      target: administration
+    image: claimcore-administration:source
+    user: "${CLAIMCORE_SERVICE_UID:?}:${CLAIMCORE_SERVICE_GID:?}"
+    profiles: [owner]
+    volumes:
+      - type: bind
+        source: ${CLAIMCORE_CONFIG_DIR:?}/administration
+        target: /etc/claimcore/administration
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${CLAIMCORE_CONFIG_DIR}/web
+        target: /etc/claimcore/web
+        read_only: true
+        bind:
+          create_host_path: false
+    read_only: true
+    tmpfs:
+      - /tmp:mode=0700,uid=${CLAIMCORE_SERVICE_UID},gid=${CLAIMCORE_SERVICE_GID}
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    restart: "no"

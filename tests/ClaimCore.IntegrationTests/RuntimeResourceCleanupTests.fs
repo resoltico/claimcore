@@ -132,10 +132,35 @@ let private delayedFailurePreservesOutcome () =
     Expect.isNull error.InnerException "No provider detail in disposal"
     Expect.equal closed 1 "Cleanup is never repeated"
 
+let private asyncShutdownRetainsLease () =
+    let mutable closed = false
+
+    let source =
+        { new IDisposable with
+            member _.Dispose() = closed <- true
+        }
+
+    use current = admission source (TimeSpan.FromMilliseconds 10.)
+    let lease = current.Admit()
+    let shutdown = current.CloseAndDrainAsync(fun () -> ())
+    Expect.isFalse shutdown.IsCompleted "Shutdown awaits the admitted lease"
+    Expect.isFalse closed "Resources remain owned"
+
+    Expect.throwsT<ObjectDisposedException>
+        (fun () -> current.Admit() |> ignore)
+        "New work is closed"
+
+    lease.Dispose()
+    shutdown.WaitAsync(TimeSpan.FromSeconds 2.).GetAwaiter().GetResult()
+    Expect.isTrue closed "Shutdown completion proves resource release"
+
 let tests =
     testList
         "runtime cleanup ownership"
         [
+            testCase
+                "[CC-RUN-001] asynchronous shutdown waits for admitted leases and cleanup"
+                asyncShutdownRetainsLease
             testCase
                 "[CC-RUN-001] deferred cleanup failure preserves admitted outcomes and safe completion"
                 delayedFailurePreservesOutcome

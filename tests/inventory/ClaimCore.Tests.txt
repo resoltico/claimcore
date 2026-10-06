@@ -150,7 +150,7 @@ ClaimCore deterministic suite.compiler-enforced core boundary.ordinary caller ca
 ClaimCore deterministic suite.compiler-enforced core boundary.ordinary caller cannot request a lifecycle transition directly
 ClaimCore deterministic suite.compiler-enforced core boundary.ordinary caller cannot see the store port
 ClaimCore deterministic suite.compiler-enforced core boundary.unbound core cannot be supplied by an ordinary caller
-ClaimCore deterministic suite.configuration projections.Compose uses the canonical digest-pinned PostgreSQL image
+ClaimCore deterministic suite.configuration projections.Compose primary and witness use the canonical digest-pinned PostgreSQL image
 ClaimCore deterministic suite.core outcome diagnostic emission.diagnostic specificity preserves existing cancellation precedence
 ClaimCore deterministic suite.core outcome diagnostic emission.provider error payloads never enter diagnostic presentation
 ClaimCore deterministic suite.core outcome diagnostic emission.recovery cursors retain view and operation binding causes

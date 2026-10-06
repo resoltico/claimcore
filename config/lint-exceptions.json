@@ -470,17 +470,6 @@
       "reviewOn": "2027-03-01"
     },
     {
-      "id": "LX-0039",
-      "tool": "shellcheck",
-      "rules": ["SC2154"],
-      "file": "db/dev-init.sh",
-      "kind": "inline",
-      "count": 1,
-      "reason": "The script validates its required environment inputs before using them, and uppercase environment variables are never assigned inside the script by design.",
-      "owner": "project maintainers",
-      "reviewOn": "2027-03-01"
-    },
-    {
       "id": "LX-0041",
       "tool": "shellcheck",
       "rules": ["SC2154"],

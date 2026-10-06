@@ -35,14 +35,7 @@ module AuthMiddleware =
                     then
                         false
                     else
-                        use chain = new X509Chain()
-                        chain.ChainPolicy.TrustMode <- X509ChainTrustMode.CustomRootTrust
-                        chain.ChainPolicy.CustomTrustStore.Add(root) |> ignore
-                        chain.ChainPolicy.RevocationMode <- X509RevocationMode.NoCheck
-                        TlsCertificatePurpose.requireServerAuthentication chain
-
-                        TlsCertificatePurpose.serverAuthentication certificate
-                        && chain.Build(certificate))
+                        TlsCertificatePurpose.customRootServerAuthentication root certificate)
 
         handler
 

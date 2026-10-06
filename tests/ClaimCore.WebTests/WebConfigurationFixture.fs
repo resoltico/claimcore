@@ -9,6 +9,8 @@ open ClaimCore.WebTests.PrivateTestPaths
 let private variables =
     [
         "CLAIMCORE_WEB_ORIGIN"
+        "CLAIMCORE_WEB_LISTEN_ADDRESS"
+        "CLAIMCORE_WEB_LISTEN_PORT"
         "CLAIMCORE_WEB_STATE_DIR"
         "CLAIMCORE_WEB_CERTIFICATE_PATH"
         "CLAIMCORE_CONNECTION_FILE"

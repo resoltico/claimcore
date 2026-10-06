@@ -94,6 +94,7 @@ ClaimCore.Web.Web v3 admission.[CC-WEB-001] keeps the mutable browser session re
 ClaimCore.Web.Web v3 admission.[CC-WEB-001] rejects absent and remote peers or wrong host authority
 ClaimCore.Web.Web v3 admission.[CC-WEB-001] requires one exact browser origin and same-origin metadata
 ClaimCore.Web.Web v3 admission.[CC-WEB-001] returns typed CSRF admission refusal
+ClaimCore.Web.[CC-WEB-001] controlled stop cancels blocked OIDC startup
 ClaimCore.Web.asynchronous HTTP transport boundaries.[CC-WEB-001] suspended I/O failure retains safe refusal
 ClaimCore.Web.asynchronous HTTP transport boundaries.[CC-WEB-001] suspended Kestrel size refusal retains transport classification
 ClaimCore.Web.asynchronous HTTP transport boundaries.[CC-WEB-001] suspended cancellation retains safe refusal
@@ -105,8 +106,10 @@ ClaimCore.Web.asynchronous HTTP transport boundaries.[CC-WEB-001] suspended over
 ClaimCore.Web.configuration.Web configuration boundaries.[CC-WEB-001] enforces session lifetime ordering
 ClaimCore.Web.configuration.Web configuration boundaries.[CC-WEB-001] loads defaults and rejects every out-of-range admission limit
 ClaimCore.Web.configuration.Web configuration boundaries.[CC-WEB-001] rejects linked credentials and certificates without private keys
-ClaimCore.Web.configuration.[CC-WEB-001] accepts only one exact local HTTPS origin
+ClaimCore.Web.configuration.[CC-WEB-001] accepts one explicit HTTPS authority and rejects ambiguous origins
 ClaimCore.Web.configuration.[CC-WEB-001] witness key and connection paths fail closed
+ClaimCore.Web.configuration.listener and public authority.[CC-WEB-001] explicit container binding retains Host and origin refusal
+ClaimCore.Web.configuration.listener and public authority.[CC-WEB-001] listener rejects invalid address and port
 ClaimCore.Web.configuration.startup resource lifetimes.[CC-WEB-001] failed OIDC verification closes both startup certificates
 ClaimCore.Web.copy adoption approval input.[CC-WEB-001] adoption approval refuses invented provenance and actor fields
 ClaimCore.Web.copy adoption approval input.[CC-WEB-001] adoption origin binds exact witnessed provenance

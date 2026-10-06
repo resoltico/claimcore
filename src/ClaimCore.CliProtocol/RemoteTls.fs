@@ -6,9 +6,10 @@ open System.Net.Security
 open System.Security.Cryptography.X509Certificates
 open System.Text
 open ClaimCore.HostSecurity
+open ClaimCore.Contracts
 
 /// System trust is the default. An explicit owner-private PEM root replaces it only for a
-/// loopback synthetic endpoint. Hostname matching remains mandatory. The isolated custom-root
+/// local synthetic endpoint. Hostname matching remains mandatory. The isolated custom-root
 /// fixture has no CRL, so its chain uses NoCheck; this is not a remote production trust mode.
 type RemoteTls private (handler: HttpClientHandler, root: X509Certificate2 option) =
     member _.Handler = handler
@@ -30,7 +31,7 @@ type RemoteTls private (handler: HttpClientHandler, root: X509Certificate2 optio
                     None
                 )
             )
-        | Some _ when not endpoint.IsLoopback -> Error "TLS_TRUST_ROOT_SCOPE_INVALID"
+        | Some _ when not (HttpsOrigins.isLocal endpoint) -> Error "TLS_TRUST_ROOT_SCOPE_INVALID"
         | Some location ->
             match PrivateFileService.readUtf8Bytes 16384 location with
             | Error _ -> Error "TLS_TRUST_ROOT_UNAVAILABLE"
@@ -56,17 +57,9 @@ type RemoteTls private (handler: HttpClientHandler, root: X509Certificate2 optio
                                 then
                                     false
                                 else
-                                    use chain = new X509Chain()
-
-                                    chain.ChainPolicy.TrustMode <-
-                                        X509ChainTrustMode.CustomRootTrust
-
-                                    chain.ChainPolicy.CustomTrustStore.Add(certificate) |> ignore
-                                    chain.ChainPolicy.RevocationMode <- X509RevocationMode.NoCheck
-                                    TlsCertificatePurpose.requireServerAuthentication chain
-
-                                    TlsCertificatePurpose.serverAuthentication presented
-                                    && chain.Build(presented))
+                                    TlsCertificatePurpose.customRootServerAuthentication
+                                        certificate
+                                        presented)
 
                     Ok(new RemoteTls(handler, Some certificate))
                 with

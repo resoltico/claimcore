@@ -17,8 +17,10 @@ let private baselineImage () =
     |> Option.defaultWith (fun () -> failtest "The baseline containerImage must be text.")
 
 let private composeImage () =
-    File.ReadLines(Path.Combine(root, "compose.yaml"))
+    File.ReadLines(Path.Combine(root, "deployment", "local.compose.yaml"))
     |> Seq.filter (fun line -> line.TrimStart().StartsWith("image:", StringComparison.Ordinal))
+    |> Seq.filter (fun line -> line.Contains("postgres:", StringComparison.Ordinal))
+    |> Seq.distinct
     |> Seq.exactlyOne
     |> fun line ->
         line[(line.IndexOf("image:", StringComparison.Ordinal) + "image:".Length) ..].Trim()
@@ -27,24 +29,26 @@ let tests =
     testList
         "configuration projections"
         [
-            testCase "Compose uses the canonical digest-pinned PostgreSQL image" (fun () ->
-                let decoy =
-                    Path.Combine(
-                        Path.GetTempPath(),
-                        "claimcore-source-link-decoy-" + Guid.NewGuid().ToString("N")
-                    )
+            testCase
+                "Compose primary and witness use the canonical digest-pinned PostgreSQL image"
+                (fun () ->
+                    let decoy =
+                        Path.Combine(
+                            Path.GetTempPath(),
+                            "claimcore-source-link-decoy-" + Guid.NewGuid().ToString("N")
+                        )
 
-                Expect.isNone
-                    (RepositoryRoot.tryFindFrom decoy)
-                    "A source-path-like location without repository markers is not a root"
+                    Expect.isNone
+                        (RepositoryRoot.tryFindFrom decoy)
+                        "A source-path-like location without repository markers is not a root"
 
-                Expect.equal
-                    (RepositoryRoot.tryFindFrom AppContext.BaseDirectory)
-                    (Some root)
-                    "The test binary locates the checkout without embedded source paths"
+                    Expect.equal
+                        (RepositoryRoot.tryFindFrom AppContext.BaseDirectory)
+                        (Some root)
+                        "The test binary locates the checkout without embedded source paths"
 
-                Expect.equal
-                    (composeImage ())
-                    (baselineImage ())
-                    "No mutable or duplicated image selection")
+                    Expect.equal
+                        (composeImage ())
+                        (baselineImage ())
+                        "No mutable or duplicated image selection")
         ]

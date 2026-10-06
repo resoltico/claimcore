@@ -1,0 +1,39 @@
+name: ${CLAIMCORE_COMPOSE_PROJECT:-claimcore-service}
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile
+      target: web
+    image: claimcore-web:source
+    user: "${CLAIMCORE_SERVICE_UID:?Set the runtime input owner UID}:${CLAIMCORE_SERVICE_GID:?Set the runtime input owner GID}"
+    env_file:
+      - path: ${CLAIMCORE_CONFIG_DIR:?Set the absolute private configuration directory}/web/web.env
+        required: false
+    ports:
+      - "${CLAIMCORE_HOST_BIND:-127.0.0.1}:${CLAIMCORE_HOST_PORT:-5443}:5443"
+    volumes:
+      - type: bind
+        source: ${CLAIMCORE_CONFIG_DIR}/web
+        target: /etc/claimcore
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${CLAIMCORE_CONFIG_DIR}/web-state
+        target: /var/lib/claimcore
+        bind:
+          create_host_path: false
+    read_only: true
+    tmpfs:
+      - /tmp:mode=0700,uid=${CLAIMCORE_SERVICE_UID},gid=${CLAIMCORE_SERVICE_GID}
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+    stop_grace_period: 90s
+    healthcheck:
+      test: [CMD, dotnet, ClaimCore.Web.dll, probe, live]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s

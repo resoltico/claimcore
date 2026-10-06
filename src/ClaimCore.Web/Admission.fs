@@ -99,16 +99,12 @@ module Admission =
             String.Equals(supplied, origin.Authority, StringComparison.OrdinalIgnoreCase)
         | None -> false
 
-    let private loopback (context: HttpContext) =
-        context.Connection.RemoteIpAddress
-        |> Option.ofObj
-        |> Option.exists IPAddress.IsLoopback
+    let trustedConnection (endpoint: WebBinding) (context: HttpContext) =
+        exactHost endpoint.Origin context
+        && WebBindings.acceptsPeer endpoint context.Connection.RemoteIpAddress
 
-    let trustedConnection origin context =
-        exactHost origin context && loopback context
-
-    let private matchingOrigin (origin: Uri) (context: HttpContext) =
-        let expected = origin.GetLeftPart(UriPartial.Authority)
+    let private matchingOrigin (endpoint: WebBinding) (context: HttpContext) =
+        let expected = endpoint.Origin.GetLeftPart(UriPartial.Authority)
 
         match oneHeader "Origin" context with
         | Some supplied -> String.Equals(supplied, expected, StringComparison.Ordinal)

@@ -57,7 +57,11 @@ let private connectionTests () =
     publicPeer.Connection.RemoteIpAddress <- IPAddress.Parse("203.0.113.10")
 
     Expect.equal
-        (Admission.postShape origin RequestBody.Json 32 publicPeer)
+        (Admission.postShape
+            (WebBindings.create origin "127.0.0.1" origin.Port)
+            RequestBody.Json
+            32
+            publicPeer)
         (Error AdmissionFailure.UntrustedConnection)
         "Public peers are rejected"
 
@@ -65,7 +69,11 @@ let private connectionTests () =
     oversized.Request.ContentLength <- Nullable 33L
 
     Expect.equal
-        (Admission.postShape origin RequestBody.Json 32 oversized)
+        (Admission.postShape
+            (WebBindings.create origin "127.0.0.1" origin.Port)
+            RequestBody.Json
+            32
+            oversized)
         (Error AdmissionFailure.BodyTooLarge)
         "Declared body limits are enforced before allocation"
 

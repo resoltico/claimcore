@@ -10,10 +10,10 @@
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --pretty false",
-    "lint": "oxlint --config .oxlintrc.json --deny-warnings ci lint release",
-    "format": "prettier --write ci lint release package.json tsconfig.json .oxlintrc.json",
-    "format:check": "prettier --check ci lint release package.json tsconfig.json .oxlintrc.json",
-    "test": "node --test \"lint/**/*.test.mjs\" \"ci/**/*.test.mjs\" \"release/**/*.test.mjs\"",
+    "lint": "oxlint --config .oxlintrc.json --deny-warnings ci lint release operations",
+    "format": "prettier --write ci lint release operations package.json tsconfig.json .oxlintrc.json",
+    "format:check": "prettier --check ci lint release operations package.json tsconfig.json .oxlintrc.json",
+    "test": "node --test \"lint/**/*.test.mjs\" \"ci/**/*.test.mjs\" \"release/**/*.test.mjs\" \"operations/**/*.test.mjs\"",
     "lint:exceptions": "node lint/check-exceptions.mjs"
   },
   "dependencies": {

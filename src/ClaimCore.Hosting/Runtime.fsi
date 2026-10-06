@@ -34,3 +34,4 @@ type Runtime =
             Task<Result<Runtime, RuntimeOpenFault>>
 
     interface IDisposable
+    interface IAsyncDisposable

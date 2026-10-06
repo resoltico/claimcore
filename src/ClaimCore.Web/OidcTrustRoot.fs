@@ -6,7 +6,7 @@ open System.Security.Cryptography.X509Certificates
 open ClaimCore.Contracts
 open ClaimCore.HostSecurity
 
-/// An optional owner-private trust root for a loopback HTTPS qualification issuer only.
+/// An optional owner-private trust root for a local HTTPS qualification issuer only.
 /// Hostname validation remains mandatory. Remote IdPs use system trust and revocation policy.
 module internal OidcTrustRoot =
     let load path =

@@ -1,6 +1,6 @@
 # ClaimCore Web
 
-`ClaimCore.Web` is the authenticated HTTPS case-work service and browser host. It alone composes the actor-bound core over the primary PostgreSQL store and independent witness; the React browser and CLI are clients, not database peers. The current host binds an exact loopback HTTPS origin. Its OIDC identities and ClaimCore grants provide individual authority, but a same-machine installation is not evidence of separate-host custody or a qualified internet-facing deployment. Private-file startup is supported on macOS and Linux; unsupported host file security fails closed.
+`ClaimCore.Web` is the authenticated HTTPS case-work service and browser host. It alone composes the actor-bound core over the primary PostgreSQL store and independent witness; the React browser and CLI are clients, not database peers. The host binds one configured HTTPS origin and an explicit listener address/port; native defaults remain loopback. Its OIDC identities and ClaimCore grants provide individual authority, but a same-machine installation is not evidence of separate-host custody or a qualified internet-facing deployment. Private-file startup is supported on macOS and Linux; unsupported host file security fails closed.
 
 ## Web executable
 
@@ -9,15 +9,18 @@ configuration or open PostgreSQL.
 
 <!-- generated:begin web-help -->
 ```text
-ClaimCore.Web 0.7.0 — local HTTPS human interface
-  ClaimCore.Web                 Start the configured loopback host
+ClaimCore.Web 0.7.0 — HTTPS human interface
+  ClaimCore.Web                 Start the configured HTTPS host
   ClaimCore.Web help            Show this configuration-free help
   ClaimCore.Web version         Show the compiled product version
   ClaimCore.Web version --json  Show compiled release identity as JSON
-Required private paths:
+  ClaimCore.Web probe live     Probe this configured listener without opening a runtime
+  ClaimCore.Web probe ready    Probe independently qualified real-data readiness
+Required settings (credentials are private file paths):
   CLAIMCORE_CONNECTION_FILE
   CLAIMCORE_WITNESS_CONNECTION_FILE
   CLAIMCORE_WITNESS_KEY_FILE
+  CLAIMCORE_WRITER_CAPABILITY_FILE
   CLAIMCORE_SUPPRESSION_KEY_FILE
   CLAIMCORE_RECOVERY_ARTIFACT_KEY_FILE
   CLAIMCORE_WEB_CERTIFICATE_PATH
@@ -28,28 +31,38 @@ Required private paths:
   CLAIMCORE_OIDC_API_AUDIENCE
   CLAIMCORE_OIDC_CLI_CLIENT_ID
   CLAIMCORE_OIDC_SERVICE_CLIENT_ID
-Optional tightening settings:
-  CLAIMCORE_WEB_ORIGIN                 HTTPS localhost origin; default https://localhost:5443
-  CLAIMCORE_WEB_MAX_JSON_BYTES         1..65536; default 65536
-  CLAIMCORE_WEB_CORE_PERMITS           1..4; default 4
-  CLAIMCORE_WEB_CORE_QUEUE             1..16; default 16
-  CLAIMCORE_WEB_LOGIN_PERMITS          1..5 per minute; default 5
-  CLAIMCORE_WEB_SESSION_IDLE_MINUTES   1..30; default 30
-  CLAIMCORE_WEB_SESSION_ABSOLUTE_MINUTES 1..480; default 480 and not below idle
+Optional settings:
+  CLAIMCORE_WEB_ORIGIN
+  CLAIMCORE_WEB_LISTEN_ADDRESS
+  CLAIMCORE_WEB_LISTEN_PORT
+  CLAIMCORE_WEB_PROBE_CA_CERT_FILE
+  CLAIMCORE_FULL_AUDIT_INTERVAL_SECONDS
+  CLAIMCORE_WEB_MAX_JSON_BYTES
+  CLAIMCORE_WEB_CORE_PERMITS
+  CLAIMCORE_WEB_CORE_QUEUE
+  CLAIMCORE_WEB_LOGIN_PERMITS
+  CLAIMCORE_WEB_SESSION_IDLE_MINUTES
+  CLAIMCORE_WEB_SESSION_ABSOLUTE_MINUTES
+  CLAIMCORE_OIDC_CA_CERT_FILE
+Conditional real-data evidence settings:
+  CLAIMCORE_BACKUP_HEALTH_POLICY_FILE
+  CLAIMCORE_BACKUP_HEALTH_CERTIFICATE_FILE
 ```
 <!-- generated:end web-help -->
 
 ## Publish and start
+
+[Service operation](service.md) owns Docker operation, persistent local deployment, mounts and process supervision.
 
 [Getting started](getting-started.md) owns the complete source-to-first-login sequence. Build Web
 assets once with the locked Node 26 frontend, then publish `ClaimCore.Web`. Publication verifies the
 asset manifest against exact source, npm lock, generated Web-v3 contract, Node/npm toolchain, notices,
 and output bytes before placing assets under `wwwroot`. Ordinary .NET builds never invoke npm.
 
-Start the published assembly only after provisioning separate primary and witness credentials, owner-private witness and suppression keys, an independent raw writer-capability file, a recovery-artifact key ring, an OIDC issuer/client, and the HTTPS certificate and state directory. Supply their paths through the variables below; do not place credential bytes in command arguments or tracked files. The certificate must be an owner-private blank-password PKCS#12/PFX with a `localhost` private key. Startup metadata discovery uses one joining separator for root and path issuers and a ten-second
+Start the published assembly only after provisioning separate primary and witness credentials, owner-private witness and suppression keys, an independent raw writer-capability file, a recovery-artifact key ring, an OIDC issuer/client, and the HTTPS certificate and state directory. Supply their paths through the variables below; do not place credential bytes in command arguments or tracked files. The certificate must be an owner-private blank-password PKCS#12/PFX with a private key for the configured public HTTPS identity. Startup metadata discovery uses one joining separator for root and path issuers and a ten-second
 whole-request deadline through the bounded body read. Browser login challenges the configured OIDC issuer with Authorization Code and S256 PKCE; there is no shared bootstrap credential. Restart revokes the host's server-side browser sessions.
 
-Startup refuses a certificate outside its validity period, without a `localhost` DNS subject
+Startup refuses a certificate outside its validity period, without a matching DNS/IP subject
 alternative name, or without the server-authentication extended key usage. A matching self-signed
 certificate still requires the operator to verify and trust its public certificate in the browser.
 
@@ -67,8 +80,13 @@ certificate still requires the operator to verify and trust its public certifica
 | `CLAIMCORE_WEB_STATE_DIR` | Required absolute owner-private directory; the host creates it as mode `0700` on POSIX and rejects a linked/reparse directory. |
 | `CLAIMCORE_OIDC_ISSUER`, `CLAIMCORE_OIDC_CLIENT_ID`, `CLAIMCORE_OIDC_CLIENT_SECRET_FILE` | Required issuer URL, browser BFF client ID, and owner-private confidential-client secret file. Real-data issuer discovery and token endpoints require validated HTTPS. |
 | `CLAIMCORE_OIDC_API_AUDIENCE`, `CLAIMCORE_OIDC_CLI_CLIENT_ID`, `CLAIMCORE_OIDC_SERVICE_CLIENT_ID` | Required API audience and distinct public-CLI/service-client identities for bearer admission. |
-| `CLAIMCORE_OIDC_CA_CERT_FILE` | Optional private test CA for a loopback synthetic issuer only; remote real-data issuers use system trust. |
-| `CLAIMCORE_WEB_ORIGIN` | Optional exact HTTPS `localhost` origin with no path, user information, query, or fragment; defaults to `https://localhost:5443`. |
+| `CLAIMCORE_OIDC_CA_CERT_FILE` | Optional private test CA for a loopback or reserved `.localhost` synthetic issuer; remote issuers use system trust. |
+| `CLAIMCORE_WEB_ORIGIN` | Optional exact public HTTPS DNS/IP origin with no path, user information, query, or fragment; defaults to `https://localhost:5443`. |
+| `CLAIMCORE_WEB_LISTEN_ADDRESS` | Optional literal IPv4/IPv6 socket address; defaults to `127.0.0.1`. Docker explicitly uses `0.0.0.0`. |
+| `CLAIMCORE_WEB_LISTEN_PORT` | Integer 1–65,535; defaults to the public origin port. |
+| `CLAIMCORE_WEB_PROBE_CA_CERT_FILE` | Optional owner-private public CA for probes of a loopback or reserved `.localhost` origin; remote probes use system trust. |
+| `CLAIMCORE_FULL_AUDIT_INTERVAL_SECONDS` | Hosting audit cadence; see [runtime admission](architecture.md#cc-run-001). |
+| `CLAIMCORE_BACKUP_HEALTH_POLICY_FILE`, `CLAIMCORE_BACKUP_HEALTH_CERTIFICATE_FILE` | Conditional owner-private real-data qualification inputs; see [Operations](operations.md). |
 | `CLAIMCORE_WEB_SESSION_IDLE_MINUTES` | Integer 1–30; defaults to 30. |
 | `CLAIMCORE_WEB_SESSION_ABSOLUTE_MINUTES` | Integer 1–480, not less than idle lifetime; defaults to 480. |
 | `CLAIMCORE_WEB_MAX_JSON_BYTES` | Integer 1–65,536; defaults to 65,536. |
@@ -76,9 +94,9 @@ certificate still requires the operator to verify and trust its public certifica
 | `CLAIMCORE_WEB_CORE_QUEUE` | Integer 1–16; defaults to 16. |
 | `CLAIMCORE_WEB_LOGIN_PERMITS` | Integer 1–5 per fixed one-minute window; defaults to 5. |
 
-The host listens only on loopback at the configured port and requires exact Host admission. It sets a
+The native listener defaults to loopback. Explicit interface binding supports Docker forwarding and remote operation while exact Host, TLS, origin, identity and grant admission remain mandatory. It sets a
 131,072-byte Kestrel ceiling solely for the largest raw envelope import; every endpoint applies its
-own lower limit before allocation. `GET /health/live` is a loopback host liveness probe, not an authenticated readiness, database-integrity, installation-readiness, or backup check. `GET /health/ready` deliberately returns `503` until separate-host backup, witness, and restore qualification is implemented and verified.
+own lower limit before allocation. `GET /health/live` is an HTTPS host liveness probe, not an authenticated readiness, database-integrity, installation-readiness, or backup check. `GET /health/ready` deliberately returns `503` until separate-host backup, witness, and restore qualification is implemented and verified.
 
 ## Browser presentation
 
@@ -102,7 +120,7 @@ not implicit browser buttons or ordinary case commands.
 ## Web-v3 contract and admission
 
 <a id="cc-web-001"></a>
-### CC-WEB-001 — Exact Web-v3 admission, routes, and typed outcomes
+### CC-WEB-001 — Exact HTTPS authority, Web-v3 admission, routes, and typed outcomes
 
 The pure `ClaimCore.Contracts` projection owns the canonical Web-v3 endpoint catalog, exact request
 and response schemas, raw-media rules, deterministic response codecs, split TypeScript DTO modules,
@@ -164,7 +182,7 @@ erasure; the owner-only prune and managed-copy verification still have separate 
 verified witness prune, the same nonpayload review reports that witness ciphertext was pruned while
 managed-copy certification remains pending; it does not expose erased bytes or claim final erasure.
 
-Every route first requires loopback HTTPS and the exact configured Host. Static assets, liveness, and the session snapshot do not require an authenticated browser session. Browser mutations require a current OIDC session, exact origin/fetch metadata, antiforgery token, and the endpoint's exact media/body bound. Bearer automation and CLI calls require a validated issuer, audience, token, client identity, and ClaimCore actor grants; a browser cookie and bearer token cannot be mixed. Actor/resource authorization occurs before disclosure and again under mutation authority locks. Missing and inaccessible case/operation identities have the same public refusal. Invalid UTF-8, scalars, tokens, grants, or oversized bodies fail with safe no-store host outcomes; admitted endpoint outcomes use the Contracts codec.
+Every route first requires the exact configured Host and the configured listener peer policy. Explicit interface binding permits Docker/remote peers; TLS, credential-mode, origin, authentication and grant checks remain mandatory. Static assets, liveness, and the session snapshot do not require an authenticated browser session. Browser mutations require a current OIDC session, exact origin/fetch metadata, antiforgery token, and the endpoint's exact media/body bound. Bearer automation and CLI calls require a validated issuer, audience, token, client identity, and ClaimCore actor grants; a browser cookie and bearer token cannot be mixed. Actor/resource authorization occurs before disclosure and again under mutation authority locks. Missing and inaccessible case/operation identities have the same public refusal. Invalid UTF-8, scalars, tokens, grants, or oversized bodies fail with safe no-store host outcomes; admitted endpoint outcomes use the Contracts codec.
 
 Recovery import is raw `application/vnd.claimcore.recovery+json`, at most 131,072 bytes. Retain resends the exact previewed bytes with the generated source-digest header; the service rechecks current actor grant, case privacy, artifact/export identity, and witnessed authority before releasing retained request material. Raw canonical-record import is not supported.
 

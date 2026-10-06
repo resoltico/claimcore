@@ -4,7 +4,7 @@
 
 Record claim facts, payment decisions and payment dates through a structured CLI or a browser interface. Both call one authenticated HTTPS service whose F#/.NET core owns validation, case transitions, authorization and recovery. A primary PostgreSQL store holds current case projections and accepted history; a separately credentialed PostgreSQL witness records authority evidence.
 
-[Get started](docs/getting-started.md) · [Documentation](docs/README.md) ·
+[Get started](docs/getting-started.md) · [Operate the service](docs/service.md) · [Documentation](docs/README.md) ·
 [CLI reference](docs/cli.md) · [Architecture](docs/architecture.md) ·
 [Releases](https://github.com/resoltico/claimcore/releases)
 
@@ -66,7 +66,7 @@ formats are refused, not converted or deleted. Preserve old databases and artifa
 matching software. Read the [installation boundary](docs/database.md#fresh-installation-boundary)
 before initializing a new target.
 
-ClaimCore uses individual OIDC identities and default-deny actor/case grants, but the current service is loopback-bound and local two-cluster qualification does not prove independent-host resilience. Multi-tenancy and a qualified nonloopback deployment are not supplied. Read [Security and operations](docs/operations.md) before considering real data.
+ClaimCore uses individual OIDC identities and default-deny actor/case grants, but the service defaults to loopback and local two-cluster qualification does not prove independent-host resilience. Multi-tenancy and independent real-data deployment qualification are not supplied. Read [Security and operations](docs/operations.md) before considering real data.
 
 ## How state stays consistent
 

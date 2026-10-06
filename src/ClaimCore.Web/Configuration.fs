@@ -34,7 +34,7 @@ type OidcConfiguration =
 [<NoEquality; NoComparison>]
 type WebConfiguration =
     {
-        Origin: Uri
+        Binding: WebBinding
         ConnectionString: string
         WitnessConnectionString: string
         WitnessKeyRingPath: string
@@ -59,22 +59,7 @@ module Configuration =
         |> Option.defaultWith (fun () ->
             WebStartupDiagnostics.refuse (WebStartupProblem.MissingSetting setting))
 
-    let parseOrigin value =
-        try
-            let parsed = Uri(value, UriKind.Absolute)
-
-            if
-                parsed.Scheme <> Uri.UriSchemeHttps
-                || not (parsed.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase))
-                || parsed.PathAndQuery <> "/"
-                || not (String.IsNullOrEmpty(parsed.Fragment))
-                || not (String.IsNullOrEmpty(parsed.UserInfo))
-            then
-                WebStartupDiagnostics.refuse WebStartupProblem.OriginInvalid
-
-            parsed
-        with :? UriFormatException ->
-            WebStartupDiagnostics.refuse WebStartupProblem.OriginInvalid
+    let parseOrigin = WebBindings.parseOrigin
 
     let private origin () =
         environment "CLAIMCORE_WEB_ORIGIN"
@@ -125,7 +110,7 @@ module Configuration =
         value
 
     let private oidc () =
-        match environment "CLAIMCORE_OIDC_ISSUER" with
+        match environment (WebSettings.token WebSetting.OidcIssuer) with
         | None -> None
         | Some source ->
             let invalid () =
@@ -136,22 +121,22 @@ module Configuration =
                 | Ok value -> value
                 | Error _ -> invalid ()
 
-            let requiredName name =
-                match environment name with
+            let requiredName setting =
+                match environment (WebSettings.token setting) with
                 | Some value when value.Length <= 256 -> value
                 | _ -> invalid ()
 
-            let secretPath = requiredName "CLAIMCORE_OIDC_CLIENT_SECRET_FILE"
+            let secretPath = requiredName WebSetting.OidcClientSecretFile
 
             let clientSecret =
                 match PrivateFileService.readUtf8Text 8192 secretPath with
                 | Ok value when not (String.IsNullOrWhiteSpace value) -> value.Trim()
                 | _ -> invalid ()
 
-            let clientId = requiredName "CLAIMCORE_OIDC_CLIENT_ID"
-            let audience = requiredName "CLAIMCORE_OIDC_API_AUDIENCE"
-            let serviceClient = requiredName "CLAIMCORE_OIDC_SERVICE_CLIENT_ID"
-            let cliClient = requiredName "CLAIMCORE_OIDC_CLI_CLIENT_ID"
+            let clientId = requiredName WebSetting.OidcClientId
+            let audience = requiredName WebSetting.OidcApiAudience
+            let serviceClient = requiredName WebSetting.OidcServiceClientId
+            let cliClient = requiredName WebSetting.OidcCliClientId
 
             if [ clientId; audience; serviceClient; cliClient ] |> Set.ofList |> Set.count <> 4 then
                 invalid ()
@@ -159,7 +144,7 @@ module Configuration =
             let trustRoot =
                 match environment "CLAIMCORE_OIDC_CA_CERT_FILE" with
                 | None -> None
-                | Some path when issuer.IsLoopback -> Some(OidcTrustRoot.load path)
+                | Some path when HttpsOrigins.isLocal issuer -> Some(OidcTrustRoot.load path)
                 | Some _ -> invalid ()
 
             Some
@@ -185,14 +170,27 @@ module Configuration =
 
     let private privateKeyPath = WebPrivateKeyPaths.requireAbsolute required
 
-    let load () =
+    let private binding () =
+        let configuredOrigin = origin ()
+
+        WebBindings.create
+            configuredOrigin
+            (environment (WebSettings.token WebSetting.ListenAddress)
+             |> Option.defaultValue "127.0.0.1")
+            (boundedInt WebSetting.ListenPort configuredOrigin.Port 65535)
+
+    let private sessionLifetimes () =
         let sessionIdle = minutes WebSetting.SessionIdle 30 30
         let sessionAbsolute = minutes WebSetting.SessionAbsolute 480 480
 
         if sessionAbsolute < sessionIdle then
             WebStartupDiagnostics.refuse WebStartupProblem.SessionLifetimeInvalid
 
-        let configuredOrigin = origin ()
+        sessionIdle, sessionAbsolute
+
+    let load () =
+        let sessionIdle, sessionAbsolute = sessionLifetimes ()
+        let configuredEndpoint = binding ()
 
         let configuredConnection =
             privateConnection
@@ -225,10 +223,12 @@ module Configuration =
                     WebStartupProblem.RecoveryArtifactKeyFileRefused
             // The Hosting key custodian opens and validates the private key-ring file.
             let configuredCertificate =
-                TlsCertificate.load (required WebSetting.CertificatePath)
+                TlsCertificate.load
+                    configuredEndpoint.Origin.IdnHost
+                    (required WebSetting.CertificatePath)
 
             {
-                Origin = configuredOrigin
+                Binding = configuredEndpoint
                 ConnectionString = configuredConnection
                 WitnessConnectionString = configuredWitnessConnection
                 WitnessKeyRingPath = configuredWitnessKeyPath

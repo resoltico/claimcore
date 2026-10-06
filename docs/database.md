@@ -190,7 +190,6 @@ Domain-owned revision; the fresh baseline admits only that reviewed revision. Bu
 accepted-history revisions are positive and below `Int64.MaxValue`. Updating executable rules and
 their baseline is a fresh-installation boundary, without converting retained old installations.
 
-
 `cases` holds the current projection of exactly thirteen business fields plus technical revision, disposition, and privacy state. `case_changes` retains ordered accepted-operation evidence with canonical requests, witnessed tickets, actor attribution, and snapshots; accepted replay does not depend on optional preparation retention. A row is a projection, not an independent authority: full audit replays accepted decisions and lifecycle changes against witnessed evidence before comparing the current row. Voiding a data-entry-error case preserves its business history; a privacy erasure request instead fences ordinary access and requires a separate, evidence-bound purge lifecycle.
 
 `request_preparations` stores exact format-3 canonical request bytes and digest with the first preparer's actor/grant provenance and timestamp. An exact-byte replay preserves that first retained metadata. Raw canonical-record import is not an entry point; signed current recovery-artifact import is rechecked against case privacy, current grant, stored export/copy identity, and settled witness evidence. Identified attempts and their independent definite settlements remain available through bounded operation-specific inspection while technical material is retained.
@@ -278,14 +277,14 @@ Host tzdata remains part of the operational environment; see [operations](operat
 
 ## Local development database
 
-[Getting started](getting-started.md) owns the supported disposable first-case qualification. The
-separate Compose service is one synthetic development primary; it cannot supply the required
-witness, authority and custody setup for case work. [`.env.example`](../.env.example) declares its
-required passwords and optional per-checkout project and host-port settings. The selected `CLAIMCORE_POSTGRES_PORT` must match both private
-connection files.
+[Service operation](service.md) owns the persistent synthetic Docker primary/witness pair,
+private file credentials and explicit owner initialization. PostgreSQL ports are not published;
+connections use the container network and validate TLS against the configured CA.
+This topology does not establish independent host/custody or real-data readiness.
+[Getting started](getting-started.md) separately owns disposable qualification.
 
 The Compose dependency is the official PostgreSQL image, pinned by tag and digest in
-[`db/postgresql-baseline.json`](../db/postgresql-baseline.json) (and, equally, in `compose.yaml`; a test holds the
+[`db/postgresql-baseline.json`](../db/postgresql-baseline.json) (and, equally, in `deployment/local.compose.yaml`; a test holds the
 two together), not a packaged ClaimCore application. ClaimCore ships no database image. The image keeps its own
 PostgreSQL license and package notices under `/usr/share/doc/`; weekly Dependabot pull requests propose newer images,
 and one is adopted only through that reviewed change.

@@ -10,6 +10,7 @@ open Microsoft.Extensions.DependencyInjection
 open ClaimCore.Web
 
 let origin = Uri("https://localhost:5443")
+let endpoint = WebBindings.create origin "127.0.0.1" origin.Port
 let credential = "synthetic-testserver-credential"
 let digest = String.replicate 64 "a"
 
@@ -58,7 +59,7 @@ let configureServices loginPermits (services: IServiceCollection) =
 
 let testConfiguration assets loginPermits =
     {
-        Origin = origin
+        Binding = endpoint
         ConnectionString = "synthetic-not-opened"
         WitnessConnectionString = "synthetic-not-opened"
         WitnessKeyRingPath = "synthetic-not-opened"

@@ -551,6 +551,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.production core boundary.runtime lifecycle.[CC-RUN-001] cancelled opening returns a safe typed fault |
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.production core boundary.runtime lifecycle.[CC-RUN-001] disposal closes admission and drains a held operation |
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.production core boundary.runtime lifecycle.[CC-RUN-001] disposed runtime refuses retained normal and recovery facades |
+| CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime cleanup ownership.[CC-RUN-001] asynchronous shutdown waits for admitted leases and cleanup |
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime cleanup ownership.[CC-RUN-001] deferred cleanup failure preserves admitted outcomes and safe completion |
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime cleanup ownership.[CC-RUN-001] runtime cleanup attempts every resource despite disposal faults |
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime cleanup ownership.[CC-RUN-001] runtime closes admission before cleanup completion |
@@ -662,6 +663,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-WEB-001 | web | ClaimCore.Web.Web v3 admission.[CC-WEB-001] rejects absent and remote peers or wrong host authority |
 | CC-WEB-001 | web | ClaimCore.Web.Web v3 admission.[CC-WEB-001] requires one exact browser origin and same-origin metadata |
 | CC-WEB-001 | web | ClaimCore.Web.Web v3 admission.[CC-WEB-001] returns typed CSRF admission refusal |
+| CC-WEB-001 | web | ClaimCore.Web.[CC-WEB-001] controlled stop cancels blocked OIDC startup |
 | CC-WEB-001 | web | ClaimCore.Web.asynchronous HTTP transport boundaries.[CC-WEB-001] suspended I/O failure retains safe refusal |
 | CC-WEB-001 | web | ClaimCore.Web.asynchronous HTTP transport boundaries.[CC-WEB-001] suspended Kestrel size refusal retains transport classification |
 | CC-WEB-001 | web | ClaimCore.Web.asynchronous HTTP transport boundaries.[CC-WEB-001] suspended cancellation retains safe refusal |
@@ -673,8 +675,10 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-WEB-001 | web | ClaimCore.Web.configuration.Web configuration boundaries.[CC-WEB-001] enforces session lifetime ordering |
 | CC-WEB-001 | web | ClaimCore.Web.configuration.Web configuration boundaries.[CC-WEB-001] loads defaults and rejects every out-of-range admission limit |
 | CC-WEB-001 | web | ClaimCore.Web.configuration.Web configuration boundaries.[CC-WEB-001] rejects linked credentials and certificates without private keys |
-| CC-WEB-001 | web | ClaimCore.Web.configuration.[CC-WEB-001] accepts only one exact local HTTPS origin |
+| CC-WEB-001 | web | ClaimCore.Web.configuration.[CC-WEB-001] accepts one explicit HTTPS authority and rejects ambiguous origins |
 | CC-WEB-001 | web | ClaimCore.Web.configuration.[CC-WEB-001] witness key and connection paths fail closed |
+| CC-WEB-001 | web | ClaimCore.Web.configuration.listener and public authority.[CC-WEB-001] explicit container binding retains Host and origin refusal |
+| CC-WEB-001 | web | ClaimCore.Web.configuration.listener and public authority.[CC-WEB-001] listener rejects invalid address and port |
 | CC-WEB-001 | web | ClaimCore.Web.configuration.startup resource lifetimes.[CC-WEB-001] failed OIDC verification closes both startup certificates |
 | CC-WEB-001 | web | ClaimCore.Web.copy adoption approval input.[CC-WEB-001] adoption approval refuses invented provenance and actor fields |
 | CC-WEB-001 | web | ClaimCore.Web.copy adoption approval input.[CC-WEB-001] adoption origin binds exact witnessed provenance |

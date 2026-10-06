@@ -39,7 +39,7 @@ module HostRoutes =
         task {
             match configuration.Oidc, Admission.credentialMode context with
             | Some oidc, CredentialMode.BrowserCookie ->
-                match! Admission.actorGet oidc configuration.Origin context with
+                match! Admission.actorGet oidc configuration.Binding context with
                 | Ok _ -> return true
                 | Error _ -> return false
             | _ -> return false
@@ -63,7 +63,7 @@ module HostRoutes =
                 match!
                     Admission.actorPost
                         oidc
-                        configuration.Origin
+                        configuration.Binding
                         RequestBody.Json
                         1024
                         antiforgery
@@ -98,7 +98,7 @@ module HostRoutes =
             match configuration.Oidc with
             | None -> return RouteSupport.hostFailure context WebHostFailure.SessionRejected
             | Some oidc ->
-                match! Admission.actorGet oidc configuration.Origin context with
+                match! Admission.actorGet oidc configuration.Binding context with
                 | Error failure -> return RouteSupport.admissionFailure context failure
                 | Ok principal ->
                     match! (forActor principal).Definition(context.RequestAborted) with

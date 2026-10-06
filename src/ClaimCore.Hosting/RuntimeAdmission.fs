@@ -229,7 +229,7 @@ type internal RuntimeAdmission
 
     member _.CleanupCompletion = drained.Task
 
-    member this.CloseAndDrain(stopBackgroundWork: unit -> unit) =
+    member private _.Close(stopBackgroundWork: unit -> unit) =
         let shouldCleanup =
             lock gate (fun () ->
                 closing <- true
@@ -241,17 +241,32 @@ type internal RuntimeAdmission
                     false)
 
         try
-            try
-                stopBackgroundWork ()
-            finally
-                if shouldCleanup then
-                    cleanup ()
+            stopBackgroundWork ()
+        finally
+            if shouldCleanup then
+                cleanup ()
+
+    member this.CloseAndDrain(stopBackgroundWork: unit -> unit) =
+        try
+            this.Close(stopBackgroundWork)
 
             if this.CleanupCompletion.Wait(drainTimeout) then
                 if not (this.CleanupCompletion.GetAwaiter().GetResult()) then
                     invalidOp "ClaimCore runtime cleanup failed."
         with _ ->
             raise (InvalidOperationException("ClaimCore runtime cleanup failed."))
+
+    member this.CloseAndDrainAsync(stopBackgroundWork: unit -> unit) =
+        task {
+            try
+                this.Close(stopBackgroundWork)
+                let! completed = this.CleanupCompletion
+
+                if not completed then
+                    invalidOp "ClaimCore runtime cleanup failed."
+            with _ ->
+                return raise (InvalidOperationException("ClaimCore runtime cleanup failed."))
+        }
 
     interface IDisposable with
         member this.Dispose() = this.CloseAndDrain(fun () -> ())

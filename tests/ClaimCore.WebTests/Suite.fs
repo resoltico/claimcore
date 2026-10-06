@@ -15,12 +15,14 @@ let tests =
                     ConfigurationTests.tests
                     StartupLifetimeTests.tests
                     OriginConfigurationTests.tests
+                    BindingAdmissionTests.tests
                     WitnessConfigurationTests.tests
                 ]
             |> testSequenced
             OidcConfigurationTests.tests
             AuthFoundationTests.tests
             OidcStartupTests.tests
+            OidcStartupCancellationTests.tests
             PrincipalAdmissionTests.tests
             AuthTrustTests.tests
             AdmissionEdgeTests.tests
