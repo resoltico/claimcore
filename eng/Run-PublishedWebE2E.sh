@@ -230,7 +230,7 @@ run_engine() (
       [[ -s "${state_dir}/diagnostics/cli-before-grant.err" ]]; then
       printf 'Unregistered service principal denial probe failed (exit %s).\n' "${cli_before_status}" >&2
       jq -c '{resultFrame:(.kind == "result"), protocolV4:(.protocolVersion == 4),
-        caseList:(.endpoint == "case.list"),
+        caseList:(.endpoint == "case.list"), serviceFailure:(.kind == "serviceFailure"),
         localCode:(if ((.code // "") | test("^CLI_[A-Z_]{1,80}$")) then .code else null end), refused:(.service.outcome.tag == "REJECTED"),
         itemsAbsent:(.service.outcome.data.items? == null)}' \
         "${state_dir}/diagnostics/cli-before-grant.out" >&2 || true

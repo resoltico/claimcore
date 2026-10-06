@@ -68,6 +68,11 @@ certificate still requires the operator to verify and trust its public certifica
 
 ## Configuration reference
 
+The API audience is a resource identifier, not an OIDC login client. In Keycloak, configure
+`claimcore-api` as an Included Custom Audience for CLI and service access tokens; a client-audience
+mapper requires a registered, enabled audience client. Keep issuer, signature and audience
+validation enabled when updating the provider.
+
 | Variable | Requirement and bound |
 |---|---|
 | `CLAIMCORE_CONNECTION_FILE` | Required owner-private primary application-role connection file. |

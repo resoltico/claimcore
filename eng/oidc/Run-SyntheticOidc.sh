@@ -124,14 +124,14 @@ jq -n \
        attributes:{"pkce.code.challenge.method":"S256"},
        protocolMappers:[{name:"claimcore-api-audience",protocol:"openid-connect",
          protocolMapper:"oidc-audience-mapper",consentRequired:false,
-         config:{"included.client.audience":"claimcore-api",
+         config:{"included.custom.audience":"claimcore-api",
            "id.token.claim":"false","access.token.claim":"true"}}]},
       {clientId:"claimcore-service",enabled:true,publicClient:false,secret:$serviceSecret,
        standardFlowEnabled:false,directAccessGrantsEnabled:false,
        implicitFlowEnabled:false,serviceAccountsEnabled:true,
        protocolMappers:[{name:"claimcore-api-audience",protocol:"openid-connect",
          protocolMapper:"oidc-audience-mapper",consentRequired:false,
-         config:{"included.client.audience":"claimcore-api",
+         config:{"included.custom.audience":"claimcore-api",
            "id.token.claim":"false","access.token.claim":"true"}}]},
       {clientId:"claimcore-unscoped",enabled:true,publicClient:false,secret:$unscopedSecret,
        standardFlowEnabled:false,directAccessGrantsEnabled:false,
@@ -153,7 +153,7 @@ jq -n --arg realm "${foreign_realm}" --arg secret "${foreign_secret}" \
       implicitFlowEnabled:false,serviceAccountsEnabled:true,
       protocolMappers:[{name:"claimcore-api-audience",protocol:"openid-connect",
         protocolMapper:"oidc-audience-mapper",consentRequired:false,
-        config:{"included.client.audience":"claimcore-api",
+        config:{"included.custom.audience":"claimcore-api",
           "id.token.claim":"false","access.token.claim":"true"}}]}]}' \
   >"${workdir}/foreign.json"
 
