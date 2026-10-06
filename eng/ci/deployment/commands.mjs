@@ -16,7 +16,18 @@ export function runner(root, log, env) {
     appendFileSync(log, result.stdout ?? "", { mode: 0o600 });
     appendFileSync(log, result.stderr ?? "");
     if (result.status !== expected) {
-      throw new Error("Container qualification command failed; private run diagnostics retained.");
+      const causes =
+        [
+          ...`${result.stdout ?? ""}\n${result.stderr ?? ""}`.matchAll(
+            /"id":"((?:DB|WEB)_[A-Z_]+)"/gu,
+          ),
+        ]
+          .map((match) => match[1])
+          .slice(0, 3)
+          .join(", ") || "none";
+      throw new Error(
+        `Container qualification failed (exit ${result.status ?? "unavailable"}; fixed diagnostics: ${causes}); private run diagnostics retained.`,
+      );
     }
     return result.stdout;
   };

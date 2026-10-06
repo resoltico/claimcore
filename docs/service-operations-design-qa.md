@@ -102,3 +102,20 @@ The runtime input mount is now `/etc/claimcore/runtime` in both processes. Owner
 a separate mount. One runtime connection file therefore retains the same certificate path
 for runtime and explicitly authorized owner work, without duplicating credentials or mounting
 schema-owner inputs into Web.
+
+## Startup-stop observation
+
+A one-second delay after container creation did not prove that startup had entered remote I/O.
+The process qualification now observes an established TCP connection to the deliberately paused
+issuer inside Web's Linux network namespace before sending SIGTERM. This makes the blocked
+transport boundary observable without adding a product test hook or logging provider details.
+The separate native cancellation test checks suspended metadata read cancellation directly.
+
+## Linux cleanup ownership
+
+The complete Linux container checks passed, then cleanup refused the role-private directories
+owned by PostgreSQL and the identity provider. Successful test teardown now uses an isolated root
+container mounted only on this run's newly created synthetic configuration, checks its format/scope,
+and removes its contents before the host removes the empty directory. Database volumes are still
+removed only after exact test-project label verification. Failed runs retain their evidence.
+No product initializer or runtime gains a deletion, reset or permission-repair path.

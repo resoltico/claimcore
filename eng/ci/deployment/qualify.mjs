@@ -112,30 +112,7 @@ try {
   compose(["up", "--detach", "--wait", "--force-recreate", "web"]);
   const replacementPort = Number(compose(["port", "web", "5443"]).trim().split(":").at(-1));
   assert.equal((await probe(replacementPort, ca, "/health/live")).status, 200);
-  writeFileSync(
-    join(state, "result.json"),
-    `${JSON.stringify({
-      run,
-      result: "passed",
-      liveness: true,
-      syntheticReadinessRefused: true,
-      exactHostRefusal: true,
-      tlsNameRefusal: true,
-      nonRoot: true,
-      privateMountSeparation: true,
-      stopAndReplacement: true,
-      startupStop: true,
-      privateInputRefusals: true,
-      runtimeAdministrationRefused: true,
-      missingRevocationRefused: true,
-      installationPreserved: true,
-      privateBuildInputsExcluded: true,
-    })}\n`,
-  );
   passed = true;
-  process.stdout.write(
-    "Container operation qualification passed against the real HTTPS deployment.\n",
-  );
 } finally {
   compose(["down"]);
   if (passed) {
@@ -154,7 +131,45 @@ try {
       assert.equal(inspection.Labels["com.docker.compose.project"], run);
       docker(["volume", "rm", volume]);
     }
+    docker([
+      "run",
+      "--rm",
+      "--user",
+      "0:0",
+      "--mount",
+      `type=bind,source=${configuration},target=/configuration`,
+      "--entrypoint",
+      "node",
+      "claimcore-configuration:source",
+      "-e",
+      "const fs=require('fs'); const state=JSON.parse(fs.readFileSync('/configuration/installation.json')); if(state.format!=='claimcore-local-configuration-1'||state.scope!=='SYNTHETIC_ONLY')throw Error('Foreign configuration refused'); for(const name of fs.readdirSync('/configuration'))fs.rmSync('/configuration/'+name,{recursive:true,force:true});",
+    ]);
     rmSync(configuration, { recursive: true, force: true });
     rmSync(join(state, "publication-context"), { recursive: true, force: true });
   }
 }
+
+writeFileSync(
+  join(state, "result.json"),
+  `${JSON.stringify({
+    run,
+    result: "passed",
+    liveness: true,
+    syntheticReadinessRefused: true,
+    exactHostRefusal: true,
+    tlsNameRefusal: true,
+    nonRoot: true,
+    privateMountSeparation: true,
+    stopAndReplacement: true,
+    startupStop: true,
+    privateInputRefusals: true,
+    runtimeAdministrationRefused: true,
+    missingRevocationRefused: true,
+    installationPreserved: true,
+    privateBuildInputsExcluded: true,
+  })}\n`,
+  { mode: 0o600, flag: "wx" },
+);
+process.stdout.write(
+  "Container operation qualification passed against the real HTTPS deployment.\n",
+);
