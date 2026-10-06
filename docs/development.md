@@ -545,7 +545,7 @@ failures, missing or weak Web packages, nonfinite rates, and ignored DTD entity 
 
 Verification is job-local: each job verifies the reports it produced against the inventories before it uploads, and
 the consumers of published bytes verify manifests. Use **Re-run all jobs**, not mixed-attempt partial reruns.
-Generated reports belong under ignored `artifacts/` or current-attempt CI artifacts, not in source.
+Generated reports belong under ignored `artifacts/` or current-attempt CI artifacts, not in source. The deployment job retains only a schema-checked result bound to the current revision, source inventory, Web/Database publication digests and run/attempt. It includes actual primary/witness CRL outcomes, public certificate/CRL and runtime fingerprints, and synthetic read-state digests; private command logs, inputs, credentials, keys and payloads are excluded. Failed evidence admission prevents upload even if secret scanning succeeds. The local deployment scope conservatively includes its source, publication, shared build, formatting and toolchain inputs.
 
 ## Dependency updates
 

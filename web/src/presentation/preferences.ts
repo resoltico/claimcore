@@ -14,7 +14,7 @@ export const defaults: Preferences = Object.freeze({ language: "en", displayLoca
 export const preferenceKey = "claimcore.presentation.v1";
 
 const canonicalTag = (value: unknown): string | null => {
-  if (typeof value !== "string" || value.length > 64 || value.length === 0) {
+  if (typeof value !== "string" || value.length > 64) {
     return null;
   }
   try {
@@ -35,20 +35,19 @@ export const resolveDisplayLocale = (value: unknown): DisplayLocale => {
   const tag = canonicalTag(value);
   return displayLocales.find((locale) => locale === tag) ?? defaults.displayLocale;
 };
+type StoredPreferences = Readonly<{ language: unknown; displayLocale: unknown; version: unknown }>;
+const isStoredPreferences = (value: unknown): value is StoredPreferences =>
+  typeof value === "object" &&
+  value !== null &&
+  !Array.isArray(value) &&
+  Object.keys(value).sort().join(",") === "displayLocale,language,version";
 export const parsePreferences = (text: string | null): Preferences => {
   if (text === null || text.length > 256) {
     return defaults;
   }
   try {
     const value: unknown = JSON.parse(text);
-    if (typeof value !== "object" || value === null || Array.isArray(value)) {
-      return defaults;
-    }
-    if (!("language" in value) || !("displayLocale" in value) || !("version" in value)) {
-      return defaults;
-    }
-    const keys = Object.keys(value).sort().join(",");
-    if (keys !== "displayLocale,language,version" || value.version !== 1) {
+    if (!isStoredPreferences(value) || value.version !== 1) {
       return defaults;
     }
     return {

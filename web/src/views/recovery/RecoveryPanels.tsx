@@ -248,6 +248,7 @@ export const RecoveryDetailsDialog = ({
   const p = usePresentation();
   return (
     <AccessibleModal
+      closeLabel={p.text("ui.close")}
       title={p.text("ui.recoveryDetails")}
       description={p.text("ui.recoveryDetailsHint")}
       isOpen={selected !== null}

@@ -8,6 +8,7 @@ import { TextField } from "react-aria-components/TextField";
 import { useCallback, useState } from "react";
 import type { CaseSummary, WebV3Response } from "../api/v3";
 import { v3 } from "../api/v3";
+import { CharacterWarning } from "../components/BusinessValue";
 import { CopyValue } from "../components/CopyValue";
 import { useRetryablePage } from "../hooks/useRead";
 
@@ -37,6 +38,7 @@ const CaseRow = ({
       >
         <bdi>{caseView.caseReference}</bdi>
       </Button>
+      <CharacterWarning value={caseView.caseReference} />
       <span>
         {p.text("ui.caseRow", {
           status: p.token(caseView.status),

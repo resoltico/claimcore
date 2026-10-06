@@ -34,7 +34,23 @@ const previewEnvelope = async (page: Page, bytes: Buffer) => {
     expect(requests).toHaveLength(1);
     preview.release();
     await expect(page.getByRole("dialog")).toContainText(digest);
-    await selectLanguage(page, "lv");
+    const dialog = page.getByRole("dialog");
+    const original = await dialog.elementHandle();
+    for (const language of ["en", "ar", "lv"] as const) {
+      await selectLanguage(page, language);
+      await expect(dialog).toHaveAccessibleName(ui(language, "ui.importTitle"));
+      await expect(
+        dialog.getByText(ui(language, "ui.importDescription"), { exact: true }),
+      ).toBeVisible();
+      await expect(
+        dialog.getByRole("button", { name: ui(language, "ui.retainForRecovery"), exact: true }),
+      ).toBeVisible();
+      await expect(
+        dialog.getByRole("button", { name: ui(language, "ui.cancel"), exact: true }),
+      ).toBeVisible();
+      await expect(dialog).toContainText(digest);
+      expect(await dialog.evaluate((element, prior) => element === prior, original)).toBe(true);
+    }
     await selectFormat(page, "ar-EG");
     await expectAccessible(page);
     expect(requests).toHaveLength(1);
@@ -54,7 +70,7 @@ test("retains unchanged encrypted artifact bytes through localized import withou
   await keepForRecovery(page);
   await inspectPending(page, identity);
   const artifacts = await exportEnvelope(page, identity);
-  await page.getByRole("dialog").getByRole("button", { name: "Cancel" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Close inspection" }).click();
   const { digest, requests } = await previewEnvelope(page, artifacts.envelope);
   const retain = await pauseJsonReply(page, "recovery.importEnvelopeRetain");
   try {
@@ -84,9 +100,7 @@ test("renders exact accepted amounts with RTL and pseudolocale accessibility whi
   await prepare(page);
   await confirmPrepared(page);
   await page.getByRole("button", { name: "Record changes" }).click();
-  await expect(
-    page.getByRole("heading", { name: "Accepted operation", exact: true }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Recorded change", exact: true })).toBeVisible();
   await selectLanguage(page, "ar");
   await selectFormat(page, "ar-EG");
   const row = page.locator('.field-row[data-field-name="claimedAmount"]');

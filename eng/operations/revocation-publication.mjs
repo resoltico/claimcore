@@ -12,6 +12,7 @@ const server = createServer((request, response) => {
     response.writeHead(404).end();
     return;
   }
+  process.stdout.write(`${JSON.stringify({ crlRequest: request.socket.remoteAddress })}\n`);
   response
     .writeHead(200, {
       "Content-Type": "application/pkix-crl",

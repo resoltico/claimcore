@@ -162,7 +162,6 @@ export type UiArgs = {
   "ui.resolveTitle": Readonly<Record<string, never>>;
   "ui.dismissTitle": Readonly<Record<string, never>>;
   "ui.exportWarning": Readonly<Record<string, never>>;
-  "ui.recoveryConfirmHint": Readonly<Record<string, never>>;
   "ui.working": Readonly<Record<string, never>>;
   "ui.confirmResolve": Readonly<Record<string, never>>;
   "ui.confirmDismiss": Readonly<Record<string, never>>;
@@ -181,4 +180,8 @@ export type UiArgs = {
   "ui.keepEditing": Readonly<Record<string, never>>;
   "ui.backToCase": Readonly<Record<string, never>>;
   "ui.registerLabel": Readonly<Record<string, never>>;
+  "ui.close": Readonly<Record<string, never>>;
+  "ui.resolveConsequence": Readonly<Record<string, never>>;
+  "ui.dismissConsequence": Readonly<Record<string, never>>;
+  "ui.canonicalCopyHint": Readonly<Record<string, never>>;
 };

@@ -55,8 +55,12 @@ const expectAuthored = (bytes: Buffer, reference: string, modes: Modes) => {
 };
 const preserveChoice = async (page: Page, modes: Modes) => {
   const requests = trackRequests(page);
-  for (const language of ["ar", "lv", "en"] as const) {
+  for (const language of ["ar", "en", "lv", "en"] as const) {
     await selectLanguage(page, language);
+    await expect(page.getByText(ui(language, "ui.correctionHint"), { exact: true })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: ui(language, "ui.prepareExact"), exact: true }),
+    ).toBeVisible();
     for (const [group, mode] of Object.entries(modes)) {
       await expect(page.locator(`#correction-${group}-mode`)).toHaveValue(mode);
     }

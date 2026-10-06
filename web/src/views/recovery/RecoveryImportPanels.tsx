@@ -73,6 +73,7 @@ export const RecoveryImportDialog = ({
   const p = usePresentation();
   return (
     <AccessibleModal
+      closeLabel={p.text("ui.cancel")}
       title={p.text("ui.importTitle")}
       description={p.text("ui.importDescription")}
       isOpen={importing !== null}

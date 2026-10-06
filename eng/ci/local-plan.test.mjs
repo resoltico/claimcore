@@ -103,3 +103,48 @@ test("only generated stage outputs are cleaned before a local run", () => {
 test("shared lint policy changes require the frontend gates", () => {
   assert.equal(affected(job("frontend-gates"), ["config/oxlint.json"]), true);
 });
+
+test("deployment selection covers publication, trust-driver, lock and shared toolchain inputs", () => {
+  const deployment = job("container-operation");
+  const inputs = [
+    "web/e2e/browser-trust-driver.mjs",
+    "web/e2e/browser-trust-navigation.mjs",
+    "web/e2e/browser-trust-store.mjs",
+    "web/package.json",
+    "web/package-lock.json",
+    "web/.npmrc",
+    "web/src/App.tsx",
+    "web/scripts/write-asset-manifest.mjs",
+    ".node-version",
+    "db/baseline.sql",
+    "db/postgresql-baseline.json",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    "Directory.Packages.props",
+    "NuGet.Config",
+    ".config/dotnet-tools.json",
+    "eng/ci/publish/main.mjs",
+    "eng/ClaimCore.ContractGenerator/DefaultPresentation.fs",
+    "eng/package-lock.json",
+    "config/contracts.lock.json",
+    "src/ClaimCore.Witness/PostgresTransport.fs",
+    "deployment/Dockerfile",
+    "ClaimCore.slnx",
+    "global.json",
+    "LICENSE",
+    "prettier.config.mjs",
+    ".editorconfig",
+    ".github/actions/toolchain/action.yml",
+    ".github/workflows/verify-deployment.yml",
+  ];
+  for (const input of inputs) {
+    assert.equal(affected(deployment, [input]), true, input);
+  }
+  for (const input of ["docs/web.md", "CHANGELOG.md", "SUPPORT.md", "examples/README.md"]) {
+    assert.equal(affected(deployment, [input]), false, input);
+  }
+  const incomplete = { ...deployment, scope: ["^deployment/", "^src/", "^config/"] };
+  for (const input of ["web/e2e/browser-trust-driver.mjs", "web/package-lock.json"]) {
+    assert.equal(affected(incomplete, [input]), false, "old scope misses this independent input");
+  }
+});

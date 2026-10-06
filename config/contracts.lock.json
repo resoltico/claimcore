@@ -353,8 +353,8 @@
     },
     {
       "path": "default-presentation.en.json",
-      "bytes": 12306,
-      "sha256": "2716879c00ff059ebb9d0a776ce6f9177548053c1661817c2bdf0e4c5c24f86e"
+      "bytes": 14223,
+      "sha256": "09d1a815f4cda4d5a12117dfa3f253255302b4d675c495d773fd3f14060eced5"
     },
     {
       "path": "local-diagnostics.parsed-value-corpus.json",

@@ -25,7 +25,7 @@ it("shows command acceptance together with required recovery for unconfirmed set
   await user.click(screen.getByRole("button", { name: "Review changes" }));
   await user.click(await screen.findByRole("checkbox", { name: "I confirm these changes." }));
   await user.click(screen.getByRole("button", { name: "Record changes" }));
-  expect(await screen.findByRole("heading", { name: "Accepted operation" })).toBeVisible();
+  expect(await screen.findByRole("heading", { name: "Recorded change" })).toBeVisible();
   expect(screen.getByRole("alert")).toHaveTextContent("Inspect Recovery");
   expect(recover).not.toHaveBeenCalled();
 });
@@ -42,7 +42,7 @@ it("keeps accepted recovery evidence distinct from unconfirmed settlement and re
   render(<RecoveryView token="token" onRecovery={recover} onMutationLockChange={lock} />);
   await user.click(await screen.findByRole("button", { name: "Inspect" }));
   await user.click(await screen.findByRole("button", { name: "Resolve exact preparation" }));
-  await user.click(await screen.findByRole("button", { name: "Confirm resolve" }));
+  await user.click(await screen.findByRole("button", { name: "Try to record this exact request" }));
   expect(await screen.findByRole("status")).toHaveTextContent("Accepted exact operation");
   expect(screen.getByRole("status")).toHaveTextContent("Inspect Recovery");
   expect(recover).toHaveBeenCalledWith({

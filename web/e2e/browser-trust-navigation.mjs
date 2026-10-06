@@ -1,3 +1,4 @@
+import { seedCasework } from "./browser-trust-seed.mjs";
 import assert from "node:assert/strict";
 import { chromium } from "@playwright/test";
 import { createConnection, createServer } from "node:net";
@@ -44,8 +45,8 @@ export const refused = (origin, error) =>
     );
   });
 
-/** @param {string} password */
-export const authenticate = (password) =>
+/** @param {string} password @param {{issuer: string, subject: string}} owner */
+export const authenticate = (password, owner) =>
   freshBrowser(async (page) => {
     await page.goto("https://app.localhost:5443/");
     await page.getByRole("link", { name: "Sign in", exact: true }).click();
@@ -75,4 +76,5 @@ export const authenticate = (password) =>
       );
     });
     assert.equal(authenticated, true);
+    await seedCasework(page, owner);
   });

@@ -79,7 +79,7 @@ const acceptsOperation = async (): Promise<void> => {
   expect(await screen.findByRole("dialog", { name: "Review changes" })).toBeVisible();
   await user.click(screen.getByRole("checkbox", { name: "I confirm these changes." }));
   await user.click(screen.getByRole("button", { name: "Record changes" }));
-  expect(await screen.findByRole("heading", { name: "Accepted operation" })).toBeVisible();
+  expect(await screen.findByRole("heading", { name: "Recorded change" })).toBeVisible();
   expect(screen.getByText(`Operation ${operationId} is accepted.`)).toBeVisible();
   await user.click(screen.getByRole("button", { name: "Return to case" }));
   expect(committed).toHaveBeenCalledOnce();

@@ -147,7 +147,7 @@ it("locks Dashboard during recovery dispatch and keeps the identity after lost r
   await user.click(screen.getByRole("button", { name: "Recovery" }));
   await user.click(await screen.findByRole("button", { name: "Inspect" }));
   await user.click(await screen.findByRole("button", { name: "Resolve exact preparation" }));
-  await user.click(await screen.findByRole("button", { name: "Confirm resolve" }));
+  await user.click(await screen.findByRole("button", { name: "Try to record this exact request" }));
   expect(screen.getByRole("button", { name: "Cases", hidden: true })).toBeDisabled();
   expect(screen.getByRole("button", { name: "Sign out", hidden: true })).toBeDisabled();
   pending.reject(new Error("Synthetic lost resolution"));
@@ -172,7 +172,7 @@ it("reports definite accepted recovery knowledge and keeps its observation targe
   await user.click(screen.getByRole("button", { name: "Recovery" }));
   await user.click(await screen.findByRole("button", { name: "Inspect" }));
   await user.click(await screen.findByRole("button", { name: "Resolve exact preparation" }));
-  await user.click(await screen.findByRole("button", { name: "Confirm resolve" }));
+  await user.click(await screen.findByRole("button", { name: "Try to record this exact request" }));
   expect(await screen.findByRole("status")).toHaveTextContent(
     `Accepted exact operation ${preparation.summary.operationId}`,
   );

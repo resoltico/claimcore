@@ -6,14 +6,30 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { isIP } from "node:net";
 
-/** @returns {{ca: string, password: string, web: string, identity: string, expiry: string}} */
+/** @param {unknown} owner */
+const readOwner = (owner) => {
+  assert.ok(owner !== null && typeof owner === "object");
+  assert.ok("issuer" in owner && typeof owner.issuer === "string");
+  assert.ok("subject" in owner && typeof owner.subject === "string");
+  assert.equal(owner.issuer, "https://identity.localhost:5444/realms/claimcore");
+  assert.match(owner.subject, /^[0-9a-f-]{36}$/u);
+  return { issuer: owner.issuer, subject: owner.subject };
+};
+/** @returns {{ca: string, password: string, owner: {issuer: string, subject: string}, web: string, identity: string, expiry: string}} */
 export function readFixture() {
   const source = readFileSync(0, "utf8");
   assert.ok(source.length < 65_536);
   /** @type {unknown} */
   const value = JSON.parse(source);
   assert.ok(value !== null && typeof value === "object");
-  assert.deepEqual(Object.keys(value).sort(), ["ca", "expiry", "identity", "password", "web"]);
+  assert.deepEqual(Object.keys(value).sort(), [
+    "ca",
+    "expiry",
+    "identity",
+    "owner",
+    "password",
+    "web",
+  ]);
   assert.ok("ca" in value && typeof value.ca === "string");
   assert.ok("password" in value && typeof value.password === "string");
   assert.ok("web" in value && typeof value.web === "string" && isIP(value.web) === 4);
@@ -21,6 +37,8 @@ export function readFixture() {
     "identity" in value && typeof value.identity === "string" && isIP(value.identity) === 4,
   );
   assert.ok("expiry" in value && typeof value.expiry === "string" && isIP(value.expiry) === 4);
+  assert.ok("owner" in value);
+  const owner = readOwner(value.owner);
   assert.ok(value.password.length > 0 && value.password.length <= 4096);
   const ca = new X509Certificate(value.ca);
   assert.ok(ca.ca);
@@ -28,6 +46,7 @@ export function readFixture() {
   return {
     ca: value.ca,
     password: value.password,
+    owner,
     web: value.web,
     identity: value.identity,
     expiry: value.expiry,

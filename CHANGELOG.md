@@ -6,7 +6,7 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Fixed
 
-- Web keeps language and display-format changes independent during rapid preference events. Clipboard feedback follows the exact attempted value and label; delayed completion cannot claim success for a changed value. Case review and recovery summaries isolate exact references and warn about hidden or directional characters without changing business text.
+- Web keeps language and display-format changes independent during rapid preference events. Clipboard feedback follows the exact attempted value and label; delayed completion cannot claim success for a changed value. List, detail, history, review, receipt, recovery and lookup displays isolate exact business values and warn about hidden or directional characters without changing their content, including clipboard fallback.
 
 - Updated the build-only HTTP cache dependency to its patched release and retired its advisory exception; reverting to the affected versions fails dependency auditing.
 
@@ -16,7 +16,7 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Changed
 
-- Shared field and command terminology now addresses case handlers, including “Responsible insurer” and explicit registration, decision and payment correction actions. Domain descriptors and typed native diagnostic templates supply default English browser text; Latvian and Arabic retain the same meanings. Canonical inputs, copied business values, operation identities, service fingerprints and stored formats are unchanged. Ordinary language controls offer English, Latvian and Arabic; the layout pseudolocale remains available through diagnostic preference seeding.
+- Shared field and command terminology now addresses case handlers, including “Responsible insurer” and explicit registration, decision and payment correction actions. Domain descriptors and typed native diagnostic templates supply default English browser text; Latvian and Arabic retain the same meanings. Ordinary screens use Case history, Available actions and Recorded change. Review closing explicitly keeps the server request for Recovery; resolve/dismiss confirmations explain possible recording, permanent future-authority revocation and the limits of earlier attempt knowledge. Canonical copy controls explain their fixed date/number spelling. Canonical inputs, copied business values, operation identities, service fingerprints and stored formats are unchanged. Ordinary language controls offer English, Latvian and Arabic; the layout pseudolocale remains available through diagnostic preference seeding.
 
 - Newly created local browser certificates omit the Docker-only database revocation URL; PostgreSQL leaves retain it. Existing certificates and trust stores are untouched. Operators must explicitly replace affected browser leaves and establish trust in the owner-verified public CA for both Web and identity-provider origins; see [browser trust setup](docs/service.md#trust-the-public-local-ca).
 
@@ -34,6 +34,8 @@ Notable changes to this project are documented in this file. The format is based
 - Fixed runtime witness cause/stage counters and bounded stderr notices identify transport, authority, schema, integrity and pending-evidence failures without provider details or claimant identifiers. Failed or overdue scheduled audits emit a fixed quarantine signal; these diagnostics do not prove non-commit, repair evidence or qualify source-preview readiness. See [operator guidance](docs/operations.md).
 
 ### Internal
+
+- Default presentation compilation preserves admitted apostrophe/brace interactions through typed literal/hole parts rather than ICU string escaping. This breaks the unpublished encoded-string build artifact shape; regenerate contracts and assets together. Deployment qualification uses cache-isolated, populated primary/witness CRL experiments and a disabled-enforcement source control, with current-attempt schema-checked evidence. Local selection includes the actual deployment build and trust inputs.
 
 - Compiled architecture checks reject cryptographic randomness, version-7 identity minting and elapsed/local-clock reads in the value-computing core. Calendar and non-owner selectors include every classified product component; the contract-test map now names the graph, internals and public-surface checks alongside their compiled negative controls. Inspection reports omit false generic edges not corroborated by CLR assembly references.
 

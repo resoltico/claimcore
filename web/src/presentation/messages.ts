@@ -26,8 +26,7 @@ const message = (key: string, preferences: Preferences): IntlMessageFormat => {
   const grammar = preferences.language === "en-XA" ? "en" : preferences.language;
   const formatter = new IntlMessageFormat(ast, grammar, undefined, {
     formatters: {
-      getNumberFormat: () =>
-        new Intl.NumberFormat(preferences.displayLocale, { maximumFractionDigits: 0 }),
+      getNumberFormat: () => new Intl.NumberFormat(preferences.displayLocale),
       getDateTimeFormat: Intl.DateTimeFormat,
       getPluralRules: (_locales, options) => new Intl.PluralRules(grammar, options),
     },
@@ -37,14 +36,12 @@ const message = (key: string, preferences: Preferences): IntlMessageFormat => {
 };
 const safeArgs = (key: string, values: Readonly<Record<string, string | number>>): boolean => {
   const shape = Object.hasOwn(shapeTable, key) ? shapeTable[key] : undefined;
-  if (
-    shape === undefined ||
-    Object.keys(values).sort().join(",") !== Object.keys(shape).sort().join(",")
-  ) {
+  if (shape === undefined || Object.keys(values).length !== Object.keys(shape).length) {
     return false;
   }
   return Object.entries(shape).every(
     ([name, role]) =>
+      Object.hasOwn(values, name) &&
       typeof values[name] === role &&
       (role !== "number" || (Number.isSafeInteger(values[name]) && Number(values[name]) >= 0)),
   );
@@ -71,20 +68,21 @@ export const translate = <K extends MessageKey>(
 ): string => renderKey(preferences, key, values[0] ?? {});
 export const hasMessage = (key: string): key is MessageKey => Object.hasOwn(shapeTable, key);
 
-/** Replace the reference argument with a DOM-isolated value, retaining ICU word order. */
-export const renderReference = <T>(
+/** Replace a string argument with a DOM-isolated value, retaining ICU word order. */
+export const renderIsolatedValue = <T>(
   preferences: Preferences,
   key: string,
   values: Readonly<Record<string, string | number>>,
   reference: T,
+  argument = "reference",
 ): (string | T)[] => {
-  if (!safeArgs(key, values) || shapeTable[key]?.["reference"] !== "string") {
+  if (!safeArgs(key, values) || shapeTable[key]?.[argument] !== "string") {
     return [renderKey(preferences, "notice.unknownDiagnostic")];
   }
   const prepared = Object.fromEntries(
     Object.entries(values).map(([k, v]) => [k, isolate(v, preferences.language === "ar")]),
   );
   return message(key, preferences)
-    .formatToParts<T>({ ...prepared, reference })
+    .formatToParts<T>({ ...prepared, [argument]: reference })
     .map((part) => part.value);
 };

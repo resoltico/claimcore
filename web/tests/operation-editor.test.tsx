@@ -195,9 +195,9 @@ const submittingState = async (): Promise<void> => {
   await openReview(user);
   await selectConfirmedSubmit(user);
   expect(screen.getByRole("button", { name: "Recording…" })).toBeDisabled();
-  expect(screen.getByRole("button", { name: "Back to editing; keep for Recovery" })).toBeDisabled();
+  expect(screen.queryByRole("button", { name: "Back to editing; keep for Recovery" })).toBeNull();
   resolveResponse(acceptedResponse());
-  await screen.findByRole("heading", { name: "Accepted operation" });
+  await screen.findByRole("heading", { name: "Recorded change" });
 };
 
 describe("operation editor transport outcomes", () => {
@@ -231,12 +231,12 @@ const openDiscardDialog = async (user: ReturnType<typeof userEvent.setup>): Prom
   await screen.findByRole("dialog", { name: "Discard these draft changes?" });
 };
 
-const cancelReview = async (): Promise<void> => {
+const closeReview = async (): Promise<void> => {
   const user = userEvent.setup();
   vi.mocked(globalThis.fetch).mockImplementationOnce(preparedForRequest(preparedResponse()));
   renderEditor();
   await openReview(user);
-  await user.click(screen.getByRole("button", { name: "Cancel" }));
+  await user.click(screen.getByRole("button", { name: "Back to editing; keep for Recovery" }));
   expect(screen.queryByRole("dialog", { name: "Review changes" })).toBeNull();
   const prepareButton = screen.getByRole("button", { name: "Review changes" });
   expect(prepareButton).toBeVisible();
@@ -262,7 +262,7 @@ const confirmCommandDiscard = async (): Promise<void> => {
 const cancelCommandDiscard = async (): Promise<void> => {
   const user = userEvent.setup();
   await openDiscardDialog(user);
-  await user.click(await screen.findByRole("button", { name: "Cancel" }));
+  await user.click(await screen.findByRole("button", { name: "Keep editing" }));
   expect(screen.queryByRole("dialog", { name: "Discard these draft changes?" })).toBeNull();
 };
 
@@ -285,7 +285,7 @@ const newCaseReference = async (): Promise<void> => {
 };
 
 describe("operation editor dialogs and render branches", () => {
-  it("keeps the editor when the review dialog is cancelled", cancelReview);
+  it("keeps the editor when the review dialog is cancelled", closeReview);
   it("keeps a dirty command when the discard dialog is cancelled", keepDirtyCommand);
   it("changes a dirty command only after the discard confirmation", confirmCommandDiscard);
   it("closes the discard dialog through its accessible cancel action", cancelCommandDiscard);

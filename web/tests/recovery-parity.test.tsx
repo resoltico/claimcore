@@ -161,7 +161,7 @@ it("keeps an unknown recovery result explicit and directs inspection", async () 
   render(<RecoveryView onRecovery={vi.fn()} onMutationLockChange={vi.fn()} token="token" />);
   await user.click(await screen.findByRole("button", { name: "Inspect" }));
   await user.click(screen.getByRole("button", { name: "Resolve exact preparation" }));
-  await user.click(await screen.findByRole("button", { name: "Confirm resolve" }));
+  await user.click(await screen.findByRole("button", { name: "Try to record this exact request" }));
   expect(
     await screen.findByText(/Inspect Recovery before retrying this exact operation/u),
   ).toBeVisible();

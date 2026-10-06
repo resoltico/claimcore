@@ -85,7 +85,7 @@ test("keeps expanded accepted-value layout and canonical clipboard on the normal
   await expect(amount.getByRole("textbox")).toHaveValue("1");
   const revision = await page.locator("section.receipt").textContent();
   await selectLanguage(page, "en");
-  await expect(page.locator("section.receipt")).toContainText("Accepted operation");
+  await expect(page.locator("section.receipt")).toContainText("Recorded change");
   expect(revision).not.toBeNull();
   await expect(amount.getByRole("textbox")).toHaveValue("1");
   await expect(page.locator('.field-row[data-field-name="claimedAmount"] bdi')).toHaveText("١");

@@ -18,7 +18,7 @@ const input = resolve(root, "src/presentation/catalogs");
 const output = resolve(root, "src/presentation/generated");
 const generate = process.argv.slice(2).includes("--write");
 const languages = ["en", "lv", "ar"];
-/** @type {Record<string, Record<string, string>>} */
+/** @type {Record<string, Record<string, import("./localization-policy.mjs").Message>>} */
 const catalogs = {};
 const domains = ["ui", "notice", "token", "field", "command", "group", "diagnostic"];
 /** @param {string} language */

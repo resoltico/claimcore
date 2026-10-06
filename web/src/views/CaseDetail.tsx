@@ -12,6 +12,7 @@ import type {
 } from "../api/v3";
 import { v3 } from "../api/v3";
 import { CaseFieldsView } from "../components/CaseFieldsView";
+import { ReferenceSummary } from "../components/ReferenceSummary";
 import { CopyValue } from "../components/CopyValue";
 import { type CommandKind } from "../domain/metadata";
 import { useRetryablePage, useRead } from "../hooks/useRead";
@@ -227,7 +228,7 @@ export const CaseDetail = ({
         <Button onPress={onBack}>{p.text("ui.backToCases")}</Button>
       </div>
       <p>
-        {p.text("ui.exactReference", { reference: caseReference })}{" "}
+        <ReferenceSummary id="ui.exactReference" values={{ reference: caseReference }} />{" "}
         <CopyValue label={p.text("ui.caseReference")} value={caseReference} />
       </p>
       <CurrentFeedback

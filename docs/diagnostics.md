@@ -21,7 +21,7 @@ revision targets use the public spellings `expectedRevision` and `revision`.
 
 The Contracts adapter owns the default English renderer, `RejectionPresentation.render`. It selects
 whole explanations using the diagnostic identity and typed parameters. It never parses a sentence
-or consults ambient UI culture. CLI and Web share the same rejection codec. Contracts also supplies build-only English catalog text through the locked generator; parameterized explanations use closed literal and parameter-hole parts shared with invariant native rendering. Domain and Application have no localization runtime dependency.
+or consults ambient UI culture. CLI and Web share the same rejection codec. Contracts supplies build-only English literal and declared-hole parts through the locked generator, shared with invariant native rendering. The browser compiler constructs literal/argument ICU nodes directly from these parts, preserving apostrophe/brace text without an encoding/parser round trip. Catalog bounds, unsafe-literal checks and exact argument roles still apply. Domain and Application have no localization runtime dependency.
 
 This applies wherever an ordinary `Rejection` appears, including rejection inside a definite recovery
 execution result. `CoreFault` and `RecoveryRejection` are also closed reasons with derived `Code` and

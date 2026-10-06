@@ -1,3 +1,4 @@
+import { CharacterWarning } from "./BusinessValue";
 import { useLayoutEffect, useRef, useState } from "react";
 import { Button } from "react-aria-components/Button";
 import { usePresentation } from "../presentation/context";
@@ -49,17 +50,24 @@ export const CopyValue = ({ label, value }: CopyValueProps) => {
   const { status, copy } = useClipboardFeedback({ label, value });
   return (
     <span className="copy-value">
-      <Button className="copy-button" onPress={() => void copy()}>
-        {p.text("ui.copy", { label })}
+      <Button
+        aria-description={p.text("ui.canonicalCopyHint")}
+        className="copy-button"
+        onPress={() => void copy()}
+      >
+        <span title={p.text("ui.canonicalCopyHint")}>{p.text("ui.copy", { label })}</span>
       </Button>
       <span aria-live="polite">{status === "copied" ? p.text("ui.copied", { label }) : ""}</span>
       {status === "fallback" ? (
-        <textarea
-          aria-label={p.text("ui.copyFallback", { label })}
-          readOnly
-          dir="auto"
-          value={value}
-        />
+        <span>
+          <CharacterWarning value={value} />
+          <textarea
+            aria-label={p.text("ui.copyFallback", { label })}
+            readOnly
+            dir="auto"
+            value={value}
+          />
+        </span>
       ) : null}
     </span>
   );

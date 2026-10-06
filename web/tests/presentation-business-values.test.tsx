@@ -23,9 +23,9 @@ it("formats review values by descriptor with independent date and amount expecta
       <BusinessValue value="EUR" field={field("claimedCurrency")} />
     </>,
   );
-  expect(document.querySelector("bdi")?.textContent).toBe("Before: 999 999 999 999 999 999,0100");
-  expect(screen.getByText("After: 31.12.0099")).toBeVisible();
-  expect(screen.getByText("Before: Not recorded")).toBeVisible();
+  expect(document.querySelector("bdi")?.textContent).toBe("999 999 999 999 999 999,0100");
+  expect(screen.getByText("31.12.0099")).toBeVisible();
+  expect(screen.getByText("Not recorded")).toBeVisible();
   expect(screen.getByText("EUR").tagName).toBe("BDI");
 });
 
@@ -38,7 +38,7 @@ it("isolates and warns about permitted business Unicode without normalizing or e
       <CharacterWarning value={null} />
     </>,
   );
-  expect(screen.getByText(`After: ${value}`).tagName).toBe("BDI");
+  expect(screen.getByText(value).tagName).toBe("BDI");
   expect(screen.getByText("Contains U+200D, U+202E")).toBeVisible();
   expect(document.querySelector("script")).toBeNull();
 });

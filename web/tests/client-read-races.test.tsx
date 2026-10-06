@@ -121,7 +121,7 @@ it("keeps attempt paging cancellable and prevents a late page from reopening clo
   expect(screen.getByRole("button", { name: "Resolve exact preparation" })).toBeDisabled();
   await user.click(screen.getByRole("button", { name: "Load more attempts" }));
   expect(fetch).toHaveBeenCalledTimes(3);
-  await user.click(screen.getByRole("button", { name: "Cancel" }));
+  await user.click(screen.getByRole("button", { name: "Close inspection" }));
   expect(fetch.mock.calls[2]?.[1]?.signal?.aborted).toBe(true);
   await act(async () => {
     pending.resolve(inspection());

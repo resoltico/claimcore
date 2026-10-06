@@ -1,3 +1,4 @@
+import { renderIsolatedValue } from "../presentation/messages";
 import type { FieldDescriptor } from "../api/v3";
 import { usePresentation } from "../presentation/context";
 import { suspiciousCodePoints } from "../utils/text";
@@ -25,7 +26,17 @@ export const BusinessValue = ({
   const display = p.fieldValue(value, field);
   return (
     <span>
-      <bdi>{context === undefined ? display : p.text(context, { value: display })}</bdi>
+      {context === undefined ? (
+        <bdi>{display}</bdi>
+      ) : (
+        renderIsolatedValue(
+          p,
+          context,
+          { value: display },
+          <bdi key="value">{display}</bdi>,
+          "value",
+        )
+      )}
       <CharacterWarning value={value} />
     </span>
   );

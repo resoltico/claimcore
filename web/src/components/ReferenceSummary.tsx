@@ -1,14 +1,11 @@
 import { CharacterWarning } from "./BusinessValue";
 import { usePresentation } from "../presentation/context";
-import { renderReference } from "../presentation/messages";
+import { renderIsolatedValue } from "../presentation/messages";
 import type { MessageArgs } from "../presentation/types";
 
-type ReferenceMessage =
-  | "ui.reference"
-  | "ui.reviewTarget"
-  | "ui.recoverySummary"
-  | "ui.retainedCommand"
-  | "ui.importTarget";
+type ReferenceMessage = {
+  [K in keyof MessageArgs]: MessageArgs[K] extends { readonly reference: string } ? K : never;
+}[keyof MessageArgs];
 
 export const ReferenceSummary = <K extends ReferenceMessage>({
   id,
@@ -21,7 +18,7 @@ export const ReferenceSummary = <K extends ReferenceMessage>({
   const reference = <bdi key="reference">{values.reference}</bdi>;
   return (
     <span>
-      {renderReference(p, id, values, reference)}
+      {renderIsolatedValue(p, id, values, reference)}
       <CharacterWarning value={values.reference} />
     </span>
   );

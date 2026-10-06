@@ -128,6 +128,8 @@ ClaimCore deterministic suite.authenticated CLI client foundation.unsafe origins
 ClaimCore deterministic suite.bounded test processes.test process concurrently captures finite input and output
 ClaimCore deterministic suite.bounded test processes.test process deadline covers a blocked input pipe
 ClaimCore deterministic suite.bounded test processes.test process stops oversized output on either channel
+ClaimCore deterministic suite.build-only presentation projection.exports every diagnostic as literal and declared hole parts [CC-WEB-001]
+ClaimCore deterministic suite.build-only presentation projection.exports serialized lossless literals across syntax interactions [CC-WEB-001]
 ClaimCore deterministic suite.business date assertions.correction assertions.[CC-DOM-002] a closed paid correction reaffirms accepted dates after rollback
 ClaimCore deterministic suite.business date assertions.correction assertions.[CC-DOM-002] a correction cannot hide a new future incident behind accepted dates
 ClaimCore deterministic suite.business date assertions.correction assertions.[CC-DOM-002] equivalent amount spelling remains a correction no-op after rollback
@@ -372,7 +374,6 @@ ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] definite 
 ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] definite retain cancellation becomes cancelled before admission
 ClaimCore deterministic suite.typed rejection diagnostics.CLI and Web project identical diagnostics without changing rejection exit semantics
 ClaimCore deterministic suite.typed rejection diagnostics.ambient culture never selects rejection identity or parameter values
-ClaimCore deterministic suite.typed rejection diagnostics.build-only ICU export escapes literal syntax [CC-WEB-001]
 ClaimCore deterministic suite.typed rejection diagnostics.diagnostic arguments match the closed safe parameter schema
 ClaimCore deterministic suite.typed rejection diagnostics.diagnostic identities and parameter shapes participate in all fingerprints
 ClaimCore deterministic suite.typed rejection diagnostics.diagnostic parameter names and both bounds participate in semantic identity

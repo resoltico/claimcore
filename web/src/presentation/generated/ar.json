@@ -621,11 +621,11 @@
   "ui.openNewCase": [{ "type": 0, "value": "فتح ملف جديد" }],
   "ui.loadingCases": [{ "type": 0, "value": "جارٍ تحميل الملفات…" }],
   "ui.moreCases": [{ "type": 0, "value": "تحميل المزيد من الملفات" }],
-  "ui.acceptedHistory": [{ "type": 0, "value": "السجل المعتمد" }],
+  "ui.acceptedHistory": [{ "type": 0, "value": "سجل الملف" }],
   "ui.historyHint": [
     {
       "type": 0,
-      "value": "إدخالات السجل للقراءة فقط. وسّع الإدخال لفحص الحالة المعتمدة وهوية من سجّلها."
+      "value": "إدخالات السجل للقراءة فقط. وسّع الإدخال للاطّلاع على تفاصيل الملف المسجّلة ومن سجّلها."
     }
   ],
   "ui.historySummary": [
@@ -649,9 +649,9 @@
     { "type": 0, "value": "عملية السجل " },
     { "type": 1, "value": "operationId" }
   ],
-  "ui.loadingHistory": [{ "type": 0, "value": "جارٍ تحميل السجل المعتمد…" }],
+  "ui.loadingHistory": [{ "type": 0, "value": "جارٍ تحميل سجل الملف…" }],
   "ui.moreHistory": [{ "type": 0, "value": "تحميل المزيد من السجل" }],
-  "ui.availableCommands": [{ "type": 0, "value": "الأوامر المتاحة" }],
+  "ui.availableCommands": [{ "type": 0, "value": "الإجراءات المتاحة" }],
   "ui.commandDescription": [
     { "type": 1, "value": "label" },
     { "type": 0, "value": ": " },
@@ -732,7 +732,7 @@
     { "type": 0, "value": "حقول الملف لـ " },
     { "type": 1, "value": "context" }
   ],
-  "ui.acceptedSummary": [{ "type": 0, "value": "ملخص الملف المعتمد" }],
+  "ui.acceptedSummary": [{ "type": 0, "value": "ملخص الملف المسجّل" }],
   "ui.copy": [
     { "type": 0, "value": "نسخ " },
     { "type": 1, "value": "label" }
@@ -785,14 +785,14 @@
     { "type": 0, "value": "تغيير الإجراء يتجاهل تفاصيل هذه المسودة ويبدأ طلبًا مختلفًا." }
   ],
   "ui.discardAndChange": [{ "type": 0, "value": "تجاهل وتغيير الإجراء" }],
-  "ui.acceptedOperation": [{ "type": 0, "value": "العملية المعتمدة" }],
+  "ui.acceptedOperation": [{ "type": 0, "value": "التغيير المسجّل" }],
   "ui.operationAccepted": [
     { "type": 0, "value": "اعتُمدت العملية " },
     { "type": 1, "value": "operationId" },
     { "type": 0, "value": "." }
   ],
   "ui.acceptedContext": [
-    { "type": 0, "value": "العملية المعتمدة " },
+    { "type": 0, "value": "العملية المسجّلة " },
     { "type": 1, "value": "operationId" }
   ],
   "ui.returnToCase": [{ "type": 0, "value": "العودة إلى الملف" }],
@@ -960,23 +960,17 @@
     { "type": 0, "value": "." }
   ],
   "ui.exportTitle": [{ "type": 0, "value": "تصدير حافظة الاسترداد؟" }],
-  "ui.resolveTitle": [{ "type": 0, "value": "معالجة التحضير نفسه؟" }],
-  "ui.dismissTitle": [{ "type": 0, "value": "استبعاد التحضير؟" }],
+  "ui.resolveTitle": [{ "type": 0, "value": "محاولة تسجيل الطلب الذي تمت مراجعته؟" }],
+  "ui.dismissTitle": [{ "type": 0, "value": "إنهاء صلاحية هذا الطلب المستقبلية نهائيًا؟" }],
   "ui.exportWarning": [
     {
       "type": 0,
       "value": "يحتوي هذا الملف على بيانات المطالب وبيانات الاسترداد. احفظه في تخزين خاص فقط."
     }
   ],
-  "ui.recoveryConfirmHint": [
-    {
-      "type": 0,
-      "value": "يستخدم هذا الإجراء معرّف العملية وبصمة الطلب المعروضين. يبقى الخادم المرجع الحاكم."
-    }
-  ],
   "ui.working": [{ "type": 0, "value": "جارٍ العمل…" }],
-  "ui.confirmResolve": [{ "type": 0, "value": "تأكيد المعالجة" }],
-  "ui.confirmDismiss": [{ "type": 0, "value": "تأكيد الاستبعاد" }],
+  "ui.confirmResolve": [{ "type": 0, "value": "محاولة تسجيل هذا الطلب نفسه" }],
+  "ui.confirmDismiss": [{ "type": 0, "value": "إنهاء الصلاحية المستقبلية نهائيًا" }],
   "ui.confirmExport": [{ "type": 0, "value": "تأكيد التصدير" }],
   "ui.artifact": [
     { "type": 0, "value": "الأثر " },
@@ -1003,5 +997,24 @@
   "ui.retainForRecovery": [{ "type": 0, "value": "الاحتفاظ للاسترداد" }],
   "ui.keepEditing": [{ "type": 0, "value": "متابعة التحرير" }],
   "ui.backToCase": [{ "type": 0, "value": "العودة إلى الملف" }],
-  "ui.registerLabel": [{ "type": 0, "value": "سجل ملفات المطالبات ClaimCore" }]
+  "ui.registerLabel": [{ "type": 0, "value": "سجل ملفات المطالبات ClaimCore" }],
+  "ui.close": [{ "type": 0, "value": "إغلاق الفحص" }],
+  "ui.resolveConsequence": [
+    {
+      "type": 0,
+      "value": "يُطلب من الخادم معالجة معرّف العملية وبصمة الطلب المعروضين. قد يسجّل الطلب الذي تمت مراجعته إذا ظل مسموحًا به، أو يعيد دليلًا على نتيجة سبق تسجيلها. النتيجة المُعادة تحدّد ما حدث؛ هذا التأكيد لا يضمن النجاح."
+    }
+  ],
+  "ui.dismissConsequence": [
+    {
+      "type": 0,
+      "value": "يُطلب من الخادم استبعاد الطلب بمعرّف العملية وبصمة الطلب المعروضين بصورة دائمة. الاستبعاد المؤكّد يمنع نهائيًا تنفيذ هذا الطلب غير المعتمد مستقبلًا. لا يمكن التراجع عنه، ولا يثبت ما إذا كانت محاولة سابقة غير مؤكّدة قد سجّلت الطلب. النتيجة المُعادة تحدّد ما إذا تم تأكيد الاستبعاد."
+    }
+  ],
+  "ui.canonicalCopyHint": [
+    {
+      "type": 0,
+      "value": "ينسخ القيمة الأصلية بدقة. تُنسخ التواريخ بصيغة YYYY-MM-DD والمبالغ بفاصلة عشرية نقطية، بغض النظر عن تنسيق العرض."
+    }
+  ]
 }

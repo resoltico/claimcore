@@ -166,12 +166,17 @@ const awaitOidcReturn = async (
   }
 };
 
-export const login = async (page: Page): Promise<void> => {
+export const login = async (
+  page: Page,
+  casesHeading = "Cases",
+  signIn = "Sign in",
+): Promise<void> => {
   await progress("login-start");
-  const cases = page.getByRole("heading", { name: "Cases" });
+  const cases = page.getByRole("heading", { name: casesHeading, exact: true });
   try {
     await page
-      .getByRole("heading", { name: /^(Cases|ClaimCore)$/u })
+      .getByRole("heading", { name: casesHeading, exact: true })
+      .or(page.getByRole("heading", { name: "ClaimCore", exact: true }))
       .first()
       .waitFor({ timeout: 5_000 });
   } catch {
@@ -187,7 +192,12 @@ export const login = async (page: Page): Promise<void> => {
   await progress("login-anon");
   const applicationOrigin = new URL(page.url()).origin;
   const owner = await syntheticOwner();
-  await page.getByRole("link", { name: "Sign in" }).click();
+  await page.getByRole("link", { name: signIn, exact: true }).click();
+  await page.locator('input[name="username"]').or(cases).first().waitFor();
+  if (await cases.isVisible()) {
+    await progress("login-ready");
+    return;
+  }
   await progress("oidc-navigation");
   await page.locator('input[name="username"]').fill(owner.username);
   await progress("oidc-username-filled");

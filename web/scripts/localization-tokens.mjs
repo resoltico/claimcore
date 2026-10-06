@@ -87,7 +87,7 @@ export const renderedTokens = (semantic, recoveryTypes) => {
   return [...result].sort();
 };
 
-/** @param {Record<string, string>} catalog @param {string[]} expected */
+/** @param {Record<string, import("./localization-policy.mjs").Message>} catalog @param {string[]} expected */
 export const validateTokens = (catalog, expected) => {
   const actual = Object.keys(catalog)
     .filter((key) => key["startsWith"]("token."))

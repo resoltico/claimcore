@@ -79,9 +79,7 @@ test("keeps published login, editor, review, receipt and history accessible at n
   await page.keyboard.press("Space");
   await review.getByRole("button", { name: "Record changes" }).focus();
   await page.keyboard.press("Enter");
-  await expect(
-    page.getByRole("heading", { name: "Accepted operation", exact: true }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Recorded change", exact: true })).toBeVisible();
   await progress("a11y-receipt");
   await expectAccessible(page);
   await page.getByRole("button", { name: "Return to case" }).click();

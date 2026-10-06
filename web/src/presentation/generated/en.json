@@ -140,11 +140,11 @@
   "ui.openNewCase": [{ "type": 0, "value": "Open new case" }],
   "ui.loadingCases": [{ "type": 0, "value": "Loading cases…" }],
   "ui.moreCases": [{ "type": 0, "value": "Load more cases" }],
-  "ui.acceptedHistory": [{ "type": 0, "value": "Accepted history" }],
+  "ui.acceptedHistory": [{ "type": 0, "value": "Case history" }],
   "ui.historyHint": [
     {
       "type": 0,
-      "value": "Historical entries are read-only. Expand an entry to inspect its accepted snapshot and attribution."
+      "value": "History entries are read-only. Expand an entry to see the recorded case details and who recorded them."
     }
   ],
   "ui.historySummary": [
@@ -168,9 +168,9 @@
     { "type": 0, "value": "history operation " },
     { "type": 1, "value": "operationId" }
   ],
-  "ui.loadingHistory": [{ "type": 0, "value": "Loading accepted history…" }],
+  "ui.loadingHistory": [{ "type": 0, "value": "Loading case history…" }],
   "ui.moreHistory": [{ "type": 0, "value": "Load more history" }],
-  "ui.availableCommands": [{ "type": 0, "value": "Available commands" }],
+  "ui.availableCommands": [{ "type": 0, "value": "Available actions" }],
   "ui.commandDescription": [
     { "type": 1, "value": "label" },
     { "type": 0, "value": ": " },
@@ -254,7 +254,7 @@
     { "type": 0, "value": "Case fields for " },
     { "type": 1, "value": "context" }
   ],
-  "ui.acceptedSummary": [{ "type": 0, "value": "accepted case summary" }],
+  "ui.acceptedSummary": [{ "type": 0, "value": "recorded case summary" }],
   "ui.copy": [
     { "type": 0, "value": "Copy " },
     { "type": 1, "value": "label" }
@@ -308,14 +308,14 @@
     }
   ],
   "ui.discardAndChange": [{ "type": 0, "value": "Discard and change action" }],
-  "ui.acceptedOperation": [{ "type": 0, "value": "Accepted operation" }],
+  "ui.acceptedOperation": [{ "type": 0, "value": "Recorded change" }],
   "ui.operationAccepted": [
     { "type": 0, "value": "Operation " },
     { "type": 1, "value": "operationId" },
     { "type": 0, "value": " is accepted." }
   ],
   "ui.acceptedContext": [
-    { "type": 0, "value": "accepted operation " },
+    { "type": 0, "value": "recorded operation " },
     { "type": 1, "value": "operationId" }
   ],
   "ui.returnToCase": [{ "type": 0, "value": "Return to case" }],
@@ -464,23 +464,17 @@
     { "type": 0, "value": "." }
   ],
   "ui.exportTitle": [{ "type": 0, "value": "Export recovery envelope?" }],
-  "ui.resolveTitle": [{ "type": 0, "value": "Resolve exact preparation?" }],
-  "ui.dismissTitle": [{ "type": 0, "value": "Dismiss preparation?" }],
+  "ui.resolveTitle": [{ "type": 0, "value": "Try to record the reviewed request?" }],
+  "ui.dismissTitle": [{ "type": 0, "value": "Permanently end this request’s future authority?" }],
   "ui.exportWarning": [
     {
       "type": 0,
       "value": "This file contains claimant data and recovery bytes. Save it only in private storage."
     }
   ],
-  "ui.recoveryConfirmHint": [
-    {
-      "type": 0,
-      "value": "This action uses the displayed operation ID and request digest. The server remains authoritative."
-    }
-  ],
   "ui.working": [{ "type": 0, "value": "Working…" }],
-  "ui.confirmResolve": [{ "type": 0, "value": "Confirm resolve" }],
-  "ui.confirmDismiss": [{ "type": 0, "value": "Confirm dismiss" }],
+  "ui.confirmResolve": [{ "type": 0, "value": "Try to record this exact request" }],
+  "ui.confirmDismiss": [{ "type": 0, "value": "Permanently end future authority" }],
   "ui.confirmExport": [{ "type": 0, "value": "Confirm export" }],
   "ui.artifact": [
     { "type": 0, "value": "Artifact " },
@@ -514,6 +508,25 @@
   "ui.keepEditing": [{ "type": 0, "value": "Keep editing" }],
   "ui.backToCase": [{ "type": 0, "value": "Back to case" }],
   "ui.registerLabel": [{ "type": 0, "value": "ClaimCore case register" }],
+  "ui.close": [{ "type": 0, "value": "Close inspection" }],
+  "ui.resolveConsequence": [
+    {
+      "type": 0,
+      "value": "This asks the server to resolve the displayed operation ID and request digest. It may record the reviewed request if it is still permitted, or return evidence of an earlier recorded result. The returned outcome determines what happened; this confirmation does not guarantee success."
+    }
+  ],
+  "ui.dismissConsequence": [
+    {
+      "type": 0,
+      "value": "This asks the server to durably dismiss the displayed operation ID and request digest. A confirmed dismissal permanently prevents future execution of this unaccepted request. It cannot be undone and does not establish whether an earlier uncertain attempt recorded the request. The returned outcome determines whether dismissal was confirmed."
+    }
+  ],
+  "ui.canonicalCopyHint": [
+    {
+      "type": 0,
+      "value": "Copies the exact underlying value. Dates use YYYY-MM-DD and amounts use a decimal point, regardless of display format."
+    }
+  ],
   "field.incidentDate.label": [{ "type": 0, "value": "Incident date" }],
   "field.incidentDate.meaning": [{ "type": 0, "value": "Date on which the incident occurred." }],
   "field.incidentNotificationDate.label": [

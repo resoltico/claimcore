@@ -74,6 +74,10 @@ keeps accepted recovery evidence distinct from unconfirmed settlement and report
 keeps an in-flight submission and its exact recovery identity through language and format switches
 keeps an unknown recovery result explicit and directs inspection
 keeps attempt paging cancellable and prevents a late page from reopening closed recovery details
+keeps before/after words outside business direction and exact clipboard fallback in ar
+keeps before/after words outside business direction and exact clipboard fallback in en
+keeps before/after words outside business direction and exact clipboard fallback in en-XA
+keeps before/after words outside business direction and exact clipboard fallback in lv
 keeps cancelled or non-diagnostic outcomes distinct from a translated core refusal
 keeps existing references immutable and delegates a reviewed commit
 keeps generated endpoint inventory callable and presents suspicious Unicode defensively
@@ -135,6 +139,10 @@ preserves exact recovery guidance when dismissal refuses an already-started subm
 preserves independent English diagnostic knowledge and parameter examples
 preserves only exact identity and recovery direction after uncertain export issuance
 preserves the independent preference through bounded reproducible event sequences
+protects ordinary list, detail, history and absent lookup references in ar [CC-WEB-001]
+protects ordinary list, detail, history and absent lookup references in en [CC-WEB-001]
+protects ordinary list, detail, history and absent lookup references in en-XA [CC-WEB-001]
+protects ordinary list, detail, history and absent lookup references in lv [CC-WEB-001]
 reads previously persisted version-one settings under their actual browser storage key
 refuses an export action when inspected recovery evidence has no exact digest
 refuses corrupt, oversized and unknown preference records without retaining arbitrary data
@@ -175,6 +183,7 @@ reports definite accepted recovery knowledge and keeps its observation target
 reports malformed pages, malformed inspections, rejected imports, and invalid exports
 requests the next server attempt page only from an inspected retained item
 requires an explicit presentation provider instead of silently using ambient locale
+requires every supplied message argument to be an exact own property
 requires fresh inspection before retrying a submission-started preparation
 requires one exact attachment filename and matching UTF-8 filename parameter
 resolves explicit language and display-format preferences independently with deterministic fallbacks
@@ -218,4 +227,5 @@ v3 Recovery view > renders a definite resolve receipt instead of treating it as 
 v3 session lifecycle > offers OIDC sign-in, then hydrates an authenticated return and signs out
 warns and isolates exact references at review and recovery decisions in ar [CC-WEB-001]
 warns and isolates exact references at review and recovery decisions in en [CC-WEB-001]
+warns and isolates exact references at review and recovery decisions in en-XA [CC-WEB-001]
 warns and isolates exact references at review and recovery decisions in lv [CC-WEB-001]

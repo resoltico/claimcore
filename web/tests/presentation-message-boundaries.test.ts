@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { renderKey, renderReference } from "../src/presentation/messages";
+import { renderKey, renderIsolatedValue } from "../src/presentation/messages";
 
 it("renders an empty attempt page as zero attempts rather than an unknown diagnostic [CC-WEB-001]", () => {
   expect(
@@ -13,7 +13,7 @@ it("isolates technical revision holes in Arabic reference summaries and preserve
   const reference = { exact: "A\u2069\u202E العربية" };
   const values = { reference: reference.exact, revision: "12" };
   expect(
-    renderReference(
+    renderIsolatedValue(
       { language: "en", displayLocale: "en-GB" },
       "ui.reviewTarget",
       values,
@@ -21,7 +21,7 @@ it("isolates technical revision holes in Arabic reference summaries and preserve
     ),
   ).toEqual(["Target ", reference, " · expected revision 12"]);
   expect(
-    renderReference(
+    renderIsolatedValue(
       { language: "ar", displayLocale: "en-GB" },
       "ui.reviewTarget",
       values,
