@@ -4,6 +4,11 @@ import { privateFile, jsonFile, emptyRoot } from "./local-files.mjs";
 import { prepareLayout } from "./local-layout.mjs";
 import { identityConfiguration } from "./local-identity.mjs";
 import { runtimeKeys, webEnvironment } from "./local-runtime.mjs";
+import {
+  emptyOperatorDirectory,
+  installationDirectory,
+  publishOperatorFiles,
+} from "./local-publication.mjs";
 import { connectionFiles } from "./local-connections.mjs";
 
 /** @param {string | undefined} value */
@@ -67,14 +72,27 @@ function create(root, uid, gid, zone) {
 
 try {
   process.umask(0o077);
-  const [directory, uid, gid, zone] = process.argv.slice(2);
-  if (directory === undefined || zone === undefined || process.argv.length !== 6) {
-    throw new Error("Usage: configure-local DIRECTORY UID GID BUSINESS_TIME_ZONE");
+  const [directory, metadata, uid, gid, zone] = process.argv.slice(2);
+  if (
+    directory === undefined ||
+    metadata === undefined ||
+    zone === undefined ||
+    process.argv.length !== 7
+  ) {
+    throw new Error(
+      "Usage: configure-local LINUX_VOLUME OPERATOR_DIRECTORY UID GID BUSINESS_TIME_ZONE",
+    );
   }
   new Intl.DateTimeFormat("en", { timeZone: zone }).format(new Date());
-  create(resolve(directory), id(uid), id(gid), zone);
+  const owner = id(uid);
+  const group = id(gid);
+  const publication = resolve(metadata);
+  emptyOperatorDirectory(publication);
+  const root = installationDirectory(resolve(directory), owner, group);
+  create(root, owner, group, zone);
+  publishOperatorFiles(root, publication, owner, group);
   process.stdout.write(
-    "Created persistent synthetic configuration. Credentials remain in private files.\n",
+    "Created persistent synthetic Linux inputs and public host metadata. Runtime credentials remain in the Linux volume; the human login is in the private operator file.\n",
   );
 } catch {
   process.stderr.write(

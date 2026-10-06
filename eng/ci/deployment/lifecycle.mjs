@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
-import { chmodSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { inputPermissionChecks } from "./input-permissions.mjs";
 import { setTimeout } from "node:timers/promises";
 
 /** @param {(args: string[], expected?: number) => string} docker
@@ -26,14 +27,7 @@ export async function lifecycleChecks(compose, docker, configuration) {
   const container = compose(["ps", "--quiet", "web"]).trim();
   compose(["stop", "web"]);
   assert.equal(JSON.parse(docker(["inspect", container]))[0].State.ExitCode, 0);
-  const privateInput = join(configuration, "web", "primary.connection");
-  chmodSync(privateInput, 0o644);
-  try {
-    compose(["run", "--rm", "--no-deps", "web"], 3);
-  } finally {
-    chmodSync(privateInput, 0o600);
-  }
-  compose(["run", "--rm", "--no-deps", "--user", "65001:65001", "web"], 3);
+  inputPermissionChecks(compose, docker, container);
   const identity = compose(["ps", "--quiet", "identity"]).trim();
   docker(["pause", identity]);
   try {

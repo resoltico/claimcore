@@ -56,6 +56,9 @@
     <Compile Include="TestServerBoundaryTests.fs" />
     <Compile Include="TransportDiagnosticTests.fs" />
     <Compile Include="AsyncTransportTests.fs" />
+    <Compile Include="ProbeHttpsFixture.fs" />
+    <Compile Include="ProbeTransportTests.fs" />
+    <Compile Include="ProbeProcessTests.fs" />
     <Compile Include="Suite.fs" />
   </ItemGroup>
   <ItemGroup>

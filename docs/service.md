@@ -12,7 +12,9 @@ Use [`deployment/compose.yaml`](../deployment/compose.yaml) for the Web process 
 invoked owner tools. The Web image contains neither the Database entry point nor schema-owner
 inputs. Do not mount an owner directory or the Docker socket into Web.
 
-Provide a physical absolute private configuration directory outside the build context. Its `web`
+Provide a physical absolute private configuration directory on a Linux backing filesystem,
+outside the build context. Docker Desktop host sharing remaps UID ownership and must not carry
+private runtime inputs; use the local overlay’s Linux volume model there. Its `web`
 subdirectory contains private runtime files and `web.env`; `web-state` is persistent, writable
 service state. Select the UID/GID that owns those inputs. Files must meet native private-file
 admission; ordinary startup refuses wrong ownership, broad permissions or links rather than fixing
@@ -55,7 +57,8 @@ is a hard process boundary, not a promise of a definite result for every request
 ## Persistent local evaluation
 
 The local overlay supplies separate TLS PostgreSQL primary/witness servers and a native HTTPS OIDC
-provider. Their data volumes and identity state survive ordinary stop/replacement. It is deliberately
+provider. Their data volumes, private input volume and identity state survive ordinary stop/replacement.
+Role-specific volume subpaths isolate Web, owner tools, PostgreSQL, the issuer and public CRL publication. It is deliberately
 `SYNTHETIC_ONLY`: use fictional data. The local OIDC development database and same-host topology are
 not a production identity-provider or independent-custody qualification.
 
@@ -63,9 +66,9 @@ The local CA publishes an initially empty signed CRL from a separate read-only c
 PostgreSQL clients retain online revocation validation. Local certificates and the CRL expire
 after one year. Production deployments use their managed CA and revocation/rotation procedure.
 
-Create configuration once, in an empty owner-private directory. The creator refuses occupied,
-linked, broad or other-owner roots. An empty root owned by the requested UID or root
-(Docker Desktop’s initial mount view) is assigned to the requested UID during explicit creation. Partial creation remains available for inspection; do not treat
+Create configuration once, in an empty Linux volume and an empty physical operator directory.
+The creator refuses occupied volumes or operator roots. Private role files use real Linux UID/mode
+semantics; the host receives only public settings/certificates and the separate human login credential. Partial creation remains available for inspection; do not treat
 failure as authorization to erase data or recreate identities.
 
 ```sh
@@ -77,7 +80,7 @@ export CLAIMCORE_COMPOSE_PROJECT=claimcore-local
 
 docker compose -f deployment/compose.yaml -f deployment/administration.compose.yaml \
   -f deployment/local.compose.yaml run --rm --no-deps --build configure \
-  /configuration "$CLAIMCORE_SERVICE_UID" "$CLAIMCORE_SERVICE_GID" Europe/Riga
+  /configuration /metadata "$CLAIMCORE_SERVICE_UID" "$CLAIMCORE_SERVICE_GID" Europe/Riga
 
 docker compose -f deployment/compose.yaml -f deployment/administration.compose.yaml \
   -f deployment/local.compose.yaml up --detach --wait primary witness identity revocation
@@ -91,14 +94,14 @@ docker compose -f deployment/compose.yaml -f deployment/administration.compose.y
 
 Open `https://app.localhost:5443`. The local public CA is `web/ca.pem`; verify and explicitly trust it
 in the browser through the platform's normal trust procedure. Never disable certificate validation.
-The generated individual `owner` password is in `administration/owner.password`; do not publish it
+The generated individual `owner` password is in the operator directory’s `owner.password`; do not publish it
 or paste it into a diagnostic report. Initial ownership does not invent case-work grants. Use the
 authenticated CLI `authority.setGrant` endpoints to grant the owner `CASE_EDITOR`,
 `RECOVERY_OPERATOR` and `RECOVERY_EXPORTER` for the intended installation scope. The exact private
 issuer/subject binding is in `administration/initial-owner.json`. [CLI](cli.md) owns those frames and
 interactive authentication. Do not write grants directly through SQL.
 
-Keep configuration, trust material, database volumes and copies under explicit operator custody.
+Keep the private input volume, operator files, trust material, database volumes and copies under explicit operator custody.
 `docker compose down` retains volumes; ordinary operation never uses `down --volumes`, a prune,
 reset, adoption or upgrade conversion. The removed single-primary development Compose file is not
 an installation migration; retained old volumes require their matching software and evidence.

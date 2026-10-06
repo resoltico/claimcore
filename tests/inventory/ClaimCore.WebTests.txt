@@ -1,3 +1,5 @@
+ClaimCore.Web.HTTPS probe transport.[CC-WEB-001] probe refuses mismatched names and untrusted roots
+ClaimCore.Web.HTTPS probe transport.[CC-WEB-001] probe retains TLS and HTTP public identity at a distinct socket
 ClaimCore.Web.OIDC authentication foundation.[CC-WEB-001] OIDC cookie uses revocable server-side ticket
 ClaimCore.Web.OIDC authentication foundation.[CC-WEB-001] OIDC mode closes legacy case work until grants exist
 ClaimCore.Web.OIDC authentication foundation.[CC-WEB-001] bearer principal uses explicit client classification
@@ -123,6 +125,8 @@ ClaimCore.Web.exact principal admission.[CC-WEB-001] root and slash-ended issuer
 ClaimCore.Web.lifecycle input.[CC-WEB-001] lifecycle drafts and approvals retain exact caller identities
 ClaimCore.Web.lifecycle input.[CC-WEB-001] lifecycle input refuses forged or malformed fields
 ClaimCore.Web.management input.[CC-WEB-001] binds exact authority event, principal, role and scope before dispatch
+ClaimCore.Web.probe process admission.[CC-WEB-001] native probe observes liveness and readiness without runtime credentials
+ClaimCore.Web.probe process admission.[CC-WEB-001] probe refuses invalid binding, unavailable transport and remote synthetic trust
 ClaimCore.Web.queued HTTP capacity.[CC-WEB-001] bounded admission refuses overload and cancels queued reads before dispatch
 ClaimCore.Web.real-data activation input.[CC-WEB-001] activation requests refuse forged actor or key metadata
 ClaimCore.Web.real-data activation input.[CC-WEB-001] activation review and approval bind exact published plan fields

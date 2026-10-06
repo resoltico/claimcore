@@ -567,6 +567,8 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime scheduling and shutdown.[CC-RUN-001] shutdown stops audit before draining admitted actor work |
 | CC-WEB-001 | unit | ClaimCore deterministic suite.CLI TLS trust.[CC-WEB-001] issuer TLS leaf requires server purpose |
 | CC-WEB-001 | unit | ClaimCore deterministic suite.CLI TLS trust.[CC-WEB-001] private TLS root validity has exact boundaries |
+| CC-WEB-001 | web | ClaimCore.Web.HTTPS probe transport.[CC-WEB-001] probe refuses mismatched names and untrusted roots |
+| CC-WEB-001 | web | ClaimCore.Web.HTTPS probe transport.[CC-WEB-001] probe retains TLS and HTTP public identity at a distinct socket |
 | CC-WEB-001 | web | ClaimCore.Web.OIDC authentication foundation.[CC-WEB-001] OIDC cookie uses revocable server-side ticket |
 | CC-WEB-001 | web | ClaimCore.Web.OIDC authentication foundation.[CC-WEB-001] OIDC mode closes legacy case work until grants exist |
 | CC-WEB-001 | web | ClaimCore.Web.OIDC authentication foundation.[CC-WEB-001] bearer principal uses explicit client classification |
@@ -692,6 +694,8 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-WEB-001 | web | ClaimCore.Web.lifecycle input.[CC-WEB-001] lifecycle drafts and approvals retain exact caller identities |
 | CC-WEB-001 | web | ClaimCore.Web.lifecycle input.[CC-WEB-001] lifecycle input refuses forged or malformed fields |
 | CC-WEB-001 | web | ClaimCore.Web.management input.[CC-WEB-001] binds exact authority event, principal, role and scope before dispatch |
+| CC-WEB-001 | web | ClaimCore.Web.probe process admission.[CC-WEB-001] native probe observes liveness and readiness without runtime credentials |
+| CC-WEB-001 | web | ClaimCore.Web.probe process admission.[CC-WEB-001] probe refuses invalid binding, unavailable transport and remote synthetic trust |
 | CC-WEB-001 | web | ClaimCore.Web.queued HTTP capacity.[CC-WEB-001] bounded admission refuses overload and cancels queued reads before dispatch |
 | CC-WEB-001 | web | ClaimCore.Web.real-data activation input.[CC-WEB-001] activation requests refuse forged actor or key metadata |
 | CC-WEB-001 | web | ClaimCore.Web.real-data activation input.[CC-WEB-001] activation review and approval bind exact published plan fields |

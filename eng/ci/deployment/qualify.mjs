@@ -51,6 +51,7 @@ try {
     "--no-deps",
     "configure",
     "/configuration",
+    "/metadata",
     String(uid),
     String(gid),
     "Etc/UTC",
@@ -92,7 +93,7 @@ try {
     "bash",
     "web",
     "-c",
-    "test ! -e /app/ClaimCore.Database.dll && test ! -e /app/initialize-local.sh",
+    "test ! -e /app/ClaimCore.Database.dll && test ! -e /app/initialize-local.sh && test ! -e /etc/claimcore/runtime/../administration && test ! -e /etc/claimcore/runtime/../authority && test ! -e /etc/claimcore/runtime/../identity",
   ]);
   const installation = databaseChecks(compose);
   const initialInstallation = installation();
@@ -131,19 +132,6 @@ try {
       assert.equal(inspection.Labels["com.docker.compose.project"], run);
       docker(["volume", "rm", volume]);
     }
-    docker([
-      "run",
-      "--rm",
-      "--user",
-      "0:0",
-      "--mount",
-      `type=bind,source=${configuration},target=/configuration`,
-      "--entrypoint",
-      "node",
-      "claimcore-configuration:source",
-      "-e",
-      "const fs=require('fs'); const state=JSON.parse(fs.readFileSync('/configuration/installation.json')); if(state.format!=='claimcore-local-configuration-1'||state.scope!=='SYNTHETIC_ONLY')throw Error('Foreign configuration refused'); for(const name of fs.readdirSync('/configuration'))fs.rmSync('/configuration/'+name,{recursive:true,force:true});",
-    ]);
     rmSync(configuration, { recursive: true, force: true });
     rmSync(join(state, "publication-context"), { recursive: true, force: true });
   }

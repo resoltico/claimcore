@@ -247,7 +247,9 @@ type Runtime
         )
 
     interface IDisposable with
-        member _.Dispose() = admission.CloseAndDrain(auditCadence.RequestStop)
+        member _.Dispose() =
+            admission.CloseAndDrain(auditCadence.RequestStop)
 
     interface IAsyncDisposable with
-        member _.DisposeAsync() = ValueTask(admission.CloseAndDrainAsync(auditCadence.RequestStop))
+        member _.DisposeAsync() =
+            ValueTask(admission.CloseAndDrainAsync(auditCadence.RequestStop))

@@ -119,3 +119,23 @@ container mounted only on this run's newly created synthetic configuration, chec
 and removes its contents before the host removes the empty directory. Database volumes are still
 removed only after exact test-project label verification. Failed runs retain their evidence.
 No product initializer or runtime gains a deletion, reset or permission-repair path.
+
+## Docker Desktop private-input storage revision
+
+A real wrong-UID probe ran as UID 65001 and observed the host-bound private connection file as
+owned by UID 65001, although configuration creation had assigned UID 501. Docker Desktop's host
+sharing remaps ownership. Native admission correctly checked the observed metadata, but the bind
+model did not provide the cross-UID isolation asserted by the design.
+
+Private local inputs must therefore live on a Docker Linux volume, with role-specific subpath
+mounts. Public metadata (environment settings containing paths/URLs, installation parameters, and
+the public CA) is exported to a host directory for Compose and browser trust. No service/provider password, private key, client secret or connection string is exported.
+The generated human login password is delivered separately in an owner-private operator file;
+no running service mounts the host operator directory. The creator refuses an occupied volume
+or metadata root; starts never populate, repair or replace inputs. Production host-bind inputs
+require a Linux backing filesystem with real UID/mode semantics.
+
+Challenge the revised graph with actual wrong-UID and broad-mode refusals on both Docker Desktop
+and Linux; inspect subpath mounts so Web cannot traverse into owner/provider/CA inputs. Test
+teardown may alter only its own synthetic volume. Public export failure preserves the private
+installation for owner inspection; it does not authorize resetting the volume or regenerating keys.
