@@ -35,6 +35,8 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Internal
 
+- Frontend CI allows 60 minutes for the complete single-worker mutation gate on hosted runners. Test deadlines, all seven targets, the 92% floor and rejection of timeout or incomplete results remain unchanged.
+
 - Default presentation compilation preserves admitted apostrophe/brace interactions through typed literal/hole parts rather than ICU string escaping. This breaks the unpublished encoded-string build artifact shape; regenerate contracts and assets together. Deployment qualification uses cache-isolated, populated primary/witness CRL experiments and a disabled-enforcement source control, with current-attempt schema-checked evidence. Local selection includes the actual deployment build and trust inputs.
 
 - Compiled architecture checks reject cryptographic randomness, version-7 identity minting and elapsed/local-clock reads in the value-computing core. Calendar and non-owner selectors include every classified product component; the contract-test map now names the graph, internals and public-surface checks alongside their compiled negative controls. Inspection reports omit false generic edges not corroborated by CLR assembly references.

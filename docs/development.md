@@ -315,7 +315,9 @@ source, npm lock, generated semantic/CLI-v4/Web-v3 contract, Node/npm versions, 
 The locked StrykerJS/Vitest mutation gate targets the four operation modules (metadata, initial state, request
 freezing and the reducer) and presentation preference/parser, descriptor/identity and typed ICU message-rendering logic. It uses one test worker to limit contention during static-mutation suite imports. It requires at least 92% killed mutants across them, refuses ignored or incomplete mutant
 results, and checks the exact sources, tool version and target set in an ignored local report. It does not exercise F#
-or PostgreSQL and cannot replace the full tests, catalog checks or restored-data audit.
+or PostgreSQL and cannot replace the full tests, catalog checks or restored-data audit. The
+[frontend workflow’s outer job budget](../.github/workflows/verify-frontend.yml) allows for repeated isolated
+test-file startup on hosted runners; it does not relax test deadlines or accept timeout mutants.
 
 #### Generated contracts
 
