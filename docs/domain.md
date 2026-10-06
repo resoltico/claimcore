@@ -18,7 +18,7 @@ record revisions, timestamps, database users, and available commands remain outs
 | 2 | Date this handler was first notified (FNOL) | `incidentNotificationDate` | Required registration input. |
 | 3 | Country of incident | `incidentCountry` | Required registration input. |
 | 4 | Claimant name | `claimantName` | Required registration input. |
-| 5 | Allegedly responsible insurer | `insurerName` | Required registration input. |
+| 5 | Responsible insurer | `insurerName` | Required registration input. |
 | 6 | Amount claimed | `claimedAmount` | Required registration input. |
 | 7 | Currency of amount claimed | `claimedCurrency` | Required registration input. |
 | 8 | Handler's case reference | `caseReference` | Required top-level command target. |
@@ -27,6 +27,8 @@ record revisions, timestamps, database users, and available commands remain outs
 | 11 | Currency of amount to be paid | `payableCurrency` | `null` until recorded. |
 | 12 | Payment date | `paymentDate` | `null` until recorded. |
 | 13 | Case status | `status` | Core-derived as `OPENED`; never supplied by a command. |
+
+Default English labels and explanations come from [Domain field descriptors](../src/ClaimCore.Domain/FieldDefinitions.fs) and [command descriptors](../src/ClaimCore.Domain/CommandDefinitions.fs), shared by CLI discovery and generated browser presentation. The insurer is the handler’s recorded assertion for this claim.
 
 Every rendered case contains all thirteen keys. Unrecorded decision and payment values are `null`,
 never zero or an invented date. `OPEN` accepts the seven registration values plus the command's

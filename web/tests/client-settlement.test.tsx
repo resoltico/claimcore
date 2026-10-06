@@ -22,11 +22,9 @@ it("shows command acceptance together with required recovery for unconfirmed set
     .mockImplementationOnce(() => Promise.resolve(preparedReply()))
     .mockResolvedValueOnce(unsettled("command.execute"));
   render(editor({ onRecovery: recover }));
-  await user.click(screen.getByRole("button", { name: "Prepare exact request" }));
-  await user.click(
-    await screen.findByRole("checkbox", { name: "I will submit this exact prepared request." }),
-  );
-  await user.click(screen.getByRole("button", { name: "Submit exact request" }));
+  await user.click(screen.getByRole("button", { name: "Review changes" }));
+  await user.click(await screen.findByRole("checkbox", { name: "I confirm these changes." }));
+  await user.click(screen.getByRole("button", { name: "Record changes" }));
   expect(await screen.findByRole("heading", { name: "Accepted operation" })).toBeVisible();
   expect(screen.getByRole("alert")).toHaveTextContent("Inspect Recovery");
   expect(recover).not.toHaveBeenCalled();

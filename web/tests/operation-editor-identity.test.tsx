@@ -92,17 +92,15 @@ it("allocates a new ID when editing a definitely refused prepared request", asyn
     .mockResolvedValueOnce(refusedResponse())
     .mockResolvedValueOnce(rejectedResponse(validationRefusal));
   render(editor(null, "OPEN"));
-  await user.click(screen.getByRole("button", { name: "Prepare exact request" }));
-  await user.click(
-    await screen.findByRole("checkbox", { name: "I will submit this exact prepared request." }),
-  );
-  await user.click(screen.getByRole("button", { name: "Submit exact request" }));
+  await user.click(screen.getByRole("button", { name: "Review changes" }));
+  await user.click(await screen.findByRole("checkbox", { name: "I confirm these changes." }));
+  await user.click(screen.getByRole("button", { name: "Record changes" }));
   await screen.findByText(
     "Authority for future execution of this exact operation was durably revoked. Earlier attempt uncertainty is unchanged; inspect its exact evidence.",
   );
   const claimant = screen.getByLabelText("Claimant name", { exact: true });
   await user.type(claimant, "Synthetic B");
-  await user.click(screen.getByRole("button", { name: "Prepare exact request" }));
+  await user.click(screen.getByRole("button", { name: "Review changes" }));
   expect(await screen.findByRole("alert")).toHaveTextContent("A non-blank value is required.");
   expect(sentDraft(0).operationId).not.toBe(sentDraft(2).operationId);
   expect(sentDraft(0).command.values["claimantName"]).toBe("");
@@ -119,10 +117,10 @@ it("retries the frozen request after delivery loss despite a changed current rev
     .mockRejectedValueOnce(new Error("Synthetic delivery loss"))
     .mockResolvedValueOnce(rejectedResponse(staleRefusal));
   const view = render(editor(current, "CLOSE"));
-  await user.click(screen.getByRole("button", { name: "Prepare exact request" }));
+  await user.click(screen.getByRole("button", { name: "Review changes" }));
   await screen.findByText(/Inspect Recovery before retrying this exact operation/u);
   view.rerender(editor({ ...current, case: { ...current.case, revision: "2" } }, "CLOSE"));
-  await user.click(screen.getByRole("button", { name: "Retry exact prepare" }));
+  await user.click(screen.getByRole("button", { name: "Retry the same review request" }));
   await waitFor(() => {
     expect(vi.mocked(globalThis.fetch)).toHaveBeenCalledTimes(2);
   });
@@ -158,7 +156,7 @@ it("sends an explicit grouped correction and preserves all non-replaced groups",
   const claimant = screen.getByLabelText("Claimant name", { exact: true });
   await user.clear(claimant);
   await user.type(claimant, "Corrected claimant");
-  await user.click(screen.getByRole("button", { name: "Prepare exact request" }));
+  await user.click(screen.getByRole("button", { name: "Review changes" }));
   const body = vi.mocked(globalThis.fetch).mock.calls[0]?.[1]?.body;
   if (typeof body !== "string") {
     throw new Error("Expected a grouped correction request body.");

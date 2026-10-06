@@ -60,12 +60,14 @@ it("rotates the retained operation ID when only an OPEN reference is changed", a
   const reference = screen.getByLabelText("Handler's case reference", { exact: true });
   expect(screen.getAllByLabelText("Handler's case reference", { exact: true })).toHaveLength(1);
   await user.type(reference, "NEW-1");
-  await user.click(screen.getByRole("button", { name: "Prepare exact request" }));
-  await user.click(await screen.findByRole("button", { name: "Keep for Recovery" }));
+  await user.click(screen.getByRole("button", { name: "Review changes" }));
+  await user.click(
+    await screen.findByRole("button", { name: "Back to editing; keep for Recovery" }),
+  );
   await user.clear(reference);
   await user.type(reference, "NEW-2");
-  await user.click(screen.getByRole("button", { name: "Prepare exact request" }));
-  await screen.findByRole("dialog", { name: "Review prepared operation" });
+  await user.click(screen.getByRole("button", { name: "Review changes" }));
+  await screen.findByRole("dialog", { name: "Review changes" });
   const first = sentDraft(fetch.mock.calls[0]?.[1]?.body);
   const second = sentDraft(fetch.mock.calls[1]?.[1]?.body);
   expect(first.caseReference).toBe("NEW-1");
@@ -96,11 +98,9 @@ it("keeps existing references immutable and delegates a reviewed commit", async 
   );
   expect(screen.queryByLabelText("Handler's case reference", { exact: true })).toBeNull();
   expect(screen.getByText(/Case reference:/u)).toHaveTextContent(fields.caseReference);
-  await user.click(screen.getByRole("button", { name: "Prepare exact request" }));
-  await user.click(
-    await screen.findByRole("checkbox", { name: "I will submit this exact prepared request." }),
-  );
-  await user.click(screen.getByRole("button", { name: "Submit exact request" }));
+  await user.click(screen.getByRole("button", { name: "Review changes" }));
+  await user.click(await screen.findByRole("checkbox", { name: "I confirm these changes." }));
+  await user.click(screen.getByRole("button", { name: "Record changes" }));
   await user.click(await screen.findByRole("button", { name: "Return to case" }));
   expect(committed).toHaveBeenCalledOnce();
   const draft = sentDraft(fetch.mock.calls[0]?.[1]?.body);

@@ -1,10 +1,10 @@
 {
   "command.OPEN.label": "فتح ملف",
-  "command.OPEN.meaning": "إنشاء السجل الأساسي. لا يُستنتج منه قرار أو دفع.",
+  "command.OPEN.meaning": "تسجيل الواقعة والمطالب وشركة التأمين والمبلغ المطالب به.",
   "command.AMEND_REGISTRATION.label": "تعديل التسجيل",
   "command.AMEND_REGISTRATION.meaning": "استبدال الوقائع الأولية. يبقى مرجع المعالج دون تغيير.",
   "command.CORRECT_CASE.label": "تصحيح وقائع الملف",
-  "command.CORRECT_CASE.meaning": "تصحيح وقائع ملف تقرّر بشأنه أو دُفع أو أُغلق، في عملية ذرّية واحدة. الإبقاء يستخدم القيم المعتمدة؛ ومسح سجل الدفع لا يعكس تحويلًا خارجيًا.",
+  "command.CORRECT_CASE.meaning": "تصحيح التفاصيل المسجّلة في ملف به قرار أو دفع أو حالة مغلقة. تُسجّل جميع التغييرات معًا. مسح تاريخ الدفع لا يعيد الأموال.",
   "command.DECIDE.label": "تسجيل قرار الدفع",
   "command.DECIDE.meaning": "تسجيل أو استبدال المبلغ والعملة المقررين. لا يرسل ذلك أموالًا.",
   "command.WITHDRAW_DECISION.label": "سحب قرار الدفع",

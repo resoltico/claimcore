@@ -28,7 +28,7 @@ const Header = ({
   return (
     <header>
       <div>
-        <p className="eyebrow">{p.text("ui.trustedInstallation")}</p>
+        <p className="eyebrow">{p.text("ui.registerLabel")}</p>
         <h1>
           {definition === null
             ? "ClaimCore"

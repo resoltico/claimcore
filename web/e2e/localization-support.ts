@@ -18,7 +18,7 @@ export const selectLanguage = async (page: Page, language: Language): Promise<vo
   const control = page
     .getByRole("combobox")
     .and(page.locator("select:not([inert], [inert] *)"))
-    .filter({ has: page.locator('option[value="en-XA"]') });
+    .and(page.locator('select[id$="-language"]'));
   await expect(control).toHaveCount(1);
   await control.selectOption(language);
   await expect(control).toHaveValue(language);
@@ -32,7 +32,7 @@ export const selectFormat = async (page: Page, locale: DisplayLocale): Promise<v
   const control = page
     .getByRole("combobox")
     .and(page.locator("select:not([inert], [inert] *)"))
-    .filter({ has: page.locator('option[value="en-GB"]') });
+    .and(page.locator('select[id$="-format"]'));
   await expect(control).toHaveCount(1);
   await control.selectOption(locale);
   await expect(control).toHaveValue(locale);

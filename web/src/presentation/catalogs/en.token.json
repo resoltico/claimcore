@@ -1,16 +1,16 @@
 {
-  "token.OPENED": "OPENED",
-  "token.CLOSED": "CLOSED",
-  "token.KEEP": "KEEP",
-  "token.REPLACE": "REPLACE",
-  "token.CLEAR": "CLEAR",
-  "token.PENDING": "PENDING",
-  "token.ACCEPTED": "ACCEPTED",
-  "token.REVOKED": "REVOKED",
-  "token.REJECTED": "REJECTED",
+  "token.OPENED": "Open",
+  "token.CLOSED": "Closed",
+  "token.KEEP": "Keep current details",
+  "token.REPLACE": "Replace details",
+  "token.CLEAR": "Clear recorded value",
+  "token.PENDING": "Pending",
+  "token.ACCEPTED": "Recorded",
+  "token.REVOKED": "Execution authority revoked",
+  "token.REJECTED": "Refused",
   "token.ERROR": "Execution error",
   "token.REVOKED_BEFORE_EXECUTION": "Revoked before execution",
-  "token.ENVELOPE": "ENVELOPE",
-  "token.FOUND": "FOUND",
-  "token.NOT_FOUND": "NOT_FOUND"
+  "token.ENVELOPE": "Recovery envelope",
+  "token.FOUND": "Accepted operation found",
+  "token.NOT_FOUND": "Operation not observed"
 }

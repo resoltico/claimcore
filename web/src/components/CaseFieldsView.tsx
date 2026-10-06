@@ -1,6 +1,6 @@
 import { useId } from "react";
 import type { CaseFields, CaseView, FieldDescriptor } from "../api/v3";
-import { hasSuspiciousCharacters, suspiciousCodePoints } from "../utils/text";
+import { BusinessValue } from "./BusinessValue";
 import { usePresentation } from "../presentation/context";
 import type { Presentation } from "../presentation/context";
 import { CopyValue } from "./CopyValue";
@@ -23,23 +23,6 @@ const acceptedSummary = (
         `${p.fieldLabel(field.name)}: ${valueFor(caseView.fields, field.name) ?? p.text("ui.notRecorded")}`,
     ),
   ].join("\n");
-const RenderedValue = ({ value, field }: { value: string | null; field: FieldDescriptor }) => {
-  const p = usePresentation();
-  const warning =
-    value === null || !hasSuspiciousCharacters(value)
-      ? null
-      : suspiciousCodePoints(value).join(", ");
-  return (
-    <span>
-      <bdi>{p.fieldValue(value, field)}</bdi>
-      {warning === null ? null : (
-        <small className="character-warning">
-          {p.text("ui.characterWarning", { characters: warning })}
-        </small>
-      )}
-    </span>
-  );
-};
 export const CaseFieldsView = ({ caseView, fields, context }: CaseFieldsViewProps) => {
   const p = usePresentation();
   const headingId = useId();
@@ -63,7 +46,7 @@ export const CaseFieldsView = ({ caseView, fields, context }: CaseFieldsViewProp
                 <small>{p.fieldMeaning(field.name)}</small>
               </dt>
               <dd>
-                <RenderedValue value={value} field={field} />
+                <BusinessValue value={value} field={field} />
                 {value === null ? null : (
                   <CopyValue label={p.fieldLabel(field.name)} value={value} />
                 )}

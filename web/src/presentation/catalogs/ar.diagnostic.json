@@ -100,7 +100,7 @@
   "diagnostic.WEB_HOST_EXPORT_METADATA_INVALID": "لم تجتز بيانات تصدير الاسترداد الوصفية التحقق.",
   "diagnostic.WEB_HOST_BEFORE_DISPATCH_FAILED": "أخفق الخادم قبل إحالة الطلب للتنفيذ.",
   "diagnostic.WEB_HOST_DISPATCH_UNCONFIRMED": "نتيجة الطلب المُحال غير مؤكدة. افحص الاسترداد قبل إجراء تعديل آخر.",
-  "diagnostic.WEB_HOST_COMPLETED_RESPONSE_FAILED": "اكتملت العملية، لكن تعذر تسليم استجابتها.",
+  "diagnostic.WEB_HOST_COMPLETED_RESPONSE_FAILED": "اكتملت معالجة الطلب، لكن تعذّر تسليم الردّ.",
   "diagnostic.WEB_HOST_SESSION_FORBIDDEN": "لا يُسمح لهذه الجلسة بالوصول إلى المورد.",
   "diagnostic.WEB_HOST_METHOD_REJECTED": "لا تدعم نقطة النهاية طريقة الطلب هذه.",
   "diagnostic.WEB_INPUT_EXPECTED_OBJECT": "يلزم كائن JSON.",

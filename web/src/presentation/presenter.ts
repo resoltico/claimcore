@@ -1,3 +1,4 @@
+import correctionTargets from "./generated/correction-targets.json";
 import type { Notice } from "../api/notices";
 import type { FieldDescriptor } from "../api/v3";
 import { calendarDate, displayField, exactAmount, exactInteger } from "./format";
@@ -40,6 +41,10 @@ const fieldValueText = (
     ? token(preferences, value)
     : displayField(value, field, preferences.displayLocale);
 };
+const correctionTargetGroup = (name: string): string | null => {
+  const targets: Readonly<Record<string, string>> = correctionTargets;
+  return Object.hasOwn(targets, name) ? (targets[name] ?? null) : null;
+};
 const hint = (preferences: Preferences, field: FieldDescriptor): string => {
   const s = field.scalar;
   switch (s.kind) {
@@ -67,6 +72,13 @@ export const createPresenter = (preferences: Preferences) => ({
   text: <K extends MessageKey>(key: K, ...values: Values<K>) =>
     translate(preferences, key, ...values),
   notice: (notice: Notice) => renderNotice(preferences, notice),
+  correctionTargetGroup,
+  authoredTargetLabel: (name: string) => {
+    const group = correctionTargetGroup(name);
+    return group === null
+      ? metadata(preferences, "field", name, "label")
+      : `${metadata(preferences, "group", group, "label")} · ${translate(preferences, "ui.action")}`;
+  },
   fieldLabel: (name: string) => metadata(preferences, "field", name, "label"),
   fieldMeaning: (name: string) => metadata(preferences, "field", name, "meaning"),
   commandLabel: (name: string) => metadata(preferences, "command", name, "label"),

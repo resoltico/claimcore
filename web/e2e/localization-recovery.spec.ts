@@ -48,7 +48,7 @@ test("preserves a committed operation and exact recovery identity when its local
   const requests = trackRequests(page);
   const pending = await pauseJsonReply(page, "command.execute", true);
   try {
-    await page.getByRole("button", { name: "Submit exact request" }).click();
+    await page.getByRole("button", { name: "Record changes" }).click();
     const captured = await pending.ready;
     const { outcome } = captured.reply;
     expect(outcome.tag === "COMPLETED" && outcome.data.execution.tag === "ACCEPTED").toBe(true);

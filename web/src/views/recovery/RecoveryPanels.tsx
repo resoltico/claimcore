@@ -1,3 +1,4 @@
+import { CharacterWarning } from "../../components/BusinessValue";
 import { NoticeView } from "../../presentation/Message";
 import { usePresentation } from "../../presentation/context";
 import type { Notice } from "../../api/notices";
@@ -60,7 +61,7 @@ const AttemptEvidence = ({
       <ul>
         {value.attempts.items.map((attempt) => (
           <li key={attempt.attemptId}>
-            <bdi>{attempt.attemptId}</bdi> · {attempt.startedAt} ·{" "}
+            <bdi>{attempt.attemptId}</bdi> · <bdi>{attempt.startedAt}</bdi> ·{" "}
             {p.token(attempt.settlement ?? "PENDING")}
           </li>
         ))}
@@ -76,6 +77,26 @@ const AttemptEvidence = ({
         </Button>
       )}
     </>
+  );
+};
+
+const AuthoredValues = ({ value }: { value: PreparationDetails }) => {
+  const p = usePresentation();
+  return (
+    <dl className="review-values">
+      {value.authoredValues.map((entry) => (
+        <div key={entry.name}>
+          <dt>{p.authoredTargetLabel(entry.name)}</dt>
+          <dd>
+            {p.correctionTargetGroup(entry.name) === null ? null : (
+              <span>{p.token(entry.value)} · </span>
+            )}
+            <bdi>{entry.value}</bdi>
+            <CharacterWarning value={entry.value} />
+          </dd>
+        </div>
+      ))}
+    </dl>
   );
 };
 
@@ -114,16 +135,7 @@ const RetainedDetails = ({
           contract: value.preparingContractKind,
         })}
       </p>
-      <dl className="review-values">
-        {value.authoredValues.map((entry) => (
-          <div key={entry.name}>
-            <dt>{p.fieldLabel(entry.name)}</dt>
-            <dd>
-              <bdi>{entry.value}</bdi>
-            </dd>
-          </div>
-        ))}
-      </dl>
+      <AuthoredValues value={value} />
       <AttemptEvidence value={value} actions={actions} />
     </>
   );

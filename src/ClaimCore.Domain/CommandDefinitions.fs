@@ -50,13 +50,13 @@ module CommandDefinitions =
                 correctionGroup
                     "registration"
                     "Registration"
-                    "Keep the accepted registration facts or replace all seven registration inputs together."
+                    "Keep the current registration details or replace all seven details together."
                     [ CorrectionGroupAction.Keep; CorrectionGroupAction.Replace ]
                     (registrationFields |> List.map current)
                 correctionGroup
                     "decision"
                     "Payment decision"
-                    "Keep the accepted decision, replace its complete date, amount, and currency tuple, or clear it."
+                    "Keep the current payment decision, replace its date, amount and currency together, or clear the decision."
                     [
                         CorrectionGroupAction.Keep
                         CorrectionGroupAction.Replace
@@ -70,7 +70,7 @@ module CommandDefinitions =
                 correctionGroup
                     "payment"
                     "Payment record"
-                    "Keep the accepted payment record, replace its date, or clear the recorded payment date; clearing does not reverse an external transfer."
+                    "Keep the current payment date, replace it, or clear the recorded date. Clearing the date does not refund money."
                     [
                         CorrectionGroupAction.Keep
                         CorrectionGroupAction.Replace
@@ -92,7 +92,7 @@ module CommandDefinitions =
             definition
                 CommandKind.Open
                 "Open a case"
-                "Create the basic record. No decision or payment is inferred."
+                "Register the incident, claimant, insurer and amount claimed."
                 (registrationFields |> List.map blank |> fields)
             definition
                 CommandKind.AmendRegistration
@@ -105,7 +105,7 @@ module CommandDefinitions =
         definition
             CommandKind.CorrectCase
             "Correct case facts"
-            "Correct existing decided, paid, or closed case facts atomically. Keep reads accepted values; clearing a payment record does not reverse an external transfer."
+            "Correct recorded details on a case with a decision, payment or closed status. All changes are recorded together. Clearing a payment date does not refund money."
             correctionGroups
 
     let private paymentAndStatusDefinitions =
@@ -123,7 +123,7 @@ module CommandDefinitions =
             definition
                 CommandKind.WithdrawDecision
                 "Withdraw payment decision"
-                "Remove the unpaid decision tuple while retaining its earlier history."
+                "Clear the unpaid decision while preserving its history."
                 (fields [])
             definition
                 CommandKind.RecordPayment
@@ -138,12 +138,12 @@ module CommandDefinitions =
             definition
                 CommandKind.Close
                 "Close the case"
-                "Set the case status to CLOSED. Closing does not imply any payment."
+                "Close the case. Closing does not mean that payment was made."
                 (fields [])
             definition
                 CommandKind.Reopen
                 "Reopen the case"
-                "Set the case status to OPENED, retaining its other fields and history."
+                "Reopen the case, preserving its details and history."
                 (fields [])
         ]
 

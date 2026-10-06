@@ -52,11 +52,13 @@ it("offers one explicit exact-ID Prepare retry after lost response", async () =>
     response("command.prepare", "PREPARED", { details: preparation, review }),
   );
   renderEditor();
-  await user.click(screen.getByRole("button", { name: "Prepare exact request" }));
-  expect(await screen.findByRole("button", { name: "Retry exact prepare" })).toBeVisible();
+  await user.click(screen.getByRole("button", { name: "Review changes" }));
+  expect(
+    await screen.findByRole("button", { name: "Retry the same review request" }),
+  ).toBeVisible();
   expect(fetch).toHaveBeenCalledOnce();
-  await user.click(screen.getByRole("button", { name: "Retry exact prepare" }));
-  expect(await screen.findByRole("dialog", { name: "Review prepared operation" })).toBeVisible();
+  await user.click(screen.getByRole("button", { name: "Retry the same review request" }));
+  expect(await screen.findByRole("dialog", { name: "Review changes" })).toBeVisible();
   expect(fetch).toHaveBeenCalledTimes(2);
   expect(fetch.mock.calls[1]?.[1]?.body).toBe(fetch.mock.calls[0]?.[1]?.body);
 });
@@ -68,9 +70,9 @@ it("renders an exact accepted Prepare replay as a definite receipt", async () =>
     response("command.prepare", "OBSERVED_ACCEPTED", { receipt }),
   );
   renderEditor(committed);
-  await user.click(screen.getByRole("button", { name: "Prepare exact request" }));
+  await user.click(screen.getByRole("button", { name: "Review changes" }));
   expect(await screen.findByRole("heading", { name: /^Accepted operation$/u })).toBeVisible();
-  expect(screen.queryByRole("dialog", { name: "Review prepared operation" })).toBeNull();
+  expect(screen.queryByRole("dialog", { name: "Review changes" })).toBeNull();
   await user.click(screen.getByRole("button", { name: "Return to case" }));
   expect(committed).toHaveBeenCalledOnce();
 });
@@ -106,10 +108,10 @@ it("keeps a non-reviewable retained Prepare exact and directs Recovery", async (
     }),
   );
   renderEditor(vi.fn(), locked);
-  await user.click(screen.getByRole("button", { name: "Prepare exact request" }));
+  await user.click(screen.getByRole("button", { name: "Review changes" }));
   expect(await screen.findByRole("alert")).toHaveTextContent("Inspect Recovery");
-  expect(screen.queryByRole("dialog", { name: "Review prepared operation" })).toBeNull();
-  expect(screen.getByRole("button", { name: "Back without preparing" })).toBeDisabled();
+  expect(screen.queryByRole("dialog", { name: "Review changes" })).toBeNull();
+  expect(screen.getByRole("button", { name: "Back to case" })).toBeDisabled();
   expect(locked).toHaveBeenCalledWith(true);
   expect(vi.mocked(globalThis.fetch)).toHaveBeenCalledOnce();
 });

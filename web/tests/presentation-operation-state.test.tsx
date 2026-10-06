@@ -39,7 +39,7 @@ it("preserves authored content, DOM selection and operation identity across lang
   expect(date).toHaveValue("2026-02-30");
   expect(date).toHaveAttribute("type", "text");
   expect(globalThis.fetch).not.toHaveBeenCalled();
-  await user.click(screen.getByRole("button", { name: "Prepare exact request" }));
+  await user.click(screen.getByRole("button", { name: "Review changes" }));
   expect(draftAt(0).command).toMatchObject({
     values: { claimantName: name.value, incidentDate: "2026-02-30" },
   });
@@ -52,7 +52,7 @@ it("renders a delayed preparation in the selected language without replay or con
   const pending = deferredResponse();
   vi.mocked(globalThis.fetch).mockReturnValueOnce(pending.promise);
   render(editor());
-  await user.click(screen.getByRole("button", { name: "Prepare exact request" }));
+  await user.click(screen.getByRole("button", { name: "Review changes" }));
   const original = draftAt(0);
   await user.selectOptions(languageControl(), "lv");
   pending.resolve(preparedReply());
@@ -79,10 +79,10 @@ it("keeps an in-flight submission and its exact recovery identity through langua
     .mockImplementationOnce(() => Promise.resolve(preparedReply()))
     .mockReturnValueOnce(pending.promise);
   render(editor());
-  await user.click(screen.getByRole("button", { name: "Prepare exact request" }));
+  await user.click(screen.getByRole("button", { name: "Review changes" }));
   const dialog = await screen.findByRole("dialog");
   await user.click(within(dialog).getByRole("checkbox"));
-  await user.click(screen.getByRole("button", { name: "Submit exact request" }));
+  await user.click(screen.getByRole("button", { name: "Record changes" }));
   const submitted = fetch.mock.calls[1]?.[1];
   await user.selectOptions(languageControl(), "ar");
   await user.keyboard("{Escape}");
@@ -97,7 +97,7 @@ it("keeps an in-flight submission and its exact recovery identity through langua
   expect(screen.getByRole("alert")).toHaveTextContent(
     "Inspect Recovery before taking another action.",
   );
-  expect(screen.queryByRole("button", { name: "Back without preparing" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Back to cases" })).toBeNull();
   expect(screen.queryByRole("textbox")).toBeNull();
   expect(fetch).toHaveBeenCalledTimes(2);
   expect(JSON.parse(typeof submitted?.body === "string" ? submitted.body : "")).toEqual(draftAt(0));
@@ -108,14 +108,14 @@ it("does not rebase a frozen preparation after language switching and an externa
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockRejectedValueOnce(new Error("lost"));
   const view = render(editor());
-  await user.click(screen.getByRole("button", { name: "Prepare exact request" }));
+  await user.click(screen.getByRole("button", { name: "Review changes" }));
   await screen.findByRole("alert");
   const initialBody = fetch.mock.calls[0]?.[1]?.body;
   await user.selectOptions(languageControl(), "ar");
   view.rerender(editor({ current: { ...current, case: { ...current.case, revision: "99" } } }));
   await user.selectOptions(languageControl(), "en");
   fetch.mockRejectedValueOnce(new Error("lost-again"));
-  await user.click(screen.getByRole("button", { name: "Retry exact prepare" }));
+  await user.click(screen.getByRole("button", { name: "Retry the same review request" }));
   await waitFor(() => {
     expect(fetch).toHaveBeenCalledTimes(2);
   });
@@ -129,7 +129,7 @@ it("localizes late validation by diagnostic identity and focuses the unchanged a
   vi.mocked(globalThis.fetch).mockReturnValueOnce(pending.promise);
   render(editor({ current: null, initialCommand: "OPEN" }));
   const name = screen.getByLabelText<HTMLInputElement>("Claimant name", { exact: true });
-  await user.click(screen.getByRole("button", { name: "Prepare exact request" }));
+  await user.click(screen.getByRole("button", { name: "Review changes" }));
   await user.selectOptions(languageControl(), "lv");
   pending.resolve(
     response("command.prepare", "REJECTED", {

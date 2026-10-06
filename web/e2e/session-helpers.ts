@@ -49,7 +49,10 @@ const syntheticOwner = async (): Promise<{ username: string; password: string }>
 };
 type Cookies = Awaited<ReturnType<BrowserContext["cookies"]>>;
 
-export const openAuthenticated = async (page: Page): Promise<void> => {
+export const openAuthenticated = async (
+  page: Page,
+  casesHeading: string | RegExp = "Cases",
+): Promise<void> => {
   const output = process.env["CLAIMCORE_WEB_E2E_PRIVATE_OUTPUT_DIR"];
   if (output === undefined) {
     throw new Error("Private browser output was not configured.");
@@ -67,7 +70,7 @@ export const openAuthenticated = async (page: Page): Promise<void> => {
   }
   await page.context().addCookies(state.cookies as Cookies);
   await page.goto("/", { waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("heading", { name: "Cases", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: casesHeading, exact: true })).toBeVisible();
 };
 
 export const expectAccessible = async (page: Page): Promise<void> => {

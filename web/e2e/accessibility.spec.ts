@@ -71,13 +71,13 @@ test("keeps published login, editor, review, receipt and history accessible at n
   await progress("a11y-editor");
   await expectAccessible(page);
   await prepare(page);
-  const review = page.getByRole("dialog", { name: "Review prepared operation" });
+  const review = page.getByRole("dialog", { name: "Review changes" });
   await expect(review).toBeVisible();
   await progress("a11y-review");
   await expectAccessible(page);
   await review.getByRole("checkbox").focus();
   await page.keyboard.press("Space");
-  await review.getByRole("button", { name: "Submit exact request" }).focus();
+  await review.getByRole("button", { name: "Record changes" }).focus();
   await page.keyboard.press("Enter");
   await expect(
     page.getByRole("heading", { name: "Accepted operation", exact: true }),

@@ -5,7 +5,7 @@
   "notice.fileTooLarge": "The selected file exceeds {maximumBytes} bytes.",
   "notice.fileUnreadable": "The selected file could not be read.",
   "notice.exportInvalid": "The recovery export response failed its protocol checks.",
-  "notice.incomplete": "The operation did not complete.",
+  "notice.incomplete": "Check the reported outcome before trying again. If it is unconfirmed, inspect Recovery.",
   "notice.definitionMismatch": "The installed Web contract does not match these browser assets. Reload after publishing matching assets.",
   "notice.invalidSession": "Invalid session response.",
   "notice.missingCsrf": "Authenticated session did not include an antiforgery token.",

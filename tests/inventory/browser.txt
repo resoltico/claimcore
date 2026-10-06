@@ -18,4 +18,28 @@ resolves and dismisses exact preparations with observed server state
 retains unchanged encrypted artifact bytes through localized import without automatic execution
 rotates a retained OPEN identity when only its target reference changes
 switches language and independent display format through native preparation without changing review consent
+updates visible anonymous text from ar to each real language with ar-EG
+updates visible anonymous text from ar to each real language with en-GB
+updates visible anonymous text from ar to each real language with lv-LV
+updates visible anonymous text from en to each real language with ar-EG
+updates visible anonymous text from en to each real language with en-GB
+updates visible anonymous text from en to each real language with lv-LV
+updates visible anonymous text from en-XA to each real language with ar-EG
+updates visible anonymous text from en-XA to each real language with en-GB
+updates visible anonymous text from en-XA to each real language with lv-LV
+updates visible anonymous text from lv to each real language with ar-EG
+updates visible anonymous text from lv to each real language with en-GB
+updates visible anonymous text from lv to each real language with lv-LV
+updates visible authenticated text from ar to each real language with ar-EG
+updates visible authenticated text from ar to each real language with en-GB
+updates visible authenticated text from ar to each real language with lv-LV
+updates visible authenticated text from en to each real language with ar-EG
+updates visible authenticated text from en to each real language with en-GB
+updates visible authenticated text from en to each real language with lv-LV
+updates visible authenticated text from en-XA to each real language with ar-EG
+updates visible authenticated text from en-XA to each real language with en-GB
+updates visible authenticated text from en-XA to each real language with lv-LV
+updates visible authenticated text from lv to each real language with ar-EG
+updates visible authenticated text from lv to each real language with en-GB
+updates visible authenticated text from lv to each real language with lv-LV
 uses OIDC sign-in and the accessible actor-bound case workspace

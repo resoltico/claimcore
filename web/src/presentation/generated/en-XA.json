@@ -1,1117 +1,4 @@
 {
-  "command.OPEN.label": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÖÖpëën àà cààsëë" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "command.OPEN.meaning": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Crëëààtëë thëë bààsïïc rëëcöörd. Nöö dëëcïïsïïöön öör pààymëënt ïïs ïïnfëërrëëd."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "command.AMEND_REGISTRATION.label": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÀÀmëënd rëëgïïstrààtïïöön" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "command.AMEND_REGISTRATION.meaning": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Rëëplààcëë thëë ïïnïïtïïààl fààcts. Thëë hààndlëër's cààsëë rëëfëërëëncëë rëëmààïïns üünchààngëëd."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "command.CORRECT_CASE.label": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Cöörrëëct cààsëë fààcts" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "command.CORRECT_CASE.meaning": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Cöörrëëct ëëxïïstïïng dëëcïïdëëd, pààïïd, öör clöösëëd cààsëë fààcts ààtöömïïcààlly. Këëëëp rëëààds ààccëëptëëd vààlüüëës; clëëààrïïng àà pààymëënt rëëcöörd dööëës nööt rëëvëërsëë ààn ëëxtëërnààl tràànsfëër."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "command.DECIDE.label": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Rëëcöörd pààymëënt dëëcïïsïïöön" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "command.DECIDE.meaning": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Rëëcöörd öör rëëplààcëë thëë dëëcïïdëëd ààmööüünt àànd cüürrëëncy. Thïïs dööëës nööt sëënd möönëëy."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "command.WITHDRAW_DECISION.label": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Wïïthdrààw pààymëënt dëëcïïsïïöön" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "command.WITHDRAW_DECISION.meaning": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Rëëmöövëë thëë üünpààïïd dëëcïïsïïöön tüüplëë whïïlëë rëëtààïïnïïng ïïts ëëààrlïïëër hïïstööry."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "command.RECORD_PAYMENT.label": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Rëëcöörd ààctüüààl pààymëënt" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "command.RECORD_PAYMENT.meaning": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Rëëcöörd thëë dààtëë thëë füüll dëëcïïdëëd ààmööüünt wààs ààctüüààlly pààïïd. Thïïs dööëës nööt ëëxëëcüütëë öör vëërïïfy àà tràànsfëër."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "command.CLEAR_PAYMENT.label": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Cöörrëëct ààn ëërröönëëööüüs pààymëënt rëëcöörd" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "command.CLEAR_PAYMENT.meaning": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Rëëmöövëë ààn ëërröönëëööüüsly rëëcöördëëd pààymëënt dààtëë. Thïïs ïïs nööt àà rëëfüünd öör rëëvëërsààl ööf ààn ààctüüààl tràànsfëër. ËËààrlïïëër hïïstööry rëëmààïïns."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "command.CLOSE.label": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Clöösëë thëë cààsëë" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "command.CLOSE.meaning": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Sëët thëë cààsëë stààtüüs töö CLÖÖSËËD. Clöösïïng dööëës nööt ïïmply ààny pààymëënt."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "command.REOPEN.label": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Rëëööpëën thëë cààsëë" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "command.REOPEN.meaning": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Sëët thëë cààsëë stààtüüs töö ÖÖPËËNËËD, rëëtààïïnïïng ïïts ööthëër fïïëëlds àànd hïïstööry."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.INPUT_TEXT_REQUIRED": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÀÀ nöön-blàànk vààlüüëë ïïs rëëqüüïïrëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.INPUT_MALFORMED_UNICODE": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Mààlföörmëëd ÜÜnïïcöödëë ïïs nööt ààccëëptëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.INPUT_SURROUNDING_WHITESPACE": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Lëëààdïïng öör trààïïlïïng whïïtëëspààcëë ïïs nööt ààccëëptëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.INPUT_TEXT_TOO_SHORT": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë vààlüüëë müüst cööntààïïn ààt lëëààst " },
-    { "type": 1, "value": "minimumCharacters" },
-    { "type": 0, "value": " ÜÜnïïcöödëë chààrààctëërs." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.INPUT_TEXT_TOO_LONG": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë vààlüüëë müüst nööt ëëxcëëëëd " },
-    { "type": 1, "value": "maximumCharacters" },
-    { "type": 0, "value": " ÜÜnïïcöödëë chààrààctëërs." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.INPUT_CONTROL_CHARACTERS": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Cööntrööl chààrààctëërs ààrëë nööt ààccëëptëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.INPUT_CALENDAR_DATE_REQUIRED": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÜÜsëë öönëë vààlïïd cààlëëndààr dààtëë ïïn YYYY-MM-DD föörmààt." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.INPUT_DATE_ORDER": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë dààtëës ààrëë ïïn ààn ïïnvààlïïd chröönöölöögïïcààl öördëër." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.INPUT_FUTURE_DATE": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "ÀÀ füütüürëë dààtëë càànnööt rëëcöörd ààn ëëvëënt thààt hààs ààlrëëààdy ööccüürrëëd."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.INPUT_DECIMAL_FORMAT": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÜÜsëë nöön-nëëgààtïïvëë dëëcïïmààl tëëxt: üüp töö " },
-    { "type": 1, "value": "maximumIntegerDigits" },
-    { "type": 0, "value": " ïïntëëgëër dïïgïïts àànd " },
-    { "type": 1, "value": "maximumFractionalDigits" },
-    { "type": 0, "value": " frààctïïöönààl dïïgïïts; nöö sïïgn öör ëëxpöönëënt." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.INPUT_CURRENCY_FORMAT": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÜÜsëë àà thrëëëë-lëëttëër üüppëërcààsëë cüürrëëncy ïïdëëntïïfïïëër." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.INPUT_AMOUNT_NOT_REPRESENTABLE": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë dëëcïïmààl ààmööüünt càànnööt bëë rëëprëësëëntëëd ëëxààctly." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.COMMAND_OPERATION_ID_REQUIRED": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÜÜsëë àà nöön-ëëmpty ÜÜÜÜÏÏD." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.COMMAND_EXPECTED_REVISION_RANGE": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÜÜsëë àà nöön-nëëgààtïïvëë vëërsïïöön bëëlööw ÏÏnt64.MààxVààlüüëë." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.STATE_STORED_REVISION_RANGE": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Stöörëëd vëërsïïööns müüst bëë pöösïïtïïvëë àànd bëëlööw ÏÏnt64.MààxVààlüüëë."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.STATE_REVISION_EXHAUSTED": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thëë cààsëë rëëvïïsïïöön càànnööt ààdvààncëë bëëlööw ÏÏnt64.MààxVààlüüëë."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.STATE_CASE_REFERENCE_MISMATCH": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë lööààdëëd cààsëë dööëës nööt mààtch thïïs cöömmàànd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.STATE_TRANSITION_MISMATCH": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë stààtëë güüààrd àànd pààymëënt tràànsïïtïïöön dïïsààgrëëëë." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.INPUT_EXACT_FIELDS_REQUIRED": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Süüpply ëëààch dëëclààrëëd cöömmàànd ïïnpüüt ëëxààctly ööncëë, wïïth nöö ëëxtràà fïïëëlds."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.COMMAND_GROUPED_CORRECTION_REQUIRED": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Süüpply ààll thrëëëë tààggëëd cöörrëëctïïöön grööüüps." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.CORRECTION_COMPLETE_DECISION_REQUIRED": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Dëëcïïsïïöön dààtëë, pààyààblëë ààmööüünt àànd pààyààblëë cüürrëëncy müüst bëë prëësëënt töögëëthëër öör ààll ààbsëënt."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.CORRECTION_PAYMENT_CLEAR_REQUIRED": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Clëëààrïïng àà pààïïd dëëcïïsïïöön rëëqüüïïrëës clëëààrïïng thëë pààymëënt rëëcöörd."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Rëëplààcïïng àà pààïïd dëëcïïsïïöön rëëqüüïïrëës ëëxplïïcïït pààymëënt rëëààffïïrmààtïïöön öör clëëààrïïng thëë pààymëënt rëëcöörd."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.CORRECTION_PAYMENT_DECISION_REQUIRED": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "ÀÀ pààymëënt rëëcöörd rëëqüüïïrëës àà cöömplëëtëë pààymëënt dëëcïïsïïöön."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.CORRECTION_REPLACEMENT_FIELDS_REQUIRED": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÜÜsëë RËËPLÀÀCËË wïïth ëëvëëry dëëclààrëëd fïïëëld." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.CORRECTION_REGISTRATION_CLEAR_FORBIDDEN": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Rëëgïïstrààtïïöön càànnööt bëë clëëààrëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.CASE_NOT_FOUND": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë cààsëë rëëfëërëëncëë wààs nööt fööüünd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.CASE_ALREADY_EXISTS": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë cààsëë rëëfëërëëncëë ààlrëëààdy ëëxïïsts." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.CASE_REVISION_CONFLICT": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Rëëààd thëë cüürrëënt cààsëë bëëföörëë mààkïïng àà chààngëëd rëëqüüëëst."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.CASE_CLOSED": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Rëëööpëën thëë cààsëë bëëföörëë chààngïïng ïïts fààcts." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.CASE_ALREADY_CLOSED": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë cààsëë ïïs ààlrëëààdy clöösëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.CASE_ALREADY_OPENED": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë cààsëë ïïs ààlrëëààdy ööpëën." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.CASE_AMENDMENT_REQUIRES_UNDECIDED": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Wïïthdrààw ààn üünpààïïd dëëcïïsïïöön bëëföörëë ààmëëndïïng rëëgïïstrààtïïöön."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.CORRECTION_NO_CHANGES": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Chöööösëë ààt lëëààst öönëë fààctüüààl cöörrëëctïïöön thààt chààngëës thëë cüürrëënt cààsëë."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.CORRECTION_EXISTING_VALUE_REQUIRED": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "ÀÀ cöörrëëctïïöön cààn öönly rëëplààcëë öör clëëààr àà vààlüüëë ààlrëëààdy rëëcöördëëd öön thïïs cààsëë."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.CASE_DECISION_REQUIRED": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Rëëcöörd àà pààymëënt dëëcïïsïïöön fïïrst." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.CASE_PAYMENT_ALREADY_RECORDED": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ClààïïmCöörëë rëëcöörds öönëë füüll pààymëënt." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.CASE_PAYMENT_NOT_RECORDED": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëërëë ïïs nöö pààymëënt rëëcöörd töö clëëààr." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.CASE_DECISION_ALREADY_PAID": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÀÀ rëëcöördëëd pààymëënt prëëvëënts chààngïïng ïïts dëëcïïsïïöön." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.CASE_ZERO_DECISION_CANNOT_BE_PAID": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÀÀ zëëröö dëëcïïsïïöön ïïs nööt àà pààymëënt." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.QUERY_PAGE_LIMIT_RANGE": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÜÜsëë àà vààlüüëë frööm 1 thrööüügh " },
-    { "type": 1, "value": "maximumPageSize" },
-    { "type": 0, "value": "." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.QUERY_CASE_LIST_CURSOR_INVALID": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Stààrt àà nëëw cààsëë lïïst. Thëë cüürsöör ïïs ïïnvààlïïd, ëëxpïïrëëd, öör bëëlööngs töö àànööthëër ààccööüünt öör pààgëë sïïzëë."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.QUERY_HISTORY_CURSOR_INVALID": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "ÜÜsëë öönëë ööpààqüüëë hïïstööry cüürsöör rëëtüürnëëd by ClààïïmCöörëë."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.OPERATION_CONTENT_CONFLICT": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thïïs ööpëërààtïïöön ÏÏD bëëlööngs töö dïïffëërëënt cöömmàànd cööntëënt. Döö nööt rëëüüsëë ïït."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.OPERATION_REVOKED": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "ÀÀüüthöörïïty föör füütüürëë ëëxëëcüütïïöön ööf thïïs ëëxààct ööpëërààtïïöön wààs düürààbly rëëvöökëëd. ËËààrlïïëër ààttëëmpt üüncëërtààïïnty ïïs üünchààngëëd; ïïnspëëct ïïts ëëxààct ëëvïïdëëncëë."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.OPERATION_RECOVERY_ATTEMPT_LIMIT": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thïïs ööpëërààtïïöön hààs rëëààchëëd ïïts rëëcöövëëry ààttëëmpt lïïmïït. ÏÏnspëëct ïïts ëëxààct ëëvïïdëëncëë àànd rëëcööncïïlëë üünrëësöölvëëd ààttëëmpts bëëföörëë ààüüthöörïïng nëëw wöörk."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.ACCESS_RESOURCE_UNAVAILABLE": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thïïs rëësööüürcëë ïïs üünààvààïïlààblëë." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RESOURCE_UNAVAILABLE": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thïïs rëëcöövëëry rëësööüürcëë ïïs üünààvààïïlààblëë." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.CORE_OPERATION_CONTENT_CONFLICT": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thëë ööpëërààtïïöön ÏÏD bëëlööngs töö dïïffëërëënt rëëqüüëëst cööntëënt."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.CORE_STORE_UNAVAILABLE": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thëë stöörëë wààs üünààvààïïlààblëë bëëföörëë cöömplëëtïïöön wààs cöönfïïrmëëd."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.CORE_COMMIT_OUTCOME_UNKNOWN": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Cöömmïït cöömplëëtïïöön wààs nööt cöönfïïrmëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.CORE_STORE_INTEGRITY_ERROR": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Stöörëëd dààtàà fààïïlëëd ïïntëëgrïïty vààlïïdààtïïöön." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.CORE_SCHEMA_MISMATCH": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thëë rüüntïïmëë schëëmàà öör dààtààbààsëë sëëttïïngs ààrëë ïïncöömpààtïïblëë."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_STORE_RESPONSE_INVALID": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Rëëcöövëëry stöörààgëë rëëtüürnëëd ààn ïïnvààlïïd tëëchnïïcààl rëëspöönsëë."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_STORE_CONTENT_CONFLICT": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Rëëcöövëëry ïïdëëntïïty cöönflïïcts wïïth rëëtààïïnëëd dààtàà." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_STORE_PREPARATION_MISSING": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Rëëcöövëëry stöörààgëë lööst ààn ëëxpëëctëëd prëëpààrààtïïöön." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_CAPACITY_EXHAUSTED": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Rëëcöövëëry cààpààcïïty ïïs ëëxhààüüstëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_SCHEMA_MISMATCH": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Rëëcöövëëry stöörààgëë ïïs ïïncöömpààtïïblëë wïïth thïïs rüüntïïmëë." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_STORE_UNAVAILABLE": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Rëëcöövëëry stöörààgëë wààs üünààvààïïlààblëë bëëföörëë cöömplëëtïïöön wààs cöönfïïrmëëd."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_STORE_INTEGRITY_ERROR": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Rëëcöövëëry stöörààgëë fààïïlëëd ïïntëëgrïïty vààlïïdààtïïöön." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_READ_CANCELLED": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë rëëcöövëëry rëëààd wààs cààncëëllëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_MUTATION_CANCELLED_BEFORE_COMMIT": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë tëëchnïïcààl müütààtïïöön wààs cààncëëllëëd bëëföörëë cöömmïït." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_MUTATION_OUTCOME_UNKNOWN": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thëë rëëcöövëëry-stààtëë müütààtïïöön màày hààvëë cöömmïïttëëd büüt cööüüld nööt bëë cöönfïïrmëëd."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_RETAINED_CANONICAL_INVALID": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Rëëtààïïnëëd càànöönïïcààl rëëqüüëëst bytëës fààïïlëëd ïïntëëgrïïty vààlïïdààtïïöön."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_RETAINED_DOMAIN_SHAPE_INVALID": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Rëëtààïïnëëd rëëqüüëëst dïïd nööt sààtïïsfy ïïts clöösëëd döömààïïn shààpëë."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_RETAINED_PREPARATION_UNVERIFIABLE": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "ÀÀn ëëxààct rëëtààïïnëëd prëëpààrààtïïöön cööüüld nööt bëë vëërïïfïïëëd."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_NEW_PREPARATION_MISSING": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "ÀÀ nëëwly rëëtààïïnëëd prëëpààrààtïïöön wààs nööt ààvààïïlààblëë föör ëëxëëcüütïïöön."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_PREPARATION_DISMISSED_BEFORE_EXECUTION": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thëë prëëpààrààtïïöön wààs dïïsmïïssëëd bëëföörëë ëëxëëcüütïïöön cööüüld bëëgïïn."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_RETAINED_DIGEST_MISMATCH": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thëë rëëtààïïnëëd prëëpààrààtïïöön dïïgëëst dööëës nööt mààtch thëë süübmïïttëëd drààft."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_STORED_DATA_INVALID": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Stöörëëd rëëcöövëëry dààtàà fààïïlëëd vààlïïdààtïïöön." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_OPERATION_ID_REQUIRED": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÀÀ nöön-ëëmpty rëëcöövëëry ööpëërààtïïöön ÏÏD ïïs rëëqüüïïrëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_REQUEST_DIGEST_INVALID": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thëë rëëcöövëëry rëëqüüëëst dïïgëëst müüst bëë àà lööwëërcààsëë SHÀÀ-256 dïïgëëst."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_PAGE_LIMIT_RANGE": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thëë rëëcöövëëry pààgëë lïïmïït ïïs ööüütsïïdëë thëë süüppöörtëëd rààngëë."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_LIST_CURSOR_INVALID": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë rëëcöövëëry lïïst cüürsöör ïïs ïïnvààlïïd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_LIST_CURSOR_VIEW_MISMATCH": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë rëëcöövëëry lïïst cüürsöör bëëlööngs töö àà dïïffëërëënt vïïëëw." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_ATTEMPT_CURSOR_INVALID": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë rëëcöövëëry ààttëëmpt cüürsöör ïïs ïïnvààlïïd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_ATTEMPT_CURSOR_OPERATION_MISMATCH": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thëë rëëcöövëëry ààttëëmpt cüürsöör bëëlööngs töö àà dïïffëërëënt ööpëërààtïïöön."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_DISMISSAL_CONFIRMATION_REQUIRED": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "ËËxplïïcïït cöönfïïrmààtïïöön ïïs rëëqüüïïrëëd töö dïïsmïïss àà rëëcöövëëry prëëpààrààtïïöön."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_PREPARATION_NOT_FOUND": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë rëëcöövëëry prëëpààrààtïïöön wààs nööt fööüünd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_OPERATION_CONTENT_CONFLICT": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thëë süüpplïïëëd rëëcöövëëry ïïdëëntïïty cöönflïïcts wïïth ààn ëëxïïstïïng ööpëërààtïïöön."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_PREPARATION_DISMISSED": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÀÀ dïïsmïïssëëd prëëpààrààtïïöön càànnööt bëë süübmïïttëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_SUBMISSION_ALREADY_STARTED": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thëë prëëpààrààtïïöön hààs ààlrëëààdy stààrtëëd süübmïïssïïöön àànd müüst bëë rëësöölvëëd ëëxààctly."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_ACCEPTED_OPERATION_DISMISSAL_FORBIDDEN": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "ÀÀn ààccëëptëëd ööpëërààtïïöön càànnööt bëë dïïsmïïssëëd. ÏÏnspëëct ïïts rëëtààïïnëëd rëëcëëïïpt."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_SOURCE_DIGEST_MISMATCH": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thëë süüpplïïëëd sööüürcëë dïïgëëst dööëës nööt mààtch thëë ëëxààct ïïmpöört bytëës."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_REQUEST_DIGEST_MISMATCH": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thëë süüpplïïëëd dïïgëëst dööëës nööt mààtch thëë ëëxààct rëëtààïïnëëd rëëqüüëëst bytëës."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_INSTALLATION_MISMATCH": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thëë rëëcöövëëry ëënvëëlööpëë bëëlööngs töö àà dïïffëërëënt ClààïïmCöörëë ïïnstààllààtïïöön."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_ENVELOPE_INVALID_OR_UNSUPPORTED": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thëë rëëcöövëëry ëënvëëlööpëë ïïs üünsüüppöörtëëd öör fààïïlëëd càànöönïïcààl dëëcöödïïng."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_OPERATION_REVOKED": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "ÀÀüüthöörïïty föör füütüürëë ëëxëëcüütïïöön ööf thïïs ëëxààct ööpëërààtïïöön wààs düürààbly rëëvöökëëd. ËËààrlïïëër ààttëëmpt üüncëërtààïïnty ïïs üünchààngëëd; ïïnspëëct ïïts ëëxààct ëëvïïdëëncëë."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_ATTEMPT_LIMIT_REACHED": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thïïs ööpëërààtïïöön hààs rëëààchëëd ïïts rëëcöövëëry ààttëëmpt lïïmïït. ÏÏnspëëct ïïts ëëxààct ëëvïïdëëncëë àànd rëëcööncïïlëë üünrëësöölvëëd ààttëëmpts bëëföörëë ààüüthöörïïng nëëw wöörk."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_HOST_CONNECTION_REJECTED": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë hööst rëëfüüsëëd thïïs cöönnëëctïïöön." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_HOST_ORIGIN_REJECTED": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë rëëqüüëëst öörïïgïïn wààs rëëfüüsëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_HOST_MEDIA_TYPE_REJECTED": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë rëëqüüëëst mëëdïïàà typëë ïïs üünsüüppöörtëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_HOST_BODY_TOO_LARGE": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë rëëqüüëëst ëëxcëëëëds thëë cöönfïïgüürëëd bytëë lïïmïït." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_BODY_TOO_LARGE": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë rëëqüüëëst ëëxcëëëëds thëë cöönfïïgüürëëd bytëë lïïmïït." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_HOST_SESSION_REJECTED": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thëë sëëssïïöön wààs rëëfüüsëëd. Sïïgn ïïn töö thëë lööcààl ïïnstààllààtïïöön."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_HOST_ANTIFORGERY_REJECTED": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë ààntïïföörgëëry chëëck fààïïlëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_HOST_ENDPOINT_MISSING": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë rëëqüüëëstëëd ëëndpööïïnt wààs nööt fööüünd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_HOST_BUSY": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë lööcààl hööst ïïs büüsy." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_HOST_EXPORT_METADATA_INVALID": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Rëëcöövëëry ëëxpöört mëëtààdààtàà fààïïlëëd vààlïïdààtïïöön." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_HOST_BEFORE_DISPATCH_FAILED": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë hööst fààïïlëëd bëëföörëë dïïspààtchïïng thëë rëëqüüëëst." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_HOST_DISPATCH_UNCONFIRMED": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thëë dïïspààtchëëd rëëqüüëëst ööüütcöömëë ïïs üüncöönfïïrmëëd. ÏÏnspëëct Rëëcöövëëry bëëföörëë àànööthëër müütààtïïöön."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_HOST_COMPLETED_RESPONSE_FAILED": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thëë ööpëërààtïïöön cöömplëëtëëd, büüt ïïts rëëspöönsëë cööüüld nööt bëë dëëlïïvëërëëd."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_HOST_SESSION_FORBIDDEN": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thïïs sëëssïïöön ïïs nööt pëërmïïttëëd töö ààccëëss thëë rëësööüürcëë."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_HOST_METHOD_REJECTED": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë rëëqüüëëst mëëthööd ïïs nööt süüppöörtëëd by thïïs ëëndpööïïnt." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_EXPECTED_OBJECT": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÀÀ JSÖÖN ööbjëëct ïïs rëëqüüïïrëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_DUPLICATE_PROPERTY": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Düüplïïcààtëë rëëqüüëëst prööpëërtïïëës ààrëë nööt ààccëëptëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_UNKNOWN_PROPERTY": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë rëëqüüëëst cööntààïïns ààn üündëëclààrëëd prööpëërty." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_MISSING_PROPERTY": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÀÀ rëëqüüïïrëëd rëëqüüëëst prööpëërty ïïs mïïssïïng." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_EXPECTED_STRING": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÀÀ tëëxt vààlüüëë ïïs rëëqüüïïrëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_NULL_FORBIDDEN": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Nüüll ïïs nööt ààccëëptëëd ààt thïïs rëëqüüëëst lööcààtïïöön." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_EXPECTED_BOOLEAN": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÀÀ Böööölëëààn vààlüüëë ïïs rëëqüüïïrëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_EXPECTED_INTEGER": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÀÀn ïïntëëgëër vààlüüëë ïïs rëëqüüïïrëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_INVALID_REVISION": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Süüpply àà càànöönïïcààl süüppöörtëëd rëëvïïsïïöön." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_INVALID_UUID": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Süüpply àà càànöönïïcààl nöön-ëëmpty ööpëërààtïïöön ÜÜÜÜÏÏD." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_INVALID_DIGEST": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Süüpply àà càànöönïïcààl lööwëërcààsëë SHÀÀ-256 dïïgëëst." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_INVALID_UNICODE": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë rëëqüüëëst cööntààïïns mààlföörmëëd ÜÜnïïcöödëë." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_INVALID_UTF8": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë rëëqüüëëst ïïs nööt vààlïïd ÜÜTF-8." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_INVALID_JSON": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë rëëqüüëëst ïïs nööt vààlïïd JSÖÖN." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_BODY_UNREADABLE": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë rëëqüüëëst böödy cööüüld nööt bëë rëëààd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_BODY_CANCELLED": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Rëëààdïïng thëë rëëqüüëëst böödy wààs cààncëëllëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_UNKNOWN_COMMAND": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë cöömmàànd ïïs nööt rëëcöögnïïzëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_MISSING_COMMAND_VALUE": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÀÀ rëëqüüïïrëëd cöömmàànd vààlüüëë ïïs mïïssïïng." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_CORRECTION_ACTION": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë cöörrëëctïïöön ààctïïöön ïïs nööt vààlïïd föör thïïs grööüüp." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_LOGOUT_SHAPE": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë sïïgn-ööüüt rëëqüüëëst hààs ààn ïïnvààlïïd shààpëë." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_PAGE_RANGE": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thëë rëëqüüëëstëëd pààgëë sïïzëë ïïs ööüütsïïdëë ïïts pëërmïïttëëd rààngëë."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_HISTORY_DETAIL": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë rëëqüüëëstëëd hïïstööry dëëtààïïl ïïs üünsüüppöörtëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_RECOVERY_VIEW": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë rëëqüüëëstëëd rëëcöövëëry vïïëëw ïïs üünsüüppöörtëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_SOURCE_DIGEST_HEADER": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë sööüürcëë-dïïgëëst hëëààdëër ïïs ààbsëënt öör ïïnvààlïïd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "field.incidentDate.label": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÏÏncïïdëënt dààtëë" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "field.incidentDate.meaning": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Dààtëë öön whïïch thëë ïïncïïdëënt ööccüürrëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "field.incidentNotificationDate.label": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÏÏncïïdëënt nöötïïfïïcààtïïöön dààtëë (FNÖÖL)" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "field.incidentNotificationDate.meaning": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Dààtëë whëën thïïs clààïïms hààndlëër wààs fïïrst nöötïïfïïëëd ööf thëë ïïncïïdëënt by àànyöönëë, nööt nëëcëëssààrïïly thëë clààïïmàànt. Nööt thëë dààtëë àànööthëër ïïnsüürëër öör öörgàànïïsààtïïöön wààs nöötïïfïïëëd."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "field.incidentCountry.label": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Cööüüntry ööf ïïncïïdëënt" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "field.incidentCountry.meaning": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Cööüüntry whëërëë thëë ïïncïïdëënt ööccüürrëëd; rëëcöördëëd ààs ëëntëërëëd wïïthööüüt ïïnfëërrïïng ààpplïïcààblëë lààw."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "field.claimantName.label": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Clààïïmàànt nààmëë" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "field.claimantName.meaning": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Nààmëë ööf thëë clààïïmàànt, whëëthëër àà prïïvààtëë pëërsöön öör àà cöömpààny. Nöö sëëpààrààtëë pààrty-typëë öör lëëgààl-ïïdëëntïïty fïïëëlds."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "field.insurerName.label": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÀÀllëëgëëdly rëëspöönsïïblëë ïïnsüürëër" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "field.insurerName.meaning": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Nààmëë ööf thëë ïïnsüürëër clààïïmëëd töö bëë rëëspöönsïïblëë. Thïïs dööëës nööt ëëstààblïïsh üültïïmààtëë lïïààbïïlïïty öör àà rëëcööüürsëë-chààïïn pöösïïtïïöön."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "field.claimedAmount.label": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÀÀmööüünt clààïïmëëd" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "field.claimedAmount.meaning": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "ÀÀmööüünt clààïïmëëd by thëë clààïïmàànt, ëëncöödëëd ààs ëëxààct nöön-nëëgààtïïvëë dëëcïïmààl tëëxt. Zëëröö ïïs àà rëëcöördëëd ààmööüünt, nööt àà süübstïïtüütëë föör üünknööwn."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "field.claimedCurrency.label": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Cüürrëëncy ööf clààïïmëëd ààmööüünt" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "field.claimedCurrency.meaning": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thrëëëë-lëëttëër üüppëërcààsëë ïïdëëntïïfïïëër föör thëë clààïïmëëd ààmööüünt; nöö cüürrëëncy cöönvëërsïïöön öör rëëgïïstry ïïnfëërëëncëë."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "field.caseReference.label": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Hààndlëër's cààsëë rëëfëërëëncëë" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "field.caseReference.meaning": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Rëëfëërëëncëë ààssïïgnëëd by thëë clààïïms hààndlëër ööpëërààtïïng thïïs rëëgïïstëër, nööt ààn ïïnsüürëër rëëfëërëëncëë. ÜÜnïïqüüëë, ïïmmüütààblëë àànd cààsëë-sëënsïïtïïvëë wïïthïïn öönëë ïïnstààllààtïïöön."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "field.paymentDecisionDate.label": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Pààymëënt dëëcïïsïïöön dààtëë" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "field.paymentDecisionDate.meaning": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Dààtëë whëën thïïs clààïïms hààndlëër dëëcïïdëëd thëë ààmööüünt töö bëë pààïïd. Nüüll üüntïïl àà dëëcïïsïïöön ïïs rëëcöördëëd; nööt àà pààymëënt öör bàànk ïïnstrüüctïïöön."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "field.payableAmount.label": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÀÀmööüünt töö bëë pààïïd" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "field.payableAmount.meaning": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Dëëcïïdëëd ààmööüünt töö bëë pààïïd, ïïn ëëxààct nöön-nëëgààtïïvëë dëëcïïmààl tëëxt. Nüüll üüntïïl dëëcïïdëëd; màày dïïffëër frööm thëë clààïïmëëd ààmööüünt."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "field.payableCurrency.label": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Cüürrëëncy ööf ààmööüünt töö bëë pààïïd" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "field.payableCurrency.meaning": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Cüürrëëncy ööf thëë dëëcïïdëëd ààmööüünt. Nüüll üüntïïl dëëcïïdëëd; ïït nëëëëd nööt ëëqüüààl thëë clààïïmëëd cüürrëëncy."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "field.paymentDate.label": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Pààymëënt dààtëë" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "field.paymentDate.meaning": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Dààtëë whëën thëë dëëcïïdëëd ààmööüünt wààs ààctüüààlly pààïïd, ààs rëëcöördëëd by thëë ööpëërààtöör. Nüüll whïïlëë üünpààïïd öör üünknööwn. ÖÖnëë füüll pààymëënt öönly; rëëcöördïïng dööëës nööt ëëxëëcüütëë öör ïïndëëpëëndëëntly vëërïïfy àà bàànk tràànsfëër."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "field.status.label": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Cààsëë stààtüüs" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "field.status.meaning": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "ÀÀdmïïnïïstrààtïïvëë stààtëë ÖÖPËËNËËD öör CLÖÖSËËD, ïïndëëpëëndëënt ööf dëëcïïsïïöön àànd pààymëënt. Nöö ààddïïtïïöönààl cààsëë stààtüüsëës."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "group.registration.label": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Rëëgïïstrààtïïöön" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "group.registration.meaning": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Këëëëp thëë ààccëëptëëd rëëgïïstrààtïïöön fààcts öör rëëplààcëë ààll sëëvëën rëëgïïstrààtïïöön ïïnpüüts töögëëthëër."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "group.decision.label": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Pààymëënt dëëcïïsïïöön" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "group.decision.meaning": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Këëëëp thëë ààccëëptëëd dëëcïïsïïöön, rëëplààcëë ïïts cöömplëëtëë dààtëë, ààmööüünt, àànd cüürrëëncy tüüplëë, öör clëëààr ïït."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "group.payment.label": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Pààymëënt rëëcöörd" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "group.payment.meaning": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Këëëëp thëë ààccëëptëëd pààymëënt rëëcöörd, rëëplààcëë ïïts dààtëë, öör clëëààr thëë rëëcöördëëd pààymëënt dààtëë; clëëààrïïng dööëës nööt rëëvëërsëë ààn ëëxtëërnààl tràànsfëër."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
   "notice.responseTimeout": [
     { "type": 0, "value": "⟦" },
     { "type": 0, "value": "Thëë sëërvïïcëë rëëspöönsëë tïïmëëd ööüüt." },
@@ -1151,7 +38,10 @@
   ],
   "notice.incomplete": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë ööpëërààtïïöön dïïd nööt cöömplëëtëë." },
+    {
+      "type": 0,
+      "value": "Chëëck thëë rëëpöörtëëd ööüütcöömëë bëëföörëë tryïïng ààgààïïn. ÏÏf ïït ïïs üüncöönfïïrmëëd, ïïnspëëct Rëëcöövëëry."
+    },
     { "type": 0, "value": "⟧" }
   ],
   "notice.definitionMismatch": [
@@ -1273,47 +163,47 @@
   ],
   "token.OPENED": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÖÖPËËNËËD" },
+    { "type": 0, "value": "ÖÖpëën" },
     { "type": 0, "value": "⟧" }
   ],
   "token.CLOSED": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "CLÖÖSËËD" },
+    { "type": 0, "value": "Clöösëëd" },
     { "type": 0, "value": "⟧" }
   ],
   "token.KEEP": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "KËËËËP" },
+    { "type": 0, "value": "Këëëëp cüürrëënt dëëtààïïls" },
     { "type": 0, "value": "⟧" }
   ],
   "token.REPLACE": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "RËËPLÀÀCËË" },
+    { "type": 0, "value": "Rëëplààcëë dëëtààïïls" },
     { "type": 0, "value": "⟧" }
   ],
   "token.CLEAR": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "CLËËÀÀR" },
+    { "type": 0, "value": "Clëëààr rëëcöördëëd vààlüüëë" },
     { "type": 0, "value": "⟧" }
   ],
   "token.PENDING": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "PËËNDÏÏNG" },
+    { "type": 0, "value": "Pëëndïïng" },
     { "type": 0, "value": "⟧" }
   ],
   "token.ACCEPTED": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÀÀCCËËPTËËD" },
+    { "type": 0, "value": "Rëëcöördëëd" },
     { "type": 0, "value": "⟧" }
   ],
   "token.REVOKED": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "RËËVÖÖKËËD" },
+    { "type": 0, "value": "ËËxëëcüütïïöön ààüüthöörïïty rëëvöökëëd" },
     { "type": 0, "value": "⟧" }
   ],
   "token.REJECTED": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "RËËJËËCTËËD" },
+    { "type": 0, "value": "Rëëfüüsëëd" },
     { "type": 0, "value": "⟧" }
   ],
   "token.ERROR": [
@@ -1328,17 +218,17 @@
   ],
   "token.ENVELOPE": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ËËNVËËLÖÖPËË" },
+    { "type": 0, "value": "Rëëcöövëëry ëënvëëlööpëë" },
     { "type": 0, "value": "⟧" }
   ],
   "token.FOUND": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "FÖÖÜÜND" },
+    { "type": 0, "value": "ÀÀccëëptëëd ööpëërààtïïöön fööüünd" },
     { "type": 0, "value": "⟧" }
   ],
   "token.NOT_FOUND": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "NÖÖT_FÖÖÜÜND" },
+    { "type": 0, "value": "ÖÖpëërààtïïöön nööt ööbsëërvëëd" },
     { "type": 0, "value": "⟧" }
   ],
   "ui.language": [
@@ -1348,14 +238,14 @@
   ],
   "ui.displayLocale": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Dïïsplàày föörmààt" },
+    { "type": 0, "value": "Dààtëë àànd nüümbëër föörmààt" },
     { "type": 0, "value": "⟧" }
   ],
   "ui.preferencesHint": [
     { "type": 0, "value": "⟦" },
     {
       "type": 0,
-      "value": "Prëësëëntààtïïöön öönly. ÀÀüüthöörëëd dààtëës àànd ààmööüünts rëëmààïïn ïïn càànöönïïcààl föörmààt."
+      "value": "ÏÏntëërfààcëë lààngüüààgëë chààngëës tëëxt; dààtëë àànd nüümbëër föörmààt chààngëës dïïsplààyëëd vààlüüëës. ËËntëër dààtëës àànd ààmööüünts ïïn thëë rëëqüüïïrëëd ïïnpüüt föörmààt."
     },
     { "type": 0, "value": "⟧" }
   ],
@@ -1385,11 +275,6 @@
   "ui.tryAgain": [
     { "type": 0, "value": "⟦" },
     { "type": 0, "value": "Try ààgààïïn" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "ui.trustedInstallation": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Trüüstëëd lööcààl ïïnstààllààtïïöön" },
     { "type": 0, "value": "⟧" }
   ],
   "ui.signOut": [
@@ -1669,10 +554,7 @@
   ],
   "ui.unchangedUntilSubmit": [
     { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "ÀÀccëëptëëd stààtëë ïïs üünchààngëëd üüntïïl thëë ëëxààct prëëpààrëëd rëëqüüëëst ïïs ëëxplïïcïïtly süübmïïttëëd."
-    },
+    { "type": 0, "value": "Rëëvïïëëw yööüür chààngëës bëëföörëë rëëcöördïïng thëëm." },
     { "type": 0, "value": "⟧" }
   ],
   "ui.observedReceipt": [
@@ -1786,14 +668,20 @@
   ],
   "ui.dateHint": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÜÜsëë yyyy-MM-dd (Grëëgöörïïààn dààtëë)." },
+    {
+      "type": 0,
+      "value": "ÜÜsëë ÀÀSCÏÏÏÏ dïïgïïts ïïn YYYY-MM-DD föörmààt, föör ëëxààmplëë 2026-10-06."
+    },
     { "type": 0, "value": "⟧" }
   ],
   "ui.amountHint": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ËËxààct dëëcïïmààl tëëxt; üüp töö " },
+    {
+      "type": 0,
+      "value": "ÜÜsëë ÀÀSCÏÏÏÏ dïïgïïts àànd àà dööt, föör ëëxààmplëë 125.50; üüp töö "
+    },
     { "type": 1, "value": "maximum" },
-    { "type": 0, "value": " dëëcïïmààl plààcëës. ÜÜsëë àà dööt, nööt àà cöömmàà." },
+    { "type": 0, "value": " dëëcïïmààl plààcëës. Nöö sïïgns öör cöömmààs." },
     { "type": 0, "value": "⟧" }
   ],
   "ui.currencyHint": [
@@ -1804,7 +692,7 @@
   ],
   "ui.command": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Cöömmàànd" },
+    { "type": 0, "value": "Cààsëë ààctïïöön" },
     { "type": 0, "value": "⟧" }
   ],
   "ui.reference": [
@@ -1815,7 +703,7 @@
   ],
   "ui.noAuthoredValues": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thïïs cöömmàànd hààs nöö ààüüthöörëëd vààlüüëës." },
+    { "type": 0, "value": "Thïïs ààctïïöön nëëëëds nöö ààddïïtïïöönààl dëëtààïïls." },
     { "type": 0, "value": "⟧" }
   ],
   "ui.action": [
@@ -1827,46 +715,41 @@
     { "type": 0, "value": "⟦" },
     {
       "type": 0,
-      "value": "ËËààch cöörrëëctïïöön grööüüp ïïs ëëxplïïcïït. KËËËËP prëësëërvëës ïïts ààccëëptëëd vààlüüëës."
+      "value": "Chöööösëë whïïch dëëtààïïls töö këëëëp, rëëplààcëë öör clëëààr. Këëpt dëëtààïïls cöömëë frööm thëë cüürrëënt cààsëë whëën chààngëës ààrëë rëëcöördëëd."
     },
     { "type": 0, "value": "⟧" }
   ],
   "ui.preparing": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Prëëpààrïïng…" },
+    { "type": 0, "value": "Prëëpààrïïng rëëvïïëëw…" },
     { "type": 0, "value": "⟧" }
   ],
   "ui.prepareExact": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Prëëpààrëë ëëxààct rëëqüüëëst" },
+    { "type": 0, "value": "Rëëvïïëëw chààngëës" },
     { "type": 0, "value": "⟧" }
   ],
   "ui.retryPrepare": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Rëëtry ëëxààct prëëpààrëë" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "ui.backWithoutPreparing": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Bààck wïïthööüüt prëëpààrïïng" },
+    { "type": 0, "value": "Rëëtry thëë sààmëë rëëvïïëëw rëëqüüëëst" },
     { "type": 0, "value": "⟧" }
   ],
   "ui.changeCommandTitle": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Dïïscààrd thïïs cöömmàànd drààft?" },
+    { "type": 0, "value": "Dïïscààrd thëësëë drààft chààngëës?" },
     { "type": 0, "value": "⟧" }
   ],
   "ui.changeCommandDescription": [
     { "type": 0, "value": "⟦" },
     {
       "type": 0,
-      "value": "Chààngïïng cöömmàànd dïïscààrds thëësëë ààüüthöörëëd vààlüüëës àànd crëëààtëës àà nëëw ööpëërààtïïöön ÏÏD."
+      "value": "Chààngïïng thëë ààctïïöön dïïscààrds thëësëë drààft dëëtààïïls àànd stààrts àà dïïffëërëënt rëëqüüëëst."
     },
     { "type": 0, "value": "⟧" }
   ],
   "ui.discardAndChange": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Dïïscààrd àànd chààngëë cöömmàànd" },
+    { "type": 0, "value": "Dïïscààrd àànd chààngëë ààctïïöön" },
     { "type": 0, "value": "⟧" }
   ],
   "ui.acceptedOperation": [
@@ -1894,14 +777,14 @@
   ],
   "ui.reviewTitle": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Rëëvïïëëw prëëpààrëëd ööpëërààtïïöön" },
+    { "type": 0, "value": "Rëëvïïëëw chààngëës" },
     { "type": 0, "value": "⟧" }
   ],
   "ui.reviewDescription": [
     { "type": 0, "value": "⟦" },
     {
       "type": 0,
-      "value": "Thëë rëëqüüëëst ïïs prëëpààrëëd büüt hààs nööt chààngëëd thëë ààccëëptëëd cààsëë. Süübmïïttïïng ïït stààrts àà müütààtïïöön thààt càànnööt bëë cààncëëllëëd."
+      "value": "Chëëck thëë dëëtààïïls, cöönfïïrm thëëm, thëën sëëlëëct “Rëëcöörd chààngëës”. ÏÏf thëë rëësüült ïïs nööt cöönfïïrmëëd, chëëck Rëëcöövëëry bëëföörëë tryïïng ààgààïïn."
     },
     { "type": 0, "value": "⟧" }
   ],
@@ -1923,22 +806,22 @@
   ],
   "ui.reviewConfirmation": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÏÏ wïïll süübmïït thïïs ëëxààct prëëpààrëëd rëëqüüëëst." },
+    { "type": 0, "value": "ÏÏ cöönfïïrm thëësëë chààngëës." },
     { "type": 0, "value": "⟧" }
   ],
   "ui.keepForRecovery": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Këëëëp föör Rëëcöövëëry" },
+    { "type": 0, "value": "Bààck töö ëëdïïtïïng; këëëëp föör Rëëcöövëëry" },
     { "type": 0, "value": "⟧" }
   ],
   "ui.submitting": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Süübmïïttïïng…" },
+    { "type": 0, "value": "Rëëcöördïïng…" },
     { "type": 0, "value": "⟧" }
   ],
   "ui.submitExact": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Süübmïït ëëxààct rëëqüüëëst" },
+    { "type": 0, "value": "Rëëcöörd chààngëës" },
     { "type": 0, "value": "⟧" }
   ],
   "ui.before": [
@@ -2080,7 +963,7 @@
   ],
   "ui.provenance": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Prëëpààrïïng pröövëënààncëë: " },
+    { "type": 0, "value": "Prëëpààrëëd wïïth " },
     { "type": 1, "value": "version" },
     { "type": 0, "value": " · " },
     { "type": 1, "value": "contract" },
@@ -2142,7 +1025,7 @@
     { "type": 0, "value": "⟦" },
     {
       "type": 0,
-      "value": "Thëë sëërvëër süüpplïïëëd thëë cüürrëënt ààüüthöörïïty, ëëvïïdëëncëë, àànd ööbsëërvààtïïöön stààtëë."
+      "value": "Cüürrëënt rëëqüüëëst ààüüthöörïïty àànd ààttëëmpt ëëvïïdëëncëë frööm thëë sëërvëër. Thëë rëëqüüëëst dëëtààïïls bëëlööw këëëëp thëë ëëxààct ëëntëërëëd vààlüüëës."
     },
     { "type": 0, "value": "⟧" }
   ],
@@ -2241,11 +1124,6 @@
     { "type": 0, "value": "ÏÏmpöört rëëcöövëëry ëënvëëlööpëë" },
     { "type": 0, "value": "⟧" }
   ],
-  "ui.importRecord": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÏÏmpöört càànöönïïcààl rëëcöörd" },
-    { "type": 0, "value": "⟧" }
-  ],
   "ui.importTitle": [
     { "type": 0, "value": "⟦" },
     { "type": 0, "value": "Rëëtààïïn ïïmpöörtëëd rëëcöövëëry mààtëërïïààl?" },
@@ -2267,6 +1145,1123 @@
   "ui.keepEditing": [
     { "type": 0, "value": "⟦" },
     { "type": 0, "value": "Këëëëp ëëdïïtïïng" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.backToCase": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Bààck töö cààsëë" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.registerLabel": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ClààïïmCöörëë cààsëë rëëgïïstëër" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.incidentDate.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÏÏncïïdëënt dààtëë" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.incidentDate.meaning": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Dààtëë öön whïïch thëë ïïncïïdëënt ööccüürrëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.incidentNotificationDate.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÏÏncïïdëënt nöötïïfïïcààtïïöön dààtëë (FNÖÖL)" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.incidentNotificationDate.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Dààtëë whëën thïïs clààïïms hààndlëër wààs fïïrst nöötïïfïïëëd ööf thëë ïïncïïdëënt by àànyöönëë, nööt nëëcëëssààrïïly thëë clààïïmàànt. Nööt thëë dààtëë àànööthëër ïïnsüürëër öör öörgàànïïsààtïïöön wààs nöötïïfïïëëd."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.incidentCountry.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Cööüüntry ööf ïïncïïdëënt" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.incidentCountry.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Cööüüntry whëërëë thëë ïïncïïdëënt ööccüürrëëd; rëëcöördëëd ààs ëëntëërëëd wïïthööüüt ïïnfëërrïïng ààpplïïcààblëë lààw."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.claimantName.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Clààïïmàànt nààmëë" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.claimantName.meaning": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Nààmëë ööf thëë pëërsöön öör cöömpààny mààkïïng thëë clààïïm." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.insurerName.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëspöönsïïblëë ïïnsüürëër" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.insurerName.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "ÏÏnsüürëër rëëcöördëëd by thëë clààïïms hààndlëër ààs rëëspöönsïïblëë föör thïïs clààïïm."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.claimedAmount.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÀÀmööüünt clààïïmëëd" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.claimedAmount.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "ÀÀmööüünt rëëqüüëëstëëd by thëë clààïïmàànt. ËËntëër zëëröö öönly whëën thëë clààïïmëëd ààmööüünt ïïs zëëröö."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.claimedCurrency.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Cüürrëëncy ööf clààïïmëëd ààmööüünt" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.claimedCurrency.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Cüürrëëncy ïïn whïïch thëë ààmööüünt ïïs clààïïmëëd. ÜÜsëë thrëëëë üüppëërcààsëë lëëttëërs, föör ëëxààmplëë ËËÜÜR."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.caseReference.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Hààndlëër's cààsëë rëëfëërëëncëë" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.caseReference.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Rëëfëërëëncëë ààssïïgnëëd by thëë clààïïms hààndlëër ööpëërààtïïng thïïs rëëgïïstëër, nööt ààn ïïnsüürëër rëëfëërëëncëë. ÜÜnïïqüüëë, ïïmmüütààblëë àànd cààsëë-sëënsïïtïïvëë wïïthïïn öönëë ïïnstààllààtïïöön."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.paymentDecisionDate.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Pààymëënt dëëcïïsïïöön dààtëë" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.paymentDecisionDate.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Dààtëë whëën thïïs clààïïms hààndlëër dëëcïïdëëd thëë ààmööüünt töö bëë pààïïd. Nööt rëëcöördëëd üüntïïl àà dëëcïïsïïöön ïïs mààdëë."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.payableAmount.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÀÀmööüünt töö bëë pààïïd" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.payableAmount.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "ÀÀmööüünt thëë hààndlëër dëëcïïdëëd shööüüld bëë pààïïd. Nööt rëëcöördëëd üüntïïl dëëcïïdëëd; màày dïïffëër frööm thëë clààïïmëëd ààmööüünt."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.payableCurrency.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Cüürrëëncy ööf ààmööüünt töö bëë pààïïd" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.payableCurrency.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Cüürrëëncy ööf thëë ààmööüünt töö bëë pààïïd. Nööt rëëcöördëëd üüntïïl dëëcïïdëëd; màày dïïffëër frööm thëë clààïïmëëd cüürrëëncy."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.paymentDate.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Pààymëënt dààtëë" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.paymentDate.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Dààtëë whëën thëë füüll dëëcïïdëëd ààmööüünt wààs pààïïd, ààs rëëcöördëëd by thëë hààndlëër. Lëëààvëë üünrëëcöördëëd ïïf üünpààïïd öör üünknööwn. Rëëcöördïïng pààymëënt dööëës nööt mààkëë öör vëërïïfy àà bàànk tràànsfëër."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.status.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Cààsëë stààtüüs" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "field.status.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Whëëthëër thëë cààsëë ïïs ööpëën öör clöösëëd. Clöösïïng àà cààsëë dööëës nööt mëëààn thààt pààymëënt wààs mààdëë."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "command.OPEN.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÖÖpëën àà cààsëë" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "command.OPEN.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Rëëgïïstëër thëë ïïncïïdëënt, clààïïmàànt, ïïnsüürëër àànd ààmööüünt clààïïmëëd."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "command.AMEND_REGISTRATION.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÀÀmëënd rëëgïïstrààtïïöön" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "command.AMEND_REGISTRATION.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Rëëplààcëë thëë ïïnïïtïïààl fààcts. Thëë hààndlëër's cààsëë rëëfëërëëncëë rëëmààïïns üünchààngëëd."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "command.CORRECT_CASE.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Cöörrëëct cààsëë fààcts" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "command.CORRECT_CASE.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Cöörrëëct rëëcöördëëd dëëtààïïls öön àà cààsëë wïïth àà dëëcïïsïïöön, pààymëënt öör clöösëëd stààtüüs. ÀÀll chààngëës ààrëë rëëcöördëëd töögëëthëër. Clëëààrïïng àà pààymëënt dààtëë dööëës nööt rëëfüünd möönëëy."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "group.registration.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëgïïstrààtïïöön" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "group.registration.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Këëëëp thëë cüürrëënt rëëgïïstrààtïïöön dëëtààïïls öör rëëplààcëë ààll sëëvëën dëëtààïïls töögëëthëër."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "group.decision.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Pààymëënt dëëcïïsïïöön" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "group.decision.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Këëëëp thëë cüürrëënt pààymëënt dëëcïïsïïöön, rëëplààcëë ïïts dààtëë, ààmööüünt àànd cüürrëëncy töögëëthëër, öör clëëààr thëë dëëcïïsïïöön."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "group.payment.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Pààymëënt rëëcöörd" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "group.payment.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Këëëëp thëë cüürrëënt pààymëënt dààtëë, rëëplààcëë ïït, öör clëëààr thëë rëëcöördëëd dààtëë. Clëëààrïïng thëë dààtëë dööëës nööt rëëfüünd möönëëy."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "command.DECIDE.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëcöörd pààymëënt dëëcïïsïïöön" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "command.DECIDE.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Rëëcöörd öör rëëplààcëë thëë dëëcïïdëëd ààmööüünt àànd cüürrëëncy. Thïïs dööëës nööt sëënd möönëëy."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "command.WITHDRAW_DECISION.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Wïïthdrààw pààymëënt dëëcïïsïïöön" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "command.WITHDRAW_DECISION.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Clëëààr thëë üünpààïïd dëëcïïsïïöön whïïlëë prëësëërvïïng ïïts hïïstööry."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "command.RECORD_PAYMENT.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëcöörd ààctüüààl pààymëënt" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "command.RECORD_PAYMENT.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Rëëcöörd thëë dààtëë thëë füüll dëëcïïdëëd ààmööüünt wààs ààctüüààlly pààïïd. Thïïs dööëës nööt ëëxëëcüütëë öör vëërïïfy àà tràànsfëër."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "command.CLEAR_PAYMENT.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Cöörrëëct ààn ëërröönëëööüüs pààymëënt rëëcöörd" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "command.CLEAR_PAYMENT.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Rëëmöövëë ààn ëërröönëëööüüsly rëëcöördëëd pààymëënt dààtëë. Thïïs ïïs nööt àà rëëfüünd öör rëëvëërsààl ööf ààn ààctüüààl tràànsfëër. ËËààrlïïëër hïïstööry rëëmààïïns."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "command.CLOSE.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Clöösëë thëë cààsëë" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "command.CLOSE.meaning": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Clöösëë thëë cààsëë. Clöösïïng dööëës nööt mëëààn thààt pààymëënt wààs mààdëë."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "command.REOPEN.label": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëööpëën thëë cààsëë" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "command.REOPEN.meaning": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëööpëën thëë cààsëë, prëësëërvïïng ïïts dëëtààïïls àànd hïïstööry." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.ACCESS_RESOURCE_UNAVAILABLE": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë rëëqüüëëstëëd rëësööüürcëë ïïs üünààvààïïlààblëë." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CASE_ALREADY_CLOSED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë cààsëë ïïs ààlrëëààdy clöösëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CASE_ALREADY_EXISTS": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë cààsëë rëëfëërëëncëë ààlrëëààdy ëëxïïsts." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CASE_ALREADY_OPENED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë cààsëë ïïs ààlrëëààdy ööpëën." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CASE_AMENDMENT_REQUIRES_UNDECIDED": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Wïïthdrààw ààn üünpààïïd dëëcïïsïïöön bëëföörëë ààmëëndïïng rëëgïïstrààtïïöön."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CASE_CLOSED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëööpëën thëë cààsëë bëëföörëë chààngïïng ïïts fààcts." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CASE_DECISION_ALREADY_PAID": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÀÀ rëëcöördëëd pààymëënt prëëvëënts chààngïïng ïïts dëëcïïsïïöön." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CASE_DECISION_REQUIRED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëcöörd àà pààymëënt dëëcïïsïïöön fïïrst." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CASE_NOT_FOUND": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë cààsëë rëëfëërëëncëë wààs nööt fööüünd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CASE_PAYMENT_ALREADY_RECORDED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ClààïïmCöörëë rëëcöörds öönëë füüll pààymëënt." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CASE_PAYMENT_NOT_RECORDED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëërëë ïïs nöö pààymëënt rëëcöörd töö clëëààr." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CASE_REVISION_CONFLICT": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Rëëààd thëë cüürrëënt cààsëë bëëföörëë mààkïïng àà chààngëëd rëëqüüëëst."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CASE_ZERO_DECISION_CANNOT_BE_PAID": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÀÀ zëëröö dëëcïïsïïöön ïïs nööt àà pààymëënt." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.COMMAND_EXPECTED_REVISION_RANGE": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÜÜsëë àà nöön-nëëgààtïïvëë vëërsïïöön bëëlööw ÏÏnt64.MààxVààlüüëë." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.COMMAND_GROUPED_CORRECTION_REQUIRED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Süüpply ààll thrëëëë tààggëëd cöörrëëctïïöön grööüüps." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.COMMAND_OPERATION_ID_REQUIRED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÜÜsëë àà nöön-ëëmpty ÜÜÜÜÏÏD." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CORE_COMMIT_OUTCOME_UNKNOWN": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Cöömmïït cöömplëëtïïöön wààs nööt cöönfïïrmëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CORE_OPERATION_CONTENT_CONFLICT": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë ööpëërààtïïöön ÏÏD bëëlööngs töö dïïffëërëënt rëëqüüëëst cööntëënt."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CORE_SCHEMA_MISMATCH": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë rüüntïïmëë schëëmàà öör dààtààbààsëë sëëttïïngs ààrëë ïïncöömpààtïïblëë."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CORE_STORE_INTEGRITY_ERROR": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Stöörëëd dààtàà fààïïlëëd ïïntëëgrïïty vààlïïdààtïïöön." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CORE_STORE_UNAVAILABLE": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë stöörëë wààs üünààvààïïlààblëë bëëföörëë cöömplëëtïïöön wààs cöönfïïrmëëd."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CORRECTION_COMPLETE_DECISION_REQUIRED": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Dëëcïïsïïöön dààtëë, pààyààblëë ààmööüünt àànd pààyààblëë cüürrëëncy müüst bëë prëësëënt töögëëthëër öör ààll ààbsëënt."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CORRECTION_EXISTING_VALUE_REQUIRED": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "ÀÀ cöörrëëctïïöön cààn öönly rëëplààcëë öör clëëààr àà vààlüüëë ààlrëëààdy rëëcöördëëd öön thïïs cààsëë."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CORRECTION_NO_CHANGES": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Chöööösëë ààt lëëààst öönëë fààctüüààl cöörrëëctïïöön thààt chààngëës thëë cüürrëënt cààsëë."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Rëëplààcïïng àà pààïïd dëëcïïsïïöön rëëqüüïïrëës ëëxplïïcïït pààymëënt rëëààffïïrmààtïïöön öör clëëààrïïng thëë pààymëënt rëëcöörd."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CORRECTION_PAYMENT_CLEAR_REQUIRED": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Clëëààrïïng àà pààïïd dëëcïïsïïöön rëëqüüïïrëës clëëààrïïng thëë pààymëënt rëëcöörd."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CORRECTION_PAYMENT_DECISION_REQUIRED": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "ÀÀ pààymëënt rëëcöörd rëëqüüïïrëës àà cöömplëëtëë pààymëënt dëëcïïsïïöön."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CORRECTION_REGISTRATION_CLEAR_FORBIDDEN": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëgïïstrààtïïöön càànnööt bëë clëëààrëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.CORRECTION_REPLACEMENT_FIELDS_REQUIRED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÜÜsëë RËËPLÀÀCËË wïïth ëëvëëry dëëclààrëëd fïïëëld." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.INPUT_AMOUNT_NOT_REPRESENTABLE": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë dëëcïïmààl ààmööüünt càànnööt bëë rëëprëësëëntëëd ëëxààctly." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.INPUT_CALENDAR_DATE_REQUIRED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÜÜsëë öönëë vààlïïd cààlëëndààr dààtëë ïïn YYYY-MM-DD föörmààt." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.INPUT_CONTROL_CHARACTERS": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Cööntrööl chààrààctëërs ààrëë nööt ààccëëptëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.INPUT_CURRENCY_FORMAT": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÜÜsëë àà thrëëëë-lëëttëër üüppëërcààsëë cüürrëëncy ïïdëëntïïfïïëër." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.INPUT_DATE_ORDER": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë dààtëës ààrëë ïïn ààn ïïnvààlïïd chröönöölöögïïcààl öördëër." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.INPUT_DECIMAL_FORMAT": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÜÜsëë nöön-nëëgààtïïvëë dëëcïïmààl tëëxt: üüp töö " },
+    { "type": 1, "value": "maximumIntegerDigits" },
+    { "type": 0, "value": " ïïntëëgëër dïïgïïts àànd " },
+    { "type": 1, "value": "maximumFractionalDigits" },
+    { "type": 0, "value": " frààctïïöönààl dïïgïïts; nöö sïïgn öör ëëxpöönëënt." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.INPUT_EXACT_FIELDS_REQUIRED": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Süüpply ëëààch dëëclààrëëd cöömmàànd ïïnpüüt ëëxààctly ööncëë, wïïth nöö ëëxtràà fïïëëlds."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.INPUT_FUTURE_DATE": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "ÀÀ füütüürëë dààtëë càànnööt rëëcöörd ààn ëëvëënt thààt hààs ààlrëëààdy ööccüürrëëd."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.INPUT_MALFORMED_UNICODE": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Mààlföörmëëd ÜÜnïïcöödëë ïïs nööt ààccëëptëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.INPUT_SURROUNDING_WHITESPACE": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Lëëààdïïng öör trààïïlïïng whïïtëëspààcëë ïïs nööt ààccëëptëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.INPUT_TEXT_REQUIRED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÀÀ nöön-blàànk vààlüüëë ïïs rëëqüüïïrëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.INPUT_TEXT_TOO_LONG": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë vààlüüëë müüst nööt ëëxcëëëëd " },
+    { "type": 1, "value": "maximumCharacters" },
+    { "type": 0, "value": " ÜÜnïïcöödëë chààrààctëërs." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.INPUT_TEXT_TOO_SHORT": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë vààlüüëë müüst cööntààïïn ààt lëëààst " },
+    { "type": 1, "value": "minimumCharacters" },
+    { "type": 0, "value": " ÜÜnïïcöödëë chààrààctëërs." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.OPERATION_CONTENT_CONFLICT": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thïïs ööpëërààtïïöön ÏÏD bëëlööngs töö dïïffëërëënt cöömmàànd cööntëënt. Döö nööt rëëüüsëë ïït."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.OPERATION_RECOVERY_ATTEMPT_LIMIT": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thïïs ööpëërààtïïöön hààs rëëààchëëd ïïts rëëcöövëëry ààttëëmpt lïïmïït. ÏÏnspëëct ïïts ëëxààct ëëvïïdëëncëë àànd rëëcööncïïlëë üünrëësöölvëëd ààttëëmpts bëëföörëë ààüüthöörïïng nëëw wöörk."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.OPERATION_REVOKED": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "ÀÀüüthöörïïty föör füütüürëë ëëxëëcüütïïöön ööf thïïs ëëxààct ööpëërààtïïöön wààs düürààbly rëëvöökëëd. ËËààrlïïëër ààttëëmpt üüncëërtààïïnty ïïs üünchààngëëd; ïïnspëëct ïïts ëëxààct ëëvïïdëëncëë."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.QUERY_CASE_LIST_CURSOR_INVALID": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "ÜÜsëë öönëë cüürrëënt ööpààqüüëë cààsëë-lïïst cüürsöör rëëtüürnëëd föör thïïs ààccööüünt àànd pààgëë sïïzëë."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.QUERY_HISTORY_CURSOR_INVALID": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "ÜÜsëë öönëë ööpààqüüëë hïïstööry cüürsöör rëëtüürnëëd by ClààïïmCöörëë."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.QUERY_PAGE_LIMIT_RANGE": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÜÜsëë àà vààlüüëë frööm 1 thrööüügh " },
+    { "type": 1, "value": "maximumPageSize" },
+    { "type": 0, "value": "." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_ACCEPTED_OPERATION_DISMISSAL_FORBIDDEN": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "ÀÀn ààccëëptëëd ööpëërààtïïöön càànnööt bëë dïïsmïïssëëd. ÏÏnspëëct ïïts rëëtààïïnëëd rëëcëëïïpt."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_ATTEMPT_CURSOR_INVALID": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë rëëcöövëëry ààttëëmpt cüürsöör ïïs ïïnvààlïïd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_ATTEMPT_CURSOR_OPERATION_MISMATCH": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë rëëcöövëëry ààttëëmpt cüürsöör bëëlööngs töö àà dïïffëërëënt ööpëërààtïïöön."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_ATTEMPT_LIMIT_REACHED": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thïïs ööpëërààtïïöön hààs rëëààchëëd ïïts rëëcöövëëry ààttëëmpt lïïmïït. ÏÏnspëëct ïïts ëëxààct ëëvïïdëëncëë àànd rëëcööncïïlëë üünrëësöölvëëd ààttëëmpts bëëföörëë ààüüthöörïïng nëëw wöörk."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_CAPACITY_EXHAUSTED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëcöövëëry cààpààcïïty ïïs ëëxhààüüstëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_DISMISSAL_CONFIRMATION_REQUIRED": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "ËËxplïïcïït cöönfïïrmààtïïöön ïïs rëëqüüïïrëëd töö dïïsmïïss àà rëëcöövëëry prëëpààrààtïïöön."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_ENVELOPE_INVALID_OR_UNSUPPORTED": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë rëëcöövëëry ëënvëëlööpëë ïïs üünsüüppöörtëëd öör fààïïlëëd càànöönïïcààl dëëcöödïïng."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_INSTALLATION_MISMATCH": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë rëëcöövëëry ëënvëëlööpëë bëëlööngs töö àà dïïffëërëënt ClààïïmCöörëë ïïnstààllààtïïöön."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_LIST_CURSOR_INVALID": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë rëëcöövëëry lïïst cüürsöör ïïs ïïnvààlïïd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_LIST_CURSOR_VIEW_MISMATCH": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë rëëcöövëëry lïïst cüürsöör bëëlööngs töö àà dïïffëërëënt vïïëëw." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_MUTATION_CANCELLED_BEFORE_COMMIT": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë tëëchnïïcààl müütààtïïöön wààs cààncëëllëëd bëëföörëë cöömmïït." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_MUTATION_OUTCOME_UNKNOWN": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë rëëcöövëëry-stààtëë müütààtïïöön màày hààvëë cöömmïïttëëd büüt cööüüld nööt bëë cöönfïïrmëëd."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_NEW_PREPARATION_MISSING": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "ÀÀ nëëwly rëëtààïïnëëd prëëpààrààtïïöön wààs nööt ààvààïïlààblëë föör ëëxëëcüütïïöön."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_OPERATION_CONTENT_CONFLICT": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë süüpplïïëëd rëëcöövëëry ïïdëëntïïty cöönflïïcts wïïth ààn ëëxïïstïïng ööpëërààtïïöön."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_OPERATION_ID_REQUIRED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÀÀ nöön-ëëmpty rëëcöövëëry ööpëërààtïïöön ÏÏD ïïs rëëqüüïïrëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_OPERATION_REVOKED": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "ÀÀüüthöörïïty föör füütüürëë ëëxëëcüütïïöön ööf thïïs ëëxààct ööpëërààtïïöön wààs düürààbly rëëvöökëëd. ËËààrlïïëër ààttëëmpt üüncëërtààïïnty ïïs üünchààngëëd; ïïnspëëct ïïts ëëxààct ëëvïïdëëncëë."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_PAGE_LIMIT_RANGE": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë rëëcöövëëry pààgëë lïïmïït ïïs ööüütsïïdëë thëë süüppöörtëëd rààngëë."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_PREPARATION_DISMISSED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÀÀ dïïsmïïssëëd prëëpààrààtïïöön càànnööt bëë süübmïïttëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_PREPARATION_DISMISSED_BEFORE_EXECUTION": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë prëëpààrààtïïöön wààs dïïsmïïssëëd bëëföörëë ëëxëëcüütïïöön cööüüld bëëgïïn."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_PREPARATION_NOT_FOUND": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë rëëcöövëëry prëëpààrààtïïöön wààs nööt fööüünd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_READ_CANCELLED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë rëëcöövëëry rëëààd wààs cààncëëllëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_REQUEST_DIGEST_INVALID": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë rëëcöövëëry rëëqüüëëst dïïgëëst müüst bëë àà lööwëërcààsëë SHÀÀ-256 dïïgëëst."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_REQUEST_DIGEST_MISMATCH": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë süüpplïïëëd dïïgëëst dööëës nööt mààtch thëë ëëxààct rëëtààïïnëëd rëëqüüëëst bytëës."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_RETAINED_CANONICAL_INVALID": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Rëëtààïïnëëd càànöönïïcààl rëëqüüëëst bytëës fààïïlëëd ïïntëëgrïïty vààlïïdààtïïöön."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_RETAINED_DIGEST_MISMATCH": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë rëëtààïïnëëd prëëpààrààtïïöön dïïgëëst dööëës nööt mààtch thëë süübmïïttëëd drààft."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_RETAINED_DOMAIN_SHAPE_INVALID": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Rëëtààïïnëëd rëëqüüëëst dïïd nööt sààtïïsfy ïïts clöösëëd döömààïïn shààpëë."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_RETAINED_PREPARATION_UNVERIFIABLE": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "ÀÀn ëëxààct rëëtààïïnëëd prëëpààrààtïïöön cööüüld nööt bëë vëërïïfïïëëd."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_SCHEMA_MISMATCH": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëcöövëëry stöörààgëë ïïs ïïncöömpààtïïblëë wïïth thïïs rüüntïïmëë." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_SOURCE_DIGEST_MISMATCH": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë süüpplïïëëd sööüürcëë dïïgëëst dööëës nööt mààtch thëë ëëxààct ïïmpöört bytëës."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_STORED_DATA_INVALID": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Stöörëëd rëëcöövëëry dààtàà fààïïlëëd vààlïïdààtïïöön." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_STORE_CONTENT_CONFLICT": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëcöövëëry ïïdëëntïïty cöönflïïcts wïïth rëëtààïïnëëd dààtàà." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_STORE_INTEGRITY_ERROR": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëcöövëëry stöörààgëë fààïïlëëd ïïntëëgrïïty vààlïïdààtïïöön." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_STORE_PREPARATION_MISSING": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëcöövëëry stöörààgëë lööst ààn ëëxpëëctëëd prëëpààrààtïïöön." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_STORE_RESPONSE_INVALID": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Rëëcöövëëry stöörààgëë rëëtüürnëëd ààn ïïnvààlïïd tëëchnïïcààl rëëspöönsëë."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_STORE_UNAVAILABLE": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Rëëcöövëëry stöörààgëë wààs üünààvààïïlààblëë bëëföörëë cöömplëëtïïöön wààs cöönfïïrmëëd."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_SUBMISSION_ALREADY_STARTED": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë prëëpààrààtïïöön hààs ààlrëëààdy stààrtëëd süübmïïssïïöön àànd müüst bëë rëësöölvëëd ëëxààctly."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RESOURCE_UNAVAILABLE": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë rëëqüüëëstëëd rëësööüürcëë ïïs üünààvààïïlààblëë." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.STATE_CASE_REFERENCE_MISMATCH": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë lööààdëëd cààsëë dööëës nööt mààtch thïïs cöömmàànd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.STATE_REVISION_EXHAUSTED": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë cààsëë rëëvïïsïïöön càànnööt ààdvààncëë bëëlööw ÏÏnt64.MààxVààlüüëë."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.STATE_STORED_REVISION_RANGE": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Stöörëëd vëërsïïööns müüst bëë pöösïïtïïvëë àànd bëëlööw ÏÏnt64.MààxVààlüüëë."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.STATE_TRANSITION_MISMATCH": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë stààtëë güüààrd àànd pààymëënt tràànsïïtïïöön dïïsààgrëëëë." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_HOST_ANTIFORGERY_REJECTED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëqüüëëst vëërïïfïïcààtïïöön wààs rëëfüüsëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_HOST_BEFORE_DISPATCH_FAILED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëqüüëëst prööcëëssïïng fààïïlëëd bëëföörëë dïïspààtch." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_HOST_BODY_TOO_LARGE": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëqüüëëst böödy ïïs töööö lààrgëë." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_HOST_BUSY": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëqüüëëst ààdmïïssïïöön ïïs büüsy." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_HOST_COMPLETED_RESPONSE_FAILED": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Rëëqüüëëst prööcëëssïïng cöömplëëtëëd büüt ïïts rëëspöönsëë cööüüld nööt bëë dëëlïïvëërëëd."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_HOST_CONNECTION_REJECTED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Cöönnëëctïïöön wààs rëëfüüsëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_HOST_DISPATCH_UNCONFIRMED": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë dïïspààtchëëd ööpëërààtïïöön cööüüld nööt bëë cöönfïïrmëëd. Prëësëërvëë ïïts ëëxààct ïïdëëntïïty."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_HOST_ENDPOINT_MISSING": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ËËndpööïïnt wààs nööt fööüünd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_HOST_EXPORT_METADATA_INVALID": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëcöövëëry ëëxpöört mëëtààdààtàà wààs ïïnvààlïïd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_HOST_MEDIA_TYPE_REJECTED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë ëëndpööïïnt mëëdïïàà typëë wààs rëëfüüsëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_HOST_METHOD_REJECTED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë rëëqüüëëst mëëthööd ïïs nööt süüppöörtëëd by thïïs ëëndpööïïnt." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_HOST_ORIGIN_REJECTED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëqüüëëst öörïïgïïn wààs rëëfüüsëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_HOST_SESSION_FORBIDDEN": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Sëëssïïöön ààccëëss wààs rëëfüüsëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_HOST_SESSION_REJECTED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Sëëssïïöön wààs rëëfüüsëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_BODY_CANCELLED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë rëëqüüëëst böödy rëëààd wààs cààncëëllëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_BODY_TOO_LARGE": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë rëëqüüëëst ëëxcëëëëds thëë cöönfïïgüürëëd bytëë lïïmïït." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_BODY_UNREADABLE": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë rëëqüüëëst böödy cööüüld nööt bëë rëëààd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_CORRECTION_ACTION": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë cöörrëëctïïöön ààctïïöön ïïs nööt dëëclààrëëd by thëë sëëmààntïïc cööntrààct."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_DUPLICATE_PROPERTY": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Düüplïïcààtëë JSÖÖN prööpëërtïïëës ààrëë nööt ààccëëptëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_EXPECTED_BOOLEAN": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ËËxpëëctëëd àà JSÖÖN böööölëëààn." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_EXPECTED_INTEGER": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ËËxpëëctëëd àà JSÖÖN ïïntëëgëër." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_EXPECTED_OBJECT": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ËËxpëëctëëd àà JSÖÖN ööbjëëct." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_EXPECTED_STRING": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ËËxpëëctëëd àà JSÖÖN strïïng." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_HISTORY_DETAIL": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë hïïstööry dëëtààïïl ïïs nööt süüppöörtëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_INVALID_DIGEST": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÜÜsëë öönëë lööwëërcààsëë SHÀÀ-256 dïïgëëst." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_INVALID_JSON": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Mààlföörmëëd JSÖÖN öör ààn üünsüüppöörtëëd JSÖÖN shààpëë." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_INVALID_REVISION": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "ËËxpëëctëëd àà càànöönïïcààl nöön-nëëgààtïïvëë rëëvïïsïïöön bëëlööw ÏÏnt64.MààxVààlüüëë."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_INVALID_UNICODE": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Mààlföörmëëd ÜÜnïïcöödëë ëëscààpëë ïïn JSÖÖN tëëxt." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_INVALID_UTF8": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë rëëqüüëëst müüst bëë vààlïïd ÜÜTF-8." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_INVALID_UUID": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÜÜsëë öönëë nöön-ëëmpty càànöönïïcààl lööwëërcààsëë ÜÜÜÜÏÏD." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_LOGOUT_SHAPE": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Löögööüüt rëëqüüïïrëës ààn ëëmpty JSÖÖN ööbjëëct." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_MISSING_COMMAND_VALUE": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÀÀ rëëqüüïïrëëd cöömmàànd vààlüüëë ïïs mïïssïïng." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_MISSING_PROPERTY": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÀÀ rëëqüüïïrëëd JSÖÖN prööpëërty ïïs mïïssïïng." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_NULL_FORBIDDEN": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "JSÖÖN nüüll ïïs nööt ààccëëptëëd hëërëë." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_PAGE_RANGE": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë rëëqüüëëstëëd pààgëë sïïzëë ïïs ööüütsïïdëë thëë süüppöörtëëd rààngëë."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_RECOVERY_VIEW": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÜÜsëë PËËNDÏÏNG öör TËËRMÏÏNÀÀL rëëcöövëëry vïïëëw." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_SOURCE_DIGEST_HEADER": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÀÀ càànöönïïcààl sööüürcëë dïïgëëst hëëààdëër ïïs rëëqüüïïrëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_UNKNOWN_COMMAND": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë cöömmàànd töökëën ïïs nööt süüppöörtëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.WEB_INPUT_UNKNOWN_PROPERTY": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë JSÖÖN ööbjëëct cööntààïïns ààn üünknööwn prööpëërty." },
     { "type": 0, "value": "⟧" }
   ]
 }

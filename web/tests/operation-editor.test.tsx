@@ -40,15 +40,13 @@ const preparedResponse = (details: PreparationDetails = preparation) =>
 const acceptedResponse = () => generatedResponse("command.execute");
 
 const openReview = async (user: ReturnType<typeof userEvent.setup>): Promise<void> => {
-  await user.click(screen.getByRole("button", { name: "Prepare exact request" }));
-  await screen.findByRole("dialog", { name: "Review prepared operation" });
+  await user.click(screen.getByRole("button", { name: "Review changes" }));
+  await screen.findByRole("dialog", { name: "Review changes" });
 };
 
 const selectConfirmedSubmit = async (user: ReturnType<typeof userEvent.setup>): Promise<void> => {
-  await user.click(
-    screen.getByRole("checkbox", { name: "I will submit this exact prepared request." }),
-  );
-  await user.click(screen.getByRole("button", { name: "Submit exact request" }));
+  await user.click(screen.getByRole("checkbox", { name: "I confirm these changes." }));
+  await user.click(screen.getByRole("button", { name: "Record changes" }));
 };
 
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
@@ -69,14 +67,14 @@ const definitePrepareRejection = async (): Promise<void> => {
     }),
   );
   renderEditor({ current: null, initialCommand: "OPEN" });
-  await user.click(screen.getByRole("button", { name: "Prepare exact request" }));
+  await user.click(screen.getByRole("button", { name: "Review changes" }));
   const input = screen.getByLabelText("Handler's case reference", { exact: true });
   await waitFor(() => {
     expect(document.activeElement).toBe(input);
   });
   expect(input).toHaveAttribute("aria-invalid", "true");
   expect(screen.getAllByText("A non-blank value is required.").length).toBeGreaterThan(0);
-  expect(screen.queryByRole("dialog", { name: "Review prepared operation" })).toBeNull();
+  expect(screen.queryByRole("dialog", { name: "Review changes" })).toBeNull();
 };
 
 const namedAuthoringRejection = async (): Promise<void> => {
@@ -95,7 +93,7 @@ const namedAuthoringRejection = async (): Promise<void> => {
     }),
   );
   renderEditor({ current: null, initialCommand: "OPEN" });
-  await user.click(screen.getByRole("button", { name: "Prepare exact request" }));
+  await user.click(screen.getByRole("button", { name: "Review changes" }));
   const input = screen.getByLabelText("Incident date", { exact: true });
   await waitFor(() => {
     expect(document.activeElement).toBe(input);
@@ -113,9 +111,9 @@ const uncertainPrepareDelivery = async (): Promise<void> => {
   const lock = vi.fn();
   vi.mocked(globalThis.fetch).mockRejectedValueOnce(new Error("Synthetic delivery loss"));
   renderEditor({ onMutationLockChange: lock });
-  await user.click(screen.getByRole("button", { name: "Prepare exact request" }));
+  await user.click(screen.getByRole("button", { name: "Review changes" }));
   expect(await screen.findByRole("alert")).toHaveTextContent("Inspect Recovery");
-  expect(screen.getByRole("button", { name: "Back without preparing" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Back to case" })).toBeDisabled();
   expect(lock).toHaveBeenCalledWith(true);
 };
 
@@ -128,7 +126,7 @@ const missingDigest = async (): Promise<void> => {
   renderEditor();
   await openReview(user);
   await selectConfirmedSubmit(user);
-  expect(screen.getByRole("dialog", { name: "Review prepared operation" })).toBeVisible();
+  expect(screen.getByRole("dialog", { name: "Review changes" })).toBeVisible();
   expect(vi.mocked(globalThis.fetch)).toHaveBeenCalledTimes(1);
 };
 
@@ -168,7 +166,7 @@ const uncertainSubmitDelivery = async (): Promise<void> => {
   expect(await screen.findByRole("alert")).toHaveTextContent(
     "Inspect Recovery before taking another action.",
   );
-  expect(screen.queryByRole("button", { name: "Back without preparing" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Back to case" })).toBeNull();
 };
 
 const acceptedSubmission = async (): Promise<void> => {
@@ -196,8 +194,8 @@ const submittingState = async (): Promise<void> => {
   renderEditor();
   await openReview(user);
   await selectConfirmedSubmit(user);
-  expect(screen.getByRole("button", { name: "Submitting…" })).toBeDisabled();
-  expect(screen.getByRole("button", { name: "Keep for Recovery" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Recording…" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Back to editing; keep for Recovery" })).toBeDisabled();
   resolveResponse(acceptedResponse());
   await screen.findByRole("heading", { name: "Accepted operation" });
 };
@@ -227,10 +225,10 @@ describe("operation editor transport outcomes", () => {
 
 const openDiscardDialog = async (user: ReturnType<typeof userEvent.setup>): Promise<void> => {
   renderEditor();
-  await user.selectOptions(screen.getByLabelText("Command"), "OPEN");
+  await user.selectOptions(screen.getByLabelText("Case action"), "OPEN");
   await user.type(screen.getByLabelText(/Incident date/u), "2026-09-09");
-  await user.selectOptions(screen.getByLabelText("Command"), "CLOSE");
-  await screen.findByRole("dialog", { name: "Discard this command draft?" });
+  await user.selectOptions(screen.getByLabelText("Case action"), "CLOSE");
+  await screen.findByRole("dialog", { name: "Discard these draft changes?" });
 };
 
 const cancelReview = async (): Promise<void> => {
@@ -239,8 +237,8 @@ const cancelReview = async (): Promise<void> => {
   renderEditor();
   await openReview(user);
   await user.click(screen.getByRole("button", { name: "Cancel" }));
-  expect(screen.queryByRole("dialog", { name: "Review prepared operation" })).toBeNull();
-  const prepareButton = screen.getByRole("button", { name: "Prepare exact request" });
+  expect(screen.queryByRole("dialog", { name: "Review changes" })).toBeNull();
+  const prepareButton = screen.getByRole("button", { name: "Review changes" });
   expect(prepareButton).toBeVisible();
   await waitFor(() => {
     expect(document.activeElement).toBe(prepareButton);
@@ -257,7 +255,7 @@ const keepDirtyCommand = async (): Promise<void> => {
 const confirmCommandDiscard = async (): Promise<void> => {
   const user = userEvent.setup();
   await openDiscardDialog(user);
-  await user.click(await screen.findByRole("button", { name: "Discard and change command" }));
+  await user.click(await screen.findByRole("button", { name: "Discard and change action" }));
   expect(screen.getByRole("heading", { name: "Close the case" })).toBeVisible();
 };
 
@@ -265,7 +263,7 @@ const cancelCommandDiscard = async (): Promise<void> => {
   const user = userEvent.setup();
   await openDiscardDialog(user);
   await user.click(await screen.findByRole("button", { name: "Cancel" }));
-  expect(screen.queryByRole("dialog", { name: "Discard this command draft?" })).toBeNull();
+  expect(screen.queryByRole("dialog", { name: "Discard these draft changes?" })).toBeNull();
 };
 
 const retainPreparedCommand = async (): Promise<void> => {
@@ -273,8 +271,8 @@ const retainPreparedCommand = async (): Promise<void> => {
   vi.mocked(globalThis.fetch).mockImplementationOnce(preparedForRequest(preparedResponse()));
   renderEditor();
   await openReview(user);
-  await user.click(screen.getByRole("button", { name: "Keep for Recovery" }));
-  expect(screen.queryByRole("dialog", { name: "Review prepared operation" })).toBeNull();
+  await user.click(screen.getByRole("button", { name: "Back to editing; keep for Recovery" }));
+  expect(screen.queryByRole("dialog", { name: "Review changes" })).toBeNull();
 };
 
 const newCaseReference = async (): Promise<void> => {
@@ -282,7 +280,7 @@ const newCaseReference = async (): Promise<void> => {
   const closed = vi.fn();
   renderEditor({ current: null, initialCommand: "OPEN", onClose: closed });
   await user.type(screen.getByLabelText(/Handler's case reference/u), "NEW-1");
-  await user.click(screen.getByRole("button", { name: "Back without preparing" }));
+  await user.click(screen.getByRole("button", { name: "Back to cases" }));
   expect(closed).toHaveBeenCalledOnce();
 };
 

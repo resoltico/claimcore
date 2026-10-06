@@ -93,7 +93,7 @@ it("switches language and display formats without remounting children or rewriti
     </>,
   );
   const language = screen.getByLabelText("Interface language", { selector: "select" });
-  const format = screen.getByLabelText("Display format", { selector: "select" });
+  const format = screen.getByLabelText("Date and number format", { selector: "select" });
   const input = screen.getByRole("textbox", { name: "unchanged draft" });
   await user.selectOptions(format, "lv-LV");
   await user.selectOptions(language, "ar");

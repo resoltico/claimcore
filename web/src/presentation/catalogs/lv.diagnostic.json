@@ -100,7 +100,7 @@
   "diagnostic.WEB_HOST_EXPORT_METADATA_INVALID": "Atkopšanas eksporta metadati neizturēja pārbaudi.",
   "diagnostic.WEB_HOST_BEFORE_DISPATCH_FAILED": "Servera kļūme pirms pieprasījuma nodošanas izpildei.",
   "diagnostic.WEB_HOST_DISPATCH_UNCONFIRMED": "Nodotā pieprasījuma rezultāts nav apstiprināts. Pirms citas izmaiņas pārbaudiet atkopšanu.",
-  "diagnostic.WEB_HOST_COMPLETED_RESPONSE_FAILED": "Operācija pabeigta, taču atbildi neizdevās piegādāt.",
+  "diagnostic.WEB_HOST_COMPLETED_RESPONSE_FAILED": "Pieprasījuma apstrāde ir pabeigta, bet atbildi nevarēja piegādāt.",
   "diagnostic.WEB_HOST_SESSION_FORBIDDEN": "Šai sesijai piekļuve resursam nav atļauta.",
   "diagnostic.WEB_HOST_METHOD_REJECTED": "Galapunkts neatbalsta šo pieprasījuma metodi.",
   "diagnostic.WEB_INPUT_EXPECTED_OBJECT": "Nepieciešams JSON objekts.",

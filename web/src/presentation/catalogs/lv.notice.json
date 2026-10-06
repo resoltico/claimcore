@@ -5,7 +5,7 @@
   "notice.fileTooLarge": "Izvēlētais fails pārsniedz {maximumBytes} baitus.",
   "notice.fileUnreadable": "Izvēlēto failu neizdevās nolasīt.",
   "notice.exportInvalid": "Atkopšanas eksporta atbilde neizturēja protokola pārbaudi.",
-  "notice.incomplete": "Operācija netika pabeigta.",
+  "notice.incomplete": "Pirms atkārtota mēģinājuma pārbaudiet norādīto iznākumu. Ja tas nav apstiprināts, pārbaudiet atkopšanu.",
   "notice.definitionMismatch": "Instalētais tīmekļa līgums neatbilst pārlūka resursiem. Pārlādējiet pēc atbilstošu resursu publicēšanas.",
   "notice.invalidSession": "Nederīga sesijas atbilde.",
   "notice.missingCsrf": "Autentificētajā sesijā nav pretviltošanas marķiera.",

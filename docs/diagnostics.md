@@ -1,7 +1,7 @@
 # Product diagnostics
 
 Ordinary rejections, core faults, and recovery refusals expose machine-readable causes separately
-from their human explanations. This is a localization foundation, not a multilingual user interface. The domain still owns
+from their human explanations. The browser presents these causes in English, Latvian and Arabic. The domain still owns
 validation and transitions; changing an explanation cannot authorize a command or settle an uncertain
 operation. [Architecture](architecture.md) owns the wider boundaries.
 
@@ -21,8 +21,7 @@ revision targets use the public spellings `expectedRevision` and `revision`.
 
 The Contracts adapter owns the default English renderer, `RejectionPresentation.render`. It selects
 whole explanations using the diagnostic identity and typed parameters. It never parses a sentence
-or consults ambient UI culture. CLI and Web share the same rejection codec. A future catalog can
-replace the presentation without making Domain or Application depend on localization infrastructure.
+or consults ambient UI culture. CLI and Web share the same rejection codec. Contracts also supplies build-only English catalog text through the locked generator; parameterized explanations use closed literal and parameter-hole parts shared with invariant native rendering. Domain and Application have no localization runtime dependency.
 
 This applies wherever an ordinary `Rejection` appears, including rejection inside a definite recovery
 execution result. `CoreFault` and `RecoveryRejection` are also closed reasons with derived `Code` and

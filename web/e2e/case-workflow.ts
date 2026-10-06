@@ -37,9 +37,7 @@ const submitReview = async (page: Page): Promise<void> => {
     throw new Error("E2E_REVIEW_CHECKBOX_CARDINALITY");
   }
   try {
-    await page
-      .getByText("I will submit this exact prepared request.", { exact: true })
-      .click({ timeout: 5_000 });
+    await page.getByText("I confirm these changes.", { exact: true }).click({ timeout: 5_000 });
   } catch {
     throw new Error("E2E_REVIEW_LABEL_CLICK_FAILED");
   }
@@ -53,7 +51,7 @@ const submitReview = async (page: Page): Promise<void> => {
     { timeout: 10_000 },
   );
   await progress("submit-dispatch");
-  await page.getByRole("button", { name: "Submit exact request" }).click();
+  await page.getByRole("button", { name: "Record changes" }).click();
   const response = await responseEvent;
   if (response.status() !== 200) {
     throw new Error("E2E_SUBMIT_HTTP_FAILURE");
@@ -85,7 +83,7 @@ export const startOpen = async (page: Page, caseReference: string): Promise<void
     "Incident notification date (FNOL)": "2026-09-02",
     "Country of incident": "Latvia",
     "Claimant name": "Synthetic claimant",
-    "Allegedly responsible insurer": "Synthetic insurer",
+    "Responsible insurer": "Synthetic insurer",
     "Amount claimed": "1200.50",
     "Currency of claimed amount": "EUR",
     "Handler's case reference": caseReference,
@@ -106,7 +104,7 @@ export const prepare = async (
   const event = page.waitForResponse((response) =>
     response.url().endsWith("/api/v3/operations/prepare"),
   );
-  await page.getByRole("button", { name: "Prepare exact request" }).click();
+  await page.getByRole("button", { name: "Review changes" }).click();
   const response = await event;
   const payload: unknown = await response.json();
   if (response.status() !== 200 || !(await isWebV3Response("command.prepare", payload))) {
@@ -121,7 +119,7 @@ export const prepare = async (
     throw new Error("E2E_PREPARE_EXACT_IDENTITY_UNAVAILABLE");
   }
   const identity = { operationId, requestSha256 };
-  const dialog = page.getByRole("dialog", { name: "Review prepared operation" });
+  const dialog = page.getByRole("dialog", { name: "Review changes" });
   await expect(dialog).toContainText(operationId);
   await expect(dialog).toContainText(requestSha256);
   await progress("prepare-reviewed");
@@ -135,8 +133,8 @@ const submit = async (page: Page): Promise<void> => {
 };
 
 export const keepForRecovery = async (page: Page): Promise<void> => {
-  await page.getByRole("button", { name: "Keep for Recovery" }).click();
-  await page.getByRole("button", { name: "Back without preparing" }).click();
+  await page.getByRole("button", { name: "Back to editing; keep for Recovery" }).click();
+  await page.getByRole("button", { name: "Back to cases" }).click();
   await expect(page.getByRole("heading", { name: "Case detail" })).toBeVisible();
 };
 
@@ -173,11 +171,11 @@ export const droppedSubmission = async (page: Page): Promise<PreparedIdentity> =
   });
   const confirmed = page.getByRole("checkbox", { name: /submit this exact prepared request/u });
   await progress("drop-confirm-click-start");
-  await page.getByText("I will submit this exact prepared request.", { exact: true }).click();
+  await page.getByText("I confirm these changes.", { exact: true }).click();
   await progress("drop-confirm-clicked");
   await expect(confirmed).toBeChecked();
   await progress("drop-confirm-checked");
-  await page.getByRole("button", { name: "Submit exact request" }).click();
+  await page.getByRole("button", { name: "Record changes" }).click();
   await expect(page.getByRole("alert")).toContainText("Recovery");
   await page.unroute("**/api/v3/operations/submit");
   expect(committed).toBe(true);

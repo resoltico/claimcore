@@ -30,18 +30,8 @@ export function createAuthority(authority) {
   ]);
 }
 
-/** @param {string} authority @param {string} directory @param {string} hostname @param {number} uid @param {number} gid */
-export function serverCertificate(authority, directory, hostname, uid, gid) {
-  const key = join(directory, "server.key");
-  const csr = join(directory, "server.csr");
-  const cert = join(directory, "server.pem");
-  const ext = join(directory, "server.ext");
-  privateFile(
-    ext,
-    `basicConstraints=critical,CA:FALSE\nkeyUsage=critical,digitalSignature,keyEncipherment\nextendedKeyUsage=serverAuth\nsubjectAltName=DNS:${hostname}\ncrlDistributionPoints=URI:http://revocation:8000/ca.crl\n`,
-    uid,
-    gid,
-  );
+/** @param {string} hostname @param {string} key @param {string} csr */
+const certificateRequest = (hostname, key, csr) => {
   openssl([
     "req",
     "-newkey",
@@ -55,6 +45,27 @@ export function serverCertificate(authority, directory, hostname, uid, gid) {
     "-out",
     csr,
   ]);
+};
+
+/** @param {string} authority @param {string} directory @param {{hostname: string, recipient: "browser" | "postgres"}} subject @param {number} uid @param {number} gid */
+export function serverCertificate(authority, directory, subject, uid, gid) {
+  const { hostname, recipient } = subject;
+  if (recipient !== "browser" && recipient !== "postgres") {
+    throw new Error("Unsupported local certificate recipient.");
+  }
+  const revocation =
+    recipient === "postgres" ? "crlDistributionPoints=URI:http://revocation:8000/ca.crl\n" : "";
+  const key = join(directory, "server.key");
+  const csr = join(directory, "server.csr");
+  const cert = join(directory, "server.pem");
+  const ext = join(directory, "server.ext");
+  privateFile(
+    ext,
+    `basicConstraints=critical,CA:FALSE\nkeyUsage=critical,digitalSignature,keyEncipherment\nextendedKeyUsage=serverAuth\nsubjectAltName=DNS:${hostname}\n${revocation}`,
+    uid,
+    gid,
+  );
+  certificateRequest(hostname, key, csr);
   openssl([
     "x509",
     "-req",

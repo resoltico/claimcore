@@ -1,3 +1,4 @@
+import { businessMessages, correctionTargets } from "./localization-metadata.mjs";
 import { renderedTokens, validateTokens } from "./localization-tokens.mjs";
 import { format, resolveConfig } from "prettier";
 import { readFile, writeFile, mkdir, readdir } from "node:fs/promises";
@@ -20,8 +21,10 @@ const languages = ["en", "lv", "ar"];
 /** @type {Record<string, Record<string, string>>} */
 const catalogs = {};
 const domains = ["ui", "notice", "token", "field", "command", "group", "diagnostic"];
+/** @param {string} language */
+const authoredDomains = (language) => (language === "en" ? ["ui", "notice", "token"] : domains);
 const expectedInputs = languages
-  .flatMap((language) => domains.map((domain) => `${language}.${domain}.json`))
+  .flatMap((language) => authoredDomains(language).map((domain) => `${language}.${domain}.json`))
   .sort();
 if (JSON.stringify((await readdir(input)).sort()) !== JSON.stringify(expectedInputs)) {
   throw new Error("Unexpected or missing localization catalog domain.");
@@ -37,9 +40,6 @@ for (const lang of languages) {
   }
   catalogs[lang] = catalog;
 }
-for (const lang of languages) {
-  validateCatalog(catalogs["en"] ?? {}, catalogs[lang] ?? {}, lang);
-}
 const generated = resolve(root, "src/generated/contracts");
 const semantic = JSON.parse(
   await readFile(resolve(generated, "semantic-core-v1.contract.json"), "utf8"),
@@ -47,6 +47,14 @@ const semantic = JSON.parse(
 const host = JSON.parse(
   await readFile(resolve(generated, "web-v3.host-failure.schema.json"), "utf8"),
 );
+Object.assign(
+  catalogs["en"] ?? {},
+  businessMessages(semantic),
+  readCatalog(await readFile(resolve(generated, "default-presentation.en.json"), "utf8")),
+);
+for (const lang of languages) {
+  validateCatalog(catalogs["en"] ?? {}, catalogs[lang] ?? {}, lang);
+}
 const requirements = diagnosticRequirements(semantic, host);
 validateCoverage(catalogs["en"] ?? {}, semantic, requirements);
 const recoveryTypes = await readFile(resolve(generated, "web-v3.types.recovery.ts"), "utf8");
@@ -93,6 +101,7 @@ for (const domain of domains) {
       )
       .join("\n")}\n};\n`;
 }
+expected["correction-targets.json"] = `${JSON.stringify(correctionTargets(semantic))}\n`;
 expected["arguments.json"] = `${JSON.stringify(args)}\n`;
 const prettierOptions = await resolveConfig(resolve(root, "package.json"));
 for (const [file, raw] of Object.entries(expected)) {

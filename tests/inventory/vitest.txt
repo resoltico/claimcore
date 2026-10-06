@@ -5,10 +5,12 @@ admits definite session refusal and conservative export failure, rejecting contr
 allocates a new ID when editing a definitely refused prepared request
 announces unsaved preferences in the chosen language without blocking the switch
 associates optional field errors and supports password text input
+binds clipboard fallback to the latest attempted exact value
 binds consent to one reviewed preparation and exact identity rather than an editor-wide boolean
 bounds a stalled response and ignores a later successful result
 classifies verified overload as not started and refuses the old ambiguous busy body
 clears claimant definition state when the server rejects or mismatches assets
+clears clipboard success when the value or presentation label changes
 clears the response timer on normal completion and leaves the validated result intact
 clears this page's cached rows cursor and metadata after a browser session refusal
 clears this page's cached rows cursor and metadata after a resource grant refusal
@@ -37,6 +39,7 @@ forks a new ID when an exposed request is edited after definite submit refusal
 forks on a changed reference or command, but not on an unchanged field
 formats Gregorian date-only values without shifting days or truncating early years
 formats only read-only scalar displays and leaves technical text and currency invariant
+formats review values by descriptor with independent date and amount expectations [CC-DOM-001]
 freezes grouped correction identity while a later correction edit forks a new operation
 generated contract corpora > accepts generated Web host values and rejects every malformed or cross-endpoint value
 generated contract corpora > covers CLI corpus families and sentinel outcomes
@@ -48,7 +51,9 @@ generated contract corpora > validates every endpoint and cross-endpoint CLI out
 generated contract corpora > validates every local CLI protocol outcome
 gives simultaneous current and historical case fields distinct heading IDs
 hands a lost submit to exact recovery even when the pending list is empty
+ignores late clipboard completion after the displayed value changes away and back
 ignores late prepare and submit responses from inactive attempts
+isolates and warns about permitted business Unicode without normalizing or executing markup
 keeps ICU plural grammar independent from the number-display locale
 keeps a failed history page request-local without erasing current case data
 keeps a non-reviewable retained Prepare exact and directs Recovery
@@ -103,6 +108,7 @@ operation editor transport outcomes > renders an accepted receipt and delegates 
 operation editor transport outcomes > shows a definite prepare rejection without creating recovery uncertainty
 operation editor transport outcomes > shows a definite submit rejection after preserving the prepared identity
 persists only presentation preferences and remains usable when storage is denied
+presents closed correction targets through groups while preserving exact action tokens
 preserves authored content, DOM selection and operation identity across language switches before preparation
 preserves core recovery direction in generic and nested mutation faults
 preserves diagnostics from direct read refusals and nested recovery execution faults without server prose
@@ -165,6 +171,9 @@ shows current fields, server command labels, full expandable history and retryab
 shows logout transport failure as retriable and clears it after a session refresh
 shows the authoritative disposition, privacy phase, and active hold without exposing its ground
 submits a retained operation ID and digest only once under duplicate confirmation
+submits machine correction modes in ar [CC-DOM-002]
+submits machine correction modes in en [CC-DOM-002]
+submits machine correction modes in lv [CC-DOM-002]
 surfaces invalid snapshots after session refresh and logout responses
 switches language and display formats without remounting children or rewriting a draft
 switches recovery views explicitly and leaves unavailable capacity unrendered

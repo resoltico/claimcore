@@ -348,8 +348,13 @@
     },
     {
       "path": "contracts-manifest.json",
-      "bytes": 7158,
-      "sha256": "fee3e9a48ba17725c49f0362ec0c1ff865d9be80a0aaad70a08767b6bf71d0f6"
+      "bytes": 7189,
+      "sha256": "a24c50fd4906e7749dac06ac46b161dc0337e4beeb0d53488cf1d2ebf2bfdb33"
+    },
+    {
+      "path": "default-presentation.en.json",
+      "bytes": 12280,
+      "sha256": "07b6fe9875a464007ddd91e9ee4b51897fb5df24b998c9f98f7962f9775402b6"
     },
     {
       "path": "local-diagnostics.parsed-value-corpus.json",
@@ -363,8 +368,8 @@
     },
     {
       "path": "semantic-core-v1.contract.json",
-      "bytes": 18231,
-      "sha256": "9020a9da67cbcf32bfc66841cf3679b0fbefa4bb56bbba96704022721151df4d"
+      "bytes": 17902,
+      "sha256": "8fb80ce7d037341448c15fcbe7814fcc34b11d44e9caf50a42f81eaabcd7a006"
     },
     {
       "path": "semantic-core-v1.schema.json",
@@ -563,8 +568,8 @@
     },
     {
       "path": "web-v3.parsed-value-corpus.json",
-      "bytes": 1984569,
-      "sha256": "66f1df7a1b9223c2385d8d30f31b669ab73fc4ae424a534069822c65b8a065ab"
+      "bytes": 1973383,
+      "sha256": "0d03872b3d8ead83c3080751a543ec7c42dc32c1e23e05e2fb92e9a64dba6b46"
     },
     {
       "path": "web-v3.process-failure.schema.json",
