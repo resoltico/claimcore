@@ -24,7 +24,7 @@ const observePreparedBytes = (page: Page): (() => Buffer | null) => {
 
 const returnToRecovery = async (page: Page): Promise<void> => {
   await progress("localized-recovery-reload");
-  await page.reload();
+  await page.reload({ waitUntil: "commit" });
   await expect(page.locator("main.app-shell header small")).toBeVisible({ timeout: 10_000 });
   await progress("localized-recovery-definition-ready");
   const navigation = page.getByRole("button", { name: "Recovery", exact: true });

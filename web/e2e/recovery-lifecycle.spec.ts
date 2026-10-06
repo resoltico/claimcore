@@ -238,7 +238,7 @@ test("recovers an exact preparation after its published response is dropped", as
   await page.unroute("**/api/v3/operations/prepare");
   await expect(page.getByRole("button", { name: "Sign out" })).toBeDisabled();
   await retryExactPrepare(page, operationId, originalBody);
-  await page.reload();
+  await page.reload({ waitUntil: "commit" });
   await navigateRecovery(page);
   const row = page.locator(".recovery-list li").filter({ hasText: operationId });
   await expect(row).toHaveCount(1);

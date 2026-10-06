@@ -152,6 +152,7 @@ const awaitOidcReturn = async (
   try {
     await page.waitForURL((url) => url.origin === applicationOrigin && url.pathname === "/", {
       timeout: 10_000,
+      waitUntil: "commit",
     });
   } catch {
     const current = new URL(page.url());

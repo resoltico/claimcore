@@ -43,7 +43,7 @@ test("updates visible detail and expanded history immediately with independent f
 test("preserves language and independent display preferences through real logout and OIDC relogin", async ({
   page,
 }) => {
-  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await page.goto("/", { waitUntil: "commit" });
   await login(page);
   await selectFormat(page, "lv-LV");
   await selectLanguage(page, "ar");

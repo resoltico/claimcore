@@ -8,7 +8,7 @@ test("bounds repeated published login admission and recovers after its window", 
   page,
 }) => {
   test.setTimeout(80_000);
-  await page.goto("/");
+  await page.goto("/", { waitUntil: "commit" });
   await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
   await progress("rate-probing");
   let challenges = 0;
@@ -39,7 +39,7 @@ test("bounds repeated published login admission and recovers after its window", 
   await progress("rate-window-wait");
   await page.waitForTimeout(61_000);
   await progress("rate-window-ended");
-  await page.reload();
+  await page.reload({ waitUntil: "commit" });
   await login(page);
   await progress("rate-login-ready");
   await expect(page.getByRole("heading", { name: "Cases" })).toBeVisible();
