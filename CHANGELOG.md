@@ -12,6 +12,8 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Changed
 
+- Source builds and the shipped operating images require Node 26.10.0; npm remains 11.19.1. The synthetic OIDC provider uses Keycloak 26.8.0, and published-process coverage uses Coverlet console 10.1.0, matching the native testing-platform collector.
+
 - Web can explicitly configure a public HTTPS origin and separate listener address/port. Native defaults remain loopback; TLS identity, exact Host/origin, OIDC and actor grants remain required. The unsupported single-primary development Compose layout is removed; existing volumes are not migrated or deleted.
 
 - Native witness `Store` operations and subject-page callbacks are asynchronous and require explicit cancellation tokens. Native integrations must await them; `Runtime.DataUseReadiness` also returns an awaited live observation. Authenticated service contract shapes and stored canonical formats are unchanged.

@@ -1,7 +1,7 @@
 # Disposable synthetic OIDC issuer
 
 Run `bash eng/oidc/Run-SyntheticOidc.sh` from the repository root. The harness
-starts the official Keycloak 26.7.4 image at a pinned multi-platform digest,
+starts the official Keycloak 26.8.0 image at a pinned multi-platform digest,
 generates a private one-day CA and server certificate, then publishes a random
 loopback HTTPS reverse proxy. It imports fresh synthetic realms and
 checks discovery, JWKS, and the confidential client's client-credentials grant.
