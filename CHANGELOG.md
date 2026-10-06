@@ -14,7 +14,7 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Changed
 
-- Source builds and the shipped operating images require Node 26.10.0; npm remains 11.19.1. The synthetic OIDC provider uses Keycloak 26.8.0 with an explicit custom API audience, and published-process coverage uses Coverlet console 10.1.0, matching the native testing-platform collector.
+- Source builds and the shipped operating images require Node 26.10.0; npm remains 11.19.1. The synthetic OIDC provider uses Keycloak 26.8.0 with an explicit custom API audience, and published-process coverage uses Coverlet console 10.1.0, matching the native testing-platform collector. Before upgrading an existing local Keycloak realm, change its CLI and service API audience mappers to Included Custom Audience; startup import does not update a persisted realm.
 
 - Web can explicitly configure a public HTTPS origin and separate listener address/port. Native defaults remain loopback; TLS identity, exact Host/origin, OIDC and actor grants remain required. The unsupported single-primary development Compose layout is removed; existing volumes are not migrated or deleted.
 
