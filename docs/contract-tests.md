@@ -635,12 +635,14 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-WEB-001 | unit | ClaimCore deterministic suite.CLI TLS trust.[CC-WEB-001] issuer TLS leaf requires server purpose |
 | CC-WEB-001 | unit | ClaimCore deterministic suite.CLI TLS trust.[CC-WEB-001] private TLS root validity has exact boundaries |
 | CC-WEB-001 | unit | ClaimCore deterministic suite.typed rejection diagnostics.build-only ICU export escapes literal syntax [CC-WEB-001] |
+| CC-WEB-001 | vitest | isolates technical revision holes in Arabic reference summaries and preserves literal word order [CC-WEB-001] |
 | CC-WEB-001 | vitest | labels grouped recovery targets in ar while keeping exact authored values [CC-WEB-001] |
 | CC-WEB-001 | vitest | labels grouped recovery targets in en while keeping exact authored values [CC-WEB-001] |
 | CC-WEB-001 | vitest | labels grouped recovery targets in lv while keeping exact authored values [CC-WEB-001] |
 | CC-WEB-001 | vitest | matches every native English diagnostic literal under default presentation [CC-WEB-001] |
 | CC-WEB-001 | vitest | preserves canonical values and frozen request identity over 500 seeded display vectors [CC-WEB-001] |
 | CC-WEB-001 | vitest | refuses reference message parts with missing, wrong-role or foreign holes [CC-WEB-001] |
+| CC-WEB-001 | vitest | renders an empty attempt page as zero attempts rather than an unknown diagnostic [CC-WEB-001] |
 | CC-WEB-001 | vitest | warns and isolates exact references at review and recovery decisions in ar [CC-WEB-001] |
 | CC-WEB-001 | vitest | warns and isolates exact references at review and recovery decisions in en [CC-WEB-001] |
 | CC-WEB-001 | vitest | warns and isolates exact references at review and recovery decisions in lv [CC-WEB-001] |

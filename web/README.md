@@ -30,7 +30,7 @@ coverage exception is registered in [`config/lint-exceptions.json`](../config/li
 Composite project references retain incremental
 state in ignored files, and Vitest uses isolated, machine-scaled file workers. The locked StrykerJS
 gate (its sandbox tsconfig rewrite is disabled because it needs a compiler API TypeScript 7 does not ship; Vitest needs no tsconfig) mutates the four operation modules (metadata, initial state, request freezing and the reducer), preference parsing/transitions, descriptor/identity presentation, and typed ICU message rendering and checks a 92% minimum against exact-source
-local evidence; it is not F# or PostgreSQL mutation coverage.
+local evidence. It uses one test worker so static mutations do not compete for repeated whole-suite imports; test deadlines and mutation acceptance are unchanged. It is not F# or PostgreSQL mutation coverage.
 
 [`package.json`](package.json) defines the individual npm scripts. Their canonical ordered use,
 including formatting, typechecking, linting, dependency assurance, tests, and asset production, is in

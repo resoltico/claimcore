@@ -14,7 +14,7 @@
     "configFile": "vite.config.ts",
     "related": true
   },
-  "concurrency": 4,
+  "concurrency": 1,
   "ignorePatterns": ["artifacts/**"],
   "tempDirName": "artifacts/stryker-tmp",
   "cleanTempDir": "always",

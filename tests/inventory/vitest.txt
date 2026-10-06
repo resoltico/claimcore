@@ -65,6 +65,7 @@ hands a lost submit to exact recovery even when the pending list is empty
 ignores late clipboard completion after the displayed value changes away and back
 ignores late prepare and submit responses from inactive attempts
 isolates and warns about permitted business Unicode without normalizing or executing markup
+isolates technical revision holes in Arabic reference summaries and preserves literal word order [CC-WEB-001]
 keeps ICU plural grammar independent from the number-display locale
 keeps a failed history page request-local without erasing current case data
 keeps a non-reviewable retained Prepare exact and directs Recovery
@@ -155,6 +156,7 @@ renders a neutral shell while definition admission is pending
 renders a recoverable session failure and invokes its refresh action
 renders absent and suspicious accepted values without changing the recorded text
 renders an OIDC sign-in link without collecting a credential
+renders an empty attempt page as zero attempts rather than an unknown diagnostic [CC-WEB-001]
 renders an exact accepted Prepare replay as a definite receipt
 renders direct observed-accepted recovery receipts
 renders every catalog key in every language and preserves typed interpolation contracts

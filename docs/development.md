@@ -313,7 +313,7 @@ source, npm lock, generated semantic/CLI-v4/Web-v3 contract, Node/npm versions, 
 [`web/README.md`](../web/README.md) for frontend structure and the current compiler-API compatibility arrangement.
 
 The locked StrykerJS/Vitest mutation gate targets the four operation modules (metadata, initial state, request
-freezing and the reducer) and presentation preference/parser, descriptor/identity and typed ICU message-rendering logic. It requires at least 92% killed mutants across them, refuses ignored or incomplete mutant
+freezing and the reducer) and presentation preference/parser, descriptor/identity and typed ICU message-rendering logic. It uses one test worker to limit contention during static-mutation suite imports. It requires at least 92% killed mutants across them, refuses ignored or incomplete mutant
 results, and checks the exact sources, tool version and target set in an ignored local report. It does not exercise F#
 or PostgreSQL and cannot replace the full tests, catalog checks or restored-data audit.
 

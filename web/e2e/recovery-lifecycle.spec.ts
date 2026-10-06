@@ -123,7 +123,8 @@ test("resolves and dismisses exact preparations with observed server state", asy
   await resolveAndObserve(page, prepared);
 
   await page.getByRole("button", { name: "Cases", exact: true }).click();
-  await page.getByRole("button", { name: caseReference }).click();
+  await page.locator("#case-lookup").fill(caseReference);
+  await page.getByRole("button", { name: "Find case", exact: true }).click();
   await startCommand(page, "Close the case");
   const dismissible = await prepare(page);
   await keepForRecovery(page);
