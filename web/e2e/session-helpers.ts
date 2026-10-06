@@ -6,6 +6,7 @@ import { expect, type BrowserContext, type Page } from "@playwright/test";
 
 import { isHostFailure, isWebV3Response } from "../src/generated/contracts/web-v3.validation";
 import type { HostFailure, WebV3Response } from "../src/generated/contracts/web-v3.types";
+import { observeStartup } from "./startup-evidence";
 
 type BrowserReply = Readonly<{
   status: number;
@@ -49,6 +50,13 @@ const syntheticOwner = async (): Promise<{ username: string; password: string }>
 };
 type Cookies = Awaited<ReturnType<BrowserContext["cookies"]>>;
 
+export const openApplication = async (page: Page, heading: string | RegExp): Promise<void> => {
+  await observeStartup(page, async () => {
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await expect(page.getByRole("heading", { name: heading, exact: true })).toBeVisible();
+  });
+};
+
 export const openAuthenticated = async (
   page: Page,
   casesHeading: string | RegExp = "Cases",
@@ -69,8 +77,7 @@ export const openAuthenticated = async (
     throw new Error("E2E_AUTH_STATE_INVALID");
   }
   await page.context().addCookies(state.cookies as Cookies);
-  await page.goto("/", { waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("heading", { name: casesHeading, exact: true })).toBeVisible();
+  await openApplication(page, casesHeading);
 };
 
 export const expectAccessible = async (page: Page): Promise<void> => {

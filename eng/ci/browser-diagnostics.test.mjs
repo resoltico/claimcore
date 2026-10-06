@@ -1,6 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { BrowserStepDiagnostic } from "../../web/scripts/playwright-diagnostics.mjs";
+import {
+  BrowserStepDiagnostic,
+  startupDiagnostic,
+} from "../../web/scripts/playwright-diagnostics.mjs";
 
 const sources = new Map([
   ["/repo/web/e2e/check.spec.ts", { file: "web/e2e/check.spec.ts", lines: 100 }],
@@ -44,4 +47,41 @@ test("browser diagnostics keep unfinished safe location without inheriting anoth
   assert.equal(first.snapshot()?.line, 12);
   const second = new BrowserStepDiagnostic(sources);
   assert.equal(second.snapshot(), null);
+});
+
+const startup = {
+  truncated: false,
+  authenticated: true,
+  pageErrorSeen: false,
+  readiness: { readyState: "interactive", view: "loading", alert: false },
+  requests: [{ kind: "session", status: 200, phase: "headers", elapsedMs: 5000 }],
+};
+/** @param {Record<string, unknown>} value */
+const encoded = (value) => Buffer.from(JSON.stringify(value));
+
+test("startup evidence admits only bounded status and readiness observations", () => {
+  assert.deepEqual(startupDiagnostic(encoded(startup)), startup);
+  const unavailable = { ...startup, authenticated: null, readiness: null, truncated: true };
+  assert.deepEqual(startupDiagnostic(encoded(unavailable)), unavailable);
+  assert.equal(startupDiagnostic(undefined), null);
+});
+
+test("startup evidence refuses arbitrary attachment fields and unbounded observations", () => {
+  const request = startup.requests[0];
+  for (const value of [
+    { ...startup, url: "PRIVATE-URL-SECRET" },
+    { ...startup, authenticated: "PRIVATE-TOKEN-SECRET" },
+    { ...startup, pageErrorSeen: "PRIVATE-ERROR-SECRET" },
+    { ...startup, readiness: { ...startup.readiness, view: "PRIVATE-DOM-SECRET" } },
+    { ...startup, readiness: { ...startup.readiness, text: "PRIVATE-DOM-SECRET" } },
+    { ...startup, requests: [{ ...request, body: "PRIVATE-PAYLOAD-SECRET" }] },
+    { ...startup, requests: [{ ...request, status: 700 }] },
+    { ...startup, requests: [{ ...request, elapsedMs: 60001 }] },
+    { ...startup, requests: [{ ...request, phase: "PRIVATE-ERROR-SECRET" }] },
+    { ...startup, requests: Array(41).fill(request) },
+  ]) {
+    assert.equal(startupDiagnostic(encoded(value)), null);
+  }
+  assert.equal(startupDiagnostic(Buffer.from("not JSON")), null);
+  assert.equal(startupDiagnostic(Buffer.alloc(16385)), null);
 });

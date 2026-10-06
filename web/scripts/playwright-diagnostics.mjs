@@ -110,3 +110,59 @@ export class BrowserStepDiagnostic {
     return this.failed ?? this.latest;
   }
 }
+
+/** @param {unknown} value @param {string[]} keys @returns {value is Record<string, unknown>} */
+const exactKeys = (value, keys) =>
+  typeof value === "object" &&
+  value !== null &&
+  !Array.isArray(value) &&
+  Object.keys(value).sort().join(",") === keys.sort().join(",");
+/** @param {unknown} value @param {string[]} choices */
+const oneOf = (value, choices) => choices.some((choice) => choice === value);
+/** @param {unknown} value @param {number} min @param {number} max */
+const boundedInteger = (value, min, max) =>
+  typeof value === "number" && Number.isInteger(value) && value >= min && value <= max;
+
+/** @param {unknown} value */
+const requestEvidence = (value) =>
+  exactKeys(value, ["kind", "status", "phase", "elapsedMs"]) &&
+  oneOf(value["kind"], ["document", "script", "stylesheet", "session", "definition"]) &&
+  oneOf(value["phase"], ["pending", "headers", "finished", "failed"]) &&
+  (value["status"] === null || boundedInteger(value["status"], 100, 599)) &&
+  boundedInteger(value["elapsedMs"], 0, 60_000);
+/** @param {unknown} value */
+const readinessEvidence = (value) =>
+  value === null ||
+  (exactKeys(value, ["readyState", "view", "alert"]) &&
+    oneOf(value["readyState"], ["loading", "interactive", "complete"]) &&
+    oneOf(value["view"], ["loading", "login-shell", "app-shell", "other"]) &&
+    typeof value["alert"] === "boolean");
+/** @param {unknown} value @returns {value is Record<string, unknown>} */
+const startupHeader = (value) =>
+  exactKeys(value, ["authenticated", "pageErrorSeen", "readiness", "requests", "truncated"]) &&
+  typeof value["truncated"] === "boolean" &&
+  typeof value["pageErrorSeen"] === "boolean" &&
+  (value["authenticated"] === null || typeof value["authenticated"] === "boolean");
+
+/** Closed startup evidence only; never admit arbitrary Playwright attachment content.
+ * @param {Buffer | undefined} body
+ * @returns {unknown | null}
+ */
+export const startupDiagnostic = (body) => {
+  if (body === undefined || body.length > 16_384) {
+    return null;
+  }
+  try {
+    const value = JSON.parse(body.toString("utf8"));
+    if (!startupHeader(value) || !readinessEvidence(value["readiness"])) {
+      return null;
+    }
+    const { requests } = value;
+    if (!Array.isArray(requests) || requests.length > 40 || !requests.every(requestEvidence)) {
+      return null;
+    }
+    return value;
+  } catch {
+    return null;
+  }
+};

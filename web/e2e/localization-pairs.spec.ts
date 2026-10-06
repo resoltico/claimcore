@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { openAuthenticated } from "./session-helpers";
+import { openApplication, openAuthenticated } from "./session-helpers";
 import { selectLanguage, trackRequests, ui, seedPresentation } from "./localization-support";
 import { displayLocales, languages, preferenceKey } from "../src/presentation/preferences";
 
@@ -49,8 +49,7 @@ for (const authenticated of [false, true]) {
               page.locator('section[aria-labelledby="case-list-title"] > p[role="status"]'),
             ).toHaveCount(0);
           } else {
-            await page.goto("/", { waitUntil: "domcontentloaded" });
-            await expect(page.getByRole("heading", { name: "ClaimCore" })).toBeVisible();
+            await openApplication(page, "ClaimCore");
           }
           const requests = trackRequests(page);
           await selectLanguage(page, target);

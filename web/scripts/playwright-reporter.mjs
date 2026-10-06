@@ -3,7 +3,11 @@ import { mkdir, rename, unlink, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { BrowserStepDiagnostic, browserSources } from "./playwright-diagnostics.mjs";
+import {
+  BrowserStepDiagnostic,
+  browserSources,
+  startupDiagnostic,
+} from "./playwright-diagnostics.mjs";
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const scope = process.env["CLAIMCORE_WEB_E2E_ENGINE"] ?? "all";
@@ -111,6 +115,11 @@ export default class SanitizedPlaywrightReporter {
       id: test.title,
       status: result.status,
       stage: safeStage(),
+      startup: failureStatuses.has(result.status)
+        ? startupDiagnostic(
+            result.attachments.find((attachment) => attachment.name === "claimcore-startup")?.body,
+          )
+        : null,
       line: result.errors[0]?.location?.line ?? null,
       step: this.stepDiagnostics.get(result)?.snapshot() ?? null,
     });
