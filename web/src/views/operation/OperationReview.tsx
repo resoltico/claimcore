@@ -2,6 +2,7 @@ import { usePresentation } from "../../presentation/context";
 import { Button } from "react-aria-components/Button";
 import { Checkbox } from "react-aria-components/Checkbox";
 import { BusinessValue } from "../../components/BusinessValue";
+import { ReferenceSummary } from "../../components/ReferenceSummary";
 import type { AdvisoryReview, PreparationDetails, FieldDescriptor } from "../../api/v3";
 import { AccessibleModal } from "../../components/AccessibleModal";
 import type { OperationEditorModel } from "./editorTypes";
@@ -46,10 +47,13 @@ const PreparedIdentity = ({ preparation }: { preparation: PreparationDetails }) 
   return (
     <>
       <p>
-        {p.text("ui.reviewTarget", {
-          reference: preparation.summary.caseReference,
-          revision: p.integer(preparation.expectedRevision),
-        })}
+        <ReferenceSummary
+          id="ui.reviewTarget"
+          values={{
+            reference: preparation.summary.caseReference,
+            revision: p.integer(preparation.expectedRevision),
+          }}
+        />
       </p>
       <p>
         {p.text("ui.operationDigest", {

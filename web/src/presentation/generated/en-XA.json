@@ -687,7 +687,7 @@
   "ui.currencyHint": [
     { "type": 0, "value": "⟦" },
     { "type": 1, "value": "length" },
-    { "type": 0, "value": " üüppëërcààsëë lëëttëërs." },
+    { "type": 0, "value": " üüppëërcààsëë ÀÀSCÏÏÏÏ lëëttëërs (ÀÀ–Z)." },
     { "type": 0, "value": "⟧" }
   ],
   "ui.command": [
@@ -910,20 +910,8 @@
       "type": 6,
       "value": "count",
       "options": {
-        "one": {
-          "value": [
-            { "type": 0, "value": "ÀÀttëëmpt ëëvïïdëëncëë: " },
-            { "type": 7 },
-            { "type": 0, "value": " shööwn." }
-          ]
-        },
-        "other": {
-          "value": [
-            { "type": 0, "value": "ÀÀttëëmpt ëëvïïdëëncëë: " },
-            { "type": 7 },
-            { "type": 0, "value": " shööwn." }
-          ]
-        }
+        "one": { "value": [{ "type": 7 }, { "type": 0, "value": " ààttëëmpt shööwn." }] },
+        "other": { "value": [{ "type": 7 }, { "type": 0, "value": " ààttëëmpts shööwn." }] }
       },
       "offset": 0,
       "pluralType": "cardinal"
@@ -1238,7 +1226,7 @@
     { "type": 0, "value": "⟦" },
     {
       "type": 0,
-      "value": "Cüürrëëncy ïïn whïïch thëë ààmööüünt ïïs clààïïmëëd. ÜÜsëë thrëëëë üüppëërcààsëë lëëttëërs, föör ëëxààmplëë ËËÜÜR."
+      "value": "Cüürrëëncy ïïn whïïch thëë ààmööüünt ïïs clààïïmëëd. ÜÜsëë thrëëëë üüppëërcààsëë ÀÀSCÏÏÏÏ lëëttëërs (ÀÀ–Z), föör ëëxààmplëë ËËÜÜR."
     },
     { "type": 0, "value": "⟧" }
   ],
@@ -1546,7 +1534,7 @@
   ],
   "diagnostic.COMMAND_EXPECTED_REVISION_RANGE": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÜÜsëë àà nöön-nëëgààtïïvëë vëërsïïöön bëëlööw ÏÏnt64.MààxVààlüüëë." },
+    { "type": 0, "value": "ÜÜsëë àà nöön-nëëgààtïïvëë rëëvïïsïïöön bëëlööw ÏÏnt64.MààxVààlüüëë." },
     { "type": 0, "value": "⟧" }
   ],
   "diagnostic.COMMAND_GROUPED_CORRECTION_REQUIRED": [
@@ -1668,7 +1656,10 @@
   ],
   "diagnostic.INPUT_CURRENCY_FORMAT": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÜÜsëë àà thrëëëë-lëëttëër üüppëërcààsëë cüürrëëncy ïïdëëntïïfïïëër." },
+    {
+      "type": 0,
+      "value": "ÜÜsëë thrëëëë üüppëërcààsëë ÀÀSCÏÏÏÏ lëëttëërs (ÀÀ–Z) föör thëë cüürrëëncy ïïdëëntïïfïïëër."
+    },
     { "type": 0, "value": "⟧" }
   ],
   "diagnostic.INPUT_DATE_ORDER": [
@@ -2045,7 +2036,7 @@
     { "type": 0, "value": "⟦" },
     {
       "type": 0,
-      "value": "Stöörëëd vëërsïïööns müüst bëë pöösïïtïïvëë àànd bëëlööw ÏÏnt64.MààxVààlüüëë."
+      "value": "Stöörëëd rëëvïïsïïööns müüst bëë pöösïïtïïvëë àànd bëëlööw ÏÏnt64.MààxVààlüüëë."
     },
     { "type": 0, "value": "⟧" }
   ],

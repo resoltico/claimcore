@@ -282,7 +282,7 @@
   ],
   "ui.currencyHint": [
     { "type": 1, "value": "length" },
-    { "type": 0, "value": " uppercase letters." }
+    { "type": 0, "value": " uppercase ASCII letters (A–Z)." }
   ],
   "ui.command": [{ "type": 0, "value": "Case action" }],
   "ui.reference": [
@@ -394,20 +394,8 @@
       "type": 6,
       "value": "count",
       "options": {
-        "one": {
-          "value": [
-            { "type": 0, "value": "Attempt evidence: " },
-            { "type": 7 },
-            { "type": 0, "value": " shown." }
-          ]
-        },
-        "other": {
-          "value": [
-            { "type": 0, "value": "Attempt evidence: " },
-            { "type": 7 },
-            { "type": 0, "value": " shown." }
-          ]
-        }
+        "one": { "value": [{ "type": 7 }, { "type": 0, "value": " attempt shown." }] },
+        "other": { "value": [{ "type": 7 }, { "type": 0, "value": " attempts shown." }] }
       },
       "offset": 0,
       "pluralType": "cardinal"
@@ -563,7 +551,7 @@
   "field.claimedCurrency.meaning": [
     {
       "type": 0,
-      "value": "Currency in which the amount is claimed. Use three uppercase letters, for example EUR."
+      "value": "Currency in which the amount is claimed. Use three uppercase ASCII letters (A–Z), for example EUR."
     }
   ],
   "field.caseReference.label": [{ "type": 0, "value": "Handler's case reference" }],
@@ -708,7 +696,7 @@
     { "type": 0, "value": "A zero decision is not a payment." }
   ],
   "diagnostic.COMMAND_EXPECTED_REVISION_RANGE": [
-    { "type": 0, "value": "Use a non-negative version below Int64.MaxValue." }
+    { "type": 0, "value": "Use a non-negative revision below Int64.MaxValue." }
   ],
   "diagnostic.COMMAND_GROUPED_CORRECTION_REQUIRED": [
     { "type": 0, "value": "Supply all three tagged correction groups." }
@@ -772,7 +760,7 @@
     { "type": 0, "value": "Control characters are not accepted." }
   ],
   "diagnostic.INPUT_CURRENCY_FORMAT": [
-    { "type": 0, "value": "Use a three-letter uppercase currency identifier." }
+    { "type": 0, "value": "Use three uppercase ASCII letters (A–Z) for the currency identifier." }
   ],
   "diagnostic.INPUT_DATE_ORDER": [
     { "type": 0, "value": "The dates are in an invalid chronological order." }
@@ -972,7 +960,7 @@
     { "type": 0, "value": "The case revision cannot advance below Int64.MaxValue." }
   ],
   "diagnostic.STATE_STORED_REVISION_RANGE": [
-    { "type": 0, "value": "Stored versions must be positive and below Int64.MaxValue." }
+    { "type": 0, "value": "Stored revisions must be positive and below Int64.MaxValue." }
   ],
   "diagnostic.STATE_TRANSITION_MISMATCH": [
     { "type": 0, "value": "The state guard and payment transition disagree." }

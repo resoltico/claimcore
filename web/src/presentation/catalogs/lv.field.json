@@ -12,7 +12,7 @@
   "field.claimedAmount.label": "Pieprasītā summa",
   "field.claimedAmount.meaning": "Prasītāja pieprasītā summa. Ievadiet nulli tikai tad, ja pieprasītā summa ir nulle.",
   "field.claimedCurrency.label": "Pieprasītās summas valūta",
-  "field.claimedCurrency.meaning": "Valūta, kurā pieprasīta summa. Izmantojiet trīs lielos burtus, piemēram, EUR.",
+  "field.claimedCurrency.meaning": "Valūta, kurā pieprasīta summa. Izmantojiet trīs lielos ASCII burtus (A–Z), piemēram, EUR.",
   "field.caseReference.label": "Administratora lietas numurs",
   "field.caseReference.meaning": "Numurs, ko piešķīris šī reģistra atlīdzību administrators, nevis apdrošinātāja numurs. Unikāls, nemaināms un reģistrjutīgs vienas instalācijas ietvaros.",
   "field.paymentDecisionDate.label": "Izmaksas lēmuma datums",

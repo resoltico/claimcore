@@ -372,6 +372,7 @@ ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] definite 
 ClaimCore deterministic suite.typed recovery cancellation.[CC-REC-001] definite retain cancellation becomes cancelled before admission
 ClaimCore deterministic suite.typed rejection diagnostics.CLI and Web project identical diagnostics without changing rejection exit semantics
 ClaimCore deterministic suite.typed rejection diagnostics.ambient culture never selects rejection identity or parameter values
+ClaimCore deterministic suite.typed rejection diagnostics.build-only ICU export escapes literal syntax [CC-WEB-001]
 ClaimCore deterministic suite.typed rejection diagnostics.diagnostic arguments match the closed safe parameter schema
 ClaimCore deterministic suite.typed rejection diagnostics.diagnostic identities and parameter shapes participate in all fingerprints
 ClaimCore deterministic suite.typed rejection diagnostics.diagnostic parameter names and both bounds participate in semantic identity

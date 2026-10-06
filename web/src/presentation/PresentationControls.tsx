@@ -20,8 +20,8 @@ const LanguageControl = ({ id }: { id: string }) => {
         aria-describedby={`${id}-hint`}
         onChange={(e) => {
           p.setPreferences({
+            kind: "LANGUAGE",
             language: resolveLanguage(e.target.value),
-            displayLocale: p.displayLocale,
           });
         }}
       >
@@ -34,7 +34,7 @@ const LanguageControl = ({ id }: { id: string }) => {
         <option value="ar" lang="ar">
           العربية
         </option>
-        <option value="en-XA">{p.text("ui.pseudo")}</option>
+        {p.language === "en-XA" ? <option value="en-XA">{p.text("ui.pseudo")}</option> : null}
       </select>
     </div>
   );
@@ -51,7 +51,7 @@ const DisplayControl = ({ id }: { id: string }) => {
         aria-describedby={`${id}-hint`}
         onChange={(e) => {
           p.setPreferences({
-            language: p.language,
+            kind: "DISPLAY_LOCALE",
             displayLocale: resolveDisplayLocale(e.target.value),
           });
         }}

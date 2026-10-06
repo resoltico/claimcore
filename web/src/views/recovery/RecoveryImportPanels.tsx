@@ -1,3 +1,4 @@
+import { ReferenceSummary } from "../../components/ReferenceSummary";
 import { usePresentation } from "../../presentation/context";
 import { Button } from "react-aria-components/Button";
 import { FileTrigger } from "react-aria-components/FileTrigger";
@@ -13,11 +14,14 @@ const ImportPreview = ({ value }: { value: RecoveryImportPreview }) => {
         {p.text("ui.artifact", { kind: p.token(value.artifactKind), digest: value.sourceSha256 })}
       </p>
       <p>
-        {p.text("ui.importTarget", {
-          reference: value.decodedEffect.caseReference,
-          command: p.commandLabel(value.decodedEffect.command),
-          revision: p.integer(value.decodedEffect.expectedRevision),
-        })}
+        <ReferenceSummary
+          id="ui.importTarget"
+          values={{
+            reference: value.decodedEffect.caseReference,
+            command: p.commandLabel(value.decodedEffect.command),
+            revision: p.integer(value.decodedEffect.expectedRevision),
+          }}
+        />
       </p>
       <p>{p.text("ui.importHint")}</p>
     </>

@@ -45,3 +45,18 @@ WORKDIR /app
 COPY --from=publication /published/web/ ./
 USER $APP_UID
 ENTRYPOINT ["dotnet", "ClaimCore.Web.dll"]
+
+FROM node AS browser-qualification
+WORKDIR /source
+COPY web/package.json web/package-lock.json web/.npmrc ./web/
+RUN npm install --global "npm@$(node -p 'require("./web/package.json").engines.npm')" \
+    && npm --prefix web ci \
+    && npm --prefix web exec -- playwright install --with-deps chromium \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends libnss3-tools=2:3.87.1-1+deb12u4 \
+    && rm -rf /var/lib/apt/lists/* \
+    && cp -a /root/.cache/ms-playwright /opt/claimcore-browsers
+ENV PLAYWRIGHT_BROWSERS_PATH=/opt/claimcore-browsers
+COPY web/e2e/browser-trust-*.mjs ./web/e2e/
+USER node
+ENTRYPOINT ["node", "/source/web/e2e/browser-trust-driver.mjs"]

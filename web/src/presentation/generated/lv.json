@@ -77,7 +77,7 @@
     { "type": 0, "value": " daļas cipariem; bez zīmes vai eksponenta." }
   ],
   "diagnostic.INPUT_CURRENCY_FORMAT": [
-    { "type": 0, "value": "Izmantojiet trīs lielo latīņu burtu valūtas identifikatoru." }
+    { "type": 0, "value": "Izmantojiet trīs lielos ASCII burtus (A–Z) valūtas apzīmējumam." }
   ],
   "diagnostic.INPUT_AMOUNT_NOT_REPRESENTABLE": [
     { "type": 0, "value": "Decimālo summu nevar attēlot precīzi." }
@@ -266,7 +266,7 @@
     { "type": 0, "value": "Jaunā saglabātā sagatave nebija pieejama izpildei." }
   ],
   "diagnostic.RECOVERY_PREPARATION_DISMISSED_BEFORE_EXECUTION": [
-    { "type": 0, "value": "Sagatave noraidīta pirms izpildes sākuma." }
+    { "type": 0, "value": "Sagatave atmesta pirms izpildes sākuma." }
   ],
   "diagnostic.RECOVERY_RETAINED_DIGEST_MISMATCH": [
     { "type": 0, "value": "Saglabātās sagataves kontrolsumma neatbilst iesniegtajam melnrakstam." }
@@ -299,7 +299,7 @@
     { "type": 0, "value": "Atkopšanas mēģinājuma kursors pieder citai operācijai." }
   ],
   "diagnostic.RECOVERY_DISMISSAL_CONFIRMATION_REQUIRED": [
-    { "type": 0, "value": "Atkopšanas sagataves noraidīšanai nepieciešams skaidrs apstiprinājums." }
+    { "type": 0, "value": "Atkopšanas sagataves atmešanai nepieciešams skaidrs apstiprinājums." }
   ],
   "diagnostic.RECOVERY_PREPARATION_NOT_FOUND": [
     { "type": 0, "value": "Atkopšanas sagatave nav atrasta." }
@@ -308,7 +308,7 @@
     { "type": 0, "value": "Norādītā atkopšanas identitāte konfliktē ar esošu operāciju." }
   ],
   "diagnostic.RECOVERY_PREPARATION_DISMISSED": [
-    { "type": 0, "value": "Noraidītu sagatavi nevar iesniegt." }
+    { "type": 0, "value": "Atmestu sagatavi nevar iesniegt." }
   ],
   "diagnostic.RECOVERY_SUBMISSION_ALREADY_STARTED": [
     { "type": 0, "value": "Sagataves iesniegšana jau sākta; jāatrisina tieši šī sagatave." }
@@ -316,7 +316,7 @@
   "diagnostic.RECOVERY_ACCEPTED_OPERATION_DISMISSAL_FORBIDDEN": [
     {
       "type": 0,
-      "value": "Pieņemtu operāciju nevar noraidīt. Pārbaudiet tās saglabāto apliecinājumu."
+      "value": "Pieņemtas operācijas sagatavi nevar atmest. Pārbaudiet tās saglabāto apliecinājumu."
     }
   ],
   "diagnostic.RECOVERY_SOURCE_DIGEST_MISMATCH": [
@@ -497,7 +497,7 @@
   "field.claimedCurrency.meaning": [
     {
       "type": 0,
-      "value": "Valūta, kurā pieprasīta summa. Izmantojiet trīs lielos burtus, piemēram, EUR."
+      "value": "Valūta, kurā pieprasīta summa. Izmantojiet trīs lielos ASCII burtus (A–Z), piemēram, EUR."
     }
   ],
   "field.caseReference.label": [{ "type": 0, "value": "Administratora lietas numurs" }],
@@ -597,8 +597,8 @@
   "notice.missingCsrf": [
     { "type": 0, "value": "Autentificētajā sesijā nav pretviltošanas marķiera." }
   ],
-  "notice.dismissed": [{ "type": 0, "value": "Sagatave noraidīta." }],
-  "notice.alreadyDismissed": [{ "type": 0, "value": "Sagatave jau bija noraidīta." }],
+  "notice.dismissed": [{ "type": 0, "value": "Sagatave atmesta." }],
+  "notice.alreadyDismissed": [{ "type": 0, "value": "Sagatave jau bija atmesta." }],
   "notice.retained": [{ "type": 0, "value": "Atkopšanas materiāls saglabāts." }],
   "notice.existing": [{ "type": 0, "value": "Atkopšanas materiāls jau bija saglabāts." }],
   "notice.accepted": [
@@ -624,7 +624,7 @@
   "notice.keptForRecovery": [
     {
       "type": 0,
-      "value": "Sagatavotais pieprasījums ir saglabāts. Izmantojiet atkopšanu, lai to pārbaudītu, atrisinātu vai noraidītu."
+      "value": "Sagatavotais pieprasījums ir saglabāts. Izmantojiet atkopšanu, lai to pārbaudītu, atrisinātu vai atmestu."
     }
   ],
   "notice.unknownDiagnostic": [
@@ -850,7 +850,7 @@
   ],
   "ui.currencyHint": [
     { "type": 1, "value": "length" },
-    { "type": 0, "value": " lielie burti." }
+    { "type": 0, "value": " lielie ASCII burti (A–Z)." }
   ],
   "ui.command": [{ "type": 0, "value": "Darbība ar lietu" }],
   "ui.reference": [
@@ -933,13 +933,13 @@
   "ui.nearCapacity": [
     {
       "type": 0,
-      "value": "Tuvojas ietilpības robežai; atrisiniet vai noraidiet zināmās gaidošās sagataves."
+      "value": "Tuvojas ietilpības robežai; atrisiniet vai atmetiet zināmās gaidošās sagataves."
     }
   ],
   "ui.recoveryHint": [
     {
       "type": 0,
-      "value": "Pēc noklusējuma tiek rādīta gaidošā atkopšana. Noslēgtais skats rāda pieņemtas, noraidītas un atsauktas tiesības, neuzrādot tās kā izpildāmu darbu. Pirms atrisināšanas vai noraidīšanas pārbaudiet servera stāvokli."
+      "value": "Pēc noklusējuma tiek rādīta gaidošā atkopšana. Noslēgtais skats rāda pieņemtas un atmestas sagataves, kā arī atsauktas izpildes tiesības, neuzrādot tās kā izpildāmu darbu. Pirms atrisināšanas vai atmešanas pārbaudiet servera stāvokli."
     }
   ],
   "ui.recoverySummary": [
@@ -1029,7 +1029,7 @@
   "ui.inspectRevocation": [{ "type": 0, "value": "Pārbaudīt atsaukumu" }],
   "ui.moreRecovery": [{ "type": 0, "value": "Ielādēt vēl atkopšanu" }],
   "ui.resolveExact": [{ "type": 0, "value": "Atrisināt precīzo sagatavi" }],
-  "ui.dismissPreparation": [{ "type": 0, "value": "Noraidīt sagatavi" }],
+  "ui.dismissPreparation": [{ "type": 0, "value": "Atmest sagatavi" }],
   "ui.exportEnvelope": [{ "type": 0, "value": "Eksportēt atkopšanas aploksni" }],
   "ui.recoveryDetails": [{ "type": 0, "value": "Atkopšanas informācija" }],
   "ui.recoveryDetailsHint": [
@@ -1049,7 +1049,7 @@
   ],
   "ui.exportTitle": [{ "type": 0, "value": "Eksportēt atkopšanas aploksni?" }],
   "ui.resolveTitle": [{ "type": 0, "value": "Atrisināt precīzo sagatavi?" }],
-  "ui.dismissTitle": [{ "type": 0, "value": "Noraidīt sagatavi?" }],
+  "ui.dismissTitle": [{ "type": 0, "value": "Atmest sagatavi?" }],
   "ui.exportWarning": [
     {
       "type": 0,
@@ -1064,7 +1064,7 @@
   ],
   "ui.working": [{ "type": 0, "value": "Apstrādā…" }],
   "ui.confirmResolve": [{ "type": 0, "value": "Apstiprināt atrisināšanu" }],
-  "ui.confirmDismiss": [{ "type": 0, "value": "Apstiprināt noraidīšanu" }],
+  "ui.confirmDismiss": [{ "type": 0, "value": "Apstiprināt atmešanu" }],
   "ui.confirmExport": [{ "type": 0, "value": "Apstiprināt eksportu" }],
   "ui.artifact": [
     { "type": 0, "value": "Artefakts " },

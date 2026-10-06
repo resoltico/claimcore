@@ -6,13 +6,13 @@ open ClaimCore.Contracts
 
 /// Build-only English projection; no runtime locale or discovery surface.
 module DefaultPresentation =
-    let private literal (value: string) =
+    let icuLiteral (value: string) =
         System.Text.RegularExpressions.Regex.Replace(value.Replace("'", "''"), "[{}]+", "'$0'")
 
     let private rejection identifier =
         RejectionPresentation.template identifier
         |> List.map (function
-            | DiagnosticTextPart.Literal value -> literal value
+            | DiagnosticTextPart.Literal value -> icuLiteral value
             | DiagnosticTextPart.Hole hole -> "{" + RejectionPresentation.holeName hole + "}")
         |> String.concat ""
 
@@ -24,16 +24,16 @@ module DefaultPresentation =
             yield!
                 CoreFaults.all
                 |> List.map (fun (reason, id) ->
-                    "diagnostic." + id, CoreFaultPresentation.render reason |> literal)
+                    "diagnostic." + id, CoreFaultPresentation.render reason |> icuLiteral)
             yield!
                 RecoveryRejections.all
                 |> List.map (fun (reason, id) ->
-                    "diagnostic." + id, RecoveryRejectionPresentation.render reason |> literal)
+                    "diagnostic." + id, RecoveryRejectionPresentation.render reason |> icuLiteral)
             yield!
                 WebHostFailures.all
                 |> List.map (fun reason ->
                     "diagnostic." + WebHostFailures.token reason,
-                    WebHostFailures.render reason |> literal)
+                    WebHostFailures.render reason |> icuLiteral)
         ]
         |> Map.ofList
         |> JsonSerializer.SerializeToUtf8Bytes

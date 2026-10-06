@@ -1,3 +1,4 @@
+import { ReferenceSummary } from "../../components/ReferenceSummary";
 import { NoticeView } from "../../presentation/Message";
 import { usePresentation } from "../../presentation/context";
 import { Button } from "react-aria-components/Button";
@@ -58,7 +59,6 @@ const CommandPicker = ({ model }: Pick<OperationFormProps, "model">) => {
 };
 
 const Reference = ({ current, model }: Pick<OperationFormProps, "current" | "model">) => {
-  const p = usePresentation();
   if (current === null && model.referenceField !== undefined) {
     return (
       <DescriptorField
@@ -74,7 +74,9 @@ const Reference = ({ current, model }: Pick<OperationFormProps, "current" | "mod
     );
   }
   return current === null ? null : (
-    <p>{p.text("ui.reference", { reference: model.state.caseReference })}</p>
+    <p>
+      <ReferenceSummary id="ui.reference" values={{ reference: model.state.caseReference }} />
+    </p>
   );
 };
 

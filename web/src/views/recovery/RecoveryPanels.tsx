@@ -1,4 +1,5 @@
 import { CharacterWarning } from "../../components/BusinessValue";
+import { ReferenceSummary } from "../../components/ReferenceSummary";
 import { NoticeView } from "../../presentation/Message";
 import { usePresentation } from "../../presentation/context";
 import type { Notice } from "../../api/notices";
@@ -29,14 +30,15 @@ export type Listing = {
 const Summary = ({ item }: { item: RecoveryListItem }) => {
   const p = usePresentation();
   return item.tag === "RETAINED" ? (
-    <>
-      {p.text("ui.recoverySummary", {
+    <ReferenceSummary
+      id="ui.recoverySummary"
+      values={{
         command: p.commandLabel(item.summary.command),
         reference: item.summary.caseReference,
         authority: p.token(item.summary.authority),
         operationId: item.summary.operationId,
-      })}
-    </>
+      }}
+    />
   ) : (
     <>
       {p.text("ui.revocationSummary", {
@@ -118,10 +120,13 @@ const RetainedDetails = ({
         })}
       </p>
       <p>
-        {p.text("ui.retainedCommand", {
-          reference: value.summary.caseReference,
-          command: p.commandLabel(value.summary.command),
-        })}
+        <ReferenceSummary
+          id="ui.retainedCommand"
+          values={{
+            reference: value.summary.caseReference,
+            command: p.commandLabel(value.summary.command),
+          }}
+        />
       </p>
       <p>
         {p.text("ui.retainedFormat", {

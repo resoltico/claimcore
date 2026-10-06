@@ -24,10 +24,7 @@ const token = (preferences: Preferences, value: string): string => {
   if (hasMessage(key)) {
     return renderKey(preferences, key);
   }
-  if (hasMessage(`command.${value}.label`)) {
-    return metadata(preferences, "command", value, "label");
-  }
-  return value;
+  return metadata(preferences, "command", value, "label");
 };
 const fieldValueText = (
   preferences: Preferences,
@@ -43,7 +40,7 @@ const fieldValueText = (
 };
 const correctionTargetGroup = (name: string): string | null => {
   const targets: Readonly<Record<string, string>> = correctionTargets;
-  return Object.hasOwn(targets, name) ? (targets[name] ?? null) : null;
+  return Object.hasOwn(targets, name) ? targets[name]! : null;
 };
 const hint = (preferences: Preferences, field: FieldDescriptor): string => {
   const s = field.scalar;

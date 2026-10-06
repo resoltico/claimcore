@@ -40,7 +40,7 @@ module RejectionPresentation =
             RejectionDiagnosticId.FutureDate,
             "A future date cannot record an event that has already occurred."
             RejectionDiagnosticId.CurrencyFormat,
-            "Use a three-letter uppercase currency identifier."
+            "Use three uppercase ASCII letters (A–Z) for the currency identifier."
             RejectionDiagnosticId.AmountNotRepresentable,
             "The decimal amount cannot be represented exactly."
         ]
@@ -49,9 +49,9 @@ module RejectionPresentation =
         [
             RejectionDiagnosticId.EmptyOperationId, "Use a non-empty UUID."
             RejectionDiagnosticId.ExpectedVersionOutOfRange,
-            "Use a non-negative version below Int64.MaxValue."
+            "Use a non-negative revision below Int64.MaxValue."
             RejectionDiagnosticId.StoredVersionOutOfRange,
-            "Stored versions must be positive and below Int64.MaxValue."
+            "Stored revisions must be positive and below Int64.MaxValue."
             RejectionDiagnosticId.RevisionExhausted,
             "The case revision cannot advance below Int64.MaxValue."
             RejectionDiagnosticId.CaseReferenceMismatch,

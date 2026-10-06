@@ -10,6 +10,7 @@ import {
   languageControl,
   preparedReply,
 } from "./presentation-state.fixtures";
+import { preferenceKey } from "../src/presentation/preferences";
 import { response } from "./v3-ui.fixtures";
 
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
@@ -20,15 +21,19 @@ it("preserves authored content, DOM selection and operation identity across lang
   const user = userEvent.setup();
   const pending = deferredResponse();
   vi.mocked(globalThis.fetch).mockReturnValueOnce(pending.promise);
+  localStorage.setItem(
+    preferenceKey,
+    JSON.stringify({ version: 1, language: "en-XA", displayLocale: "en-GB" }),
+  );
   render(editor({ current: null, initialCommand: "OPEN" }));
-  const name = screen.getByLabelText<HTMLInputElement>("Claimant name", { exact: true });
-  const date = screen.getByLabelText("Incident date", { exact: true });
+  const name = document.querySelector<HTMLInputElement>('input[name="claimantName"]')!;
+  const date = document.querySelector<HTMLInputElement>('input[name="incidentDate"]')!;
   fireEvent.change(name, { target: { value: "A\u0308 <unchanged> العربية" } });
   fireEvent.change(date, { target: { value: "2026-02-30" } });
   name.setSelectionRange(1, 3);
   const before = ids.mock.calls.length;
   const selector = languageControl();
-  for (const language of ["ar", "en-XA", "lv", "en"]) {
+  for (const language of ["ar", "lv", "en"]) {
     await user.selectOptions(selector, language);
   }
   expect(ids.mock.calls.length).toBe(before);

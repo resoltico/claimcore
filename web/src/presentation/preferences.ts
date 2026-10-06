@@ -3,6 +3,13 @@ export const displayLocales = ["en-GB", "lv-LV", "ar-EG"] as const;
 export type Language = (typeof languages)[number];
 export type DisplayLocale = (typeof displayLocales)[number];
 export type Preferences = Readonly<{ language: Language; displayLocale: DisplayLocale }>;
+export type PreferenceChange =
+  | Readonly<{ kind: "LANGUAGE"; language: Language }>
+  | Readonly<{ kind: "DISPLAY_LOCALE"; displayLocale: DisplayLocale }>;
+export const changePreferences = (current: Preferences, change: PreferenceChange): Preferences =>
+  change.kind === "LANGUAGE"
+    ? { ...current, language: change.language }
+    : { ...current, displayLocale: change.displayLocale };
 export const defaults: Preferences = Object.freeze({ language: "en", displayLocale: "en-GB" });
 export const preferenceKey = "claimcore.presentation.v1";
 
@@ -11,7 +18,7 @@ const canonicalTag = (value: unknown): string | null => {
     return null;
   }
   try {
-    return Intl.getCanonicalLocales(value)[0] ?? null;
+    return Intl.getCanonicalLocales(value)[0]!;
   } catch {
     return null;
   }
@@ -37,11 +44,11 @@ export const parsePreferences = (text: string | null): Preferences => {
     if (typeof value !== "object" || value === null || Array.isArray(value)) {
       return defaults;
     }
-    const keys = Object.keys(value).sort().join(",");
-    if (keys !== "displayLocale,language,version" || !("version" in value) || value.version !== 1) {
+    if (!("language" in value) || !("displayLocale" in value) || !("version" in value)) {
       return defaults;
     }
-    if (!("language" in value) || !("displayLocale" in value)) {
+    const keys = Object.keys(value).sort().join(",");
+    if (keys !== "displayLocale,language,version" || value.version !== 1) {
       return defaults;
     }
     return {

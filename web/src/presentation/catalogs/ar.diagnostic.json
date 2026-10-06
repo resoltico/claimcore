@@ -9,7 +9,7 @@
   "diagnostic.INPUT_DATE_ORDER": "الترتيب الزمني للتواريخ غير صالح.",
   "diagnostic.INPUT_FUTURE_DATE": "لا يمكن استخدام تاريخ مستقبلي لتسجيل واقعة حدثت بالفعل.",
   "diagnostic.INPUT_DECIMAL_FORMAT": "استخدم نصًا عشريًا غير سالب: حتى {maximumIntegerDigits} رقمًا صحيحًا و{maximumFractionalDigits} أرقام كسرية؛ دون إشارة أو أس.",
-  "diagnostic.INPUT_CURRENCY_FORMAT": "استخدم معرّف عملة من ثلاثة أحرف لاتينية كبيرة.",
+  "diagnostic.INPUT_CURRENCY_FORMAT": "استخدم ثلاثة أحرف ASCII كبيرة من A إلى Z لمعرّف العملة.",
   "diagnostic.INPUT_AMOUNT_NOT_REPRESENTABLE": "لا يمكن تمثيل المبلغ العشري بدقة.",
   "diagnostic.COMMAND_OPERATION_ID_REQUIRED": "استخدم UUID غير فارغ.",
   "diagnostic.COMMAND_EXPECTED_REVISION_RANGE": "استخدم مراجعة غير سالبة وأقل من Int64.MaxValue.",

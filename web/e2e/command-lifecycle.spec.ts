@@ -61,7 +61,7 @@ test("publishes payment, correction, close and reopen with current-case parity",
   await completeCommand(page, "Record actual payment", { "Payment date": "2026-09-05" });
   await completeCommand(page, "Correct an erroneous payment record");
   await completeCommand(page, "Close the case");
-  await expect(page.getByText("CLOSED", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("Closed", { exact: true }).first()).toBeVisible();
   await completeCommand(page, "Reopen the case");
   await expect(page.locator("section.case-fields").first().getByText("Revision 6")).toBeVisible();
   await expect(page.locator(".history-list details")).toHaveCount(6);

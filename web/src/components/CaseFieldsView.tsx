@@ -19,8 +19,7 @@ const acceptedSummary = (
   [
     `${p.text("ui.revisionLabel")}: ${caseView.revision}`,
     ...fields.map(
-      (field) =>
-        `${p.fieldLabel(field.name)}: ${valueFor(caseView.fields, field.name) ?? p.text("ui.notRecorded")}`,
+      (field) => `${p.fieldLabel(field.name)}: ${valueFor(caseView.fields, field.name) ?? "null"}`,
     ),
   ].join("\n");
 export const CaseFieldsView = ({ caseView, fields, context }: CaseFieldsViewProps) => {

@@ -22,7 +22,7 @@ const message = (key: string, preferences: Preferences): IntlMessageFormat => {
   if (cached !== undefined) {
     return cached;
   }
-  const ast = catalogs[preferences.language]![key] ?? catalogs["en"]![key]!;
+  const ast = catalogs[preferences.language]![key]!;
   const grammar = preferences.language === "en-XA" ? "en" : preferences.language;
   const formatter = new IntlMessageFormat(ast, grammar, undefined, {
     formatters: {
@@ -70,3 +70,21 @@ export const translate = <K extends MessageKey>(
   ...values: Values<K>
 ): string => renderKey(preferences, key, values[0] ?? {});
 export const hasMessage = (key: string): key is MessageKey => Object.hasOwn(shapeTable, key);
+
+/** Replace the reference argument with a DOM-isolated value, retaining ICU word order. */
+export const renderReference = <T>(
+  preferences: Preferences,
+  key: string,
+  values: Readonly<Record<string, string | number>>,
+  reference: T,
+): (string | T)[] => {
+  if (!safeArgs(key, values) || shapeTable[key]?.["reference"] !== "string") {
+    return [renderKey(preferences, "notice.unknownDiagnostic")];
+  }
+  const prepared = Object.fromEntries(
+    Object.entries(values).map(([k, v]) => [k, isolate(v, preferences.language === "ar")]),
+  );
+  return message(key, preferences)
+    .formatToParts<T>({ ...prepared, reference })
+    .map((part) => part.value);
+};

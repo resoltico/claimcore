@@ -1,9 +1,12 @@
 aborts a stale page load before appending a newer cursor page
 aborts observation on unmount without delivering a late receipt
+accepts exactly bounded settings and refuses valid JSON beyond its storage budget
 accepts the matching generated definition fingerprint
 admits definite session refusal and conservative export failure, rejecting contradictory phases
+admits the exact tag budget and refuses otherwise valid oversized tags
 allocates a new ID when editing a definitely refused prepared request
 announces unsaved preferences in the chosen language without blocking the switch
+applies batched preference changes to current state even through a stale event handler
 associates optional field errors and supports password text input
 binds clipboard fallback to the latest attempted exact value
 binds consent to one reviewed preparation and exact identity rather than an editor-wide boolean
@@ -20,7 +23,13 @@ coalesces duplicate preparation activation while retention is pending
 coalesces duplicate recovery retention for the same previewed bytes
 coalesces observation and discards an older receipt after changing the operation ID
 coalesces recovery mutations and previews without replacing an in-flight navigation lock
+copies canonical summary business values and null markers in ar
+copies canonical summary business values and null markers in en
+copies canonical summary business values and null markers in lv
 copies safe values and provides an accessible fallback when clipboard access is unavailable
+crosses English and Arabic grammar with independent displayed digits
+derives shared browser business meaning directly from semantic discovery
+detaches replacement group values so later authoring cannot change a frozen request
 discards an aborted definition response when session epoch changes
 discards an aborted keyed read instead of replacing its newer response
 discards reverse-order recovery inspection responses and cancels closed detail reads
@@ -36,6 +45,7 @@ fails closed on malformed delivery and validates recovery export
 fails closed when the server definition is rejected or has a different Web fingerprint
 fails immediately when the embedding document omits the application root
 forks a new ID when an exposed request is edited after definite submit refusal
+forks exposed correction identities when their group modes change after definite refusal
 forks on a changed reference or command, but not on an unchanged field
 formats Gregorian date-only values without shifting days or truncating early years
 formats only read-only scalar displays and leaves technical text and currency invariant
@@ -49,6 +59,7 @@ generated contract corpora > qualifies every published diagnostic and its exact 
 generated contract corpora > rejects CLI lone surrogates and revision overflow
 generated contract corpora > validates every endpoint and cross-endpoint CLI outcome
 generated contract corpora > validates every local CLI protocol outcome
+gives exact scalar syntax and limits from each descriptor rather than an absent hint
 gives simultaneous current and historical case fields distinct heading IDs
 hands a lost submit to exact recovery even when the pending list is empty
 ignores late clipboard completion after the displayed value changes away and back
@@ -71,6 +82,9 @@ keeps recovery confirm dialog accessible before dispatch
 keeps recovery import dialog accessible before retention
 keeps the latest session snapshot when refresh responses finish in reverse order
 keeps unconfirmed settlement distinct from definite accepted execution
+labels grouped recovery targets in ar while keeping exact authored values [CC-WEB-001]
+labels grouped recovery targets in en while keeping exact authored values [CC-WEB-001]
+labels grouped recovery targets in lv while keeping exact authored values [CC-WEB-001]
 leaves invalid authored decimal and integer text unchanged for core validation
 lists, reloads, pages, selects and opens cases through typed list outcomes
 local diagnostic contracts > fingerprints the administration grammar independently of display text
@@ -80,6 +94,7 @@ localizes late validation by diagnostic identity and focuses the unchanged autho
 locks Dashboard during recovery dispatch and keeps the identity after lost resolution
 locks navigation and logout while a prepared mutation is dispatched
 maps every JSON endpoint to v3 and preserves nullable cursors and mutation identity
+matches every native English diagnostic literal under default presentation [CC-WEB-001]
 metadata-driven descriptor rendering > renders descriptor labels and all supplied field values without client-side normalization
 metadata-driven dirty command behavior > keeps a prepared operation in recovery and asks before discarding a dirty command switch
 metadata-driven drafts > derives command fields, prefill and a canonical draft without a browser command registry
@@ -90,6 +105,7 @@ mounts the Web v3 browser root
 names idempotent recovery outcomes and leaves downloads without outcome messages
 navigates dashboard case, operation and recovery surfaces without hidden business dispatch
 offers one explicit exact-ID Prepare retry after lost response
+offers real languages normally and a truthful current diagnostic option only when seeded
 opens a metadata-derived command from Dashboard's current-case transition
 operation editor dialogs and render branches > changes a dirty command only after the discard confirmation
 operation editor dialogs and render branches > closes the discard dialog through its accessible cancel action
@@ -110,13 +126,20 @@ operation editor transport outcomes > shows a definite submit rejection after pr
 persists only presentation preferences and remains usable when storage is denied
 presents closed correction targets through groups while preserving exact action tokens
 preserves authored content, DOM selection and operation identity across language switches before preparation
+preserves canonical values and frozen request identity over 500 seeded display vectors [CC-WEB-001]
 preserves core recovery direction in generic and nested mutation faults
 preserves diagnostics from direct read refusals and nested recovery execution faults without server prose
 preserves every permitted amount digit and trailing zero in independent display locales
 preserves exact recovery guidance when dismissal refuses an already-started submission
+preserves independent English diagnostic knowledge and parameter examples
 preserves only exact identity and recovery direction after uncertain export issuance
+preserves the independent preference through bounded reproducible event sequences
+reads previously persisted version-one settings under their actual browser storage key
 refuses an export action when inspected recovery evidence has no exact digest
 refuses corrupt, oversized and unknown preference records without retaining arbitrary data
+refuses nontext language values even when Intl could interpret an array-like object
+refuses reference message parts with missing, wrong-role or foreign holes [CC-WEB-001]
+refuses submission transitions when no exact reviewed request exists
 refuses unknown or malformed message arguments without echoing the supplied material
 rejects JSON-prefix spoofing and accepts an exact JSON media type with parameters
 rejects impossible local draft shapes and keeps absent current correction values blank
@@ -191,3 +214,6 @@ v3 Recovery view > inspects and dismisses only a server-advertised unsubmitted p
 v3 Recovery view > keeps a completed non-acceptance out of the accepted receipt path
 v3 Recovery view > renders a definite resolve receipt instead of treating it as transport uncertainty
 v3 session lifecycle > offers OIDC sign-in, then hydrates an authenticated return and signs out
+warns and isolates exact references at review and recovery decisions in ar [CC-WEB-001]
+warns and isolates exact references at review and recovery decisions in en [CC-WEB-001]
+warns and isolates exact references at review and recovery decisions in lv [CC-WEB-001]

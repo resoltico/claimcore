@@ -6,6 +6,8 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Fixed
 
+- Web keeps language and display-format changes independent during rapid preference events. Clipboard feedback follows the exact attempted value and label; delayed completion cannot claim success for a changed value. Case review and recovery summaries isolate exact references and warn about hidden or directional characters without changing business text.
+
 - Updated the build-only HTTP cache dependency to its patched release and retired its advisory exception; reverting to the affected versions fails dependency auditing.
 
 - Witness, recovery and full-audit runtime paths await database I/O and honor cancellation before dispatch. A caller cancelling after an append can commit still receives completion or exact uncertainty; retries retain the original operation identity and bytes.
@@ -13,6 +15,10 @@ Notable changes to this project are documented in this file. The format is based
 - Generated .NET redistribution notices retain each package's own copyright and supplied license/NOTICE files, including NSec's embedded BSD/ISC notices. The former generic MIT attribution and incomplete notice collection are replaced. Regenerate application publish outputs before redistribution; published source releases and their licenses remain unchanged.
 
 ### Changed
+
+- Shared field and command terminology now addresses case handlers, including “Responsible insurer” and explicit registration, decision and payment correction actions. Domain descriptors and typed native diagnostic templates supply default English browser text; Latvian and Arabic retain the same meanings. Canonical inputs, copied business values, operation identities, service fingerprints and stored formats are unchanged. Ordinary language controls offer English, Latvian and Arabic; the layout pseudolocale remains available through diagnostic preference seeding.
+
+- Newly created local browser certificates omit the Docker-only database revocation URL; PostgreSQL leaves retain it. Existing certificates and trust stores are untouched. Operators must explicitly replace affected browser leaves and establish trust in the owner-verified public CA for both Web and identity-provider origins; see [browser trust setup](docs/service.md#trust-the-public-local-ca).
 
 - Source builds and the shipped operating images require Node 26.10.0; npm remains 11.19.1. Frontend, engineering and Python tooling dependencies, including uv 0.12.23, are refreshed to their current stable releases. The synthetic OIDC provider uses Keycloak 26.8.0 with an explicit custom API audience, and published-process coverage uses Coverlet console 10.1.0, matching the native testing-platform collector. Before upgrading an existing local Keycloak realm, change its CLI and service API audience mappers to Included Custom Audience; startup import does not update a persisted realm.
 

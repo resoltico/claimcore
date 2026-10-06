@@ -1,4 +1,10 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "project": ["src/**/*.{ts,tsx}", "tests/**/*.{ts,tsx}", "e2e/**/*.{ts,tsx}", "scripts/**/*.mjs"]
+  "project": [
+    "src/**/*.{ts,tsx}",
+    "tests/**/*.{ts,tsx}",
+    "e2e/**/*.{ts,tsx,mjs}",
+    "scripts/**/*.mjs"
+  ],
+  "entry": ["e2e/cli-pkce-driver.mjs", "e2e/browser-trust-driver.mjs"]
 }

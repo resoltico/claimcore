@@ -31,7 +31,7 @@ const submitFailureCategory = (outcome: SubmitOutcome): string => {
 };
 
 const submitReview = async (page: Page): Promise<void> => {
-  const confirmed = page.getByRole("checkbox", { name: /submit this exact prepared request/u });
+  const confirmed = page.getByRole("checkbox", { name: "I confirm these changes.", exact: true });
   await progress("confirm-click-start");
   if ((await confirmed.count()) !== 1) {
     throw new Error("E2E_REVIEW_CHECKBOX_CARDINALITY");
@@ -134,7 +134,7 @@ const submit = async (page: Page): Promise<void> => {
 
 export const keepForRecovery = async (page: Page): Promise<void> => {
   await page.getByRole("button", { name: "Back to editing; keep for Recovery" }).click();
-  await page.getByRole("button", { name: "Back to cases" }).click();
+  await page.getByRole("button", { name: "Back to case" }).click();
   await expect(page.getByRole("heading", { name: "Case detail" })).toBeVisible();
 };
 
@@ -169,7 +169,7 @@ export const droppedSubmission = async (page: Page): Promise<PreparedIdentity> =
     committed = response.status() === 200;
     await route.abort("connectionfailed");
   });
-  const confirmed = page.getByRole("checkbox", { name: /submit this exact prepared request/u });
+  const confirmed = page.getByRole("checkbox", { name: "I confirm these changes.", exact: true });
   await progress("drop-confirm-click-start");
   await page.getByText("I confirm these changes.", { exact: true }).click();
   await progress("drop-confirm-clicked");

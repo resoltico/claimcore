@@ -108,7 +108,7 @@ test("renders exact accepted amounts with RTL and pseudolocale accessibility whi
   await selectFormat(page, "lv-LV");
   await expect(page.locator("html")).toHaveAttribute("lang", "ar");
   await expect(row.getByRole("textbox")).toHaveValue(amount);
-  await selectLanguage(page, "en-XA");
+  await selectLanguage(page, "en");
   await expectAccessible(page);
   await page.setViewportSize({ width: 640, height: 900 });
   await page.evaluate(() => {

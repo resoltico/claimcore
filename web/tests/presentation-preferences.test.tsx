@@ -103,7 +103,8 @@ it("switches language and display formats without remounting children or rewriti
   expect(input).toHaveValue("2026-02-30 / 1.0000");
   expect(format).toHaveValue("lv-LV");
   expect(language).toHaveFocus();
-  await user.selectOptions(language, "en-XA");
+  expect(language.querySelector('option[value="en-XA"]')).toBeNull();
+  await user.selectOptions(language, "en");
   expect(document.documentElement).toHaveAttribute("lang", "en");
   expect(document.documentElement).toHaveAttribute("dir", "ltr");
   expect(mount).toHaveBeenCalledOnce();

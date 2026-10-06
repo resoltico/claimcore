@@ -125,7 +125,7 @@ module FieldDefinitions =
                 "claimedCurrency"
                 "ClaimedCurrency"
                 "Currency of claimed amount"
-                "Currency in which the amount is claimed. Use three uppercase letters, for example EUR."
+                "Currency in which the amount is claimed. Use three uppercase ASCII letters (A–Z), for example EUR."
                 currency
                 false
         ]

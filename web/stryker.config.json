@@ -4,7 +4,10 @@
     "src/domain/metadata.ts",
     "src/domain/operationInitial.ts",
     "src/domain/operationReducer.ts",
-    "src/domain/operationRequest.ts"
+    "src/domain/operationRequest.ts",
+    "src/presentation/preferences.ts",
+    "src/presentation/presenter.ts",
+    "src/presentation/messages.ts"
   ],
   "testRunner": "vitest",
   "vitest": {

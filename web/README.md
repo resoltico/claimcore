@@ -29,7 +29,7 @@ that no built-in rule expresses live in `lint/claimcore-plugin.mjs`. Every lint,
 coverage exception is registered in [`config/lint-exceptions.json`](../config/lint-exceptions.json).
 Composite project references retain incremental
 state in ignored files, and Vitest uses isolated, machine-scaled file workers. The locked StrykerJS
-gate (its sandbox tsconfig rewrite is disabled because it needs a compiler API TypeScript 7 does not ship; Vitest needs no tsconfig) mutates the four pure operation modules (metadata, initial state, request freezing and the reducer) and checks a 92% minimum against exact-source
+gate (its sandbox tsconfig rewrite is disabled because it needs a compiler API TypeScript 7 does not ship; Vitest needs no tsconfig) mutates the four operation modules (metadata, initial state, request freezing and the reducer), preference parsing/transitions, descriptor/identity presentation, and typed ICU message rendering and checks a 92% minimum against exact-source
 local evidence; it is not F# or PostgreSQL mutation coverage.
 
 [`package.json`](package.json) defines the individual npm scripts. Their canonical ordered use,
