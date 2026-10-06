@@ -29,7 +29,7 @@ is read from its owning file; the tool table below is generated.
 | actionlint | 1.7.12 | darwin-arm64, darwin-x64, linux-arm64, linux-x64, win32-x64 |
 | gitleaks | 8.30.1 | darwin-arm64, darwin-x64, linux-arm64, linux-x64, win32-arm64, win32-x64 |
 | shfmt | 3.14.1 | darwin-arm64, darwin-x64, linux-arm64, linux-x64, win32-x64 |
-| uv | 0.12.21 | darwin-arm64, darwin-x64, linux-arm64, linux-x64, win32-x64 |
+| uv | 0.12.23 | darwin-arm64, darwin-x64, linux-arm64, linux-x64, win32-x64 |
 <!-- generated:end pinned-tools -->
 
 Run commands from the repository root. Use only synthetic data and isolated test databases.
