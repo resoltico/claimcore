@@ -36,6 +36,13 @@ Run commands from the repository root. Use only synthetic data and isolated test
 
 ## First checkout
 
+After selecting the pinned Node release, install the pinned npm release; Node's bundled npm
+can differ. CI and Docker perform this same step before locked restores:
+
+```sh
+npm install --global --ignore-scripts "npm@$(node -p 'require("./web/package.json").engines.npm')"
+```
+
 ```text
 node eng/ci/setup.mjs
 ```
