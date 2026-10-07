@@ -71,7 +71,7 @@ it("renders an exact accepted Prepare replay as a definite receipt", async () =>
   );
   renderEditor(committed);
   await user.click(screen.getByRole("button", { name: "Review changes" }));
-  expect(await screen.findByRole("heading", { name: /^Accepted operation$/u })).toBeVisible();
+  expect(await screen.findByRole("heading", { name: /^Recorded change$/u })).toBeVisible();
   expect(screen.queryByRole("dialog", { name: "Review changes" })).toBeNull();
   await user.click(screen.getByRole("button", { name: "Return to case" }));
   expect(committed).toHaveBeenCalledOnce();

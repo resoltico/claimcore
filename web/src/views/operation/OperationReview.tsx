@@ -70,15 +70,6 @@ const ReviewActions = ({ model }: { model: OperationEditorModel }) => {
   return (
     <div className="dialog-actions">
       <Button
-        className="secondary-button"
-        onPress={() => {
-          model.dispatch({ type: "KEEP_FOR_RECOVERY" });
-        }}
-        isDisabled={model.state.delivery === "SUBMITTING"}
-      >
-        {p.text("ui.keepForRecovery")}
-      </Button>
-      <Button
         onPress={() => void model.submit()}
         isDisabled={!model.confirmed || model.state.delivery === "SUBMITTING"}
       >
@@ -124,6 +115,7 @@ export const OperationReview = ({
   }
   return (
     <AccessibleModal
+      closeLabel={p.text("ui.keepForRecovery")}
       title={p.text("ui.reviewTitle")}
       description={p.text("ui.reviewDescription")}
       isOpen={model.state.delivery === "REVIEWING" || model.state.delivery === "SUBMITTING"}

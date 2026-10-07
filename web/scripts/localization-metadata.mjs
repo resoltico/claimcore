@@ -1,10 +1,6 @@
-/** Preserve descriptor literals when exporting them to ICU message text. @param {string} text */
-export const icuLiteral = (text) =>
-  text.replaceAll("'", "''").replace(/[{}]+/gu, (braces) => `'${braces}'`);
-
-/** @param {import("./tooling-types.mjs").JsonRecord} semantic @returns {Record<string, string>} */
+/** @param {import("./tooling-types.mjs").JsonRecord} semantic @returns {Record<string, import("./localization-policy.mjs").Message> } */
 export const businessMessages = (semantic) => {
-  /** @type {Record<string, string>} */
+  /** @type {Record<string, import("./localization-policy.mjs").Message> } */
   const result = {};
   /** @param {string} owner @param {string} name @param {{label: string, meaning: string}} descriptor */
   const add = (owner, name, descriptor) => {
@@ -13,7 +9,7 @@ export const businessMessages = (semantic) => {
       if (Object.hasOwn(result, key)) {
         throw new Error("Duplicate business presentation identity.");
       }
-      result[key] = icuLiteral(descriptor[part]);
+      result[key] = [{ literal: descriptor[part] }];
     }
   };
   for (const field of semantic["fields"]) {

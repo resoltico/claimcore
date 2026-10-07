@@ -35,6 +35,7 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0@sha256:222759b391a1aaf241166672c8f99b2
 WORKDIR /app
 COPY --from=publication /published/database/ ./database/
 COPY --from=publication /published/cli/ ./cli/
+COPY --from=publication /published/manifests/ /app/publication-manifests/
 COPY deployment/initialize-local.sh /app/initialize-local.sh
 USER $APP_UID
 ENTRYPOINT ["dotnet", "/app/database/ClaimCore.Database.dll"]
@@ -60,3 +61,36 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/opt/claimcore-browsers
 COPY web/e2e/browser-trust-*.mjs ./web/e2e/
 USER node
 ENTRYPOINT ["node", "/source/web/e2e/browser-trust-driver.mjs"]
+
+# Fresh SDK client filesystems run an engineering probe against exact publication assemblies.
+FROM sdk AS transport-qualification
+WORKDIR /app
+COPY --from=publication /published/database/ ./database/
+COPY --from=publication /published/manifests/database.json ./database-manifest.json
+COPY eng/ci/deployment/transport-probe.fsx ./transport-probe.fsx
+ENV DOTNET_CLI_TELEMETRY_OPTOUT=1
+ENV DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
+ENV DOTNET_NOLOGO=1
+ENTRYPOINT ["dotnet", "fsi", "--exec", "/app/transport-probe.fsx"]
+
+# A source mutation in an owned build must reach the same healthy connection experiment.
+FROM node AS transport-mutant-build
+COPY --from=sdk /usr/share/dotnet /usr/share/dotnet
+ENV DOTNET_ROOT=/usr/share/dotnet
+ENV PATH="/usr/share/dotnet:${PATH}"
+WORKDIR /mutation
+COPY . .
+COPY --from=publication /published/database/ /mutant/database/
+COPY --from=publication /published/manifests/database.json /mutant/manifests/database.json
+RUN --mount=type=cache,target=/root/.nuget/packages --mount=type=cache,target=/root/.npm \
+    npm install --global "npm@$(node -p 'require("./eng/package.json").engines.npm')" \
+    && npm --prefix eng ci \
+    && node eng/ci/deployment/transport-mutant.mjs
+
+FROM transport-qualification AS transport-negative-control
+COPY --from=transport-mutant-build /mutant/database/ /app/database/
+COPY --from=transport-mutant-build /mutant/manifests/database.json /app/database-manifest.json
+
+# Export one Linux publication for local qualification; all clients consume this exact tree.
+FROM scratch AS publication-export
+COPY --from=build /published/ /published/

@@ -39,3 +39,6 @@ web/src/generated/contracts
 **/*.password
 **/.env
 **/.env.*
+
+# Verification output and mutation sandboxes never belong to a source build.
+web/artifacts

@@ -89,7 +89,7 @@ it("renders observed recovery details and leaves only permitted server actions e
   expect(screen.queryByRole("button", { name: "Resolve exact preparation" })).toBeNull();
   expect(screen.queryByRole("button", { name: "Dismiss preparation" })).toBeNull();
   await user.click(screen.getByRole("button", { name: "Export recovery envelope" }));
-  await user.click(screen.getByRole("button", { name: "Cancel" }));
+  await user.click(screen.getByRole("button", { name: "Close inspection" }));
   expect(action.choose).not.toHaveBeenCalled();
   expect(action.exportItem).toHaveBeenCalledWith(acceptedSummary);
   expect(close).toHaveBeenCalledOnce();
@@ -107,7 +107,7 @@ it("keeps recovery confirm dialog accessible before dispatch", async () => {
       actions={action}
     />,
   );
-  await user.click(screen.getByRole("button", { name: "Confirm resolve" }));
+  await user.click(screen.getByRole("button", { name: "Try to record this exact request" }));
   await user.click(screen.getByRole("button", { name: "Cancel" }));
   expect(action.act).toHaveBeenCalledOnce();
   expect(closeConfirm).toHaveBeenCalledOnce();

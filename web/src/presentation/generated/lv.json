@@ -703,11 +703,11 @@
   "ui.openNewCase": [{ "type": 0, "value": "Atvērt jaunu lietu" }],
   "ui.loadingCases": [{ "type": 0, "value": "Ielādē lietas…" }],
   "ui.moreCases": [{ "type": 0, "value": "Ielādēt vēl lietas" }],
-  "ui.acceptedHistory": [{ "type": 0, "value": "Pieņemtā vēsture" }],
+  "ui.acceptedHistory": [{ "type": 0, "value": "Lietas vēsture" }],
   "ui.historyHint": [
     {
       "type": 0,
-      "value": "Vēstures ieraksti ir tikai lasāmi. Izvērsiet ierakstu, lai skatītu pieņemto stāvokli un tā autoru."
+      "value": "Vēstures ieraksti ir tikai lasāmi. Izvērsiet ierakstu, lai skatītu reģistrētās lietas ziņas un to autoru."
     }
   ],
   "ui.historySummary": [
@@ -731,9 +731,9 @@
     { "type": 0, "value": "vēstures operācija " },
     { "type": 1, "value": "operationId" }
   ],
-  "ui.loadingHistory": [{ "type": 0, "value": "Ielādē pieņemto vēsturi…" }],
+  "ui.loadingHistory": [{ "type": 0, "value": "Ielādē lietas vēsturi…" }],
   "ui.moreHistory": [{ "type": 0, "value": "Ielādēt vēl vēsturi" }],
-  "ui.availableCommands": [{ "type": 0, "value": "Pieejamās komandas" }],
+  "ui.availableCommands": [{ "type": 0, "value": "Pieejamās darbības" }],
   "ui.commandDescription": [
     { "type": 1, "value": "label" },
     { "type": 0, "value": ": " },
@@ -821,7 +821,7 @@
     { "type": 0, "value": "Lietas lauki: " },
     { "type": 1, "value": "context" }
   ],
-  "ui.acceptedSummary": [{ "type": 0, "value": "pieņemtais lietas kopsavilkums" }],
+  "ui.acceptedSummary": [{ "type": 0, "value": "reģistrētais lietas kopsavilkums" }],
   "ui.copy": [
     { "type": 0, "value": "Kopēt: " },
     { "type": 1, "value": "label" }
@@ -873,14 +873,14 @@
     { "type": 0, "value": "Darbības maiņa atmet šos melnraksta datus un sāk citu pieprasījumu." }
   ],
   "ui.discardAndChange": [{ "type": 0, "value": "Atmest un mainīt darbību" }],
-  "ui.acceptedOperation": [{ "type": 0, "value": "Pieņemtā operācija" }],
+  "ui.acceptedOperation": [{ "type": 0, "value": "Reģistrētā izmaiņa" }],
   "ui.operationAccepted": [
     { "type": 0, "value": "Operācija " },
     { "type": 1, "value": "operationId" },
     { "type": 0, "value": " ir pieņemta." }
   ],
   "ui.acceptedContext": [
-    { "type": 0, "value": "pieņemtā operācija " },
+    { "type": 0, "value": "reģistrētā operācija " },
     { "type": 1, "value": "operationId" }
   ],
   "ui.returnToCase": [{ "type": 0, "value": "Atgriezties lietā" }],
@@ -1048,23 +1048,19 @@
     { "type": 0, "value": "." }
   ],
   "ui.exportTitle": [{ "type": 0, "value": "Eksportēt atkopšanas aploksni?" }],
-  "ui.resolveTitle": [{ "type": 0, "value": "Atrisināt precīzo sagatavi?" }],
-  "ui.dismissTitle": [{ "type": 0, "value": "Atmest sagatavi?" }],
+  "ui.resolveTitle": [{ "type": 0, "value": "Mēģināt reģistrēt pārskatīto pieprasījumu?" }],
+  "ui.dismissTitle": [
+    { "type": 0, "value": "Neatgriezeniski izbeigt pieprasījuma turpmākās pilnvaras?" }
+  ],
   "ui.exportWarning": [
     {
       "type": 0,
       "value": "Fails satur prasītāja datus un atkopšanas baitus. Saglabājiet to tikai privātā krātuvē."
     }
   ],
-  "ui.recoveryConfirmHint": [
-    {
-      "type": 0,
-      "value": "Darbība izmanto parādīto operācijas ID un pieprasījuma kontrolsummu. Noteicošs paliek serveris."
-    }
-  ],
   "ui.working": [{ "type": 0, "value": "Apstrādā…" }],
-  "ui.confirmResolve": [{ "type": 0, "value": "Apstiprināt atrisināšanu" }],
-  "ui.confirmDismiss": [{ "type": 0, "value": "Apstiprināt atmešanu" }],
+  "ui.confirmResolve": [{ "type": 0, "value": "Mēģināt reģistrēt šo precīzo pieprasījumu" }],
+  "ui.confirmDismiss": [{ "type": 0, "value": "Neatgriezeniski izbeigt turpmākās pilnvaras" }],
   "ui.confirmExport": [{ "type": 0, "value": "Apstiprināt eksportu" }],
   "ui.artifact": [
     { "type": 0, "value": "Artefakts " },
@@ -1097,5 +1093,24 @@
   "ui.retainForRecovery": [{ "type": 0, "value": "Saglabāt atkopšanai" }],
   "ui.keepEditing": [{ "type": 0, "value": "Turpināt rediģēšanu" }],
   "ui.backToCase": [{ "type": 0, "value": "Atpakaļ uz lietu" }],
-  "ui.registerLabel": [{ "type": 0, "value": "ClaimCore atlīdzību lietu reģistrs" }]
+  "ui.registerLabel": [{ "type": 0, "value": "ClaimCore atlīdzību lietu reģistrs" }],
+  "ui.close": [{ "type": 0, "value": "Aizvērt apskati" }],
+  "ui.resolveConsequence": [
+    {
+      "type": 0,
+      "value": "Serverim tiek lūgts atrisināt pieprasījumu ar parādīto operācijas ID un kontrolsummu. Tas var reģistrēt pārskatīto pieprasījumu, ja tas vēl ir atļauts, vai atgriezt pierādījumus par iepriekš reģistrētu rezultātu. Notikušo nosaka atgrieztais iznākums; šis apstiprinājums negarantē sekmes."
+    }
+  ],
+  "ui.dismissConsequence": [
+    {
+      "type": 0,
+      "value": "Serverim tiek lūgts neatgriezeniski atmest pieprasījumu ar parādīto operācijas ID un kontrolsummu. Apstiprināta atmešana pastāvīgi liedz šā vēl nepieņemtā pieprasījuma turpmāku izpildi. To nevar atsaukt, un tā nenosaka, vai agrāks nenoteikts mēģinājums reģistrēja pieprasījumu. Atgrieztais iznākums nosaka, vai atmešana ir apstiprināta."
+    }
+  ],
+  "ui.canonicalCopyHint": [
+    {
+      "type": 0,
+      "value": "Kopē precīzo vērtību. Datumi ir formātā YYYY-MM-DD, un summās izmanto decimālo punktu neatkarīgi no attēlošanas formāta."
+    }
+  ]
 }

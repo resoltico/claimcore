@@ -1,7 +1,41 @@
 import { expect, test, type Page } from "@playwright/test";
-import { openAuthenticated } from "./session-helpers";
+import { openApplication, openAuthenticated } from "./session-helpers";
 import { selectLanguage, trackRequests, ui, seedPresentation } from "./localization-support";
 import { displayLocales, languages, preferenceKey } from "../src/presentation/preferences";
+import { webV3Endpoints } from "../src/generated/contracts/web-v3.endpoint-catalog";
+import { isWebV3Response } from "../src/generated/contracts/web-v3.validation";
+import type { WebV3Response } from "../src/generated/contracts/web-v3.types";
+import type { Language } from "../src/presentation/preferences";
+
+const openPairPage = async (page: Page, source: Language, authenticated: boolean) => {
+  if (!authenticated) {
+    await openApplication(page, "ClaimCore");
+    return;
+  }
+  const endpoint = webV3Endpoints.find((entry) => entry.id === "case.list");
+  if (endpoint === undefined) {
+    throw new Error("E2E_CASE_LIST_ENDPOINT_MISSING");
+  }
+  const initialList = page
+    .waitForResponse(
+      (reply) =>
+        new URL(reply.url()).pathname === endpoint.path &&
+        reply.request().method() === endpoint.method,
+    )
+    .then(async (reply) => {
+      expect(reply.status()).toBe(200);
+      const payload: unknown = await reply.json();
+      expect(await isWebV3Response("case.list", payload)).toBe(true);
+      expect((payload as WebV3Response<"case.list">).outcome.tag).toBe("SUCCEEDED");
+    });
+  await Promise.all([
+    initialList,
+    openAuthenticated(page, source === "en-XA" ? "⟦Cààsëës⟧" : ui(source, "ui.cases")),
+  ]);
+  const list = page.locator('section[aria-labelledby="case-list-title"]');
+  await expect(list.locator(':scope > p[role="status"]')).toHaveCount(0);
+  await expect(list.locator(':scope > p[role="alert"]')).toHaveCount(0);
+};
 
 const visibleLanguage = async (
   page: Page,
@@ -40,18 +74,7 @@ for (const authenticated of [false, true]) {
           page,
         }) => {
           await seedPresentation(page, source, displayLocale);
-          if (authenticated) {
-            await openAuthenticated(
-              page,
-              source === "en-XA" ? "⟦Cààsëës⟧" : ui(source, "ui.cases"),
-            );
-            await expect(
-              page.locator('section[aria-labelledby="case-list-title"] > p[role="status"]'),
-            ).toHaveCount(0);
-          } else {
-            await page.goto("/", { waitUntil: "domcontentloaded" });
-            await expect(page.getByRole("heading", { name: "ClaimCore" })).toBeVisible();
-          }
+          await openPairPage(page, source, authenticated);
           const requests = trackRequests(page);
           await selectLanguage(page, target);
           await visibleLanguage(page, target, authenticated);

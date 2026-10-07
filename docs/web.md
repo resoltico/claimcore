@@ -116,7 +116,7 @@ Changing either preference does not submit a command or clear a draft, prepared 
 recovery identity. Preference events update one choice against current state, including rapid alternating events. Preferences are stored locally in the browser when storage is available; they do
 not change the installation's business time zone or recorded currency. Each tab loads preferences when opened; cross-tab synchronization is not provided. Displayed dates and accepted
 amounts follow the selected format, but authored dates and amounts retain their canonical input
-syntax. Copied canonical values and downloaded recovery artifacts remain exact. Read-only business values use directional isolation and code-point warnings for suspicious characters; review, recovery and import target summaries provide the same protection for exact case references. Warning and presentation markers never enter canonical requests or exports.
+syntax. Copied canonical values and downloaded recovery artifacts remain exact. Read-only business values use directional isolation and code-point warnings for suspicious characters; review, recovery and import target summaries provide the same protection for exact case references. List, detail, history, receipt and lookup references use the same display boundary, including an entered target that was not found. Before/after words stay outside the isolated value. Clipboard fallback exposes warnings while retaining the exact attempted text. Warning and presentation markers never enter canonical requests or exports.
 
 The case detail reads disposition and privacy status through the authorized lifecycle review. It
 shows active holds as a separate erasure blocker and warns when a data-entry-error void requires
@@ -249,7 +249,7 @@ view for accepted and revoked technical material. Detailed inspection pages iden
 an opaque operation-bound cursor; unset settlements remain uncertain even after a later accepted retry. A
 pruned revoked preparation is a payload-free tombstone, not a substitute for claimant data. The UI
 can resolve or dismiss only after accessible confirmation using the exact operation ID and digest.
-An accepted receipt is not offered as a new resolve action; an exact replay can observe it without a
+Resolve confirmation explains that the exact reviewed request may be recorded or an earlier result observed; the returned outcome determines what happened. Dismissal confirmation explains that confirmed future-authority revocation is permanent and does not settle an earlier uncertain attempt. Closing either unsent confirmation cancels only that confirmation. Closing a prepared review returns to editing and keeps its server preparation for Recovery; Escape and outside-click have that same effect when dismissal is permitted. Running submissions cannot be dismissed. An accepted receipt is not offered as a new resolve action; an exact replay can observe it without a
 second accepted revision. Reload clears browser review state; durable recovery is the Application
 workflow, not browser state.
 

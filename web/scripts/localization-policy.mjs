@@ -1,6 +1,8 @@
 import { parse, TYPE } from "@formatjs/icu-messageformat-parser";
 import { parseDocument } from "yaml";
 
+/** @typedef {string | ({literal: string} | {hole: string})[]} Message */
+
 /** @param {string} source @returns {Record<string, string>} */
 export const readCatalog = (source) => {
   const parsed = parseDocument(source, { schema: "json", uniqueKeys: true });
@@ -13,7 +15,7 @@ export const readCatalog = (source) => {
   }
   return value;
 };
-/** @param {Record<string, string>} catalog @param {Record<string, string>} entries @param {string} domain */
+/** @param {Record<string, Message>} catalog @param {Record<string, Message>} entries @param {string} domain */
 export const addDomain = (catalog, entries, domain) => {
   for (const [key, value] of Object.entries(entries)) {
     if (!key.startsWith(`${domain}.`) || Object.hasOwn(catalog, key)) {
@@ -83,12 +85,42 @@ const inspectNodes = (nodes, language, args, selectors) => {
     }
   }
 };
-/** @param {string | undefined} message @param {string} language */
-export const messageShape = (message, language) => {
-  if (typeof message !== "string" || message.trim() === "" || message.length > 8000) {
+/** @param {string} message */
+const parseCatalogText = (message) => {
+  if (message.trim() === "" || message.length > 8000) {
     throw new Error("Invalid catalog text.");
   }
-  const ast = parse(message, { requiresOtherClause: true });
+  return parse(message, { requiresOtherClause: true });
+};
+/** @param {Exclude<Message, string> | undefined} parts @returns {import("@formatjs/icu-messageformat-parser").MessageFormatElement[]} */
+const literalParts = (parts) => {
+  if (!Array.isArray(parts) || parts.length === 0 || parts.length > 8000) {
+    throw new Error("Invalid presentation parts.");
+  }
+  let length = 0;
+  const ast = parts.map(
+    /** @returns {import("@formatjs/icu-messageformat-parser").LiteralElement | import("@formatjs/icu-messageformat-parser").ArgumentElement} */
+    (part) => {
+      if (!part || typeof part !== "object" || Object.keys(part).length !== 1) {
+        throw new Error("Invalid presentation part.");
+      }
+      const literal = "literal" in part;
+      const value = literal ? part.literal : part.hole;
+      if (typeof value !== "string") {
+        throw new Error("Invalid presentation part value.");
+      }
+      length += value.length + (literal ? 0 : 2);
+      return literal ? { type: TYPE.literal, value } : { type: TYPE.argument, value };
+    },
+  );
+  if (length === 0 || length > 8000 || ast.every((node) => node.value.trim() === "")) {
+    throw new Error("Invalid complete presentation message.");
+  }
+  return ast;
+};
+/** @param {Message | undefined} message @param {string} language */
+export const messageShape = (message, language) => {
+  const ast = typeof message === "string" ? parseCatalogText(message) : literalParts(message);
   /** @type {Record<string, string>} */
   const args = {};
   /** @type {unknown[]} */
@@ -100,7 +132,7 @@ export const messageShape = (message, language) => {
     selectors: [...new Set(selectors.map((value) => JSON.stringify(value)))].sort(),
   };
 };
-/** @param {Record<string, string>} source @param {Record<string, string>} translated @param {string} language */
+/** @param {Record<string, Message>} source @param {Record<string, Message>} translated @param {string} language */
 export const validateCatalog = (source, translated, language) => {
   if (
     JSON.stringify(Object.keys(source).sort()) !== JSON.stringify(Object.keys(translated).sort())
@@ -196,7 +228,7 @@ export const diagnosticRequirements = (semantic, hostSchema) => {
   visit(hostSchema);
   return result;
 };
-/** @param {string | undefined} message @param {Record<string, unknown>} args @param {string} id */
+/** @param {Message | undefined} message @param {Record<string, unknown>} args @param {string} id */
 const assertDiagnosticShape = (message, args, id) => {
   const actual = messageShape(message, "en").args;
   if (
@@ -207,7 +239,7 @@ const assertDiagnosticShape = (message, args, id) => {
     throw new Error(`Diagnostic parameters differ: ${id}`);
   }
 };
-/** @param {Record<string, string>} catalog @param {import("./tooling-types.mjs").JsonRecord} semantic @param {Record<string, Record<string, unknown>>} requirements */
+/** @param {Record<string, Message>} catalog @param {import("./tooling-types.mjs").JsonRecord} semantic @param {Record<string, Record<string, unknown>>} requirements */
 export const validateCoverage = (catalog, semantic, requirements) => {
   /** @type {string[]} */
   const keys = [];

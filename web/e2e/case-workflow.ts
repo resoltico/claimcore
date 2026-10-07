@@ -67,9 +67,7 @@ const submitReview = async (page: Page): Promise<void> => {
   ) {
     throw new Error(`E2E_SUBMIT_${submitFailureCategory(outcome)}`);
   }
-  await expect(
-    page.getByRole("heading", { name: "Accepted operation", exact: true }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Recorded change", exact: true })).toBeVisible();
   await expect(page.locator("section.receipt section.case-fields dl > div")).toHaveCount(13);
   await progress("accepted-receipt");
 };

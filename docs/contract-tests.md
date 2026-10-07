@@ -634,17 +634,23 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime scheduling and shutdown.[CC-RUN-001] shutdown stops audit before draining admitted actor work |
 | CC-WEB-001 | unit | ClaimCore deterministic suite.CLI TLS trust.[CC-WEB-001] issuer TLS leaf requires server purpose |
 | CC-WEB-001 | unit | ClaimCore deterministic suite.CLI TLS trust.[CC-WEB-001] private TLS root validity has exact boundaries |
-| CC-WEB-001 | unit | ClaimCore deterministic suite.typed rejection diagnostics.build-only ICU export escapes literal syntax [CC-WEB-001] |
+| CC-WEB-001 | unit | ClaimCore deterministic suite.build-only presentation projection.exports every diagnostic as literal and declared hole parts [CC-WEB-001] |
+| CC-WEB-001 | unit | ClaimCore deterministic suite.build-only presentation projection.exports serialized lossless literals across syntax interactions [CC-WEB-001] |
 | CC-WEB-001 | vitest | isolates technical revision holes in Arabic reference summaries and preserves literal word order [CC-WEB-001] |
 | CC-WEB-001 | vitest | labels grouped recovery targets in ar while keeping exact authored values [CC-WEB-001] |
 | CC-WEB-001 | vitest | labels grouped recovery targets in en while keeping exact authored values [CC-WEB-001] |
 | CC-WEB-001 | vitest | labels grouped recovery targets in lv while keeping exact authored values [CC-WEB-001] |
 | CC-WEB-001 | vitest | matches every native English diagnostic literal under default presentation [CC-WEB-001] |
 | CC-WEB-001 | vitest | preserves canonical values and frozen request identity over 500 seeded display vectors [CC-WEB-001] |
+| CC-WEB-001 | vitest | protects ordinary list, detail, history and absent lookup references in ar [CC-WEB-001] |
+| CC-WEB-001 | vitest | protects ordinary list, detail, history and absent lookup references in en [CC-WEB-001] |
+| CC-WEB-001 | vitest | protects ordinary list, detail, history and absent lookup references in en-XA [CC-WEB-001] |
+| CC-WEB-001 | vitest | protects ordinary list, detail, history and absent lookup references in lv [CC-WEB-001] |
 | CC-WEB-001 | vitest | refuses reference message parts with missing, wrong-role or foreign holes [CC-WEB-001] |
 | CC-WEB-001 | vitest | renders an empty attempt page as zero attempts rather than an unknown diagnostic [CC-WEB-001] |
 | CC-WEB-001 | vitest | warns and isolates exact references at review and recovery decisions in ar [CC-WEB-001] |
 | CC-WEB-001 | vitest | warns and isolates exact references at review and recovery decisions in en [CC-WEB-001] |
+| CC-WEB-001 | vitest | warns and isolates exact references at review and recovery decisions in en-XA [CC-WEB-001] |
 | CC-WEB-001 | vitest | warns and isolates exact references at review and recovery decisions in lv [CC-WEB-001] |
 | CC-WEB-001 | web | ClaimCore.Web.HTTPS probe transport.[CC-WEB-001] probe refuses mismatched names and untrusted roots |
 | CC-WEB-001 | web | ClaimCore.Web.HTTPS probe transport.[CC-WEB-001] probe retains TLS and HTTP public identity at a distinct socket |

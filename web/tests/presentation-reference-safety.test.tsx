@@ -100,7 +100,7 @@ const checkRecovery = () => {
   expect(retained.summary.caseReference).toBe(reference);
 };
 
-it.each(["en", "lv", "ar"] as const)(
+it.each(["en", "lv", "ar", "en-XA"] as const)(
   "warns and isolates exact references at review and recovery decisions in %s [CC-WEB-001]",
   async (language) => {
     localStorage.setItem(

@@ -20,6 +20,36 @@ services:
         bind:
           create_host_path: false
     restart: no
+  transport-qualification:
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile
+      target: transport-qualification
+    image: claimcore-transport-qualification:source
+    profiles: [qualification]
+    user: ${CLAIMCORE_SERVICE_UID:?}:${CLAIMCORE_SERVICE_GID:?}
+    environment:
+      HOME: /cache
+    tmpfs:
+      - /cache:rw,uid=${CLAIMCORE_SERVICE_UID},gid=${CLAIMCORE_SERVICE_GID},mode=700
+      - /tmp:rw,mode=1777
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    volumes:
+      - type: volume
+        source: configuration
+        target: /etc/claimcore/administration
+        read_only: true
+        volume:
+          nocopy: true
+          subpath: installation/administration
+  transport-negative-control:
+    extends:
+      service: transport-qualification
+    build:
+      target: transport-negative-control
+    image: claimcore-transport-negative-control:source
   revocation:
     build:
       context: ..

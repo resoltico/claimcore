@@ -66,6 +66,7 @@
     <Compile Include="EndpointExtensionTests.fs" />
     <Compile Include="SemanticIdentityTests.fs" />
     <Compile Include="RejectionDiagnosticTests.fs" />
+    <Compile Include="PresentationProjectionTests.fs" />
     <Compile Include="RejectionEmissionTests.fs" />
     <Compile Include="FaultDiagnosticExamples.fs" />
     <Compile Include="RecoveryDiagnosticExamples.fs" />

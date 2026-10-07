@@ -1,17 +1,20 @@
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
-import { chmodSync, cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { resolve, join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { verifyPublished } from "../publish/main.mjs";
+import { publicationContext } from "./publication-context.mjs";
 import { runner } from "./commands.mjs";
 import { probe } from "./http.mjs";
 import { databaseChecks } from "./database.mjs";
 import { contextChecks } from "./context.mjs";
 import { browserTrustQualification } from "./browser-trust-qualification.mjs";
+import { revocationQualification } from "./revocation-qualification.mjs";
+import { evidenceIdentity, verifyDeploymentReport } from "./report.mjs";
 import { lifecycleChecks } from "./lifecycle.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
+const identity = evidenceIdentity(root);
 const run = `claimcore-operating-${randomBytes(8).toString("hex")}`;
 const state = join(root, "artifacts", run);
 const configuration = join(state, "configuration");
@@ -32,20 +35,18 @@ const env = {
   CLAIMCORE_HOST_PORT: "0",
   CLAIMCORE_IDENTITY_HOST_PORT: "0",
 };
-const publication = process.env.CLAIMCORE_PUBLISHED_DIR;
-if (publication !== undefined) {
-  verifyPublished(publication);
-  const context = join(state, "publication-context");
-  mkdirSync(context);
-  cpSync(publication, join(context, "published"), { recursive: true });
-  env.CLAIMCORE_PUBLISHED_CONTEXT = context;
-}
-const { docker, compose } = runner(root, join(state, "commands.log"), env);
+const log = join(state, "commands.log");
+const { docker } = runner(root, log, env);
+let { compose } = runner(root, log, env);
 
 let passed = false;
 let browserTrust;
+let databaseRevocation;
+let publications;
 try {
   contextChecks(root, state, docker);
+  env.CLAIMCORE_PUBLISHED_CONTEXT = publicationContext(docker, state, env.CLAIMCORE_PUBLISHED_DIR);
+  ({ compose } = runner(root, log, env));
   compose(["build", "web", "administration", "configure", "revocation"]);
   compose([
     "run",
@@ -58,10 +59,25 @@ try {
     String(gid),
     "Etc/UTC",
   ]);
-  compose(["up", "--detach", "--wait", "primary", "witness", "identity"]);
-  compose(["run", "--rm", "--no-deps", "administration", "verify"], 3);
-  compose(["up", "--detach", "--wait", "revocation"]);
+  compose(["up", "--detach", "--wait", "primary", "witness", "identity", "revocation"]);
   compose(["run", "--rm", "initialize"]);
+  publications = Object.fromEntries(
+    ["web", "database"].map((product) => {
+      const manifest = JSON.parse(
+        compose([
+          "run",
+          "--rm",
+          "--no-deps",
+          "--entrypoint",
+          "cat",
+          "administration",
+          `/app/publication-manifests/${product}.json`,
+        ]),
+      );
+      return [product, manifest.treeSha256];
+    }),
+  );
+  compose(["run", "--rm", "--no-deps", "administration", "verify"]);
   compose(["up", "--detach", "--wait", "web"]);
   const container = compose(["ps", "--quiet", "web"]).trim();
   const port = Number(compose(["port", "web", "5443"]).trim().split(":").at(-1));
@@ -98,6 +114,7 @@ try {
     "test ! -e /app/ClaimCore.Database.dll && test ! -e /app/initialize-local.sh && test ! -e /etc/claimcore/runtime/../administration && test ! -e /etc/claimcore/runtime/../authority && test ! -e /etc/claimcore/runtime/../identity",
   ]);
   browserTrust = browserTrustQualification(docker, compose, configuration, run);
+  databaseRevocation = revocationQualification(compose);
   const installation = databaseChecks(compose);
   const initialInstallation = installation();
   await lifecycleChecks(compose, docker, configuration);
@@ -155,28 +172,37 @@ try {
   }
 }
 
-writeFileSync(
-  join(state, "result.json"),
-  `${JSON.stringify({
+assert.deepEqual(evidenceIdentity(root), identity, "Qualification source changed while it ran.");
+const report = verifyDeploymentReport(
+  {
+    format: "claimcore-deployment-qualification",
+    formatVersion: 1,
+    identity,
+    publications,
     run,
     result: "passed",
-    liveness: true,
     browserTrust,
-    syntheticReadinessRefused: true,
-    exactHostRefusal: true,
-    tlsNameRefusal: true,
-    nonRoot: true,
-    privateMountSeparation: true,
-    stopAndReplacement: true,
-    startupStop: true,
-    privateInputRefusals: true,
-    runtimeAdministrationRefused: true,
-    missingRevocationRefused: true,
-    installationPreserved: true,
-    privateBuildInputsExcluded: true,
-  })}\n`,
-  { mode: 0o600, flag: "wx" },
+    databaseRevocation,
+    properties: {
+      liveness: true,
+      syntheticReadinessRefused: true,
+      exactHostRefusal: true,
+      tlsNameRefusal: true,
+      nonRoot: true,
+      privateMountSeparation: true,
+      stopAndReplacement: true,
+      startupStop: true,
+      privateInputRefusals: true,
+      runtimeAdministrationRefused: true,
+      installationPreserved: true,
+      privateBuildInputsExcluded: true,
+    },
+  },
+  identity,
 );
+const reportPath = env.CLAIMCORE_DEPLOYMENT_REPORT ?? join(state, "result.json");
+mkdirSync(dirname(reportPath), { recursive: true, mode: 0o700 });
+writeFileSync(reportPath, `${JSON.stringify(report)}\n`, { mode: 0o600, flag: "wx" });
 process.stdout.write(
   "Container operation qualification passed against the real HTTPS deployment.\n",
 );

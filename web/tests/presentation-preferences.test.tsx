@@ -22,6 +22,14 @@ it("resolves explicit language and display-format preferences independently with
   for (const input of [undefined, null, 42, "", "invalid_tag", "x".repeat(65), "de-DE"]) {
     expect(resolveLanguage(input)).toBe("en");
   }
+  expect(parsePreferences('{"version":1,"language":null,"displayLocale":"lv-LV"}')).toEqual({
+    language: "en",
+    displayLocale: "lv-LV",
+  });
+  expect(parsePreferences('{"version":1,"language":"ar","displayLocale":null}')).toEqual({
+    language: "ar",
+    displayLocale: "en-GB",
+  });
   expect(resolveLanguage("LV-lv")).toBe("lv");
   expect(resolveLanguage("ar-EG")).toBe("ar");
   expect(resolveLanguage("en-xa")).toBe("en-XA");

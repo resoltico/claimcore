@@ -221,6 +221,6 @@ installations stay unready even while Web is live. Neither probe repairs state o
 [Development](development.md) owns complete verification. Container qualification exercises the
 real HTTPS graph, non-root operation, separate mounts and database roles, TLS-name and foreign-Host
 refusal, synthetic readiness refusal, unsafe-input refusal, startup stop and persisted installation
-identity across container replacement. Build-context canaries prove private-input exclusions. Native tests cover startup cancellation and lease-preserving shutdown.
+identity across container replacement. Build-context canaries prove private-input exclusions. Native tests cover startup cancellation and lease-preserving shutdown. The database revocation experiment starts with healthy initialized primary/witness reads and populated synthetic case/recovery evidence. It varies valid, unavailable, malformed, wrongly signed, expired and separately revoked primary/witness CRLs, recreating the publisher and using fresh client container filesystems for every read. It compares the relevant TLS/cryptography runtime files with the service runtime, checks unchanged read snapshots, and requires an isolated source build with revocation disabled to reach the unhealthy reads and fail the same boundary qualification. This fixture does not provide a production disable option or alter personal certificate caches.
 Report tested platforms and actual failures separately from design/source review. Installation
 qualification and owner merge/release approval remain separate requirements.

@@ -5,6 +5,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 import { prepare, startOpen } from "./case-workflow";
 import { expectAccessible, login, progress } from "./session-helpers";
+import { observeStartup } from "./startup-evidence";
 
 test.use({ storageState: { cookies: [], origins: [] } });
 
@@ -50,9 +51,11 @@ const openAccessibleLogin = async (page: Page): Promise<void> => {
   await progress("a11y-viewport-ready");
   await page.emulateMedia({ reducedMotion: "reduce", forcedColors: "active" });
   await progress("a11y-media-ready");
-  await page.goto("/", { waitUntil: "domcontentloaded", timeout: 10_000 });
-  await progress("a11y-document-ready");
-  await expect(page.getByRole("heading", { name: "ClaimCore", exact: true })).toBeVisible();
+  await observeStartup(page, async () => {
+    await page.goto("/", { waitUntil: "commit", timeout: 10_000 });
+    await progress("a11y-document-ready");
+    await expect(page.getByRole("heading", { name: "ClaimCore", exact: true })).toBeVisible();
+  });
 };
 
 test("keeps published login, editor, review, receipt and history accessible at narrow and zoomed viewports", async ({
@@ -79,9 +82,7 @@ test("keeps published login, editor, review, receipt and history accessible at n
   await page.keyboard.press("Space");
   await review.getByRole("button", { name: "Record changes" }).focus();
   await page.keyboard.press("Enter");
-  await expect(
-    page.getByRole("heading", { name: "Accepted operation", exact: true }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Recorded change", exact: true })).toBeVisible();
   await progress("a11y-receipt");
   await expectAccessible(page);
   await page.getByRole("button", { name: "Return to case" }).click();
@@ -96,7 +97,7 @@ test("keeps published login, editor, review, receipt and history accessible at n
   await progress("a11y-zoom");
   await assertNarrowLayout(page, "zoom");
   await page.context().clearCookies();
-  await page.reload();
+  await page.reload({ waitUntil: "commit" });
   await expect(page.getByRole("heading", { name: "ClaimCore" })).toBeVisible();
   await progress("a11y-expired-session");
   await expectAccessible(page);

@@ -315,7 +315,9 @@ source, npm lock, generated semantic/CLI-v4/Web-v3 contract, Node/npm versions, 
 The locked StrykerJS/Vitest mutation gate targets the four operation modules (metadata, initial state, request
 freezing and the reducer) and presentation preference/parser, descriptor/identity and typed ICU message-rendering logic. It uses one test worker to limit contention during static-mutation suite imports. It requires at least 92% killed mutants across them, refuses ignored or incomplete mutant
 results, and checks the exact sources, tool version and target set in an ignored local report. It does not exercise F#
-or PostgreSQL and cannot replace the full tests, catalog checks or restored-data audit.
+or PostgreSQL and cannot replace the full tests, catalog checks or restored-data audit. The
+[frontend workflow’s outer job budget](../.github/workflows/verify-frontend.yml) allows for repeated isolated
+test-file startup on hosted runners; it does not relax test deadlines or accept timeout mutants.
 
 #### Generated contracts
 
@@ -545,7 +547,7 @@ failures, missing or weak Web packages, nonfinite rates, and ignored DTD entity 
 
 Verification is job-local: each job verifies the reports it produced against the inventories before it uploads, and
 the consumers of published bytes verify manifests. Use **Re-run all jobs**, not mixed-attempt partial reruns.
-Generated reports belong under ignored `artifacts/` or current-attempt CI artifacts, not in source.
+Generated reports belong under ignored `artifacts/` or current-attempt CI artifacts, not in source. The deployment job retains only a schema-checked result bound to the current revision, source inventory, Web/Database publication digests and run/attempt. It includes actual primary/witness CRL outcomes, public certificate/CRL and runtime fingerprints, and synthetic read-state digests; private command logs, inputs, credentials, keys and payloads are excluded. Failed evidence admission prevents upload even if secret scanning succeeds. The local deployment scope conservatively includes its source, publication, shared build, formatting and toolchain inputs.
 
 ## Dependency updates
 

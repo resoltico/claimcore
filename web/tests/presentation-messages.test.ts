@@ -5,7 +5,12 @@ import {
   type Diagnostic,
   type LocalNoticeReason,
 } from "../src/api/notices";
-import { hasMessage, renderKey, renderReference, translate } from "../src/presentation/messages";
+import {
+  hasMessage,
+  renderKey,
+  renderIsolatedValue,
+  translate,
+} from "../src/presentation/messages";
 import { renderNotice } from "../src/presentation/notice";
 import { defaults, languages } from "../src/presentation/preferences";
 import shapes from "../src/presentation/generated/arguments.json";
@@ -150,12 +155,29 @@ it("refuses reference message parts with missing, wrong-role or foreign holes [C
   const preferences = { language: "en" as const, displayLocale: "en-GB" as const };
   const fallback = [renderKey(preferences, "notice.unknownDiagnostic")];
   const reference = { exact: "Synthetic reference" };
-  expect(renderReference(preferences, "ui.reviewTarget", {}, reference)).toEqual(fallback);
+  expect(renderIsolatedValue(preferences, "ui.reviewTarget", {}, reference)).toEqual(fallback);
   expect(
-    renderReference(preferences, "ui.reviewTarget", { reference: 1, revision: "1" }, reference),
+    renderIsolatedValue(preferences, "ui.reviewTarget", { reference: 1, revision: "1" }, reference),
   ).toEqual(fallback);
   expect(
-    renderReference(preferences, "ui.reference", { reference: "S", extra: "foreign" }, reference),
+    renderIsolatedValue(
+      preferences,
+      "ui.reference",
+      { reference: "S", extra: "foreign" },
+      reference,
+    ),
   ).toEqual(fallback);
-  expect(renderReference(preferences, "ui.action", {}, reference)).toEqual(fallback);
+  expect(renderIsolatedValue(preferences, "ui.action", {}, reference)).toEqual(fallback);
+});
+
+it("requires every supplied message argument to be an exact own property", () => {
+  const inherited: Readonly<Record<string, string>> = { unrelated: "foreign" };
+  Object.setPrototypeOf(inherited, { reference: "inherited" });
+  expect(renderIsolatedValue(defaults, "ui.reference", inherited, { exact: "inherited" })).toEqual([
+    renderKey(defaults, "notice.unknownDiagnostic"),
+  ]);
+  expect(renderKey(defaults, "ui.reference", { reference: "own" })).toBe("Case reference: own");
+  expect(renderKey(defaults, "ui.reference", { reference: "own", unrelated: "foreign" })).toBe(
+    renderKey(defaults, "notice.unknownDiagnostic"),
+  );
 });

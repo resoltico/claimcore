@@ -8,6 +8,9 @@ jobs:
     name: Persistent HTTPS container operation
     runs-on: ubuntu-24.04
     timeout-minutes: 60
+    env:
+      CLAIMCORE_PUBLISHED_DIR: ${{ github.workspace }}/artifacts/publish
+      CLAIMCORE_DEPLOYMENT_REPORT: ${{ github.workspace }}/artifacts/deployment/${{ github.run_id }}-${{ github.run_attempt }}/result.json
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -19,6 +22,24 @@ jobs:
           name: claimcore-published-${{ github.run_id }}-${{ github.run_attempt }}
           path: artifacts/publish
       - name: Qualify the immutable published bytes in Docker
-        env:
-          CLAIMCORE_PUBLISHED_DIR: ${{ github.workspace }}/artifacts/publish
         run: node eng/ci/deployment/qualify.mjs
+      - name: Verify current-attempt sanitized deployment evidence
+        id: deployment_evidence
+        env:
+          CLAIMCORE_DEPLOYMENT_REPORT: artifacts/deployment/${{ github.run_id }}-${{ github.run_attempt }}/result.json
+        run: node eng/ci/deployment/report.mjs "$CLAIMCORE_DEPLOYMENT_REPORT"
+      - name: Scan sanitized deployment evidence before upload
+        id: artifact_scan
+        if: always()
+        shell: bash
+        env:
+          CLAIMCORE_DEPLOYMENT_REPORT: artifacts/deployment/${{ github.run_id }}-${{ github.run_attempt }}/result.json
+        run: node eng/ci/scan/main.mjs artifacts "$CLAIMCORE_DEPLOYMENT_REPORT"
+      - name: Upload current-attempt deployment evidence
+        if: ${{ always() && steps.artifact_scan.outcome == 'success' && steps.deployment_evidence.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: claimcore-deployment-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/deployment/${{ github.run_id }}-${{ github.run_attempt }}/result.json
+          if-no-files-found: error
+          retention-days: 14

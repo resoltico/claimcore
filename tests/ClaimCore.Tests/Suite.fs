@@ -54,6 +54,7 @@ let private surfaces =
         EndpointExtensionTests.tests
         SemanticIdentityTests.tests
         RejectionDiagnosticTests.tests
+        PresentationProjectionTests.tests
         RejectionEmissionTests.tests
         OutcomeDiagnosticTests.tests
         OutcomeEmissionTests.tests

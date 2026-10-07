@@ -257,22 +257,11 @@ let private cultures () =
         CultureInfo.CurrentCulture <- beforeCulture
         CultureInfo.CurrentUICulture <- beforeUi
 
-let private literalEncoding () =
-    let encode = ClaimCore.ContractGeneration.DefaultPresentation.icuLiteral
-    Expect.equal (encode "Handler's claim") "Handler''s claim" "Apostrophe remains literal"
-
-    Expect.equal
-        (encode "Use {literal} and {}")
-        "Use '{'literal'}' and '{}'"
-        "Braces cannot create parameters"
-
-    Expect.equal (encode "'{name}'") "'''{'name'}'''" "Quotes around braces remain literal"
 
 let tests =
     testList
         "typed rejection diagnostics"
         [
-            testCase "build-only ICU export escapes literal syntax [CC-WEB-001]" literalEncoding
             testCase
                 "every closed identity has one explicit token and a complete projection"
                 catalogueCoverage

@@ -6,6 +6,7 @@ import { expect, type BrowserContext, type Page } from "@playwright/test";
 
 import { isHostFailure, isWebV3Response } from "../src/generated/contracts/web-v3.validation";
 import type { HostFailure, WebV3Response } from "../src/generated/contracts/web-v3.types";
+import { observeStartup } from "./startup-evidence";
 
 type BrowserReply = Readonly<{
   status: number;
@@ -49,6 +50,13 @@ const syntheticOwner = async (): Promise<{ username: string; password: string }>
 };
 type Cookies = Awaited<ReturnType<BrowserContext["cookies"]>>;
 
+export const openApplication = async (page: Page, heading: string | RegExp): Promise<void> => {
+  await observeStartup(page, async () => {
+    await page.goto("/", { waitUntil: "commit" });
+    await expect(page.getByRole("heading", { name: heading, exact: true })).toBeVisible();
+  });
+};
+
 export const openAuthenticated = async (
   page: Page,
   casesHeading: string | RegExp = "Cases",
@@ -69,8 +77,7 @@ export const openAuthenticated = async (
     throw new Error("E2E_AUTH_STATE_INVALID");
   }
   await page.context().addCookies(state.cookies as Cookies);
-  await page.goto("/", { waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("heading", { name: casesHeading, exact: true })).toBeVisible();
+  await openApplication(page, casesHeading);
 };
 
 export const expectAccessible = async (page: Page): Promise<void> => {
@@ -145,6 +152,7 @@ const awaitOidcReturn = async (
   try {
     await page.waitForURL((url) => url.origin === applicationOrigin && url.pathname === "/", {
       timeout: 10_000,
+      waitUntil: "commit",
     });
   } catch {
     const current = new URL(page.url());
@@ -166,12 +174,17 @@ const awaitOidcReturn = async (
   }
 };
 
-export const login = async (page: Page): Promise<void> => {
+export const login = async (
+  page: Page,
+  casesHeading = "Cases",
+  signIn = "Sign in",
+): Promise<void> => {
   await progress("login-start");
-  const cases = page.getByRole("heading", { name: "Cases" });
+  const cases = page.getByRole("heading", { name: casesHeading, exact: true });
   try {
     await page
-      .getByRole("heading", { name: /^(Cases|ClaimCore)$/u })
+      .getByRole("heading", { name: casesHeading, exact: true })
+      .or(page.getByRole("heading", { name: "ClaimCore", exact: true }))
       .first()
       .waitFor({ timeout: 5_000 });
   } catch {
@@ -187,7 +200,12 @@ export const login = async (page: Page): Promise<void> => {
   await progress("login-anon");
   const applicationOrigin = new URL(page.url()).origin;
   const owner = await syntheticOwner();
-  await page.getByRole("link", { name: "Sign in" }).click();
+  await page.getByRole("link", { name: signIn, exact: true }).click();
+  await page.locator('input[name="username"]').or(cases).first().waitFor();
+  if (await cases.isVisible()) {
+    await progress("login-ready");
+    return;
+  }
   await progress("oidc-navigation");
   await page.locator('input[name="username"]').fill(owner.username);
   await progress("oidc-username-filled");

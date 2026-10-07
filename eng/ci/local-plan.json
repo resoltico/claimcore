@@ -130,12 +130,23 @@
       "tools": ["docker"],
       "scope": [
         "^deployment/",
-        "^eng/operations/",
-        "^eng/ci/deployment/",
+        "^eng/",
         "^src/",
+        "^tests/",
+        "^web/",
+        "^db/",
         "^config/",
+        "^\\.config/",
+        "^Directory\\.(Build\\.(props|targets)|Packages\\.props)$",
+        "^NuGet\\.Config$",
+        "^ClaimCore\\.slnx$",
         "^global\\.json$",
-        "^\\.dockerignore$"
+        "^\\.node-version$",
+        "^\\.dockerignore$",
+        "^LICENSE$",
+        "^prettier\\.config\\.mjs$",
+        "^\\.editorconfig$",
+        "^\\.github/"
       ]
     }
   ],

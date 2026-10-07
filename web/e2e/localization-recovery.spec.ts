@@ -24,7 +24,7 @@ const observePreparedBytes = (page: Page): (() => Buffer | null) => {
 
 const returnToRecovery = async (page: Page): Promise<void> => {
   await progress("localized-recovery-reload");
-  await page.reload();
+  await page.reload({ waitUntil: "commit" });
   await expect(page.locator("main.app-shell header small")).toBeVisible({ timeout: 10_000 });
   await progress("localized-recovery-definition-ready");
   const navigation = page.getByRole("button", { name: "Recovery", exact: true });
@@ -33,6 +33,23 @@ const returnToRecovery = async (page: Page): Promise<void> => {
   await expect(navigation).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("heading", { name: "Recovery", exact: true })).toBeVisible();
   await progress("localized-recovery-navigation-ready");
+};
+
+const inspectionLanguage = async (page: Page) => {
+  for (const language of ["ar", "en", "lv"] as const) {
+    await selectLanguage(page, language);
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toHaveAccessibleName(ui(language, "ui.recoveryDetails"));
+    await expect(
+      dialog.getByText(ui(language, "ui.recoveryDetailsHint"), { exact: true }),
+    ).toBeVisible();
+    await expect(
+      dialog.getByRole("button", { name: ui(language, "ui.resolveExact"), exact: true }),
+    ).toBeVisible();
+    await expect(
+      dialog.getByRole("button", { name: ui(language, "ui.close"), exact: true }),
+    ).toBeVisible();
+  }
 };
 
 test("preserves a committed operation and exact recovery identity when its localized submit response is lost", async ({
@@ -97,8 +114,7 @@ test("keeps inspected recovery authority and confirmation stable while language 
   await inspectPending(page, identity);
   const selected = await page.getByRole("dialog").elementHandle();
   const requests = trackRequests(page);
-  await selectLanguage(page, "ar");
-  await selectLanguage(page, "lv");
+  await inspectionLanguage(page);
   expect(
     await page.getByRole("dialog").evaluate((element, prior) => element === prior, selected),
   ).toBe(true);
@@ -112,6 +128,16 @@ test("keeps inspected recovery authority and confirmation stable while language 
     expect(outcome.tag === "COMPLETED" && outcome.data.execution.tag === "ACCEPTED").toBe(true);
     expect(captured.bytes.equals(Buffer.from(JSON.stringify(identity)))).toBe(true);
     await selectLanguage(page, "ar");
+    const confirmation = page.getByRole("dialog", {
+      name: ui("ar", "ui.resolveTitle"),
+      exact: true,
+    });
+    await expect(
+      confirmation.getByText(ui("ar", "ui.resolveConsequence"), { exact: true }),
+    ).toBeVisible();
+    await expect(
+      confirmation.getByRole("button", { name: ui("ar", "ui.working"), exact: true }),
+    ).toBeDisabled();
     await selectFormat(page, "ar-EG");
     await page.keyboard.press("Escape");
     await expect(page.getByRole("button", { name: ui("ar", "ui.working") })).toBeDisabled();

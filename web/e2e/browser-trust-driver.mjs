@@ -18,7 +18,7 @@ async function qualify() {
     }
     stage = "TRUSTED_AUTHENTICATION";
     store.import();
-    const version = await authenticate(fixture.password);
+    const version = await authenticate(fixture.password, fixture.owner);
     stage = "WRONG_HOST";
     await refused("https://wrong.localhost:5443/", "ERR_CERT_COMMON_NAME_INVALID");
     await refused("https://wrong.localhost:5444/", "ERR_CERT_COMMON_NAME_INVALID");

@@ -12,7 +12,7 @@ import {
   validateCatalog,
   validateCoverage,
 } from "./localization-policy.mjs";
-import { businessMessages, icuLiteral } from "./localization-metadata.mjs";
+import { businessMessages } from "./localization-metadata.mjs";
 import { renderedTokens, validateTokens } from "./localization-tokens.mjs";
 const root = resolve(import.meta.dirname, "../src");
 /** @param {string} path */
@@ -22,7 +22,7 @@ const requirements = diagnosticRequirements(
   semantic,
   json("generated/contracts/web-v3.host-failure.schema.json"),
 );
-/** @param {string} language @returns {Record<string, string>} */
+/** @param {string} language @returns {Record<string, import("./localization-policy.mjs").Message>} */
 const catalog = (language) =>
   Object.assign(
     language === "en"
@@ -154,7 +154,7 @@ test("default business projection preserves literal apostrophes and braces witho
     "A }{ B",
     "{id, plural, other {unsafe}}",
   ]) {
-    const { ast, args } = messageShape(icuLiteral(text), "en");
+    const { ast, args } = messageShape([{ literal: text }], "en");
     assert.deepEqual(args, {});
     assert.equal(new IntlMessageFormat(ast, "en").format(), text);
   }
@@ -172,12 +172,69 @@ test("default business projection preserves literal apostrophes and braces witho
     ],
   };
   assert.deepEqual(businessMessages(descriptors), {
-    "field.insurerName.label": "Responsible insurer",
-    "field.insurerName.meaning": "Recorded insurer '{'role'}'.",
-    "command.OPEN.label": "Register case",
-    "command.OPEN.meaning": "Register the case.",
+    "field.insurerName.label": [{ literal: "Responsible insurer" }],
+    "field.insurerName.meaning": [{ literal: "Recorded insurer {role}." }],
+    "command.OPEN.label": [{ literal: "Register case" }],
+    "command.OPEN.meaning": [{ literal: "Register the case." }],
   });
   assert.throws(() =>
     businessMessages({ ...descriptors, fields: [...descriptors.fields, ...descriptors.fields] }),
   );
+});
+
+// Independent oracle: original literals plus supplied hole values, never encoded text.
+test("typed literals round-trip exhaustive syntax interactions and seeded Unicode at hole boundaries", () => {
+  const alphabet = ["{", "}", "'", "a"];
+  let cases = [""];
+  /** @param {string} text */
+  const verify = (text) => {
+    const parts = [{ literal: text }, { hole: "identity" }, { literal: text }];
+    const { ast, args } = messageShape(parts, "en");
+    assert.deepEqual(args, { identity: "string" });
+    const identity = "VALUE {notAnArgument}' العربية";
+    assert.equal(new IntlMessageFormat(ast, "en").format({ identity }), text + identity + text);
+    if (text.trim()) {
+      const literal = messageShape([{ literal: text }], "en");
+      assert.deepEqual(literal.args, {});
+      assert.equal(new IntlMessageFormat(literal.ast, "en").format(), text);
+    }
+  };
+  for (let length = 0; length <= 6; length++) {
+    cases.forEach(verify);
+    cases = cases.flatMap((prefix) => alphabet.map((char) => prefix + char));
+  }
+  let seed = 20261006;
+  const unicode = [...alphabet, "é", "م", "😀", "\u200d", "\u0301", " "];
+  for (let sample = 0; sample < 200; sample++) {
+    let text = "";
+    for (let index = 0; index < 80; index++) {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+      text += unicode[seed % unicode.length];
+    }
+    verify(text);
+  }
+  /** @param {string} text */
+  const old = (text) => text.replaceAll("'", "''").replace(/[{}]+/gu, (braces) => `'${braces}'`);
+  for (const text of ["{'{", "{'}", "}'{", "}'}"]) {
+    assert.notEqual(new IntlMessageFormat(old(text), "en").format(), text);
+    verify(text);
+  }
+});
+
+test("typed-part admission retains bounds, unsafe-literal and exact argument roles", () => {
+  for (const parts of [
+    [],
+    [{ literal: "" }],
+    [{ literal: " " }],
+    [{ literal: "x".repeat(8001) }],
+    [{ literal: "<b>" }],
+    [{ literal: "\u202e" }],
+    [{ hole: "constructor" }],
+    [{ hole: "not-a-name" }],
+    [{ literal: "a", hole: "identity" }],
+  ]) {
+    assert.throws(() => messageShape(parts, "en"));
+  }
+  assert.throws(() => validateCatalog({ a: [{ hole: "identity" }] }, { a: "{other}" }, "en"));
+  validateCatalog({ a: [{ literal: "" }, { hole: "identity" }] }, { a: "{identity}" }, "en");
 });

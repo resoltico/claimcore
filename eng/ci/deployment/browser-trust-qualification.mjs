@@ -72,6 +72,20 @@ const browserPolicy = [
   "/tmp:rw,mode=1777",
 ];
 
+/** @param {Compose} compose */
+const initialOwner = (compose) =>
+  JSON.parse(
+    compose([
+      "run",
+      "--rm",
+      "--no-deps",
+      "--entrypoint",
+      "cat",
+      "configure",
+      "/configuration/installation/administration/initial-owner.json",
+    ]),
+  );
+
 /** @param {Docker} docker @param {Compose} compose @param {string} configuration @param {string} run */
 export function browserTrustQualification(docker, compose, configuration, run) {
   const { network, addresses, volume } = networkAddresses(docker, compose, run);
@@ -89,6 +103,7 @@ export function browserTrustQualification(docker, compose, configuration, run) {
   ]);
   const expiry = expiryServer(docker, volume, network, run);
   const input = JSON.stringify({
+    owner: initialOwner(compose),
     expiry: expiry.address,
     ca,
     password: readFileSync(join(configuration, "owner.password"), "utf8").trim(),

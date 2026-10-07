@@ -30,9 +30,9 @@ it("keeps missing case lookup and non-full history entries out of case presentat
       onCommand={vi.fn()}
     />,
   );
-  expect(await screen.findByRole("heading", { name: "Accepted history" })).toBeVisible();
+  expect(await screen.findByRole("heading", { name: "Case history" })).toBeVisible();
   expect(await screen.findByText("Case was not found.")).toBeVisible();
-  expect(screen.queryByRole("heading", { name: "Available commands" })).toBeNull();
+  expect(screen.queryByRole("heading", { name: "Available actions" })).toBeNull();
 });
 
 it("keeps a failed history page request-local without erasing current case data", async () => {
@@ -84,7 +84,7 @@ it("treats a typed missing history as an empty read rather than a transport erro
     />,
   );
   expect(await screen.findByRole("region", { name: "Case fields for current case" })).toBeVisible();
-  expect(screen.getByRole("heading", { name: "Accepted history" })).toBeVisible();
+  expect(screen.getByRole("heading", { name: "Case history" })).toBeVisible();
   expect(screen.queryByRole("alert")).toBeNull();
 });
 

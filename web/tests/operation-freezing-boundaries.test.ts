@@ -49,4 +49,6 @@ it("forks exposed correction identities when their group modes change after defi
 it("refuses submission transitions when no exact reviewed request exists", () => {
   const editing = initialOperation(firstId, "CLOSE", {}, "CASE-1");
   expect(operationReducer(editing, { type: "SUBMITTING", requestId: 9 })).toBe(editing);
+  const reviewing = { ...editing, delivery: "REVIEWING" as const, exposedRequest: null };
+  expect(operationReducer(reviewing, { type: "SUBMITTING", requestId: 9 })).toBe(reviewing);
 });

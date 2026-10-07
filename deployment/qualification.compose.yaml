@@ -7,3 +7,11 @@ services:
     build:
       additional_contexts:
         publication: ${CLAIMCORE_PUBLISHED_CONTEXT}
+  transport-qualification:
+    build:
+      additional_contexts:
+        publication: ${CLAIMCORE_PUBLISHED_CONTEXT}
+  transport-negative-control:
+    build:
+      additional_contexts:
+        publication: ${CLAIMCORE_PUBLISHED_CONTEXT}

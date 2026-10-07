@@ -32,6 +32,21 @@ function safePath(value, glob) {
   }
   return path;
 }
+/** @param {string} raw @param {import("./types.mjs").Json} env */
+function scanPath(raw, env) {
+  const variable = /^"\$([A-Z][A-Z0-9_]*)"$/u.exec(raw.trim());
+  if (variable === null) {
+    return safePath(raw, false);
+  }
+  const [, name] = variable;
+  assert.ok(name && Object.hasOwn(env, name), "Scan variable must have an explicit step binding.");
+  const value = env[name];
+  assert.ok(
+    typeof value === "string" && !/[\r\n"']/u.test(value),
+    "Scan variable must name one literal path.",
+  );
+  return safePath(value, false);
+}
 /** @param {import("./types.mjs").Json} step */
 function scanPaths(step) {
   assert.equal(step.shell, "bash");
@@ -47,7 +62,25 @@ function scanPaths(step) {
   );
   const values = lines[0] === prefix ? lines.slice(1) : [lines[0].slice(prefix.length)];
   assert(values.length && (lines[0] === prefix || lines.length === 1), "Unexpected scan command.");
-  return values.map((/** @type {string} */ path) => safePath(path, false));
+  return values.map((/** @type {string} */ path) => scanPath(path, step.env ?? {}));
+}
+/** Mandatory scan protection can be strengthened by earlier successful evidence steps. @param {import("./types.mjs").Json} step @param {import("./types.mjs").Json[]} before */
+function uploadGuard(step, before) {
+  const condition = normalize(step.if);
+  assert.ok(typeof condition === "string");
+  const clauses = condition.split(/\s*&&\s*/u);
+  assert.deepEqual(clauses.slice(0, 2), ["always()", "steps.artifact_scan.outcome == 'success'"]);
+  const names = new Set();
+  for (const clause of clauses.slice(2)) {
+    const match = /^steps\.([a-zA-Z_][a-zA-Z0-9_-]*)\.outcome == 'success'$/u.exec(clause);
+    assert.ok(match && match[1] !== "artifact_scan");
+    assert.ok(
+      before.some((candidate) => candidate.id === match[1]),
+      "Evidence guard must name an earlier step.",
+    );
+    assert.ok(!names.has(match[1]), "Duplicate evidence guard.");
+    names.add(match[1]);
+  }
 }
 /**
  * Every artifact upload must follow exactly one successful scan that covers its paths.
@@ -73,7 +106,7 @@ export function checkUploads(steps) {
     "No producer or other step may run after artifact scanning.",
   );
   for (const step of uploaded) {
-    assert.equal(normalize(step.if), "always() && steps.artifact_scan.outcome == 'success'");
+    uploadGuard(step, steps.slice(0, steps.indexOf(scan)));
     assert.equal(step.with?.["if-no-files-found"], "error");
     assert(
       step.with["include-hidden-files"] !== true && step.with.overwrite !== true,

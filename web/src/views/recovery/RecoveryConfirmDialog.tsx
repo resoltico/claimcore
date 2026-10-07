@@ -9,6 +9,11 @@ const titleKeys = {
   RESOLVE: "ui.resolveTitle",
   DISMISS: "ui.dismissTitle",
 } as const;
+const descriptionKeys = {
+  EXPORT: "ui.exportWarning",
+  RESOLVE: "ui.resolveConsequence",
+  DISMISS: "ui.dismissConsequence",
+} as const;
 const confirmKeys = {
   RESOLVE: "ui.confirmResolve",
   DISMISS: "ui.confirmDismiss",
@@ -48,10 +53,9 @@ export const RecoveryConfirmDialog = ({
   const p = usePresentation();
   return (
     <AccessibleModal
+      closeLabel={p.text("ui.cancel")}
       title={p.text(confirm === null ? "ui.dismissTitle" : titleKeys[confirm.action])}
-      description={
-        confirm?.action === "EXPORT" ? p.text("ui.exportWarning") : p.text("ui.recoveryConfirmHint")
-      }
+      description={p.text(descriptionKeys[confirm?.action ?? "DISMISS"])}
       isOpen={confirm !== null}
       isDismissable={busy === null}
       onOpenChange={(open) => {

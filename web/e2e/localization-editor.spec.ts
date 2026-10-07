@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { startOpen } from "./case-workflow";
 import { expectAccessible, openAuthenticated } from "./session-helpers";
 import {
@@ -10,7 +10,50 @@ import {
   selectFormat,
   selectLanguage,
   trackRequests,
+  ui,
 } from "./localization-support";
+
+const editorLanguage = async (page: Page) => {
+  for (const language of ["lv", "ar", "en"] as const) {
+    await selectLanguage(page, language);
+    await expect(
+      page.getByRole("button", { name: ui(language, "ui.prepareExact"), exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByText(ui(language, "ui.unchangedUntilSubmit"), { exact: true }),
+    ).toBeVisible();
+  }
+};
+const reviewLanguage = async (page: Page) => {
+  const dialog = page.getByRole("dialog");
+  const confirmation = dialog.getByRole("checkbox");
+  for (const language of ["en", "ar", "lv"] as const) {
+    await selectLanguage(page, language);
+    await expect(dialog).toHaveAccessibleName(ui(language, "ui.reviewTitle"));
+    await expect(confirmation).toHaveAccessibleName(ui(language, "ui.reviewConfirmation"));
+    await expect(
+      dialog.getByRole("button", { name: ui(language, "ui.submitExact"), exact: true }),
+    ).toBeVisible();
+    await expect(
+      dialog.getByRole("button", { name: ui(language, "ui.keepForRecovery"), exact: true }),
+    ).toBeVisible();
+    await expect(
+      dialog.getByText(ui(language, "ui.reviewDescription"), { exact: true }),
+    ).toBeVisible();
+    await expect(confirmation).toBeChecked();
+  }
+};
+
+const calendarLanguage = async (page: Page) => {
+  for (const [language, message] of [
+    ["lv", "Izmantojiet vienu derīgu datumu formātā YYYY-MM-DD."],
+    ["ar", "استخدم تاريخًا تقويميًا صالحًا واحدًا بالصيغة YYYY-MM-DD."],
+    ["en", "Use one valid calendar date in YYYY-MM-DD format."],
+  ] as const) {
+    await selectLanguage(page, language);
+    await expect(page.getByRole("alert")).toContainText(message);
+  }
+};
 
 test("preserves authored Unicode and invalid calendar text while localizing real core validation", async ({
   page,
@@ -26,9 +69,7 @@ test("preserves authored Unicode and invalid calendar text while localizing real
   });
   const originalNode = await name.elementHandle();
   const requests = trackRequests(page);
-  for (const language of ["lv", "ar", "en"] as const) {
-    await selectLanguage(page, language);
-  }
+  await editorLanguage(page);
   expect(await name.evaluate((element, prior) => element === prior, originalNode)).toBe(true);
   expect(
     await name.evaluate((element: HTMLInputElement) => [
@@ -49,8 +90,7 @@ test("preserves authored Unicode and invalid calendar text while localizing real
     pending.release();
     await expect(date).toBeFocused();
     await expect(date).toHaveAttribute("aria-invalid", "true");
-    await expect(page.getByRole("alert")).toBeVisible();
-    await selectLanguage(page, "ar");
+    await calendarLanguage(page);
     await expect(date).toHaveValue("2026-02-30");
     expect(requests).toHaveLength(1);
     await expectAccessible(page);
@@ -81,7 +121,7 @@ test("switches language and independent display format through native preparatio
     const confirmation = dialog.getByRole("checkbox");
     await confirmPrepared(page);
     await expectKeyboardContained(page, dialog);
-    await selectLanguage(page, "lv");
+    await reviewLanguage(page);
     await selectFormat(page, "lv-LV");
     expect(await dialog.evaluate((element, prior) => element === prior, originalDialog)).toBe(true);
     await expect(confirmation).toBeChecked();

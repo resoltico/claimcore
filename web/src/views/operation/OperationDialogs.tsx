@@ -15,6 +15,7 @@ export const CommandChangeDialog = ({ model }: CommandChangeProps) => {
   const { pendingCommand } = model;
   return (
     <AccessibleModal
+      closeLabel={p.text("ui.keepEditing")}
       title={p.text("ui.changeCommandTitle")}
       description={p.text("ui.changeCommandDescription")}
       isOpen
@@ -24,14 +25,6 @@ export const CommandChangeDialog = ({ model }: CommandChangeProps) => {
       }}
     >
       <div className="dialog-actions">
-        <Button
-          className="secondary-button"
-          onPress={() => {
-            model.setPendingCommand(null);
-          }}
-        >
-          {p.text("ui.keepEditing")}
-        </Button>
         <Button
           onPress={() => {
             model.applyCommand(pendingCommand);

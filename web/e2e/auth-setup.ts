@@ -36,7 +36,7 @@ export default async function setup(): Promise<void> {
   try {
     const context = await browser.newContext({ ignoreHTTPSErrors: true });
     const page = await context.newPage();
-    await page.goto(baseURL);
+    await page.goto(baseURL, { waitUntil: "commit" });
     await login(page);
     await grantSyntheticCasework(page);
     await page.getByRole("heading", { name: "Cases" }).waitFor();

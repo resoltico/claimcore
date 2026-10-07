@@ -38,7 +38,7 @@ const rejectMalformedAuthenticatedPosts = async (page: Page, token: string): Pro
 test("rejects retired routes and malformed published Web v3 admission before mutation", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/", { waitUntil: "commit" });
   await expectHostFailure(await browserRequest(page, "/api/v1/query"), 404, "WEB_NOT_FOUND");
   await expectHostFailure(
     await browserRequest(page, "/api/v3/cases/list", {
