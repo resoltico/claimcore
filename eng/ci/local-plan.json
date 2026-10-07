@@ -118,7 +118,14 @@
         "^eng/(Run-PublishedCliAcceptance|Run-PublishedWebE2E|Generate-SyntheticWebTls|PublishedWebE2E-Setup)\\.sh$",
         "^eng/oidc/",
         "^eng/ci/publish/",
-        "^web/"
+        "^web/",
+        "^eng/PrivateQualificationPaths\\.sh$",
+        "^eng/PublicationInputs\\.(fsx|targets)$",
+        "^config/publication-inputs\\.json$",
+        "^Directory\\.(Build\\.(props|targets)|Packages\\.props)$",
+        "^NuGet\\.Config$",
+        "^global\\.json$",
+        "^eng/PublicationRestoreGraph\\.fsx$"
       ]
     },
     {

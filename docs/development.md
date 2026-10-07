@@ -503,6 +503,21 @@ assets:produce` before publishing after this format change. Publish verification
 file inventory. These hashes establish identity against the recorded inputs, not producer authentication
 or review quality.
 
+Publication manifest format 2 additionally records the producing-input digest embedded in every
+managed product assembly during compilation. The bounded input specification is
+[`config/publication-inputs.json`](../config/publication-inputs.json), shared by native build recording
+and publication verification on the host and in Docker. Before recording a compilation identity,
+the SDK-derived current restore graph and resolved package hashes must match the existing assets
+and lock; stale `--no-restore` graphs are refused without restoring or rewriting them. It includes embedded database inputs,
+contract generation and lock, frontend source/producer configuration, and pinned toolchains.
+Commit labels are outside that digest: equivalent producing inputs under a PR merge and main
+revision can qualify. The native private-file shim recompiles during publication instead of
+relying on retained timestamps. `--no-build` publication verifies compiled identities and refuses
+stale or mixed assemblies; it cannot stamp current source onto an older binary. Rebuild before
+publication when inputs change. Unsupported earlier publication manifests are refused unchanged.
+These checks establish producing-input agreement and byte identity, not producer authentication,
+review quality or execution in the authoritative environment.
+
 A manifest lists every regular file of a published tree with its length and SHA-256, plus a digest over those
 records. Every consumer verifies the tree it received before and after use (`node eng/ci/publish/main.mjs verify
 <root> [cli|database|web]...`), so the bytes that were published once are the bytes that were exercised.
@@ -547,7 +562,7 @@ failures, missing or weak Web packages, nonfinite rates, and ignored DTD entity 
 
 Verification is job-local: each job verifies the reports it produced against the inventories before it uploads, and
 the consumers of published bytes verify manifests. Use **Re-run all jobs**, not mixed-attempt partial reruns.
-Generated reports belong under ignored `artifacts/` or current-attempt CI artifacts, not in source. The deployment job retains only a schema-checked result bound to the current revision, source inventory, Web/Database publication digests and run/attempt. It includes actual primary/witness CRL outcomes, public certificate/CRL and runtime fingerprints, and synthetic read-state digests; private command logs, inputs, credentials, keys and payloads are excluded. Failed evidence admission prevents upload even if secret scanning succeeds. The local deployment scope conservatively includes its source, publication, shared build, formatting and toolchain inputs.
+Generated reports belong under ignored `artifacts/` or current-attempt CI artifacts, not in source. The deployment job retains only format-2 schema-checked results bound to the current revision, source inventory, bounded producing-input digest, Web/Database publication digests and run/attempt. Earlier result formats are refused without conversion. It includes actual primary/witness CRL outcomes, public certificate/CRL and runtime fingerprints, and synthetic read-state digests; private command logs, inputs, credentials, keys and payloads are excluded. Failed evidence admission prevents upload even if secret scanning succeeds. The local deployment scope conservatively includes its source, publication, shared build, formatting and toolchain inputs.
 
 ## Dependency updates
 

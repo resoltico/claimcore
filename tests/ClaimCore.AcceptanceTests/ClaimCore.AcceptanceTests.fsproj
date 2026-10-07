@@ -6,6 +6,7 @@
     <Compile Include="Configuration.fs" />
     <Compile Include="ProcessRunner.fs" />
     <Compile Include="RemoteFixture.fs" />
+    <Compile Include="NativeOwnerGrantAcceptance.fs" />
     <Compile Include="RemoteAuthAcceptance.fs" />
     <Compile Include="RemoteProtocolWalkthroughTests.fs" />
     <Compile Include="RemoteProtocolBoundaryTests.fs" />

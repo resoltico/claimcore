@@ -12,6 +12,7 @@ preserves a committed operation and exact recovery identity when its localized s
 preserves authored Unicode and invalid calendar text while localizing real core validation
 preserves language and independent display preferences through real logout and OIDC relogin
 preserves operation identity after a dropped published submit response
+protects exact amendment edits on action change and Back while untouched drafts leave directly
 publishes open, amendment, decision, withdrawal, full history and operation lookup
 publishes payment, correction, close and reopen with current-case parity
 recovers an exact preparation after its published response is dropped
@@ -28,6 +29,7 @@ rejects retired routes and malformed published Web v3 admission before mutation
 renders exact accepted amounts with RTL and pseudolocale accessibility while canonical copy remains unchanged
 resolves and dismisses exact preparations with observed server state
 retains unchanged encrypted artifact bytes through localized import without automatic execution
+review blocks authoring and accepted OPEN shows only receipt with a usable Return path
 rotates a retained OPEN identity when only its target reference changes
 submits literal CORRECT_CASE KEEP/CLEAR/CLEAR in ar with authoritative outcome [CC-DOM-002]
 submits literal CORRECT_CASE KEEP/CLEAR/CLEAR in en with authoritative outcome [CC-DOM-002]

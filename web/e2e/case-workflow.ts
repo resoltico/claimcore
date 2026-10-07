@@ -74,7 +74,7 @@ const submitReview = async (page: Page): Promise<void> => {
 
 export const startOpen = async (page: Page, caseReference: string): Promise<void> => {
   await progress("start-open");
-  await page.getByRole("button", { name: "Open new case" }).click();
+  await page.getByRole("button", { name: "Open a case" }).click();
   await progress("open-editor");
   await fill(page, {
     "Incident date": "2026-09-01",

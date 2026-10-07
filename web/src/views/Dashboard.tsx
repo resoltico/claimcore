@@ -29,15 +29,14 @@ const Header = ({
     <header>
       <div>
         <p className="eyebrow">{p.text("ui.registerLabel")}</p>
-        <h1>
-          {definition === null
-            ? "ClaimCore"
-            : `${definition.definition.application} ${definition.runtime.productVersion}`}
-        </h1>
+        <h1>{definition === null ? "ClaimCore" : definition.definition.application}</h1>
         {definition === null ? null : (
-          <small>
-            Semantic {definition.semanticFingerprint} · Web v3 {definition.webFingerprint}
-          </small>
+          <details>
+            <summary>{p.text("ui.technicalDetails")}</summary>
+            <p>{p.text("ui.productVersion", { version: definition.runtime.productVersion })}</p>
+            <p>{p.text("ui.semanticIdentity", { digest: definition.semanticFingerprint })}</p>
+            <p>{p.text("ui.webIdentity", { digest: definition.webFingerprint })}</p>
+          </details>
         )}
       </div>
       <Button onPress={() => void onLogout()} isDisabled={locked}>

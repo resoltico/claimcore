@@ -64,6 +64,9 @@ let publication () =
     use document = JsonDocument.Parse(File.ReadAllText("/app/database-manifest.json"))
     let root = document.RootElement
 
+    if root.GetProperty("schemaVersion").GetInt32() <> 2 then
+        failwith "Unsupported publication manifest."
+
     if root.GetProperty("product").GetString() <> "ClaimCore.Database" then
         failwith "Wrong publication."
 

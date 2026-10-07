@@ -122,22 +122,23 @@
   "ui.cases": [{ "type": 0, "value": "Cases" }],
   "ui.recovery": [{ "type": 0, "value": "Recovery" }],
   "ui.operations": [{ "type": 0, "value": "Operations" }],
-  "ui.loadingDefinition": [{ "type": 0, "value": "Loading core definition…" }],
+  "ui.loadingDefinition": [{ "type": 0, "value": "Loading application…" }],
   "ui.loginInstructions": [
     { "type": 0, "value": "Sign in with your organization's identity provider." }
   ],
   "ui.signIn": [{ "type": 0, "value": "Sign in" }],
-  "ui.caseReference": [{ "type": 0, "value": "case reference" }],
   "ui.caseRow": [
     { "type": 1, "value": "status" },
     { "type": 0, "value": " · revision " },
     { "type": 1, "value": "revision" }
   ],
-  "ui.exactCaseReference": [{ "type": 0, "value": "Exact case reference" }],
+  "ui.exactCaseReference": [
+    { "type": 1, "value": "label" },
+    { "type": 0, "value": " (exact)" }
+  ],
   "ui.findCase": [{ "type": 0, "value": "Find case" }],
   "ui.loading": [{ "type": 0, "value": "Loading…" }],
   "ui.reloadCases": [{ "type": 0, "value": "Reload cases" }],
-  "ui.openNewCase": [{ "type": 0, "value": "Open new case" }],
   "ui.loadingCases": [{ "type": 0, "value": "Loading cases…" }],
   "ui.moreCases": [{ "type": 0, "value": "Load more cases" }],
   "ui.acceptedHistory": [{ "type": 0, "value": "Case history" }],
@@ -217,7 +218,8 @@
   ],
   "ui.backToCases": [{ "type": 0, "value": "Back to cases" }],
   "ui.exactReference": [
-    { "type": 0, "value": "Exact reference: " },
+    { "type": 1, "value": "label" },
+    { "type": 0, "value": " (exact): " },
     { "type": 1, "value": "reference" }
   ],
   "ui.unchangedUntilSubmit": [{ "type": 0, "value": "Review your changes before recording them." }],
@@ -237,7 +239,7 @@
   "ui.operationLookup": [{ "type": 0, "value": "Operation lookup" }],
   "ui.exactOperationId": [{ "type": 0, "value": "Exact operation ID" }],
   "ui.lookingUp": [{ "type": 0, "value": "Looking up…" }],
-  "ui.observeOperation": [{ "type": 0, "value": "Observe operation" }],
+  "ui.observeOperation": [{ "type": 0, "value": "Look up recorded result" }],
   "ui.cancel": [{ "type": 0, "value": "Cancel" }],
   "ui.notRecorded": [{ "type": 0, "value": "Not recorded" }],
   "ui.unavailable": [{ "type": 0, "value": "Unavailable" }],
@@ -249,10 +251,6 @@
   "ui.characterWarning": [
     { "type": 0, "value": "Contains " },
     { "type": 1, "value": "characters" }
-  ],
-  "ui.caseFieldsContext": [
-    { "type": 0, "value": "Case fields for " },
-    { "type": 1, "value": "context" }
   ],
   "ui.acceptedSummary": [{ "type": 0, "value": "recorded case summary" }],
   "ui.copy": [
@@ -286,7 +284,8 @@
   ],
   "ui.command": [{ "type": 0, "value": "Case action" }],
   "ui.reference": [
-    { "type": 0, "value": "Case reference: " },
+    { "type": 1, "value": "label" },
+    { "type": 0, "value": ": " },
     { "type": 1, "value": "reference" }
   ],
   "ui.noAuthoredValues": [{ "type": 0, "value": "This action needs no additional details." }],
@@ -294,7 +293,7 @@
   "ui.correctionHint": [
     {
       "type": 0,
-      "value": "Choose which details to keep, replace or clear. Kept details come from the current case when changes are recorded."
+      "value": "Choose an action for each group. Kept details use the current case when recorded."
     }
   ],
   "ui.preparing": [{ "type": 0, "value": "Preparing review…" }],
@@ -323,7 +322,7 @@
   "ui.reviewDescription": [
     {
       "type": 0,
-      "value": "Check the details, confirm them, then select “Record changes”. If the result is not confirmed, check Recovery before trying again."
+      "value": "Check and confirm the details. If recording is unconfirmed, inspect Recovery before trying again."
     }
   ],
   "ui.reviewTarget": [
@@ -355,15 +354,15 @@
   "ui.terminal": [{ "type": 0, "value": "Terminal" }],
   "ui.reload": [{ "type": 0, "value": "Reload" }],
   "ui.capacity": [
-    { "type": 0, "value": "Pending recovery capacity: " },
+    { "type": 0, "value": "Pending recovery storage: " },
     { "type": 1, "value": "count" },
     { "type": 0, "value": " / " },
     { "type": 1, "value": "maximum" },
-    { "type": 0, "value": " preparations · " },
+    { "type": 0, "value": " requests · " },
     { "type": 1, "value": "bytes" },
     { "type": 0, "value": " / " },
     { "type": 1, "value": "maximumBytes" },
-    { "type": 0, "value": " canonical bytes." }
+    { "type": 0, "value": " bytes of exact request content." }
   ],
   "ui.nearCapacity": [
     { "type": 0, "value": "Near capacity; resolve or dismiss known pending items." }
@@ -371,7 +370,7 @@
   "ui.recoveryHint": [
     {
       "type": 0,
-      "value": "Pending recovery is shown by default. Terminal view records accepted, dismissed, and revoked authority without presenting it as executable work. Inspect server state before resolving or dismissing an item."
+      "value": "Pending requests appear by default. Terminal view shows accepted, dismissed and revoked authority as non-executable evidence. Inspect server state before recording or dismissing a request."
     }
   ],
   "ui.recoverySummary": [
@@ -413,7 +412,7 @@
   "ui.retainedCommand": [
     { "type": 0, "value": "Case " },
     { "type": 1, "value": "reference" },
-    { "type": 0, "value": " · command " },
+    { "type": 0, "value": " · action " },
     { "type": 1, "value": "command" }
   ],
   "ui.retainedFormat": [
@@ -444,14 +443,14 @@
   "ui.inspect": [{ "type": 0, "value": "Inspect" }],
   "ui.inspectRevocation": [{ "type": 0, "value": "Inspect revocation" }],
   "ui.moreRecovery": [{ "type": 0, "value": "Load more recovery" }],
-  "ui.resolveExact": [{ "type": 0, "value": "Resolve exact preparation" }],
-  "ui.dismissPreparation": [{ "type": 0, "value": "Dismiss preparation" }],
+  "ui.resolveExact": [{ "type": 0, "value": "Try to record this request" }],
+  "ui.dismissPreparation": [{ "type": 0, "value": "Stop future recording of this request" }],
   "ui.exportEnvelope": [{ "type": 0, "value": "Export recovery envelope" }],
   "ui.recoveryDetails": [{ "type": 0, "value": "Recovery details" }],
   "ui.recoveryDetailsHint": [
     {
       "type": 0,
-      "value": "Current request authority and attempt evidence from the server. The request details below keep the exact entered values."
+      "value": "Request authority and attempt evidence from the server. Request details preserve the exact entered values."
     }
   ],
   "ui.observation": [
@@ -473,8 +472,6 @@
     }
   ],
   "ui.working": [{ "type": 0, "value": "Working…" }],
-  "ui.confirmResolve": [{ "type": 0, "value": "Try to record this exact request" }],
-  "ui.confirmDismiss": [{ "type": 0, "value": "Permanently end future authority" }],
   "ui.confirmExport": [{ "type": 0, "value": "Confirm export" }],
   "ui.artifact": [
     { "type": 0, "value": "Artifact " },
@@ -483,25 +480,19 @@
     { "type": 1, "value": "digest" }
   ],
   "ui.importTarget": [
-    { "type": 0, "value": "Decoded target " },
+    { "type": 0, "value": "Imported target " },
     { "type": 1, "value": "reference" },
-    { "type": 0, "value": " · command " },
+    { "type": 0, "value": " · action " },
     { "type": 1, "value": "command" },
     { "type": 0, "value": " · expected revision " },
     { "type": 1, "value": "revision" }
-  ],
-  "ui.importHint": [
-    {
-      "type": 0,
-      "value": "The artifact is retained for explicit Recovery action; it is never submitted automatically."
-    }
   ],
   "ui.importEnvelope": [{ "type": 0, "value": "Import recovery envelope" }],
   "ui.importTitle": [{ "type": 0, "value": "Retain imported recovery material?" }],
   "ui.importDescription": [
     {
       "type": 0,
-      "value": "The preview is retained only after confirmation and is never submitted automatically."
+      "value": "Retained only after confirmation, for explicit Recovery action; never submitted automatically."
     }
   ],
   "ui.retainForRecovery": [{ "type": 0, "value": "Retain for Recovery" }],
@@ -512,13 +503,13 @@
   "ui.resolveConsequence": [
     {
       "type": 0,
-      "value": "This asks the server to resolve the displayed operation ID and request digest. It may record the reviewed request if it is still permitted, or return evidence of an earlier recorded result. The returned outcome determines what happened; this confirmation does not guarantee success."
+      "value": "The server may record this exact request if still permitted, or show an earlier accepted result. The returned outcome tells you what happened; success is not guaranteed."
     }
   ],
   "ui.dismissConsequence": [
     {
       "type": 0,
-      "value": "This asks the server to durably dismiss the displayed operation ID and request digest. A confirmed dismissal permanently prevents future execution of this unaccepted request. It cannot be undone and does not establish whether an earlier uncertain attempt recorded the request. The returned outcome determines whether dismissal was confirmed."
+      "value": "Confirmed dismissal permanently prevents future execution of this unaccepted request. It cannot be undone and does not settle earlier uncertain attempts. Check the returned outcome to confirm dismissal."
     }
   ],
   "ui.canonicalCopyHint": [
@@ -527,6 +518,27 @@
       "value": "Copies the exact underlying value. Dates use YYYY-MM-DD and amounts use a decimal point, regardless of display format."
     }
   ],
+  "ui.leaveDraftDescription": [
+    {
+      "type": 0,
+      "value": "Leaving discards draft edits. Retained requests stay in Recovery; leaving does not stop them or settle earlier attempts."
+    }
+  ],
+  "ui.discardAndLeave": [{ "type": 0, "value": "Discard and leave" }],
+  "ui.technicalDetails": [{ "type": 0, "value": "Technical details for support" }],
+  "ui.productVersion": [
+    { "type": 0, "value": "Product version: " },
+    { "type": 1, "value": "version" }
+  ],
+  "ui.semanticIdentity": [
+    { "type": 0, "value": "Semantic contract: " },
+    { "type": 1, "value": "digest" }
+  ],
+  "ui.webIdentity": [
+    { "type": 0, "value": "Web v3 contract: " },
+    { "type": 1, "value": "digest" }
+  ],
+  "ui.fieldHelp": [{ "type": 0, "value": "Meaning and exact copy" }],
   "field.incidentDate.label": [{ "type": 0, "value": "Incident date" }],
   "field.incidentDate.meaning": [{ "type": 0, "value": "Date on which the incident occurred." }],
   "field.incidentNotificationDate.label": [
@@ -554,18 +566,10 @@
     { "type": 0, "value": "Insurer recorded by the claims handler as responsible for this claim." }
   ],
   "field.claimedAmount.label": [{ "type": 0, "value": "Amount claimed" }],
-  "field.claimedAmount.meaning": [
-    {
-      "type": 0,
-      "value": "Amount requested by the claimant. Enter zero only when the claimed amount is zero."
-    }
-  ],
+  "field.claimedAmount.meaning": [{ "type": 0, "value": "Amount requested by the claimant." }],
   "field.claimedCurrency.label": [{ "type": 0, "value": "Currency of claimed amount" }],
   "field.claimedCurrency.meaning": [
-    {
-      "type": 0,
-      "value": "Currency in which the amount is claimed. Use three uppercase ASCII letters (A–Z), for example EUR."
-    }
+    { "type": 0, "value": "Currency in which the amount is claimed." }
   ],
   "field.caseReference.label": [{ "type": 0, "value": "Handler's case reference" }],
   "field.caseReference.meaning": [
@@ -688,11 +692,22 @@
   "diagnostic.CASE_ALREADY_EXISTS": [{ "type": 0, "value": "The case reference already exists." }],
   "diagnostic.CASE_ALREADY_OPENED": [{ "type": 0, "value": "The case is already open." }],
   "diagnostic.CASE_AMENDMENT_REQUIRES_UNDECIDED": [
-    { "type": 0, "value": "Withdraw an unpaid decision before amending registration." }
+    {
+      "type": 0,
+      "value": "“Amend registration” requires an undecided case. Use “Correct case facts” to correct recorded registration while keeping its decision."
+    }
   ],
-  "diagnostic.CASE_CLOSED": [{ "type": 0, "value": "Reopen the case before changing its facts." }],
+  "diagnostic.CASE_CLOSED": [
+    {
+      "type": 0,
+      "value": "This action cannot change a closed case. Use “Correct case facts” for factual corrections while keeping its status, or “Reopen the case” when you intend to resume ordinary case work."
+    }
+  ],
   "diagnostic.CASE_DECISION_ALREADY_PAID": [
-    { "type": 0, "value": "A recorded payment prevents changing its decision." }
+    {
+      "type": 0,
+      "value": "“Record payment decision” and “Withdraw payment decision” cannot change a paid decision. Use “Correct case facts” for a factual correction, with explicit payment reaffirmation or clearing when replacing a paid decision."
+    }
   ],
   "diagnostic.CASE_DECISION_REQUIRED": [{ "type": 0, "value": "Record a payment decision first." }],
   "diagnostic.CASE_NOT_FOUND": [{ "type": 0, "value": "The case reference was not found." }],

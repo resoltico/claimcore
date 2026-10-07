@@ -99,7 +99,7 @@ test("preserves a committed operation and exact recovery identity when its local
   await expect(row).toHaveCount(1);
   await row.getByRole("button", { name: "Inspect", exact: true }).click();
   await expect(page.getByRole("dialog")).toContainText(identity.requestSha256);
-  await expect(page.getByRole("button", { name: "Resolve exact preparation" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Try to record this request" })).toHaveCount(0);
   await expectAccessible(page);
 });
 
@@ -122,7 +122,7 @@ test("keeps inspected recovery authority and confirmation stable while language 
   await page.getByRole("button", { name: ui("lv", "ui.resolveExact") }).click();
   const pending = await pauseJsonReply(page, "recovery.resolve");
   try {
-    await page.getByRole("button", { name: ui("lv", "ui.confirmResolve") }).click();
+    await page.getByRole("button", { name: ui("lv", "ui.resolveExact") }).click();
     const captured = await pending.ready;
     const { outcome } = captured.reply;
     expect(outcome.tag === "COMPLETED" && outcome.data.execution.tag === "ACCEPTED").toBe(true);

@@ -208,7 +208,20 @@ export const createDraft = (
   };
 };
 
-export const isDirty = (values: DraftValues): boolean =>
-  isCorrectionValues(values)
-    ? correctionGroupNames.some((group) => values[group].mode !== "KEEP")
-    : Object.values(values).some((value) => value !== "");
+const flatValuesChanged = (values: FlatDraftValues, baseline: FlatDraftValues): boolean =>
+  Object.keys(values).length !== Object.keys(baseline).length ||
+  Object.entries(values).some(([field, value]) => baseline[field] !== value);
+
+export const isDirty = (values: DraftValues, baseline: DraftValues): boolean => {
+  if (isCorrectionValues(values)) {
+    return (
+      !isCorrectionValues(baseline) ||
+      correctionGroupNames.some(
+        (group) =>
+          values[group].mode !== baseline[group].mode ||
+          flatValuesChanged(values[group].values, baseline[group].values),
+      )
+    );
+  }
+  return isCorrectionValues(baseline) || flatValuesChanged(values, baseline);
+};

@@ -41,8 +41,8 @@ it("keeps accepted recovery evidence distinct from unconfirmed settlement and re
     .mockResolvedValueOnce(list([]));
   render(<RecoveryView token="token" onRecovery={recover} onMutationLockChange={lock} />);
   await user.click(await screen.findByRole("button", { name: "Inspect" }));
-  await user.click(await screen.findByRole("button", { name: "Resolve exact preparation" }));
-  await user.click(await screen.findByRole("button", { name: "Try to record this exact request" }));
+  await user.click(await screen.findByRole("button", { name: "Try to record this request" }));
+  await user.click(await screen.findByRole("button", { name: "Try to record this request" }));
   expect(await screen.findByRole("status")).toHaveTextContent("Accepted exact operation");
   expect(screen.getByRole("status")).toHaveTextContent("Inspect Recovery");
   expect(recover).toHaveBeenCalledWith({

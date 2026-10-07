@@ -281,6 +281,8 @@ const newCaseReference = async (): Promise<void> => {
   renderEditor({ current: null, initialCommand: "OPEN", onClose: closed });
   await user.type(screen.getByLabelText(/Handler's case reference/u), "NEW-1");
   await user.click(screen.getByRole("button", { name: "Back to cases" }));
+  expect(closed).not.toHaveBeenCalled();
+  await user.click(await screen.findByRole("button", { name: "Discard and leave" }));
   expect(closed).toHaveBeenCalledOnce();
 };
 

@@ -10,6 +10,9 @@ import type { Language, DisplayLocale } from "../src/presentation/preferences";
 import en from "../src/presentation/catalogs/en.ui.json" with { type: "json" };
 import lv from "../src/presentation/catalogs/lv.ui.json" with { type: "json" };
 import ar from "../src/presentation/catalogs/ar.ui.json" with { type: "json" };
+import enPresentation from "../src/presentation/generated/en.json" with { type: "json" };
+import lvPresentation from "../src/presentation/generated/lv.json" with { type: "json" };
+import arPresentation from "../src/presentation/generated/ar.json" with { type: "json" };
 import type { PreparedIdentity } from "./case-workflow";
 
 export const seedPresentation = async (
@@ -26,6 +29,10 @@ export const seedPresentation = async (
 };
 export const ui = (language: "en" | "lv" | "ar", key: keyof typeof en): string =>
   ({ en, lv, ar })[language][key];
+export const openLabel = (language: "en" | "lv" | "ar"): string =>
+  ({ en: enPresentation, lv: lvPresentation, ar: arPresentation })[language]["command.OPEN.label"]
+    .map((part) => part.value)
+    .join("");
 // Role lookup includes inert background controls; require the active native control.
 export const selectLanguage = async (page: Page, language: Language): Promise<void> => {
   const control = page

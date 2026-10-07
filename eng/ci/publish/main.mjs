@@ -11,6 +11,7 @@ import { fileURLToPath } from "node:url";
 import { flag, option } from "../process-support.mjs";
 import { packageNoticeReader } from "../policy/nuget-notices.mjs";
 import { productComponentNames, renderNotices } from "../policy/notices.mjs";
+import { compiledInputs, producingInputDigest, verifyProducingInputs } from "./inputs.mjs";
 import { verifyTree, writeManifest } from "./tree.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
@@ -154,6 +155,7 @@ function publishOne({ product, directory, project, frontendSbom }, { output, bui
   if (existsSync(destination)) {
     throw new Error(`The output ${destination} must start absent.`);
   }
+  const expectedInputs = producingInputDigest(root);
   const { version, license, assetsPath } = projectIdentity(project);
   run("dotnet", [
     "publish",
@@ -175,7 +177,12 @@ function publishOne({ product, directory, project, frontendSbom }, { output, bui
     copyFileSync(join(root, frontendSbom), join(destination, `${product}.frontend.cdx.json`));
   }
   mkdirSync(join(output, "manifests"), { recursive: true });
-  writeManifest(product, destination, join(output, "manifests", `${directory}.json`));
+  const inputs = compiledInputs(destination);
+  verifyProducingInputs(inputs, expectedInputs);
+  if (producingInputDigest(root) !== expectedInputs) {
+    throw new Error("Producing inputs changed during publication.");
+  }
+  writeManifest(product, destination, join(output, "manifests", `${directory}.json`), inputs);
 }
 
 /**
@@ -188,8 +195,22 @@ export function verifyPublished(output, only = []) {
   if (chosen.length === 0 || chosen.length !== (only.length || products.length)) {
     throw new Error("Name published products: cli, database, web.");
   }
+  const expected = producingInputDigest(root);
   for (const { product, directory } of chosen) {
-    verifyTree(product, join(output, directory), join(output, "manifests", `${directory}.json`));
+    const manifestPath = join(output, "manifests", `${directory}.json`);
+    verifyTree(product, join(output, directory), manifestPath);
+    const actual = compiledInputs(join(output, directory));
+    const declared = JSON.parse(readFileSync(manifestPath, "utf8")).producingInputs;
+    if (
+      JSON.stringify(Object.entries(actual).sort()) !==
+      JSON.stringify(Object.entries(declared).sort())
+    ) {
+      throw new Error("Compiled producing inputs differ from the publication manifest.");
+    }
+    verifyProducingInputs(actual, expected);
+  }
+  if (producingInputDigest(root) !== expected) {
+    throw new Error("Producing inputs changed during publication verification.");
   }
   return chosen.map((item) => item.directory);
 }

@@ -12,6 +12,7 @@ type DescriptorFieldProps = {
   value: string;
   inputName?: string;
   error?: Notice | undefined;
+  disabled?: boolean;
   onChange: (value: string) => void;
 };
 export const DescriptorField = ({
@@ -19,6 +20,7 @@ export const DescriptorField = ({
   value,
   inputName,
   error,
+  disabled = false,
   onChange,
 }: DescriptorFieldProps) => {
   const p = usePresentation();
@@ -26,6 +28,7 @@ export const DescriptorField = ({
     <TextField
       className="text-field"
       isInvalid={error !== undefined}
+      isDisabled={disabled}
       value={value}
       onChange={onChange}
     >

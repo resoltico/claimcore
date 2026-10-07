@@ -139,7 +139,23 @@ let private privateReadBoundariesPosix () =
         |> expectRefused "Noncanonical source path is refused"
 
         PrivateFiles.readSource 9 (path + "\u0000-suffix")
-        |> expectRefused "Embedded NUL source path is refused")
+        |> expectRefused "Embedded NUL source path is refused"
+
+        if OperatingSystem.IsMacOS() then
+            let beneath = makeFile directory "ancestor-check.json" bytes
+
+            Expect.equal
+                (PrivateFiles.readSource 9 beneath)
+                (Ok bytes)
+                "Unlinked private ancestor admitted"
+
+            addBroadAcl directory
+
+            PrivateFiles.readSource 9 beneath
+            |> expectRefused "ACL-granted ancestor is refused"
+
+            PrivateFiles.writeNew (Path.Combine(directory, "ancestor-export.json")) bytes
+            |> expectRefused "ACL-granted export ancestor is refused")
 
 let private linksAndNonFilesPosix () =
     withSandbox (fun directory ->

@@ -46,7 +46,7 @@ const filesBelow = async (directory) => {
   return files.flat();
 };
 
-const sourceFiles = async () => {
+export const sourceFiles = async () => {
   const source = await filesBelow(resolve(webDirectory, "src"));
   const scripts = await filesBelow(resolve(webDirectory, "scripts"));
   const fixed = [

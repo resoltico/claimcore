@@ -27,8 +27,10 @@ const inspectsAndDismisses = async (): Promise<void> => {
     preparation.summary.requestSha256!,
   );
   expect(screen.getByRole("dialog", { name: "Recovery details" })).toHaveTextContent(operationId);
-  await user.click(screen.getByRole("button", { name: "Dismiss preparation" }));
-  await user.click(await screen.findByRole("button", { name: "Permanently end future authority" }));
+  await user.click(screen.getByRole("button", { name: "Stop future recording of this request" }));
+  await user.click(
+    await screen.findByRole("button", { name: "Stop future recording of this request" }),
+  );
   expect(await screen.findByText("Preparation dismissed.")).toBeVisible();
 };
 
@@ -48,17 +50,15 @@ describe("v3 Recovery view", () => {
     fetch.mockResolvedValueOnce(list([]));
     render(<RecoveryView onRecovery={vi.fn()} onMutationLockChange={vi.fn()} token="token" />);
     await user.click(await screen.findByRole("button", { name: "Inspect" }));
-    await user.click(screen.getByRole("button", { name: "Resolve exact preparation" }));
-    await screen.findByRole("button", { name: "Try to record this exact request" });
+    await user.click(screen.getByRole("button", { name: "Try to record this request" }));
+    await screen.findByRole("button", { name: "Try to record this request" });
     expect(screen.getAllByRole("dialog")).toHaveLength(1);
     const language = screen.getByRole("combobox", { name: "Interface language" });
     await user.selectOptions(language, "ar");
     expect(screen.getAllByRole("dialog")).toHaveLength(1);
     await user.selectOptions(language, "en");
     expect(fetch).toHaveBeenCalledTimes(2);
-    await user.click(
-      await screen.findByRole("button", { name: "Try to record this exact request" }),
-    );
+    await user.click(await screen.findByRole("button", { name: "Try to record this request" }));
     expect(await screen.findByText(`Accepted exact operation ${operationId}.`)).toBeVisible();
   });
 
@@ -71,10 +71,8 @@ describe("v3 Recovery view", () => {
     fetch.mockResolvedValueOnce(list([]));
     render(<RecoveryView onRecovery={vi.fn()} onMutationLockChange={vi.fn()} token="token" />);
     await user.click(await screen.findByRole("button", { name: "Inspect" }));
-    await user.click(screen.getByRole("button", { name: "Resolve exact preparation" }));
-    await user.click(
-      await screen.findByRole("button", { name: "Try to record this exact request" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Try to record this request" }));
+    await user.click(await screen.findByRole("button", { name: "Try to record this request" }));
     expect(await screen.findByRole("status", { hidden: true })).toHaveTextContent(
       "Read the current case",
     );
@@ -175,7 +173,7 @@ it("closes recovery detail, confirm, and import dialogs without dispatching muta
   await user.click(await screen.findByRole("button", { name: "Inspect" }));
   await user.click(screen.getByRole("button", { name: "Close inspection" }));
   await user.click(screen.getByRole("button", { name: "Inspect" }));
-  await user.click(screen.getByRole("button", { name: "Dismiss preparation" }));
+  await user.click(screen.getByRole("button", { name: "Stop future recording of this request" }));
   await user.click(screen.getByRole("button", { name: "Cancel" }));
   await user.click(screen.getByRole("button", { name: "Export recovery envelope" }));
   expect(await screen.findByRole("dialog", { name: "Export recovery envelope?" })).toBeVisible();
@@ -235,7 +233,7 @@ it("renders direct observed-accepted recovery receipts", async () => {
   fetch.mockResolvedValueOnce(list([]));
   render(<RecoveryView onRecovery={vi.fn()} onMutationLockChange={vi.fn()} token="token" />);
   await user.click(await screen.findByRole("button", { name: "Inspect" }));
-  await user.click(screen.getByRole("button", { name: "Resolve exact preparation" }));
-  await user.click(await screen.findByRole("button", { name: "Try to record this exact request" }));
+  await user.click(screen.getByRole("button", { name: "Try to record this request" }));
+  await user.click(await screen.findByRole("button", { name: "Try to record this request" }));
   expect(await screen.findByText(`Accepted exact operation ${operationId}.`)).toBeVisible();
 });

@@ -41,8 +41,10 @@ if an existing installation has such a ring; never reset or adopt it to evade th
 - Handle-first private-file operations are supported on macOS and Linux only. Windows source builds,
   tests, and configuration-free discovery work, but operations that need private credential or artifact files fail closed until an independently verified Windows handle/ACL implementation exists.
 - On macOS, use physical canonical paths; system aliases such as `/var` and `/tmp` have linked
-  ancestors and are intentionally refused. An ignored repo-local `.local` under a physical `/Users`
-  checkout is a suitable private location when its permissions and retention are controlled.
+  ancestors and are intentionally refused. An extended ACL on any ancestor also refuses admission,
+  including a home directory with a stock deny-delete ACL. A repo-local `.local` directory does
+  not avoid that ancestor. Use the [durable private operator path](service.md#persistent-local-evaluation)
+  and retain its files under operator custody; do not remove a home ACL to admit the CLI.
 
 Initialization and retention credentials own schema administration and must never be application
 credentials. This build intentionally refuses every old installation without changing its data.

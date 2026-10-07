@@ -176,7 +176,7 @@ assert.deepEqual(evidenceIdentity(root), identity, "Qualification source changed
 const report = verifyDeploymentReport(
   {
     format: "claimcore-deployment-qualification",
-    formatVersion: 1,
+    formatVersion: 2,
     identity,
     publications,
     run,

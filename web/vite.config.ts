@@ -1,6 +1,7 @@
 import { availableParallelism } from "node:os";
 import react from "@vitejs/plugin-react";
 import type { UserConfig } from "vite";
+import ContractFirstSequencer from "./scripts/contract-first-sequencer.mjs";
 
 const testWorkers = Math.max(1, Math.min(6, Math.ceil(availableParallelism() / 3)));
 
@@ -24,6 +25,7 @@ export default {
     host: "127.0.0.1",
   },
   test: {
+    sequence: { sequencer: ContractFirstSequencer },
     environment: "jsdom",
     maxWorkers: testWorkers,
     pool: "vmThreads",

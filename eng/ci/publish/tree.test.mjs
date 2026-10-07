@@ -23,6 +23,8 @@ function withTree(files, body) {
   }
 }
 
+const provenance = { "app.dll": "a".repeat(64) };
+
 const files = {
   "app.dll": "binary",
   "wwwroot/index.html": "<html>",
@@ -32,9 +34,9 @@ const files = {
 
 test("a written manifest verifies its tree and lists files in ordinal order", () => {
   withTree(files, (root, manifest) => {
-    writeManifest("cli", root, manifest);
+    writeManifest("cli", root, manifest, provenance);
     assert.match(verifyTree("cli", root, manifest), /^[0-9a-f]{64}$/u);
-    const paths = createManifest("cli", root).files.map((file) => file.path);
+    const paths = createManifest("cli", root, provenance).files.map((file) => file.path);
     assert.deepEqual(paths, ["app.dll", "wwwroot/B.txt", "wwwroot/a.txt", "wwwroot/index.html"]);
   });
 });
@@ -48,7 +50,7 @@ test("any change to the tree is refused", () => {
   ];
   for (const mutate of mutations) {
     withTree(files, (root, manifest) => {
-      writeManifest("cli", root, manifest);
+      writeManifest("cli", root, manifest, provenance);
       mutate(root);
       assert.throws(() => verifyTree("cli", root, manifest), /./u);
     });
@@ -57,11 +59,13 @@ test("any change to the tree is refused", () => {
 
 test("a manifest for another product or with a forged shape is refused", () => {
   withTree(files, (root, manifest) => {
-    writeManifest("cli", root, manifest);
+    writeManifest("cli", root, manifest, provenance);
     assert.throws(() => verifyTree("web", root, manifest), /different product/u);
     const parsed = JSON.parse(readFileSync(manifest, "utf8"));
     /** @param {object} value */
     const rewrite = (value) => writeFileSync(manifest, JSON.stringify(value));
+    rewrite({ ...parsed, schemaVersion: 1 });
+    assert.throws(() => verifyTree("cli", root, manifest), /malformed/u);
     rewrite({ ...parsed, extra: 1 });
     assert.throws(() => verifyTree("cli", root, manifest), /unknown properties/u);
     rewrite({ ...parsed, treeSha256: "0".repeat(64) });
@@ -82,7 +86,7 @@ test("an empty tree cannot be published", () => {
   withTree({}, () => undefined);
   const scratch = mkdtempSync(join(tmpdir(), "claimcore-publish-empty-"));
   try {
-    assert.throws(() => createManifest("cli", scratch), /empty/u);
+    assert.throws(() => createManifest("cli", scratch, provenance), /empty/u);
   } finally {
     rmSync(scratch, { recursive: true, force: true });
   }
@@ -96,7 +100,13 @@ test("an empty inventory cannot verify an empty published tree", () => {
     mkdirSync(root);
     writeFileSync(
       manifest,
-      JSON.stringify({ schemaVersion: 1, product: "cli", files: [], treeSha256: treeDigest([]) }),
+      JSON.stringify({
+        schemaVersion: 2,
+        producingInputs: provenance,
+        product: "cli",
+        files: [],
+        treeSha256: treeDigest([]),
+      }),
     );
     assert.throws(() => verifyTree("cli", root, manifest), /malformed/u);
   } finally {

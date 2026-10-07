@@ -72,9 +72,28 @@ The creator refuses occupied volumes or operator roots. Private role files use r
 semantics; the host receives only public settings/certificates and the separate human login credential. Partial creation remains available for inspection; do not treat
 failure as authorization to erase data or recreate identities.
 
+On macOS, a home ancestor may carry an extended ACL that native CLI admission refuses,
+even when its child is mode `0700`. Use a new physical directory directly beneath
+`/Users/Shared`, provided that parent is root-owned, sticky and has no extended ACL.
+Inspect with `ls -lde / /Users /Users/Shared` first. Do not modify an existing parent or
+strip an ACL. This is durable operator storage outside the repository; exclude it from
+synchronization and manage its retention. On Linux select an equivalent physical
+owner-controlled path whose ancestors satisfy [private-file admission](cli.md#cc-cli-002).
+The Linux example uses a physical qualifying home; choose an independently provisioned
+physical path instead if that home has linked components, unsafe ownership or an extended ACL.
+Persistent setup also requires `uuidgen`, `jq`, and `tr`; on Debian/Ubuntu `uuidgen` is
+provided by `uuid-runtime`. These tools create exact private grant frames, not identities.
+Creation below is exclusive: if the name exists, stop and choose a fresh name.
+
 ```sh
-install -d -m 700 "$PWD/.local/installation"
-export CLAIMCORE_CONFIG_DIR="$PWD/.local/installation"
+case "$(uname -s)" in
+  Darwin) claimcore_operator_path=/Users/Shared/claimcore-local-operator ;;
+  Linux) claimcore_operator_path="$HOME/claimcore-local-operator" ;;
+  *) printf 'This private-file runtime supports macOS and Linux.\n' >&2; exit 1 ;;
+esac
+umask 077
+mkdir "$claimcore_operator_path"
+export CLAIMCORE_CONFIG_DIR="$claimcore_operator_path"
 export CLAIMCORE_SERVICE_UID="$(id -u)"
 export CLAIMCORE_SERVICE_GID="$(id -g)"
 export CLAIMCORE_COMPOSE_PROJECT=claimcore-local
@@ -101,6 +120,57 @@ authenticated CLI `authority.setGrant` endpoints to grant the owner `CASE_EDITOR
 `RECOVERY_OPERATOR` and `RECOVERY_EXPORTER` for the intended installation scope. The exact private
 issuer/subject binding is in `administration/initial-owner.json`. [CLI](cli.md) owns those frames and
 interactive authentication. Do not write grants directly through SQL.
+
+Retrieve that existing binding from the configured Linux volume into a new private file.
+This reads identity metadata, not an owner registration or database credential:
+
+```sh
+mkdir "$CLAIMCORE_CONFIG_DIR/cli"
+set -C
+docker compose -f deployment/compose.yaml -f deployment/administration.compose.yaml \
+  -f deployment/local.compose.yaml run --rm --no-deps --entrypoint cat configure \
+  /configuration/installation/administration/initial-owner.json \
+  >"$CLAIMCORE_CONFIG_DIR/cli/initial-owner.json"
+```
+
+After building the CLI, configure its own public OIDC client and both explicit loopback
+public roots. These settings do not grant Chrome trust:
+
+```sh
+export CLAIMCORE_SERVICE_URL=https://app.localhost:5443/
+export CLAIMCORE_OIDC_ISSUER=https://identity.localhost:5444/realms/claimcore
+export CLAIMCORE_OIDC_CLIENT_ID=claimcore-cli
+export CLAIMCORE_CLI_AUTH_MODE=interactive
+export CLAIMCORE_CLI_OIDC_TRUST_ROOT_FILE="$CLAIMCORE_CONFIG_DIR/web/ca.pem"
+export CLAIMCORE_CLI_SERVICE_TRUST_ROOT_FILE="$CLAIMCORE_CONFIG_DIR/web/ca.pem"
+```
+
+Create three private invocation files once, with distinct event IDs. The initial owner
+is already registered; do not create a second principal to work around access refusal.
+
+```sh
+for claimcore_role in CASE_EDITOR RECOVERY_OPERATOR RECOVERY_EXPORTER; do
+  jq --arg eventId "$(uuidgen | tr '[:upper:]' '[:lower:]')" --arg role "$claimcore_role" \
+    '{protocolVersion:4,endpoint:"authority.setGrant",input:{eventId:$eventId,
+      principal:({kind:"HUMAN"}+.),role:$role,scope:{kind:"INSTALLATION"},active:true}}' \
+    "$CLAIMCORE_CONFIG_DIR/cli/initial-owner.json" \
+    >"$CLAIMCORE_CONFIG_DIR/cli/grant-$claimcore_role.json"
+done
+dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- call \
+  <"$CLAIMCORE_CONFIG_DIR/cli/grant-CASE_EDITOR.json"
+```
+
+Sign in as that existing owner when the interactive CLI opens the issuer. Inspect the
+typed outcome before running the corresponding `call` separately for `RECOVERY_OPERATOR`
+and `RECOVERY_EXPORTER`. Require `APPLIED`, including an exact replay. `INSTALLATION`
+scope permits first-case creation, listing and recovery discovery; a `CASE` scope names
+only the intended existing case and cannot replace it for first-run setup. Neither a
+database role nor owner registration supplies case-work grants automatically.
+
+On `UNCONFIRMED`, exit 4, or lost output, preserve the original grant file and event ID.
+Use `authority.observe` with `input:{eventId:"<that same UUID>"}` in a CLI-v4 frame;
+absence does not prove non-commit. Reconcile through exact observation or replay the
+unchanged original file. Never regenerate an event ID or change a grant through SQL.
 
 Keep the private input volume, operator files, trust material, database volumes and copies under explicit operator custody.
 `docker compose down` retains volumes; ordinary operation never uses `down --volumes`, a prune,

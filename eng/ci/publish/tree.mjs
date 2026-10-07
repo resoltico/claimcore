@@ -7,7 +7,7 @@ import { join, relative, sep } from "node:path";
 import { compareOrdinal } from "../suites/inventory.mjs";
 
 /** @typedef {{ path: string, length: number, sha256: string }} PublishedFile */
-/** @typedef {{ schemaVersion: 1, product: string, files: PublishedFile[], treeSha256: string }} Manifest */
+/** @typedef {{ schemaVersion: 2, product: string, files: PublishedFile[], treeSha256: string, producingInputs: Record<string, string> }} Manifest */
 
 const digestPattern = /^[0-9a-f]{64}$/u;
 
@@ -65,25 +65,31 @@ export const treeDigest = (files) =>
 /**
  * @param {string} product
  * @param {string} root
+ * @param {Record<string, string>} producingInputs
  * @returns {Manifest}
  */
-export function createManifest(product, root) {
+export function createManifest(product, root, producingInputs) {
   const files = describeFiles(root);
   if (files.length === 0) {
     throw new Error("A published tree cannot be empty.");
   }
-  return { schemaVersion: 1, product, files, treeSha256: treeDigest(files) };
+  return { schemaVersion: 2, product, files, treeSha256: treeDigest(files), producingInputs };
 }
 
 /**
  * @param {string} product
  * @param {string} root
  * @param {string} manifestPath
+ * @param {Record<string, string>} producingInputs
  */
-export function writeManifest(product, root, manifestPath) {
-  writeFileSync(manifestPath, `${JSON.stringify(createManifest(product, root), null, 2)}\n`, {
-    flag: "wx",
-  });
+export function writeManifest(product, root, manifestPath, producingInputs) {
+  writeFileSync(
+    manifestPath,
+    `${JSON.stringify(createManifest(product, root, producingInputs), null, 2)}\n`,
+    {
+      flag: "wx",
+    },
+  );
 }
 
 /**
@@ -113,6 +119,17 @@ function validFileRecord(file) {
   );
 }
 
+/** @param {Record<string, string>} inputs */
+function validProducingInputs(inputs) {
+  return (
+    inputs !== null &&
+    typeof inputs === "object" &&
+    !Array.isArray(inputs) &&
+    Object.keys(inputs).length > 0 &&
+    Object.entries(inputs).every(([path, digest]) => safePath(path) && digestPattern.test(digest))
+  );
+}
+
 /**
  * @param {unknown} value
  * @returns {Manifest}
@@ -121,17 +138,21 @@ function checkedManifest(value) {
   const manifest = /** @type {Manifest} */ (value);
   const keys = Object.keys(manifest ?? {}).sort();
   if (
-    JSON.stringify(keys) !== JSON.stringify(["files", "product", "schemaVersion", "treeSha256"])
+    JSON.stringify(keys) !==
+    JSON.stringify(["files", "product", "producingInputs", "schemaVersion", "treeSha256"].sort())
   ) {
     throw new Error("The publish manifest has missing or unknown properties.");
   }
   if (
-    manifest.schemaVersion !== 1 ||
+    manifest.schemaVersion !== 2 ||
     !Array.isArray(manifest.files) ||
     manifest.files.length === 0 ||
     !digestPattern.test(manifest.treeSha256)
   ) {
     throw new Error("The publish manifest is malformed.");
+  }
+  if (!validProducingInputs(manifest.producingInputs)) {
+    throw new Error("The publish manifest has invalid producing inputs.");
   }
   if (!manifest.files.every(validFileRecord)) {
     throw new Error("The publish manifest has an invalid file record.");

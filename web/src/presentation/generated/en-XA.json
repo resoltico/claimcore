@@ -304,7 +304,7 @@
   ],
   "ui.loadingDefinition": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Lööààdïïng cöörëë dëëfïïnïïtïïöön…" },
+    { "type": 0, "value": "Lööààdïïng ààpplïïcààtïïöön…" },
     { "type": 0, "value": "⟧" }
   ],
   "ui.loginInstructions": [
@@ -317,11 +317,6 @@
     { "type": 0, "value": "Sïïgn ïïn" },
     { "type": 0, "value": "⟧" }
   ],
-  "ui.caseReference": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "cààsëë rëëfëërëëncëë" },
-    { "type": 0, "value": "⟧" }
-  ],
   "ui.caseRow": [
     { "type": 0, "value": "⟦" },
     { "type": 1, "value": "status" },
@@ -331,7 +326,8 @@
   ],
   "ui.exactCaseReference": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ËËxààct cààsëë rëëfëërëëncëë" },
+    { "type": 1, "value": "label" },
+    { "type": 0, "value": " (ëëxààct)" },
     { "type": 0, "value": "⟧" }
   ],
   "ui.findCase": [
@@ -347,11 +343,6 @@
   "ui.reloadCases": [
     { "type": 0, "value": "⟦" },
     { "type": 0, "value": "Rëëlööààd cààsëës" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "ui.openNewCase": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÖÖpëën nëëw cààsëë" },
     { "type": 0, "value": "⟧" }
   ],
   "ui.loadingCases": [
@@ -548,7 +539,8 @@
   ],
   "ui.exactReference": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ËËxààct rëëfëërëëncëë: " },
+    { "type": 1, "value": "label" },
+    { "type": 0, "value": " (ëëxààct): " },
     { "type": 1, "value": "reference" },
     { "type": 0, "value": "⟧" }
   ],
@@ -595,7 +587,7 @@
   ],
   "ui.observeOperation": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÖÖbsëërvëë ööpëërààtïïöön" },
+    { "type": 0, "value": "Löööök üüp rëëcöördëëd rëësüült" },
     { "type": 0, "value": "⟧" }
   ],
   "ui.cancel": [
@@ -628,12 +620,6 @@
     { "type": 0, "value": "⟦" },
     { "type": 0, "value": "Cööntààïïns " },
     { "type": 1, "value": "characters" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "ui.caseFieldsContext": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Cààsëë fïïëëlds föör " },
-    { "type": 1, "value": "context" },
     { "type": 0, "value": "⟧" }
   ],
   "ui.acceptedSummary": [
@@ -697,7 +683,8 @@
   ],
   "ui.reference": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Cààsëë rëëfëërëëncëë: " },
+    { "type": 1, "value": "label" },
+    { "type": 0, "value": ": " },
     { "type": 1, "value": "reference" },
     { "type": 0, "value": "⟧" }
   ],
@@ -715,7 +702,7 @@
     { "type": 0, "value": "⟦" },
     {
       "type": 0,
-      "value": "Chöööösëë whïïch dëëtààïïls töö këëëëp, rëëplààcëë öör clëëààr. Këëpt dëëtààïïls cöömëë frööm thëë cüürrëënt cààsëë whëën chààngëës ààrëë rëëcöördëëd."
+      "value": "Chöööösëë ààn ààctïïöön föör ëëààch grööüüp. Këëpt dëëtààïïls üüsëë thëë cüürrëënt cààsëë whëën rëëcöördëëd."
     },
     { "type": 0, "value": "⟧" }
   ],
@@ -784,7 +771,7 @@
     { "type": 0, "value": "⟦" },
     {
       "type": 0,
-      "value": "Chëëck thëë dëëtààïïls, cöönfïïrm thëëm, thëën sëëlëëct “Rëëcöörd chààngëës”. ÏÏf thëë rëësüült ïïs nööt cöönfïïrmëëd, chëëck Rëëcöövëëry bëëföörëë tryïïng ààgààïïn."
+      "value": "Chëëck àànd cöönfïïrm thëë dëëtààïïls. ÏÏf rëëcöördïïng ïïs üüncöönfïïrmëëd, ïïnspëëct Rëëcöövëëry bëëföörëë tryïïng ààgààïïn."
     },
     { "type": 0, "value": "⟧" }
   ],
@@ -858,15 +845,15 @@
   ],
   "ui.capacity": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Pëëndïïng rëëcöövëëry cààpààcïïty: " },
+    { "type": 0, "value": "Pëëndïïng rëëcöövëëry stöörààgëë: " },
     { "type": 1, "value": "count" },
     { "type": 0, "value": " / " },
     { "type": 1, "value": "maximum" },
-    { "type": 0, "value": " prëëpààrààtïïööns · " },
+    { "type": 0, "value": " rëëqüüëësts · " },
     { "type": 1, "value": "bytes" },
     { "type": 0, "value": " / " },
     { "type": 1, "value": "maximumBytes" },
-    { "type": 0, "value": " càànöönïïcààl bytëës." },
+    { "type": 0, "value": " bytëës ööf ëëxààct rëëqüüëëst cööntëënt." },
     { "type": 0, "value": "⟧" }
   ],
   "ui.nearCapacity": [
@@ -881,7 +868,7 @@
     { "type": 0, "value": "⟦" },
     {
       "type": 0,
-      "value": "Pëëndïïng rëëcöövëëry ïïs shööwn by dëëfààüült. Tëërmïïnààl vïïëëw rëëcöörds ààccëëptëëd, dïïsmïïssëëd, àànd rëëvöökëëd ààüüthöörïïty wïïthööüüt prëësëëntïïng ïït ààs ëëxëëcüütààblëë wöörk. ÏÏnspëëct sëërvëër stààtëë bëëföörëë rëësöölvïïng öör dïïsmïïssïïng ààn ïïtëëm."
+      "value": "Pëëndïïng rëëqüüëësts ààppëëààr by dëëfààüült. Tëërmïïnààl vïïëëw shööws ààccëëptëëd, dïïsmïïssëëd àànd rëëvöökëëd ààüüthöörïïty ààs nöön-ëëxëëcüütààblëë ëëvïïdëëncëë. ÏÏnspëëct sëërvëër stààtëë bëëföörëë rëëcöördïïng öör dïïsmïïssïïng àà rëëqüüëëst."
     },
     { "type": 0, "value": "⟧" }
   ],
@@ -937,7 +924,7 @@
     { "type": 0, "value": "⟦" },
     { "type": 0, "value": "Cààsëë " },
     { "type": 1, "value": "reference" },
-    { "type": 0, "value": " · cöömmàànd " },
+    { "type": 0, "value": " · ààctïïöön " },
     { "type": 1, "value": "command" },
     { "type": 0, "value": "⟧" }
   ],
@@ -991,12 +978,12 @@
   ],
   "ui.resolveExact": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Rëësöölvëë ëëxààct prëëpààrààtïïöön" },
+    { "type": 0, "value": "Try töö rëëcöörd thïïs rëëqüüëëst" },
     { "type": 0, "value": "⟧" }
   ],
   "ui.dismissPreparation": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Dïïsmïïss prëëpààrààtïïöön" },
+    { "type": 0, "value": "Stööp füütüürëë rëëcöördïïng ööf thïïs rëëqüüëëst" },
     { "type": 0, "value": "⟧" }
   ],
   "ui.exportEnvelope": [
@@ -1013,7 +1000,7 @@
     { "type": 0, "value": "⟦" },
     {
       "type": 0,
-      "value": "Cüürrëënt rëëqüüëëst ààüüthöörïïty àànd ààttëëmpt ëëvïïdëëncëë frööm thëë sëërvëër. Thëë rëëqüüëëst dëëtààïïls bëëlööw këëëëp thëë ëëxààct ëëntëërëëd vààlüüëës."
+      "value": "Rëëqüüëëst ààüüthöörïïty àànd ààttëëmpt ëëvïïdëëncëë frööm thëë sëërvëër. Rëëqüüëëst dëëtààïïls prëësëërvëë thëë ëëxààct ëëntëërëëd vààlüüëës."
     },
     { "type": 0, "value": "⟧" }
   ],
@@ -1058,16 +1045,6 @@
     { "type": 0, "value": "Wöörkïïng…" },
     { "type": 0, "value": "⟧" }
   ],
-  "ui.confirmResolve": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Try töö rëëcöörd thïïs ëëxààct rëëqüüëëst" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "ui.confirmDismiss": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Pëërmàànëëntly ëënd füütüürëë ààüüthöörïïty" },
-    { "type": 0, "value": "⟧" }
-  ],
   "ui.confirmExport": [
     { "type": 0, "value": "⟦" },
     { "type": 0, "value": "Cöönfïïrm ëëxpöört" },
@@ -1083,20 +1060,12 @@
   ],
   "ui.importTarget": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Dëëcöödëëd tààrgëët " },
+    { "type": 0, "value": "ÏÏmpöörtëëd tààrgëët " },
     { "type": 1, "value": "reference" },
-    { "type": 0, "value": " · cöömmàànd " },
+    { "type": 0, "value": " · ààctïïöön " },
     { "type": 1, "value": "command" },
     { "type": 0, "value": " · ëëxpëëctëëd rëëvïïsïïöön " },
     { "type": 1, "value": "revision" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "ui.importHint": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thëë ààrtïïfààct ïïs rëëtààïïnëëd föör ëëxplïïcïït Rëëcöövëëry ààctïïöön; ïït ïïs nëëvëër süübmïïttëëd ààüütöömààtïïcààlly."
-    },
     { "type": 0, "value": "⟧" }
   ],
   "ui.importEnvelope": [
@@ -1113,7 +1082,7 @@
     { "type": 0, "value": "⟦" },
     {
       "type": 0,
-      "value": "Thëë prëëvïïëëw ïïs rëëtààïïnëëd öönly ààftëër cöönfïïrmààtïïöön àànd ïïs nëëvëër süübmïïttëëd ààüütöömààtïïcààlly."
+      "value": "Rëëtààïïnëëd öönly ààftëër cöönfïïrmààtïïöön, föör ëëxplïïcïït Rëëcöövëëry ààctïïöön; nëëvëër süübmïïttëëd ààüütöömààtïïcààlly."
     },
     { "type": 0, "value": "⟧" }
   ],
@@ -1146,7 +1115,7 @@
     { "type": 0, "value": "⟦" },
     {
       "type": 0,
-      "value": "Thïïs ààsks thëë sëërvëër töö rëësöölvëë thëë dïïsplààyëëd ööpëërààtïïöön ÏÏD àànd rëëqüüëëst dïïgëëst. ÏÏt màày rëëcöörd thëë rëëvïïëëwëëd rëëqüüëëst ïïf ïït ïïs stïïll pëërmïïttëëd, öör rëëtüürn ëëvïïdëëncëë ööf ààn ëëààrlïïëër rëëcöördëëd rëësüült. Thëë rëëtüürnëëd ööüütcöömëë dëëtëërmïïnëës whààt hààppëënëëd; thïïs cöönfïïrmààtïïöön dööëës nööt güüààrààntëëëë süüccëëss."
+      "value": "Thëë sëërvëër màày rëëcöörd thïïs ëëxààct rëëqüüëëst ïïf stïïll pëërmïïttëëd, öör shööw ààn ëëààrlïïëër ààccëëptëëd rëësüült. Thëë rëëtüürnëëd ööüütcöömëë tëëlls yööüü whààt hààppëënëëd; süüccëëss ïïs nööt güüààrààntëëëëd."
     },
     { "type": 0, "value": "⟧" }
   ],
@@ -1154,7 +1123,7 @@
     { "type": 0, "value": "⟦" },
     {
       "type": 0,
-      "value": "Thïïs ààsks thëë sëërvëër töö düürààbly dïïsmïïss thëë dïïsplààyëëd ööpëërààtïïöön ÏÏD àànd rëëqüüëëst dïïgëëst. ÀÀ cöönfïïrmëëd dïïsmïïssààl pëërmàànëëntly prëëvëënts füütüürëë ëëxëëcüütïïöön ööf thïïs üünààccëëptëëd rëëqüüëëst. ÏÏt càànnööt bëë üündöönëë àànd dööëës nööt ëëstààblïïsh whëëthëër ààn ëëààrlïïëër üüncëërtààïïn ààttëëmpt rëëcöördëëd thëë rëëqüüëëst. Thëë rëëtüürnëëd ööüütcöömëë dëëtëërmïïnëës whëëthëër dïïsmïïssààl wààs cöönfïïrmëëd."
+      "value": "Cöönfïïrmëëd dïïsmïïssààl pëërmàànëëntly prëëvëënts füütüürëë ëëxëëcüütïïöön ööf thïïs üünààccëëptëëd rëëqüüëëst. ÏÏt càànnööt bëë üündöönëë àànd dööëës nööt sëëttlëë ëëààrlïïëër üüncëërtààïïn ààttëëmpts. Chëëck thëë rëëtüürnëëd ööüütcöömëë töö cöönfïïrm dïïsmïïssààl."
     },
     { "type": 0, "value": "⟧" }
   ],
@@ -1164,6 +1133,47 @@
       "type": 0,
       "value": "Cööpïïëës thëë ëëxààct üündëërlyïïng vààlüüëë. Dààtëës üüsëë YYYY-MM-DD àànd ààmööüünts üüsëë àà dëëcïïmààl pööïïnt, rëëgààrdlëëss ööf dïïsplàày föörmààt."
     },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.leaveDraftDescription": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Lëëààvïïng dïïscààrds drààft ëëdïïts. Rëëtààïïnëëd rëëqüüëësts stàày ïïn Rëëcöövëëry; lëëààvïïng dööëës nööt stööp thëëm öör sëëttlëë ëëààrlïïëër ààttëëmpts."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.discardAndLeave": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Dïïscààrd àànd lëëààvëë" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.technicalDetails": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Tëëchnïïcààl dëëtààïïls föör süüppöört" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.productVersion": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Pröödüüct vëërsïïöön: " },
+    { "type": 1, "value": "version" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.semanticIdentity": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Sëëmààntïïc cööntrààct: " },
+    { "type": 1, "value": "digest" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.webIdentity": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Wëëb v3 cööntrààct: " },
+    { "type": 1, "value": "digest" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.fieldHelp": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Mëëàànïïng àànd ëëxààct cööpy" },
     { "type": 0, "value": "⟧" }
   ],
   "field.incidentDate.label": [
@@ -1232,10 +1242,7 @@
   ],
   "field.claimedAmount.meaning": [
     { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "ÀÀmööüünt rëëqüüëëstëëd by thëë clààïïmàànt. ËËntëër zëëröö öönly whëën thëë clààïïmëëd ààmööüünt ïïs zëëröö."
-    },
+    { "type": 0, "value": "ÀÀmööüünt rëëqüüëëstëëd by thëë clààïïmàànt." },
     { "type": 0, "value": "⟧" }
   ],
   "field.claimedCurrency.label": [
@@ -1245,10 +1252,7 @@
   ],
   "field.claimedCurrency.meaning": [
     { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Cüürrëëncy ïïn whïïch thëë ààmööüünt ïïs clààïïmëëd. ÜÜsëë thrëëëë üüppëërcààsëë ÀÀSCÏÏÏÏ lëëttëërs (ÀÀ–Z), föör ëëxààmplëë ËËÜÜR."
-    },
+    { "type": 0, "value": "Cüürrëëncy ïïn whïïch thëë ààmööüünt ïïs clààïïmëëd." },
     { "type": 0, "value": "⟧" }
   ],
   "field.caseReference.label": [
@@ -1506,18 +1510,24 @@
     { "type": 0, "value": "⟦" },
     {
       "type": 0,
-      "value": "Wïïthdrààw ààn üünpààïïd dëëcïïsïïöön bëëföörëë ààmëëndïïng rëëgïïstrààtïïöön."
+      "value": "“ÀÀmëënd rëëgïïstrààtïïöön” rëëqüüïïrëës ààn üündëëcïïdëëd cààsëë. ÜÜsëë “Cöörrëëct cààsëë fààcts” töö cöörrëëct rëëcöördëëd rëëgïïstrààtïïöön whïïlëë këëëëpïïng ïïts dëëcïïsïïöön."
     },
     { "type": 0, "value": "⟧" }
   ],
   "diagnostic.CASE_CLOSED": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Rëëööpëën thëë cààsëë bëëföörëë chààngïïng ïïts fààcts." },
+    {
+      "type": 0,
+      "value": "Thïïs ààctïïöön càànnööt chààngëë àà clöösëëd cààsëë. ÜÜsëë “Cöörrëëct cààsëë fààcts” föör fààctüüààl cöörrëëctïïööns whïïlëë këëëëpïïng ïïts stààtüüs, öör “Rëëööpëën thëë cààsëë” whëën yööüü ïïntëënd töö rëësüümëë öördïïnààry cààsëë wöörk."
+    },
     { "type": 0, "value": "⟧" }
   ],
   "diagnostic.CASE_DECISION_ALREADY_PAID": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÀÀ rëëcöördëëd pààymëënt prëëvëënts chààngïïng ïïts dëëcïïsïïöön." },
+    {
+      "type": 0,
+      "value": "“Rëëcöörd pààymëënt dëëcïïsïïöön” àànd “Wïïthdrààw pààymëënt dëëcïïsïïöön” càànnööt chààngëë àà pààïïd dëëcïïsïïöön. ÜÜsëë “Cöörrëëct cààsëë fààcts” föör àà fààctüüààl cöörrëëctïïöön, wïïth ëëxplïïcïït pààymëënt rëëààffïïrmààtïïöön öör clëëààrïïng whëën rëëplààcïïng àà pààïïd dëëcïïsïïöön."
+    },
     { "type": 0, "value": "⟧" }
   ],
   "diagnostic.CASE_DECISION_REQUIRED": [

@@ -50,10 +50,12 @@ it("requires fresh inspection before retrying a submission-started preparation",
   fetch.mockResolvedValueOnce(inspection(started));
   render(<RecoveryView onRecovery={vi.fn()} onMutationLockChange={vi.fn()} token="token" />);
   await screen.findByRole("button", { name: "Inspect" });
-  expect(screen.queryByRole("button", { name: "Resolve exact preparation" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Try to record this request" })).toBeNull();
   await user.click(screen.getByRole("button", { name: "Inspect" }));
-  expect(await screen.findByRole("button", { name: "Resolve exact preparation" })).toBeVisible();
-  expect(screen.queryByRole("button", { name: "Dismiss preparation" })).toBeNull();
+  expect(await screen.findByRole("button", { name: "Try to record this request" })).toBeVisible();
+  expect(
+    screen.queryByRole("button", { name: "Stop future recording of this request" }),
+  ).toBeNull();
   expect(fetch).toHaveBeenCalledTimes(2);
 });
 
@@ -87,8 +89,10 @@ it("uses inspected accepted evidence to remove stale list mutation actions", asy
   render(<RecoveryView onRecovery={vi.fn()} onMutationLockChange={vi.fn()} token="token" />);
   await user.click(await screen.findByRole("button", { name: "Inspect" }));
   expect(await screen.findByRole("dialog", { name: "Recovery details" })).toBeVisible();
-  expect(screen.queryByRole("button", { name: "Resolve exact preparation" })).toBeNull();
-  expect(screen.queryByRole("button", { name: "Dismiss preparation" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Try to record this request" })).toBeNull();
+  expect(
+    screen.queryByRole("button", { name: "Stop future recording of this request" }),
+  ).toBeNull();
   expect(screen.getByRole("button", { name: "Export recovery envelope" })).toBeVisible();
 });
 
@@ -160,13 +164,13 @@ it("keeps an unknown recovery result explicit and directs inspection", async () 
   fetch.mockResolvedValueOnce(list([]));
   render(<RecoveryView onRecovery={vi.fn()} onMutationLockChange={vi.fn()} token="token" />);
   await user.click(await screen.findByRole("button", { name: "Inspect" }));
-  await user.click(screen.getByRole("button", { name: "Resolve exact preparation" }));
-  await user.click(await screen.findByRole("button", { name: "Try to record this exact request" }));
+  await user.click(screen.getByRole("button", { name: "Try to record this request" }));
+  await user.click(await screen.findByRole("button", { name: "Try to record this request" }));
   expect(
     await screen.findByText(/Inspect Recovery before retrying this exact operation/u),
   ).toBeVisible();
   expect(screen.queryByText(/Accepted exact operation/u)).toBeNull();
-  expect(screen.queryByRole("button", { name: "Resolve exact preparation" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Try to record this request" })).toBeNull();
   expect(screen.queryByRole("dialog", { name: "Recovery details" })).toBeNull();
 });
 

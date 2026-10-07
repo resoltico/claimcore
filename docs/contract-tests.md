@@ -82,6 +82,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.runtime full-audit cadence.[CC-AUDIT-001] scheduled full-audit failure closes actor authority lanes |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.runtime scheduling and shutdown.[CC-AUDIT-001] long complete audits leave a completion-based interval |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.witnessed capacity and competing work.[CC-AUDIT-001] paged witnessed volume export and actor work survive audit contention with small pools |
+| CC-AUTH-001 | acceptance | published authenticated CLI v4 acceptance.[CC-CLI-001][CC-AUTH-001] native public-client grants replay and read back the existing owner |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.[CC-AUTH-001] case-list cursor binds principal grant query and visible page |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.[CC-AUTH-001] voided and erasure-fenced identities share denial timing class |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.actor and grant storage.[CC-AUTH-001] exact authority replay detects a forged live actor projection |
@@ -257,6 +258,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-CLI-001 | acceptance | published authenticated CLI v4 acceptance.[CC-CLI-001] published operation and recovery identities reject invalid UUID and digest |
 | CC-CLI-001 | acceptance | published authenticated CLI v4 acceptance.[CC-CLI-001] published six-request witnessed lifecycle retains exact history |
 | CC-CLI-001 | acceptance | published authenticated CLI v4 acceptance.[CC-CLI-001] witnessed accepted command and exact replay |
+| CC-CLI-001 | acceptance | published authenticated CLI v4 acceptance.[CC-CLI-001][CC-AUTH-001] native public-client grants replay and read back the existing owner |
 | CC-CLI-001 | unit | ClaimCore deterministic suite.HTTP response deadlines.[CC-CLI-001] discovery deadline covers a suspended body after headers |
 | CC-CLI-001 | unit | ClaimCore deterministic suite.HTTP response deadlines.[CC-CLI-001] token deadline covers a suspended body after headers |
 | CC-CLI-001 | unit | ClaimCore deterministic suite.endpoint extension ownership.[CC-CLI-001] generated responses refuse an unreviewed endpoint family |
@@ -271,6 +273,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-CLI-002 | unit | ClaimCore deterministic suite.CLI private-file security.[CC-CLI-002] private export rejects leaf and ancestor links without changing targets |
 | CC-CLI-002 | unit | ClaimCore deterministic suite.CLI private-file security.[CC-CLI-002] private source enforces exact size, mode, ACL, and strict UTF-8 |
 | CC-CLI-002 | unit | ClaimCore deterministic suite.CLI private-file security.[CC-CLI-002] private source rejects symlinks, ancestor links, directories, and relative paths |
+| CC-CLI-002 | unit | ClaimCore deterministic suite.[CC-CLI-002] native frames classify refused and malformed public roots without dispatch or path disclosure |
 | CC-CLI-002 | unit | ClaimCore deterministic suite.export effect and delivery ownership.[CC-CLI-002] FAILED export preserves core-owned uncertainty guidance |
 | CC-CLI-002 | unit | ClaimCore deterministic suite.export effect and delivery ownership.[CC-CLI-002] private destination failure retains observed service completion |
 | CC-CLI-002 | unit | ClaimCore deterministic suite.export effect and delivery ownership.[CC-CLI-002] witnessed export is noncancellable and lost completion stays uncertain |
@@ -426,6 +429,9 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-DOM-002 | unit | ClaimCore deterministic suite.business date assertions.ordinary assertions.[CC-DOM-002] withdrawing a decision removes its date reaffirmation authority |
 | CC-DOM-002 | unit | ClaimCore deterministic suite.correction group invariants.[CC-DOM-002] all correction choices match an independent eight-state matrix |
 | CC-DOM-002 | unit | ClaimCore deterministic suite.domain accepted-state admission.[CC-DOM-002] malformed payload admission precedes stale revision and eligibility |
+| CC-DOM-002 | unit | ClaimCore deterministic suite.scoped factual correction guidance.[CC-DOM-002] amendment refusal permits correction keeping the decision |
+| CC-DOM-002 | unit | ClaimCore deterministic suite.scoped factual correction guidance.[CC-DOM-002] closed case refusal permits correction without reopening |
+| CC-DOM-002 | unit | ClaimCore deterministic suite.scoped factual correction guidance.[CC-DOM-002] paid decision refusal permits correction with explicit payment reaffirmation |
 | CC-DOM-002 | unit | ClaimCore deterministic suite.state guard and advertised actions.[CC-DOM-002] each state advertises and enforces the specified command set |
 | CC-DOM-002 | vitest | submits machine correction modes in ar [CC-DOM-002] |
 | CC-DOM-002 | vitest | submits machine correction modes in en [CC-DOM-002] |

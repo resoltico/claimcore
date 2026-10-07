@@ -1,36 +1,45 @@
 import { usePresentation } from "../../presentation/context";
 import { Button } from "react-aria-components/Button";
+import { useEffect, useRef } from "react";
+import type { Notice } from "../../api/notices";
+import { NoticeView } from "../../presentation/Message";
 import type { DefinitionPayload, Receipt } from "../../api/v3";
 import { AccessibleModal } from "../../components/AccessibleModal";
 import { CaseFieldsView } from "../../components/CaseFieldsView";
 import type { OperationEditorModel } from "./editorTypes";
 
-type CommandChangeProps = { model: OperationEditorModel };
+type CommandChangeProps = { model: OperationEditorModel; onClose: () => void };
 
-export const CommandChangeDialog = ({ model }: CommandChangeProps) => {
+export const CommandChangeDialog = ({ model, onClose }: CommandChangeProps) => {
   const p = usePresentation();
-  if (model.pendingCommand === null) {
+  if (model.pendingDiscard === null) {
     return null;
   }
-  const { pendingCommand } = model;
+  const { pendingDiscard } = model;
   return (
     <AccessibleModal
       closeLabel={p.text("ui.keepEditing")}
       title={p.text("ui.changeCommandTitle")}
-      description={p.text("ui.changeCommandDescription")}
+      description={p.text(
+        pendingDiscard === "LEAVE" ? "ui.leaveDraftDescription" : "ui.changeCommandDescription",
+      )}
       isOpen
       isDismissable
       onOpenChange={() => {
-        model.setPendingCommand(null);
+        model.setPendingDiscard(null);
       }}
     >
       <div className="dialog-actions">
         <Button
           onPress={() => {
-            model.applyCommand(pendingCommand);
+            if (pendingDiscard === "LEAVE") {
+              onClose();
+            } else {
+              model.applyCommand(pendingDiscard);
+            }
           }}
         >
-          {p.text("ui.discardAndChange")}
+          {p.text(pendingDiscard === "LEAVE" ? "ui.discardAndLeave" : "ui.discardAndChange")}
         </Button>
       </div>
     </AccessibleModal>
@@ -39,18 +48,32 @@ export const CommandChangeDialog = ({ model }: CommandChangeProps) => {
 
 type AcceptedOperationProps = {
   definition: DefinitionPayload;
-  receipt: Receipt | null;
+  receipt: Receipt;
+  message: Notice | null;
   onCommitted: (receipt: Receipt) => void;
 };
 
-export const AcceptedOperation = ({ definition, receipt, onCommitted }: AcceptedOperationProps) => {
+export const AcceptedOperation = ({
+  definition,
+  receipt,
+  message,
+  onCommitted,
+}: AcceptedOperationProps) => {
   const p = usePresentation();
-  if (receipt === null) {
-    return null;
-  }
+  const heading = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    heading.current?.focus();
+  }, []);
   return (
     <section aria-labelledby="accepted-title" className="receipt">
-      <h2 id="accepted-title">{p.text("ui.acceptedOperation")}</h2>
+      {message === null ? null : (
+        <p role="alert">
+          <NoticeView value={message} />
+        </p>
+      )}
+      <h2 ref={heading} tabIndex={-1} id="accepted-title">
+        {p.text("ui.acceptedOperation")}
+      </h2>
       <p>{p.text("ui.operationAccepted", { operationId: receipt.operationId })}</p>
       <CaseFieldsView
         caseView={receipt.snapshot}

@@ -30,8 +30,8 @@ export type EditorState = {
   dispatch: Dispatch<OperationAction>;
   confirmed: boolean;
   setConfirmed: (value: boolean) => void;
-  pendingCommand: CommandKind | null;
-  setPendingCommand: Dispatch<SetStateAction<CommandKind | null>>;
+  pendingDiscard: CommandKind | "LEAVE" | null;
+  setPendingDiscard: Dispatch<SetStateAction<CommandKind | "LEAVE" | null>>;
 };
 
 export type EditorMetadata = {

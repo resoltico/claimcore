@@ -9,7 +9,7 @@ export { initialOperation } from "./operationInitial";
 
 export type { DeliveryState, OperationAction, OperationState } from "./operationState";
 
-const editable = (state: OperationState) =>
+export const editable = (state: OperationState): boolean =>
   state.delivery === "EDITING" || state.delivery === "DEFINITELY_REJECTED";
 const reset = (
   state: OperationState,

@@ -71,6 +71,16 @@ let interactive mode endpoint input =
         (interactiveEnvironment mode)
         (Some source)
 
+let interactiveSession frames =
+    let source = (String.concat "\n" frames + "\n") |> Encoding.UTF8.GetBytes
+
+    ProcessRunner.dotnet
+        90_000
+        inputs.Value.CliDll
+        [ "session" ]
+        (interactiveEnvironment "valid")
+        (Some source)
+
 let withSecret secretFile endpoint input =
     let values = Dictionary<string, string>()
 

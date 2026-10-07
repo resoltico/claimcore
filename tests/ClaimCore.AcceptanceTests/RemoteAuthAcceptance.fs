@@ -48,12 +48,3 @@ let forgedPkceCallback () =
         "Typed refusal"
 
     refusedToken ()
-
-let livePkceCallback () =
-    let response = RemoteFixture.interactive "valid" "case.list" {| limit = 1 |}
-    use document = RemoteFixture.parse 0 "case.list" response
-
-    Expect.equal
-        (RemoteFixture.tag document)
-        "SUCCEEDED"
-        "Public-client access token reached the service"

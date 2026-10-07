@@ -28,7 +28,7 @@ export const CaseFieldsView = ({ caseView, fields, context }: CaseFieldsViewProp
   return (
     <section aria-labelledby={headingId} className="case-fields">
       <div className="section-heading">
-        <h2 id={headingId}>{p.text("ui.caseFieldsContext", { context })}</h2>
+        <h2 id={headingId}>{context}</h2>
         <span>{p.text("ui.revision", { revision: p.integer(caseView.revision) })}</span>
         <CopyValue
           label={p.text("ui.acceptedSummary")}
@@ -40,15 +40,16 @@ export const CaseFieldsView = ({ caseView, fields, context }: CaseFieldsViewProp
           const value = valueFor(caseView.fields, field.name);
           return (
             <div key={field.name} className="field-row" data-field-name={field.name}>
-              <dt>
-                {p.fieldLabel(field.name)}
-                <small>{p.fieldMeaning(field.name)}</small>
-              </dt>
+              <dt>{p.fieldLabel(field.name)}</dt>
               <dd>
                 <BusinessValue value={value} field={field} />
-                {value === null ? null : (
-                  <CopyValue label={p.fieldLabel(field.name)} value={value} />
-                )}
+                <details>
+                  <summary>{p.text("ui.fieldHelp")}</summary>
+                  <p>{p.fieldMeaning(field.name)}</p>
+                  {value === null ? null : (
+                    <CopyValue label={p.fieldLabel(field.name)} value={value} />
+                  )}
+                </details>
               </dd>
             </div>
           );

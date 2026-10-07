@@ -45,7 +45,7 @@ const CaseRow = ({
           revision: p.integer(caseView.revision),
         })}
       </span>
-      <CopyValue label={p.text("ui.caseReference")} value={caseView.caseReference} />
+      <CopyValue label={p.fieldLabel("caseReference")} value={caseView.caseReference} />
     </li>
   );
 };
@@ -73,7 +73,7 @@ const LookupForm = ({
       className="lookup"
     >
       <TextField value={lookup} onChange={onChange}>
-        <Label>{p.text("ui.exactCaseReference")}</Label>
+        <Label>{p.text("ui.exactCaseReference", { label: p.fieldLabel("caseReference") })}</Label>
         <Input id="case-lookup" autoComplete="off" dir="auto" />
       </TextField>
       <Button type="submit">{p.text("ui.findCase")}</Button>
@@ -100,7 +100,7 @@ export const CaseList = ({ token, onSelect, onOpen }: CaseListProps) => {
     <section aria-labelledby="case-list-title">
       <div className="section-heading">
         <h2 id="case-list-title">{p.text("ui.cases")}</h2>
-        <Button onPress={onOpen}>{p.text("ui.openNewCase")}</Button>
+        <Button onPress={onOpen}>{p.commandLabel("OPEN")}</Button>
       </div>
       <LookupForm
         lookup={lookup}

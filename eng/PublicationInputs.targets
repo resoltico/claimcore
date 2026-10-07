@@ -1,0 +1,17 @@
+<Project>
+  <!-- The SDK records bounded producing inputs; ordinary builds never run npm. -->
+  <Target Name="RecordPublicationInputs" BeforeTargets="AssignTargetPaths"
+          Condition="'$(MSBuildProjectExtension)' == '.fsproj' and '$(DesignTimeBuild)' != 'true'">
+    <PropertyGroup>
+      <PublicationInputResource>$(IntermediateOutputPath)claimcore-producing-inputs.txt</PublicationInputResource>
+    </PropertyGroup>
+    <Exec Command="dotnet fsi --warnaserror+ --exec &quot;$(MSBuildThisFileDirectory)PublicationInputs.fsx&quot; record &quot;$(MSBuildThisFileDirectory)..&quot; &quot;$(PublicationInputResource)&quot; &quot;$(NETCoreSdkVersion)&quot; &quot;$(MSBuildProjectFullPath)&quot; &quot;$(ProjectAssetsFile)&quot; &quot;$(Configuration)&quot;" />
+    <ItemGroup>
+      <EmbeddedResource Include="$(PublicationInputResource)" LogicalName="ClaimCore.ProducingInputs" />
+    </ItemGroup>
+  </Target>
+  <Target Name="VerifyPublicationInputsAfterCompile" AfterTargets="CoreCompile"
+          Condition="'$(MSBuildProjectExtension)' == '.fsproj' and '$(DesignTimeBuild)' != 'true'">
+    <Exec Command="dotnet fsi --warnaserror+ --exec &quot;$(MSBuildThisFileDirectory)PublicationInputs.fsx&quot; verify &quot;$(MSBuildThisFileDirectory)..&quot; &quot;$(PublicationInputResource)&quot;" />
+  </Target>
+</Project>

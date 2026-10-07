@@ -10,7 +10,7 @@ import {
   prefilledValues,
   type CommandKind,
 } from "../../domain/metadata";
-import { initialOperation, operationReducer } from "../../domain/operationReducer";
+import { editable, initialOperation, operationReducer } from "../../domain/operationReducer";
 import type {
   EditorActions,
   EditorMetadata,
@@ -34,21 +34,19 @@ const createInitialOperation = (props: OperationEditorProps) =>
 const useEditorState = (props: OperationEditorProps): EditorState => {
   const [state, dispatch] = useReducer(operationReducer, props, createInitialOperation);
   const { confirmed, setConfirmed } = usePreparedConsent(state.preparation);
-  const [pendingCommand, setPendingCommand] = useState<CommandKind | null>(null);
+  const [pendingDiscard, setPendingDiscard] = useState<CommandKind | "LEAVE" | null>(null);
   return {
     state,
     dispatch,
     confirmed,
     setConfirmed,
-    pendingCommand,
-    setPendingCommand,
+    pendingDiscard,
+    setPendingDiscard,
   };
 };
 
 const canSendPrepare = (state: EditorState): boolean =>
-  state.state.delivery === "EDITING" ||
-  state.state.delivery === "DEFINITELY_REJECTED" ||
-  state.state.delivery === "PREPARATION_UNKNOWN";
+  editable(state.state) || state.state.delivery === "PREPARATION_UNKNOWN";
 
 const useRequestSerial = (): (() => number) => {
   const requestSerial = useRef(0);
@@ -101,7 +99,7 @@ const changeActions = (
       values: prefilledValues(props.definition.definition, command, props.current?.case ?? null),
       nextOperationId: nextOperationId(),
     });
-    state.setPendingCommand(null);
+    state.setPendingDiscard(null);
   };
   return { edit, editCorrection, setCorrectionMode, editReference, applyCommand };
 };
@@ -161,9 +159,17 @@ const metadata = (props: OperationEditorProps, state: EditorState): EditorMetada
     referenceField,
     available: props.current?.availableCommands ?? [props.initialCommand],
     locked: isLocked(state.state.delivery),
-    canPrepare:
-      state.state.delivery === "EDITING" || state.state.delivery === "DEFINITELY_REJECTED",
-    dirty: state.state.caseReference !== currentReference || isDirty(state.state.values),
+    canPrepare: editable(state.state),
+    dirty:
+      state.state.caseReference !== currentReference ||
+      isDirty(
+        state.state.values,
+        prefilledValues(
+          props.definition.definition,
+          state.state.command,
+          props.current?.case ?? null,
+        ),
+      ),
     receipt: state.state.delivery === "ACCEPTED" ? state.state.receipt : null,
   };
 };

@@ -146,15 +146,15 @@ it("locks Dashboard during recovery dispatch and keeps the identity after lost r
   await screen.findByRole("heading", { name: "Cases" });
   await user.click(screen.getByRole("button", { name: "Recovery" }));
   await user.click(await screen.findByRole("button", { name: "Inspect" }));
-  await user.click(await screen.findByRole("button", { name: "Resolve exact preparation" }));
-  await user.click(await screen.findByRole("button", { name: "Try to record this exact request" }));
+  await user.click(await screen.findByRole("button", { name: "Try to record this request" }));
+  await user.click(await screen.findByRole("button", { name: "Try to record this request" }));
   expect(screen.getByRole("button", { name: "Cases", hidden: true })).toBeDisabled();
   expect(screen.getByRole("button", { name: "Sign out", hidden: true })).toBeDisabled();
   pending.reject(new Error("Synthetic lost resolution"));
   expect(await screen.findByRole("alert")).toHaveTextContent(preparation.summary.operationId);
   expect(screen.getByRole("alert")).toHaveTextContent(preparation.summary.requestSha256!);
   expect(screen.getByRole("button", { name: "Sign out" })).not.toBeDisabled();
-  expect(screen.queryByRole("button", { name: "Resolve exact preparation" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Try to record this request" })).toBeNull();
   expect(fetch.mock.calls.filter(([path]) => path === "/api/v3/recovery/resolve")).toHaveLength(1);
 });
 
@@ -171,8 +171,8 @@ it("reports definite accepted recovery knowledge and keeps its observation targe
   await screen.findByRole("heading", { name: "Cases" });
   await user.click(screen.getByRole("button", { name: "Recovery" }));
   await user.click(await screen.findByRole("button", { name: "Inspect" }));
-  await user.click(await screen.findByRole("button", { name: "Resolve exact preparation" }));
-  await user.click(await screen.findByRole("button", { name: "Try to record this exact request" }));
+  await user.click(await screen.findByRole("button", { name: "Try to record this request" }));
+  await user.click(await screen.findByRole("button", { name: "Try to record this request" }));
   expect(await screen.findByRole("status")).toHaveTextContent(
     `Accepted exact operation ${preparation.summary.operationId}`,
   );
@@ -202,7 +202,7 @@ it("returns an accepted open operation to Dashboard through its committed transi
   queueAcceptedOpen();
   queueDetail();
   renderDashboard();
-  await user.click(await screen.findByRole("button", { name: "Open new case" }));
+  await user.click(await screen.findByRole("button", { name: "Open a case" }));
   const fill = (label: RegExp, value: string): void => {
     fireEvent.change(screen.getByLabelText(label), { target: { value } });
   };

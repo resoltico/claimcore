@@ -32,6 +32,7 @@
     <Compile Include="CaseLifecycleProjectionTests.fs" />
     <Compile Include="CasePurgeAuthorizationTests.fs" />
     <Compile Include="CaseCorrectionTests.fs" />
+    <Compile Include="CorrectionGuidanceTests.fs" />
     <Compile Include="BusinessDateTests.fs" />
     <Compile Include="DomainAdmissionTests.fs" />
     <Compile Include="CorrectionMatrixTests.fs" />
@@ -78,6 +79,7 @@
     <Compile Include="SchemaFormatTests.fs" />
     <Compile Include="RemoteClientTests.fs" />
     <Compile Include="RemoteTlsTests.fs" />
+    <Compile Include="CliTrustRootProcessTests.fs" />
     <Compile Include="TokenLifetimeTests.fs" />
     <Compile Include="HttpResponseDeadlineTests.fs" />
     <Compile Include="RemoteResponseBoundsTests.fs" />

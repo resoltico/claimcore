@@ -32,7 +32,7 @@ const CommandPicker = ({ model }: Pick<OperationFormProps, "model">) => {
       return;
     }
     if (model.dirty) {
-      model.setPendingCommand(command);
+      model.setPendingDiscard(command);
     } else {
       model.applyCommand(command);
     }
@@ -43,7 +43,7 @@ const CommandPicker = ({ model }: Pick<OperationFormProps, "model">) => {
       <select
         id="command-picker"
         value={model.state.command}
-        disabled={model.locked}
+        disabled={!model.canPrepare}
         onChange={(event) => {
           change(event.target.value);
         }}
@@ -59,11 +59,13 @@ const CommandPicker = ({ model }: Pick<OperationFormProps, "model">) => {
 };
 
 const Reference = ({ current, model }: Pick<OperationFormProps, "current" | "model">) => {
+  const p = usePresentation();
   if (current === null && model.referenceField !== undefined) {
     return (
       <DescriptorField
         field={model.referenceField}
         value={model.state.caseReference}
+        disabled={!model.canPrepare}
         error={
           model.state.fieldError?.name === model.referenceField.name
             ? model.state.fieldError.message
@@ -75,7 +77,10 @@ const Reference = ({ current, model }: Pick<OperationFormProps, "current" | "mod
   }
   return current === null ? null : (
     <p>
-      <ReferenceSummary id="ui.reference" values={{ reference: model.state.caseReference }} />
+      <ReferenceSummary
+        id="ui.reference"
+        values={{ label: p.fieldLabel("caseReference"), reference: model.state.caseReference }}
+      />
     </p>
   );
 };
@@ -93,6 +98,7 @@ const AuthoringFields = ({ model }: Pick<OperationFormProps, "model">) => {
           key={field.name}
           field={field}
           value={values[field.name] ?? ""}
+          disabled={!model.canPrepare}
           error={
             model.state.fieldError?.name === field.name ? model.state.fieldError.message : undefined
           }
@@ -158,6 +164,7 @@ const ReplacementFields = ({
       field={field}
       inputName={`${name}.${field.name}`}
       value={values[field.name] ?? ""}
+      disabled={!model.canPrepare}
       error={
         model.state.fieldError?.name === field.name ||
         model.state.fieldError?.name === `${name}.${field.name}`
@@ -198,7 +205,7 @@ const CorrectionGroup = ({
         name={name}
         mode={value.mode}
         actions={actions}
-        locked={model.locked}
+        locked={!model.canPrepare}
         onChange={(next) => {
           model.setCorrectionMode(name, next);
         }}

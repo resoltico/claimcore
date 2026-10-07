@@ -15,6 +15,15 @@ dotnet run --project src/ClaimCore.Cli --configuration Release --no-build -- des
 
 Discovery commands require no service or credentials. Case-work calls require `CLAIMCORE_SERVICE_URL`, `CLAIMCORE_OIDC_ISSUER`, `CLAIMCORE_OIDC_CLIENT_ID`, and `CLAIMCORE_CLI_AUTH_MODE` (`interactive` or `automation`). Automation also requires an owner-private `CLAIMCORE_OIDC_CLIENT_SECRET_FILE` for its distinct client-credentials principal. Interactive login uses an authorization-code/S256 PKCE loopback callback. The service and issuer URLs must be HTTPS; system certificate trust is the default. The optional private `CLAIMCORE_CLI_OIDC_TRUST_ROOT_FILE` and `CLAIMCORE_CLI_SERVICE_TRUST_ROOT_FILE` are restricted to loopback qualification and do not disable hostname validation. No bearer token or client secret belongs in a frame, log, or repository file. System-trust HTTPS checks certificate revocation during new handshakes. Loopback private roots must be current signing CAs with public-only material; the server leaf must carry server-authentication purpose.
 
+A supplied public-root file that fails handle-first admission returns
+`CLI_PRIVATE_SOURCE_INVALID` before authentication. Check that it exists at a physical
+absolute path, is a regular file owned by the current user in mode `0600`, and has no
+linked component or extended ACL on the file or any ancestor. Its directory must be
+owner-private; broad ancestors must satisfy the root-owned/sticky-parent rules. A
+malformed or unsuitable public root returns `CLI_CONFIGURATION_INVALID`. Paths and
+provider details are never reflected. Use the [local operator workflow](service.md#persistent-local-evaluation)
+for an ACL-bearing macOS home; do not strip ACLs or change existing broad directories.
+
 ## Commands
 
 This block is synchronized with the compiled CLI. Synchronization establishes identity, not semantic
@@ -57,7 +66,8 @@ own outcomes; this refusal does not settle any earlier uncertain operation.
 
 Configuration, authentication, invalid service replies, and private-file refusals return a CLI-v4 `localFailure` with a safe code and exit 3. A service host refusal is a distinct `serviceFailure`; a service outcome is nested under `result.service` and validated against the generated endpoint response schema before delivery. An uncertain outbound mutation or delivery returns a typed unconfirmed result and exit 4. Neither transport failure nor a temporarily absent receipt proves that a mutation failed. [Core outcome diagnostics](diagnostics.md) defines the service's safe diagnostic identities.
 
-Protocol failures now require `diagnostic.id`, exact parameters and a known-member path. Use
+Protocol failures carry flat `diagnosticId`, `code`, and a known-member `path` in the
+`protocolFailure` frame, without a core-style `diagnostic` object or parameters. Use
 `claimcore describe diagnostics` for protocol and process schemas. A process delivery failure uses
 structured stderr, preserves only the current frame's known operation context, and never writes a
 second stdout frame. A potentially state-changing frame with unconfirmed delivery exits 4; no

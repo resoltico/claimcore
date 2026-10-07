@@ -49,12 +49,12 @@ if [[ "$("${runtime_prefix[@]}" node --version)" != "v${expected_node}" ]] ||
   printf 'Locked Node/npm could not be selected.\n' >&2
   exit 64
 fi
-
 run_engine() (
   engine="$1"
   umask 077
   run_label="claimcore-browser-${engine}-$(openssl rand -hex 8)"
-  created_dir="$(mktemp -d "${TMPDIR:-/tmp}/claimcore-web-e2e.${engine}.XXXXXXXX")"
+  source "${repo_root}/eng/PrivateQualificationPaths.sh"
+  created_dir="$(create_private_qualification_directory "claimcore-web-e2e.${engine}.XXXXXXXX")"
   if ! state_dir="$(cd -P "${created_dir}" && pwd -P)"; then
     rmdir "${created_dir}" 2>/dev/null || true
     printf 'The private browser state path could not be resolved.\n' >&2

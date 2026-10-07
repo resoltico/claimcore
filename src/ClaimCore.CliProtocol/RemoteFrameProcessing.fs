@@ -16,7 +16,8 @@ type private RemoteSessionHolder() =
             | Error _ -> Error CliRemoteProblem.Configuration
             | Ok configuration ->
                 match RemoteAccessSession.Open configuration with
-                | Error _ -> Error CliRemoteProblem.Authentication
+                | Error "TLS_TRUST_ROOT_UNAVAILABLE" -> Error CliRemoteProblem.PrivateSource
+                | Error _ -> Error CliRemoteProblem.Configuration
                 | Ok opened ->
                     session <- Some opened
                     Ok opened

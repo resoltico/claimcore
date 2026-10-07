@@ -9,7 +9,7 @@ test("contains keyboard focus and returns it after safely dismissing a prepared 
   page,
 }) => {
   await openAuthenticated(page);
-  await page.getByRole("button", { name: "Open new case" }).focus();
+  await page.getByRole("button", { name: "Open a case" }).focus();
   await page.keyboard.press("Enter");
   await expect(page.getByRole("heading", { name: "Open a case" })).toBeVisible();
   await page.getByRole("button", { name: "Back to cases" }).click();
