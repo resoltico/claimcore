@@ -15,6 +15,7 @@ import {
 } from "./scanners/config-web.mjs";
 import { scanFSharp } from "./scanners/fsharp.mjs";
 import { scanScriptComments, scanStyleComments } from "./scanners/javascript.mjs";
+import { scanNative } from "./scanners/native.mjs";
 import { scanPython } from "./scanners/python.mjs";
 import { scanScripts } from "./scanners/scripts.mjs";
 
@@ -27,6 +28,10 @@ const buildFiles = /(?:\.fsproj|\.props|\.targets)$|(?:^|\/)\.editorconfig$/u;
  * @type {Array<{ applies: (path: string, name: string) => boolean, scan: (source: import("./files.mjs").SourceFile, name: string) => import("./model.mjs").Occurrence[] }>}
  */
 const scanners = [
+  {
+    applies: (path) => /\.(?:c|h)$/u.test(path),
+    scan: ({ path, text, lines }) => scanNative(path, text, lines),
+  },
   {
     applies: (path) => fsharp.test(path),
     scan: ({ path, lines, text }) => scanFSharp(path, lines, text),

@@ -140,10 +140,10 @@ const configCases = [
   [
     "oxlint disabled rules and ignore patterns",
     "web/.oxlintrc.json",
-    '{ // c\n "ignorePatterns": ["gen/*.mjs"], "rules": {"no-console": "off", "eqeqeq": "error"}, "overrides": [{"rules": {"no-debugger": ["off"]}}] }',
+    '{ // c\n "ignorePatterns": ["gen/*.mjs"], "rules": {"no-console": "off", "eqeqeq": "error"}, "overrides": [{"files": ["tests/**"], "rules": {"no-debugger": ["off"]}}] }',
     [
       "oxlint:no-console:config:-",
-      "oxlint:no-debugger:config:-",
+      'oxlint:override:["tests/**"]:[]:no-debugger:config:-',
       "oxlint:ignorePatterns:gen/*.mjs:config:-",
     ],
   ],

@@ -32,8 +32,26 @@ export function scanPyproject(file, text) {
       strings(holder[key]).forEach((entry) => add("ruff", `${key}:${entry}`));
     }
   }
-  strings(mypy["exclude"]).forEach((entry) => add("mypy", `exclude:${entry}`));
+  found.push(...scanMypy(file, mypy));
+  return found;
+}
+
+/** @param {string} file @param {Record<string, unknown>} mypy */
+function scanMypy(file, mypy) {
+  /** @type {import("../model.mjs").Occurrence[]} */
+  const found = [];
+  /** @param {string} name @param {string} rule */
+  const add = (name, rule) => found.push(configOccurrence(file, name, rule));
+  strings(typeof mypy["exclude"] === "string" ? [mypy["exclude"]] : mypy["exclude"]).forEach(
+    (entry) => add("mypy", `exclude:${entry}`),
+  );
   strings(mypy["disable_error_code"]).forEach((code) => add("mypy", `disable_error_code:${code}`));
+  if (mypy["ignore_errors"] === true) {
+    add("mypy", "ignore_errors");
+  }
+  if (mypy["follow_imports"] === "skip" || mypy["follow_imports"] === "silent") {
+    add("mypy", `follow_imports:${String(mypy["follow_imports"])}`);
+  }
   if (mypy["ignore_missing_imports"] === true) {
     add("mypy", "ignore_missing_imports");
   }
@@ -44,6 +62,9 @@ export function scanPyproject(file, text) {
       if (entry[key] === true) {
         add("mypy", `override:${modules}:${key}`);
       }
+    }
+    if (entry["follow_imports"] === "skip" || entry["follow_imports"] === "silent") {
+      add("mypy", `override:${modules}:follow_imports:${String(entry["follow_imports"])}`);
     }
     strings(entry["disable_error_code"]).forEach((code) =>
       add("mypy", `override:${modules}:disable_error_code:${code}`),
@@ -112,9 +133,46 @@ export function scanBuildConfig(file, text) {
   for (const match of text.matchAll(property)) {
     for (const code of (match[1] ?? match[2] ?? "")
       .split(/[,;\s]+/u)
-      .filter((part) => part !== "" && !part.startsWith("$"))) {
-      found.push(configOccurrence(file, "msbuild", /^\d+$/u.test(code) ? `FS${code}` : code));
+      .filter((part) => part !== "" && part !== "$(NoWarn)" && part !== "$(WarningsNotAsErrors)")) {
+      found.push(configOccurrence(file, "msbuild", warningCode(code)));
     }
   }
+  found.push(...scanCompilerOptions(file, text));
   return found;
+}
+
+/** @param {string} file @param {string} text */
+function scanCompilerOptions(file, text) {
+  /** @type {import("../model.mjs").Occurrence[]} */
+  const found = [];
+  if (
+    /<TreatWarningsAsErrors[^>]*>\s*false\s*<|<WarningLevel[^>]*>\s*[0-4]\s*<|--warn:[0-4]\b|--warnaserror-/iu.test(
+      text,
+    )
+  ) {
+    found.push(configOccurrence(file, "msbuild", "*"));
+  }
+  if (/(?:^|[\s"'])-w(?=$|[\s"'])/mu.test(text)) {
+    found.push(configOccurrence(file, "native-compiler", "*"));
+  }
+  for (const match of text.matchAll(/--nowarn:(?<code>[0-9,;]+)/gu)) {
+    for (const code of (match.groups?.["code"] ?? "").split(/[,;]/u)) {
+      found.push(configOccurrence(file, "msbuild", `FS${code}`));
+    }
+  }
+  for (const match of text.matchAll(/-Wno-(?<warning>[A-Za-z0-9-]+)/gu)) {
+    const warning = match.groups?.["warning"] ?? "";
+    found.push(
+      configOccurrence(file, "native-compiler", warning.startsWith("error") ? "*" : `-W${warning}`),
+    );
+  }
+  return found;
+}
+
+/** @param {string} code */
+function warningCode(code) {
+  if (code.startsWith("$")) {
+    return "*";
+  }
+  return /^\d+$/u.test(code) ? `FS${code}` : code;
 }

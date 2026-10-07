@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# lint-exception: LX-0041
-# shellcheck disable=SC2154
+set -o pipefail
 # Sourced inside run_engine; keep each browser fixture in its existing isolated subshell.
 repo_root="${repo_root:?The repository root is required.}"
 state_dir="${state_dir:?The private browser state directory is required.}"
@@ -9,6 +8,8 @@ witness="${witness:?The witness fixture name is required.}"
 run_label="${run_label:?The fixture label is required.}"
 database_dll="${database_dll:?The published Database assembly is required.}"
 oidc_ca="${oidc_ca:?The synthetic issuer trust root is required.}"
+CLAIMCORE_TEST_OIDC_CREDENTIALS="${CLAIMCORE_TEST_OIDC_CREDENTIALS:?Synthetic credentials are required.}"
+CLAIMCORE_TEST_OIDC_ISSUER="${CLAIMCORE_TEST_OIDC_ISSUER:?Synthetic issuer is required.}"
 image="$(jq -r '.containerImage' "${repo_root}/db/postgresql-baseline.json")"
 primary_password="$(openssl rand -hex 32)"
 app_password="$(openssl rand -hex 32)"
@@ -108,8 +109,9 @@ if ! CLAIMCORE_ADMIN_CONNECTION_FILE="${state_dir}/primary-owner.connection" \
   dotnet "${database_dll}" initialize-witness \
   >"${state_dir}/diagnostics/witness-init.out" \
   2>"${state_dir}/diagnostics/witness-init.err"; then
+  witness_init_diagnostic="$(diagnostic "${state_dir}/diagnostics/witness-init.err")"
   printf 'Witness initialization failed: %s.\n' \
-    "$(diagnostic "${state_dir}/diagnostics/witness-init.err")" >&2
+    "${witness_init_diagnostic}" >&2
   exit 1
 fi
 issuer_base="${CLAIMCORE_TEST_OIDC_ISSUER%/realms/*}"
@@ -155,9 +157,10 @@ steward_subject="$(jq -er --arg username "${steward_username}" \
 }
 printf '%s\n' "${owner_subject}" >"${state_dir}/owner.subject"
 printf '%s\n' "${steward_subject}" >"${state_dir}/steward.subject"
+service_client_id="$(jq -r '.serviceClientId' "${CLAIMCORE_TEST_OIDC_CREDENTIALS}")"
 jq -n --arg issuer "${CLAIMCORE_TEST_OIDC_ISSUER}" \
   --arg owner "${owner_subject}" --arg steward "${steward_subject}" \
-  --arg service "$(jq -r '.serviceClientId' "${CLAIMCORE_TEST_OIDC_CREDENTIALS}")" \
+  --arg service "${service_client_id}" \
   '{issuer:$issuer,ownerSubject:$owner,stewardSubject:$steward,serviceClientId:$service}' \
   >"${state_dir}/principals.json"
 jq -e 'keys == ["issuer","ownerSubject","serviceClientId","stewardSubject"] and
@@ -180,8 +183,9 @@ if ! CLAIMCORE_ADMIN_CONNECTION_FILE="${state_dir}/primary-owner.connection" \
   dotnet "${database_dll}" provision-initial-owner \
   >"${state_dir}/diagnostics/owner-init.out" \
   2>"${state_dir}/diagnostics/owner-init.err"; then
+  owner_init_diagnostic="$(diagnostic "${state_dir}/diagnostics/owner-init.err")"
   printf 'Initial owner provisioning failed: %s.\n' \
-    "$(diagnostic "${state_dir}/diagnostics/owner-init.err")" >&2
+    "${owner_init_diagnostic}" >&2
   exit 1
 fi
 authority_before="$(docker exec "${primary}" psql -X -U claimcore_primary_owner -d claimcore -At -c 'SELECT revision FROM claimcore.authority_tip WHERE singleton')"
@@ -197,10 +201,12 @@ if ! CLAIMCORE_ADMIN_CONNECTION_FILE="${state_dir}/primary-owner.connection" \
   printf 'Exact first-owner readback failed.\n' >&2
   exit 1
 fi
+authority_after="$(docker exec "${primary}" psql -X -U claimcore_primary_owner -d claimcore -At -c 'SELECT revision FROM claimcore.authority_tip WHERE singleton')"
+witness_after="$(docker exec "${witness}" psql -X -U claimcore_witness_owner -d claimcore_witness -At -c 'SELECT tip_sequence FROM claimcore_witness.installation WHERE singleton')"
 if ! jq -e '.operationOutcome == "COMPLETED"' "${state_dir}/diagnostics/owner-repeat.out" >/dev/null ||
   [[ -s "${state_dir}/diagnostics/owner-repeat.err" ]] ||
-  [[ "$(docker exec "${primary}" psql -X -U claimcore_primary_owner -d claimcore -At -c 'SELECT revision FROM claimcore.authority_tip WHERE singleton')" != "${authority_before}" ]] ||
-  [[ "$(docker exec "${witness}" psql -X -U claimcore_witness_owner -d claimcore_witness -At -c 'SELECT tip_sequence FROM claimcore_witness.installation WHERE singleton')" != "${witness_before}" ]]; then
+  [[ "${authority_after}" != "${authority_before}" ]] ||
+  [[ "${witness_after}" != "${witness_before}" ]]; then
   printf 'Exact first-owner readback changed authority or returned no confirmed receipt.\n' >&2
   exit 1
 fi

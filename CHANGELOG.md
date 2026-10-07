@@ -6,6 +6,8 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Fixed
 
+- Docker build contexts exclude the reviewed private/generated file classes at root and nested admitted locations while preserving required producer inputs and the two credential-free npm policies. Native private-file shims use the selected SDK intermediate root and configuration/RID pivots; custom artifacts roots no longer leave native output in the checkout's default root.
+
 - Browser drafts compare exact authored text with the opened draft. Untouched prefilled amendments leave directly; changes to empty strings, references and hidden correction replacements require a deliberate discard when changing action or leaving. Delivery phases accurately disable authoring controls. Accepted results show the receipt and Return path, retaining separate Recovery guidance when witness settlement is unconfirmed.
 
 - Web keeps language and display-format changes independent during rapid preference events. Clipboard feedback follows the exact attempted value and label; delayed completion cannot claim success for a changed value. List, detail, history, review, receipt, recovery and lookup displays isolate exact business values and warn about hidden or directional characters without changing their content, including clipboard fallback.
@@ -17,6 +19,8 @@ Notable changes to this project are documented in this file. The format is based
 - Generated .NET redistribution notices retain each package's own copyright and supplied license/NOTICE files, including NSec's embedded BSD/ISC notices. The former generic MIT attribution and incomplete notice collection are replaced. Regenerate application publish outputs before redistribution; published source releases and their licenses remain unchanged.
 
 ### Changed
+
+- Coordinated local verification uses fresh private Gitless source snapshots and unique `artifacts/runs/<UUID>` evidence instead of clearing shared results. Standalone coordinated suite, stage, publication and browser/CLI commands create or join a validated run context. Reviewable source, reports, coverage and manifests are retained. Wrapper-owned publications are removed after their consumers and exact resource cleanup finish; snapshots that executed jobs remain private until child/resource ownership is established. Failures and interruptions retain useful private reproduction material. Existing historical artifacts, installations, recovery state and volumes are not swept.
 
 - Application publication manifests use format 2 and bind each managed assembly's compiled producing-input digest to the bounded source, contract, database, frontend and toolchain inputs. Compilation refuses stale restored dependency graphs; publication refuses stale `--no-build` outputs and mixed source inputs. Run locked restore and rebuild retained binaries before publishing. Native private-file shims compile at publication. Deployment evidence uses format 2 and records the producing-input digest separately from source revision and byte identity. Unsupported earlier manifests/evidence are refused without conversion; hashes do not establish producer authentication or review.
 - The native macOS local CLI workflow uses a new private physical operator directory beneath a qualifying `/Users/Shared` parent when a home ancestor has an extended ACL. Private admission remains fail-closed. The setup sequence retrieves the existing owner binding and uses explicit installation-scoped case/recovery grants with exact event-ID recovery. Supplied public-root admission failures now report `CLI_PRIVATE_SOURCE_INVALID`; malformed or unsuitable roots report `CLI_CONFIGURATION_INVALID`.
@@ -39,6 +43,10 @@ Notable changes to this project are documented in this file. The format is based
 - Fixed runtime witness cause/stage counters and bounded stderr notices identify transport, authority, schema, integrity and pending-evidence failures without provider details or claimant identifiers. Failed or overdue scheduled audits emit a fixed quarantine signal; these diagnostics do not prove non-commit, repair evidence or qualify source-preview readiness. See [operator guidance](docs/operations.md).
 
 ### Internal
+
+- Quality gates bind prefixed lint rules and exact exception scopes/counts, reject blanket compiler/type-check bypasses, and cover nested Python, frontend lint plugins, native Bash/PowerShell syntax and SQL functions. Global ShellCheck suppressions were removed; producer failures and failed backup/catalog evidence remain visible. Verification scratch on macOS refuses extended ACLs even when mode bits appear private.
+
+- Required quality verification scans complete reachable Git history separately from current working source, with merge-only additions, forced text diffs and replacement masking covered by synthetic controls. Shallow, grafted, partial, missing or changing history is refused. Scanned and admitted failure diagnostics can upload from failed jobs without making Gate pass; source changes do not activate native repository settings.
 
 - Frontend CI allows 60 minutes for the complete single-worker mutation gate on hosted runners. Test deadlines, all seven targets, the 92% floor and rejection of timeout or incomplete results remain unchanged.
 

@@ -3,15 +3,19 @@
   <Target Name="RecordPublicationInputs" BeforeTargets="AssignTargetPaths"
           Condition="'$(MSBuildProjectExtension)' == '.fsproj' and '$(DesignTimeBuild)' != 'true'">
     <PropertyGroup>
+      <PublicationSdkHost>$([System.IO.Path]::GetFullPath('$(MSBuildToolsPath)/../../dotnet'))</PublicationSdkHost>
+      <PublicationSdkHost Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(PublicationSdkHost).exe</PublicationSdkHost>
       <PublicationInputResource>$(IntermediateOutputPath)claimcore-producing-inputs.txt</PublicationInputResource>
     </PropertyGroup>
-    <Exec Command="dotnet fsi --warnaserror+ --exec &quot;$(MSBuildThisFileDirectory)PublicationInputs.fsx&quot; record &quot;$(MSBuildThisFileDirectory)..&quot; &quot;$(PublicationInputResource)&quot; &quot;$(NETCoreSdkVersion)&quot; &quot;$(MSBuildProjectFullPath)&quot; &quot;$(ProjectAssetsFile)&quot; &quot;$(Configuration)&quot;" />
+    <Error Condition="!Exists('$(PublicationSdkHost)')" Text="The producing SDK host is unavailable; use the pinned dotnet SDK." />
+    <Exec Command="&quot;$(PublicationSdkHost)&quot; fsi --warnaserror+ --exec &quot;$(MSBuildThisFileDirectory)PublicationInputs.fsx&quot; record &quot;$(MSBuildThisFileDirectory)..&quot; &quot;$(PublicationInputResource)&quot; &quot;$(NETCoreSdkVersion)&quot; &quot;$(MSBuildProjectFullPath)&quot; &quot;$(ProjectAssetsFile)&quot; &quot;$(Configuration)&quot; &quot;$(ArtifactsPath)&quot; &quot;$(RuntimeIdentifier)&quot; &quot;$(TargetFramework)&quot; &quot;$(PublicationSdkHost)&quot;" />
     <ItemGroup>
       <EmbeddedResource Include="$(PublicationInputResource)" LogicalName="ClaimCore.ProducingInputs" />
     </ItemGroup>
   </Target>
   <Target Name="VerifyPublicationInputsAfterCompile" AfterTargets="CoreCompile"
           Condition="'$(MSBuildProjectExtension)' == '.fsproj' and '$(DesignTimeBuild)' != 'true'">
-    <Exec Command="dotnet fsi --warnaserror+ --exec &quot;$(MSBuildThisFileDirectory)PublicationInputs.fsx&quot; verify &quot;$(MSBuildThisFileDirectory)..&quot; &quot;$(PublicationInputResource)&quot;" />
+    <Error Condition="!Exists('$(PublicationSdkHost)')" Text="The producing SDK host is unavailable; use the pinned dotnet SDK." />
+    <Exec Command="&quot;$(PublicationSdkHost)&quot; fsi --warnaserror+ --exec &quot;$(MSBuildThisFileDirectory)PublicationInputs.fsx&quot; verify &quot;$(MSBuildThisFileDirectory)..&quot; &quot;$(PublicationInputResource)&quot;" />
   </Target>
 </Project>

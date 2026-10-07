@@ -17,9 +17,9 @@ witness_restored=""
 stage="source-validation"
 preserve_diagnostics() {
   local directory current name
-  mkdir -p "${repo_root}/artifacts/restore-failures"
-  directory="$(mktemp -d "${repo_root}/artifacts/restore-failures/restore.XXXXXXXX")"
-  printf '%s\n' "${stage}" >"${directory}/stage.txt"
+  mkdir -p "${repo_root}/artifacts/restore-failures" || return
+  directory="$(mktemp -d "${repo_root}/artifacts/restore-failures/restore.XXXXXXXX")" || return
+  printf '%s\n' "${stage}" >"${directory}/stage.txt" || return
   for name in primary witness; do
     if [[ "${name}" == primary ]]; then current="${primary_restored}"; else current="${witness_restored}"; fi
     if [[ -z "${current}" ]]; then continue; fi
@@ -31,6 +31,8 @@ preserve_diagnostics() {
   done
 }
 cleanup_error() {
+  # lint-exception: LX-0049
+  # shellcheck disable=SC2310
   preserve_diagnostics >/dev/null 2>&1 || true
   printf 'restore-stage=%s\n' "${stage}" >&2
   for current in "${witness_restored}" "${primary_restored}"; do
@@ -42,7 +44,8 @@ trap cleanup_error ERR
 [[ "${primary_source}" =~ ^[0-9a-f]{64}$ && "${witness_source}" =~ ^[0-9a-f]{64}$ ]]
 [[ "${primary_source}" != "${witness_source}" ]]
 [[ "${primary_role}" =~ ^[a-z][a-z0-9_]{0,62}$ && "${witness_role}" =~ ^[a-z][a-z0-9_]{0,62}$ ]]
-[[ -d "${scratch}" && ! -L "${scratch}" && "$(cd "${scratch}" && pwd -P)" == "${scratch}" ]]
+physical_scratch="$(cd "${scratch}" && pwd -P)"
+[[ -d "${scratch}" && ! -L "${scratch}" && "${physical_scratch}" == "${scratch}" ]]
 
 stage="source-image-label"
 for source in "${primary_source}" "${witness_source}"; do
@@ -83,6 +86,7 @@ for name in primary witness; do
   pg_verifybackup "${scratch}/recovered/${name}" >/dev/null
 
   found_wal=0
+  find "${scratch}/${name}/pg_wal" -maxdepth 1 -type f >"${scratch}/${name}.wal-list"
   while IFS= read -r segment; do
     segment_name="${segment##*/}"
     if [[ ! "${segment_name}" =~ ^[0-9A-F]{24}$ ]]; then continue; fi
@@ -93,7 +97,7 @@ for name in primary witness; do
     age --decrypt --identity "${scratch}/identity.age" \
       "${scratch}/archive/${name}-wal/${segment_name}.age" |
       cmp - "${segment}" >/dev/null
-  done < <(find "${scratch}/${name}/pg_wal" -maxdepth 1 -type f)
+  done <"${scratch}/${name}.wal-list"
   [[ "${found_wal}" == 1 ]]
 done
 

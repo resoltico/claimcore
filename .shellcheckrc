@@ -2,4 +2,3 @@
 external-sources=true
 enable=all
 severity=style
-disable=SC2310,SC2312

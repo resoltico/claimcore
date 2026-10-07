@@ -9,16 +9,22 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(HostSecurityNativeExtension)' != ''">
     <HostSecurityNativeSource>$(MSBuildThisFileDirectory)native/claimcore_private_openat.c</HostSecurityNativeSource>
-    <HostSecurityNativeOutputDirectory>$(MSBuildThisFileDirectory)../../artifacts/native/$(MSBuildProjectName)/$(Configuration)</HostSecurityNativeOutputDirectory>
-    <HostSecurityNativeFile>$(HostSecurityNativeOutputDirectory)/libclaimcore_hostsecurity_native$(HostSecurityNativeExtension)</HostSecurityNativeFile>
   </PropertyGroup>
   <!-- Libraries never publish a second copy of the host's fixed-ABI private-file shim.
        Every runnable host imports this target and owns its one exact native publish item. -->
-  <ItemGroup Condition="'$(HostSecurityNativeExtension)' != '' and '$(OutputType)' == 'Exe'">
-    <None Include="$(HostSecurityNativeFile)" Link="libclaimcore_hostsecurity_native$(HostSecurityNativeExtension)"
-          CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-  </ItemGroup>
+  <Target Name="ConfigureHostSecurityNativeOutput" BeforeTargets="AssignTargetPaths"
+          Condition="'$(HostSecurityNativeExtension)' != '' and '$(OutputType)' == 'Exe'">
+    <PropertyGroup>
+      <HostSecurityNativeOutputDirectory>$(IntermediateOutputPath)native</HostSecurityNativeOutputDirectory>
+      <HostSecurityNativeFile>$(HostSecurityNativeOutputDirectory)/libclaimcore_hostsecurity_native$(HostSecurityNativeExtension)</HostSecurityNativeFile>
+    </PropertyGroup>
+    <ItemGroup>
+      <None Include="$(HostSecurityNativeFile)" Link="libclaimcore_hostsecurity_native$(HostSecurityNativeExtension)"
+            CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    </ItemGroup>
+  </Target>
   <Target Name="BuildHostSecurityNative" BeforeTargets="GetCopyToOutputDirectoryItems;ComputeFilesToPublish"
+          DependsOnTargets="ConfigureHostSecurityNativeOutput"
           Condition="'$(HostSecurityNativeExtension)' != '' and '$(OutputType)' == 'Exe'">
     <MakeDir Directories="$(HostSecurityNativeOutputDirectory)" />
     <Exec Command="cc -std=c11 -O2 -fPIC -Wall -Wextra -Werror $(HostSecurityNativeLinkFlag) &quot;$(HostSecurityNativeSource)&quot; -o &quot;$(HostSecurityNativeFile)&quot;" />

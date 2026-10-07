@@ -64,11 +64,16 @@ export const referencePattern = /lint-exception\s*:\s*(LX-\d{4})\b/iu;
  * @returns {string | null}
  */
 export function referenceNear(lines, index) {
-  const current = referencePattern.exec(lines[index] ?? "");
+  const safe = (/** @type {string} */ line) =>
+    line.replace(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/gu, '""');
+  const current = referencePattern.exec(safe(lines[index] ?? ""));
   if (current) {
     return (current[1] ?? "").toUpperCase();
   }
-  const above = referencePattern.exec(lines[index - 1] ?? "");
+  const previous = safe(lines[index - 1] ?? "");
+  const above = /^\s*(?:#|\/\/|\/\*|\*|\(\*)/u.test(previous)
+    ? referencePattern.exec(previous)
+    : null;
   return above ? (above[1] ?? "").toUpperCase() : null;
 }
 

@@ -18,7 +18,8 @@ trap 'printf "wal-capture-stage=%s\n" "$stage" >&2' ERR
 [[ "${primary_source}" != "${witness_source}" ]]
 [[ "${primary_prefix}" =~ ^[0-9A-F]{24}(,[0-9A-F]{24})*$ ]]
 [[ "${witness_prefix}" =~ ^[0-9A-F]{24}(,[0-9A-F]{24})*$ ]]
-[[ -d "${scratch}" && ! -L "${scratch}" && "$(cd "${scratch}" && pwd -P)" == "${scratch}" ]]
+physical_scratch="$(cd "${scratch}" && pwd -P)"
+[[ -d "${scratch}" && ! -L "${scratch}" && "${physical_scratch}" == "${scratch}" ]]
 [[ -f "${scratch}/identity.age" && ! -L "${scratch}/identity.age" ]]
 
 stage="source-image-label"

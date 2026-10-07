@@ -18,26 +18,22 @@ restore_container=""
 checkpoint_signer_pid=""
 checkpoint_socket_root=""
 
-capture_synthetic() {
-  python3 -B "${repo_root}/eng/backup/Test-ManagedBackupPrimitives.py" \
-    --config "$1" --primary-container "${primary_container}" \
-    --witness-container "${witness_container}"
-}
-
 cleanup() {
+  local status=$?
   if [[ -n "${checkpoint_signer_pid}" ]]; then
     kill "${checkpoint_signer_pid}" >/dev/null 2>&1 || true
     wait "${checkpoint_signer_pid}" >/dev/null 2>&1 || true
   fi
   for current in "${restore_container}" "${witness_container}" "${primary_container}"; do
-    if [[ -n "${current}" ]]; then docker stop "${current}" >/dev/null 2>&1 || true; fi
+    if [[ -n "${current}" ]]; then docker stop "${current}" >/dev/null 2>&1 || status=1; fi
   done
-  if [[ "${scratch}" == */claimcore-backup-test.* && -d "${scratch}" ]]; then
-    rm -rf -- "${scratch}"
+  if [[ "${status}" != 0 ]]; then
+    printf 'Failed backup drill retained private scratch: %s\n' "${scratch}" >&2
+    return "${status}"
   fi
-  if [[ "${checkpoint_socket_root}" == */cccp.* && -d "${checkpoint_socket_root}" ]]; then
-    rm -rf -- "${checkpoint_socket_root}"
-  fi
+  [[ "${scratch}" == */claimcore-backup-test.* && -d "${scratch}" ]] && rm -rf -- "${scratch}"
+  [[ "${checkpoint_socket_root}" == */cccp.* && -d "${checkpoint_socket_root}" ]] && rm -rf -- "${checkpoint_socket_root}"
+  return "${status}"
 }
 trap cleanup EXIT
 
@@ -130,17 +126,19 @@ jq -n --arg archive "${scratch}/archive" --arg recipient "${recipient}" \
   --arg checkpoint_socket "${checkpoint_socket}" \
   '{format:"claimcore-managed-backup-1",archiveRoot:$archive,checkpointRoot:$checkpoints,inventoryRoot:$inventory,commitmentKey:$commitment,signingKeyId:$signing_id,checkpointSigningKeyId:$checkpoint_signing_id,encryptionKeyId:$encryption_id,backupIntervalSeconds:86400,maximumBackupAgeSeconds:172800,restoreHorizonSeconds:259200,backupRetentionSeconds:604800,walRetentionSeconds:604800,checkpointRetentionSeconds:1209600,ageRecipient:$recipient,ageIdentity:$identity,signingKey:$signing,verificationKey:$public,checkpointSignerMode:"LOCAL_SYNTHETIC",checkpointSignerSocket:$checkpoint_socket,checkpointSignerRemote:null,checkpointVerificationKey:$checkpoint_public,checkpointCustodianId:"synthetic-checkpoint-custodian",pgServiceFile:$pgservice,pgServiceFileSha256:$pgsha,pgTlsRootSha256:null,maxBackupBytes:134217728,maxTarEntries:20000,maxWalCopies:1000,primary:{metadataService:"backup_primary",replicationService:"backup_primary_replication",custodianId:"synthetic-primary"},witness:{metadataService:"backup_witness",replicationService:"backup_witness_replication",custodianId:"synthetic-witness"}}' >"${scratch}/config.json"
 chmod 600 "${scratch}/config.json"
+capture_command=(python3 -B "${repo_root}/eng/backup/Test-ManagedBackupPrimitives.py"
+  --primary-container "${primary_container}" --witness-container "${witness_container}")
 jq '. + {qualifiedVerifierSha256:("a" * 64)}' "${scratch}/config.json" \
   >"${scratch}/owner-selected-verifier.json"
 chmod 600 "${scratch}/owner-selected-verifier.json"
-if capture_synthetic "${scratch}/owner-selected-verifier.json" >/dev/null 2>&1; then
+if "${capture_command[@]}" --config "${scratch}/owner-selected-verifier.json" >/dev/null 2>&1; then
   echo 'Owner-selected callback hash passed lower-level backup configuration.' >&2
   exit 1
 fi
 jq '.checkpointVerificationKey=.verificationKey' "${scratch}/config.json" \
   >"${scratch}/reused-checkpoint-key.json"
 chmod 600 "${scratch}/reused-checkpoint-key.json"
-if capture_synthetic "${scratch}/reused-checkpoint-key.json" >/dev/null 2>&1; then
+if "${capture_command[@]}" --config "${scratch}/reused-checkpoint-key.json" >/dev/null 2>&1; then
   echo 'A shared copy/checkpoint signing key passed admission.' >&2
   exit 1
 fi
@@ -148,12 +146,12 @@ jq '{format,archiveRoot,ageRecipient}' "${scratch}/config.json" >"${scratch}/arc
 chmod 600 "${scratch}/archiver.json"
 
 ln -s "${scratch}/config.json" "${scratch}/linked-config.json"
-if capture_synthetic "${scratch}/linked-config.json" >/dev/null 2>&1; then
+if "${capture_command[@]}" --config "${scratch}/linked-config.json" >/dev/null 2>&1; then
   echo 'Linked private configuration passed admission.' >&2
   exit 1
 fi
 ln -s "${scratch}" "${scratch}/linked-parent"
-if capture_synthetic "${scratch}/linked-parent/config.json" >/dev/null 2>&1; then
+if "${capture_command[@]}" --config "${scratch}/linked-parent/config.json" >/dev/null 2>&1; then
   echo 'Linked private ancestor passed admission.' >&2
   exit 1
 fi
@@ -170,7 +168,8 @@ wait "${checkpoint_signer_pid}" >/dev/null 2>&1 || true
 checkpoint_signer_pid=""
 [[ "${cycle}" =~ ^[0-9a-f-]{36}$ ]]
 [[ ! -f "${scratch}/archive/${cycle}/primary.tar" && -f "${scratch}/archive/${cycle}/primary.tar.age" ]]
-[[ "$(find "${scratch}/inventory" -name "${cycle}.*.json" | wc -l | tr -d ' ')" == 2 ]]
+inventory_count="$(find "${scratch}/inventory" -name "${cycle}.*.json" | wc -l | tr -d ' ')"
+[[ "${inventory_count}" == 2 ]]
 for attestation in "${scratch}/inventory/${cycle}."*.json; do
   openssl pkeyutl -verify -rawin -pubin -inkey "${scratch}/attestor.pub" -in "${attestation}" -sigfile "${attestation%.json}.sig" >/dev/null
   jq -e '.eventKind == "REGISTER" and .state == "UNVERIFIED" and .primaryRegistration == "NOT_REGISTERED" and .verificationProofSha256 == null and (.backupManifestSha256 | length) == 64 and (.walSegmentBytes | type) == "number"' "${attestation}" >/dev/null
@@ -218,7 +217,8 @@ python3 "${repo_root}/eng/backup/managed.py" --config "${scratch}/archiver.json"
 python3 "${repo_root}/eng/backup/managed.py" --config "${scratch}/archiver.json" archive-wal primary "${scratch}/${wal_segment}" "${wal_segment}"
 python3 "${repo_root}/eng/backup/managed.py" --config "${scratch}/config.json" attest-wal primary "${wal_segment}" >/dev/null
 [[ -f "${scratch}/archive/wal/primary/${wal_segment}.age" ]]
-[[ "$(find "${scratch}/inventory" -name "wal.${wal_segment}.primary.*.json" | wc -l | tr -d ' ')" == 1 ]]
+wal_copy_count="$(find "${scratch}/inventory" -name "wal.${wal_segment}.primary.*.json" | wc -l | tr -d ' ')"
+[[ "${wal_copy_count}" == 1 ]]
 python3 "${repo_root}/eng/backup/managed.py" --config "${scratch}/archiver.json" archive-wal witness "${scratch}/witness-wal/${witness_wal_segment}" "${witness_wal_segment}"
 python3 "${repo_root}/eng/backup/managed.py" --config "${scratch}/config.json" attest-wal witness "${witness_wal_segment}" >/dev/null
 python3 "${repo_root}/eng/backup/managed.py" --config "${scratch}/config.json" inspect "${cycle}" --restore-verifier "${repo_root}/eng/backup/Verify-BackupPrimitives.sh" >"${scratch}/with-wal-result.json"
@@ -254,7 +254,8 @@ if python3 "${repo_root}/eng/backup/managed.py" --config "${scratch}/archiver.js
 fi
 
 cp "${scratch}/archive/${cycle}/manifest.json" "${scratch}/original-manifest.json"
-jq --arg installation "$(uuidgen | tr '[:upper:]' '[:lower:]')" '.installationId = $installation' "${scratch}/original-manifest.json" >"${scratch}/archive/${cycle}/manifest.json"
+replacement_installation="$(uuidgen | tr '[:upper:]' '[:lower:]')"
+jq --arg installation "${replacement_installation}" '.installationId = $installation' "${scratch}/original-manifest.json" >"${scratch}/archive/${cycle}/manifest.json"
 openssl pkeyutl -sign -rawin -inkey "${scratch}/attestor.key" -in "${scratch}/archive/${cycle}/manifest.json" -out "${scratch}/archive/${cycle}/manifest.sig"
 if python3 "${repo_root}/eng/backup/managed.py" --config "${scratch}/config.json" inspect "${cycle}" --restore-verifier "${repo_root}/eng/backup/Verify-BackupPrimitives.sh" >/dev/null 2>&1; then
   echo 'Wrong-installation signed backup passed inspection.' >&2

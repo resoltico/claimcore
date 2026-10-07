@@ -19,6 +19,7 @@
     "stylelint.config.mjs",
     "../eng/ci/repository-path.mjs",
     "../eng/lint/jsonc.mjs",
-    "../eng/ci/publish/inputs.mjs"
+    "../eng/ci/publish/inputs.mjs",
+    "../eng/ci/executable.mjs"
   ]
 }

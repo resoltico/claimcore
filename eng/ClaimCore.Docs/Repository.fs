@@ -6,6 +6,7 @@ open System.Globalization
 open System.IO
 open System.Security.Cryptography
 open System.Text
+open System.Text.Json
 open System.Threading.Tasks
 
 [<Sealed>]
@@ -153,58 +154,39 @@ module Repository =
 
     let sha256File path = File.ReadAllBytes(path) |> sha256Bytes
 
-    let private gitRedirectVariables =
-        [
-            "GIT_ALTERNATE_OBJECT_DIRECTORIES"
-            "GIT_CEILING_DIRECTORIES"
-            "GIT_COMMON_DIR"
-            "GIT_CONFIG_COUNT"
-            "GIT_CONFIG_PARAMETERS"
-            "GIT_DIR"
-            "GIT_DISCOVERY_ACROSS_FILESYSTEM"
-            "GIT_INDEX_FILE"
-            "GIT_NAMESPACE"
-            "GIT_OBJECT_DIRECTORY"
-            "GIT_WORK_TREE"
-        ]
-
-    /// The Markdown files git would list: tracked files, plus untracked files no .gitignore excludes.
-    /// Git owns the ignore rules, so this tool never restates them.
+    /// Source admission owns membership and Git ignore rules, including isolated Gitless exports.
     let markdownFiles (root: RepositoryRoot) (runner: IProcessRunner) =
         let request =
             {
-                FileName = "git"
-                Arguments =
-                    [
-                        "ls-files"
-                        "-z"
-                        "--cached"
-                        "--others"
-                        "--exclude-per-directory=.gitignore"
-                        "--"
-                        ":(glob)**/*.md"
-                    ]
+                FileName = "node"
+                Arguments = [ "eng/ci/repository.mjs"; root.Path ]
                 WorkingDirectory = root.Path
-                Environment =
-                    [ for name in gitRedirectVariables -> name, None ]
-                    @ [ "GIT_OPTIONAL_LOCKS", Some "0"; "GIT_TERMINAL_PROMPT", Some "0" ]
+                Environment = []
                 Timeout = TimeSpan.FromSeconds 60.0
             }
 
         match runner.Run request with
-        | Error message -> Error $"The Markdown inventory could not be listed: {message}"
-        | Ok output when output.ExitCode <> 0 ->
-            Error
-                "The Markdown inventory could not be listed; the repository must be a Git worktree."
+        | Error _ -> Error "The Markdown source inventory could not be admitted."
+        | Ok output when output.ExitCode <> 0 || output.StandardError <> "" ->
+            Error "The Markdown source inventory could not be admitted."
         | Ok output ->
-            output.StandardOutput.Split('\000', StringSplitOptions.RemoveEmptyEntries)
-            |> Array.distinct
-            |> Array.sortWith (fun left right -> String.CompareOrdinal(left, right))
-            |> Array.map (fun relative ->
-                Path.Combine(root.Path, relative.Replace('/', Path.DirectorySeparatorChar)))
-            |> Array.filter File.Exists
-            |> Array.toList
-            |> Ok
+            try
+                let paths =
+                    JsonSerializer.Deserialize<string array>(output.StandardOutput)
+                    |> Option.ofObj
+                    |> Option.defaultWith (fun () -> invalidOp "Missing source inventory")
+
+                paths
+                |> Array.distinct
+                |> Array.filter (fun path -> path.EndsWith(".md", StringComparison.Ordinal))
+                |> Array.sortWith (fun left right -> String.CompareOrdinal(left, right))
+                |> Array.map (fun path ->
+                    Path.Combine(root.Path, path.Replace('/', Path.DirectorySeparatorChar)))
+                |> Array.filter File.Exists
+                |> Array.toList
+                |> Ok
+            with _ ->
+                Error "The Markdown source inventory was malformed."
 
 [<Sealed>]
 type SystemProcessRunner() =

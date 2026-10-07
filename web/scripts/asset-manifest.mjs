@@ -59,6 +59,7 @@ export const sourceFiles = async () => {
     "tsconfig.node.json",
     "vite.config.ts",
     "../eng/ci/repository-path.mjs",
+    "../eng/ci/executable.mjs",
     "../eng/lint/jsonc.mjs",
   ].map((file) => resolve(webDirectory, file));
   const compiler = compilerInputs(

@@ -2,6 +2,9 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+# shellcheck source=eng/PublishedQualificationRuntime.sh
+source "${repo_root}/eng/PublishedQualificationRuntime.sh"
+enter_qualification_run "$@"
 cd "${repo_root}"
 
 workspace="$(mktemp -d "${repo_root}/artifacts/acceptance-local.XXXXXX")"
@@ -20,6 +23,9 @@ cleanup_test_containers() {
   if ! bash "${repo_root}/eng/Remove-LabeledTestContainers.sh" "${test_run_label}"; then
     echo "Exact-label published CLI container cleanup failed." >&2
     status=1
+  fi
+  if [[ "${status}" == 0 ]]; then
+    node "${repo_root}/eng/ci/run-publication.mjs" dispose "${workspace}" || status=1
   fi
   exit "${status}"
 }

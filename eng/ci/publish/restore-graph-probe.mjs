@@ -1,3 +1,4 @@
+import { executable } from "../executable.mjs";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { copyFileSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
@@ -5,7 +6,11 @@ import { join } from "node:path";
 
 /** @param {string} source @param {string[]} args @param {boolean} [accepted] */
 function execute(source, args, accepted = true) {
-  const result = spawnSync("dotnet", args, { cwd: source, encoding: "utf8", timeout: 600_000 });
+  const result = spawnSync(executable("dotnet"), args, {
+    cwd: source,
+    encoding: "utf8",
+    timeout: 600_000,
+  });
   if (accepted) {
     assert.equal(result.status, 0, "Restored-graph positive control failed.");
   } else {

@@ -121,7 +121,17 @@ let inputDigest root =
 
 try
     match fsi.CommandLineArgs |> Array.skip 1 with
-    | [| "record"; root; destination; sdk; project; assets; configuration |] ->
+    | [| "record"
+         root
+         destination
+         sdk
+         project
+         assets
+         configuration
+         artifacts
+         runtime
+         framework
+         sdkHost |] ->
         use specification =
             JsonDocument.Parse(File.ReadAllText(physicalPath (Path.GetFullPath root) "global.json"))
 
@@ -131,7 +141,15 @@ try
         then
             failwith "Unsupported producing SDK."
 
-        PublicationRestoreGraph.verify (Path.GetFullPath root) project assets configuration
+        PublicationRestoreGraph.verify
+            (Path.GetFullPath root)
+            project
+            assets
+            configuration
+            artifacts
+            runtime
+            framework
+            sdkHost
 
         let digest = inputDigest (Path.GetFullPath root)
 

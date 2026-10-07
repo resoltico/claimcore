@@ -161,13 +161,12 @@ function checkedManifest(value) {
 }
 
 /**
- * Require the tree at `root` to be exactly the one `manifestPath` describes.
+ * Inspect a current-format manifest without claiming its product bytes are present.
  * @param {string} product
- * @param {string} root
  * @param {string} manifestPath
- * @returns {string} The tree digest.
+ * @returns {Manifest}
  */
-export function verifyTree(product, root, manifestPath) {
+export function inspectManifest(product, manifestPath) {
   const manifest = checkedManifest(JSON.parse(readFileSync(manifestPath, "utf8")));
   if (manifest.product !== product) {
     throw new Error("The publish manifest names a different product.");
@@ -182,6 +181,12 @@ export function verifyTree(product, root, manifestPath) {
   if (treeDigest(manifest.files) !== manifest.treeSha256) {
     throw new Error("The publish manifest tree digest does not match its file records.");
   }
+  return manifest;
+}
+
+/** @param {string} product @param {string} root @param {string} manifestPath */
+export function verifyTree(product, root, manifestPath) {
+  const manifest = inspectManifest(product, manifestPath);
   const actual = describeFiles(root);
   if (JSON.stringify(actual) !== JSON.stringify(manifest.files)) {
     throw new Error("The output tree does not match the publish manifest.");

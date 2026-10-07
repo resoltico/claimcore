@@ -1,1 +1,31 @@
-{"baselineId":"claimcore-witness-v1","sha256":"f8366f637824294079a9b890986ccb9074f6ec049646c64de27b06dac15b983a"}
+{
+  "schemaVersion": 2,
+  "baselineId": "claimcore-witness-v1",
+  "sha256": "b2d59f66464205a03a41c0498be1b487aeaedbbcc98b8c2e4186e8a44da2c413",
+  "fragments": [
+    "installation.sql",
+    "journal.sql",
+    "writer-handoff-table.sql",
+    "installation-loss-table.sql",
+    "request-types.sql",
+    "journal-append.sql",
+    "writer-handoff-preparation.sql",
+    "writer-handoff-settlement.sql",
+    "writer-activation.sql",
+    "data-use-activation.sql",
+    "writer-handoff-abort.sql",
+    "writer-handoff-release.sql",
+    "prune-source-proof.sql",
+    "prune-sealed-targets.sql",
+    "prune-settlement.sql",
+    "installation-loss-intent.sql",
+    "installation-loss-settlement.sql",
+    "authority-fences.sql",
+    "journal-proof-shapes.sql",
+    "writer-proof-shapes.sql",
+    "privacy-proof-shapes.sql",
+    "loss-proof-shapes.sql",
+    "authority-triggers.sql",
+    "grants.sql"
+  ]
+}

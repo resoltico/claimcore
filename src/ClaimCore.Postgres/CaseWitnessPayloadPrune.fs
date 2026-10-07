@@ -64,11 +64,7 @@ module internal CaseWitnessPayloadPrune =
 
     let private sql =
         "SELECT sequence,entry_hash,payload_sha256,deleted_count "
-        + "FROM claimcore_witness.settle_and_prune(@installation,@lineage,@epoch,"
-        + "@event,@case,@intentSequence,@intentHash,@purge,@purgeSequence,@purgeHash,"
-        + "@cutoff,@cutoffHash,@targetCount,@targetDigest,"
-        + "@approvalOne,@approvalOneSequence,@approvalOneHash,"
-        + "@approvalTwo,@approvalTwoSequence,@approvalTwoHash,@key,@settlement,@writerCapability)"
+        + "FROM claimcore_witness.settle_and_prune(ROW(@installation,@lineage,@epoch)::claimcore_witness.installation_identity,ROW(@case,ROW(@purge,@purgeSequence,@purgeHash)::claimcore_witness.journal_ticket,ROW(@cutoff,@cutoffHash)::claimcore_witness.journal_tip,@targetCount,@targetDigest)::claimcore_witness.prune_source,ROW(@event,ROW(@intentSequence,@intentHash)::claimcore_witness.journal_tip,ROW(@approvalOne,@approvalOneSequence,@approvalOneHash)::claimcore_witness.journal_ticket,ROW(@approvalTwo,@approvalTwoSequence,@approvalTwoHash)::claimcore_witness.journal_ticket)::claimcore_witness.prune_authority,ROW(@key,@settlement,@writerCapability)::claimcore_witness.writer_delivery)"
 
     let private bind
         (command: NpgsqlCommand)

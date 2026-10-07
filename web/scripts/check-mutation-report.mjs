@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
+import { isDeepStrictEqual } from "node:util";
 
 export const targets = [
   "src/domain/metadata.ts",
@@ -11,6 +12,46 @@ export const targets = [
   "src/presentation/messages.ts",
 ];
 const minimumScore = 92;
+// Vitest deadlines reach Stryker as failed tests and can otherwise be reported as Killed.
+const deadlineReason =
+  /^(?:Error: )?(?:(?:Test|Hook) timed out in \d+ms(?: while waiting for [^\r\n]+)?\.|The (?:setup|teardown) phase of "(?:aroundEach|aroundAll)" hook timed out after \d+ms\.)/u;
+
+/** @param {import("./tooling-types.mjs").MutationReport} report */
+function requireProfile(report) {
+  const profile = {
+    mutate: targets,
+    testRunner: "vitest",
+    vitest: { configFile: "vite.config.ts", related: true },
+    ignorePatterns: ["artifacts/**"],
+    coverageAnalysis: "perTest",
+    mutator: { plugins: null, excludedMutations: [] },
+    plugins: ["@stryker-mutator/*"],
+    appendPlugins: [],
+    ignorers: [],
+    checkers: [],
+    ignoreStatic: false,
+    incremental: false,
+    dryRunOnly: false,
+    inPlace: false,
+    testFiles: [],
+    testRunnerNodeArgs: [],
+  };
+  if (
+    !report.config ||
+    Object.entries(profile).some(([key, value]) => !isDeepStrictEqual(report.config[key], value))
+  ) {
+    throw new Error("Mutation evidence does not match the reviewed full profile.");
+  }
+}
+
+/** @param {{ status: string, statusReason?: string }} mutant */
+function definiteResult(mutant) {
+  if (!["Killed", "Survived"].includes(mutant.status)) {
+    return false;
+  }
+  const reason = mutant.statusReason;
+  return reason === undefined || (typeof reason === "string" && !deadlineReason.test(reason));
+}
 
 /** @param {import("./tooling-types.mjs").MutationReport} report @param {string} version */
 function requireIdentity(report, version) {
@@ -45,12 +86,10 @@ export function verifyMutationReport(report, sources, version) {
   requireIdentity(report, version);
   requireScope(report, sources);
   const mutants = targets.flatMap((target) => report.files[target]?.mutants ?? []);
-  if (
-    mutants.length === 0 ||
-    mutants.some((mutant) => !["Killed", "Survived"].includes(mutant.status))
-  ) {
-    throw new Error("Mutation evidence is empty, incomplete, or ignored.");
+  if (mutants.length === 0 || mutants.some((mutant) => !definiteResult(mutant))) {
+    throw new Error("Mutation evidence is empty, incomplete, ignored, or timed out.");
   }
+  requireProfile(report);
   const killed = mutants.filter((mutant) => mutant.status === "Killed").length;
   const score = (100 * killed) / mutants.length;
   if (score < minimumScore) {

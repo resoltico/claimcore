@@ -27,15 +27,18 @@ function validateAppend(stage) {
   if (stage.appendFiles === undefined) {
     return;
   }
-  const { directories, suffix } = stage.appendFiles;
+  const { directories, suffixes } = stage.appendFiles;
   if (
     !strings(directories) ||
     directories.length === 0 ||
     !directories.every(relativeDirectory) ||
-    typeof suffix !== "string" ||
-    !/^\.[a-z0-9]+$/u.test(suffix)
+    !strings(suffixes) ||
+    suffixes.length === 0 ||
+    !suffixes.every((suffix) => /^\.[a-z0-9]+$/u.test(suffix))
   ) {
-    throw new Error("Appended stage inputs need safe source directories and one file suffix.");
+    throw new Error(
+      "Appended stage inputs need safe source directories and explicit file suffixes.",
+    );
   }
 }
 

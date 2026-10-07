@@ -1,5 +1,21 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "baselineId": "claimcore-primary-v1",
-  "sha256": "1c29b04a7d5bcb4e0df1a753d57acb9c239a8408a860949d8e94b054a1c828df"
+  "sha256": "1c29b04a7d5bcb4e0df1a753d57acb9c239a8408a860949d8e94b054a1c828df",
+  "fragments": [
+    "case-state-and-lineage.sql",
+    "writer-authority.sql",
+    "actor-and-data-use-authority.sql",
+    "case-lifecycle.sql",
+    "erasure-tombstones.sql",
+    "erasure-holds-and-pruning.sql",
+    "erasure-terminal-evidence.sql",
+    "recovery-exports-and-copy-signers.sql",
+    "installation-loss-retirement.sql",
+    "managed-copy-ledger.sql",
+    "managed-copy-verification-and-adoption.sql",
+    "external-copy-publication-and-deletion.sql",
+    "request-recovery.sql",
+    "runtime-grants.sql"
+  ]
 }

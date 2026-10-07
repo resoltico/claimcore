@@ -2,7 +2,7 @@ import { expect, it } from "vitest";
 import { createDraft } from "../src/domain/metadata";
 import { freezeRequest } from "../src/domain/operationRequest";
 import { initialOperation, operationReducer } from "../src/domain/operationReducer";
-import { firstId, secondId, refused, begin } from "./operation-identity.fixtures";
+import { firstId, secondId, refused, begin, reviewed } from "./operation-identity.fixtures";
 import { groupedCorrectionValues } from "./v3-foundation.fixtures";
 
 it("detaches replacement group values so later authoring cannot change a frozen request", () => {
@@ -51,4 +51,23 @@ it("refuses submission transitions when no exact reviewed request exists", () =>
   expect(operationReducer(editing, { type: "SUBMITTING", requestId: 9 })).toBe(editing);
   const reviewing = { ...editing, delivery: "REVIEWING" as const, exposedRequest: null };
   expect(operationReducer(reviewing, { type: "SUBMITTING", requestId: 9 })).toBe(reviewing);
+});
+it("enters submitting with the exact reviewed request and makes authoring unavailable", () => {
+  const reviewing = reviewed();
+  const submitting = operationReducer(reviewing, { type: "SUBMITTING", requestId: 9 });
+  expect(submitting).toEqual({
+    ...reviewing,
+    delivery: "SUBMITTING",
+    message: null,
+    fieldError: null,
+    pending: { kind: "SUBMIT", requestId: 9 },
+  });
+  expect(submitting.exposedRequest).toBe(reviewing.exposedRequest);
+  expect(
+    operationReducer(submitting, {
+      type: "EDIT_REFERENCE",
+      value: "OTHER",
+      nextOperationId: secondId,
+    }),
+  ).toBe(submitting);
 });

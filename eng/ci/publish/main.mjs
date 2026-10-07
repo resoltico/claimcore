@@ -1,3 +1,7 @@
+import { artifactDirectory } from "../artifact-path.mjs";
+import { runContext } from "../run-context.mjs";
+import { jobContext } from "../job-context.mjs";
+import { coordinate } from "../run-command.mjs";
 import { commandLine } from "../executable.mjs";
 // Publish the three applications once, describe them (SBOM, third-party notices, manifest) and let
 // every consumer verify the exact bytes it received.
@@ -219,10 +223,13 @@ export function verifyPublished(output, only = []) {
 const absolute = (path) => (isAbsolute(path) ? path : resolve(root, path));
 
 /** @param {string[]} argv */
-function main(argv) {
+export function publishCommand(argv) {
   const [mode, ...rest] = argv;
   if (mode === "build") {
     const output = absolute(option(rest, "output", "artifacts/publish"));
+    if (runContext(root) !== null || jobContext(root) !== null) {
+      artifactDirectory(root, output);
+    }
     for (const item of products) {
       publishOne(item, { output, build: !flag(rest, "no-build") });
     }
@@ -237,7 +244,12 @@ function main(argv) {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   try {
-    main(process.argv.slice(2));
+    if (
+      process.argv[2] !== "build" ||
+      !(await coordinate(root, "node", ["eng/ci/publish/main.mjs", ...process.argv.slice(2)]))
+    ) {
+      publishCommand(process.argv.slice(2));
+    }
   } catch (error) {
     process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
     process.exitCode = 1;

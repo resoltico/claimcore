@@ -12,10 +12,11 @@ export function commandFor(stage, runId, root) {
     part.replaceAll("{runId}", runId).replaceAll("{root}", root),
   );
   if (stage.appendFiles) {
-    const { directories, suffix } = stage.appendFiles;
+    const { directories, suffixes } = stage.appendFiles;
     const files = repositoryFiles(root).filter(
       (path) =>
-        path.endsWith(suffix) && directories.some((directory) => path.startsWith(`${directory}/`)),
+        suffixes.some((suffix) => path.endsWith(suffix)) &&
+        directories.some((directory) => path.startsWith(`${directory}/`)),
     );
     if (files.length === 0) {
       throw new Error("A stage source selector matched no source files.");

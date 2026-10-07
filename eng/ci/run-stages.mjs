@@ -8,6 +8,7 @@
 // command than the one that gates the merge. A stage that needs a pinned tool from
 // config/tools.json installs it first; any other missing tool skips the stage on a developer
 // machine and fails it in CI.
+import { coordinate } from "./run-command.mjs";
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { availableParallelism, tmpdir } from "node:os";
@@ -121,7 +122,11 @@ async function main() {
   }
 }
 
-main().catch((error) => {
+(async () => {
+  if (!(await coordinate(root, "node", ["eng/ci/run-stages.mjs", ...argv.slice(2)]))) {
+    await main();
+  }
+})().catch((error) => {
   process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
   process.exitCode = 1;
 });

@@ -2,6 +2,19 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { isObject } from "./model.mjs";
 
+const exceptionFields = [
+  "id",
+  "tool",
+  "rules",
+  "file",
+  "kind",
+  "count",
+  "reason",
+  "owner",
+  "reviewOn",
+  "expiresOn",
+];
+
 const identifier = /^LX-\d{4}$/u;
 const tools = new Set([
   "fsc",
@@ -21,9 +34,10 @@ const tools = new Set([
   "yamllint",
   "actionlint",
   "msbuild",
+  "native-compiler",
 ]);
 const nonSuppressible =
-  /(^|[-_/.:])(max[-_]?lines|file[-_]?size|function[-_]?size|complexity|focused|skip(?:ped)?[-_]?test|test[-_]?filter|contract[-_]?drift|security[-_]?boundary)([-_/.:]|$)/iu;
+  /(^|[-_/.:])(max[-_]?lines(?:In\w+)?|cyclomaticComplexity|max[-_](?:params|statements|args|positional[-_]args)|C901|PLR091[2357]|max[-_]nesting[-_]depth|selector[-_]max[-_](?:specificity|compound[-_]selectors)|file[-_]?size|function[-_]?size|complexity|focused|skip(?:ped)?[-_]?test|test[-_]?filter|contract[-_]?drift|security[-_]?boundary)([-_/.:]|$)/iu;
 const generatedPath =
   /^(?:artifacts\/obj\/|src\/ClaimCore\.Web\/wwwroot\/|web\/(?:artifacts|coverage|dist|node_modules|playwright-report|test-results)\/)$/u;
 
@@ -109,28 +123,26 @@ function fieldProblems(entry, root, ids, rules) {
     [kind === "inline" || kind === "config", "kind must be inline or config."],
     [Number.isInteger(count) && Number(count) >= 1, "needs a positive integer count."],
     [
+      rules.length <= 1 || count === rules.length,
+      "must cover each listed rule exactly once; repeated occurrences need a single-rule entry.",
+    ],
+    [
       rules.length > 0 && rules.length === listed && new Set(rules).size === rules.length,
       "needs exact rule names without duplicates.",
     ],
-    [
-      knownFields(entry, [
-        "id",
-        "tool",
-        "rules",
-        "file",
-        "kind",
-        "count",
-        "reason",
-        "owner",
-        "reviewOn",
-        "expiresOn",
-      ]),
-      "contains unknown fields.",
-    ],
+    [knownFields(entry, exceptionFields), "contains unknown fields."],
     [
       rules.every(
         (rule) =>
-          rule !== "*" && !nonSuppressible.test(rule) && (kind === "config" || !/[*?]/u.test(rule)),
+          !/^(?:\*|all|@ts-nocheck|ignore_errors|noCheck|skipLibCheck|dynamic-pragma|-W(?:all|extra|everything)|SC\d+-SC\d+)$/iu.test(
+            rule,
+          ) &&
+          !/(?:^|:)(?:ignore_errors|ALL|\*{1,2}(?:\/\*{1,2})*)$/iu.test(rule) &&
+          !(
+            text(entry, "tool") === "ruff" && /(?:^|:)(?:[A-Z]{1,4}[0-9]{0,2}|PLR091)$/u.test(rule)
+          ) &&
+          !nonSuppressible.test(rule) &&
+          (kind === "config" || !/[*?]/u.test(rule)),
       ),
       "names a blanket, wildcard or non-suppressible rule.",
     ],
@@ -211,6 +223,20 @@ function generatedEntry(entry, report, seen) {
   };
 }
 
+/** @param {import("./model.mjs").LintException[]} exceptions @param {import("./model.mjs").Report} report */
+function checkConfigTargets(exceptions, report) {
+  const targets = new Set();
+  for (const entry of exceptions.filter((candidate) => candidate.kind === "config")) {
+    for (const rule of entry.rules) {
+      const target = JSON.stringify([entry.file, entry.tool, rule]);
+      if (targets.has(target)) {
+        report.add(`Exception ${entry.id} duplicates an existing config exception target.`);
+      }
+      targets.add(target);
+    }
+  }
+}
+
 /**
  * Load and validate the registry; problems go to `report`.
  * @param {string} root Repository root.
@@ -252,5 +278,6 @@ export function loadRegistry(root, registryPath, report) {
     .filter(isObject)
     .map((entry) => exceptionEntry(entry, root, report, ids))
     .filter((entry) => entry !== null);
+  checkConfigTargets(exceptions, report);
   return { generated: generated.filter((entry) => entry !== null), exceptions };
 }

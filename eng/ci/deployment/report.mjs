@@ -6,6 +6,9 @@ import { join, resolve } from "node:path";
 import { verifyPublished } from "../publish/main.mjs";
 import { verifyProbe } from "./transport-evidence.mjs";
 import { sourceFingerprint } from "../source-snapshot.mjs";
+import { runContext } from "../run-context.mjs";
+import { jobContext } from "../job-context.mjs";
+import { gitEnvironment } from "../scan/process.mjs";
 import { producingInputDigest } from "../publish/inputs.mjs";
 import { verifyBrowserTrustReport } from "./browser-trust-qualification.mjs";
 import { verifyDisabledGuard, verifyRevocationMatrix } from "./revocation-qualification.mjs";
@@ -28,8 +31,15 @@ const properties = [
 /** @typedef {{revision: string, sourceSha256: string, producingInputsSha256: string, runId: string, attempt: string}} Identity */
 /** @param {string} root @returns {Identity} */
 export function evidenceIdentity(root) {
+  const context = runContext(root) ?? jobContext(root);
   return {
-    revision: execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim(),
+    revision:
+      context?.history.head ??
+      execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: root,
+        encoding: "utf8",
+        env: gitEnvironment(),
+      }).trim(),
     sourceSha256: sourceFingerprint(root),
     producingInputsSha256: producingInputDigest(root),
     runId: process.env.GITHUB_RUN_ID ?? "local",

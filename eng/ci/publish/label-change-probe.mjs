@@ -1,12 +1,25 @@
+import { commandLine } from "../executable.mjs";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { readFileSync, symlinkSync, writeFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 
-const root = resolve(import.meta.dirname, "../../..");
 /** @param {string} source @param {string} command @param {string[]} args */
 function run(source, command, args) {
-  const result = spawnSync(command, args, { cwd: source, encoding: "utf8", timeout: 600_000 });
+  const result = spawnSync(...commandLine(command, args), {
+    cwd: source,
+    encoding: "utf8",
+    timeout: 600_000,
+  });
+  if (result.status !== 0) {
+    const diagnostics = join(source, "artifacts");
+    mkdirSync(diagnostics, { recursive: true, mode: 0o700 });
+    writeFileSync(
+      join(diagnostics, "vocabulary-probe-failure.log"),
+      result.stdout + result.stderr,
+      { mode: 0o600 },
+    );
+  }
   assert.equal(result.status, 0, "Real vocabulary producer/consumer probe failed.");
   return result.stdout;
 }
@@ -40,11 +53,7 @@ export function verifyLabelChange(source, publication) {
     "eng/ClaimCore.ContractGenerator/ClaimCore.ContractGenerator.fsproj",
     "--locked-mode",
   ]);
-  symlinkSync(
-    join(root, "web/node_modules"),
-    join(source, "web/node_modules"),
-    process.platform === "win32" ? "junction" : "dir",
-  );
+  run(source, "npm", ["--prefix", "web", "ci"]);
   run(source, "node", ["web/scripts/regenerate-contract.mjs", "--write-lock"]);
   run(source, "node", ["web/scripts/localization.mjs", "--write"]);
   run(source, "dotnet", [

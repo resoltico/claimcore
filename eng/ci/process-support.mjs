@@ -56,18 +56,22 @@ export function logTailLines(path, lines, width) {
  * start, 128 when a signal ended it).
  * @param {string} command
  * @param {string[]} args
- * @param {{ cwd: string, log: string, env?: NodeJS.ProcessEnv }} options
+ * @param {{ cwd: string, log: string, env?: NodeJS.ProcessEnv, groups?: number[] }} options
  * @returns {Promise<number>}
  */
-export function runToLog(command, args, { cwd, log, env }) {
+export function runToLog(command, args, { cwd, log, env, groups }) {
   const selected = commandLine(command, args);
   const descriptor = openSync(log, "w");
   return new Promise((resolve) => {
     const child = spawn(...selected, {
       cwd,
+      detached: groups !== undefined && process.platform !== "win32",
       stdio: ["ignore", descriptor, descriptor],
       ...(env === undefined ? {} : { env }),
     });
+    if (groups !== undefined && child.pid !== undefined) {
+      groups.push(child.pid);
+    }
     let settled = false;
     /** @param {number} status */
     const settle = (status) => {

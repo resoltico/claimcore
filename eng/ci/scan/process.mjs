@@ -47,31 +47,23 @@ export function runChild(command, args, { cwd, env, timeoutMs = 300_000 }) {
   });
 }
 
-const gitRedirect = new Set([
-  "GIT_ALTERNATE_OBJECT_DIRECTORIES",
-  "GIT_CEILING_DIRECTORIES",
-  "GIT_COMMON_DIR",
-  "GIT_CONFIG_COUNT",
-  "GIT_CONFIG_PARAMETERS",
-  "GIT_DIR",
-  "GIT_DISCOVERY_ACROSS_FILESYSTEM",
-  "GIT_INDEX_FILE",
-  "GIT_NAMESPACE",
-  "GIT_OBJECT_DIRECTORY",
-  "GIT_WORK_TREE",
-]);
-
-/** @returns {NodeJS.ProcessEnv} The environment without anything that redirects git elsewhere. */
+/** @returns {NodeJS.ProcessEnv} Git cannot inherit another repository or replacement view. */
 export function gitEnvironment() {
   const env = Object.fromEntries(
-    Object.entries(process.env).filter(([name]) => !gitRedirect.has(name)),
+    Object.entries(process.env).filter(([name]) => !name.startsWith("GIT_")),
   );
-  return { ...env, GIT_OPTIONAL_LOCKS: "0", GIT_TERMINAL_PROMPT: "0" };
+  return {
+    ...env,
+    GIT_OPTIONAL_LOCKS: "0",
+    GIT_TERMINAL_PROMPT: "0",
+    GIT_NO_REPLACE_OBJECTS: "1",
+    GIT_NO_LAZY_FETCH: "1",
+  };
 }
 
-/** @returns {NodeJS.ProcessEnv} The environment without scanner configuration overrides. */
-export function scannerEnvironment() {
-  const env = { ...process.env };
+/** @param {NodeJS.ProcessEnv} [environment] @returns {NodeJS.ProcessEnv} */
+export function scannerEnvironment(environment = process.env) {
+  const env = { ...environment };
   delete env["GITLEAKS_CONFIG"];
   delete env["GITLEAKS_CONFIG_TOML"];
   return env;

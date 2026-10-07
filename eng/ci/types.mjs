@@ -20,7 +20,7 @@
  * @property {boolean} [exclusive] Runs alone.
  * @property {Record<string, string>} [env]
  * @property {string[]} [requires] Tools that must be on PATH.
- * @property {{ directories: string[], suffix: string }} [appendFiles]
+ * @property {{ directories: string[], suffixes: string[] }} [appendFiles]
  */
 
 /**

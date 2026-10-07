@@ -1,3 +1,4 @@
+import { executable } from "../executable.mjs";
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
 import {
@@ -19,22 +20,37 @@ import { compiledInputs, producingInputDigest, verifyProducingInputs } from "./i
 import { verifyPublished } from "./main.mjs";
 import { verifyTree, writeManifest } from "./tree.mjs";
 import { verifyLabelChange } from "./label-change-probe.mjs";
+import { verifyNativeOutputRoots } from "./native-output-probe.mjs";
 import { verifyStaleRestore } from "./restore-graph-probe.mjs";
 
 const root = resolve(import.meta.dirname, "../../..");
 
 /** @param {string} directory @param {string[]} args */
 function dotnet(directory, args) {
-  const result = spawnSync("dotnet", args, { cwd: directory, encoding: "utf8", timeout: 600_000 });
+  const result = spawnSync(executable("dotnet"), args, {
+    cwd: directory,
+    encoding: "utf8",
+    timeout: 600_000,
+  });
+  if (result.status !== 0) {
+    mkdirSync(join(directory, "artifacts"), { recursive: true });
+    writeFileSync(
+      join(directory, "artifacts/producing-input-failure.log"),
+      result.stdout + result.stderr,
+      { mode: 0o600 },
+    );
+  }
   assert.equal(result.status, 0, `Producing-input fixture command failed: ${args[0]}.`);
 }
 
 /** @typedef {{scratch: string, source: string, published: string}} Fixture */
 /** @param {(fixture: Fixture) => void} action */
 function withPublication(action) {
+  mkdirSync(join(root, "artifacts"), { recursive: true });
   const scratch = mkdtempSync(join(root, "artifacts/publication-inputs-"));
   const source = join(scratch, "source");
   const published = join(scratch, "published");
+  let passed = false;
   try {
     copySource(root, source);
     dotnet(source, ["restore", "src/ClaimCore.Cli/ClaimCore.Cli.fsproj", "--locked-mode"]);
@@ -42,8 +58,13 @@ function withPublication(action) {
     publishCli(source, published);
     assert.deepEqual(verifyPublished(published, ["cli"]), ["cli"]);
     action({ scratch, source, published });
+    passed = true;
   } finally {
-    rmSync(scratch, { recursive: true, force: true });
+    if (passed) {
+      rmSync(scratch, { recursive: true });
+    } else {
+      process.stderr.write(`Failed publication reproduction retained: ${scratch}.\n`);
+    }
   }
 }
 
@@ -92,8 +113,21 @@ function changeInputs({ source, scratch }) {
   assert.notEqual(changed, before);
   const stale = spawnSync(
     "node",
-    ["eng/ci/publish/main.mjs", "build", "--no-build", "--output", join(scratch, "stale")],
-    { cwd: source, encoding: "utf8", timeout: 600_000 },
+    [
+      "--input-type=module",
+      "-e",
+      'import { publishCommand } from "./eng/ci/publish/main.mjs"; try { publishCommand(process.argv.slice(1)); } catch (error) { process.stderr.write(error.message); process.exitCode = 1; }',
+      "build",
+      "--no-build",
+      "--output",
+      join(scratch, "stale"),
+    ],
+    {
+      cwd: source,
+      encoding: "utf8",
+      timeout: 600_000,
+      env: { ...process.env, CLAIMCORE_RUN_CONTEXT: undefined, CLAIMCORE_JOB_CONTEXT: undefined },
+    },
   );
   assert.equal(stale.status, 1);
   assert.match(stale.stderr, /produced from different inputs/u);
@@ -202,7 +236,7 @@ function verifyNativeNoBuild({ source, scratch, published }) {
     return;
   }
   assert.ok(native, "Supported private runtime publishes its native shim.");
-  const retained = join(source, "artifacts/native/ClaimCore.Cli/Release", native);
+  const retained = join(source, "artifacts/obj/ClaimCore.Cli/release/native", native);
   copyFileSync(join(published, "cli", native), retained);
   const future = new Date(Date.now() + 60_000);
   utimesSync(retained, future, future);
@@ -238,5 +272,13 @@ test(
       verifyNativeNoBuild(fixture);
       verifyLabelChange(fixture.source, join(fixture.scratch, "label-publication"));
     });
+  },
+);
+
+test(
+  "real SDK output roots and configuration/RID pivots isolate native shims",
+  { timeout: 900_000 },
+  () => {
+    withPublication((fixture) => verifyNativeOutputRoots(fixture.source, fixture.scratch));
   },
 );

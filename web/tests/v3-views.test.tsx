@@ -95,9 +95,9 @@ it("shows current fields, server command labels, full expandable history and ret
     />,
   );
   expect(await screen.findByText("CASE-1")).toBeVisible();
-  await user.click(screen.getByRole("button", { name: /Close the case/u }));
+  await user.click(await screen.findByRole("button", { name: /Close the case/u }));
   expect(command).toHaveBeenCalledWith(current, "CLOSE");
-  await user.click(screen.getAllByText(/Close the case · revision/u)[0]!);
+  await user.click((await screen.findAllByText(/Close the case · revision/u))[0]!);
   expect(screen.getAllByText(/synthetic-operator/u)).toHaveLength(2);
   expect(document.body).toHaveTextContent("exact replay");
   await user.click(screen.getByRole("button", { name: "Load more history" }));

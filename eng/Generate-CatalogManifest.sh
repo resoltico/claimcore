@@ -14,11 +14,19 @@ mkdir -p artifacts
 temporary="$(mktemp artifacts/catalog-manifest.XXXXXX)"
 
 cleanup() {
-  if [[ -n "${container_id}" ]] &&
-    [[ "$(docker inspect --format '{{index .Config.Labels "org.claimcore.catalog-manifest"}}' "${container_id}" 2>/dev/null)" == "${run_tag}" ]]; then
-    docker stop "${container_id}" >/dev/null 2>&1 || true
+  local status=$? container_owner
+  trap - EXIT
+  if [[ -n "${container_id}" ]]; then
+    if ! container_owner="$(docker inspect --format '{{index .Config.Labels "org.claimcore.catalog-manifest"}}' "${container_id}" 2>/dev/null)"; then
+      status=1
+    elif [[ "${container_owner}" == "${run_tag}" ]]; then
+      docker stop "${container_id}" >/dev/null 2>&1 || status=1
+    else
+      status=1
+    fi
   fi
-  rm -f "${temporary}"
+  if [[ "${status}" == 0 ]]; then rm -f "${temporary}" || status=1; fi
+  return "${status}"
 }
 trap cleanup EXIT
 
@@ -30,8 +38,8 @@ container_id="$(docker run --rm -d --name "${container}" \
   "${image}" -c fsync=on -c full_page_writes=on -c synchronous_commit=on)"
 
 for _ in $(seq 1 40); do
-  if docker exec "${container_id}" pg_isready -q -U claimcore_catalog_owner \
-    -d claimcore_catalog_synthetic; then
+  if docker exec "${container_id}" psql -X -q -A -t -U claimcore_catalog_owner \
+    -d claimcore_catalog_synthetic -c 'SELECT 1' >/dev/null 2>&1; then
     break
   fi
   sleep 1
@@ -42,7 +50,7 @@ psql=(docker exec -i "${container_id}" psql -X -v ON_ERROR_STOP=1
 
 printf 'CREATE ROLE claimcore_app LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS NOINHERIT;\n' |
   "${psql[@]}" >/dev/null
-"${psql[@]}" <db/baseline.sql >/dev/null
+node eng/ci/database/baseline-source.mjs db/schema-baseline.json | "${psql[@]}" >/dev/null
 
 actual_version="$(printf 'SELECT current_setting('\''server_version_num'\'')::integer;\n' |
   "${psql[@]}" -A -t)"

@@ -2,9 +2,12 @@
 
 /** @param {import("oxlint/plugins-dev").Expression} source */
 function importedText(source) {
-  if (source.type === "Literal" && typeof source.value === "string") return source.value;
-  if (source.type === "TemplateLiteral")
+  if (source.type === "Literal" && typeof source.value === "string") {
+    return source.value;
+  }
+  if (source.type === "TemplateLiteral") {
     return source.quasis.map((part) => part.value.cooked ?? "").join("");
+  }
   return null;
 }
 
@@ -25,8 +28,9 @@ const noPresentationImport = {
     return {
       ImportExpression(node) {
         const text = importedText(node.source);
-        if (text !== null && /presentation/.test(text))
+        if (text !== null && /presentation/u.test(text)) {
           context.report({ node, messageId: "forbidden" });
+        }
       },
     };
   },

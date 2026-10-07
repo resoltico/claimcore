@@ -64,7 +64,7 @@ let scalar<'a> (connection: string) sql =
     use command = new NpgsqlCommand(sql, db)
     command.ExecuteScalar() :?> 'a
 
-let fixture test =
+let fixtureRoles test =
     let password = Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(24))
 
     let container =
@@ -113,9 +113,15 @@ let fixture test =
         builder.Password <- writerPassword
         builder.PersistSecurityInfo <- false
         builder.LogParameters <- false
-        test owner builder.ConnectionString identity capability
+        let auditor = NpgsqlConnectionStringBuilder(builder.ConnectionString)
+        auditor.Username <- "claimcore_witness_auditor"
+        auditor.Password <- auditPassword
+        test owner builder.ConnectionString auditor.ConnectionString identity capability
     finally
         CryptographicOperations.ZeroMemory(capability)
         container.DisposeAsync().AsTask().GetAwaiter().GetResult()
+
+let fixture test =
+    fixtureRoles (fun owner writer _ identity capability -> test owner writer identity capability)
 
 let payload (value: byte) = [| 0x43uy; 0x43uy; 0x57uy; value |]

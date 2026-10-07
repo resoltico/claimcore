@@ -257,17 +257,6 @@
       "reviewOn": "2027-03-01"
     },
     {
-      "id": "LX-0018",
-      "tool": "oxlint",
-      "rules": ["typescript/no-deprecated"],
-      "file": "web/src/views/operation/OperationReview.tsx",
-      "kind": "inline",
-      "count": 1,
-      "reason": "react-aria-components 1.21 deprecates Checkbox for CheckboxField with CheckboxButton; the replacement changes the rendered structure that the browser accessibility tests pin, so the migration needs its own browser-verified change.",
-      "owner": "project maintainers",
-      "reviewOn": "2027-03-01"
-    },
-    {
       "id": "LX-0019",
       "tool": "oxlint",
       "rules": [
@@ -324,7 +313,9 @@
     {
       "id": "LX-0023",
       "tool": "oxlint",
-      "rules": ["require-await"],
+      "rules": [
+        "override:[\"**/*.test.mjs\",\"**/test-support.mjs\",\"**/settings-fixture.mjs\"]:[]:require-await"
+      ],
       "file": "eng/.oxlintrc.json",
       "kind": "config",
       "count": 1,
@@ -335,7 +326,9 @@
     {
       "id": "LX-0024",
       "tool": "oxlint",
-      "rules": ["no-template-curly-in-string"],
+      "rules": [
+        "override:[\"ci/workflow-graph.mjs\",\"ci/workflow-policy.mjs\",\"ci/workflow-policy.test.mjs\"]:[]:no-template-curly-in-string"
+      ],
       "file": "eng/.oxlintrc.json",
       "kind": "config",
       "count": 1,
@@ -373,7 +366,7 @@
     {
       "id": "LX-0030",
       "tool": "oxlint",
-      "rules": ["jsx-a11y/prefer-tag-over-role"],
+      "rules": ["override:[\"**/*.ts\",\"**/*.tsx\"]:[]:jsx-a11y/prefer-tag-over-role"],
       "file": "web/.oxlintrc.json",
       "kind": "config",
       "count": 1,
@@ -384,7 +377,7 @@
     {
       "id": "LX-0031",
       "tool": "oxlint",
-      "rules": ["typescript/consistent-return"],
+      "rules": ["override:[\"**/*.ts\",\"**/*.tsx\"]:[]:typescript/consistent-return"],
       "file": "web/.oxlintrc.json",
       "kind": "config",
       "count": 1,
@@ -395,7 +388,7 @@
     {
       "id": "LX-0032",
       "tool": "oxlint",
-      "rules": ["typescript/consistent-type-definitions"],
+      "rules": ["override:[\"**/*.ts\",\"**/*.tsx\"]:[]:typescript/consistent-type-definitions"],
       "file": "web/.oxlintrc.json",
       "kind": "config",
       "count": 1,
@@ -406,7 +399,9 @@
     {
       "id": "LX-0033",
       "tool": "oxlint",
-      "rules": ["typescript/prefer-readonly-parameter-types"],
+      "rules": [
+        "override:[\"**/*.ts\",\"**/*.tsx\"]:[]:typescript/prefer-readonly-parameter-types"
+      ],
       "file": "web/.oxlintrc.json",
       "kind": "config",
       "count": 1,
@@ -417,7 +412,9 @@
     {
       "id": "LX-0034",
       "tool": "oxlint",
-      "rules": ["typescript/strict-void-return"],
+      "rules": [
+        "override:[\"tests/**/*.ts\",\"tests/**/*.tsx\",\"e2e/**/*.ts\",\"e2e/**/*.tsx\"]:[]:typescript/strict-void-return"
+      ],
       "file": "web/.oxlintrc.json",
       "kind": "config",
       "count": 1,
@@ -428,7 +425,10 @@
     {
       "id": "LX-0035",
       "tool": "oxlint",
-      "rules": ["typescript/no-unsafe-type-assertion"],
+      "rules": [
+        "override:[\"tests/**/*.ts\",\"tests/**/*.tsx\",\"e2e/**/*.ts\",\"e2e/**/*.tsx\"]:[]:typescript/no-unsafe-type-assertion",
+        "override:[\"src/generated/**/*.ts\",\"src/generated/**/*.mts\",\"src/api/v3.ts\"]:[]:typescript/no-unsafe-type-assertion"
+      ],
       "file": "web/.oxlintrc.json",
       "kind": "config",
       "count": 2,
@@ -439,7 +439,7 @@
     {
       "id": "LX-0036",
       "tool": "oxlint",
-      "rules": ["no-await-in-loop"],
+      "rules": ["override:[\"tests/**\",\"e2e/**\",\"scripts/**\"]:[]:no-await-in-loop"],
       "file": "web/.oxlintrc.json",
       "kind": "config",
       "count": 1,
@@ -450,7 +450,9 @@
     {
       "id": "LX-0037",
       "tool": "oxlint",
-      "rules": ["typescript/no-unnecessary-type-parameters"],
+      "rules": [
+        "override:[\"src/generated/**/*.ts\",\"src/generated/**/*.mts\",\"src/api/v3.ts\"]:[]:typescript/no-unnecessary-type-parameters"
+      ],
       "file": "web/.oxlintrc.json",
       "kind": "config",
       "count": 1,
@@ -461,33 +463,13 @@
     {
       "id": "LX-0038",
       "tool": "oxlint",
-      "rules": ["typescript/array-type"],
+      "rules": [
+        "override:[\"src/generated/**/*.ts\",\"src/generated/**/*.mts\",\"src/api/v3.ts\"]:[]:typescript/array-type"
+      ],
       "file": "web/.oxlintrc.json",
       "kind": "config",
       "count": 1,
       "reason": "The bundler emits the standalone validator declaration files with its own array syntax; generated declarations are not hand-edited.",
-      "owner": "project maintainers",
-      "reviewOn": "2027-03-01"
-    },
-    {
-      "id": "LX-0041",
-      "tool": "shellcheck",
-      "rules": ["SC2154"],
-      "file": "eng/PublishedWebE2E-Setup.sh",
-      "kind": "inline",
-      "count": 1,
-      "reason": "This fragment is sourced by the runner, which defines and validates the environment variables and paths it reads; they are intentionally not assigned in the fragment.",
-      "owner": "project maintainers",
-      "reviewOn": "2027-03-01"
-    },
-    {
-      "id": "LX-0042",
-      "tool": "shellcheck",
-      "rules": ["SC2310", "SC2312"],
-      "file": ".shellcheckrc",
-      "kind": "config",
-      "count": 2,
-      "reason": "The scripts run with set -euo pipefail and deliberately test helper functions in conditions and substitute pipeline or path lookups whose failure the next explicit check reports; rewriting them into temporary variables would add noise without adding verification.",
       "owner": "project maintainers",
       "reviewOn": "2027-03-01"
     },
@@ -499,6 +481,65 @@
       "kind": "config",
       "count": 1,
       "reason": "The audit asks for the `$/...` self-repository action syntax, which actionlint and the repository's own workflow policy do not yet understand; the reviewed `./` form is kept until all three accept it.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0044",
+      "tool": "oxlint",
+      "rules": [
+        "override:[\"src/**/*.ts\",\"src/**/*.tsx\"]:[\"src/api/v3.ts\"]:excludeFiles:src/api/v3.ts"
+      ],
+      "file": "web/.oxlintrc.json",
+      "kind": "config",
+      "count": 1,
+      "reason": "The validated generated-contract HTTP adapter owns browser transport; this exact adapter may call fetch while operation-domain and other browser callers must use its validated endpoint boundary.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0045",
+      "tool": "oxlint",
+      "rules": [
+        "override:[\"src/api/**/*.ts\",\"src/api/**/*.tsx\",\"src/domain/**/*.ts\",\"src/domain/**/*.tsx\",\"src/hooks/**/*.ts\",\"src/hooks/**/*.tsx\",\"src/views/recovery/RecoveryState.ts\"]:[\"src/api/v3.ts\"]:excludeFiles:src/api/v3.ts"
+      ],
+      "file": "web/.oxlintrc.json",
+      "kind": "config",
+      "count": 1,
+      "reason": "The validated generated-contract HTTP adapter owns browser transport; this exact adapter may call fetch while operation-domain and other browser callers must use its validated endpoint boundary.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0047",
+      "tool": "shellcheck",
+      "rules": ["SC2310"],
+      "file": "eng/Remove-LabeledTestContainers.sh",
+      "kind": "inline",
+      "count": 1,
+      "reason": "The absence helper explicitly handles enumeration failure and returns its final bounded empty-result predicate. Conditional use distinguishes proven disappearance from inaccessible Docker state without relying on errexit.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0048",
+      "tool": "shellcheck",
+      "rules": ["SC2310"],
+      "file": "eng/Test-LabeledTestContainerCleanup.sh",
+      "kind": "inline",
+      "count": 1,
+      "reason": "Cleanup already disables errexit; this helper explicitly guards the exact owned anonymous volume identity and returns the actual remove command status, which the caller records as cleanup failure.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0049",
+      "tool": "shellcheck",
+      "rules": ["SC2310"],
+      "file": "eng/backup/Restore-IsolatedTestPair.sh",
+      "kind": "inline",
+      "count": 1,
+      "reason": "Diagnostic retention is best effort during an existing restore failure. Each directory setup step explicitly returns on failure; independent Docker diagnostic attempts are intentionally bounded and tolerated without changing the restore failure.",
       "owner": "project maintainers",
       "reviewOn": "2027-03-01"
     }

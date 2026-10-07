@@ -66,7 +66,7 @@ does not produce or consume browser assets.
 Orchestration, policy checks and report verification are Node programs under `eng/ci/`, tested with
 `node:test` in `eng/` (`npm --prefix eng test`). F# is used for the product and for the documentation
 tool that needs product-independent Markdown parsing; Python only for the backup drills; Bash only for
-container and PostgreSQL drills. There is no PowerShell. The pieces:
+container and PostgreSQL drills. Windows orchestration uses the built-in Windows PowerShell 5.1 only to protect and read back a freshly created scratch directory ACL; it does not run profiles or change execution policy. The pieces:
 
 | Concern                | Entry point                                                    |
 | ---------------------- | -------------------------------------------------------------- |
@@ -135,17 +135,62 @@ one machine: the locked restore and strict-compiler build, the documentation che
 dependency gates, the frontend product and gates, the cross-platform suites for this platform, and the
 partitioned PostgreSQL suites and persistent Docker operation qualification. Each job runs the command CI runs. The jobs are registered in
 [`eng/ci/local-plan.json`](../eng/ci/local-plan.json), which also lists every CI family with no local
-equivalent (the other operating systems, the published-browser lifecycles and merged coverage) with the
-reason, and a test holds that list to `ci.yml`. Jobs run exclusively one after another because they share one working
-tree; each uses the machine's cores internally. Generated outputs under `artifacts/` are removed first.
+equivalent with the reason, and a test holds that list to `ci.yml`. The suite family here covers only this
+operating system; the other registered systems remain CI work, as the local summary states. Each local run captures a fresh private Gitless source snapshot
+in physical OS scratch outside every Git repository ancestor. Its stages share only that snapshot
+and run exclusively; independent runs have separate SDK intermediates, dependencies, contracts, assets,
+mutation outputs and publications. Global package caches remain in their normal locations. Prior outputs
+are never removed before selection. The workflows explicitly create a caller-selected job-checkout record and recheck its physical Git root, exact source and history before evidence transfer. That record permits direct execution in the job checkout without another snapshot; it establishes input agreement and selected ownership, not authenticated GitHub identity. GitHub environment flags alone cannot select this mode.
 
 By default a job runs only when a changed file, measured against the merge base with `origin/main` and
 including uncommitted and untracked files, could affect it, so a documentation-only change skips the frontend
 and database suites; `--changed-since REF` moves the base and `--all` runs everything. `--include published`
-adds the published CLI acceptance (it publishes the applications and uses Docker). `--only id,id` and
+adds published CLI acceptance plus all three measured browser engines and same-run merged coverage
+(it publishes the applications and uses Docker). `--only id,id` and
 `--skip id,id` select jobs (unknown IDs fail), `--no-fail-fast` continues past a failure, and logs go to
-`artifacts/local-ci/<time>/<job>.log` with the tail of a failing log printed. A green local run is verification
+a private `artifacts/local-ci/<job>.log` inside the isolated snapshot, with the tail of a failing log printed.
+Admitted reports are scanned in plaintext, then copied once into fresh retained inodes with source and destination fingerprints checked around transfer. A producer’s previously open file descriptor cannot modify the retained copy. Owner-validated report evidence is retained under `artifacts/runs/<UUID>/results`; stage outcomes and
+admission records provide bounded diagnostics. Raw failure logs and unknown files remain private scratch. A green local run is verification
 of what ran here, not of the platforms and families it lists as not run; use the summary it prints.
+
+Fresh POSIX scratch roots require the current effective user and exact `0700` mode; context files require the same owner and exact `0600`. On macOS, bounded native metadata readback refuses every extended ACL while permitting ordinary extended attributes, and context admission rechecks the parent root. On Linux, the group mode class limits named ACL users/groups through the ACL mask. These are pathname metadata checks with no-link and byte agreement checks, not descriptor-atomic protection or protection from privileged operating-system administrators.
+
+On Windows, the local orchestrator protects its fresh empty OS scratch root with a non-inherited DACL owned by the current user SID and granting inheritable full control only to that SID and SYSTEM. Admission rereads the root ACL and requires its regular context file to inherit exactly those rules; broad Users/Everyone permissions, changed inheritance and linked roots or context entries are refused. This protects against ordinary other users, not privileged operating-system administrators or SYSTEM. Windows CI executes the real native positive and refusal controls. This orchestration boundary does not broaden the case-work private-file runtime contract, which remains macOS/Linux only.
+
+The run's private `run-input.json` binds its originating Git revision/ref and complete reachable graph,
+source fingerprint and producing-input identity. `inputs/` retains exact admitted source bytes, including
+uncommitted source, for review; hashes prove agreement, not owner authorization. The context is checked
+against those bytes and the actual original Git graph before nested commands consume it. History scanning
+uses that explicit original Git root; the Gitless snapshot never borrows an ancestor's HEAD.
+`outcome.json` records actual stage outcomes, including selection skips. A partial selection is not complete verification.
+
+Standalone suite, stage-plan, publication build, published CLI/browser and container qualification commands
+create the same kind of run; nested commands participate through `CLAIMCORE_RUN_CONTEXT`, a private
+validated context file, not an approval flag. Standalone commands restore/build their snapshot before execution.
+Standalone publication builds accept only relative paths under artifacts and retain the complete verified
+product under `artifacts/runs/<UUID>/publication` for later consumers. Publication verification and raw
+`dotnet`/npm commands remain ordinary direct commands. A source export
+supports ordinary builds and source scans. `node eng/ci/publish/source-export.mjs build --output <path>`
+is the explicit container/source-export publication command; it uses the same compiled-input, asset and
+byte-manifest guards and makes no Git-history/run-context claim. Standard Docker builds use it.
+Complete history qualification requires genuine complete Git metadata.
+`bash eng/Run-LocalBrowserCoverage.sh` creates a fresh run and executes its required complete .NET suites
+before browser coverage; it no longer consumes an earlier checkout result directory. When nested in the
+local plan, it consumes only the suites already admitted in that same snapshot. Raw coverage moves once
+into that run's input set, retaining full records for exact inventory and branch-floor checks.
+An externally supplied standalone browser publication must first pass tree and producing-input verification
+before its regular bytes are copied into the run snapshot.
+
+After all consumers finish, a successful settled run retains reports, inventories, raw coverage, mutation and
+publication/input manifests once, then removes only scratch whose actual ownership is known settled. Process-group absence cannot prove
+that a detached descendant exited; snapshots that executed jobs remain conservatively private until their
+process/resource ownership can be established. A no-job selection can remove its untouched snapshot.
+Published CLI/browser wrappers remove only their own disposable publications after their actual consumer
+processes, exact-label resource cleanup and final byte verification finish; exact manifests survive.
+No later age, dead-parent PID or missing lock proves settlement. Failed, interrupted or live-child scratch remains
+at the printed private path for diagnosis; no automatic historical sweep or root-wide cleanup is provided.
+Unknown historical artifacts, private `.local` installations, recovery evidence and named volumes remain protected.
+Raw unrelated editor/build writes are outside coordinated ownership; changing captured inputs refuses qualification.
 
 ### .NET tests
 
@@ -227,7 +272,7 @@ Program pipeline. Published client suites exercise the actual delivered host.
 Windows CI builds and exercises fail-closed private-file branches, but the current private-file
 runtime contract supports macOS and Linux only; Windows is not a published first-run target.
 
-The deterministic unit and fuzz profiles run 200 cases per property. The scheduled extended profile
+The registered in-memory boundary fuzz suite runs on Linux, macOS and Windows alongside the platform’s other source suites. The deterministic unit and fuzz profiles run 200 cases per property. The scheduled extended profile
 runs 5,000 for both:
 
 ```sh
@@ -314,7 +359,7 @@ source, npm lock, generated semantic/CLI-v4/Web-v3 contract, Node/npm versions, 
 
 The locked StrykerJS/Vitest mutation gate targets the four operation modules (metadata, initial state, request
 freezing and the reducer) and presentation preference/parser, descriptor/identity and typed ICU message-rendering logic. It uses one test worker to limit contention during static-mutation suite imports. It requires at least 92% killed mutants across them, refuses ignored or incomplete mutant
-results, and checks the exact sources, tool version and target set in an ignored local report. It does not exercise F#
+results, and checks the exact sources, tool version, target set and resolved full-run configuration in an ignored local report. It also rejects deadline failures disguised as killed mutants when the pinned runner reports a deadline as its first error; hidden secondary errors are not available to this check. It does not exercise F#
 or PostgreSQL and cannot replace the full tests, catalog checks or restored-data audit. The
 [frontend workflow’s outer job budget](../.github/workflows/verify-frontend.yml) allows for repeated isolated
 test-file startup on hosted runners; it does not relax test deadlines or accept timeout mutants.
@@ -359,8 +404,9 @@ The table shows each stage's arguments and additional inputs; run the plan to re
 | --- | --- | --- |
 | lint-exceptions | node eng/lint/check-exceptions.mjs |  |
 | suite-registry | node eng/ci/suites/check-registry.mjs |  |
+| pinned-tools-smoke | node eng/ci/tools-smoke.mjs |  |
 | clean-source | node eng/ci/clean-source.mjs | requires dotnet; exclusive |
-| eng-tests | npm --prefix eng test |  |
+| eng-tests | npm --prefix eng test | requires shfmt; requires uv |
 | eng-format | npm --prefix eng run format:check |  |
 | eng-types | npm --prefix eng run typecheck |  |
 | eng-lint | npm --prefix eng run lint |  |
@@ -373,16 +419,19 @@ The table shows each stage's arguments and additional inputs; run the plan to re
 | python-audit | uv audit --frozen | requires uv |
 | git-ignore-policy | node eng/ci/policy/ignore.mjs |  |
 | source-secret-scan | node eng/ci/scan/main.mjs source |  |
+| history-secret-scan | node eng/ci/scan/main.mjs history |  |
 | test-diagnostic-privacy | node eng/ci/policy/diagnostic-privacy.mjs |  |
 | fantomas | bash eng/Check-Fantomas.sh |  |
 | fsharplint | bash eng/Check-FSharpLint.sh |  |
-| actionlint | actionlint -color | requires actionlint |
+| actionlint | actionlint -color | requires actionlint; append .yml, .yaml source under .github/workflows |
 | workflow-security | uv run --frozen zizmor --persona pedantic --config .github/zizmor.yml --no-progress --format=plain .github | requires uv |
 | workflow-policy | node eng/ci/check-workflows.mjs |  |
 | shfmt | shfmt -d | requires shfmt; append .sh source under eng, db, deployment |
+| shell-limits | node eng/lint/check-shell.mjs | requires shfmt |
 | shellcheck | shellcheck -x | requires shellcheck; append .sh source under eng, db, deployment |
 | compose-config | CLAIMCORE_COMPOSE_PROJECT="claimcore-config-{runId}" CLAIMCORE_CONFIG_DIR="/tmp/claimcore-config-{runId}" CLAIMCORE_SERVICE_UID="1654" CLAIMCORE_SERVICE_GID="1654" CLAIMCORE_HOST_PORT="0" docker compose --file deployment/compose.yaml config --quiet | requires docker |
 | docker-cleanup-assurance | bash eng/Test-LabeledTestContainerCleanup.sh | requires docker; resource docker |
+| sql-limits | node eng/lint/check-sql.mjs | requires uv |
 <!-- generated:end quality-stages -->
 
 Use Fantomas without `--check` to format changed F# files. The FSharpLint gate applies its configured
@@ -422,7 +471,7 @@ weakened in passing:
 | F#                                       | compiler, Fantomas (no roll-forward), FSharpLint           | warnings as errors; size and complexity ceilings pinned by the exception engine                                                  |
 | TypeScript and JavaScript (`web`, `eng`) | TypeScript 7 `tsc`, oxlint with type-aware rules, Prettier | correctness, suspicious, pedantic, perf and style categories at `error`, denied warnings; typed rules scoped to TypeScript files |
 | Python (`eng/backup`)                    | uv-locked ruff, mypy, function-length check, `uv audit`    | every ruff rule selected, mypy `strict`, 50-line functions, 300-line files, pylint argument and statement ceilings pinned        |
-| Shell                                    | shellcheck, shfmt                                          | every optional check at `style` severity through `.shellcheckrc`; shfmt settings in `.editorconfig`                              |
+| Shell                                    | shellcheck, shfmt, native Bash AST limits                                          | every optional check at `style` severity through `.shellcheckrc`; shfmt settings in `.editorconfig`                              |
 | GitHub workflows                         | actionlint, zizmor, repository workflow policy             | zizmor pedantic persona; the only disabled audit is registered                                                                   |
 
 Shared Oxlint declarations live in [`config/oxlint.json`](../config/oxlint.json); package configs
@@ -431,8 +480,7 @@ complete configuration. Both engineering and frontend JavaScript tooling are che
 to browser source and tests, while orchestration uses Node globals. Retained Web asset identity
 includes the full repository-local compiler inheritance graph, including the frontend base settings.
 
-The exception engine (`node eng/lint/check-exceptions.mjs`) pins inherited and overridden oxlint categories and the Python
-ceilings, so relaxing them fails the gate. `node eng/ci/suites/check-registry.mjs` holds the repository to the suite
+The exception engine (`node eng/lint/check-exceptions.mjs`) pins inherited and overridden Oxlint categories, including prefixed rule aliases, and F#/Python/CSS ceilings, so relaxing them fails the gate. Native Bash and Windows PowerShell AST checks enforce function, branch and parameter bounds; Python discovery includes nested tooling. Physical file limits include production and test code, MSBuild project/props/targets, native C headers/source and PowerShell scripts. The locked `pglast` tooling uses PostgreSQL 18.6 native SQL and PL/pgSQL syntax trees to enforce whole executable-statement spans, input parameter counts, procedural decisions and nested SQL `CASE` arms. It refuses unsupported executable languages, dynamic SQL construction and missing bodies. For user-defined composite headers, procedural parsing substitutes record placeholders while preserving the body; real PostgreSQL creation and catalog/role tests establish actual type binding. SQL Boolean query predicates retain PostgreSQL evaluation semantics and are not counted as JavaScript short-circuit branches. All SQL source files also have the shared physical limit. These syntactic bounds and the compiled architecture checks do not prove cohesive responsibilities or arbitrary dynamic dependencies; substantive exception reasons still require review. `node eng/ci/suites/check-registry.mjs` holds the repository to the suite
 registry: every test project is registered, every registered file exists, every inventory belongs to a suite, and
 no workflow or script repeats a test count. Runner images are pinned to exact labels, and telemetry settings live in
 the toolchain action.
@@ -440,7 +488,9 @@ the toolchain action.
 Evaluated and not adopted: F# analyzers (G-Research and Ionide) report about 740 findings, of which about
 560 ask for typed interpolation holes on every `$"..."`, and the "unsafe option unwrapping" findings mostly flag
 `.Value` on validated wrapper types; adopting them would need hundreds of mechanical edits for little defect-finding
-value, so FSharpLint and the strict compiler remain the F# gates. F# mutation testing is also not adopted; StrykerJS
+value, so FSharpLint and the strict compiler remain the F# gates. The exact-source definitive mutation JSON is retained alongside scanned frontend evidence in the
+current-attempt GitHub artifact. Failure uploads preserve available diagnostics without qualifying an
+incomplete mutation run. F# mutation testing is also not adopted; StrykerJS
 covers the pure TypeScript operation-domain modules, and F# behavior is covered by the property, integration and
 qualification suites. Splitting `ClaimCore.Postgres` into runtime and administration assemblies was prototyped and
 rejected: the two halves share types and `internal` members across hundreds of files, so the split would move shared
@@ -456,7 +506,7 @@ suppression (`// oxlint-disable-next-line`, `# noqa`, `#nowarn`, `# shellcheck d
 `prettier-ignore`, coverage ignores and their equivalents) must carry `lint-exception: LX-nnnn` in its own comment or
 the line above; no line numbers are recorded, so edits above a suppression never break it. Configuration-level
 ignores (ignore patterns, `per-file-ignores`, mypy overrides, disabled rules, zizmor audit settings, knip ignores,
-`.prettierignore`, `NoWarn`, `dotnet_diagnostic` severities) are matched by file, tool and target. An entry with no
+`.prettierignore`, `NoWarn`, `dotnet_diagnostic` severities) are matched by file, tool and target. Oxlint configuration exceptions also bind the exact override `files` and `excludeFiles` selectors. Each target in a multi-rule entry occurs exactly once, with `count` equal to the number of rules; repeated occurrences use a single-rule entry with its exact count. A registry reference must be in a real source comment, not a string or docstring. Whole-file type checking bypasses, diagnostic-family prefixes and blanket compiler/linter disables cannot be registered. An entry with no
 remaining occurrence is stale and fails, as does any occurrence without an entry or a count that differs.
 `node eng/lint/check-exceptions.mjs` runs the check; its tests (`npm --prefix eng test`) build isolated repository
 trees for every scanner and policy. File-size, function-size, complexity, focused-test, skipped-test, test-filter,
@@ -466,6 +516,18 @@ Endpoint and outcome completeness is proven where it is actually exercised: test
 outcome catalogs (route-map dispatch, response-schema corpus coverage), so deleting an endpoint, branch or outcome tag
 fails a test rather than a registry. Test counts alone are not evidence of coverage, and a codec corpus does not prove
 a runtime branch was exercised.
+
+Complete reachable Git history is a separate required quality stage: `node eng/ci/scan/main.mjs history`.
+The quality checkout fetches full history without persisting credentials. The pinned scanner reads all reachable
+refs and HEAD with separate merge diffs, forced text, replacements disabled, and no external diff/textconv.
+Grafts, shallow/partial clones, missing objects, changed refs and absent Git metadata refuse that claim.
+Recognition of textual patterns does not establish that arbitrary passwords, encrypted bytes or unreachable
+remote history are discoverable. Source, history and upload scans use distinct scopes; Docker exclusion also
+protects ignored files that source scanning deliberately excludes. Real synthetic Docker exports qualify the
+shared private/generated probes in `config/git-ignore-policy.json` at root and nested admitted locations,
+while preserving all required producing inputs and the two reviewed credential-free npm policies.
+Native GitHub secret scanning and push protection operate independently; local green gates do not activate
+repository authorization or provider validation. Use the existing owner settings plan/readback procedure.
 
 ### Documentation assurance
 
@@ -508,10 +570,13 @@ managed product assembly during compilation. The bounded input specification is
 [`config/publication-inputs.json`](../config/publication-inputs.json), shared by native build recording
 and publication verification on the host and in Docker. Before recording a compilation identity,
 the SDK-derived current restore graph and resolved package hashes must match the existing assets
-and lock; stale `--no-restore` graphs are refused without restoring or rewriting them. It includes embedded database inputs,
+and lock; stale `--no-restore` graphs are refused without restoring or rewriting them. The recorder uses the SDK host that executes MSBuild; contract generation selects the same declared SDK host through the shared executable selector. Two installations with the same version may resolve different physical SDK inputs and cannot be mixed merely because their version strings match. It includes embedded database inputs,
 contract generation and lock, frontend source/producer configuration, and pinned toolchains.
 Commit labels are outside that digest: equivalent producing inputs under a PR merge and main
-revision can qualify. The native private-file shim recompiles during publication instead of
+revision can qualify. The native private-file shim lives under the evaluated SDK `IntermediateOutputPath` and its
+configuration/RID pivots, so selected `ArtifactsPath` roots stay isolated. Every runnable host publishes
+exactly one fixed-ABI shim; libraries publish none. Native compilation targets the actual host compiler,
+not an arbitrary cross-compilation promise. The shim recompiles during publication instead of
 relying on retained timestamps. `--no-build` publication verifies compiled identities and refuses
 stale or mixed assemblies; it cannot stamp current source onto an older binary. Rebuild before
 publication when inputs change. Unsupported earlier publication manifests are refused unchanged.
@@ -522,14 +587,15 @@ A manifest lists every regular file of a published tree with its length and SHA-
 records. Every consumer verifies the tree it received before and after use (`node eng/ci/publish/main.mjs verify
 <root> [cli|database|web]...`), so the bytes that were published once are the bytes that were exercised.
 
-For a local three-engine Web lifecycle with the same measured Web-branch requirement as CI, first run the unit, web
-and postgres suites through `suite.mjs`, then:
+For a local three-engine Web lifecycle with the same measured Web-branch requirement as CI, run:
 
 ```sh
 bash eng/Run-LocalBrowserCoverage.sh
 ```
 
-The wrapper takes the .NET coverage reports from `artifacts/test-results`, locks and rebuilds the Web asset producer,
+The wrapper creates a private run snapshot, runs its complete required .NET suites (or consumes the already
+admitted suites when nested in the local plan), moves their raw coverage once into the same-run input set,
+and locks and rebuilds the Web asset producer. It
 creates fresh Web and Database publish trees with SBOMs and manifests, verifies those manifests after each engine,
 and runs Chromium, Firefox, and WebKit separately under Coverlet. Each engine checks its actual sanitized test
 identities against `tests/inventory/browser.txt` and must measure `ClaimCore.Web` branches. It then merges the three

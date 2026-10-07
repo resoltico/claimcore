@@ -18,6 +18,7 @@
     <Compile Include="ContractTokens.fs" />
     <Compile Include="GenerationTypes.fs" />
     <Compile Include="DevelopmentBlocks.fs" />
+    <Compile Include="ExecutableHelp.fs" />
     <Compile Include="Generators.fs" />
     <Compile Include="DocumentationCommands.fs" />
     <Compile Include="Commands.fs" />

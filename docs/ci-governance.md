@@ -49,8 +49,10 @@ both the workflow and its checker. Repository authorization is a separate bounda
 ## Failures
 
 Each stage and test process prints its output as one group in the job log, and a failing stage's output is always
-shown. Nothing is uploaded from a failed or unscanned job: artifacts are scanned for secrets after production and
-before upload, and a scanner failure, a missing path or a detected secret prevents the upload.
+shown. Schema-admitted, scanned diagnostic evidence may upload from an otherwise failed job through
+its deliberate `always()` admission path. That preserves failure visibility and does not make Gate pass.
+Artifacts are scanned after production and before upload; a missing path, scanner failure or detected
+secret prevents upload. Source review and passing settings-helper tests do not activate native protections.
 
 ## PR publication and handoff
 

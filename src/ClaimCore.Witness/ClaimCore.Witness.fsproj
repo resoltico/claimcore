@@ -8,6 +8,7 @@
     <Compile Include="KeyRingCodec.fs" />
     <Compile Include="WitnessIdentity.fs" />
     <Compile Include="WitnessInstallationUse.fs" />
+    <Compile Include="BaselineSource.fs" />
     <Compile Include="WitnessTypes.fs" />
     <Compile Include="WitnessHandoffTypes.fs" />
     <Compile Include="WitnessAdmission.fs" />
@@ -29,7 +30,7 @@
     <Compile Include="WitnessStore.fs" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="../../db/witness-baseline.sql" LogicalName="ClaimCore.Witness.Baseline.sql" />
+    <EmbeddedResource Include="../../db/witness-baseline/*.sql" LogicalName="ClaimCore.Witness.Baseline.Source.%(Filename)%(Extension)" />
     <EmbeddedResource Include="../../db/witness-baseline.json" LogicalName="ClaimCore.Witness.Baseline.json" />
     <EmbeddedResource Include="../../db/witness-catalog.sql" LogicalName="ClaimCore.Witness.Catalog.sql" />
     <EmbeddedResource Include="../../db/witness-catalog.pg18.6.json" LogicalName="ClaimCore.Witness.Catalog.json" />

@@ -62,13 +62,19 @@ let private generatedFixture (repository: TempRepository) (helps: ProcessOutput 
         let binary =
             repository.Write($"artifacts/bin/{product}/release/{product}.dll", "binary")
 
+        repository.Write($"src/{product}/{product}.fsproj", "<Project />\n") |> ignore
+
         let path = repository.Write(document, "# Help\n\n" + marker id)
         let parsed = MarkdownModel.read repository.Root path |> requireOk
-        parsed, [ processOutput 0 "build" ""; processOutput 0 (binary + "\n") ""; help ])
+        parsed, [ processOutput 0 (binary + "\n") ""; help ])
     |> List.unzip
     |> fun (documents, outputs) ->
         development :: evidence :: architecture :: documents,
-        [ processOutput 0 "stages\n" ""; processOutput 0 "tools\n" "" ]
+        [
+            processOutput 0 "build" ""
+            processOutput 0 "stages\n" ""
+            processOutput 0 "tools\n" ""
+        ]
         @ List.concat outputs
 
 let private blockTests =
@@ -117,6 +123,30 @@ let private blockTests =
                     "Authored bytes and marker lines remain intact"
         ]
 
+let private assertHelpBuild (runner: QueueRunner) =
+    Expect.equal runner.Requests.Length 9 "One batch builds the three help products"
+    let build = runner.Requests.Head
+    Expect.equal build.Timeout (TimeSpan.FromMinutes(15.0)) "The three build budgets are retained"
+
+    Expect.equal build.Arguments.Head "build" "The assessment first builds prerequisites"
+
+    Expect.contains build.Arguments "--no-restore" "Locked restore remains a prerequisite"
+
+    Expect.contains build.Arguments "Release" "All products use Release"
+
+    Expect.contains
+        build.Arguments
+        "-p:ShouldUnsetParentConfigurationAndPlatform=false"
+        "Unlisted references inherit Release"
+
+    let solution = runner.Solutions |> List.exactlyOne
+
+    for product in [ "ClaimCore.Cli"; "ClaimCore.Database"; "ClaimCore.Web" ] do
+        Expect.stringContains
+            solution
+            ($"{product}.fsproj")
+            "Exactly the registered help projects are built"
+
 let private generationSuccessTests =
     testList
         "trusted block output"
@@ -151,7 +181,7 @@ let private generationSuccessTests =
                     "```text\nline one\nline two\n```"
                     "Named normalization"
 
-                Expect.equal runner.Requests.Length 11 "Only fixed registered invocations run"
+                assertHelpBuild runner
 
         ]
 

@@ -840,5 +840,11 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-WIT-001 | witness-qualification | ClaimCore witness PostgreSQL.[CC-WIT-001] weaker same-name constraint closes admission |
 | CC-WIT-001 | witness-qualification | ClaimCore witness PostgreSQL.[CC-WIT-001] writer cannot invoke owner-only witness functions |
 | CC-WIT-001 | witness-qualification | ClaimCore witness PostgreSQL.[CC-WIT-001] writer capability and pending handoff fence every append |
+| CC-WIT-001 | witness-qualification | [CC-WIT-001] prepared owner handoff retry binds its exact installation and historical ticket |
 | CC-WIT-001 | witness-qualification | [CC-WIT-001] witness rotation rejects reused material and ambiguous key files |
+| CC-WIT-001 | witness-qualification | witness SQL authority.[CC-WIT-001] every owner entry and private helper denies actual writer and auditor execution |
+| CC-WIT-001 | witness-qualification | witness SQL authority.[CC-WIT-001] failure after journal insert rolls back payload and tip without consuming sequence |
+| CC-WIT-001 | witness-qualification | witness SQL authority.[CC-WIT-001] helper execute and composite usage drift close admission and invoker authority remains confined |
+| CC-WIT-001 | witness-qualification | witness SQL authority.[CC-WIT-001] owner role membership closes ordinary witness admission |
+| CC-WIT-001 | witness-qualification | witness SQL authority.[CC-WIT-001] whole and partial null proofs refuse exact retry while settlement inherits nullable subject |
 <!-- generated:end contract-tests -->

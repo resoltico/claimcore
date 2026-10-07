@@ -1,6 +1,7 @@
 module ClaimCore.IntegrationTests.Fixtures
 
 open System
+open Expecto
 open Npgsql
 open NpgsqlTypes
 open ClaimCore.Domain
@@ -43,15 +44,13 @@ let witnessedOpen primary cancellation =
 let runtimeOpeningFailure =
     function
     | RuntimeOpenFault.RuntimeConfigurationInvalid ->
-        Expecto.failtest "Synthetic runtime configuration was invalid."
-    | RuntimeOpenFault.RuntimeSchemaMismatch ->
-        Expecto.failtest "Synthetic runtime schema mismatched."
+        failtest "Synthetic runtime configuration was invalid."
+    | RuntimeOpenFault.RuntimeSchemaMismatch -> failtest "Synthetic runtime schema mismatched."
     | RuntimeOpenFault.RuntimeStoreUnavailable ->
-        Expecto.failtest "Synthetic runtime store was unavailable."
+        failtest "Synthetic runtime store was unavailable."
     | RuntimeOpenFault.RuntimeStoreIntegrityError ->
-        Expecto.failtest "Synthetic runtime integrity was refused."
-    | RuntimeOpenFault.RuntimeCancelled ->
-        Expecto.failtest "Synthetic runtime opening was cancelled."
+        failtest "Synthetic runtime integrity was refused."
+    | RuntimeOpenFault.RuntimeCancelled -> failtest "Synthetic runtime opening was cancelled."
 
 let appConnectionFile () = FixtureDatabase.appConnectionFile ()
 let suppressionKeyFile () = FixtureDatabase.suppressionKeyFile ()

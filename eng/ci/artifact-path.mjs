@@ -22,13 +22,3 @@ export function artifactDirectory(root, value) {
   }
   return output;
 }
-
-/** @param {string} root @param {string[]} paths @returns {string[]} */
-export function cleanDirectories(root, paths) {
-  return paths.map((path) => {
-    if (!/^artifacts\/[a-z-]+$/u.test(path)) {
-      throw new Error("Local cleanup may name only single generated directories below artifacts/.");
-    }
-    return artifactDirectory(root, path);
-  });
-}

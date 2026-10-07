@@ -195,7 +195,7 @@ test("malformed resource and source-selector metadata is refused before executio
     { after: "early" },
     { env: [] },
     { requires: ["node", "node"] },
-    { appendFiles: { directories: ["../private"], suffix: ".sh" } },
+    { appendFiles: { directories: ["../private"], suffixes: [".sh"] } },
     { ignoredField: true },
   ]) {
     assert.throws(() =>

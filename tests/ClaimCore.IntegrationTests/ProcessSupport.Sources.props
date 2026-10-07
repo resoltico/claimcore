@@ -1,0 +1,9 @@
+<Project>
+  <!-- Shared process boundaries precede the PostgreSQL fixture types. -->
+  <ItemGroup>
+    <Compile Include="../CliProcessEnvironment.fs" Link="CliProcessEnvironment.fs" />
+    <Compile Include="../BoundedProcess.fs" Link="BoundedProcess.fs" />
+    <Compile Include="../RepositoryRoot.fs" Link="RepositoryRoot.fs" />
+    <Compile Include="../CommandExecution.fs" Link="CommandExecution.fs" />
+  </ItemGroup>
+</Project>

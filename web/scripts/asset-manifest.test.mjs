@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, relative, resolve } from "node:path";
 import test from "node:test";
@@ -60,8 +60,12 @@ test("publication inputs include every frontend asset producer input and embedde
       "Asset input missing from producing identity.",
     );
   }
+  const baseline = /** @type {{fragments: string[]}} */ (
+    JSON.parse(await readFile(join(root, "db/schema-baseline.json"), "utf8"))
+  );
+  baseline.fragments.forEach((name) => assert.ok(included.has(`db/baseline/${name}`)));
   for (const path of [
-    "db/baseline.sql",
+    "db/schema-baseline.json",
     "db/postgresql-baseline.json",
     "global.json",
     "config/contracts.lock.json",

@@ -26,8 +26,8 @@ let private actualPackages (assets: JsonElement) =
         item.Name.ToLowerInvariant(), item.Value.GetProperty("sha512").GetString())
     |> Map.ofSeq
 
-let private generate root project configuration output =
-    let start = ProcessStartInfo("dotnet")
+let private generate root project configuration artifacts runtime framework sdkHost output =
+    let start = ProcessStartInfo(sdkHost)
     start.WorkingDirectory <- root
     start.UseShellExecute <- false
     start.RedirectStandardOutput <- true
@@ -44,6 +44,9 @@ let private generate root project configuration output =
             "-target:GenerateRestoreGraphFile"
             "-property:RestoreLockedMode=true"
             "-property:Configuration=" + configuration
+            "-property:ArtifactsPath=" + artifacts
+            "-property:RuntimeIdentifier=" + runtime
+            "-property:TargetFramework=" + framework
             "-property:RestoreGraphOutputPath=" + output
         ] do
         start.ArgumentList.Add argument
@@ -72,13 +75,22 @@ let private normalize (project: JsonNode) =
 
     result
 
-let verify root (project: string) (assetsPath: string) configuration =
+let verify
+    root
+    (project: string)
+    (assetsPath: string)
+    configuration
+    artifacts
+    runtime
+    framework
+    sdkHost
+    =
     let lock = Path.Combine(Path.GetDirectoryName project, "packages.lock.json")
 
     let graphPath =
         Path.Combine(Path.GetDirectoryName assetsPath, "claimcore-current-restore-graph.json")
 
-    generate root project configuration graphPath
+    generate root project configuration artifacts runtime framework sdkHost graphPath
     use assets = JsonDocument.Parse(File.ReadAllText assetsPath)
 
     if packageLock lock <> actualPackages assets.RootElement then
