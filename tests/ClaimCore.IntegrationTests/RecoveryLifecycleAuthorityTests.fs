@@ -13,7 +13,7 @@ open ClaimCore.IntegrationTests.Fixtures
 let private openRuntime () =
     witnessedOpen (appConnection ()) CancellationToken.None
     |> await
-    |> Result.defaultWith (fun _ -> failtest "Synthetic lifecycle runtime must open.")
+    |> Result.defaultWith runtimeOpeningFailure
 
 let private prepared (core: IActorClaimsCore) operationId reference =
     let request = openRequest operationId reference

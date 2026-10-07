@@ -22,10 +22,15 @@ const observePreparedBytes = (page: Page): (() => Buffer | null) => {
   return () => bytes;
 };
 
+const resolveConfirmation = (page: Page, language: "en" | "lv" | "ar") =>
+  page.getByRole("dialog", { name: ui(language, "ui.resolveTitle"), exact: true });
+
 const returnToRecovery = async (page: Page): Promise<void> => {
   await progress("localized-recovery-reload");
   await page.reload({ waitUntil: "commit" });
-  await expect(page.locator("main.app-shell header small")).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator("main.app-shell header details > summary")).toBeVisible({
+    timeout: 10_000,
+  });
   await progress("localized-recovery-definition-ready");
   const navigation = page.getByRole("button", { name: "Recovery", exact: true });
   await expect(navigation).toBeEnabled();
@@ -122,16 +127,15 @@ test("keeps inspected recovery authority and confirmation stable while language 
   await page.getByRole("button", { name: ui("lv", "ui.resolveExact") }).click();
   const pending = await pauseJsonReply(page, "recovery.resolve");
   try {
-    await page.getByRole("button", { name: ui("lv", "ui.resolveExact") }).click();
+    await resolveConfirmation(page, "lv")
+      .getByRole("button", { name: ui("lv", "ui.resolveExact"), exact: true })
+      .click();
     const captured = await pending.ready;
     const { outcome } = captured.reply;
     expect(outcome.tag === "COMPLETED" && outcome.data.execution.tag === "ACCEPTED").toBe(true);
     expect(captured.bytes.equals(Buffer.from(JSON.stringify(identity)))).toBe(true);
     await selectLanguage(page, "ar");
-    const confirmation = page.getByRole("dialog", {
-      name: ui("ar", "ui.resolveTitle"),
-      exact: true,
-    });
+    const confirmation = resolveConfirmation(page, "ar");
     await expect(
       confirmation.getByText(ui("ar", "ui.resolveConsequence"), { exact: true }),
     ).toBeVisible();

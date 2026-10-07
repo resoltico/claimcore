@@ -23,7 +23,6 @@ const ImportPreview = ({ value }: { value: RecoveryImportPreview }) => {
           }}
         />
       </p>
-      <p>{p.text("ui.importDescription")}</p>
     </>
   );
 };

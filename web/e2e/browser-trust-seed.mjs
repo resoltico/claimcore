@@ -47,7 +47,7 @@ async function grantCasework(page, owner) {
 export async function seedCasework(page, owner) {
   await grantCasework(page, owner);
   await page.reload();
-  await page.getByRole("button", { name: "Open new case", exact: true }).click();
+  await page.getByRole("button", { name: "Open a case", exact: true }).click();
   const values = {
     "Handler's case reference": "TLS-QUALIFICATION",
     "Incident date": "2026-01-01",

@@ -40,6 +40,19 @@ let writerCapabilityFile () = FixtureDatabase.writerCapabilityFile ()
 let witnessedOpen primary cancellation =
     FixtureDatabase.witnessedOpen primary cancellation
 
+let runtimeOpeningFailure =
+    function
+    | RuntimeOpenFault.RuntimeConfigurationInvalid ->
+        Expecto.failtest "Synthetic runtime configuration was invalid."
+    | RuntimeOpenFault.RuntimeSchemaMismatch ->
+        Expecto.failtest "Synthetic runtime schema mismatched."
+    | RuntimeOpenFault.RuntimeStoreUnavailable ->
+        Expecto.failtest "Synthetic runtime store was unavailable."
+    | RuntimeOpenFault.RuntimeStoreIntegrityError ->
+        Expecto.failtest "Synthetic runtime integrity was refused."
+    | RuntimeOpenFault.RuntimeCancelled ->
+        Expecto.failtest "Synthetic runtime opening was cancelled."
+
 let appConnectionFile () = FixtureDatabase.appConnectionFile ()
 let suppressionKeyFile () = FixtureDatabase.suppressionKeyFile ()
 let artifactKeyRingFile () = FixtureDatabase.artifactKeyRingFile ()

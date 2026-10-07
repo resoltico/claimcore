@@ -28,10 +28,12 @@ test("publishes open, amendment, decision, withdrawal, full history and operatio
   await decide(page);
   await completeCommand(page, "Withdraw payment decision");
   await expect(page.locator("section.case-fields").first().getByText("Revision 4")).toBeVisible();
-  await expect(page.locator(".history-list details")).toHaveCount(4);
-  const opening = page.locator(".history-list details").filter({ hasText: opened.operationId });
+  await expect(page.locator(".history-list > li > details")).toHaveCount(4);
+  const opening = page
+    .locator(".history-list > li > details")
+    .filter({ hasText: opened.operationId });
   await expect(opening).toHaveCount(1);
-  await opening.locator("summary").click();
+  await opening.locator(":scope > summary").click();
   await expect(opening).toContainText(opened.operationId);
   await expect(page.getByRole("button", { name: /^Close the case:/u })).toBeVisible();
   await expectAccessible(page);
@@ -64,6 +66,6 @@ test("publishes payment, correction, close and reopen with current-case parity",
   await expect(page.getByText("Closed", { exact: true }).first()).toBeVisible();
   await completeCommand(page, "Reopen the case");
   await expect(page.locator("section.case-fields").first().getByText("Revision 6")).toBeVisible();
-  await expect(page.locator(".history-list details")).toHaveCount(6);
+  await expect(page.locator(".history-list > li > details")).toHaveCount(6);
   await expectAccessible(page);
 });

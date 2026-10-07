@@ -50,7 +50,7 @@ const inspect = async (page: Page, identity: PreparedIdentity): Promise<void> =>
 
 const navigateRecovery = async (page: Page): Promise<void> => {
   await progress("recovery-navigation");
-  await expect(page.locator("main.app-shell header small")).toBeVisible();
+  await expect(page.locator("main.app-shell header details > summary")).toBeVisible();
   const navigation = page.getByRole("button", { name: "Recovery", exact: true });
   await expect(navigation).toBeEnabled();
   await navigation.click();
