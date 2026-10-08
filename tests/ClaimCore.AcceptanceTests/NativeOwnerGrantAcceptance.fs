@@ -6,7 +6,7 @@ open System.Text
 open System.Text.Json
 open Expecto
 
-let private requests () =
+let private requests active =
     let binding =
         Path.Combine(RemoteFixture.inputs.Value.PrivateDirectory, "initial-owner.json")
 
@@ -44,7 +44,7 @@ let private requests () =
                     principal = principal
                     role = role
                     scope = {| kind = "INSTALLATION" |}
-                    active = true
+                    active = active
                 |}
 
         eventId, frame)
@@ -74,11 +74,29 @@ let private readBackGrant result (lines: string array) index (eventId, _) =
     Expect.equal observed first "Observation returns the same accepted authority event"
     snd first
 
+let private refused result line =
+    use document =
+        RemoteFixture.parse
+            0
+            "authority.setGrant"
+            { result with
+                StandardOutput = Encoding.UTF8.GetBytes(line: string)
+            }
+
+    Expect.equal
+        (RemoteFixture.tag document)
+        "RESOURCE_UNAVAILABLE"
+        "A fresh event cannot reaffirm an already active grant"
+
 let qualify () =
-    let grants = requests ()
+    let unchanged = requests true
+
+    let transitions =
+        List.zip (requests false) (requests true)
+        |> List.collect (fun (revocation, grant) -> [ revocation; grant ])
 
     let frames =
-        grants
+        transitions
         |> List.collect (fun (eventId, frame) ->
             [
                 frame
@@ -88,7 +106,9 @@ let qualify () =
 
     let result =
         RemoteFixture.interactiveSession (
-            frames @ [ RemoteFixture.encode "case.list" {| limit = 1 |} ]
+            (unchanged |> List.map snd)
+            @ frames
+            @ [ RemoteFixture.encode "case.list" {| limit = 1 |} ]
         )
 
     Expect.equal result.ExitCode 0 "Authenticated native grant session"
@@ -99,9 +119,16 @@ let qualify () =
             .GetString(result.StandardOutput)
             .Split('\n', StringSplitOptions.RemoveEmptyEntries)
 
-    Expect.equal lines.Length 10 "Every exact frame has a result"
+    Expect.equal
+        lines.Length
+        (unchanged.Length + frames.Length + 1)
+        "Every exact frame has a result"
 
-    let actors = grants |> List.mapi (readBackGrant result lines)
+    lines |> Array.take unchanged.Length |> Array.iter (refused result)
+
+    let settled = lines |> Array.skip unchanged.Length
+
+    let actors = transitions |> List.mapi (readBackGrant result settled)
 
     Expect.equal
         (actors |> List.distinct |> List.length)
@@ -113,7 +140,7 @@ let qualify () =
             0
             "case.list"
             { result with
-                StandardOutput = Encoding.UTF8.GetBytes lines[9]
+                StandardOutput = Encoding.UTF8.GetBytes lines[lines.Length - 1]
             }
 
     Expect.equal (RemoteFixture.tag listed) "SUCCEEDED" "Existing owner can list cases"

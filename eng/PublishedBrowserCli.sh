@@ -57,7 +57,7 @@ require_unregistered_cli_refusal() {
 }
 
 run_browser_cli_acceptance() {
-  local state_dir="$1" origin="$2" engine="$3" cli_results="$4"
+  local state_dir="$1" origin="$2" engine="$3" cli_results="$4" cli_status=0
   [[ ! -e "${cli_results}" ]] || {
     printf 'CLI result path must start absent.\n' >&2
     exit 64
@@ -84,10 +84,14 @@ run_browser_cli_acceptance() {
     --zero-tests-policy=strict --timeout=20m -- \
     --settings="${repo_root}/eng/expecto.runsettings" --report-trx \
     --report-trx-filename=ClaimCore.AcceptanceTests.trx \
-    >"${state_dir}/diagnostics/cli-acceptance.log" 2>&1 || {
+    >"${state_dir}/diagnostics/cli-acceptance.log" 2>&1 || cli_status=$?
+  if ! node "${repo_root}/eng/ci/retain-browser-failure.mjs" bound-cli "${state_dir}/diagnostics"; then
+    cli_status=1
+  fi
+  if [[ "${cli_status}" != 0 ]]; then
     printf 'Published authenticated CLI acceptance failed.\n' >&2
     exit 1
-  }
+  fi
   node "${repo_root}/eng/ci/suites/verify-report.mjs" acceptance \
     "${cli_results}/ClaimCore.AcceptanceTests.trx"
   printf 'Published authenticated CLI acceptance passed in isolated %s fixture.\n' "${engine}"
