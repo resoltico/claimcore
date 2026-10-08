@@ -81,7 +81,9 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.runtime full-audit cadence.[CC-AUDIT-001] scheduled complete audits repeat and remain healthy |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.runtime full-audit cadence.[CC-AUDIT-001] scheduled full-audit failure closes actor authority lanes |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.runtime scheduling and shutdown.[CC-AUDIT-001] long complete audits leave a completion-based interval |
+| CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.witnessed capacity and competing work.[CC-AUDIT-001] failed contention assertions join the audit and admitted actor work |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.witnessed capacity and competing work.[CC-AUDIT-001] paged witnessed volume export and actor work survive audit contention with small pools |
+| CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.witnessed capacity and competing work.[CC-AUDIT-001] workload deadlines join blocked full audits before releasing fixture authority |
 | CC-AUTH-001 | acceptance | published authenticated CLI v4 acceptance.[CC-CLI-001][CC-AUTH-001] native public-client grants replay and read back the existing owner |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.[CC-AUTH-001] case-list cursor binds principal grant query and visible page |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.[CC-AUTH-001] voided and erasure-fenced identities share denial timing class |

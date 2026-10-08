@@ -61,6 +61,7 @@
     <Compile Include="SettledAttemptExecutionTests.fs" />
     <Compile Include="AuthorityOperationFenceFixture.fs" />
     <Compile Include="AuthorityOperationFenceTests.fs" />
+    <Compile Include="WitnessedCapacityAuditFixture.fs" />
     <Compile Include="WitnessedCapacityTests.fs" />
     <Compile Include="TechnicalWitnessPruneTests.fs" />
     <Compile Include="TechnicalWitnessTests.fs" />
