@@ -1,3 +1,4 @@
+import { acquisitionDiagnostic } from "../tool-acquisition.mjs";
 // Scan explicit artifact paths for credentials before they are uploaded. Nothing the scanner
 // reports is shown: even redacted findings can carry data-bearing lines and file names. The only
 // output distinguishes a scan that completed and refused its targets from one that could not run.
@@ -110,10 +111,10 @@ export async function scanArtifacts(
     } else {
       stderr("Artifact secret scan completed and refused its targets.\n");
     }
-  } catch {
-    // No exception detail, target path or tool log: the stage alone tells an operator whether the
-    // scanner could not run or ran and found something.
-    stderr(`Artifact secret scan could not complete at ${stage}.\n`);
+  } catch (error) {
+    // Only owned acquisition phases are safe; never disclose target paths or provider details.
+    const detail = stage === "SCANNER_ACQUISITION" ? acquisitionDiagnostic(error) : "";
+    stderr(`Artifact secret scan could not complete at ${stage}${detail}.\n`);
     status = 1;
   } finally {
     if (scratch !== undefined) {

@@ -1,3 +1,4 @@
+import { acquisitionStep } from "./tool-acquisition.mjs";
 import { resolveSourceFile } from "./repository-path.mjs";
 import { executable as resolveExecutable } from "./executable.mjs";
 // The pinned downloadable tools: config/tools.json names each tool's version and, per platform,
@@ -156,28 +157,42 @@ function installed(path, marker, tool, asset) {
 export async function installTool(
   root,
   name,
-  { tools = loadTools(root), platform = platformKey(), acquire = download } = {},
+  { tools, platform = platformKey(), acquire = download } = {},
 ) {
-  if (!/^[a-z][a-z0-9-]*$/u.test(name)) {
-    throw new Error("A pinned tool requires a safe executable name.");
-  }
-  const tool = tools[name];
-  const asset = tool?.assets[platform];
-  if (!tool || !asset) {
-    throw new Error(`Tool '${name}' has no pinned asset for ${platform}.`);
-  }
+  const { tool, asset, filename } = await acquisitionStep("MANIFEST", () => {
+    if (!/^[a-z][a-z0-9-]*$/u.test(name)) {
+      throw new Error("A pinned tool requires a safe executable name.");
+    }
+    const selected = (tools ?? loadTools(root))[name];
+    const pinned = selected?.assets[platform];
+    if (!selected || !pinned) {
+      throw new Error("No pinned asset for the selected platform.");
+    }
+    return { tool: selected, asset: pinned, filename: executableName(name, pinned) };
+  });
   const directory = toolsDirectory(root);
-  const executable = join(directory, executableName(name, asset));
+  const executable = join(directory, filename);
   const marker = join(directory, `.${name}.json`);
-  if (installed(executable, marker, tool, asset)) {
+  if (await acquisitionStep("CACHE", () => installed(executable, marker, tool, asset))) {
     return executable;
   }
-  const bytes = await acquire(asset.url);
-  if (digest(bytes) !== asset.sha256.toLowerCase()) {
-    throw new Error(`The ${name} asset failed integrity verification.`);
-  }
+  const bytes = await acquisitionStep("DOWNLOAD", () => acquire(asset.url));
+  await acquisitionStep("INTEGRITY", () => {
+    if (digest(bytes) !== asset.sha256.toLowerCase()) {
+      throw new Error("Asset digest mismatch.");
+    }
+  });
+  const unpacked = await acquisitionStep("UNPACK", () => unpack(bytes, name, asset));
+  await acquisitionStep("PUBLISH", () =>
+    publish(directory, executable, marker, unpacked, { tool, asset }),
+  );
+  return executable;
+}
+
+/** @param {string} directory @param {string} executable @param {string} marker
+ * @param {Buffer} unpacked @param {{tool: Tool, asset: Asset}} pinned */
+function publish(directory, executable, marker, unpacked, { tool, asset }) {
   mkdirSync(directory, { recursive: true });
-  const unpacked = unpack(bytes, name, asset);
   const record = JSON.stringify({
     version: tool.version,
     sha256: asset.sha256,
@@ -195,7 +210,6 @@ export async function installTool(
     rmSync(scratch, { force: true });
     rmSync(pendingMarker, { force: true });
   }
-  return executable;
 }
 
 /**
@@ -209,7 +223,7 @@ export const pathWithTools = (root, current = process.env["PATH"] ?? "") =>
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const requested = process.argv.slice(2);
-  const tools = loadTools(repositoryRoot);
+  const tools = await acquisitionStep("MANIFEST", () => loadTools(repositoryRoot));
   const names = requested.length > 0 ? requested : Object.keys(tools);
   for (const name of names) {
     process.stdout.write(`${await installTool(repositoryRoot, name, { tools })}\n`);

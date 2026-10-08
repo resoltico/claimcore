@@ -426,10 +426,10 @@ The table shows each stage's arguments and additional inputs; run the plan to re
 | eng-lint | npm --prefix eng run lint |  |
 | eng-npm-audit | npm --prefix eng audit --audit-level=low |  |
 | eng-npm-signatures | npm --prefix eng audit signatures |  |
-| python-format | uv run --frozen ruff format --check --no-cache | requires uv |
-| python-lint | uv run --frozen ruff check --no-cache | requires uv |
-| python-types | uv run --frozen mypy | requires uv |
-| python-limits | uv run --frozen python -B eng/lint/check_python_limits.py | requires uv |
+| python-format | uv run --frozen ruff format --check --no-cache | requires uv; append .py source under . |
+| python-lint | uv run --frozen ruff check --no-cache | requires uv; append .py source under . |
+| python-types | uv run --frozen mypy | requires uv; append .py source under . |
+| python-limits | uv run --frozen python -B eng/lint/check_python_limits.py | requires uv; append .py source under . |
 | python-audit | uv audit --frozen | requires uv |
 | git-ignore-policy | node eng/ci/policy/ignore.mjs |  |
 | source-secret-scan | node eng/ci/scan/main.mjs source |  |
@@ -473,7 +473,9 @@ allowlist or inline `gitleaks:allow` bypass. Ignored private or generated state 
 gate. Every GitHub Actions artifact family is independently scanned after production and before upload
 (`node eng/ci/scan/main.mjs artifacts <path>...`); a missing path, scanner failure, or detected secret prevents its
 upload. The scanner is the checksum-verified binary from `config/tools.json`; a safe failure-stage label
-distinguishes unavailable acquisition from scan execution without disclosing artifact paths or content, and neither
+distinguishes unavailable acquisition from scan execution; owned acquisition failures also identify the finite
+manifest, cache, download, integrity, unpack or publication phase without provider details, artifact paths or content.
+Suite jobs acquire the verified scanner before building and reverify its cached bytes before scanning. Neither
 condition permits upload. An artifact scan does not replace the source inventory or the browser harness's
 known-secret output checks (`eng/ci/policy/sensitive-output.mjs`).
 
@@ -489,7 +491,7 @@ weakened in passing:
 | ---------------------------------------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | F#                                       | compiler, Fantomas (no roll-forward), FSharpLint           | warnings as errors; size and complexity ceilings pinned by the exception engine                                                  |
 | TypeScript and JavaScript (`web`, `eng`) | TypeScript 7 `tsc`, oxlint with type-aware rules, Prettier | correctness, suspicious, pedantic, perf and style categories at `error`, denied warnings; typed rules scoped to TypeScript files |
-| Python (`eng/backup`)                    | uv-locked ruff, mypy, function-length check, `uv audit`    | every ruff rule selected, mypy `strict`, 50-line functions, 300-line files, pylint argument and statement ceilings pinned        |
+| Python (all repository source)                    | uv-locked ruff, mypy, function-length check, `uv audit`    | every ruff rule selected, mypy `strict`, 50-line functions, 300-line files, pylint argument and statement ceilings pinned        |
 | Shell                                    | shellcheck, shfmt, native Bash AST limits                                          | every optional check at `style` severity through `.shellcheckrc`; shfmt settings in `.editorconfig`                              |
 | GitHub workflows                         | actionlint, zizmor, repository workflow policy             | zizmor pedantic persona; the only disabled audit is registered                                                                   |
 
@@ -499,7 +501,7 @@ complete configuration. Both engineering and frontend JavaScript tooling are che
 to browser source and tests, while orchestration uses Node globals. Retained Web asset identity
 includes the full repository-local compiler inheritance graph, including the frontend base settings.
 
-The exception engine (`node eng/lint/check-exceptions.mjs`) pins inherited and overridden Oxlint categories, including prefixed rule aliases, and F#/Python/CSS ceilings, so relaxing them fails the gate. Native Bash and PowerShell AST checks on Windows enforce function, branch and parameter bounds; Python discovery includes nested tooling. Physical file limits include production and test code, MSBuild project/props/targets, native C headers/source and PowerShell scripts. The locked `pglast` tooling uses PostgreSQL 18.6 native SQL and PL/pgSQL syntax trees to enforce whole executable-statement spans, input parameter counts, procedural decisions and nested SQL `CASE` arms. It refuses unsupported executable languages, dynamic SQL construction and missing bodies. For user-defined composite headers, procedural parsing substitutes record placeholders while preserving the body; real PostgreSQL creation and catalog/role tests establish actual type binding. SQL Boolean query predicates retain PostgreSQL evaluation semantics and are not counted as JavaScript short-circuit branches. All SQL source files also have the shared physical limit. These syntactic bounds and the compiled architecture checks do not prove cohesive responsibilities or arbitrary dynamic dependencies; substantive exception reasons still require review. `node eng/ci/suites/check-registry.mjs` holds the repository to the suite
+The exception engine (`node eng/lint/check-exceptions.mjs`) pins inherited and overridden Oxlint categories, including prefixed rule aliases, and F#/Python/CSS ceilings, so relaxing them fails the gate. Native Bash and PowerShell AST checks on Windows enforce function, branch and parameter bounds. Python format, lint, type and function-length stages pass every repository-source `.py` file explicitly, including nested tooling and files outside `eng/`. The shared source inventory respects repository ignores in Git checkouts and Gitless snapshots, so concurrently generated fixture copies are not source inputs. An empty Python selection fails rather than falling back to a filesystem walk. Physical file limits include production and test code, MSBuild project/props/targets, native C headers/source and PowerShell scripts. The locked `pglast` tooling uses PostgreSQL 18.6 native SQL and PL/pgSQL syntax trees to enforce whole executable-statement spans, input parameter counts, procedural decisions and nested SQL `CASE` arms. It refuses unsupported executable languages, dynamic SQL construction and missing bodies. For user-defined composite headers, procedural parsing substitutes record placeholders while preserving the body; real PostgreSQL creation and catalog/role tests establish actual type binding. SQL Boolean query predicates retain PostgreSQL evaluation semantics and are not counted as JavaScript short-circuit branches. All SQL source files also have the shared physical limit. These syntactic bounds and the compiled architecture checks do not prove cohesive responsibilities or arbitrary dynamic dependencies; substantive exception reasons still require review. `node eng/ci/suites/check-registry.mjs` holds the repository to the suite
 registry: every test project is registered, every registered file exists, every inventory belongs to a suite, and
 no workflow or script repeats a test count. Runner images are pinned to exact labels, and telemetry settings live in
 the toolchain action.

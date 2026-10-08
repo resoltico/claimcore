@@ -16,7 +16,7 @@ export function commandFor(stage, runId, root) {
     const files = repositoryFiles(root).filter(
       (path) =>
         suffixes.some((suffix) => path.endsWith(suffix)) &&
-        directories.some((directory) => path.startsWith(`${directory}/`)),
+        directories.some((directory) => directory === "." || path.startsWith(`${directory}/`)),
     );
     if (files.length === 0) {
       throw new Error("A stage source selector matched no source files.");

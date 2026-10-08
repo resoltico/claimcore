@@ -46,22 +46,38 @@
     {
       "id": "python-format",
       "argv": ["uv", "run", "--frozen", "ruff", "format", "--check", "--no-cache"],
-      "requires": ["uv"]
+      "requires": ["uv"],
+      "appendFiles": {
+        "directories": ["."],
+        "suffixes": [".py"]
+      }
     },
     {
       "id": "python-lint",
       "argv": ["uv", "run", "--frozen", "ruff", "check", "--no-cache"],
-      "requires": ["uv"]
+      "requires": ["uv"],
+      "appendFiles": {
+        "directories": ["."],
+        "suffixes": [".py"]
+      }
     },
     {
       "id": "python-types",
       "argv": ["uv", "run", "--frozen", "mypy"],
-      "requires": ["uv"]
+      "requires": ["uv"],
+      "appendFiles": {
+        "directories": ["."],
+        "suffixes": [".py"]
+      }
     },
     {
       "id": "python-limits",
       "argv": ["uv", "run", "--frozen", "python", "-B", "eng/lint/check_python_limits.py"],
-      "requires": ["uv"]
+      "requires": ["uv"],
+      "appendFiles": {
+        "directories": ["."],
+        "suffixes": [".py"]
+      }
     },
     {
       "id": "python-audit",
