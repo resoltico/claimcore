@@ -18,6 +18,11 @@ is read from its owning file; the tool table below is generated.
   platform open flags and file metadata through a fixed-width ABI rather than managed guesses at
   libc constants or structure offsets. Deploy the shim and managed host from the same publish tree.
 - Git, Bash, ShellCheck, `jq`, `curl`, and OpenSSL.
+- On Windows, PowerShell 7 or later in the standard machine MSI installation. The minimum is owned
+  by [`minimumPowerShellMajor`](../eng/ci/executable.mjs); each native invocation verifies the actual
+  engine version and internal home, and uses only its shipped modules. Install the current stable
+  [PowerShell MSI](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows)
+  in its default machine location. Alternate installation paths are not supported.
 - The pinned downloadable tools in [`config/tools.json`](../config/tools.json) (actionlint, Gitleaks,
   shfmt, uv). Each entry names a version and a SHA-256 per platform; `node eng/ci/tools.mjs`
   installs them verified into `artifacts/tools/bin`, and the stage runner installs what a stage needs.
@@ -66,7 +71,9 @@ does not produce or consume browser assets.
 Orchestration, policy checks and report verification are Node programs under `eng/ci/`, tested with
 `node:test` in `eng/` (`npm --prefix eng test`). F# is used for the product and for the documentation
 tool that needs product-independent Markdown parsing; Python only for the backup drills; Bash only for
-container and PostgreSQL drills. Windows orchestration uses the built-in Windows PowerShell 5.1 only to protect and read back a freshly created scratch directory ACL; it does not run profiles or change execution policy. The pieces:
+container and PostgreSQL drills. Windows orchestration uses PowerShell 7 or later to protect and read back
+a freshly created scratch directory ACL and parse native PowerShell source bounds. It does not run profiles
+or change execution policy. The pieces:
 
 | Concern                | Entry point                                                    |
 | ---------------------- | -------------------------------------------------------------- |
@@ -150,7 +157,7 @@ adds published CLI acceptance plus all three measured browser engines and same-r
 `--skip id,id` select jobs (unknown IDs fail), `--no-fail-fast` continues past a failure, and logs go to
 a private `artifacts/local-ci/<job>.log` inside the isolated snapshot, with the tail of a failing log printed.
 Admitted reports are scanned in plaintext, then copied once into fresh retained inodes with source and destination fingerprints checked around transfer. A producer’s previously open file descriptor cannot modify the retained copy. Owner-validated report evidence is retained under `artifacts/runs/<UUID>/results`; stage outcomes and
-admission records provide bounded diagnostics. Raw failure logs and unknown files remain private scratch. A green local run is verification
+admission records provide bounded diagnostics. Raw failure logs and unknown files remain private scratch. Coordinated command logs retain at most 16 MiB of output plus a bounded byte-count marker. They drain excess output and refuse an otherwise successful stage rather than qualifying incomplete diagnostics. A green local run is verification
 of what ran here, not of the platforms and families it lists as not run; use the summary it prints.
 
 Fresh POSIX scratch roots require the current effective user and exact `0700` mode; context files require the same owner and exact `0600`. On macOS, bounded native metadata readback refuses every extended ACL while permitting ordinary extended attributes, and context admission rechecks the parent root. On Linux, the group mode class limits named ACL users/groups through the ACL mask. These are pathname metadata checks with no-link and byte agreement checks, not descriptor-atomic protection or protection from privileged operating-system administrators.
@@ -480,7 +487,7 @@ complete configuration. Both engineering and frontend JavaScript tooling are che
 to browser source and tests, while orchestration uses Node globals. Retained Web asset identity
 includes the full repository-local compiler inheritance graph, including the frontend base settings.
 
-The exception engine (`node eng/lint/check-exceptions.mjs`) pins inherited and overridden Oxlint categories, including prefixed rule aliases, and F#/Python/CSS ceilings, so relaxing them fails the gate. Native Bash and Windows PowerShell AST checks enforce function, branch and parameter bounds; Python discovery includes nested tooling. Physical file limits include production and test code, MSBuild project/props/targets, native C headers/source and PowerShell scripts. The locked `pglast` tooling uses PostgreSQL 18.6 native SQL and PL/pgSQL syntax trees to enforce whole executable-statement spans, input parameter counts, procedural decisions and nested SQL `CASE` arms. It refuses unsupported executable languages, dynamic SQL construction and missing bodies. For user-defined composite headers, procedural parsing substitutes record placeholders while preserving the body; real PostgreSQL creation and catalog/role tests establish actual type binding. SQL Boolean query predicates retain PostgreSQL evaluation semantics and are not counted as JavaScript short-circuit branches. All SQL source files also have the shared physical limit. These syntactic bounds and the compiled architecture checks do not prove cohesive responsibilities or arbitrary dynamic dependencies; substantive exception reasons still require review. `node eng/ci/suites/check-registry.mjs` holds the repository to the suite
+The exception engine (`node eng/lint/check-exceptions.mjs`) pins inherited and overridden Oxlint categories, including prefixed rule aliases, and F#/Python/CSS ceilings, so relaxing them fails the gate. Native Bash and PowerShell AST checks on Windows enforce function, branch and parameter bounds; Python discovery includes nested tooling. Physical file limits include production and test code, MSBuild project/props/targets, native C headers/source and PowerShell scripts. The locked `pglast` tooling uses PostgreSQL 18.6 native SQL and PL/pgSQL syntax trees to enforce whole executable-statement spans, input parameter counts, procedural decisions and nested SQL `CASE` arms. It refuses unsupported executable languages, dynamic SQL construction and missing bodies. For user-defined composite headers, procedural parsing substitutes record placeholders while preserving the body; real PostgreSQL creation and catalog/role tests establish actual type binding. SQL Boolean query predicates retain PostgreSQL evaluation semantics and are not counted as JavaScript short-circuit branches. All SQL source files also have the shared physical limit. These syntactic bounds and the compiled architecture checks do not prove cohesive responsibilities or arbitrary dynamic dependencies; substantive exception reasons still require review. `node eng/ci/suites/check-registry.mjs` holds the repository to the suite
 registry: every test project is registered, every registered file exists, every inventory belongs to a suite, and
 no workflow or script repeats a test count. Runner images are pinned to exact labels, and telemetry settings live in
 the toolchain action.

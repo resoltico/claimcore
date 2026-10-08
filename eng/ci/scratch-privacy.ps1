@@ -39,7 +39,7 @@ function Protect-Root($root) {
   foreach ($sid in @($user, $system)) {
     $acl.AddAccessRule([System.Security.AccessControl.FileSystemAccessRule]::new($sid, $full, $inherit, $none, $allow))
   }
-  [System.IO.Directory]::SetAccessControl($root, $acl)
+  Set-Acl -LiteralPath $root -AclObject $acl
 }
 
 $ErrorActionPreference = 'Stop'
@@ -58,6 +58,10 @@ try {
   if ($mode -eq 'check') { Assert-Access (Join-Path $root 'context.json') $false }
   exit 0
 } catch {
-  [Console]::Error.WriteLine('Private orchestration scratch ACL was refused.')
+  if ($_.Exception -is [System.Management.Automation.CommandNotFoundException]) {
+    [Console]::Error.WriteLine('CLAIMCORE_PS_COMMAND_UNAVAILABLE')
+  } else {
+    [Console]::Error.WriteLine('CLAIMCORE_PS_ACL_REFUSED')
+  }
   exit 1
 }

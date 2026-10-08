@@ -17,7 +17,7 @@ import { checkPowerShell } from "../lint/powershell.mjs";
 import { repositoryFiles } from "./repository.mjs";
 import test from "node:test";
 import { protectScratch, requirePrivateContext } from "./scratch-privacy.mjs";
-import { executable } from "./executable.mjs";
+import { executable, powerShellEnvironment, powerShellArguments } from "./executable.mjs";
 
 /** @param {(root:string)=>void} body */
 function fixture(body) {
@@ -32,15 +32,11 @@ function fixture(body) {
  * @param {string} root @param {string} command */
 function windowsMutation(root, command) {
   const result = spawnSync(
-    executable("powershell"),
-    [
-      "-NoLogo",
-      "-NoProfile",
-      "-NonInteractive",
-      "-Command",
+    executable("pwsh"),
+    powerShellArguments(
       `$ErrorActionPreference = 'Stop'; $root = $env:CLAIMCORE_TEST_SCRATCH; ${command}`,
-    ],
-    { env: { ...process.env, CLAIMCORE_TEST_SCRATCH: root }, stdio: "pipe" },
+    ),
+    { env: { ...powerShellEnvironment(), CLAIMCORE_TEST_SCRATCH: root }, stdio: "pipe" },
   );
   assert.equal(result.status, 0, "Synthetic ACL mutation must execute before the refusal oracle.");
 }
@@ -183,7 +179,7 @@ test("Windows ACL readback rejects broad principals and broken effective inherit
   }
 });
 
-test("native Windows PowerShell AST gate measures source and refuses oversized or branch-heavy executable units", () => {
+test("native PowerShell AST gate measures source and refuses oversized or branch-heavy executable units", () => {
   const root = resolve(import.meta.dirname, "../..");
   if (process.platform !== "win32") {
     assert.throws(() => checkPowerShell([]), /requires Windows/u);
@@ -233,11 +229,11 @@ test("native Windows PowerShell AST gate measures source and refuses oversized o
 
 test("native Windows ACL refusal uses the loaded system binary despite a forged SystemRoot", () => {
   if (process.platform !== "win32") {
-    assert.throws(() => executable("powershell"), /requires Windows/u);
+    assert.throws(() => executable("pwsh"), /requires Windows/u);
     return;
   }
   const original = process.env["SystemRoot"];
-  const trusted = executable("powershell");
+  const trusted = executable("pwsh");
   const tar = executable("tar");
   assert.equal(spawnSync(tar, ["--version"], { stdio: "pipe" }).status, 0);
   fixture((root) => {
@@ -250,7 +246,7 @@ test("native Windows ACL refusal uses the loaded system binary despite a forged 
     );
     try {
       process.env["SystemRoot"] = join(root, "forged-system-root");
-      assert.equal(executable("powershell"), trusted);
+      assert.equal(executable("pwsh"), trusted);
       assert.equal(executable("tar"), tar);
       assert.throws(() => requirePrivateContext(context));
     } finally {

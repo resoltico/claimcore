@@ -1,4 +1,4 @@
-import { commandLine } from "./executable.mjs";
+import { commandLine, minimumPowerShellMajor, powerShellHost } from "./executable.mjs";
 // Report whether this machine has the toolchain a checkout pins, and how to fix what is missing.
 // Every version is read from the file that owns it: global.json, .node-version, the package
 // manifests' engines and config/tools.json. Exit status 0 means every required tool matches.
@@ -37,6 +37,28 @@ function capture(command, args) {
 
 /** @param {string} path @returns {any} */
 const readJson = (path) => JSON.parse(readFileSync(join(root, path), "utf8"));
+
+/** @returns {Check[]} */
+function powerShellChecks() {
+  if (process.platform !== "win32") {
+    return [];
+  }
+  let actual;
+  try {
+    actual = powerShellHost().version;
+  } catch {
+    actual = undefined;
+  }
+  return [
+    {
+      tool: "pwsh",
+      expected: `${minimumPowerShellMajor}+`,
+      actual,
+      required: true,
+      fix: `Install PowerShell ${minimumPowerShellMajor}+ at the standard machine MSI location.`,
+    },
+  ];
+}
 
 /** @returns {Check[]} The toolchain every checkout needs. */
 function platformChecks() {
@@ -93,15 +115,19 @@ export function collectChecks() {
       ? `Run: node eng/ci/tools.mjs ${name}`
       : `No pinned ${name} asset exists for ${platform}; install ${tool.version} yourself.`,
   }));
-  return [...platformChecks(), ...pinned];
+  return [...platformChecks(), ...powerShellChecks(), ...pinned];
 }
 
 /**
  * @param {Check} check
  * @returns {boolean}
  */
-const satisfied = ({ expected, actual }) =>
-  actual !== undefined && (expected === "any" || actual === expected || actual.includes(expected));
+const satisfied = ({ tool, expected, actual }) =>
+  actual !== undefined &&
+  (expected === "any" ||
+    actual === expected ||
+    actual.includes(expected) ||
+    (tool === "pwsh" && Number(actual.split(".")[0]) >= minimumPowerShellMajor));
 
 /**
  * @param {Check} check

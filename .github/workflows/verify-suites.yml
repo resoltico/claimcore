@@ -62,7 +62,7 @@ jobs:
         run: node eng/ci/job-context.mjs create >> "$GITHUB_ENV"
       - name: Qualify native Windows orchestration scratch privacy
         if: runner.os == 'Windows' && matrix.suite == 'unit'
-        run: node --test eng/ci/scratch-privacy.test.mjs
+        run: node --test eng/ci/executable.test.mjs eng/ci/scratch-privacy.test.mjs
       - name: Build, check against the inventory, run and verify the suite
         shell: bash
         env:

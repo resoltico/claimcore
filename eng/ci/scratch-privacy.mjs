@@ -4,7 +4,7 @@ import { spawnSync } from "node:child_process";
 import { lstatSync, readFileSync, readdirSync, realpathSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { assertNoLinkAbove } from "./scan/files.mjs";
-import { executable } from "./executable.mjs";
+import { executable, powerShellEnvironment, powerShellArguments } from "./executable.mjs";
 
 /** macOS ACL grants are independent of mode bits; reject every extended ACL.
  * Metadata is captured privately and never included in refusal diagnostics.
@@ -46,22 +46,28 @@ function windowsAcl(root, mode) {
   assert.equal(realpathSync(root), resolve(root));
   assert.ok(lstatSync(root).isDirectory());
   const result = spawnSync(
-    executable("powershell"),
-    [
-      "-NoLogo",
-      "-NoProfile",
-      "-NonInteractive",
-      "-Command",
-      readFileSync(new URL("./scratch-privacy.ps1", import.meta.url), "utf8"),
-    ],
+    executable("pwsh"),
+    powerShellArguments(readFileSync(new URL("./scratch-privacy.ps1", import.meta.url), "utf8")),
     {
-      env: { ...process.env, CLAIMCORE_SCRATCH_PATH: root, CLAIMCORE_SCRATCH_MODE: mode },
+      env: {
+        ...powerShellEnvironment(),
+        CLAIMCORE_SCRATCH_PATH: root,
+        CLAIMCORE_SCRATCH_MODE: mode,
+      },
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
       timeout: 30_000,
     },
   );
-  assert.equal(result.status, 0, "Private orchestration scratch ACL was refused.");
+  const category =
+    typeof result.stderr === "string"
+      ? result.stderr.match(/^CLAIMCORE_PS_(COMMAND_UNAVAILABLE|ACL_REFUSED)\r?\n$/u)?.[1]
+      : undefined;
+  assert.equal(
+    result.status,
+    0,
+    `Private orchestration scratch ACL was refused (${category ?? "NATIVE_FAILURE"}).`,
+  );
 }
 
 /** The caller has just created this empty physical directory; no existing tree is modified.

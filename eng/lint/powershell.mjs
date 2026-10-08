@@ -4,7 +4,7 @@ import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { assertNoLinkAbove } from "../ci/scan/files.mjs";
-import { executable } from "../ci/executable.mjs";
+import { executable, powerShellEnvironment, powerShellArguments } from "../ci/executable.mjs";
 
 /** @param {string[]} files */
 export function checkPowerShell(files) {
@@ -14,18 +14,14 @@ export function checkPowerShell(files) {
   const paths = [checker, ...files];
   paths.forEach(assertNoLinkAbove);
   assertNoLinkAbove(limits);
-  const result = spawnSync(
-    executable("powershell"),
-    ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", readFileSync(checker, "utf8")],
-    {
-      env: {
-        ...process.env,
-        CLAIMCORE_PS_FILES: JSON.stringify(paths),
-        CLAIMCORE_PS_LIMITS: limits,
-      },
-      stdio: "pipe",
-      timeout: 30_000,
+  const result = spawnSync(executable("pwsh"), powerShellArguments(readFileSync(checker, "utf8")), {
+    env: {
+      ...powerShellEnvironment(),
+      CLAIMCORE_PS_FILES: JSON.stringify(paths),
+      CLAIMCORE_PS_LIMITS: limits,
     },
-  );
+    stdio: "pipe",
+    timeout: 30_000,
+  });
   assert.equal(result.status, 0, "Native PowerShell source policy was refused.");
 }
