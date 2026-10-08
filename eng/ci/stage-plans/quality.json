@@ -16,8 +16,7 @@
     {
       "id": "clean-source",
       "argv": ["node", "eng/ci/clean-source.mjs"],
-      "requires": ["dotnet"],
-      "exclusive": true
+      "requires": ["dotnet"]
     },
     {
       "id": "eng-tests",

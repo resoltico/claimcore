@@ -88,6 +88,17 @@ let private refused result line =
         "RESOURCE_UNAVAILABLE"
         "A fresh event cannot reaffirm an already active grant"
 
+let private caseworkAvailable result line =
+    use listed =
+        RemoteFixture.parse
+            0
+            "case.list"
+            { result with
+                StandardOutput = Encoding.UTF8.GetBytes(line: string)
+            }
+
+    Expect.equal (RemoteFixture.tag listed) "SUCCEEDED" "Existing owner can list cases"
+
 let qualify () =
     let unchanged = requests true
 
@@ -135,12 +146,4 @@ let qualify () =
         1
         "Every grant targets the same existing owner"
 
-    use listed =
-        RemoteFixture.parse
-            0
-            "case.list"
-            { result with
-                StandardOutput = Encoding.UTF8.GetBytes lines[lines.Length - 1]
-            }
-
-    Expect.equal (RemoteFixture.tag listed) "SUCCEEDED" "Existing owner can list cases"
+    caseworkAvailable result lines[lines.Length - 1]

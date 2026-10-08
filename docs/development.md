@@ -194,6 +194,9 @@ that a detached descendant exited; snapshots that executed jobs remain conservat
 process/resource ownership can be established. A no-job selection can remove its untouched snapshot.
 Published CLI/browser wrappers remove only their own disposable publications after their actual consumer
 processes, exact-label resource cleanup and final byte verification finish; exact manifests survive.
+Those wrappers restore and build the three application projects and the registered acceptance harness
+in one native Release solution group, sharing dependency work while preserving harness prerequisites.
+Publication still verifies compiled producing inputs and freshly compiles each host's native shim.
 No later age, dead-parent PID or missing lock proves settlement. Failed, interrupted or live-child scratch remains
 at the printed private path for diagnosis; no automatic historical sweep or root-wide cleanup is provided.
 Unknown historical artifacts, private `.local` installations, recovery evidence and named volumes remain protected.
@@ -416,7 +419,7 @@ The table shows each stage's arguments and additional inputs; run the plan to re
 | lint-exceptions | node eng/lint/check-exceptions.mjs |  |
 | suite-registry | node eng/ci/suites/check-registry.mjs |  |
 | pinned-tools-smoke | node eng/ci/tools-smoke.mjs |  |
-| clean-source | node eng/ci/clean-source.mjs | requires dotnet; exclusive |
+| clean-source | node eng/ci/clean-source.mjs | requires dotnet |
 | eng-tests | npm --prefix eng test | requires shfmt; requires uv |
 | eng-format | npm --prefix eng run format:check |  |
 | eng-types | npm --prefix eng run typecheck |  |

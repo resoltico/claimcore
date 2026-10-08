@@ -31,15 +31,8 @@ cleanup_test_containers() {
 }
 trap cleanup_test_containers EXIT
 
-dotnet restore ClaimCore.slnx --locked-mode
 dotnet tool restore
-for project in \
-  src/ClaimCore.Cli/ClaimCore.Cli.fsproj \
-  src/ClaimCore.Web/ClaimCore.Web.fsproj \
-  src/ClaimCore.Database/ClaimCore.Database.fsproj \
-  tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj; do
-  dotnet build "${project}" --configuration Release --no-restore
-done
+node eng/ci/run-publication.mjs build-inputs
 npm --prefix web ci
 npm --prefix web run contract:generate
 npm --prefix web run build

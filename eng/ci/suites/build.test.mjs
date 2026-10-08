@@ -2,10 +2,53 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import test from "node:test";
 import { buildGroups, buildSuites, solutionText } from "./build.mjs";
 import { executable } from "../executable.mjs";
+import { publicationBuildSuite } from "../run-publication.mjs";
+
+test("publication builds share one Release graph for all three applications and the registered harness", () => {
+  const root = resolve(import.meta.dirname, "../../..");
+  assert.deepEqual(buildGroups([publicationBuildSuite(root)]), [
+    {
+      configuration: "Release",
+      msbuild: [],
+      projects: [
+        "src/ClaimCore.Cli/ClaimCore.Cli.fsproj",
+        "src/ClaimCore.Database/ClaimCore.Database.fsproj",
+        "src/ClaimCore.Web/ClaimCore.Web.fsproj",
+        "tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj",
+      ],
+    },
+  ]);
+});
+
+test("publication builds preserve registered harness prerequisites and refuse missing or incompatible configuration", () => {
+  const root = mkdtempSync(join(tmpdir(), "claimcore-publication-build-plan-"));
+  try {
+    mkdirSync(join(root, "config"));
+    const original = /** @type {{suites:import("./registry.mjs").Suite[]}} */ (
+      JSON.parse(readFileSync(new URL("../../../config/test-suites.json", import.meta.url), "utf8"))
+    );
+    const suite = original.suites.find((item) => item.id === "acceptance");
+    assert.ok(suite);
+    const write = () =>
+      writeFileSync(join(root, "config/test-suites.json"), JSON.stringify(original));
+    const prerequisite = "tests/ClaimCore.Tests/ClaimCore.Tests.fsproj";
+    suite.build = [prerequisite];
+    write();
+    assert.ok(buildGroups([publicationBuildSuite(root)])[0]?.projects.includes(prerequisite));
+    suite.configuration = "Debug";
+    write();
+    assert.throws(() => publicationBuildSuite(root));
+    original.suites = original.suites.filter((item) => item.id !== "acceptance");
+    write();
+    assert.throws(() => publicationBuildSuite(root), /registered acceptance/u);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
 
 /** @param {string} root */
 function configurationFixture(root) {

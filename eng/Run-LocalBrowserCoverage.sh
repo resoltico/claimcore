@@ -35,15 +35,8 @@ browser_input="${local_coverage}/browser"
 mkdir -p "${local_coverage}/dotnet" "${browser_input}"
 find "${dotnet_results}" -name '*.coverage.cobertura.*.xml' -exec mv {} "${local_coverage}/dotnet/" \;
 
-dotnet restore ClaimCore.slnx --locked-mode
 dotnet tool restore
-for project in \
-  src/ClaimCore.Cli/ClaimCore.Cli.fsproj \
-  src/ClaimCore.Web/ClaimCore.Web.fsproj \
-  src/ClaimCore.Database/ClaimCore.Database.fsproj \
-  tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj; do
-  dotnet build "${project}" --configuration Release --no-restore
-done
+node eng/ci/run-publication.mjs build-inputs
 npm --prefix web ci
 npm --prefix web run contract:generate
 npm --prefix web run test:unit

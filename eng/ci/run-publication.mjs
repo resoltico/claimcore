@@ -8,7 +8,23 @@ import { artifactDirectory } from "./artifact-path.mjs";
 import { regularFiles, fingerprint } from "./scan/files.mjs";
 import { scanArtifacts } from "./scan/artifacts.mjs";
 import { installTool } from "./tools.mjs";
-import { verifyPublished } from "./publish/main.mjs";
+import { products, verifyPublished } from "./publish/main.mjs";
+import { loadSuites } from "./suites/registry.mjs";
+import { buildSuites } from "./suites/build.mjs";
+
+/** One native solution shares application dependencies while preserving harness prerequisites.
+ * @param {string} root @returns {import("./suites/registry.mjs").Suite} */
+export function publicationBuildSuite(root) {
+  const suite = loadSuites(root).find((item) => item.id === "acceptance");
+  assert.ok(suite?.kind === "dotnet", "The registered acceptance harness is required.");
+  assert.equal(suite.configuration ?? "Release", "Release");
+  return { ...suite, build: [...products.map((item) => item.project), ...(suite.build ?? [])] };
+}
+
+/** @param {string} root */
+export function buildPublicationInputs(root) {
+  buildSuites(root, [publicationBuildSuite(root)]);
+}
 
 /** @param {import("./run-context.mjs").RunContext} context @param {string} output */
 export async function retainPublication(context, output) {
@@ -69,6 +85,11 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const root = resolve(import.meta.dirname, "../..");
   const context = runContext(root);
   const [mode, workspace] = process.argv.slice(2);
-  assert.ok(context && mode === "dispose" && workspace && process.argv.length === 4);
-  await disposeQualifiedPublication(context, workspace);
+  assert.ok(context, "Publication work requires its admitted run context.");
+  if (mode === "build-inputs" && process.argv.length === 3) {
+    buildPublicationInputs(root);
+  } else {
+    assert.ok(mode === "dispose" && workspace && process.argv.length === 4);
+    await disposeQualifiedPublication(context, workspace);
+  }
 }
