@@ -2,7 +2,7 @@ module ClaimCore.IntegrationTests.WitnessedCapacityTests
 
 open System
 open System.Threading
-open System.Threading.Tasks
+open Npgsql
 open Expecto
 open ClaimCore.Application
 open ClaimCore.Domain
@@ -10,25 +10,9 @@ open ClaimCore.Hosting
 open ClaimCore.Postgres
 open ClaimCore.IntegrationTests.Fixtures
 open ClaimCore.IntegrationTests.ActorGrantTestSupport
+open ClaimCore.IntegrationTests.FreshBaselineSupport
 open ClaimCore.IntegrationTests.AuthorityOperationFenceFixture
-
-let private grantWork app witness principal =
-    use source = RuntimeDataSource.create app
-    let grants = new ActorGrantStore(source)
-    let registry = new ActorGrantRegistry(source, witness)
-
-    for role in [ Role.CaseEditor; Role.RecoveryOperator; Role.RecoveryExporter ] do
-        registry.SetGrant(
-            principal,
-            actorId grants principal,
-            {
-                Role = role
-                Scope = GrantScope.Installation
-            },
-            true
-        )
-        |> await
-        |> applied
+open ClaimCore.IntegrationTests.WitnessedCapacityAuditFixture
 
 let private acceptedExecution (core: IActorClaimsCore) request =
     match core.Execute(request, CancellationToken.None) |> await with
@@ -131,90 +115,13 @@ let private exportPreparation (core: IActorClaimsCore) reference =
         | _ -> failtest "Expected a witnessed export."
     | _ -> failtest "Expected retained preparation."
 
-let private holdAuditAndResume
-    owner
-    (core: IActorClaimsCore)
-    (auditResources: RuntimeResources)
-    reference
-    =
-    use timeout = new CancellationTokenSource(TimeSpan.FromSeconds 15.)
-    let fenced = signal ()
-    let hold = signal ()
-
-    let audit =
-        RuntimeFullAudit.runWith
-            auditResources
-            (fun () -> Task.CompletedTask)
-            (fun () ->
-                fenced.SetResult()
-                hold.Task.WaitAsync(timeout.Token) :> Task)
-            timeout.Token
-
-    try
-        Expect.isTrue (fenced.Task.Wait(2000)) "Audit holds its stable cutoff."
-
-        let mutation =
-            Task.Run<SubmissionOutcome>(fun () ->
-                core.Execute(
-                    openRequest (Guid.NewGuid()) (reference + "-NEXT"),
-                    CancellationToken.None
-                ))
-
-        let read =
-            Task.Run<QueryOutcome<Lookup<CurrentCase, string>>>(fun () ->
-                core.Get(reference, CancellationToken.None))
-
-        waitForDatabaseLock owner "transactionid"
-        Expect.isFalse mutation.IsCompleted "Mutation waits behind audit authority."
-        Expect.isFalse read.IsCompleted "Disclosure waits behind the stable audit."
-        timeout.Cancel()
-
-        try
-            completed audit |> ignore
-            failtest "Audit must report cancellation."
-        with :? OperationCanceledException ->
-            ()
-
-        match completed mutation with
-        | SubmissionOutcome.Completed(_, _, DefiniteExecution.Accepted _, _) -> ()
-        | _ -> failtest "Admitted mutation must keep its accepted result after audit cancellation."
-
-        match completed read with
-        | QueryOutcome.Succeeded(Lookup.Found _) -> ()
-        | _ -> failtest "Queued read must resume without pool exhaustion."
-
-        let final = RuntimeFullAudit.run auditResources CancellationToken.None |> completed
-        Expect.equal final.Cases 56L "Post-contention audit includes the accepted operation."
-    finally
-        hold.TrySetResult() |> ignore
-        timeout.Cancel()
-
 let private competingAuditAndActorWork () =
-    withAuthorityRuntimeDatabase (fun owner app writer witness ->
-        let principal = human "witnessed-capacity-owner"
-        provision owner witness principal |> applied
-        grantWork app witness principal
-
-        use runtime =
-            Runtime.OpenPostgres(
-                pooled app 2,
-                writer,
-                witnessKey (),
-                suppressionKeyFile (),
-                artifactKeyRingFile (),
-                CancellationToken.None
-            )
-            |> await
-            |> accepted
-
-        let core = runtime.ForActor principal
+    withRuntime (fun owner core auditResources ->
         let reference = populate core
         verifyPages core reference
         exportPreparation core reference
-        use auditResources = resources app witness
 
-        let summary =
-            RuntimeFullAudit.run auditResources CancellationToken.None |> completed
+        let summary = runVolumeAudit auditResources
 
         Expect.equal summary.Cases 55L "Full audit crosses its case page boundary."
 
@@ -223,7 +130,98 @@ let private competingAuditAndActorWork () =
             115L
             "Full replay crosses multiple history windows."
 
-        holdAuditAndResume owner core auditResources reference)
+        holdAudit owner core auditResources reference (resumeAfterCancellation auditResources))
+
+let private assertionFailureJoinsQueuedWork () =
+    withRuntime (fun owner core auditResources ->
+        let reference = "WIT-CAP-CLEANUP-" + Guid.NewGuid().ToString("N")
+        acceptedExecution core (openRequest (Guid.NewGuid()) reference)
+        let mutable queued = None
+
+        let injectFailure () =
+            holdAudit owner core auditResources reference (fun (_, audit, mutation, read) ->
+                queued <- Some(audit, mutation, read)
+                invalidOp "Synthetic assertion after actor work queues.")
+
+        let failure =
+            try
+                injectFailure ()
+                None
+            with error ->
+                Some error
+
+        match failure with
+        | Some(:? InvalidOperationException as error) ->
+            Expect.equal
+                error.Message
+                "Synthetic assertion after actor work queues."
+                "Cleanup preserves the original assertion failure."
+        | _ -> failtest "Expected the exact injected assertion failure."
+
+        let audit, mutation, read =
+            queued |> Option.defaultWith (fun () -> failtest "Expected all queued tasks.")
+
+        Expect.isTrue audit.IsCompleted "Held audit has ended before fixture dependencies unwind."
+
+        Expect.isTrue
+            mutation.IsCompleted
+            "Admitted mutation has settled before returning failure."
+
+        Expect.isTrue read.IsCompleted "Queued disclosure has settled before returning failure."
+
+        match mutation |> await with
+        | SubmissionOutcome.Completed(_, _, DefiniteExecution.Accepted _, _) -> ()
+        | _ -> failtest "Cleanup must preserve the admitted mutation's acceptance."
+
+        match read |> await with
+        | QueryOutcome.Succeeded(Lookup.Found _) -> ()
+        | _ -> failtest "Cleanup must preserve the queued read's result."
+
+        let summary = runVolumeAudit auditResources
+        Expect.equal summary.Cases 2L "Subsequent audit includes the settled mutation.")
+
+let private workloadDeadlineJoinsBlockedAudit () =
+    withRuntime (fun owner _ auditResources ->
+        use barrier = new NpgsqlConnection(owner)
+        barrier.Open()
+
+        use lease =
+            AuthorityOperationFence.acquireShared None barrier CancellationToken.None
+            |> await
+
+        let pending = startVolumeAuditWithin (TimeSpan.FromSeconds 5.) auditResources
+
+        try
+            waitForDatabaseLock owner "advisory"
+
+            Expect.throwsT<OperationCanceledException>
+                (fun () -> pending |> await |> ignore)
+                "The workload deadline cancels and joins the audit while authority remains held."
+
+            Expect.isTrue pending.IsCanceled "No audit task survives its deadline refusal."
+
+            Expect.equal
+                (scalar
+                    owner
+                    ("SELECT count(*) FROM pg_stat_activity WHERE datname=current_database() "
+                     + "AND wait_event_type='Lock' AND wait_event='advisory'")
+                :?> int64)
+                0L
+                "The cancelled connector is retired before authority is released."
+        finally
+            lease.Dispose()
+
+            try
+                pending |> await |> ignore
+            with :? OperationCanceledException ->
+                ()
+
+        let summary = runVolumeAudit auditResources
+
+        Expect.equal
+            summary.Cases
+            0L
+            "The next full audit can acquire authority after cancellation.")
 
 let tests =
     testList
@@ -232,4 +230,10 @@ let tests =
             testCase
                 "[CC-AUDIT-001] paged witnessed volume export and actor work survive audit contention with small pools"
                 competingAuditAndActorWork
+            testCase
+                "[CC-AUDIT-001] failed contention assertions join the audit and admitted actor work"
+                assertionFailureJoinsQueuedWork
+            testCase
+                "[CC-AUDIT-001] workload deadlines join blocked full audits before releasing fixture authority"
+                workloadDeadlineJoinsBlockedAudit
         ]

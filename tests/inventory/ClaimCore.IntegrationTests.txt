@@ -404,7 +404,9 @@ ClaimCore PostgreSQL integration.witnessed accepted observation.[CC-WIT-001] acc
 ClaimCore PostgreSQL integration.witnessed accepted observation.[CC-WIT-001] attempt admission cannot bypass accepted settlement
 ClaimCore PostgreSQL integration.witnessed accepted observation.[CC-WIT-001] read-only case and receipt disclosures require settled evidence
 ClaimCore PostgreSQL integration.witnessed accepted observation.[CC-WIT-001] retention cannot bypass accepted settlement
+ClaimCore PostgreSQL integration.witnessed capacity and competing work.[CC-AUDIT-001] failed contention assertions join the audit and admitted actor work
 ClaimCore PostgreSQL integration.witnessed capacity and competing work.[CC-AUDIT-001] paged witnessed volume export and actor work survive audit contention with small pools
+ClaimCore PostgreSQL integration.witnessed capacity and competing work.[CC-AUDIT-001] workload deadlines join blocked full audits before releasing fixture authority
 ClaimCore PostgreSQL integration.witnessed primary commit.[CC-WIT-001] orphan intent stays unknown without primary effect
 ClaimCore PostgreSQL integration.witnessed primary commit.[CC-WIT-001] postcommit witness outage stays unknown then exact retry settles
 ClaimCore PostgreSQL integration.witnessed primary commit.[CC-WIT-001] wrong witness key refuses runtime opening before case work
