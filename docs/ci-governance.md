@@ -98,6 +98,10 @@ Gate ruleset. Wider, hidden or incompatible existing owner rules require reconci
 replacement. Version tags become immutable against update/deletion; tag creation remains with existing content
 writers and release publication remains separately reviewed.
 
+Update-rule readback accepts GitHub's exact parameter-free representation or an explicit
+`update_allows_fetch_and_merge: false`. Empty, null, unfamiliar or permissive parameters are refused;
+scope and bypass identities remain checked independently.
+
 The publisher references the `release` environment. The settings plan adds a main-only deployment policy and an
 explicit owner reviewer when absent. Existing reviewers and waiting/self-review rules are preserved, not weakened. Duplicate protection
 rule types, missing rule information, malformed timers/self-review settings, and invalid or duplicate

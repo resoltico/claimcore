@@ -1,7 +1,20 @@
 // The reviewed ruleset building blocks shared by the branch and tag operations.
+import { isDeepStrictEqual } from "node:util";
 
 /** @typedef {import("./types.mjs").Json} Json */
 /** @typedef {{ path: string, method: string, json: Json }} Operation */
+
+/**
+ * GitHub omits parameters when reading back an update restriction with no upstream exception.
+ * Accept only that exact provider shape or the explicit false value sent by this helper.
+ * @param {Json} rule
+ */
+export const restrictsUpdates = (rule) =>
+  isDeepStrictEqual(rule, { type: "update" }) ||
+  isDeepStrictEqual(rule, {
+    type: "update",
+    parameters: { update_allows_fetch_and_merge: false },
+  });
 
 export const prRule = {
   type: "pull_request",

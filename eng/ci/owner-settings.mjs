@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { isDeepStrictEqual } from "node:util";
+import { restrictsUpdates } from "./settings-rules.mjs";
 
 const name = "Owner-authorized ClaimCore PR merges";
 /** @param {number} ownerId */
@@ -44,12 +45,16 @@ export function ownerMergeOperation(snapshot) {
   }
   const [current] = candidates;
   assert(Number.isSafeInteger(current.id) && current.id > 0, "Owner ruleset identity is missing.");
-  for (const key of ["target", "conditions", "bypass_actors", "rules"]) {
+  for (const key of ["target", "conditions", "bypass_actors"]) {
     assert(
       isDeepStrictEqual(current[key], desired[key]),
       "Existing owner-merge scope or authority requires explicit owner reconciliation.",
     );
   }
+  assert(
+    current.rules.length === 1 && restrictsUpdates(current.rules[0]),
+    "Existing owner-merge scope or authority requires explicit owner reconciliation.",
+  );
   assert(["active", "disabled", "evaluate"].includes(current.enforcement), "Unknown enforcement.");
   return current.enforcement === "active"
     ? null
