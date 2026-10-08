@@ -15,6 +15,7 @@ let private foundation =
         CaseLifecycleProjectionTests.tests
         CasePurgeAuthorizationTests.tests
         CaseCorrectionTests.tests
+        CorrectionGuidanceTests.tests
         BusinessDateTests.tests
         DomainAdmissionTests.tests
         CorrectionMatrixTests.tests
@@ -63,6 +64,7 @@ let private surfaces =
         BoundedProcessTests.tests
         SchemaFormatTests.tests
         RemoteClientTests.tests
+        CliTrustRootProcessTests.tests
         RemoteTlsTests.tests
         TokenLifetimeTests.tests
         HttpResponseDeadlineTests.tests

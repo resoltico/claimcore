@@ -77,6 +77,7 @@ ClaimCore deterministic suite.Hedgehog state invariants.sequence oracle rejects 
 ClaimCore deterministic suite.[CC-APP-002] prepared canonical identity cannot be mutated through an accessor
 ClaimCore deterministic suite.[CC-AUTH-001] CLI discovery compares the complete issuer identity
 ClaimCore deterministic suite.[CC-AUTH-001] every Domain command maps to edit capability
+ClaimCore deterministic suite.[CC-CLI-002] native frames classify refused and malformed public roots without dispatch or path disclosure
 ClaimCore deterministic suite.accepted receipt first.[CC-APP-002] accepted identity conflict refuses without recovery disclosure
 ClaimCore deterministic suite.accepted receipt first.[CC-APP-002] accepted receipt wins after original commit confirmation is lost
 ClaimCore deterministic suite.accepted receipt first.[CC-APP-002] accepted replay needs no retained preparation or recovery read
@@ -312,6 +313,9 @@ ClaimCore deterministic suite.remote invocation contract.[CC-CLI-003] CLI v4 inp
 ClaimCore deterministic suite.schema timestamp formats.date-time accepts explicit representable RFC 3339 instants
 ClaimCore deterministic suite.schema timestamp formats.date-time refuses implicit calendar and local-zone inputs
 ClaimCore deterministic suite.schema timestamp formats.format validation preserves canonical wire restrictions
+ClaimCore deterministic suite.scoped factual correction guidance.[CC-DOM-002] amendment refusal permits correction keeping the decision
+ClaimCore deterministic suite.scoped factual correction guidance.[CC-DOM-002] closed case refusal permits correction without reopening
+ClaimCore deterministic suite.scoped factual correction guidance.[CC-DOM-002] paid decision refusal permits correction with explicit payment reaffirmation
 ClaimCore deterministic suite.service response bounds.[CC-CLI-001] CLI bounds service JSON buffering before parsing
 ClaimCore deterministic suite.service response bounds.[CC-CLI-001] CLI reads a full history with maximum-length Unicode fields
 ClaimCore deterministic suite.signed recovery import attribution.[CC-REC-001] signed import preserves A and records importer B

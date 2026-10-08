@@ -10,14 +10,18 @@
       "argv": ["node", "eng/ci/suites/check-registry.mjs"]
     },
     {
+      "id": "pinned-tools-smoke",
+      "argv": ["node", "eng/ci/tools-smoke.mjs"]
+    },
+    {
       "id": "clean-source",
       "argv": ["node", "eng/ci/clean-source.mjs"],
-      "requires": ["dotnet"],
-      "exclusive": true
+      "requires": ["dotnet"]
     },
     {
       "id": "eng-tests",
-      "argv": ["npm", "--prefix", "eng", "test"]
+      "argv": ["npm", "--prefix", "eng", "test"],
+      "requires": ["shfmt", "uv"]
     },
     {
       "id": "eng-format",
@@ -73,6 +77,10 @@
       "argv": ["node", "eng/ci/scan/main.mjs", "source"]
     },
     {
+      "id": "history-secret-scan",
+      "argv": ["node", "eng/ci/scan/main.mjs", "history"]
+    },
+    {
       "id": "test-diagnostic-privacy",
       "argv": ["node", "eng/ci/policy/diagnostic-privacy.mjs"]
     },
@@ -87,7 +95,11 @@
     {
       "id": "actionlint",
       "argv": ["actionlint", "-color"],
-      "requires": ["actionlint"]
+      "requires": ["actionlint"],
+      "appendFiles": {
+        "directories": [".github/workflows"],
+        "suffixes": [".yml", ".yaml"]
+      }
     },
     {
       "id": "workflow-security",
@@ -115,8 +127,13 @@
       "argv": ["shfmt", "-d"],
       "appendFiles": {
         "directories": ["eng", "db", "deployment"],
-        "suffix": ".sh"
+        "suffixes": [".sh"]
       },
+      "requires": ["shfmt"]
+    },
+    {
+      "id": "shell-limits",
+      "argv": ["node", "eng/lint/check-shell.mjs"],
       "requires": ["shfmt"]
     },
     {
@@ -124,7 +141,7 @@
       "argv": ["shellcheck", "-x"],
       "appendFiles": {
         "directories": ["eng", "db", "deployment"],
-        "suffix": ".sh"
+        "suffixes": [".sh"]
       },
       "requires": ["shellcheck"]
     },
@@ -145,6 +162,11 @@
       "argv": ["bash", "eng/Test-LabeledTestContainerCleanup.sh"],
       "group": "docker",
       "requires": ["docker"]
+    },
+    {
+      "id": "sql-limits",
+      "argv": ["node", "eng/lint/check-sql.mjs"],
+      "requires": ["uv"]
     }
   ]
 }

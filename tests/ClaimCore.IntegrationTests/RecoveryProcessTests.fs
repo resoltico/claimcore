@@ -17,8 +17,7 @@ open ClaimCore.IntegrationTests.Fixtures
 let private openRuntime () =
     witnessedOpen (appConnection ()) CancellationToken.None
     |> await
-    |> Result.defaultWith (fun _ ->
-        failtest "Runtime must open for synthetic recovery qualification.")
+    |> Result.defaultWith runtimeOpeningFailure
 
 let private request operationId reference = openRequest operationId reference
 

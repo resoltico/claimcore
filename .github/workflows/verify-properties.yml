@@ -29,7 +29,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: ./.github/actions/toolchain
+      - name: Admit the explicit job checkout
+        shell: bash
+        run: node eng/ci/job-context.mjs create >> "$GITHUB_ENV"
       - name: Select and validate the public exploration seed
         shell: bash
         env:
@@ -47,13 +51,17 @@ jobs:
         run: dotnet restore ClaimCore.slnx --locked-mode
       - name: Run the complete extended profile
         run: node eng/ci/suites/suite.mjs run unit fuzz --build --results-root artifacts/properties-results
+      - name: Recheck admitted job inputs before evidence scanning
+        id: job_checkout_current
+        if: always()
+        run: node eng/ci/job-context.mjs check
       - name: Scan artifacts before upload
         id: artifact_scan
         if: always()
         shell: bash
         run: node eng/ci/scan/main.mjs artifacts artifacts/properties-results/
       - name: Upload required extended-profile evidence
-        if: ${{ always() && steps.artifact_scan.outcome == 'success' }}
+        if: ${{ always() && steps.artifact_scan.outcome == 'success' && steps.job_checkout_current.outcome == 'success' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: claimcore-properties-extended-${{ github.run_id }}-${{ github.run_attempt }}

@@ -46,7 +46,7 @@ const filesBelow = async (directory) => {
   return files.flat();
 };
 
-const sourceFiles = async () => {
+export const sourceFiles = async () => {
   const source = await filesBelow(resolve(webDirectory, "src"));
   const scripts = await filesBelow(resolve(webDirectory, "scripts"));
   const fixed = [
@@ -59,6 +59,7 @@ const sourceFiles = async () => {
     "tsconfig.node.json",
     "vite.config.ts",
     "../eng/ci/repository-path.mjs",
+    "../eng/ci/executable.mjs",
     "../eng/lint/jsonc.mjs",
   ].map((file) => resolve(webDirectory, file));
   const compiler = compilerInputs(

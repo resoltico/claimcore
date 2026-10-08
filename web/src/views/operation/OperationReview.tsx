@@ -1,6 +1,6 @@
 import { usePresentation } from "../../presentation/context";
 import { Button } from "react-aria-components/Button";
-import { Checkbox } from "react-aria-components/Checkbox";
+import { CheckboxButton, CheckboxField } from "react-aria-components/Checkbox";
 import { BusinessValue } from "../../components/BusinessValue";
 import { ReferenceSummary } from "../../components/ReferenceSummary";
 import type { AdvisoryReview, PreparationDetails, FieldDescriptor } from "../../api/v3";
@@ -82,23 +82,22 @@ const ReviewActions = ({ model }: { model: OperationEditorModel }) => {
 const ReviewConfirmation = ({ model }: { model: OperationEditorModel }) => {
   const p = usePresentation();
   return (
-    // lint-exception: LX-0018
-    // oxlint-disable-next-line typescript/no-deprecated
-    <Checkbox
-      className="review-confirmation"
+    <CheckboxField
       isDisabled={model.state.delivery === "SUBMITTING"}
       isSelected={model.confirmed}
       onChange={model.setConfirmed}
     >
-      {({ isSelected }) => (
-        <>
-          <span aria-hidden="true" className="review-checkmark">
-            {isSelected ? "✓" : ""}
-          </span>
-          {p.text("ui.reviewConfirmation")}
-        </>
-      )}
-    </Checkbox>
+      <CheckboxButton className="review-confirmation">
+        {({ isSelected }) => (
+          <>
+            <span aria-hidden="true" className="review-checkmark">
+              {isSelected ? "✓" : ""}
+            </span>
+            {p.text("ui.reviewConfirmation")}
+          </>
+        )}
+      </CheckboxButton>
+    </CheckboxField>
   );
 };
 

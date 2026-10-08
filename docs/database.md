@@ -212,8 +212,8 @@ not a replacement for the Domain state machine. Runtime credentials permit some 
 <a id="cc-db-001"></a>
 ### CC-DB-001 — Atomic fresh baseline and non-destructive refusal
 
-[`db/baseline.sql`](../db/baseline.sql) is one direct final-state schema definition, embedded with the
-frozen identity and SHA-256 digest in [`db/schema-baseline.json`](../db/schema-baseline.json).
+The ordered sources in [`db/baseline/`](../db/baseline/) assemble into one direct final-state schema definition.
+[`db/schema-baseline.json`](../db/schema-baseline.json) is its format-2 source manifest, recording the frozen identity, whole-script SHA-256 digest and exact fragment order. Assembly inserts no separators, validates the exact embedded fragment inventory, and refuses earlier source-manifest formats. The primary script’s bytes and installation identity remain unchanged; fragments are source responsibilities, not upgrade steps.
 `initialize <canonical-IANA-ID>` validates an explicitly chosen calendar before connecting. Under a
 transaction-scoped schema lock it inspects the namespace before executing DDL. Only an absent
 `claimcore` namespace may be created. Schema, grants, baseline marker, new lineage UUID and non-null

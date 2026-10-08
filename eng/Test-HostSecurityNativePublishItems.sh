@@ -15,7 +15,7 @@ name="libclaimcore_hostsecurity_native.${extension}"
 
 check() {
   local project="$1" expected="$2" actual
-  actual="$(dotnet msbuild "${project}" -getItem:None |
+  actual="$(dotnet msbuild "${project}" -target:ConfigureHostSecurityNativeOutput -getItem:None |
     jq --arg name "${name}" '[.Items.None[]? |
       select(.Link == $name and .CopyToPublishDirectory == "PreserveNewest")] | length')"
   if [[ "${actual}" != "${expected}" ]]; then

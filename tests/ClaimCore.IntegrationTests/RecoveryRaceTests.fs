@@ -13,7 +13,7 @@ open ClaimCore.IntegrationTests.Fixtures
 let private openRuntime () =
     witnessedOpen (appConnection ()) CancellationToken.None
     |> await
-    |> Result.defaultWith (fun _ -> failtest "Synthetic recovery runtime must open.")
+    |> Result.defaultWith runtimeOpeningFailure
 
 let private prepare (core: IActorClaimsCore) operationId =
     let request = openRequest operationId ("RACE-" + operationId.ToString("N"))

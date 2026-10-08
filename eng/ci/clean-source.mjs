@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, realpathSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -10,7 +10,8 @@ import { loadSuites } from "./suites/registry.mjs";
 
 const root = fileURLToPath(new URL("../..", import.meta.url));
 
-const scratch = mkdtempSync(join(tmpdir(), "claimcore-clean-source-"));
+const scratch = mkdtempSync(join(realpathSync(tmpdir()), "claimcore-clean-source-"));
+let passed = false;
 try {
   const fingerprint = copySource(root, scratch);
   process.stdout.write(`Clean-source preflight: ${fingerprint}\n`);
@@ -28,7 +29,12 @@ try {
     loadSuites(scratch).filter((suite) => suite.kind === "dotnet"),
     { restore: false },
   );
+  passed = true;
   process.stdout.write("Clean-source locked restores and all suite prerequisites passed.\n");
 } finally {
-  rmSync(scratch, { recursive: true, force: true });
+  if (passed) {
+    rmSync(scratch, { recursive: true });
+  } else {
+    process.stderr.write(`Failed clean-source reproduction retained: ${scratch}.\n`);
+  }
 }

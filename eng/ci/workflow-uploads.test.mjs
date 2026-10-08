@@ -1,10 +1,134 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { readFileSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+  existsSync,
+  symlinkSync,
+  unlinkSync,
+  readdirSync,
+} from "node:fs";
+import { spawnSync } from "node:child_process";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { checkUploads } from "./workflow-uploads.mjs";
 import { parseWorkflow } from "./yaml.mjs";
 
 const guard = "always() && steps.artifact_scan.outcome == 'success'";
+const sourceReport = "web/artifacts/stryker/domain-mutation.json";
+const retainedReport = "artifacts/frontend/domain-mutation.json";
+
+function mutationRetentionCommand() {
+  const workflow = parseWorkflow(
+    readFileSync(new URL("../../.github/workflows/verify-frontend.yml", import.meta.url), "utf8"),
+  ).value;
+  /** @type {import("./types.mjs").Json[]} */
+  const actual = workflow.jobs.frontend.steps;
+  const retain = actual.find((step) => step.id === "mutation_evidence");
+  assert.ok(retain);
+  assert.equal(retain.if, "always()");
+  assert.ok(actual.indexOf(retain) < actual.findIndex((step) => step.id === "artifact_scan"));
+  checkUploads(actual);
+  const upload = actual.find((step) => step.uses?.startsWith("actions/upload-artifact@"));
+  assert.ok(upload);
+  assert.equal(
+    upload.if,
+    `\${{ ${guard} && steps.job_checkout_current.outcome == 'success' && steps.mutation_evidence.outcome == 'success' }}`,
+  );
+  return retain.run;
+}
+
+for (const produced of [true, false]) {
+  test(`frontend evidence preserves diagnostics with mutation report ${produced ? "present" : "absent"}`, () => {
+    const command = mutationRetentionCommand();
+    const root = mkdtempSync(join(tmpdir(), "claimcore-mutation-evidence-"));
+    const mutation = '{"files":{"synthetic":{"mutants":[{"status":"Killed"}]}}}\n';
+    try {
+      mkdirSync(join(root, "artifacts/frontend"), { recursive: true });
+      writeFileSync(join(root, "artifacts/frontend/vitest-summary.json"), "diagnostic\n");
+      if (produced) {
+        mkdirSync(join(root, "web/artifacts/stryker"), { recursive: true });
+        writeFileSync(join(root, sourceReport), mutation);
+      }
+      assert.equal(spawnSync("bash", ["-euo", "pipefail", "-c", command], { cwd: root }).status, 0);
+      const retained = join(root, retainedReport);
+      assert.equal(existsSync(retained), produced);
+      if (produced) {
+        assert.equal(readFileSync(retained, "utf8"), mutation);
+      }
+      assert.equal(
+        readFileSync(join(root, "artifacts/frontend/vitest-summary.json"), "utf8"),
+        "diagnostic\n",
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+}
+
+/** @type {Record<string, (root: string) => void>} */
+const refusedMutationReports = {
+  "linked source": (root) => {
+    unlinkSync(join(root, sourceReport));
+    symlinkSync(join(root, "private/keep.json"), join(root, sourceReport));
+  },
+  "linked source ancestor": (root) => {
+    rmSync(join(root, "web/artifacts/stryker"), { recursive: true });
+    writeFileSync(join(root, "private/domain-mutation.json"), "private source\n");
+    symlinkSync(join(root, "private"), join(root, "web/artifacts/stryker"));
+  },
+  "linked destination": (root) => {
+    symlinkSync(join(root, "private/keep.json"), join(root, retainedReport));
+  },
+  "linked destination ancestor": (root) => {
+    rmSync(join(root, "artifacts/frontend"), { recursive: true });
+    symlinkSync(join(root, "private"), join(root, "artifacts/frontend"));
+  },
+  "pre-existing destination": (root) => {
+    writeFileSync(join(root, retainedReport), "prior report\n");
+  },
+  "non-regular source": (root) => {
+    unlinkSync(join(root, sourceReport));
+    mkdirSync(join(root, sourceReport));
+  },
+};
+
+/** @param {string} root */
+const privateFixtureState = (root) =>
+  readdirSync(join(root, "private"))
+    .sort()
+    .map((name) => [name, readFileSync(join(root, "private", name), "utf8")]);
+
+for (const [kind, prepare] of Object.entries(refusedMutationReports)) {
+  test(`frontend mutation retention refuses ${kind} without copying or overwriting private bytes`, () => {
+    const root = mkdtempSync(join(tmpdir(), "claimcore-mutation-refusal-"));
+    try {
+      for (const directory of ["web/artifacts/stryker", "artifacts/frontend", "private"]) {
+        mkdirSync(join(root, directory), { recursive: true });
+      }
+      writeFileSync(join(root, sourceReport), "produced report\n");
+      writeFileSync(join(root, "private/keep.json"), "private fixture\n");
+      prepare(root);
+      const before = privateFixtureState(root);
+      const result = spawnSync("bash", ["-euo", "pipefail", "-c", mutationRetentionCommand()], {
+        cwd: root,
+      });
+      assert.notEqual(result.status, 0);
+      assert.deepEqual(privateFixtureState(root), before);
+      if (kind.startsWith("linked source") || kind === "non-regular source") {
+        assert.equal(existsSync(join(root, retainedReport)), false);
+      }
+      if (kind === "pre-existing destination") {
+        assert.equal(readFileSync(join(root, retainedReport), "utf8"), "prior report\n");
+      }
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+}
 const steps = () => [
   { id: "evidence", run: "node verify.mjs" },
   {
@@ -50,7 +174,7 @@ test("deployment reports can only upload after successful current-attempt schema
   const requireEvidence = (condition) =>
     assert.equal(
       condition,
-      `\${{ always() && steps.artifact_scan.outcome == 'success' && steps.deployment_evidence.outcome == 'success' }}`,
+      `\${{ always() && steps.artifact_scan.outcome == 'success' && steps.job_checkout_current.outcome == 'success' && steps.deployment_evidence.outcome == 'success' }}`,
     );
   requireEvidence(upload.if);
   assert.throws(() =>

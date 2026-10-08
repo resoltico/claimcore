@@ -4,7 +4,8 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 helper="${repo_root}/eng/Remove-LabeledTestContainers.sh"
 temporary="$(mktemp -d "${TMPDIR:-/tmp}/claimcore-container-cleanup.XXXXXX")"
-nonce="$(printf '%s' "$$-${RANDOM}-$(date -u +%s)" | shasum -a 256 | cut -c1-12)"
+nonce_time="$(date -u +%s)"
+nonce="$(printf '%s' "$$-${RANDOM}-${nonce_time}" | shasum -a 256 | cut -c1-12)"
 run_label="claimcore-integration-cleanup-${nonce}"
 other_label="claimcore-integration-other-${nonce}"
 target_name="claimcore-cleanup-target-${nonce}"
@@ -14,6 +15,16 @@ sentinel="claimcore-cleanup-sentinel-${nonce}"
 probe_label="org.claimcore.cleanup-probe=${nonce}"
 live_started=0
 pgdata_volume=""
+
+# This exact anonymous volume was read back from the test-owned PostgreSQL container.
+remove_test_data_volume() {
+  local volume="$1"
+  [[ -n "${volume}" ]] || return 0
+  [[ "${volume}" =~ ^[a-f0-9]{64}$ ]] || return 1
+  if docker volume inspect "${volume}" >/dev/null 2>&1; then
+    docker volume rm "${volume}" >/dev/null 2>&1
+  fi
+}
 
 cleanup() {
   local status=$?
@@ -30,15 +41,9 @@ cleanup() {
         status=1
       fi
     done
-    if [[ -n "${pgdata_volume}" ]]; then
-      if [[ "${pgdata_volume}" =~ ^[a-f0-9]{64}$ ]]; then
-        if docker volume inspect "${pgdata_volume}" >/dev/null 2>&1; then
-          docker volume rm "${pgdata_volume}" >/dev/null 2>&1 || status=1
-        fi
-      else
-        status=1
-      fi
-    fi
+    # lint-exception: LX-0048
+    # shellcheck disable=SC2310
+    remove_test_data_volume "${pgdata_volume}" || status=1
     owner="$(docker volume inspect \
       --format '{{ index .Labels "org.claimcore.cleanup-probe" }}' "${sentinel}" 2>/dev/null)"
     if [[ "${owner}" == "${nonce}" ]]; then
@@ -174,8 +179,9 @@ if PATH="${temporary}/mock:${PATH}" MOCK_MODE=normal MOCK_CALLS="${calls}" \
 else
   browser_status=$?
 fi
+probe_contents="$(find "${browser_probe}" -mindepth 1 -print -quit)"
 if [[ "${browser_status}" != 64 || -s "${calls}" ]] ||
-  [[ -n "$(find "${browser_probe}" -mindepth 1 -print -quit)" ]]; then
+  [[ -n "${probe_contents}" ]]; then
   echo 'All-engine browser admission did not reject a shared test-run label before side effects.' >&2
   exit 1
 fi

@@ -5,6 +5,24 @@ WITH target AS (
     SELECT jsonb_build_object(
         'schemaOwner', nspowner::regrole::text,
         'schemaAcl', nspacl::text,
+        'types', (
+            SELECT jsonb_agg(jsonb_build_object(
+                'name', t.typname, 'kind', t.typtype, 'owner', t.typowner::regrole::text,
+                'acl', t.typacl::text, 'element', format_type(t.typelem, NULL),
+                'relation', c.relname,
+                'attributes', (
+                    SELECT jsonb_agg(jsonb_build_object(
+                        'number', a.attnum, 'name', a.attname,
+                        'type', format_type(a.atttypid, a.atttypmod),
+                        'notNull', a.attnotnull, 'collation', co.collname, 'acl', a.attacl::text
+                    ) ORDER BY a.attnum)
+                    FROM pg_attribute a LEFT JOIN pg_collation co ON co.oid=a.attcollation
+                    WHERE a.attrelid=t.typrelid AND a.attnum>0 AND NOT a.attisdropped
+                )
+            ) ORDER BY t.typname)
+            FROM pg_type t LEFT JOIN pg_class c ON c.oid=t.typrelid
+            WHERE t.typnamespace=target.oid
+        ),
         'relations', (
             SELECT jsonb_agg(jsonb_build_object(
                 'name', c.relname, 'kind', c.relkind, 'persistence', c.relpersistence,
@@ -53,7 +71,7 @@ WITH target AS (
                 'acl', p.proacl::text, 'securityDefiner', p.prosecdef,
                 'configuration', p.proconfig::text,
                 'definition', pg_get_functiondef(p.oid)
-            ) ORDER BY p.proname)
+            ) ORDER BY p.proname, pg_get_function_identity_arguments(p.oid))
             FROM pg_proc p WHERE p.pronamespace = target.oid
         ),
         'triggers', (

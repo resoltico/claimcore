@@ -1,5 +1,6 @@
 const sizeLimit = 300;
-const sized = /\.(?:fs|fsi|fsx|ts|tsx|js|mjs|cjs|css|sh|py|yml|yaml)$/u;
+const sized =
+  /\.(?:fs|fsi|fsx|ts|tsx|js|mjs|cjs|css|sh|ps1|sql|props|targets|fsproj|c|h|py|yml|yaml)$/u;
 const fsharpTests = /^tests\/.*\.(?:fs|fsx|fsi)$/u;
 const webTests = /^web\/(?:tests|e2e)\//u;
 const pythonTests = /^eng\/.*Test-[^/]*\.py$/u;

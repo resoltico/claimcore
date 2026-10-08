@@ -1,6 +1,6 @@
 import { inlineRules } from "./comments.mjs";
 
-const shellcheck = /#\s*shellcheck\s+disable=(?<rules>[A-Za-z0-9,]+)/iu;
+const shellcheck = /#\s*shellcheck\s+disable=(?<rules>[A-Za-z0-9,-]+)/iu;
 const yamllint = /#\s*yamllint\s+disable(?:-line)?(?<rules>[^\r\n]*)/iu;
 
 /**
@@ -26,6 +26,10 @@ export function scanScripts(file, lines) {
           index,
         ),
       );
+    }
+    const security = yaml ? /#\s*zizmor\s*:\s*ignore\[(?<rules>[^\]]*)\]/iu.exec(line) : null;
+    if (security) {
+      found.push(...inlineRules(file, "zizmor", security.groups?.["rules"], lines, index));
     }
     const lint = yaml ? yamllint.exec(line) : null;
     if (lint) {

@@ -32,6 +32,8 @@ while IFS= read -r container; do
 
   if ! label="$(docker container inspect \
     --format '{{ index .Config.Labels "org.claimcore.test-run" }}' "${container}" 2>/dev/null)"; then
+    # lint-exception: LX-0047
+    # shellcheck disable=SC2310
     if container_absent "${container}"; then continue; fi
     echo 'Could not inspect a container during scoped test cleanup.' >&2
     exit 1

@@ -2,7 +2,7 @@
 // content fingerprint, so a scan can prove what it looked at and that it did not change.
 import { createHash } from "node:crypto";
 import { lstatSync, readdirSync, readFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import { compareOrdinal } from "../suites/inventory.mjs";
 
 /**
@@ -57,9 +57,10 @@ export function regularFiles(path, { forbiddenNames = [] } = {}) {
  */
 export function fingerprint(path) {
   const hash = createHash("sha256");
-  for (const file of regularFiles(resolve(path))) {
+  const root = resolve(path);
+  for (const file of regularFiles(root)) {
     const content = createHash("sha256").update(readFileSync(file)).digest("hex");
-    hash.update(`${file}\0${content}\0`);
+    hash.update(`${relative(root, file).replaceAll("\\", "/")}\0${content}\0`);
   }
   return hash.digest("hex");
 }

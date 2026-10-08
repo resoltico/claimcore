@@ -112,6 +112,19 @@ Language and display format are separate controls: the available formats are `en
 `ar-EG`. The defaults are English and `en-GB`, regardless of the host or browser locale. Expanded
 English (`en-XA`) is a layout-test pseudolocale supported by the normal preference parser. Ordinary controls offer the three real languages; a seeded diagnostic preference shows a truthful current option until a real language is selected.
 
+Draft-change decisions compare exact authored strings with the selected action's opened prefill,
+including correction modes and retained hidden replacement values. Editing then reverting every
+string and mode leaves no draft change; clearing prefilled values is an edit. Switching actions
+opens that action's existing prefill after any required discard confirmation. Back uses the same
+comparison. Discarding browser edits does not revoke a retained request or settle earlier attempt
+uncertainty. Fields and action selectors expose editing only in the reducer's editing or definitely
+rejected phases. Accepted results show their receipt and explicit Return path; Return rereads current
+state before advertising actions. Separate unconfirmed witness-settlement guidance remains visible.
+
+Support version and exact contract identities are available in localized technical details. Read-only
+fields retain all thirteen values and offer contextual meaning/canonical copy controls; scalar input
+syntax belongs beside authoring fields.
+
 Changing either preference does not submit a command or clear a draft, prepared review, consent or
 recovery identity. Preference events update one choice against current state, including rapid alternating events. Preferences are stored locally in the browser when storage is available; they do
 not change the installation's business time zone or recorded currency. Each tab loads preferences when opened; cross-tab synchronization is not provided. Displayed dates and accepted

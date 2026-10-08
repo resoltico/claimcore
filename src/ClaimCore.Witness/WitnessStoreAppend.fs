@@ -36,8 +36,7 @@ module internal WitnessStoreAppend =
         task {
             use command =
                 new NpgsqlCommand(
-                    "SELECT sequence,entry_hash,payload_sha256 FROM claimcore_witness.append("
-                    + "@installation,@lineage,@epoch,@operation,@scope,@case,@phase,@keyId,@payload,@writerCapability)",
+                    "SELECT sequence,entry_hash,payload_sha256 FROM claimcore_witness.append(ROW(@installation,@lineage,@epoch)::claimcore_witness.installation_identity,ROW(@scope,@case)::claimcore_witness.journal_subject,ROW(@operation,@phase,@keyId,@payload)::claimcore_witness.journal_request,@writerCapability)",
                     writer
                 )
 

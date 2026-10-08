@@ -6,6 +6,7 @@ import { verifyDeploymentReport } from "./report.mjs";
 const identity = {
   revision: "a".repeat(40),
   sourceSha256: "b".repeat(64),
+  producingInputsSha256: "8".repeat(64),
   runId: "123",
   attempt: "2",
 };
@@ -67,7 +68,7 @@ const matrix = (mutant) =>
   }));
 const fixture = () => ({
   format: "claimcore-deployment-qualification",
-  formatVersion: 1,
+  formatVersion: 2,
   identity,
   publications: { web: "7".repeat(64), database: "c".repeat(64) },
   run: "claimcore-operating-0123456789abcdef",

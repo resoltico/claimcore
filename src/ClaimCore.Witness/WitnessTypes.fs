@@ -172,19 +172,18 @@ module Baseline =
         buffer.ToArray()
 
     let script () =
-        let sql = resource "ClaimCore.Witness.Baseline.sql"
         let marker = resource "ClaimCore.Witness.Baseline.json"
-        use document = JsonDocument.Parse(marker)
-        let root = document.RootElement
-        let digest = SHA256.HashData(sql) |> Convert.ToHexStringLower
 
-        if
-            root.GetProperty("baselineId").GetString() <> "claimcore-witness-v1"
-            || root.GetProperty("sha256").GetString() <> digest
-        then
-            invalidOp "Witness baseline digest mismatch."
+        let source =
+            BaselineSource.assemble
+                typeof<Identity>.Assembly
+                marker
+                "ClaimCore.Witness.Baseline.Source."
 
-        UTF8Encoding(false, true).GetString(sql), digest
+        if source.Id <> "claimcore-witness-v1" then
+            invalidOp "Witness baseline identity mismatch."
+
+        UTF8Encoding(false, true).GetString(source.Bytes), source.Digest
 
     let catalogScript () =
         resource "ClaimCore.Witness.Catalog.sql" |> UTF8Encoding(false, true).GetString

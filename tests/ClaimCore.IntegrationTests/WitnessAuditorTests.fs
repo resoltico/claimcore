@@ -44,7 +44,7 @@ let private requireAuditorAcl auditorConnection =
             + "has_table_privilege(current_user,'claimcore_witness.journal','UPDATE'),"
             + "has_table_privilege(current_user,'claimcore_witness.journal','DELETE'),"
             + "has_function_privilege(current_user,"
-            + "'claimcore_witness.append(uuid,uuid,bigint,uuid,text,uuid,text,uuid,bytea,bytea)',"
+            + "'claimcore_witness.append(claimcore_witness.installation_identity,claimcore_witness.journal_subject,claimcore_witness.journal_request,bytea)',"
             + "'EXECUTE')",
             connection
         )

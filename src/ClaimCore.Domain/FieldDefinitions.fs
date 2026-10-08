@@ -118,14 +118,14 @@ module FieldDefinitions =
                 "claimedAmount"
                 "ClaimedAmount"
                 "Amount claimed"
-                "Amount requested by the claimant. Enter zero only when the claimed amount is zero."
+                "Amount requested by the claimant."
                 amount
                 false
             field
                 "claimedCurrency"
                 "ClaimedCurrency"
                 "Currency of claimed amount"
-                "Currency in which the amount is claimed. Use three uppercase ASCII letters (A–Z), for example EUR."
+                "Currency in which the amount is claimed."
                 currency
                 false
         ]

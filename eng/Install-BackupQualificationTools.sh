@@ -68,7 +68,8 @@ tar --strip-components=1 -xzf "${claimcore_age_archive}" -C "${claimcore_age_bin
 for claimcore_program in age age-keygen; do
   test -f "${claimcore_age_bin}/${claimcore_program}"
   test ! -L "${claimcore_age_bin}/${claimcore_program}"
-  test "$("${claimcore_age_bin}/${claimcore_program}" --version)" = v1.3.2
+  claimcore_program_version="$("${claimcore_age_bin}/${claimcore_program}" --version)"
+  test "${claimcore_program_version}" = v1.3.2
 done
 
 claimcore_pg_bin=/usr/lib/postgresql/18/bin

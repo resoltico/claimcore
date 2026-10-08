@@ -65,10 +65,14 @@ function validLimit(setting, rule, maximum) {
 function checkRuleLimits(scope, label, report, complete) {
   const rules = table(scope["rules"]);
   for (const [name, maximum] of Object.entries(ceilings)) {
-    if ((complete || rules[name] !== undefined) && !validLimit(rules[name], name, maximum)) {
-      report.add(
-        `${label} must set '${name}' to error with a positive limit at most ${maximum}, without measurement exclusions.`,
-      );
+    for (const key of [name, `eslint/${name}`]) {
+      if ((complete && key === name) || rules[key] !== undefined) {
+        if (!validLimit(rules[key], name, maximum)) {
+          report.add(
+            `${label} must set '${key}' to error with a positive limit at most ${maximum}, without measurement exclusions.`,
+          );
+        }
+      }
     }
   }
 }

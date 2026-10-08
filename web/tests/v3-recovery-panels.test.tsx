@@ -86,8 +86,10 @@ it("renders observed recovery details and leaves only permitted server actions e
     />,
   );
   expect(screen.getAllByText(new RegExp(operationId, "u"))).toHaveLength(2);
-  expect(screen.queryByRole("button", { name: "Resolve exact preparation" })).toBeNull();
-  expect(screen.queryByRole("button", { name: "Dismiss preparation" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Try to record this request" })).toBeNull();
+  expect(
+    screen.queryByRole("button", { name: "Stop future recording of this request" }),
+  ).toBeNull();
   await user.click(screen.getByRole("button", { name: "Export recovery envelope" }));
   await user.click(screen.getByRole("button", { name: "Close inspection" }));
   expect(action.choose).not.toHaveBeenCalled();
@@ -107,7 +109,7 @@ it("keeps recovery confirm dialog accessible before dispatch", async () => {
       actions={action}
     />,
   );
-  await user.click(screen.getByRole("button", { name: "Try to record this exact request" }));
+  await user.click(screen.getByRole("button", { name: "Try to record this request" }));
   await user.click(screen.getByRole("button", { name: "Cancel" }));
   expect(action.act).toHaveBeenCalledOnce();
   expect(closeConfirm).toHaveBeenCalledOnce();
@@ -230,9 +232,9 @@ it("renders terminal revocation authority and exposes no mutation action", () =>
       />
     </>,
   );
-  expect(screen.getByText(/Pending recovery capacity/u)).toHaveTextContent("1,020 / 1,024");
+  expect(screen.getByText(/Pending recovery storage/u)).toHaveTextContent("1,020 / 1,024");
   expect(screen.getByText(/cannot be resurrected/u)).toBeVisible();
-  expect(screen.queryByRole("button", { name: "Resolve exact preparation" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Try to record this request" })).toBeNull();
 });
 
 it("switches recovery views explicitly and leaves unavailable capacity unrendered", async () => {
@@ -255,7 +257,7 @@ it("switches recovery views explicitly and leaves unavailable capacity unrendere
       closeImport={vi.fn()}
     />,
   );
-  expect(screen.queryByText(/Pending recovery capacity/u)).toBeNull();
+  expect(screen.queryByText(/Pending recovery storage/u)).toBeNull();
   const selector = screen.getByLabelText("Recovery view");
   await user.selectOptions(selector, "TERMINAL");
   await user.selectOptions(selector, "PENDING");

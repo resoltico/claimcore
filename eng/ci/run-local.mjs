@@ -8,12 +8,14 @@
 // local equivalent and why; a test holds that registry to ci.yml so it cannot drift. Each job runs
 // the same command CI runs. By default a job runs only when a changed file could affect it (against
 // the merge base with origin/main); when that cannot be decided, everything runs.
-import { artifactDirectory, cleanDirectories } from "./artifact-path.mjs";
-import { mkdirSync, readFileSync, rmSync } from "node:fs";
+import { artifactDirectory } from "./artifact-path.mjs";
+import { mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { affected, changedFiles } from "./local-scope.mjs";
 import { flag, logTailLines, onPath, option, runToLog } from "./process-support.mjs";
+import { finishRun } from "./run-evidence.mjs";
+import { createRun, contextEnvironment } from "./run-context.mjs";
 import { runPlan } from "./stage-plan.mjs";
 
 const root = fileURLToPath(new URL("../..", import.meta.url));
@@ -34,7 +36,6 @@ const { argv } = process;
 
 /**
  * @typedef {object} LocalRegistry
- * @property {string[]} [clean]
  * @property {LocalJob[]} jobs
  * @property {{ family: string, reason: string }[]} notLocal
  */
@@ -69,14 +70,21 @@ function reasonToSkip(job, { only, skip, includeOptional, changed }) {
  * @param {LocalJob} job
  * @param {string} logs Directory receiving the job's log.
  * @param {Map<string, string>} outcomes
+ * @param {number[]} groups
+ * @param {import("./run-context.mjs").RunContext} context
  * @returns {Promise<import("./types.mjs").StageResult>}
  */
-async function runJob(job, logs, outcomes) {
+async function runJob(job, logs, outcomes, context, groups) {
   const log = join(logs, `${job.id}.log`);
   const started = Date.now();
   console.log(`> ${job.id}: ${job.title}`);
   const [command = "", ...args] = job.argv;
-  const status = await runToLog(command, args, { cwd: root, log });
+  const status = await runToLog(command, args, {
+    cwd: context.source,
+    log,
+    env: contextEnvironment(context),
+    groups,
+  });
   const passed = status === 0;
   outcomes.set(job.id, `${passed ? "passed" : "FAILED"} in ${seconds(started)}`);
   console.log(
@@ -98,6 +106,7 @@ function summarize(registry, outcomes) {
   for (const job of registry.jobs) {
     console.log(`  ${job.id.padEnd(18)} ${outcomes.get(job.id) ?? "not run"}`);
   }
+  console.log("Other registered operating systems require CI verification.");
   console.log("Not run locally:");
   for (const item of registry.notLocal) {
     console.log(`  ${item.family.padEnd(18)} ${item.reason}`);
@@ -128,29 +137,8 @@ function selectionFor(changed) {
   };
 }
 
-/**
- * Create this run's log directory and remove the stage outputs of earlier runs.
- * @param {LocalRegistry} registry
- * @returns {string} The log directory.
- */
-function prepareRun(registry) {
-  const clean = cleanDirectories(root, registry.clean ?? []);
-  const logs = artifactDirectory(
-    root,
-    join("artifacts/local-ci", new Date().toISOString().replace(/[:.]/gu, "-")),
-  );
-  mkdirSync(logs, { recursive: true });
-  // Stage outputs must start absent, as they do in a CI checkout; these are generated, never sources.
-  for (const path of clean) {
-    rmSync(path, { recursive: true, force: true });
-  }
-  return logs;
-}
-
-async function main() {
-  const registry = /** @type {LocalRegistry} */ (
-    JSON.parse(readFileSync(join(root, "eng/ci/local-plan.json"), "utf8"))
-  );
+/** @param {LocalRegistry} registry */
+function selectRun(registry) {
   const changed = flag(argv, "all")
     ? null
     : changedFiles(root, option(argv, "changed-since", undefined));
@@ -159,13 +147,26 @@ async function main() {
   if (selectedIds.some((id) => !registry.jobs.some((job) => job.id === id))) {
     throw new Error("Local selection names an unknown job.");
   }
-  const logs = prepareRun(registry);
+  return { changed, selection };
+}
+
+async function main() {
+  const registry = /** @type {LocalRegistry} */ (
+    JSON.parse(readFileSync(join(root, "eng/ci/local-plan.json"), "utf8"))
+  );
+  const { changed, selection } = selectRun(registry);
+  const context = await createRun(root);
+  const logs = artifactDirectory(context.source, "artifacts/local-ci");
+  mkdirSync(logs, { recursive: true, mode: 0o700 });
+  console.log(`Run ${context.id}; isolated scratch ${context.scratch}.`);
   // Jobs share this one working tree, and several read or write it as a whole: the documentation
   // assessment refuses a tree that changes under it, the convergence controls place probe files in
   // it, and the frontend build writes into it. In CI each job has its own checkout. Locally the jobs
   // therefore run one after another, each using the machine's cores internally.
   const parallel = Number(option(argv, "parallel", "1"));
   const outcomes = new Map();
+  /** @type {number[]} */
+  const groups = [];
   console.log(
     changed === null
       ? "Running every job (no change scoping)."
@@ -178,7 +179,7 @@ async function main() {
     const job = /** @type {LocalJob} */ (byId.get(stage.id));
     const why = reasonToSkip(job, selection);
     if (why === null) {
-      return runJob(job, logs, outcomes);
+      return runJob(job, logs, outcomes, context, groups);
     }
     outcomes.set(job.id, `skipped (${why})`);
     console.log(`- ${job.id}: skipped (${why})`);
@@ -191,7 +192,9 @@ async function main() {
     }
   }
   summarize(registry, outcomes);
-  if (results.some((result) => result.value.status === "failed")) {
+  const passed = !results.some((result) => result.value.status === "failed");
+  await finishRun(context, { passed, groups, stages: Object.fromEntries(outcomes) });
+  if (!passed) {
     process.exitCode = 1;
   }
 }

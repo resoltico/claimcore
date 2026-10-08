@@ -18,7 +18,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: ./.github/actions/toolchain
+      - name: Admit the explicit job checkout
+        shell: bash
+        run: node eng/ci/job-context.mjs create >> "$GITHUB_ENV"
       - name: Download the exact current-attempt published applications
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -60,6 +64,21 @@ jobs:
         if: always()
         shell: bash
         run: bash eng/Remove-LabeledTestContainers.sh "$CLAIMCORE_TEST_RUN_LABEL"
+      - name: Recheck admitted job inputs before evidence scanning
+        id: job_checkout_current
+        if: always()
+        run: node eng/ci/job-context.mjs check
+      - name: Retain sanitized browser reports with acceptance evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/test-results/acceptance/browser
+          for report in artifacts/browser/chromium.json artifacts/browser/chromium.diagnostics.json; do
+            if [[ -f "$report" ]]; then
+              cp "$report" artifacts/test-results/acceptance/browser/
+            fi
+          done
       - name: Scan artifacts before upload
         id: artifact_scan
         if: always()
@@ -68,7 +87,7 @@ jobs:
           node eng/ci/scan/main.mjs artifacts \
             artifacts/test-results/acceptance/
       - name: Upload the acceptance results
-        if: ${{ always() && steps.artifact_scan.outcome == 'success' }}
+        if: ${{ always() && steps.artifact_scan.outcome == 'success' && steps.job_checkout_current.outcome == 'success' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: claimcore-test-acceptance-linux-${{ github.run_id }}-${{ github.run_attempt }}

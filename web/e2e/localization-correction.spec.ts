@@ -17,6 +17,10 @@ import {
   type Modes,
 } from "./localization-correction-workflow";
 
+// This complete published workflow includes three witnessed setup commits, language changes,
+// correction and authoritative readback; allow its instrumented host a whole-workflow budget.
+test.setTimeout(45_000);
+
 // Independent paid-case outcomes; all replacement values actually change their groups.
 const outcomes = [
   ["KEEP", "KEEP", "KEEP", "CORRECTION_NO_CHANGES"],

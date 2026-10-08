@@ -13,7 +13,7 @@ it("renders a neutral shell while definition admission is pending", () => {
     }),
   );
   render(<Dashboard token="token" sessionEpoch={1} onLogout={vi.fn(() => Promise.resolve())} />);
-  expect(screen.getByText("Loading core definition…")).toBeVisible();
+  expect(screen.getByText("Loading application…")).toBeVisible();
   expect(screen.getByRole("heading", { name: "ClaimCore" })).toBeVisible();
 });
 
@@ -28,7 +28,7 @@ it("locks navigation and logout while a prepared mutation is dispatched", async 
     }),
   );
   render(<Dashboard token="token" sessionEpoch={2} onLogout={vi.fn(() => Promise.resolve())} />);
-  await user.click(await screen.findByRole("button", { name: "Open new case" }));
+  await user.click(await screen.findByRole("button", { name: "Open a case" }));
   const inputs = screen.getAllByRole("textbox");
   await user.type(inputs[0]!, "LOCK-001");
   const incidentDate = document.querySelector<HTMLInputElement>('input[name="incidentDate"]');

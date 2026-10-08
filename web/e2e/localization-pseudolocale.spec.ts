@@ -81,6 +81,7 @@ test("keeps expanded accepted-value layout and canonical clipboard on the normal
     }),
   );
   const amount = page.locator('.field-row[data-field-name="claimedAmount"]');
+  await amount.locator("details > summary").click();
   await amount.getByRole("button").click();
   await expect(amount.getByRole("textbox")).toHaveValue("1");
   const revision = await page.locator("section.receipt").textContent();

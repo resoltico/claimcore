@@ -28,25 +28,27 @@ test("publishes open, amendment, decision, withdrawal, full history and operatio
   await decide(page);
   await completeCommand(page, "Withdraw payment decision");
   await expect(page.locator("section.case-fields").first().getByText("Revision 4")).toBeVisible();
-  await expect(page.locator(".history-list details")).toHaveCount(4);
-  const opening = page.locator(".history-list details").filter({ hasText: opened.operationId });
+  await expect(page.locator(".history-list > li > details")).toHaveCount(4);
+  const opening = page
+    .locator(".history-list > li > details")
+    .filter({ hasText: opened.operationId });
   await expect(opening).toHaveCount(1);
-  await opening.locator("summary").click();
+  await opening.locator(":scope > summary").click();
   await expect(opening).toContainText(opened.operationId);
   await expect(page.getByRole("button", { name: /^Close the case:/u })).toBeVisible();
   await expectAccessible(page);
 
   await page.getByRole("button", { name: "Operations", exact: true }).click();
   await page.getByLabel("Exact operation ID").fill(opened.operationId);
-  await page.getByRole("button", { name: "Observe operation" }).click();
+  await page.getByRole("button", { name: "Look up recorded result" }).click();
   await expect(
     page.getByText(`Accepted operation ${opened.operationId}`, { exact: false }),
   ).toBeVisible();
   await expectAccessible(page);
 
   await page.getByRole("button", { name: "Cases", exact: true }).click();
-  await page.getByLabel("Exact case reference").fill(caseReference);
-  await page.getByLabel("Exact case reference").press("Enter");
+  await page.getByLabel("Handler's case reference (exact)").fill(caseReference);
+  await page.getByLabel("Handler's case reference (exact)").press("Enter");
   await expect(page.getByRole("heading", { name: "Case detail" })).toBeVisible();
   await expect(page.getByText("Synthetic amended claimant").first()).toBeVisible();
 });
@@ -64,6 +66,6 @@ test("publishes payment, correction, close and reopen with current-case parity",
   await expect(page.getByText("Closed", { exact: true }).first()).toBeVisible();
   await completeCommand(page, "Reopen the case");
   await expect(page.locator("section.case-fields").first().getByText("Revision 6")).toBeVisible();
-  await expect(page.locator(".history-list details")).toHaveCount(6);
+  await expect(page.locator(".history-list > li > details")).toHaveCount(6);
   await expectAccessible(page);
 });

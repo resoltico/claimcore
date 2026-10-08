@@ -214,7 +214,7 @@
           }
         ]
       },
-      "excludeFiles": ["src/api/v3.ts", "src/generated/**"]
+      "excludeFiles": ["src/api/v3.ts"]
     },
     {
       "files": [

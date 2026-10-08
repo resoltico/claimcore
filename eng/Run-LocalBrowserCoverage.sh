@@ -2,13 +2,16 @@
 set -euo pipefail
 
 # Runs the three published-browser lifecycles with coverage and merges them with the .NET suites'
-# coverage from an earlier `node eng/ci/suites/suite.mjs run unit web --group postgres` run.
+# coverage from the complete suites in this same admitted run.
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+# shellcheck source=eng/PublishedQualificationRuntime.sh
+source "${repo_root}/eng/PublishedQualificationRuntime.sh"
+enter_qualification_run "$@"
 cd "${repo_root}"
 dotnet_results="${repo_root}/artifacts/test-results"
 if [[ ! -d "${dotnet_results}" || -L "${dotnet_results}" ]]; then
-  printf 'Run the unit, web and postgres suites first; artifacts/test-results is absent.\n' >&2
-  exit 64
+  node eng/ci/suites/suite.mjs run --cross-platform --build
+  node eng/ci/suites/suite.mjs run --group postgres --build
 fi
 
 expected_node="$(tr -d '\r\n' <.node-version)"
@@ -23,20 +26,17 @@ workspace="$(mktemp -d "${repo_root}/artifacts/local-browser.XXXXXXXX")"
 publish_root="${workspace}/publish"
 web_dir="${publish_root}/web"
 database_dir="${publish_root}/database"
-local_coverage="${workspace}/coverage-input"
+local_coverage="${repo_root}/artifacts/coverage/input"
+[[ ! -e "${local_coverage}" ]] || {
+  printf 'Coverage inputs must start absent in this run.\n' >&2
+  exit 64
+}
 browser_input="${local_coverage}/browser"
 mkdir -p "${local_coverage}/dotnet" "${browser_input}"
-find "${dotnet_results}" -name '*.coverage.cobertura.*.xml' -exec cp {} "${local_coverage}/dotnet/" \;
+find "${dotnet_results}" -name '*.coverage.cobertura.*.xml' -exec mv {} "${local_coverage}/dotnet/" \;
 
-dotnet restore ClaimCore.slnx --locked-mode
 dotnet tool restore
-for project in \
-  src/ClaimCore.Cli/ClaimCore.Cli.fsproj \
-  src/ClaimCore.Web/ClaimCore.Web.fsproj \
-  src/ClaimCore.Database/ClaimCore.Database.fsproj \
-  tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj; do
-  dotnet build "${project}" --configuration Release --no-restore
-done
+node eng/ci/run-publication.mjs build-inputs
 npm --prefix web ci
 npm --prefix web run contract:generate
 npm --prefix web run test:unit
@@ -67,6 +67,7 @@ for engine in chromium firefox webkit; do
 done
 
 node eng/ci/suites/frontend.mjs all
-node eng/ci/coverage-policy/merge.mjs "${local_coverage}" "${workspace}/merged-coverage"
+node eng/ci/coverage-policy/merge.mjs "${local_coverage}" "${repo_root}/artifacts/coverage/merged"
+node eng/ci/run-publication.mjs dispose "${workspace}"
 printf 'Local published browser and merged coverage qualification passed.\n'
 printf 'Synthetic results are under %s.\n' "${workspace}"

@@ -2,6 +2,7 @@
   <ItemGroup>
     <Compile Include="Fixtures.fs" />
     <Compile Include="MarkdownTests.fs" />
+    <Compile Include="ExecutableHelpTests.fs" />
     <Compile Include="PathAndLinkTests.fs" />
     <Compile Include="ContractTokenTests.fs" />
     <Compile Include="Suite.fs" />

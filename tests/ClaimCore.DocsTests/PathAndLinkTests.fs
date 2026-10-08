@@ -52,12 +52,15 @@ let private rejectsWrongCase () =
     let wrong = Path.Combine(directory, "exact.md")
     Repository.ensureExistingSafe repository.Root wrong |> requireError |> ignore
 
-let private listsMarkdownThroughGit () =
+let private listsMarkdownThroughSourceAdmission () =
     use repository = new TempRepository()
     repository.Write("docs/b.md", "# B\n") |> ignore
     repository.Write("docs/a.md", "# A\n") |> ignore
     repository.Write("README.md", "# R\n") |> ignore
-    let listed = "docs/b.md\000docs/a.md\000README.md\000deleted.md\000"
+
+    let listed =
+        "[\"docs/b.md\",\"docs/a.md\",\"README.md\",\"deleted.md\",\"src/Source.fs\"]"
+
     let runner = QueueRunner([ processOutput 0 listed "" ])
 
     let files =
@@ -71,17 +74,12 @@ let private listsMarkdownThroughGit () =
         "Ordinal order; deleted files are skipped"
 
     let request = runner.Requests |> List.exactlyOne
-    Expect.equal request.FileName "git" "Git lists the files"
-
-    Expect.contains
-        request.Arguments
-        "--exclude-per-directory=.gitignore"
-        "Git applies the ignore rules"
+    Expect.equal request.FileName "node" "The shared source admission lists files"
 
     Expect.equal
-        (request.Environment |> Map.ofList |> Map.tryFind "GIT_DIR")
-        (Some None)
-        "Git redirection variables are removed"
+        request.Arguments
+        [ "eng/ci/repository.mjs"; repository.Root.Path ]
+        "The exact source root is explicit; the admission owner scrubs Git redirection"
 
 let private refusesUnlistableRepository () =
     use repository = new TempRepository()
@@ -97,8 +95,10 @@ let private pathTests =
                 rejectsUnsafeRegisteredPaths
             testCase "rejects a symlink in an existing path" rejectsExistingSymlink
             testCase "detects exact path casing on every host" rejectsWrongCase
-            testCase "lists the Markdown files Git lists, in ordinal order" listsMarkdownThroughGit
-            testCase "refuses a repository Git cannot list" refusesUnlistableRepository
+            testCase
+                "lists admitted Markdown files in ordinal order"
+                listsMarkdownThroughSourceAdmission
+            testCase "refuses an unavailable source inventory" refusesUnlistableRepository
         ]
 
 let private navigationTests =

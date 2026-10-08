@@ -2,6 +2,9 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+# shellcheck source=eng/PublishedQualificationRuntime.sh
+source "${repo_root}/eng/PublishedQualificationRuntime.sh"
+enter_qualification_run "$@"
 cd "${repo_root}"
 
 workspace="$(mktemp -d "${repo_root}/artifacts/acceptance-local.XXXXXX")"
@@ -21,19 +24,15 @@ cleanup_test_containers() {
     echo "Exact-label published CLI container cleanup failed." >&2
     status=1
   fi
+  if [[ "${status}" == 0 ]]; then
+    node "${repo_root}/eng/ci/run-publication.mjs" dispose "${workspace}" || status=1
+  fi
   exit "${status}"
 }
 trap cleanup_test_containers EXIT
 
-dotnet restore ClaimCore.slnx --locked-mode
 dotnet tool restore
-for project in \
-  src/ClaimCore.Cli/ClaimCore.Cli.fsproj \
-  src/ClaimCore.Web/ClaimCore.Web.fsproj \
-  src/ClaimCore.Database/ClaimCore.Database.fsproj \
-  tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj; do
-  dotnet build "${project}" --configuration Release --no-restore
-done
+node eng/ci/run-publication.mjs build-inputs
 npm --prefix web ci
 npm --prefix web run contract:generate
 npm --prefix web run build

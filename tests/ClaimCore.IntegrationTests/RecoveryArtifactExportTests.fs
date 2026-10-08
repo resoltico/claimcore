@@ -149,18 +149,7 @@ let private openSyntheticRuntime app writer =
         )
         |> await
 
-    match opening with
-    | Ok value -> value
-    | Error RuntimeOpenFault.RuntimeConfigurationInvalid ->
-        failtest "Synthetic recovery runtime configuration was invalid."
-    | Error RuntimeOpenFault.RuntimeSchemaMismatch ->
-        failtest "Synthetic recovery runtime schema mismatched."
-    | Error RuntimeOpenFault.RuntimeStoreUnavailable ->
-        failtest "Synthetic recovery runtime store was unavailable."
-    | Error RuntimeOpenFault.RuntimeStoreIntegrityError ->
-        failtest "Synthetic recovery runtime integrity was refused."
-    | Error RuntimeOpenFault.RuntimeCancelled ->
-        failtest "Synthetic recovery runtime opening was cancelled."
+    opening |> Result.defaultWith runtimeOpeningFailure
 
 let private withScenario action =
     withAuthorityRuntimeDatabase (fun ownerConnection app writer witness ->

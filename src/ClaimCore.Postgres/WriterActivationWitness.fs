@@ -31,9 +31,7 @@ module internal WriterActivationWitness =
             use command =
                 new NpgsqlCommand(
                     "SELECT intent_sequence,intent_hash,settlement_sequence,settlement_hash "
-                    + "FROM claimcore_witness.activate_writer_handoff("
-                    + "@installation,@lineage,@epoch,@handoff,@activation,@w1sequence,@w1hash,"
-                    + "@canonical,@key,@intent,@settlement)",
+                    + "FROM claimcore_witness.activate_writer_handoff(ROW(@installation,@lineage,@epoch)::claimcore_witness.installation_identity,ROW(@handoff,@activation,@canonical)::claimcore_witness.writer_activation_plan,ROW(@w1sequence,@w1hash)::claimcore_witness.journal_tip,ROW(@key,@intent,@settlement)::claimcore_witness.activation_payloads)",
                     connection
                 )
 

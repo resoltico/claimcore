@@ -125,11 +125,19 @@
   "diagnostic.CASE_REVISION_CONFLICT": [
     { "type": 0, "value": "اقرأ الملف الحالي قبل إنشاء طلب معدّل." }
   ],
-  "diagnostic.CASE_CLOSED": [{ "type": 0, "value": "أعد فتح الملف قبل تغيير وقائعه." }],
+  "diagnostic.CASE_CLOSED": [
+    {
+      "type": 0,
+      "value": "لا يمكن لهذا الإجراء تغيير ملف مغلق. استخدم «تصحيح وقائع الملف» لتصحيح الوقائع مع الاحتفاظ بالحالة، أو «إعادة فتح الملف» إذا كنت تريد استئناف العمل المعتاد عليه."
+    }
+  ],
   "diagnostic.CASE_ALREADY_CLOSED": [{ "type": 0, "value": "الملف مغلق بالفعل." }],
   "diagnostic.CASE_ALREADY_OPENED": [{ "type": 0, "value": "الملف مفتوح بالفعل." }],
   "diagnostic.CASE_AMENDMENT_REQUIRES_UNDECIDED": [
-    { "type": 0, "value": "اسحب القرار غير المدفوع قبل تعديل التسجيل." }
+    {
+      "type": 0,
+      "value": "يتطلب «تعديل التسجيل» ملفًا بلا قرار. استخدم «تصحيح وقائع الملف» لتصحيح تفاصيل التسجيل المسجلة مع الاحتفاظ بالقرار."
+    }
   ],
   "diagnostic.CORRECTION_NO_CHANGES": [
     { "type": 0, "value": "اختر تصحيحًا واقعيًا واحدًا على الأقل يغيّر الملف الحالي." }
@@ -143,7 +151,10 @@
   ],
   "diagnostic.CASE_PAYMENT_NOT_RECORDED": [{ "type": 0, "value": "لا يوجد سجل دفع لمسحه." }],
   "diagnostic.CASE_DECISION_ALREADY_PAID": [
-    { "type": 0, "value": "يمنع الدفع المسجّل تغيير قراره." }
+    {
+      "type": 0,
+      "value": "لا يمكن لـ«تسجيل قرار الدفع» و«سحب قرار الدفع» تغيير قرار تم دفعه. استخدم «تصحيح وقائع الملف» للتصحيح، مع إعادة تأكيد الدفع صراحةً أو مسح سجله عند استبدال قرار تم دفعه."
+    }
   ],
   "diagnostic.CASE_ZERO_DECISION_CANNOT_BE_PAID": [
     { "type": 0, "value": "القرار بمبلغ صفر ليس دفعًا." }
@@ -419,19 +430,9 @@
     }
   ],
   "field.claimedAmount.label": [{ "type": 0, "value": "المبلغ المطالب به" }],
-  "field.claimedAmount.meaning": [
-    {
-      "type": 0,
-      "value": "المبلغ الذي يطلبه المطالب. أدخل صفرًا فقط إذا كان المبلغ المطالب به صفرًا."
-    }
-  ],
+  "field.claimedAmount.meaning": [{ "type": 0, "value": "المبلغ الذي يطلبه المطالب." }],
   "field.claimedCurrency.label": [{ "type": 0, "value": "عملة المبلغ المطالب به" }],
-  "field.claimedCurrency.meaning": [
-    {
-      "type": 0,
-      "value": "العملة التي يُطالب بها بالمبلغ. استخدم ثلاثة أحرف ASCII كبيرة من A إلى Z، مثل EUR."
-    }
-  ],
+  "field.claimedCurrency.meaning": [{ "type": 0, "value": "العملة التي يُطالب بها المبلغ." }],
   "field.caseReference.label": [{ "type": 0, "value": "مرجع الملف لدى المعالج" }],
   "field.caseReference.meaning": [
     {
@@ -603,22 +604,23 @@
   "ui.cases": [{ "type": 0, "value": "الملفات" }],
   "ui.recovery": [{ "type": 0, "value": "الاسترداد" }],
   "ui.operations": [{ "type": 0, "value": "العمليات" }],
-  "ui.loadingDefinition": [{ "type": 0, "value": "جارٍ تحميل تعريف النواة…" }],
+  "ui.loadingDefinition": [{ "type": 0, "value": "جارٍ تحميل التطبيق…" }],
   "ui.loginInstructions": [
     { "type": 0, "value": "سجّل الدخول باستخدام موفر الهوية التابع لمؤسستك." }
   ],
   "ui.signIn": [{ "type": 0, "value": "تسجيل الدخول" }],
-  "ui.caseReference": [{ "type": 0, "value": "مرجع الملف" }],
   "ui.caseRow": [
     { "type": 1, "value": "status" },
     { "type": 0, "value": " · المراجعة " },
     { "type": 1, "value": "revision" }
   ],
-  "ui.exactCaseReference": [{ "type": 0, "value": "مرجع الملف الدقيق" }],
+  "ui.exactCaseReference": [
+    { "type": 1, "value": "label" },
+    { "type": 0, "value": " (دقيق)" }
+  ],
   "ui.findCase": [{ "type": 0, "value": "البحث عن ملف" }],
   "ui.loading": [{ "type": 0, "value": "جارٍ التحميل…" }],
   "ui.reloadCases": [{ "type": 0, "value": "إعادة تحميل الملفات" }],
-  "ui.openNewCase": [{ "type": 0, "value": "فتح ملف جديد" }],
   "ui.loadingCases": [{ "type": 0, "value": "جارٍ تحميل الملفات…" }],
   "ui.moreCases": [{ "type": 0, "value": "تحميل المزيد من الملفات" }],
   "ui.acceptedHistory": [{ "type": 0, "value": "سجل الملف" }],
@@ -695,7 +697,8 @@
   ],
   "ui.backToCases": [{ "type": 0, "value": "العودة إلى الملفات" }],
   "ui.exactReference": [
-    { "type": 0, "value": "المرجع الدقيق: " },
+    { "type": 1, "value": "label" },
+    { "type": 0, "value": " (دقيق): " },
     { "type": 1, "value": "reference" }
   ],
   "ui.unchangedUntilSubmit": [{ "type": 0, "value": "راجع تغييراتك قبل تسجيلها." }],
@@ -715,7 +718,7 @@
   "ui.operationLookup": [{ "type": 0, "value": "البحث عن عملية" }],
   "ui.exactOperationId": [{ "type": 0, "value": "معرّف العملية الدقيق" }],
   "ui.lookingUp": [{ "type": 0, "value": "جارٍ البحث…" }],
-  "ui.observeOperation": [{ "type": 0, "value": "رصد العملية" }],
+  "ui.observeOperation": [{ "type": 0, "value": "البحث عن النتيجة المسجلة" }],
   "ui.cancel": [{ "type": 0, "value": "إلغاء" }],
   "ui.notRecorded": [{ "type": 0, "value": "غير مسجّل" }],
   "ui.unavailable": [{ "type": 0, "value": "غير متاح" }],
@@ -727,10 +730,6 @@
   "ui.characterWarning": [
     { "type": 0, "value": "يحتوي على " },
     { "type": 1, "value": "characters" }
-  ],
-  "ui.caseFieldsContext": [
-    { "type": 0, "value": "حقول الملف لـ " },
-    { "type": 1, "value": "context" }
   ],
   "ui.acceptedSummary": [{ "type": 0, "value": "ملخص الملف المسجّل" }],
   "ui.copy": [
@@ -766,7 +765,8 @@
   ],
   "ui.command": [{ "type": 0, "value": "إجراء الملف" }],
   "ui.reference": [
-    { "type": 0, "value": "مرجع الملف: " },
+    { "type": 1, "value": "label" },
+    { "type": 0, "value": ": " },
     { "type": 1, "value": "reference" }
   ],
   "ui.noAuthoredValues": [{ "type": 0, "value": "لا يحتاج هذا الإجراء إلى تفاصيل إضافية." }],
@@ -774,7 +774,7 @@
   "ui.correctionHint": [
     {
       "type": 0,
-      "value": "اختر التفاصيل التي تريد إبقاءها أو استبدالها أو مسحها. تُؤخذ التفاصيل المُبقى عليها من الملف الحالي عند تسجيل التغييرات."
+      "value": "اختر إجراء كل مجموعة. تُؤخذ التفاصيل المحتفظ بها من حالة الملف عند التسجيل."
     }
   ],
   "ui.preparing": [{ "type": 0, "value": "جارٍ إعداد المراجعة…" }],
@@ -800,7 +800,7 @@
   "ui.reviewDescription": [
     {
       "type": 0,
-      "value": "تحقّق من التفاصيل وأكّدها، ثم اختر «تسجيل التغييرات». إذا لم يُؤكّد الناتج، فتحقّق من الاسترداد قبل المحاولة مجددًا."
+      "value": "راجع التفاصيل وأكّدها. إذا لم يتأكد التسجيل، افحص الاسترداد قبل المحاولة مجددًا."
     }
   ],
   "ui.reviewTarget": [
@@ -832,15 +832,15 @@
   "ui.terminal": [{ "type": 0, "value": "النهائية" }],
   "ui.reload": [{ "type": 0, "value": "إعادة التحميل" }],
   "ui.capacity": [
-    { "type": 0, "value": "سعة الاسترداد المعلّق: " },
+    { "type": 0, "value": "تخزين طلبات الاسترداد المعلقة: " },
     { "type": 1, "value": "count" },
     { "type": 0, "value": " / " },
     { "type": 1, "value": "maximum" },
-    { "type": 0, "value": " من التحضيرات · " },
+    { "type": 0, "value": " طلبات · " },
     { "type": 1, "value": "bytes" },
     { "type": 0, "value": " / " },
     { "type": 1, "value": "maximumBytes" },
-    { "type": 0, "value": " بايت معياري." }
+    { "type": 0, "value": " بايت من محتوى الطلبات الدقيق." }
   ],
   "ui.nearCapacity": [
     { "type": 0, "value": "اقتربت السعة من الحد؛ عالج التحضيرات المعلّقة المعروفة أو استبعدها." }
@@ -848,7 +848,7 @@
   "ui.recoveryHint": [
     {
       "type": 0,
-      "value": "يُعرض الاسترداد المعلّق افتراضيًا. يعرض القسم النهائي الصلاحيات المعتمدة والمستبعدة والمسحوبة دون اعتبارها عملًا قابلًا للتنفيذ. افحص حالة الخادم قبل المعالجة أو الاستبعاد."
+      "value": "تظهر الطلبات المعلّقة افتراضيًا. يعرض القسم النهائي الصلاحيات المعتمدة والمستبعدة والمسحوبة كأدلة غير قابلة للتنفيذ. افحص حالة الخادم قبل التسجيل أو الاستبعاد."
     }
   ],
   "ui.recoverySummary": [
@@ -912,7 +912,7 @@
   "ui.retainedCommand": [
     { "type": 0, "value": "الملف " },
     { "type": 1, "value": "reference" },
-    { "type": 0, "value": " · الأمر " },
+    { "type": 0, "value": " · الإجراء " },
     { "type": 1, "value": "command" }
   ],
   "ui.retainedFormat": [
@@ -940,14 +940,14 @@
   "ui.inspect": [{ "type": 0, "value": "فحص" }],
   "ui.inspectRevocation": [{ "type": 0, "value": "فحص السحب" }],
   "ui.moreRecovery": [{ "type": 0, "value": "تحميل المزيد من الاسترداد" }],
-  "ui.resolveExact": [{ "type": 0, "value": "معالجة التحضير نفسه" }],
-  "ui.dismissPreparation": [{ "type": 0, "value": "استبعاد التحضير" }],
+  "ui.resolveExact": [{ "type": 0, "value": "محاولة تسجيل هذا الطلب" }],
+  "ui.dismissPreparation": [{ "type": 0, "value": "إيقاف التسجيل المستقبلي لهذا الطلب" }],
   "ui.exportEnvelope": [{ "type": 0, "value": "تصدير حافظة الاسترداد" }],
   "ui.recoveryDetails": [{ "type": 0, "value": "تفاصيل الاسترداد" }],
   "ui.recoveryDetailsHint": [
     {
       "type": 0,
-      "value": "صلاحية الطلب الحالية وأدلة المحاولات من الخادم. تحتفظ تفاصيل الطلب أدناه بالقيم المُدخلة كما هي بالضبط."
+      "value": "صلاحية الطلب وأدلة المحاولات من الخادم. تحافظ تفاصيل الطلب على القيم المُدخلة نفسها."
     }
   ],
   "ui.observation": [
@@ -969,8 +969,6 @@
     }
   ],
   "ui.working": [{ "type": 0, "value": "جارٍ العمل…" }],
-  "ui.confirmResolve": [{ "type": 0, "value": "محاولة تسجيل هذا الطلب نفسه" }],
-  "ui.confirmDismiss": [{ "type": 0, "value": "إنهاء الصلاحية المستقبلية نهائيًا" }],
   "ui.confirmExport": [{ "type": 0, "value": "تأكيد التصدير" }],
   "ui.artifact": [
     { "type": 0, "value": "الأثر " },
@@ -979,20 +977,20 @@
     { "type": 1, "value": "digest" }
   ],
   "ui.importTarget": [
-    { "type": 0, "value": "الهدف المفكوك " },
+    { "type": 0, "value": "الهدف المستورد " },
     { "type": 1, "value": "reference" },
-    { "type": 0, "value": " · الأمر " },
+    { "type": 0, "value": " · الإجراء " },
     { "type": 1, "value": "command" },
     { "type": 0, "value": " · المراجعة المتوقعة " },
     { "type": 1, "value": "revision" }
   ],
-  "ui.importHint": [
-    { "type": 0, "value": "يُحتفظ بالأثر لإجراء استرداد صريح؛ لا يُرسل تلقائيًا مطلقًا." }
-  ],
   "ui.importEnvelope": [{ "type": 0, "value": "استيراد حافظة الاسترداد" }],
   "ui.importTitle": [{ "type": 0, "value": "الاحتفاظ بمادة الاسترداد المستوردة؟" }],
   "ui.importDescription": [
-    { "type": 0, "value": "يُحتفظ بالمعاينة بعد التأكيد فقط، ولا تُرسل تلقائيًا مطلقًا." }
+    {
+      "type": 0,
+      "value": "يُحتفظ به بعد التأكيد فقط لإجراء استرداد صريح؛ لا يُرسل تلقائيًا مطلقًا."
+    }
   ],
   "ui.retainForRecovery": [{ "type": 0, "value": "الاحتفاظ للاسترداد" }],
   "ui.keepEditing": [{ "type": 0, "value": "متابعة التحرير" }],
@@ -1002,13 +1000,13 @@
   "ui.resolveConsequence": [
     {
       "type": 0,
-      "value": "يُطلب من الخادم معالجة معرّف العملية وبصمة الطلب المعروضين. قد يسجّل الطلب الذي تمت مراجعته إذا ظل مسموحًا به، أو يعيد دليلًا على نتيجة سبق تسجيلها. النتيجة المُعادة تحدّد ما حدث؛ هذا التأكيد لا يضمن النجاح."
+      "value": "قد يسجّل الخادم هذا الطلب نفسه إذا ظل مسموحًا به، أو يعرض نتيجة سبق اعتمادها. النتيجة المُعادة تحدّد ما حدث؛ النجاح غير مضمون."
     }
   ],
   "ui.dismissConsequence": [
     {
       "type": 0,
-      "value": "يُطلب من الخادم استبعاد الطلب بمعرّف العملية وبصمة الطلب المعروضين بصورة دائمة. الاستبعاد المؤكّد يمنع نهائيًا تنفيذ هذا الطلب غير المعتمد مستقبلًا. لا يمكن التراجع عنه، ولا يثبت ما إذا كانت محاولة سابقة غير مؤكّدة قد سجّلت الطلب. النتيجة المُعادة تحدّد ما إذا تم تأكيد الاستبعاد."
+      "value": "الاستبعاد المؤكّد يمنع نهائيًا تنفيذ هذا الطلب غير المعتمد مستقبلًا. لا يمكن التراجع عنه، ولا يحسم المحاولات السابقة غير المؤكّدة. تحقّق من النتيجة المُعادة لتأكيد الاستبعاد."
     }
   ],
   "ui.canonicalCopyHint": [
@@ -1016,5 +1014,26 @@
       "type": 0,
       "value": "ينسخ القيمة الأصلية بدقة. تُنسخ التواريخ بصيغة YYYY-MM-DD والمبالغ بفاصلة عشرية نقطية، بغض النظر عن تنسيق العرض."
     }
-  ]
+  ],
+  "ui.leaveDraftDescription": [
+    {
+      "type": 0,
+      "value": "المغادرة تتجاهل تعديلات المسودة. تبقى الطلبات المحفوظة في الاسترداد؛ المغادرة لا توقفها ولا تحسم المحاولات السابقة."
+    }
+  ],
+  "ui.discardAndLeave": [{ "type": 0, "value": "تجاهل ومغادرة" }],
+  "ui.technicalDetails": [{ "type": 0, "value": "تفاصيل تقنية للدعم" }],
+  "ui.productVersion": [
+    { "type": 0, "value": "إصدار المنتج: " },
+    { "type": 1, "value": "version" }
+  ],
+  "ui.semanticIdentity": [
+    { "type": 0, "value": "العقد الدلالي: " },
+    { "type": 1, "value": "digest" }
+  ],
+  "ui.webIdentity": [
+    { "type": 0, "value": "عقد Web v3: " },
+    { "type": 1, "value": "digest" }
+  ],
+  "ui.fieldHelp": [{ "type": 0, "value": "المعنى والنسخ الدقيق" }]
 }

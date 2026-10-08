@@ -12,6 +12,10 @@
       "after": ["frontend-unit"]
     },
     {
+      "id": "frontend-mutation",
+      "argv": ["npm", "--prefix", "web", "run", "test:mutation"]
+    },
+    {
       "id": "frontend-format",
       "argv": ["npm", "--prefix", "web", "run", "format:check"]
     },
@@ -47,10 +51,6 @@
     {
       "id": "dependency-licenses",
       "argv": ["npm", "--prefix", "web", "run", "licenses:check"]
-    },
-    {
-      "id": "frontend-mutation",
-      "argv": ["npm", "--prefix", "web", "run", "test:mutation"]
     },
     {
       "id": "browser-inventory",

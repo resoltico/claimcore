@@ -34,6 +34,14 @@ const useEditorFocus = (
   }, [model.state.delivery, prepareButtonRef]);
 };
 
+const requestLeave = (model: OperationEditorModel, onClose: () => void): void => {
+  if (model.canPrepare && model.dirty) {
+    model.setPendingDiscard("LEAVE");
+  } else if (!model.locked) {
+    onClose();
+  }
+};
+
 const OperationEditorLayout = ({
   props,
   model,
@@ -52,6 +60,16 @@ const OperationEditorLayout = ({
       </p>
     );
   }
+  if (model.receipt !== null) {
+    return (
+      <AcceptedOperation
+        definition={props.definition}
+        receipt={model.receipt}
+        message={model.state.message}
+        onCommitted={props.onCommitted}
+      />
+    );
+  }
   return (
     <section ref={section} aria-labelledby="operation-title" className="operation-editor">
       <h2 id="operation-title">{p.commandLabel(model.state.command)}</h2>
@@ -61,16 +79,13 @@ const OperationEditorLayout = ({
         definition={props.definition}
         current={props.current}
         model={model}
-        onClose={props.onClose}
+        onClose={() => {
+          requestLeave(model, props.onClose);
+        }}
         prepareButtonRef={prepareButtonRef}
       />
       <OperationReview model={model} fields={props.definition.definition.fields} />
-      <CommandChangeDialog model={model} />
-      <AcceptedOperation
-        definition={props.definition}
-        receipt={model.receipt}
-        onCommitted={props.onCommitted}
-      />
+      <CommandChangeDialog model={model} onClose={props.onClose} />
     </section>
   );
 };

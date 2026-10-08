@@ -15,11 +15,19 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: ./.github/actions/toolchain
+      - name: Admit the explicit job checkout
+        shell: bash
+        run: node eng/ci/job-context.mjs create >> "$GITHUB_ENV"
       - name: Restore the locked source tree
         run: dotnet restore ClaimCore.slnx --locked-mode
       - name: Produce the contracts, the frontend and its SBOM from the locked graphs
         run: node eng/ci/run-stages.mjs frontend-product --parallel 2
+      - name: Recheck admitted job inputs before evidence scanning
+        id: job_checkout_current
+        if: always()
+        run: node eng/ci/job-context.mjs check
       - name: Scan artifacts before upload
         id: artifact_scan
         if: always()
@@ -30,7 +38,7 @@ jobs:
             artifacts/frontend-contracts/ \
             artifacts/sbom/
       - name: Upload immutable frontend product
-        if: ${{ always() && steps.artifact_scan.outcome == 'success' }}
+        if: ${{ always() && steps.artifact_scan.outcome == 'success' && steps.job_checkout_current.outcome == 'success' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: claimcore-frontend-${{ github.run_id }}-${{ github.run_attempt }}
@@ -38,7 +46,7 @@ jobs:
           if-no-files-found: error
           retention-days: 14
       - name: Upload the generated contract artifacts
-        if: ${{ always() && steps.artifact_scan.outcome == 'success' }}
+        if: ${{ always() && steps.artifact_scan.outcome == 'success' && steps.job_checkout_current.outcome == 'success' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: claimcore-contracts-${{ github.run_id }}-${{ github.run_attempt }}
@@ -46,7 +54,7 @@ jobs:
           if-no-files-found: error
           retention-days: 14
       - name: Upload required frontend SBOM
-        if: ${{ always() && steps.artifact_scan.outcome == 'success' }}
+        if: ${{ always() && steps.artifact_scan.outcome == 'success' && steps.job_checkout_current.outcome == 'success' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: claimcore-frontend-sbom-${{ github.run_id }}-${{ github.run_attempt }}

@@ -15,10 +15,17 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: ./.github/actions/toolchain
+      - name: Admit the explicit job checkout
+        shell: bash
+        run: node eng/ci/job-context.mjs create >> "$GITHUB_ENV"
       - name: Restore and build the documentation inputs
         run: |
           dotnet restore ClaimCore.slnx --locked-mode
           dotnet build ClaimCore.slnx --configuration Release --no-restore
       - name: Check generated blocks, links and contracts, then prove write is byte-idle
         run: node eng/ci/policy/documentation.mjs
+      - name: Recheck admitted job inputs
+        if: always()
+        run: node eng/ci/job-context.mjs check

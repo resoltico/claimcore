@@ -83,7 +83,7 @@ it("treats a typed missing history as an empty read rather than a transport erro
       onCommand={vi.fn()}
     />,
   );
-  expect(await screen.findByRole("region", { name: "Case fields for current case" })).toBeVisible();
+  expect(await screen.findByRole("region", { name: "current case" })).toBeVisible();
   expect(screen.getByRole("heading", { name: "Case history" })).toBeVisible();
   expect(screen.queryByRole("alert")).toBeNull();
 });
@@ -95,9 +95,9 @@ it("reports absent and malformed operation observations without leaving stale re
     response("operation.observe", "SUCCEEDED", { tag: "NOT_FOUND", operationId }),
   );
   render(<OperationLookup token="token" definition={definition} />);
-  expect(screen.getByRole("button", { name: "Observe operation" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Look up recorded result" })).toBeDisabled();
   await user.type(screen.getByLabelText("Exact operation ID"), operationId);
-  await user.click(screen.getByRole("button", { name: "Observe operation" }));
+  await user.click(screen.getByRole("button", { name: "Look up recorded result" }));
   expect(await screen.findByText("Operation was not observed.")).toBeVisible();
   expect(screen.queryByRole("alert")).toBeNull();
   expect(screen.queryByText(/Accepted operation/u)).toBeNull();
@@ -110,6 +110,6 @@ it("reports a found observation without a receipt as a protocol failure", async 
   );
   render(<OperationLookup token="token" definition={definition} />);
   await user.type(screen.getByLabelText("Exact operation ID"), operationId);
-  await user.click(screen.getByRole("button", { name: "Observe operation" }));
+  await user.click(screen.getByRole("button", { name: "Look up recorded result" }));
   expect(await screen.findByRole("alert")).toBeVisible();
 });

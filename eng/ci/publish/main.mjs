@@ -1,3 +1,7 @@
+import { artifactDirectory } from "../artifact-path.mjs";
+import { runContext } from "../run-context.mjs";
+import { jobContext } from "../job-context.mjs";
+import { coordinate } from "../run-command.mjs";
 import { commandLine } from "../executable.mjs";
 // Publish the three applications once, describe them (SBOM, third-party notices, manifest) and let
 // every consumer verify the exact bytes it received.
@@ -11,6 +15,7 @@ import { fileURLToPath } from "node:url";
 import { flag, option } from "../process-support.mjs";
 import { packageNoticeReader } from "../policy/nuget-notices.mjs";
 import { productComponentNames, renderNotices } from "../policy/notices.mjs";
+import { compiledInputs, producingInputDigest, verifyProducingInputs } from "./inputs.mjs";
 import { verifyTree, writeManifest } from "./tree.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
@@ -154,6 +159,7 @@ function publishOne({ product, directory, project, frontendSbom }, { output, bui
   if (existsSync(destination)) {
     throw new Error(`The output ${destination} must start absent.`);
   }
+  const expectedInputs = producingInputDigest(root);
   const { version, license, assetsPath } = projectIdentity(project);
   run("dotnet", [
     "publish",
@@ -175,7 +181,12 @@ function publishOne({ product, directory, project, frontendSbom }, { output, bui
     copyFileSync(join(root, frontendSbom), join(destination, `${product}.frontend.cdx.json`));
   }
   mkdirSync(join(output, "manifests"), { recursive: true });
-  writeManifest(product, destination, join(output, "manifests", `${directory}.json`));
+  const inputs = compiledInputs(destination);
+  verifyProducingInputs(inputs, expectedInputs);
+  if (producingInputDigest(root) !== expectedInputs) {
+    throw new Error("Producing inputs changed during publication.");
+  }
+  writeManifest(product, destination, join(output, "manifests", `${directory}.json`), inputs);
 }
 
 /**
@@ -188,8 +199,22 @@ export function verifyPublished(output, only = []) {
   if (chosen.length === 0 || chosen.length !== (only.length || products.length)) {
     throw new Error("Name published products: cli, database, web.");
   }
+  const expected = producingInputDigest(root);
   for (const { product, directory } of chosen) {
-    verifyTree(product, join(output, directory), join(output, "manifests", `${directory}.json`));
+    const manifestPath = join(output, "manifests", `${directory}.json`);
+    verifyTree(product, join(output, directory), manifestPath);
+    const actual = compiledInputs(join(output, directory));
+    const declared = JSON.parse(readFileSync(manifestPath, "utf8")).producingInputs;
+    if (
+      JSON.stringify(Object.entries(actual).sort()) !==
+      JSON.stringify(Object.entries(declared).sort())
+    ) {
+      throw new Error("Compiled producing inputs differ from the publication manifest.");
+    }
+    verifyProducingInputs(actual, expected);
+  }
+  if (producingInputDigest(root) !== expected) {
+    throw new Error("Producing inputs changed during publication verification.");
   }
   return chosen.map((item) => item.directory);
 }
@@ -198,10 +223,13 @@ export function verifyPublished(output, only = []) {
 const absolute = (path) => (isAbsolute(path) ? path : resolve(root, path));
 
 /** @param {string[]} argv */
-function main(argv) {
+export function publishCommand(argv) {
   const [mode, ...rest] = argv;
   if (mode === "build") {
     const output = absolute(option(rest, "output", "artifacts/publish"));
+    if (runContext(root) !== null || jobContext(root) !== null) {
+      artifactDirectory(root, output);
+    }
     for (const item of products) {
       publishOne(item, { output, build: !flag(rest, "no-build") });
     }
@@ -216,7 +244,12 @@ function main(argv) {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   try {
-    main(process.argv.slice(2));
+    if (
+      process.argv[2] !== "build" ||
+      !(await coordinate(root, "node", ["eng/ci/publish/main.mjs", ...process.argv.slice(2)]))
+    ) {
+      publishCommand(process.argv.slice(2));
+    }
   } catch (error) {
     process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
     process.exitCode = 1;

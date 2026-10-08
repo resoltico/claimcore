@@ -59,12 +59,19 @@ type TempRepository() =
 type QueueRunner(outputs: ProcessOutput list) =
     let queue = Queue<ProcessOutput>(outputs)
     let requests = ResizeArray<ProcessRequest>()
+    let solutions = ResizeArray<string>()
 
     member _.Requests = List.ofSeq requests
+    member _.Solutions = List.ofSeq solutions
 
     interface IProcessRunner with
         member _.Run request =
             requests.Add(request)
+
+            match request.Arguments with
+            | "build" :: solution :: _ when solution.EndsWith(".slnx", StringComparison.Ordinal) ->
+                solutions.Add(File.ReadAllText(solution))
+            | _ -> ()
 
             if queue.Count = 0 then
                 Error "Unexpected process invocation."

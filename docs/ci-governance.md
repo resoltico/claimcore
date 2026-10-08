@@ -49,8 +49,10 @@ both the workflow and its checker. Repository authorization is a separate bounda
 ## Failures
 
 Each stage and test process prints its output as one group in the job log, and a failing stage's output is always
-shown. Nothing is uploaded from a failed or unscanned job: artifacts are scanned for secrets after production and
-before upload, and a scanner failure, a missing path or a detected secret prevents the upload.
+shown. Schema-admitted, scanned diagnostic evidence may upload from an otherwise failed job through
+its deliberate `always()` admission path. That preserves failure visibility and does not make Gate pass.
+Artifacts are scanned after production and before upload; a missing path, scanner failure or detected
+secret prevents upload. Source review and passing settings-helper tests do not activate native protections.
 
 ## PR publication and handoff
 
@@ -95,6 +97,10 @@ allows only the numeric repository owner User to merge through a PR; its bypass 
 Gate ruleset. Wider, hidden or incompatible existing owner rules require reconciliation, not automatic
 replacement. Version tags become immutable against update/deletion; tag creation remains with existing content
 writers and release publication remains separately reviewed.
+
+Update-rule readback accepts GitHub's exact parameter-free representation or an explicit
+`update_allows_fetch_and_merge: false`. Empty, null, unfamiliar or permissive parameters are refused;
+scope and bypass identities remain checked independently.
 
 The publisher references the `release` environment. The settings plan adds a main-only deployment policy and an
 explicit owner reviewer when absent. Existing reviewers and waiting/self-review rules are preserved, not weakened. Duplicate protection

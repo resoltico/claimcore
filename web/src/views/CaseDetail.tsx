@@ -197,6 +197,26 @@ const CurrentPresentation = ({
   );
 };
 
+const CaseHeader = ({
+  caseReference,
+  onBack,
+}: Pick<CaseDetailProps, "caseReference" | "onBack">) => {
+  const p = usePresentation();
+  const label = p.fieldLabel("caseReference");
+  return (
+    <>
+      <div className="section-heading">
+        <h2 id="case-detail-title">{p.text("ui.caseDetail")}</h2>
+        <Button onPress={onBack}>{p.text("ui.backToCases")}</Button>
+      </div>
+      <p>
+        <ReferenceSummary id="ui.exactReference" values={{ label, reference: caseReference }} />{" "}
+        <CopyValue label={label} value={caseReference} />
+      </p>
+    </>
+  );
+};
+
 export const CaseDetail = ({
   token,
   caseReference,
@@ -205,7 +225,6 @@ export const CaseDetail = ({
   onBack,
   onCommand,
 }: CaseDetailProps) => {
-  const p = usePresentation();
   const get = useCallback(
     (signal: AbortSignal) => v3.get(caseReference, token, signal),
     [caseReference, token],
@@ -223,14 +242,7 @@ export const CaseDetail = ({
   const lookup = current.value?.tag === "FOUND" ? current.value.current : null;
   return (
     <section aria-labelledby="case-detail-title">
-      <div className="section-heading">
-        <h2 id="case-detail-title">{p.text("ui.caseDetail")}</h2>
-        <Button onPress={onBack}>{p.text("ui.backToCases")}</Button>
-      </div>
-      <p>
-        <ReferenceSummary id="ui.exactReference" values={{ reference: caseReference }} />{" "}
-        <CopyValue label={p.text("ui.caseReference")} value={caseReference} />
-      </p>
+      <CaseHeader caseReference={caseReference} onBack={onBack} />
       <CurrentFeedback
         message={current.message}
         loading={current.loading}

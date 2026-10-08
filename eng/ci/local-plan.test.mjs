@@ -74,7 +74,7 @@ test("changes select the jobs that can be affected by them", () => {
     affected(job("tests-postgres"), ["src/ClaimCore.Postgres/RuntimeDatabase.fs"]),
     true,
   );
-  assert.equal(affected(job("tests-postgres"), ["db/baseline.sql"]), true);
+  assert.equal(affected(job("tests-postgres"), ["db/baseline/case-state-and-lineage.sql"]), true);
   assert.equal(affected(job("tests-postgres"), ["eng/backup/capture_delivery.py"]), true);
   assert.equal(affected(job("tests-postgres"), ["eng/backup/Test-ManagedBackup.sh"]), true);
   assert.equal(affected(job("tests-postgres"), ["eng/backup/README.md"]), false);
@@ -90,14 +90,8 @@ test("when the change set is unknown every job runs", () => {
   }
 });
 
-test("only generated stage outputs are cleaned before a local run", () => {
-  for (const path of registry.clean ?? []) {
-    assert.match(
-      path,
-      /^artifacts\/[a-z-]+$/u,
-      "clean paths are single directories under artifacts/",
-    );
-  }
+test("local runs have no shared cleanup registry", () => {
+  assert.equal(Reflect.has(registry, "clean"), false);
 });
 
 test("shared lint policy changes require the frontend gates", () => {
@@ -116,7 +110,7 @@ test("deployment selection covers publication, trust-driver, lock and shared too
     "web/src/App.tsx",
     "web/scripts/write-asset-manifest.mjs",
     ".node-version",
-    "db/baseline.sql",
+    "db/baseline/case-state-and-lineage.sql",
     "db/postgresql-baseline.json",
     "Directory.Build.props",
     "Directory.Build.targets",

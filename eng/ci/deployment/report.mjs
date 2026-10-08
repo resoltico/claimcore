@@ -6,6 +6,10 @@ import { join, resolve } from "node:path";
 import { verifyPublished } from "../publish/main.mjs";
 import { verifyProbe } from "./transport-evidence.mjs";
 import { sourceFingerprint } from "../source-snapshot.mjs";
+import { runContext } from "../run-context.mjs";
+import { jobContext } from "../job-context.mjs";
+import { gitEnvironment } from "../scan/process.mjs";
+import { producingInputDigest } from "../publish/inputs.mjs";
 import { verifyBrowserTrustReport } from "./browser-trust-qualification.mjs";
 import { verifyDisabledGuard, verifyRevocationMatrix } from "./revocation-qualification.mjs";
 
@@ -24,12 +28,20 @@ const properties = [
   "installationPreserved",
   "privateBuildInputsExcluded",
 ];
-/** @typedef {{revision: string, sourceSha256: string, runId: string, attempt: string}} Identity */
+/** @typedef {{revision: string, sourceSha256: string, producingInputsSha256: string, runId: string, attempt: string}} Identity */
 /** @param {string} root @returns {Identity} */
 export function evidenceIdentity(root) {
+  const context = runContext(root) ?? jobContext(root);
   return {
-    revision: execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim(),
+    revision:
+      context?.history.head ??
+      execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: root,
+        encoding: "utf8",
+        env: gitEnvironment(),
+      }).trim(),
     sourceSha256: sourceFingerprint(root),
+    producingInputsSha256: producingInputDigest(root),
     runId: process.env.GITHUB_RUN_ID ?? "local",
     attempt: process.env.GITHUB_RUN_ATTEMPT ?? "1",
   };
@@ -114,6 +126,16 @@ function observation(value) {
   verifyProbe(value.primary);
   verifyProbe(value.witness);
 }
+/** @param {Identity} value @param {Identity} identity */
+function verifyIdentity(value, identity) {
+  keys(value, ["revision", "sourceSha256", "producingInputsSha256", "runId", "attempt"]);
+  assert.deepEqual(value, identity);
+  assert.match(identity.revision, /^[0-9a-f]{40}$/u);
+  assert.match(identity.sourceSha256, digest);
+  assert.match(identity.producingInputsSha256, digest);
+  assert.match(identity.runId, /^(?:local|[0-9]+)$/u);
+  assert.match(identity.attempt, /^[1-9][0-9]*$/u);
+}
 /** @param {import("../types.mjs").Json} value @param {Identity} identity */
 export function verifyDeploymentReport(value, identity) {
   keys(value, [
@@ -128,15 +150,10 @@ export function verifyDeploymentReport(value, identity) {
     "databaseRevocation",
   ]);
   assert.equal(value["format"], "claimcore-deployment-qualification");
-  assert.equal(value["formatVersion"], 1);
+  assert.equal(value["formatVersion"], 2);
   assert.equal(value["result"], "passed");
   assert.match(value["run"], /^claimcore-operating-[0-9a-f]{16}$/u);
-  keys(value["identity"], ["revision", "sourceSha256", "runId", "attempt"]);
-  assert.deepEqual(value["identity"], identity);
-  assert.match(identity.revision, /^[0-9a-f]{40}$/u);
-  assert.match(identity.sourceSha256, digest);
-  assert.match(identity.runId, /^(?:local|[0-9]+)$/u);
-  assert.match(identity.attempt, /^[1-9][0-9]*$/u);
+  verifyIdentity(value["identity"], identity);
   keys(value["publications"], ["web", "database"]);
   assert.match(value["publications"].web, digest);
   assert.match(value["publications"].database, digest);

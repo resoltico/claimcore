@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, relative, resolve } from "node:path";
 import test from "node:test";
-import { recordsFor, treeHash } from "./asset-manifest.mjs";
+import { producingInputFiles } from "../../eng/ci/publish/inputs.mjs";
+import { recordsFor, treeHash, sourceFiles } from "./asset-manifest.mjs";
 
 test("asset inventory excludes only the root manifest and orders paths ordinally", async () => {
   const root = await mkdtemp(join(tmpdir(), "claimcore-asset-records-"));
@@ -48,4 +49,27 @@ test("source identity distinguishes newline-containing paths from multiple recor
     ]),
     "fa5a66f488295200dc3ba10e2d7d85d205c20b8df2c96587488ff9bf3d100516",
   );
+});
+
+const root = resolve(import.meta.dirname, "../..");
+test("publication inputs include every frontend asset producer input and embedded database input", async () => {
+  const included = new Set(producingInputFiles(root));
+  for (const path of await sourceFiles()) {
+    assert.ok(
+      included.has(relative(root, path).split("\\").join("/")),
+      "Asset input missing from producing identity.",
+    );
+  }
+  const baseline = /** @type {{fragments: string[]}} */ (
+    JSON.parse(await readFile(join(root, "db/schema-baseline.json"), "utf8"))
+  );
+  baseline.fragments.forEach((name) => assert.ok(included.has(`db/baseline/${name}`)));
+  for (const path of [
+    "db/schema-baseline.json",
+    "db/postgresql-baseline.json",
+    "global.json",
+    "config/contracts.lock.json",
+  ]) {
+    assert.ok(included.has(path));
+  }
 });

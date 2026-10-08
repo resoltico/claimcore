@@ -1,6 +1,12 @@
 import { expect, test, type Page } from "@playwright/test";
 import { openApplication, openAuthenticated } from "./session-helpers";
-import { selectLanguage, trackRequests, ui, seedPresentation } from "./localization-support";
+import {
+  selectLanguage,
+  trackRequests,
+  ui,
+  seedPresentation,
+  openLabel,
+} from "./localization-support";
 import { displayLocales, languages, preferenceKey } from "../src/presentation/preferences";
 import { webV3Endpoints } from "../src/generated/contracts/web-v3.endpoint-catalog";
 import { isWebV3Response } from "../src/generated/contracts/web-v3.validation";
@@ -51,7 +57,10 @@ const visibleLanguage = async (
       page.getByRole("heading", { name: ui(language, "ui.cases"), exact: true }),
     ).toBeVisible();
     await expect(
-      page.getByRole("button", { name: ui(language, "ui.openNewCase"), exact: true }),
+      page.getByRole("button", {
+        name: openLabel(language),
+        exact: true,
+      }),
     ).toBeVisible();
     await expect(
       page.getByRole("button", { name: ui(language, "ui.signOut"), exact: true }),

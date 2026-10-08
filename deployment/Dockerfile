@@ -17,7 +17,7 @@ RUN --mount=type=cache,target=/root/.nuget/packages --mount=type=cache,target=/r
     && npm --prefix web run contract:generate \
     && npm --prefix web run sbom \
     && npm --prefix web run build \
-    && node eng/ci/publish/main.mjs build --output /published
+    && node eng/ci/publish/source-export.mjs build --output /published
 
 FROM node AS configuration
 WORKDIR /source

@@ -1,10 +1,10 @@
 import { parseSync } from "oxc-parser";
-import { ruleList } from "../model.mjs";
+import { referencePattern, ruleList } from "../model.mjs";
 import { inline } from "./comments.mjs";
 
 const commentStart = String.raw`(?:\/\/|\/\*+)\s*`;
 const disable = new RegExp(
-  `${commentStart}(?:oxlint|eslint)-disable(?:-(?:next-line|line))?\\s*(?<rules>[^*\\r\\n]*?)(?:\\s+--.*)?(?:\\*\\/)?\\s*$`,
+  `${commentStart}(?:oxlint|eslint)-disable(?:-(?:next-line|line))?\\s*(?<rules>[^*]*?)(?:\\s+--.*)?(?:\\*\\/)?\\s*$`,
   "iu",
 );
 const typescript = new RegExp(
@@ -13,7 +13,7 @@ const typescript = new RegExp(
 );
 const prettier = new RegExp(`${commentStart}(?<rule>prettier-ignore(?:-start|-end)?)\\b`, "iu");
 const stylelint = new RegExp(
-  `${commentStart}stylelint-disable(?:-(?:next-line|line))?\\s*(?<rules>[^*\\r\\n]*?)(?:\\s+--.*)?(?:\\*\\/)?\\s*$`,
+  `${commentStart}stylelint-disable(?:-(?:next-line|line))?\\s*(?<rules>[^*]*?)(?:\\s+--.*)?(?:\\*\\/)?\\s*$`,
   "iu",
 );
 const coverage = new RegExp(
@@ -53,12 +53,21 @@ const syntaxes = [
  * @param {string} comment Comment text including its delimiters.
  * @param {string[]} lines
  * @param {number} index Zero-based line on which the comment starts.
+ * @param {string | null} [reference] Reference proven to be in an actual parsed comment.
  * @returns {import("../model.mjs").Occurrence[]}
  */
-function fromComment(file, comment, lines, index) {
+function fromComment(file, comment, lines, index, reference) {
   return syntaxes.flatMap(({ pattern, tool, rule }) => {
     const match = pattern.exec(comment);
-    return match ? rule(match).map((name) => inline(file, tool, name, lines, index)) : [];
+    return match
+      ? rule(match).map((name) => {
+          const occurrence = inline(file, tool, name, lines, index);
+          if (reference !== undefined) {
+            occurrence.id = reference;
+          }
+          return occurrence;
+        })
+      : [];
   });
 }
 
@@ -76,9 +85,22 @@ export function scanScriptComments(file, text, lines) {
   if (errors.length > 0) {
     return scanStyleComments(file, lines);
   }
+  const commentEnds = new Map(
+    comments.map((comment) => [
+      text.slice(0, comment.end).split("\n").length - 1,
+      text.slice(comment.start, comment.end),
+    ]),
+  );
   return comments.flatMap((comment) => {
     const index = text.slice(0, comment.start).split("\n").length - 1;
-    return fromComment(file, text.slice(comment.start, comment.end), lines, index);
+    const actual = text.slice(comment.start, comment.end);
+    const above =
+      commentEnds
+        .get(index - 1)
+        ?.split("\n")
+        .at(-1) ?? "";
+    const reference = referencePattern.exec(actual) ?? referencePattern.exec(above);
+    return fromComment(file, actual, lines, index, reference?.[1]?.toUpperCase() ?? null);
   });
 }
 
@@ -89,5 +111,10 @@ export function scanScriptComments(file, text, lines) {
  * @returns {import("../model.mjs").Occurrence[]}
  */
 export function scanStyleComments(file, lines) {
-  return lines.flatMap((line, index) => fromComment(file, line, lines, index));
+  const text = lines.join("\n");
+  const comments = text.matchAll(/\/\*[\s\S]*?\*\/|\/\/[^\r\n]*/gu);
+  return [...comments].flatMap((comment) => {
+    const index = text.slice(0, comment.index).split("\n").length - 1;
+    return fromComment(file, comment[0], lines, index);
+  });
 }

@@ -48,9 +48,12 @@ primary_actual="$(docker exec "${primary_container}" psql -X -U postgres -A -t -
 witness_actual="$(docker exec "${witness_container}" psql -X -U postgres -A -t -v ON_ERROR_STOP=1 -c "${witness_query}")"
 [[ "${primary_actual}" == "${expected_installation}:${expected_lineage}:41" ]]
 [[ "${witness_actual}" == "${expected_installation}:${expected_lineage}:1:43" ]]
+checkpoint_hash="$(jq -er '.witnessCheckpoint.hash' "${manifest}")"
+checkpoint_sequence="$(jq -er '.witnessCheckpoint.sequence' "${manifest}")"
+checkpoint_epoch="$(jq -er '.epoch' "${manifest}")"
 jq -n --arg installation "${expected_installation}" --arg lineage "${expected_lineage}" \
-  --arg hash "$(jq -er '.witnessCheckpoint.hash' "${manifest}")" \
-  --argjson cutoff "$(jq -er '.witnessCheckpoint.sequence' "${manifest}")" \
-  --argjson epoch "$(jq -er '.epoch' "${manifest}")" \
+  --arg hash "${checkpoint_hash}" \
+  --argjson cutoff "${checkpoint_sequence}" \
+  --argjson epoch "${checkpoint_epoch}" \
   '{format:"claimcore-restored-pair-report-1",installationId:$installation,lineageId:$lineage,epoch:$epoch,witnessCutoff:$cutoff,witnessHash:$hash,scope:"synthetic-only",recoveredDataChecked:true,pairCompared:true,catalogVerified:false,dataAuditVerified:false,walTimelineVerified:false,authorityReconciled:false,pendingIntents:null}' >"${report}"
 chmod 600 "${report}"

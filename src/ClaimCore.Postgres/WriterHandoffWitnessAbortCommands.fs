@@ -141,10 +141,7 @@ module internal WriterHandoffWitnessAbortCommands =
                 use command =
                     new NpgsqlCommand(
                         "SELECT sequence,entry_hash,payload_sha256 "
-                        + "FROM claimcore_witness.abort_writer_handoff("
-                        + "@installation,@lineage,@epoch,@handoff,@prepareSequence,@prepareHash,"
-                        + "@oldCapability,@canonical,@signatureOne,@signatureTwo,@keyOne,@keyTwo,"
-                        + "@key,@ciphertext)",
+                        + "FROM claimcore_witness.abort_writer_handoff(ROW(@installation,@lineage,@epoch)::claimcore_witness.installation_identity,ROW(@handoff,@prepareSequence,@prepareHash)::claimcore_witness.journal_ticket,ROW(@canonical,@signatureOne,@signatureTwo,@keyOne,@keyTwo)::claimcore_witness.handoff_abort_decision,ROW(@key,@ciphertext,@oldCapability)::claimcore_witness.writer_delivery)",
                         connection
                     )
 
@@ -180,8 +177,7 @@ module internal WriterHandoffWitnessAbortCommands =
 
             use command =
                 new NpgsqlCommand(
-                    "SELECT claimcore_witness.release_aborted_writer_handoff("
-                    + "@installation,@lineage,@epoch,@handoff,@abortSequence,@abortHash,@oldCapability)",
+                    "SELECT claimcore_witness.release_aborted_writer_handoff(ROW(@installation,@lineage,@epoch)::claimcore_witness.installation_identity,ROW(@handoff,@abortSequence,@abortHash)::claimcore_witness.journal_ticket,@oldCapability)",
                     connection
                 )
 

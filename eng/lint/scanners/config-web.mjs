@@ -14,9 +14,10 @@ export function configOccurrence(file, tool, rule) {
 /**
  * @param {string} file
  * @param {unknown} rules
+ * @param {string} [scope] Exact override selectors, absent for global rules.
  * @returns {import("../model.mjs").Occurrence[]}
  */
-function disabledRules(file, rules) {
+function disabledRules(file, rules, scope = "") {
   if (!isObject(rules)) {
     return [];
   }
@@ -25,7 +26,24 @@ function disabledRules(file, rules) {
       const level = Array.isArray(setting) ? setting[0] : setting;
       return level === "off" || level === 0 || level === "allow";
     })
-    .map(([name]) => configOccurrence(file, "oxlint", name));
+    .map(([name]) => configOccurrence(file, "oxlint", `${scope}${name}`));
+}
+
+/** @param {string} file @param {unknown} entry */
+function overrideExceptions(file, entry) {
+  if (!isObject(entry)) {
+    throw new Error("Oxlint override must be an object.");
+  }
+  const { files, excludeFiles: excluded = [] } = entry;
+  if (!Array.isArray(files) || !Array.isArray(excluded)) {
+    throw new Error("Oxlint override must name exact selector arrays.");
+  }
+  const scope = `override:${JSON.stringify(files)}:${JSON.stringify(excluded)}:`;
+  const found = disabledRules(file, entry["rules"], scope);
+  for (const target of excluded) {
+    found.push(configOccurrence(file, "oxlint", `${scope}excludeFiles:${String(target)}`));
+  }
+  return found;
 }
 
 /**
@@ -46,7 +64,7 @@ export function scanOxlintConfig(file, text) {
     ...patterns.map((pattern) =>
       configOccurrence(file, "oxlint", `ignorePatterns:${String(pattern)}`),
     ),
-    ...overrides.flatMap((entry) => (isObject(entry) ? disabledRules(file, entry["rules"]) : [])),
+    ...overrides.flatMap((entry) => overrideExceptions(file, entry)),
   ];
 }
 
@@ -59,7 +77,17 @@ export function scanOxlintConfig(file, text) {
 export function scanTypeScriptConfig(file, text) {
   const config = parseJsonc(text);
   const exclude = isObject(config) && Array.isArray(config["exclude"]) ? config["exclude"] : [];
-  return exclude.map((pattern) => configOccurrence(file, "tsc", `exclude:${String(pattern)}`));
+  const found = exclude.map((pattern) =>
+    configOccurrence(file, "tsc", `exclude:${String(pattern)}`),
+  );
+  const options =
+    isObject(config) && isObject(config["compilerOptions"]) ? config["compilerOptions"] : {};
+  for (const key of ["noCheck", "skipLibCheck"]) {
+    if (options[key] === true) {
+      found.push(configOccurrence(file, "tsc", key));
+    }
+  }
+  return found;
 }
 
 /**

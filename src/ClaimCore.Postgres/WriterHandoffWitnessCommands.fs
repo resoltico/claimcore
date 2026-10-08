@@ -108,10 +108,7 @@ module internal WriterHandoffWitnessCommands =
                 use command =
                     new NpgsqlCommand(
                         "SELECT sequence,entry_hash,payload_sha256 "
-                        + "FROM claimcore_witness.prepare_writer_handoff("
-                        + "@installation,@lineage,@epoch,@handoff,@oldGeneration,"
-                        + "@expectedSequence,@expectedHash,@newCapability,@checkpointKey,"
-                        + "@canonical,@signature,@approvalOne,@approvalTwo,@key,@ciphertext,@oldCapability)",
+                        + "FROM claimcore_witness.prepare_writer_handoff(ROW(@installation,@lineage,@epoch)::claimcore_witness.installation_identity,ROW(@handoff,@oldGeneration,@newCapability)::claimcore_witness.handoff_plan,ROW(@expectedSequence,@expectedHash)::claimcore_witness.journal_tip,ROW(@canonical,@signature,@checkpointKey,@approvalOne,@approvalTwo)::claimcore_witness.handoff_approval,ROW(@key,@ciphertext,@oldCapability)::claimcore_witness.writer_delivery)",
                         connection
                     )
 
@@ -177,10 +174,7 @@ module internal WriterHandoffWitnessCommands =
                 use command =
                     new NpgsqlCommand(
                         "SELECT sequence,entry_hash,payload_sha256 "
-                        + "FROM claimcore_witness.commit_writer_handoff("
-                        + "@installation,@lineage,@epoch,@handoff,@prepareSequence,"
-                        + "@prepareHash,@oldCapability,@newCapability,@canonical,@signature,"
-                        + "@key,@ciphertext)",
+                        + "FROM claimcore_witness.commit_writer_handoff(ROW(@installation,@lineage,@epoch)::claimcore_witness.installation_identity,ROW(@handoff,@prepareSequence,@prepareHash)::claimcore_witness.journal_ticket,ROW(@oldCapability,@newCapability)::claimcore_witness.writer_capabilities,ROW(@canonical,@signature)::claimcore_witness.signed_candidate,ROW(@key,@ciphertext)::claimcore_witness.journal_payload)",
                         connection
                     )
 

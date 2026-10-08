@@ -83,13 +83,22 @@ const expectPrefill = () => {
 };
 
 const expectDirtiness = () => {
-  expect(isDirty({ a: "" })).toBe(false);
-  expect(isDirty({ a: "x" })).toBe(true);
-  expect(isDirty({ a: "", b: "x" })).toBe(true);
-  expect(isDirty({ registration: keep, decision: keep, payment: keep })).toBe(false);
+  const baseline = { a: "prefilled" };
+  expect(isDirty({ a: "prefilled" }, baseline)).toBe(false);
+  expect(isDirty({ a: "" }, baseline)).toBe(true);
+  expect(isDirty({ a: "1.0000" }, { a: "1" })).toBe(true);
+  expect(isDirty({ a: "" }, { a: "" })).toBe(false);
+  expect(isDirty({ a: "x" }, { a: "" })).toBe(true);
+  expect(isDirty({ a: "", b: "x" }, { a: "" })).toBe(true);
+  expect(isDirty({}, { a: "" })).toBe(true);
+  const groups = { registration: keep, decision: keep, payment: keep };
+  expect(isDirty(groups, groups)).toBe(false);
+  expect(isDirty({ ...groups, payment: { mode: "CLEAR", values: {} } }, groups)).toBe(true);
   expect(
-    isDirty({ registration: keep, decision: keep, payment: { mode: "CLEAR", values: {} } }),
+    isDirty({ ...groups, registration: { ...keep, values: { claimantName: "edited" } } }, groups),
   ).toBe(true);
+  expect(isDirty(groups, {})).toBe(true);
+  expect(isDirty({}, groups)).toBe(true);
 };
 
 const expectFrozenRequests = () => {

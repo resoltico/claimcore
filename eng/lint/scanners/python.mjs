@@ -41,7 +41,11 @@ function codeOf(raw, state) {
     state.triple = "";
   }
   const opening = /("""|''')/u.exec(line);
-  if (opening && !line.slice((opening.index ?? 0) + 3).includes(opening[1] ?? "")) {
+  if (
+    opening &&
+    !withoutStrings(line.slice(0, opening.index)).includes("#") &&
+    !line.slice((opening.index ?? 0) + 3).includes(opening[1] ?? "")
+  ) {
     state.triple = opening[1] ?? "";
     line = line.slice(0, opening.index);
   }
@@ -56,18 +60,16 @@ function codeOf(raw, state) {
  */
 export function scanPython(file, lines) {
   const state = { triple: "" };
-  return lines.flatMap((raw, index) => {
-    const code = codeOf(raw, state);
-    if (code === null) {
-      return [];
-    }
+  const sourceLines = lines.map((raw) => codeOf(raw, state) ?? "");
+  return sourceLines.flatMap((code, index) => {
     const listed = listedRules.flatMap(({ pattern, tool }) => {
       const match = pattern.exec(code);
-      return match ? inlineRules(file, tool, match.groups?.["rules"], lines, index) : [];
+      return match ? inlineRules(file, tool, match.groups?.["rules"], sourceLines, index) : [];
     });
     const others = otherTools
       .filter((other) => other.pattern.test(code))
-      .map((other) => inline(file, other.tool, other.rule, lines, index));
-    return [...listed, ...others];
+      .map((other) => inline(file, other.tool, other.rule, sourceLines, index));
+    listed.push(...others);
+    return listed;
   });
 }

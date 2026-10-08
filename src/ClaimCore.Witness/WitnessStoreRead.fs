@@ -18,8 +18,7 @@ module internal WitnessStoreRead =
         task {
             use command =
                 new NpgsqlCommand(
-                    "SELECT claimcore_witness.acquire_read_fence("
-                    + "@installation,@lineage,@epoch,@writerCapability)",
+                    "SELECT claimcore_witness.acquire_read_fence(ROW(@installation,@lineage,@epoch)::claimcore_witness.installation_identity,@writerCapability)",
                     connection,
                     transaction
                 )

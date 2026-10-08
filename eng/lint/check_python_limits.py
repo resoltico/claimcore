@@ -37,7 +37,7 @@ def oversized(path: Path) -> list[str]:
 def main(argv: list[str]) -> int:
     """Check every Python file under the roots, or the files named on the command line."""
     files = [Path(name) for name in argv] or sorted(
-        path for root in ROOTS for path in Path(root).glob("*.py")
+        path for root in ROOTS for path in Path(root).rglob("*.py")
     )
     findings = [message for path in files for message in oversized(path)]
     for message in findings:

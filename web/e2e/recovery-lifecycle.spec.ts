@@ -50,7 +50,7 @@ const inspect = async (page: Page, identity: PreparedIdentity): Promise<void> =>
 
 const navigateRecovery = async (page: Page): Promise<void> => {
   await progress("recovery-navigation");
-  await expect(page.locator("main.app-shell header small")).toBeVisible();
+  await expect(page.locator("main.app-shell header details > summary")).toBeVisible();
   const navigation = page.getByRole("button", { name: "Recovery", exact: true });
   await expect(navigation).toBeEnabled();
   await navigation.click();
@@ -73,23 +73,28 @@ const preparedDecision = async (page: Page, caseReference: string): Promise<Prep
     "Amount to be paid": "300.25",
     "Currency of amount to be paid": "EUR",
   });
-  await keepForRecovery(page);
+  await page.getByRole("button", { name: "Back to editing; keep for Recovery" }).click();
+  await page.getByRole("button", { name: "Back to case" }).click();
+  const discard = page.getByRole("dialog", { name: "Discard these draft changes?" });
+  await expect(discard).toContainText("Retained requests stay in Recovery");
+  await discard.getByRole("button", { name: "Discard and leave" }).click();
+  await expect(page.getByRole("heading", { name: "Case detail" })).toBeVisible();
   await navigateRecovery(page);
   return identity;
 };
 
 const resolveAndObserve = async (page: Page, identity: PreparedIdentity): Promise<void> => {
   await inspect(page, identity);
-  await page.getByRole("button", { name: "Resolve exact preparation" }).click();
+  await page.getByRole("button", { name: "Try to record this request" }).click();
   const resolve = page.getByRole("dialog", { name: "Try to record the reviewed request?" });
   await expect(resolve).toContainText(identity.requestSha256);
   await expectAccessible(page);
-  await resolve.getByRole("button", { name: "Try to record this exact request" }).click();
+  await resolve.getByRole("button", { name: "Try to record this request" }).click();
   await expect(page.getByRole("status")).toContainText("Accepted exact operation");
   await expect(page.getByRole("dialog", { name: "Recovery details" })).toHaveCount(0);
   await selectRecoveryView(page, "TERMINAL");
   await inspect(page, identity);
-  await expect(page.getByRole("button", { name: "Resolve exact preparation" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Try to record this request" })).toHaveCount(0);
   await page
     .getByRole("dialog", { name: "Recovery details" })
     .getByRole("button", { name: "Close inspection" })
@@ -113,7 +118,7 @@ test("exports and retains the encrypted recovery artifact through published Web"
   await previewAndRetain(page, artifacts.envelope);
   await progress("recovery-envelope-retained");
   await inspect(page, prepared);
-  await expect(page.getByRole("button", { name: "Resolve exact preparation" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Try to record this request" })).toBeVisible();
 });
 
 test("resolves and dismisses exact preparations with observed server state", async ({ page }) => {
@@ -130,13 +135,13 @@ test("resolves and dismisses exact preparations with observed server state", asy
   await keepForRecovery(page);
   await navigateRecovery(page);
   await inspect(page, dismissible);
-  await page.getByRole("button", { name: "Dismiss preparation" }).click();
+  await page.getByRole("button", { name: "Stop future recording of this request" }).click();
   const dismiss = page.getByRole("dialog", {
     name: "Permanently end this request’s future authority?",
   });
   await expect(dismiss).toContainText(dismissible.requestSha256);
   await expectAccessible(page);
-  await dismiss.getByRole("button", { name: "Permanently end future authority" }).click();
+  await dismiss.getByRole("button", { name: "Stop future recording of this request" }).click();
   await expect(page.getByRole("status")).toBeVisible();
 });
 
@@ -154,14 +159,14 @@ test("preserves operation identity after a dropped published submit response", a
   await expect(page.getByRole("dialog", { name: "Recovery details" })).toContainText(
     "Observed accepted operation",
   );
-  await expect(page.getByRole("button", { name: "Resolve exact preparation" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Try to record this request" })).toHaveCount(0);
   await page
     .getByRole("dialog", { name: "Recovery details" })
     .getByRole("button", { name: "Close inspection" })
     .click();
   await page.getByRole("button", { name: "Operations", exact: true }).click();
   await expect(page.getByLabel("Exact operation ID")).toHaveValue(identity.operationId);
-  await page.getByRole("button", { name: "Observe operation" }).click();
+  await page.getByRole("button", { name: "Look up recorded result" }).click();
   await expect(
     page.getByText(`Accepted operation ${identity.operationId}`, { exact: false }),
   ).toBeVisible();
@@ -244,10 +249,10 @@ test("recovers an exact preparation after its published response is dropped", as
   await expect(row).toHaveCount(1);
   await row.getByRole("button", { name: "Inspect" }).click();
   await expect(page.getByRole("dialog", { name: "Recovery details" })).toContainText(operationId);
-  await page.getByRole("button", { name: "Resolve exact preparation" }).click();
+  await page.getByRole("button", { name: "Try to record this request" }).click();
   await page
     .getByRole("dialog", { name: "Try to record the reviewed request?" })
-    .getByRole("button", { name: "Try to record this exact request" })
+    .getByRole("button", { name: "Try to record this request" })
     .click();
   await expect(page.getByRole("status")).toContainText("Accepted exact operation");
   await observeAcceptedPrepareReplay(page, operationId, originalBody);

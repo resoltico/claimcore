@@ -2,6 +2,7 @@ namespace ClaimCore.Contracts
 
 open System.Globalization
 open ClaimCore.Application
+open ClaimCore.Domain
 
 [<RequireQualifiedAccess>]
 type DiagnosticHole =
@@ -19,6 +20,9 @@ type DiagnosticTextPart =
 /// The existing English presentation belongs to the outward adapter, never to core meaning.
 /// Native rendering and build-only catalog projection share literal text and closed parameter holes.
 module RejectionPresentation =
+    let private action kind =
+        "“" + (CommandDefinitions.forKind kind).Label + "”"
+
     let private integer (value: int) =
         value.ToString(CultureInfo.InvariantCulture)
 
@@ -85,7 +89,12 @@ module RejectionPresentation =
             RejectionDiagnosticId.CaseAlreadyExists, "The case reference already exists."
             RejectionDiagnosticId.VersionConflict,
             "Read the current case before making a changed request."
-            RejectionDiagnosticId.CaseClosed, "Reopen the case before changing its facts."
+            RejectionDiagnosticId.CaseClosed,
+            "This action cannot change a closed case. Use "
+            + action CommandKind.CorrectCase
+            + " for factual corrections while keeping its status, or "
+            + action CommandKind.Reopen
+            + " when you intend to resume ordinary case work."
             RejectionDiagnosticId.AlreadyClosed, "The case is already closed."
             RejectionDiagnosticId.AlreadyOpened, "The case is already open."
         ]
@@ -93,7 +102,10 @@ module RejectionPresentation =
     let private progress =
         [
             RejectionDiagnosticId.AmendmentRequiresUndecided,
-            "Withdraw an unpaid decision before amending registration."
+            action CommandKind.AmendRegistration
+            + " requires an undecided case. Use "
+            + action CommandKind.CorrectCase
+            + " to correct recorded registration while keeping its decision."
             RejectionDiagnosticId.CorrectionNoChanges,
             "Choose at least one factual correction that changes the current case."
             RejectionDiagnosticId.CorrectionRequiresExistingValue,
@@ -102,7 +114,12 @@ module RejectionPresentation =
             RejectionDiagnosticId.PaymentAlreadyRecorded, "ClaimCore records one full payment."
             RejectionDiagnosticId.PaymentNotRecorded, "There is no payment record to clear."
             RejectionDiagnosticId.DecisionAlreadyPaid,
-            "A recorded payment prevents changing its decision."
+            action CommandKind.Decide
+            + " and "
+            + action CommandKind.WithdrawDecision
+            + " cannot change a paid decision. Use "
+            + action CommandKind.CorrectCase
+            + " for a factual correction, with explicit payment reaffirmation or clearing when replacing a paid decision."
             RejectionDiagnosticId.ZeroDecisionCannotBePaid, "A zero decision is not a payment."
         ]
 

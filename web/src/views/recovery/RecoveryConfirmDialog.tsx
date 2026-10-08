@@ -15,8 +15,8 @@ const descriptionKeys = {
   DISMISS: "ui.dismissConsequence",
 } as const;
 const confirmKeys = {
-  RESOLVE: "ui.confirmResolve",
-  DISMISS: "ui.confirmDismiss",
+  RESOLVE: "ui.resolveExact",
+  DISMISS: "ui.dismissPreparation",
   EXPORT: "ui.confirmExport",
 } as const;
 

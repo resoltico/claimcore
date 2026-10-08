@@ -5,6 +5,7 @@ import { reconcile } from "./match.mjs";
 import { Report } from "./model.mjs";
 import { checkFSharpLint, checkPythonPolicy } from "./policies/limits.mjs";
 import { checkOxlintLimits } from "./policies/oxlint.mjs";
+import { checkStyleLimits } from "./policies/styles.mjs";
 import { checkSource } from "./policies/sources.mjs";
 import { loadRegistry } from "./registry.mjs";
 import { scanFile } from "./scan.mjs";
@@ -23,7 +24,7 @@ export function checkRepository(root, registryPath = join(root, "config/lint-exc
   const occurrences = [];
   for (const path of repositoryFiles(root, generated)) {
     if (
-      !/\.(?:fs|fsi|fsx|fsproj|props|targets|ts|tsx|js|mjs|cjs|css|json|jsonc|toml|py|sh|yml|yaml|editorconfig)$|(?:^|\/)(?:\.[a-z]+ignore|\.shellcheckrc|\.editorconfig)$/u.test(
+      !/\.(?:fs|fsi|fsx|fsproj|props|targets|ts|tsx|js|mjs|cjs|css|json|jsonc|toml|c|h|py|sh|ps1|sql|yml|yaml|editorconfig)$|(?:^|\/)(?:\.[a-z]+ignore|\.shellcheckrc|\.editorconfig)$/u.test(
         path,
       )
     ) {
@@ -40,6 +41,7 @@ export function checkRepository(root, registryPath = join(root, "config/lint-exc
     }
   }
   checkPythonPolicy(root, report);
+  checkStyleLimits(root, report);
   reconcile(registry, occurrences, report);
   return { report, registered: registry.exceptions.length, active: occurrences.length };
 }

@@ -97,7 +97,7 @@ it("keeps existing references immutable and delegates a reviewed commit", async 
     />,
   );
   expect(screen.queryByLabelText("Handler's case reference", { exact: true })).toBeNull();
-  expect(screen.getByText(/Case reference:/u)).toHaveTextContent(fields.caseReference);
+  expect(screen.getByText(/Handler's case reference:/u)).toHaveTextContent(fields.caseReference);
   await user.click(screen.getByRole("button", { name: "Review changes" }));
   await user.click(await screen.findByRole("checkbox", { name: "I confirm these changes." }));
   await user.click(screen.getByRole("button", { name: "Record changes" }));

@@ -8,6 +8,8 @@ export function reconcile(registry, occurrences, report) {
   const byId = new Map(registry.exceptions.map((entry) => [entry.id, entry]));
   /** @type {Map<string, number>} */
   const counts = new Map();
+  /** @type {Map<string, Map<string, number>>} */
+  const matchedRules = new Map();
   for (const occurrence of occurrences) {
     const entry =
       occurrence.kind === "inline"
@@ -15,10 +17,32 @@ export function reconcile(registry, occurrences, report) {
         : configEntry(occurrence, registry, report);
     if (entry) {
       counts.set(entry.id, (counts.get(entry.id) ?? 0) + 1);
+      const rules = matchedRules.get(entry.id) ?? new Map();
+      rules.set(occurrence.rule, (rules.get(occurrence.rule) ?? 0) + 1);
+      matchedRules.set(entry.id, rules);
     }
   }
+  checkCounts(registry, counts, matchedRules, report);
+}
+
+/**
+ * @param {import("./model.mjs").Registry} registry
+ * @param {Map<string, number>} counts
+ * @param {Map<string, Map<string, number>>} matchedRules
+ * @param {import("./model.mjs").Report} report
+ */
+function checkCounts(registry, counts, matchedRules, report) {
   for (const entry of registry.exceptions) {
     const seen = counts.get(entry.id) ?? 0;
+    for (const rule of entry.rules) {
+      const matched = matchedRules.get(entry.id)?.get(rule) ?? 0;
+      const expected = entry.rules.length === 1 ? entry.count : 1;
+      if (matched !== expected) {
+        report.add(
+          `Rule ${rule} in exception ${entry.id} requires ${expected} occurrence(s), found ${matched}.`,
+        );
+      }
+    }
     if (seen === 0) {
       report.add(
         `Stale exception ${entry.id}: no ${entry.tool} suppression of ${entry.rules.join(", ")} remains in ${entry.file}.`,

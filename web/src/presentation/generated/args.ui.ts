@@ -16,13 +16,11 @@ export type UiArgs = {
   "ui.loadingDefinition": Readonly<Record<string, never>>;
   "ui.loginInstructions": Readonly<Record<string, never>>;
   "ui.signIn": Readonly<Record<string, never>>;
-  "ui.caseReference": Readonly<Record<string, never>>;
   "ui.caseRow": { readonly revision: string; readonly status: string };
-  "ui.exactCaseReference": Readonly<Record<string, never>>;
+  "ui.exactCaseReference": { readonly label: string };
   "ui.findCase": Readonly<Record<string, never>>;
   "ui.loading": Readonly<Record<string, never>>;
   "ui.reloadCases": Readonly<Record<string, never>>;
-  "ui.openNewCase": Readonly<Record<string, never>>;
   "ui.loadingCases": Readonly<Record<string, never>>;
   "ui.moreCases": Readonly<Record<string, never>>;
   "ui.acceptedHistory": Readonly<Record<string, never>>;
@@ -64,7 +62,7 @@ export type UiArgs = {
   "ui.lifecycleHoldReview": { readonly date: string };
   "ui.lifecycleVoidApproval": Readonly<Record<string, never>>;
   "ui.backToCases": Readonly<Record<string, never>>;
-  "ui.exactReference": { readonly reference: string };
+  "ui.exactReference": { readonly label: string; readonly reference: string };
   "ui.unchangedUntilSubmit": Readonly<Record<string, never>>;
   "ui.observedReceipt": {
     readonly actor: string;
@@ -83,7 +81,6 @@ export type UiArgs = {
   "ui.revision": { readonly revision: string };
   "ui.revisionLabel": Readonly<Record<string, never>>;
   "ui.characterWarning": { readonly characters: string };
-  "ui.caseFieldsContext": { readonly context: string };
   "ui.acceptedSummary": Readonly<Record<string, never>>;
   "ui.copy": { readonly label: string };
   "ui.copied": { readonly label: string };
@@ -93,7 +90,7 @@ export type UiArgs = {
   "ui.amountHint": { readonly maximum: string };
   "ui.currencyHint": { readonly length: string };
   "ui.command": Readonly<Record<string, never>>;
-  "ui.reference": { readonly reference: string };
+  "ui.reference": { readonly label: string; readonly reference: string };
   "ui.noAuthoredValues": Readonly<Record<string, never>>;
   "ui.action": Readonly<Record<string, never>>;
   "ui.correctionHint": Readonly<Record<string, never>>;
@@ -163,8 +160,6 @@ export type UiArgs = {
   "ui.dismissTitle": Readonly<Record<string, never>>;
   "ui.exportWarning": Readonly<Record<string, never>>;
   "ui.working": Readonly<Record<string, never>>;
-  "ui.confirmResolve": Readonly<Record<string, never>>;
-  "ui.confirmDismiss": Readonly<Record<string, never>>;
   "ui.confirmExport": Readonly<Record<string, never>>;
   "ui.artifact": { readonly digest: string; readonly kind: string };
   "ui.importTarget": {
@@ -172,7 +167,6 @@ export type UiArgs = {
     readonly reference: string;
     readonly revision: string;
   };
-  "ui.importHint": Readonly<Record<string, never>>;
   "ui.importEnvelope": Readonly<Record<string, never>>;
   "ui.importTitle": Readonly<Record<string, never>>;
   "ui.importDescription": Readonly<Record<string, never>>;
@@ -184,4 +178,11 @@ export type UiArgs = {
   "ui.resolveConsequence": Readonly<Record<string, never>>;
   "ui.dismissConsequence": Readonly<Record<string, never>>;
   "ui.canonicalCopyHint": Readonly<Record<string, never>>;
+  "ui.leaveDraftDescription": Readonly<Record<string, never>>;
+  "ui.discardAndLeave": Readonly<Record<string, never>>;
+  "ui.technicalDetails": Readonly<Record<string, never>>;
+  "ui.productVersion": { readonly version: string };
+  "ui.semanticIdentity": { readonly digest: string };
+  "ui.webIdentity": { readonly digest: string };
+  "ui.fieldHelp": Readonly<Record<string, never>>;
 };

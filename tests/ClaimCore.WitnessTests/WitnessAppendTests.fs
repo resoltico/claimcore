@@ -68,7 +68,7 @@ let rollbackSequence =
 
             use command =
                 new NpgsqlCommand(
-                    "SELECT sequence FROM claimcore_witness.append(@i,@l,@e,@o,'INSTALLATION',NULL,'INTENT',@k,@p,@cap)",
+                    "SELECT sequence FROM claimcore_witness.append(ROW(@i,@l,@e)::claimcore_witness.installation_identity,ROW('INSTALLATION',NULL)::claimcore_witness.journal_subject,ROW(@o,'INTENT',@k,@p)::claimcore_witness.journal_request,@cap)",
                     db,
                     tx
                 )

@@ -47,7 +47,9 @@ it("keeps ICU plural grammar independent from the number-display locale", () => 
   expect(translate({ ...defaults, language: "en-XA" }, "ui.attemptCount", { count: 2 })).toContain(
     "2",
   );
-  expect(translate({ ...defaults, language: "en-XA" }, "ui.caseReference")).toMatch(/^⟦.+⟧$/u);
+  expect(translate({ ...defaults, language: "en-XA" }, "field.caseReference.label")).toMatch(
+    /^⟦.+⟧$/u,
+  );
 });
 
 it("crosses English and Arabic grammar with independent displayed digits", () => {
@@ -78,10 +80,16 @@ it("refuses unknown or malformed message arguments without echoing the supplied 
   }
   const canonical = "<unsafe>\u0308-CANONICAL";
   expect(
-    translate({ ...defaults, language: "ar" }, "ui.reference", { reference: canonical }),
+    translate({ ...defaults, language: "ar" }, "ui.reference", {
+      label: "Reference",
+      reference: canonical,
+    }),
   ).toContain(`\u2068${canonical}\u2069`);
   expect(
-    translate({ ...defaults, language: "en-XA" }, "ui.reference", { reference: canonical }),
+    translate({ ...defaults, language: "en-XA" }, "ui.reference", {
+      label: "Reference",
+      reference: canonical,
+    }),
   ).toContain(canonical);
 });
 
@@ -176,8 +184,14 @@ it("requires every supplied message argument to be an exact own property", () =>
   expect(renderIsolatedValue(defaults, "ui.reference", inherited, { exact: "inherited" })).toEqual([
     renderKey(defaults, "notice.unknownDiagnostic"),
   ]);
-  expect(renderKey(defaults, "ui.reference", { reference: "own" })).toBe("Case reference: own");
-  expect(renderKey(defaults, "ui.reference", { reference: "own", unrelated: "foreign" })).toBe(
-    renderKey(defaults, "notice.unknownDiagnostic"),
+  expect(renderKey(defaults, "ui.reference", { label: "Reference", reference: "own" })).toBe(
+    "Reference: own",
   );
+  expect(
+    renderKey(defaults, "ui.reference", {
+      label: "Reference",
+      reference: "own",
+      unrelated: "foreign",
+    }),
+  ).toBe(renderKey(defaults, "notice.unknownDiagnostic"));
 });

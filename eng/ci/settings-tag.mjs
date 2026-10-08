@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { ref } from "./settings-rules.mjs";
+import { ref, restrictsUpdates } from "./settings-rules.mjs";
 
 /** @typedef {import("./settings-rules.mjs").Json} Json */
 /** @typedef {import("./settings-rules.mjs").Operation} Operation */
@@ -17,9 +17,8 @@ export function tagOperation(snapshot) {
     (/** @type {Json} */ rule) =>
       rule.enforcement === "active" &&
       rule.bypass_actors.length === 0 &&
-      ["update", "deletion"].every((type) =>
-        rule.rules.some((/** @type {Json} */ item) => item.type === type),
-      ),
+      rule.rules.some(restrictsUpdates) &&
+      rule.rules.some((/** @type {Json} */ item) => item.type === "deletion"),
   );
   if (protectedTags) {
     return null;

@@ -1,12 +1,4 @@
 {
-  "clean": [
-    "artifacts/sbom",
-    "artifacts/frontend",
-    "artifacts/frontend-product",
-    "artifacts/test-results",
-    "artifacts/measured-bin",
-    "artifacts/frontend-contracts"
-  ],
   "jobs": [
     {
       "id": "setup",
@@ -118,7 +110,14 @@
         "^eng/(Run-PublishedCliAcceptance|Run-PublishedWebE2E|Generate-SyntheticWebTls|PublishedWebE2E-Setup)\\.sh$",
         "^eng/oidc/",
         "^eng/ci/publish/",
-        "^web/"
+        "^web/",
+        "^eng/PrivateQualificationPaths\\.sh$",
+        "^eng/PublicationInputs\\.(fsx|targets)$",
+        "^config/publication-inputs\\.json$",
+        "^Directory\\.(Build\\.(props|targets)|Packages\\.props)$",
+        "^NuGet\\.Config$",
+        "^global\\.json$",
+        "^eng/PublicationRestoreGraph\\.fsx$"
       ]
     },
     {
@@ -148,16 +147,17 @@
         "^\\.editorconfig$",
         "^\\.github/"
       ]
-    }
-  ],
-  "notLocal": [
-    {
-      "family": "browser",
-      "reason": "The three published-browser lifecycles need the synthetic OIDC fixture and three browser engines; run eng/Run-PublishedWebE2E.sh by hand."
     },
     {
-      "family": "coverage",
-      "reason": "Merged coverage needs every producer, including the browser lifecycles; CI merges it."
+      "id": "browser-coverage",
+      "title": "All published browser engines and exact same-run merged production coverage",
+      "mirrors": ["browser", "coverage"],
+      "after": ["tests-postgres", "frontend-gates"],
+      "argv": ["bash", "eng/Run-LocalBrowserCoverage.sh"],
+      "tools": ["docker"],
+      "optional": true,
+      "scope": null
     }
-  ]
+  ],
+  "notLocal": []
 }

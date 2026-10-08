@@ -29,7 +29,7 @@ let private witnessCase10 =
 
             run
                 owner
-                "REVOKE EXECUTE ON FUNCTION claimcore_witness.append(uuid,uuid,bigint,uuid,text,uuid,text,uuid,bytea,bytea) FROM claimcore_witness_writer"
+                "REVOKE EXECUTE ON FUNCTION claimcore_witness.append(claimcore_witness.installation_identity,claimcore_witness.journal_subject,claimcore_witness.journal_request,bytea) FROM claimcore_witness_writer"
 
             Expect.throws
                 (fun () -> (store.Admit(cancellation) |> await))
@@ -37,13 +37,13 @@ let private witnessCase10 =
 
             run
                 owner
-                "GRANT EXECUTE ON FUNCTION claimcore_witness.append(uuid,uuid,bigint,uuid,text,uuid,text,uuid,bytea,bytea) TO claimcore_witness_writer"
+                "GRANT EXECUTE ON FUNCTION claimcore_witness.append(claimcore_witness.installation_identity,claimcore_witness.journal_subject,claimcore_witness.journal_request,bytea) TO claimcore_witness_writer"
 
             (store.Admit(cancellation) |> await)
 
             run
                 owner
-                "ALTER FUNCTION claimcore_witness.append(uuid,uuid,bigint,uuid,text,uuid,text,uuid,bytea,bytea) SET search_path = public"
+                "ALTER FUNCTION claimcore_witness.append(claimcore_witness.installation_identity,claimcore_witness.journal_subject,claimcore_witness.journal_request,bytea) SET search_path = public"
 
             Expect.throws
                 (fun () -> (store.Admit(cancellation) |> await))

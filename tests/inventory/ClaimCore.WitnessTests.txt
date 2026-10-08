@@ -19,4 +19,10 @@ ClaimCore witness PostgreSQL.[CC-WIT-001] unsafe durability fails before append
 ClaimCore witness PostgreSQL.[CC-WIT-001] weaker same-name constraint closes admission
 ClaimCore witness PostgreSQL.[CC-WIT-001] writer cannot invoke owner-only witness functions
 ClaimCore witness PostgreSQL.[CC-WIT-001] writer capability and pending handoff fence every append
+[CC-WIT-001] prepared owner handoff retry binds its exact installation and historical ticket
 [CC-WIT-001] witness rotation rejects reused material and ambiguous key files
+witness SQL authority.[CC-WIT-001] every owner entry and private helper denies actual writer and auditor execution
+witness SQL authority.[CC-WIT-001] failure after journal insert rolls back payload and tip without consuming sequence
+witness SQL authority.[CC-WIT-001] helper execute and composite usage drift close admission and invoker authority remains confined
+witness SQL authority.[CC-WIT-001] owner role membership closes ordinary witness admission
+witness SQL authority.[CC-WIT-001] whole and partial null proofs refuse exact retry while settlement inherits nullable subject

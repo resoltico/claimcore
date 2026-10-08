@@ -23,6 +23,11 @@ const pythonPylintLimits = [
   ["max-positional-args", 5],
   ["max-statements", 50],
 ];
+/** @param {unknown} value @param {number} maximum */
+function validCeiling(value, maximum) {
+  return typeof value === "number" && Number.isInteger(value) && value > 0 && value <= maximum;
+}
+
 const nestedExclusion = /(ignore|exclude|suppress|allowed)/iu;
 
 /**
@@ -73,7 +78,7 @@ export function checkFSharpLint(root, generated, report) {
     const value = table(rule["config"])[property];
     if (rule["enabled"] !== true) {
       report.add(`config/fsharplint.json must keep '${name}' enabled.`);
-    } else if (typeof value !== "number" || value > maximum) {
+    } else if (!validCeiling(value, maximum)) {
       report.add(
         `config/fsharplint.json weakens '${name}' to ${String(value)}; the maximum is ${maximum}.`,
       );
@@ -101,13 +106,13 @@ export function checkPythonPolicy(root, report) {
     report.add("pyproject.toml must run mypy with strict = true.");
   }
   const complexity = table(lint["mccabe"])["max-complexity"];
-  if (typeof complexity !== "number" || complexity > 12) {
+  if (!validCeiling(complexity, 12)) {
     report.add("pyproject.toml must cap ruff McCabe complexity at 12 or less.");
   }
   const pylint = table(lint["pylint"]);
   for (const [name, maximum] of pythonPylintLimits) {
     const value = pylint[name];
-    if (typeof value !== "number" || value > maximum) {
+    if (!validCeiling(value, maximum)) {
       report.add(`pyproject.toml must set ruff pylint '${name}' to at most ${maximum}.`);
     }
   }

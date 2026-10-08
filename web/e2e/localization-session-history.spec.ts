@@ -11,9 +11,9 @@ test("updates visible detail and expanded history immediately with independent f
   await openAuthenticated(page);
   const reference = `LANGUAGE-HISTORY-${randomUUID()}`;
   await openCase(page, reference);
-  const history = page.locator(".history-list details").first();
+  const history = page.locator(".history-list > li > details").first();
   await expect(history).toBeVisible();
-  await history.locator("summary").click();
+  await history.locator(":scope > summary").click();
   await expect(history).toHaveAttribute("open", "");
   await selectFormat(page, "ar-EG");
   const original = await history.elementHandle();

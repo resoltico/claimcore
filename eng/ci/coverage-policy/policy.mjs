@@ -4,7 +4,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { productionAssemblies, reconcileMeasurements } from "./measurement.mjs";
-import { descendantsNamed, parseXml } from "../suites/xml.mjs";
+import { descendantsNamed, parseCoverageXml } from "../suites/xml.mjs";
 
 export const browserEngines = ["chromium", "firefox", "webkit"];
 export const mergedFloors = { line: 0.6, branch: 0.4 };
@@ -15,11 +15,7 @@ export const webPackageFloors = { line: 0.8, branch: 0.7 };
  * @returns {import("../suites/xml.mjs").XmlElement}
  */
 function readCoverage(path) {
-  const root = parseXml(readFileSync(path, "utf8"), { allowDoctype: true });
-  if (root.name !== "coverage") {
-    throw new Error("Coverage must be a Cobertura coverage document.");
-  }
-  return root;
+  return parseCoverageXml(readFileSync(path, "utf8"));
 }
 
 /**

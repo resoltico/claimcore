@@ -5,9 +5,9 @@ AND NOT has_schema_privilege(current_user,'claimcore_witness','CREATE')
 AND (SELECT nspowner::regrole::text FROM pg_namespace
     WHERE nspname='claimcore_witness')='claimcore_witness_owner'
 AND (SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
-    WHERE n.nspname='claimcore_witness')=21
+    WHERE n.nspname='claimcore_witness')=43
 AND (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
-    WHERE n.nspname='claimcore_witness')=14
+    WHERE n.nspname='claimcore_witness')=81
 AND NOT EXISTS (SELECT 1 FROM pg_policy pol JOIN pg_class c ON c.oid=pol.polrelid
     JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='claimcore_witness')
 AND NOT EXISTS (SELECT 1 FROM pg_default_acl
@@ -51,3 +51,11 @@ AND NOT has_table_privilege(current_user,'claimcore_witness.writer_handoffs','TR
 AND NOT EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
     WHERE n.nspname='claimcore_witness'
     AND has_function_privilege(current_user,p.oid,'EXECUTE'))
+AND NOT pg_has_role('claimcore_witness_writer','claimcore_witness_owner','MEMBER')
+AND NOT pg_has_role('claimcore_witness_auditor','claimcore_witness_owner','MEMBER')
+AND (SELECT count(*) FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace
+  WHERE n.nspname='claimcore_witness' AND t.typtype='c')=27
+AND NOT EXISTS (SELECT 1 FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace
+  WHERE n.nspname='claimcore_witness' AND t.typtype='c'
+    AND (t.typowner::regrole::text<>'claimcore_witness_owner'
+      OR has_type_privilege(current_user,t.oid,'USAGE')))

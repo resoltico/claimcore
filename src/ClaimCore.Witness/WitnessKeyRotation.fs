@@ -18,8 +18,7 @@ module KeyRotation =
         =
         let command =
             new NpgsqlCommand(
-                "SELECT sequence,entry_hash,payload_sha256 FROM claimcore_witness.rotate_key("
-                + "@installation,@lineage,@epoch,@operation,@oldKey,@newKey,@check,@event,@writerCapability)",
+                "SELECT sequence,entry_hash,payload_sha256 FROM claimcore_witness.rotate_key(ROW(@installation,@lineage,@epoch)::claimcore_witness.installation_identity,ROW(@operation,@oldKey,@newKey,@check)::claimcore_witness.key_rotation,@event,@writerCapability)",
                 connection,
                 transaction
             )

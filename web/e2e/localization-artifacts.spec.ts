@@ -112,6 +112,7 @@ test("renders exact accepted amounts with RTL and pseudolocale accessibility whi
       value: { writeText: () => Promise.reject(new Error("synthetic denied clipboard")) },
     }),
   );
+  await row.locator("summary").click();
   await row.getByRole("button").click();
   await expect(row.getByRole("textbox")).toHaveValue(amount);
   const requests = trackRequests(page);

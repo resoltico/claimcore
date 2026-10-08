@@ -1,3 +1,4 @@
+import { coordinate } from "../run-command.mjs";
 import { artifactDirectory } from "../artifact-path.mjs";
 import { executable } from "../executable.mjs";
 // Runs registered test suites: checks the build's discovered tests against the committed inventory,
@@ -131,6 +132,15 @@ export function architectureSummary(reportPath) {
  * @property {string[]} names
  */
 
+/** @param {import("./registry.mjs").Suite} suite @param {string} resultsRoot */
+function requireFreshResults(suite, resultsRoot) {
+  if (existsSync(join(resultsRoot, suite.id))) {
+    throw new Error(
+      `The ${suite.id} results directory ${JSON.stringify(join(resultsRoot, suite.id))} must start absent. Preserve prior evidence and run: node eng/ci/suites/suite.mjs run ${suite.id} --results-root artifacts/results-${Date.now()}.`,
+    );
+  }
+}
+
 /**
  * Check the selected build against the inventory and plan the suite's processes.
  * @param {import("./registry.mjs").Suite} suite
@@ -138,11 +148,7 @@ export function architectureSummary(reportPath) {
  * @returns {Prepared}
  */
 function prepare(suite, { resultsRoot }) {
-  if (existsSync(join(resultsRoot, suite.id))) {
-    throw new Error(
-      `The ${suite.id} results directory ${JSON.stringify(join(resultsRoot, suite.id))} must start absent. Preserve prior evidence and run: node eng/ci/suites/suite.mjs run ${suite.id} --results-root artifacts/results-${Date.now()}.`,
-    );
-  }
+  requireFreshResults(suite, resultsRoot);
   const names = parseInventory(readFileSync(join(root, inventoryPath(suite)), "utf8"));
   const { names: discovered, partitions: partitionNames } = discoverDotnet(root, suite);
   if (JSON.stringify(discovered) !== JSON.stringify(names)) {
@@ -218,5 +224,22 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   if (process.argv[2] !== "run") {
     throw new Error("Usage: suite.mjs run <suite-id>... | --group <group>");
   }
-  process.exitCode = await run(process.argv.slice(2));
+  const selection = parseSelection(process.argv.slice(2));
+  const suites = selectSuites(
+    loadSuites(root),
+    selection,
+    selection.options["platform"] ?? currentPlatform(),
+  );
+  for (const suite of suites) {
+    requireCompletePropertyProfile({ ...process.env, ...suite.env });
+  }
+  if (selection.options["results-root"] !== undefined) {
+    const results = artifactDirectory(root, selection.options["results-root"]);
+    for (const suite of suites) {
+      requireFreshResults(suite, results);
+    }
+  }
+  if (!(await coordinate(root, "node", ["eng/ci/suites/suite.mjs", ...process.argv.slice(2)]))) {
+    process.exitCode = await run(process.argv.slice(2));
+  }
 }

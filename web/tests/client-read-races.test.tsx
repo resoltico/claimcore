@@ -118,7 +118,7 @@ it("keeps attempt paging cancellable and prevents a late page from reopening clo
   render(<RecoveryView onRecovery={vi.fn()} onMutationLockChange={vi.fn()} token="token" />);
   await user.click(await screen.findByRole("button", { name: "Inspect" }));
   await user.click(await screen.findByRole("button", { name: "Load more attempts" }));
-  expect(screen.getByRole("button", { name: "Resolve exact preparation" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Try to record this request" })).toBeDisabled();
   await user.click(screen.getByRole("button", { name: "Load more attempts" }));
   expect(fetch).toHaveBeenCalledTimes(3);
   await user.click(screen.getByRole("button", { name: "Close inspection" }));

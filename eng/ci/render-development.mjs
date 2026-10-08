@@ -24,7 +24,7 @@ export function renderStages(root) {
       ...(stage.exclusive ? ["exclusive"] : []),
       ...(stage.appendFiles
         ? [
-            `append ${stage.appendFiles.suffix} source under ${stage.appendFiles.directories.join(", ")}`,
+            `append ${stage.appendFiles.suffixes.join(", ")} source under ${stage.appendFiles.directories.join(", ")}`,
           ]
         : []),
     ];

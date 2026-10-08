@@ -13,8 +13,8 @@ ClaimCore documentation assurance.Path and link safety.local links and anchors.r
 ClaimCore documentation assurance.Path and link safety.local links and anchors.rejects missing targets fragments and traversal escapes
 ClaimCore documentation assurance.Path and link safety.local links and anchors.rejects wrong case malformed encoding and unsafe schemes
 ClaimCore documentation assurance.Path and link safety.repository path confinement.detects exact path casing on every host
-ClaimCore documentation assurance.Path and link safety.repository path confinement.lists the Markdown files Git lists, in ordinal order
-ClaimCore documentation assurance.Path and link safety.repository path confinement.refuses a repository Git cannot list
+ClaimCore documentation assurance.Path and link safety.repository path confinement.lists admitted Markdown files in ordinal order
+ClaimCore documentation assurance.Path and link safety.repository path confinement.refuses an unavailable source inventory
 ClaimCore documentation assurance.Path and link safety.repository path confinement.rejects a symlink in an existing path
 ClaimCore documentation assurance.Path and link safety.repository path confinement.rejects rooted dot parent and backslash registered paths
 ClaimCore documentation assurance.contract tokens.accepts every contract named by a test and no unknown token
@@ -22,3 +22,5 @@ ClaimCore documentation assurance.contract tokens.an orphan inventory cannot sup
 ClaimCore documentation assurance.contract tokens.refuses a contract that no test names
 ClaimCore documentation assurance.contract tokens.refuses a missing inventory directory
 ClaimCore documentation assurance.contract tokens.refuses a token that names no declared contract
+ClaimCore documentation assurance.executable help prerequisites.a failed batched help build prevents target resolution and execution
+ClaimCore documentation assurance.executable help prerequisites.a linked help project is refused before any producer executes

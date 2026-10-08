@@ -85,7 +85,7 @@ const Probe = ({ mount }: { mount: () => void }) => {
     <>
       <input ref={ref} aria-label="unchanged draft" defaultValue="2026-02-30 / 1.0000" />
       <p>
-        <Message id="ui.reference" values={{ reference: "EXACT-123" }} />
+        <Message id="ui.reference" values={{ label: "Synthetic label", reference: "EXACT-123" }} />
       </p>
     </>
   );

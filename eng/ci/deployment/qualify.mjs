@@ -1,3 +1,4 @@
+import { coordinate } from "../run-command.mjs";
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
 import { chmodSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -14,6 +15,9 @@ import { evidenceIdentity, verifyDeploymentReport } from "./report.mjs";
 import { lifecycleChecks } from "./lifecycle.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
+if (await coordinate(root, "node", ["eng/ci/deployment/qualify.mjs", ...process.argv.slice(2)])) {
+  process.exit(process.exitCode ?? 1);
+}
 const identity = evidenceIdentity(root);
 const run = `claimcore-operating-${randomBytes(8).toString("hex")}`;
 const state = join(root, "artifacts", run);
@@ -176,7 +180,7 @@ assert.deepEqual(evidenceIdentity(root), identity, "Qualification source changed
 const report = verifyDeploymentReport(
   {
     format: "claimcore-deployment-qualification",
-    formatVersion: 1,
+    formatVersion: 2,
     identity,
     publications,
     run,

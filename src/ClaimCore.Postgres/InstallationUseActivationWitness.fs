@@ -27,8 +27,7 @@ module internal InstallationUseActivationWitness =
             use command =
                 new NpgsqlCommand(
                     "SELECT intent_sequence,intent_hash,settlement_sequence,settlement_hash "
-                    + "FROM claimcore_witness.activate_data_use(@installation,@lineage,@epoch,"
-                    + "@event,@expectedSequence,@expectedHash,@canonical,@key,@intent,@settlement)",
+                    + "FROM claimcore_witness.activate_data_use(ROW(@installation,@lineage,@epoch)::claimcore_witness.installation_identity,ROW(@event,@canonical)::claimcore_witness.data_use_activation_plan,ROW(@expectedSequence,@expectedHash)::claimcore_witness.journal_tip,ROW(@key,@intent,@settlement)::claimcore_witness.activation_payloads)",
                     connection
                 )
 

@@ -104,11 +104,11 @@ let private witnessCase8 =
             let digest =
                 scalar<string>
                     owner
-                    "SELECT encode(sha256(convert_to(pg_get_functiondef('claimcore_witness.append(uuid,uuid,bigint,uuid,text,uuid,text,uuid,bytea,bytea)'::regprocedure),'UTF8')),'hex')"
+                    "SELECT encode(sha256(convert_to(pg_get_functiondef('claimcore_witness.append(claimcore_witness.installation_identity,claimcore_witness.journal_subject,claimcore_witness.journal_request,bytea)'::regprocedure),'UTF8')),'hex')"
 
             Expect.equal
                 digest
-                "770a563cf040e29ba8868063c85df19829452b10af67dd2b908c3a2b15c72d02"
+                "a1a360b7cd3f936afa55139f2b35456c90435b8b72902b7fa0aff2d43bc9bc3c"
                 "Pinned PostgreSQL 18.6 deparsed function"))
 
 let private witnessCase10 =

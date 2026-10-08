@@ -30,6 +30,8 @@ copies safe values and provides an accessible fallback when clipboard access is 
 crosses English and Arabic grammar with independent displayed digits
 derives shared browser business meaning directly from semantic discovery
 detaches replacement group values so later authoring cannot change a frozen request
+disables OPEN reference and fields after preparation uncertainty while preserving exact retry
+disables retained recovery fields and action switching without suggesting a fresh review
 discards an aborted definition response when session epoch changes
 discards an aborted keyed read instead of replacing its newer response
 discards reverse-order recovery inspection responses and cancels closed detail reads
@@ -40,6 +42,7 @@ does not rebase a frozen preparation after language switching and an external re
 does not retain recovery material without a preview
 does not send a credential from an anonymous session
 encodes every correction action explicitly and refuses an invalid registration clear
+enters submitting with the exact reviewed request and makes authoring unavailable
 fails a malformed authenticated session and leaves logout inert
 fails closed on malformed delivery and validates recovery export
 fails closed when the server definition is rejected or has a different Web fingerprint
@@ -90,6 +93,9 @@ keeps unconfirmed settlement distinct from definite accepted execution
 labels grouped recovery targets in ar while keeping exact authored values [CC-WEB-001]
 labels grouped recovery targets in en while keeping exact authored values [CC-WEB-001]
 labels grouped recovery targets in lv while keeping exact authored values [CC-WEB-001]
+leaves a correction whose mode was changed and reverted without value edits
+leaves an unchanged retained review without stopping its server request
+leaves an untouched prefilled amendment directly
 leaves invalid authored decimal and integer text unchanged for core validation
 lists, reloads, pages, selects and opens cases through typed list outcomes
 local diagnostic contracts > fingerprints the administration grammar independently of display text
@@ -139,11 +145,17 @@ preserves exact recovery guidance when dismissal refuses an already-started subm
 preserves independent English diagnostic knowledge and parameter examples
 preserves only exact identity and recovery direction after uncertain export issuance
 preserves the independent preference through bounded reproducible event sequences
+protects an amendment changed to all empty strings on switch and Back
+protects exact authored edits after retaining the review
+protects hidden correction replacement edits after returning its mode to KEEP
 protects ordinary list, detail, history and absent lookup references in ar [CC-WEB-001]
 protects ordinary list, detail, history and absent lookup references in en [CC-WEB-001]
 protects ordinary list, detail, history and absent lookup references in en-XA [CC-WEB-001]
 protects ordinary list, detail, history and absent lookup references in lv [CC-WEB-001]
 reads previously persisted version-one settings under their actual browser storage key
+recognizes edit then exact revert but preserves distinct amount spelling
+reflects reducer editability during preparation, review, submission and uncertainty for AMEND_REGISTRATION
+reflects reducer editability during preparation, review, submission and uncertainty for CORRECT_CASE
 refuses an export action when inspected recovery evidence has no exact digest
 refuses corrupt, oversized and unknown preference records without retaining arbitrary data
 refuses nontext language values even when Intl could interpret an array-like object
@@ -195,6 +207,7 @@ retries an unchanged definite refusal with its original exact identity
 retries the frozen request after delivery loss despite a changed current revision
 returns an accepted open operation to Dashboard through its committed transition
 returns from a selected case through Dashboard's detail-back transition
+reuses actual ICU formatters only within one language, display locale and message key
 rotates the retained operation ID when only an OPEN reference is changed
 routes dashboard list selections and the new-case command into the typed editor
 sends an explicit grouped correction and preserves all non-replaced groups
@@ -203,12 +216,14 @@ shows a safe diagnostic after a failed lifecycle review
 shows command acceptance together with required recovery for unconfirmed settlement
 shows current fields, server command labels, full expandable history and retryable history pages
 shows logout transport failure as retriable and clears it after a session refresh
+shows only an accepted receipt, focuses it and keeps Return usable
 shows the authoritative disposition, privacy phase, and active hold without exposing its ground
 submits a retained operation ID and digest only once under duplicate confirmation
 submits machine correction modes in ar [CC-DOM-002]
 submits machine correction modes in en [CC-DOM-002]
 submits machine correction modes in lv [CC-DOM-002]
 surfaces invalid snapshots after session refresh and logout responses
+switches an untouched amendment without discarding authored work
 switches language and display formats without remounting children or rewriting a draft
 switches recovery views explicitly and leaves unavailable capacity unrendered
 times out submission and witnessed export without adding mutation abort or retry

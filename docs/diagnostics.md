@@ -87,7 +87,11 @@ English, Latvian, and Arabic presentation catalogs are separate from semantic ad
 The transport follow-up completes the remaining product failure boundaries. CLI `ProtocolFailure`
 is a private value of a closed `ProtocolProblem` and known-member location; it carries no writable
 message. Unknown JSON property names collapse to the known containing object or root. Oversized
-NDJSON lines are drained before the next frame, and wrong scalar kinds return typed refusals.
+NDJSON lines terminate the process with exit 2 and one `FRAME_TOO_LARGE` response immediately
+after the first excess byte, without waiting for newline or EOF. Restart before sending another
+frame. Complete malformed frames and wrong scalar kinds return frame-local typed refusals;
+the refusal does not settle earlier operation uncertainty. CLI-v4 `protocolFailure` frames use
+flat `diagnosticId`, `code`, and known-member `path`, separately from core diagnostic objects.
 `claimcore describe diagnostics` publishes the protocol and process schemas without opening a store.
 
 HTTP readers return `HttpInputProblem`, not English sentences. The host policy binds each identity

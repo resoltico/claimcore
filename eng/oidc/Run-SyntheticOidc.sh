@@ -48,7 +48,9 @@ if [[ $# -gt 0 ]]; then shift; fi
 
 umask 077
 run_id="$(openssl rand -hex 16)"
-workdir="$(mktemp -d "${TMPDIR:-/tmp}/claimcore-oidc.XXXXXXXX")"
+# shellcheck source=eng/PrivateQualificationPaths.sh
+source "$(dirname "${BASH_SOURCE[0]}")/../PrivateQualificationPaths.sh"
+workdir="$(create_private_qualification_directory "claimcore-oidc.XXXXXXXX")"
 
 openssl req -x509 -newkey rsa:3072 -sha256 -nodes -days 1 \
   -subj '/CN=ClaimCore Synthetic OIDC CA' \

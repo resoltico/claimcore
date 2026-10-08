@@ -287,8 +287,8 @@ let tests =
                 "forged loopback PKCE state is refused before service access"
                 RemoteAuthAcceptance.forgedPkceCallback
             testCase
-                "live Keycloak public-client code and PKCE reaches the service"
-                RemoteAuthAcceptance.livePkceCallback
+                "[CC-CLI-001][CC-AUTH-001] native public-client grants replay and read back the existing owner"
+                NativeOwnerGrantAcceptance.qualify
             yield! RemoteProtocolBoundaryTests.tests
         ]
     |> testSequenced

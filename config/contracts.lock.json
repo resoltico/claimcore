@@ -328,8 +328,8 @@
     },
     {
       "path": "cli-v4.parsed-value-corpus.json",
-      "bytes": 1487552,
-      "sha256": "1d9b480bbce739031b6c91f86374eabe53278afa4f65ae279ac5cb2e73d5c55d"
+      "bytes": 1490744,
+      "sha256": "3adbfdfb84c05fe740961fb7c7630310b179c58664706df6f5337e21e6efdc65"
     },
     {
       "path": "cli-v4.process-failure.schema.json",
@@ -353,8 +353,8 @@
     },
     {
       "path": "default-presentation.en.json",
-      "bytes": 14223,
-      "sha256": "09d1a815f4cda4d5a12117dfa3f253255302b4d675c495d773fd3f14060eced5"
+      "bytes": 14679,
+      "sha256": "a169df06b087142c52eff5736f3a09612a991b474d5c4e9bf2ea28b2e88b90d2"
     },
     {
       "path": "local-diagnostics.parsed-value-corpus.json",
@@ -368,8 +368,8 @@
     },
     {
       "path": "semantic-core-v1.contract.json",
-      "bytes": 17919,
-      "sha256": "0e92e20fa7bbf42144117f0b7f3c1148ec8d165bec9460ee98089054c6101237"
+      "bytes": 17807,
+      "sha256": "285bfe4879125c31c1aefcf05def46e4f1c440a6c6eb5404147ae3e20268dbdd"
     },
     {
       "path": "semantic-core-v1.schema.json",
@@ -568,8 +568,8 @@
     },
     {
       "path": "web-v3.parsed-value-corpus.json",
-      "bytes": 1974143,
-      "sha256": "47affca7c1fddb7af32ec8acd628cf3589e02745fd24abc916584e752c5b47bc"
+      "bytes": 1973527,
+      "sha256": "b2b3374b9ace370896a6940a2a41006877bd591d3783de98f6e978f19c4f2941"
     },
     {
       "path": "web-v3.process-failure.schema.json",

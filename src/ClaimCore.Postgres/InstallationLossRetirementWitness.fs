@@ -208,10 +208,7 @@ module internal InstallationLossRetirementWitness =
                 use command =
                     new NpgsqlCommand(
                         "SELECT sequence,entry_hash,payload_sha256 FROM "
-                        + "claimcore_witness.prepare_installation_loss_retirement("
-                        + "@installation,@lineage,@epoch,@retirement,@previousSequence,@previousHash,"
-                        + "@canonical,@firstSignature,@secondSignature,@firstKey,@secondKey,"
-                        + "@firstOwner,@secondOwner,@setKind,@knownCount,@knownDigest,@key,@encrypted)",
+                        + "claimcore_witness.prepare_installation_loss_retirement(ROW(@installation,@lineage,@epoch)::claimcore_witness.installation_identity,ROW(@previousSequence,@previousHash)::claimcore_witness.journal_tip,ROW(@retirement,@canonical,@setKind,@knownCount,@knownDigest)::claimcore_witness.loss_retirement_plan,ROW(ROW(@firstSignature,@firstKey,@firstOwner)::claimcore_witness.owner_signature,ROW(@secondSignature,@secondKey,@secondOwner)::claimcore_witness.owner_signature)::claimcore_witness.owner_signature_pair,ROW(@key,@encrypted)::claimcore_witness.journal_payload)",
                         connection
                     )
 
@@ -253,9 +250,7 @@ module internal InstallationLossRetirementWitness =
                 use command =
                     new NpgsqlCommand(
                         "SELECT sequence,entry_hash,payload_sha256 FROM "
-                        + "claimcore_witness.settle_installation_loss_retirement("
-                        + "@installation,@lineage,@epoch,@retirement,@intentSequence,@intentHash,"
-                        + "@candidate,@key,@encrypted)",
+                        + "claimcore_witness.settle_installation_loss_retirement(ROW(@installation,@lineage,@epoch)::claimcore_witness.installation_identity,ROW(ROW(@retirement,@intentSequence,@intentHash)::claimcore_witness.journal_ticket,@candidate)::claimcore_witness.loss_settlement_proof,ROW(@key,@encrypted)::claimcore_witness.journal_payload)",
                         connection
                     )
 

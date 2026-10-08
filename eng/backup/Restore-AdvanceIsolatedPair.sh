@@ -23,7 +23,8 @@ trap cleanup_error ERR
 
 [[ "${primary_source}" =~ ^[0-9a-f]{64}$ && "${witness_source}" =~ ^[0-9a-f]{64}$ ]]
 [[ "${primary_source}" != "${witness_source}" ]]
-[[ -d "${scratch}" && ! -L "${scratch}" && "$(cd "${scratch}" && pwd -P)" == "${scratch}" ]]
+physical_scratch="$(cd "${scratch}" && pwd -P)"
+[[ -d "${scratch}" && ! -L "${scratch}" && "${physical_scratch}" == "${scratch}" ]]
 
 stage="source-image-label"
 for source in "${primary_source}" "${witness_source}"; do
