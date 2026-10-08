@@ -5,7 +5,17 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { createCoverageMap, createFileCoverage } from "@vitest/istanbul-lib-coverage";
 import { create, createContext } from "@vitest/istanbul-lib-report";
-import { frontendReports } from "../../eng/ci/run-frontend-reports.mjs";
+// Runtime loading preserves the engine implementation's own TypeScript project boundary.
+const owner = /** @type {unknown} */ (
+  await import(new URL("../../eng/ci/run-frontend-reports.mjs", import.meta.url).href)
+);
+assert.ok(
+  typeof owner === "object" &&
+    owner !== null &&
+    "frontendReports" in owner &&
+    typeof owner.frontendReports === "function",
+);
+const { frontendReports } = /** @type {{frontendReports:(root:string)=>unknown}} */ (owner);
 
 /** @param {string} root @returns {{total:import("@vitest/istanbul-lib-coverage").CoverageSummaryData} & Record<string,import("@vitest/istanbul-lib-coverage").CoverageSummaryData>} */
 function measuredSummary(root) {
@@ -67,7 +77,9 @@ function admit(root, summary) {
     join(root, "artifacts/frontend/coverage/coverage-summary.json"),
     JSON.stringify(summary),
   );
-  return frontendReports(root);
+  const reports = frontendReports(root);
+  assert.ok(Array.isArray(reports) && reports.every((report) => typeof report === "string"));
+  return reports;
 }
 
 test("raw frontend admission accepts measured locked producer summaries with aggregate branchesTrue", () => {
