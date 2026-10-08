@@ -18,9 +18,10 @@ const strings = (value) =>
 
 /** @param {string} value @returns {boolean} */
 const relativeDirectory = (value) =>
-  !value.startsWith("/") &&
-  !value.includes("\\") &&
-  value.split("/").every((part) => part !== "" && part !== "." && part !== "..");
+  value === "." ||
+  (!value.startsWith("/") &&
+    !value.includes("\\") &&
+    value.split("/").every((part) => part !== "" && part !== "." && part !== ".."));
 
 /** @param {import("./types.mjs").Stage} stage */
 function validateAppend(stage) {
