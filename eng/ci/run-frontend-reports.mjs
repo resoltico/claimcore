@@ -20,7 +20,7 @@ function json(path) {
 // The executed Vite gate owns thresholds and inclusion; its exact config is retained with source.
 function coverageSummary(root, path) {
   const summary =
-    /** @type {Record<string,Record<string,{total:number,covered:number,skipped:number,pct:number|string}>>} */ (
+    /** @type {Record<string,Record<string,{total:number,covered:number,skipped:number,pct:number}>>} */ (
       json(path)
     );
   assert.ok(Object.keys(summary).length > 1 && summary["total"]);
@@ -30,7 +30,12 @@ function coverageSummary(root, path) {
       assert.ok(!isAbsolute(inside) && inside !== ".." && !inside.startsWith("../"));
       safeFile(file);
     }
-    assert.deepEqual(Object.keys(metrics).sort(), ["branches", "functions", "lines", "statements"]);
+    const required = ["branches", "functions", "lines", "statements"];
+    const keys = Object.keys(metrics).sort();
+    assert.deepEqual(
+      keys,
+      keys.includes("branchesTrue") ? [...required, "branchesTrue"].sort() : required,
+    );
     for (const counts of Object.values(metrics)) {
       assert.deepEqual(Object.keys(counts).sort(), ["covered", "pct", "skipped", "total"]);
       assert.ok(
@@ -39,8 +44,9 @@ function coverageSummary(root, path) {
         ),
       );
       assert.ok(counts.covered <= counts.total && counts.skipped === 0);
+      assert.ok(typeof counts.pct === "number" && Number.isFinite(counts.pct));
       const measured = counts.total === 0 ? 100 : (100 * counts.covered) / counts.total;
-      assert.ok(Math.abs(Number(counts.pct) - measured) < 0.011);
+      assert.ok(Math.abs(counts.pct - measured) < 0.011);
     }
   }
 }
