@@ -477,6 +477,11 @@ distinguishes unavailable acquisition from scan execution without disclosing art
 condition permits upload. An artifact scan does not replace the source inventory or the browser harness's
 known-secret output checks (`eng/ci/policy/sensitive-output.mjs`).
 
+Published CLI acceptance uploads the sanitized Chromium summary and, on browser failure, its
+diagnostic report alongside available acceptance results. These reports preserve bounded failure
+locations when the browser fails before CLI tests begin; private `artifacts/browser-failures/` logs
+remain excluded from uploads.
+
 Every language runs its linter in its strictest useful mode, and each mode is pinned so it cannot be
 weakened in passing:
 

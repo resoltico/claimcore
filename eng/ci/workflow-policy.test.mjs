@@ -4,6 +4,11 @@ import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
 import { validateWorkflowSources } from "./workflow-policy.mjs";
 import { workflowSources } from "./workflow-sources.mjs";
+import { parseWorkflow } from "./yaml.mjs";
+import { mkdtempSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { spawnSync } from "node:child_process";
 
 const root = fileURLToPath(new URL("../..", import.meta.url));
 const pin = "1".repeat(40);
@@ -95,6 +100,48 @@ function changed(path, modify) {
 
 test("validates the complete real workflow graph", () => {
   assert(validateWorkflowSources(workflowSources(root)).workflows >= 10);
+});
+test("acceptance retains sanitized browser failures before CLI results exist", () => {
+  const source = must(workflowSources(root).get(".github/workflows/verify-acceptance.yml"));
+  const { steps } = parseWorkflow(source).value.jobs.acceptance;
+  const packaging = must(
+    steps.find(
+      (/** @type {import("./types.mjs").Json} */ step) =>
+        step.name === "Retain sanitized browser reports with acceptance evidence",
+    ),
+  );
+  assert.equal(packaging.if, "always()");
+  assert.equal(packaging.shell, "bash");
+  const upload = must(
+    steps.find((/** @type {import("./types.mjs").Json} */ step) =>
+      step.uses?.startsWith("actions/upload-artifact@"),
+    ),
+  );
+  assert.equal(upload.with.path, "artifacts/test-results/acceptance/");
+  for (const diagnostics of [false, true]) {
+    const scratch = mkdtempSync(join(tmpdir(), "claimcore-acceptance-evidence-"));
+    try {
+      mkdirSync(join(scratch, "artifacts/browser"), { recursive: true });
+      mkdirSync(join(scratch, "artifacts/browser-failures"));
+      writeFileSync(join(scratch, "artifacts/browser-failures/private.log"), "PRIVATE-SENTINEL");
+      writeFileSync(join(scratch, "artifacts/browser/unreviewed.json"), "UNREVIEWED-SENTINEL");
+      const files = ["chromium.json", ...(diagnostics ? ["chromium.diagnostics.json"] : [])];
+      for (const file of files) {
+        writeFileSync(join(scratch, "artifacts/browser", file), `{"source":"${file}"}\n`);
+      }
+      assert.equal(spawnSync("bash", ["-c", packaging.run], { cwd: scratch }).status, 0);
+      const destination = join(scratch, "artifacts/test-results/acceptance/browser");
+      assert.deepEqual(readdirSync(destination).sort(), files.sort());
+      for (const file of files) {
+        assert.deepEqual(
+          readFileSync(join(destination, file)),
+          readFileSync(join(scratch, "artifacts/browser", file)),
+        );
+      }
+    } finally {
+      rmSync(scratch, { recursive: true, force: true });
+    }
+  }
 });
 /** @type {Array<[string, string, (source: string) => string]>} */
 const graphControls = [

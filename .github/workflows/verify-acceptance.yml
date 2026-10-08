@@ -68,6 +68,17 @@ jobs:
         id: job_checkout_current
         if: always()
         run: node eng/ci/job-context.mjs check
+      - name: Retain sanitized browser reports with acceptance evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/test-results/acceptance/browser
+          for report in artifacts/browser/chromium.json artifacts/browser/chromium.diagnostics.json; do
+            if [[ -f "$report" ]]; then
+              cp "$report" artifacts/test-results/acceptance/browser/
+            fi
+          done
       - name: Scan artifacts before upload
         id: artifact_scan
         if: always()
