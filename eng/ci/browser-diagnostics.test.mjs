@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import {
   existsSync,
   linkSync,
@@ -189,7 +190,7 @@ test("failed private diagnostic admission prints only a fixed refusal without su
     writeFileSync(join(source, "cli-acceptance.log"), "PRIVATE-LOG-PAYLOAD-SENTINEL");
     const result = spawnSync(
       process.execPath,
-      ["eng/ci/retain-browser-failure.mjs", source, occupied],
+      [fileURLToPath(new URL("./retain-browser-failure.mjs", import.meta.url)), source, occupied],
       { encoding: "utf8" },
     );
     assert.equal(result.status, 1);
