@@ -7,8 +7,8 @@ import { artifactDirectory } from "./artifact-path.mjs";
 import { loadSuites, inventoryPath } from "./suites/registry.mjs";
 import { discoverDotnet, parseInventory } from "./suites/inventory.mjs";
 import { verifyTrx, verifyPartitions } from "./suites/trx.mjs";
-import { parseXml, childrenNamed } from "./suites/xml.mjs";
-import { productionAssemblies, reconcileMeasurements } from "./coverage-policy/measurement.mjs";
+import { parseCoverageXml } from "./suites/xml.mjs";
+import { reconcileRawMeasurements } from "./coverage-policy/measurement.mjs";
 import { checkFloors, checkCliCoverage, resolveInputs } from "./coverage-policy/policy.mjs";
 import { inspectManifest } from "./publish/tree.mjs";
 import { producingInputDigest, verifyProducingInputs } from "./publish/inputs.mjs";
@@ -29,13 +29,8 @@ function safeFile(path) {
 /** @param {string} path */
 function rawCoverage(path) {
   safeFile(path);
-  const root = parseXml(readFileSync(path, "utf8"), { allowDoctype: true });
-  assert.equal(root.name, "coverage");
-  const [packages] = childrenNamed(root, "packages");
-  assert.ok(packages);
-  const names = childrenNamed(packages, "package").map((item) => item.attributes["name"] ?? "");
-  assert.ok(names.length > 0 && names.every((name) => productionAssemblies().includes(name)));
-  reconcileMeasurements(root, names);
+  const root = parseCoverageXml(readFileSync(path, "utf8"));
+  reconcileRawMeasurements(root);
 }
 /** @param {string} root @param {import("./suites/registry.mjs").Suite} suite @param {string} base */
 function suiteReports(root, suite, base) {

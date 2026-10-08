@@ -11,6 +11,7 @@
  */
 
 const maximumBytes = 16 * 1024 * 1024;
+const maximumCoverageBytes = 64 * 1024 * 1024;
 const named = /** @type {Record<string, string>} */ ({
   amp: "&",
   lt: "<",
@@ -198,11 +199,12 @@ function attach(parent, root, element) {
 
 /**
  * @param {string} source
- * @param {{ allowDoctype?: boolean }} [options] Tolerate an external-only document type.
+ * @param {number} limit
+ * @param {boolean} allowDoctype Tolerate an external-only document type.
  * @returns {XmlElement} The document element.
  */
-export function parseXml(source, { allowDoctype = false } = {}) {
-  if (Buffer.byteLength(source) > maximumBytes) {
+function parseDocument(source, limit, allowDoctype) {
+  if (Buffer.byteLength(source) > limit) {
     throw new Error("XML document exceeds its bounded size.");
   }
   const text = source.replace(/^\uFEFF/u, "");
@@ -226,6 +228,23 @@ export function parseXml(source, { allowDoctype = false } = {}) {
   }
   if (!root || stack.length > 0) {
     throw new Error("XML document is incomplete.");
+  }
+  return root;
+}
+
+/** General and TRX XML retains its 16 MiB bound.
+ * @param {string} source @param {{allowDoctype?:boolean}} [options] */
+export function parseXml(source, { allowDoctype = false } = {}) {
+  return parseDocument(source, maximumBytes, allowDoctype);
+}
+
+/** Native Cobertura includes detailed method and class records, bounded separately at 64 MiB.
+ * The strict reader tolerates only an external DTD declaration and never resolves it.
+ * @param {string} source */
+export function parseCoverageXml(source) {
+  const root = parseDocument(source, maximumCoverageBytes, true);
+  if (root.name !== "coverage") {
+    throw new Error("Coverage must be a Cobertura coverage document.");
   }
   return root;
 }

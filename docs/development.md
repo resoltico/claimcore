@@ -217,6 +217,10 @@ Reports must reconcile unique executed names against that inventory, with one fl
 and entry section. Duplicate names cannot stand in for missing tests or partition coverage; misplaced
 records and contradictory sections refuse qualification. The shared XML reader rejects malformed
 version declarations without waiting for a job timeout and preserves every attribute for validation.
+General XML and TRX reports are bounded at 16 MiB; detailed native Cobertura reports have a separate
+fixed 64 MiB bound. Raw coverage retains and reconciles registered product and tooling measurements,
+requires production evidence, and refuses unknown or test assemblies. Merged floors still measure
+only the registered production assemblies.
 CLI fixture children clear inherited ClaimCore credentials/configuration and coverage instrumentation
 before applying explicit synthetic settings; local operator configuration cannot select their service.
 

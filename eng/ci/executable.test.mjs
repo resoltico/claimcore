@@ -146,7 +146,7 @@ test("native PowerShell ACL APIs ignore hostile inherited module locations", () 
     const marker = join(root, "module-loaded.fixture");
     nativeCommand(
       root,
-      "$env:PSModulePath=$env:CLAIMCORE_TEST_SCRATCH; Import-Module Microsoft.PowerShell.Security -Force; try { Get-Acl } catch {}",
+      "$env:PSModulePath=$env:CLAIMCORE_TEST_SCRATCH; Import-Module Microsoft.PowerShell.Security -Force; try { Get-Acl } catch {}; exit 0",
     );
     assert.equal(existsSync(marker), true);
     rmSync(marker);

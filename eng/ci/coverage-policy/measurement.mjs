@@ -3,8 +3,8 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { childrenNamed } from "../suites/xml.mjs";
 
-/** @returns {string[]} Production identity comes from the component owner, not a second list. */
-export function productionAssemblies() {
+/** @param {string[]} tiers @returns {string[]} Assembly identity comes from the component owner. */
+function componentAssemblies(tiers) {
   /** @type {{ components: { tier: string, name: string }[] }} */
   const manifest = JSON.parse(
     readFileSync(
@@ -13,13 +13,18 @@ export function productionAssemblies() {
     ),
   );
   const names = manifest.components
-    .filter((item) => item.tier === "product")
+    .filter((item) => tiers.includes(item.tier))
     .map((item) => item.name)
     .sort();
   if (names.length === 0 || new Set(names).size !== names.length) {
-    throw new Error("Production coverage requires a nonempty unique component set.");
+    throw new Error("Coverage requires a nonempty unique component set.");
   }
   return names;
+}
+
+/** @returns {string[]} Merged floors measure only registered product components. */
+export function productionAssemblies() {
+  return componentAssemblies(["product"]);
 }
 
 /** @typedef {{ lines: number, coveredLines: number, branches: number, coveredBranches: number }} Counts */
@@ -129,4 +134,26 @@ export function reconcileMeasurements(root, expected) {
     }
   }
   return { total, packages: measured };
+}
+
+/** Raw Coverlet instrumentation can include tooling exercised by production tests.
+ * Preserve and reconcile every registered product/tooling package; merged floors filter to products.
+ * @param {import("../suites/xml.mjs").XmlElement} root */
+export function reconcileRawMeasurements(root) {
+  const [packages] = childrenNamed(root, "packages");
+  const names =
+    packages === undefined
+      ? []
+      : childrenNamed(packages, "package").map((pkg) => pkg.attributes["name"] ?? "");
+  const allowed = componentAssemblies(["product", "tooling"]);
+  const products = productionAssemblies();
+  if (
+    !names.some((name) => products.includes(name)) ||
+    names.some((name) => !allowed.includes(name))
+  ) {
+    throw new Error(
+      "Raw coverage requires registered product/tooling measurements and a production package.",
+    );
+  }
+  return reconcileMeasurements(root, names);
 }
