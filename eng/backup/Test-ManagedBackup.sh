@@ -161,7 +161,7 @@ if python3 "${repo_root}/eng/backup/managed.py" --config "${scratch}/config.json
   echo 'The unfenced owner capture CLI remained available.' >&2
   exit 1
 fi
-capture="$(capture_synthetic "${scratch}/config.json")"
+capture="$("${capture_command[@]}" --config "${scratch}/config.json")"
 cycle="$(jq -er '.cycleId' <<<"${capture}")"
 kill "${checkpoint_signer_pid}" >/dev/null 2>&1
 wait "${checkpoint_signer_pid}" >/dev/null 2>&1 || true

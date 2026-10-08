@@ -32,7 +32,7 @@
     "licenses:check": "license-checker-rseidelsohn --production --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;0BSD;CC0-1.0'",
     "notices:generate": "node scripts/generate-third-party-notices.mjs",
     "sbom": "node scripts/generate-sbom.mjs",
-    "architecture:check": "node --test scripts/boundary-policy.test.mjs scripts/type-aware-policy.test.mjs scripts/validator-groups.test.mjs scripts/contract-lock.test.mjs scripts/localization-policy.test.mjs scripts/mutation-policy.test.mjs scripts/compiler-inputs.test.mjs scripts/asset-manifest.test.mjs",
+    "architecture:check": "node --test scripts/boundary-policy.test.mjs scripts/type-aware-policy.test.mjs scripts/validator-groups.test.mjs scripts/contract-lock.test.mjs scripts/localization-policy.test.mjs scripts/mutation-policy.test.mjs scripts/compiler-inputs.test.mjs scripts/asset-manifest.test.mjs scripts/vitest-diagnostics.test.mjs",
     "localization:generate": "node scripts/localization.mjs --write",
     "localization:check": "node scripts/localization.mjs"
   },

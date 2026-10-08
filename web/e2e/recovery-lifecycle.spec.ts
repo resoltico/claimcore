@@ -73,7 +73,12 @@ const preparedDecision = async (page: Page, caseReference: string): Promise<Prep
     "Amount to be paid": "300.25",
     "Currency of amount to be paid": "EUR",
   });
-  await keepForRecovery(page);
+  await page.getByRole("button", { name: "Back to editing; keep for Recovery" }).click();
+  await page.getByRole("button", { name: "Back to case" }).click();
+  const discard = page.getByRole("dialog", { name: "Discard these draft changes?" });
+  await expect(discard).toContainText("Retained requests stay in Recovery");
+  await discard.getByRole("button", { name: "Discard and leave" }).click();
+  await expect(page.getByRole("heading", { name: "Case detail" })).toBeVisible();
   await navigateRecovery(page);
   return identity;
 };
