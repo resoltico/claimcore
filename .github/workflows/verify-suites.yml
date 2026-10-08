@@ -60,6 +60,8 @@ jobs:
       - name: Admit the explicit job checkout
         shell: bash
         run: node eng/ci/job-context.mjs create >> "$GITHUB_ENV"
+      - name: Acquire the verified scanner before building the suite
+        run: node eng/ci/tools.mjs gitleaks
       - name: Qualify native Windows orchestration scratch privacy
         if: runner.os == 'Windows' && matrix.suite == 'unit'
         run: node --test eng/ci/executable.test.mjs eng/ci/scratch-privacy.test.mjs

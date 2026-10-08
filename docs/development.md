@@ -473,7 +473,9 @@ allowlist or inline `gitleaks:allow` bypass. Ignored private or generated state 
 gate. Every GitHub Actions artifact family is independently scanned after production and before upload
 (`node eng/ci/scan/main.mjs artifacts <path>...`); a missing path, scanner failure, or detected secret prevents its
 upload. The scanner is the checksum-verified binary from `config/tools.json`; a safe failure-stage label
-distinguishes unavailable acquisition from scan execution without disclosing artifact paths or content, and neither
+distinguishes unavailable acquisition from scan execution; owned acquisition failures also identify the finite
+manifest, cache, download, integrity, unpack or publication phase without provider details, artifact paths or content.
+Suite jobs acquire the verified scanner before building and reverify its cached bytes before scanning. Neither
 condition permits upload. An artifact scan does not replace the source inventory or the browser harness's
 known-secret output checks (`eng/ci/policy/sensitive-output.mjs`).
 
