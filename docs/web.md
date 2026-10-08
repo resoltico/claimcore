@@ -9,7 +9,7 @@ configuration or open PostgreSQL.
 
 <!-- generated:begin web-help -->
 ```text
-ClaimCore.Web 0.7.0 — HTTPS human interface
+ClaimCore.Web 0.8.0 — HTTPS human interface
   ClaimCore.Web                 Start the configured HTTPS host
   ClaimCore.Web help            Show this configuration-free help
   ClaimCore.Web version         Show the compiled product version

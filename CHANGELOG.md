@@ -4,6 +4,8 @@ Notable changes to this project are documented in this file. The format is based
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-08
+
 ### Security
 
 - The build-only `http-cache-semantics` dependency is patched and its advisory exception is retired; reverting to affected versions fails dependency auditing. The development-only `braces` exception remains limited to its reviewed finding until 2026-11-03; unknown and production findings still fail verification.

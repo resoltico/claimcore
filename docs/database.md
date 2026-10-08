@@ -10,7 +10,7 @@ private file selected by `CLAIMCORE_ADMIN_CONNECTION_FILE`.
 
 <!-- generated:begin database-help -->
 ```text
-ClaimCore.Database 0.7.0 — schema and recovery-retention administration
+ClaimCore.Database 0.8.0 — schema and recovery-retention administration
   ClaimCore.Database initialize <canonical-IANA-ID>
   ClaimCore.Database initialize-real-data <canonical-IANA-ID>
   ClaimCore.Database publish-real-data-activation-plan <private-policy-file> <private-evidence-file> <private-review-output-file>
