@@ -126,5 +126,6 @@
   "diagnostic.WEB_INPUT_PAGE_RANGE": "Pieprasītais lapas izmērs ir ārpus atļautā diapazona.",
   "diagnostic.WEB_INPUT_HISTORY_DETAIL": "Pieprasītā vēstures detalizācija nav atbalstīta.",
   "diagnostic.WEB_INPUT_RECOVERY_VIEW": "Pieprasītais atkopšanas skats nav atbalstīts.",
-  "diagnostic.WEB_INPUT_SOURCE_DIGEST_HEADER": "Avota kontrolsummas galvene trūkst vai nav derīga."
+  "diagnostic.WEB_INPUT_SOURCE_DIGEST_HEADER": "Avota kontrolsummas galvene trūkst vai nav derīga.",
+  "diagnostic.RECOVERY_ACCESS_UNAVAILABLE": "Piekļuve šai operācijai tika atteikta. Saglabājiet tās precīzo identitāti un pārbaudiet pierādījumus, kad piekļuve ir pieejama. Atteikums nenosaka agrāko mēģinājumu iznākumu."
 }

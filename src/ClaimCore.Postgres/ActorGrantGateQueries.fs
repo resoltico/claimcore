@@ -187,12 +187,15 @@ module internal ActorGrantGateQueries =
                 | Some actual, Some value ->
                     match ActorAuthorization.authorize principal value action actual with
                     | AuthorizationDecision.Available(actorId, grantRevision) ->
-                        Some
+                        Some(
                             {
                                 Principal = principal
                                 ActorId = actorId
                                 GrantRevision = grantRevision
-                            }
+                            },
+                            ActorActionAdvice.mayEditCommands principal value actual,
+                            ActorActionAdvice.allowedRecoveryActions principal value actual
+                        )
                     | AuthorizationDecision.Unavailable -> None
                 | _ -> None
         }

@@ -11,6 +11,7 @@ type ProtocolProblem =
     | InvalidUnicode
     | InvalidJson
     | ExpectedObject
+    | ExpectedArray
     | ExpectedString
     | ExpectedBoolean
     | ExpectedNumber
@@ -19,6 +20,7 @@ type ProtocolProblem =
     | MissingProperty
     | IntegerRange
     | InvalidToken
+    | InvalidScalar
     | InvalidUuid
     | InvalidDigest
     | InvalidRevision
@@ -72,6 +74,8 @@ module ProtocolProblems =
         [
             ProtocolProblem.ExpectedObject,
             ("CLI_EXPECTED_OBJECT", "INVALID_SHAPE", "Expected a JSON object.")
+            ProtocolProblem.ExpectedArray,
+            ("CLI_EXPECTED_ARRAY", "INVALID_SHAPE", "Expected a JSON array.")
             ProtocolProblem.ExpectedString,
             ("CLI_EXPECTED_STRING", "INVALID_SHAPE", "Expected a JSON string.")
             ProtocolProblem.ExpectedBoolean,
@@ -96,6 +100,10 @@ module ProtocolProblems =
         [
             ProtocolProblem.InvalidToken,
             ("CLI_INVALID_TOKEN", "INVALID_VALUE", "The value is not one of the permitted tokens.")
+            ProtocolProblem.InvalidScalar,
+            ("CLI_INVALID_SCALAR",
+             "INVALID_VALUE",
+             "Use the scalar constraint attached to the known field.")
             ProtocolProblem.InvalidUuid,
             ("CLI_INVALID_UUID", "INVALID_UUID", "Use a non-empty canonical lowercase UUID.")
             ProtocolProblem.InvalidDigest,

@@ -36,7 +36,14 @@ module internal ScalarCorpus =
             CliCorpusValues.fields.IncidentDate
             [ "year-zero", "0000-08-01"; "invalid-calendar", "2026-02-30" ]
         @ text "text" source CliCorpusValues.fields.CaseReference [ "empty", "" ]
-        @ CorpusJson.domainTextBoundaries source CliCorpusValues.fields.CaseReference 80
+        @ CorpusJson.domainTextBoundaries "text" source CliCorpusValues.fields.CaseReference 80
+        @ CorpusJson.domainTextBoundaries
+            "country"
+            source
+            CliCorpusValues.fields.IncidentCountry
+            100
+        @ CorpusJson.domainTextBoundaries "claimant" source CliCorpusValues.fields.ClaimantName 200
+        @ CorpusJson.domainTextBoundaries "insurer" source CliCorpusValues.fields.InsurerName 200
         @ text
             "revision"
             source

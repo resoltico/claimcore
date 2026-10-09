@@ -3,14 +3,14 @@ import { type MessageFormatElement } from "@formatjs/icu-messageformat-parser";
 import en from "./generated/en.json";
 import lv from "./generated/lv.json";
 import ar from "./generated/ar.json";
-import pseudo from "./generated/en-XA.json";
+import { pseudolocalize } from "./pseudolocalization.mjs";
 import shapes from "./generated/arguments.json";
 import type { Preferences } from "./preferences";
 import type { MessageKey, Values } from "./types";
 
 // lint-exception: LX-0014
 // oxlint-disable-next-line typescript/no-unsafe-type-assertion
-const catalogs = { en, lv, ar, "en-XA": pseudo } as unknown as Record<
+const catalogs = { en, lv, ar } as unknown as Record<
   string,
   Record<string, MessageFormatElement[]>
 >;
@@ -22,7 +22,14 @@ const message = (key: string, preferences: Preferences): IntlMessageFormat => {
   if (cached !== undefined) {
     return cached;
   }
-  const ast = catalogs[preferences.language]![key]!;
+  const ast =
+    preferences.language === "en-XA"
+      ? ([
+          { type: 0, value: "⟦" },
+          ...pseudolocalize(catalogs["en"]![key]!),
+          { type: 0, value: "⟧" },
+        ] satisfies MessageFormatElement[])
+      : catalogs[preferences.language]![key]!;
   const grammar = preferences.language === "en-XA" ? "en" : preferences.language;
   const formatter = new IntlMessageFormat(ast, grammar, undefined, {
     formatters: {

@@ -19,7 +19,9 @@ const useEditorFocus = (
       return;
     }
     // React attaches this ref during commit before effects run.
-    const inputs = section.current!.querySelectorAll("input");
+    const inputs = section.current!.querySelectorAll<HTMLInputElement | HTMLSelectElement>(
+      "input, select",
+    );
     const target =
       [...inputs].find((input) => input.name === field) ??
       [...inputs].find((input) => input.dataset["fieldName"] === field);

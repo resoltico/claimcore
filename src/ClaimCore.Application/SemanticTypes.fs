@@ -86,6 +86,7 @@ type CaseSummaryPage =
     {
         Items: CaseSummary list
         NextCursor: string option
+        AvailableCommands: CommandKind list
     }
 
 type HistoryDetail =

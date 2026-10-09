@@ -27,7 +27,10 @@ const root = resolve(import.meta.dirname, "../../..");
 
 /** @param {string} directory @param {string[]} args */
 function dotnet(directory, args) {
-  const result = spawnSync(executable("dotnet"), args, {
+  const bounded = ["build", "publish", "restore"].includes(args[0] ?? "")
+    ? [...args, "-maxcpucount:1", "-nodeReuse:false"]
+    : args;
+  const result = spawnSync(executable("dotnet"), bounded, {
     cwd: directory,
     encoding: "utf8",
     timeout: 600_000,

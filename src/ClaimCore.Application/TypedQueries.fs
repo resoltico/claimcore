@@ -18,6 +18,7 @@ module internal TypedQueries =
 
     let get
         (store: IClaimStore)
+        (mayEditCommands: bool)
         (reference: string)
         (cancellationToken: CancellationToken)
         : Task<QueryOutcome<Lookup<CurrentCase, string>>> =
@@ -38,7 +39,17 @@ module internal TypedQueries =
                         | Ok(Some claim) ->
                             return
                                 QueryOutcome.Succeeded(
-                                    Lookup.Found(TypedProjection.currentCase claim)
+                                    Lookup.Found(
+                                        let current = TypedProjection.currentCase claim
+
+                                        { current with
+                                            AvailableCommands =
+                                                if mayEditCommands then
+                                                    current.AvailableCommands
+                                                else
+                                                    []
+                                        }
+                                    )
                                 )
                         | Ok None -> return QueryOutcome.Succeeded(Lookup.NotFound reference)
                         | Error CoreFailure.ResourceUnavailable ->
@@ -47,7 +58,7 @@ module internal TypedQueries =
                             return QueryOutcome.Failed(TypedProjection.coreFault failure)
                 }
 
-    let private casePage (page: ClaimCore.Application.CasePage) : CaseSummaryPage =
+    let private casePage mayEditCommands (page: ClaimCore.Application.CasePage) : CaseSummaryPage =
         let items =
             page.Items
             |> List.map (
@@ -63,10 +74,12 @@ module internal TypedQueries =
         {
             Items = items
             NextCursor = page.NextCursor
+            AvailableCommands = if mayEditCommands then [ CommandKind.Open ] else []
         }
 
     let list
         (store: IClaimStore)
+        (mayEditCommands: bool)
         (request: CaseListRequest)
         (cancellationToken: CancellationToken)
         : Task<QueryOutcome<CaseSummaryPage>> =
@@ -87,7 +100,7 @@ module internal TypedQueries =
                     | Error CoreFailure.ResourceUnavailable ->
                         return QueryOutcome.Rejected Rejection.ResourceUnavailable
                     | Error failure -> return QueryOutcome.Failed(TypedProjection.coreFault failure)
-                    | Ok page -> return QueryOutcome.Succeeded(casePage page)
+                    | Ok page -> return QueryOutcome.Succeeded(casePage mayEditCommands page)
             }
 
     let private historyEntry (detail: HistoryDetail) (value: Receipt) : HistoryEntry =

@@ -118,11 +118,11 @@ module internal CoreApi =
 
             member _.Get(reference, cancellationToken) =
                 TypedQueries.cancelObservation cancellationToken QueryOutcome.Cancelled (fun () ->
-                    TypedQueries.get store reference cancellationToken)
+                    TypedQueries.get store context.MayEditCommands reference cancellationToken)
 
             member _.List(request, cancellationToken) =
                 TypedQueries.cancelObservation cancellationToken QueryOutcome.Cancelled (fun () ->
-                    TypedQueries.list store request cancellationToken)
+                    TypedQueries.list store context.MayEditCommands request cancellationToken)
 
             member _.History(request, cancellationToken) =
                 TypedQueries.cancelObservation cancellationToken QueryOutcome.Cancelled (fun () ->

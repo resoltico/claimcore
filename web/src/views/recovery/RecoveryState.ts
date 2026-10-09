@@ -18,7 +18,8 @@ import type { RecoveryTarget } from "../../domain/operationState";
 export type Inspection = RecoveryInspection;
 export type RecoveryViewKind = RecoveryPage["view"];
 export type ImportState = { file: File; preview: RecoveryImportPreview };
-export type ConfirmState = { action: "RESOLVE" | "DISMISS" | "EXPORT"; item: PreparationSummary };
+type RecoveryIdentity = Pick<PreparationSummary, "operationId" | "requestSha256">;
+export type ConfirmState = { action: "RESOLVE" | "DISMISS" | "EXPORT"; item: RecoveryIdentity };
 
 type Setter<T> = Dispatch<SetStateAction<T>>;
 type Listing = { load: (cursor: string | null) => Promise<void> };
@@ -42,6 +43,8 @@ export type RecoveryActions = {
   choose: (action: ConfirmState["action"], item: PreparationSummary) => void;
   act: () => Promise<void>;
   exportItem: (item: PreparationSummary) => void;
+  exportIdentity: (operationId: string, requestSha256: string) => void;
+  clearMessage: () => void;
   preview: (file: File) => Promise<void>;
   retain: () => Promise<void>;
 };
@@ -117,7 +120,7 @@ const reportOperation = (
 
 const exportFailure = (
   result: ApiResult<WebV3Response<"recovery.export">>,
-  item: PreparationSummary,
+  item: RecoveryIdentity,
   ui: RecoveryUi,
 ): void => {
   ui.setSelected(null);
@@ -130,14 +133,12 @@ const exportFailure = (
   );
 };
 
-const download = async (item: PreparationSummary, token: string, ui: RecoveryUi): Promise<void> => {
+const download = async (item: RecoveryIdentity, token: string, ui: RecoveryUi): Promise<void> => {
   if (item.requestSha256 === null) {
     ui.setMessage(localNotice("digestUnavailable"));
     return;
   }
-  ui.setBusy(item.operationId);
   const result = await v3.recoveryExport(item.operationId, item.requestSha256, token);
-  ui.setBusy(null);
   if (result.kind !== "outcome") {
     exportFailure(result, item, ui);
     return;
@@ -187,10 +188,8 @@ const performAction = async (token: string, listing: Listing, ui: RecoveryUi): P
   }
   ui.inspection.cancel();
   ui.setSelected(null);
-  ui.setBusy(choice.item.operationId);
   if (choice.action === "DISMISS") {
     const result = await v3.recoveryDismiss(choice.item.operationId, digest, token);
-    ui.setBusy(null);
     ui.setConfirm(null);
     reportOperation(
       choice.item,
@@ -203,7 +202,6 @@ const performAction = async (token: string, listing: Listing, ui: RecoveryUi): P
     return;
   }
   const result = await v3.recoveryResolve(choice.item.operationId, digest, token);
-  ui.setBusy(null);
   ui.setConfirm(null);
   const receipt = result.kind === "outcome" ? accepted(result.value) : null;
   reportOperation(choice.item, resolutionNotice(result, receipt), ui);
@@ -237,9 +235,7 @@ const retainImport = async (token: string, listing: Listing, ui: RecoveryUi): Pr
   if (value === null) {
     return;
   }
-  ui.setBusy("import-ENVELOPE");
   const result = await v3.importEnvelopeRetain(value.file, value.preview.sourceSha256, token);
-  ui.setBusy(null);
   ui.setImporting(null);
   reportOperation(
     value.preview.decodedEffect,
@@ -265,6 +261,12 @@ export const recoveryActions = (
   act: () => performAction(token, listing, ui),
   exportItem: (item) => {
     ui.setConfirm({ action: "EXPORT", item });
+  },
+  exportIdentity: (id, requestSha256) => {
+    ui.setConfirm({ action: "EXPORT", item: { operationId: id, requestSha256 } });
+  },
+  clearMessage: () => {
+    ui.setMessage(null);
   },
   preview: (file) => previewImport(file, token, ui),
   retain: () => retainImport(token, listing, ui),

@@ -181,7 +181,19 @@ module CliResponseCorpus =
             webCases projection
             |> List.choose (fromWeb endpoints)
             |> fun value ->
-                value @ localCases endpoints @ serviceFailureCases endpoints @ specialCases ()
+                value
+                @ localCases endpoints
+                @ serviceFailureCases endpoints
+                @ specialCases ()
+                @ (ScalarProtocolCorpus.all ()
+                   |> List.map (fun (id, valid, frame) ->
+                       {
+                           Identifier = id
+                           Endpoint = None
+                           ExitCode = 2
+                           Valid = valid
+                           Value = frame
+                       }))
 
         let buffer = ArrayBufferWriter<byte>()
         use writer = new Utf8JsonWriter(buffer)

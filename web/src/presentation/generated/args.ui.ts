@@ -185,4 +185,10 @@ export type UiArgs = {
   "ui.semanticIdentity": { readonly digest: string };
   "ui.webIdentity": { readonly digest: string };
   "ui.fieldHelp": Readonly<Record<string, never>>;
+  "ui.historyDetail": Readonly<Record<string, never>>;
+  "ui.summaryHistory": Readonly<Record<string, never>>;
+  "ui.fullHistory": Readonly<Record<string, never>>;
+  "ui.requestDigest": Readonly<Record<string, never>>;
+  "ui.inspectOperationId": Readonly<Record<string, never>>;
+  "ui.exportKnownIdentity": Readonly<Record<string, never>>;
 };

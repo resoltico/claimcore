@@ -72,7 +72,7 @@ const expectCliShape = (): void => {
   const endpointCount = compiledCliValidators.endpoints.size;
   expect(crossCount(cases)).toBe(endpointCount * (endpointCount - 1));
   expect(cases.filter((value) => value.id.startsWith("pattern-"))).toHaveLength(8);
-  expect(cases.filter((value) => value.id.startsWith("scalar-"))).toHaveLength(27);
+  expect(cases.filter((value) => value.id.startsWith("scalar-"))).toHaveLength(45);
   expect(byId.get("valid-case-get-found-scalar-boundaries")).toEqual(
     expect.objectContaining({ id: "valid-case-get-found-scalar-boundaries", valid: true }),
   );
@@ -152,7 +152,7 @@ const expectWebCases = async (): Promise<void> => {
   const byId = new Map(cases.map((item) => [item.id, item]));
   expect(crossCount(cases)).toBe(endpointInventory.length * (endpointInventory.length - 1));
   expect(cases.filter((value) => value.id.startsWith("pattern-"))).toHaveLength(8);
-  expect(cases.filter((value) => value.id.startsWith("scalar-"))).toHaveLength(27);
+  expect(cases.filter((value) => value.id.startsWith("scalar-"))).toHaveLength(45);
   expect(byId.get("valid-case-get-found-scalar-boundaries")).toEqual(
     expect.objectContaining({ id: "valid-case-get-found-scalar-boundaries", valid: true }),
   );

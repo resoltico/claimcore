@@ -52,9 +52,11 @@ const Summary = ({ item }: { item: RecoveryListItem }) => {
 const AttemptEvidence = ({
   value,
   actions,
+  busy,
 }: {
   value: PreparationDetails;
   actions: RecoveryActions;
+  busy: boolean;
 }) => {
   const p = usePresentation();
   return (
@@ -71,6 +73,7 @@ const AttemptEvidence = ({
       {value.attempts.nextCursor === null ? null : (
         <Button
           className="secondary-button"
+          isDisabled={busy}
           onPress={() => {
             actions.loadAttempts(value.summary.operationId, value.attempts.nextCursor!);
           }}
@@ -105,9 +108,11 @@ const AuthoredValues = ({ value }: { value: PreparationDetails }) => {
 const RetainedDetails = ({
   value,
   actions,
+  busy,
 }: {
   value: PreparationDetails;
   actions: RecoveryActions;
+  busy: boolean;
 }) => {
   const p = usePresentation();
   return (
@@ -141,7 +146,7 @@ const RetainedDetails = ({
         })}
       </p>
       <AuthoredValues value={value} />
-      <AttemptEvidence value={value} actions={actions} />
+      <AttemptEvidence value={value} actions={actions} busy={busy} />
     </>
   );
 };
@@ -220,7 +225,7 @@ const DetailsBody = ({
   const { summary } = selected.value.preparation;
   return (
     <>
-      <RetainedDetails value={selected.value.preparation} actions={actions} />
+      <RetainedDetails value={selected.value.preparation} actions={actions} busy={busy} />
       <p>{p.text("ui.observation", { state: p.token(selected.value.observation.tag) })}</p>
       {selected.value.observation.tag === "FOUND" ? (
         <p>

@@ -2,7 +2,7 @@ import { act, renderHook } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import type { CurrentCase } from "../src/api/v3";
 import { useOperationEditor } from "../src/hooks/operation/useOperationEditor";
-import { definition, fields, preparation, response } from "./v3-ui.fixtures";
+import { definition, fields, preparation, response, runtime } from "./v3-ui.fixtures";
 
 const current: CurrentCase = {
   case: { fields, revision: "1" },
@@ -42,7 +42,7 @@ it("coalesces duplicate preparation activation while retention is pending", asyn
           before: current.case,
           proposed: current.case,
           changes: [],
-          context: definition.runtime,
+          context: runtime,
           advisory: true,
         },
       }),

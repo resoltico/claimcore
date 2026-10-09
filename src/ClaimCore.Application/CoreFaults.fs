@@ -1,6 +1,7 @@
 namespace ClaimCore.Application
 
 type FaultCode =
+    | ResourceUnavailable
     | StoreUnavailable
     | StoreIntegrityError
     | SchemaMismatch
@@ -18,6 +19,7 @@ type CoreFault =
     | StoreIntegrityError
     | SchemaMismatch
     | RecoveryResponseInvalid
+    | RecoveryAccessUnavailable
     | RecoveryContentConflict
     | RecoveryPreparationMissing
     | RecoveryCapacityExhausted
@@ -67,6 +69,10 @@ module CoreFaults =
 
     let private policy1 =
         [
+            CoreFault.RecoveryAccessUnavailable,
+            "RECOVERY_ACCESS_UNAVAILABLE",
+            FaultCode.ResourceUnavailable,
+            RecommendedAction.RecoverExact
             CoreFault.RecoveryContentConflict,
             "RECOVERY_STORE_CONTENT_CONFLICT",
             FaultCode.TechnicalMutationUnknown,

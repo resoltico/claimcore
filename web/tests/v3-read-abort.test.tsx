@@ -12,6 +12,7 @@ const result = (reference: string): ApiResult<ListResponse> => ({
     outcome: {
       tag: "SUCCEEDED",
       data: {
+        availableCommands: [],
         items: [{ caseReference: reference, revision: "1", status: "OPENED" }],
         nextCursor: null,
       },
@@ -92,4 +93,33 @@ it("coalesces duplicate page loads for one in-flight cursor", async () => {
     await first;
   });
   expect(hook.current.items).toEqual(["same"]);
+});
+
+it("starts a changed history mode at the same cursor while its cancelled predecessor is pending [CC-WEB-001]", async () => {
+  let complete: (value: ApiResult<ListResponse>) => void = () => undefined;
+  const first = new Promise<ApiResult<ListResponse>>((resolve) => {
+    complete = resolve;
+  });
+  const summary = vi.fn((_cursor: string | null, _signal: AbortSignal) => first);
+  const full = vi.fn((_cursor: string | null, _signal: AbortSignal) =>
+    Promise.resolve(result("full")),
+  );
+  const { result: hook, rerender } = renderHook(
+    ({ request }) => useRetryablePage(request, selectPage),
+    { initialProps: { request: summary } },
+  );
+  await waitFor(() => {
+    expect(summary).toHaveBeenCalledOnce();
+  });
+  rerender({ request: full });
+  await waitFor(() => {
+    expect(hook.current.items).toEqual(["full"]);
+  });
+  expect(summary.mock.calls[0]?.[1].aborted).toBe(true);
+  expect(full).toHaveBeenCalledOnce();
+  await act(async () => {
+    complete(result("obsolete-summary"));
+    await first;
+  });
+  expect(hook.current.items).toEqual(["full"]);
 });

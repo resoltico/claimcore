@@ -153,5 +153,11 @@
   "ui.productVersion": "إصدار المنتج: {version}",
   "ui.semanticIdentity": "العقد الدلالي: {digest}",
   "ui.webIdentity": "عقد Web v3: {digest}",
-  "ui.fieldHelp": "المعنى والنسخ الدقيق"
+  "ui.fieldHelp": "المعنى والنسخ الدقيق",
+  "ui.historyDetail": "تفاصيل السجل",
+  "ui.summaryHistory": "ملخص",
+  "ui.fullHistory": "جميع الحقول المسجلة",
+  "ui.requestDigest": "بصمة SHA-256 الدقيقة للطلب",
+  "ui.inspectOperationId": "فحص معرّف العملية",
+  "ui.exportKnownIdentity": "تصدير باستخدام المعرّف والبصمة"
 }

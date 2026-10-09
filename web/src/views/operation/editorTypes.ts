@@ -4,7 +4,7 @@ import type {
   CommandDraft,
   CorrectionGroupDescriptor,
   CurrentCase,
-  DefinitionPayload,
+  PublicDefinition,
   FieldDescriptor,
   PreparationDetails,
   Receipt,
@@ -16,7 +16,7 @@ import type { RecoveryTarget } from "../../domain/operationState";
 
 export type OperationEditorProps = {
   token: string;
-  definition: DefinitionPayload;
+  definition: PublicDefinition;
   current: CurrentCase | null;
   initialCommand: CommandKind;
   onClose: () => void;

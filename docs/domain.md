@@ -79,8 +79,10 @@ payment replacement/reaffirmation or clearing payment so an old payment assertio
 carried to a new payable amount. A successful correction writes one complete revision; a refusal
 writes neither current state nor accepted history.
 
-Only the core derives available commands from current state, and execution revalidates the command
-against authoritative state and expected revision. An advertised command is advisory, not commit
+Domain derives command eligibility from current state. Actor-bound current views filter that advice
+through Application's current resource authorization; an installation list advertises `OPEN` only
+when that actor may create a case. A case-scoped editing grant does not imply installation creation.
+Execution revalidates the command against authoritative state, current authority and expected revision. An advertised command is advisory, not commit
 authority; adapters do not add another action policy.
 
 <a id="cc-life-001"></a>
@@ -140,7 +142,7 @@ positive. A case at `Int64.MaxValue - 1` advertises no new command, and executio
 transition rather than overflowing or creating an unrepresentable terminal revision. Exact replay
 remains a read of the original accepted receipt.
 
-Current views may advertise state-derived commands. Receipts and history are snapshots and advertise
+Current actor-bound views may advertise the authorized subset of state-derived commands. Receipts and history are snapshots and advertise
 no actions. Read the current case before preparing another change. Safe recovery from an uncertain
 result is defined in [CLI and protocol](cli.md#canonical-request-identity-and-recovery).
 

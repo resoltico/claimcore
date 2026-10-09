@@ -4,7 +4,7 @@ import { vi } from "vitest";
 import type { CommandDraft, CurrentCase } from "../src/api/v3";
 import { PresentationControls } from "../src/presentation/PresentationControls";
 import { OperationEditor } from "../src/views/OperationEditor";
-import { definition, fields, preparation, response } from "./v3-ui.fixtures";
+import { definition, fields, preparation, response, runtime } from "./v3-ui.fixtures";
 
 export const current: CurrentCase = {
   case: { fields, revision: "1" },
@@ -51,7 +51,7 @@ export const preparedReply = (index = 0): Response => {
       before: { fields, revision: draft.expectedRevision },
       proposed: { fields: { ...fields, status: "CLOSED" }, revision: "2" },
       changes: [{ fieldName: "status", before: "OPENED", after: "CLOSED" }],
-      context: definition.runtime,
+      context: runtime,
       advisory: true,
     },
   });

@@ -83,6 +83,7 @@ module CliRemoteSchemas =
 
     let protocolFailure =
         ProtocolProblems.all
+        |> List.filter ((<>) ProtocolProblem.InvalidScalar)
         |> List.groupBy ProtocolProblems.code
         |> List.map (fun (code, reasons) ->
             Schema.objectOf
@@ -100,7 +101,29 @@ module CliRemoteSchemas =
                         (Schema.string None (Some ProtocolLocation.pattern) (Some 0) (Some 256))
                         true
                 ])
-        |> Schema.oneOf
+        |> fun variants ->
+            let scalar =
+                Schema.objectOf
+                    false
+                    [
+                        property "protocolVersion" version true
+                        property "kind" (token "protocolFailure") true
+                        property
+                            "code"
+                            (token (ProtocolProblems.code ProtocolProblem.InvalidScalar))
+                            true
+                        property
+                            "diagnosticId"
+                            (token (ProtocolProblems.token ProtocolProblem.InvalidScalar))
+                            true
+                        property
+                            "path"
+                            (Schema.string None (Some ProtocolLocation.pattern) (Some 0) (Some 256))
+                            true
+                        property "scalarDiagnostic" RejectionDiagnosticSchemas.scalarAdmission true
+                    ]
+
+            Schema.oneOf (scalar :: variants)
 
     let endpointResponse projection identifier =
         [

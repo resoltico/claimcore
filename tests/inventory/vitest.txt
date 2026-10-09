@@ -1,18 +1,18 @@
 aborts a stale page load before appending a newer cursor page
 aborts observation on unmount without delivering a late receipt
 accepts exactly bounded settings and refuses valid JSON beyond its storage budget
-accepts the matching generated definition fingerprint
 admits definite session refusal and conservative export failure, rejecting contradictory phases
+admits matching public session metadata without protected definition access [CC-WEB-001]
 admits the exact tag budget and refuses otherwise valid oversized tags
 allocates a new ID when editing a definitely refused prepared request
 announces unsaved preferences in the chosen language without blocking the switch
 applies batched preference changes to current state even through a stale event handler
 associates optional field errors and supports password text input
+associates payment acknowledgement with the generated mode control [CC-DOM-002]
 binds clipboard fallback to the latest attempted exact value
 binds consent to one reviewed preparation and exact identity rather than an editor-wide boolean
 bounds a stalled response and ignores a later successful result
 classifies verified overload as not started and refuses the old ambiguous busy body
-clears claimant definition state when the server rejects or mismatches assets
 clears clipboard success when the value or presentation label changes
 clears the response timer on normal completion and leaves the validated result intact
 clears this page's cached rows cursor and metadata after a browser session refusal
@@ -28,15 +28,17 @@ copies canonical summary business values and null markers in en
 copies canonical summary business values and null markers in lv
 copies safe values and provides an accessible fallback when clipboard access is unavailable
 crosses English and Arabic grammar with independent displayed digits
+defaults to actual SUMMARY entries and deliberately resets between SUMMARY and FULL [CC-WEB-001]
 derives shared browser business meaning directly from semantic discovery
+derives the published pseudo label exactly from the preserved generated catalog [CC-WEB-001]
 detaches replacement group values so later authoring cannot change a frozen request
 disables OPEN reference and fields after preparation uncertainty while preserving exact retry
 disables retained recovery fields and action switching without suggesting a fresh review
-discards an aborted definition response when session epoch changes
 discards an aborted keyed read instead of replacing its newer response
 discards reverse-order recovery inspection responses and cancels closed detail reads
 distinguishes cancellation boundaries from generic incomplete results in every language
 does not interpret a local delivery notice as a definite server refusal
+does not invent rollback after the first authority action is unconfirmed [CC-AUTH-001]
 does not let an older refresh resurrect an authenticated session after logout
 does not rebase a frozen preparation after language switching and an external revision change
 does not retain recovery material without a preview
@@ -45,8 +47,10 @@ encodes every correction action explicitly and refuses an invalid registration c
 enters submitting with the exact reviewed request and makes authoring unavailable
 fails a malformed authenticated session and leaves logout inert
 fails closed on malformed delivery and validates recovery export
-fails closed when the server definition is rejected or has a different Web fingerprint
 fails immediately when the embedding document omits the application root
+focuses and describes WEB_INPUT_INVALID_DIGEST and clears its stale lookup guidance [CC-WEB-001]
+focuses and describes WEB_INPUT_INVALID_UUID and clears its stale lookup guidance [CC-WEB-001]
+focuses and describes invalid operation identity then clears the stale error [CC-WEB-001]
 forks a new ID when an exposed request is edited after definite submit refusal
 forks exposed correction identities when their group modes change after definite refusal
 forks on a changed reference or command, but not on an unchanged field
@@ -82,10 +86,14 @@ keeps before/after words outside business direction and exact clipboard fallback
 keeps before/after words outside business direction and exact clipboard fallback in en-XA
 keeps before/after words outside business direction and exact clipboard fallback in lv
 keeps cancelled or non-diagnostic outcomes distinct from a translated core refusal
+keeps closed inspection controls locked until export settles (false) [CC-REC-001]
+keeps closed inspection controls locked until export settles (true) [CC-REC-001]
 keeps existing references immutable and delegates a reviewed commit
 keeps generated endpoint inventory callable and presents suspicious Unicode defensively
 keeps invalid reducer transitions inert and records a completed receipt
 keeps missing case lookup and non-full history entries out of case presentation
+keeps newer session admission when an older fingerprint reply arrives [CC-WEB-001]
+keeps public metadata and other panes available when a case read is refused
 keeps recovery confirm dialog accessible before dispatch
 keeps recovery import dialog accessible before retention
 keeps the latest session snapshot when refresh responses finish in reverse order
@@ -104,6 +112,7 @@ local diagnostic contracts > validates every process and administration cause an
 localizes late validation by diagnostic identity and focuses the unchanged authoring field
 locks Dashboard during recovery dispatch and keeps the identity after lost resolution
 locks navigation and logout while a prepared mutation is dispatched
+locks navigation synchronously and releases admission after a synchronous action failure
 maps every JSON endpoint to v3 and preserves nullable cursors and mutation identity
 matches every native English diagnostic literal under default presentation [CC-WEB-001]
 metadata-driven descriptor rendering > renders descriptor labels and all supplied field values without client-side normalization
@@ -115,6 +124,7 @@ models definite rejection and unknown outcomes without allowing a dispatched mut
 mounts the Web v3 browser root
 names idempotent recovery outcomes and leaves downloads without outcome messages
 navigates dashboard case, operation and recovery surfaces without hidden business dispatch
+offers independent known-ID inspection and known-ID plus digest export without listing [CC-REC-001]
 offers one explicit exact-ID Prepare retry after lost response
 offers real languages normally and a truthful current diagnostic option only when seeded
 opens a metadata-derived command from Dashboard's current-case transition
@@ -152,10 +162,12 @@ protects ordinary list, detail, history and absent lookup references in ar [CC-W
 protects ordinary list, detail, history and absent lookup references in en [CC-WEB-001]
 protects ordinary list, detail, history and absent lookup references in en-XA [CC-WEB-001]
 protects ordinary list, detail, history and absent lookup references in lv [CC-WEB-001]
+pseudolocalizes nested literals while preserving argument, selector and plural identities [CC-WEB-001]
 reads previously persisted version-one settings under their actual browser storage key
 recognizes edit then exact revert but preserves distinct amount spelling
 reflects reducer editability during preparation, review, submission and uncertainty for AMEND_REGISTRATION
 reflects reducer editability during preparation, review, submission and uncertainty for CORRECT_CASE
+refuses a host fingerprint mismatch without claiming an invalid actor session [CC-WEB-001]
 refuses an export action when inspected recovery evidence has no exact digest
 refuses corrupt, oversized and unknown preference records without retaining arbitrary data
 refuses nontext language values even when Intl could interpret an array-like object
@@ -172,7 +184,6 @@ renders ERASURE_REQUESTED separately from held state
 renders OIDC sign-in and authenticated dashboard paths
 renders PAYLOAD_ERASED_SUPPRESSION_RETAINED separately from held state
 renders a delayed preparation in the selected language without replay or confirmation loss
-renders a neutral shell while definition admission is pending
 renders a recoverable session failure and invokes its refresh action
 renders absent and suspicious accepted values without changing the recorded text
 renders an OIDC sign-in link without collecting a credential
@@ -184,6 +195,7 @@ renders every specific diagnostic using only its closed safe parameter contract
 renders loading and refreshable session failures
 renders observed recovery details and leaves only permitted server actions enabled
 renders ordinary text input without an error and forwards edits
+renders public product metadata while an authorized case read is pending
 renders recovery import controls and lets the page reload without mutation
 renders recovery list state, invokes inspection, and pages through a cursor
 renders terminal revocation authority and exposes no mutation action
@@ -194,11 +206,13 @@ reports absent and malformed operation observations without leaving stale receip
 reports definite accepted recovery knowledge and keeps its observation target
 reports malformed pages, malformed inspections, rejected imports, and invalid exports
 requests the next server attempt page only from an inspected retained item
+requires an exact nonempty reference without silently trimming lookup [CC-WEB-001]
 requires an explicit presentation provider instead of silently using ambient locale
 requires every supplied message argument to be an exact own property
 requires fresh inspection before retrying a submission-started preparation
 requires one exact attachment filename and matching UTF-8 filename parameter
 resolves explicit language and display-format preferences independently with deterministic fallbacks
+restores only the confirmed baseline grant when narrow setup fails [CC-AUTH-001]
 retains an exact id until a retained preparation is edited, then starts a new id
 retains authored replacement values for every grouped correction field
 retains local, accepted and uncertain notices as language-neutral data
@@ -218,6 +232,7 @@ shows current fields, server command labels, full expandable history and retryab
 shows logout transport failure as retriable and clears it after a session refresh
 shows only an accepted receipt, focuses it and keeps Return usable
 shows the authoritative disposition, privacy phase, and active hold without exposing its ground
+starts a changed history mode at the same cursor while its cancelled predecessor is pending [CC-WEB-001]
 submits a retained operation ID and digest only once under duplicate confirmation
 submits machine correction modes in ar [CC-DOM-002]
 submits machine correction modes in en [CC-DOM-002]

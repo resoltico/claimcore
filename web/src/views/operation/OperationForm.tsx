@@ -1,10 +1,11 @@
+import { CorrectionMode } from "./CorrectionMode";
 import { ReferenceSummary } from "../../components/ReferenceSummary";
 import { NoticeView } from "../../presentation/Message";
 import { usePresentation } from "../../presentation/context";
 import { Button } from "react-aria-components/Button";
 import { Form } from "react-aria-components/Form";
 import type { RefObject } from "react";
-import type { CurrentCase, DefinitionPayload } from "../../api/v3";
+import type { CurrentCase, PublicDefinition } from "../../api/v3";
 import { DescriptorField } from "../../components/DescriptorField";
 import {
   correctionGroupName,
@@ -14,7 +15,7 @@ import {
 import type { OperationEditorModel } from "./editorTypes";
 
 type OperationFormProps = {
-  definition: DefinitionPayload;
+  definition: PublicDefinition;
   current: CurrentCase | null;
   model: OperationEditorModel;
   onClose: () => void;
@@ -112,41 +113,6 @@ const AuthoringFields = ({ model }: Pick<OperationFormProps, "model">) => {
   );
 };
 
-const CorrectionMode = ({
-  name,
-  mode,
-  actions,
-  locked,
-  onChange,
-}: {
-  name: CorrectionGroupName;
-  mode: string;
-  actions: ReadonlyArray<"KEEP" | "REPLACE" | "CLEAR">;
-  locked: boolean;
-  onChange: (next: string) => void;
-}) => {
-  const p = usePresentation();
-  return (
-    <>
-      <label htmlFor={`correction-${name}-mode`}>{p.text("ui.action")}</label>
-      <select
-        id={`correction-${name}-mode`}
-        value={mode}
-        disabled={locked}
-        onChange={(event) => {
-          onChange(event.target.value);
-        }}
-      >
-        {actions.map((action) => (
-          <option key={action} value={action}>
-            {p.token(action)}
-          </option>
-        ))}
-      </select>
-    </>
-  );
-};
-
 const ReplacementFields = ({
   model,
   name,
@@ -206,6 +172,11 @@ const CorrectionGroup = ({
         mode={value.mode}
         actions={actions}
         locked={!model.canPrepare}
+        error={
+          model.state.fieldError?.name === name || model.state.fieldError?.name === `${name}.action`
+            ? model.state.fieldError.message
+            : undefined
+        }
         onChange={(next) => {
           model.setCorrectionMode(name, next);
         }}

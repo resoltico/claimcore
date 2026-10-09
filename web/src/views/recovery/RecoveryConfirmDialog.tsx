@@ -32,9 +32,7 @@ const ConfirmationButton = ({
   const p = usePresentation();
   return (
     <Button onPress={() => void actions.act()} isDisabled={busy !== null}>
-      {busy === confirm.item.operationId
-        ? p.text("ui.working")
-        : p.text(confirmKeys[confirm.action])}
+      {busy === null ? p.text(confirmKeys[confirm.action]) : p.text("ui.working")}
     </Button>
   );
 };

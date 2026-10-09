@@ -30,6 +30,8 @@ let private foundation =
         ExportDeliveryTests.tests
         ReceiptFirstTests.tests
         RecoveryOutcomeTests.tests
+        RecoveryAccessOutcomeTests.tests
+        RecoveryAdmissionOutcomeTests.tests
         RecoveryCancellationOutcomeTests.tests
         RecoveryAuthorityTests.tests
         CoreQueryTests.tests
@@ -71,6 +73,7 @@ let private surfaces =
         RemoteResponseBoundsTests.tests
         IssuerIdentityTests.tests
         RemoteInvocationTests.tests
+        ScalarInvocationDiagnosticTests.tests
         ActorAuthorizationTests.tests
         ActorAuthorizationMatrixTests.tests
         ActorCommandCapabilityTests.tests

@@ -11,8 +11,10 @@ let completedWalEndpoint connectionString =
 
     use command =
         new NpgsqlCommand(
+            // With no intervening writes, switch returns the following segment boundary.
+            // The completed prefix ends exclusively, so its last file contains lsn - 1.
             "WITH tip AS MATERIALIZED (SELECT pg_switch_wal() AS lsn) "
-            + "SELECT lsn::text,pg_walfile_name(lsn) FROM tip",
+            + "SELECT lsn::text,pg_walfile_name(lsn - 1) FROM tip",
             connection
         )
 
@@ -47,14 +49,14 @@ let requiredSegments baseEndLsn timeline segmentBytes horizon lastSegment =
     let size = uint64 segmentBytes
 
     if size = 0UL || ending <= start then
-        failtest "Synthetic registered WAL horizon does not follow BASE"
+        failtest "Synthetic completed WAL horizon does not follow BASE"
 
     let first = start / size
     let last = (ending - 1UL) / size
     let count = last - first + 1UL
 
     if count < 1UL || count > 1000UL then
-        failtest "Synthetic registered WAL prefix exceeds reviewed bound"
+        failtest "Synthetic completed WAL prefix exceeds reviewed bound"
 
     let segmentsPerLog = 0x100000000UL / size
 
@@ -65,6 +67,6 @@ let requiredSegments baseEndLsn timeline segmentBytes horizon lastSegment =
             $"{timeline:X8}{segment / segmentsPerLog:X8}{segment % segmentsPerLog:X8}")
 
     if List.last names <> lastSegment then
-        failtest "Completed WAL segment does not match registered horizon"
+        failtest "Completed WAL segment does not match the exclusive horizon"
 
     String.Join(',', names)

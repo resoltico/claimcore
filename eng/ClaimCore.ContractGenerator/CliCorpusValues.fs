@@ -65,6 +65,22 @@ module internal CliCorpusValues =
                 }
         }
 
+    let scalarSingleCurrentCase =
+        let singleScalarFields =
+            { fields with
+                CaseReference = "🙂"
+                IncidentCountry = "🙂"
+                ClaimantName = "🙂"
+                InsurerName = "🙂"
+            }
+
+        { currentCase with
+            Record =
+                { caseView with
+                    Fields = singleScalarFields
+                }
+        }
+
     let scalarBoundaryCurrentCase =
         let boundary =
             { caseView with

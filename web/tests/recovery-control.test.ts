@@ -31,3 +31,16 @@ it("coalesces recovery mutations and previews without replacing an in-flight nav
   expect(lock.mock.calls).toEqual([[true], [false]]);
   expect(admission.idle()).toBe(true);
 });
+
+it("locks navigation synchronously and releases admission after a synchronous action failure", async () => {
+  const admission = createRecoveryAdmission();
+  const lock = vi.fn();
+  const action = admission.mutate(() => {
+    throw new Error("Synthetic synchronous action failure");
+  }, lock);
+  expect(lock).toHaveBeenCalledWith(true);
+  expect(admission.idle()).toBe(false);
+  await expect(action).rejects.toThrow("Synthetic synchronous action failure");
+  expect(lock.mock.calls).toEqual([[true], [false]]);
+  expect(admission.idle()).toBe(true);
+});

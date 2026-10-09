@@ -1,6 +1,6 @@
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "./presentation-test-support";
+import { fireEvent, render, screen, waitFor } from "./presentation-test-support";
 import { preferenceKey } from "../src/presentation/preferences";
 import { CaseDetail } from "../src/views/CaseDetail";
 import { CaseList } from "../src/views/CaseList";
@@ -37,20 +37,19 @@ const historyReply = (value: string) => {
   if (history.outcome.tag !== "SUCCEEDED" || history.outcome.data.tag !== "FOUND") {
     throw new Error("Expected generated history fixture.");
   }
-  const entries = history.outcome.data.entries.map((entry) =>
-    entry.tag === "FULL"
-      ? {
-          ...entry,
-          receipt: {
-            ...entry.receipt,
-            snapshot: {
-              ...entry.receipt.snapshot,
-              fields: { ...fields, caseReference: value },
-            },
-          },
-        }
-      : entry,
-  );
+  const full = history.outcome.data.entries.find((entry) => entry.tag === "FULL");
+  if (full === undefined) {
+    throw new Error("Expected a full synthetic history receipt.");
+  }
+  const entries = [
+    {
+      tag: "FULL" as const,
+      receipt: {
+        ...full.receipt,
+        snapshot: { ...full.receipt.snapshot, fields: { ...fields, caseReference: value } },
+      },
+    },
+  ];
   return { ...history.outcome.data, entries };
 };
 const readReply = (url: string, value: string, missing: boolean) => {
@@ -100,6 +99,9 @@ const checkDetail = async (value: string, points: string | null, missing: boolea
     />,
   );
   assertSafe(view.container.querySelector(".section-heading + p")!, value, points);
+  if (!missing) {
+    fireEvent.change(view.container.querySelector("select")!, { target: { value: "FULL" } });
+  }
   await waitFor(() => {
     expect(view.container.querySelectorAll('.history-list > p[role="status"]')).toHaveLength(0);
     const directStatus = view.container.querySelectorAll(

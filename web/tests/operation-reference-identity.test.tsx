@@ -5,7 +5,7 @@ import type { CurrentCase } from "../src/api/v3";
 import { OperationEditor } from "../src/views/OperationEditor";
 import { generatedResponse } from "./contract-corpus.fixtures";
 import { preparedForRequest } from "./prepared-request.fixtures";
-import { definition, fields, preparation, response } from "./v3-ui.fixtures";
+import { definition, fields, preparation, response, runtime } from "./v3-ui.fixtures";
 
 const current: CurrentCase = {
   case: { fields, revision: "1" },
@@ -19,7 +19,7 @@ const prepared = () =>
       before: current.case,
       proposed: { fields, revision: "2" },
       changes: [],
-      context: definition.runtime,
+      context: runtime,
       advisory: true,
     },
   });

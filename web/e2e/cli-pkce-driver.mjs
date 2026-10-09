@@ -59,6 +59,19 @@ if (!Array.isArray(credentials.users) || credentials.users.length < 1) {
   process.exit(2);
 }
 
+const selectedUsername = process.env.CLAIMCORE_CLI_TEST_USERNAME;
+const selectedUser =
+  selectedUsername === undefined
+    ? credentials.users[0]
+    : credentials.users.find((user) => user?.username === selectedUsername);
+if (
+  selectedUser === undefined ||
+  typeof selectedUser.username !== "string" ||
+  typeof selectedUser.password !== "string"
+) {
+  process.exit(2);
+}
+
 const requestWrongState = () => {
   redirect.search = new URLSearchParams({ code: "synthetic", state: "wrong-state" }).toString();
   return new Promise((resolve, reject) => {
@@ -97,9 +110,9 @@ const run = async () => {
       }
       throw new Error("Synthetic login form unavailable.");
     }
-    await page.locator('input[name="username"]').fill(credentials.users[0].username);
+    await page.locator('input[name="username"]').fill(selectedUser.username);
     progress("username-filled");
-    await page.locator('input[name="password"]').fill(credentials.users[0].password);
+    await page.locator('input[name="password"]').fill(selectedUser.password);
     progress("password-filled");
     const submit = page.locator('button[type="submit"], input[type="submit"]').first();
     if ((await submit.count()) !== 1) {

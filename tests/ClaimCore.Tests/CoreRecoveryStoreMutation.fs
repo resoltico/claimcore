@@ -64,7 +64,20 @@ module internal RecoveryStoreMutation =
                 startResult state settings operationId)
 
         settings.OnStart |> Option.iter (fun callback -> callback ())
-        Task.FromResult result
+
+        let changed =
+            match settings.TransformStarted with
+            | None -> result
+            | Some change ->
+                result
+                |> Result.map (function
+                    | RecoveryStart.Started(id, preparation) ->
+                        RecoveryStart.Started(id, change preparation)
+                    | RecoveryStart.AlreadyStarted(id, preparation) ->
+                        RecoveryStart.AlreadyStarted(id, change preparation)
+                    | other -> other)
+
+        Task.FromResult changed
 
     let settle (state: RecoveryStoreStateData) (settings: RecoveryStoreSettings) attemptId outcome =
         lock state.Gate (fun () -> state.SettlementCalls <- state.SettlementCalls + 1)

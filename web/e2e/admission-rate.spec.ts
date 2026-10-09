@@ -1,8 +1,26 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type APIResponse, type Page } from "@playwright/test";
 
 import { expectAccessible, expectHostFailure, login, progress } from "./session-helpers";
 
 test.use({ storageState: { cookies: [], origins: [] } });
+const cleanup: { required: boolean; batch: Promise<PromiseSettledResult<APIResponse>[]> | null } = {
+  required: false,
+  batch: null,
+};
+const resetWindow = async (page: Page) => {
+  if (cleanup.required) {
+    if (cleanup.batch !== null) {
+      await cleanup.batch;
+    }
+    await progress("rate-window-wait");
+    await page.waitForTimeout(61_000);
+    cleanup.required = false;
+    cleanup.batch = null;
+  }
+};
+test.afterEach(async ({ page }) => {
+  await resetWindow(page);
+});
 
 test("bounds repeated published login admission and recovers after its window", async ({
   page,
@@ -11,11 +29,21 @@ test("bounds repeated published login admission and recovers after its window", 
   await page.goto("/", { waitUntil: "commit" });
   await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
   await progress("rate-probing");
-  let challenges = 0;
   let bounded = false;
-  // Challenge requests exercise admission without submitting any credentials.
-  for (let attempt = 0; attempt < 6; attempt += 1) {
-    const response = await page.request.get("/auth/login", { maxRedirects: 0 });
+  // The shared host may already have consumed permits. A burst crosses at most one
+  // window boundary; eleven requests exceed both possible five-permit allocations.
+  cleanup.required = true;
+  const began = performance.now();
+  cleanup.batch = Promise.allSettled(
+    Array.from({ length: 11 }, () => page.request.get("/auth/login", { maxRedirects: 0 })),
+  );
+  const responses = await cleanup.batch;
+  expect(performance.now() - began).toBeLessThan(60_000);
+  for (const result of responses) {
+    if (result.status !== "fulfilled") {
+      throw new Error("E2E_RATE_REQUEST_FAILED");
+    }
+    const response = result.value;
     if (response.status() === 429) {
       await expectHostFailure(
         {
@@ -27,17 +55,14 @@ test("bounds repeated published login admission and recovers after its window", 
         "WEB_BUSY",
       );
       bounded = true;
-      break;
+      continue;
     }
     if (response.status() !== 302) {
       throw new Error(`E2E_RATE_STATUS_${response.status()}`);
     }
-    challenges += 1;
   }
-  expect(challenges).toBeGreaterThanOrEqual(2);
   expect(bounded).toBe(true);
-  await progress("rate-window-wait");
-  await page.waitForTimeout(61_000);
+  await resetWindow(page);
   await progress("rate-window-ended");
   await page.reload({ waitUntil: "commit" });
   await login(page);

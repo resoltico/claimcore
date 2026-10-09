@@ -400,6 +400,12 @@
   "diagnostic.WEB_INPUT_SOURCE_DIGEST_HEADER": [
     { "type": 0, "value": "ترويسة بصمة المصدر مفقودة أو غير صالحة." }
   ],
+  "diagnostic.RECOVERY_ACCESS_UNAVAILABLE": [
+    {
+      "type": 0,
+      "value": "تم رفض الوصول إلى هذه العملية. احتفظ بهويتها الدقيقة وافحص أدلتها عندما يصبح الوصول متاحًا. لا يحسم هذا الرفض نتائج المحاولات السابقة."
+    }
+  ],
   "field.incidentDate.label": [{ "type": 0, "value": "تاريخ الواقعة" }],
   "field.incidentDate.meaning": [{ "type": 0, "value": "التاريخ الذي وقعت فيه الواقعة." }],
   "field.incidentNotificationDate.label": [
@@ -1035,5 +1041,11 @@
     { "type": 0, "value": "عقد Web v3: " },
     { "type": 1, "value": "digest" }
   ],
-  "ui.fieldHelp": [{ "type": 0, "value": "المعنى والنسخ الدقيق" }]
+  "ui.fieldHelp": [{ "type": 0, "value": "المعنى والنسخ الدقيق" }],
+  "ui.historyDetail": [{ "type": 0, "value": "تفاصيل السجل" }],
+  "ui.summaryHistory": [{ "type": 0, "value": "ملخص" }],
+  "ui.fullHistory": [{ "type": 0, "value": "جميع الحقول المسجلة" }],
+  "ui.requestDigest": [{ "type": 0, "value": "بصمة SHA-256 الدقيقة للطلب" }],
+  "ui.inspectOperationId": [{ "type": 0, "value": "فحص معرّف العملية" }],
+  "ui.exportKnownIdentity": [{ "type": 0, "value": "تصدير باستخدام المعرّف والبصمة" }]
 }

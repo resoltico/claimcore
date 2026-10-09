@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import type { WebV3Response } from "../api/v3";
 import { v3 } from "../api/v3";
 import { NoticeView } from "../presentation/Message";
@@ -54,7 +54,7 @@ const LifecycleDetails = ({ value }: { value: Review }) => {
   );
 };
 
-export const LifecycleStatus = ({
+const AuthorizedLifecycleStatus = ({
   caseReference,
   token,
   reloadSignal,
@@ -83,5 +83,20 @@ export const LifecycleStatus = ({
       ) : null}
       {review.value === null ? null : <LifecycleDetails value={review.value} />}
     </section>
+  );
+};
+
+export const LifecycleStatus = (props: Parameters<typeof AuthorizedLifecycleStatus>[0]) => {
+  const p = usePresentation();
+  const [open, setOpen] = useState(false);
+  return (
+    <details
+      onToggle={(event) => {
+        setOpen(event.currentTarget.open);
+      }}
+    >
+      <summary>{p.text("ui.lifecycleStatus")}</summary>
+      {open ? <AuthorizedLifecycleStatus {...props} /> : null}
+    </details>
   );
 };

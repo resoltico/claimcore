@@ -87,6 +87,7 @@ test("keeps published login, editor, review, receipt and history accessible at n
   await expectAccessible(page);
   await page.getByRole("button", { name: "Return to case" }).click();
   await expect(page.getByRole("heading", { name: "Case detail" })).toBeVisible();
+  await page.getByLabel("History detail", { exact: true }).selectOption("FULL");
   await page.locator(".history-list summary").first().click();
   await progress("a11y-history");
   await expectAccessible(page);

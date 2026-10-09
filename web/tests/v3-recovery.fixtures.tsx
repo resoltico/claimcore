@@ -1,3 +1,5 @@
+import { vi } from "vitest";
+import type { RecoveryActions } from "../src/views/recovery/RecoveryState";
 import { fireEvent } from "./presentation-test-support";
 import type { Rejection } from "../src/api/v3";
 import { fields, operationId, preparation, recoveryPage, response } from "./v3-ui.fixtures";
@@ -89,3 +91,16 @@ export const importFile = (container: HTMLElement, index: number, type: string):
   }
   return new File(["{}"], "recovery.json", { type });
 };
+
+export const mockRecoveryActions = (): RecoveryActions => ({
+  inspectId: vi.fn(),
+  inspect: vi.fn(),
+  loadAttempts: vi.fn(),
+  choose: vi.fn(),
+  act: vi.fn(),
+  exportItem: vi.fn(),
+  exportIdentity: vi.fn(),
+  clearMessage: vi.fn(),
+  preview: vi.fn(),
+  retain: vi.fn(),
+});

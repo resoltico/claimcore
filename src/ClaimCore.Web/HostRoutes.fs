@@ -101,9 +101,8 @@ module HostRoutes =
                 match! Admission.actorGet oidc configuration.Binding context with
                 | Error failure -> return RouteSupport.admissionFailure context failure
                 | Ok principal ->
-                    match! (forActor principal).Definition(context.RequestAborted) with
-                    | QueryOutcome.Succeeded value -> return WebWire.description value
-                    | _ -> return RouteSupport.hostFailure context WebHostFailure.SessionForbidden
+                    let! value = (forActor principal).Definition(context.RequestAborted)
+                    return WebWire.definition value
         }
 
     let private mapSession configuration (application: WebApplication) =

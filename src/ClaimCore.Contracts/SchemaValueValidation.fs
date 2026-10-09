@@ -1,184 +1,169 @@
 namespace ClaimCore.Contracts
 
 open System
-open System.Globalization
 open System.Text.Json
-open System.Text.RegularExpressions
+open SchemaFailures
 
-/// Bounded runtime verification of the same schema AST used to generate service response schemas.
-/// A failed check carries no authored values into transport diagnostics.
+/// One bounded traversal owns both detailed intake refusal and Boolean response verification.
 module SchemaValueValidation =
-    let private matchesPattern (pattern: string) (value: string) =
-        try
-            Regex.IsMatch(
-                value,
-                pattern,
-                RegexOptions.CultureInvariant,
-                TimeSpan.FromMilliseconds(200.)
-            )
-        with :? RegexMatchTimeoutException ->
-            false
-
-    let private validFormat format value =
-        match format with
-        | None -> true
-        | Some "uuid" ->
-            match Guid.TryParseExact(value, "D") with
-            | true, parsed -> parsed <> Guid.Empty && parsed.ToString("D") = value
-            | _ -> false
-        | Some "date" ->
-            let mutable date = Unchecked.defaultof<DateOnly>
-
-            DateOnly.TryParseExact(
-                value,
-                "yyyy-MM-dd",
-                CultureInfo.InvariantCulture,
-                DateTimeStyles.None,
-                &date
-            )
-        | Some "date-time" ->
-            // Explicit seconds and offset prevent the parser from supplying a host calendar
-            // or local zone. Wire schemas separately require canonical UTC round-trip spelling.
-            matchesPattern
-                @"\A[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt][0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?([Zz]|[+-][0-9]{2}:[0-9]{2})\z"
-                value
-            && (DateTimeOffset.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.None)
-                |> fst)
-        | Some "uri" ->
-            match Uri.TryCreate(value, UriKind.Absolute) with
-            | true, _ -> true
-            | _ -> false
-        | _ -> false
-
-    let private stringMatches constraints (element: JsonElement) =
-        if element.ValueKind <> JsonValueKind.String then
-            false
-        else
-            match element.GetString() |> Option.ofObj with
-            | None -> false
-            | Some value ->
-                let count = value.EnumerateRunes() |> Seq.length
-
-                constraints.MinimumLength |> Option.forall (fun minimum -> count >= minimum)
-                && (constraints.MaximumLength |> Option.forall (fun maximum -> count <= maximum))
-                && validFormat constraints.Format value
-                && (constraints.Pattern
-                    |> Option.forall (fun pattern -> matchesPattern pattern value))
-
-    let private integerMatches constraints (element: JsonElement) =
-        let mutable number = 0L
-
-        element.ValueKind = JsonValueKind.Number
-        && element.TryGetInt64(&number)
-        && (constraints.Minimum |> Option.forall (fun minimum -> number >= minimum))
-        && (constraints.Maximum |> Option.forall (fun maximum -> number <= maximum))
-
-    let private constantMatches constant (element: JsonElement) =
-        match constant with
-        | TextConstant expected ->
-            element.ValueKind = JsonValueKind.String && element.GetString() = expected
-        | IntegerConstant expected ->
-            let mutable value = 0L
-
-            element.ValueKind = JsonValueKind.Number
-            && element.TryGetInt64(&value)
-            && value = expected
-        | BooleanConstant expected ->
-            element.ValueKind = JsonValueKind.True && expected
-            || element.ValueKind = JsonValueKind.False && not expected
-        | NullConstant -> element.ValueKind = JsonValueKind.Null
-
-    let private properties (element: JsonElement) =
+    let private properties path (element: JsonElement) =
         if element.ValueKind <> JsonValueKind.Object then
-            None
+            fail path SchemaProblem.ObjectRequired
         else
             let values = element.EnumerateObject() |> Seq.toList
             let names = values |> List.map _.Name
 
             if names.Length <> (names |> Set.ofList |> Set.count) then
-                None
+                fail path SchemaProblem.DuplicateMember
             else
-                Some values
+                Ok(values |> List.map (fun item -> item.Name, item.Value) |> Map.ofList)
 
-    let private primitive schema element =
-        match schema with
-        | StringSchema constraints -> Some(stringMatches constraints element)
-        | IntegerSchema constraints -> Some(integerMatches constraints element)
-        | BooleanSchema ->
-            Some(
-                element.ValueKind = JsonValueKind.True
-                || element.ValueKind = JsonValueKind.False
-            )
-        | NullSchema -> Some(element.ValueKind = JsonValueKind.Null)
-        | NeverSchema -> Some false
-        | ConstantSchema value -> Some(constantMatches value element)
-        | EnumerationSchema values ->
-            Some(values |> List.exists (fun value -> constantMatches value element))
-        | _ -> None
+    let private every check values =
+        values
+        |> List.tryPick (fun value ->
+            match check value with
+            | Ok() -> None
+            | Error reason -> Some reason)
+        |> Option.map Error
+        |> Option.defaultValue (Ok())
 
-    let rec private check definitions depth schema element =
+    let rec private constants definitions depth =
+        function
+        | ReferenceSchema name when depth < 64 ->
+            Map.tryFind name definitions
+            |> Option.map (constants definitions (depth + 1))
+            |> Option.defaultValue Map.empty
+        | ObjectSchema value ->
+            value.Properties
+            |> List.choose (fun property ->
+                match property.Required, property.Schema with
+                | true, ConstantSchema constant -> Some(property.Name, constant)
+                | _ -> None)
+            |> Map.ofList
+        | _ -> Map.empty
+
+    let private selectedAlternative definitions path alternatives (element: JsonElement) =
+        let selectors = alternatives |> List.map (constants definitions 0)
+
+        let common =
+            selectors |> List.map (Map.keys >> Set.ofSeq) |> List.reduce Set.intersect
+
+        let discriminator =
+            common
+            |> Set.toList
+            |> List.tryFind (fun name ->
+                selectors |> List.map (Map.find name) |> Set.ofList |> Set.count > 1)
+
+        match discriminator, properties path element with
+        | Some name, Ok values ->
+            match Map.tryFind name values with
+            | None -> Some(fail (path @ [ name ]) SchemaProblem.MissingMember)
+            | Some value ->
+                let matching =
+                    List.zip alternatives selectors
+                    |> List.filter (fun (_, selector) ->
+                        SchemaPrimitiveValidation.constantMatches (Map.find name selector) value)
+
+                match matching with
+                | [ alternative, _ ] -> Some(Ok alternative)
+                | [] -> Some(fail (path @ [ name ]) SchemaProblem.InvalidValue)
+                | _ -> None
+        | Some _, Error failure -> Some(Error failure)
+        | None, _ -> None
+
+    let rec private check definitions depth path schema element =
         if depth > 64 then
-            false
+            fail path SchemaProblem.InvalidValue
         else
-            match primitive schema element with
+            match SchemaPrimitiveValidation.check path schema element with
             | Some answer -> answer
-            | None -> checkComposite definitions depth schema element
+            | None -> composite definitions depth path schema element
 
-    and private checkComposite definitions depth schema element =
+    and private composite definitions depth path schema (element: JsonElement) =
+        let child schema value =
+            check definitions (depth + 1) path schema value
+
         match schema with
+        | ObjectSchema constraints -> objectValue definitions depth path constraints element
         | ArraySchema constraints ->
             if element.ValueKind <> JsonValueKind.Array then
-                false
+                fail path SchemaProblem.ArrayRequired
             else
                 let values = element.EnumerateArray() |> Seq.toList
 
-                (constraints.MinimumItems
-                 |> Option.forall (fun minimum -> values.Length >= minimum))
-                && (constraints.MaximumItems
-                    |> Option.forall (fun maximum -> values.Length <= maximum))
-                && (values |> List.forall (check definitions (depth + 1) constraints.Item))
+                if
+                    (constraints.MinimumItems
+                     |> Option.exists (fun minimum -> values.Length < minimum))
+                    || (constraints.MaximumItems
+                        |> Option.exists (fun maximum -> values.Length > maximum))
+                then
+                    fail path SchemaProblem.IntegerRange
+                else
+                    every (child constraints.Item) values
         | TupleSchema schemas ->
-            element.ValueKind = JsonValueKind.Array
-            && (let values = element.EnumerateArray() |> Seq.toList
+            if element.ValueKind <> JsonValueKind.Array then
+                fail path SchemaProblem.ArrayRequired
+            else
+                let values = element.EnumerateArray() |> Seq.toList
 
-                values.Length = schemas.Length
-                && List.forall2 (check definitions (depth + 1)) schemas values)
-        | ObjectSchema constraints -> checkObject definitions depth constraints element
+                if values.Length <> schemas.Length then
+                    fail path SchemaProblem.IntegerRange
+                else
+                    List.zip schemas values |> every (fun (schema, value) -> child schema value)
         | DictionarySchema value ->
-            properties element
-            |> Option.exists (
-                List.forall (fun item -> check definitions (depth + 1) value item.Value)
-            )
-        | OneOfSchema alternatives ->
-            alternatives
-            |> List.filter (fun alternative -> check definitions (depth + 1) alternative element)
-            |> List.length
-            |> (=) 1
+            properties path element
+            |> Result.bind (Map.values >> Seq.toList >> every (child value))
+        | OneOfSchema alternatives -> unionValue definitions depth path alternatives element
         | ReferenceSchema name ->
-            definitions
-            |> Map.tryFind name
-            |> Option.exists (fun target -> check definitions (depth + 1) target element)
-        | _ -> false
+            match Map.tryFind name definitions with
+            | Some target -> child target element
+            | None -> fail path SchemaProblem.InvalidValue
+        | _ -> fail path SchemaProblem.InvalidValue
 
-    and private checkObject definitions depth constraints element =
-        match properties element with
-        | None -> false
-        | Some values ->
-            let supplied = values |> List.map (fun item -> item.Name, item.Value) |> Map.ofList
+    and private objectValue definitions depth path constraints element =
+        properties path element
+        |> Result.bind (fun supplied ->
             let declared = constraints.Properties |> List.map _.Name |> Set.ofList
 
-            (constraints.AdditionalProperties
-             || (supplied |> Map.forall (fun name _ -> Set.contains name declared)))
-            && (constraints.Properties
-                |> List.forall (fun item ->
-                    match Map.tryFind item.Name supplied with
-                    | None -> not item.Required
-                    | Some value -> check definitions (depth + 1) item.Schema value))
+            if
+                not constraints.AdditionalProperties
+                && supplied |> Map.exists (fun name _ -> not (Set.contains name declared))
+            then
+                fail path SchemaProblem.UnknownMember
+            else
+                constraints.Properties
+                |> every (fun property ->
+                    match Map.tryFind property.Name supplied with
+                    | None when property.Required ->
+                        fail (path @ [ property.Name ]) SchemaProblem.MissingMember
+                    | None -> Ok()
+                    | Some value ->
+                        check
+                            definitions
+                            (depth + 1)
+                            (path @ [ property.Name ])
+                            property.Schema
+                            value))
 
-    let verify (document: SchemaDocument) (element: JsonElement) =
-        let definitions = document.Definitions |> Map.ofList
+    and private unionValue definitions depth path alternatives element =
+        let results =
+            alternatives
+            |> List.map (fun schema -> check definitions (depth + 1) path schema element)
 
+        match results |> List.filter Result.isOk |> List.length with
+        | 1 -> Ok()
+        | 0 when not alternatives.IsEmpty ->
+            match selectedAlternative definitions path alternatives element with
+            | Some(Ok selected) -> check definitions (depth + 1) path selected element
+            | Some(Error failure) -> Error failure
+            | None -> fail path SchemaProblem.InvalidValue
+        | _ -> fail path SchemaProblem.InvalidValue
+
+    let admit (document: SchemaDocument) (element: JsonElement) =
         try
-            check definitions 0 document.Root element
-        with :? InvalidOperationException ->
-            false
+            check (document.Definitions |> Map.ofList) 0 [] document.Root element
+        with
+        | :? InvalidOperationException
+        | :? ArgumentException -> fail [] SchemaProblem.InvalidValue
+
+    let verify document element = admit document element |> Result.isOk

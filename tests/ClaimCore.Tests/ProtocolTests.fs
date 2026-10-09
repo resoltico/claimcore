@@ -118,7 +118,7 @@ let private rejectedVersions =
 
                     match CliRemoteInvocation.decode document.RootElement with
                     | Error problem ->
-                        Expect.equal problem.Code "INVALID_VALUE" "Revision stays decimal text"
+                        Expect.equal problem.Code "INVALID_SHAPE" "Revision stays decimal text"
                     | Ok _ -> failtest "Numeric revision must not be coerced.")
         ]
 
@@ -204,7 +204,7 @@ let private privateErrorPaths =
 
         let unknownFailure = privacyFailure unknown
         let duplicateFailure = privacyFailure duplicate
-        Expect.equal unknownFailure.Code "INVALID_VALUE" "Unknown key classification"
+        Expect.equal unknownFailure.Code "UNKNOWN_PROPERTY" "Unknown key classification"
         Expect.equal unknownFailure.Path "/input" "Only the registered parent path is returned"
         Expect.equal duplicateFailure.Code "DUPLICATE_KEY" "Nested duplicate classification"
         Expect.equal duplicateFailure.Path "" "Unknown nesting names are not reflected"
@@ -223,8 +223,12 @@ let private missingRequiredInput =
 
         match CliRemoteInvocation.decode document.RootElement with
         | Error problem ->
-            Expect.equal problem.Code "INVALID_VALUE" "Required case reference"
-            Expect.equal problem.Path "/input" "No authored name in outward path"
+            Expect.equal problem.Code "MISSING_PROPERTY" "Required case reference"
+
+            Expect.equal
+                problem.Path
+                "/input/caseReference"
+                "Only the missing declared member is named"
         | Ok _ -> failtest "A missing endpoint input must not reach the runtime.")
 
 let private timeoutAndParser =

@@ -1,0 +1,12 @@
+<Project>
+  <ItemGroup>
+    <Compile Include="CaseListAuthorityTests.fs" />
+    <Compile Include="CaseListCapacityTests.fs" />
+    <Compile Include="ActorBoundReplayTests.fs" />
+    <Compile Include="ActorBoundRecoveryTests.fs" />
+    <Compile Include="ActorAdviceTests.fs" />
+    <Compile Include="RecoveryAuthorityInterleaveFixture.fs" />
+    <Compile Include="RecoveryAuthorityInterleaveTests.fs" />
+    <Compile Include="RecoveryListAuthorityTests.fs" />
+  </ItemGroup>
+</Project>

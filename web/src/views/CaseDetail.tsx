@@ -3,19 +3,14 @@ import { usePresentation } from "../presentation/context";
 import type { Notice } from "../api/notices";
 import { Button } from "react-aria-components/Button";
 import { useCallback } from "react";
-import type {
-  CurrentCase,
-  FieldDescriptor,
-  Receipt,
-  SemanticDefinition,
-  WebV3Response,
-} from "../api/v3";
+import type { CurrentCase, SemanticDefinition, WebV3Response } from "../api/v3";
 import { v3 } from "../api/v3";
 import { CaseFieldsView } from "../components/CaseFieldsView";
 import { ReferenceSummary } from "../components/ReferenceSummary";
 import { CopyValue } from "../components/CopyValue";
 import { type CommandKind } from "../domain/metadata";
-import { useRetryablePage, useRead } from "../hooks/useRead";
+import { useRead } from "../hooks/useRead";
+import { CaseHistory } from "./CaseHistory";
 import { LifecycleStatus } from "./LifecycleStatus";
 
 type CaseDetailProps = {
@@ -27,92 +22,8 @@ type CaseDetailProps = {
   onCommand: (current: CurrentCase, command: CommandKind) => void;
 };
 
-const fullHistory = (response: WebV3Response<"case.history">) => {
-  const { outcome } = response;
-  if (outcome.tag !== "SUCCEEDED") {
-    return null;
-  }
-  if (outcome.data.tag === "NOT_FOUND") {
-    return { items: [], nextCursor: null };
-  }
-  const entries = outcome.data.entries.flatMap((entry) =>
-    entry.tag === "FULL" ? [entry.receipt] : [],
-  );
-  return { items: entries, nextCursor: outcome.data.nextCursor };
-};
-
 const caseLookup = (response: WebV3Response<"case.get">) =>
   response.outcome.tag === "SUCCEEDED" ? response.outcome.data : null;
-
-const HistoryReceipt = ({
-  receipt,
-  fields,
-}: {
-  receipt: Receipt;
-  fields: ReadonlyArray<FieldDescriptor>;
-}) => {
-  const p = usePresentation();
-  return (
-    <li>
-      <details>
-        <summary>
-          {p.text("ui.historySummary", {
-            command: p.commandLabel(receipt.command),
-            revision: p.integer(receipt.snapshot.revision),
-            timestamp: receipt.recordedAt,
-          })}
-        </summary>
-        <p>
-          {p.text("ui.receiptAttribution", {
-            operationId: receipt.operationId,
-            actor: receipt.recordedBy,
-            state: receipt.replayed ? p.text("ui.exactReplay") : p.text("ui.accepted"),
-          })}
-        </p>
-        <CaseFieldsView
-          caseView={receipt.snapshot}
-          fields={fields}
-          context={p.text("ui.historyContext", { operationId: receipt.operationId })}
-        />
-      </details>
-    </li>
-  );
-};
-
-const AcceptedHistory = ({
-  items,
-  cursor,
-  message,
-  loading,
-  load,
-  fields,
-}: ReturnType<typeof useRetryablePage<WebV3Response<"case.history">, Receipt>> & {
-  fields: ReadonlyArray<FieldDescriptor>;
-}) => {
-  const p = usePresentation();
-  return (
-    <section aria-labelledby="history-title">
-      <h2 id="history-title">{p.text("ui.acceptedHistory")}</h2>
-      <p>{p.text("ui.historyHint")}</p>
-      <ol className="history-list">
-        {items.map((receipt) => (
-          <HistoryReceipt key={receipt.operationId} receipt={receipt} fields={fields} />
-        ))}
-      </ol>
-      {message === null ? null : (
-        <p className="error" role="alert">
-          <NoticeView value={message} />
-        </p>
-      )}
-      {loading ? <p role="status">{p.text("ui.loadingHistory")}</p> : null}
-      {cursor === null ? null : (
-        <Button onPress={() => void load(cursor)} isDisabled={loading}>
-          {p.text("ui.moreHistory")}
-        </Button>
-      )}
-    </section>
-  );
-};
 
 const AvailableCommands = ({
   current,
@@ -230,15 +141,6 @@ export const CaseDetail = ({
     [caseReference, token],
   );
   const current = useRead(get, caseLookup, `${caseReference}:${reloadSignal}`);
-  const historyRequest = useCallback(
-    (cursor: string | null, signal: AbortSignal) =>
-      v3.history(caseReference, cursor, 50, token, signal),
-    [caseReference, token],
-  );
-  const history = useRetryablePage<WebV3Response<"case.history">, Receipt>(
-    historyRequest,
-    fullHistory,
-  );
   const lookup = current.value?.tag === "FOUND" ? current.value.current : null;
   return (
     <section aria-labelledby="case-detail-title">
@@ -254,7 +156,12 @@ export const CaseDetail = ({
       {current.loading ? null : (
         <LifecycleStatus caseReference={caseReference} token={token} reloadSignal={reloadSignal} />
       )}
-      <AcceptedHistory {...history} fields={definition.fields} />
+      <CaseHistory
+        key={`${caseReference}:${reloadSignal}`}
+        token={token}
+        caseReference={caseReference}
+        fields={definition.fields}
+      />
     </section>
   );
 };

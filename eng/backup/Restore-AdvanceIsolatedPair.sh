@@ -7,6 +7,8 @@ image="$(jq -er '.containerImage' "${repo_root}/db/postgresql-baseline.json")"
 primary_source="${1:?labelled primary source ID}"
 witness_source="${2:?labelled witness source ID}"
 scratch="${3:?owner-private synthetic scratch}"
+primary_prefix="${4:?finite completed primary WAL prefix}"
+witness_prefix="${5:?finite completed witness WAL prefix}"
 pg_bin="${CLAIMCORE_PG_BIN:-/opt/homebrew/opt/libpq/bin}"
 export PATH="${pg_bin}:${PATH}"
 
@@ -23,6 +25,8 @@ trap cleanup_error ERR
 
 [[ "${primary_source}" =~ ^[0-9a-f]{64}$ && "${witness_source}" =~ ^[0-9a-f]{64}$ ]]
 [[ "${primary_source}" != "${witness_source}" ]]
+[[ "${primary_prefix}" =~ ^[0-9A-F]{24}(,[0-9A-F]{24})*$ ]]
+[[ "${witness_prefix}" =~ ^[0-9A-F]{24}(,[0-9A-F]{24})*$ ]]
 physical_scratch="$(cd "${scratch}" && pwd -P)"
 [[ -d "${scratch}" && ! -L "${scratch}" && "${physical_scratch}" == "${scratch}" ]]
 
@@ -41,12 +45,20 @@ for name in primary witness; do
   pg_verifybackup "${scratch}/advanced/${name}" >/dev/null
 done
 
-stage="unregistered-wal-tail"
-docker cp "${primary_source}:/var/lib/postgresql/18/docker/pg_wal/." \
-  "${scratch}/advanced/primary/pg_wal" >/dev/null
-docker cp "${witness_source}:/var/lib/postgresql/18/docker/pg_wal/." \
-  "${scratch}/advanced/witness/pg_wal" >/dev/null
+stage="completed-wal-tail"
 for name in primary witness; do
+  source="${primary_source}"
+  prefix="${primary_prefix}"
+  if [[ "${name}" == witness ]]; then
+    source="${witness_source}"
+    prefix="${witness_prefix}"
+  fi
+  IFS=, read -r -a segments <<<"${prefix}"
+  [[ "${#segments[@]}" -ge 1 && "${#segments[@]}" -le 1000 ]]
+  for segment in "${segments[@]}"; do
+    docker cp "${source}:/var/lib/postgresql/18/docker/pg_wal/${segment}" \
+      "${scratch}/advanced/${name}/pg_wal/${segment}" >/dev/null
+  done
   size_kib="$(du -sk "${scratch}/advanced/${name}/pg_wal" | awk '{print $1}')"
   [[ "${size_kib}" =~ ^[0-9]+$ && "${size_kib}" -gt 0 && "${size_kib}" -le 1048576 ]]
 done

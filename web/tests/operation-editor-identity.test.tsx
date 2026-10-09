@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import type { CurrentCase, Rejection } from "../src/api/v3";
 import { OperationEditor } from "../src/views/OperationEditor";
-import { definition, fields, preparation, response } from "./v3-ui.fixtures";
+import { definition, fields, preparation, response, runtime } from "./v3-ui.fixtures";
 
 type SentDraft = {
   operationId: string;
@@ -41,7 +41,7 @@ const preparedResponse = () =>
       before: null,
       proposed: { fields, revision: "1" },
       changes: [],
-      context: definition.runtime,
+      context: runtime,
       advisory: true,
     },
   });

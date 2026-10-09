@@ -158,6 +158,13 @@ type RuntimeStub(?invalidExportMetadata: bool) as this =
         this.CoreCalls <- this.CoreCalls + 1
         stubResult configured fallback
 
+    let emptyCases: CaseSummaryPage =
+        {
+            Items = []
+            NextCursor = None
+            AvailableCommands = []
+        }
+
     let actorCore =
         { new IActorClaimsCore with
             member _.Definition(_) =
@@ -184,9 +191,7 @@ type RuntimeStub(?invalidExportMetadata: bool) as this =
                         (QueryOutcome.Succeeded(Lookup.NotFound reference))
 
             member _.List(_, _) =
-                recordCoreCall
-                    this.ListOutcome
-                    (QueryOutcome.Succeeded { Items = []; NextCursor = None })
+                recordCoreCall this.ListOutcome (QueryOutcome.Succeeded emptyCases)
 
             member _.History(request, _) =
                 recordCoreCall

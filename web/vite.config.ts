@@ -9,6 +9,14 @@ const testWorkers = Math.max(1, Math.min(6, Math.ceil(availableParallelism() / 3
 // context-checked here, and required zero-warning Vitest runs exercise the test block.
 export default {
   plugins: [react()],
+  resolve: {
+    alias: [
+      {
+        find: /^@formatjs\/icu-messageformat-parser$/u,
+        replacement: "@formatjs/icu-messageformat-parser/no-parser.js",
+      },
+    ],
+  },
   build: {
     chunkSizeWarningLimit: 600,
     rolldownOptions: {
@@ -36,7 +44,7 @@ export default {
       provider: "v8",
       reporter: ["text", "json-summary"],
       reportsDirectory: "../artifacts/frontend/coverage",
-      include: ["src/**/*.{ts,tsx}"],
+      include: ["src/**/*.{ts,tsx}", "src/presentation/pseudolocalization.mjs"],
       thresholds: {
         statements: 90,
         branches: 85,

@@ -14,8 +14,8 @@ module RejectionDiagnosticSchemas =
             parameter.Name
             (Schema.integer (Some(int64 parameter.Minimum)) (Some(int64 parameter.Maximum)))
 
-    let value =
-        RejectionDiagnosticIds.definitions
+    let internal forDefinitions definitions =
+        definitions
         // Equal parameter shapes share one variant; IDs remain disjoint and exact.
         // This preserves strict validation without duplicating empty-object validators.
         |> List.groupBy (fun definition -> definition.Parameters)
@@ -33,6 +33,9 @@ module RejectionDiagnosticSchemas =
                         (parameters |> List.map parameterSchema |> Schema.objectOf false)
                 ])
         |> Schema.oneOf
+
+    let value = forDefinitions RejectionDiagnosticIds.definitions
+    let scalarAdmission = forDefinitions ScalarAdmissionDiagnostics.definitions
 
     let private parameterDefinition parameters =
         parameters

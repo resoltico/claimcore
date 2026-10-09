@@ -153,5 +153,11 @@
   "ui.productVersion": "Product version: {version}",
   "ui.semanticIdentity": "Semantic contract: {digest}",
   "ui.webIdentity": "Web v3 contract: {digest}",
-  "ui.fieldHelp": "Meaning and exact copy"
+  "ui.fieldHelp": "Meaning and exact copy",
+  "ui.historyDetail": "History detail",
+  "ui.summaryHistory": "Summary",
+  "ui.fullHistory": "Full recorded fields",
+  "ui.requestDigest": "Exact request SHA-256 digest",
+  "ui.inspectOperationId": "Inspect operation ID",
+  "ui.exportKnownIdentity": "Export by ID and digest"
 }

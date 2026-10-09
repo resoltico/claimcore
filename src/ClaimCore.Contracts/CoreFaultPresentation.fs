@@ -18,6 +18,8 @@ module CoreFaultPresentation =
 
     let private group1 =
         [
+            CoreFault.RecoveryAccessUnavailable,
+            "Access to this operation was refused. Preserve its exact identity and inspect its evidence when access is available. This refusal does not settle earlier attempts."
             CoreFault.RecoveryContentConflict, "Recovery identity conflicts with retained data."
             CoreFault.RecoveryPreparationMissing, "Recovery storage lost an expected preparation."
             CoreFault.RecoveryCapacityExhausted, "Recovery capacity is exhausted."

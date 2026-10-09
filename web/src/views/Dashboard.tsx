@@ -1,11 +1,10 @@
-import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
 import { Button } from "react-aria-components/Button";
 import { useState } from "react";
-import type { CurrentCase, DefinitionPayload, Receipt } from "../api/v3";
+import type { CurrentCase, PublicDefinition, Receipt } from "../api/v3";
 import type { RecoveryTarget } from "../domain/operationState";
 import type { CommandKind } from "../domain/metadata";
-import { useDefinition } from "../hooks/useDefinition";
+import { productMetadata } from "../generated/contracts/web-v3.product-metadata";
 import { CaseDetail } from "./CaseDetail";
 import { CaseList } from "./CaseList";
 import { OperationEditor } from "./OperationEditor";
@@ -13,14 +12,14 @@ import { OperationLookup } from "./OperationLookup";
 import { RecoveryView } from "./RecoveryView";
 
 type OperationTarget = { current: CurrentCase | null; command: CommandKind };
-type DashboardProps = { token: string; sessionEpoch: number; onLogout: () => Promise<void> };
+type DashboardProps = { token: string; onLogout: () => Promise<void> };
 
 const Header = ({
   definition,
   locked,
   onLogout,
 }: {
-  definition: DefinitionPayload | null;
+  definition: PublicDefinition;
   locked: boolean;
   onLogout: () => Promise<void>;
 }) => {
@@ -29,15 +28,13 @@ const Header = ({
     <header>
       <div>
         <p className="eyebrow">{p.text("ui.registerLabel")}</p>
-        <h1>{definition === null ? "ClaimCore" : definition.definition.application}</h1>
-        {definition === null ? null : (
-          <details>
-            <summary>{p.text("ui.technicalDetails")}</summary>
-            <p>{p.text("ui.productVersion", { version: definition.runtime.productVersion })}</p>
-            <p>{p.text("ui.semanticIdentity", { digest: definition.semanticFingerprint })}</p>
-            <p>{p.text("ui.webIdentity", { digest: definition.webFingerprint })}</p>
-          </details>
-        )}
+        <h1>{definition.definition.application}</h1>
+        <details>
+          <summary>{p.text("ui.technicalDetails")}</summary>
+          <p>{p.text("ui.productVersion", { version: definition.productVersion })}</p>
+          <p>{p.text("ui.semanticIdentity", { digest: definition.semanticFingerprint })}</p>
+          <p>{p.text("ui.webIdentity", { digest: definition.webFingerprint })}</p>
+        </details>
       </div>
       <Button onPress={() => void onLogout()} isDisabled={locked}>
         {p.text("ui.signOut")}
@@ -76,7 +73,7 @@ const DashboardNav = ({
 
 type ContentProps = {
   token: string;
-  definition: DefinitionPayload | null;
+  definition: PublicDefinition;
   active: string;
   operation: OperationTarget | null;
   selectedReference: string | null;
@@ -131,15 +128,11 @@ const CasesPane = ({
 
 const DashboardContent = (props: ContentProps) => {
   const { definition, operation } = props;
-  const p = usePresentation();
   const workflow = {
     token: props.token,
     onRecovery: props.recover,
     onMutationLockChange: props.setLocked,
   };
-  if (definition === null) {
-    return <p>{p.text("ui.loadingDefinition")}</p>;
-  }
   if (operation !== null) {
     return (
       <OperationEditor
@@ -220,20 +213,15 @@ const useDashboardNavigation = () => {
   };
 };
 
-export const Dashboard = ({ token, sessionEpoch, onLogout }: DashboardProps) => {
+export const Dashboard = ({ token, onLogout }: DashboardProps) => {
   const navigation = useDashboardNavigation();
-  const { definition, message } = useDefinition(sessionEpoch);
+  const definition = productMetadata;
   const locked = navigation.locked || navigation.operation !== null;
 
   return (
     <main className="app-shell">
       <Header definition={definition} locked={locked} onLogout={onLogout} />
       <DashboardNav active={navigation.active} locked={locked} navigate={navigation.navigate} />
-      {message === null ? null : (
-        <p className="error" role="alert">
-          <NoticeView value={message} />
-        </p>
-      )}
       <DashboardContent {...navigation} token={token} definition={definition} />
     </main>
   );

@@ -17,7 +17,8 @@ type internal Store
         ?onGet: unit -> unit,
         ?getFailure: RecoveryStoreFailure,
         ?transformGet: RetainedPreparation -> RetainedPreparation,
-        ?onStart: unit -> unit
+        ?onStart: unit -> unit,
+        ?transformStarted: RetainedPreparation -> RetainedPreparation
     ) =
     let state = RecoveryStoreState.create ()
 
@@ -32,6 +33,7 @@ type internal Store
             GetFailure = getFailure
             TransformGet = transformGet
             OnStart = onStart
+            TransformStarted = transformStarted
         }
 
     member _.StartCalls = state.StartCalls

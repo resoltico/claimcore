@@ -106,6 +106,7 @@ foreign_secret="$(openssl rand -base64 36 | tr -d '\n')"
 web_secret="$(openssl rand -base64 36 | tr -d '\n')"
 owner_password="$(openssl rand -base64 36 | tr -d '\n')"
 steward_password="$(openssl rand -base64 36 | tr -d '\n')"
+outsider_password="$(openssl rand -base64 36 | tr -d '\n')"
 
 jq -n \
   --arg realm "${realm}" \
@@ -115,6 +116,7 @@ jq -n \
   --arg webSecret "${web_secret}" \
   --arg ownerPassword "${owner_password}" \
   --arg stewardPassword "${steward_password}" \
+  --arg outsiderPassword "${outsider_password}" \
   '{realm:$realm,enabled:true,sslRequired:"none",loginWithEmailAllowed:false,
     accessTokenLifespan:15,
     clients:[
@@ -147,7 +149,10 @@ jq -n \
        credentials:[{type:"password",value:$ownerPassword,temporary:false}]},
       {username:"synthetic-steward",email:"steward@example.test",firstName:"Synthetic",
        lastName:"Steward",enabled:true,emailVerified:true,requiredActions:[],
-       credentials:[{type:"password",value:$stewardPassword,temporary:false}]}
+       credentials:[{type:"password",value:$stewardPassword,temporary:false}]},
+      {username:"synthetic-outsider",email:"outsider@example.test",firstName:"Synthetic",
+       lastName:"Outsider",enabled:true,emailVerified:true,requiredActions:[],
+       credentials:[{type:"password",value:$outsiderPassword,temporary:false}]}
     ]}' >"${workdir}/realm.json"
 
 jq -n --arg realm "${foreign_realm}" --arg secret "${foreign_secret}" \
@@ -171,6 +176,7 @@ jq -n \
   --arg adminPassword "${admin_password}" \
   --arg ownerPassword "${owner_password}" \
   --arg stewardPassword "${steward_password}" \
+  --arg outsiderPassword "${outsider_password}" \
   '{realm:$realm,publicClientId:"claimcore-cli",webClientId:"claimcore-web",
     webClientSecret:$webSecret,apiAudience:"claimcore-api",
     serviceClientId:"claimcore-service",serviceClientSecret:$clientSecret,
@@ -178,7 +184,8 @@ jq -n \
     foreignRealm:$foreignRealm,foreignClientSecret:$foreignSecret,
     adminUsername:"synthetic-admin",adminPassword:$adminPassword,
     users:[{username:"synthetic-owner",password:$ownerPassword},
-           {username:"synthetic-steward",password:$stewardPassword}]}' >"${workdir}/credentials.json"
+           {username:"synthetic-steward",password:$stewardPassword},
+           {username:"synthetic-outsider",password:$outsiderPassword}]}' >"${workdir}/credentials.json"
 
 printf 'KC_BOOTSTRAP_ADMIN_USERNAME=synthetic-admin\nKC_BOOTSTRAP_ADMIN_PASSWORD=%s\n' \
   "${admin_password}" >"${workdir}/admin.env"

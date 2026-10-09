@@ -121,6 +121,12 @@ uncertainty. Fields and action selectors expose editing only in the reducer's ed
 rejected phases. Accepted results show their receipt and explicit Return path; Return rereads current
 state before advertising actions. Separate unconfirmed witness-settlement guidance remains visible.
 
+The browser bootstraps from bundled public product metadata generated with matching assets: static
+semantic descriptors, build-owned product version and exact semantic/Web fingerprints. It admits
+the host fingerprint through the anonymous/session snapshot before displaying an authenticated
+workspace. This metadata contains no installation time zone or effective business date; the live
+`definition` endpoint keeps its existing actor authority and returns typed rejection, failure or
+cancellation without relabeling them as an invalid session.
 Support version and exact contract identities are available in localized technical details. Read-only
 fields retain all thirteen values and offer contextual meaning/canonical copy controls; scalar input
 syntax belongs beside authoring fields.
@@ -131,6 +137,10 @@ not change the installation's business time zone or recorded currency. Each tab 
 amounts follow the selected format, but authored dates and amounts retain their canonical input
 syntax. Copied canonical values and downloaded recovery artifacts remain exact. Read-only business values use directional isolation and code-point warnings for suspicious characters; review, recovery and import target summaries provide the same protection for exact case references. List, detail, history, receipt and lookup references use the same display boundary, including an entered target that was not found. Before/after words stay outside the isolated value. Clipboard fallback exposes warnings while retaining the exact attempted text. Warning and presentation markers never enter canonical requests or exports.
 
+Case detail requests lifecycle status only when the operator deliberately expands that optional
+review. Case history defaults to authorized SUMMARY entries; FULL is a deliberate mode, with a
+fresh page sequence and cancellation of the previous mode. A refusal of one read does not disable
+known-reference case lookup or other independent permitted workflows.
 The case detail reads disposition and privacy status through the authorized lifecycle review. It
 shows active holds as a separate erasure blocker and warns when a data-entry-error void requires
 two distinct approvals; voiding does not reverse a payment. An unavailable review exposes no
@@ -251,6 +261,9 @@ state, and never retry automatically.
 
 An uncertain submit or non-reviewable retained preparation opens Recovery with that exact identity.
 Inspect remains explicit and does not depend on the operation appearing in the pending list.
+Recovery also accepts a known operation ID independently of installation listing, and known ID plus
+exact digest for confirmed export independently of inspection. These controls recheck their own
+capability; an exporter grant supplies neither inspection, resolution nor case editing.
 Operations lookup is prefilled with the same ID for observation when preparation is absent or pruned;
 absence is never proof of failure. A known accepted receipt remains acceptance evidence when its
 response also reports unconfirmed witness settlement; the browser separately directs Recovery.
@@ -259,12 +272,14 @@ response also reports unconfirmed witness settlement; the browser separately dir
 
 The browser lists actionable pending recovery work by default and offers an explicit bounded terminal
 view for accepted and revoked technical material. Detailed inspection pages identified attempts with
-an opaque operation-bound cursor; unset settlements remain uncertain even after a later accepted retry. A
+an opaque operation-bound cursor; unset settlements remain uncertain even after a later accepted retry. Inspected `availableActions`
+intersects state eligibility with current actor grants; other summaries remain state facts and
+require fresh inspection before driving action controls. A
 pruned revoked preparation is a payload-free tombstone, not a substitute for claimant data. The UI
 can resolve or dismiss only after accessible confirmation using the exact operation ID and digest.
 Resolve confirmation explains that the exact reviewed request may be recorded or an earlier result observed; the returned outcome determines what happened. Dismissal confirmation explains that confirmed future-authority revocation is permanent and does not settle an earlier uncertain attempt. Closing either unsent confirmation cancels only that confirmation. Closing a prepared review returns to editing and keeps its server preparation for Recovery; Escape and outside-click have that same effect when dismissal is permitted. Running submissions cannot be dismissed. An accepted receipt is not offered as a new resolve action; an exact replay can observe it without a
-second accepted revision. Reload clears browser review state; durable recovery is the Application
-workflow, not browser state.
+second accepted revision. Reload or closing the tab loses unprepared browser edits and in-memory review state. Durable
+preparations and exact recovery remain Application workflows; browser drafts are not durable storage.
 
 Recovery resolve, dismiss, retain and export lock navigation/logout through dispatch. Resolution and dismissal
 invalidate old inspected mutation actions; results retain the subject ID/digest for fresh inspection.

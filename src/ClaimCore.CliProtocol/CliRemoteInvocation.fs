@@ -23,10 +23,9 @@ module CliRemoteInvocation =
                 Definitions = definitions
             }
 
-        if SchemaValueValidation.verify schema input then
-            Ok input
-        else
-            failure ProtocolProblem.InvalidToken "/input"
+        SchemaValueValidation.admit schema input
+        |> Result.map (fun () -> input)
+        |> Result.mapError (ProtocolFailure.fromSchema "/input")
 
     let private timeout endpoint frame identifier input =
         match StrictJson.optionalProperty "timeoutMs" frame with

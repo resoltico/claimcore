@@ -1,21 +1,13 @@
+import { mockRecoveryActions } from "./v3-recovery.fixtures";
 import { expect, it, vi } from "vitest";
 import { render, screen } from "./presentation-test-support";
 import { preferenceKey } from "../src/presentation/preferences";
 import { RecoveryDetailsDialog } from "../src/views/recovery/RecoveryPanels";
-import type { Inspection, RecoveryActions } from "../src/views/recovery/RecoveryState";
+import type { Inspection } from "../src/views/recovery/RecoveryState";
 import { operationId, preparation } from "./v3-ui.fixtures";
 import { createPresenter } from "../src/presentation/presenter";
 
-const actions: RecoveryActions = {
-  inspectId: vi.fn(),
-  inspect: vi.fn(),
-  loadAttempts: vi.fn(),
-  choose: vi.fn(),
-  act: vi.fn(),
-  exportItem: vi.fn(),
-  preview: vi.fn(),
-  retain: vi.fn(),
-};
+const actions = mockRecoveryActions();
 const authoredValues = [
   { name: "registration.action", value: "REPLACE" },
   { name: "decision.action", value: "KEEP" },

@@ -25,8 +25,7 @@ or consults ambient UI culture. CLI and Web share the same rejection codec. Cont
 
 This applies wherever an ordinary `Rejection` appears, including rejection inside a definite recovery
 execution result. `CoreFault` and `RecoveryRejection` are also closed reasons with derived `Code` and
-`Action`, without writable messages or arbitrary argument bags. `CoreFaults` declares 22 explicit
-fault identities; `RecoveryRejections` declares 20 refusal identities. Their arguments are exactly
+`Action`, without writable messages or arbitrary argument bags. `CoreFaults` and `RecoveryRejections` declare their closed fault and refusal inventories. Their arguments are exactly
 empty objects: none needs submitted values or provider details. Recovery input causes distinguish
 operation IDs, digests, page limits, invalid and wrongly bound cursors, and dismissal confirmation.
 Source-artifact digest mismatch is distinct from a retained request digest mismatch.
@@ -38,6 +37,16 @@ dismissal, and import outcomes. The outer outcome still owns commit knowledge. B
 Revocation ends future authority without asserting historical nonexecution; exhausted attempts require
 exact evidence reconciliation before new work. Browser cancellation notices distinguish this request's
 admission/attempt boundary from ordinary refusal and uncertainty, without settling earlier attempts.
+An access-specific `RECOVERY_ACCESS_UNAVAILABLE` fault is separate from invalid storage responses.
+Before admission, the invocation retains its failed-before-attempt phase. After admission, it
+retains the identified unresolved attempt; an access refusal never settles an earlier unknown
+attempt as rejected. Preserve the exact operation ID, digest and request bytes and inspect
+when authorized access is available.
+Retained canonical or Domain-shape validation failure after a confirmed or historical attempt
+start likewise preserves that exact unresolved attempt and its specific retained fault. A failure
+to decode the returned summary retains previously validated identity and known admission state.
+An unexpectedly faulted or cancelled `Start` invocation leaves admission unknown; only its typed
+pre-commit cancellation result proves cancellation before an attempt.
 A fault diagnostic alone does not prove non-commit or authorize retry. Defensive store-cancellation
 projections retain their existing meaning; ordinary cancellation paths still return their cancellation outcomes.
 
@@ -91,7 +100,10 @@ NDJSON lines terminate the process with exit 2 and one `FRAME_TOO_LARGE` respons
 after the first excess byte, without waiting for newline or EOF. Restart before sending another
 frame. Complete malformed frames and wrong scalar kinds return frame-local typed refusals;
 the refusal does not settle earlier operation uncertainty. CLI-v4 `protocolFailure` frames use
-flat `diagnosticId`, `code`, and known-member `path`, separately from core diagnostic objects.
+flat `diagnosticId`, `code`, and known-member `path`, separately from core outcome objects.
+A local `CLI_INVALID_SCALAR` additionally carries exact `scalarDiagnostic.id` and `parameters`
+from the shared scalar diagnostic owner. Missing, excess, unknown and nonlocal causes are refused.
+This is transport admission, not a manufactured Domain rejection or proof about an earlier attempt.
 `claimcore describe diagnostics` publishes the protocol and process schemas without opening a store.
 
 HTTP readers return `HttpInputProblem`, not English sentences. The host policy binds each identity

@@ -126,5 +126,6 @@
   "diagnostic.WEB_INPUT_PAGE_RANGE": "حجم الصفحة المطلوب خارج النطاق المسموح.",
   "diagnostic.WEB_INPUT_HISTORY_DETAIL": "مستوى تفاصيل السجل المطلوب غير مدعوم.",
   "diagnostic.WEB_INPUT_RECOVERY_VIEW": "عرض الاسترداد المطلوب غير مدعوم.",
-  "diagnostic.WEB_INPUT_SOURCE_DIGEST_HEADER": "ترويسة بصمة المصدر مفقودة أو غير صالحة."
+  "diagnostic.WEB_INPUT_SOURCE_DIGEST_HEADER": "ترويسة بصمة المصدر مفقودة أو غير صالحة.",
+  "diagnostic.RECOVERY_ACCESS_UNAVAILABLE": "تم رفض الوصول إلى هذه العملية. احتفظ بهويتها الدقيقة وافحص أدلتها عندما يصبح الوصول متاحًا. لا يحسم هذا الرفض نتائج المحاولات السابقة."
 }

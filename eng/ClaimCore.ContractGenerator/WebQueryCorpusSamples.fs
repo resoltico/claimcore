@@ -2,6 +2,7 @@ namespace ClaimCore.ContractGeneration
 
 open ClaimCore.Application
 open ClaimCore.Contracts
+open ClaimCore.Domain
 
 [<RequireQualifiedAccess>]
 module internal WebQueryCorpusSamples =
@@ -25,6 +26,18 @@ module internal WebQueryCorpusSamples =
                 "definition-described"
                 "definition"
                 (WebWireCodec.description WebCorpusSamples.description)
+            sample
+                "definition-rejected"
+                "definition"
+                (WebWireCodec.definition (QueryOutcome.Rejected Rejection.ResourceUnavailable))
+            sample
+                "definition-failed"
+                "definition"
+                (WebWireCodec.definition (QueryOutcome.Failed CoreFault.StoreUnavailable))
+            sample
+                "definition-cancelled"
+                "definition"
+                (WebWireCodec.definition QueryOutcome.Cancelled)
         ]
 
     let caseGet =
@@ -36,6 +49,12 @@ module internal WebQueryCorpusSamples =
                 "case-get-found"
                 endpoint
                 (encode (QueryOutcome.Succeeded(Lookup.Found CliCorpusValues.currentCase)))
+            sample
+                "case-get-found-scalar-one"
+                endpoint
+                (encode (
+                    QueryOutcome.Succeeded(Lookup.Found CliCorpusValues.scalarSingleCurrentCase)
+                ))
             sample
                 "case-get-found-four-byte-boundary"
                 endpoint
@@ -80,12 +99,20 @@ module internal WebQueryCorpusSamples =
                         {
                             Items = [ CliCorpusValues.caseSummary ]
                             NextCursor = Some "synthetic-case-list-cursor"
+                            AvailableCommands = [ CommandKind.Open ]
                         }
                 ))
             sample
                 "case-list-empty-page"
                 endpoint
-                (encode (QueryOutcome.Succeeded { Items = []; NextCursor = None }))
+                (encode (
+                    QueryOutcome.Succeeded
+                        {
+                            Items = []
+                            NextCursor = None
+                            AvailableCommands = []
+                        }
+                ))
         ]
         @ WebCorpusSamples.queryFailures
             "case-list"

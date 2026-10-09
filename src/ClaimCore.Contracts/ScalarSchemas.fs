@@ -28,7 +28,7 @@ module internal ScalarSchemas =
                 yield digits
             ]
 
-        "^(?:" + String.concat "|" (shorter :: sameLength) + ")$"
+        "^(?:" + String.concat "|" (shorter :: sameLength) + ")(?![\\s\\S])"
 
     let decimalText =
         let maximum = Int64.MaxValue - 1L
@@ -47,20 +47,25 @@ module internal ScalarSchemas =
     let private textGuards (constraints: ScalarTextConstraints) =
         [
             if constraints.RequiresNonBlank then
-                "(?![" + whitespace + "]*$)"
-
-            if constraints.RejectsSurroundingWhitespace then
-                "(?![" + whitespace + "])(?![\\s\\S]*[" + whitespace + "]$)"
-
-            if constraints.RejectsControlCharacters then
-                "(?![\\s\\S]*[\\u0000-\\u001f\\u007f-\\u009f])"
+                ("(?![" + whitespace + "]*$)", InputViolation.Text TextViolation.NonBlankRequired)
 
             if constraints.RequiresWellFormedUnicode then
-                "(?![\\s\\S]*[\\ud800-\\udfff])"
+                ("(?=(?:[^\\ud800-\\udfff]|[\\ud800-\\udbff][\\udc00-\\udfff])*$)",
+                 InputViolation.Text TextViolation.MalformedUnicode)
+
+            if constraints.RejectsSurroundingWhitespace then
+                ("(?![" + whitespace + "])(?![\\s\\S]*[" + whitespace + "]$)",
+                 InputViolation.Text TextViolation.SurroundingWhitespace)
+
+            if constraints.RejectsControlCharacters then
+                ("(?![\\s\\S]*[\\u0000-\\u001f\\u007f-\\u009f])",
+                 InputViolation.Text TextViolation.ControlCharacters)
+
+
         ]
 
     let private textPattern (constraints: ScalarTextConstraints) =
-        let guards = textGuards constraints
+        let guards = textGuards constraints |> List.map fst
 
         if guards.IsEmpty then
             None
@@ -68,7 +73,13 @@ module internal ScalarSchemas =
             Some("^" + String.concat "" guards + "[\\s\\S]*$")
 
     let private grammarPattern (constraints: ScalarTextConstraints) grammar =
-        Some("^" + String.concat "" (textGuards constraints) + "(?:" + grammar + ")$")
+        Some(
+            "^"
+            + String.concat "" (textGuards constraints |> List.map fst)
+            + "(?:"
+            + grammar
+            + ")$"
+        )
 
     let uuid =
         Schema.string
@@ -85,7 +96,7 @@ module internal ScalarSchemas =
             (Some constraints.MinimumCharacters)
             (Some constraints.MaximumCharacters)
 
-    let scalar (value: ScalarRule) =
+    let private project (value: ScalarRule) =
         match value with
         | ScalarRule.CalendarDate rule ->
             if
@@ -117,3 +128,33 @@ module internal ScalarSchemas =
             rule.AllowedValues
             |> List.map (CaseStatuses.token >> TextConstant)
             |> Schema.enumeration
+
+    let private guardedText constraints =
+        textGuards constraints
+        |> List.map (fun (pattern, violation) -> "^" + pattern + "[\\s\\S]*$", violation)
+
+    let scalar value =
+        let guards =
+            match value with
+            | ScalarRule.Text rule -> guardedText rule
+            | ScalarRule.Amount rule ->
+                guardedText rule.Text
+                @ [
+                    "^(?:" + rule.Grammar + ")$",
+                    InputViolation.Amount(
+                        AmountViolation.DecimalFormat(
+                            rule.MaximumIntegerDigits,
+                            rule.MaximumFractionalDigits
+                        )
+                    )
+                ]
+            | ScalarRule.Currency rule ->
+                guardedText rule.Text
+                @ [
+                    "^(?:" + rule.Grammar + ")$",
+                    InputViolation.Amount AmountViolation.CurrencyFormat
+                ]
+            | ScalarRule.CalendarDate _
+            | ScalarRule.CaseStatus _ -> []
+
+        project value |> Schema.scalarDiagnostics value guards

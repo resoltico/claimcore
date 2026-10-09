@@ -15,7 +15,7 @@ let private digest path =
     use stream = File.OpenRead(path)
     SHA256.HashData(stream) |> Convert.ToHexStringLower
 
-let private prefix (source: PhysicalCopyCapture) cluster horizon segment =
+let prefix (source: PhysicalCopyCapture) cluster horizon segment =
     let baseCopy =
         source.Objects
         |> List.find (fun item -> item.Cluster = cluster && item.Kind = "BASE")

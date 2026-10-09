@@ -188,7 +188,12 @@ let private serviceResponseSchema () =
 
     let schema = WebSchemas.responseDocument model endpoint
 
-    let page = { Items = []; NextCursor = None }
+    let page =
+        {
+            Items = []
+            NextCursor = None
+            AvailableCommands = []
+        }
 
     let bytes = WebWireCodec.list (QueryOutcome.Succeeded page)
     use document = System.Text.Json.JsonDocument.Parse(ReadOnlyMemory bytes)

@@ -466,6 +466,12 @@
   "diagnostic.WEB_INPUT_SOURCE_DIGEST_HEADER": [
     { "type": 0, "value": "Avota kontrolsummas galvene trūkst vai nav derīga." }
   ],
+  "diagnostic.RECOVERY_ACCESS_UNAVAILABLE": [
+    {
+      "type": 0,
+      "value": "Piekļuve šai operācijai tika atteikta. Saglabājiet tās precīzo identitāti un pārbaudiet pierādījumus, kad piekļuve ir pieejama. Atteikums nenosaka agrāko mēģinājumu iznākumu."
+    }
+  ],
   "field.incidentDate.label": [{ "type": 0, "value": "Notikuma datums" }],
   "field.incidentDate.meaning": [{ "type": 0, "value": "Datums, kurā notika negadījums." }],
   "field.incidentNotificationDate.label": [
@@ -1125,5 +1131,13 @@
     { "type": 0, "value": "Web v3 līgums: " },
     { "type": 1, "value": "digest" }
   ],
-  "ui.fieldHelp": [{ "type": 0, "value": "Nozīme un precīza kopēšana" }]
+  "ui.fieldHelp": [{ "type": 0, "value": "Nozīme un precīza kopēšana" }],
+  "ui.historyDetail": [{ "type": 0, "value": "Vēstures detalizācija" }],
+  "ui.summaryHistory": [{ "type": 0, "value": "Kopsavilkums" }],
+  "ui.fullHistory": [{ "type": 0, "value": "Visi reģistrētie lauki" }],
+  "ui.requestDigest": [
+    { "type": 0, "value": "Precīzs pieprasījuma SHA-256 kontrolsummas nospiedums" }
+  ],
+  "ui.inspectOperationId": [{ "type": 0, "value": "Pārbaudīt operācijas ID" }],
+  "ui.exportKnownIdentity": [{ "type": 0, "value": "Eksportēt pēc ID un kontrolsummas" }]
 }

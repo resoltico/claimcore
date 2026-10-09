@@ -10,9 +10,11 @@ open ActorGrantGateQueries
 module internal ActorGrantGateBinding =
     let context commitments binding caseId action =
         binding
-        |> Option.map (fun actor ->
+        |> Option.map (fun (actor, mayEdit, recoveryActions) ->
             {
                 Binding = actor
+                MayEditCommands = mayEdit
+                AllowedRecoveryActions = recoveryActions
                 CaseId = caseId
                 Action = action
                 Suppression = commitments

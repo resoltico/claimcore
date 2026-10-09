@@ -60,7 +60,7 @@ const historyWithReplayedReceipt = () => {
   return {
     ...history.outcome.data,
     entries: [
-      ...history.outcome.data.entries,
+      full,
       {
         tag: "FULL",
         receipt: {
@@ -78,8 +78,10 @@ it("shows current fields, server command labels, full expandable history and ret
   const fetch = vi.mocked(globalThis.fetch);
   const extendedHistory = historyWithReplayedReceipt();
   fetch.mockResolvedValueOnce(response("case.get", "SUCCEEDED", { tag: "FOUND", current }));
+  fetch.mockResolvedValueOnce(
+    response("case.history", "SUCCEEDED", { tag: "FOUND", entries: [], nextCursor: null }),
+  );
   fetch.mockResolvedValueOnce(response("case.history", "SUCCEEDED", extendedHistory));
-  fetch.mockResolvedValueOnce(response("lifecycle.review", "RESOURCE_UNAVAILABLE", null));
   fetch.mockResolvedValueOnce(
     response("case.history", "SUCCEEDED", { tag: "FOUND", entries: [], nextCursor: null }),
   );
@@ -97,6 +99,7 @@ it("shows current fields, server command labels, full expandable history and ret
   expect(await screen.findByText("CASE-1")).toBeVisible();
   await user.click(await screen.findByRole("button", { name: /Close the case/u }));
   expect(command).toHaveBeenCalledWith(current, "CLOSE");
+  await user.selectOptions(screen.getByLabelText("History detail"), "FULL");
   await user.click((await screen.findAllByText(/Close the case · revision/u))[0]!);
   expect(screen.getAllByText(/synthetic-operator/u)).toHaveLength(2);
   expect(document.body).toHaveTextContent("exact replay");
@@ -108,10 +111,9 @@ it("shows current fields, server command labels, full expandable history and ret
 it("navigates dashboard case, operation and recovery surfaces without hidden business dispatch", async () => {
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
-  fetch.mockResolvedValueOnce(response("definition", "DESCRIBED", definition));
   fetch.mockResolvedValueOnce(response("case.list", "SUCCEEDED", { items: [], nextCursor: null }));
   fetch.mockResolvedValueOnce(response("recovery.list", "SUCCEEDED", recoveryPage([])));
-  render(<Dashboard token="token" sessionEpoch={1} onLogout={vi.fn(() => Promise.resolve())} />);
+  render(<Dashboard token="token" onLogout={vi.fn(() => Promise.resolve())} />);
   await user.click(await screen.findByRole("button", { name: "Recovery" }));
   expect(await screen.findByRole("heading", { name: "Recovery" })).toBeVisible();
   await user.click(screen.getByRole("button", { name: "Operations" }));
@@ -123,10 +125,9 @@ it("navigates dashboard case, operation and recovery surfaces without hidden bus
 it("uses an exact operation lookup result and clears absent lookup presentation", async () => {
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
-  fetch.mockResolvedValueOnce(response("definition", "DESCRIBED", definition));
   fetch.mockResolvedValueOnce(response("case.list", "SUCCEEDED", { items: [], nextCursor: null }));
   fetch.mockResolvedValueOnce(generatedResponse("operation.observe"));
-  render(<Dashboard token="token" sessionEpoch={1} onLogout={vi.fn(() => Promise.resolve())} />);
+  render(<Dashboard token="token" onLogout={vi.fn(() => Promise.resolve())} />);
   await user.click(await screen.findByRole("button", { name: "Operations" }));
   await user.type(screen.getByLabelText("Exact operation ID"), operationId);
   await user.click(screen.getByRole("button", { name: "Look up recorded result" }));
@@ -152,7 +153,7 @@ it("reports a failed list as a request-local error without manufacturing rows", 
   expect(screen.queryByRole("listitem")).toBeNull();
 });
 
-it("fails closed when the server definition is rejected or has a different Web fingerprint", async () => {
+it("keeps public metadata and other panes available when a case read is refused", async () => {
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockResolvedValueOnce(
     new Response(
@@ -167,22 +168,16 @@ it("fails closed when the server definition is rejected or has a different Web f
       { status: 401, headers: { "content-type": "application/json" } },
     ),
   );
-  const first = render(
-    <Dashboard token="token" sessionEpoch={2} onLogout={vi.fn(() => Promise.resolve())} />,
-  );
+  const first = render(<Dashboard token="token" onLogout={vi.fn(() => Promise.resolve())} />);
   expect(await screen.findByRole("alert")).toHaveTextContent("Session was refused.");
+  expect(screen.getByRole("button", { name: "Recovery" })).not.toBeDisabled();
+  expect(screen.getByRole("heading", { name: "ClaimCore" })).toBeVisible();
   first.unmount();
-  fetch.mockResolvedValueOnce(
-    response("definition", "DESCRIBED", { ...definition, webFingerprint: "0".repeat(64) }),
-  );
-  render(<Dashboard token="token" sessionEpoch={3} onLogout={vi.fn(() => Promise.resolve())} />);
-  expect(await screen.findByRole("alert")).toHaveTextContent("does not match");
 });
 
 it("routes dashboard list selections and the new-case command into the typed editor", async () => {
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
-  fetch.mockResolvedValueOnce(response("definition", "DESCRIBED", definition));
   fetch.mockResolvedValueOnce(
     response("case.list", "SUCCEEDED", {
       items: [{ caseReference: "CASE-1", revision: "1", status: "OPENED" }],
@@ -195,7 +190,7 @@ it("routes dashboard list selections and the new-case command into the typed edi
       nextCursor: null,
     }),
   );
-  render(<Dashboard token="token" sessionEpoch={4} onLogout={vi.fn(() => Promise.resolve())} />);
+  render(<Dashboard token="token" onLogout={vi.fn(() => Promise.resolve())} />);
   await user.click(await screen.findByRole("button", { name: "Open a case" }));
   expect(screen.getByRole("heading", { name: "Open a case" })).toBeVisible();
   await user.click(screen.getByRole("button", { name: "Back to cases" }));

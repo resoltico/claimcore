@@ -45,6 +45,8 @@ let private suppression: ISuppressionCommitments =
 
 let private context: ActorCallContext =
     {
+        MayEditCommands = true
+        AllowedRecoveryActions = []
         Binding =
             {
                 Principal = principal

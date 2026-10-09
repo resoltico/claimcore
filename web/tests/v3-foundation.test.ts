@@ -1,3 +1,4 @@
+import { webV3WireContractFingerprint } from "../src/generated/contracts/web-v3.endpoint-catalog";
 import { createPresenter } from "../src/presentation/presenter";
 import { defaults } from "../src/presentation/preferences";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -71,7 +72,11 @@ const jsonCalls: [() => Promise<unknown>, string, EndpointId][] = [
   [() => v3.logout("token"), "/api/v3/session/logout", "session.logout"],
   [() => v3.definition(), "/api/v3/definition", "definition"],
   [() => v3.list(null, 50, "token"), "/api/v3/cases/list", "case.list"],
-  [() => v3.history("CASE-1", null, 50, "token"), "/api/v3/cases/history", "case.history"],
+  [
+    () => v3.history({ caseReference: "CASE-1", cursor: null, limit: 50 }, "token"),
+    "/api/v3/cases/history",
+    "case.history",
+  ],
   [() => v3.observe(operationId, "token"), "/api/v3/operations/observe", "operation.observe"],
   [
     () =>
@@ -111,7 +116,13 @@ beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 it("uses generated v3 paths and typed endpoint outcomes", async () => {
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockResolvedValueOnce(
-    json(outcome("session", "SNAPSHOT", { authenticated: false, antiforgeryToken: "token" })),
+    json(
+      outcome("session", "SNAPSHOT", {
+        authenticated: false,
+        antiforgeryToken: "token",
+        webFingerprint: webV3WireContractFingerprint,
+      }),
+    ),
   );
   const session = await v3.session();
   if (session.kind !== "outcome") {
@@ -120,6 +131,7 @@ it("uses generated v3 paths and typed endpoint outcomes", async () => {
   expect(session.value.outcome.data).toEqual({
     authenticated: false,
     antiforgeryToken: "token",
+    webFingerprint: webV3WireContractFingerprint,
   });
   expect(fetch.mock.calls[0]?.[0]).toBe("/api/v3/session");
   fetch.mockResolvedValueOnce(

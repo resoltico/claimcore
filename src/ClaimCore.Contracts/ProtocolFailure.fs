@@ -1,6 +1,7 @@
 namespace ClaimCore.Contracts
 
 open System
+open ClaimCore.Application
 
 [<RequireQualifiedAccess>]
 type ProtocolMember =
@@ -134,15 +135,60 @@ type ProtocolFailure =
         {
             ReasonValue: ProtocolProblem
             LocationValue: ProtocolLocation
+            ScalarValue: RejectionDiagnostic option
         }
 
+    member this.ScalarDiagnostic = this.ScalarValue
     member this.Reason = this.ReasonValue
     member this.Code = ProtocolProblems.code this.ReasonValue
     member this.Path = ProtocolLocation.value this.LocationValue
 
 module ProtocolFailure =
     let create reason location =
+        if reason = ProtocolProblem.InvalidScalar then
+            invalidArg "reason" "Scalar admission requires a projected diagnostic."
+
         {
             ReasonValue = reason
             LocationValue = location
+            ScalarValue = None
         }
+
+    let scalar diagnostic location =
+        if not (ScalarAdmissionDiagnostics.supported diagnostic) then
+            invalidArg "diagnostic" "This is not a local scalar constraint."
+
+        {
+            ReasonValue = ProtocolProblem.InvalidScalar
+            LocationValue = location
+            ScalarValue = Some diagnostic
+        }
+
+    let fromSchema prefix (failure: SchemaFailure) =
+        let location =
+            ProtocolLocation.fromPath (
+                prefix
+                + (failure.DeclaredPath |> List.map (fun name -> "/" + name) |> String.concat "")
+            )
+
+        match failure.Problem with
+        | SchemaProblem.ScalarViolation violation ->
+            match ScalarAdmissionDiagnostics.describe failure.DeclaredPath violation with
+            | Some diagnostic -> scalar diagnostic location
+            | None -> create ProtocolProblem.InvalidToken location
+        | problem ->
+            let reason =
+                match problem with
+                | SchemaProblem.ObjectRequired -> ProtocolProblem.ExpectedObject
+                | SchemaProblem.ArrayRequired -> ProtocolProblem.ExpectedArray
+                | SchemaProblem.StringRequired -> ProtocolProblem.ExpectedString
+                | SchemaProblem.BooleanRequired -> ProtocolProblem.ExpectedBoolean
+                | SchemaProblem.NumberRequired -> ProtocolProblem.ExpectedNumber
+                | SchemaProblem.DuplicateMember -> ProtocolProblem.DuplicateProperty
+                | SchemaProblem.UnknownMember -> ProtocolProblem.UnknownProperty
+                | SchemaProblem.MissingMember -> ProtocolProblem.MissingProperty
+                | SchemaProblem.IntegerRange -> ProtocolProblem.IntegerRange
+                | SchemaProblem.InvalidFormat "uuid" -> ProtocolProblem.InvalidUuid
+                | _ -> ProtocolProblem.InvalidToken
+
+            create reason location

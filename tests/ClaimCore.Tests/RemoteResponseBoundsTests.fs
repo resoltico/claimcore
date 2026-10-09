@@ -16,12 +16,12 @@ let private fields: CaseFields =
     {
         IncidentDate = "2026-09-07"
         IncidentNotificationDate = "2026-09-07"
-        IncidentCountry = String('界', 100)
-        ClaimantName = String('界', 200)
-        InsurerName = String('界', 200)
+        IncidentCountry = String.replicate 100 "🙂"
+        ClaimantName = String.replicate 200 "🙂"
+        InsurerName = String.replicate 200 "🙂"
         ClaimedAmount = "1"
         ClaimedCurrency = "EUR"
-        CaseReference = String('界', 80)
+        CaseReference = String.replicate 80 "🙂"
         PaymentDecisionDate = None
         PayableAmount = None
         PayableCurrency = None

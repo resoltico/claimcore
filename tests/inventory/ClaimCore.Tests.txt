@@ -108,6 +108,13 @@ ClaimCore deterministic suite.administration diagnostic boundaries.failed stderr
 ClaimCore deterministic suite.administration diagnostic boundaries.native administrative reasons have a complete closed vocabulary
 ClaimCore deterministic suite.administration diagnostic boundaries.output failure cannot relabel confirmed maintenance
 ClaimCore deterministic suite.administration diagnostic boundaries.unexpected process failure makes no not-started claim
+ClaimCore deterministic suite.admitted recovery knowledge.[CC-REC-001] cancellation exception after Start preserves admission uncertainty and exact recovery
+ClaimCore deterministic suite.admitted recovery knowledge.[CC-REC-001] corrupt canonical read before admission starts no attempt
+ClaimCore deterministic suite.admitted recovery knowledge.[CC-REC-001] corrupt canonical reply after fresh start preserves exact attempt
+ClaimCore deterministic suite.admitted recovery knowledge.[CC-REC-001] corrupt canonical reply after historical start preserves exact attempt
+ClaimCore deterministic suite.admitted recovery knowledge.[CC-REC-001] faulted Start delivery preserves admission uncertainty and exact recovery
+ClaimCore deterministic suite.admitted recovery knowledge.[CC-REC-001] invalid Domain reply after fresh start preserves exact attempt
+ClaimCore deterministic suite.admitted recovery knowledge.[CC-REC-001] invalid Domain reply after historical start preserves exact attempt
 ClaimCore deterministic suite.atomic case correction.closed correction.all-keep correction is refused without changing the accepted case
 ClaimCore deterministic suite.atomic case correction.closed correction.closed cases may correct facts while retaining CLOSED status
 ClaimCore deterministic suite.atomic case correction.closed correction.equivalent scalar spelling cannot create a correction-only revision
@@ -261,6 +268,11 @@ ClaimCore deterministic suite.native form contract.form binding.each declared fo
 ClaimCore deterministic suite.native form contract.form binding.grouped correction binding retains each replacement scalar exactly
 ClaimCore deterministic suite.native form contract.form definitions.all nine forms cover the canonical commands in canonical order
 ClaimCore deterministic suite.native private-file ancestor race.[CC-CLI-002] descriptor-relative create and lock remain in pinned parent after ancestor swap
+ClaimCore deterministic suite.native scalar admission diagnostics.[CC-CLI-001] discriminator and unknown member diagnostics never reflect authored keys
+ClaimCore deterministic suite.native scalar admission diagnostics.[CC-CLI-001] every correction group diagnoses its discriminator through strict parsing
+ClaimCore deterministic suite.native scalar admission diagnostics.[CC-CLI-001] malformed business scalars identify their known field and shared constraint
+ClaimCore deterministic suite.native scalar admission diagnostics.[CC-CLI-001] scalar protocol metadata is correlated and excludes nonlocal diagnostic causes
+ClaimCore deterministic suite.native scalar admission diagnostics.[CC-DOM-001] future-date policy remains service-owned after local scalar admission
 ClaimCore deterministic suite.owner live purge authorization.[CC-ERASE-001] hold and tombstone prevent a second live purge
 ClaimCore deterministic suite.owner live purge authorization.[CC-ERASE-001] owner live purge authorization keeps privacy pending
 ClaimCore deterministic suite.owner live purge authorization.[CC-ERASE-001] owner purge uses technical execution and two distinct stewards
@@ -278,6 +290,8 @@ ClaimCore deterministic suite.property harness policy.failure diagnostic privacy
 ClaimCore deterministic suite.property harness policy.property configuration.partial and additional recheck inputs fail closed
 ClaimCore deterministic suite.property harness policy.property configuration.required and extended profiles are explicit
 ClaimCore deterministic suite.published example contract.every shipped command example decodes and completes its sequential Domain transition
+ClaimCore deterministic suite.recovery access phase.[CC-REC-001] admitted access refusal preserves exact unresolved attempt knowledge
+ClaimCore deterministic suite.recovery access phase.[CC-REC-001] pre-admission access refusal is not an invalid storage reply
 ClaimCore deterministic suite.recovery authority closure.[CC-REC-001] durable revocation closes exact identity before and after preparation pruning
 ClaimCore deterministic suite.recovery authority closure.[CC-REC-001] recovery list and attempt cursors reject a different view or operation
 ClaimCore deterministic suite.recovery uncertainty boundaries.[CC-REC-001] cancellation after admitted attempt preserves definite acceptance
@@ -310,9 +324,11 @@ ClaimCore deterministic suite.remote frame-local delivery diagnostics.service ac
 ClaimCore deterministic suite.remote frame-local delivery diagnostics.uncertain import without an operation ID does not invent one
 ClaimCore deterministic suite.remote frame-local delivery diagnostics.validated response observation precedes output
 ClaimCore deterministic suite.remote invocation contract.[CC-CLI-003] CLI v4 inputs bind exact noncancellable endpoints
-ClaimCore deterministic suite.schema timestamp formats.date-time accepts explicit representable RFC 3339 instants
-ClaimCore deterministic suite.schema timestamp formats.date-time refuses implicit calendar and local-zone inputs
-ClaimCore deterministic suite.schema timestamp formats.format validation preserves canonical wire restrictions
+ClaimCore deterministic suite.schema scalar formats.[CC-DOM-001] native evaluator admits the shared scalar corpus
+ClaimCore deterministic suite.schema scalar formats.[CC-DOM-001] projected reference guard preserves Unicode scalar semantics
+ClaimCore deterministic suite.schema scalar formats.date-time accepts explicit representable RFC 3339 instants
+ClaimCore deterministic suite.schema scalar formats.date-time refuses implicit calendar and local-zone inputs
+ClaimCore deterministic suite.schema scalar formats.format validation preserves canonical wire restrictions
 ClaimCore deterministic suite.scoped factual correction guidance.[CC-DOM-002] amendment refusal permits correction keeping the decision
 ClaimCore deterministic suite.scoped factual correction guidance.[CC-DOM-002] closed case refusal permits correction without reopening
 ClaimCore deterministic suite.scoped factual correction guidance.[CC-DOM-002] paid decision refusal permits correction with explicit payment reaffirmation
