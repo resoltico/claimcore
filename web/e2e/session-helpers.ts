@@ -74,14 +74,14 @@ export const openApplication = async (page: Page, heading: string | RegExp): Pro
 export const openAuthenticated = async (
   page: Page,
   casesHeading: string | RegExp = "Cases",
+  stateFile:
+    "authenticated-state.json" | "narrow-authenticated-state.json" = "authenticated-state.json",
 ): Promise<void> => {
   const output = process.env["CLAIMCORE_WEB_E2E_PRIVATE_OUTPUT_DIR"];
   if (output === undefined) {
     throw new Error("Private browser output was not configured.");
   }
-  const state: unknown = JSON.parse(
-    await readFile(resolve(output, "authenticated-state.json"), "utf8"),
-  );
+  const state: unknown = JSON.parse(await readFile(resolve(output, stateFile), "utf8"));
   if (
     typeof state !== "object" ||
     state === null ||

@@ -56,6 +56,17 @@ const inspectRetainedClose = async (page: Page) => {
   return { identity, row };
 };
 
+const closeExportDetails = async (page: Page) => {
+  await expect(page.getByRole("dialog")).toHaveCount(1);
+  const close = page
+    .getByRole("dialog", { name: "Recovery details" })
+    .getByRole("button", { name: "Close", exact: true });
+  await close.focus();
+  await expect(close).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog", { name: "Recovery details" })).toHaveCount(0);
+};
+
 for (const loseReply of [false, true]) {
   test(`keeps recovery controls and exact identity stable after closing a real delayed export (${loseReply ? "lost reply" : "download"}) [CC-REC-001]`, async ({
     page,
@@ -69,8 +80,7 @@ for (const loseReply of [false, true]) {
       await page.getByRole("button", { name: "Confirm export", exact: true }).click();
       const exportedIdentity: unknown = JSON.parse(await pending.ready);
       expect(exportedIdentity).toEqual(identity);
-      await page.keyboard.press("Escape");
-      await expect(page.getByRole("dialog", { name: "Recovery details" })).toHaveCount(0);
+      await closeExportDetails(page);
       const inspect = row.getByRole("button", { name: "Inspect", exact: true });
       const importing = page.getByRole("button", { name: "Import recovery envelope", exact: true });
       await expect(inspect).toBeDisabled();

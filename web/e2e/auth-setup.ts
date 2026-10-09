@@ -44,6 +44,14 @@ export default async function setup(): Promise<void> {
     await context.storageState({ path: state });
     await chmod(state, 0o600);
     await context.close();
+    const narrow = await browser.newContext({ ignoreHTTPSErrors: true });
+    const narrowPage = await narrow.newPage();
+    await narrowPage.goto(baseURL, { waitUntil: "commit" });
+    await login(narrowPage, "Cases", "Sign in", "synthetic-steward");
+    const narrowState = resolve(output, "narrow-authenticated-state.json");
+    await narrow.storageState({ path: narrowState });
+    await chmod(narrowState, 0o600);
+    await narrow.close();
   } finally {
     await browser.close();
   }

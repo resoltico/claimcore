@@ -1,6 +1,11 @@
 import { acceptedResolution, verifyClosed, verifyExport, refusedRead } from "./narrow-role-oracles";
 import { expect, test, type Page } from "@playwright/test";
-import { login, browserRequest, sessionToken, expectAccessible } from "./session-helpers";
+import {
+  openAuthenticated,
+  browserRequest,
+  sessionToken,
+  expectAccessible,
+} from "./session-helpers";
 import {
   prepareRoleFixture,
   configureRole,
@@ -128,8 +133,7 @@ for (const [name, role, scoped] of cases) {
     });
     await setup;
     const narrow = await context.newPage();
-    await narrow.goto("/");
-    await login(narrow, "Cases", "Sign in", "synthetic-steward");
+    await openAuthenticated(narrow, "Cases", "narrow-authenticated-state.json");
     await expectDefinitionAccess(narrow, role, scoped);
     if (role === "CASE_READER" || role === "CASE_EDITOR") {
       await readCase(narrow, fixture, role, scoped);
