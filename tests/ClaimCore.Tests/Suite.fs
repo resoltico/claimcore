@@ -31,6 +31,7 @@ let private foundation =
         ReceiptFirstTests.tests
         RecoveryOutcomeTests.tests
         RecoveryAccessOutcomeTests.tests
+        RecoveryAdmissionOutcomeTests.tests
         RecoveryCancellationOutcomeTests.tests
         RecoveryAuthorityTests.tests
         CoreQueryTests.tests

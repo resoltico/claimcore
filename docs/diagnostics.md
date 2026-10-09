@@ -42,6 +42,11 @@ Before admission, the invocation retains its failed-before-attempt phase. After 
 retains the identified unresolved attempt; an access refusal never settles an earlier unknown
 attempt as rejected. Preserve the exact operation ID, digest and request bytes and inspect
 when authorized access is available.
+Retained canonical or Domain-shape validation failure after a confirmed or historical attempt
+start likewise preserves that exact unresolved attempt and its specific retained fault. A failure
+to decode the returned summary retains previously validated identity and known admission state.
+An unexpectedly faulted or cancelled `Start` invocation leaves admission unknown; only its typed
+pre-commit cancellation result proves cancellation before an attempt.
 A fault diagnostic alone does not prove non-commit or authorize retry. Defensive store-cancellation
 projections retain their existing meaning; ordinary cancellation paths still return their cancellation outcomes.
 

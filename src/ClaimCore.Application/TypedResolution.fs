@@ -64,14 +64,14 @@ module internal TypedResolution =
                     preparation.CanonicalRequest
             with
             | Error _ ->
-                return
-                    ResolutionFailedBeforeAttempt(Some summary, CoreFault.RetainedCanonicalInvalid)
+                return ResolutionUnresolved(summary, attemptId, CoreFault.RetainedCanonicalInvalid)
             | Ok request ->
                 match Operation.prepare request with
                 | Error _ ->
                     return
-                        ResolutionFailedBeforeAttempt(
-                            Some summary,
+                        ResolutionUnresolved(
+                            summary,
+                            attemptId,
                             CoreFault.RetainedDomainShapeInvalid
                         )
                 | Ok operation ->
@@ -115,6 +115,15 @@ module internal TypedResolution =
             return execution
         }
 
+    let private admitAttempt (recovery: IRecoveryStore) operationId cancellationToken =
+        task {
+            try
+                return! recovery.Start(operationId, cancellationToken)
+            with _ ->
+                // An invoked port that loses its result cannot prove non-admission.
+                return Error RecoveryStoreFailure.TechnicalMutationUnknown
+        }
+
     let private start
         (recovery: IRecoveryStore)
         (clock: IBusinessTime)
@@ -123,7 +132,7 @@ module internal TypedResolution =
         (cancellationToken: CancellationToken)
         : Task<RetainedResolution> =
         task {
-            match! recovery.Start(operationId, cancellationToken) with
+            match! admitAttempt recovery operationId cancellationToken with
             | Error RecoveryStoreFailure.TechnicalMutationUnknown ->
                 return
                     ResolutionAdmissionUnknown(
@@ -148,7 +157,15 @@ module internal TypedResolution =
             | Ok(RecoveryStart.Started(attemptId, retained))
             | Ok(RecoveryStart.AlreadyStarted(attemptId, retained)) ->
                 match TypedProjection.summary true retained with
-                | Error fault -> return ResolutionFailedBeforeAttempt(Some summary, fault)
+                | Error fault ->
+                    return
+                        ResolutionUnresolved(
+                            { summary with
+                                State = PreparationState.SubmissionStarted
+                            },
+                            attemptId,
+                            fault
+                        )
                 | Ok admitted -> return! executeAdmitted recovery clock retained admitted attemptId
         }
 

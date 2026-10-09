@@ -96,6 +96,7 @@ const HistoryModePicker = ({
     <label>
       {p.text("ui.historyDetail")}
       <select
+        aria-label={p.text("ui.historyDetail")}
         value={detail}
         onChange={(event) => {
           onChange(event.target.value === "FULL" ? "FULL" : "SUMMARY");

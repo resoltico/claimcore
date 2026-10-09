@@ -13,6 +13,16 @@ const findCase = async (page: Page, reference: string) => {
   await page.getByRole("button", { name: "Find case", exact: true }).click();
 };
 
+const expectDefinitionAccess = async (page: Page, role: NarrowRole | null, scoped: boolean) => {
+  const token = await sessionToken(page);
+  const definition = await browserRequest(page, "/api/v3/definition");
+  expect(definition.status).toBe(200);
+  expect(definition.payload).toMatchObject({
+    outcome: { tag: role === "CASE_READER" && !scoped ? "DESCRIBED" : "REJECTED" },
+  });
+  expect(token.length).toBeGreaterThan(0);
+};
+
 const readCase = async (page: Page, fixture: RoleFixture, role: NarrowRole, scoped: boolean) => {
   await expect(page.getByRole("button", { name: "Open a case", exact: true })).toHaveCount(0);
   await findCase(page, fixture.reference);
@@ -81,6 +91,14 @@ const cases: ReadonlyArray<readonly [string, NarrowRole | null, boolean]> = [
   ["steward", "DATA_STEWARD", false],
   ["enabled actor without grants", null, false],
 ];
+const teardown: { current: (() => Promise<void>) | null } = { current: null };
+test.afterEach(async () => {
+  const cleanup = teardown.current;
+  teardown.current = null;
+  if (cleanup !== null) {
+    await cleanup();
+  }
+});
 for (const [name, role, scoped] of cases) {
   test(`admits the ${name} workflow without wider grants through published Web [CC-AUTH-001]`, async ({
     page,
@@ -92,38 +110,39 @@ for (const [name, role, scoped] of cases) {
       ignoreHTTPSErrors: true,
     });
     let restore: (() => Promise<void>) | null = null;
-    try {
-      restore = await configureRole(page, fixture, role, scoped);
-      const narrow = await context.newPage();
-      await narrow.goto("/");
-      await login(narrow, "Cases", "Sign in", "synthetic-steward");
-      const token = await sessionToken(narrow);
-      const definition = await browserRequest(narrow, "/api/v3/definition");
-      expect(definition.status).toBe(200);
-      expect(definition.payload).toMatchObject({
-        outcome: { tag: role === "CASE_READER" && !scoped ? "DESCRIBED" : "REJECTED" },
-      });
-      expect(token.length).toBeGreaterThan(0);
-      if (role === "CASE_READER" || role === "CASE_EDITOR") {
-        await readCase(narrow, fixture, role, scoped);
-      } else if (role === "RECOVERY_OPERATOR" || role === "RECOVERY_EXPORTER") {
-        await recover(narrow, page, fixture, role === "RECOVERY_EXPORTER");
-      } else {
-        await expect(narrow.getByRole("button", { name: "Open a case", exact: true })).toHaveCount(
-          0,
-        );
-        await refusedRead(narrow, "case.get", () => findCase(narrow, fixture.reference));
-        if (role === "DATA_STEWARD") {
-          await narrow.getByText("Disposition and privacy status", { exact: true }).click();
-          await expect(narrow.getByText("Disposition: Active", { exact: true })).toBeVisible();
+    let setup: Promise<void> | null = null;
+    teardown.current = async () => {
+      try {
+        if (setup !== null) {
+          await setup.catch(() => undefined);
         }
+        if (restore !== null) {
+          await restore();
+        }
+      } finally {
+        await context.close();
       }
-      await expectAccessible(narrow);
-    } finally {
-      await context.close();
-      if (restore !== null) {
-        await restore();
+    };
+    setup = configureRole(page, fixture, role, scoped, (cleanup) => {
+      restore = cleanup;
+    });
+    await setup;
+    const narrow = await context.newPage();
+    await narrow.goto("/");
+    await login(narrow, "Cases", "Sign in", "synthetic-steward");
+    await expectDefinitionAccess(narrow, role, scoped);
+    if (role === "CASE_READER" || role === "CASE_EDITOR") {
+      await readCase(narrow, fixture, role, scoped);
+    } else if (role === "RECOVERY_OPERATOR" || role === "RECOVERY_EXPORTER") {
+      await recover(narrow, page, fixture, role === "RECOVERY_EXPORTER");
+    } else {
+      await expect(narrow.getByRole("button", { name: "Open a case", exact: true })).toHaveCount(0);
+      await refusedRead(narrow, "case.get", () => findCase(narrow, fixture.reference));
+      if (role === "DATA_STEWARD") {
+        await narrow.getByText("Disposition and privacy status", { exact: true }).click();
+        await expect(narrow.getByText("Disposition: Active", { exact: true })).toBeVisible();
       }
     }
+    await expectAccessible(narrow);
   });
 }

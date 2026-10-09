@@ -108,6 +108,13 @@ ClaimCore deterministic suite.administration diagnostic boundaries.failed stderr
 ClaimCore deterministic suite.administration diagnostic boundaries.native administrative reasons have a complete closed vocabulary
 ClaimCore deterministic suite.administration diagnostic boundaries.output failure cannot relabel confirmed maintenance
 ClaimCore deterministic suite.administration diagnostic boundaries.unexpected process failure makes no not-started claim
+ClaimCore deterministic suite.admitted recovery knowledge.[CC-REC-001] cancellation exception after Start preserves admission uncertainty and exact recovery
+ClaimCore deterministic suite.admitted recovery knowledge.[CC-REC-001] corrupt canonical read before admission starts no attempt
+ClaimCore deterministic suite.admitted recovery knowledge.[CC-REC-001] corrupt canonical reply after fresh start preserves exact attempt
+ClaimCore deterministic suite.admitted recovery knowledge.[CC-REC-001] corrupt canonical reply after historical start preserves exact attempt
+ClaimCore deterministic suite.admitted recovery knowledge.[CC-REC-001] faulted Start delivery preserves admission uncertainty and exact recovery
+ClaimCore deterministic suite.admitted recovery knowledge.[CC-REC-001] invalid Domain reply after fresh start preserves exact attempt
+ClaimCore deterministic suite.admitted recovery knowledge.[CC-REC-001] invalid Domain reply after historical start preserves exact attempt
 ClaimCore deterministic suite.atomic case correction.closed correction.all-keep correction is refused without changing the accepted case
 ClaimCore deterministic suite.atomic case correction.closed correction.closed cases may correct facts while retaining CLOSED status
 ClaimCore deterministic suite.atomic case correction.closed correction.equivalent scalar spelling cannot create a correction-only revision

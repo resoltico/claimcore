@@ -60,7 +60,7 @@ test("disabled actor keeps authenticated public bootstrap but cannot read cases 
   browser,
 }) => {
   const fixture = await prepareRoleFixture(page);
-  const restore = await configureRole(page, fixture, "CASE_READER", false);
+  let restore: () => Promise<void> = () => Promise.resolve();
   const context = await browser.newContext({
     baseURL: new URL(page.url()).origin,
     ignoreHTTPSErrors: true,
@@ -73,6 +73,9 @@ test("disabled actor keeps authenticated public bootstrap but cannot read cases 
     });
   let disabledConfirmed = false;
   try {
+    await configureRole(page, fixture, "CASE_READER", false, (cleanup) => {
+      restore = cleanup;
+    });
     await enable(false);
     disabledConfirmed = true;
     const disabled = await context.newPage();
@@ -85,11 +88,17 @@ test("disabled actor keeps authenticated public bootstrap but cannot read cases 
     );
     await expect(disabled.getByRole("button", { name: "Open a case", exact: true })).toHaveCount(0);
   } finally {
-    await context.close();
-    if (disabledConfirmed) {
-      await enable(true);
+    try {
+      if (disabledConfirmed) {
+        await enable(true);
+      }
+    } finally {
+      try {
+        await restore();
+      } finally {
+        await context.close();
+      }
     }
-    await restore();
   }
 });
 

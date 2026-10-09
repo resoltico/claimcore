@@ -30,11 +30,22 @@ beforeEach(() => vi.mocked(applyAuthority).mockReset());
 
 it("restores only the confirmed baseline grant when narrow setup fails [CC-AUTH-001]", async () => {
   const failed = new Error("Synthetic grant response unavailable");
+  let registered = false;
   vi.mocked(applyAuthority)
-    .mockResolvedValueOnce()
+    .mockImplementationOnce(() => {
+      expect(registered).toBe(true);
+      return Promise.resolve();
+    })
     .mockRejectedValueOnce(failed)
     .mockResolvedValueOnce();
-  await expect(configureRole(page, fixture, "CASE_READER", true)).rejects.toBe(failed);
+  let restore: () => Promise<void> = () => Promise.resolve();
+  await expect(
+    configureRole(page, fixture, "CASE_READER", true, (cleanup) => {
+      registered = true;
+      restore = cleanup;
+    }),
+  ).rejects.toBe(failed);
+  await restore();
   const bodies = vi.mocked(applyAuthority).mock.calls.map((call) => call[2]);
   expect(bodies).toMatchObject([
     { role: "DATA_STEWARD", active: false },
@@ -53,6 +64,12 @@ it("restores only the confirmed baseline grant when narrow setup fails [CC-AUTH-
 it("does not invent rollback after the first authority action is unconfirmed [CC-AUTH-001]", async () => {
   const failed = new Error("Synthetic initial transition unconfirmed");
   vi.mocked(applyAuthority).mockRejectedValueOnce(failed);
-  await expect(configureRole(page, fixture, "CASE_READER", false)).rejects.toBe(failed);
+  let restore: () => Promise<void> = () => Promise.resolve();
+  await expect(
+    configureRole(page, fixture, "CASE_READER", false, (cleanup) => {
+      restore = cleanup;
+    }),
+  ).rejects.toBe(failed);
+  await restore();
   expect(applyAuthority).toHaveBeenCalledOnce();
 });

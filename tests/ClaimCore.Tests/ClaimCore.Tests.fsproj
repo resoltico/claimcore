@@ -46,6 +46,7 @@
     <Compile Include="ScriptedClaimStore.fs" />
     <Compile Include="RecoveryOutcomeTests.fs" />
     <Compile Include="RecoveryAccessOutcomeTests.fs" />
+    <Compile Include="RecoveryAdmissionOutcomeTests.fs" />
     <Compile Include="RecoveryCancellationOutcomeTests.fs" />
     <Compile Include="RecoveryAuthorityTests.fs" />
     <Compile Include="CoreQueryTests.fs" />

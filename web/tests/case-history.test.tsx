@@ -55,6 +55,7 @@ it("defaults to actual SUMMARY entries and deliberately resets between SUMMARY a
   });
   expect(view.container.querySelector(".history-list details")).toBeNull();
   expect(view.container.querySelector(".case-fields")).toBeNull();
+  expect(screen.getByRole("combobox", { name: "History detail" })).toBeVisible();
   await user.selectOptions(screen.getByLabelText("History detail"), "FULL");
   await waitFor(() => {
     expect(view.container.querySelector(".history-list details")).not.toBeNull();

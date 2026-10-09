@@ -689,6 +689,13 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-REC-001 | recovery-qualification | ClaimCore recovery qualification.typed retained-request recovery.[CC-REC-001] incompatible request fingerprint is rejected before submission |
 | CC-REC-001 | unit | ClaimCore deterministic suite.CLI-v4 service exit contract.[CC-REC-001] exact prepare replay wires observed acceptance and retained recovery distinctly |
 | CC-REC-001 | unit | ClaimCore deterministic suite.accepted receipt first.[CC-REC-001] mismatched retained identity refuses without preparation metadata |
+| CC-REC-001 | unit | ClaimCore deterministic suite.admitted recovery knowledge.[CC-REC-001] cancellation exception after Start preserves admission uncertainty and exact recovery |
+| CC-REC-001 | unit | ClaimCore deterministic suite.admitted recovery knowledge.[CC-REC-001] corrupt canonical read before admission starts no attempt |
+| CC-REC-001 | unit | ClaimCore deterministic suite.admitted recovery knowledge.[CC-REC-001] corrupt canonical reply after fresh start preserves exact attempt |
+| CC-REC-001 | unit | ClaimCore deterministic suite.admitted recovery knowledge.[CC-REC-001] corrupt canonical reply after historical start preserves exact attempt |
+| CC-REC-001 | unit | ClaimCore deterministic suite.admitted recovery knowledge.[CC-REC-001] faulted Start delivery preserves admission uncertainty and exact recovery |
+| CC-REC-001 | unit | ClaimCore deterministic suite.admitted recovery knowledge.[CC-REC-001] invalid Domain reply after fresh start preserves exact attempt |
+| CC-REC-001 | unit | ClaimCore deterministic suite.admitted recovery knowledge.[CC-REC-001] invalid Domain reply after historical start preserves exact attempt |
 | CC-REC-001 | unit | ClaimCore deterministic suite.encrypted recovery artifact v3.[CC-REC-001] v3 encrypts exact request and binds attribution |
 | CC-REC-001 | unit | ClaimCore deterministic suite.encrypted recovery artifact v3.[CC-REC-001] v3 enforces epoch expiry and key policy |
 | CC-REC-001 | unit | ClaimCore deterministic suite.encrypted recovery artifact v3.[CC-REC-001] v3 rejects tampering and v2 |

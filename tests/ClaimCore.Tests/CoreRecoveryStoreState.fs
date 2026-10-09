@@ -16,6 +16,7 @@ type internal RecoveryStoreSettings =
         GetFailure: RecoveryStoreFailure option
         TransformGet: (RetainedPreparation -> RetainedPreparation) option
         OnStart: (unit -> unit) option
+        TransformStarted: (RetainedPreparation -> RetainedPreparation) option
     }
 
 [<NoEquality; NoComparison>]

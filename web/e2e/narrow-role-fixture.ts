@@ -43,31 +43,27 @@ export const configureRole = async (
   fixture: RoleFixture,
   role: NarrowRole | null,
   scoped: boolean,
+  registerRestore: (restore: () => Promise<void>) => void,
 ) => {
+  let baselineRevoked = false;
+  let roleGranted = false;
+  registerRestore(async () => {
+    if (roleGranted && role !== null) {
+      await setGrant(page, fixture, role, scoped, false);
+      roleGranted = false;
+    }
+    if (baselineRevoked) {
+      await setGrant(page, fixture, "DATA_STEWARD", false, true);
+      baselineRevoked = false;
+    }
+  });
   if (role === "DATA_STEWARD") {
-    return () => Promise.resolve();
+    return;
   }
   await setGrant(page, fixture, "DATA_STEWARD", false, false);
-  try {
-    if (role !== null) {
-      await setGrant(page, fixture, role, scoped, true);
-    }
-  } catch (error) {
-    try {
-      await setGrant(page, fixture, "DATA_STEWARD", false, true);
-    } catch (cleanup) {
-      throw new AggregateError(
-        [error, cleanup],
-        "Synthetic grant setup and confirmed-state restoration failed.",
-        { cause: cleanup },
-      );
-    }
-    throw error;
+  baselineRevoked = true;
+  if (role !== null) {
+    await setGrant(page, fixture, role, scoped, true);
+    roleGranted = true;
   }
-  return async () => {
-    if (role !== null) {
-      await setGrant(page, fixture, role, scoped, false);
-    }
-    await setGrant(page, fixture, "DATA_STEWARD", false, true);
-  };
 };

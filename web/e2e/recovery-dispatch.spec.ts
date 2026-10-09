@@ -67,7 +67,8 @@ for (const loseReply of [false, true]) {
       await page.getByRole("button", { name: "Export recovery envelope", exact: true }).click();
       const download = loseReply ? null : page.waitForEvent("download");
       await page.getByRole("button", { name: "Confirm export", exact: true }).click();
-      expect(await pending.ready).toBe(JSON.stringify(identity));
+      const exportedIdentity: unknown = JSON.parse(await pending.ready);
+      expect(exportedIdentity).toEqual(identity);
       await page.keyboard.press("Escape");
       await expect(page.getByRole("dialog", { name: "Recovery details" })).toHaveCount(0);
       const inspect = row.getByRole("button", { name: "Inspect", exact: true });

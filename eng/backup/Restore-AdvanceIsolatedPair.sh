@@ -49,7 +49,10 @@ stage="completed-wal-tail"
 for name in primary witness; do
   source="${primary_source}"
   prefix="${primary_prefix}"
-  if [[ "${name}" == witness ]]; then source="${witness_source}"; prefix="${witness_prefix}"; fi
+  if [[ "${name}" == witness ]]; then
+    source="${witness_source}"
+    prefix="${witness_prefix}"
+  fi
   IFS=, read -r -a segments <<<"${prefix}"
   [[ "${#segments[@]}" -ge 1 && "${#segments[@]}" -le 1000 ]]
   for segment in "${segments[@]}"; do
