@@ -85,6 +85,29 @@ const paidInStatus = async (page: Page, reference: string, status: "OPENED" | "C
   expect(before.fields.status).toBe(status);
   return before;
 };
+const expectPaymentGuidance = async (page: Page, refusal: string) => {
+  if (refusal !== "CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED") {
+    return;
+  }
+  const payment = page.locator("#correction-payment-mode");
+  await expect(payment).toBeFocused();
+  await expect(payment).toHaveAttribute("aria-invalid", "true");
+  const descriptionId = await payment.getAttribute("aria-describedby");
+  expect(descriptionId).toMatch(/^\S+$/u);
+  const description = page.locator(`[id="${descriptionId}"]`);
+  for (const [language, text] of [
+    ["en", "explicit payment reaffirmation"],
+    ["lv", "skaidri jāapstiprina"],
+    ["ar", "إعادة تأكيد الدفع"],
+  ] as const) {
+    await selectLanguage(page, language);
+    await expect(description).toContainText(text);
+    await expect(payment).toHaveAttribute("aria-invalid", "true");
+  }
+  await payment.selectOption("CLEAR");
+  await expect(payment).not.toHaveAttribute("aria-invalid");
+  await expect(payment).not.toHaveAttribute("aria-describedby");
+};
 for (const status of ["OPENED", "CLOSED"] as const) {
   for (const language of ["en", "lv", "ar"] as const) {
     for (const [registration, decision, payment, refusal] of outcomes) {
@@ -130,6 +153,7 @@ for (const status of ["OPENED", "CLOSED"] as const) {
             expect(captured.reply.outcome.data.rejection.diagnostic.id).toBe(refusal);
           }
           await expect(page.getByRole("alert")).toBeVisible();
+          await expectPaymentGuidance(page, refusal);
           expect(await currentCase(page, reference)).toEqual(before);
           expect(await history(page, reference)).toHaveLength(Number(before.revision));
         }

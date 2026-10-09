@@ -6,6 +6,7 @@ admits the exporter workflow without wider grants through published Web [CC-AUTH
 admits the installation reader workflow without wider grants through published Web [CC-AUTH-001]
 admits the recovery operator workflow without wider grants through published Web [CC-AUTH-001]
 admits the steward workflow without wider grants through published Web [CC-AUTH-001]
+associates malformed operation lookup guidance and prevents empty case lookup [CC-WEB-001]
 authors and prepares in seeded pseudolocale then switches out with draft, identity and consent intact
 bounds repeated published login admission and recovers after its window
 contains keyboard focus and returns it after safely dismissing a prepared review
