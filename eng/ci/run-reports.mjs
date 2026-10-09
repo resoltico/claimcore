@@ -1,3 +1,4 @@
+import { verifyFrontendPrerequisites } from "./frontend-prerequisites.mjs";
 import { frontendReports } from "./run-frontend-reports.mjs";
 // Evidence is admitted by its owning report contract, never by a filename extension.
 import assert from "node:assert/strict";
@@ -202,6 +203,11 @@ export function admittedReports(context) {
   const artifacts = join(root, "artifacts");
   const suites = loadSuites(root);
   const admitted = frontendReports(root);
+  const prerequisites = join(artifacts, "frontend/prerequisites.json");
+  if (lstatSync(prerequisites, { throwIfNoEntry: false })) {
+    verifyFrontendPrerequisites(context);
+    admitted.push(prerequisites);
+  }
   const at = context.requested.indexOf("--results-root");
   const results = artifactDirectory(
     root,

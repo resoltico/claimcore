@@ -19,6 +19,13 @@ received. There is no cross-job reconciliation record; GitHub binds artifacts to
 reads only the Gate conclusion. The cross-platform suite matrix is derived from `config/test-suites.json` by a
 `plan` job, so a new suite or platform needs no workflow edit.
 
+Publish a coherent committed candidate early enough for CI to run alongside long local qualification.
+Windows checks start after matrix planning in parallel with independent verification families; no platform
+serializes the whole workflow. This provides early feedback for Windows paths, PowerShell, ACL and process
+changes that a macOS/Linux local run cannot qualify. Keep the local source and originating Git history fixed;
+use a separate clean verification checkout when continuing to edit or commit the candidate. The final merge
+still requires complete verification of its exact current head, not an earlier passing checkpoint.
+
 Use **Re-run all jobs** after an infrastructure failure. The supported unit is a complete attempt, not an
 arbitrary mixture of successful jobs from previous attempts. Do not select a vaguely "latest successful"
 artifact or lower a check to make a partial rerun green.

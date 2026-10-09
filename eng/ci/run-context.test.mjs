@@ -251,3 +251,43 @@ test("a successful parent cannot authorize deletion under a detached descendant"
     }
   });
 });
+
+test("combined and standalone coverage require each publication, client and engine evidence leaf", async () => {
+  await fixture(async (origin, runs) => {
+    const run = await createRun(origin);
+    runs.push(run);
+    const required = [
+      ...["cli", "web", "database"].map(
+        (product) => `local-browser.synthetic/manifests/${product}.json`,
+      ),
+      "coverage/merged/Cobertura.xml",
+      "coverage/input/acceptance/ClaimCore.AcceptanceTests.trx",
+      "coverage/input/acceptance/cli.coverage.cobertura.acceptance.xml",
+      ...["chromium", "firefox", "webkit"].flatMap((engine) => [
+        `browser/${engine}.json`,
+        `coverage/input/browser/${engine}.coverage.cobertura.e2e.xml`,
+      ]),
+    ];
+    const artifacts = join(run.source, "artifacts");
+    for (const leaf of required) {
+      const path = join(artifacts, leaf);
+      mkdirSync(dirname(path), { recursive: true });
+      writeFileSync(path, "synthetic path-presence fixture; owner admission remains separate");
+    }
+    const standalone = { ...run, requested: ["bash", "eng/Run-LocalBrowserCoverage.sh"] };
+    const passed = { "browser-coverage": "passed in 1s" };
+    assert.doesNotThrow(() => requirePassedEvidence(run, passed));
+    assert.doesNotThrow(() => requirePassedEvidence(standalone, { command: "exit 0" }));
+    for (const leaf of required) {
+      const path = join(artifacts, leaf);
+      rmSync(path);
+      assert.throws(() => requirePassedEvidence(run, passed), /./u, leaf);
+      assert.throws(() => requirePassedEvidence(standalone, { command: "exit 0" }), /./u, leaf);
+      assert.doesNotThrow(() =>
+        requirePassedEvidence(run, { "browser-coverage": "skipped (--skip)" }),
+      );
+      writeFileSync(path, "synthetic path-presence fixture; owner admission remains separate");
+    }
+    assert.throws(() => admittedReports(run), "path presence cannot admit fabricated reports");
+  });
+});

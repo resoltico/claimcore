@@ -152,8 +152,10 @@ are never removed before selection. The workflows explicitly create a caller-sel
 By default a job runs only when a changed file, measured against the merge base with `origin/main` and
 including uncommitted and untracked files, could affect it, so a documentation-only change skips the frontend
 and database suites; `--changed-since REF` moves the base and `--all` runs everything. `--include published`
-adds published CLI acceptance plus all three measured browser engines and same-run merged coverage
-(it publishes the applications and uses Docker). `--only id,id` and
+adds one combined `browser-coverage` job for published CLI acceptance, all three measured browser engines
+and same-run merged coverage (it publishes the applications and uses Docker). The former local
+`published-cli` selector is removed; use `--only browser-coverage` for combined qualification or
+`bash eng/Run-PublishedCliAcceptance.sh` for standalone native acceptance. `--only id,id` and
 `--skip id,id` select jobs (unknown IDs fail), `--no-fail-fast` continues past a failure, and logs go to
 a private `artifacts/local-ci/<job>.log` inside the isolated snapshot, with the tail of a failing log printed.
 Admitted reports are scanned in plaintext, then copied once into fresh retained inodes with source and destination fingerprints checked around transfer. A producer’s previously open file descriptor cannot modify the retained copy. Owner-validated report evidence is retained under `artifacts/runs/<UUID>/results`; stage outcomes and
@@ -181,6 +183,11 @@ supports ordinary builds and source scans. `node eng/ci/publish/source-export.mj
 is the explicit container/source-export publication command; it uses the same compiled-input, asset and
 byte-manifest guards and makes no Git-history/run-context claim. Standard Docker builds use it.
 Complete history qualification requires genuine complete Git metadata.
+Frontend unit and mutation prerequisites run once per admitted local snapshot. The registered stage
+owner records their successful commands and exact report bytes in a run/source-bound prerequisite
+receipt. Combined qualification validates that receipt before reuse; an absent receipt runs the complete
+prerequisite producers, while an invalid receipt refuses. Passing test totals alone cannot establish
+that the unit command's coverage floors passed. Standalone commands retain their prerequisites.
 `bash eng/Run-LocalBrowserCoverage.sh` creates a fresh run and executes its required complete .NET suites
 before browser coverage; it no longer consumes an earlier checkout result directory. When nested in the
 local plan, it consumes only the suites already admitted in that same snapshot. Raw coverage moves once
@@ -616,8 +623,10 @@ bash eng/Run-LocalBrowserCoverage.sh
 
 The wrapper creates a private run snapshot, runs its complete required .NET suites (or consumes the already
 admitted suites when nested in the local plan), moves their raw coverage once into the same-run input set,
-and locks and rebuilds the Web asset producer. It
-creates fresh Web and Database publish trees with SBOMs and manifests, verifies those manifests after each engine,
+and verifies or executes the complete frontend unit/mutation prerequisites before rebuilding Web assets. It
+creates fresh CLI, Web and Database publish trees with SBOMs and manifests. Native acceptance first runs with
+CLI instrumentation; the three browser runs use Web instrumentation. These are distinct measurements.
+It verifies publication manifests after each consumer,
 and runs Chromium, Firefox, and WebKit separately under Coverlet. Each engine checks its actual sanitized test
 identities against `tests/inventory/browser.txt` and must measure `ClaimCore.Web` branches. It then merges the three
 browser inputs with the .NET suites' inputs and enforces the same coverage floors as CI. The harness rejects a Vite

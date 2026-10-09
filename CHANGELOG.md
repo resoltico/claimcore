@@ -13,6 +13,7 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Changed
 
+- Full local published qualification consolidates native acceptance, all browser engines and merged coverage in the `browser-coverage` job, eliminating the duplicate CLI/Chromium run and reusing only successful same-run frontend prerequisites. The local `--only published-cli` selector is removed; the standalone `bash eng/Run-PublishedCliAcceptance.sh` command remains available. Complete inventories, distinct CLI/Web coverage and existing floors remain required.
 - **Breaking client contract:** matching CLI, browser and host builds are required for the new wire fingerprints. Session snapshots carry the host Web fingerprint, case-list pages carry advisory `availableCommands`, current commands and inspected recovery actions reflect actor grants, protected definition reads preserve their typed failure/cancellation outcomes, and native `CLI_INVALID_SCALAR` failures carry required shared diagnostics while structural failures name safe declared locations. The frozen SQL baseline and canonical recovery formats are unchanged.
 
 ## [0.8.0] - 2026-10-08

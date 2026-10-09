@@ -50,8 +50,10 @@ function coverageSummary(root, path) {
     }
   }
 }
-/** @param {string} root */
-export function frontendReports(root) {
+/** Unit, coverage-summary and mutation owner oracles, independent of browser results.
+ * @param {string} root
+ */
+export function frontendPrerequisiteReports(root) {
   const admitted = [];
   const vitest = join(root, "artifacts/frontend/vitest-summary.json");
   if (existsSync(vitest)) {
@@ -62,6 +64,23 @@ export function frontendReports(root) {
     coverageSummary(root, coverage);
     admitted.push(coverage);
   }
+  const mutation = join(root, "web/artifacts/stryker/domain-mutation.json");
+  if (existsSync(mutation)) {
+    const sources = Object.fromEntries(
+      targets.map((target) => [target, readFileSync(join(root, "web", target), "utf8")]),
+    );
+    verifyMutationReport(
+      json(mutation),
+      sources,
+      json(join(root, "web/package.json")).devDependencies["@stryker-mutator/core"],
+    );
+    admitted.push(mutation);
+  }
+  return admitted;
+}
+/** @param {string} root */
+export function frontendReports(root) {
+  const admitted = frontendPrerequisiteReports(root);
   for (const engine of engines) {
     const report = join(root, `artifacts/browser/${engine}.json`);
     if (existsSync(report)) {
@@ -78,18 +97,6 @@ export function frontendReports(root) {
       checkBrowserCoverage(coverage);
       admitted.push(coverage);
     }
-  }
-  const mutation = join(root, "web/artifacts/stryker/domain-mutation.json");
-  if (existsSync(mutation)) {
-    const sources = Object.fromEntries(
-      targets.map((target) => [target, readFileSync(join(root, "web", target), "utf8")]),
-    );
-    verifyMutationReport(
-      json(mutation),
-      sources,
-      json(join(root, "web/package.json")).devDependencies["@stryker-mutator/core"],
-    );
-    admitted.push(mutation);
   }
   return admitted;
 }

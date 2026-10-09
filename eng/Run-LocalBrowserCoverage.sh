@@ -39,8 +39,7 @@ dotnet tool restore
 node eng/ci/run-publication.mjs build-inputs
 npm --prefix web ci
 npm --prefix web run contract:generate
-npm --prefix web run test:unit
-npm --prefix web run test:mutation
+node eng/ci/frontend-prerequisites.mjs
 npm --prefix web run build
 npm --prefix web run sbom
 npm --prefix web exec -- playwright install chromium firefox webkit
