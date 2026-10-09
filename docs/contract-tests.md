@@ -767,6 +767,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime lifecycle under PostgreSQL.[CC-RUN-001] thrown opening closes its owned source |
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime scheduling and shutdown.[CC-RUN-001] audit stop is nonblocking and cleanup joins cancellation callbacks |
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime scheduling and shutdown.[CC-RUN-001] shutdown stops audit before draining admitted actor work |
+| CC-WEB-001 | browser | associates malformed operation lookup guidance and prevents empty case lookup [CC-WEB-001] |
 | CC-WEB-001 | browser | records supplementary scalar boundaries through Web for published native readback [CC-CLI-001][CC-WEB-001] |
 | CC-WEB-001 | unit | ClaimCore deterministic suite.CLI TLS trust.[CC-WEB-001] issuer TLS leaf requires server purpose |
 | CC-WEB-001 | unit | ClaimCore deterministic suite.CLI TLS trust.[CC-WEB-001] private TLS root validity has exact boundaries |
