@@ -85,7 +85,7 @@ export const expectResultFields = (
   modes: Modes,
 ) => {
   expect(after).toEqual({
-    revision: "4",
+    revision: String(Number(before.revision) + 1),
     fields: {
       ...before.fields,
       ...(modes.registration === "REPLACE"

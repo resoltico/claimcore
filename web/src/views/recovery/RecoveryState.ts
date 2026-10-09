@@ -18,7 +18,7 @@ import type { RecoveryTarget } from "../../domain/operationState";
 export type Inspection = RecoveryInspection;
 export type RecoveryViewKind = RecoveryPage["view"];
 export type ImportState = { file: File; preview: RecoveryImportPreview };
-export type RecoveryIdentity = Pick<PreparationSummary, "operationId" | "requestSha256">;
+type RecoveryIdentity = Pick<PreparationSummary, "operationId" | "requestSha256">;
 export type ConfirmState = { action: "RESOLVE" | "DISMISS" | "EXPORT"; item: RecoveryIdentity };
 
 type Setter<T> = Dispatch<SetStateAction<T>>;

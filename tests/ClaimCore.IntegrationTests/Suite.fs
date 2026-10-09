@@ -6,7 +6,11 @@ open Expecto
 do afterRunTests Fixtures.shutdown
 
 let private disclosureTests =
-    [ MutationDisclosureTests.tests; RecoveryDisclosureTests.tests ]
+    [
+        MutationDisclosureTests.tests
+        RecoveryDisclosureTests.tests
+        WitnessSettlementReadbackTests.tests
+    ]
 
 let private coreAndRecovery =
     [

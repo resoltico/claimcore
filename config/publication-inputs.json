@@ -55,6 +55,7 @@
     ".tsx",
     ".css",
     ".mjs",
+    ".mts",
     ".sh",
     ".sql",
     ".html",

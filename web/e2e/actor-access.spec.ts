@@ -8,14 +8,31 @@ import { login, sessionToken } from "./session-helpers";
 const ownerRoles = ["CASE_EDITOR", "RECOVERY_OPERATOR", "RECOVERY_EXPORTER"] as const;
 const ownerGrants = async (page: Page, active: boolean) => {
   const source = await syntheticPrincipals();
-  for (const role of ownerRoles) {
-    await applyAuthority(page, "authority.setGrant", {
-      eventId: randomUUID(),
-      principal: { kind: "HUMAN", issuer: source.issuer, subject: source.ownerSubject },
-      role,
-      scope: { kind: "INSTALLATION" },
-      active,
-    });
+  const changed: (typeof ownerRoles)[number][] = [];
+  try {
+    for (const role of ownerRoles) {
+      await applyAuthority(page, "authority.setGrant", {
+        eventId: randomUUID(),
+        principal: { kind: "HUMAN", issuer: source.issuer, subject: source.ownerSubject },
+        role,
+        scope: { kind: "INSTALLATION" },
+        active,
+      });
+      changed.push(role);
+    }
+  } catch (error) {
+    if (!active) {
+      for (const role of changed.reverse()) {
+        await applyAuthority(page, "authority.setGrant", {
+          eventId: randomUUID(),
+          principal: { kind: "HUMAN", issuer: source.issuer, subject: source.ownerSubject },
+          role,
+          scope: { kind: "INSTALLATION" },
+          active: true,
+        });
+      }
+    }
+    throw error;
   }
 };
 
@@ -54,8 +71,10 @@ test("disabled actor keeps authenticated public bootstrap but cannot read cases 
       principal: fixture.principal,
       enabled,
     });
-  await enable(false);
+  let disabledConfirmed = false;
   try {
+    await enable(false);
+    disabledConfirmed = true;
     const disabled = await context.newPage();
     await disabled.goto("/");
     await login(disabled, "Cases", "Sign in", "synthetic-steward");
@@ -67,7 +86,9 @@ test("disabled actor keeps authenticated public bootstrap but cannot read cases 
     await expect(disabled.getByRole("button", { name: "Open a case", exact: true })).toHaveCount(0);
   } finally {
     await context.close();
-    await enable(true);
+    if (disabledConfirmed) {
+      await enable(true);
+    }
     await restore();
   }
 });

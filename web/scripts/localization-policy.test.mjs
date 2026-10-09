@@ -36,6 +36,21 @@ const catalog = (language) =>
       .map((name) => json(`presentation/catalogs/${name}`)),
   );
 
+test("runtime pseudolocalization preserves every generated pseudo AST and English source", () => {
+  const english = json("presentation/generated/en.json");
+  const before = JSON.stringify(english);
+  const pseudo = json("presentation/generated/en-XA.json");
+  assert.deepEqual(Object.keys(english).sort(), Object.keys(pseudo).sort());
+  for (const [key, ast] of Object.entries(english)) {
+    assert.deepEqual(
+      [{ type: 0, value: "⟦" }, ...pseudolocalize(ast), { type: 0, value: "⟧" }],
+      pseudo[key],
+      key,
+    );
+  }
+  assert.equal(JSON.stringify(english), before);
+});
+
 test("every shipped real catalog covers the native metadata and diagnostic parameter vocabulary", () => {
   const en = catalog("en");
   assert.ok(Object.keys(en).length > 300);

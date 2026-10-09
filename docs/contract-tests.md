@@ -160,6 +160,8 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-AUTH-001 | unit | ClaimCore deterministic suite.actor and grant authorization.[CC-AUTH-001] real-data activation review and approval require a human installation owner |
 | CC-AUTH-001 | unit | ClaimCore deterministic suite.case-list cursor contract.[CC-AUTH-001] invalid list cursor has one typed diagnostic |
 | CC-AUTH-001 | unit | ClaimCore deterministic suite.case-list cursor contract.[CC-AUTH-001] list cursor binds caller grant query and expiry |
+| CC-AUTH-001 | vitest | does not invent rollback after the first authority action is unconfirmed [CC-AUTH-001] |
+| CC-AUTH-001 | vitest | restores only the confirmed baseline grant when narrow setup fails [CC-AUTH-001] |
 | CC-BACKUP-001 | backup-qualification | ClaimCore managed backup qualification.[CC-BACKUP-001] deploy-time custody gate refuses same-host and self-certified evidence |
 | CC-BACKUP-001 | backup-qualification | ClaimCore managed backup qualification.[CC-BACKUP-001] encrypted dual-cluster backup is verified by isolated restores and rejects altered evidence |
 | CC-BACKUP-001 | backup-qualification | ClaimCore managed backup qualification.operator evidence recovery.[CC-BACKUP-001] capture interruptions and checkpoint replay preserve exact evidence |
@@ -172,6 +174,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.Restore report pair binding.[CC-BACKUP-001] stale or divergent restore pair facts refuse recheck |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.[CC-BACKUP-001] intermediate restore reports cannot claim deployment readiness |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.advanced physical restored pair.[CC-BACKUP-001] original BASE pair replays later synthetic WAL before audit |
+| CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.advanced physical restored pair.[CC-BACKUP-001] repeated quiet WAL switches retain the last completed segment |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.authority operation fence.[CC-BACKUP-001] backup capture drains actor settlement and retains the complete authority fence |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.backup capture private files.[CC-BACKUP-001] owner hashes only private exact-root capture files |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.backup capture signed claims.[CC-BACKUP-001] signed capture binds owner cutoff and both physical copies |
@@ -655,6 +658,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-REC-001 | integration | ClaimCore PostgreSQL integration.authority interleave knowledge.[CC-REC-001] lost real start reply and later exact acceptance preserve the earlier unknown attempt |
 | CC-REC-001 | integration | ClaimCore PostgreSQL integration.authority interleave knowledge.[CC-REC-001] related grant loss before execution preserves old uncertainty through explicit restoration |
 | CC-REC-001 | integration | ClaimCore PostgreSQL integration.authority interleave knowledge.[CC-WIT-001][CC-REC-001] reconciled START and later authority change preserve the exact historical unknown attempt |
+| CC-REC-001 | integration | ClaimCore PostgreSQL integration.durable witness verification knowledge.[CC-WIT-001][CC-REC-001] durable settlement with unavailable exact verification preserves uncertainty |
 | CC-REC-001 | integration | ClaimCore PostgreSQL integration.owner-private recovery artifact key policy.[CC-REC-001] artifact key policy rejects unsafe bounds |
 | CC-REC-001 | integration | ClaimCore PostgreSQL integration.owner-private recovery artifact key policy.[CC-REC-001] artifact keys rotate with bounded issue and verify horizons |
 | CC-REC-001 | integration | ClaimCore PostgreSQL integration.technical witness phases.[CC-REC-001] unaccepted unrevoked PREPARE is not owner-prunable |
@@ -763,6 +767,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-WEB-001 | unit | ClaimCore deterministic suite.build-only presentation projection.exports serialized lossless literals across syntax interactions [CC-WEB-001] |
 | CC-WEB-001 | vitest | admits matching public session metadata without protected definition access [CC-WEB-001] |
 | CC-WEB-001 | vitest | defaults to actual SUMMARY entries and deliberately resets between SUMMARY and FULL [CC-WEB-001] |
+| CC-WEB-001 | vitest | derives the published pseudo label exactly from the preserved generated catalog [CC-WEB-001] |
 | CC-WEB-001 | vitest | focuses and describes WEB_INPUT_INVALID_DIGEST and clears its stale lookup guidance [CC-WEB-001] |
 | CC-WEB-001 | vitest | focuses and describes WEB_INPUT_INVALID_UUID and clears its stale lookup guidance [CC-WEB-001] |
 | CC-WEB-001 | vitest | focuses and describes invalid operation identity then clears the stale error [CC-WEB-001] |
@@ -777,6 +782,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-WEB-001 | vitest | protects ordinary list, detail, history and absent lookup references in en [CC-WEB-001] |
 | CC-WEB-001 | vitest | protects ordinary list, detail, history and absent lookup references in en-XA [CC-WEB-001] |
 | CC-WEB-001 | vitest | protects ordinary list, detail, history and absent lookup references in lv [CC-WEB-001] |
+| CC-WEB-001 | vitest | pseudolocalizes nested literals while preserving argument, selector and plural identities [CC-WEB-001] |
 | CC-WEB-001 | vitest | refuses a host fingerprint mismatch without claiming an invalid actor session [CC-WEB-001] |
 | CC-WEB-001 | vitest | refuses reference message parts with missing, wrong-role or foreign holes [CC-WEB-001] |
 | CC-WEB-001 | vitest | renders an empty attempt page as zero attempts rather than an unknown diagnostic [CC-WEB-001] |
@@ -931,6 +937,8 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-WIT-001 | integration | ClaimCore PostgreSQL integration.Storage boundary qualification.catalog change token behavior.catalog change token.[CC-WIT-001] structural and privilege changes move the witness catalog token |
 | CC-WIT-001 | integration | ClaimCore PostgreSQL integration.[CC-REC-001] [CC-WIT-001] revocation fences future authority without rewriting an orphan acceptance |
 | CC-WIT-001 | integration | ClaimCore PostgreSQL integration.authority interleave knowledge.[CC-WIT-001][CC-REC-001] reconciled START and later authority change preserve the exact historical unknown attempt |
+| CC-WIT-001 | integration | ClaimCore PostgreSQL integration.durable witness verification knowledge.[CC-WIT-001] healthy exact fallback recovers after the same lost original settlement response |
+| CC-WIT-001 | integration | ClaimCore PostgreSQL integration.durable witness verification knowledge.[CC-WIT-001][CC-REC-001] durable settlement with unavailable exact verification preserves uncertainty |
 | CC-WIT-001 | integration | ClaimCore PostgreSQL integration.owner-private witness key custody.[CC-WIT-001] owner-private key-ring file admits and broad mode refuses |
 | CC-WIT-001 | integration | ClaimCore PostgreSQL integration.runtime I/O and diagnostics.[CC-WIT-001] blocked witness admission cancels before dispatch |
 | CC-WIT-001 | integration | ClaimCore PostgreSQL integration.runtime I/O and diagnostics.[CC-WIT-001] late cancellation preserves exact settlement readback |

@@ -13,7 +13,6 @@ export type {
   CommandInputShape,
   CorrectionGroupDescriptor,
   CurrentCase,
-  DefinitionPayload,
   EndpointOutcome,
   FieldDescriptor,
   HistoryEntry,

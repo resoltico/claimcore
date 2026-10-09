@@ -53,6 +53,7 @@
     <Compile Include="RecoveryArtifactImportTests.fs" />
     <Compile Include="RecoveryArtifactImportPreviewTests.fs" />
     <Compile Include="TechnicalWitnessTestSupport.fs" />
+    <Compile Include="WitnessSettlementReadbackTests.fs" />
     <Compile Include="RecoverySnapshotGate.fs" />
     <Compile Include="RecoverySnapshotTests.fs" />
     <Compile Include="AcceptedReplayWitnessTests.fs" />

@@ -30,6 +30,7 @@ copies safe values and provides an accessible fallback when clipboard access is 
 crosses English and Arabic grammar with independent displayed digits
 defaults to actual SUMMARY entries and deliberately resets between SUMMARY and FULL [CC-WEB-001]
 derives shared browser business meaning directly from semantic discovery
+derives the published pseudo label exactly from the preserved generated catalog [CC-WEB-001]
 detaches replacement group values so later authoring cannot change a frozen request
 disables OPEN reference and fields after preparation uncertainty while preserving exact retry
 disables retained recovery fields and action switching without suggesting a fresh review
@@ -37,6 +38,7 @@ discards an aborted keyed read instead of replacing its newer response
 discards reverse-order recovery inspection responses and cancels closed detail reads
 distinguishes cancellation boundaries from generic incomplete results in every language
 does not interpret a local delivery notice as a definite server refusal
+does not invent rollback after the first authority action is unconfirmed [CC-AUTH-001]
 does not let an older refresh resurrect an authenticated session after logout
 does not rebase a frozen preparation after language switching and an external revision change
 does not retain recovery material without a preview
@@ -160,6 +162,7 @@ protects ordinary list, detail, history and absent lookup references in ar [CC-W
 protects ordinary list, detail, history and absent lookup references in en [CC-WEB-001]
 protects ordinary list, detail, history and absent lookup references in en-XA [CC-WEB-001]
 protects ordinary list, detail, history and absent lookup references in lv [CC-WEB-001]
+pseudolocalizes nested literals while preserving argument, selector and plural identities [CC-WEB-001]
 reads previously persisted version-one settings under their actual browser storage key
 recognizes edit then exact revert but preserves distinct amount spelling
 reflects reducer editability during preparation, review, submission and uncertainty for AMEND_REGISTRATION
@@ -209,6 +212,7 @@ requires every supplied message argument to be an exact own property
 requires fresh inspection before retrying a submission-started preparation
 requires one exact attachment filename and matching UTF-8 filename parameter
 resolves explicit language and display-format preferences independently with deterministic fallbacks
+restores only the confirmed baseline grant when narrow setup fails [CC-AUTH-001]
 retains an exact id until a retained preparation is edited, then starts a new id
 retains authored replacement values for every grouped correction field
 retains local, accepted and uncertain notices as language-neutral data

@@ -10,6 +10,7 @@ export const targets = [
   "src/presentation/preferences.ts",
   "src/presentation/presenter.ts",
   "src/presentation/messages.ts",
+  "src/presentation/pseudolocalization.mjs",
 ];
 const minimumScore = 92;
 // Vitest deadlines reach Stryker as failed tests and can otherwise be reported as Killed.

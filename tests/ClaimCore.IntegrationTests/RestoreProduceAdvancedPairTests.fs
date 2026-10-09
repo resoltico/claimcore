@@ -8,6 +8,7 @@ open ClaimCore.IntegrationTests.RestorePhysicalArchiveEvidence
 open ClaimCore.IntegrationTests.RestoreRegisteredWalCapture
 open ClaimCore.IntegrationTests.RestorePhysicalCopyFixture
 open ClaimCore.IntegrationTests.RestorePhysicalReplayFixture
+open ClaimCore.IntegrationTests.RestorePhysicalWalRange
 open ClaimCore.IntegrationTests.RestoreProducePhysicalChecks
 
 let private walPosition (value: string) =
@@ -74,6 +75,13 @@ let tests =
     testList
         "advanced physical restored pair"
         [
+            testCase
+                "[CC-BACKUP-001] repeated quiet WAL switches retain the last completed segment"
+                (fun _ ->
+                    withAuthorityRuntimeDatabase (fun owner _ _ _ ->
+                        let _, completed = completedWalEndpoint owner
+                        let _, quiet = completedWalEndpoint owner
+                        Expect.equal quiet completed "No writes created another completed segment"))
             testCase
                 "[CC-BACKUP-001] original BASE pair replays later synthetic WAL before audit"
                 (fun _ -> withAuthorityRuntimeDatabase advancedPair)
