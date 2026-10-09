@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { expect, test, type Page, type Download } from "@playwright/test";
 import { openCase, startCommand, prepare, keepForRecovery } from "./case-workflow";
-import { trackRequests } from "./localization-support";
+import { trackRequests, ui } from "./localization-support";
 import { openAuthenticated, expectAccessible } from "./session-helpers";
 
 const pausedExport = async (page: Page, loseReply: boolean) => {
@@ -60,7 +60,7 @@ const closeExportDetails = async (page: Page) => {
   await expect(page.getByRole("dialog")).toHaveCount(1);
   const close = page
     .getByRole("dialog", { name: "Recovery details" })
-    .getByRole("button", { name: "Close", exact: true });
+    .getByRole("button", { name: ui("en", "ui.close"), exact: true });
   await close.focus();
   await expect(close).toBeFocused();
   await page.keyboard.press("Escape");

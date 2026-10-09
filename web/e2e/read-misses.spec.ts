@@ -4,6 +4,7 @@ import { expect, test } from "@playwright/test";
 
 import { expectAccessible, openAuthenticated } from "./session-helpers";
 import { selectLanguage, trackRequests, ui } from "./localization-support";
+import { webV3Endpoints } from "../src/generated/contracts/web-v3.endpoint-catalog";
 
 test("associates malformed operation lookup guidance and prevents empty case lookup [CC-WEB-001]", async ({
   page,
@@ -14,6 +15,7 @@ test("associates malformed operation lookup guidance and prevents empty case loo
   await page.getByLabel("Handler's case reference (exact)").fill("");
   await expect(page.getByRole("button", { name: "Find case", exact: true })).toBeDisabled();
   await page.getByLabel("Handler's case reference (exact)").press("Enter");
+  expect(requests).toHaveLength(0);
   await page.getByRole("button", { name: "Operations", exact: true }).click();
   const operation = page
     .locator('section[aria-labelledby="operation-lookup-title"]')
@@ -36,7 +38,9 @@ test("associates malformed operation lookup guidance and prevents empty case loo
   await expect(operation).toHaveAccessibleDescription(translated ?? "");
   await operation.fill(randomUUID());
   await expect(operation).not.toHaveAttribute("aria-invalid");
-  expect(requests).toHaveLength(0);
+  const observe = webV3Endpoints.find((endpoint) => endpoint.id === "operation.observe");
+  expect(observe).toBeDefined();
+  expect(requests).toEqual([`POST ${observe?.path}`]);
   await expectAccessible(page);
 });
 
