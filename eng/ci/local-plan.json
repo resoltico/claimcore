@@ -96,31 +96,6 @@
       ]
     },
     {
-      "id": "published-cli",
-      "title": "Published CLI acceptance (publishes the applications, uses Docker)",
-      "mirrors": ["publish", "acceptance"],
-      "after": ["tests-postgres"],
-      "argv": ["bash", "eng/Run-PublishedCliAcceptance.sh"],
-      "tools": ["docker"],
-      "optional": true,
-      "scope": [
-        "^src/",
-        "^db/",
-        "^tests/ClaimCore\\.AcceptanceTests/",
-        "^eng/(Run-PublishedCliAcceptance|Run-PublishedWebE2E|Generate-SyntheticWebTls|PublishedWebE2E-Setup)\\.sh$",
-        "^eng/oidc/",
-        "^eng/ci/publish/",
-        "^web/",
-        "^eng/PrivateQualificationPaths\\.sh$",
-        "^eng/PublicationInputs\\.(fsx|targets)$",
-        "^config/publication-inputs\\.json$",
-        "^Directory\\.(Build\\.(props|targets)|Packages\\.props)$",
-        "^NuGet\\.Config$",
-        "^global\\.json$",
-        "^eng/PublicationRestoreGraph\\.fsx$"
-      ]
-    },
-    {
       "id": "container-operation",
       "title": "Persistent HTTPS Docker operation and authority separation",
       "mirrors": ["deployment"],
@@ -150,8 +125,8 @@
     },
     {
       "id": "browser-coverage",
-      "title": "All published browser engines and exact same-run merged production coverage",
-      "mirrors": ["browser", "coverage"],
+      "title": "Published CLI acceptance, all browser engines and exact same-run merged production coverage",
+      "mirrors": ["publish", "acceptance", "browser", "coverage"],
       "after": ["tests-postgres", "frontend-gates"],
       "argv": ["bash", "eng/Run-LocalBrowserCoverage.sh"],
       "tools": ["docker"],

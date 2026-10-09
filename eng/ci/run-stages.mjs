@@ -8,6 +8,10 @@
 // command than the one that gates the merge. A stage that needs a pinned tool from
 // config/tools.json installs it first; any other missing tool skips the stage on a developer
 // machine and fails it in CI.
+import {
+  beginFrontendPrerequisites,
+  finishFrontendPrerequisites,
+} from "./frontend-prerequisites.mjs";
 import { coordinate } from "./run-command.mjs";
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
@@ -109,7 +113,19 @@ async function main() {
     stages:
       only.length === 0 ? plan.stages : plan.stages.filter((stage) => only.includes(stage.id)),
   };
+  validatePlan(selected);
+  if (!Number.isInteger(parallel) || parallel < 1) {
+    throw new Error("Concurrency must be a positive integer.");
+  }
+  const context =
+    name === "frontend"
+      ? beginFrontendPrerequisites(
+          root,
+          selected.stages.map((stage) => stage.id),
+        )
+      : null;
   const results = await runPlan(selected, parallel, (stage) => execute(stage, runId));
+  finishFrontendPrerequisites(context, results);
   const failed = results
     .filter((result) => result.value.status === "failed")
     .map((result) => result.stage.id);

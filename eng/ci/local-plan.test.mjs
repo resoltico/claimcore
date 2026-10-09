@@ -58,7 +58,6 @@ test("a documentation-only change runs neither the frontend nor the database sui
   const changed = ["docs/development.md", "CHANGELOG.md"];
   assert.equal(affected(job("frontend-gates"), changed), false);
   assert.equal(affected(job("tests-postgres"), changed), false);
-  assert.equal(affected(job("published-cli"), changed), false);
   assert.equal(affected(job("quality"), changed), true, "repository gates always run");
   assert.equal(
     affected(job("tests-dotnet"), changed),
@@ -80,8 +79,8 @@ test("changes select the jobs that can be affected by them", () => {
   assert.equal(affected(job("tests-postgres"), ["eng/backup/README.md"]), false);
   assert.equal(affected(job("frontend-gates"), ["src/ClaimCore.Contracts/Endpoints.fs"]), true);
   assert.equal(affected(job("tests-dotnet"), ["eng/ci/suites/suite.mjs"]), true);
-  assert.equal(affected(job("published-cli"), ["eng/Generate-SyntheticWebTls.sh"]), true);
-  assert.equal(affected(job("published-cli"), ["eng/oidc/Run-SyntheticOidc.sh"]), true);
+  assert.equal(affected(job("browser-coverage"), ["eng/Generate-SyntheticWebTls.sh"]), true);
+  assert.equal(affected(job("browser-coverage"), ["eng/oidc/Run-SyntheticOidc.sh"]), true);
 });
 
 test("when the change set is unknown every job runs", () => {
@@ -140,5 +139,18 @@ test("deployment selection covers publication, trust-driver, lock and shared too
   const incomplete = { ...deployment, scope: ["^deployment/", "^src/", "^config/"] };
   for (const input of ["web/e2e/browser-trust-driver.mjs", "web/package-lock.json"]) {
     assert.equal(affected(incomplete, [input]), false, "old scope misses this independent input");
+  }
+});
+
+test("one combined published job owns every client and coverage family", () => {
+  const combined = job("browser-coverage");
+  assert.deepEqual(combined.mirrors, ["publish", "acceptance", "browser", "coverage"]);
+  assert.deepEqual(combined.argv, ["bash", "eng/Run-LocalBrowserCoverage.sh"]);
+  assert.equal(
+    registry.jobs.some((entry) => entry.id === "published-cli"),
+    false,
+  );
+  for (const family of combined.mirrors) {
+    assert.equal(registry.jobs.filter((entry) => entry.mirrors.includes(family)).length, 1);
   }
 });

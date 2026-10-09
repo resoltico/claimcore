@@ -48,6 +48,17 @@ function requireWrapper(artifacts, kind) {
     requireFile(join(workspace, "results/cli.coverage.cobertura.acceptance.xml"));
   }
 }
+/** @param {string} artifacts */
+function requirePublishedCoverage(artifacts) {
+  requireWrapper(artifacts, "local-browser");
+  requireFile(join(artifacts, "coverage/merged/Cobertura.xml"));
+  requireFile(join(artifacts, "coverage/input/acceptance/ClaimCore.AcceptanceTests.trx"));
+  requireFile(join(artifacts, "coverage/input/acceptance/cli.coverage.cobertura.acceptance.xml"));
+  for (const engine of ["chromium", "firefox", "webkit"]) {
+    requireFile(join(artifacts, `browser/${engine}.json`));
+    requireFile(join(artifacts, `coverage/input/browser/${engine}.coverage.cobertura.e2e.xml`));
+  }
+}
 /** @param {import("./run-context.mjs").RunContext} context @param {string[]} args */
 function requireStagePlan(context, args) {
   const [name] = args;
@@ -93,7 +104,7 @@ function requireStandalone(context, artifacts) {
     requireWrapper(artifacts, "acceptance-local");
   }
   if (context.requested.some((arg) => arg.endsWith("Run-LocalBrowserCoverage.sh"))) {
-    requireFile(join(artifacts, "coverage/merged/Cobertura.xml"));
+    requirePublishedCoverage(artifacts);
   }
   if (context.requested.some((arg) => arg.endsWith("eng/ci/deployment/qualify.mjs"))) {
     requirePassedEvidence(context, { "container-operation": "passed" });
@@ -109,17 +120,11 @@ export function requirePassedEvidence(context, stages) {
   if (passed("tests-postgres")) {
     requireSuites(context, ["run", "--group", "postgres"]);
   }
-  if (passed("published-cli")) {
-    requireWrapper(artifacts, "acceptance-local");
-  }
   if (passed("browser-coverage")) {
-    requireWrapper(artifacts, "local-browser");
-    requireFile(join(artifacts, "coverage/merged/Cobertura.xml"));
-    for (const engine of ["chromium", "firefox", "webkit"]) {
-      requireFile(join(artifacts, `browser/${engine}.json`));
-    }
+    requirePublishedCoverage(artifacts);
   }
   if (passed("frontend-gates")) {
+    requireFile(join(artifacts, "frontend/prerequisites.json"));
     requireFile(join(artifacts, "frontend/vitest-summary.json"));
     requireFile(join(context.source, "web/artifacts/stryker/domain-mutation.json"));
   }
