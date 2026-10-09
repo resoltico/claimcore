@@ -290,5 +290,9 @@ let tests =
                 "[CC-CLI-001][CC-AUTH-001] native public-client grants replay and read back the existing owner"
                 NativeOwnerGrantAcceptance.qualify
             yield! RemoteProtocolBoundaryTests.tests
+            yield! UnicodeAcceptanceTests.tests
+            yield! NarrowRoleAcceptanceTests.tests
+            yield! NativeOwnerWorkspaceProof.tests
+            yield! NativeActorAccessProof.tests
         ]
     |> testSequenced

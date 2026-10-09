@@ -67,7 +67,10 @@ own outcomes; this refusal does not settle any earlier uncertain operation.
 Configuration, authentication, invalid service replies, and private-file refusals return a CLI-v4 `localFailure` with a safe code and exit 3. A service host refusal is a distinct `serviceFailure`; a service outcome is nested under `result.service` and validated against the generated endpoint response schema before delivery. An uncertain outbound mutation or delivery returns a typed unconfirmed result and exit 4. Neither transport failure nor a temporarily absent receipt proves that a mutation failed. [Core outcome diagnostics](diagnostics.md) defines the service's safe diagnostic identities.
 
 Protocol failures carry flat `diagnosticId`, `code`, and a known-member `path` in the
-`protocolFailure` frame, without a core-style `diagnostic` object or parameters. Use
+`protocolFailure` frame. A `CLI_INVALID_SCALAR` failure additionally requires `scalarDiagnostic`
+with the shared scalar diagnostic ID and exact safe numeric parameters. Its registered path names
+the actual input field; it diagnoses syntax/length/Unicode constraints, never business dates,
+chronology, state or actor authority. Other protocol failures have no scalar payload. Use
 `claimcore describe diagnostics` for protocol and process schemas. A process delivery failure uses
 structured stderr, preserves only the current frame's known operation context, and never writes a
 second stdout frame. A potentially state-changing frame with unconfirmed delivery exits 4; no
@@ -130,7 +133,7 @@ The latter formats preserve exact recovery bytes; they are not earlier CLI proto
 | `recovery.list`, `recovery.inspect`, `recovery.resolve`, `recovery.dismiss` | Authorized recovery work |
 | `recovery.export` | Obtain an authorized envelope and create an exclusive owner-private local file |
 | `recovery.importEnvelopePreview`, `recovery.importEnvelopeRetain` | Read a private local envelope and preview or retain its exact bytes through the service |
-| `authority.register`, `authority.setGrant`, `authority.setEnabled`, `authority.observe`, `authority.approveCopySigner`, `authority.approveCopyDeletion`, `authority.approveCopyAdoption`, `authority.approveWriterHandoff` | Installation/case authority and exact copy-signer, deletion, adoption, or writer-handoff approval subject to service grants; owner custody and execution are separate |
+| `authority.register`, `authority.setGrant`, `authority.setEnabled`, `authority.observe`, `authority.approveCopySigner`, `authority.approveCopyDeletion`, `authority.approveCopyAdoption`, `authority.approveWriterHandoff`, `authority.reviewRealDataActivation`, `authority.approveRealDataActivation` | Installation/case authority and exact copy-signer, deletion, adoption, writer-handoff or real-data-activation review/approval subject to service grants; owner custody and execution are separate |
 | `lifecycle.review`, `lifecycle.apply`, `lifecycle.approve` | Audited disposition, erasure, hold, and approval workflow subject to service grants |
 | `tombstone.review`, `tombstone.approvePrune`, `tombstone.approveTerminal`, `tombstone.changeHold` | Opaque post-purge review, witnessed prune or terminal-evidence draft approval, and nonpayload holds; owner certification and execution are separate |
 
@@ -219,7 +222,10 @@ provenance separately from its receipt observation. It pages actual identified a
 definite settlements with an opaque cursor bound to that operation. Unsettled identified attempts
 remain independent of later acceptance and prevent pruning of their preparation. `recovery.list` defaults to pending work and takes an explicit
 terminal view for retained accepted/revoked evidence and payload-free revocation tombstones. A bounded
-recovery list deliberately omits authored values, provenance, and attempt detail.
+recovery list deliberately omits authored values, provenance, and attempt detail. Its summary actions
+state operation eligibility. Detailed actor-bound inspection intersects those actions with the
+current actor's operation grants; only inspection advice should drive action controls. A prepared,
+imported or mutation-result summary is not current actor permission. Execution always rechecks it.
 An accepted receipt remains observable to a currently authorized actor even if its technical preparation has been pruned. While a
 preparation is retained, exact replay preserves its original producer provenance and timestamp; a
 newer binary's semantic fingerprint does not rewrite those first-writer facts or become part of

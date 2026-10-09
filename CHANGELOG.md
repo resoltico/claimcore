@@ -4,6 +4,17 @@ Notable changes to this project are documented in this file. The format is based
 
 ## [Unreleased]
 
+### Fixed
+
+- Native schema admission accepts valid supplementary Unicode in business text and service replies while still refusing malformed Unicode, over-limit scalars, whitespace and controls. Exact authored text and recovery identities are unchanged.
+- Narrow-grant browser work no longer depends on protected installation definition access. History defaults to permitted summaries, lifecycle review is optional, and known-ID recovery/export can work independently of listing or inspection grants.
+- Native input errors identify declared fields and shared scalar constraints through structured diagnostics. Browser correction selectors and operation lookups associate errors with their controls; empty case lookup cannot silently submit. Recovery controls retain dispatch ownership when inspection closes during export.
+- Recovery authority refusal has its own access diagnostic and preserves the admitted unresolved attempt rather than reporting an invalid storage response or inventing a settlement.
+
+### Changed
+
+- **Breaking client contract:** matching CLI, browser and host builds are required for the new wire fingerprints. Session snapshots carry the host Web fingerprint, case-list pages carry advisory `availableCommands`, current commands and inspected recovery actions reflect actor grants, protected definition reads preserve their typed failure/cancellation outcomes, and native `CLI_INVALID_SCALAR` failures carry required shared diagnostics while structural failures name safe declared locations. The frozen SQL baseline and canonical recovery formats are unchanged.
+
 ## [0.8.0] - 2026-10-08
 
 ### Security

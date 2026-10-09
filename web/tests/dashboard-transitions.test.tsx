@@ -6,7 +6,7 @@ import { Dashboard } from "../src/views/Dashboard";
 import { receipt, list, inspection, accepted } from "./v3-recovery.fixtures";
 import { deferredResponse } from "./presentation-state.fixtures";
 import { preparedForRequest } from "./prepared-request.fixtures";
-import { definition, fields, preparation, response, recoveryPage } from "./v3-ui.fixtures";
+import { fields, preparation, response, recoveryPage, runtime } from "./v3-ui.fixtures";
 
 const current: CurrentCase = { case: { fields, revision: "1" }, availableCommands: ["CLOSE"] };
 
@@ -14,7 +14,6 @@ beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 
 const queueDefinitionAndList = () => {
   const fetch = vi.mocked(globalThis.fetch);
-  fetch.mockResolvedValueOnce(response("definition", "DESCRIBED", definition));
   fetch.mockResolvedValueOnce(
     response("case.list", "SUCCEEDED", {
       items: [{ caseReference: "CASE-1", revision: "1", status: "OPENED" }],
@@ -29,7 +28,6 @@ const queueDetail = () => {
   fetch.mockResolvedValueOnce(
     response("case.history", "SUCCEEDED", { tag: "FOUND", entries: [], nextCursor: null }),
   );
-  fetch.mockResolvedValueOnce(response("lifecycle.review", "RESOURCE_UNAVAILABLE", null));
 };
 
 const queueAcceptedOpen = (): void => {
@@ -58,7 +56,7 @@ const sentOperationId = (path: string): string => {
 };
 
 const renderDashboard = () =>
-  render(<Dashboard token="token" sessionEpoch={1} onLogout={vi.fn(() => Promise.resolve())} />);
+  render(<Dashboard token="token" onLogout={vi.fn(() => Promise.resolve())} />);
 
 it("returns from a selected case through Dashboard's detail-back transition", async () => {
   const user = userEvent.setup();
@@ -99,7 +97,7 @@ it("hands a lost submit to exact recovery even when the pending list is empty", 
           before: current.case,
           proposed: { fields, revision: "2" },
           changes: [],
-          context: definition.runtime,
+          context: runtime,
           advisory: true,
         },
       }),
@@ -120,7 +118,7 @@ it("hands a lost submit to exact recovery even when the pending list is empty", 
   await user.click(await screen.findByRole("checkbox", { name: "I confirm these changes." }));
   await user.click(screen.getByRole("button", { name: "Record changes" }));
   expect(await screen.findByRole("heading", { name: "Recovery" })).toBeVisible();
-  expect(screen.queryByRole("textbox")).toBeNull();
+  expect(screen.getByLabelText("Exact operation ID")).toBeVisible();
   expect(screen.queryByText(fields.claimantName)).toBeNull();
   expect(screen.getByRole("button", { name: "Sign out" })).not.toBeDisabled();
   const operationId = sentOperationId("/api/v3/operations/submit");
@@ -193,7 +191,7 @@ it("returns an accepted open operation to Dashboard through its committed transi
           before: null,
           proposed: { fields, revision: "1" },
           changes: [],
-          context: definition.runtime,
+          context: runtime,
           advisory: true,
         },
       }),

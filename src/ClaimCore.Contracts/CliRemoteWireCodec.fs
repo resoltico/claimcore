@@ -74,6 +74,12 @@ module CliRemoteWireCodec =
             writer.WriteString("code", failure.Code)
             writer.WriteString("diagnosticId", ProtocolProblems.token failure.Reason)
             writer.WriteString("path", failure.Path)
+
+            failure.ScalarDiagnostic
+            |> Option.iter (fun value ->
+                writer.WritePropertyName("scalarDiagnostic")
+                CliWireValues.scalarDiagnostic writer value)
+
             writer.WriteEndObject())
 
     /// Core recovery direction preserves earlier uncertainty even before a new attempt.

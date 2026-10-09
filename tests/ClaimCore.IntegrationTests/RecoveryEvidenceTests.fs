@@ -195,6 +195,8 @@ let private withEditorRecovery action =
 
         let context: ActorCallContext =
             {
+                MayEditCommands = true
+                AllowedRecoveryActions = []
                 Binding =
                     {
                         Principal = editor

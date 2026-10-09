@@ -1,11 +1,9 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
+import { response } from "./v3-ui.fixtures";
 import { useSession } from "../src/hooks/useSession";
 
-const session = (data: unknown) =>
-  new Response(JSON.stringify({ endpoint: "session", outcome: { tag: "SNAPSHOT", data } }), {
-    headers: { "content-type": "application/json" },
-  });
+const session = (data: Record<string, unknown>) => response("session", "SNAPSHOT", data);
 
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 
@@ -52,15 +50,7 @@ it("does not send a credential from an anonymous session", async () => {
     expect(result.current.state.kind).toBe("anonymous");
   });
   expect(fetch).toHaveBeenCalledTimes(1);
-  fetch.mockResolvedValueOnce(
-    new Response(
-      JSON.stringify({
-        endpoint: "session",
-        outcome: { tag: "SNAPSHOT", data: { authenticated: true, antiforgeryToken: "new" } },
-      }),
-      { headers: { "content-type": "application/json" } },
-    ),
-  );
+  fetch.mockResolvedValueOnce(session({ authenticated: true, antiforgeryToken: "new" }));
   await result.current.refresh();
   await waitFor(() => {
     expect(result.current.state).toMatchObject({ kind: "authenticated", token: "new" });

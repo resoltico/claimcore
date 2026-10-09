@@ -1176,6 +1176,36 @@
     { "type": 0, "value": "Mëëàànïïng àànd ëëxààct cööpy" },
     { "type": 0, "value": "⟧" }
   ],
+  "ui.historyDetail": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Hïïstööry dëëtààïïl" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.summaryHistory": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Süümmààry" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.fullHistory": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Füüll rëëcöördëëd fïïëëlds" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.requestDigest": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ËËxààct rëëqüüëëst SHÀÀ-256 dïïgëëst" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.inspectOperationId": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÏÏnspëëct ööpëërààtïïöön ÏÏD" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.exportKnownIdentity": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ËËxpöört by ÏÏD àànd dïïgëëst" },
+    { "type": 0, "value": "⟧" }
+  ],
   "field.incidentDate.label": [
     { "type": 0, "value": "⟦" },
     { "type": 0, "value": "ÏÏncïïdëënt dààtëë" },
@@ -1804,6 +1834,14 @@
     {
       "type": 0,
       "value": "ÀÀn ààccëëptëëd ööpëërààtïïöön càànnööt bëë dïïsmïïssëëd. ÏÏnspëëct ïïts rëëtààïïnëëd rëëcëëïïpt."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.RECOVERY_ACCESS_UNAVAILABLE": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "ÀÀccëëss töö thïïs ööpëërààtïïöön wààs rëëfüüsëëd. Prëësëërvëë ïïts ëëxààct ïïdëëntïïty àànd ïïnspëëct ïïts ëëvïïdëëncëë whëën ààccëëss ïïs ààvààïïlààblëë. Thïïs rëëfüüsààl dööëës nööt sëëttlëë ëëààrlïïëër ààttëëmpts."
     },
     { "type": 0, "value": "⟧" }
   ],

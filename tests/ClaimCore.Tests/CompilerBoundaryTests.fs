@@ -98,6 +98,8 @@ let private hostCompileClosures () =
                     "-nologo"
                     "-verbosity:quiet"
                     "-property:Configuration=Release"
+                    "-property:BuildProjectReferences=false"
+                    "-property:ShouldUnsetParentConfigurationAndPlatform=false"
                     "-target:ResolveReferences"
                     "-getItem:ReferencePath"
                 ]

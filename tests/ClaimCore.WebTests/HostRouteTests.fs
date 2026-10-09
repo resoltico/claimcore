@@ -78,13 +78,18 @@ let private definitionRefusal () =
 
     host.Runtime.DefinitionOutcome <- Some(QueryOutcome.Rejected Rejection.ResourceUnavailable)
     let refused = host.Send(HttpMethod.Get, "/api/v3/definition", None, None, None)
-    Expect.equal refused.Status 403 "A refused core definition is not disclosed"
+    Expect.equal refused.Status 200 "Actor refusal retains a typed definition outcome"
     use body = document refused
 
     Expect.equal
-        (body.RootElement.GetProperty("code").GetString())
-        "WEB_SESSION_REJECTED"
-        "Core refusal has a closed host diagnostic"
+        (body.RootElement.GetProperty("outcome").GetProperty("tag").GetString())
+        "REJECTED"
+        "Core refusal remains an actor rejection, not a session failure"
+
+    Expect.equal
+        (body.RootElement.GetProperty("outcome").GetProperty("data").GetProperty("code").GetString())
+        "RESOURCE_UNAVAILABLE"
+        "Core refusal retains its actual reason"
 
 let tests =
     testList

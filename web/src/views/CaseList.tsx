@@ -72,15 +72,27 @@ const LookupForm = ({
       }}
       className="lookup"
     >
-      <TextField value={lookup} onChange={onChange}>
+      <TextField value={lookup} onChange={onChange} isRequired>
         <Label>{p.text("ui.exactCaseReference", { label: p.fieldLabel("caseReference") })}</Label>
         <Input id="case-lookup" autoComplete="off" dir="auto" />
       </TextField>
-      <Button type="submit">{p.text("ui.findCase")}</Button>
+      <Button type="submit" isDisabled={lookup === ""}>
+        {p.text("ui.findCase")}
+      </Button>
       <Button onPress={onReload} isDisabled={loading}>
         {loading ? p.text("ui.loading") : p.text("ui.reloadCases")}
       </Button>
     </Form>
+  );
+};
+
+const CaseHeading = ({ mayOpen, onOpen }: { mayOpen: boolean; onOpen: () => void }) => {
+  const p = usePresentation();
+  return (
+    <div className="section-heading">
+      <h2 id="case-list-title">{p.text("ui.cases")}</h2>
+      {mayOpen ? <Button onPress={onOpen}>{p.commandLabel("OPEN")}</Button> : null}
+    </div>
   );
 };
 
@@ -91,17 +103,15 @@ export const CaseList = ({ token, onSelect, onOpen }: CaseListProps) => {
     (cursor: string | null, signal: AbortSignal) => v3.list(cursor, 50, token, signal),
     [token],
   );
-  const { items, cursor, message, loading, load } = useRetryablePage<
+  const { items, cursor, message, loading, load, page } = useRetryablePage<
     WebV3Response<"case.list">,
-    CaseSummary
+    CaseSummary,
+    NonNullable<ReturnType<typeof casePage>>
   >(request, casePage);
 
   return (
     <section aria-labelledby="case-list-title">
-      <div className="section-heading">
-        <h2 id="case-list-title">{p.text("ui.cases")}</h2>
-        <Button onPress={onOpen}>{p.commandLabel("OPEN")}</Button>
-      </div>
+      <CaseHeading mayOpen={page?.availableCommands.length === 1} onOpen={onOpen} />
       <LookupForm
         lookup={lookup}
         loading={loading}

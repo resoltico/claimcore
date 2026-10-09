@@ -1,4 +1,6 @@
 import { NoticeView } from "../presentation/Message";
+import { FieldError } from "react-aria-components/FieldError";
+import { useEffect, useRef } from "react";
 import { usePresentation } from "../presentation/context";
 import type { Notice } from "../api/notices";
 import { Button } from "react-aria-components/Button";
@@ -6,13 +8,13 @@ import { Form } from "react-aria-components/Form";
 import { Input } from "react-aria-components/Input";
 import { Label } from "react-aria-components/Label";
 import { TextField } from "react-aria-components/TextField";
-import type { DefinitionPayload, Receipt } from "../api/v3";
+import type { PublicDefinition, Receipt } from "../api/v3";
 import { useOperationObservation } from "../hooks/useOperationObservation";
 import { CaseFieldsView } from "../components/CaseFieldsView";
 
 type OperationLookupProps = {
   token: string;
-  definition: DefinitionPayload;
+  definition: PublicDefinition;
   initialOperationId?: string;
 };
 
@@ -21,7 +23,7 @@ const ReceiptView = ({
   definition,
 }: {
   receipt: Receipt;
-  definition: DefinitionPayload;
+  definition: PublicDefinition;
 }) => {
   const p = usePresentation();
   return (
@@ -70,6 +72,14 @@ export const OperationLookup = ({
   const p = usePresentation();
   const { operationId, setOperationId, receipt, message, notObserved, loading, observe } =
     useOperationObservation(token, initialOperationId);
+  const invalid =
+    message?.kind === "diagnostic" && message.diagnostic.id === "WEB_INPUT_INVALID_UUID";
+  const input = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (invalid && !loading) {
+      input.current?.focus();
+    }
+  }, [invalid, loading]);
   return (
     <section aria-labelledby="operation-lookup-title">
       <h2 id="operation-lookup-title">{p.text("ui.operationLookup")}</h2>
@@ -80,9 +90,14 @@ export const OperationLookup = ({
           void observe();
         }}
       >
-        <TextField value={operationId} onChange={setOperationId}>
+        <TextField value={operationId} onChange={setOperationId} isInvalid={invalid}>
           <Label>{p.text("ui.exactOperationId")}</Label>
-          <Input autoComplete="off" dir="ltr" />
+          <Input ref={input} autoComplete="off" dir="ltr" />
+          {!invalid || message === null ? null : (
+            <FieldError>
+              <NoticeView value={message} />
+            </FieldError>
+          )}
         </TextField>
         <Button type="submit" isDisabled={loading || operationId === ""}>
           {loading ? p.text("ui.lookingUp") : p.text("ui.observeOperation")}

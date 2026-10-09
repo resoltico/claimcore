@@ -1,3 +1,4 @@
+import { webV3WireContractFingerprint } from "../generated/contracts/web-v3.endpoint-catalog";
 import { localNotice } from "../api/notices";
 import type { Notice } from "../api/notices";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -29,6 +30,9 @@ const stateFor = (
 ): SessionState => {
   if (failed !== null || value === null) {
     return { kind: "failure", message: failed ?? localNotice("invalidSession"), epoch };
+  }
+  if (value.webFingerprint !== webV3WireContractFingerprint) {
+    return { kind: "failure", message: localNotice("definitionMismatch"), epoch };
   }
   if (!value.authenticated) {
     return { kind: "anonymous", token: value.antiforgeryToken, message: null, epoch };

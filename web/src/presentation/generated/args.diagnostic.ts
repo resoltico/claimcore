@@ -52,6 +52,7 @@ export type DiagnosticArgs = {
   "diagnostic.QUERY_HISTORY_CURSOR_INVALID": Readonly<Record<string, never>>;
   "diagnostic.QUERY_PAGE_LIMIT_RANGE": { readonly maximumPageSize: string };
   "diagnostic.RECOVERY_ACCEPTED_OPERATION_DISMISSAL_FORBIDDEN": Readonly<Record<string, never>>;
+  "diagnostic.RECOVERY_ACCESS_UNAVAILABLE": Readonly<Record<string, never>>;
   "diagnostic.RECOVERY_ATTEMPT_CURSOR_INVALID": Readonly<Record<string, never>>;
   "diagnostic.RECOVERY_ATTEMPT_CURSOR_OPERATION_MISMATCH": Readonly<Record<string, never>>;
   "diagnostic.RECOVERY_ATTEMPT_LIMIT_REACHED": Readonly<Record<string, never>>;

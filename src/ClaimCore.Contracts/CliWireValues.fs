@@ -21,8 +21,7 @@ module internal CliWireValues =
         | Some value -> writer.WriteString(name, value)
         | None -> writer.WriteNull(name)
 
-    let private diagnostic (writer: Utf8JsonWriter) (value: Rejection) =
-        let projected = RejectionDiagnostics.describe value
+    let scalarDiagnostic (writer: Utf8JsonWriter) (projected: RejectionDiagnostic) =
         writer.WriteStartObject()
 
         writer.WriteString(
@@ -43,7 +42,7 @@ module internal CliWireValues =
         writer.WriteStartObject()
         writer.WriteString("code", rejectionCode value.Code)
         writer.WritePropertyName("diagnostic")
-        diagnostic writer value
+        scalarDiagnostic writer (RejectionDiagnostics.describe value)
         writer.WriteString("message", RejectionPresentation.render value)
         optional writer "field" value.Field
         optional writer "actualRevision" (value.ActualVersion |> Option.map revision)

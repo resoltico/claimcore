@@ -1,12 +1,8 @@
-import type { CaseFields, DefinitionPayload, PreparationDetails } from "../src/api/v3";
+import { webV3WireContractFingerprint } from "../src/generated/contracts/web-v3.endpoint-catalog";
+import type { CaseFields, PreparationDetails } from "../src/api/v3";
 import { generatedWebValue } from "./contract-corpus.fixtures";
 
-const described = generatedWebValue("definition");
-if (described.outcome.tag !== "DESCRIBED") {
-  throw new Error("Generated definition fixture must be described.");
-}
-
-export const definition: DefinitionPayload = described.outcome.data;
+export { productMetadata as definition } from "../src/generated/contracts/web-v3.product-metadata";
 
 const foundCase = generatedWebValue("case.get");
 if (foundCase.outcome.tag !== "SUCCEEDED" || foundCase.outcome.data.tag !== "FOUND") {
@@ -36,6 +32,7 @@ if (prepared.outcome.tag !== "PREPARED") {
 }
 
 export const { operationId } = prepared.outcome.data.details.summary;
+export const runtime = prepared.outcome.data.review.context;
 
 export const preparation: PreparationDetails = {
   ...prepared.outcome.data.details,
@@ -65,8 +62,23 @@ export const recoveryPage = (
   nearCapacity: false,
 });
 
+const fixtureData = (endpoint: string, tag: string, data: unknown): unknown => {
+  if (typeof data !== "object" || data === null || Array.isArray(data)) {
+    return data;
+  }
+  if (endpoint === "case.list" && tag === "SUCCEEDED") {
+    return { availableCommands: ["OPEN"], ...data };
+  }
+  if (endpoint.startsWith("session") && tag === "SNAPSHOT") {
+    return { webFingerprint: webV3WireContractFingerprint, ...data };
+  }
+  return data;
+};
 export const response = (endpoint: string, tag: string, data: unknown, status = 200): Response =>
-  new Response(JSON.stringify({ endpoint, outcome: { tag, data } }), {
-    status,
-    headers: { "content-type": "application/json" },
-  });
+  new Response(
+    JSON.stringify({ endpoint, outcome: { tag, data: fixtureData(endpoint, tag, data) } }),
+    {
+      status,
+      headers: { "content-type": "application/json" },
+    },
+  );

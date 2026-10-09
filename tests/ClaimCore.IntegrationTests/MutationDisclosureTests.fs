@@ -34,22 +34,25 @@ let private prepareRevocation () =
             0L
             "Preparation did not execute the command")
 
+let private verifyAccepted owner (witness: WitnessProtocol) operationId =
+    Expect.equal
+        (acceptedCount owner operationId)
+        1L
+        "The primary committed acceptance before disclosure"
+
+    Expect.isSome
+        (witness.EvidenceStore
+            .TryReadEvidence(operationId, SettledAccepted, CancellationToken.None)
+            .GetAwaiter()
+            .GetResult())
+        "The acceptance is independently settled before disclosure"
+
 let private executeFence privacy =
     setup (fun owner (source, app) witness (runtime: Runtime) principal _ _ _ _ ->
         let request = newRequest ()
 
         let beforeFence () =
-            Expect.equal
-                (acceptedCount owner request.OperationId)
-                1L
-                "The interleaving occurs after primary COMMIT"
-
-            Expect.isSome
-                ((witness.EvidenceStore
-                    .TryReadEvidence(request.OperationId, SettledAccepted, CancellationToken.None)
-                    .GetAwaiter()
-                    .GetResult()))
-                "The acceptance is independently settled"
+            verifyAccepted owner witness request.OperationId
 
             if privacy then
                 erase (runtime.ForActor principal) request.CaseReference
@@ -65,7 +68,7 @@ let private executeFence privacy =
             1L
             "Withholding never rolls back accepted authority")
 
-let private recoveryFence action role =
+let private recoveryFence action role accepted =
     setup (fun owner (source, app) witness (runtime: Runtime) principal _ _ _ _ ->
         grant source witness principal role true
         let normal = runtime.ForActor principal
@@ -73,7 +76,11 @@ let private recoveryFence action role =
         let digest = prepared normal request
 
         use admission =
-            fencedAdmission app witness (fun () -> grant source witness principal role false)
+            fencedAdmission app witness (fun () ->
+                if accepted then
+                    verifyAccepted owner witness request.OperationId
+
+                grant source witness principal role false)
 
         let actor = runtime.ForActorWithAdmission(principal, admission)
         requireWithheld (fun () -> action actor request.OperationId digest)
@@ -90,18 +97,21 @@ let private exportRevocation () =
             |> await
             |> ignore)
         Role.RecoveryExporter
+        false
 
 let private resolveRevocation () =
     recoveryFence
         (fun actor operation digest ->
             actor.Recovery.Resolve(operation, digest, cancellation) |> await |> ignore)
         Role.RecoveryOperator
+        true
 
 let private dismissRevocation () =
     recoveryFence
         (fun actor operation digest ->
             actor.Recovery.Dismiss(operation, digest, true, cancellation) |> await |> ignore)
         Role.RecoveryOperator
+        false
 
 let private retainRevocation () =
     setup (fun owner (source, app) witness (runtime: Runtime) principal _ _ _ _ ->

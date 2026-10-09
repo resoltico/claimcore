@@ -26,7 +26,9 @@ if (oidcCredentialsFile === undefined) {
   throw new Error("Synthetic OIDC credentials were not configured.");
 }
 
-const syntheticOwner = async (): Promise<{ username: string; password: string }> => {
+const syntheticCredentials = async (
+  username?: string,
+): Promise<{ username: string; password: string }> => {
   const source: unknown = JSON.parse(await readFile(oidcCredentialsFile, "utf8"));
   if (typeof source !== "object" || source === null || !("users" in source)) {
     throw new Error("Synthetic OIDC user inventory is invalid.");
@@ -35,7 +37,16 @@ const syntheticOwner = async (): Promise<{ username: string; password: string }>
   if (!Array.isArray(users)) {
     throw new Error("Synthetic OIDC user inventory is invalid.");
   }
-  const owner: unknown = users[0];
+  const owner: unknown =
+    username === undefined
+      ? users[0]
+      : users.find(
+          (user: unknown) =>
+            typeof user === "object" &&
+            user !== null &&
+            "username" in user &&
+            user.username === username,
+        );
   if (
     typeof owner !== "object" ||
     owner === null ||
@@ -44,7 +55,7 @@ const syntheticOwner = async (): Promise<{ username: string; password: string }>
     !("password" in owner) ||
     typeof owner.password !== "string"
   ) {
-    throw new Error("Synthetic OIDC owner is invalid.");
+    throw new Error("Synthetic OIDC selected user is invalid.");
   }
   return { username: owner.username, password: owner.password };
 };
@@ -53,7 +64,7 @@ type Cookies = Awaited<ReturnType<BrowserContext["cookies"]>>;
 export const openApplication = async (page: Page, heading: string | RegExp): Promise<void> => {
   await observeStartup(page, async () => {
     await page.goto("/", { waitUntil: "commit" });
-    // Published-host readiness includes the authenticated definition fetch before rendering.
+    // Readiness includes public metadata and the actor-bound case-list outcome.
     await expect(page.getByRole("heading", { name: heading, exact: true })).toBeVisible({
       timeout: 10_000,
     });
@@ -177,10 +188,21 @@ const awaitOidcReturn = async (
   }
 };
 
+const trackOidcCallback = (page: Page) => {
+  let callbackStatus = 0;
+  page.on("response", (response) => {
+    if (new URL(response.url()).pathname === "/signin-oidc") {
+      callbackStatus = response.status();
+    }
+  });
+  return () => callbackStatus;
+};
+
 export const login = async (
   page: Page,
   casesHeading = "Cases",
   signIn = "Sign in",
+  username?: string,
 ): Promise<void> => {
   await progress("login-start");
   const cases = page.getByRole("heading", { name: casesHeading, exact: true });
@@ -202,7 +224,7 @@ export const login = async (
   }
   await progress("login-anon");
   const applicationOrigin = new URL(page.url()).origin;
-  const owner = await syntheticOwner();
+  const owner = await syntheticCredentials(username);
   await page.getByRole("link", { name: signIn, exact: true }).click();
   await page.locator('input[name="username"]').or(cases).first().waitFor();
   if (await cases.isVisible()) {
@@ -214,15 +236,10 @@ export const login = async (
   await progress("oidc-username-filled");
   await page.locator('input[name="password"]').fill(owner.password);
   await progress("oidc-password-filled");
-  let callbackStatus = 0;
-  page.on("response", (response) => {
-    if (new URL(response.url()).pathname === "/signin-oidc") {
-      callbackStatus = response.status();
-    }
-  });
+  const callbackStatus = trackOidcCallback(page);
   await page.locator('input[type="submit"], button[type="submit"]').first().click();
   await progress("oidc-submitted");
-  await awaitOidcReturn(page, applicationOrigin, () => callbackStatus);
+  await awaitOidcReturn(page, applicationOrigin, callbackStatus);
   await progress("oidc-callback-returned");
   await expect(cases).toBeVisible();
   await progress("login-ready");

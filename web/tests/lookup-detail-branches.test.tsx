@@ -1,8 +1,10 @@
-import { render, screen } from "./presentation-test-support";
+import { render, screen, waitFor } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import { CaseDetail } from "../src/views/CaseDetail";
 import { OperationLookup } from "../src/views/OperationLookup";
+import { webCases } from "./contract-corpus.fixtures";
+import { CaseList } from "../src/views/CaseList";
 import { definition, fields, operationId, response } from "./v3-ui.fixtures";
 
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
@@ -112,4 +114,48 @@ it("reports a found observation without a receipt as a protocol failure", async 
   await user.type(screen.getByLabelText("Exact operation ID"), operationId);
   await user.click(screen.getByRole("button", { name: "Look up recorded result" }));
   expect(await screen.findByRole("alert")).toBeVisible();
+});
+
+it("focuses and describes invalid operation identity then clears the stale error [CC-WEB-001]", async () => {
+  const sample = webCases().find((value) => value.id === "valid-host-WEB_INPUT_INVALID_UUID");
+  if (sample === undefined) {
+    throw new Error("UUID host diagnostic fixture is required.");
+  }
+  vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+    new Response(JSON.stringify(sample.value), {
+      status: sample.status,
+      headers: { "content-type": "application/json" },
+    }),
+  );
+  const user = userEvent.setup();
+  render(<OperationLookup token="token" definition={definition} />);
+  const input = screen.getByLabelText("Exact operation ID");
+  await user.type(input, "invalid");
+  await user.click(screen.getByRole("button", { name: "Look up recorded result" }));
+  await waitFor(() => {
+    expect(input).toHaveFocus();
+  });
+  expect(input).toHaveAttribute("aria-invalid", "true");
+  expect(input).toHaveAttribute("aria-describedby");
+  expect(document.getElementById(input.getAttribute("aria-describedby")!)).toHaveTextContent(
+    "Use one non-empty canonical lowercase UUID.",
+  );
+  await user.type(input, "a");
+  expect(input).not.toHaveAttribute("aria-invalid", "true");
+  expect(screen.queryByRole("alert")).toBeNull();
+});
+
+it("requires an exact nonempty reference without silently trimming lookup [CC-WEB-001]", async () => {
+  vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+    response("case.list", "SUCCEEDED", { items: [], nextCursor: null }),
+  );
+  const selected = vi.fn();
+  const user = userEvent.setup();
+  render(<CaseList token="token" onSelect={selected} onOpen={vi.fn()} />);
+  const find = screen.getByRole("button", { name: "Find case" });
+  expect(find).toBeDisabled();
+  await user.type(screen.getByLabelText("Handler's case reference (exact)"), " REF ");
+  await user.click(find);
+  expect(selected).toHaveBeenCalledWith(" REF ");
+  expect(globalThis.fetch).toHaveBeenCalledOnce();
 });

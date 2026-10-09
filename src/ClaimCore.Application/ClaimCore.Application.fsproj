@@ -11,6 +11,7 @@
     <Compile Include="ActorIdentity.fs" />
     <Compile Include="AuthorizationTypes.fs" />
     <Compile Include="AuthorizationPolicy.fs" />
+    <Compile Include="ActorActionAdvice.fs" />
     <Compile Include="CopySignerApprovalTypes.fs" />
     <Compile Include="CopyDeletionApprovalTypes.fs" />
     <Compile Include="CopyAdoptionApprovalTypes.fs" />

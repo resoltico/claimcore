@@ -100,11 +100,9 @@
     <Compile Include="BackupCapturePathsTests.fs" />
     <Compile Include="BackupCaptureEvidenceFixture.fs" />
     <Compile Include="BackupCaptureSessionTests.fs" />
-    <Compile Include="CaseListAuthorityTests.fs" />
-    <Compile Include="CaseListCapacityTests.fs" />
-    <Compile Include="ActorBoundReplayTests.fs" />
-    <Compile Include="ActorBoundRecoveryTests.fs" />
-    <Compile Include="RecoveryListAuthorityTests.fs" />
+  </ItemGroup>
+  <Import Project="ActorCaseWork.Sources.props" />
+  <ItemGroup>
     <Compile Include="ManagedCopyEventHashTests.fs" />
     <Compile Include="ManagedCopySignerTestSupport.fs" />
     <Compile Include="ManagedCopySignerAssertions.fs" />
@@ -212,6 +210,7 @@
     <Compile Include="PreparationHoldRetentionTests.fs" />
     <Compile Include="MutationDisclosureFixture.fs" />
     <Compile Include="MutationDisclosureTests.fs" />
+    <Compile Include="RecoveryDisclosureTests.fs" />
     <Compile Include="CaseListBlockedTimingTests.fs" />
     <Compile Include="CaseErasureFenceTests.fs" />
     <Compile Include="CaseLifecycleAuditTests.fs" />

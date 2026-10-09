@@ -210,6 +210,10 @@ module ContractArtifacts =
                 Name = "default-presentation.en.json"
                 Bytes = DefaultPresentation.bytes ()
             }
+            {
+                Name = "web-v3.product-metadata.ts"
+                Bytes = ProductMetadataArtifact.bytes projection
+            }
             artifact "web-v3.catalog.json" web
             artifact
                 "cli-v4.process-failure.schema.json"

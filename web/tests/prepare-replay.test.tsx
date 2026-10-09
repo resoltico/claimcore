@@ -4,7 +4,7 @@ import { beforeEach, expect, it, vi } from "vitest";
 import type { CurrentCase, Rejection } from "../src/api/v3";
 import { isWebV3Response } from "../src/generated/contracts/web-v3.validation";
 import { OperationEditor } from "../src/views/OperationEditor";
-import { definition, fields, operationId, preparation, response } from "./v3-ui.fixtures";
+import { definition, fields, operationId, preparation, response, runtime } from "./v3-ui.fixtures";
 
 const current: CurrentCase = {
   case: { fields, revision: "1" },
@@ -15,7 +15,7 @@ const review = {
   before: current.case,
   proposed: { fields, revision: "2" },
   changes: [],
-  context: definition.runtime,
+  context: runtime,
   advisory: true,
 };
 

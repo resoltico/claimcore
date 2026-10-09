@@ -11,6 +11,7 @@ test("updates visible detail and expanded history immediately with independent f
   await openAuthenticated(page);
   const reference = `LANGUAGE-HISTORY-${randomUUID()}`;
   await openCase(page, reference);
+  await page.getByLabel("History detail", { exact: true }).selectOption("FULL");
   const history = page.locator(".history-list > li > details").first();
   await expect(history).toBeVisible();
   await history.locator(":scope > summary").click();

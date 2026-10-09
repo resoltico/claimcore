@@ -36,7 +36,7 @@ module CliRawCorpus =
     let private valid (endpoint: CliEndpoint) =
         {
             Identifier = "valid-" + endpoint.Identifier
-            Bytes = endpoint.Input |> Schema.sampleBytes |> frame endpoint.Identifier
+            Bytes = endpoint.Input |> SchemaSamples.bytes |> frame endpoint.Identifier
             Valid = true
             Code = None
             Path = None
@@ -66,9 +66,13 @@ module CliRawCorpus =
             invalid
                 "maximum-revision"
                 "INVALID_VALUE"
-                "/input"
+                "/input/expectedRevision"
                 (revision (Int64.MaxValue.ToString()))
-            invalid "overflow-revision" "INVALID_VALUE" "/input" (revision "9223372036854775808")
+            invalid
+                "overflow-revision"
+                "INVALID_VALUE"
+                "/input/expectedRevision"
+                (revision "9223372036854775808")
             invalid
                 "old-v3-refused"
                 "INVALID_RANGE"
@@ -81,8 +85,8 @@ module CliRawCorpus =
                 """{"protocolVersion":4,"endpoint":"case.unknown","input":{}}"""
             invalid
                 "invalid-input"
-                "INVALID_VALUE"
-                "/input"
+                "INVALID_RANGE"
+                "/input/limit"
                 """{"protocolVersion":4,"endpoint":"case.list","input":{"limit":0}}"""
             invalid
                 "duplicate-key"

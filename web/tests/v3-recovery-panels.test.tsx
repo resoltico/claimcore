@@ -1,3 +1,4 @@
+import { mockRecoveryActions } from "./v3-recovery.fixtures";
 import { localNotice } from "../src/api/notices";
 import { fireEvent, render, screen } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
@@ -10,19 +11,9 @@ import {
   RecoveryList,
   type Listing,
 } from "../src/views/recovery/RecoveryPanels";
-import type { RecoveryActions } from "../src/views/recovery/RecoveryState";
 import { fields, operationId, preparation } from "./v3-ui.fixtures";
 
-const actions = (): RecoveryActions => ({
-  inspectId: vi.fn(),
-  inspect: vi.fn(),
-  loadAttempts: vi.fn(),
-  choose: vi.fn(),
-  act: vi.fn(),
-  exportItem: vi.fn(),
-  preview: vi.fn(),
-  retain: vi.fn(),
-});
+const actions = mockRecoveryActions;
 
 const listing = (cursor: string | null = null): Listing => ({
   items: [{ tag: "RETAINED" as const, summary: preparation.summary }],

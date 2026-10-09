@@ -16,6 +16,7 @@ export type {
   DefinitionPayload,
   EndpointOutcome,
   FieldDescriptor,
+  HistoryEntry,
   PreparationDetails,
   PreparationSummary,
   Receipt,
@@ -35,3 +36,5 @@ export type ApiResult<T> =
   | { readonly kind: "outcome"; readonly value: T; readonly status: number }
   | { readonly kind: "hostFailure"; readonly failure: HostFailure; readonly status: number }
   | { readonly kind: "deliveryFailure"; readonly notice: Notice };
+
+export type { PublicDefinition } from "../generated/contracts/web-v3.product-metadata";

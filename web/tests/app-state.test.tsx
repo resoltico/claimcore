@@ -43,5 +43,6 @@ it("renders OIDC sign-in and authenticated dashboard paths", async () => {
   expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/auth/login");
   rejected.unmount();
   await renderState({ kind: "authenticated", token: "token", epoch: 4 });
-  expect(screen.getByText("Loading application…")).toBeVisible();
+  expect(screen.getByRole("heading", { name: "Cases" })).toBeVisible();
+  expect(screen.queryByText("Loading application…")).toBeNull();
 });

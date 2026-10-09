@@ -84,9 +84,32 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.witnessed capacity and competing work.[CC-AUDIT-001] failed contention assertions join the audit and admitted actor work |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.witnessed capacity and competing work.[CC-AUDIT-001] paged witnessed volume export and actor work survive audit contention with small pools |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.witnessed capacity and competing work.[CC-AUDIT-001] workload deadlines join blocked full audits before releasing fixture authority |
+| CC-AUTH-001 | acceptance | published authenticated CLI v4 acceptance.[CC-AUTH-001][CC-CLI-001] disabled native reader remains refused despite its role |
+| CC-AUTH-001 | acceptance | published authenticated CLI v4 acceptance.[CC-AUTH-001][CC-CLI-001] owner-only native workspace does not imply case authority |
+| CC-AUTH-001 | acceptance | published authenticated CLI v4 acceptance.[CC-AUTH-001][CC-CLI-001] published native CASE_EDITOR scoped=True preserves narrow authority |
+| CC-AUTH-001 | acceptance | published authenticated CLI v4 acceptance.[CC-AUTH-001][CC-CLI-001] published native CASE_READER scoped=False preserves narrow authority |
+| CC-AUTH-001 | acceptance | published authenticated CLI v4 acceptance.[CC-AUTH-001][CC-CLI-001] published native CASE_READER scoped=True preserves narrow authority |
+| CC-AUTH-001 | acceptance | published authenticated CLI v4 acceptance.[CC-AUTH-001][CC-CLI-001] published native DATA_STEWARD scoped=False preserves narrow authority |
+| CC-AUTH-001 | acceptance | published authenticated CLI v4 acceptance.[CC-AUTH-001][CC-CLI-001] published native NONE scoped=False preserves narrow authority |
+| CC-AUTH-001 | acceptance | published authenticated CLI v4 acceptance.[CC-AUTH-001][CC-CLI-001] published native RECOVERY_EXPORTER scoped=False preserves narrow authority |
+| CC-AUTH-001 | acceptance | published authenticated CLI v4 acceptance.[CC-AUTH-001][CC-CLI-001] published native RECOVERY_OPERATOR scoped=False preserves narrow authority |
+| CC-AUTH-001 | acceptance | published authenticated CLI v4 acceptance.[CC-AUTH-001][CC-CLI-001] published native RECOVERY_OPERATOR scoped=True preserves narrow authority |
+| CC-AUTH-001 | acceptance | published authenticated CLI v4 acceptance.[CC-AUTH-001][CC-CLI-001] unregistered native human authenticates without row access |
 | CC-AUTH-001 | acceptance | published authenticated CLI v4 acceptance.[CC-CLI-001][CC-AUTH-001] native public-client grants replay and read back the existing owner |
+| CC-AUTH-001 | browser | admits the case editor workflow without wider grants through published Web [CC-AUTH-001] |
+| CC-AUTH-001 | browser | admits the case reader workflow without wider grants through published Web [CC-AUTH-001] |
+| CC-AUTH-001 | browser | admits the case recovery operator workflow without wider grants through published Web [CC-AUTH-001] |
+| CC-AUTH-001 | browser | admits the enabled actor without grants workflow without wider grants through published Web [CC-AUTH-001] |
+| CC-AUTH-001 | browser | admits the exporter workflow without wider grants through published Web [CC-AUTH-001] |
+| CC-AUTH-001 | browser | admits the installation reader workflow without wider grants through published Web [CC-AUTH-001] |
+| CC-AUTH-001 | browser | admits the recovery operator workflow without wider grants through published Web [CC-AUTH-001] |
+| CC-AUTH-001 | browser | admits the steward workflow without wider grants through published Web [CC-AUTH-001] |
+| CC-AUTH-001 | browser | disabled actor keeps authenticated public bootstrap but cannot read cases [CC-AUTH-001] |
+| CC-AUTH-001 | browser | owner-only workspace renders without inventing case authority [CC-AUTH-001] |
+| CC-AUTH-001 | browser | unregistered human authenticates without gaining a wider grant [CC-AUTH-001] |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.[CC-AUTH-001] case-list cursor binds principal grant query and visible page |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.[CC-AUTH-001] voided and erasure-fenced identities share denial timing class |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.[CC-AUTH-001][CC-REC-001] unresolved recovery payload is withheld after final disclosure authority loss |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.actor and grant storage.[CC-AUTH-001] exact authority replay detects a forged live actor projection |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.actor and grant storage.[CC-AUTH-001] exact initial-owner readback preserves receipt without restoring authority |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.actor and grant storage.[CC-AUTH-001] explicit grant revocation advances authority and invalidates stale snapshot |
@@ -97,6 +120,8 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.actor management.[CC-AUTH-001] management denies unknown actor and service stewardship |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.actor management.[CC-AUTH-001] orphan grant intent remains unknown on exact retry |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.actor management.[CC-AUTH-001] owner management exact retry keeps event and target identity |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.actor resource advice.[CC-AUTH-001] actor command advice preserves narrow scopes without wider grants |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.actor resource advice.[CC-AUTH-001] disabled and unregistered actors gain no case or list advice |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.actor-bound core.[CC-AUTH-001] actor-bound execute, read and exact replay enforce current grant |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.actor-bound core.[CC-AUTH-001] case list filters grants before storage page window |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.actor-bound core.[CC-AUTH-001] inaccessible and absent resources share one refusal |
@@ -110,6 +135,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.actor-bound replay.[CC-AUTH-001] current read grant permits receipt replay without duplicate effect |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.actor/grant resource lookup.[CC-AUTH-001] authority lock excludes a concurrent grant change |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.actor/grant resource lookup.[CC-AUTH-001] case and accepted-operation lookups do not reveal inaccessible identities |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.authority interleave knowledge.[CC-AUTH-001] unrelated grant revision change after real admission preserves exact unresolved attempt |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.case-list capacity.[CC-AUTH-001] installation access keeps bounded ordered work at volume |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.case-list capacity.[CC-AUTH-001] sparse actor access selects indexed granted cases at volume |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.case-list cursor protection.[CC-AUTH-001] cursor tamper and runtime restart refuse without plaintext |
@@ -256,15 +282,33 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-BACKUP-001 | unit | ClaimCore deterministic suite.administration diagnostic boundaries.[CC-BACKUP-001] owner adoption accepts only one private evidence path |
 | CC-BACKUP-001 | unit | ClaimCore deterministic suite.administration diagnostic boundaries.[CC-BACKUP-001] owner backup capture accepts no path or caller-selected executable |
 | CC-BACKUP-001 | unit | ClaimCore deterministic suite.private archive hashing.[CC-BACKUP-001] private archive hash is bounded and rejects aliases |
+| CC-CLI-001 | acceptance | published authenticated CLI v4 acceptance.[CC-AUTH-001][CC-CLI-001] disabled native reader remains refused despite its role |
+| CC-CLI-001 | acceptance | published authenticated CLI v4 acceptance.[CC-AUTH-001][CC-CLI-001] owner-only native workspace does not imply case authority |
+| CC-CLI-001 | acceptance | published authenticated CLI v4 acceptance.[CC-AUTH-001][CC-CLI-001] published native CASE_EDITOR scoped=True preserves narrow authority |
+| CC-CLI-001 | acceptance | published authenticated CLI v4 acceptance.[CC-AUTH-001][CC-CLI-001] published native CASE_READER scoped=False preserves narrow authority |
+| CC-CLI-001 | acceptance | published authenticated CLI v4 acceptance.[CC-AUTH-001][CC-CLI-001] published native CASE_READER scoped=True preserves narrow authority |
+| CC-CLI-001 | acceptance | published authenticated CLI v4 acceptance.[CC-AUTH-001][CC-CLI-001] published native DATA_STEWARD scoped=False preserves narrow authority |
+| CC-CLI-001 | acceptance | published authenticated CLI v4 acceptance.[CC-AUTH-001][CC-CLI-001] published native NONE scoped=False preserves narrow authority |
+| CC-CLI-001 | acceptance | published authenticated CLI v4 acceptance.[CC-AUTH-001][CC-CLI-001] published native RECOVERY_EXPORTER scoped=False preserves narrow authority |
+| CC-CLI-001 | acceptance | published authenticated CLI v4 acceptance.[CC-AUTH-001][CC-CLI-001] published native RECOVERY_OPERATOR scoped=False preserves narrow authority |
+| CC-CLI-001 | acceptance | published authenticated CLI v4 acceptance.[CC-AUTH-001][CC-CLI-001] published native RECOVERY_OPERATOR scoped=True preserves narrow authority |
+| CC-CLI-001 | acceptance | published authenticated CLI v4 acceptance.[CC-AUTH-001][CC-CLI-001] unregistered native human authenticates without row access |
 | CC-CLI-001 | acceptance | published authenticated CLI v4 acceptance.[CC-CLI-001] published malformed frames retain exact typed refusals |
 | CC-CLI-001 | acceptance | published authenticated CLI v4 acceptance.[CC-CLI-001] published operation and recovery identities reject invalid UUID and digest |
 | CC-CLI-001 | acceptance | published authenticated CLI v4 acceptance.[CC-CLI-001] published six-request witnessed lifecycle retains exact history |
 | CC-CLI-001 | acceptance | published authenticated CLI v4 acceptance.[CC-CLI-001] witnessed accepted command and exact replay |
 | CC-CLI-001 | acceptance | published authenticated CLI v4 acceptance.[CC-CLI-001][CC-AUTH-001] native public-client grants replay and read back the existing owner |
+| CC-CLI-001 | acceptance | published authenticated CLI v4 acceptance.[CC-CLI-001][CC-REC-001] Web-authored supplementary boundaries survive published native reads and ASCII acceptance exactly once |
+| CC-CLI-001 | acceptance | published authenticated CLI v4 acceptance.[CC-CLI-001][CC-REC-001] published supplementary Unicode input and ASCII mutation replies preserve one exact replay |
+| CC-CLI-001 | browser | records supplementary scalar boundaries through Web for published native readback [CC-CLI-001][CC-WEB-001] |
 | CC-CLI-001 | unit | ClaimCore deterministic suite.HTTP response deadlines.[CC-CLI-001] discovery deadline covers a suspended body after headers |
 | CC-CLI-001 | unit | ClaimCore deterministic suite.HTTP response deadlines.[CC-CLI-001] token deadline covers a suspended body after headers |
 | CC-CLI-001 | unit | ClaimCore deterministic suite.endpoint extension ownership.[CC-CLI-001] generated responses refuse an unreviewed endpoint family |
 | CC-CLI-001 | unit | ClaimCore deterministic suite.endpoint extension ownership.[CC-CLI-001] generated responses refuse duplicate endpoint identifiers |
+| CC-CLI-001 | unit | ClaimCore deterministic suite.native scalar admission diagnostics.[CC-CLI-001] discriminator and unknown member diagnostics never reflect authored keys |
+| CC-CLI-001 | unit | ClaimCore deterministic suite.native scalar admission diagnostics.[CC-CLI-001] every correction group diagnoses its discriminator through strict parsing |
+| CC-CLI-001 | unit | ClaimCore deterministic suite.native scalar admission diagnostics.[CC-CLI-001] malformed business scalars identify their known field and shared constraint |
+| CC-CLI-001 | unit | ClaimCore deterministic suite.native scalar admission diagnostics.[CC-CLI-001] scalar protocol metadata is correlated and excludes nonlocal diagnostic causes |
 | CC-CLI-001 | unit | ClaimCore deterministic suite.service response bounds.[CC-CLI-001] CLI bounds service JSON buffering before parsing |
 | CC-CLI-001 | unit | ClaimCore deterministic suite.service response bounds.[CC-CLI-001] CLI reads a full history with maximum-length Unicode fields |
 | CC-CLI-002 | acceptance | published authenticated CLI v4 acceptance.[CC-CLI-002] malformed owner-private envelope preview retains no preparation |
@@ -358,64 +402,121 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-DOM-001 | unit | ClaimCore deterministic suite.domain accepted-state admission.[CC-DOM-001] restoration refuses invalid paid and chronological states |
 | CC-DOM-001 | unit | ClaimCore deterministic suite.domain validation.[CC-DOM-001] business Unicode preserves joining and authored display controls through restoration |
 | CC-DOM-001 | unit | ClaimCore deterministic suite.generated semantic field contract.semantic field schema.[CC-DOM-001] semantic contract renders exactly thirteen ordered field descriptors |
+| CC-DOM-001 | unit | ClaimCore deterministic suite.native scalar admission diagnostics.[CC-DOM-001] future-date policy remains service-owned after local scalar admission |
+| CC-DOM-001 | unit | ClaimCore deterministic suite.schema scalar formats.[CC-DOM-001] native evaluator admits the shared scalar corpus |
+| CC-DOM-001 | unit | ClaimCore deterministic suite.schema scalar formats.[CC-DOM-001] projected reference guard preserves Unicode scalar semantics |
 | CC-DOM-001 | vitest | formats review values by descriptor with independent date and amount expectations [CC-DOM-001] |
 | CC-DOM-002 | browser | refuses corrections of missing recorded values in ar [CC-DOM-002] |
 | CC-DOM-002 | browser | refuses corrections of missing recorded values in en [CC-DOM-002] |
 | CC-DOM-002 | browser | refuses corrections of missing recorded values in lv [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/CLEAR/CLEAR in ar with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/CLEAR/CLEAR in en with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/CLEAR/CLEAR in lv with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/CLEAR/KEEP in ar with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/CLEAR/KEEP in en with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/CLEAR/KEEP in lv with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/CLEAR/REPLACE in ar with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/CLEAR/REPLACE in en with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/CLEAR/REPLACE in lv with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/KEEP/CLEAR in ar with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/KEEP/CLEAR in en with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/KEEP/CLEAR in lv with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/KEEP/KEEP in ar with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/KEEP/KEEP in en with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/KEEP/KEEP in lv with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/KEEP/REPLACE in ar with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/KEEP/REPLACE in en with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/KEEP/REPLACE in lv with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/REPLACE/CLEAR in ar with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/REPLACE/CLEAR in en with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/REPLACE/CLEAR in lv with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/REPLACE/KEEP in ar with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/REPLACE/KEEP in en with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/REPLACE/KEEP in lv with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/REPLACE/REPLACE in ar with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/REPLACE/REPLACE in en with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/REPLACE/REPLACE in lv with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/CLEAR/CLEAR in ar with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/CLEAR/CLEAR in en with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/CLEAR/CLEAR in lv with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/CLEAR/KEEP in ar with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/CLEAR/KEEP in en with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/CLEAR/KEEP in lv with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/CLEAR/REPLACE in ar with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/CLEAR/REPLACE in en with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/CLEAR/REPLACE in lv with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/KEEP/CLEAR in ar with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/KEEP/CLEAR in en with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/KEEP/CLEAR in lv with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/KEEP/KEEP in ar with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/KEEP/KEEP in en with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/KEEP/KEEP in lv with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/KEEP/REPLACE in ar with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/KEEP/REPLACE in en with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/KEEP/REPLACE in lv with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/REPLACE/CLEAR in ar with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/REPLACE/CLEAR in en with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/REPLACE/CLEAR in lv with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/REPLACE/KEEP in ar with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/REPLACE/KEEP in en with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/REPLACE/KEEP in lv with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/REPLACE/REPLACE in ar with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/REPLACE/REPLACE in en with authoritative outcome [CC-DOM-002] |
-| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/REPLACE/REPLACE in lv with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/CLEAR/CLEAR in ar while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/CLEAR/CLEAR in ar while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/CLEAR/CLEAR in en while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/CLEAR/CLEAR in en while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/CLEAR/CLEAR in lv while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/CLEAR/CLEAR in lv while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/CLEAR/KEEP in ar while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/CLEAR/KEEP in ar while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/CLEAR/KEEP in en while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/CLEAR/KEEP in en while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/CLEAR/KEEP in lv while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/CLEAR/KEEP in lv while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/CLEAR/REPLACE in ar while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/CLEAR/REPLACE in ar while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/CLEAR/REPLACE in en while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/CLEAR/REPLACE in en while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/CLEAR/REPLACE in lv while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/CLEAR/REPLACE in lv while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/KEEP/CLEAR in ar while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/KEEP/CLEAR in ar while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/KEEP/CLEAR in en while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/KEEP/CLEAR in en while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/KEEP/CLEAR in lv while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/KEEP/CLEAR in lv while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/KEEP/KEEP in ar while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/KEEP/KEEP in ar while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/KEEP/KEEP in en while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/KEEP/KEEP in en while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/KEEP/KEEP in lv while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/KEEP/KEEP in lv while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/KEEP/REPLACE in ar while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/KEEP/REPLACE in ar while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/KEEP/REPLACE in en while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/KEEP/REPLACE in en while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/KEEP/REPLACE in lv while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/KEEP/REPLACE in lv while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/REPLACE/CLEAR in ar while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/REPLACE/CLEAR in ar while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/REPLACE/CLEAR in en while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/REPLACE/CLEAR in en while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/REPLACE/CLEAR in lv while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/REPLACE/CLEAR in lv while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/REPLACE/KEEP in ar while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/REPLACE/KEEP in ar while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/REPLACE/KEEP in en while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/REPLACE/KEEP in en while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/REPLACE/KEEP in lv while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/REPLACE/KEEP in lv while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/REPLACE/REPLACE in ar while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/REPLACE/REPLACE in ar while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/REPLACE/REPLACE in en while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/REPLACE/REPLACE in en while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/REPLACE/REPLACE in lv while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE KEEP/REPLACE/REPLACE in lv while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/CLEAR/CLEAR in ar while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/CLEAR/CLEAR in ar while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/CLEAR/CLEAR in en while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/CLEAR/CLEAR in en while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/CLEAR/CLEAR in lv while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/CLEAR/CLEAR in lv while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/CLEAR/KEEP in ar while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/CLEAR/KEEP in ar while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/CLEAR/KEEP in en while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/CLEAR/KEEP in en while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/CLEAR/KEEP in lv while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/CLEAR/KEEP in lv while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/CLEAR/REPLACE in ar while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/CLEAR/REPLACE in ar while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/CLEAR/REPLACE in en while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/CLEAR/REPLACE in en while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/CLEAR/REPLACE in lv while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/CLEAR/REPLACE in lv while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/KEEP/CLEAR in ar while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/KEEP/CLEAR in ar while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/KEEP/CLEAR in en while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/KEEP/CLEAR in en while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/KEEP/CLEAR in lv while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/KEEP/CLEAR in lv while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/KEEP/KEEP in ar while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/KEEP/KEEP in ar while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/KEEP/KEEP in en while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/KEEP/KEEP in en while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/KEEP/KEEP in lv while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/KEEP/KEEP in lv while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/KEEP/REPLACE in ar while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/KEEP/REPLACE in ar while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/KEEP/REPLACE in en while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/KEEP/REPLACE in en while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/KEEP/REPLACE in lv while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/KEEP/REPLACE in lv while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/REPLACE/CLEAR in ar while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/REPLACE/CLEAR in ar while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/REPLACE/CLEAR in en while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/REPLACE/CLEAR in en while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/REPLACE/CLEAR in lv while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/REPLACE/CLEAR in lv while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/REPLACE/KEEP in ar while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/REPLACE/KEEP in ar while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/REPLACE/KEEP in en while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/REPLACE/KEEP in en while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/REPLACE/KEEP in lv while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/REPLACE/KEEP in lv while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/REPLACE/REPLACE in ar while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/REPLACE/REPLACE in ar while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/REPLACE/REPLACE in en while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/REPLACE/REPLACE in en while OPENED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/REPLACE/REPLACE in lv while CLOSED with authoritative outcome [CC-DOM-002] |
+| CC-DOM-002 | browser | submits literal CORRECT_CASE REPLACE/REPLACE/REPLACE in lv while OPENED with authoritative outcome [CC-DOM-002] |
 | CC-DOM-002 | integration | ClaimCore PostgreSQL integration.business calendar capture.[CC-DOM-002] stored-zone capture pairs one instant across leap midnight and DST boundaries |
 | CC-DOM-002 | integration | ClaimCore PostgreSQL integration.domain durable evidence.[CC-DOM-002] clock rollback amendments persist and retain the current rule revision |
 | CC-DOM-002 | unit | ClaimCore deterministic suite.business date assertions.correction assertions.[CC-DOM-002] a closed paid correction reaffirms accepted dates after rollback |
@@ -435,6 +536,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-DOM-002 | unit | ClaimCore deterministic suite.scoped factual correction guidance.[CC-DOM-002] closed case refusal permits correction without reopening |
 | CC-DOM-002 | unit | ClaimCore deterministic suite.scoped factual correction guidance.[CC-DOM-002] paid decision refusal permits correction with explicit payment reaffirmation |
 | CC-DOM-002 | unit | ClaimCore deterministic suite.state guard and advertised actions.[CC-DOM-002] each state advertises and enforces the specified command set |
+| CC-DOM-002 | vitest | associates payment acknowledgement with the generated mode control [CC-DOM-002] |
 | CC-DOM-002 | vitest | submits machine correction modes in ar [CC-DOM-002] |
 | CC-DOM-002 | vitest | submits machine correction modes in en [CC-DOM-002] |
 | CC-DOM-002 | vitest | submits machine correction modes in lv [CC-DOM-002] |
@@ -516,6 +618,10 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-LIFE-001 | unit | ClaimCore deterministic suite.Case erasure.[CC-LIFE-001] structural copy evidence and distinct stewards gate later phase |
 | CC-LIFE-001 | unit | ClaimCore deterministic suite.lifecycle projection.[CC-LIFE-001] a case has at most 256 simultaneous active holds |
 | CC-LIFE-001 | unit | ClaimCore deterministic suite.lifecycle projection.[CC-LIFE-001] lifecycle SQL projection loader refuses duplicate and terminal holds |
+| CC-REC-001 | acceptance | published authenticated CLI v4 acceptance.[CC-CLI-001][CC-REC-001] Web-authored supplementary boundaries survive published native reads and ASCII acceptance exactly once |
+| CC-REC-001 | acceptance | published authenticated CLI v4 acceptance.[CC-CLI-001][CC-REC-001] published supplementary Unicode input and ASCII mutation replies preserve one exact replay |
+| CC-REC-001 | browser | keeps recovery controls and exact identity stable after closing a real delayed export (download) [CC-REC-001] |
+| CC-REC-001 | browser | keeps recovery controls and exact identity stable after closing a real delayed export (lost reply) [CC-REC-001] |
 | CC-REC-001 | concurrency-qualification | ClaimCore concurrency qualification.PostgreSQL recovery races.[CC-REC-001] simultaneous exact resolves retain one accepted revision |
 | CC-REC-001 | concurrency-qualification | ClaimCore concurrency qualification.PostgreSQL recovery races.[CC-REC-001] simultaneous resolve and dismiss have one lifecycle winner |
 | CC-REC-001 | integration | ClaimCore PostgreSQL integration.PostgreSQL operation authority lifecycle.[CC-REC-001] a revoked worker cannot execute or lose unsettled preparation evidence |
@@ -539,11 +645,16 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-REC-001 | integration | ClaimCore PostgreSQL integration.PostgreSQL recovery state table.[CC-REC-001] dismissed preparation is idempotent and cannot be exported |
 | CC-REC-001 | integration | ClaimCore PostgreSQL integration.PostgreSQL recovery state table.[CC-REC-001] missing preparation has explicit read and action outcomes |
 | CC-REC-001 | integration | ClaimCore PostgreSQL integration.PostgreSQL terminal capacity.[CC-REC-001] 1,024 recent accepted operations leave capacity for a distinct fresh preparation |
+| CC-REC-001 | integration | ClaimCore PostgreSQL integration.[CC-AUTH-001][CC-REC-001] unresolved recovery payload is withheld after final disclosure authority loss |
 | CC-REC-001 | integration | ClaimCore PostgreSQL integration.[CC-LIFE-001] [CC-REC-001] a witnessed hold retains terminal preparation evidence until release |
 | CC-REC-001 | integration | ClaimCore PostgreSQL integration.[CC-REC-001] [CC-WIT-001] revocation fences future authority without rewriting an orphan acceptance |
 | CC-REC-001 | integration | ClaimCore PostgreSQL integration.[CC-REC-001] a settled rejection cannot be re-executed or issue an orphan intent |
 | CC-REC-001 | integration | ClaimCore PostgreSQL integration.[CC-REC-001] recovery inspection uses one snapshot across concurrent owner pruning |
+| CC-REC-001 | integration | ClaimCore PostgreSQL integration.actor resource advice.[CC-REC-001] inspection advice distinguishes recovery and export without granting either |
 | CC-REC-001 | integration | ClaimCore PostgreSQL integration.actor-bound v3 recovery import.[CC-REC-001] import requires current grant, authenticated artifact and active case |
+| CC-REC-001 | integration | ClaimCore PostgreSQL integration.authority interleave knowledge.[CC-REC-001] lost real start reply and later exact acceptance preserve the earlier unknown attempt |
+| CC-REC-001 | integration | ClaimCore PostgreSQL integration.authority interleave knowledge.[CC-REC-001] related grant loss before execution preserves old uncertainty through explicit restoration |
+| CC-REC-001 | integration | ClaimCore PostgreSQL integration.authority interleave knowledge.[CC-WIT-001][CC-REC-001] reconciled START and later authority change preserve the exact historical unknown attempt |
 | CC-REC-001 | integration | ClaimCore PostgreSQL integration.owner-private recovery artifact key policy.[CC-REC-001] artifact key policy rejects unsafe bounds |
 | CC-REC-001 | integration | ClaimCore PostgreSQL integration.owner-private recovery artifact key policy.[CC-REC-001] artifact keys rotate with bounded issue and verify horizons |
 | CC-REC-001 | integration | ClaimCore PostgreSQL integration.technical witness phases.[CC-REC-001] unaccepted unrevoked PREPARE is not owner-prunable |
@@ -588,6 +699,8 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-REC-001 | unit | ClaimCore deterministic suite.fresh recovery format boundary.[CC-REC-001] raw noncanonical bytes are not imported |
 | CC-REC-001 | unit | ClaimCore deterministic suite.fresh recovery format boundary.[CC-REC-001] signed envelope metadata and layout tampering are refused |
 | CC-REC-001 | unit | ClaimCore deterministic suite.preparation attribution.[CC-REC-001] retained OPEN preserves case and preparer authority |
+| CC-REC-001 | unit | ClaimCore deterministic suite.recovery access phase.[CC-REC-001] admitted access refusal preserves exact unresolved attempt knowledge |
+| CC-REC-001 | unit | ClaimCore deterministic suite.recovery access phase.[CC-REC-001] pre-admission access refusal is not an invalid storage reply |
 | CC-REC-001 | unit | ClaimCore deterministic suite.recovery authority closure.[CC-REC-001] durable revocation closes exact identity before and after preparation pruning |
 | CC-REC-001 | unit | ClaimCore deterministic suite.recovery authority closure.[CC-REC-001] recovery list and attempt cursors reject a different view or operation |
 | CC-REC-001 | unit | ClaimCore deterministic suite.recovery uncertainty boundaries.[CC-REC-001] cancellation after admitted attempt preserves definite acceptance |
@@ -622,6 +735,9 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-REC-001 | unit | fresh recovery format boundary.[CC-REC-001] signed envelope metadata and layout tampering are refused |
 | CC-REC-001 | unit | preparation attribution.[CC-REC-001] retained OPEN preserves case and preparer authority |
 | CC-REC-001 | unit | signed recovery import attribution.[CC-REC-001] signed import preserves A and records importer B |
+| CC-REC-001 | vitest | keeps closed inspection controls locked until export settles (false) [CC-REC-001] |
+| CC-REC-001 | vitest | keeps closed inspection controls locked until export settles (true) [CC-REC-001] |
+| CC-REC-001 | vitest | offers independent known-ID inspection and known-ID plus digest export without listing [CC-REC-001] |
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.production core boundary.runtime lifecycle.[CC-RUN-001] bounded disposal defers source cleanup until the final lease |
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.production core boundary.runtime lifecycle.[CC-RUN-001] cancelled opening returns a safe typed fault |
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.production core boundary.runtime lifecycle.[CC-RUN-001] disposal closes admission and drains a held operation |
@@ -640,11 +756,18 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime lifecycle under PostgreSQL.[CC-RUN-001] thrown opening closes its owned source |
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime scheduling and shutdown.[CC-RUN-001] audit stop is nonblocking and cleanup joins cancellation callbacks |
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime scheduling and shutdown.[CC-RUN-001] shutdown stops audit before draining admitted actor work |
+| CC-WEB-001 | browser | records supplementary scalar boundaries through Web for published native readback [CC-CLI-001][CC-WEB-001] |
 | CC-WEB-001 | unit | ClaimCore deterministic suite.CLI TLS trust.[CC-WEB-001] issuer TLS leaf requires server purpose |
 | CC-WEB-001 | unit | ClaimCore deterministic suite.CLI TLS trust.[CC-WEB-001] private TLS root validity has exact boundaries |
 | CC-WEB-001 | unit | ClaimCore deterministic suite.build-only presentation projection.exports every diagnostic as literal and declared hole parts [CC-WEB-001] |
 | CC-WEB-001 | unit | ClaimCore deterministic suite.build-only presentation projection.exports serialized lossless literals across syntax interactions [CC-WEB-001] |
+| CC-WEB-001 | vitest | admits matching public session metadata without protected definition access [CC-WEB-001] |
+| CC-WEB-001 | vitest | defaults to actual SUMMARY entries and deliberately resets between SUMMARY and FULL [CC-WEB-001] |
+| CC-WEB-001 | vitest | focuses and describes WEB_INPUT_INVALID_DIGEST and clears its stale lookup guidance [CC-WEB-001] |
+| CC-WEB-001 | vitest | focuses and describes WEB_INPUT_INVALID_UUID and clears its stale lookup guidance [CC-WEB-001] |
+| CC-WEB-001 | vitest | focuses and describes invalid operation identity then clears the stale error [CC-WEB-001] |
 | CC-WEB-001 | vitest | isolates technical revision holes in Arabic reference summaries and preserves literal word order [CC-WEB-001] |
+| CC-WEB-001 | vitest | keeps newer session admission when an older fingerprint reply arrives [CC-WEB-001] |
 | CC-WEB-001 | vitest | labels grouped recovery targets in ar while keeping exact authored values [CC-WEB-001] |
 | CC-WEB-001 | vitest | labels grouped recovery targets in en while keeping exact authored values [CC-WEB-001] |
 | CC-WEB-001 | vitest | labels grouped recovery targets in lv while keeping exact authored values [CC-WEB-001] |
@@ -654,8 +777,11 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-WEB-001 | vitest | protects ordinary list, detail, history and absent lookup references in en [CC-WEB-001] |
 | CC-WEB-001 | vitest | protects ordinary list, detail, history and absent lookup references in en-XA [CC-WEB-001] |
 | CC-WEB-001 | vitest | protects ordinary list, detail, history and absent lookup references in lv [CC-WEB-001] |
+| CC-WEB-001 | vitest | refuses a host fingerprint mismatch without claiming an invalid actor session [CC-WEB-001] |
 | CC-WEB-001 | vitest | refuses reference message parts with missing, wrong-role or foreign holes [CC-WEB-001] |
 | CC-WEB-001 | vitest | renders an empty attempt page as zero attempts rather than an unknown diagnostic [CC-WEB-001] |
+| CC-WEB-001 | vitest | requires an exact nonempty reference without silently trimming lookup [CC-WEB-001] |
+| CC-WEB-001 | vitest | starts a changed history mode at the same cursor while its cancelled predecessor is pending [CC-WEB-001] |
 | CC-WEB-001 | vitest | warns and isolates exact references at review and recovery decisions in ar [CC-WEB-001] |
 | CC-WEB-001 | vitest | warns and isolates exact references at review and recovery decisions in en [CC-WEB-001] |
 | CC-WEB-001 | vitest | warns and isolates exact references at review and recovery decisions in en-XA [CC-WEB-001] |
@@ -804,6 +930,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-WEB-001 | web | ClaimCore.Web.writer handoff approval input.[CC-WEB-001] handoff approval refuses forged or malformed metadata |
 | CC-WIT-001 | integration | ClaimCore PostgreSQL integration.Storage boundary qualification.catalog change token behavior.catalog change token.[CC-WIT-001] structural and privilege changes move the witness catalog token |
 | CC-WIT-001 | integration | ClaimCore PostgreSQL integration.[CC-REC-001] [CC-WIT-001] revocation fences future authority without rewriting an orphan acceptance |
+| CC-WIT-001 | integration | ClaimCore PostgreSQL integration.authority interleave knowledge.[CC-WIT-001][CC-REC-001] reconciled START and later authority change preserve the exact historical unknown attempt |
 | CC-WIT-001 | integration | ClaimCore PostgreSQL integration.owner-private witness key custody.[CC-WIT-001] owner-private key-ring file admits and broad mode refuses |
 | CC-WIT-001 | integration | ClaimCore PostgreSQL integration.runtime I/O and diagnostics.[CC-WIT-001] blocked witness admission cancels before dispatch |
 | CC-WIT-001 | integration | ClaimCore PostgreSQL integration.runtime I/O and diagnostics.[CC-WIT-001] late cancellation preserves exact settlement readback |

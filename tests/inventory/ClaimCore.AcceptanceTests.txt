@@ -1,10 +1,23 @@
 published authenticated CLI v4 acceptance.NDJSON session preserves frame-local results
 published authenticated CLI v4 acceptance.[CC-APP-001] rejected published CLI-v4 command preserves current case and accepted history
+published authenticated CLI v4 acceptance.[CC-AUTH-001][CC-CLI-001] disabled native reader remains refused despite its role
+published authenticated CLI v4 acceptance.[CC-AUTH-001][CC-CLI-001] owner-only native workspace does not imply case authority
+published authenticated CLI v4 acceptance.[CC-AUTH-001][CC-CLI-001] published native CASE_EDITOR scoped=True preserves narrow authority
+published authenticated CLI v4 acceptance.[CC-AUTH-001][CC-CLI-001] published native CASE_READER scoped=False preserves narrow authority
+published authenticated CLI v4 acceptance.[CC-AUTH-001][CC-CLI-001] published native CASE_READER scoped=True preserves narrow authority
+published authenticated CLI v4 acceptance.[CC-AUTH-001][CC-CLI-001] published native DATA_STEWARD scoped=False preserves narrow authority
+published authenticated CLI v4 acceptance.[CC-AUTH-001][CC-CLI-001] published native NONE scoped=False preserves narrow authority
+published authenticated CLI v4 acceptance.[CC-AUTH-001][CC-CLI-001] published native RECOVERY_EXPORTER scoped=False preserves narrow authority
+published authenticated CLI v4 acceptance.[CC-AUTH-001][CC-CLI-001] published native RECOVERY_OPERATOR scoped=False preserves narrow authority
+published authenticated CLI v4 acceptance.[CC-AUTH-001][CC-CLI-001] published native RECOVERY_OPERATOR scoped=True preserves narrow authority
+published authenticated CLI v4 acceptance.[CC-AUTH-001][CC-CLI-001] unregistered native human authenticates without row access
 published authenticated CLI v4 acceptance.[CC-CLI-001] published malformed frames retain exact typed refusals
 published authenticated CLI v4 acceptance.[CC-CLI-001] published operation and recovery identities reject invalid UUID and digest
 published authenticated CLI v4 acceptance.[CC-CLI-001] published six-request witnessed lifecycle retains exact history
 published authenticated CLI v4 acceptance.[CC-CLI-001] witnessed accepted command and exact replay
 published authenticated CLI v4 acceptance.[CC-CLI-001][CC-AUTH-001] native public-client grants replay and read back the existing owner
+published authenticated CLI v4 acceptance.[CC-CLI-001][CC-REC-001] Web-authored supplementary boundaries survive published native reads and ASCII acceptance exactly once
+published authenticated CLI v4 acceptance.[CC-CLI-001][CC-REC-001] published supplementary Unicode input and ASCII mutation replies preserve one exact replay
 published authenticated CLI v4 acceptance.[CC-CLI-002] malformed owner-private envelope preview retains no preparation
 published authenticated CLI v4 acceptance.[CC-CLI-002] private recovery export and preview
 published authenticated CLI v4 acceptance.[CC-CLI-002] unsafe private source refuses without path disclosure

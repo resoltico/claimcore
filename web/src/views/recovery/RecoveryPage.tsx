@@ -1,3 +1,4 @@
+import { RecoveryIdentityLookup } from "./RecoveryIdentityLookup";
 import { NoticeView } from "../../presentation/Message";
 import { usePresentation } from "../../presentation/context";
 import type { Notice } from "../../api/notices";
@@ -113,6 +114,7 @@ export const RecoveryPage = ({
       <RecoveryHeading listing={listing} />
       <p>{p.text("ui.recoveryHint")}</p>
       <Capacity listing={listing} />
+      <RecoveryIdentityLookup busy={busy !== null} actions={actions} message={message} />
       <RecoveryImports busy={busy} actions={actions} />
       {message === null ? null : (
         <p className="notice" role="status">

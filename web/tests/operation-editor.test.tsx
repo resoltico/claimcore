@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { CurrentCase, PreparationDetails, Rejection } from "../src/api/v3";
 import { OperationEditor } from "../src/views/OperationEditor";
 import { generatedResponse } from "./contract-corpus.fixtures";
-import { definition, fields, operationId, preparation, response } from "./v3-ui.fixtures";
+import { definition, fields, operationId, preparation, response, runtime } from "./v3-ui.fixtures";
 
 const current: CurrentCase = {
   case: { fields, revision: "1" },
@@ -16,7 +16,7 @@ const review = {
   before: { fields, revision: "1" },
   proposed: { fields, revision: "2" },
   changes: [{ fieldName: "status", before: "OPENED", after: "CLOSED" }],
-  context: definition.runtime,
+  context: runtime,
   advisory: true,
 };
 

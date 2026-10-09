@@ -109,7 +109,14 @@ module internal WebResponseSchemas =
         outcomes endpoint [ "SNAPSHOT", reference "SessionSnapshot" ]
 
     let definition =
-        outcomes "definition" [ "DESCRIBED", reference "DefinitionPayload" ]
+        outcomes
+            "definition"
+            [
+                "DESCRIBED", reference "DefinitionPayload"
+                "REJECTED", reference "Rejection"
+                "FAILED", reference "Fault"
+                "CANCELLED", Schema.nullValue
+            ]
 
     let caseGet =
         let succeeded =
@@ -123,6 +130,9 @@ module internal WebResponseSchemas =
                 [
                     WireSchema.property "items" (WireSchema.array (reference "CaseSummary"))
                     WireSchema.property "nextCursor" WireSchema.nullableText
+                    WireSchema.property
+                        "availableCommands"
+                        (Schema.oneOf [ Schema.tuple []; Schema.tuple [ WireSchema.token "OPEN" ] ])
                 ]
 
         query "case.list" page (reference "Rejection")

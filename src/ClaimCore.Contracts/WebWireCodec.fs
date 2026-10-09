@@ -51,10 +51,14 @@ module WebWireCodec =
             writer.WriteEndObject())
 
     let session endpoint (authenticated: bool) (antiforgeryToken: string option) =
-        result endpoint (fun writer -> WebWireQueries.session writer authenticated antiforgeryToken)
+        result endpoint (fun writer ->
+            WebWireDiscovery.session writer authenticated antiforgeryToken)
 
     let description value =
-        result "definition" (fun writer -> WebWireQueries.description writer value)
+        result "definition" (fun writer -> WebWireDiscovery.description writer value)
+
+    let definition value =
+        result "definition" (fun writer -> WebWireDiscovery.definition writer value)
 
     let get value =
         result "case.get" (fun writer -> WebWireQueries.currentCase writer value)

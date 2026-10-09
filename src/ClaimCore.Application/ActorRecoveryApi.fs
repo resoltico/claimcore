@@ -35,14 +35,14 @@ module internal ActorRecoveryApi =
         (principal: PrincipalKey)
         action
         operationId
-        (invoke: IRecoveryWorkflow -> Task<RecoveryQueryOutcome<'value>>)
+        (invoke: ActorCallContext -> IRecoveryWorkflow -> Task<RecoveryQueryOutcome<'value>>)
         ct
         =
         task {
             let! admitted = admit gate principal action operationId ct
 
             match admitted with
-            | Choice1Of3(Some context) -> return! invoke (factory context).Recovery
+            | Choice1Of3(Some context) -> return! invoke context (factory context).Recovery
             | Choice2Of3() -> return RecoveryQueryOutcome.RecoveryCancelled
             | Choice3Of3() -> return RecoveryQueryOutcome.RecoveryFailed CoreFault.StoreUnavailable
             | Choice1Of3 None ->
@@ -242,8 +242,15 @@ module internal ActorRecoveryApi =
                     principal
                     EndpointAction.RecoveryInspect
                     operationId
-                    (fun (recovery: IRecoveryWorkflow) ->
-                        recovery.Inspect(operationId, after, limit, ct))
+                    (fun context (recovery: IRecoveryWorkflow) ->
+                        task {
+                            let! result = recovery.Inspect(operationId, after, limit, ct)
+
+                            return
+                                TypedProjection.actorInspection
+                                    context.AllowedRecoveryActions
+                                    result
+                        })
                     ct
 
             member _.Resolve(operationId, requestSha256, ct) =
@@ -259,7 +266,7 @@ module internal ActorRecoveryApi =
                     principal
                     EndpointAction.RecoveryExport
                     operationId
-                    (fun (recovery: IRecoveryWorkflow) ->
+                    (fun _ (recovery: IRecoveryWorkflow) ->
                         recovery.ExportEnvelope(operationId, requestSha256, ct))
                     ct
 

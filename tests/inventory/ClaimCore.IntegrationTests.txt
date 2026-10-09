@@ -90,6 +90,7 @@ ClaimCore PostgreSQL integration.[CC-APP-002] PostgreSQL accepted history withou
 ClaimCore PostgreSQL integration.[CC-AUDIT-001] authority lease cleanup preserves an observed result and retires its connector
 ClaimCore PostgreSQL integration.[CC-AUTH-001] case-list cursor binds principal grant query and visible page
 ClaimCore PostgreSQL integration.[CC-AUTH-001] voided and erasure-fenced identities share denial timing class
+ClaimCore PostgreSQL integration.[CC-AUTH-001][CC-REC-001] unresolved recovery payload is withheld after final disclosure authority loss
 ClaimCore PostgreSQL integration.[CC-BACKUP-001] intermediate restore reports cannot claim deployment readiness
 ClaimCore PostgreSQL integration.[CC-LIFE-001] [CC-REC-001] a witnessed hold retains terminal preparation evidence until release
 ClaimCore PostgreSQL integration.[CC-REC-001] [CC-WIT-001] revocation fences future authority without rewriting an orphan acceptance
@@ -105,6 +106,9 @@ ClaimCore PostgreSQL integration.actor and grant storage.[CC-AUTH-001] stale pri
 ClaimCore PostgreSQL integration.actor management.[CC-AUTH-001] management denies unknown actor and service stewardship
 ClaimCore PostgreSQL integration.actor management.[CC-AUTH-001] orphan grant intent remains unknown on exact retry
 ClaimCore PostgreSQL integration.actor management.[CC-AUTH-001] owner management exact retry keeps event and target identity
+ClaimCore PostgreSQL integration.actor resource advice.[CC-AUTH-001] actor command advice preserves narrow scopes without wider grants
+ClaimCore PostgreSQL integration.actor resource advice.[CC-AUTH-001] disabled and unregistered actors gain no case or list advice
+ClaimCore PostgreSQL integration.actor resource advice.[CC-REC-001] inspection advice distinguishes recovery and export without granting either
 ClaimCore PostgreSQL integration.actor-bound core.[CC-AUTH-001] actor-bound execute, read and exact replay enforce current grant
 ClaimCore PostgreSQL integration.actor-bound core.[CC-AUTH-001] case list filters grants before storage page window
 ClaimCore PostgreSQL integration.actor-bound core.[CC-AUTH-001] inaccessible and absent resources share one refusal
@@ -131,6 +135,10 @@ ClaimCore PostgreSQL integration.adopted product copy transitions.[CC-AUDIT-001]
 ClaimCore PostgreSQL integration.advanced physical restored pair.[CC-BACKUP-001] original BASE pair replays later synthetic WAL before audit
 ClaimCore PostgreSQL integration.authority expiration under lock.[CC-LIFE-001] approval issuance uses current database time after lock delay
 ClaimCore PostgreSQL integration.authority expiration under lock.[CC-LIFE-001] delayed approval consumption refuses while expired exact readback survives
+ClaimCore PostgreSQL integration.authority interleave knowledge.[CC-AUTH-001] unrelated grant revision change after real admission preserves exact unresolved attempt
+ClaimCore PostgreSQL integration.authority interleave knowledge.[CC-REC-001] lost real start reply and later exact acceptance preserve the earlier unknown attempt
+ClaimCore PostgreSQL integration.authority interleave knowledge.[CC-REC-001] related grant loss before execution preserves old uncertainty through explicit restoration
+ClaimCore PostgreSQL integration.authority interleave knowledge.[CC-WIT-001][CC-REC-001] reconciled START and later authority change preserve the exact historical unknown attempt
 ClaimCore PostgreSQL integration.authority operation fence.[CC-AUDIT-001] cancelled queued exclusive acquisition retires its connector and releases authority
 ClaimCore PostgreSQL integration.authority operation fence.[CC-AUDIT-001] cancelling an audit after its fence releases all authority locks
 ClaimCore PostgreSQL integration.authority operation fence.[CC-AUDIT-001] cancelling an audit queued behind authority does not strand its session lease

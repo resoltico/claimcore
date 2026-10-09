@@ -203,9 +203,12 @@ export const v3 = {
   list: (cursor: string | null, limit: number, token: string, signal?: AbortSignal) =>
     request("case.list", token, { ...(cursor === null ? {} : { cursor }), limit }, signal),
   history: (
-    caseReference: string,
-    cursor: string | null,
-    limit: number,
+    input: {
+      caseReference: string;
+      cursor: string | null;
+      limit: number;
+      detail?: "SUMMARY" | "FULL";
+    },
     token: string,
     signal?: AbortSignal,
   ) =>
@@ -213,10 +216,10 @@ export const v3 = {
       "case.history",
       token,
       {
-        caseReference,
-        ...(cursor === null ? {} : { cursor }),
-        limit,
-        detail: "FULL",
+        caseReference: input.caseReference,
+        ...(input.cursor === null ? {} : { cursor: input.cursor }),
+        limit: input.limit,
+        detail: input.detail ?? "SUMMARY",
       },
       signal,
     ),

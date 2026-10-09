@@ -3,7 +3,7 @@ import { Button } from "react-aria-components/Button";
 import { useEffect, useRef } from "react";
 import type { Notice } from "../../api/notices";
 import { NoticeView } from "../../presentation/Message";
-import type { DefinitionPayload, Receipt } from "../../api/v3";
+import type { PublicDefinition, Receipt } from "../../api/v3";
 import { AccessibleModal } from "../../components/AccessibleModal";
 import { CaseFieldsView } from "../../components/CaseFieldsView";
 import type { OperationEditorModel } from "./editorTypes";
@@ -47,7 +47,7 @@ export const CommandChangeDialog = ({ model, onClose }: CommandChangeProps) => {
 };
 
 type AcceptedOperationProps = {
-  definition: DefinitionPayload;
+  definition: PublicDefinition;
   receipt: Receipt;
   message: Notice | null;
   onCommitted: (receipt: Receipt) => void;

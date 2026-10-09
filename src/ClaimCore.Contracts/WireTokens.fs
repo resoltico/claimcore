@@ -45,6 +45,7 @@ module WireTokens =
 
     let faultCode =
         function
+        | FaultCode.ResourceUnavailable -> "RESOURCE_UNAVAILABLE"
         | FaultCode.StoreUnavailable -> "STORE_UNAVAILABLE"
         | FaultCode.StoreIntegrityError -> "STORE_INTEGRITY_ERROR"
         | FaultCode.SchemaMismatch -> "SCHEMA_MISMATCH"
@@ -136,6 +137,7 @@ module WireTokens =
 
     let faultCodes =
         [
+            FaultCode.ResourceUnavailable
             FaultCode.StoreUnavailable
             FaultCode.StoreIntegrityError
             FaultCode.SchemaMismatch

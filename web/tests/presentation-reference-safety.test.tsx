@@ -4,25 +4,15 @@ import { render, screen } from "./presentation-test-support";
 import { preferenceKey } from "../src/presentation/preferences";
 import { current, draftAt, editor, preparedReply } from "./presentation-state.fixtures";
 import { preparation } from "./v3-ui.fixtures";
-import { preview } from "./v3-recovery.fixtures";
+import { preview, mockRecoveryActions } from "./v3-recovery.fixtures";
 import {
   RecoveryImportDialog,
   RecoveryDetailsDialog,
   RecoveryList,
 } from "../src/views/recovery/RecoveryPanels";
-import type { RecoveryActions } from "../src/views/recovery/RecoveryState";
 
 const reference = "A\u0308 العربية\u2069\u202E\u200D <script>";
-const actions: RecoveryActions = {
-  inspectId: vi.fn(),
-  inspect: vi.fn(),
-  loadAttempts: vi.fn(),
-  choose: vi.fn(),
-  act: vi.fn(),
-  exportItem: vi.fn(),
-  preview: vi.fn(),
-  retain: vi.fn(),
-};
+const actions = mockRecoveryActions();
 const safeReference = (element: HTMLElement) => {
   expect([...element.querySelectorAll("bdi")].some((node) => node.textContent === reference)).toBe(
     true,

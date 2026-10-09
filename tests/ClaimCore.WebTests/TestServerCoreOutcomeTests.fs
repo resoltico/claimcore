@@ -66,7 +66,7 @@ let private noExistenceResponseParity () =
     Expect.equal host.Runtime.CoreCalls 4 "Both identity classes reached one typed core call"
 
 let private listOutcomes (host: Host) token =
-    let success =
+    let success: QueryOutcome<CaseSummaryPage> =
         QueryOutcome.Succeeded
             {
                 Items =
@@ -78,6 +78,7 @@ let private listOutcomes (host: Host) token =
                         }
                     ]
                 NextCursor = None
+                AvailableCommands = []
             }
 
     for value, expected in

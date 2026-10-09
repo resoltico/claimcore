@@ -36,6 +36,9 @@ module WebWire =
     let description value =
         WebWireCodec.description value |> EncodedJson.ok
 
+    let definition value =
+        WebWireCodec.definition value |> EncodedJson.ok
+
     let get value =
         WebWireCodec.get value |> EncodedJson.ok
 

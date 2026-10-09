@@ -22,7 +22,7 @@ let private automationEnvironment () =
     values["CLAIMCORE_CLI_SERVICE_TRUST_ROOT_FILE"] <- selected.ServiceCa
     values :> IReadOnlyDictionary<string, string>
 
-let private interactiveEnvironment mode =
+let private interactiveEnvironment mode username =
     let selected = inputs.Value
     let values = Dictionary<string, string>()
     values["CLAIMCORE_SERVICE_URL"] <- selected.ServiceUrl
@@ -32,6 +32,10 @@ let private interactiveEnvironment mode =
     values["CLAIMCORE_CLI_OIDC_TRUST_ROOT_FILE"] <- selected.OidcCa
     values["CLAIMCORE_CLI_SERVICE_TRUST_ROOT_FILE"] <- selected.ServiceCa
     values["CLAIMCORE_CLI_TEST_AUTH_MODE"] <- mode
+
+    username
+    |> Option.iter (fun value -> values["CLAIMCORE_CLI_TEST_USERNAME"] <- value)
+
     values["CLAIMCORE_CLI_TEST_CREDENTIALS_FILE"] <- selected.OidcCredentialsFile
     values["CLAIMCORE_CLI_TEST_ISSUER"] <- selected.Issuer
     values["CLAIMCORE_CLI_TEST_PUBLIC_CLIENT_ID"] <- selected.PublicClientId
@@ -68,7 +72,7 @@ let interactive mode endpoint input =
         60_000
         inputs.Value.CliDll
         [ "call" ]
-        (interactiveEnvironment mode)
+        (interactiveEnvironment mode None)
         (Some source)
 
 let interactiveSession frames =
@@ -78,7 +82,17 @@ let interactiveSession frames =
         90_000
         inputs.Value.CliDll
         [ "session" ]
-        (interactiveEnvironment "valid")
+        (interactiveEnvironment "valid" None)
+        (Some source)
+
+let interactiveSessionAs username frames =
+    let source = (String.concat "\n" frames + "\n") |> Encoding.UTF8.GetBytes
+
+    ProcessRunner.dotnet
+        90_000
+        inputs.Value.CliDll
+        [ "session" ]
+        (interactiveEnvironment "valid" (Some username))
         (Some source)
 
 let withSecret secretFile endpoint input =

@@ -41,6 +41,8 @@ let private acceptedCase owner app witness =
 
     let actorContext: ActorCallContext =
         {
+            MayEditCommands = true
+            AllowedRecoveryActions = []
             Binding =
                 {
                     Principal = principal

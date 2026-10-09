@@ -30,7 +30,7 @@ const submitFailureCategory = (outcome: SubmitOutcome): string => {
   return outcome.tag;
 };
 
-const submitReview = async (page: Page): Promise<void> => {
+export const recordPrepared = async (page: Page): Promise<void> => {
   const confirmed = page.getByRole("checkbox", { name: "I confirm these changes.", exact: true });
   await progress("confirm-click-start");
   if ((await confirmed.count()) !== 1) {
@@ -125,7 +125,7 @@ export const prepare = async (
 };
 
 const submit = async (page: Page): Promise<void> => {
-  await submitReview(page);
+  await recordPrepared(page);
   await page.getByRole("button", { name: "Return to case" }).click();
   await progress("returned-to-case");
 };

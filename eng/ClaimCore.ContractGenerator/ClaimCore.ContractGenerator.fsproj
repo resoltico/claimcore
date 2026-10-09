@@ -28,8 +28,10 @@
     <Compile Include="WebImportRetainCorpusSamples.fs" />
     <Compile Include="WebHostCorpusSamples.fs" />
     <Compile Include="WebParsedCorpus.fs" />
+    <Compile Include="ScalarProtocolCorpus.fs" />
     <Compile Include="CliResponseCorpus.fs" />
     <Compile Include="DefaultPresentation.fs" />
+    <Compile Include="ProductMetadataArtifact.fs" />
     <Compile Include="Artifacts.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>

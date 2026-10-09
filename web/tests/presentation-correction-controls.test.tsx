@@ -1,8 +1,9 @@
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
-import { render, waitFor } from "./presentation-test-support";
+import { render, screen, waitFor } from "./presentation-test-support";
 import { editor, draftAt, current } from "./presentation-state.fixtures";
 import type { CurrentCase } from "../src/api/v3";
+import { response } from "./v3-ui.fixtures";
 import { preferenceKey } from "../src/presentation/preferences";
 
 const paidCase: CurrentCase = {
@@ -73,3 +74,44 @@ it.each(["en", "lv", "ar"])(
     });
   },
 );
+
+it("associates payment acknowledgement with the generated mode control [CC-DOM-002]", async () => {
+  const user = userEvent.setup();
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockImplementation(() =>
+      Promise.resolve(
+        response("command.prepare", "REJECTED", {
+          operationId: draftAt(0).operationId,
+          rejection: {
+            code: "INVALID_INPUT",
+            field: "payment",
+            actualRevision: null,
+            recommendedAction: "CORRECT_INPUT",
+            message: "Synthetic payment acknowledgement refusal.",
+            diagnostic: { id: "CORRECTION_PAYMENT_ACKNOWLEDGEMENT_REQUIRED", parameters: {} },
+          },
+        }),
+      ),
+    ),
+  );
+  render(editor({ initialCommand: "CORRECT_CASE", current: paidCase }));
+  const payment = document.querySelector<HTMLSelectElement>("#correction-payment-mode")!;
+  await user.selectOptions(
+    document.querySelector<HTMLSelectElement>("#correction-decision-mode")!,
+    "REPLACE",
+  );
+  await user.click(document.querySelector<HTMLButtonElement>('button[type="submit"]')!);
+  await waitFor(() => {
+    expect(payment).toHaveFocus();
+  });
+  expect(payment).toHaveAttribute("aria-invalid", "true");
+  const description = document.getElementById(payment.getAttribute("aria-describedby")!);
+  expect(description).toHaveTextContent("explicit payment reaffirmation");
+  await user.selectOptions(screen.getByRole("combobox", { name: "Interface language" }), "lv");
+  expect(description).toHaveTextContent("skaidri jāapstiprina");
+  await user.selectOptions(payment, "CLEAR");
+  expect(payment).not.toHaveAttribute("aria-invalid");
+  expect(payment).not.toHaveAttribute("aria-describedby");
+  expect(globalThis.fetch).toHaveBeenCalledOnce();
+});

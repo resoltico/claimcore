@@ -256,11 +256,16 @@ type internal PostgresActorGate(dataSource: NpgsqlDataSource, commitments: ISupp
                     authority
                     |> Option.filter _.Enabled
                     |> Option.map (fun value ->
-                        {
+                        ({
                             Principal = principal
                             ActorId = value.ActorId
                             GrantRevision = value.GrantRevision
-                        })
+                         },
+                         ActorActionAdvice.mayEditCommands
+                             principal
+                             value
+                             ResourceScope.Installation,
+                         []))
 
                 return context commitments actor None EndpointAction.ListCases
             }

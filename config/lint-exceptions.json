@@ -246,17 +246,6 @@
       "reviewOn": "2027-03-01"
     },
     {
-      "id": "LX-0017",
-      "tool": "oxlint",
-      "rules": ["react/exhaustive-effect-dependencies"],
-      "file": "web/src/hooks/useDefinition.ts",
-      "kind": "inline",
-      "count": 1,
-      "reason": "The session epoch is the deliberate reload trigger: a new epoch must discard the old definition even though the effect body does not read the epoch.",
-      "owner": "project maintainers",
-      "reviewOn": "2027-03-01"
-    },
-    {
       "id": "LX-0019",
       "tool": "oxlint",
       "rules": [

@@ -2,12 +2,16 @@
   <ItemGroup>
     <Compile Include="HttpsOrigins.fs" />
     <Compile Include="SchemaAst.fs" />
+    <Compile Include="SchemaSamples.fs" />
+    <Compile Include="SchemaFailure.fs" />
+    <Compile Include="SchemaPrimitiveValidation.fs" />
     <Compile Include="SchemaValueValidation.fs" />
     <Compile Include="SchemaRendering.fs" />
     <Compile Include="ContractModel.fs" />
     <Compile Include="WireTokens.fs" />
     <Compile Include="ScalarSchemas.fs" />
     <Compile Include="CommandInputProjection.fs" />
+    <Compile Include="ScalarAdmissionDiagnostics.fs" />
     <Compile Include="RejectionDiagnosticSchemas.fs" />
     <Compile Include="Projection.fs" />
     <Compile Include="EndpointInputs.fs" />
@@ -70,6 +74,7 @@
     <Compile Include="BuildIdentityCodec.fs" />
     <Compile Include="WebWireValues.fs" />
     <Compile Include="WebWireQueries.fs" />
+    <Compile Include="WebWireDiscovery.fs" />
     <Compile Include="WebWireManagement.fs" />
     <Compile Include="WebWireSignerApproval.fs" />
     <Compile Include="WebWireCopyDeletionApproval.fs" />

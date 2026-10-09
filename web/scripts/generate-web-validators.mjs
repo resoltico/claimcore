@@ -144,11 +144,7 @@ const atomicWrite = async (file, contents) => {
 /** @param {string} directory @param {Set<string>} provisional */
 const formatTypeScriptArtifacts = async (directory, provisional) => {
   const names = [...provisional]
-    .filter(
-      (name) =>
-        /^web-v3\.endpoint-catalog(?:\.[a-z]+)?\.ts$/u.test(name) ||
-        /^web-v3\.types(?:\.[a-z]+)*\.ts$/u.test(name),
-    )
+    .filter((name) => name.startsWith("web-v3.") && name.endsWith(".ts"))
     .sort();
   if (names.length < 2) {
     throw new Error("Generated Web TypeScript artifacts are missing.");

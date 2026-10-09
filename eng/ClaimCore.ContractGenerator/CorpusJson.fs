@@ -59,9 +59,9 @@ module internal CorpusJson =
         replacements
         |> List.map (fun (suffix, replacement) -> identifier + "-" + suffix, replace replacement)
 
-    let domainTextBoundaries (value: JsonElement) expected maximumCharacters =
+    let domainTextBoundaries identifier (value: JsonElement) expected maximumCharacters =
         textVariants
-            "text"
+            identifier
             value
             expected
             [

@@ -1,6 +1,6 @@
 import { createRecoveryAdmission, createInspectionControl } from "../hooks/recoveryControl";
 import type { Notice } from "../api/notices";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
 import { Button } from "react-aria-components/Button";
@@ -50,6 +50,8 @@ const guardActions = (
   loadAttempts: whenRecoveryIdle(idle, actions.loadAttempts),
   choose: whenRecoveryIdle(idle, actions.choose),
   exportItem: whenRecoveryIdle(idle, actions.exportItem),
+  exportIdentity: whenRecoveryIdle(idle, actions.exportIdentity),
+  clearMessage: whenRecoveryIdle(idle, actions.clearMessage),
   preview: (file: File) => admission.read(() => actions.preview(file)),
   act: () => admission.mutate(actions.act, onLock),
   retain: () => admission.mutate(actions.retain, onLock),
@@ -73,8 +75,10 @@ const useRecoveryDialogs = (props: RecoveryViewProps, listing: Listing) => {
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
   const [importing, setImporting] = useState<ImportState | null>(null);
   const [message, setMessage] = useState<Notice | null>(null);
-  const [busy, setBusy] = useState<string | null>(null);
+  const [readBusy, setReadBusy] = useState<string | null>(null);
   const { admission, inspection } = useRecoveryControl();
+  const pending = useSyncExternalStore(admission.subscribe, admission.getSnapshot);
+  const busy = pending ? "dispatch" : readBusy;
   const actions = recoveryActions(token, listing, {
     inspection,
     onRecovery,
@@ -84,7 +88,7 @@ const useRecoveryDialogs = (props: RecoveryViewProps, listing: Listing) => {
     importing,
     setImporting,
     setMessage,
-    setBusy,
+    setBusy: setReadBusy,
   });
   const guardedActions = guardActions(
     actions,
@@ -94,7 +98,7 @@ const useRecoveryDialogs = (props: RecoveryViewProps, listing: Listing) => {
   );
   const closeDetails = (): void => {
     inspection.cancel();
-    setBusy(null);
+    setReadBusy(null);
     setSelected(null);
   };
   return {

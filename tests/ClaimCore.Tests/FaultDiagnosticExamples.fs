@@ -33,6 +33,10 @@ let private group0 =
 
 let private group1 =
     [
+        CoreFault.RecoveryAccessUnavailable,
+        "RECOVERY_ACCESS_UNAVAILABLE",
+        FaultCode.ResourceUnavailable,
+        RecommendedAction.RecoverExact
         CoreFault.RecoveryContentConflict,
         "RECOVERY_STORE_CONTENT_CONFLICT",
         FaultCode.TechnicalMutationUnknown,

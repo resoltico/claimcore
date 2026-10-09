@@ -107,7 +107,10 @@ const usePageLoader = <R extends EndpointOutcome, T, P extends Page<T>>(
     },
     [request, select, sinks],
   );
-  const abort = useCallback(() => controller.current?.abort(), []);
+  const abort = useCallback(() => {
+    controller.current?.abort();
+    pending.current = null;
+  }, []);
   return { load, abort };
 };
 

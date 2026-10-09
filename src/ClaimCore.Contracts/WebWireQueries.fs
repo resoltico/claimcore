@@ -12,48 +12,6 @@ module internal WebWireQueries =
         write ()
         writer.WriteEndObject()
 
-    let session (writer: Utf8JsonWriter) (authenticated: bool) (antiforgeryToken: string option) =
-        outcome writer "SNAPSHOT" (fun () ->
-            writer.WriteStartObject()
-            writer.WriteBoolean("authenticated", authenticated)
-
-            match antiforgeryToken with
-            | Some value -> writer.WriteString("antiforgeryToken", value)
-            | None -> writer.WriteNull("antiforgeryToken")
-
-            writer.WriteEndObject())
-
-    let description (writer: Utf8JsonWriter) (value: CoreDescription) =
-        outcome writer "DESCRIBED" (fun () ->
-            writer.WriteStartObject()
-
-            writer.WriteString(
-                "semanticFingerprint",
-                value.SemanticFingerprint |> SemanticCoreFingerprint.value
-            )
-
-            let projection = ContractProjection.create value.Contract
-
-            writer.WriteString(
-                "webFingerprint",
-                ContractRenderers.webFingerprint projection |> WebWireContractFingerprint.value
-            )
-
-            writer.WritePropertyName("runtime")
-            writer.WriteStartObject()
-            writer.WriteString("productVersion", value.Runtime.ProductVersion)
-
-            writer.WriteString(
-                "effectiveBusinessDate",
-                value.Runtime.EffectiveBusinessDate.ToString("O")
-            )
-
-            writer.WriteString("timeZoneId", value.Runtime.TimeZoneId)
-            writer.WriteEndObject()
-            writer.WritePropertyName("definition")
-            WebWireValues.semanticDefinition writer value
-            writer.WriteEndObject())
-
     let private query
         (writer: Utf8JsonWriter)
         (succeeded: 'value -> unit)
@@ -108,6 +66,13 @@ module internal WebWireQueries =
                 writer.WritePropertyName("items")
                 writer.WriteStartArray()
                 page.Items |> List.iter (CliWireValues.summary writer)
+                writer.WriteEndArray()
+                writer.WritePropertyName("availableCommands")
+                writer.WriteStartArray()
+
+                page.AvailableCommands
+                |> List.iter (WireTokens.command >> writer.WriteStringValue)
+
                 writer.WriteEndArray()
 
                 match page.NextCursor with

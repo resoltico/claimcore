@@ -15,6 +15,7 @@ const initial: ApiResult<ListResponse> = {
     outcome: {
       tag: "SUCCEEDED",
       data: {
+        availableCommands: [],
         items: [{ caseReference: "SYNTHETIC-PRIVATE", revision: "1", status: "OPENED" }],
         nextCursor: "continuation",
       },

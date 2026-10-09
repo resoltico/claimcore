@@ -10,6 +10,12 @@
     <Compile Include="RemoteAuthAcceptance.fs" />
     <Compile Include="RemoteProtocolWalkthroughTests.fs" />
     <Compile Include="RemoteProtocolBoundaryTests.fs" />
+    <Compile Include="UnicodeAcceptanceTests.fs" />
+    <Compile Include="NativeRoleFixture.fs" />
+    <Compile Include="NativeRoleExportProof.fs" />
+    <Compile Include="NativeOwnerWorkspaceProof.fs" />
+    <Compile Include="NativeActorAccessProof.fs" />
+    <Compile Include="NarrowRoleAcceptanceTests.fs" />
     <Compile Include="RemoteAcceptanceTests.fs" />
     <Compile Include="Suite.fs" />
   </ItemGroup>

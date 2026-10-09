@@ -16,7 +16,7 @@ module internal TypedProjection =
         match failure with
         | RecoveryStoreFailure.InvalidInput _ -> CoreFault.RecoveryResponseInvalid
         | RecoveryStoreFailure.IdempotencyConflict -> CoreFault.RecoveryContentConflict
-        | RecoveryStoreFailure.ResourceUnavailable -> CoreFault.RecoveryResponseInvalid
+        | RecoveryStoreFailure.ResourceUnavailable -> CoreFault.RecoveryAccessUnavailable
         | RecoveryStoreFailure.NotFound -> CoreFault.RecoveryPreparationMissing
         | RecoveryStoreFailure.CapacityExceeded -> CoreFault.RecoveryCapacityExhausted
         | RecoveryStoreFailure.SchemaMismatch -> CoreFault.RecoverySchemaMismatch
@@ -233,3 +233,35 @@ module internal TypedProjection =
 
     let details (preparation: RetainedPreparation) : Result<PreparationDetails, CoreFault> =
         detailsWithAttempts preparation emptyAttemptPage
+
+    /// Inspection advice intersects state authority with this actor's current operation grants.
+    let actorInspection allowed =
+        let permitted =
+            function
+            | RecoveryAction.Resolve -> List.contains EndpointAction.RecoveryResolve allowed
+            | RecoveryAction.Dismiss -> List.contains EndpointAction.RecoveryDismiss allowed
+            | RecoveryAction.Export -> List.contains EndpointAction.RecoveryExport allowed
+
+        function
+        | RecoveryQueryOutcome.RecoverySucceeded(Lookup.Found(RecoveryInspection.RetainedInspection detail)) ->
+            let summary = detail.Preparation.Summary
+
+            let filtered =
+                { summary with
+                    AvailableActions = summary.AvailableActions |> List.filter permitted
+                }
+
+            let preparation =
+                { detail.Preparation with
+                    Summary = filtered
+                }
+
+            RecoveryQueryOutcome.RecoverySucceeded(
+                Lookup.Found(
+                    RecoveryInspection.RetainedInspection
+                        { detail with
+                            Preparation = preparation
+                        }
+                )
+            )
+        | other -> other

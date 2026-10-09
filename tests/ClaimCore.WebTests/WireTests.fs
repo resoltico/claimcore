@@ -157,7 +157,12 @@ let private coreHostWrappers () =
     same "Case wrapper" (WebWireCodec.get missingCase) (WebWire.get missingCase)
 
     let casePage: QueryOutcome<CaseSummaryPage> =
-        QueryOutcome.Succeeded { Items = []; NextCursor = None }
+        QueryOutcome.Succeeded
+            {
+                Items = []
+                NextCursor = None
+                AvailableCommands = []
+            }
 
     same "List wrapper" (WebWireCodec.list casePage) (WebWire.list casePage)
     same "History wrapper" (WebWireCodec.history missingHistory) (WebWire.history missingHistory)

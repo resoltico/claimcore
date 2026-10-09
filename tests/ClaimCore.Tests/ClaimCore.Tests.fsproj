@@ -45,6 +45,7 @@
     <Compile Include="ReceiptFirstTests.fs" />
     <Compile Include="ScriptedClaimStore.fs" />
     <Compile Include="RecoveryOutcomeTests.fs" />
+    <Compile Include="RecoveryAccessOutcomeTests.fs" />
     <Compile Include="RecoveryCancellationOutcomeTests.fs" />
     <Compile Include="RecoveryAuthorityTests.fs" />
     <Compile Include="CoreQueryTests.fs" />
@@ -85,6 +86,7 @@
     <Compile Include="RemoteResponseBoundsTests.fs" />
     <Compile Include="IssuerIdentityTests.fs" />
     <Compile Include="RemoteInvocationTests.fs" />
+    <Compile Include="ScalarInvocationDiagnosticTests.fs" />
     <Compile Include="ActorAuthorizationTests.fs" />
     <Compile Include="ActorAuthorizationMatrixTests.fs" />
     <Compile Include="ActorCommandCapabilityTests.fs" />

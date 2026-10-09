@@ -11,6 +11,8 @@ open ClaimCore.Domain
 type internal ActorCallContext =
     {
         Binding: ActorBinding
+        MayEditCommands: bool
+        AllowedRecoveryActions: EndpointAction list
         CaseId: Guid option
         Action: EndpointAction
         Suppression: ISuppressionCommitments

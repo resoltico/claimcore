@@ -8,14 +8,9 @@ import { DescriptorField } from "../src/components/DescriptorField";
 import { OperationEditor } from "../src/views/OperationEditor";
 import { generatedResponse } from "./contract-corpus.fixtures";
 import { preparedForRequest } from "./prepared-request.fixtures";
-import { definition, fields, operationId, preparation } from "./v3-ui.fixtures";
+import { definition, fields, operationId, preparation, runtime, response } from "./v3-ui.fixtures";
 
 const current: CurrentCase = { case: { fields, revision: "1" }, availableCommands: ["CLOSE"] };
-const response = (endpoint: string, tag: string, data: unknown, status = 200) =>
-  new Response(JSON.stringify({ endpoint, outcome: { tag, data } }), {
-    status,
-    headers: { "content-type": "application/json" },
-  });
 
 describe("metadata-driven descriptor rendering", () => {
   it("renders descriptor labels and all supplied field values without client-side normalization", () => {
@@ -55,7 +50,7 @@ const acceptsOperation = async (): Promise<void> => {
           before: { fields, revision: "1" },
           proposed: { fields, revision: "2" },
           changes: [],
-          context: definition.runtime,
+          context: runtime,
           advisory: true,
         },
       }),
@@ -106,7 +101,7 @@ describe("metadata-driven dirty command behavior", () => {
           before: null,
           proposed: { fields, revision: "2" },
           changes: [],
-          context: definition.runtime,
+          context: runtime,
           advisory: true,
         },
       }),
@@ -158,7 +153,6 @@ describe("v3 session lifecycle", () => {
         antiforgeryToken: "authenticated",
       }),
     );
-    fetch.mockResolvedValueOnce(response("definition", "DESCRIBED", definition));
     fetch.mockResolvedValueOnce(
       response("case.list", "SUCCEEDED", { items: [], nextCursor: null }),
     );

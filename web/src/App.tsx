@@ -26,14 +26,7 @@ const SessionContent = () => {
     );
   }
   if (state.kind === "authenticated") {
-    return (
-      <Dashboard
-        key={state.epoch}
-        token={state.token}
-        sessionEpoch={state.epoch}
-        onLogout={logout}
-      />
-    );
+    return <Dashboard key={state.epoch} token={state.token} onLogout={logout} />;
   }
   return <LoginScreen message={state.message} />;
 };

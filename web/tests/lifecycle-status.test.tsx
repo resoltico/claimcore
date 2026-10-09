@@ -1,3 +1,4 @@
+import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 import { render, screen } from "./presentation-test-support";
 import { v3 } from "../src/api/v3";
@@ -50,6 +51,8 @@ it("shows the authoritative disposition, privacy phase, and active hold without 
     },
   });
   render(<LifecycleStatus caseReference="CASE-1" token="synthetic" reloadSignal={0} />);
+  expect(v3.lifecycleReview).not.toHaveBeenCalled();
+  await userEvent.click(screen.getByText("Disposition and privacy status"));
   expect(await screen.findByText("Disposition: Voided as a data-entry error")).toBeVisible();
   expect(screen.getByText("Privacy phase: Erasure pending")).toBeVisible();
   expect(screen.getByText("HELD: active holds block payload erasure.")).toBeVisible();
@@ -64,6 +67,8 @@ it("uses one unavailable presentation for inaccessible and absent lifecycle subj
     value: { endpoint: "lifecycle.review", outcome: { tag: "RESOURCE_UNAVAILABLE", data: null } },
   });
   render(<LifecycleStatus caseReference="MISSING" token="synthetic" reloadSignal={0} />);
+  expect(v3.lifecycleReview).not.toHaveBeenCalled();
+  await userEvent.click(screen.getByText("Disposition and privacy status"));
   expect(await screen.findByText("Lifecycle status is unavailable for this case.")).toBeVisible();
   expect(screen.queryByText(/Disposition:/u)).toBeNull();
 });
@@ -80,6 +85,8 @@ it.each([
     value: review(phase),
   });
   render(<LifecycleStatus caseReference="CASE-1" token="synthetic" reloadSignal={0} />);
+  expect(v3.lifecycleReview).not.toHaveBeenCalled();
+  await userEvent.click(screen.getByText("Disposition and privacy status"));
   expect(await screen.findByText(`Privacy phase: ${label}`)).toBeVisible();
   expect(screen.getByText("No active hold is recorded.")).toBeVisible();
   expect(screen.queryByText(/two distinct approvals/u)).toBeNull();
@@ -103,5 +110,7 @@ it("shows a safe diagnostic after a failed lifecycle review", async () => {
     },
   });
   render(<LifecycleStatus caseReference="CASE-1" token="synthetic" reloadSignal={0} />);
+  expect(v3.lifecycleReview).not.toHaveBeenCalled();
+  await userEvent.click(screen.getByText("Disposition and privacy status"));
   expect(await screen.findByRole("alert")).not.toHaveTextContent("PRIVATE_PROVIDER_CANARY");
 });

@@ -14,6 +14,7 @@ module WebSchemaDefinitions =
         WireSchema.objectOf
             [
                 WireSchema.property "authenticated" Schema.boolean
+                WireSchema.property "webFingerprint" WireSchema.digest
                 WireSchema.property "antiforgeryToken" WireSchema.nullableText
             ]
 

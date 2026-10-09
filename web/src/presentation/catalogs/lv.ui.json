@@ -153,5 +153,11 @@
   "ui.productVersion": "Produkta versija: {version}",
   "ui.semanticIdentity": "Semantiskais līgums: {digest}",
   "ui.webIdentity": "Web v3 līgums: {digest}",
-  "ui.fieldHelp": "Nozīme un precīza kopēšana"
+  "ui.fieldHelp": "Nozīme un precīza kopēšana",
+  "ui.historyDetail": "Vēstures detalizācija",
+  "ui.summaryHistory": "Kopsavilkums",
+  "ui.fullHistory": "Visi reģistrētie lauki",
+  "ui.requestDigest": "Precīzs pieprasījuma SHA-256 kontrolsummas nospiedums",
+  "ui.inspectOperationId": "Pārbaudīt operācijas ID",
+  "ui.exportKnownIdentity": "Eksportēt pēc ID un kontrolsummas"
 }

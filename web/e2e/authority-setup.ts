@@ -28,7 +28,7 @@ const validPrincipals = (value: Record<string, unknown>): value is Principals =>
   );
 };
 
-const principals = async (): Promise<Principals> => {
+export const syntheticPrincipals = async (): Promise<Principals> => {
   const file = process.env["CLAIMCORE_WEB_E2E_PRINCIPALS_FILE"];
   if (file === undefined) {
     throw new Error("Synthetic principal inventory is missing.");
@@ -43,7 +43,8 @@ const principals = async (): Promise<Principals> => {
   return source as Principals;
 };
 
-type ManagementEndpoint = "authority.register" | "authority.setGrant" | "authority.observe";
+type ManagementEndpoint =
+  "authority.register" | "authority.setGrant" | "authority.setEnabled" | "authority.observe";
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -85,7 +86,7 @@ const call = async (page: Page, endpoint: ManagementEndpoint, body: object) => {
   return payload["outcome"]["tag"];
 };
 
-const apply = async (
+export const applyAuthority = async (
   page: Page,
   endpoint: Exclude<ManagementEndpoint, "authority.observe">,
   body: Readonly<Record<string, unknown>> & { eventId: string },
@@ -111,11 +112,11 @@ const apply = async (
 
 const grantService = async (page: Page, principal: object, scope: object): Promise<void> => {
   await progress("authority-service-register-start");
-  await apply(page, "authority.register", { eventId: randomUUID(), principal });
+  await applyAuthority(page, "authority.register", { eventId: randomUUID(), principal });
   await progress("authority-service-register-done");
   for (const role of ["CASE_EDITOR", "RECOVERY_OPERATOR", "RECOVERY_EXPORTER"] as const) {
     await progress(`authority-service-${role.toLowerCase().replaceAll("_", "-")}-start`);
-    await apply(page, "authority.setGrant", {
+    await applyAuthority(page, "authority.setGrant", {
       eventId: randomUUID(),
       principal,
       role,
@@ -135,7 +136,7 @@ export const grantSyntheticCasework = async (page: Page): Promise<void> => {
   await progress("authority-principals-start");
   let inventory: Principals;
   try {
-    inventory = await principals();
+    inventory = await syntheticPrincipals();
   } catch {
     await progress("authority-principals-invalid");
     throw new Error("Synthetic principal inventory admission failed.");
@@ -147,10 +148,10 @@ export const grantSyntheticCasework = async (page: Page): Promise<void> => {
   const service = { kind: "SERVICE", issuer, clientId: serviceClientId };
   const scope = { kind: "INSTALLATION" };
   await progress("authority-register-start");
-  await apply(page, "authority.register", { eventId: randomUUID(), principal: steward });
+  await applyAuthority(page, "authority.register", { eventId: randomUUID(), principal: steward });
   await progress("authority-register-done");
   await progress("authority-steward-grant-start");
-  await apply(page, "authority.setGrant", {
+  await applyAuthority(page, "authority.setGrant", {
     eventId: randomUUID(),
     principal: steward,
     role: "DATA_STEWARD",
@@ -159,7 +160,7 @@ export const grantSyntheticCasework = async (page: Page): Promise<void> => {
   });
   await progress("authority-steward-grant-done");
   await progress("authority-owner-editor-start");
-  await apply(page, "authority.setGrant", {
+  await applyAuthority(page, "authority.setGrant", {
     eventId: randomUUID(),
     principal: owner,
     role: "CASE_EDITOR",
@@ -169,7 +170,7 @@ export const grantSyntheticCasework = async (page: Page): Promise<void> => {
   await progress("authority-owner-editor-done");
   for (const role of ["RECOVERY_OPERATOR", "RECOVERY_EXPORTER"] as const) {
     await progress(`authority-owner-${role.toLowerCase().replace("_", "-")}-start`);
-    await apply(page, "authority.setGrant", {
+    await applyAuthority(page, "authority.setGrant", {
       eventId: randomUUID(),
       principal: owner,
       role,

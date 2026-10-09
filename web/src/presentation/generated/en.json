@@ -539,6 +539,12 @@
     { "type": 1, "value": "digest" }
   ],
   "ui.fieldHelp": [{ "type": 0, "value": "Meaning and exact copy" }],
+  "ui.historyDetail": [{ "type": 0, "value": "History detail" }],
+  "ui.summaryHistory": [{ "type": 0, "value": "Summary" }],
+  "ui.fullHistory": [{ "type": 0, "value": "Full recorded fields" }],
+  "ui.requestDigest": [{ "type": 0, "value": "Exact request SHA-256 digest" }],
+  "ui.inspectOperationId": [{ "type": 0, "value": "Inspect operation ID" }],
+  "ui.exportKnownIdentity": [{ "type": 0, "value": "Export by ID and digest" }],
   "field.incidentDate.label": [{ "type": 0, "value": "Incident date" }],
   "field.incidentDate.meaning": [{ "type": 0, "value": "Date on which the incident occurred." }],
   "field.incidentNotificationDate.label": [
@@ -859,6 +865,12 @@
     {
       "type": 0,
       "value": "An accepted operation cannot be dismissed. Inspect its retained receipt."
+    }
+  ],
+  "diagnostic.RECOVERY_ACCESS_UNAVAILABLE": [
+    {
+      "type": 0,
+      "value": "Access to this operation was refused. Preserve its exact identity and inspect its evidence when access is available. This refusal does not settle earlier attempts."
     }
   ],
   "diagnostic.RECOVERY_ATTEMPT_CURSOR_INVALID": [
