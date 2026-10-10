@@ -3,11 +3,93 @@ import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import { executable } from "../executable.mjs";
 
+const errorCodes = new Set([
+  "ENOENT",
+  "EACCES",
+  "EPERM",
+  "ETIMEDOUT",
+  "ENOBUFS",
+  "E2BIG",
+  "EINVAL",
+  "ENOMEM",
+  "EIO",
+  "EBADF",
+]);
+const signals = new Set([
+  "SIGTERM",
+  "SIGKILL",
+  "SIGABRT",
+  "SIGSEGV",
+  "SIGINT",
+  "SIGBUS",
+  "SIGILL",
+  "SIGFPE",
+  "SIGQUIT",
+  "SIGHUP",
+  "SIGPIPE",
+  "SIGBREAK",
+]);
+/** @param {import("node:child_process").SpawnSyncReturns<string>} result */
+function nativeCode(result) {
+  const { error } = result;
+  const code = error && "code" in error ? error.code : undefined;
+  return typeof code === "string" && errorCodes.has(code) ? code : "unknown";
+}
+/** @typedef {"start"|"process-error"|"deadline"|"capture-limit"|"exit"|"property-json"|"property-incomplete"|"property-invalid"} FailureReason */
+class ClassificationFailure extends Error {
+  /** @param {FailureReason} reason @param {import("node:child_process").SpawnSyncReturns<string>} result @param {number} elapsed */
+  constructor(reason, result, elapsed) {
+    const code = nativeCode(result);
+    const exit =
+      Number.isInteger(result.status) &&
+      result.status !== null &&
+      result.status >= -2147483648 &&
+      result.status <= 4294967295
+        ? result.status
+        : "unknown";
+    const signal =
+      typeof result.signal === "string" && signals.has(result.signal) ? result.signal : "unknown";
+
+    const milliseconds =
+      Number.isFinite(elapsed) && elapsed >= 0 && elapsed <= 3600000
+        ? Math.round(elapsed)
+        : "unknown";
+    super(
+      `reason=${reason}; exit=${exit}; signal=${signal}; errorCode=${code}; elapsedMs=${milliseconds}`,
+    );
+  }
+}
+/** @param {import("node:child_process").SpawnSyncReturns<string>} result @returns {FailureReason} */
+function processFailure(result) {
+  if (nativeCode(result) === "ETIMEDOUT") {
+    return "deadline";
+  }
+  if (nativeCode(result) === "ENOBUFS") {
+    return "capture-limit";
+  }
+  if (result.error) {
+    return ["ENOENT", "EACCES", "EPERM", "E2BIG"].includes(nativeCode(result))
+      ? "start"
+      : "process-error";
+  }
+  return "exit";
+}
+/** @param {string} text @param {()=>never} refuse */
+function propertyValues(text, refuse) {
+  try {
+    return JSON.parse(text)?.Properties;
+  } catch {
+    return refuse();
+  }
+}
+
 /** @typedef {{isTest:boolean,outputType:string,assembly:string}} Classification */
 /** @param {string} root @param {string} project @param {string} configuration @param {string[]} properties
+ * @param {(command:string,args:string[],options:import("node:child_process").SpawnSyncOptionsWithStringEncoding)=>import("node:child_process").SpawnSyncReturns<string>} [run]
  * @returns {Classification} */
-export function evaluateTestProject(root, project, configuration, properties) {
-  const result = spawnSync(
+export function evaluateTestProject(root, project, configuration, properties, run = spawnSync) {
+  const started = performance.now();
+  const result = run(
     executable("dotnet"),
     [
       "msbuild",
@@ -20,19 +102,24 @@ export function evaluateTestProject(root, project, configuration, properties) {
     ],
     { cwd: root, encoding: "utf8", timeout: 30_000, maxBuffer: 1024 * 1024 },
   );
-  if (result.status !== 0) {
-    throw new Error(`Native test classification failed for ${project}.`);
+  const elapsed = performance.now() - started;
+  /** @param {FailureReason} reason @returns {never} */
+  const refuse = (reason) => {
+    throw new ClassificationFailure(reason, result, elapsed);
+  };
+  if (result.error || result.status !== 0) {
+    refuse(processFailure(result));
   }
-  const value = JSON.parse(result.stdout).Properties;
+  const value = propertyValues(result.stdout, () => refuse("property-json"));
   if (
     typeof value?.IsTestProject !== "string" ||
     typeof value.OutputType !== "string" ||
     typeof value.AssemblyName !== "string"
   ) {
-    throw new Error(`Native test classification is incomplete for ${project}.`);
+    refuse("property-incomplete");
   }
   if (value.IsTestProject !== "" && !/^(?:true|false)$/iu.test(value.IsTestProject)) {
-    throw new Error(`Native test classification is invalid for ${project}.`);
+    refuse("property-invalid");
   }
   return {
     isTest: value.IsTestProject.toLowerCase() === "true",
@@ -70,8 +157,11 @@ export function projectMembershipProblems(root, projects, suites, evaluate = eva
       let observed;
       try {
         observed = evaluate(root, project, profile.configuration, profile.properties);
-      } catch {
-        errors.push(`Native test classification failed for ${project} (${profile.configuration}).`);
+      } catch (error) {
+        const facts = error instanceof ClassificationFailure ? error.message : "reason=unknown";
+        errors.push(
+          `Native test classification failed for ${project} (${profile.configuration}); ${facts}.`,
+        );
         continue;
       }
       errors.push(...classificationProblems(project, profile.configuration, observed, registered));
