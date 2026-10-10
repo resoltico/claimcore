@@ -105,18 +105,24 @@ module internal CatalogManifest =
 
     let private rollbackAdmission (connection: NpgsqlConnection) (transaction: NpgsqlTransaction) =
         task {
-            use cleanup = new CancellationTokenSource(TimeSpan.FromSeconds 5.)
+            // Ordinary commands enforce socket cancellation; the provider's internal rollback
+            // can leave an active read after its cancellation token has fired.
+            use cleanup = new CancellationTokenSource(TimeSpan.FromSeconds 12.)
+            use rollback = new NpgsqlCommand("ROLLBACK", connection, transaction)
+            rollback.CommandTimeout <- 3
 
             try
-                do! transaction.RollbackAsync(cleanup.Token)
+                let! _ = rollback.ExecuteNonQueryAsync(cleanup.Token)
                 do! transaction.DisposeAsync().AsTask().WaitAsync(cleanup.Token)
                 return None
             with error ->
                 // Never put a session whose transaction cleanup is unknown back into its pool.
+                use retirement = new CancellationTokenSource(TimeSpan.FromSeconds 3.)
+
                 try
                     NpgsqlConnection.ClearPool(connection)
-                    do! connection.CloseAsync().WaitAsync(cleanup.Token)
-                    do! transaction.DisposeAsync().AsTask().WaitAsync(cleanup.Token)
+                    do! connection.CloseAsync().WaitAsync(retirement.Token)
+                    do! transaction.DisposeAsync().AsTask().WaitAsync(retirement.Token)
                 with invalidation ->
                     error.Data["CatalogInvalidationFailure"] <- invalidation.GetType().Name
 
@@ -176,7 +182,8 @@ module internal CatalogManifest =
             match failure, cleanupFailure with
             | Some original, cleanup ->
                 if cleanup.IsSome then
-                    original.Data["CatalogAdmissionCleanup"] <- "Connection invalidated."
+                    original.Data["CatalogAdmissionCleanup"] <-
+                        "Admission cleanup failed; connector retirement requested."
 
                 return raise original
             | None, Some cleanup -> return raise cleanup

@@ -198,7 +198,9 @@ it("reports malformed pages, malformed inspections, rejected imports, and invali
   fetch.mockResolvedValueOnce(response("recovery.inspect", "SUCCEEDED", { tag: "NOT_FOUND" }));
   fetch.mockResolvedValueOnce(inspection());
   fetch.mockResolvedValueOnce(
-    new Response(JSON.stringify(recoveryArtifact), { headers: { "content-type": "application/json" } }),
+    new Response(JSON.stringify(recoveryArtifact), {
+      headers: { "content-type": "application/json" },
+    }),
   );
   fetch.mockResolvedValueOnce(response("recovery.importEnvelopePreview", "REJECTED", {}));
   const view = render(

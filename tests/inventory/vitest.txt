@@ -1,5 +1,6 @@
 aborts a stale page load before appending a newer cursor page
 aborts observation on unmount without delivering a late receipt
+aborts unfinished transport and clears its timer when work rejects
 accepts exactly bounded settings and refuses valid JSON beyond its storage budget
 admits definite session refusal and conservative export failure, rejecting contradictory phases
 admits matching public session metadata without protected definition access [CC-WEB-001]
@@ -12,6 +13,7 @@ associates payment acknowledgement with the generated mode control [CC-DOM-002]
 binds clipboard fallback to the latest attempted exact value
 binds consent to one reviewed preparation and exact identity rather than an editor-wide boolean
 bounds a stalled response and ignores a later successful result
+cancels unread protocol-refused bodies without awaiting a hostile cancellation
 classifies verified overload as not started and refuses the old ambiguous busy body
 clears clipboard success when the value or presentation label changes
 clears the response timer on normal completion and leaves the validated result intact

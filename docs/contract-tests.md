@@ -388,6 +388,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-DB-001 | integration | ClaimCore PostgreSQL integration.Storage boundary qualification.catalog change token behavior.guarded runtime admission.[CC-DB-001] the runtime refuses drift the catalog token vouched for before, then admits its reversal |
 | CC-DB-001 | integration | ClaimCore PostgreSQL integration.database admission.actual catalog transport cancellation and cleanup.[CC-DB-001] catalog reply cancellation retires the unclean connection |
 | CC-DB-001 | integration | ClaimCore PostgreSQL integration.database admission.actual catalog transport cancellation and cleanup.[CC-DB-001] original catalog divergence survives stalled rollback readback |
+| CC-DB-001 | integration | ClaimCore PostgreSQL integration.database admission.actual catalog transport cancellation and cleanup.[CC-DB-001] releasing the selected reply completes admission with clean settings |
 | CC-DB-001 | integration | ClaimCore PostgreSQL integration.database admission.actual catalog transport cancellation and cleanup.[CC-DB-001] settings reply cancellation retires the unclean connection |
 | CC-DB-001 | integration | ClaimCore PostgreSQL integration.database admission.actual catalog transport cancellation and cleanup.[CC-DB-001] version reply cancellation retires the unclean connection |
 | CC-DB-001 | integration | ClaimCore PostgreSQL integration.database admission.admitted PostgreSQL wait and settings policy.[CC-DB-001] actual builders normalize infinite transport and cancellation budgets |

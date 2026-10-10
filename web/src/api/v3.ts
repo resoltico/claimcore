@@ -51,8 +51,15 @@ const jsonHeaders = (token: string | undefined): Record<string, string> => {
 const responseMediaType = (response: Response): string | null =>
   response.headers.get("content-type")?.split(";", 1)[0]?.trim().toLowerCase() ?? null;
 
+const cancelUnreadBody = (response: Response) => {
+  void response.body?.cancel().catch(() => {
+    // Cancellation refusal cannot replace the original protocol refusal.
+  });
+};
+
 const readJson = async (response: Response, signal: AbortSignal): Promise<unknown> => {
   if (responseMediaType(response) !== "application/json") {
+    cancelUnreadBody(response);
     return null;
   }
   try {
@@ -190,6 +197,7 @@ const exportRecoveryResult = async (
       type !== descriptor.successMediaType ||
       !exactDownloadDisposition(disposition, expected)
     ) {
+      cancelUnreadBody(response);
       return {
         kind: "deliveryFailure",
         notice: localNotice("exportInvalid"),

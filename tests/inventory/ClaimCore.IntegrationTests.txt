@@ -202,6 +202,7 @@ ClaimCore PostgreSQL integration.case-list cursor protection.[CC-AUTH-001] encry
 ClaimCore PostgreSQL integration.copy adoption owner approval.[CC-ERASE-001] product export adoption approval and tamper audit remain pending
 ClaimCore PostgreSQL integration.database admission.actual catalog transport cancellation and cleanup.[CC-DB-001] catalog reply cancellation retires the unclean connection
 ClaimCore PostgreSQL integration.database admission.actual catalog transport cancellation and cleanup.[CC-DB-001] original catalog divergence survives stalled rollback readback
+ClaimCore PostgreSQL integration.database admission.actual catalog transport cancellation and cleanup.[CC-DB-001] releasing the selected reply completes admission with clean settings
 ClaimCore PostgreSQL integration.database admission.actual catalog transport cancellation and cleanup.[CC-DB-001] settings reply cancellation retires the unclean connection
 ClaimCore PostgreSQL integration.database admission.actual catalog transport cancellation and cleanup.[CC-DB-001] version reply cancellation retires the unclean connection
 ClaimCore PostgreSQL integration.database admission.admitted PostgreSQL wait and settings policy.[CC-AUDIT-001] default authority acquisition expires without caller cancellation

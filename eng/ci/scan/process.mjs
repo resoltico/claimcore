@@ -27,19 +27,32 @@ export function runChild(command, args, { cwd, env, timeoutMs = 300_000 }) {
     const capture = byteCapture();
     child.stdout.on("data", capture.stdout);
     child.stderr.on("data", capture.stderr);
-    let timedOut = false;
-    const timer = setTimeout(() => {
-      timedOut = true;
-      child.kill("SIGKILL");
-    }, timeoutMs);
+    const deadline = childDeadline(child, timeoutMs, reject);
+    let deliveryFailed = false;
+    const failedDelivery = () => {
+      deliveryFailed = true;
+    };
+    for (const stream of [child.stdout, child.stderr]) {
+      stream.on("error", failedDelivery);
+    }
     child.on("error", (error) => {
-      clearTimeout(timer);
+      deadline.clear();
       reject(error);
     });
     child.on("close", (code) => {
-      clearTimeout(timer);
-      if (timedOut) {
-        reject(new Error("A required child process timed out after termination settled."));
+      deadline.clear();
+      if (deadline.expired()) {
+        reject(
+          new Error(
+            `A required child process timed out; child exit ${code ?? "unknown"}; owned console delivery closed.`,
+          ),
+        );
+        return;
+      }
+      if (deliveryFailed) {
+        reject(
+          new Error(`Required child console delivery failed; child exit ${code ?? "unknown"}.`),
+        );
         return;
       }
       resolve({
@@ -70,4 +83,34 @@ export function scannerEnvironment(environment = process.env) {
   delete env["GITLEAKS_CONFIG"];
   delete env["GITLEAKS_CONFIG_TOML"];
   return env;
+}
+
+/** Child exit does not prove descendant or inherited-pipe settlement.
+ * @param {import("node:child_process").ChildProcess} child @param {number} timeoutMs
+ * @param {(error:Error)=>void} reject */
+function childDeadline(child, timeoutMs, reject) {
+  let expired = false;
+  /** @type {NodeJS.Timeout | undefined} */
+  let settlement;
+  const timer = setTimeout(() => {
+    expired = true;
+    child.kill("SIGKILL");
+    settlement = setTimeout(() => {
+      reject(
+        new Error(
+          `Required child timed out; child exit ${child.exitCode ?? "unknown"}; descendant or pipe settlement remains unknown.`,
+        ),
+      );
+      child.stdout?.destroy();
+      child.stderr?.destroy();
+      child.unref();
+    }, 2000);
+  }, timeoutMs);
+  return {
+    expired: () => expired,
+    clear: () => {
+      clearTimeout(timer);
+      clearTimeout(settlement);
+    },
+  };
 }

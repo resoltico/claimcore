@@ -23,11 +23,18 @@ export const withinResponseDeadline = async <T>(
       controller.abort();
     }, responseDeadlineMs);
   });
+  let completed = false;
   try {
-    return await Promise.race([work(controller.signal), expired]);
+    const response = work(controller.signal).then((result) => {
+      completed = true;
+      return result;
+    });
+    return await Promise.race([response, expired]);
   } finally {
     clearTimeout(timer);
     callerSignal?.removeEventListener("abort", cancel);
-    controller.abort();
+    if (!completed) {
+      controller.abort();
+    }
   }
 };

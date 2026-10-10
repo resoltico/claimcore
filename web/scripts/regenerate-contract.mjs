@@ -5,7 +5,9 @@ import { assertValidatorSizes } from "./validator-sizes.mjs";
 import { promoteContracts } from "./contract-promotion.mjs";
 
 if (process.argv.some((argument) => argument.startsWith("--") && argument !== "--write-lock")) {
-  throw new Error("Only intentional --write-lock is supported. Interrupted writers require the preservation procedure in web/README.md.");
+  throw new Error(
+    "Only intentional --write-lock is supported. Interrupted writers require the preservation procedure in web/README.md.",
+  );
 }
 
 await promoteContracts({

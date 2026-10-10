@@ -1,3 +1,4 @@
+import { ReadableStream } from "node:stream/web";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { withinResponseDeadline } from "../src/api/responseDeadline";
 import { isMutationUncertain, v3, type ApiResult } from "../src/api/v3";
@@ -91,10 +92,56 @@ it("propagates pre-cancelled callers and preserves a healthy caller on completio
     });
   }, cancelled.signal);
   const healthy = new AbortController();
-  await withinResponseDeadline(
-    () => Promise.resolve({ kind: "outcome", value: 1, status: 200 }),
-    healthy.signal,
-  );
+  let owned: AbortSignal | undefined;
+  await withinResponseDeadline((signal) => {
+    owned = signal;
+    return Promise.resolve({ kind: "outcome", value: 1, status: 200 });
+  }, healthy.signal);
   expect(healthy.signal.aborted).toBe(false);
+  expect(owned?.aborted).toBe(false);
+  healthy.abort();
+  expect(owned?.aborted).toBe(false);
+  expect(vi.getTimerCount()).toBe(0);
+});
+
+it("aborts unfinished transport and clears its timer when work rejects", async () => {
+  let owned: AbortSignal | undefined;
+  await expect(
+    withinResponseDeadline((signal) => {
+      owned = signal;
+      return Promise.reject(new Error("Synthetic work refusal"));
+    }),
+  ).rejects.toThrow("Synthetic work refusal");
+  expect(owned?.aborted).toBe(true);
+  expect(vi.getTimerCount()).toBe(0);
+});
+
+it("cancels unread protocol-refused bodies without awaiting a hostile cancellation", async () => {
+  const refused = vi.fn(() => Promise.reject(new Error("Synthetic cancellation refusal")));
+  vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+    new Response(new ReadableStream({ cancel: refused }) as unknown as BodyInit, {
+      headers: { "Content-Type": "text/plain" },
+    }),
+  );
+  expect((await v3.definition()).kind).toBe("deliveryFailure");
+  expect(refused).toHaveBeenCalledOnce();
+  const stalled = vi.fn(
+    () =>
+      new Promise<void>(() => {
+        /* Synthetic hostile cancellation. */
+      }),
+  );
+  vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+    new Response(new ReadableStream({ cancel: stalled }) as unknown as BodyInit, {
+      headers: {
+        "Content-Type": "application/vnd.claimcore.recovery+json",
+        "Content-Disposition": "attachment; filename=wrong.json",
+      },
+    }),
+  );
+  expect((await v3.recoveryExport(operationId, "a".repeat(64), "token")).kind).toBe(
+    "deliveryFailure",
+  );
+  expect(stalled).toHaveBeenCalledOnce();
   expect(vi.getTimerCount()).toBe(0);
 });

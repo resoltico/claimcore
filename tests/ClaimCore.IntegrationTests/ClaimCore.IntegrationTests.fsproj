@@ -40,6 +40,7 @@
     <Compile Include="RuntimeAuditQuarantineTests.fs" />
     <Compile Include="ConnectionBudgetTests.fs" />
     <Compile Include="AuditCancellationTests.fs" />
+    <Compile Include="PostgresProtocolFrames.fs" />
     <Compile Include="PostgresReplyDelay.fs" />
     <Compile Include="CatalogTransportTests.fs" />
     <Compile Include="RuntimeSchedulingTests.fs" />
