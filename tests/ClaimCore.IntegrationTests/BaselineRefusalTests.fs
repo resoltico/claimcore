@@ -1,6 +1,7 @@
 module ClaimCore.IntegrationTests.BaselineRefusalTests
 
 open Expecto
+open System
 open ClaimCore.Postgres
 open ClaimCore.IntegrationTests.Fixtures
 open ClaimCore.IntegrationTests.FreshBaselineSupport
@@ -136,6 +137,121 @@ let private incomplete =
                 runtimeRefuses app
                 Expect.equal (snapshot admin) before "No automatic constraint repair"))
 
+let private actualCleanupFailure () =
+    let original = InvalidOperationException("PRIVATE-BODY")
+    let mutable observed: exn option = None
+
+    try
+        withDatabase (fun admin _ ->
+            let database =
+                Npgsql.NpgsqlConnectionStringBuilder(admin).Database
+                |> Option.ofObj
+                |> Option.defaultWith (fun () ->
+                    failtest "Owned synthetic database identity is absent.")
+
+            use builder = new Npgsql.NpgsqlCommandBuilder()
+            Npgsql.NpgsqlConnection.ClearAllPools()
+            execute (adminConnection ()) ("DROP DATABASE " + builder.QuoteIdentifier(database))
+            raise original)
+    with error ->
+        observed <- Some error
+
+    Expect.isTrue
+        (observed |> Option.exists (fun error -> obj.ReferenceEquals(error, original)))
+        "Actual missing-database cleanup cannot replace the original refusal"
+
+    Expect.equal
+        original.Data["FixtureCleanupFailure"]
+        (box "postgres-refusal")
+        "Actual fixed cleanup category"
+
+    Expect.equal
+        original.Data["FixtureCleanupSettlement"]
+        (box "unknown")
+        "No success inferred from cleanup refusal"
+
+let private diagnosticRefusal () =
+    let original =
+        { new Exception("PRIVATE-BODY") with
+            override _.Data =
+                System.Collections.ObjectModel.ReadOnlyDictionary<string, obj>(
+                    System.Collections.Generic.Dictionary<string, obj>()
+                )
+                :> System.Collections.IDictionary
+        }
+
+    let previous = Console.Error
+    use output = new System.IO.StringWriter()
+    let mutable observed: exn option = None
+
+    try
+        Console.SetError(output)
+
+        try
+            FixtureCleanup.run (fun () -> raise (TimeoutException("PRIVATE-CLEANUP"))) (fun () ->
+                raise original)
+        with error ->
+            observed <- Some error
+    finally
+        Console.SetError(previous)
+
+    Expect.isTrue
+        (observed |> Option.exists (fun error -> obj.ReferenceEquals(error, original)))
+        "Diagnostic refusal cannot replace the original failure"
+
+    Expect.stringContains
+        (output.ToString())
+        "fixture-cleanup-settlement=unknown kind=timeout diagnostic-retention=unavailable"
+        "Fixed fallback exposes cleanup uncertainty"
+
+    Expect.isFalse
+        ((output.ToString()).Contains("PRIVATE", StringComparison.Ordinal))
+        "Fallback omits both provider messages"
+
+let private cleanupFailures =
+    testCase
+        "[CC-DB-001] database cleanup preserves the original refusal and exposes uncertainty"
+        (fun () ->
+            let bodyError = InvalidOperationException("PRIVATE-BODY")
+            let cleanupError = TimeoutException("PRIVATE-CLEANUP")
+
+            let observed cleanup body =
+                try
+                    FixtureCleanup.run cleanup body |> ignore
+                    None
+                with error ->
+                    Some error
+
+            let doubled = observed (fun () -> raise cleanupError) (fun () -> raise bodyError)
+
+            Expect.isTrue
+                (doubled |> Option.exists (fun error -> obj.ReferenceEquals(error, bodyError)))
+                "Body failure survives"
+
+            Expect.equal
+                bodyError.Data["FixtureCleanupFailure"]
+                (box "timeout")
+                "Closed cleanup kind"
+
+            Expect.equal
+                bodyError.Data["FixtureCleanupSettlement"]
+                (box "unknown")
+                "No cleanup settlement inferred"
+
+            let single = observed (fun () -> raise cleanupError) (fun () -> ())
+
+            Expect.isTrue
+                (single |> Option.exists (fun error -> obj.ReferenceEquals(error, cleanupError)))
+                "Cleanup failure after success refuses"
+
+            Expect.equal
+                (FixtureCleanup.run (fun () -> ()) (fun () -> 7))
+                7
+                "Settled body result survives"
+
+            actualCleanupFailure ()
+            diagnosticRefusal ())
+
 let tests =
     testList
         "unsupported installation refusal"
@@ -148,4 +264,5 @@ let tests =
             malformedMarker
             corruptIdentity
             incomplete
+            cleanupFailures
         ]

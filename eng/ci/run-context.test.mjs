@@ -142,6 +142,13 @@ async function eventually(condition) {
   assert.fail("Owned process boundary did not reach its expected state.");
 }
 
+const snapshotWriter =
+  'const fs=require("node:fs"); let counter=0; const pending=process.argv[1]+".pending"; const timer=setInterval(()=>{if(fs.existsSync(process.argv[2])){clearInterval(timer);return;}fs.writeFileSync(pending,String(++counter));fs.renameSync(pending,process.argv[1]);},20);';
+/** @param {string} path */
+function publishedCounter(path) {
+  return existsSync(path) ? Number(readFileSync(path, "utf8")) : 0;
+}
+
 test("a surviving child keeps its snapshot after parent death and cannot corrupt a second run", async () => {
   await fixture(async (origin, runs) => {
     const first = await createRun(origin);
@@ -150,36 +157,32 @@ test("a surviving child keeps its snapshot after parent death and cannot corrupt
     mkdirSync(dirname(log), { recursive: true });
     const pidFile = join(first.scratch, "child.pid");
     const written = join(first.source, "artifacts/child-write.txt");
-    const childScript =
-      'const fs=require("node:fs"); setInterval(()=>fs.writeFileSync(process.argv[1],String(Date.now())),20);';
+    const stop = join(first.scratch, "writer.stop");
     const parentScript =
-      'const fs=require("node:fs"); const cp=require("node:child_process"); const child=cp.spawn(process.execPath,["-e",process.argv[1],process.argv[3]],{stdio:"ignore"}); fs.writeFileSync(process.argv[2],String(child.pid)); setInterval(()=>{},1000);';
+      'const fs=require("node:fs"); const cp=require("node:child_process"); const child=cp.spawn(process.execPath,["-e",process.argv[1],process.argv[3],process.argv[4]],{stdio:"ignore"}); fs.writeFileSync(process.argv[2],String(child.pid)); const timer=setInterval(()=>{if(fs.existsSync(process.argv[4]))clearInterval(timer);},20);';
     /** @type {number[]} */
     const groups = [];
-    const parent = runToLog(process.execPath, ["-e", parentScript, childScript, pidFile, written], {
-      cwd: first.source,
-      log,
-      groups,
-    });
-    await eventually(() => existsSync(pidFile) && existsSync(written));
-    const child = Number(readFileSync(pidFile, "utf8"));
+    const args = ["-e", parentScript, snapshotWriter, pidFile, written, stop];
+    const parent = runToLog(process.execPath, args, { cwd: first.source, log, groups });
     try {
+      await eventually(() => publishedCounter(pidFile) > 0 && publishedCounter(written) > 0);
       assert.ok(groups[0]);
       process.kill(groups[0], "SIGKILL");
       assert.equal(await parent, 128);
       assert.equal(processGroupsAbsent(groups), false);
       const second = await createRun(origin);
       runs.push(second);
-      const before = readFileSync(written, "utf8");
-      await delay(60);
-      assert.notEqual(readFileSync(written, "utf8"), before);
+      const before = publishedCounter(written);
+      assert.ok(before > 0);
+      await eventually(() => publishedCounter(written) > before);
       assert.equal(existsSync(join(second.source, "artifacts/child-write.txt")), false);
       await finishRun(first, { passed: false, groups });
       assert.equal(existsSync(first.source), true);
       assert.equal(existsSync(join(first.results, "admission.json")), true);
       assert.equal(existsSync(log), true);
     } finally {
-      process.kill(child, "SIGTERM");
+      writeFileSync(stop, "stop");
+      await parent;
       await eventually(() => processGroupsAbsent(groups));
     }
   });
@@ -222,32 +225,25 @@ test("a successful parent cannot authorize deletion under a detached descendant"
     mkdirSync(dirname(log), { recursive: true });
     const pidFile = join(run.scratch, "detached.pid");
     const written = join(run.source, "artifacts/detached-write.txt");
-    const childScript =
-      'const fs=require("node:fs"); setInterval(()=>fs.writeFileSync(process.argv[1],String(Date.now())),20);';
+    const stop = join(run.scratch, "writer.stop");
     const parentScript =
-      'const fs=require("node:fs"); const cp=require("node:child_process"); const child=cp.spawn(process.execPath,["-e",process.argv[1],process.argv[3]],{stdio:"ignore",detached:true}); fs.writeFileSync(process.argv[2],String(child.pid)); child.unref();';
+      'const fs=require("node:fs"); const cp=require("node:child_process"); const child=cp.spawn(process.execPath,["-e",process.argv[1],process.argv[3],process.argv[4]],{stdio:"ignore",detached:true}); fs.writeFileSync(process.argv[2],String(child.pid)); child.unref();';
     /** @type {number[]} */
     const groups = [];
-    assert.equal(
-      await runToLog(process.execPath, ["-e", parentScript, childScript, pidFile, written], {
-        cwd: run.source,
-        log,
-        groups,
-      }),
-      0,
-    );
-    const child = Number(readFileSync(pidFile, "utf8"));
     try {
-      await eventually(() => existsSync(written));
+      const args = ["-e", parentScript, snapshotWriter, pidFile, written, stop];
+      assert.equal(await runToLog(process.execPath, args, { cwd: run.source, log, groups }), 0);
+      await eventually(() => publishedCounter(pidFile) > 0 && publishedCounter(written) > 0);
       assert.equal(processGroupsAbsent(groups), true);
       await finishRun(run, { passed: true, groups });
       assert.equal(existsSync(run.source), true);
-      const before = readFileSync(written, "utf8");
-      await delay(60);
-      assert.notEqual(readFileSync(written, "utf8"), before);
+      const before = publishedCounter(written);
+      assert.ok(before > 0);
+      await eventually(() => publishedCounter(written) > before);
     } finally {
-      process.kill(child, "SIGTERM");
-      await eventually(() => processGroupsAbsent([child]));
+      writeFileSync(stop, "stop");
+      await eventually(() => publishedCounter(pidFile) > 0);
+      await eventually(() => processGroupsAbsent([...groups, publishedCounter(pidFile)]));
     }
   });
 });

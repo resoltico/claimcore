@@ -5,17 +5,108 @@ import io
 import json
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from types import SimpleNamespace, TracebackType
 from typing import cast
 from unittest.mock import Mock, patch
 
 import managed
+import managed_copy_boot
 from backup_barrier import BarrierUnknownError
 from backup_types import JsonObject
 from capture_delivery import CaptureCompletedError, report_failure, write_result
 from deployment_common import DeploymentRefusalError
 from managed_common import BackupFailureError
+from managed_copy_verification_io import VerificationFailureError, write_new
+
+
+def copy_cleanup_checks() -> None:
+    identifier = "a" * 64
+    for body_fails, cleanup_fails in ((True, True), (False, True), (True, False), (False, False)):
+        with tempfile.TemporaryDirectory(dir=Path(tempfile.gettempdir()).resolve()) as directory:
+            body_error = VerificationFailureError("RECOVERED_IDENTITY_DIVERGED")
+            config: JsonObject = {
+                "privateScratchRoot": directory,
+                "databaseOwnerRole": "synthetic",
+                "databaseName": "synthetic_test",
+            }
+            result = SimpleNamespace(returncode=1 if cleanup_fails else 0)
+            with (
+                patch.object(managed_copy_boot, "_image", return_value="synthetic"),
+                patch.object(managed_copy_boot, "_start", return_value=identifier),
+                patch.object(managed_copy_boot, "_load"),
+                patch.object(
+                    managed_copy_boot,
+                    "_check_identity",
+                    side_effect=body_error if body_fails else None,
+                ),
+                patch.object(managed_copy_boot, "_row_count", return_value=7),
+                patch.object(managed_copy_boot, "tool", return_value="docker"),
+                patch("managed_copy_boot.subprocess.run", return_value=result) as stop,
+            ):
+                observed = None
+                try:
+                    assert managed_copy_boot.boot_identity(config, Path(directory)) == 7
+                except VerificationFailureError as error:
+                    observed = error
+                assert (observed is not None) == (body_fails or cleanup_fails)
+                if body_fails:
+                    assert observed is body_error
+                assert stop.call_args.kwargs["timeout"] == 30
+            records = list(Path(directory).glob("copy-cleanup-*.json"))
+            assert len(records) == int(cleanup_fails)
+            if cleanup_fails:
+                record = json.loads(records[0].read_text())
+                assert record["containerId"] == identifier and record["settlement"] == "UNKNOWN"
+                assert record["kind"] == "refused"
+                assert records[0].stat().st_mode & 0o777 == 0o600
+
+
+def copy_cleanup_timeout() -> None:
+    identifier = "b" * 64
+    original = RuntimeError("PRIVATE-BODY")
+    timeout = subprocess.TimeoutExpired("PRIVATE-COMMAND", 30, stderr=b"PRIVATE-PAYLOAD")
+    for body_fails, retention_fails in ((True, False), (True, True), (False, False)):
+        with tempfile.TemporaryDirectory(dir=Path(tempfile.gettempdir()).resolve()) as directory:
+            config: JsonObject = {
+                "privateScratchRoot": directory,
+                "databaseOwnerRole": "synthetic",
+                "databaseName": "synthetic_test",
+            }
+            with (
+                patch.object(managed_copy_boot, "_image", return_value="synthetic"),
+                patch.object(managed_copy_boot, "_start", return_value=identifier),
+                patch.object(managed_copy_boot, "_load"),
+                patch.object(
+                    managed_copy_boot,
+                    "_check_identity",
+                    side_effect=original if body_fails else None,
+                ),
+                patch.object(managed_copy_boot, "_row_count", return_value=7),
+                patch.object(managed_copy_boot, "tool", return_value="docker"),
+                patch("managed_copy_boot.subprocess.run", side_effect=timeout) as stop,
+                patch.object(
+                    managed_copy_boot,
+                    "write_new",
+                    wraps=write_new,
+                    side_effect=OSError("PRIVATE-IO") if retention_fails else None,
+                ),
+            ):
+                observed = None
+                try:
+                    managed_copy_boot.boot_identity(config, Path(directory))
+                except (RuntimeError, subprocess.TimeoutExpired) as error:
+                    observed = error
+                assert observed is (original if body_fails else timeout)
+                assert stop.call_args.kwargs["timeout"] == 30
+            assert observed is not None and "PRIVATE" not in " ".join(observed.__notes__)
+            if retention_fails:
+                assert original.__notes__[-1] == "copy-cleanup-record=unavailable"
+                assert not list(Path(directory).glob("copy-cleanup-*.json"))
+            else:
+                record = next(Path(directory).glob("copy-cleanup-*.json")).read_text()
+                assert json.loads(record)["kind"] == "timeout" and "PRIVATE" not in record
 
 
 def capture_diagnostics(error: BaseException) -> JsonObject:
@@ -126,6 +217,8 @@ def main() -> None:
     }
     capture_delivery_checks()
     capture_closed_pipe()
+    copy_cleanup_checks()
+    copy_cleanup_timeout()
 
 
 if __name__ == "__main__":

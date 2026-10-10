@@ -266,26 +266,24 @@ let withCapturedPrimary callback owner app writer (witness: WitnessProtocol) =
     let mutable primaryRestore = ""
     let mutable witnessRestore = ""
 
-    try
-        let primaryId, primaryPort, witnessId, witnessPort = startRestores scratch
-        primaryRestore <- primaryId
-        witnessRestore <- witnessId
+    FixtureCleanup.physical
+        (fun id -> let code, _, _ = run "docker" [ "stop"; id ] in code)
+        (fun () -> [ witnessRestore; primaryRestore ])
+        scratch
+        (fun () ->
+            let primaryId, primaryPort, witnessId, witnessPort = startRestores scratch
+            primaryRestore <- primaryId
+            witnessRestore <- witnessId
 
-        describedCapture
-            scratch
-            owner
-            app
-            writer
-            witness
-            captured
-            sourcePrimary
-            sourceWitness
-            primaryPort
-            witnessPort
-        |> callback
-    finally
-        for id in [ witnessRestore; primaryRestore ] do
-            if id <> "" then
-                run "docker" [ "stop"; id ] |> ignore
-
-        Directory.Delete(scratch, true)
+            describedCapture
+                scratch
+                owner
+                app
+                writer
+                witness
+                captured
+                sourcePrimary
+                sourceWitness
+                primaryPort
+                witnessPort
+            |> callback)

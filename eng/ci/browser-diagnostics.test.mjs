@@ -43,6 +43,7 @@ test("browser diagnostics preserve safe first-failure location without raw step 
     file: "web/e2e/check.spec.ts",
     line: 12,
     column: 3,
+    errorKind: "unknown",
   });
   assert(!JSON.stringify(diagnostic.snapshot()).includes("PRIVATE"));
 });

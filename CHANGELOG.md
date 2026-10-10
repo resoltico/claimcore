@@ -6,6 +6,7 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Fixed
 
+- Managed-copy verification refuses unconfirmed inspection-container shutdown and preserves preceding verification failures. Owner-private cleanup records identify the exact unsettled container; existing stop deadlines and plaintext disposal remain unchanged.
 - Scheduled audit quarantine now fences queued actor reads, writes, authority setup and readiness, preserving already committed evidence when later disclosure is refused. Accepted historical dates and UTC observations are authenticated against the witness and replayed unchanged after time-zone rule updates.
 - Database admission uses cancellable transaction-local catalog settings and finite connection, command, cancellation-readback and authority-acquisition budgets. Cleanup preserves original failures and retires unclean connections; post-dispatch expiry retains uncertainty.
 - Browser and native recovery downloads require complete artifact structure and exact operation identity. Browser JSON/artifact consumption counts received bytes, stops at the response deadline and preserves export bytes.

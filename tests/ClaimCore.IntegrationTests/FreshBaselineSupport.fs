@@ -44,20 +44,21 @@ let withDatabase action =
     let quoted = quoteIdentifier database
     execute root ("CREATE DATABASE " + quoted)
 
-    try
-        execute
-            root
-            ("REVOKE ALL ON DATABASE "
-             + quoted
-             + " FROM PUBLIC; GRANT CONNECT ON DATABASE "
-             + quoted
-             + " TO claimcore_app")
+    FixtureCleanup.run
+        (fun () ->
+            NpgsqlConnection.ClearAllPools()
+            execute root ("DROP DATABASE " + quoted))
+        (fun () ->
+            execute
+                root
+                ("REVOKE ALL ON DATABASE "
+                 + quoted
+                 + " FROM PUBLIC; GRANT CONNECT ON DATABASE "
+                 + quoted
+                 + " TO claimcore_app")
 
-        execute admin "REVOKE CREATE ON SCHEMA public FROM PUBLIC"
-        action admin app
-    finally
-        NpgsqlConnection.ClearAllPools()
-        execute root ("DROP DATABASE " + quoted)
+            execute admin "REVOKE CREATE ON SCHEMA public FROM PUBLIC"
+            action admin app)
 
 let private installationIdentity primaryOwner =
     use connection = new NpgsqlConnection(primaryOwner)
@@ -84,6 +85,41 @@ let private installationIdentity primaryOwner =
 
     identity
 
+let private withWitnessCapability scope primaryOwner owner writer action =
+    let identity = installationIdentity primaryOwner
+    let keyId = Guid.NewGuid()
+    let key = witnessKey ()
+    let capability = RandomNumberGenerator.GetBytes(32)
+
+    let directory =
+        Path.GetDirectoryName(writerCapabilityFile ())
+        |> Option.ofObj
+        |> Option.defaultWith (fun () -> invalidOp "Synthetic writer directory is missing.")
+
+    let capabilityPath =
+        Path.Combine(directory, "separate-writer-" + Guid.NewGuid().ToString("N") + ".cap")
+
+    let previous =
+        Environment.GetEnvironmentVariable("CLAIMCORE_WRITER_CAPABILITY_FILE")
+
+    try
+        privateBytes directory capabilityPath capability
+
+        Environment.SetEnvironmentVariable("CLAIMCORE_WRITER_CAPABILITY_FILE", capabilityPath)
+
+        use custody = new KeyRing(keyId, [ keyId, key ]) :> IKeyCustody
+        let check = KeyCheck.create custody identity.InstallationId identity.LineageId
+        ClaimCore.Witness.Baseline.initialize owner identity scope keyId check capability
+        action writer capability
+    finally
+        try
+            Environment.SetEnvironmentVariable("CLAIMCORE_WRITER_CAPABILITY_FILE", previous)
+
+            File.Delete(capabilityPath)
+        finally
+            CryptographicOperations.ZeroMemory(key)
+            CryptographicOperations.ZeroMemory(capability)
+
 let withWitnessForScope scope primaryOwner action =
     let database = "witness_" + Guid.NewGuid().ToString("N") + "_test"
     let root = witnessOwnerConnection ()
@@ -92,48 +128,20 @@ let withWitnessForScope scope primaryOwner action =
     let quoted = quoteIdentifier database
     execute root ("CREATE DATABASE " + quoted)
 
-    try
-        execute
-            root
-            ("REVOKE ALL ON DATABASE "
-             + quoted
-             + " FROM PUBLIC; GRANT CONNECT ON DATABASE "
-             + quoted
-             + " TO claimcore_witness_writer, claimcore_witness_auditor")
+    FixtureCleanup.run
+        (fun () ->
+            NpgsqlConnection.ClearAllPools()
+            execute root ("DROP DATABASE " + quoted))
+        (fun () ->
+            execute
+                root
+                ("REVOKE ALL ON DATABASE "
+                 + quoted
+                 + " FROM PUBLIC; GRANT CONNECT ON DATABASE "
+                 + quoted
+                 + " TO claimcore_witness_writer, claimcore_witness_auditor")
 
-        let identity = installationIdentity primaryOwner
-        let keyId = Guid.NewGuid()
-        let key = witnessKey ()
-        let capability = RandomNumberGenerator.GetBytes(32)
-
-        let directory =
-            Path.GetDirectoryName(writerCapabilityFile ())
-            |> Option.ofObj
-            |> Option.defaultWith (fun () -> invalidOp "Synthetic writer directory is missing.")
-
-        let capabilityPath =
-            Path.Combine(directory, "separate-writer-" + Guid.NewGuid().ToString("N") + ".cap")
-
-        let previous =
-            Environment.GetEnvironmentVariable("CLAIMCORE_WRITER_CAPABILITY_FILE")
-
-        try
-            privateBytes directory capabilityPath capability
-            Environment.SetEnvironmentVariable("CLAIMCORE_WRITER_CAPABILITY_FILE", capabilityPath)
-            use custody = new KeyRing(keyId, [ keyId, key ]) :> IKeyCustody
-            let check = KeyCheck.create custody identity.InstallationId identity.LineageId
-            ClaimCore.Witness.Baseline.initialize owner identity scope keyId check capability
-            action writer capability
-        finally
-            try
-                Environment.SetEnvironmentVariable("CLAIMCORE_WRITER_CAPABILITY_FILE", previous)
-                File.Delete(capabilityPath)
-            finally
-                CryptographicOperations.ZeroMemory(key)
-                CryptographicOperations.ZeroMemory(capability)
-    finally
-        NpgsqlConnection.ClearAllPools()
-        execute root ("DROP DATABASE " + quoted)
+            withWitnessCapability scope primaryOwner owner writer action)
 
 let withWitnessFor primaryOwner action =
     withWitnessForScope InstallationUseScope.SyntheticOnly primaryOwner action

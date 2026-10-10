@@ -23,6 +23,7 @@
     <Compile Include="CatalogEpochChanges.fs" />
     <Compile Include="CatalogEpochTokenTests.fs" />
     <Compile Include="CatalogEpochTests.fs" />
+    <Compile Include="FixtureCleanup.fs" />
     <Compile Include="FreshBaselineSupport.fs" />
     <Compile Include="StorageBoundaryTests.fs" />
     <Compile Include="PreparationTests.fs" />

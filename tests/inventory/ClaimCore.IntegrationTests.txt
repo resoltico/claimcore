@@ -292,6 +292,7 @@ ClaimCore PostgreSQL integration.owner-private recovery artifact key policy.[CC-
 ClaimCore PostgreSQL integration.owner-private recovery artifact key policy.[CC-REC-001] artifact keys rotate with bounded issue and verify horizons
 ClaimCore PostgreSQL integration.owner-private witness key custody.[CC-WIT-001] owner-private key-ring file admits and broad mode refuses
 ClaimCore PostgreSQL integration.physical fenced recovery tail.[CC-BACKUP-001] signed post-W1 final WAL tail rechecks without readiness
+ClaimCore PostgreSQL integration.physical restored W1 owner handoff.[CC-BACKUP-001] owned restore cleanup attempts every stop and retains unsettled evidence
 ClaimCore PostgreSQL integration.physical restored W1 owner handoff.[CC-BACKUP-001] signed physical report and post-isolation fence drive owner W1
 ClaimCore PostgreSQL integration.physical restored pair.[CC-BACKUP-001] two physical PostgreSQL restores pass full audit and missing WAL refuses
 ClaimCore PostgreSQL integration.postprune evidence audit.[CC-ERASE-001] changed postprune target root quarantines full audit
@@ -414,6 +415,7 @@ ClaimCore PostgreSQL integration.unsupported installation refusal.[CC-DB-001] a 
 ClaimCore PostgreSQL integration.unsupported installation refusal.[CC-DB-001] all old installation markers are refused without touching evidence or history
 ClaimCore PostgreSQL integration.unsupported installation refusal.[CC-DB-001] an unmarked occupied namespace is refused without deleting its contents
 ClaimCore PostgreSQL integration.unsupported installation refusal.[CC-DB-001] current-looking tables without a baseline marker remain unsupported
+ClaimCore PostgreSQL integration.unsupported installation refusal.[CC-DB-001] database cleanup preserves the original refusal and exposes uncertainty
 ClaimCore PostgreSQL integration.unsupported installation refusal.[CC-DB-001] even an empty pre-existing namespace is not silently adopted
 ClaimCore PostgreSQL integration.unsupported installation refusal.[CC-DB-001] malformed or executable baseline lookalikes are not queried or repaired
 ClaimCore PostgreSQL integration.unsupported installation refusal.[CC-DB-001] mixing a current marker with historical metadata cannot authorize old storage

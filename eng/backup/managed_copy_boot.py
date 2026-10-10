@@ -8,7 +8,13 @@ from pathlib import Path
 
 from backup_types import JsonObject
 from managed_copy_source import run_fixed
-from managed_copy_verification_io import VerificationFailureError, require, tool
+from managed_copy_verification_io import (
+    VerificationFailureError,
+    canonical,
+    require,
+    tool,
+    write_new,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 PGDATA = "/var/lib/postgresql/18/docker"
@@ -161,16 +167,58 @@ def _row_count(config: JsonObject, target: Recovered) -> int:
 def boot_identity(config: JsonObject, data: Path) -> int:
     """Boot the recovered data, prove its identity and timeline, and return its row count."""
     identifier = _start(_image())
+    body_error: BaseException | None = None
     try:
         _load(identifier, data)
         target = Recovered(identifier, config["databaseOwnerRole"], config["databaseName"])
         _check_identity(config, target)
         return _row_count(config, target)
+    except BaseException as error:
+        body_error = error
+        raise
     finally:
-        subprocess.run(
-            [tool("docker", None), "stop", identifier],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            timeout=STOP_TIMEOUT_SECONDS,
-            check=False,
+        try:
+            result = subprocess.run(
+                [tool("docker", None), "stop", identifier],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=STOP_TIMEOUT_SECONDS,
+                check=False,
+            )
+            require(result.returncode == 0, "DOCKER_STOP_REFUSED")
+        except BaseException as cleanup_error:
+            original = body_error if body_error is not None else cleanup_error
+            _retain_cleanup(config, identifier, cleanup_error, original)
+            if body_error is None:
+                raise
+
+
+def _retain_cleanup(
+    config: JsonObject, identifier: str, error: BaseException, original: BaseException
+) -> None:
+    kind = (
+        "timeout"
+        if isinstance(error, subprocess.TimeoutExpired)
+        else "refused"
+        if isinstance(error, VerificationFailureError)
+        else "io-unavailable"
+        if isinstance(error, OSError)
+        else "unknown"
+    )
+    original.add_note("copy-cleanup-settlement=unknown operation=docker-stop kind=" + kind)
+    try:
+        path = Path(config["privateScratchRoot"]) / ("copy-cleanup-" + identifier + ".json")
+        write_new(
+            str(path),
+            canonical(
+                {
+                    "format": "claimcore-copy-cleanup-1",
+                    "containerId": identifier,
+                    "operation": "docker-stop",
+                    "kind": kind,
+                    "settlement": "UNKNOWN",
+                }
+            ),
         )
+    except (OSError, VerificationFailureError):
+        original.add_note("copy-cleanup-record=unavailable")

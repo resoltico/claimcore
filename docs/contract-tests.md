@@ -242,6 +242,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.owner physical copy process.[CC-BACKUP-001] real signed BASE proof drives owner verify-managed-copy and full audit |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.owner physical copy process.[CC-BACKUP-001] retained-copy transition wins authority lock before actor commit health |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.physical fenced recovery tail.[CC-BACKUP-001] signed post-W1 final WAL tail rechecks without readiness |
+| CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.physical restored W1 owner handoff.[CC-BACKUP-001] owned restore cleanup attempts every stop and retains unsettled evidence |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.physical restored W1 owner handoff.[CC-BACKUP-001] signed physical report and post-isolation fence drive owner W1 |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.physical restored pair.[CC-BACKUP-001] two physical PostgreSQL restores pass full audit and missing WAL refuses |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.product export copy event chain.[CC-BACKUP-001] extra product-export revision cannot evade global copy audit |
@@ -366,6 +367,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-DB-001 | fresh-baseline-qualification | ClaimCore fresh baseline qualification.unsupported installation refusal.[CC-DB-001] all old installation markers are refused without touching evidence or history |
 | CC-DB-001 | fresh-baseline-qualification | ClaimCore fresh baseline qualification.unsupported installation refusal.[CC-DB-001] an unmarked occupied namespace is refused without deleting its contents |
 | CC-DB-001 | fresh-baseline-qualification | ClaimCore fresh baseline qualification.unsupported installation refusal.[CC-DB-001] current-looking tables without a baseline marker remain unsupported |
+| CC-DB-001 | fresh-baseline-qualification | ClaimCore fresh baseline qualification.unsupported installation refusal.[CC-DB-001] database cleanup preserves the original refusal and exposes uncertainty |
 | CC-DB-001 | fresh-baseline-qualification | ClaimCore fresh baseline qualification.unsupported installation refusal.[CC-DB-001] even an empty pre-existing namespace is not silently adopted |
 | CC-DB-001 | fresh-baseline-qualification | ClaimCore fresh baseline qualification.unsupported installation refusal.[CC-DB-001] malformed or executable baseline lookalikes are not queried or repaired |
 | CC-DB-001 | fresh-baseline-qualification | ClaimCore fresh baseline qualification.unsupported installation refusal.[CC-DB-001] mixing a current marker with historical metadata cannot authorize old storage |
@@ -406,6 +408,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-DB-001 | integration | ClaimCore PostgreSQL integration.unsupported installation refusal.[CC-DB-001] all old installation markers are refused without touching evidence or history |
 | CC-DB-001 | integration | ClaimCore PostgreSQL integration.unsupported installation refusal.[CC-DB-001] an unmarked occupied namespace is refused without deleting its contents |
 | CC-DB-001 | integration | ClaimCore PostgreSQL integration.unsupported installation refusal.[CC-DB-001] current-looking tables without a baseline marker remain unsupported |
+| CC-DB-001 | integration | ClaimCore PostgreSQL integration.unsupported installation refusal.[CC-DB-001] database cleanup preserves the original refusal and exposes uncertainty |
 | CC-DB-001 | integration | ClaimCore PostgreSQL integration.unsupported installation refusal.[CC-DB-001] even an empty pre-existing namespace is not silently adopted |
 | CC-DB-001 | integration | ClaimCore PostgreSQL integration.unsupported installation refusal.[CC-DB-001] malformed or executable baseline lookalikes are not queried or repaired |
 | CC-DB-001 | integration | ClaimCore PostgreSQL integration.unsupported installation refusal.[CC-DB-001] mixing a current marker with historical metadata cannot authorize old storage |
