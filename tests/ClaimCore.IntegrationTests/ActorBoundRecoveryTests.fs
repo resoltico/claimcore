@@ -13,7 +13,7 @@ open ClaimCore.IntegrationTests.ActorGrantTestSupport
 
 let private grant source witness owner role =
     let registry = new ActorGrantRegistry(source, witness)
-    let target = actorId (new ActorGrantStore(source)) owner
+    let target = actorId (source) owner
 
     registry.SetGrant(
         owner,
@@ -38,7 +38,7 @@ let private requirePrepared (core: IActorClaimsCore) request =
 
 let private revoke source witness owner role =
     let registry = new ActorGrantRegistry(source, witness)
-    let id = actorId (new ActorGrantStore(source)) owner
+    let id = actorId (source) owner
 
     registry.SetGrant(
         owner,

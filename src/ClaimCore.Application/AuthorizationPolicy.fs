@@ -5,11 +5,6 @@ open System.Threading
 open System.Threading.Tasks
 open ClaimCore.Domain
 
-type internal IActorGrantSource =
-    abstract LoadForScope:
-        principal: PrincipalKey * resource: ResourceScope * cancellationToken: CancellationToken ->
-            Task<ActorAuthority option>
-
 module ActorAuthorization =
     let private capabilityPairs =
         [

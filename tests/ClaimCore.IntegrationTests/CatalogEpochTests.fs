@@ -247,23 +247,25 @@ let private privilegeDriftIsRefused () =
 
 let private cancellableAdmissionIsGuarded () =
     CatalogEpoch.forget ()
-    use connection = openAdmin ()
-    use transaction = connection.BeginTransaction()
-    asRuntime connection
+    use owner = openAdmin ()
+    use connection = new NpgsqlConnection(appConnection ())
+    connection.Open()
     RuntimeDatabase.requireCompatibleAsync connection |> await
     let verified = CatalogEpoch.counters ()
     RuntimeDatabase.requireCompatibleAsync connection |> await
     let skipped = CatalogEpoch.counters ()
     Expect.equal (skipped.Skipped - verified.Skipped) 1L "The second checkout is vouched for"
-    asOwner connection
-    execute connection "GRANT DELETE ON claimcore.cases TO claimcore_app"
-    asRuntime connection
+    execute owner "GRANT DELETE ON claimcore.cases TO claimcore_app"
 
-    Expect.throwsT<RuntimeDatabaseMismatch>
-        (fun () -> RuntimeDatabase.requireCompatibleAsync connection |> await)
-        "Drift is refused on the asynchronous path"
+    try
+        for _ in 1..2 do
+            Expect.throwsT<RuntimeDatabaseMismatch>
+                (fun () -> RuntimeDatabase.requireCompatibleAsync connection |> await)
+                "Committed isolated drift is refused on every asynchronous checkout"
+    finally
+        execute owner "REVOKE DELETE ON claimcore.cases FROM claimcore_app"
 
-    transaction.Rollback()
+    RuntimeDatabase.requireCompatibleAsync connection |> await
 
 let private runtimeAdmissionTests =
     testList

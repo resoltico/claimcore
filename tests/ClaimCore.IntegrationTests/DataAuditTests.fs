@@ -16,11 +16,11 @@ let private audit app witness =
     use connection = RuntimeDatabase.openConnection source
     DataAudit.run connection witness CancellationToken.None |> await
 
-let private acceptedCase owner app witness =
+let private acceptedCaseAt (businessTime: IBusinessTime) owner app witness =
     let principal = human ("audit-owner-" + Guid.NewGuid().ToString("N"))
     provision owner witness principal |> applied
     use source = RuntimeDataSource.create app
-    let grants = new ActorGrantStore(source)
+    let grants = source
     let registry = new ActorGrantRegistry(source, witness)
 
     let editor =
@@ -54,12 +54,14 @@ let private acceptedCase owner app witness =
             Suppression = FixturePrivateFiles.syntheticCommitments witness.Identity
         }
 
-    FixtureCommandExecution.executeRequest source witness actorContext clock input
+    FixtureCommandExecution.executeRequest source witness actorContext businessTime input
     |> await
     |> accepted
     |> ignore
 
     input
+
+let private acceptedCase owner app witness = acceptedCaseAt clock owner app witness
 
 let private snapshot owner operationId =
     use connection = new NpgsqlConnection(owner)
@@ -165,6 +167,55 @@ let private omittedCaseTest owner app witness =
         restore.ExecuteNonQuery() |> ignore
 
 
+let private changedCalendarRules owner app witness =
+    // Independent rule datasets with the installation's same identifier put this instant
+    // on different dates. The saved execution date belongs to acceptance, not today's rules.
+    let instant = DateTimeOffset(2026, 9, 7, 23, 30, 0, TimeSpan.Zero)
+
+    let zone offset =
+        TimeZoneInfo.CreateCustomTimeZone("Etc/UTC", offset, "Synthetic", "Synthetic")
+
+    let acceptedZone = zone (TimeSpan.FromHours 2.)
+    let currentZone = zone TimeSpan.Zero
+
+    let date zone =
+        TimeZoneInfo.ConvertTime(instant, zone).DateTime |> DateOnly.FromDateTime
+
+    Expect.equal (date acceptedZone) (DateOnly(2026, 9, 8)) "Accepted rules vector"
+    Expect.equal (date currentZone) (DateOnly(2026, 9, 7)) "Current rules vector"
+
+    let historicalTime =
+        { new IBusinessTime with
+            member _.Capture() =
+                {
+                    EffectiveBusinessDate = DateOnly(2026, 9, 8)
+                    ObservedUtcInstant = instant
+                    TimeZoneId = "Etc/UTC"
+                }
+        }
+
+    acceptedCaseAt historicalTime owner app witness |> ignore
+    let result = audit app witness
+    Expect.isGreaterThan result.AcceptedOperations 0L "Authenticated historical context replays"
+
+let private shiftInstant owner operationId seconds =
+    use connection = new NpgsqlConnection(owner)
+    connection.Open()
+
+    use command =
+        new NpgsqlCommand(
+            "UPDATE claimcore.case_changes SET observed_utc_instant=observed_utc_instant+make_interval(secs => @seconds) WHERE operation_id=@operation",
+            connection
+        )
+
+    command.Parameters.AddWithValue("operation", NpgsqlDbType.Uuid, operationId)
+    |> ignore
+
+    command.Parameters.AddWithValue("seconds", NpgsqlDbType.Double, float seconds)
+    |> ignore
+
+    Expect.equal (command.ExecuteNonQuery()) 1 "Synthetic UTC observation changed once"
+
 let tests =
     testList
         "full primary data audit"
@@ -194,6 +245,18 @@ let tests =
                         expectsCorrupt app witness
                     finally
                         shiftDate owner input.OperationId -1))
+            testCase
+                "[CC-AUDIT-001] changed same-identity calendar rules preserve accepted history"
+                (fun () -> withAuthorityDatabase changedCalendarRules)
+            testCase "[CC-AUDIT-001] audit rejects a false accepted UTC observation" (fun () ->
+                withAuthorityDatabase (fun owner app witness ->
+                    let input = acceptedCase owner app witness
+                    shiftInstant owner input.OperationId 1
+
+                    try
+                        expectsCorrupt app witness
+                    finally
+                        shiftInstant owner input.OperationId -1))
             testCase "[CC-AUDIT-001] audit rejects a stale current projection" (fun () ->
                 withAuthorityDatabase (fun owner app witness ->
                     let input = acceptedCase owner app witness

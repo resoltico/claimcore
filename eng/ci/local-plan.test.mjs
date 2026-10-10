@@ -5,7 +5,7 @@ import test from "node:test";
 import { must } from "./test-support.mjs";
 import { fileURLToPath } from "node:url";
 import { affected } from "./local-scope.mjs";
-import { validatePlan } from "./stage-plan.mjs";
+import { runPlan, validatePlan } from "./stage-plan.mjs";
 import { parseWorkflow } from "./yaml.mjs";
 
 const root = fileURLToPath(new URL("../..", import.meta.url));
@@ -13,6 +13,30 @@ const root = fileURLToPath(new URL("../..", import.meta.url));
 const registry = JSON.parse(readFileSync(join(root, "eng/ci/local-plan.json"), "utf8"));
 /** @param {string} id */
 const job = (id) => must(registry.jobs.find((candidate) => candidate.id === id));
+
+/** @param {import("./run-local.mjs").LocalJob[]} jobs */
+async function browserFailure(jobs) {
+  /** @type {string[]} */
+  const started = [];
+  await runPlan(
+    {
+      producer: "local",
+      stages: jobs.map(({ id, argv, after }) => ({
+        id,
+        argv,
+        after: after ?? [],
+        exclusive: true,
+      })),
+    },
+    4,
+    async ({ id }) => {
+      started.push(id);
+      return { status: id === "browser-coverage" ? "failed" : "passed" };
+    },
+    { failFast: true },
+  );
+  return started;
+}
 
 test("every CI verification family is mirrored locally or explained", () => {
   const ci = parseWorkflow(readFileSync(join(root, ".github/workflows/ci.yml"), "utf8")).value;
@@ -142,10 +166,11 @@ test("deployment selection covers publication, trust-driver, lock and shared too
   }
 });
 
-test("one combined published job owns every client and coverage family", () => {
+test("one combined published job owns every client and coverage family", async () => {
   const combined = job("browser-coverage");
   assert.deepEqual(combined.mirrors, ["publish", "acceptance", "browser", "coverage"]);
   assert.deepEqual(combined.argv, ["bash", "eng/Run-LocalBrowserCoverage.sh"]);
+  assert.deepEqual(combined.after, ["tests-postgres", "frontend-gates"]);
   assert.equal(
     registry.jobs.some((entry) => entry.id === "published-cli"),
     false,
@@ -153,4 +178,11 @@ test("one combined published job owns every client and coverage family", () => {
   for (const family of combined.mirrors) {
     assert.equal(registry.jobs.filter((entry) => entry.mirrors.includes(family)).length, 1);
   }
+  const started = await browserFailure(registry.jobs);
+  assert.ok(started.includes("tests-postgres"));
+  assert.ok(started.includes("frontend-gates"));
+  assert.equal(started.at(-1), "browser-coverage");
+  assert.ok(!started.includes("container-operation"));
+  const priorOrder = registry.jobs.filter((entry) => entry !== combined).concat(combined);
+  assert.ok((await browserFailure(priorOrder)).includes("container-operation"));
 });

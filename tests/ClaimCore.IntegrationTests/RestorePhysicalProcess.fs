@@ -6,6 +6,40 @@ open System.IO
 open System.Text.RegularExpressions
 open Expecto
 
+let privateScratch () =
+    let temporary = Path.GetTempPath()
+
+    let physical =
+        if
+            OperatingSystem.IsMacOS()
+            && (temporary.StartsWith("/var/", StringComparison.Ordinal)
+                || temporary.StartsWith("/tmp/", StringComparison.Ordinal))
+        then
+            "/private" + temporary
+        else
+            temporary
+
+    let path =
+        Path.Combine(physical, "claimcore-physical-restore-" + Guid.NewGuid().ToString("N"))
+
+    let mode =
+        UnixFileMode.UserRead ||| UnixFileMode.UserWrite ||| UnixFileMode.UserExecute
+
+    Directory.CreateDirectory(path, mode) |> ignore
+    path
+
+let private retainStderr bytes =
+    try
+        let directory = privateScratch ()
+
+        ClaimCore.HostSecurity.PrivateFileService.writeNew
+            1_048_576
+            (Path.Combine(directory, "stderr.txt"))
+            bytes
+        |> ignore
+    with _ ->
+        ()
+
 let run command arguments =
     let info = ProcessStartInfo(command)
     info.UseShellExecute <- false
@@ -16,6 +50,10 @@ let run command arguments =
         info.ArgumentList.Add(value)
 
     let result = ClaimCore.TestSupport.BoundedProcess.run info None 1_048_576 240_000
+
+    if result.ExitCode <> 0 then
+        retainStderr result.StandardError
+
     let utf8 = System.Text.UTF8Encoding(false, true)
     let diagnosticText = utf8.GetString(result.StandardError)
 
@@ -41,25 +79,3 @@ let run command arguments =
             "restore-stage=unavailable"
 
     result.ExitCode, utf8.GetString(result.StandardOutput).Trim(), stage
-
-let privateScratch () =
-    let temporary = Path.GetTempPath()
-
-    let physical =
-        if
-            OperatingSystem.IsMacOS()
-            && (temporary.StartsWith("/var/", StringComparison.Ordinal)
-                || temporary.StartsWith("/tmp/", StringComparison.Ordinal))
-        then
-            "/private" + temporary
-        else
-            temporary
-
-    let path =
-        Path.Combine(physical, "claimcore-physical-restore-" + Guid.NewGuid().ToString("N"))
-
-    let mode =
-        UnixFileMode.UserRead ||| UnixFileMode.UserWrite ||| UnixFileMode.UserExecute
-
-    Directory.CreateDirectory(path, mode) |> ignore
-    path

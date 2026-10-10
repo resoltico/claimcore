@@ -1,0 +1,16 @@
+<Project>
+  <ItemGroup>
+    <Compile Include="FixtureEnvironment.fs" />
+    <Compile Include="FixturePrivateFiles.fs" />
+    <Compile Include="FixtureWitnessIdentity.fs" />
+    <Compile Include="FixtureWitnessDatabase.fs" />
+    <Compile Include="FixtureDatabase.fs" />
+    <Compile Include="CaseListCursorTestSupport.fs" />
+    <Compile Include="CaseListCursorProtectionTests.fs" />
+    <Compile Include="FixtureCommandExecution.fs" />
+    <Compile Include="FixtureActorAuthority.fs" />
+    <Compile Include="ActorBoundStoreFixture.fs" />
+    <Compile Include="Fixtures.fs" />
+    <Compile Include="DatabaseObservation.fs" />
+  </ItemGroup>
+</Project>

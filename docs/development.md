@@ -153,21 +153,32 @@ By default a job runs only when a changed file, measured against the merge base 
 including uncommitted and untracked files, could affect it, so a documentation-only change skips the frontend
 and database suites; `--changed-since REF` moves the base and `--all` runs everything. `--include published`
 adds one combined `browser-coverage` job for published CLI acceptance, all three measured browser engines
-and same-run merged coverage (it publishes the applications and uses Docker). The former local
+and same-run merged coverage (it publishes the applications and uses Docker). When included, this
+combined qualification runs before container operation to report client failures earlier; both retain
+their prerequisites, and successful runs still execute every selected job. The former local
 `published-cli` selector is removed; use `--only browser-coverage` for combined qualification or
 `bash eng/Run-PublishedCliAcceptance.sh` for standalone native acceptance. `--only id,id` and
 `--skip id,id` select jobs (unknown IDs fail), `--no-fail-fast` continues past a failure, and logs go to
 a private `artifacts/local-ci/<job>.log` inside the isolated snapshot, with the tail of a failing log printed.
-Admitted reports are scanned in plaintext, then copied once into fresh retained inodes with source and destination fingerprints checked around transfer. A producer’s previously open file descriptor cannot modify the retained copy. Owner-validated report evidence is retained under `artifacts/runs/<UUID>/results`; stage outcomes and
-admission records provide bounded diagnostics. Raw failure logs and unknown files remain private scratch. After sensitive-output admission, completed Web, browser and native CLI diagnostics are retained privately under `artifacts/browser-failures/<run-label>`. Oversized completed CLI output retains a bounded tail with a fixed truncation/count marker and fails qualification; these private logs are excluded from CI upload paths. Coordinated command logs retain at most 16 MiB of output plus a bounded byte-count marker. They drain excess output and refuse an otherwise successful stage rather than qualifying incomplete diagnostics. A green local run is verification
+Admitted reports are scanned in plaintext, then copied once into fresh retained inodes with source and destination fingerprints checked around transfer. A producer’s previously open file descriptor cannot modify the retained copy. Owner-validated report evidence is retained under `artifacts/runs/<UUID>/results`; execution outcomes and
+evidence admission remain separate. Creator-owned private diagnostics preserve original stage exits
+even when context/report admission refuses; rejected context destinations never authorize a write. Raw failure logs and unknown files remain private scratch. After sensitive-output admission, completed Web, browser and native CLI diagnostics are retained privately under `artifacts/browser-failures/<run-label>`. Oversized completed CLI output retains a bounded tail with a fixed truncation/count marker and fails qualification; these private logs are excluded from CI upload paths. Scanner deadlines include a finite wait for inherited console pipes. If those pipes remain open, refusal reports any known immediate-child exit and unknown descendant settlement; it does not claim termination of descendants. Coordinated command logs retain at most 16 MiB of output plus a bounded byte-count marker. They drain excess output and refuse an otherwise successful stage rather than qualifying incomplete diagnostics. A green local run is verification
 of what ran here, not of the platforms and families it lists as not run; use the summary it prints.
 
 Fresh POSIX scratch roots require the current effective user and exact `0700` mode; context files require the same owner and exact `0600`. On macOS, bounded native metadata readback refuses every extended ACL while permitting ordinary extended attributes, and context admission rechecks the parent root. On Linux, the group mode class limits named ACL users/groups through the ACL mask. These are pathname metadata checks with no-link and byte agreement checks, not descriptor-atomic protection or protection from privileged operating-system administrators.
 
 On Windows, the local orchestrator protects its fresh empty OS scratch root with a non-inherited DACL owned by the current user SID and granting inheritable full control only to that SID and SYSTEM. Admission rereads the root ACL and requires its regular context file to inherit exactly those rules; broad Users/Everyone permissions, changed inheritance and linked roots or context entries are refused. This protects against ordinary other users, not privileged operating-system administrators or SYSTEM. Windows CI executes the real native positive and refusal controls. This orchestration boundary does not broaden the case-work private-file runtime contract, which remains macOS/Linux only.
 
+Format-2 local/job verification contexts refuse older records without conversion; preserve old
+evidence and start a fresh run with the current tooling. A composed run admits one absolute physical
+.NET host against `global.json`, binds it in the context and aligns native/nested execution with that
+host. Conflicting explicit SDK selectors and custom task/target resolver overrides refuse admission.
+
 The run's private `run-input.json` binds its originating Git revision/ref and complete reachable graph,
-source fingerprint and producing-input identity. `inputs/` retains exact admitted source bytes, including
+source fingerprint and producing-input identity. Reachable commit/object identities are validated,
+sorted and deduplicated; admitted root IDs own history scanning. Ref-label mappings are diagnostics,
+so aliases that preserve the reachable graph and selected HEAD/ref do not invalidate qualification.
+Observations before/after transfer do not prove detection of every transient mutation. `inputs/` retains exact admitted source bytes, including
 uncommitted source, for review; hashes prove agreement, not owner authorization. The context is checked
 against those bytes and the actual original Git graph before nested commands consume it. History scanning
 uses that explicit original Git root; the Gitless snapshot never borrows an ancestor's HEAD.
@@ -418,6 +429,7 @@ runner, `node eng/ci/run-stages.mjs quality` (or `frontend`, `frontend-product`)
 4), serialises stages that share a resource group, and prints each stage's output as one group when it ends. Add
 `--only id,id` to run some stages. A stage that needs a pinned tool installs it first, at the pinned version; a stage
 whose other required tool is absent fails both locally and in CI. Unknown selections fail before execution.
+Stage status lines include elapsed wall time, including tool provisioning and command execution.
 The table shows each stage's arguments and additional inputs; run the plan to resolve source selectors and templates.
 
 <!-- generated:begin quality-stages -->
@@ -490,6 +502,17 @@ Published CLI acceptance uploads the sanitized Chromium summary and, on browser 
 diagnostic report alongside available acceptance results. These reports preserve bounded failure
 locations when the browser fails before CLI tests begin; private `artifacts/browser-failures/` logs
 remain excluded from uploads.
+
+Witness fixture startup or owner-provisioning failures retain best-effort private evidence in a
+fresh `claimcore-witness-startup-*` OS scratch directory. `witness-startup.json` contains only the
+owned container identity, fixed phase, SQLSTATE category, and nullable credential/host/port
+agreement and running-state facts; unavailable evidence stays unknown. Agreement compares the
+selected connection configuration with owned-container metadata; actual host authentication
+remains the fixture SQL check. Agreement does not establish the database password, host wire
+identity or failure cause. Capture uses a five-second
+Docker command budget plus bounded process settlement. It does not retain credentials, connection
+strings or container logs, retry authentication, or replace the original failure when capture or
+disposal fails. Keep this evidence private when diagnosing qualification failures.
 
 Every language runs its linter in its strictest useful mode, and each mode is pinned so it cannot be
 weakened in passing:
@@ -600,6 +623,8 @@ and publication verification on the host and in Docker. Before recording a compi
 the SDK-derived current restore graph and resolved package hashes must match the existing assets
 and lock; stale `--no-restore` graphs are refused without restoring or rewriting them. The recorder uses the SDK host that executes MSBuild; contract generation selects the same declared SDK host through the shared executable selector. Two installations with the same version may resolve different physical SDK inputs and cannot be mixed merely because their version strings match. It includes embedded database inputs,
 contract generation and lock, frontend source/producer configuration, and pinned toolchains.
+The derived `web/src/generated/` tree, including contract promotion reservations, stages and backups,
+is excluded; contract locks and Web asset manifests separately verify generated output.
 Commit labels are outside that digest: equivalent producing inputs under a PR merge and main
 revision can qualify. The native private-file shim lives under the evaluated SDK `IntermediateOutputPath` and its
 configuration/RID pivots, so selected `ArtifactsPath` roots stay isolated. Every runnable host publishes
@@ -633,6 +658,11 @@ browser inputs with the .NET suites' inputs and enforces the same coverage floor
 server, uses a disposable synthetic OIDC issuer and separate primary and witness PostgreSQL clusters, and keeps
 private diagnostics out of retained sanitized results. Same-machine containers do not prove independent-host
 survival; GitHub artifact transfer and other operating-system runners remain separate CI evidence.
+
+Chromium test pages retain original streamed replies in bounded native DevTools buffers for the existing
+HTTP-body assertions. Page/context closure retires those observation sessions. Anonymous transport controls
+also exercise raw and gzip replies from an isolated loopback server; they carry no case-work authentication
+and do not replace the published HTTPS service qualification.
 
 ### Coverage
 

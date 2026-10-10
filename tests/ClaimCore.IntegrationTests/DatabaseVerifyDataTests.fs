@@ -45,21 +45,16 @@ let internal runCommand command arguments files =
     for name, path in files do
         start.Environment[name] <- path
 
-    use runner =
-        match Process.Start start with
-        | null -> failtest "Owner data-audit process did not start."
-        | started -> started
+    let result =
+        ClaimCore.TestSupport.BoundedProcess.run start None (1024 * 1024) 120000
 
-    let stdout = runner.StandardOutput.ReadToEndAsync()
-    let stderr = runner.StandardError.ReadToEndAsync()
+    let output =
+        if result.ExitCode = 0 then
+            result.StandardOutput
+        else
+            result.StandardError
 
-    if not (runner.WaitForExit(120000)) then
-        runner.Kill(true)
-        failtest "Owner data-audit process timed out."
-
-    let output = if runner.ExitCode = 0 then stdout.Result else stderr.Result
-
-    runner.ExitCode, JsonDocument.Parse(output)
+    result.ExitCode, JsonDocument.Parse(ReadOnlyMemory output)
 
 let private run files = runCommand "verify-data" [] files
 
@@ -132,7 +127,7 @@ let private acceptedCase owner app writer witness =
     provision owner witness principal |> applied
     use source = RuntimeDataSource.create app
     let registry = new ActorGrantRegistry(source, witness)
-    let grants = new ActorGrantStore(source)
+    let grants = source
 
     registry.SetGrant(
         principal,

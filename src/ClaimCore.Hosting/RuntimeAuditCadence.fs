@@ -15,8 +15,21 @@ type internal RuntimeAuditClock =
         Elapsed: int64 -> TimeSpan
     }
 
+module internal RuntimeAuditCancellation =
+    let isOrderlyStop shutdownRequested deadlineRequested token (error: exn) =
+        match error with
+        | :? OperationCanceledException as cancelled ->
+            shutdownRequested
+            && not deadlineRequested
+            && cancelled.CancellationToken = token
+        | _ -> false
+
 type internal RuntimeAuditCadence
-    (runAudit: CancellationToken -> Task, interval: TimeSpan, clock: RuntimeAuditClock) =
+    (
+        runAudit: CancellationToken -> (exn -> unit) -> Task,
+        interval: TimeSpan,
+        clock: RuntimeAuditClock
+    ) =
     let interval =
         if interval <= TimeSpan.Zero || interval > TimeSpan.FromHours 24. then
             invalidArg (nameof interval) "Full-audit interval must be positive and at most one day."
@@ -46,21 +59,47 @@ type internal RuntimeAuditCadence
                 while running do
                     do! Task.Delay(interval, cancellation.Token)
 
-                    try
-                        use bounded =
-                            CancellationTokenSource.CreateLinkedTokenSource(cancellation.Token)
+                    use deadline = new CancellationTokenSource(TimeSpan.FromHours 2.)
 
-                        bounded.CancelAfter(TimeSpan.FromHours 2.)
-                        do! runAudit bounded.Token
+                    use bounded =
+                        CancellationTokenSource.CreateLinkedTokenSource(
+                            cancellation.Token,
+                            deadline.Token
+                        )
+
+                    try
+                        let publishFailure (error: exn) =
+                            if
+                                not (
+                                    RuntimeAuditCancellation.isOrderlyStop
+                                        cancellation.IsCancellationRequested
+                                        deadline.IsCancellationRequested
+                                        bounded.Token
+                                        error
+                                )
+                            then
+                                quarantine false
+
+                        do! runAudit bounded.Token publishFailure
                         Interlocked.Exchange(&lastCompletedTicks, clock.Timestamp()) |> ignore
                     with
-                    | :? OperationCanceledException when cancellation.IsCancellationRequested ->
+                    | error when
+                        RuntimeAuditCancellation.isOrderlyStop
+                            cancellation.IsCancellationRequested
+                            deadline.IsCancellationRequested
+                            bounded.Token
+                            error
+                        ->
                         running <- false
                     | _ ->
                         quarantine false
                         running <- false
             with
-            | :? OperationCanceledException when cancellation.IsCancellationRequested -> ()
+            | :? OperationCanceledException as error when
+                cancellation.IsCancellationRequested
+                && error.CancellationToken = cancellation.Token
+                ->
+                ()
             | _ -> quarantine false
         }
 
@@ -81,6 +120,9 @@ type internal RuntimeAuditCadence
 
     member _.Completion = worker :> Task
 
+    new(runAudit: CancellationToken -> Task, interval: TimeSpan, clock: RuntimeAuditClock) =
+        new RuntimeAuditCadence((fun token _ -> runAudit token), interval, clock)
+
     new(runAudit: CancellationToken -> Task, interval: TimeSpan) =
         new RuntimeAuditCadence(
             runAudit,
@@ -93,13 +135,17 @@ type internal RuntimeAuditCadence
 
     new(resources: RuntimeResources, interval: TimeSpan) =
         new RuntimeAuditCadence(
-            (fun token ->
+            (fun token onFailure ->
                 task {
-                    let! _ = RuntimeFullAudit.run resources token
+                    let! _ = RuntimeFullAudit.runScheduled resources onFailure token
                     return ()
                 }
                 :> Task),
-            interval
+            interval,
+            {
+                Timestamp = Stopwatch.GetTimestamp
+                Elapsed = Stopwatch.GetElapsedTime
+            }
         )
 
     interface IDisposable with

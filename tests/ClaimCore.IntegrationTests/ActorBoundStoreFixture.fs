@@ -29,12 +29,10 @@ let private provision () =
     |> applied
 
     let source = dataSource ()
-    let grants = new ActorGrantStore(source)
+    let grants = source
 
     let authority =
-        (grants :> IActorGrantSource)
-            .LoadForScope(principal, ResourceScope.Installation, CancellationToken.None)
-        |> await
+        FixtureActorAuthority.load grants principal ResourceScope.Installation
         |> Option.defaultWith (fun () -> failtest "Synthetic owner is missing.")
 
     let registry = new ActorGrantRegistry(source, witnessProtocol ())

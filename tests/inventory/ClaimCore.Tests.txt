@@ -334,6 +334,7 @@ ClaimCore deterministic suite.scoped factual correction guidance.[CC-DOM-002] cl
 ClaimCore deterministic suite.scoped factual correction guidance.[CC-DOM-002] paid decision refusal permits correction with explicit payment reaffirmation
 ClaimCore deterministic suite.service response bounds.[CC-CLI-001] CLI bounds service JSON buffering before parsing
 ClaimCore deterministic suite.service response bounds.[CC-CLI-001] CLI reads a full history with maximum-length Unicode fields
+ClaimCore deterministic suite.service response bounds.[CC-CLI-002] native recovery export requires complete structure and exact identity
 ClaimCore deterministic suite.signed recovery import attribution.[CC-REC-001] signed import preserves A and records importer B
 ClaimCore deterministic suite.single-owner compiled release identity.compiled source identity.CLI v4 discovery renders compiled release identity
 ClaimCore deterministic suite.single-owner compiled release identity.compiled source identity.native core identity comes from the SDK attributes, matching the sole source

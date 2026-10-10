@@ -27,24 +27,16 @@ let private storedCaseId owner reference =
     command.ExecuteScalar() :?> Guid
 
 let private equalUnavailable actual =
-    Expect.equal
-        actual
-        AuthorizationDecision.Unavailable
-        "Inaccessible and nonexistent identities use one refusal."
+    Expect.isNone actual "Inaccessible and nonexistent identities use one refusal."
 
-let private assertDenied (grants: ActorGrantStore) reader (input: CommandRequest) =
+let private assertDenied (grants: IActorGate) reader (input: CommandRequest) =
     for reference in [ input.CaseReference; "MISSING-" + Guid.NewGuid().ToString("N") ] do
-        grants.AuthorizeCaseReference(
-            reader,
-            EndpointAction.GetCase,
-            reference,
-            CancellationToken.None
-        )
+        grants.Case(reader, EndpointAction.GetCase, reference, CancellationToken.None)
         |> await
         |> equalUnavailable
 
     for operationId in [ input.OperationId; Guid.NewGuid() ] do
-        grants.AuthorizeAcceptedOperation(
+        grants.Operation(
             reader,
             EndpointAction.ObserveOperation,
             operationId,
@@ -53,21 +45,16 @@ let private assertDenied (grants: ActorGrantStore) reader (input: CommandRequest
         |> await
         |> equalUnavailable
 
-let private assertGranted (grants: ActorGrantStore) reader (input: CommandRequest) =
+let private assertGranted (grants: IActorGate) reader (input: CommandRequest) =
     match
-        grants.AuthorizeCaseReference(
-            reader,
-            EndpointAction.GetCase,
-            input.CaseReference,
-            CancellationToken.None
-        )
+        grants.Case(reader, EndpointAction.GetCase, input.CaseReference, CancellationToken.None)
         |> await
     with
-    | AuthorizationDecision.Available _ -> ()
+    | Some _ -> ()
     | _ -> failtest "Explicit case read grant should authorize the existing case."
 
     match
-        grants.AuthorizeAcceptedOperation(
+        grants.Operation(
             reader,
             EndpointAction.ObserveOperation,
             input.OperationId,
@@ -75,7 +62,7 @@ let private assertGranted (grants: ActorGrantStore) reader (input: CommandReques
         )
         |> await
     with
-    | AuthorizationDecision.Available _ -> ()
+    | Some _ -> ()
     | _ -> failtest "Exact accepted operation resolves to the granted case."
 
 let private assertCaseWitness (witness: WitnessProtocol) eventId caseId =
@@ -113,7 +100,11 @@ let private exerciseLookups owner app witness =
     use source = RuntimeDataSource.create app
     let registry = new ActorGrantRegistry(source, witness)
     registry.RegisterActor(first, reader) |> await |> applied
-    let grants = new ActorGrantStore(source)
+    let grants = source
+
+    let gate =
+        new PostgresActorGate(source, FixturePrivateFiles.syntheticCommitments witness.Identity)
+        :> IActorGate
 
     registry.SetGrant(
         first,
@@ -131,7 +122,7 @@ let private exerciseLookups owner app witness =
 
     acceptedOpen source witness first input
 
-    assertDenied grants reader input
+    assertDenied gate reader input
 
     let grant =
         {
@@ -150,7 +141,7 @@ let private exerciseLookups owner app witness =
     | AuthorityWriteOutcome.Applied(eventId, _) -> assertCaseWitness witness eventId caseId
     | _ -> failtest "Case grant did not settle."
 
-    assertGranted grants reader input
+    assertGranted gate reader input
 
     let revokeOutcome =
         registry.SetGrant(first, actorId grants reader, grant, false) |> await
@@ -161,7 +152,7 @@ let private exerciseLookups owner app witness =
     | AuthorityWriteOutcome.Applied(eventId, _) -> assertCaseWitness witness eventId caseId
     | _ -> failtest "Case revocation did not settle."
 
-    assertDenied grants reader input
+    assertDenied gate reader input
 
 let private noExistenceLeak =
     testCase

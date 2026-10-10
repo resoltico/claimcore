@@ -20,6 +20,26 @@ function git(root, args) {
   return result.stdout.trim();
 }
 
+/** @param {string} text @param {boolean} [paths] */
+function objectIds(text, paths = false) {
+  const ids = text
+    .split("\n")
+    .filter(Boolean)
+    .map((line) => (paths ? (line.split(" ", 1)[0] ?? "") : line));
+  if (ids.some((id) => !id || !/^(?:[0-9a-f]{40}|[0-9a-f]{64})$/u.test(id))) {
+    throw new Error("Git history contains an invalid object identity.");
+  }
+  return [...new Set(ids)].sort();
+}
+
+/** Mutable alias labels are diagnostic metadata, not qualification identity.
+ * @param {ReturnType<typeof observeHistory>} history */
+export function historyIdentity(history) {
+  const { refsSha256: diagnostic, ...identity } = history;
+  void diagnostic;
+  return identity;
+}
+
 /** @param {string} directory */
 export function observeHistory(directory) {
   const root = realpathSync(resolve(directory));
@@ -57,21 +77,42 @@ export function observeHistory(directory) {
     throw new Error("Git reference observation failed.");
   }
   const refs = git(root, ["for-each-ref", "--format=%(refname) %(objectname)"]);
-  const objects = git(root, ["rev-list", "--all", "HEAD", "--objects", "--missing=error"]);
-  const commits = git(root, ["rev-list", "--all", "HEAD"]);
+  const { objects, commits, roots } = reachableGraph(root);
   return {
+    format: 2,
     root,
     common,
     head,
     ref: symbolic.status === 0 ? symbolic.stdout.trim() : null,
+    roots,
+    commitsSha256: createHash("sha256").update(commits.join("\n")).digest("hex"),
     refsSha256: createHash("sha256").update(refs).digest("hex"),
-    objectsSha256: createHash("sha256").update(objects).digest("hex"),
-    commits: commits.split("\n").filter(Boolean).length,
+    objectsSha256: createHash("sha256").update(objects.join("\n")).digest("hex"),
+    commits: commits.length,
   };
 }
 
-/** @param {string} configuration @param {string} ignore @param {string} root */
-function historyArguments(configuration, ignore, root) {
+/** @param {string} root */
+function reachableGraph(root) {
+  const objects = objectIds(
+    git(root, ["rev-list", "--all", "HEAD", "--objects", "--missing=error"]),
+    true,
+  );
+  const commits = objectIds(git(root, ["rev-list", "--all", "HEAD"]));
+  const ancestry = git(root, ["rev-list", "--all", "HEAD", "--parents"]);
+  const parents = new Set(
+    ancestry
+      .split("\n")
+      .flatMap((line) =>
+        objectIds(line.replaceAll(" ", "\n")).filter((id) => id !== line.split(" ", 1)[0]),
+      ),
+  );
+  const roots = commits.filter((id) => !parents.has(id));
+  return { objects, commits, roots };
+}
+
+/** @param {string} configuration @param {string} ignore @param {string} root @param {string[]} roots */
+function historyArguments(configuration, ignore, root, roots) {
   return [
     "git",
     "--redact=100",
@@ -84,7 +125,7 @@ function historyArguments(configuration, ignore, root) {
     configuration,
     "--gitleaks-ignore-path",
     ignore,
-    "--log-opts=--all HEAD --full-history --diff-merges=separate --text --no-ext-diff --no-textconv",
+    `--log-opts=${roots.join(" ")} --full-history --diff-merges=separate --text --no-ext-diff --no-textconv`,
     root,
   ];
 }
@@ -104,15 +145,19 @@ export async function scanHistory({
     const ignore = join(scratch, "empty.gitleaksignore");
     writeFileSync(configuration, "[extend]\nuseDefault = true\n", { mode: 0o600 });
     writeFileSync(ignore, "", { mode: 0o600 });
-    const result = await runChild(gitleaks, historyArguments(configuration, ignore, before.root), {
-      cwd: scratch,
-      env: scannerEnvironment(gitEnvironment()),
-    });
+    const result = await runChild(
+      gitleaks,
+      historyArguments(configuration, ignore, before.root, before.roots),
+      {
+        cwd: scratch,
+        env: scannerEnvironment(gitEnvironment()),
+      },
+    );
     const after = await observeHistory(root);
-    if (JSON.stringify(before) !== JSON.stringify(after)) {
+    if (JSON.stringify(historyIdentity(before)) !== JSON.stringify(historyIdentity(after))) {
       throw new Error("Git history changed during qualification.");
     }
-    if (result.status !== 0) {
+    if (result.status !== 0 || result.overflow) {
       stderr("Complete history secret scan refused its inputs.\n");
       return 1;
     }

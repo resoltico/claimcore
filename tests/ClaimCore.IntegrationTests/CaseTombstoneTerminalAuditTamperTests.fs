@@ -38,7 +38,7 @@ let private actorTamper =
             ("UPDATE claimcore.case_erasure_terminal_approvals "
              + "SET approver_actor_id=@actor WHERE approval_id=@approval")
             (fun source second command ->
-                let actor = actorId (new ActorGrantStore(fst source)) second
+                let actor = actorId (fst source) second
                 Sql.uuid command "actor" actor))
 
 let private grantTamper =

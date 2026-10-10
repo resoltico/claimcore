@@ -20,7 +20,7 @@
     <Compile Include="Sql.fs" />
     <Compile Include="CaseErasureSuppression.fs" />
     <Compile Include="ActorGrantCandidate.fs" />
-    <Compile Include="CaseMutationCommitHealth.fs" />
+    <Compile Include="MutationCommitHealth.fs" />
     <Compile Include="ActorGrantRead.fs" />
     <Compile Include="ActorGrantGateQueries.fs" />
     <Compile Include="ActorGrantGateBinding.fs" />

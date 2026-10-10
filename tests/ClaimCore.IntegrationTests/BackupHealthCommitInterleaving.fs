@@ -135,7 +135,7 @@ let private actorAttempt
         use transaction = actor.BeginTransaction(IsolationLevel.ReadCommitted)
 
         let guard =
-            { new ICaseMutationCommitHealth with
+            { new IMutationCommitHealth with
                 member _.VerifyLocked(connection, current, _) =
                     task {
                         if copyState connection (Some current) copyId <> "RETAINED" then
@@ -144,7 +144,7 @@ let private actorAttempt
                     :> Task
             }
 
-        use _scope = CaseMutationCommitHealth.enter guard
+        use _scope = MutationCommitHealth.enter guard
 
         ActorGrantRead.lockRevision actor transaction true CancellationToken.None
         |> await

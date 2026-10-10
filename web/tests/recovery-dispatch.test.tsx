@@ -1,3 +1,4 @@
+import { recoveryArtifact } from "./recovery-artifact.fixtures";
 import { expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "./presentation-test-support";
@@ -6,7 +7,7 @@ import { operationId, preparation } from "./v3-ui.fixtures";
 import { inspection, list } from "./v3-recovery.fixtures";
 
 const exportReply = (success: boolean): Response =>
-  new Response("{}", {
+  new Response(JSON.stringify(recoveryArtifact), {
     headers: success
       ? {
           "content-type": "application/vnd.claimcore.recovery+json",

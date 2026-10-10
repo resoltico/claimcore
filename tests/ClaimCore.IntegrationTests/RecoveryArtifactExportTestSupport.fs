@@ -32,7 +32,7 @@ let acceptedCase (core: IActorClaimsCore) request =
     | _ -> failtest "Synthetic case must accept before recovery export."
 
 let grant source witness owner role =
-    let store = new ActorGrantStore(source)
+    let store = source
     let registry = new ActorGrantRegistry(source, witness)
 
     registry.SetGrant(

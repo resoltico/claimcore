@@ -10,7 +10,7 @@ open ClaimCore.Contracts
 
 module RemoteServiceCall =
     // Full history pages and owner reviews are larger than individual request/recovery records.
-    let private maximumJsonResponseBytes = 16 * 1024 * 1024
+    let private maximumJsonResponseBytes = TransportLimits.JsonResponseBytes
 
     let hostStatusMatches status (root: JsonElement) =
         let mutable reported = Unchecked.defaultof<JsonElement>
@@ -48,18 +48,13 @@ module RemoteServiceCall =
             body.Headers.ContentType <- MediaTypeHeaderValue(mediaType)
             body :> HttpContent
 
-    let private artifactIdentity (operationId: Guid) (bytes: byte array) =
+    let internal artifactIdentity (operationId: Guid) (bytes: byte array) =
         try
             use document = JsonDocument.Parse(ReadOnlyMemory bytes)
             let root = document.RootElement
-            let mutable found = Unchecked.defaultof<JsonElement>
 
-            root.ValueKind = JsonValueKind.Object
-            && root.TryGetProperty("operationId", &found)
-            && found.ValueKind = JsonValueKind.String
-            && found.GetString() = operationId.ToString("D")
-            && root.GetProperty("format").GetString() = "claimcore-recovery-artifact"
-            && root.GetProperty("formatVersion").GetInt32() = 3
+            SchemaValueValidation.verify (CliSchemas.recoveryEnvelopeDocument ()) root
+            && root.GetProperty("operationId").GetString() = operationId.ToString("D")
         with
         | :? JsonException
         | :? System.Collections.Generic.KeyNotFoundException
@@ -100,7 +95,7 @@ module RemoteServiceCall =
                 then
                     return Error CliRemoteProblem.DeliveryUnconfirmed
                 else
-                    match! readBounded 131072 response cancelled with
+                    match! readBounded TransportLimits.RecoveryArtifactBytes response cancelled with
                     | Some bytes when artifactIdentity operationId bytes ->
                         match PrivateFiles.writeNew destination bytes with
                         | Ok() ->

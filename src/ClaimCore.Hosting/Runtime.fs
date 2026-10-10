@@ -26,9 +26,11 @@ type Runtime
         new RuntimeAuditCadence(resources, RuntimeAuditInterval.configured ())
 
     let commitHealth =
-        { new ICaseMutationCommitHealth with
+        { new IMutationCommitHealth with
             member _.VerifyLocked(connection, transaction, ct) =
                 task {
+                    auditCadence.RequireHealthy()
+
                     if realDataScope then
                         do!
                             RuntimeBackupHealthFiles.requireLocked
@@ -77,42 +79,23 @@ type Runtime
                             auditCadence.RequireHealthy()
                             do! safety.RequireAuthorityRead(ct)
                         })
+                RequireAuditTrust = auditCadence.RequireHealthy
+                AuthorityHealth =
+                    { new IMutationCommitHealth with
+                        member _.VerifyLocked(_, _, _) =
+                            task { auditCadence.RequireHealthy() } :> Task
+                    }
                 CommitHealth = commitHealth
                 CommitHealthRequired = realDataScope
             }
         )
 
-    /// Safe operator-facing scope/phase observation; no case data or private evidence leaves.
+    /// Safe operator-facing readiness is advisory at one fenced observation.
     member _.DataUseReadiness(?cancellationToken: CancellationToken) =
         task {
             let ct = defaultArg cancellationToken CancellationToken.None
             use _lease = admission.Admit()
-
-            try
-                let! state = safety.CurrentUseState(ct)
-
-                let! ready =
-                    task {
-                        if
-                            state.Scope <> InstallationUseScope.RealData
-                            || state.Phase <> InstallationUsePhase.Active
-                        then
-                            return false
-                        else
-                            try
-                                auditCadence.RequireHealthy()
-                                do! safety.RequireCaseMutation(ct)
-                                return true
-                            with _ ->
-                                return false
-                    }
-
-                return
-                    InstallationUse.scopeToken state.Scope,
-                    InstallationUse.phaseToken state.Phase,
-                    ready
-            with _ ->
-                return "UNKNOWN", "QUARANTINED", false
+            return! RuntimeReadiness.observe safety auditCadence.RequireHealthy ct
         }
 
     /// The caller passes a PrincipalKey obtained from validated OIDC/OAuth, not a display

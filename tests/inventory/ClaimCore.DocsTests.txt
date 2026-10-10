@@ -24,3 +24,9 @@ ClaimCore documentation assurance.contract tokens.refuses a missing inventory di
 ClaimCore documentation assurance.contract tokens.refuses a token that names no declared contract
 ClaimCore documentation assurance.executable help prerequisites.a failed batched help build prevents target resolution and execution
 ClaimCore documentation assurance.executable help prerequisites.a linked help project is refused before any producer executes
+ClaimCore documentation assurance.native documentation console capture.console allowance is combined across actual stdout and stderr
+ClaimCore documentation assurance.native documentation console capture.console overflow preserves natural failure
+ClaimCore documentation assurance.native documentation console capture.exact console byte allowance retains natural failure
+ClaimCore documentation assurance.native documentation console capture.one excess byte refuses an otherwise successful child
+ClaimCore documentation assurance.native documentation console capture.raw-byte capture preserves split UTF-8
+ClaimCore documentation assurance.native documentation console capture.stalled console child settles termination and pipe cleanup

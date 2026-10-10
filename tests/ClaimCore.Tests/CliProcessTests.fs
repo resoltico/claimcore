@@ -213,8 +213,13 @@ let private oversizedOpenSession () =
         |> Option.defaultWith (fun () -> failtest "CLI process did not start")
 
     try
-        let output = child.StandardOutput.ReadToEndAsync()
-        let errors = child.StandardError.ReadToEndAsync()
+        let lifetime = TimeSpan.FromSeconds 20.
+
+        let output =
+            BoundedProcess.readText (16 * 1024 * 1024) child.StandardOutput lifetime
+
+        let errors = BoundedProcess.readText (16 * 1024 * 1024) child.StandardError lifetime
+
         let bytes = Array.create 131073 (byte 'x')
         child.StandardInput.BaseStream.Write(bytes, 0, bytes.Length)
         child.StandardInput.BaseStream.Flush()
@@ -227,7 +232,7 @@ let private oversizedOpenSession () =
     finally
         if not child.HasExited then
             child.Kill(true)
-            child.WaitForExit()
+            child.WaitForExit(2000) |> ignore
 
 let private isolatedEnvironment () =
     let start = ProcessStartInfo("dotnet")

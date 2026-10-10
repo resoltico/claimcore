@@ -33,7 +33,8 @@ function problems(extra) {
   try {
     const files = {
       "config/test-suites.json": JSON.stringify(registry),
-      "tests/Example.Tests/Example.Tests.fsproj": "<Project />",
+      "tests/Example.Tests/Example.Tests.fsproj":
+        "<Project><PropertyGroup><IsTestProject>true</IsTestProject><OutputType>Exe</OutputType><AssemblyName>Example.Tests</AssemblyName></PropertyGroup></Project>",
       "tests/inventory/Example.Tests.txt": "a test\n",
       ".github/workflows/ci.yml": "name: ci\n",
       ...extra,
@@ -58,7 +59,12 @@ test("a consistent fixture has no problems", () => {
 
 test("an unregistered test project, orphan inventory or repeated count is reported", () => {
   assert.match(
-    String(problems({ "tests/Other.Tests/Other.Tests.fsproj": "<Project />" })),
+    String(
+      problems({
+        "tests/Other.Tests/Other.Tests.fsproj":
+          "<Project><PropertyGroup><IsTestProject>true</IsTestProject><OutputType>Exe</OutputType><AssemblyName>Example.Tests</AssemblyName></PropertyGroup></Project>",
+      }),
+    ),
     /no suite registers/u,
   );
   assert.match(

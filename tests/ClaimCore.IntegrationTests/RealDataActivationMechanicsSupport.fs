@@ -27,7 +27,7 @@ let private approved =
 let owners app (witness: WitnessProtocol) first second =
     use source = RuntimeDataSource.create app
     let registry = new ActorGrantRegistry(source, witness)
-    let actors = new ActorGrantStore(source)
+    let actors = source
     registry.RegisterActor(first, second) |> await |> applied
 
     registry.SetGrant(

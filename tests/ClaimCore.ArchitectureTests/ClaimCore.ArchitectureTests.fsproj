@@ -3,6 +3,7 @@
     <Optimize>false</Optimize>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../BoundedProcess.fs" Link="BoundedProcess.fs" />
     <Compile Include="../RepositoryRoot.fs" Link="RepositoryRoot.fs" />
     <Compile Include="Inspection.fs" />
     <Compile Include="InspectionReport.fs" />

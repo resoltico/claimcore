@@ -1,4 +1,4 @@
-module ClaimCore.IntegrationTests.ActorGrantStoreTests
+module ClaimCore.IntegrationTests.ActorAuthorityTests
 
 open System
 open System.Data
@@ -20,7 +20,7 @@ let private initialOwner =
 
         withAuthorityDatabase (fun owner app witness ->
             use source = RuntimeDataSource.create app
-            let store = new ActorGrantStore(source)
+            let store = source
             let ownerPrincipal = human "first-owner"
             let unknown = human "unknown-login"
 
@@ -60,7 +60,7 @@ let private revocation =
                 let readerPrincipal = human "reader"
                 provision owner witness ownerPrincipal |> applied
                 use source = RuntimeDataSource.create app
-                let grants = new ActorGrantStore(source)
+                let grants = source
                 let registry = new ActorGrantRegistry(source, witness)
                 registry.RegisterActor(ownerPrincipal, readerPrincipal) |> await |> applied
                 let readerId = actorId grants readerPrincipal
@@ -117,7 +117,7 @@ let private initialOwnerReadback =
                 assertInitialReadback owner witness first original
 
                 use source = RuntimeDataSource.create app
-                let grants = new ActorGrantStore(source)
+                let grants = source
                 let registry = new ActorGrantRegistry(source, witness)
                 registry.RegisterActor(first, second) |> await |> applied
 
@@ -181,7 +181,7 @@ let private dualControlRoster =
                     DualControlRoster.Missing
                     "A second login without ClaimCore grant is not a steward."
 
-                let reader = new ActorGrantStore(source)
+                let reader = source
                 let secondId = actorId reader second
 
                 let grant =
@@ -244,7 +244,7 @@ let private projectionReplay =
             let registry = new ActorGrantRegistry(source, witness)
             registry.RegisterActor(first, second) |> await |> applied
             let expected = replayProjection owner
-            let readerId = actorId (new ActorGrantStore(source)) second
+            let readerId = actorId (source) second
             Expect.isTrue expected.Actors[readerId].Enabled "Witnessed actor is enabled."
 
             assertProjectionTamper owner source witness readerId expected.Actors[readerId].Enabled))
@@ -266,7 +266,7 @@ let private serviceCannotOwn =
                 use source = RuntimeDataSource.create app
                 let registry = new ActorGrantRegistry(source, witness)
                 registry.RegisterActor(ownerPrincipal, automation) |> await |> applied
-                let targetId = actorId (new ActorGrantStore(source)) automation
+                let targetId = actorId (source) automation
 
                 for role in [ Role.Owner; Role.DataSteward ] do
                     let grant =

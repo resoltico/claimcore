@@ -7,11 +7,11 @@ open Npgsql
 
 /// Only the Hosting composition root can install this scoped, typed guard. Owner
 /// administration has no scope and remains able to repair stale backup health.
-type internal ICaseMutationCommitHealth =
+type internal IMutationCommitHealth =
     abstract VerifyLocked: NpgsqlConnection * NpgsqlTransaction * CancellationToken -> Task
 
-module internal CaseMutationCommitHealth =
-    type private Scope(guard: ICaseMutationCommitHealth) =
+module internal MutationCommitHealth =
+    type private Scope(guard: IMutationCommitHealth) =
         let mutable active = 1
         let mutable checking = 0
         let mutable entered = 0
@@ -20,14 +20,14 @@ module internal CaseMutationCommitHealth =
         member _.Verify(connection, transaction, ct) =
             task {
                 if Volatile.Read(&active) = 0 then
-                    invalidOp "Case mutation health scope has ended."
+                    invalidOp "Mutation health scope has ended."
 
                 if Interlocked.CompareExchange(&checking, 1, 0) <> 0 then
-                    invalidOp "Case mutation health recheck is reentrant."
+                    invalidOp "Mutation health recheck is reentrant."
 
                 try
                     if Volatile.Read(&active) = 0 then
-                        invalidOp "Case mutation health scope has ended."
+                        invalidOp "Mutation health scope has ended."
 
                     Interlocked.Increment(&entered) |> ignore
                     do! guard.VerifyLocked(connection, transaction, ct)
@@ -44,7 +44,7 @@ module internal CaseMutationCommitHealth =
 
     let private current = AsyncLocal<Scope option>()
 
-    let enter (guard: ICaseMutationCommitHealth) =
+    let enter (guard: IMutationCommitHealth) =
         if isNull (box guard) then
             invalidArg (nameof guard) "Commit health guard is required."
 
@@ -66,5 +66,5 @@ module internal CaseMutationCommitHealth =
     let requireVerified () =
         match current.Value with
         | Some scope when scope.Verified -> ()
-        | Some scope when scope.Entered -> invalidOp "Case mutation commit-side health was refused."
-        | _ -> invalidOp "Case mutation never reached commit-side health admission."
+        | Some scope when scope.Entered -> invalidOp "Mutation commit-side health was refused."
+        | _ -> invalidOp "Mutation never reached commit-side health admission."

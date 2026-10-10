@@ -61,7 +61,7 @@ async function scanTargets(binary, targets, scratch) {
       ],
       { cwd: scratch, env: scannerEnvironment() },
     );
-    status ||= result.status === 0 ? 0 : 1;
+    status ||= result.status === 0 && !result.overflow ? 0 : 1;
   }
   return status;
 }

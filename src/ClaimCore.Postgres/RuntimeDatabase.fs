@@ -134,8 +134,7 @@ module internal RuntimeDataSource =
         builder.LogParameters <- false
         builder.PersistSecurityInfo <- false
         builder.NoResetOnClose <- false
-        builder.Timeout <- 5
-        builder.CommandTimeout <- 10
+        PostgresTransport.applyBudgets 10 builder
 
         builder.ApplicationName <-
             BuildIdentity.current.Product + "/" + BuildIdentity.current.Version

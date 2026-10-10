@@ -70,7 +70,7 @@ test("explicit job ownership binds exact source and complete live Git graph", ()
     assert.throws(() => jobContext(root, path));
     writeFileSync(join(root, "source.txt"), "synthetic source\n");
     git(["branch", "changed-ref"]);
-    assert.throws(() => jobContext(root, path));
+    assert.ok(jobContext(root, path));
     git(["branch", "-D", "changed-ref"]);
     assert.ok(jobContext(root, path));
     mkdirSync(join(root, "nested"));

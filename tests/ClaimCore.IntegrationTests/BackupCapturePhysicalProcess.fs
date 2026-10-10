@@ -142,19 +142,14 @@ let private runPython (paths: CapturePaths) inputs tamper =
             "/usr/bin"
 
     start.Environment["PATH"] <- pg + ":" + previous
-    use child = new Process(StartInfo = start)
 
-    if not (child.Start()) then
-        failtest "Synthetic fenced capture did not start."
+    let result =
+        ClaimCore.TestSupport.BoundedProcess.run start None (16 * 1024 * 1024) 300000
 
-    let stdout = child.StandardOutput.ReadToEndAsync()
-    let stderr = child.StandardError.ReadToEndAsync()
-
-    if not (child.WaitForExit(300000)) then
-        child.Kill(true)
-        failtest "Synthetic fenced capture timed out."
-
-    jsonResult child.ExitCode stdout.Result stderr.Result
+    jsonResult
+        result.ExitCode
+        (System.Text.Encoding.UTF8.GetString(result.StandardOutput))
+        (System.Text.Encoding.UTF8.GetString(result.StandardError))
 
 let withCapture paths owner app writer witness action =
     let inputs = inputs paths owner app writer witness

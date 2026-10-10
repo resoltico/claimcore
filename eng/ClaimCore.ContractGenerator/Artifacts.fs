@@ -96,6 +96,11 @@ import {{ webV3AuthorityEndpoints }} from "./web-v3.endpoint-catalog.authority";
 export const webV3WireContractFingerprint =
   {stringLiteral fingerprint};
 
+export const webV3TransportLimits = {{
+  jsonResponseBytes: {TransportLimits.JsonResponseBytes},
+  recoveryArtifactBytes: {TransportLimits.RecoveryArtifactBytes},
+}} as const;
+
 export const webV3HostFailureStatuses = [{statuses}] as const;
 
 export const webV3Endpoints = [...webV3CaseworkEndpoints, ...webV3AuthorityEndpoints] as const;

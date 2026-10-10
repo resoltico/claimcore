@@ -96,6 +96,16 @@
       ]
     },
     {
+      "id": "browser-coverage",
+      "title": "Published CLI acceptance, all browser engines and exact same-run merged production coverage",
+      "mirrors": ["publish", "acceptance", "browser", "coverage"],
+      "after": ["tests-postgres", "frontend-gates"],
+      "argv": ["bash", "eng/Run-LocalBrowserCoverage.sh"],
+      "tools": ["docker"],
+      "optional": true,
+      "scope": null
+    },
+    {
       "id": "container-operation",
       "title": "Persistent HTTPS Docker operation and authority separation",
       "mirrors": ["deployment"],
@@ -122,16 +132,6 @@
         "^\\.editorconfig$",
         "^\\.github/"
       ]
-    },
-    {
-      "id": "browser-coverage",
-      "title": "Published CLI acceptance, all browser engines and exact same-run merged production coverage",
-      "mirrors": ["publish", "acceptance", "browser", "coverage"],
-      "after": ["tests-postgres", "frontend-gates"],
-      "argv": ["bash", "eng/Run-LocalBrowserCoverage.sh"],
-      "tools": ["docker"],
-      "optional": true,
-      "scope": null
     }
   ],
   "notLocal": []

@@ -20,6 +20,7 @@ preserve_diagnostics() {
   mkdir -p "${repo_root}/artifacts/restore-failures" || return
   directory="$(mktemp -d "${repo_root}/artifacts/restore-failures/restore.XXXXXXXX")" || return
   printf '%s\n' "${stage}" >"${directory}/stage.txt" || return
+  printf '%s\n' "$@" >"${directory}/pipeline-status.txt" || return
   for name in primary witness; do
     if [[ "${name}" == primary ]]; then current="${primary_restored}"; else current="${witness_restored}"; fi
     if [[ -z "${current}" ]]; then continue; fi
@@ -33,13 +34,14 @@ preserve_diagnostics() {
 cleanup_error() {
   # lint-exception: LX-0049
   # shellcheck disable=SC2310
-  preserve_diagnostics >/dev/null 2>&1 || true
+  preserve_diagnostics "$@" >/dev/null 2>&1 || true
   printf 'restore-stage=%s\n' "${stage}" >&2
+  printf 'restore-pipeline-status=%s\n' "$*" >&2
   for current in "${witness_restored}" "${primary_restored}"; do
     if [[ -n "${current}" ]]; then docker stop "${current}" >/dev/null 2>&1 || true; fi
   done
 }
-trap cleanup_error ERR
+trap 'cleanup_error "${PIPESTATUS[@]}"' ERR
 
 [[ "${primary_source}" =~ ^[0-9a-f]{64}$ && "${witness_source}" =~ ^[0-9a-f]{64}$ ]]
 [[ "${primary_source}" != "${witness_source}" ]]
@@ -71,20 +73,26 @@ capture_one "${primary_source}" "${primary_role}" primary "${scratch}/primary"
 stage="witness-base-backup"
 capture_one "${witness_source}" "${witness_role}" witness "${scratch}/witness"
 
-stage="backup-encryption"
+stage="backup-encryption-directories"
 mkdir -m 700 "${scratch}/archive" "${scratch}/recovered"
+stage="backup-key-generation"
 age-keygen -o "${scratch}/identity.age" >/dev/null 2>&1
+stage="backup-recipient-read"
 recipient="$(age-keygen -y "${scratch}/identity.age")"
 
 for name in primary witness; do
+  stage="${name}-base-encryption"
   tar -C "${scratch}/${name}" -cf - . |
     age --encrypt --recipient "${recipient}" --output "${scratch}/archive/${name}.tar.age"
   mkdir -m 700 "${scratch}/recovered/${name}" "${scratch}/archive/${name}-wal"
+  stage="${name}-base-decrypt-extraction"
   age --decrypt --identity "${scratch}/identity.age" \
     "${scratch}/archive/${name}.tar.age" |
     tar -C "${scratch}/recovered/${name}" -xf -
+  stage="${name}-recovered-base-verification"
   pg_verifybackup "${scratch}/recovered/${name}" >/dev/null
 
+  stage="${name}-wal-inspection"
   found_wal=0
   find "${scratch}/${name}/pg_wal" -maxdepth 1 -type f >"${scratch}/${name}.wal-list"
   while IFS= read -r segment; do

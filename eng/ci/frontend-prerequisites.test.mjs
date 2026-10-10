@@ -125,7 +125,7 @@ test("absence executes prerequisites once; nonzero actual stage exit cannot cert
     },
   );
   assert.equal(failed.status, 1, failed.stderr);
-  assert.match(failed.stdout, /frontend-unit: FAILED/u);
+  assert.match(failed.stdout, /frontend-unit: FAILED in \d+s/u);
   assert.match(failed.stdout, /frontend: 2 passed, 1 failed, 0 skipped/u);
   assert.deepEqual(
     readFileSync(join(run().source, "artifacts/frontend/vitest-summary.json")),
@@ -141,7 +141,7 @@ test("absence executes prerequisites once; nonzero actual stage exit cannot cert
       { cwd: run().source, env: environment, encoding: "utf8" },
     );
     for (const id of prerequisiteStages) {
-      assert.ok(completed.stdout.includes(`${id}: passed`), completed.stderr);
+      assert.match(completed.stdout, new RegExp(`${id}: passed in \\d+s`, "u"));
     }
     return completed.status;
   });

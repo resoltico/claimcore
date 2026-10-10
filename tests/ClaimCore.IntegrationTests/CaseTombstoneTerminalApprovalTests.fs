@@ -139,7 +139,7 @@ let private revokedGrant =
             let firstId = Guid.NewGuid()
             approve runtime first draft firstId expiry |> applied firstId
             let registry = new ActorGrantRegistry(source, fixture.Witness)
-            let actor = actorId (new ActorGrantStore(source)) first
+            let actor = actorId (source) first
 
             registry.SetGrant(
                 proposer,

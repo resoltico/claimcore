@@ -19,7 +19,7 @@ let private grantRecovery source witness principal role =
 
     registry.SetGrant(
         principal,
-        actorId (ActorGrantStore(source)) principal,
+        actorId (source) principal,
         {
             Role = role
             Scope = GrantScope.Installation

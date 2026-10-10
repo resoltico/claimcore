@@ -81,7 +81,7 @@ let setup action =
         let principal = human "technical-owner"
         provision owner witness principal |> applied
         use source = RuntimeDataSource.create app
-        let grants = new ActorGrantStore(source)
+        let grants = source
         let registry = new ActorGrantRegistry(source, witness)
 
         registry.SetGrant(

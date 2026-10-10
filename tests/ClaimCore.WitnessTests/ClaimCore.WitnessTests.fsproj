@@ -1,7 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <Compile Include="../RepositoryRoot.fs" Link="RepositoryRoot.fs" />
+    <Compile Include="../BoundedProcess.fs" Link="BoundedProcess.fs" />
+    <Compile Include="../FixtureCleanup.fs" Link="FixtureCleanup.fs" />
+    <Compile Include="WitnessFixtureDiagnostics.fs" />
     <Compile Include="WitnessTestSupport.fs" />
+    <Compile Include="WitnessFixtureDiagnosticsTests.fs" />
     <Compile Include="WitnessAppendTests.fs" />
     <Compile Include="WitnessSqlAuthoritySupport.fs" />
     <Compile Include="WitnessSqlAuthorityTests.fs" />
@@ -13,9 +17,11 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/ClaimCore.Witness/ClaimCore.Witness.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Npgsql" />
     <PackageReference Include="Testcontainers.PostgreSql" />
   </ItemGroup>
+  <Import Project="../../src/ClaimCore.HostSecurity/HostSecurity.Native.targets" />
 </Project>

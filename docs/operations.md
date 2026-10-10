@@ -56,6 +56,13 @@ Test credentials and containers must point only to disposable synthetic database
 and the operating-system clipboard leave ClaimCore's process boundary; see the
 [Web reference](web.md#recovery-downloads-and-clipboard).
 
+Runtime connections use 5-second establishment and 10-second ordinary command budgets; owner and
+witness connections use 5/30 seconds. All use 2000 milliseconds for cancellation readback. Authority
+lease acquisition inherits the finite command budget; scheduled audits retain an explicit two-hour
+acquisition/whole-operation window. Expiry after dispatch does not prove non-commit. Async catalog
+admission owns a short pre-work transaction with local settings and independent finite rollback;
+unclean connectors are retired rather than reused.
+
 ## The installation calendar
 
 The fresh initializer stores one mandatory canonical IANA zone atomically with installation
@@ -72,12 +79,15 @@ Two hosts running different tzdata releases can therefore derive different busin
 same instant, but only for an operation that falls inside a transition whose rules changed between
 those releases. The same applies to one host across an operating-system update.
 
-Treat the time-zone database as part of the installation:
+Accepted history retains its effective business date and UTC observation authenticated by the
+independent witness. Audits replay that saved execution context; later zone-rule changes do not
+recalculate it. Fresh commands use the installed current rules, so updates can affect future
+acceptance. A quiet period cannot establish historical validity.
+
+Treat the time-zone database as part of fresh date calculation:
 
 - Keep the hosts that serve one installation on the same operating-system time-zone data, and update
   them together.
-- After a tzdata update, prefer a quiet period before resuming case work, for the same reason a
-  restore needs one.
 - `ClaimCore.Database initialize` refuses a calendar different from the installed one. Choosing a
   different calendar is a new installation decision, not an edit.
 

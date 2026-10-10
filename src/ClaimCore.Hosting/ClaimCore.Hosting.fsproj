@@ -17,6 +17,7 @@
     <Compile Include="RuntimeAuditCadence.fs" />
     <Compile Include="RuntimeBackupHealthFiles.fs" />
     <Compile Include="RuntimeSafetySupervisor.fs" />
+    <Compile Include="RuntimeReadiness.fs" />
     <Compile Include="RuntimeActorApprovalStores.fs" />
     <Compile Include="RuntimeOpening.fs" />
     <Compile Include="RuntimeActorFactory.fs" />

@@ -1,10 +1,11 @@
+import { recoveryArtifact } from "./recovery-artifact.fixtures";
 import { beforeEach, expect, it, vi } from "vitest";
 import { v3 } from "../src/api/v3";
 import { operationId } from "./v3-ui.fixtures";
 
 const filename = `claimcore-recovery-${operationId}.json`;
 const download = (disposition: string | null): Response =>
-  new Response("{}", {
+  new Response(JSON.stringify(recoveryArtifact), {
     headers: {
       "content-type": "application/vnd.claimcore.recovery+json",
       ...(disposition === null ? {} : { "content-disposition": disposition }),

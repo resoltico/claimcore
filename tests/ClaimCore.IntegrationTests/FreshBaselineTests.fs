@@ -58,7 +58,7 @@ let private installed =
 let private grantSeedRoles admin app witness principal =
     provision admin witness principal |> applied
     use source = RuntimeDataSource.create app
-    let grants = new ActorGrantStore(source)
+    let grants = source
     let registry = new ActorGrantRegistry(source, witness)
 
     for role in [ Role.CaseEditor; Role.RecoveryOperator ] do

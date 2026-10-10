@@ -128,6 +128,7 @@ let tests =
     testList
         "ClaimCore witness PostgreSQL"
         [
+            WitnessFixtureDiagnosticsTests.tests
             witnessCase1
             witnessCase2
             WitnessAppendTests.concurrentAppend

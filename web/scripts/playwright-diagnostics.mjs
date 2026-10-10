@@ -2,6 +2,47 @@ import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const categories = new Set(["expect", "fixture", "hook", "pw:api", "test.step"]);
+/** @typedef {"response-body-unavailable"|"json-parse"|"cancelled-or-closed"|"timeout"|"assertion"|"unknown"} BrowserFailureKind */
+
+/** Classify bounded engine messages without returning any message, selector, URL or value.
+ * @param {unknown} error @returns {BrowserFailureKind} */
+export const browserFailureKind = (error) => {
+  const message =
+    typeof error === "object" &&
+    error !== null &&
+    "message" in error &&
+    typeof error.message === "string"
+      ? error.message.slice(0, 8192)
+      : "";
+  if (
+    /Network\.getResponseBody.*(?:No resource with given identifier|No data found for resource|evicted from inspector cache)|Response body is unavailable/iu.test(
+      message,
+    )
+  ) {
+    return "response-body-unavailable";
+  }
+  if (
+    /Unexpected end of JSON input|is not valid JSON|in JSON at position|JSON\.parse:/iu.test(
+      message,
+    )
+  ) {
+    return "json-parse";
+  }
+  if (
+    /Target (?:page, context or browser has been closed|closed)|AbortError|net::ERR_ABORTED|NS_BINDING_ABORTED/iu.test(
+      message,
+    )
+  ) {
+    return "cancelled-or-closed";
+  }
+  if (/Timeout \d+ms exceeded|Test timeout of \d+ms exceeded|Timed out waiting/iu.test(message)) {
+    return "timeout";
+  }
+  if (/\bexpect\(|\bAssertionError\b/u.test(message)) {
+    return "assertion";
+  }
+  return "unknown";
+};
 /** @param {unknown} value @returns {value is number} */
 const positive = (value) => typeof value === "number" && Number.isSafeInteger(value) && value > 0;
 
@@ -31,6 +72,7 @@ const positive = (value) => typeof value === "number" && Number.isSafeInteger(va
  * @property {string} file
  * @property {number} line
  * @property {number} column
+ * @property {BrowserFailureKind} [errorKind]
  */
 
 /**
@@ -72,7 +114,7 @@ const sourceLocation = (location, sources) => {
   return { file: source.file, line: location.line, column: location.column };
 };
 
-// Step titles, selectors, URLs, expected/actual values and errors are never copied.
+// Step titles, selectors, URLs, expected/actual values and error messages are never copied.
 export class BrowserStepDiagnostic {
   /** @type {Located | null} */
   latest = null;
@@ -102,7 +144,11 @@ export class BrowserStepDiagnostic {
     }
     const location = sourceLocation(step.location, this.sources);
     if (location !== null) {
-      this.failed = { category: step.category, ...location };
+      this.failed = {
+        category: step.category,
+        ...location,
+        errorKind: browserFailureKind(step.error),
+      };
     }
   }
 

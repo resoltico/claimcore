@@ -23,12 +23,22 @@ module PostgresTransport =
             builder.CheckCertificateRevocation <- true
             true
 
+    /// All admitted PostgreSQL waits include finite cancellation readback.
+    let applyBudgets commandSeconds (builder: NpgsqlConnectionStringBuilder) =
+        if commandSeconds < 1 then
+            invalidArg (nameof commandSeconds) "PostgreSQL command budget must be finite."
+
+        builder.Timeout <- 5
+        builder.CommandTimeout <- commandSeconds
+        builder.CancellationTimeout <- 2000
+
     let connectionString (raw: string) =
         let builder = NpgsqlConnectionStringBuilder(raw)
 
         if not (requireAuthenticatedRemote builder) then
             invalidArg (nameof raw) "Remote PostgreSQL transport is not authenticated."
 
+        applyBudgets 30 builder
         builder.ConnectionString
 
     let connection raw =

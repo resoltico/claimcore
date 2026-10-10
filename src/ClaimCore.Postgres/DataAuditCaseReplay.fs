@@ -52,17 +52,7 @@ module internal DataAuditCaseReplay =
             return List.ofSeq current
         }
 
-    let private verifyCurrentCase
-        connection
-        transaction
-        zone
-        witness
-        cutoff
-        ct
-        digest
-        caseId
-        claim
-        =
+    let private verifyCurrentCase connection transaction witness cutoff ct digest caseId claim =
         task {
             let! lifecycle =
                 CaseLifecycleAudit.verifyCase connection transaction witness cutoff caseId claim ct
@@ -71,7 +61,6 @@ module internal DataAuditCaseReplay =
                 DataAuditReplay.replayCase
                     connection
                     transaction
-                    zone
                     witness
                     cutoff
                     caseId
@@ -87,7 +76,6 @@ module internal DataAuditCaseReplay =
     let replayCases
         (connection: NpgsqlConnection)
         (transaction: NpgsqlTransaction)
-        zone
         (witness: WitnessProtocol)
         cutoff
         (ct: CancellationToken)
@@ -109,7 +97,6 @@ module internal DataAuditCaseReplay =
                         verifyCurrentCase
                             connection
                             transaction
-                            zone
                             witness
                             cutoff
                             ct

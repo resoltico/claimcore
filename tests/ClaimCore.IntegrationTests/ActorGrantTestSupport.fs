@@ -66,8 +66,7 @@ let provision owner witness principal =
     |> await
 
 let load source principal scope =
-    (source :> IActorGrantSource).LoadForScope(principal, scope, CancellationToken.None)
-    |> await
+    FixtureActorAuthority.load source principal scope
 
 let actorId source principal =
     load source principal ResourceScope.Installation

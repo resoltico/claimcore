@@ -17,7 +17,10 @@ module internal ExecutableHelp =
     let private invoke context arguments timeout =
         context.Processes.Run(
             {
-                FileName = "dotnet"
+                FileName =
+                    Environment.GetEnvironmentVariable("CLAIMCORE_DOTNET")
+                    |> Option.ofObj
+                    |> Option.defaultValue "dotnet"
                 Arguments = arguments
                 WorkingDirectory = context.Root.Path
                 Environment =

@@ -1,3 +1,4 @@
+import { responseBytes, strictJsonBytes } from "./responseBytes";
 import type { ApiResult } from "./types";
 import { withinResponseDeadline } from "./responseDeadline";
 import { exactDownloadDisposition } from "./downloadDisposition";
@@ -6,8 +7,13 @@ import {
   type WebV3EndpointId,
   webV3Endpoints,
   webV3HostFailureStatuses,
+  webV3TransportLimits,
 } from "../generated/contracts/web-v3.endpoint-catalog";
-import { isHostFailure, isWebV3Response } from "../generated/contracts/web-v3.validation";
+import {
+  isHostFailure,
+  isRecoveryArtifact,
+  isWebV3Response,
+} from "../generated/contracts/web-v3.validation";
 import type { CommandDraft, HostFailure, WebV3Response } from "../generated/contracts/web-v3.types";
 
 /** The generated endpoint catalogue owns route, method, media type, and byte limits. */
@@ -45,12 +51,21 @@ const jsonHeaders = (token: string | undefined): Record<string, string> => {
 const responseMediaType = (response: Response): string | null =>
   response.headers.get("content-type")?.split(";", 1)[0]?.trim().toLowerCase() ?? null;
 
-const readJson = async (response: Response): Promise<unknown> => {
+const cancelUnreadBody = (response: Response) => {
+  void response.body?.cancel().catch(() => {
+    // Cancellation refusal cannot replace the original protocol refusal.
+  });
+};
+
+const readJson = async (response: Response, signal: AbortSignal): Promise<unknown> => {
   if (responseMediaType(response) !== "application/json") {
+    cancelUnreadBody(response);
     return null;
   }
   try {
-    return await response.json();
+    return strictJsonBytes(
+      await responseBytes(response, webV3TransportLimits.jsonResponseBytes, signal),
+    );
   } catch {
     return null;
   }
@@ -80,7 +95,7 @@ const requestResult = async <K extends WebV3EndpointId>(
   id: K,
   token: string | undefined,
   body: JsonBody | RawBody | undefined,
-  signal?: AbortSignal,
+  signal: AbortSignal,
 ): Promise<ApiResult<WebV3Response<K>>> => {
   const descriptor = endpoint(id);
   const headers = jsonHeaders(token);
@@ -103,7 +118,7 @@ const requestResult = async <K extends WebV3EndpointId>(
       credentials: "same-origin",
       ...(signal === undefined ? {} : { signal }),
     });
-    const payload = await readJson(response);
+    const payload = await readJson(response, signal);
     return await decodeJsonResponse(id, response.status, payload);
   } catch {
     return { kind: "deliveryFailure", notice: localNotice("unreachable") };
@@ -115,7 +130,7 @@ const request = <K extends WebV3EndpointId>(
   token: string | undefined,
   body: JsonBody | RawBody | undefined,
   signal?: AbortSignal,
-) => withinResponseDeadline(requestResult(id, token, body, signal));
+) => withinResponseDeadline((ownedSignal) => requestResult(id, token, body, ownedSignal), signal);
 
 type RawEndpointId = "recovery.importEnvelopePreview" | "recovery.importEnvelopeRetain";
 
@@ -155,6 +170,7 @@ const exportRecoveryResult = async (
   operationId: string,
   requestSha256: string,
   token: string,
+  signal: AbortSignal,
 ): Promise<ApiResult<Download | WebV3Response<"recovery.export">>> => {
   const descriptor = endpoint("recovery.export");
   try {
@@ -163,10 +179,15 @@ const exportRecoveryResult = async (
       headers: { ...jsonHeaders(token), "Content-Type": "application/json" },
       body: JSON.stringify({ operationId, requestSha256 }),
       credentials: "same-origin",
+      signal,
     });
     const type = responseMediaType(response);
     if (type === "application/json") {
-      return await decodeJsonResponse("recovery.export", response.status, await readJson(response));
+      return await decodeJsonResponse(
+        "recovery.export",
+        response.status,
+        await readJson(response, signal),
+      );
     }
     const expected = `claimcore-recovery-${operationId}.json`;
     const disposition = response.headers.get("content-disposition");
@@ -176,14 +197,19 @@ const exportRecoveryResult = async (
       type !== descriptor.successMediaType ||
       !exactDownloadDisposition(disposition, expected)
     ) {
+      cancelUnreadBody(response);
       return {
         kind: "deliveryFailure",
         notice: localNotice("exportInvalid"),
       };
     }
+    const bytes = await responseBytes(response, webV3TransportLimits.recoveryArtifactBytes, signal);
+    if (!(await isRecoveryArtifact(strictJsonBytes(bytes), operationId))) {
+      return { kind: "deliveryFailure", notice: localNotice("exportInvalid") };
+    }
     return {
       kind: "outcome",
-      value: { blob: await response.blob(), filename: expected },
+      value: { blob: new Blob([bytes], { type: descriptor.successMediaType }), filename: expected },
       status: response.status,
     };
   } catch {
@@ -192,7 +218,9 @@ const exportRecoveryResult = async (
 };
 
 const exportRecovery = (operationId: string, requestSha256: string, token: string) =>
-  withinResponseDeadline(exportRecoveryResult(operationId, requestSha256, token));
+  withinResponseDeadline((signal) =>
+    exportRecoveryResult(operationId, requestSha256, token, signal),
+  );
 
 export const v3 = {
   session: () => request("session", undefined, undefined),

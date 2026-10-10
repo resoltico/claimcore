@@ -3,6 +3,7 @@ module PublicationRestoreGraph
 open System
 open System.Diagnostics
 open System.IO
+open System.Threading
 open System.Text.Json
 open System.Text.Json.Nodes
 
@@ -29,6 +30,8 @@ let private actualPackages (assets: JsonElement) =
 let private generate root project configuration artifacts runtime framework sdkHost output =
     let start = ProcessStartInfo(sdkHost)
     start.WorkingDirectory <- root
+    start.Environment["DOTNET_ROOT"] <- Path.GetDirectoryName sdkHost
+    start.Environment["DOTNET_HOST_PATH"] <- sdkHost
     start.UseShellExecute <- false
     start.RedirectStandardOutput <- true
     start.RedirectStandardError <- true
@@ -51,16 +54,32 @@ let private generate root project configuration artifacts runtime framework sdkH
         ] do
         start.ArgumentList.Add argument
 
+    use deadline = new CancellationTokenSource(TimeSpan.FromSeconds 60.)
     use child = Process.Start start
-    let stdout = child.StandardOutput.ReadToEndAsync()
-    let stderr = child.StandardError.ReadToEndAsync()
+
+    let stdout =
+        child.StandardOutput.BaseStream.CopyToAsync(Stream.Null, deadline.Token)
+
+    let stderr = child.StandardError.BaseStream.CopyToAsync(Stream.Null, deadline.Token)
 
     if not (child.WaitForExit 60_000) then
         child.Kill true
+        child.WaitForExit(2000) |> ignore
+        deadline.Cancel()
         failwith "Producing dependency graph timed out."
 
-    stdout.GetAwaiter().GetResult() |> ignore
-    stderr.GetAwaiter().GetResult() |> ignore
+    let drained = System.Threading.Tasks.Task.WhenAll(stdout, stderr)
+
+    try
+        drained.WaitAsync(TimeSpan.FromSeconds 2.).GetAwaiter().GetResult()
+    with _ ->
+        deadline.Cancel()
+
+        failwith (
+            "Producing dependency graph delivery refused; child exit "
+            + string child.ExitCode
+            + "."
+        )
 
     if child.ExitCode <> 0 then
         failwith "Producing dependency graph unavailable."

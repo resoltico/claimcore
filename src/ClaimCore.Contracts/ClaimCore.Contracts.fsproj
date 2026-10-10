@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <Compile Include="TransportLimits.fs" />
     <Compile Include="HttpsOrigins.fs" />
     <Compile Include="SchemaAst.fs" />
     <Compile Include="SchemaSamples.fs" />

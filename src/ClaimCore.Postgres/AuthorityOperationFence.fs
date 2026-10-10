@@ -42,7 +42,13 @@ module internal AuthorityOperationFence =
             // Retirement protects the pool without rewriting an already observed result.
             ()
 
-    let private acquire source (connection: NpgsqlConnection) shared (ct: CancellationToken) =
+    let private acquire
+        source
+        (connection: NpgsqlConnection)
+        shared
+        budget
+        (ct: CancellationToken)
+        =
         task {
             let name =
                 if shared then
@@ -51,7 +57,11 @@ module internal AuthorityOperationFence =
                     "pg_advisory_lock"
 
             use command = command connection name
-            command.CommandTimeout <- 0
+
+            match budget with
+            | Some seconds when seconds > 0 -> command.CommandTimeout <- seconds
+            | Some _ -> invalidArg (nameof budget) "Authority acquisition budget must be finite."
+            | None -> ()
 
             try
                 let! _ = command.ExecuteNonQueryAsync(ct)
@@ -71,5 +81,8 @@ module internal AuthorityOperationFence =
                 }
         }
 
-    let acquireShared source connection ct = acquire source connection true ct
-    let acquireExclusive source connection ct = acquire source connection false ct
+    let acquireShared source connection ct = acquire source connection true None ct
+    let acquireExclusive source connection ct = acquire source connection false None ct
+
+    let acquireExclusiveWithin source connection seconds ct =
+        acquire source connection false (Some seconds) ct

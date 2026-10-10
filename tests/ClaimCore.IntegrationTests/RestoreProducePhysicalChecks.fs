@@ -57,7 +57,7 @@ let private reportedPair (facts: RestoredPairFacts) =
 let internal newerTipRefusesOldPair app (witness: WitnessProtocol) (facts: RestoredPairFacts) =
     let principal = human "physical-restore-owner"
     use source = RuntimeDataSource.create app
-    let grants = new ActorGrantStore(source)
+    let grants = source
     let registry = new ActorGrantRegistry(source, witness)
 
     registry.SetGrant(

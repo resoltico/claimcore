@@ -9,6 +9,7 @@ ClaimCore fresh baseline qualification.unsupported installation refusal.[CC-DB-0
 ClaimCore fresh baseline qualification.unsupported installation refusal.[CC-DB-001] all old installation markers are refused without touching evidence or history
 ClaimCore fresh baseline qualification.unsupported installation refusal.[CC-DB-001] an unmarked occupied namespace is refused without deleting its contents
 ClaimCore fresh baseline qualification.unsupported installation refusal.[CC-DB-001] current-looking tables without a baseline marker remain unsupported
+ClaimCore fresh baseline qualification.unsupported installation refusal.[CC-DB-001] database cleanup preserves the original refusal and exposes uncertainty
 ClaimCore fresh baseline qualification.unsupported installation refusal.[CC-DB-001] even an empty pre-existing namespace is not silently adopted
 ClaimCore fresh baseline qualification.unsupported installation refusal.[CC-DB-001] malformed or executable baseline lookalikes are not queried or repaired
 ClaimCore fresh baseline qualification.unsupported installation refusal.[CC-DB-001] mixing a current marker with historical metadata cannot authorize old storage

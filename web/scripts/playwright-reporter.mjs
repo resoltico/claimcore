@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import {
   BrowserStepDiagnostic,
   browserSources,
+  browserFailureKind,
   startupDiagnostic,
 } from "./playwright-diagnostics.mjs";
 
@@ -121,6 +122,7 @@ export default class SanitizedPlaywrightReporter {
           )
         : null,
       line: result.errors[0]?.location?.line ?? null,
+      errorKinds: result.errors.slice(0, 8).map(browserFailureKind),
       step: this.stepDiagnostics.get(result)?.snapshot() ?? null,
     });
   }

@@ -72,7 +72,7 @@ let private seedHolds owner source principal reference =
 
     Sql.text lookup "reference" reference
     let caseId = lookup.ExecuteScalar() :?> Guid
-    let actor = actorId (new ActorGrantStore(source)) principal
+    let actor = actorId (source) principal
 
     use insert =
         new NpgsqlCommand(

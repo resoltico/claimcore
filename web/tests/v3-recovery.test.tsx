@@ -1,3 +1,4 @@
+import { recoveryArtifact } from "./recovery-artifact.fixtures";
 import { render, screen, waitFor } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -90,7 +91,7 @@ const exportsAndRetainsEnvelope = async (): Promise<void> => {
   fetch.mockResolvedValueOnce(list());
   fetch.mockResolvedValueOnce(inspection("FOUND"));
   fetch.mockResolvedValueOnce(
-    new Response("{}", {
+    new Response(JSON.stringify(recoveryArtifact), {
       headers: {
         "content-type": "application/vnd.claimcore.recovery+json",
         "content-disposition": `attachment; filename=claimcore-recovery-${operationId}.json; filename*=UTF-8''claimcore-recovery-${operationId}.json`,
@@ -197,7 +198,9 @@ it("reports malformed pages, malformed inspections, rejected imports, and invali
   fetch.mockResolvedValueOnce(response("recovery.inspect", "SUCCEEDED", { tag: "NOT_FOUND" }));
   fetch.mockResolvedValueOnce(inspection());
   fetch.mockResolvedValueOnce(
-    new Response("{}", { headers: { "content-type": "application/json" } }),
+    new Response(JSON.stringify(recoveryArtifact), {
+      headers: { "content-type": "application/json" },
+    }),
   );
   fetch.mockResolvedValueOnce(response("recovery.importEnvelopePreview", "REJECTED", {}));
   const view = render(

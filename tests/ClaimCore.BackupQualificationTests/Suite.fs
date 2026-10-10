@@ -84,25 +84,15 @@ let private runScript tool scriptName =
     start.RedirectStandardError <- true
     start.Environment["PYTHONDONTWRITEBYTECODE"] <- "1"
 
-    use runner =
-        match Process.Start start with
-        | null -> failwith "Backup qualification process did not start."
-        | started -> started
+    let result =
+        ClaimCore.TestSupport.BoundedProcess.run start None (16 * 1024 * 1024) 300000
 
-    let output = runner.StandardOutput.ReadToEndAsync()
-    let errors = runner.StandardError.ReadToEndAsync()
+    let diagnostics = System.Text.Encoding.UTF8.GetString(result.StandardError)
 
-    if not (runner.WaitForExit(300_000)) then
-        runner.Kill(true)
-        failwith "Backup qualification timed out."
-
-    output.GetAwaiter().GetResult() |> ignore
-    let diagnostics = errors.GetAwaiter().GetResult()
-
-    if runner.ExitCode <> 0 then
+    if result.ExitCode <> 0 then
         failtestf "Synthetic qualification stopped at %s." (safeStage diagnostics)
 
-    runner.ExitCode
+    result.ExitCode
 
 let private operatorEvidence =
     testList

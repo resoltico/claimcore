@@ -13,7 +13,7 @@ open ClaimCore.IntegrationTests.AuthorityOperationFenceFixture
 
 let private grantWork app witness principal =
     use source = RuntimeDataSource.create app
-    let grants = new ActorGrantStore(source)
+    let grants = source
     let registry = new ActorGrantRegistry(source, witness)
 
     for role in [ Role.CaseEditor; Role.RecoveryOperator; Role.RecoveryExporter ] do

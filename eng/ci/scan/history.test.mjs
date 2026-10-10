@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import test from "node:test";
 import { installTool } from "../tools.mjs";
-import { observeHistory, scanHistory } from "./history.mjs";
+import { historyIdentity, observeHistory, scanHistory } from "./history.mjs";
 import { gitEnvironment } from "./process.mjs";
 
 const root = resolve(import.meta.dirname, "../../..");
@@ -122,5 +122,26 @@ test("history disables external diff and text conversion and scrubs redirection/
     } finally {
       process.env = saved;
     }
+  });
+});
+
+test("canonical history identity ignores alias labels and traversal order but binds new reachable content and selected ref", async () => {
+  await fixture(async (dir) => {
+    const before = historyIdentity(observeHistory(dir));
+    git(dir, ["branch", "z-alias"]);
+    git(dir, ["branch", "a-alias"]);
+    assert.deepEqual(historyIdentity(observeHistory(dir)), before);
+    git(dir, ["branch", "-D", "z-alias"]);
+    assert.deepEqual(historyIdentity(observeHistory(dir)), before);
+    git(dir, ["checkout", "a-alias"]);
+    assert.notDeepEqual(historyIdentity(observeHistory(dir)), before);
+    git(dir, ["checkout", "main"]);
+    git(dir, ["checkout", "-b", "additional"]);
+    writeFileSync(join(dir, "added.txt"), "independent reachable content");
+    commit(dir, "additional");
+    git(dir, ["checkout", "main"]);
+    assert.notDeepEqual(historyIdentity(observeHistory(dir)), before);
+    git(dir, ["branch", "-D", "additional"]);
+    assert.deepEqual(historyIdentity(observeHistory(dir)), before);
   });
 });

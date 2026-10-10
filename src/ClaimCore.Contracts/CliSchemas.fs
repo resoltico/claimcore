@@ -61,7 +61,7 @@ module CliSchemas =
     let definition (projection: ContractModel) =
         CanonicalJson.renderSchema projection.DefinitionSchema projection.DefinitionSchema.Root
 
-    let recoveryEnvelope _ =
+    let recoveryEnvelopeDocument () =
         Schema.objectOf
             false
             [
@@ -96,9 +96,13 @@ module CliSchemas =
                 Schema.property "tagBase64" (Schema.string None None (Some 24) (Some 24)) true
                 Schema.property "macSha256" EndpointInputs.digest true
             ]
-        |> render
+        |> document
             "https://claimcore.local/contracts/recovery-artifact-v3.schema.json"
             "ClaimCore encrypted recovery artifact v3"
+
+    let recoveryEnvelope _ =
+        let value = recoveryEnvelopeDocument ()
+        CanonicalJson.renderSchema value value.Root
 
     let endpoint (projection: ContractModel) identifier =
         projection.CliEndpoints

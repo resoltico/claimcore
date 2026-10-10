@@ -12,7 +12,9 @@ type internal RuntimeUseGate =
         RequireCaseRead: CancellationToken -> Task<unit>
         RequireAuthoritySetup: CancellationToken -> Task<unit>
         RequireAuthorityRead: CancellationToken -> Task<unit>
-        CommitHealth: ICaseMutationCommitHealth
+        RequireAuditTrust: unit -> unit
+        AuthorityHealth: IMutationCommitHealth
+        CommitHealth: IMutationCommitHealth
         CommitHealthRequired: bool
     }
 
@@ -107,15 +109,16 @@ type internal RuntimeAdmission
                 use _lease = this.Admit()
                 do! requireCurrent ct
                 do! useGate.RequireCaseMutation ct
-                use _commitHealth = CaseMutationCommitHealth.enter useGate.CommitHealth
+                use _commitHealth = MutationCommitHealth.enter useGate.CommitHealth
                 dispatched <- true
                 let! outcome = work ()
 
                 if useGate.CommitHealthRequired && not (isPreAdmissionRefusal outcome) then
-                    CaseMutationCommitHealth.requireVerified ()
+                    MutationCommitHealth.requireVerified ()
                 // A witnessed mutation can settle just before a handoff fences disclosure.
                 // Recheck after settlement so no claimant-bearing outcome escapes this core boundary.
                 use! _disclosureFence = acquireReadFence CancellationToken.None
+                useGate.RequireAuditTrust()
 
                 match validateDisclosure with
                 | Some validate -> do! validate outcome
@@ -168,6 +171,7 @@ type internal RuntimeAdmission
                 do! requireCurrent ct
                 do! useGate.RequireCaseRead ct
                 use! _fence = acquireReadFence ct
+                useGate.RequireAuditTrust()
                 dispatched <- true
                 return! work ()
             with :? OperationCanceledException as error when
@@ -191,9 +195,11 @@ type internal RuntimeAdmission
                 use _lease = this.Admit()
                 do! requireCurrent ct
                 do! useGate.RequireAuthoritySetup ct
+                use _health = MutationCommitHealth.enter useGate.AuthorityHealth
                 dispatched <- true
                 let! outcome = work ()
                 use! _fence = acquireReadFence CancellationToken.None
+                useGate.RequireAuditTrust()
                 return outcome
             with :? OperationCanceledException as error when
                 (defaultArg cancellationToken CancellationToken.None).IsCancellationRequested
@@ -218,6 +224,7 @@ type internal RuntimeAdmission
                 do! requireCurrent ct
                 do! useGate.RequireAuthorityRead ct
                 use! _fence = acquireReadFence ct
+                useGate.RequireAuditTrust()
                 dispatched <- true
                 return! work ()
             with :? OperationCanceledException as error when

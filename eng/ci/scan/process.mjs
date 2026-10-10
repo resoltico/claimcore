@@ -1,3 +1,4 @@
+import { byteCapture } from "../byte-capture.mjs";
 import { commandLine } from "../executable.mjs";
 // Running the scanner and git as child processes with a bounded lifetime and a scrubbed environment.
 import { spawn } from "node:child_process";
@@ -7,6 +8,7 @@ import { spawn } from "node:child_process";
  * @property {number} status
  * @property {string} stdout
  * @property {string} stderr
+ * @property {boolean} overflow
  */
 
 /**
@@ -22,26 +24,40 @@ export function runChild(command, args, { cwd, env, timeoutMs = 300_000 }) {
       env,
       stdio: ["ignore", "pipe", "pipe"],
     });
-    /** @type {Buffer[]} */
-    const out = [];
-    /** @type {Buffer[]} */
-    const err = [];
-    child.stdout.on("data", (chunk) => out.push(chunk));
-    child.stderr.on("data", (chunk) => err.push(chunk));
-    const timer = setTimeout(() => {
-      child.kill("SIGKILL");
-      reject(new Error("A required child process timed out."));
-    }, timeoutMs);
+    const capture = byteCapture();
+    child.stdout.on("data", capture.stdout);
+    child.stderr.on("data", capture.stderr);
+    const deadline = childDeadline(child, timeoutMs, reject);
+    let deliveryFailed = false;
+    const failedDelivery = () => {
+      deliveryFailed = true;
+    };
+    for (const stream of [child.stdout, child.stderr]) {
+      stream.on("error", failedDelivery);
+    }
     child.on("error", (error) => {
-      clearTimeout(timer);
+      deadline.clear();
       reject(error);
     });
     child.on("close", (code) => {
-      clearTimeout(timer);
+      deadline.clear();
+      if (deadline.expired()) {
+        reject(
+          new Error(
+            `A required child process timed out; child exit ${code ?? "unknown"}; owned console delivery closed.`,
+          ),
+        );
+        return;
+      }
+      if (deliveryFailed) {
+        reject(
+          new Error(`Required child console delivery failed; child exit ${code ?? "unknown"}.`),
+        );
+        return;
+      }
       resolve({
         status: code ?? 1,
-        stdout: Buffer.concat(out).toString("utf8"),
-        stderr: Buffer.concat(err).toString("utf8"),
+        ...capture.result(),
       });
     });
   });
@@ -67,4 +83,34 @@ export function scannerEnvironment(environment = process.env) {
   delete env["GITLEAKS_CONFIG"];
   delete env["GITLEAKS_CONFIG_TOML"];
   return env;
+}
+
+/** Child exit does not prove descendant or inherited-pipe settlement.
+ * @param {import("node:child_process").ChildProcess} child @param {number} timeoutMs
+ * @param {(error:Error)=>void} reject */
+function childDeadline(child, timeoutMs, reject) {
+  let expired = false;
+  /** @type {NodeJS.Timeout | undefined} */
+  let settlement;
+  const timer = setTimeout(() => {
+    expired = true;
+    child.kill("SIGKILL");
+    settlement = setTimeout(() => {
+      reject(
+        new Error(
+          `Required child timed out; child exit ${child.exitCode ?? "unknown"}; descendant or pipe settlement remains unknown.`,
+        ),
+      );
+      child.stdout?.destroy();
+      child.stderr?.destroy();
+      child.unref();
+    }, 2000);
+  }, timeoutMs);
+  return {
+    expired: () => expired,
+    clear: () => {
+      clearTimeout(timer);
+      clearTimeout(settlement);
+    },
+  };
 }
