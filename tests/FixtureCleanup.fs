@@ -1,4 +1,4 @@
-module internal ClaimCore.IntegrationTests.FixtureCleanup
+module internal ClaimCore.TestSupport.FixtureCleanup
 
 open System
 open System.IO

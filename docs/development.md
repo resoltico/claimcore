@@ -503,6 +503,17 @@ diagnostic report alongside available acceptance results. These reports preserve
 locations when the browser fails before CLI tests begin; private `artifacts/browser-failures/` logs
 remain excluded from uploads.
 
+Witness fixture startup or owner-provisioning failures retain best-effort private evidence in a
+fresh `claimcore-witness-startup-*` OS scratch directory. `witness-startup.json` contains only the
+owned container identity, fixed phase, SQLSTATE category, and nullable credential/host/port
+agreement and running-state facts; unavailable evidence stays unknown. Agreement compares the
+selected connection configuration with owned-container metadata; actual host authentication
+remains the fixture SQL check. Agreement does not establish the database password, host wire
+identity or failure cause. Capture uses a five-second
+Docker command budget plus bounded process settlement. It does not retain credentials, connection
+strings or container logs, retry authentication, or replace the original failure when capture or
+disposal fails. Keep this evidence private when diagnosing qualification failures.
+
 Every language runs its linter in its strictest useful mode, and each mode is pinned so it cannot be
 weakened in passing:
 

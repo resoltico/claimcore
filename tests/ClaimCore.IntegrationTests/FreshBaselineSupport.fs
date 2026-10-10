@@ -1,5 +1,6 @@
 module ClaimCore.IntegrationTests.FreshBaselineSupport
 
+open ClaimCore.TestSupport
 open System
 open System.IO
 open System.Security.Cryptography

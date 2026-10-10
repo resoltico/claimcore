@@ -1,5 +1,6 @@
 module ClaimCore.IntegrationTests.RestoreWriterHandoffPhysicalTests
 
+open ClaimCore.TestSupport
 open Expecto
 open System
 open System.IO

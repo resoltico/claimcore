@@ -1,5 +1,6 @@
 module ClaimCore.IntegrationTests.BaselineRefusalTests
 
+open ClaimCore.TestSupport
 open Expecto
 open System
 open ClaimCore.Postgres

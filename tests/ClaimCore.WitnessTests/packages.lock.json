@@ -177,6 +177,12 @@
           "SharpZipLib": "1.4.2"
         }
       },
+      "claimcore.hostsecurity": {
+        "type": "Project",
+        "dependencies": {
+          "FSharp.Core": "[10.1.401, )"
+        }
+      },
       "claimcore.witness": {
         "type": "Project",
         "dependencies": {

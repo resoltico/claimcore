@@ -7,6 +7,7 @@ open Npgsql
 open Expecto
 open Testcontainers.PostgreSql
 open ClaimCore.Witness
+open ClaimCore.TestSupport
 
 let image =
     use baseline =
@@ -64,62 +65,81 @@ let scalar<'a> (connection: string) sql =
     use command = new NpgsqlCommand(sql, db)
     command.ExecuteScalar() :?> 'a
 
+let createContainer password =
+    PostgreSqlBuilder(image)
+        .WithDatabase("witness_synthetic")
+        .WithUsername("claimcore_witness_owner")
+        .WithPassword(password)
+        .WithCommand("-c", "fsync=on")
+        .WithCommand("-c", "full_page_writes=on")
+        .WithCommand("-c", "synchronous_commit=on")
+        .Build()
+
+
+let private provision owner capability test =
+    let writerPassword = Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(24))
+    let auditPassword = Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(24))
+
+    run
+        owner
+        ($"CREATE ROLE claimcore_witness_writer LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS NOINHERIT PASSWORD '{writerPassword}';")
+
+    run
+        owner
+        ($"CREATE ROLE claimcore_witness_auditor LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS NOINHERIT PASSWORD '{auditPassword}';")
+
+    run
+        owner
+        "REVOKE ALL ON DATABASE witness_synthetic FROM PUBLIC; GRANT CONNECT ON DATABASE witness_synthetic TO claimcore_witness_writer, claimcore_witness_auditor;"
+
+    let identity =
+        {
+            InstallationId = Guid.NewGuid()
+            LineageId = Guid.NewGuid()
+            Epoch = 1L
+        }
+
+    let key = RandomNumberGenerator.GetBytes(32)
+    use custody = new KeyRing(keyId, [ keyId, key ]) :> IKeyCustody
+    let check = KeyCheck.create custody identity.InstallationId identity.LineageId
+    Baseline.initialize owner identity InstallationUseScope.SyntheticOnly keyId check capability
+    let builder = NpgsqlConnectionStringBuilder(owner)
+    builder.Username <- "claimcore_witness_writer"
+    builder.Password <- writerPassword
+    builder.PersistSecurityInfo <- false
+    builder.LogParameters <- false
+    let auditor = NpgsqlConnectionStringBuilder(builder.ConnectionString)
+    auditor.Username <- "claimcore_witness_auditor"
+    auditor.Password <- auditPassword
+    test owner builder.ConnectionString auditor.ConnectionString identity capability
+
 let fixtureRoles test =
     let password = Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(24))
-
-    let container =
-        PostgreSqlBuilder(image)
-            .WithDatabase("witness_synthetic")
-            .WithUsername("claimcore_witness_owner")
-            .WithPassword(password)
-            .WithCommand("-c", "fsync=on")
-            .WithCommand("-c", "full_page_writes=on")
-            .WithCommand("-c", "synchronous_commit=on")
-            .Build()
-
-    container.StartAsync().GetAwaiter().GetResult()
+    let container = createContainer password
     let capability = RandomNumberGenerator.GetBytes(32)
 
-    try
-        let owner = container.GetConnectionString()
-        let writerPassword = Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(24))
-        let auditPassword = Convert.ToHexStringLower(RandomNumberGenerator.GetBytes(24))
+    FixtureCleanup.run
+        (fun () ->
+            CryptographicOperations.ZeroMemory(capability)
+            container.DisposeAsync().AsTask().GetAwaiter().GetResult())
+        (fun () ->
+            let mutable selected = None
+            let mutable phase = "startup"
 
-        run
-            owner
-            ($"CREATE ROLE claimcore_witness_writer LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS NOINHERIT PASSWORD '{writerPassword}';")
+            try
+                container.StartAsync().GetAwaiter().GetResult()
+                let owner = container.GetConnectionString()
+                selected <- Some owner
+                phase <- "owner-provision"
 
-        run
-            owner
-            ($"CREATE ROLE claimcore_witness_auditor LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS NOINHERIT PASSWORD '{auditPassword}';")
+                provision owner capability (fun owner writer auditor identity capability ->
+                    phase <- "test-body"
+                    test owner writer auditor identity capability)
+            with error ->
+                if phase <> "test-body" then
+                    WitnessFixtureDiagnostics.capture container selected password phase error
 
-        run
-            owner
-            "REVOKE ALL ON DATABASE witness_synthetic FROM PUBLIC; GRANT CONNECT ON DATABASE witness_synthetic TO claimcore_witness_writer, claimcore_witness_auditor;"
-
-        let identity =
-            {
-                InstallationId = Guid.NewGuid()
-                LineageId = Guid.NewGuid()
-                Epoch = 1L
-            }
-
-        let key = RandomNumberGenerator.GetBytes(32)
-        use custody = new KeyRing(keyId, [ keyId, key ]) :> IKeyCustody
-        let check = KeyCheck.create custody identity.InstallationId identity.LineageId
-        Baseline.initialize owner identity InstallationUseScope.SyntheticOnly keyId check capability
-        let builder = NpgsqlConnectionStringBuilder(owner)
-        builder.Username <- "claimcore_witness_writer"
-        builder.Password <- writerPassword
-        builder.PersistSecurityInfo <- false
-        builder.LogParameters <- false
-        let auditor = NpgsqlConnectionStringBuilder(builder.ConnectionString)
-        auditor.Username <- "claimcore_witness_auditor"
-        auditor.Password <- auditPassword
-        test owner builder.ConnectionString auditor.ConnectionString identity capability
-    finally
-        CryptographicOperations.ZeroMemory(capability)
-        container.DisposeAsync().AsTask().GetAwaiter().GetResult()
+                reraise ())
 
 let fixture test =
     fixtureRoles (fun owner writer _ identity capability -> test owner writer identity capability)
