@@ -153,7 +153,9 @@ By default a job runs only when a changed file, measured against the merge base 
 including uncommitted and untracked files, could affect it, so a documentation-only change skips the frontend
 and database suites; `--changed-since REF` moves the base and `--all` runs everything. `--include published`
 adds one combined `browser-coverage` job for published CLI acceptance, all three measured browser engines
-and same-run merged coverage (it publishes the applications and uses Docker). The former local
+and same-run merged coverage (it publishes the applications and uses Docker). When included, this
+combined qualification runs before container operation to report client failures earlier; both retain
+their prerequisites, and successful runs still execute every selected job. The former local
 `published-cli` selector is removed; use `--only browser-coverage` for combined qualification or
 `bash eng/Run-PublishedCliAcceptance.sh` for standalone native acceptance. `--only id,id` and
 `--skip id,id` select jobs (unknown IDs fail), `--no-fail-fast` continues past a failure, and logs go to
