@@ -50,20 +50,22 @@ async function provide(required) {
  * @param {string} id
  * @param {number} status
  * @param {string} log
+ * @param {number} started
  */
-function report(id, status, log) {
+function report(id, status, log, started) {
+  const duration = ` in ${Math.round((performance.now() - started) / 1000)}s`;
   const text = readFileSync(log, "utf8");
   const tail = status === 0 ? [] : logTailLines(log, 60, 240);
   if (groups) {
     process.stdout.write(
-      `::group::${id}: ${status === 0 ? "passed" : "FAILED"}\n${text}\n::endgroup::\n`,
+      `::group::${id}: ${status === 0 ? "passed" : "FAILED"}${duration}\n${text}\n::endgroup::\n`,
     );
   } else if (tail.length > 0) {
     process.stdout.write(
       `${id}: last ${tail.length} log lines\n${tail.map((line) => `  ${line}`).join("\n")}\nFull log: ${JSON.stringify(log)}\n`,
     );
   }
-  process.stdout.write(`${id}: ${status === 0 ? "passed" : "FAILED"}\n`);
+  process.stdout.write(`${id}: ${status === 0 ? "passed" : "FAILED"}${duration}\n`);
 }
 
 /**
@@ -72,6 +74,7 @@ function report(id, status, log) {
  * @returns {Promise<import("./types.mjs").StageResult>}
  */
 async function execute(stage, runId) {
+  const started = performance.now();
   const missing = await provide(stage.requires ?? []);
   if (missing.length > 0) {
     // CI must never skip a gate; a developer machine without the tool cannot run it.
@@ -92,7 +95,7 @@ async function execute(stage, runId) {
         `Stage ${stage.id}: child exit ${exit}; captureFailed=${captureFailed}; log ${log}.\n`,
       ),
   });
-  report(stage.id, status, log);
+  report(stage.id, status, log, started);
   return { status: status === 0 ? "passed" : "failed" };
 }
 

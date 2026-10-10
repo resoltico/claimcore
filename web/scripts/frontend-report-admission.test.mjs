@@ -5,6 +5,8 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { createCoverageMap, createFileCoverage } from "@vitest/istanbul-lib-coverage";
 import { create, createContext } from "@vitest/istanbul-lib-report";
+import SanitizedPlaywrightReporter from "./playwright-reporter.mjs";
+import { browserFailureKind } from "./playwright-diagnostics.mjs";
 // Runtime loading preserves the engine implementation's own TypeScript project boundary.
 const owner = /** @type {unknown} */ (
   await import(new URL("../../eng/ci/run-frontend-reports.mjs", import.meta.url).href)
@@ -120,4 +122,82 @@ test("raw frontend admission refuses percentage coercion despite plausible zero 
       assert.throws(() => admit(root, { ...summary, total: { ...summary.total, branchesTrue } }));
     }
   });
+});
+
+test("browser failure classification retains closed kinds and never copies provider payloads", () => {
+  const privateValue = "PRIVATE-BROWSER-PAYLOAD";
+  const cases = [
+    [
+      "Protocol error (Network.getResponseBody): No resource with given identifier found",
+      "response-body-unavailable",
+    ],
+    [
+      "Protocol error (Network.getResponseBody): Request content was evicted from inspector cache",
+      "response-body-unavailable",
+    ],
+    ["SyntaxError: Unexpected end of JSON input", "json-parse"],
+    ["SyntaxError: Unexpected token '<', is not valid JSON", "json-parse"],
+    ["response.body: Target page, context or browser has been closed", "cancelled-or-closed"],
+    ["AbortError: The operation was aborted", "cancelled-or-closed"],
+    ["page.waitForResponse: Timeout 10000ms exceeded", "timeout"],
+    ["Error: expect(locator).toBeVisible() failed", "assertion"],
+    ["Unrecognized engine failure", "unknown"],
+  ];
+  for (const [message, expected] of cases) {
+    const actual = browserFailureKind({ message: `${message} ${privateValue}` });
+    assert.equal(actual, expected);
+    assert.ok(!actual.includes(privateValue));
+  }
+  for (const error of [null, undefined, privateValue, { message: 3 }, { value: privateValue }]) {
+    assert.equal(browserFailureKind(error), "unknown");
+  }
+  assert.equal(
+    browserFailureKind({ message: `${"x".repeat(8192)}Unexpected end of JSON input` }),
+    "unknown",
+  );
+});
+
+test("browser reporter preserves original step failure independently of final cleanup errors", () => {
+  const reporter = new SanitizedPlaywrightReporter();
+  const source = resolve(import.meta.dirname, "../e2e/case-workflow.ts");
+  const testCase = /** @type {Parameters<SanitizedPlaywrightReporter["onTestEnd"]>[0]} */ (
+    /** @type {unknown} */ ({ title: "synthetic browser diagnostic" })
+  );
+  const result = /** @type {Parameters<SanitizedPlaywrightReporter["onTestEnd"]>[1]} */ (
+    /** @type {unknown} */ ({
+      status: "failed",
+      duration: 1,
+      attachments: [],
+      errors: [
+        { message: "Target closed PRIVATE-CLEANUP-PAYLOAD" },
+        ...Array.from({ length: 10 }, () => ({ message: "Unrecognized PRIVATE-PAYLOAD" })),
+      ],
+    })
+  );
+  const step = /** @type {Parameters<SanitizedPlaywrightReporter["onStepEnd"]>[2]} */ (
+    /** @type {unknown} */ ({
+      category: "pw:api",
+      title: "PRIVATE-SELECTOR",
+      location: { file: source, line: 59, column: 1 },
+      error: {
+        message:
+          "Protocol error (Network.getResponseBody): No resource with given identifier found PRIVATE-RESPONSE-PAYLOAD",
+      },
+    })
+  );
+  reporter.onTestBegin(testCase, result);
+  reporter.onStepEnd(testCase, result, step);
+  reporter.onStepEnd(testCase, result, {
+    ...step,
+    error: { message: "Target closed PRIVATE-CLEANUP-PAYLOAD" },
+  });
+  reporter.onTestEnd(testCase, result);
+  assert.equal(
+    reporter.stepDiagnostics.get(result)?.snapshot()?.errorKind,
+    "response-body-unavailable",
+  );
+  const [diagnostic] = reporter.diagnosticTests;
+  assert.ok(typeof diagnostic === "object" && diagnostic !== null && "errorKinds" in diagnostic);
+  assert.deepEqual(diagnostic.errorKinds, ["cancelled-or-closed", ...Array(7).fill("unknown")]);
+  assert.ok(!JSON.stringify(diagnostic).includes("PRIVATE"));
 });

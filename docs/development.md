@@ -427,6 +427,7 @@ runner, `node eng/ci/run-stages.mjs quality` (or `frontend`, `frontend-product`)
 4), serialises stages that share a resource group, and prints each stage's output as one group when it ends. Add
 `--only id,id` to run some stages. A stage that needs a pinned tool installs it first, at the pinned version; a stage
 whose other required tool is absent fails both locally and in CI. Unknown selections fail before execution.
+Stage status lines include elapsed wall time, including tool provisioning and command execution.
 The table shows each stage's arguments and additional inputs; run the plan to resolve source selectors and templates.
 
 <!-- generated:begin quality-stages -->
@@ -609,6 +610,8 @@ and publication verification on the host and in Docker. Before recording a compi
 the SDK-derived current restore graph and resolved package hashes must match the existing assets
 and lock; stale `--no-restore` graphs are refused without restoring or rewriting them. The recorder uses the SDK host that executes MSBuild; contract generation selects the same declared SDK host through the shared executable selector. Two installations with the same version may resolve different physical SDK inputs and cannot be mixed merely because their version strings match. It includes embedded database inputs,
 contract generation and lock, frontend source/producer configuration, and pinned toolchains.
+The derived `web/src/generated/` tree, including contract promotion reservations, stages and backups,
+is excluded; contract locks and Web asset manifests separately verify generated output.
 Commit labels are outside that digest: equivalent producing inputs under a PR merge and main
 revision can qualify. The native private-file shim lives under the evaluated SDK `IntermediateOutputPath` and its
 configuration/RID pivots, so selected `ArtifactsPath` roots stay isolated. Every runnable host publishes

@@ -41,7 +41,7 @@
     "db",
     "eng/licenses"
   ],
-  "excludedDirectories": ["bin", "obj", "node_modules", "artifacts", "web/src/generated/contracts"],
+  "excludedDirectories": ["bin", "obj", "node_modules", "artifacts", "web/src/generated"],
   "extensions": [
     ".fs",
     ".fsi",

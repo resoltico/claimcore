@@ -25,7 +25,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 /**
  * @param {string} command
  * @param {string[]} args
- * @returns {string | undefined} Trimmed standard output, or undefined when it cannot run.
+ * @returns {string | undefined} A recognized version token, or undefined when it cannot run.
  */
 function capture(command, args) {
   let result;
@@ -43,8 +43,17 @@ function capture(command, args) {
   if (result.status !== 0) {
     return undefined;
   }
-  const tokens = result.stdout.trim().match(/(?:^|\s)v?(\d+\.\d+\.\d+)(?:[\s,]|$)/u);
-  return tokens?.[1] ?? undefined;
+  return reportedVersion(command, result.stdout);
+}
+
+/** Availability probes may have distribution suffixes; pinned probes keep exact core tokens.
+ * @param {string} command @param {string} output @returns {string | undefined} */
+export function reportedVersion(command, output) {
+  const pattern =
+    command === "git"
+      ? /^git version (\d+\.\d+\.\d+(?:\.windows\.\d+)?)(?:\s|$)/u
+      : /(?:^|\s)v?(\d+\.\d+\.\d+)(?:[\s,]|$)/u;
+  return output.trim().match(pattern)?.[1] ?? undefined;
 }
 
 /** @param {string} path @returns {any} */
