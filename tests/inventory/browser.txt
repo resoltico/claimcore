@@ -19,6 +19,8 @@ keeps inspected recovery authority and confirmation stable while language change
 keeps published login, editor, review, receipt and history accessible at narrow and zoomed viewports
 keeps recovery controls and exact identity stable after closing a real delayed export (download) [CC-REC-001]
 keeps recovery controls and exact identity stable after closing a real delayed export (lost reply) [CC-REC-001]
+original gzip streamed reply remains observable at headers
+original raw streamed reply remains observable at headers
 owner-only workspace renders without inventing case authority [CC-AUTH-001]
 prefills metadata fields and confirms dirty command changes before review
 preserves a committed operation and exact recovery identity when its localized submit response is lost

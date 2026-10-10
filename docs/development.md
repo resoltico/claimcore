@@ -648,6 +648,11 @@ server, uses a disposable synthetic OIDC issuer and separate primary and witness
 private diagnostics out of retained sanitized results. Same-machine containers do not prove independent-host
 survival; GitHub artifact transfer and other operating-system runners remain separate CI evidence.
 
+Chromium test pages retain original streamed replies in bounded native DevTools buffers for the existing
+HTTP-body assertions. Page/context closure retires those observation sessions. Anonymous transport controls
+also exercise raw and gzip replies from an isolated loopback server; they carry no case-work authentication
+and do not replace the published HTTPS service qualification.
+
 ### Coverage
 
 Frontend unit tests enforce their configured coverage floors. The CI unit, web, integration, published CLI and browser

@@ -7,6 +7,7 @@ import { expect, type BrowserContext, type Page } from "@playwright/test";
 import { isHostFailure, isWebV3Response } from "../src/generated/contracts/web-v3.validation";
 import type { HostFailure, WebV3Response } from "../src/generated/contracts/web-v3.types";
 import { observeStartup } from "./startup-evidence";
+import { retainResponseBodies } from "./response-bodies";
 
 type BrowserReply = Readonly<{
   status: number;
@@ -62,6 +63,7 @@ const syntheticCredentials = async (
 type Cookies = Awaited<ReturnType<BrowserContext["cookies"]>>;
 
 export const openApplication = async (page: Page, heading: string | RegExp): Promise<void> => {
+  await retainResponseBodies(page);
   await observeStartup(page, async () => {
     await page.goto("/", { waitUntil: "commit" });
     // Readiness includes public metadata and the actor-bound case-list outcome.
@@ -205,6 +207,7 @@ export const login = async (
   username?: string,
 ): Promise<void> => {
   await progress("login-start");
+  await retainResponseBodies(page);
   const cases = page.getByRole("heading", { name: casesHeading, exact: true });
   try {
     await page
