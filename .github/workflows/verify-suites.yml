@@ -65,6 +65,8 @@ jobs:
       - name: Qualify native Windows orchestration scratch privacy
         if: runner.os == 'Windows' && matrix.suite == 'unit'
         run: node --test eng/ci/executable.test.mjs eng/ci/scratch-privacy.test.mjs
+      - name: Reconcile native MSBuild test classification with required suites
+        run: node eng/ci/suites/check-registry.mjs
       - name: Build, check against the inventory, run and verify the suite
         shell: bash
         env:

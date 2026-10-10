@@ -119,14 +119,20 @@ module internal WebEndpointCatalog =
                 "recovery.importEnvelopePreview"
                 "POST"
                 "/api/v3/recovery/import-envelope/preview"
-                (raw "application/vnd.claimcore.recovery+json" 131072 [])
+                (raw
+                    "application/vnd.claimcore.recovery+json"
+                    TransportLimits.RecoveryArtifactBytes
+                    [])
                 None
             endpoint
                 (WebResponseSchemas.importRetain "recovery.importEnvelopeRetain")
                 "recovery.importEnvelopeRetain"
                 "POST"
                 "/api/v3/recovery/import-envelope/retain"
-                (raw "application/vnd.claimcore.recovery+json" 131072 sourceDigestHeader)
+                (raw
+                    "application/vnd.claimcore.recovery+json"
+                    TransportLimits.RecoveryArtifactBytes
+                    sourceDigestHeader)
                 None
         ]
 

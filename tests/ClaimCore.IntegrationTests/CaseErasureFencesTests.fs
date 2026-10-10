@@ -54,7 +54,7 @@ let private grantFence =
                 let input = openedCase actor
                 let id = caseId owner input.CaseReference
                 let registry = ActorGrantRegistry(source, witness)
-                let grants = ActorGrantStore(source)
+                let grants = source
 
                 let grant =
                     {

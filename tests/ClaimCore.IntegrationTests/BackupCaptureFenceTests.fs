@@ -118,7 +118,7 @@ let private capturedAuthority =
                 provision owner witness principal |> applied
                 use source = RuntimeDataSource.create app
                 let registry = new ActorGrantRegistry(source, witness)
-                let identity = actorId (new ActorGrantStore(source)) principal
+                let identity = actorId (source) principal
                 registry.SetGrant(principal, identity, editorGrant, true) |> await |> applied
                 use runtime = admittedRuntime app writer
                 use ownerConnection = new NpgsqlConnection(owner)

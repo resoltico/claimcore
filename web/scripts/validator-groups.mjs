@@ -71,6 +71,7 @@ export interface WebV3Validator<T> {
 
 ${endpoints.length === 0 ? "export const validate_host_failure: WebV3Validator<HostFailure>;" : ""}
 ${declarations(endpoints)}
+${endpoints.some(({ endpoint }) => endpoint.startsWith("recovery.")) ? "export const validate_recovery_artifact: WebV3Validator<unknown>;" : ""}
 `;
 
 /** @param {import("./tooling-types.mjs").ValidatorEndpoint[]} endpoints */
@@ -132,6 +133,10 @@ export const isHostFailure = async (
   const validator = (await loadHost())["validate_host_failure"]!;
   return validator(value) && (value as { readonly status: number }).status === status;
 };
+
+export const isRecoveryArtifact = async (value: unknown, operationId: string): Promise<boolean> =>
+  (await loadRecovery())["validate_recovery_artifact"]!(value) &&
+  (value as { operationId: string }).operationId === operationId;
 
 export const isWebV3Response = async <K extends WebV3EndpointId>(
   endpoint: K,

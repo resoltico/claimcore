@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <Compile Include="../BoundedProcess.fs" Link="BoundedProcess.fs" />
     <Compile Include="Suite.fs" />
   </ItemGroup>
 </Project>

@@ -25,7 +25,7 @@ let private openRuntime app witnessWriter =
 
 let private grant
     (registry: ActorGrantRegistry)
-    (source: ActorGrantStore)
+    (source: NpgsqlDataSource)
     (owner: PrincipalKey)
     (target: PrincipalKey)
     (role: Role)
@@ -88,7 +88,7 @@ let private scopedListContinuation () =
         let other = human "cursor-other"
         provision owner witness steward |> applied
         use source = RuntimeDataSource.create app
-        let actors = new ActorGrantStore(source)
+        let actors = source
         let registry = new ActorGrantRegistry(source, witness)
         registry.RegisterActor(steward, reader) |> await |> applied
         registry.RegisterActor(steward, other) |> await |> applied

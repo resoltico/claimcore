@@ -7,6 +7,8 @@ import { executable as resolveExecutable } from "./executable.mjs";
 import { spawnSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import {
+  accessSync,
+  constants,
   chmodSync,
   existsSync,
   lstatSync,
@@ -136,8 +138,13 @@ function installed(path, marker, tool, asset) {
     return false;
   }
   try {
+    if (lstatSync(marker).size > 4096) {
+      return false;
+    }
+    accessSync(path, constants.X_OK);
     const record = JSON.parse(readFileSync(marker, "utf8"));
     return (
+      Object.keys(record).sort().join(",") === "executableSha256,sha256,version" &&
       record.version === tool.version &&
       record.sha256 === asset.sha256 &&
       record.executableSha256 === digest(readFileSync(path))
@@ -145,6 +152,27 @@ function installed(path, marker, tool, asset) {
   } catch {
     return false;
   }
+}
+
+/** Read-only cache admission; never acquires or changes tool bytes.
+ * @param {string} root @param {string} name
+ * @param {{tools?:Record<string,Tool>, platform?:string}} [options]
+ * @returns {string | null} */
+export function installedTool(
+  root,
+  name,
+  { tools = loadTools(root), platform = platformKey() } = {},
+) {
+  if (!/^[a-z][a-z0-9-]*$/u.test(name)) {
+    return null;
+  }
+  const tool = tools[name];
+  const asset = tool?.assets[platform];
+  if (!tool || !asset) {
+    return null;
+  }
+  const path = join(toolsDirectory(root), executableName(name, asset));
+  return installed(path, join(toolsDirectory(root), `.${name}.json`), tool, asset) ? path : null;
 }
 
 /**

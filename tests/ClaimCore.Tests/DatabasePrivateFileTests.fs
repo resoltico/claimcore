@@ -69,16 +69,11 @@ let private invokeCommand command path =
     |> Array.iter (fun key -> start.Environment.Remove(key) |> ignore)
 
     start.Environment["CLAIMCORE_ADMIN_CONNECTION_FILE"] <- path
-    use child = new Process(StartInfo = start)
-    Expect.isTrue (child.Start()) "Database process starts"
-    let stdout = child.StandardOutput.ReadToEndAsync()
-    let stderr = child.StandardError.ReadToEndAsync()
+    let result = ClaimCore.TestSupport.BoundedProcess.run start None (1024 * 1024) 30000
 
-    if not (child.WaitForExit(30000)) then
-        child.Kill(true)
-        failtest "Database private-file rejection timed out"
-
-    child.ExitCode, stdout.GetAwaiter().GetResult(), stderr.GetAwaiter().GetResult()
+    result.ExitCode,
+    System.Text.Encoding.UTF8.GetString(result.StandardOutput),
+    System.Text.Encoding.UTF8.GetString(result.StandardError)
 
 let private invoke path = invokeCommand [ "verify" ] path
 

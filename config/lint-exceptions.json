@@ -531,6 +531,17 @@
       "reason": "Diagnostic retention is best effort during an existing restore failure. Each directory setup step explicitly returns on failure; independent Docker diagnostic attempts are intentionally bounded and tolerated without changing the restore failure.",
       "owner": "project maintainers",
       "reviewOn": "2027-03-01"
+    },
+    {
+      "id": "LX-0050",
+      "tool": "oxlint",
+      "rules": ["no-await-in-loop"],
+      "file": "web/src/api/responseBytes.ts",
+      "kind": "inline",
+      "count": 1,
+      "reason": "ReadableStream chunks must be consumed sequentially so each received byte is counted before retaining the next chunk; parallel reads would defeat backpressure, ordered UTF-8 acquisition and the resource bound.",
+      "owner": "project maintainers",
+      "reviewOn": "2027-03-01"
     }
   ]
 }

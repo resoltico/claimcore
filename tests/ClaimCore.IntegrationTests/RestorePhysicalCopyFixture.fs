@@ -26,7 +26,7 @@ let private acceptedCase owner app writer witness =
     provision owner witness principal |> applied
     use source = RuntimeDataSource.create app
     let registry = new ActorGrantRegistry(source, witness)
-    let grants = new ActorGrantStore(source)
+    let grants = source
 
     registry.SetGrant(
         principal,

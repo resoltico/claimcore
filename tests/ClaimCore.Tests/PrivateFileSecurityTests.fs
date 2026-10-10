@@ -96,18 +96,8 @@ let private addBroadAcl path =
     start.ArgumentList.Add("+a")
     start.ArgumentList.Add("everyone allow read")
     start.ArgumentList.Add(path)
-    use child = new Process(StartInfo = start)
-    Expect.isTrue (child.Start()) "Synthetic ACL command starts"
-    let output = child.StandardOutput.ReadToEndAsync()
-    let diagnostics = child.StandardError.ReadToEndAsync()
-
-    if not (child.WaitForExit(5000)) then
-        child.Kill(true)
-        failtest "Synthetic ACL command timed out"
-
-    output.GetAwaiter().GetResult() |> ignore
-    diagnostics.GetAwaiter().GetResult() |> ignore
-    Expect.equal child.ExitCode 0 "Synthetic extended ACL was installed"
+    let result = ClaimCore.TestSupport.BoundedProcess.run start None 4096 5000
+    Expect.equal result.ExitCode 0 "Synthetic extended ACL was installed"
 
 let private privateReadBoundariesPosix () =
     withSandbox (fun directory ->

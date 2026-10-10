@@ -158,16 +158,25 @@ and same-run merged coverage (it publishes the applications and uses Docker). Th
 `bash eng/Run-PublishedCliAcceptance.sh` for standalone native acceptance. `--only id,id` and
 `--skip id,id` select jobs (unknown IDs fail), `--no-fail-fast` continues past a failure, and logs go to
 a private `artifacts/local-ci/<job>.log` inside the isolated snapshot, with the tail of a failing log printed.
-Admitted reports are scanned in plaintext, then copied once into fresh retained inodes with source and destination fingerprints checked around transfer. A producer’s previously open file descriptor cannot modify the retained copy. Owner-validated report evidence is retained under `artifacts/runs/<UUID>/results`; stage outcomes and
-admission records provide bounded diagnostics. Raw failure logs and unknown files remain private scratch. After sensitive-output admission, completed Web, browser and native CLI diagnostics are retained privately under `artifacts/browser-failures/<run-label>`. Oversized completed CLI output retains a bounded tail with a fixed truncation/count marker and fails qualification; these private logs are excluded from CI upload paths. Coordinated command logs retain at most 16 MiB of output plus a bounded byte-count marker. They drain excess output and refuse an otherwise successful stage rather than qualifying incomplete diagnostics. A green local run is verification
+Admitted reports are scanned in plaintext, then copied once into fresh retained inodes with source and destination fingerprints checked around transfer. A producer’s previously open file descriptor cannot modify the retained copy. Owner-validated report evidence is retained under `artifacts/runs/<UUID>/results`; execution outcomes and
+evidence admission remain separate. Creator-owned private diagnostics preserve original stage exits
+even when context/report admission refuses; rejected context destinations never authorize a write. Raw failure logs and unknown files remain private scratch. After sensitive-output admission, completed Web, browser and native CLI diagnostics are retained privately under `artifacts/browser-failures/<run-label>`. Oversized completed CLI output retains a bounded tail with a fixed truncation/count marker and fails qualification; these private logs are excluded from CI upload paths. Coordinated command logs retain at most 16 MiB of output plus a bounded byte-count marker. They drain excess output and refuse an otherwise successful stage rather than qualifying incomplete diagnostics. A green local run is verification
 of what ran here, not of the platforms and families it lists as not run; use the summary it prints.
 
 Fresh POSIX scratch roots require the current effective user and exact `0700` mode; context files require the same owner and exact `0600`. On macOS, bounded native metadata readback refuses every extended ACL while permitting ordinary extended attributes, and context admission rechecks the parent root. On Linux, the group mode class limits named ACL users/groups through the ACL mask. These are pathname metadata checks with no-link and byte agreement checks, not descriptor-atomic protection or protection from privileged operating-system administrators.
 
 On Windows, the local orchestrator protects its fresh empty OS scratch root with a non-inherited DACL owned by the current user SID and granting inheritable full control only to that SID and SYSTEM. Admission rereads the root ACL and requires its regular context file to inherit exactly those rules; broad Users/Everyone permissions, changed inheritance and linked roots or context entries are refused. This protects against ordinary other users, not privileged operating-system administrators or SYSTEM. Windows CI executes the real native positive and refusal controls. This orchestration boundary does not broaden the case-work private-file runtime contract, which remains macOS/Linux only.
 
+Format-2 local/job verification contexts refuse older records without conversion; preserve old
+evidence and start a fresh run with the current tooling. A composed run admits one absolute physical
+.NET host against `global.json`, binds it in the context and aligns native/nested execution with that
+host. Conflicting explicit SDK selectors and custom task/target resolver overrides refuse admission.
+
 The run's private `run-input.json` binds its originating Git revision/ref and complete reachable graph,
-source fingerprint and producing-input identity. `inputs/` retains exact admitted source bytes, including
+source fingerprint and producing-input identity. Reachable commit/object identities are validated,
+sorted and deduplicated; admitted root IDs own history scanning. Ref-label mappings are diagnostics,
+so aliases that preserve the reachable graph and selected HEAD/ref do not invalidate qualification.
+Observations before/after transfer do not prove detection of every transient mutation. `inputs/` retains exact admitted source bytes, including
 uncommitted source, for review; hashes prove agreement, not owner authorization. The context is checked
 against those bytes and the actual original Git graph before nested commands consume it. History scanning
 uses that explicit original Git root; the Gitless snapshot never borrows an ancestor's HEAD.

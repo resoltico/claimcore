@@ -25,7 +25,7 @@ let private openRuntime app witnessWriter =
     |> accepted
 
 let private grantEditor source witness ownerPrincipal =
-    let store = new ActorGrantStore(source)
+    let store = source
     let registry = new ActorGrantRegistry(source, witness)
 
     let grant =
@@ -163,7 +163,7 @@ let private revokeBetweenPrepareAndSubmit =
             | PrepareOutcome.Prepared _ -> ()
             | _ -> failtest "Initial authorized preparation should be retained."
 
-            let id = actorId (new ActorGrantStore(source)) first
+            let id = actorId (source) first
             registry.SetGrant(first, id, grant, false) |> await |> applied
 
             match core.Execute(input, CancellationToken.None) |> await with
@@ -240,7 +240,7 @@ let private noExistenceOracle =
             |> await
             |> requireUnavailable
 
-            let id = actorId (new ActorGrantStore(source)) other
+            let id = actorId (source) other
             registry.SetEnabled(first, id, false) |> await |> applied
             denied.Definition CancellationToken.None |> await |> requireUnavailable))
 
@@ -262,7 +262,7 @@ let private listFiltersBeforeWindow =
                     Scope = GrantScope.Case(storedCaseId owner finalReference)
                 }
 
-            let target = actorId (new ActorGrantStore(source)) reader
+            let target = actorId (source) reader
             registry.SetGrant(first, target, grant, true) |> await |> applied
             let request = { AfterCursor = None; Limit = 10 }
 

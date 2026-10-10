@@ -1,3 +1,4 @@
+import { byteCapture } from "../byte-capture.mjs";
 import { commandLine } from "../executable.mjs";
 // Running the scanner and git as child processes with a bounded lifetime and a scrubbed environment.
 import { spawn } from "node:child_process";
@@ -7,6 +8,7 @@ import { spawn } from "node:child_process";
  * @property {number} status
  * @property {string} stdout
  * @property {string} stderr
+ * @property {boolean} overflow
  */
 
 /**
@@ -22,15 +24,13 @@ export function runChild(command, args, { cwd, env, timeoutMs = 300_000 }) {
       env,
       stdio: ["ignore", "pipe", "pipe"],
     });
-    /** @type {Buffer[]} */
-    const out = [];
-    /** @type {Buffer[]} */
-    const err = [];
-    child.stdout.on("data", (chunk) => out.push(chunk));
-    child.stderr.on("data", (chunk) => err.push(chunk));
+    const capture = byteCapture();
+    child.stdout.on("data", capture.stdout);
+    child.stderr.on("data", capture.stderr);
+    let timedOut = false;
     const timer = setTimeout(() => {
+      timedOut = true;
       child.kill("SIGKILL");
-      reject(new Error("A required child process timed out."));
     }, timeoutMs);
     child.on("error", (error) => {
       clearTimeout(timer);
@@ -38,10 +38,13 @@ export function runChild(command, args, { cwd, env, timeoutMs = 300_000 }) {
     });
     child.on("close", (code) => {
       clearTimeout(timer);
+      if (timedOut) {
+        reject(new Error("A required child process timed out after termination settled."));
+        return;
+      }
       resolve({
         status: code ?? 1,
-        stdout: Buffer.concat(out).toString("utf8"),
-        stderr: Buffer.concat(err).toString("utf8"),
+        ...capture.result(),
       });
     });
   });

@@ -393,8 +393,8 @@
     },
     {
       "path": "web-v3.endpoint-catalog.ts",
-      "bytes": 729,
-      "sha256": "581025421f3c207ae50f00abefb1a54aa001b8be2baf3c83e86dee1c96b79bf6"
+      "bytes": 844,
+      "sha256": "ad362fd898b7648ec264cdd37c1ca6dd3e22f12d3acbf59cf43b4b358d1788df"
     },
     {
       "path": "web-v3.endpoint.authority.approveCopyAdoption.response.schema.json",
@@ -648,8 +648,8 @@
     },
     {
       "path": "web-v3.validation.ts",
-      "bytes": 4835,
-      "sha256": "bbf872278adb1bd345f5be217071d5422eb209108074064af7348dc1323128f7"
+      "bytes": 5067,
+      "sha256": "102ed14aa1fd4ab1d7b6a94c2e68545959cbb9e34b83c1986bb19dc891852fd8"
     },
     {
       "path": "web-v3.validators.NOTICE.txt",
@@ -688,13 +688,13 @@
     },
     {
       "path": "web-v3.validators.recovery.d.mts",
-      "bytes": 1165,
-      "sha256": "c2004ab9099609ec61350eb8c52bff21952fbfaa016c5b7d9aad330b600c27b5"
+      "bytes": 1231,
+      "sha256": "61d203904629f12acd68c575fef76389673d47625dc5a2918d84708149372620"
     },
     {
       "path": "web-v3.validators.recovery.mjs",
-      "bytes": 326814,
-      "sha256": "19d2364625b09f6aa5cab4c0c3d4d15d372714799c77e9232cf7713b84d9aa28"
+      "bytes": 346602,
+      "sha256": "9d2c6c5f47a35600a744c2b268d75ba889a65fb627bb71d59a07a813a6130360"
     }
   ]
 }

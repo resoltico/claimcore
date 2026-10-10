@@ -12,7 +12,7 @@ open ClaimCore.IntegrationTests.ActorGrantTestSupport
 let private grant (registry: ActorGrantRegistry) owner source principal role =
     registry.SetGrant(
         owner,
-        actorId (new ActorGrantStore(source)) principal,
+        actorId (source) principal,
         {
             Role = role
             Scope = GrantScope.Installation

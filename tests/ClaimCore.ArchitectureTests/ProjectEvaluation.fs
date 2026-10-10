@@ -51,37 +51,30 @@ let evaluate (projectPath: string) (configuration: string) =
         invalidArg (nameof configuration) "Architecture evaluation accepts Debug or Release."
 
     try
-        use child = new Process()
-        child.StartInfo.FileName <- "dotnet"
-        child.StartInfo.WorkingDirectory <- nonNull (Path.GetDirectoryName projectPath)
-        child.StartInfo.UseShellExecute <- false
-        child.StartInfo.CreateNoWindow <- true
-        child.StartInfo.RedirectStandardOutput <- true
-        child.StartInfo.RedirectStandardError <- true
-        child.StartInfo.ArgumentList.Add("msbuild")
-        child.StartInfo.ArgumentList.Add(projectPath)
+        let start = ProcessStartInfo()
 
-        child.StartInfo.ArgumentList.Add(
-            "-getItem:ProjectReference,PackageReference,FrameworkReference"
-        )
+        start.FileName <-
+            Environment.GetEnvironmentVariable("CLAIMCORE_DOTNET")
+            |> Option.ofObj
+            |> Option.defaultValue "dotnet"
 
-        child.StartInfo.ArgumentList.Add("-getProperty:DisableTransitiveProjectReferences")
-        child.StartInfo.ArgumentList.Add("-property:Configuration=" + configuration)
+        start.WorkingDirectory <- nonNull (Path.GetDirectoryName projectPath)
+        start.UseShellExecute <- false
+        start.CreateNoWindow <- true
+        start.RedirectStandardOutput <- true
+        start.RedirectStandardError <- true
+        start.ArgumentList.Add("msbuild")
+        start.ArgumentList.Add(projectPath)
 
-        if not (child.Start()) then
-            invalidOp "MSBuild evaluation did not start."
+        start.ArgumentList.Add("-getItem:ProjectReference,PackageReference,FrameworkReference")
 
-        let output = child.StandardOutput.ReadToEndAsync()
-        let errors = child.StandardError.ReadToEndAsync()
+        start.ArgumentList.Add("-getProperty:DisableTransitiveProjectReferences")
+        start.ArgumentList.Add("-property:Configuration=" + configuration)
 
-        if not (child.WaitForExit(15000)) then
-            child.Kill(true)
-            invalidOp "MSBuild evaluation timed out."
+        let result = ClaimCore.TestSupport.BoundedProcess.run start None (1024 * 1024) 15000
+        let body = System.Text.Encoding.UTF8.GetString(result.StandardOutput)
 
-        let body = output.GetAwaiter().GetResult()
-        errors.GetAwaiter().GetResult() |> ignore
-
-        if child.ExitCode <> 0 then
+        if result.ExitCode <> 0 then
             invalidOp "MSBuild evaluation failed."
 
         parse body

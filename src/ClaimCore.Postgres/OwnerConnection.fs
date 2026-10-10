@@ -22,8 +22,7 @@ module internal OwnerConnection =
             AdministrationFailures.refuse AdministrationFailure.OwnerConnectionInvalid
 
         builder.Enlist <- false
-        builder.Timeout <- 5
-        builder.CommandTimeout <- 30
+        PostgresTransport.applyBudgets 30 builder
         builder.IncludeErrorDetail <- false
         builder.LogParameters <- false
         builder.PersistSecurityInfo <- false

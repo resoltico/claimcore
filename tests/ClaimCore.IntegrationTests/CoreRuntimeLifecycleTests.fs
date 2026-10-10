@@ -160,15 +160,11 @@ let private bootstrapPermitsAuthorityOnly () =
             TimeSpan.FromSeconds 1.,
             (fun _ -> Task.FromResult(())),
             (fun _ -> Task.FromResult(countedSource (DisposeCounter()))),
-            {
+            { RuntimeAdmissionFixture.gate (fun () -> ()) with
                 RequireCaseMutation = (fun _ -> task { denied () })
                 RequireCaseRead = (fun _ -> task { denied () })
                 RequireAuthoritySetup = (fun _ -> Task.FromResult(()))
                 RequireAuthorityRead = (fun _ -> Task.FromResult(()))
-                CommitHealth =
-                    { new ICaseMutationCommitHealth with
-                        member _.VerifyLocked(_, _, _) = Task.CompletedTask
-                    }
                 CommitHealthRequired = false
             }
         )
@@ -195,7 +191,7 @@ let private endedCommitHealthScopeRefusesLateChild () =
     let mutable checks = 0
 
     let guard =
-        { new ICaseMutationCommitHealth with
+        { new IMutationCommitHealth with
             member _.VerifyLocked(_, _, _) =
                 checks <- checks + 1
                 Task.CompletedTask
@@ -207,9 +203,9 @@ let private endedCommitHealthScopeRefusesLateChild () =
     let release =
         TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
 
-    let scope = CaseMutationCommitHealth.enter guard
+    let scope = MutationCommitHealth.enter guard
 
-    (CaseMutationCommitHealth.verifyLocked connection transaction CancellationToken.None)
+    (MutationCommitHealth.verifyLocked connection transaction CancellationToken.None)
         .GetAwaiter()
         .GetResult()
 
@@ -217,7 +213,7 @@ let private endedCommitHealthScopeRefusesLateChild () =
         Task.Run(fun () ->
             release.Task.GetAwaiter().GetResult()
 
-            (CaseMutationCommitHealth.verifyLocked connection transaction CancellationToken.None)
+            (MutationCommitHealth.verifyLocked connection transaction CancellationToken.None)
                 .GetAwaiter()
                 .GetResult())
 
@@ -259,7 +255,7 @@ let private unguardedRealDataOutcomeRefuses () =
         "invalid-input"
         "A code-classified pre-admission refusal retains its typed result"
 
-    CaseMutationCommitHealth.verifyLocked
+    MutationCommitHealth.verifyLocked
         (Unchecked.defaultof<NpgsqlConnection>)
         (Unchecked.defaultof<NpgsqlTransaction>)
         CancellationToken.None

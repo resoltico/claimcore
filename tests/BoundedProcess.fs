@@ -36,6 +36,14 @@ module BoundedProcess =
                 return raise error
         }
 
+    /// Interactive fixtures retain their stdin/process ownership but bound each actual pipe reader.
+    let readText maximum (reader: StreamReader) timeout =
+        task {
+            use deadline = new CancellationTokenSource(timeout: TimeSpan)
+            let! bytes = read maximum reader.BaseStream deadline
+            return System.Text.Encoding.UTF8.GetString(bytes)
+        }
+
     let run (start: ProcessStartInfo) input maximum timeoutMilliseconds =
         if maximum < 1 || maximum >= Int32.MaxValue || timeoutMilliseconds < 1 then
             invalidArg (nameof maximum) "Test process bounds must be positive."

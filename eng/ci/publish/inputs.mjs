@@ -1,3 +1,4 @@
+import { executable } from "../executable.mjs";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { lstatSync, readdirSync, readFileSync } from "node:fs";
@@ -59,7 +60,7 @@ export function producingInputDigest(directory) {
 /** @param {string} directory @returns {Record<string, string>} */
 export function compiledInputs(directory) {
   const result = execFileSync(
-    "dotnet",
+    executable("dotnet"),
     ["fsi", "--exec", join(root, "eng/PublicationInputs.fsx"), "read", directory],
     {
       cwd: root,

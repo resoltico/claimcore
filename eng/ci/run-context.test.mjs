@@ -85,7 +85,7 @@ test("two run snapshots preserve prior outputs/private state and admit exact unc
   });
 });
 
-test("forged history, redirected results, changing refs/source and linked context are refused", async () => {
+test("forged history, redirected results, changing selected refs/source and linked context are refused", async () => {
   await fixture(async (origin, runs) => {
     const run = await createRun(origin);
     runs.push(run);
@@ -110,7 +110,7 @@ test("forged history, redirected results, changing refs/source and linked contex
     writeFileSync(path, original);
     writeFileSync(retained, original);
     execFileSync("git", ["branch", "concurrent"], { cwd: origin, env: gitEnvironment() });
-    assert.throws(() => runContext(run.source, path));
+    assert.ok(runContext(run.source, path));
     execFileSync("git", ["branch", "-D", "concurrent"], { cwd: origin, env: gitEnvironment() });
     writeFileSync(join(run.source, "changed.md"), "changed snapshot");
     assert.throws(() => runContext(run.source, path));

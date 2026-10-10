@@ -6,6 +6,10 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Fixed
 
+- Scheduled audit quarantine now fences queued actor reads, writes, authority setup and readiness, preserving already committed evidence when later disclosure is refused. Accepted historical dates and UTC observations are authenticated against the witness and replayed unchanged after time-zone rule updates.
+- Database admission uses cancellable transaction-local catalog settings and finite connection, command, cancellation-readback and authority-acquisition budgets. Cleanup preserves original failures and retires unclean connections; post-dispatch expiry retains uncertainty.
+- Browser and native recovery downloads require complete artifact structure and exact operation identity. Browser JSON/artifact consumption counts received bytes, stops at the response deadline and preserves export bytes.
+- Contract generation validates complete staged output before promotion, serializes writers and refuses interrupted output at consumer startup. Interrupted writers require the documented preservation and explicit regeneration procedure.
 - Native schema admission accepts valid supplementary Unicode in business text and service replies while still refusing malformed Unicode, over-limit scalars, whitespace and controls. Exact authored text and recovery identities are unchanged.
 - Narrow-grant browser work no longer depends on protected installation definition access. History defaults to permitted summaries, lifecycle review is optional, and known-ID recovery/export can work independently of listing or inspection grants.
 - Native input errors identify declared fields and shared scalar constraints through structured diagnostics. Browser correction selectors and operation lookups associate errors with their controls; empty case lookup cannot silently submit. Recovery controls retain dispatch ownership when inspection closes during export.
@@ -13,6 +17,7 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Changed
 
+- Contributor verification uses format-2 contexts bound to one physical pinned SDK host and canonical reachable Git history. Older contexts are refused without conversion; preserve their evidence and start a fresh run. Native evaluated test metadata owns suite registration, bounded console capture cannot qualify overflow, execution failures remain distinct from evidence refusal, and Doctor checks actual installed-tool bytes and prerequisite families without installing them.
 - Full local published qualification consolidates native acceptance, all browser engines and merged coverage in the `browser-coverage` job, eliminating the duplicate CLI/Chromium run and reusing only successful same-run frontend prerequisites. The local `--only published-cli` selector is removed; the standalone `bash eng/Run-PublishedCliAcceptance.sh` command remains available. Complete inventories, distinct CLI/Web coverage and existing floors remain required.
 - **Breaking client contract:** matching CLI, browser and host builds are required for the new wire fingerprints. Session snapshots carry the host Web fingerprint, case-list pages carry advisory `availableCommands`, current commands and inspected recovery actions reflect actor grants, protected definition reads preserve their typed failure/cancellation outcomes, and native `CLI_INVALID_SCALAR` failures carry required shared diagnostics while structural failures name safe declared locations. The frozen SQL baseline and canonical recovery formats are unchanged.
 

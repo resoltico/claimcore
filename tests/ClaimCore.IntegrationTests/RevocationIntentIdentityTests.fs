@@ -11,7 +11,7 @@ open ClaimCore.IntegrationTests.Fixtures
 open ClaimCore.IntegrationTests.TechnicalWitnessTestSupport
 
 let private enableRecovery source witness principal =
-    let grants = new ActorGrantStore(source)
+    let grants = source
     let registry = new ActorGrantRegistry(source, witness)
 
     registry.SetGrant(

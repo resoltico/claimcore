@@ -103,10 +103,10 @@ export function logTailLines(path, lines, width) {
  * marker; an otherwise successful command then fails rather than qualifying incomplete diagnostics.
  * @param {string} command
  * @param {string[]} args
- * @param {{ cwd: string, log: string, env?: NodeJS.ProcessEnv, groups?: number[] }} options
+ * @param {{ cwd: string, log: string, env?: NodeJS.ProcessEnv, groups?: number[], onOutcome?:(outcome:{exit:number,captureFailed:boolean})=>void }} options
  * @returns {Promise<number>}
  */
-export function runToLog(command, args, { cwd, log, env, groups }) {
+export function runToLog(command, args, { cwd, log, env, groups, onOutcome }) {
   const selected = commandLine(command, args);
   const capture = boundedLog(log);
   return new Promise((resolve) => {
@@ -119,7 +119,8 @@ export function runToLog(command, args, { cwd, log, env, groups }) {
         ...(env === undefined ? {} : { env }),
       });
     } catch {
-      capture.finish();
+      const captureFailed = capture.finish();
+      onOutcome?.({ exit: 127, captureFailed });
       resolve(127);
       return;
     }
@@ -139,6 +140,7 @@ export function runToLog(command, args, { cwd, log, env, groups }) {
       }
       settled = true;
       const captureFailed = capture.finish();
+      onOutcome?.({ exit: status, captureFailed });
       resolve(status === 0 && captureFailed ? 1 : status);
     };
     child.on("error", () => {

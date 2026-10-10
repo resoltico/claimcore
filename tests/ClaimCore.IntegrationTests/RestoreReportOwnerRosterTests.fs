@@ -210,7 +210,7 @@ let private setup owner app witness =
     let second = human "restore-report-owner-two"
     provision owner witness first |> applied
     use source = RuntimeDataSource.create app
-    let grants = new ActorGrantStore(source)
+    let grants = source
     let registry = new ActorGrantRegistry(source, witness)
     registry.RegisterActor(first, second) |> await |> applied
 

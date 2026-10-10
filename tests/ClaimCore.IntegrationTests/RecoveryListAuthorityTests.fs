@@ -11,7 +11,7 @@ open ClaimCore.IntegrationTests.Fixtures
 
 let private setRole source witness owner target role active =
     let registry = new ActorGrantRegistry(source, witness)
-    let id = actorId (new ActorGrantStore(source)) target
+    let id = actorId (source) target
 
     registry.SetGrant(
         owner,

@@ -1,15 +1,17 @@
-import { rm } from "node:fs/promises";
+import { resolve } from "node:path";
 import { generateContracts } from "./contract-generation.mjs";
-import { generatedDirectory, verifyLock, writeLock } from "./contract-lock.mjs";
+import { generatedDirectory } from "./contract-lock.mjs";
 import { assertValidatorSizes } from "./validator-sizes.mjs";
+import { promoteContracts } from "./contract-promotion.mjs";
 
-// Generates every contract artifact from the F# projection, then either accepts the result as the new
-// lock (`--write-lock`, an explicit maintainer decision) or requires it to match the committed lock.
-await rm(generatedDirectory, { force: true, recursive: true });
-await generateContracts(generatedDirectory);
-await assertValidatorSizes(generatedDirectory);
-if (process.argv.includes("--write-lock")) {
-  await writeLock(generatedDirectory);
-} else {
-  await verifyLock(generatedDirectory);
+if (process.argv.some((argument) => argument.startsWith("--") && argument !== "--write-lock")) {
+  throw new Error("Only intentional --write-lock is supported. Interrupted writers require the preservation procedure in web/README.md.");
 }
+
+await promoteContracts({
+  directory: generatedDirectory,
+  lockFile: resolve(import.meta.dirname, "../../config/contracts.lock.json"),
+  generate: generateContracts,
+  validate: assertValidatorSizes,
+  acceptLock: process.argv.includes("--write-lock"),
+});

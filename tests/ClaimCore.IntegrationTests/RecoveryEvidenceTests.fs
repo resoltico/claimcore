@@ -176,7 +176,7 @@ let private withEditorRecovery action =
         let registry = new ActorGrantRegistry(source, witness)
         let editor = human "provenance-editor"
         registry.RegisterActor(principal, editor) |> await |> applied
-        let grants = new ActorGrantStore(source)
+        let grants = source
         let editorId = actorId grants editor
 
         let grant =

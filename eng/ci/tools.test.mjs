@@ -39,7 +39,7 @@ test("the doctor reads each required version from the file that owns it", () => 
   const required = collectChecks().filter((check) => check.required);
   assert.deepEqual(
     required.map((check) => check.tool),
-    ["dotnet", "node", "npm", "git"],
+    ["dotnet", "node", "npm", "git", ...(process.platform === "win32" ? ["pwsh"] : ["cc"])],
   );
   assert.equal(required[0]?.expected, readJson("global.json").sdk.version);
 });

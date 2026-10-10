@@ -1,3 +1,4 @@
+import { retainRunDiagnostic } from "./run-diagnostics.mjs";
 import { requirePassedEvidence } from "./run-expectations.mjs";
 import { admittedReports } from "./run-reports.mjs";
 // Retain regular reports and input manifests once; publications and dependencies are scratch.
@@ -11,7 +12,7 @@ import { contextEnvironment, runContext } from "./run-context.mjs";
 import { assertNoLinkAbove, fingerprint, regularFiles } from "./scan/files.mjs";
 import { scanArtifacts } from "./scan/artifacts.mjs";
 import { installTool } from "./tools.mjs";
-import { observeHistory } from "./scan/history.mjs";
+import { historyIdentity, observeHistory } from "./scan/history.mjs";
 
 /** @param {import("./run-context.mjs").RunContext} context @param {boolean} passed */
 async function retainResults(context, passed) {
@@ -49,11 +50,17 @@ async function retainResults(context, passed) {
   assert.equal(fingerprint(staging), before);
   artifactDirectory(context.origin, relative(context.origin, context.results));
   runContext(context.source, contextEnvironment(context)["CLAIMCORE_RUN_CONTEXT"]);
-  assert.deepEqual(observeHistory(context.origin), context.history);
+  assert.deepEqual(
+    historyIdentity(observeHistory(context.origin)),
+    historyIdentity(context.history),
+  );
   assert.equal(sourceFingerprint(context.origin), context.sourceSha256);
   transferEvidence(staging, context.results, before);
   runContext(context.source, contextEnvironment(context)["CLAIMCORE_RUN_CONTEXT"]);
-  assert.deepEqual(observeHistory(context.origin), context.history);
+  assert.deepEqual(
+    historyIdentity(observeHistory(context.origin)),
+    historyIdentity(context.history),
+  );
   assert.equal(sourceFingerprint(context.origin), context.sourceSha256);
 }
 /** Copy once into fresh inodes: a producer's held descriptor must not mutate retained evidence.
@@ -74,9 +81,27 @@ export function transferEvidence(staging, destinationRoot, qualifiedFingerprint)
   assert.equal(fingerprint(destinationRoot), qualifiedFingerprint);
 }
 /** @param {import("./run-context.mjs").RunContext} context @param {{passed:boolean,groups:number[],stages?:Record<string,string>}} outcome */
-export async function finishRun(context, { passed, groups, stages = {} }) {
+export async function finishRun(context, outcome) {
+  retainRunDiagnostic(context, outcome, "pending");
+  try {
+    await admitFinishedRun(context, outcome);
+    retainRunDiagnostic(context, outcome, "accepted");
+  } catch (error) {
+    const diagnostic = retainRunDiagnostic(context, outcome, "refused");
+    process.stderr.write(
+      `Execution outcome preserved; evidence admission refused${diagnostic ? ` (${diagnostic})` : ""}.\n`,
+    );
+    throw error;
+  }
+}
+
+/** @param {import("./run-context.mjs").RunContext} context @param {{passed:boolean,groups:number[],stages?:Record<string,string>}} outcome */
+async function admitFinishedRun(context, { passed, groups, stages = {} }) {
   runContext(context.source, contextEnvironment(context)["CLAIMCORE_RUN_CONTEXT"]);
-  assert.deepEqual(await observeHistory(context.origin), context.history);
+  assert.deepEqual(
+    historyIdentity(await observeHistory(context.origin)),
+    historyIdentity(context.history),
+  );
   assert.equal(sourceFingerprint(context.origin), context.sourceSha256);
   if (passed) {
     requirePassedEvidence(context, stages);

@@ -32,7 +32,7 @@ let private grantEditor source witness owner target =
             Scope = GrantScope.Installation
         }
 
-    let id = actorId (new ActorGrantStore(source)) target
+    let id = actorId (source) target
     registry.SetGrant(owner, id, grant, true) |> await |> applied
     registry
 

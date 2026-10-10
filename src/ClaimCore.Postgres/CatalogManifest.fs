@@ -103,32 +103,82 @@ module internal CatalogManifest =
         finally
             setSettings connection dateStyle searchPath
 
+    let private rollbackAdmission (connection: NpgsqlConnection) (transaction: NpgsqlTransaction) =
+        task {
+            use cleanup = new CancellationTokenSource(TimeSpan.FromSeconds 5.)
+
+            try
+                do! transaction.RollbackAsync(cleanup.Token)
+                do! transaction.DisposeAsync().AsTask().WaitAsync(cleanup.Token)
+                return None
+            with error ->
+                // Never put a session whose transaction cleanup is unknown back into its pool.
+                try
+                    NpgsqlConnection.ClearPool(connection)
+                    do! connection.CloseAsync().WaitAsync(cleanup.Token)
+                    do! transaction.DisposeAsync().AsTask().WaitAsync(cleanup.Token)
+                with invalidation ->
+                    error.Data["CatalogInvalidationFailure"] <- invalidation.GetType().Name
+
+                return Some error
+        }
+
+    let private verifyCatalogAsync
+        (connection: NpgsqlConnection)
+        (transaction: NpgsqlTransaction)
+        (cancellationToken: CancellationToken)
+        =
+        task {
+            use settings =
+                new NpgsqlCommand(
+                    "SET LOCAL DateStyle = 'ISO, YMD'; SET LOCAL search_path = pg_catalog",
+                    connection,
+                    transaction
+                )
+
+            let! _ = settings.ExecuteNonQueryAsync(cancellationToken)
+
+            use versionCommand =
+                new NpgsqlCommand(
+                    "SELECT current_setting('server_version_num')::integer",
+                    connection,
+                    transaction
+                )
+
+            let! version = versionCommand.ExecuteScalarAsync(cancellationToken)
+            use command = new NpgsqlCommand(sql.Value, connection, transaction)
+            let! result = command.ExecuteScalarAsync(cancellationToken)
+
+            let catalog =
+                match result with
+                | :? string as value -> value
+                | _ -> raise (InvalidDataException("The live catalog projection is missing."))
+
+            require (version :?> int) catalog
+        }
+
+    /// Pre-work admission owns a transaction; local settings disappear on rollback.
     let requireCompatibleAsyncWithCancellation
         (connection: NpgsqlConnection)
         (cancellationToken: CancellationToken)
         =
         task {
-            let dateStyle, searchPath = currentSettings connection
+            let! transaction = connection.BeginTransactionAsync(cancellationToken)
+            let mutable failure: exn option = None
 
             try
-                setSettings connection "ISO, YMD" "pg_catalog"
+                do! verifyCatalogAsync connection transaction cancellationToken
+            with error ->
+                failure <- Some error
 
-                use versionCommand =
-                    new NpgsqlCommand(
-                        "SELECT current_setting('server_version_num')::integer",
-                        connection
-                    )
+            let! cleanupFailure = rollbackAdmission connection transaction
 
-                let! version = versionCommand.ExecuteScalarAsync(cancellationToken)
-                use command = new NpgsqlCommand(sql.Value, connection)
-                let! result = command.ExecuteScalarAsync(cancellationToken)
+            match failure, cleanupFailure with
+            | Some original, cleanup ->
+                if cleanup.IsSome then
+                    original.Data["CatalogAdmissionCleanup"] <- "Connection invalidated."
 
-                let catalog =
-                    match result with
-                    | :? string as value -> value
-                    | _ -> raise (InvalidDataException("The live catalog projection is missing."))
-
-                require (version :?> int) catalog
-            finally
-                setSettings connection dateStyle searchPath
+                return raise original
+            | None, Some cleanup -> return raise cleanup
+            | None, None -> return ()
         }

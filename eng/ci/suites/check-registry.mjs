@@ -1,3 +1,4 @@
+import { projectMembershipProblems } from "./project-membership.mjs";
 // Holds the suite registry to the repository: every test project is registered, every registered
 // file exists, every inventory belongs to a suite, and nothing repeats a test count that the
 // inventories already own.
@@ -41,14 +42,13 @@ export function checkRegistry(root) {
     files.filter((path) => path.startsWith(`${directory}/`) && pattern.test(path));
   /** @type {string[]} */
   const errors = [];
-  const registeredProjects = new Set(
-    suites.flatMap((suite) => (suite.project ? [suite.project] : [])),
+  errors.push(
+    ...projectMembershipProblems(
+      root,
+      files.filter((path) => path.endsWith(".fsproj")),
+      suites,
+    ),
   );
-  for (const project of filesMatching("tests", /^tests\/[^/]+Tests\/[^/]+\.fsproj$/u)) {
-    if (!registeredProjects.has(project)) {
-      errors.push(`${project} is a test project that no suite registers.`);
-    }
-  }
   errors.push(...suiteProblems(root, suites));
   const inventories = new Set(suites.map(inventoryPath));
   for (const file of filesMatching("tests/inventory", /\.txt$/u)) {

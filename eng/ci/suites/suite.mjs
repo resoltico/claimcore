@@ -1,3 +1,4 @@
+import { byteCapture } from "../byte-capture.mjs";
 import { coordinate } from "../run-command.mjs";
 import { artifactDirectory } from "../artifact-path.mjs";
 import { executable } from "../executable.mjs";
@@ -28,7 +29,7 @@ const currentPlatform = () => platformNames[process.platform] ?? "linux";
 
 /**
  * @param {import("./plan.mjs").Job} job
- * @returns {Promise<{ status: number, output: string }>}
+ * @returns {Promise<{ status: number, output: string, overflow: boolean }>}
  */
 function execute(job) {
   if (job.privateBin !== undefined) {
@@ -42,16 +43,16 @@ function execute(job) {
       env: { ...process.env, ...job.env },
       stdio: ["ignore", "pipe", "pipe"],
     });
-    /** @type {Buffer[]} */
-    const chunks = [];
-    child.stdout.on("data", (chunk) => chunks.push(chunk));
-    child.stderr.on("data", (chunk) => chunks.push(chunk));
-    child.on("error", () => resolve({ status: 127, output: "" }));
+    const capture = byteCapture();
+    child.stdout.on("data", capture.stdout);
+    child.stderr.on("data", capture.stderr);
+    child.on("error", () => resolve({ status: 127, output: "", overflow: false }));
     child.on("close", (code) => {
       if (job.privateBin !== undefined) {
         rmSync(job.privateBin, { recursive: true, force: true });
       }
-      resolve({ status: code ?? 1, output: Buffer.concat(chunks).toString("utf8") });
+      const { stdout, stderr, overflow } = capture.result();
+      resolve({ status: code ?? 1, output: stdout + stderr, overflow });
     });
   });
 }
@@ -62,7 +63,7 @@ function execute(job) {
  * @param {number} limit
  * @returns {Promise<Map<import("./plan.mjs").Job, number>>}
  */
-async function runJobs(jobs, limit) {
+export async function runJobs(jobs, limit) {
   /** @type {Map<import("./plan.mjs").Job, number>} */
   const statuses = new Map();
   const stages = jobs.map((job, index) => ({
@@ -74,11 +75,14 @@ async function runJobs(jobs, limit) {
     if (!job) {
       throw new Error("The suite process plan is incomplete.");
     }
-    const { status, output } = await execute(job);
+    const { status, output, overflow } = await execute(job);
     const title = job.partition ? `${job.suite} [${job.partition}]` : job.suite;
     process.stdout.write(`::group::${title}\n${output}\n::endgroup::\n`);
-    statuses.set(job, status);
-    return { status: status === 0 ? "passed" : "failed" };
+    if (overflow) {
+      process.stderr.write(`Suite ${job.suite}: console capture overflow; child exit ${status}.\n`);
+    }
+    statuses.set(job, overflow ? 1 : status);
+    return { status: status === 0 && !overflow ? "passed" : "failed" };
   });
   return statuses;
 }

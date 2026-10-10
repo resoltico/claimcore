@@ -87,6 +87,10 @@ async function execute(stage, runId) {
     cwd: root,
     log,
     env: environmentFor(stage, runId),
+    onOutcome: ({ exit, captureFailed }) =>
+      process.stderr.write(
+        `Stage ${stage.id}: child exit ${exit}; captureFailed=${captureFailed}; log ${log}.\n`,
+      ),
   });
   report(stage.id, status, log);
   return { status: status === 0 ? "passed" : "failed" };

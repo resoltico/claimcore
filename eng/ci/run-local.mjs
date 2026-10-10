@@ -84,6 +84,8 @@ async function runJob(job, logs, outcomes, context, groups) {
     log,
     env: contextEnvironment(context),
     groups,
+    onOutcome: ({ exit, captureFailed }) =>
+      outcomes.set(`${job.id}-execution`, `exit ${exit}; captureFailed=${captureFailed}`),
   });
   const passed = status === 0;
   outcomes.set(job.id, `${passed ? "passed" : "FAILED"} in ${seconds(started)}`);
@@ -193,6 +195,7 @@ async function main() {
   }
   summarize(registry, outcomes);
   const passed = !results.some((result) => result.value.status === "failed");
+  process.exitCode = passed ? 0 : 1;
   await finishRun(context, { passed, groups, stages: Object.fromEntries(outcomes) });
   if (!passed) {
     process.exitCode = 1;

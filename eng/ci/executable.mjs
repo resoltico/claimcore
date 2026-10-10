@@ -1,3 +1,4 @@
+import { dotnetHost } from "./dotnet-host.mjs";
 // Platform-specific executable selection. Callers own environments and output disclosure.
 import { existsSync, lstatSync, realpathSync } from "node:fs";
 import { dirname, join, win32 } from "node:path";
@@ -67,15 +68,8 @@ export function executable(command) {
   if (command === "tar" && process.platform === "win32") {
     return win32.join(windowsSystemDirectory(), "tar.exe");
   }
-  if (command === "dotnet" && process.env["DOTNET_ROOT"]) {
-    const path = join(
-      process.env["DOTNET_ROOT"],
-      process.platform === "win32" ? "dotnet.exe" : "dotnet",
-    );
-    if (!existsSync(path)) {
-      throw new Error("The explicitly selected .NET root has no executable.");
-    }
-    return path;
+  if (command === "dotnet") {
+    return dotnetHost();
   }
   return command;
 }

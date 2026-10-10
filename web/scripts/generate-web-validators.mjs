@@ -104,10 +104,17 @@ const validatorInventory = async (directory, endpoints, group) => {
       schemaReference: `${aggregate.$id}#/$defs/${responseDefinition}`,
     };
   });
-  return {
-    schemas: [aggregate],
-    validators: endpointValidators,
-  };
+  if (group === "recovery") {
+    const artifact = await readSchema(directory, "recovery-artifact-v3.schema.json");
+    return {
+      schemas: [aggregate, artifact],
+      validators: [
+        ...endpointValidators,
+        { exportName: "validate_recovery_artifact", schemaReference: String(artifact.$id) },
+      ],
+    };
+  }
+  return { schemas: [aggregate], validators: endpointValidators };
 };
 
 /** @param {string} directory @param {Set<string>} provisional */

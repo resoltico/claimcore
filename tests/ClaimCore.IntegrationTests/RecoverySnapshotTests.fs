@@ -15,7 +15,7 @@ let private grant source witness principal =
 
     registry.SetGrant(
         principal,
-        ActorGrantTestSupport.actorId (new ActorGrantStore(source)) principal,
+        ActorGrantTestSupport.actorId (source) principal,
         {
             Role = Role.RecoveryOperator
             Scope = GrantScope.Installation
@@ -127,7 +127,7 @@ let tests =
 
                 registry.SetGrant(
                     principal,
-                    ActorGrantTestSupport.actorId (new ActorGrantStore(source)) principal,
+                    ActorGrantTestSupport.actorId (source) principal,
                     {
                         Role = Role.CaseEditor
                         Scope = GrantScope.Installation

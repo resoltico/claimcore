@@ -188,6 +188,55 @@ module Repository =
             with _ ->
                 Error "The Markdown source inventory was malformed."
 
+module private ProcessDelivery =
+    let private settle (child: Process) (readers: Task) =
+        try
+            if not child.HasExited then
+                child.Kill(true)
+                child.WaitForExit(2000) |> ignore
+        with _ ->
+            ()
+
+        try
+            readers.WaitAsync(TimeSpan.FromSeconds 2.).GetAwaiter().GetResult()
+        with _ ->
+            ()
+
+    let collect (request: ProcessRequest) (child: Process) =
+        use deadline = new System.Threading.CancellationTokenSource(request.Timeout)
+        let capture = ConsoleCapture(16 * 1024 * 1024)
+        let stdout = capture.Read(child.StandardOutput.BaseStream, deadline.Token)
+        let stderr = capture.Read(child.StandardError.BaseStream, deadline.Token)
+        let readers = Task.WhenAll([| stdout :> Task; stderr :> Task |])
+        let exited = child.WaitForExitAsync()
+
+        try
+            if not (exited.Wait(request.Timeout)) then
+                invalidOp "Deadline"
+
+            readers.WaitAsync(request.Timeout).GetAwaiter().GetResult()
+
+            if capture.Overflow then
+                Error("Console capture overflow; child exit " + string child.ExitCode + ".")
+            else
+                Ok
+                    {
+                        ExitCode = child.ExitCode
+                        StandardOutput = Encoding.UTF8.GetString(stdout.Result)
+                        StandardError = Encoding.UTF8.GetString(stderr.Result)
+                    }
+        with error ->
+            deadline.Cancel()
+            settle child readers
+
+            let status =
+                if child.HasExited then
+                    string child.ExitCode
+                else
+                    "unsettled"
+
+            Error("Child delivery refused; exit " + status + "; " + error.GetType().Name + ".")
+
 [<Sealed>]
 type SystemProcessRunner() =
     interface IProcessRunner with
@@ -207,25 +256,9 @@ type SystemProcessRunner() =
 
                 use child = new Process(StartInfo = start)
 
-                if not (child.Start()) then
-                    Error "The child process did not start."
+                if child.Start() then
+                    ProcessDelivery.collect request child
                 else
-                    let stdout = child.StandardOutput.ReadToEndAsync()
-                    let stderr = child.StandardError.ReadToEndAsync()
-                    let exited = child.WaitForExitAsync()
-
-                    if not (exited.Wait(request.Timeout)) then
-                        child.Kill(true)
-                        child.WaitForExit()
-                        Error "The child process timed out."
-                    else
-                        Task.WaitAll([| stdout :> Task; stderr :> Task |])
-
-                        Ok
-                            {
-                                ExitCode = child.ExitCode
-                                StandardOutput = stdout.Result
-                                StandardError = stderr.Result
-                            }
+                    Error "The child process did not start."
             with error ->
-                Error(error.GetType().Name + ": " + error.Message)
+                Error("Child setup refused; " + error.GetType().Name + ".")

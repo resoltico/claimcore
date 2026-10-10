@@ -40,15 +40,11 @@ let private failedAuditQuarantinesActorLanes () =
             TimeSpan.FromSeconds 1.,
             (fun _ -> Task.FromResult(())),
             (fun _ -> task { return (emptyLease) () }),
-            {
+            { RuntimeAdmissionFixture.gate (fun () -> ()) with
                 RequireCaseMutation = (fun _ -> task { denied () })
                 RequireCaseRead = (fun _ -> task { denied () })
                 RequireAuthoritySetup = (fun _ -> task { denied () })
                 RequireAuthorityRead = (fun _ -> task { denied () })
-                CommitHealth =
-                    { new ICaseMutationCommitHealth with
-                        member _.VerifyLocked(_, _, _) = Task.CompletedTask
-                    }
                 CommitHealthRequired = false
             }
         )
@@ -251,7 +247,7 @@ let private scheduledAuditQuarantinesTamperedCase () =
         let principal = human "cadence-owner"
         provision owner witness principal |> applied
         use source = RuntimeDataSource.create app
-        let grants = new ActorGrantStore(source)
+        let grants = source
         let registry = new ActorGrantRegistry(source, witness)
 
         registry.SetGrant(

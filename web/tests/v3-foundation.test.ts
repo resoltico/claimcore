@@ -1,3 +1,4 @@
+import { recoveryArtifact } from "./recovery-artifact.fixtures";
 import { webV3WireContractFingerprint } from "../src/generated/contracts/web-v3.endpoint-catalog";
 import { createPresenter } from "../src/presentation/presenter";
 import { defaults } from "../src/presentation/preferences";
@@ -61,7 +62,7 @@ const openValues = {
 };
 const openDraft = createDraft(operationId, "CASE-1", "0", "OPEN", openValues);
 const recoveryDownload = (status: number): Response =>
-  new Response("{}", {
+  new Response(JSON.stringify({ ...recoveryArtifact, operationId }), {
     status,
     headers: {
       "content-type": "application/vnd.claimcore.recovery+json",

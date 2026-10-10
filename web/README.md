@@ -57,3 +57,20 @@ silently accepts stale assets.
 Browser operation and private runtime configuration belong in the [Web
 reference](../docs/web.md). The browser suite always targets published bytes and independently
 freshly initialized synthetic databases, never a Vite development server.
+
+## Interrupted contract generation
+
+Generation validates a complete sibling stage before promoting it. A writer reservation prevents
+concurrent generators and makes dev, typecheck and unit consumers refuse active or interrupted
+promotion. Ordinary failures restore prior output and the lock; interruption can leave recognizable
+`.contracts-stage-*`, backup and `.contracts-writer` entries under `web/src/generated/`.
+
+For an interruption, stop **all** contract generators and frontend consumers. Preserve the writer
+reservation (including an empty early reservation), stages, backups, generated output and current
+`config/contracts.lock.json` together before moving the abandoned reservation to a distinct saved
+location outside its reserved pathname. Review the intended lock against the committed revision:
+an interrupted intentional lock command may already have replaced the working lock. Restore that
+reviewed authoritative lock if needed, then run `npm --prefix web run contract:generate` to rebuild
+a coherent pair. A failed regeneration continues to refuse consumption. Only an independently
+intentional `contract:lock` may accept replacement bytes. Generation never takes over a reservation
+based on its age or a process ID.

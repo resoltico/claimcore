@@ -15,7 +15,7 @@ open ClaimCore.IntegrationTests.RealDataActivationPlanFixture
 
 let private owners app (witness: WitnessProtocol) first second =
     use source = RuntimeDataSource.create app
-    let store = new ActorGrantStore(source)
+    let store = source
     let registry = new ActorGrantRegistry(source, witness)
     registry.RegisterActor(first, second) |> await |> applied
 
@@ -212,7 +212,7 @@ let private twoHumanOwners owner app writer (witness: WitnessProtocol) profile =
     exactRetry witness coreOne firstApproval firstRevision finalSequence
 
     use source = RuntimeDataSource.create app
-    let store = new ActorGrantStore(source)
+    let store = source
     let registry = new ActorGrantRegistry(source, witness)
 
     registry.SetGrant(

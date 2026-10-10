@@ -10,17 +10,7 @@ open DataAuditCommon
 /// Accepted command rows are replayed through Application/Domain with authenticated
 /// disposition-only revisions interleaved from bounded independent witness-verified pages.
 module internal DataAuditReplay =
-    let private requireBusinessDate zone (row: AcceptedAuditRow) =
-        let localDate =
-            TimeZoneInfo.ConvertTime(row.ObservedInstant, zone).DateTime
-            |> DateOnly.FromDateTime
-
-        if row.BusinessDate <> localDate then
-            corrupt ()
-
-
     let private verifyRow
-        zone
         (witness: WitnessProtocol)
         cutoff
         caseId
@@ -35,8 +25,6 @@ module internal DataAuditReplay =
                 || row.WitnessSequence > cutoff
             then
                 corrupt ()
-
-            requireBusinessDate zone row
 
             let digest =
                 witnessProof (fun () ->
@@ -74,7 +62,6 @@ module internal DataAuditReplay =
     let private replayPage
         connection
         transaction
-        zone
         witness
         cutoff
         caseId
@@ -101,7 +88,7 @@ module internal DataAuditReplay =
                         last
                         ct
 
-                let! replayed = verifyRow zone witness cutoff caseId advanced row ct
+                let! replayed = verifyRow witness cutoff caseId advanced row ct
                 last <- Some replayed
 
             return last
@@ -148,7 +135,6 @@ module internal DataAuditReplay =
     let private replayAcceptedPages
         (connection: NpgsqlConnection)
         (transaction: NpgsqlTransaction)
-        zone
         (witness: WitnessProtocol)
         cutoff
         caseId
@@ -172,7 +158,6 @@ module internal DataAuditReplay =
                         replayPage
                             connection
                             transaction
-                            zone
                             witness
                             cutoff
                             caseId
@@ -191,7 +176,6 @@ module internal DataAuditReplay =
     let replayCase
         (connection: NpgsqlConnection)
         (transaction: NpgsqlTransaction)
-        zone
         (witness: WitnessProtocol)
         cutoff
         caseId
@@ -205,16 +189,7 @@ module internal DataAuditReplay =
             let cursor = DataAuditDispositionCursor.create ()
 
             let! previous, accepted =
-                replayAcceptedPages
-                    connection
-                    transaction
-                    zone
-                    witness
-                    cutoff
-                    caseId
-                    reference
-                    cursor
-                    ct
+                replayAcceptedPages connection transaction witness cutoff caseId reference cursor ct
 
             do!
                 finish

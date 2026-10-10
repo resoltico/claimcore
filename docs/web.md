@@ -320,3 +320,13 @@ before metadata verification and owns the built application through route setup 
 Application services close before runtime and certificate owners; startup refusal does not leave a
 verified pool, certificate or unstarted host behind. Trust validation and private-file rules remain
 the same on supported hosts.
+
+## Response consumption
+
+The browser counts actual received bytes: JSON responses have a 16 MiB allowance and recovery
+artifacts 131072 bytes, independent of Content-Length. A request-owned controller links caller
+cancellation to the twenty-second whole-response deadline. Consumption stops and the reader is
+released without awaiting a hostile source cancellation promise. Strict UTF-8/JSON decoding refuses
+duplicate members. Downloads require the complete contract-owned artifact structure and exact
+requested operation ID before creating a Blob, preserving original bytes. This is structural
+admission, not browser signature verification; dispatched timeout or cancellation remains uncertain.

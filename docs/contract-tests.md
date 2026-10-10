@@ -47,6 +47,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.[CC-AUDIT-001] authority lease cleanup preserves an observed result and retires its connector |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.adopted external copy transitions.[CC-AUDIT-001] adopted external signed origin and transition replay |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.adopted product copy transitions.[CC-AUDIT-001] product export signed post-adoption transition replays through projection |
+| CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.audit cancellation causes.[CC-AUDIT-001] orderly stop remains distinct from deadline and simultaneous integrity failure |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.authority operation fence.[CC-AUDIT-001] cancelled queued exclusive acquisition retires its connector and releases authority |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.authority operation fence.[CC-AUDIT-001] cancelling an audit after its fence releases all authority locks |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.authority operation fence.[CC-AUDIT-001] cancelling an audit queued behind authority does not strand its session lease |
@@ -64,11 +65,15 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.case erasure purged-state audit.[CC-AUDIT-001] restored claimant row beside purge proof quarantines audit |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.case erasure purged-state audit.[CC-AUDIT-001] restored primary missing purge tombstone quarantines audit |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.case lifecycle full audit.[CC-AUDIT-001] full audit merges disposition revisions and detects a tampered lifecycle tip |
+| CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.database admission.admitted PostgreSQL wait and settings policy.[CC-AUDIT-001] default authority acquisition expires without caller cancellation |
+| CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.database admission.admitted PostgreSQL wait and settings policy.[CC-AUDIT-001] explicit longer authority acquisition expires without caller cancellation |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.external copy publication.[CC-AUDIT-001] external publication verifies actual bytes and detects signature tampering |
+| CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.full primary data audit.[CC-AUDIT-001] audit rejects a false accepted UTC observation |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.full primary data audit.[CC-AUDIT-001] audit rejects a false accepted business date |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.full primary data audit.[CC-AUDIT-001] audit rejects a stale current projection |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.full primary data audit.[CC-AUDIT-001] audit rejects noncanonical historical snapshot |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.full primary data audit.[CC-AUDIT-001] audit replays every retained accepted case |
+| CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.full primary data audit.[CC-AUDIT-001] changed same-identity calendar rules preserve accepted history |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.full primary data audit.[CC-AUDIT-001] independent witness detects a whole omitted case |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.owner backup capture fence.[CC-AUDIT-001] complete audit drains primary mutations and blocks new witness tickets |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.owner full data audit command.[CC-AUDIT-001] owner verify-data reports full counts and quarantines a changed case |
@@ -81,6 +86,8 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.runtime full-audit cadence.[CC-AUDIT-001] scheduled complete audits repeat and remain healthy |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.runtime full-audit cadence.[CC-AUDIT-001] scheduled full-audit failure closes actor authority lanes |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.runtime scheduling and shutdown.[CC-AUDIT-001] long complete audits leave a completion-based interval |
+| CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.scheduled audit fenced quarantine.[CC-AUDIT-001] queued readiness cannot escape quarantined authority |
+| CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.scheduled audit fenced quarantine.[CC-AUDIT-001] queued reads and writes cannot cross failure publication and committed history survives |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.witnessed capacity and competing work.[CC-AUDIT-001] failed contention assertions join the audit and admitted actor work |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.witnessed capacity and competing work.[CC-AUDIT-001] paged witnessed volume export and actor work survive audit contention with small pools |
 | CC-AUDIT-001 | integration | ClaimCore PostgreSQL integration.witnessed capacity and competing work.[CC-AUDIT-001] workload deadlines join blocked full audits before releasing fixture authority |
@@ -330,6 +337,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-CLI-002 | unit | ClaimCore deterministic suite.native file boundary.[CC-CLI-002] malformed filename scalars cannot read write hash delete or lock encoded aliases |
 | CC-CLI-002 | unit | ClaimCore deterministic suite.native file boundary.[CC-CLI-002] native metadata failure releases an acquired file lock before refusal |
 | CC-CLI-002 | unit | ClaimCore deterministic suite.native private-file ancestor race.[CC-CLI-002] descriptor-relative create and lock remain in pinned parent after ancestor swap |
+| CC-CLI-002 | unit | ClaimCore deterministic suite.service response bounds.[CC-CLI-002] native recovery export requires complete structure and exact identity |
 | CC-CLI-003 | integration | ClaimCore PostgreSQL integration.CLI process interruption.[CC-CLI-003] SIGINT after real TLS mutation dispatch exits uncertain |
 | CC-CLI-003 | integration | ClaimCore PostgreSQL integration.CLI process interruption.[CC-CLI-003] SIGINT ends input wait before EOF and mutation admission |
 | CC-CLI-003 | unit | ClaimCore deterministic suite.CLI token lifetimes.[CC-CLI-003] delayed token delivery cannot create fresh reuse lifetime |
@@ -378,6 +386,12 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-DB-001 | integration | ClaimCore PostgreSQL integration.Storage boundary qualification.catalog change token behavior.guarded runtime admission.[CC-DB-001] a privilege drift is refused on the guarded path |
 | CC-DB-001 | integration | ClaimCore PostgreSQL integration.Storage boundary qualification.catalog change token behavior.guarded runtime admission.[CC-DB-001] the cancellable runtime admission is vouched for and refuses the same drift |
 | CC-DB-001 | integration | ClaimCore PostgreSQL integration.Storage boundary qualification.catalog change token behavior.guarded runtime admission.[CC-DB-001] the runtime refuses drift the catalog token vouched for before, then admits its reversal |
+| CC-DB-001 | integration | ClaimCore PostgreSQL integration.database admission.actual catalog transport cancellation and cleanup.[CC-DB-001] catalog reply cancellation retires the unclean connection |
+| CC-DB-001 | integration | ClaimCore PostgreSQL integration.database admission.actual catalog transport cancellation and cleanup.[CC-DB-001] original catalog divergence survives stalled rollback readback |
+| CC-DB-001 | integration | ClaimCore PostgreSQL integration.database admission.actual catalog transport cancellation and cleanup.[CC-DB-001] settings reply cancellation retires the unclean connection |
+| CC-DB-001 | integration | ClaimCore PostgreSQL integration.database admission.actual catalog transport cancellation and cleanup.[CC-DB-001] version reply cancellation retires the unclean connection |
+| CC-DB-001 | integration | ClaimCore PostgreSQL integration.database admission.admitted PostgreSQL wait and settings policy.[CC-DB-001] actual builders normalize infinite transport and cancellation budgets |
+| CC-DB-001 | integration | ClaimCore PostgreSQL integration.database admission.admitted PostgreSQL wait and settings policy.[CC-DB-001] asynchronous catalog admission preserves settings through later work and cancellation |
 | CC-DB-001 | integration | ClaimCore PostgreSQL integration.fresh installation qualification.[CC-DB-001] a different calendar is refused without rewriting installation identity |
 | CC-DB-001 | integration | ClaimCore PostgreSQL integration.fresh installation qualification.[CC-DB-001] baseline DDL failure rolls back the entire namespace before commit |
 | CC-DB-001 | integration | ClaimCore PostgreSQL integration.fresh installation qualification.[CC-DB-001] concurrent different calendars cannot both win initialization |

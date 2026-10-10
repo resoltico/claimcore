@@ -8,7 +8,8 @@ import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadTools, pathWithTools, platformKey } from "./tools.mjs";
+import { createRequire } from "node:module";
+import { installedTool, loadTools, pathWithTools, platformKey } from "./tools.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -27,12 +28,23 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
  * @returns {string | undefined} Trimmed standard output, or undefined when it cannot run.
  */
 function capture(command, args) {
-  const result = spawnSync(...commandLine(command, args), {
-    cwd: root,
-    encoding: "utf8",
-    env: { ...process.env, PATH: pathWithTools(root) },
-  });
-  return result.status === 0 ? result.stdout.trim() : undefined;
+  let result;
+  try {
+    result = spawnSync(...commandLine(command, args), {
+      cwd: root,
+      encoding: "utf8",
+      env: { ...process.env, PATH: pathWithTools(root) },
+      timeout: 10_000,
+      maxBuffer: 4096,
+    });
+  } catch {
+    return undefined;
+  }
+  if (result.status !== 0) {
+    return undefined;
+  }
+  const tokens = result.stdout.trim().match(/(?:^|\s)v?(\d+\.\d+\.\d+)(?:[\s,]|$)/u);
+  return tokens?.[1] ?? undefined;
 }
 
 /** @param {string} path @returns {any} */
@@ -102,20 +114,81 @@ function platformChecks() {
 }
 
 /** @returns {Check[]} */
+function nativeChecks() {
+  const commands = [
+    "bash",
+    "shellcheck",
+    "jq",
+    "curl",
+    "openssl",
+    ...(process.platform === "win32" ? [] : ["cc"]),
+  ];
+  return commands
+    .map((tool) => {
+      const result = spawnSync(
+        ...commandLine(tool, [tool === "openssl" ? "version" : "--version"]),
+        {
+          cwd: root,
+          stdio: "ignore",
+          timeout: 10_000,
+        },
+      );
+      return {
+        tool,
+        expected: "any",
+        actual: result.status === 0 ? "available" : undefined,
+        required: tool === "cc",
+        fix: `Install ${tool} for ${tool === "cc" ? "native builds" : "quality and qualification"}.`,
+      };
+    })
+    .concat([
+      {
+        tool: "docker-daemon",
+        expected: "any",
+        actual: capture("docker", ["info", "--format", "{{.ServerVersion}}"]),
+        required: false,
+        fix: "Start Docker and select a reachable context for PostgreSQL/published qualification.",
+      },
+    ]);
+}
+
+/** Availability only; no browser execution or download.
+ * @returns {Check[]} */
+function browserChecks() {
+  let browsers;
+  try {
+    browsers = createRequire(join(root, "web/package.json"))("@playwright/test");
+  } catch {
+    browsers = {};
+  }
+  return ["chromium", "firefox", "webkit"].map((tool) => ({
+    tool,
+    expected: "any",
+    actual: browsers[tool] && existsSync(browsers[tool].executablePath()) ? "available" : undefined,
+    required: false,
+    fix: `Run the pinned Playwright install for ${tool}; availability does not qualify browser behavior.`,
+  }));
+}
+
+/** @returns {Check[]} */
 export function collectChecks() {
   const platform = platformKey();
   const pinned = Object.entries(loadTools(root)).map(([name, tool]) => ({
     tool: name,
     expected: tool.version,
-    actual: existsSync(join(root, "artifacts/tools/bin", `.${name}.json`))
-      ? tool.version
-      : undefined,
+    actual: installedTool(root, name) === null ? undefined : tool.version,
     required: false,
     fix: tool.assets[platform]
       ? `Run: node eng/ci/tools.mjs ${name}`
       : `No pinned ${name} asset exists for ${platform}; install ${tool.version} yourself.`,
   }));
-  return [...platformChecks(), ...powerShellChecks(), ...pinned];
+  return [
+    ...platformChecks(),
+    ...powerShellChecks(),
+    ...nativeChecks(),
+    ...browserChecks(),
+    ...pinned,
+  ];
 }
 
 /**
@@ -126,7 +199,6 @@ const satisfied = ({ tool, expected, actual }) =>
   actual !== undefined &&
   (expected === "any" ||
     actual === expected ||
-    actual.includes(expected) ||
     (tool === "pwsh" && Number(actual.split(".")[0]) >= minimumPowerShellMajor));
 
 /**
@@ -152,5 +224,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       process.stdout.write(`         ${check.fix}\n`);
     }
   }
+  process.stdout.write(
+    "Availability is not executed qualification. Optional gaps leave the corresponding quality, PostgreSQL, published or browser family unavailable.\n",
+  );
   process.exitCode = checks.some((check) => check.required && !satisfied(check)) ? 1 : 0;
 }

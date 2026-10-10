@@ -1,8 +1,7 @@
-import { executable } from "../../eng/ci/executable.mjs";
+import { admitDotnetHost } from "../../eng/ci/dotnet-host.mjs";
 import { execFile } from "node:child_process";
-import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
-import { isAbsolute, resolve } from "node:path";
+import { resolve } from "node:path";
 import { promisify } from "node:util";
 
 import { generateWebValidators } from "./generate-web-validators.mjs";
@@ -20,16 +19,7 @@ const requiredSdk = async () => {
   return version;
 };
 
-const selectedDotnet = () => {
-  const configured = process.env["CLAIMCORE_DOTNET"];
-  if (configured !== undefined && !isAbsolute(configured)) {
-    throw new Error("CLAIMCORE_DOTNET must name one absolute executable.");
-  }
-  if (configured !== undefined && !existsSync(configured)) {
-    throw new Error("The explicitly selected .NET executable is unavailable.");
-  }
-  return configured ?? executable("dotnet");
-};
+const selectedDotnet = () => admitDotnetHost();
 
 const resolveDotnet = async () => {
   const expected = await requiredSdk();

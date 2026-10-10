@@ -11,4 +11,5 @@ let tests =
             ExecutableHelpTests.tests
             PathAndLinkTests.tests
             ContractTokenTests.tests
+            ProcessCaptureTests.tests
         ]

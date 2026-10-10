@@ -90,7 +90,7 @@ let certificate (value: BackupHealthClaims) =
 
 let private commitGuard witness profile policy canonical signature onLocked onRefused =
     let guard =
-        { new ICaseMutationCommitHealth with
+        { new IMutationCommitHealth with
             member _.VerifyLocked(connection, transaction, ct) =
                 task {
                     onLocked ()
@@ -169,6 +169,11 @@ let admittance
             RequireCaseRead = (fun _ -> Task.FromResult(()))
             RequireAuthoritySetup = (fun _ -> Task.FromResult(()))
             RequireAuthorityRead = (fun _ -> Task.FromResult(()))
+            RequireAuditTrust = (fun () -> ())
+            AuthorityHealth =
+                { new IMutationCommitHealth with
+                    member _.VerifyLocked(_, _, _) = Task.CompletedTask
+                }
             CommitHealth = guard
             CommitHealthRequired = true
         }

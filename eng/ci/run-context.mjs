@@ -1,3 +1,5 @@
+import { registerRunDiagnostics } from "./run-diagnostics.mjs";
+import { admitDotnetHost } from "./dotnet-host.mjs";
 import { protectScratch, requirePrivateContext } from "./scratch-privacy.mjs";
 import { jobContext } from "./job-context.mjs";
 // A local run binds one Gitless source snapshot to one retained evidence destination.
@@ -19,10 +21,10 @@ import { artifactDirectory } from "./artifact-path.mjs";
 import { copySource, sourceFingerprint } from "./source-snapshot.mjs";
 import { producingInputDigest } from "./publish/inputs.mjs";
 import { assertNoLinkAbove } from "./scan/files.mjs";
-import { observeHistory } from "./scan/history.mjs";
+import { historyIdentity, observeHistory } from "./scan/history.mjs";
 
 /** @typedef {Awaited<ReturnType<typeof observeHistory>>} History */
-/** @typedef {{format:1,id:string,origin:string,scratch:string,source:string,results:string,sourceSha256:string,producingInputsSha256:string,history:History,requested:string[]}} RunContext */
+/** @typedef {{format:2,id:string,origin:string,scratch:string,source:string,results:string,sourceSha256:string,producingInputsSha256:string,history:History,sdkHost:string,requested:string[]}} RunContext */
 /** @param {string} path */
 function physical(path) {
   assertNoLinkAbove(path);
@@ -41,6 +43,7 @@ function outsideGit(scratch) {
 }
 /** @param {string} origin @returns {Promise<RunContext>} */
 export async function createRun(origin) {
+  const sdkHost = admitDotnetHost();
   origin = physical(realpathSync(origin));
   const history = await observeHistory(origin);
   const id = randomUUID();
@@ -50,7 +53,7 @@ export async function createRun(origin) {
   const source = join(scratch, "source");
   mkdirSync(source, { mode: 0o700 });
   const sourceSha256 = copySource(origin, source);
-  assert.deepEqual(await observeHistory(origin), history);
+  assert.deepEqual(historyIdentity(await observeHistory(origin)), historyIdentity(history));
   const retained = artifactDirectory(origin, `artifacts/runs/${id}`);
   assert.ok(!existsSync(retained));
   mkdirSync(retained, { recursive: true, mode: 0o700 });
@@ -58,7 +61,7 @@ export async function createRun(origin) {
   mkdirSync(inputs, { mode: 0o700 });
   assert.equal(copySource(source, inputs), sourceSha256);
   const context = {
-    format: /** @type {const} */ (1),
+    format: /** @type {const} */ (2),
     id,
     origin,
     scratch,
@@ -67,11 +70,13 @@ export async function createRun(origin) {
     sourceSha256,
     producingInputsSha256: producingInputDigest(source),
     history,
-    requested: process.argv.slice(1),
+    sdkHost,
+    requested: process.argv.slice(2),
   };
   const bytes = `${JSON.stringify(context, null, 2)}\n`;
   writeFileSync(join(retained, "run-input.json"), bytes, { flag: "wx", mode: 0o600 });
   writeFileSync(join(scratch, "context.json"), bytes, { flag: "wx", mode: 0o600 });
+  registerRunDiagnostics(context, retained, id);
   return context;
 }
 /** @param {string} root @param {string} path @returns {RunContext} */
@@ -91,10 +96,12 @@ function validateRunContext(root, path) {
       "sourceSha256",
       "producingInputsSha256",
       "history",
+      "sdkHost",
       "requested",
     ].sort(),
   );
-  assert.equal(value.format, 1);
+  assert.equal(value.format, 2);
+  assert.equal(value.sdkHost, admitDotnetHost());
   assert.ok(
     Array.isArray(value.requested) && value.requested.every((part) => typeof part === "string"),
   );
@@ -113,7 +120,7 @@ function validateRunContext(root, path) {
     readFileSync(join(dirname(value.results), "run-input.json"), "utf8"),
     readFileSync(path, "utf8"),
   );
-  assert.deepEqual(observeHistory(value.origin), value.history);
+  assert.deepEqual(historyIdentity(observeHistory(value.origin)), historyIdentity(value.history));
   assert.equal(sourceFingerprint(join(dirname(value.results), "inputs")), value.sourceSha256);
   assert.equal(sourceFingerprint(value.source), value.sourceSha256);
   assert.equal(producingInputDigest(value.source), value.producingInputsSha256);
@@ -143,6 +150,9 @@ export async function historyRoot(root) {
     jobContext(root);
     return root;
   }
-  assert.deepEqual(await observeHistory(context.origin), context.history);
+  assert.deepEqual(
+    historyIdentity(await observeHistory(context.origin)),
+    historyIdentity(context.history),
+  );
   return context.origin;
 }

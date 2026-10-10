@@ -27,6 +27,7 @@ copies canonical summary business values and null markers in ar
 copies canonical summary business values and null markers in en
 copies canonical summary business values and null markers in lv
 copies safe values and provides an accessible fallback when clipboard access is unavailable
+counts actual chunks at the exact boundary and rejects deceptive lengths and giant chunks
 crosses English and Arabic grammar with independent displayed digits
 defaults to actual SUMMARY entries and deliberately resets between SUMMARY and FULL [CC-WEB-001]
 derives shared browser business meaning directly from semantic discovery
@@ -43,8 +44,10 @@ does not let an older refresh resurrect an authenticated session after logout
 does not rebase a frozen preparation after language switching and an external revision change
 does not retain recovery material without a preview
 does not send a credential from an anonymous session
+drains chunked bytes and strictly rejects invalid UTF-8 and JSON
 encodes every correction action explicitly and refuses an invalid registration clear
 enters submitting with the exact reviewed request and makes authoring unavailable
+exports only complete matching artifact structure and preserves exact bytes
 fails a malformed authenticated session and leaves logout inert
 fails closed on malformed delivery and validates recovery export
 fails immediately when the embedding document omits the application root
@@ -105,6 +108,7 @@ leaves a correction whose mode was changed and reverted without value edits
 leaves an unchanged retained review without stopping its server request
 leaves an untouched prefilled amendment directly
 leaves invalid authored decimal and integer text unchanged for core validation
+links caller cancellation and releases only the request-owned controller
 lists, reloads, pages, selects and opens cases through typed list outcomes
 local diagnostic contracts > fingerprints the administration grammar independently of display text
 local diagnostic contracts > rejects mismatched actual HTTP status even for an otherwise valid host body
@@ -124,6 +128,7 @@ models definite rejection and unknown outcomes without allowing a dispatched mut
 mounts the Web v3 browser root
 names idempotent recovery outcomes and leaves downloads without outcome messages
 navigates dashboard case, operation and recovery surfaces without hidden business dispatch
+observes rejected source cancellation while releasing the reader and preserving refusal
 offers independent known-ID inspection and known-ID plus digest export without listing [CC-REC-001]
 offers one explicit exact-ID Prepare retry after lost response
 offers real languages normally and a truthful current diagnostic option only when seeded
@@ -155,6 +160,7 @@ preserves exact recovery guidance when dismissal refuses an already-started subm
 preserves independent English diagnostic knowledge and parameter examples
 preserves only exact identity and recovery direction after uncertain export issuance
 preserves the independent preference through bounded reproducible event sequences
+propagates pre-cancelled callers and preserves a healthy caller on completion
 protects an amendment changed to all empty strings on switch and Back
 protects exact authored edits after retaining the review
 protects hidden correction replacement edits after returning its mode to KEEP
@@ -170,6 +176,7 @@ reflects reducer editability during preparation, review, submission and uncertai
 refuses a host fingerprint mismatch without claiming an invalid actor session [CC-WEB-001]
 refuses an export action when inspected recovery evidence has no exact digest
 refuses corrupt, oversized and unknown preference records without retaining arbitrary data
+refuses duplicate decoded member names at every object scope
 refuses nontext language values even when Intl could interpret an array-like object
 refuses reference message parts with missing, wrong-role or foreign holes [CC-WEB-001]
 refuses submission transitions when no exact reviewed request exists
@@ -177,6 +184,7 @@ refuses unknown or malformed message arguments without echoing the supplied mate
 rejects JSON-prefix spoofing and accepts an exact JSON media type with parameters
 rejects impossible local draft shapes and keeps absent current correction values blank
 rejects technical preparation details on an accepted Prepare replay
+releases a stalled reader without awaiting hostile cancellation
 releases the recovery navigation lock when an action throws
 renders ACTIVE separately from held state
 renders ERASURE_FINAL separately from held state
@@ -213,6 +221,7 @@ requires fresh inspection before retrying a submission-started preparation
 requires one exact attachment filename and matching UTF-8 filename parameter
 resolves explicit language and display-format preferences independently with deterministic fallbacks
 restores only the confirmed baseline grant when narrow setup fails [CC-AUTH-001]
+retains JSON.parse grammar refusal for incomplete strings, braces and non-JSON whitespace
 retains an exact id until a retained preparation is edited, then starts a new id
 retains authored replacement values for every grouped correction field
 retains local, accepted and uncertain notices as language-neutral data
@@ -226,6 +235,7 @@ rotates the retained operation ID when only an OPEN reference is changed
 routes dashboard list selections and the new-case command into the typed editor
 sends an explicit grouped correction and preserves all non-replaced groups
 sends bounded raw imports with generated media type and digest header
+separates array and object scopes and ignores structural text inside string values
 shows a safe diagnostic after a failed lifecycle review
 shows command acceptance together with required recovery for unconfirmed settlement
 shows current fields, server command labels, full expandable history and retryable history pages
@@ -241,13 +251,14 @@ surfaces invalid snapshots after session refresh and logout responses
 switches an untouched amendment without discarding authored work
 switches language and display formats without remounting children or rewriting a draft
 switches recovery views explicitly and leaves unavailable capacity unrendered
-times out submission and witnessed export without adding mutation abort or retry
+times out submission and witnessed export with transport abort while preserving mutation uncertainty
 treats a typed missing history as an empty read rather than a transport error
 uses an exact operation lookup result and clears absent lookup presentation
 uses generated v3 paths and typed endpoint outcomes
 uses inspected accepted evidence to remove stale list mutation actions
 uses one unavailable presentation for inaccessible and absent lifecycle subjects
 uses stable metadata identity rather than supplied English labels as catalog authority
+uses the full received artifact and JSON allowances independently of headers
 uses the supplied attempt cursor for the next inspected evidence page
 v3 Recovery import and export > exports the validated filename then retains previewed envelope material without submission
 v3 Recovery import and export > retains encrypted-envelope previews and reports rejected recovery pages

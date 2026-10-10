@@ -88,10 +88,10 @@ export async function scanSource({
     );
     stdout(result.stdout);
     stderr(result.stderr);
-    if (result.status === 0) {
+    if (result.status === 0 && !result.overflow) {
       stdout(`Source secret scan passed for ${files.length} repository files.\n`);
     }
-    return result.status;
+    return result.overflow ? 2 : result.status;
   } finally {
     rmSync(scratch, { recursive: true, force: true });
   }

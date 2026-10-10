@@ -5,11 +5,14 @@ open Expecto
 
 do afterRunTests Fixtures.shutdown
 
-let private disclosureTests =
+let private accessTrustTests =
     [
         MutationDisclosureTests.tests
         RecoveryDisclosureTests.tests
         WitnessSettlementReadbackTests.tests
+        RuntimeAuditCadenceTests.tests
+        AuditCancellationTests.tests
+        RuntimeAuditQuarantineTests.tests
     ]
 
 let private coreAndRecovery =
@@ -27,7 +30,7 @@ let private coreAndRecovery =
         RuntimeConstructionTests.tests
         CliInterruptionProcessTests.tests
         RuntimeIoTests.tests
-        RuntimeAuditCadenceTests.tests
+        (testList "database admission" [ ConnectionBudgetTests.tests; CatalogTransportTests.tests ])
         RuntimeSchedulingTests.tests
         AuthorityOperationFenceTests.tests
         WitnessedCapacityTests.tests
@@ -61,7 +64,7 @@ let private coreAndRecovery =
         AdministrationCompletionTests.tests
         DataAuditTests.tests
     ]
-    @ disclosureTests
+    @ accessTrustTests
 
 /// One test that drives 1,024 accepted operations in sequence; alone, it bounds one partition.
 let private terminalCapacity = [ TerminalCapacityTests.tests ]
@@ -95,7 +98,7 @@ let private restoreAndBackup =
         RestoreFencedTailPhysicalTests.tests
         IndependentHostProbeTests.tests
         IndependentHostTopologyTests.tests
-        ActorGrantStoreTests.tests
+        ActorAuthorityTests.tests
         WitnessAuditorTests.tests
         ActorGrantLookupTests.tests
         ActorBoundCoreTests.tests

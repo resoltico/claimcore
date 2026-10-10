@@ -23,7 +23,7 @@ let private withActorFixture action =
         provision ownerConnection witness owner |> applied
         use source = RuntimeDataSource.create app
         let registry = new ActorGrantRegistry(source, witness)
-        let ownerId = actorId (new ActorGrantStore(source)) owner
+        let ownerId = actorId (source) owner
 
         registry.SetGrant(
             owner,

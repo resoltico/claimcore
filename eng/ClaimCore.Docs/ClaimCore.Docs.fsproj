@@ -5,6 +5,7 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Types.fs" />
+    <Compile Include="ConsoleCapture.fs" />
     <Compile Include="Repository.fs" />
     <Compile Include="ArchitectureManifest.fs" />
     <Compile Include="ArchitectureTable.fs" />

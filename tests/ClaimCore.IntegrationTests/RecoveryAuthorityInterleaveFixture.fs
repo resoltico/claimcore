@@ -71,7 +71,7 @@ let private initializeActors ownerConnection source witness =
     let owner = human "interleave-owner"
     provision ownerConnection witness owner |> applied
     let registry = new ActorGrantRegistry(source, witness)
-    let ownerId = actorId (new ActorGrantStore(source)) owner
+    let ownerId = actorId (source) owner
 
     for role in [ Role.CaseEditor; Role.RecoveryOperator ] do
         registry.SetGrant(

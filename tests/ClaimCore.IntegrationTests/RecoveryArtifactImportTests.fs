@@ -19,7 +19,7 @@ let private setOperator source witness owner enabled =
 
     registry.SetGrant(
         owner,
-        actorId (new ActorGrantStore(source)) owner,
+        actorId (source) owner,
         {
             Role = Role.RecoveryOperator
             Scope = GrantScope.Installation

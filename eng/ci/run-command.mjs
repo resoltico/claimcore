@@ -70,13 +70,16 @@ function setupCommands(args) {
   }
   return commands;
 }
-/** @param {string[][]} commands @param {{cwd:string,env:NodeJS.ProcessEnv,groups:number[]}} options @param {string} logs */
-async function setupRun(commands, options, logs) {
+/** @param {string[][]} commands @param {{cwd:string,env:NodeJS.ProcessEnv,groups:number[]}} options @param {string} logs @param {Record<string,string>} stages */
+async function setupRun(commands, options, logs, stages) {
   for (const [index, [command, ...args]] of commands.entries()) {
     assert.ok(command);
     const status = await runToLog(command, args, {
       ...options,
       log: join(logs, `setup-${index}.log`),
+      onOutcome: ({ exit, captureFailed }) => {
+        stages[`setup-${index}`] = `exit ${exit}; captureFailed=${captureFailed}`;
+      },
     });
     if (status !== 0) {
       return status;
@@ -129,17 +132,44 @@ export async function coordinate(root, command, args) {
   if (args[0] === "eng/Run-PublishedWebE2E.sh") {
     args = [args[0], ...admitBrowserPublication(context, args.slice(1))];
   }
-  let status = await setupRun(setupCommands(args), options, logs);
-  if (status === 0) {
-    status = await runToLog(command, args, { ...options, log: join(logs, "command.log") });
-  }
-  if (status === 0 && publicationOutput !== null) {
-    await retainPublication(context, publicationOutput);
-  }
-  await finishRun(context, { passed: status === 0, groups, stages: { command: `exit ${status}` } });
-  process.exitCode = status;
+  await executeInRun(context, command, args, options, { logs, publicationOutput });
   return true;
 }
+/** @param {import("./run-context.mjs").RunContext} context @param {string} command @param {string[]} args
+ * @param {{cwd:string,env:NodeJS.ProcessEnv,groups:number[]}} options @param {{logs:string,publicationOutput:string|null}} paths */
+async function executeInRun(context, command, args, options, { logs, publicationOutput }) {
+  const { groups } = options;
+  let status;
+  /** @type {Record<string,string>} */
+  const stages = {};
+  try {
+    status = await setupRun(setupCommands(args), options, logs, stages);
+    stages.setup = `exit ${status}`;
+    if (status === 0) {
+      status = await runToLog(command, args, {
+        ...options,
+        log: join(logs, "command.log"),
+        onOutcome: ({ exit, captureFailed }) => {
+          stages["command-execution"] = `exit ${exit}; captureFailed=${captureFailed}`;
+        },
+      });
+      stages.command = `exit ${status}`;
+    }
+    if (status === 0 && publicationOutput !== null) {
+      await retainPublication(context, publicationOutput);
+    }
+  } catch {
+    stages.coordination = "refused";
+    status = 1;
+  }
+  process.exitCode = status;
+  try {
+    await finishRun(context, { passed: status === 0, groups, stages });
+  } catch {
+    process.exitCode = 1;
+  }
+}
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const root = resolve(import.meta.dirname, "../..");
   const [command, ...args] = process.argv.slice(2);

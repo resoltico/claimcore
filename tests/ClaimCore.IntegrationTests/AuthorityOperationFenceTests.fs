@@ -19,7 +19,7 @@ let private openSmallRuntime () =
         let principal = human "small-pool-owner"
         provision owner witness principal |> applied
         use source = RuntimeDataSource.create app
-        let grants = new ActorGrantStore(source)
+        let grants = source
         let registry = new ActorGrantRegistry(source, witness)
 
         registry.SetGrant(

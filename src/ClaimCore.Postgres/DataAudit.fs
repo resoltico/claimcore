@@ -17,7 +17,6 @@ module internal DataAudit =
     [<NoEquality; NoComparison>]
     type private InstallationEvidence =
         {
-            Zone: TimeZoneInfo
             InstallationId: Guid
             LineageId: Guid
             Epoch: int64
@@ -29,8 +28,9 @@ module internal DataAudit =
         }
 
     let private readEvidence (reader: NpgsqlDataReader) =
+        businessZone (reader.GetString(0)) |> ignore
+
         {
-            Zone = businessZone (reader.GetString(0))
             InstallationId = reader.GetGuid(1)
             LineageId = reader.GetGuid(2)
             Epoch = reader.GetInt64(3)
@@ -129,7 +129,7 @@ module internal DataAudit =
             if not (matchesWitness tip evidence) then
                 corrupt ()
 
-            return evidence.Zone, tip
+            return tip
         }
 
     let private requireNoOrphan
@@ -173,7 +173,6 @@ module internal DataAudit =
     let private verifyPrimary
         (connection: NpgsqlConnection)
         (transaction: NpgsqlTransaction)
-        zone
         (witness: WitnessProtocol)
         cutoff
         (commitments: ISuppressionCommitments option)
@@ -184,7 +183,6 @@ module internal DataAudit =
                 DataAuditCaseReplay.replayCases
                     connection
                     transaction
-                    zone
                     witness
                     cutoff
                     cancellationToken
@@ -240,13 +238,12 @@ module internal DataAudit =
                 new NpgsqlCommand("SET TRANSACTION READ ONLY", connection, transaction)
 
             let! _ = readOnly.ExecuteNonQueryAsync(cancellationToken)
-            let! zone, tip = installation connection transaction witness cancellationToken
+            let! tip = installation connection transaction witness cancellationToken
 
             let! primary =
                 verifyPrimary
                     connection
                     transaction
-                    zone
                     witness
                     tip.TipSequence
                     commitments

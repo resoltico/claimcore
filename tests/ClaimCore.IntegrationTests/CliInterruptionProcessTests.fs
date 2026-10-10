@@ -37,7 +37,12 @@ let private beforeInputEof () =
     use deadline = new CancellationTokenSource(TimeSpan.FromSeconds 5.)
     use errorStream = child.StandardError
     use output = child.StandardOutput
-    let errors = errorStream.ReadToEndAsync(deadline.Token)
+
+    let errors =
+        ClaimCore.TestSupport.BoundedProcess.readText
+            (16 * 1024 * 1024)
+            errorStream
+            (TimeSpan.FromSeconds 30.)
 
     try
         child.StandardInput.WriteLine("{invalid}")

@@ -1,3 +1,4 @@
+import { admitDotnetHost } from "./dotnet-host.mjs";
 // Source restore and build commands shared by first-checkout setup and the local verification plan.
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -23,6 +24,7 @@ export const buildCommands = [
 
 /** @param {string} root @param {string[][]} commands */
 export function runCommands(root, commands) {
+  admitDotnetHost();
   artifactDirectory(root, "artifacts/bin");
   for (const [command = "", ...args] of commands) {
     process.stdout.write(`> ${[command, ...args].join(" ")}\n`);

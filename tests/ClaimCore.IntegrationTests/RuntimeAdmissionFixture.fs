@@ -11,8 +11,13 @@ let gate requireMutation : RuntimeUseGate =
         RequireCaseRead = (fun _ -> Task.FromResult(()))
         RequireAuthoritySetup = (fun _ -> Task.FromResult(()))
         RequireAuthorityRead = (fun _ -> Task.FromResult(()))
+        RequireAuditTrust = (fun () -> ())
+        AuthorityHealth =
+            { new IMutationCommitHealth with
+                member _.VerifyLocked(_, _, _) = Task.CompletedTask
+            }
         CommitHealth =
-            { new ICaseMutationCommitHealth with
+            { new IMutationCommitHealth with
                 member _.VerifyLocked(_, _, _) = Task.CompletedTask
             }
         CommitHealthRequired = false

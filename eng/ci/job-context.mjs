@@ -1,3 +1,4 @@
+import { admitDotnetHost } from "./dotnet-host.mjs";
 // Explicit caller-selected job ownership; this record does not authenticate a CI provider.
 import assert from "node:assert/strict";
 import {
@@ -13,7 +14,7 @@ import { fileURLToPath } from "node:url";
 import { artifactDirectory } from "./artifact-path.mjs";
 import { producingInputDigest } from "./publish/inputs.mjs";
 import { assertNoLinkAbove } from "./scan/files.mjs";
-import { observeHistory } from "./scan/history.mjs";
+import { historyIdentity, observeHistory } from "./scan/history.mjs";
 import { sourceFingerprint } from "./source-snapshot.mjs";
 
 /** @param {string} root */
@@ -23,19 +24,21 @@ function observation(root) {
   assert.equal(realpathSync(root), root);
   const history = observeHistory(root);
   const value = {
-    format: 1,
+    format: 2,
     kind: "job-checkout",
     root,
     history,
+    sdkHost: admitDotnetHost(),
     sourceSha256: sourceFingerprint(root),
     producingInputsSha256: producingInputDigest(root),
   };
-  assert.deepEqual(observeHistory(root), history);
+  assert.deepEqual(historyIdentity(observeHistory(root)), historyIdentity(history));
   return value;
 }
 
 /** @param {string} root @returns {string} */
 export function createJobContext(root) {
+  admitDotnetHost();
   const value = observation(root);
   const path = join(artifactDirectory(value.root, "artifacts/job-ownership"), "context.json");
   assert.ok(!existsSync(path), "A job context must start absent.");
@@ -56,7 +59,12 @@ function validate(root, path) {
     assert.equal(stat.mode & 0o077, 0, "A job context must be owner-private.");
   }
   const value = JSON.parse(readFileSync(path, "utf8"));
-  assert.deepEqual(value, observation(root), "Job source or Git graph changed after admission.");
+  const current = observation(root);
+  assert.deepEqual(
+    { ...value, history: historyIdentity(value.history) },
+    { ...current, history: historyIdentity(current.history) },
+    "Job source or Git graph changed after admission.",
+  );
   return value;
 }
 

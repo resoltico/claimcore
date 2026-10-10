@@ -134,6 +134,7 @@ ClaimCore PostgreSQL integration.adopted external copy transitions.[CC-ERASE-001
 ClaimCore PostgreSQL integration.adopted product copy transitions.[CC-AUDIT-001] product export signed post-adoption transition replays through projection
 ClaimCore PostgreSQL integration.advanced physical restored pair.[CC-BACKUP-001] original BASE pair replays later synthetic WAL before audit
 ClaimCore PostgreSQL integration.advanced physical restored pair.[CC-BACKUP-001] repeated quiet WAL switches retain the last completed segment
+ClaimCore PostgreSQL integration.audit cancellation causes.[CC-AUDIT-001] orderly stop remains distinct from deadline and simultaneous integrity failure
 ClaimCore PostgreSQL integration.authority expiration under lock.[CC-LIFE-001] approval issuance uses current database time after lock delay
 ClaimCore PostgreSQL integration.authority expiration under lock.[CC-LIFE-001] delayed approval consumption refuses while expired exact readback survives
 ClaimCore PostgreSQL integration.authority interleave knowledge.[CC-AUTH-001] unrelated grant revision change after real admission preserves exact unresolved attempt
@@ -199,6 +200,14 @@ ClaimCore PostgreSQL integration.case-list capacity.[CC-AUTH-001] sparse actor a
 ClaimCore PostgreSQL integration.case-list cursor protection.[CC-AUTH-001] cursor tamper and runtime restart refuse without plaintext
 ClaimCore PostgreSQL integration.case-list cursor protection.[CC-AUTH-001] encrypted cursor binds actor grant query and expiry
 ClaimCore PostgreSQL integration.copy adoption owner approval.[CC-ERASE-001] product export adoption approval and tamper audit remain pending
+ClaimCore PostgreSQL integration.database admission.actual catalog transport cancellation and cleanup.[CC-DB-001] catalog reply cancellation retires the unclean connection
+ClaimCore PostgreSQL integration.database admission.actual catalog transport cancellation and cleanup.[CC-DB-001] original catalog divergence survives stalled rollback readback
+ClaimCore PostgreSQL integration.database admission.actual catalog transport cancellation and cleanup.[CC-DB-001] settings reply cancellation retires the unclean connection
+ClaimCore PostgreSQL integration.database admission.actual catalog transport cancellation and cleanup.[CC-DB-001] version reply cancellation retires the unclean connection
+ClaimCore PostgreSQL integration.database admission.admitted PostgreSQL wait and settings policy.[CC-AUDIT-001] default authority acquisition expires without caller cancellation
+ClaimCore PostgreSQL integration.database admission.admitted PostgreSQL wait and settings policy.[CC-AUDIT-001] explicit longer authority acquisition expires without caller cancellation
+ClaimCore PostgreSQL integration.database admission.admitted PostgreSQL wait and settings policy.[CC-DB-001] actual builders normalize infinite transport and cancellation budgets
+ClaimCore PostgreSQL integration.database admission.admitted PostgreSQL wait and settings policy.[CC-DB-001] asynchronous catalog admission preserves settings through later work and cancellation
 ClaimCore PostgreSQL integration.domain durable evidence.[CC-DOM-001] fresh SQL refuses terminal business revisions and unsupported rule evidence
 ClaimCore PostgreSQL integration.domain durable evidence.[CC-DOM-002] clock rollback amendments persist and retain the current rule revision
 ClaimCore PostgreSQL integration.durable witness verification knowledge.[CC-WIT-001] healthy exact fallback recovers after the same lost original settlement response
@@ -216,10 +225,12 @@ ClaimCore PostgreSQL integration.fresh installation qualification.[CC-DB-001] co
 ClaimCore PostgreSQL integration.fresh installation qualification.[CC-DB-001] fresh initialization atomically installs the current identity and calendar
 ClaimCore PostgreSQL integration.fresh installation qualification.[CC-DB-001] identical initialization and read-only verification preserve every stored byte
 ClaimCore PostgreSQL integration.fresh installation qualification.[CC-DB-001] verification and maintenance refuse an absent baseline without creating it
+ClaimCore PostgreSQL integration.full primary data audit.[CC-AUDIT-001] audit rejects a false accepted UTC observation
 ClaimCore PostgreSQL integration.full primary data audit.[CC-AUDIT-001] audit rejects a false accepted business date
 ClaimCore PostgreSQL integration.full primary data audit.[CC-AUDIT-001] audit rejects a stale current projection
 ClaimCore PostgreSQL integration.full primary data audit.[CC-AUDIT-001] audit rejects noncanonical historical snapshot
 ClaimCore PostgreSQL integration.full primary data audit.[CC-AUDIT-001] audit replays every retained accepted case
+ClaimCore PostgreSQL integration.full primary data audit.[CC-AUDIT-001] changed same-identity calendar rules preserve accepted history
 ClaimCore PostgreSQL integration.full primary data audit.[CC-AUDIT-001] independent witness detects a whole omitted case
 ClaimCore PostgreSQL integration.independent archive host proof.[CC-BACKUP-001] forged or stale archive observation is refused
 ClaimCore PostgreSQL integration.independent archive host proof.[CC-BACKUP-001] signed archive observation binds every final WAL object
@@ -363,6 +374,8 @@ ClaimCore PostgreSQL integration.runtime scheduling and shutdown.[CC-AUDIT-001] 
 ClaimCore PostgreSQL integration.runtime scheduling and shutdown.[CC-RUN-001] audit stop is nonblocking and cleanup joins cancellation callbacks
 ClaimCore PostgreSQL integration.runtime scheduling and shutdown.[CC-RUN-001] shutdown stops audit before draining admitted actor work
 ClaimCore PostgreSQL integration.runtime signed backup health.[CC-BACKUP-001] signed current health cannot authorize actor Execute after retained-copy loss
+ClaimCore PostgreSQL integration.scheduled audit fenced quarantine.[CC-AUDIT-001] queued readiness cannot escape quarantined authority
+ClaimCore PostgreSQL integration.scheduled audit fenced quarantine.[CC-AUDIT-001] queued reads and writes cannot cross failure publication and committed history survives
 ClaimCore PostgreSQL integration.settled erasure fence.[CC-ERASE-001] a mismatched request tombstone cannot mint pending proof
 ClaimCore PostgreSQL integration.settled erasure fence.[CC-ERASE-001] complete case witness scan stages bounded HMAC denials
 ClaimCore PostgreSQL integration.settled erasure fence.[CC-ERASE-001] only a settled erasure fence advances to pending

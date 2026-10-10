@@ -1,17 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <Import Project="ProcessSupport.Sources.props" />
+  <Import Project="Fixture.Sources.props" />
   <ItemGroup>
-    <Compile Include="FixtureEnvironment.fs" />
-    <Compile Include="FixturePrivateFiles.fs" />
-    <Compile Include="FixtureWitnessIdentity.fs" />
-    <Compile Include="FixtureWitnessDatabase.fs" />
-    <Compile Include="FixtureDatabase.fs" />
-    <Compile Include="CaseListCursorTestSupport.fs" />
-    <Compile Include="CaseListCursorProtectionTests.fs" />
-    <Compile Include="FixtureCommandExecution.fs" />
-    <Compile Include="ActorBoundStoreFixture.fs" />
-    <Compile Include="Fixtures.fs" />
-    <Compile Include="DatabaseObservation.fs" />
     <Compile Include="TransactionPaginationTests.fs" />
     <Compile Include="TransactionRejectionTests.fs" />
     <Compile Include="OperationLookupTests.fs" />
@@ -46,6 +36,12 @@
     <Compile Include="ActorGrantTestSupport.fs" />
     <Compile Include="RuntimeIoTests.fs" />
     <Compile Include="RuntimeAuditCadenceTests.fs" />
+    <Compile Include="RuntimeAuditQuarantineFixture.fs" />
+    <Compile Include="RuntimeAuditQuarantineTests.fs" />
+    <Compile Include="ConnectionBudgetTests.fs" />
+    <Compile Include="AuditCancellationTests.fs" />
+    <Compile Include="PostgresReplyDelay.fs" />
+    <Compile Include="CatalogTransportTests.fs" />
     <Compile Include="RuntimeSchedulingTests.fs" />
     <Compile Include="WitnessAuditorTests.fs" />
     <Compile Include="RecoveryArtifactExportTestSupport.fs" />
@@ -90,7 +86,7 @@
     <Compile Include="RestoreProducePhysicalChecks.fs" />
     <Compile Include="RestoreProducePhysicalTests.fs" />
     <Compile Include="RestoreProduceAdvancedPairTests.fs" />
-    <Compile Include="ActorGrantStoreTests.fs" />
+    <Compile Include="ActorAuthorityTests.fs" />
     <Compile Include="ActorGrantLookupTests.fs" />
     <Compile Include="ActorBoundCoreTestSupport.fs" />
     <Compile Include="ActorBoundCoreTests.fs" />
