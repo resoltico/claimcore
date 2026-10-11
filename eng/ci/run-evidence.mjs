@@ -13,6 +13,17 @@ import { assertNoLinkAbove, fingerprint, regularFiles } from "./scan/files.mjs";
 import { scanArtifacts } from "./scan/artifacts.mjs";
 import { installTool } from "./tools.mjs";
 import { historyIdentity, observeHistory } from "./scan/history.mjs";
+import { evidenceStageOwnership, removeEvidenceStage } from "./evidence-stage.mjs";
+
+/** @param {import("./run-context.mjs").RunContext} context */
+function requireUnchangedInputs(context) {
+  runContext(context.source, contextEnvironment(context)["CLAIMCORE_RUN_CONTEXT"]);
+  assert.deepEqual(
+    historyIdentity(observeHistory(context.origin)),
+    historyIdentity(context.history),
+  );
+  assert.equal(sourceFingerprint(context.origin), context.sourceSha256);
+}
 
 /** @param {import("./run-context.mjs").RunContext} context @param {boolean} passed */
 async function retainResults(context, passed) {
@@ -49,26 +60,28 @@ async function retainResults(context, passed) {
   );
   assert.equal(fingerprint(staging), before);
   artifactDirectory(context.origin, relative(context.origin, context.results));
-  runContext(context.source, contextEnvironment(context)["CLAIMCORE_RUN_CONTEXT"]);
-  assert.deepEqual(
-    historyIdentity(observeHistory(context.origin)),
-    historyIdentity(context.history),
-  );
-  assert.equal(sourceFingerprint(context.origin), context.sourceSha256);
-  transferEvidence(staging, context.results, before);
-  runContext(context.source, contextEnvironment(context)["CLAIMCORE_RUN_CONTEXT"]);
-  assert.deepEqual(
-    historyIdentity(observeHistory(context.origin)),
-    historyIdentity(context.history),
-  );
-  assert.equal(sourceFingerprint(context.origin), context.sourceSha256);
+  requireUnchangedInputs(context);
+  const removeDuplicate = transferEvidence(staging, context.results, before, [
+    ...files.map((file) => relative(context.source, file).replaceAll("\\", "/")),
+    "admission.json",
+  ]);
+  requireUnchangedInputs(context);
+  if (passed && qualified && !removeDuplicate()) {
+    try {
+      process.stderr.write("Verified report copy retained; staged duplicate cleanup refused.\n");
+    } catch {
+      // Optional duplicate cleanup never changes execution or evidence admission.
+    }
+  }
 }
 /** Copy once into fresh inodes: a producer's held descriptor must not mutate retained evidence.
- * @param {string} staging @param {string} destinationRoot @param {string} qualifiedFingerprint */
-export function transferEvidence(staging, destinationRoot, qualifiedFingerprint) {
+ * @param {string} staging @param {string} destinationRoot @param {string} qualifiedFingerprint
+ * @param {string[]} [admittedFiles] */
+export function transferEvidence(staging, destinationRoot, qualifiedFingerprint, admittedFiles) {
   assertNoLinkAbove(staging);
   assertNoLinkAbove(dirname(destinationRoot));
   assert.equal(fingerprint(staging), qualifiedFingerprint);
+  const staged = evidenceStageOwnership(staging, admittedFiles);
   mkdirSync(destinationRoot, { mode: 0o700 });
   for (const file of regularFiles(staging)) {
     const destination = join(destinationRoot, relative(staging, file));
@@ -79,6 +92,9 @@ export function transferEvidence(staging, destinationRoot, qualifiedFingerprint)
   assert.equal(fingerprint(staging), qualifiedFingerprint);
   assertNoLinkAbove(destinationRoot);
   assert.equal(fingerprint(destinationRoot), qualifiedFingerprint);
+  const delivered = evidenceStageOwnership(destinationRoot, admittedFiles);
+  return () =>
+    removeEvidenceStage(staging, destinationRoot, qualifiedFingerprint, staged, delivered);
 }
 /** @param {import("./run-context.mjs").RunContext} context @param {{passed:boolean,groups:number[],stages?:Record<string,string>}} outcome */
 export async function finishRun(context, outcome) {
