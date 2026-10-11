@@ -4,6 +4,7 @@ import {
   closeSync,
   existsSync,
   ftruncateSync,
+  linkSync,
   lstatSync,
   mkdirSync,
   mkdtempSync,
@@ -28,6 +29,7 @@ import { gitEnvironment } from "./scan/process.mjs";
 import { writePrerequisiteReports } from "./frontend-prerequisite-fixture.mjs";
 import { prerequisiteStages, finishFrontendPrerequisites } from "./frontend-prerequisites.mjs";
 import { fingerprint } from "./scan/files.mjs";
+import { evidenceStageOwnership } from "./evidence-stage.mjs";
 
 /** @param {(root:string, staging:string, destination:string)=>void} body */
 function fixture(body) {
@@ -69,6 +71,66 @@ test("changed qualified report bytes refuse before creating a retained tree", ()
     writeFileSync(join(staging, "suite/report.trx"), "different synthetic report");
     assert.throws(() => transferEvidence(staging, destination, qualified));
     assert.equal(existsSync(destination), false);
+  });
+});
+
+test("creator cleanup unlinks only verified staging while a held writer cannot change retention", () => {
+  fixture((_root, staging, destination) => {
+    const source = join(staging, "suite/report.trx");
+    const fd = openSync(source, "r+");
+    try {
+      const before = fingerprint(staging);
+      const cleanup = transferEvidence(staging, destination, before, ["suite/report.trx"]);
+      assert.equal(cleanup(), true);
+      assert.equal(existsSync(staging), false);
+      writeSync(fd, Buffer.from("unlinked writer"), 0, 15, 0);
+      ftruncateSync(fd, 15);
+      assert.equal(fingerprint(destination), before);
+    } finally {
+      closeSync(fd);
+    }
+  });
+});
+
+for (const side of ["stage", "retained"]) {
+  for (const change of ["bytes", "inode", "directory", "file", "link", "hardlink"]) {
+    test(`duplicate cleanup preserves ${side} after ${change} substitution`, () => {
+      fixture((root, staging, destination) => {
+        const before = fingerprint(staging);
+        const cleanup = transferEvidence(staging, destination, before, ["suite/report.trx"]);
+        const changed = side === "stage" ? staging : destination;
+        const file = join(changed, "suite/report.trx");
+        if (change === "bytes") {
+          writeFileSync(file, "preserved changed evidence");
+        } else if (change === "inode") {
+          const bytes = readFileSync(file);
+          renameSync(file, join(root, "old-report.trx"));
+          writeFileSync(file, bytes);
+        } else if (change === "directory") {
+          mkdirSync(join(changed, "unknown-empty"));
+        } else if (change === "file") {
+          writeFileSync(join(changed, "unknown.txt"), "unowned evidence");
+        } else if (change === "link") {
+          renameSync(join(changed, "suite"), join(root, "outside"));
+          symlinkSync(join(root, "outside"), join(changed, "suite"), "junction");
+        } else {
+          linkSync(file, join(root, "report-link.trx"));
+        }
+        assert.equal(cleanup(), false);
+        assert.equal(existsSync(join(staging, "suite/report.trx")), true);
+        assert.equal(existsSync(join(destination, "suite/report.trx")), true);
+      });
+    });
+  }
+}
+
+test("known report paths cannot adopt empty directory leaves or noncanonical entries", () => {
+  fixture((_root, staging) => {
+    mkdirSync(join(staging, "empty.trx"));
+    assert.equal(evidenceStageOwnership(staging, ["suite/report.trx", "empty.trx"]), null);
+    for (const paths of [["../outside"], ["suite/../report.trx"], ["suite/report.trx", "suite"]]) {
+      assert.equal(evidenceStageOwnership(staging, paths), null);
+    }
   });
 });
 
@@ -131,6 +193,7 @@ async function frontendEvidenceFixture(body) {
     }
     const run = await createRun(origin);
     ({ scratch } = run);
+    mkdirSync(join(run.source, "artifacts"), { recursive: true, mode: 0o700 });
     await body(run);
   } finally {
     if (scratch) {
@@ -162,6 +225,7 @@ test("passed frontend gates require a valid receipt retained with owner reports 
     requirePassedEvidence(run, stages);
     assert.equal(sourceFingerprint(run.source), run.sourceSha256);
     await finishRun(run, { passed: true, groups: [], stages });
+    assert.equal(existsSync(join(run.source, "artifacts/retained-evidence")), false);
     assert.deepEqual(
       readFileSync(join(run.results, "artifacts/frontend/prerequisites.json")),
       bytes,
@@ -174,5 +238,56 @@ test("passed frontend gates require a valid receipt retained with owner reports 
       assert.ok(existsSync(join(run.results, leaf)));
     }
     assert.equal(sourceFingerprint(join(dirname(run.results), "inputs")), run.sourceSha256);
+  });
+});
+
+test("failed execution preserves its staging even when evidence can be admitted", async () => {
+  await frontendEvidenceFixture(async (run) => {
+    await finishRun(run, { passed: false, groups: [], stages: { command: "FAILED" } });
+    assert.equal(existsSync(join(run.source, "artifacts/retained-evidence")), true);
+    assert.equal(
+      JSON.parse(readFileSync(join(dirname(run.results), "outcome.json"), "utf8")).passed,
+      false,
+    );
+  });
+});
+
+test("unknown stage entries and refused cleanup diagnostics cannot mask successful admission", async () => {
+  await frontendEvidenceFixture(async (run) => {
+    const output = process.stdout.write.bind(process.stdout);
+    const errors = process.stderr.write.bind(process.stderr);
+    const unknown = join(run.source, "artifacts/retained-evidence/unknown-empty");
+    let injected = false;
+    let refused = false;
+    try {
+      process.stdout.write = (...args) => {
+        if (String(args[0]).includes("Artifact secret scan passed") && !injected) {
+          mkdirSync(unknown);
+          injected = true;
+        }
+        return Boolean(Reflect.apply(output, process.stdout, args));
+      };
+      process.stderr.write = (...args) => {
+        if (String(args[0]).includes("staged duplicate cleanup refused")) {
+          refused = true;
+          throw new Error("synthetic closed diagnostic sink");
+        }
+        return Boolean(Reflect.apply(errors, process.stderr, args));
+      };
+      await finishRun(run, { passed: true, groups: [123], stages: {} });
+    } finally {
+      process.stdout.write = output;
+      process.stderr.write = errors;
+    }
+    assert.equal(injected && refused, true);
+    assert.equal(existsSync(unknown), true);
+    assert.equal(
+      JSON.parse(readFileSync(join(run.results, "admission.json"), "utf8")).qualified,
+      true,
+    );
+    assert.equal(
+      JSON.parse(readFileSync(join(dirname(run.results), "outcome.json"), "utf8")).passed,
+      true,
+    );
   });
 });

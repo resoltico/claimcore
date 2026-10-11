@@ -210,6 +210,11 @@ After all consumers finish, a successful settled run retains reports, inventorie
 publication/input manifests once, then removes only scratch whose actual ownership is known settled. Process-group absence cannot prove
 that a detached descendant exited; snapshots that executed jobs remain conservatively private until their
 process/resource ownership can be established. A no-job selection can remove its untouched snapshot.
+After successful qualified report transfer and final input checks, the creator removes only its
+exact unchanged staging duplicates, preserving the retained fresh-inode copy. Unknown entries,
+links, replacement inodes or changed copies refuse cleanup. Cleanup refusal does not change
+execution or evidence admission; a failure during removal may leave a partial duplicate tree.
+This removes report copies only and establishes no whole-snapshot or descendant settlement.
 Published CLI/browser wrappers remove only their own disposable publications after their actual consumer
 processes, exact-label resource cleanup and final byte verification finish; exact manifests survive.
 Those wrappers restore and build the three application projects and the registered acceptance harness
