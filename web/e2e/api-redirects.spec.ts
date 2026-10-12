@@ -6,11 +6,14 @@ import { isWebV3Response } from "../src/generated/contracts/web-v3.validation";
 import type { WebV3Response } from "../src/generated/contracts/web-v3.types";
 import { openAuthenticated } from "./session-helpers";
 
-const destination = async (page: Page) => {
+const destination = (page: Page) => {
   let requests = 0;
-  await page.route("**/__synthetic/redirect-destination", async (route) => {
-    requests += 1;
-    await route.fulfill({ status: 200, contentType: "application/json", body: "{}" });
+  const { origin } = new URL(page.url());
+  page.on("request", (request) => {
+    const target = new URL(request.url());
+    if (target.origin === origin && target.pathname === "/__synthetic/redirect-destination") {
+      requests += 1;
+    }
   });
   return () => requests;
 };
@@ -24,7 +27,7 @@ for (const status of [301, 302, 303, 307, 308]) {
     await openCase(page, `REDIRECT-${randomUUID()}`);
     await startCommand(page, "Close the case");
     const identity = await prepare(page);
-    const requests = await destination(page);
+    const requests = destination(page);
     let original = 0;
     let committed = false;
     await page.route("**/api/v3/operations/submit", async (route) => {
@@ -70,7 +73,7 @@ for (const status of [301, 302, 303, 307, 308]) {
     await page.getByRole("button", { name: "Recovery", exact: true }).click();
     const row = page.locator(".recovery-list li").filter({ hasText: identity.operationId });
     await row.getByRole("button", { name: "Inspect", exact: true }).click();
-    const requests = await destination(page);
+    const requests = destination(page);
     let original = 0;
     await page.route("**/api/v3/recovery/export", async (route) => {
       original += 1;
@@ -90,7 +93,7 @@ for (const status of [301, 302, 303, 307, 308]) {
     redirectResponse,
   }) => {
     await openAuthenticated(page);
-    const requests = await destination(page);
+    const requests = destination(page);
     await page.route("**/__synthetic/redirect-control", (route) =>
       route.continue({ url: redirectResponse.url(status) }),
     );
