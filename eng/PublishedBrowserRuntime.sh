@@ -6,7 +6,7 @@ set -o pipefail
 
 start_browser_host() {
   local state_dir="$1" origin="${CLAIMCORE_TEST_WEB_ORIGIN:?Synthetic Web origin was not allocated.}" backend_origin backend_port
-  [[ "$2" == host_pid ]] || return 64
+  [[ "$2" == host_pid && "$3" == proxy_pid ]] || return 64
   jq -r '.webClientSecret' "${CLAIMCORE_TEST_OIDC_CREDENTIALS}" \
     >"${state_dir}/oidc-client.secret"
   printf '%s\n' 'Synthetic claimant canary' >"${state_dir}/claimant.canary"
@@ -38,7 +38,7 @@ start_browser_host() {
   printf -v "$2" '%s' "$!"
   node "${repo_root}/eng/ci/browser-redirect-proxy.mjs" "${state_dir}" "${origin}" "${backend_port}" \
     >"${state_dir}/diagnostics/redirect-proxy.log" 2>&1 &
-  proxy_pid="$!"
+  printf -v "$3" '%s' "$!"
 }
 
 require_browser_host() {

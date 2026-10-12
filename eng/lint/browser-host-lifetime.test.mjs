@@ -24,7 +24,7 @@ test("published browser host PID remains a waitable child of the per-engine call
         fi
       }
       host_pid=''; proxy_pid=''
-      start_browser_host "$CLAIMCORE_PROBE_FIXTURE" host_pid
+      start_browser_host "$CLAIMCORE_PROBE_FIXTURE" host_pid proxy_pid
       [[ "$host_pid" =~ ^[0-9]+$ ]]
       kill -0 "$host_pid"
       wait "$host_pid"

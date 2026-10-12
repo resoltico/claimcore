@@ -76,7 +76,10 @@ cleanup() {
   trap - EXIT
   set +e
   for pid in "${owned_pids[@]}"; do
-    [[ "${pid}" =~ ^[0-9]+$ ]] || { status=1; continue; }
+    [[ "${pid}" =~ ^[0-9]+$ ]] || {
+      status=1
+      continue
+    }
     kill "${pid}" 2>/dev/null
     wait "${pid}" 2>/dev/null
   done

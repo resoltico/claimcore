@@ -63,7 +63,7 @@ run_engine() (
   # shellcheck source=eng/PublishedWebE2E-Setup.sh
   source "${repo_root}/eng/PublishedWebE2E-Setup.sh"
   origin="${CLAIMCORE_TEST_WEB_ORIGIN:?Synthetic Web origin was not allocated.}"
-  start_browser_host "${state_dir}" host_pid
+  start_browser_host "${state_dir}" host_pid proxy_pid
   require_browser_host "${state_dir}" "${origin}" "${host_pid}"
   if [[ -n "${CLAIMCORE_PUBLISHED_CLI_DIR:-}" ]]; then
     prepare_browser_cli "${state_dir}" "${origin}"
