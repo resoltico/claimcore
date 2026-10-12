@@ -52,7 +52,7 @@ type private GatedStream(bytes: byte array, failure: exn option) =
 let private bounded label bytes failure expected =
     testCase label (fun () ->
         use stream = new GatedStream(bytes, failure)
-        let pending = HttpBody.readBounded 3 stream
+        let pending = HttpBody.readBounded 3 stream System.Threading.CancellationToken.None
         Expect.isFalse pending.IsCompleted "Network read genuinely waits for data"
         stream.Release()
 

@@ -20,6 +20,8 @@ module Routes =
             | Ok bytes ->
                 match decode bytes with
                 | Error message -> return RouteSupport.inputFailure context message
+                | Ok _ when context.RequestAborted.IsCancellationRequested ->
+                    return RouteSupport.inputFailure context HttpInputProblem.BodyCancelled
                 | Ok input ->
                     RouteSupport.markDispatched context
                     let! outcome = invoke input
@@ -213,6 +215,8 @@ module Routes =
             | Ok bytes ->
                 match HttpInput.resolve bytes with
                 | Error message -> return RouteSupport.inputFailure context message
+                | Ok _ when context.RequestAborted.IsCancellationRequested ->
+                    return RouteSupport.inputFailure context HttpInputProblem.BodyCancelled
                 | Ok input ->
                     RouteSupport.markDispatched context
 
@@ -248,6 +252,8 @@ module Routes =
         task {
             match! RouteSupport.admittedBody admit maximumBytes context with
             | Error result -> return result
+            | Ok _ when context.RequestAborted.IsCancellationRequested ->
+                return RouteSupport.inputFailure context HttpInputProblem.BodyCancelled
             | Ok source ->
                 RouteSupport.markDispatched context
                 let! outcome = invoke source
@@ -262,6 +268,8 @@ module Routes =
             | Ok source ->
                 match RouteSupport.sourceDigest sourceDigestHeader context with
                 | Error result -> return result
+                | Ok _ when context.RequestAborted.IsCancellationRequested ->
+                    return RouteSupport.inputFailure context HttpInputProblem.BodyCancelled
                 | Ok digest ->
                     RouteSupport.markDispatched context
                     let! outcome = invoke source digest

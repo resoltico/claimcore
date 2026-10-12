@@ -13,6 +13,11 @@ let private accessTrustTests =
         RuntimeAuditCadenceTests.tests
         AuditCancellationTests.tests
         RuntimeAuditQuarantineTests.tests
+        RuntimeHealthTests.tests
+        CaseReadProofBatchTests.tests
+        ReadProofLengthTests.tests
+        CaseHistoryProofBatchTests.tests
+        CaseLifecycleProofBatchTests.tests
     ]
 
 let private coreAndRecovery =

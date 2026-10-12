@@ -6,6 +6,10 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Fixed
 
+- Browser API and recovery export refuse redirects before a second request, preserving uncertainty and exact recovery identity after original-handler acceptance.
+- Web bounds body acquisition to ten seconds with caller/host-stop cancellation, propagates cancellation through activation review, and bounds authentication/callback ingress. Readiness probes read one owned, age-bounded observation without initiating database or session work; actual authority checks remain live.
+- Authorized case/history proofs acquire bounded sets of independently witnessed evidence, and session lookups/renewals sweep at most 32 unrelated tickets while preserving exact expiry and capacity refusal.
+- Unexpected Web failures carry privacy-safe, bounded host diagnostics. Final response-start enforcement preserves security/no-store headers and the diagnostic ID after an error response is cleared.
 - Managed-copy verification refuses unconfirmed inspection-container shutdown and preserves preceding verification failures. Owner-private cleanup records identify the exact unsettled container; existing stop deadlines and plaintext disposal remain unchanged.
 - Scheduled audit quarantine now fences queued actor reads, writes, authority setup and readiness, preserving already committed evidence when later disclosure is refused. Accepted historical dates and UTC observations are authenticated against the witness and replayed unchanged after time-zone rule updates.
 - Database admission uses cancellable transaction-local catalog settings and finite connection, command, cancellation-readback and authority-acquisition budgets. Cleanup preserves original failures and retires unclean connections; post-dispatch expiry retains uncertainty.

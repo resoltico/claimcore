@@ -1,0 +1,82 @@
+import { randomUUID } from "node:crypto";
+import { expect, test, type Page } from "@playwright/test";
+import { openCase, startCommand, prepare, keepForRecovery } from "./case-workflow";
+import { isWebV3Response } from "../src/generated/contracts/web-v3.validation";
+import type { WebV3Response } from "../src/generated/contracts/web-v3.types";
+import { openAuthenticated } from "./session-helpers";
+
+const destination = async (page: Page) => {
+  let requests = 0;
+  await page.route("**/__synthetic/redirect-destination", async (route) => {
+    requests += 1;
+    await route.fulfill({ status: 200, contentType: "application/json", body: "{}" });
+  });
+  return () => requests;
+};
+
+for (const status of [301, 302, 303, 307, 308]) {
+  test(`refuses ordinary API ${status} after original acceptance without redirect dispatch [CC-WEB-001]`, async ({
+    page,
+  }) => {
+    await openAuthenticated(page);
+    await openCase(page, `REDIRECT-${randomUUID()}`);
+    await startCommand(page, "Close the case");
+    const identity = await prepare(page);
+    const requests = await destination(page);
+    let original = 0;
+    let committed = false;
+    await page.route("**/api/v3/operations/submit", async (route) => {
+      original += 1;
+      const response = await route.fetch();
+      const payload: unknown = await response.json();
+      if (response.status() === 200 && (await isWebV3Response("command.execute", payload))) {
+        const { outcome } = payload as WebV3Response<"command.execute">;
+        committed = outcome.tag === "COMPLETED" && outcome.data.execution.tag === "ACCEPTED";
+      }
+      await route.fulfill({ status, headers: { Location: "/__synthetic/redirect-destination" } });
+    });
+    await page.getByText("I confirm these changes.", { exact: true }).click();
+    await page.getByRole("button", { name: "Record changes" }).click();
+    await expect(page.getByRole("alert")).toContainText("Recovery");
+    expect(original).toBe(1);
+    expect(committed).toBe(true);
+    expect(requests()).toBe(0);
+    await page.unroute("**/api/v3/operations/submit");
+    await expect(page.getByRole("heading", { name: "Recovery", exact: true })).toBeVisible();
+    await expect(page.getByRole("alert")).toContainText(identity.operationId);
+    await expect(page.getByRole("alert")).toContainText(identity.requestSha256);
+    await page.getByRole("button", { name: "Operations", exact: true }).click();
+    await expect(page.getByLabel("Exact operation ID")).toHaveValue(identity.operationId);
+    await page.getByRole("button", { name: "Look up recorded result" }).click();
+    await expect(
+      page.getByText(`Accepted operation ${identity.operationId}`, { exact: false }),
+    ).toBeVisible();
+    expect(original).toBe(1);
+    expect(requests()).toBe(0);
+  });
+
+  test(`refuses recovery export ${status} before a second destination request [CC-REC-001]`, async ({
+    page,
+  }) => {
+    await openAuthenticated(page);
+    await openCase(page, `EXPORT-REDIRECT-${randomUUID()}`);
+    await startCommand(page, "Close the case");
+    const identity = await prepare(page);
+    await keepForRecovery(page);
+    await page.getByRole("button", { name: "Recovery", exact: true }).click();
+    const row = page.locator(".recovery-list li").filter({ hasText: identity.operationId });
+    await row.getByRole("button", { name: "Inspect", exact: true }).click();
+    const requests = await destination(page);
+    let original = 0;
+    await page.route("**/api/v3/recovery/export", async (route) => {
+      original += 1;
+      await route.fulfill({ status, headers: { Location: "/__synthetic/redirect-destination" } });
+    });
+    await page.getByRole("button", { name: "Export recovery envelope", exact: true }).click();
+    await page.getByRole("button", { name: "Confirm export", exact: true }).click();
+    await expect(page.getByRole("alert")).toBeVisible();
+    expect(original).toBe(1);
+    expect(requests()).toBe(0);
+    await expect(page.getByRole("alert")).toContainText(identity.operationId);
+  });
+}

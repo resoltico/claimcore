@@ -17,6 +17,7 @@
     <Compile Include="WitnessDatabaseAdmission.fs" />
     <Compile Include="WitnessKeyRotation.fs" />
     <Compile Include="WitnessStoreRead.fs" />
+    <Compile Include="WitnessEvidenceBatch.fs" />
     <Compile Include="WitnessStoreSnapshot.fs" />
     <Compile Include="WitnessDataUseActivation.fs" />
     <Compile Include="WitnessStoreReadLease.fs" />

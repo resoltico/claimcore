@@ -101,9 +101,9 @@ ORDER BY c.case_reference COLLATE "C" LIMIT @window
     let private receiptColumns =
         "operation_id, case_id, case_reference, preparer_actor_id, importer_actor_id, "
         + "submitter_actor_id, resolver_actor_id, accepted_actor_id, grant_revision, "
-        + "revision, command_name, rule_revision, request_format_version, request_sha256, canonical_request, "
+        + "revision, command_name, rule_revision, request_format_version, request_sha256, CASE WHEN octet_length(canonical_request) BETWEEN 1 AND 65536 THEN canonical_request END AS canonical_request, "
         + "effective_business_date - DATE '2000-01-01' AS effective_business_date, observed_utc_instant, "
-        + "snapshot_version, snapshot, witness_sequence, witness_epoch, witness_entry_hash, "
+        + "snapshot_version, CASE WHEN octet_length(snapshot) BETWEEN 1 AND 65536 THEN snapshot END AS snapshot, witness_sequence, witness_epoch, CASE WHEN octet_length(witness_entry_hash)=32 THEN witness_entry_hash END AS witness_entry_hash, "
         + "recorded_at, accepted_actor_id::text AS recorded_by"
 
     let history =

@@ -47,7 +47,7 @@ module ApiRoutes =
             .RequireRateLimiting("core")
         |> ignore
 
-    let private jsonHandlers maximum =
+    let internal jsonHandlers maximum =
         [
             "case.get", Routes.get admitted maximum
             "case.list", Routes.list admitted maximum

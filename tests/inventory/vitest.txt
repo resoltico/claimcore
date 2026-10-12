@@ -151,6 +151,7 @@ operation editor transport outcomes > preserves only recovery direction after an
 operation editor transport outcomes > renders an accepted receipt and delegates its return action
 operation editor transport outcomes > shows a definite prepare rejection without creating recovery uncertainty
 operation editor transport outcomes > shows a definite submit rejection after preserving the prepared identity
+ordinary API and recovery export refuse redirects with one delivery policy and no replay
 persists only presentation preferences and remains usable when storage is denied
 presents closed correction targets through groups while preserving exact action tokens
 preserves authored content, DOM selection and operation identity across language switches before preparation

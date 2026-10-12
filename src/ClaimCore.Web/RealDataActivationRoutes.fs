@@ -12,7 +12,7 @@ module RealDataActivationRoutes =
             admit
             maximumBytes
             HttpRealDataActivationInput.review
-            (fun planId -> core.ReviewRealDataActivation(planId, CancellationToken.None))
+            (fun planId -> core.ReviewRealDataActivation(planId, context.RequestAborted))
             WebWire.realDataActivationReview
             context
 

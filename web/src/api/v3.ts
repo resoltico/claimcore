@@ -1,3 +1,4 @@
+import { deliveryOptions } from "./deliveryOptions";
 import { responseBytes, strictJsonBytes } from "./responseBytes";
 import type { ApiResult } from "./types";
 import { withinResponseDeadline } from "./responseDeadline";
@@ -115,8 +116,7 @@ const requestResult = async <K extends WebV3EndpointId>(
       method: descriptor.method,
       headers,
       body: requestBody,
-      credentials: "same-origin",
-      ...(signal === undefined ? {} : { signal }),
+      ...deliveryOptions(signal),
     });
     const payload = await readJson(response, signal);
     return await decodeJsonResponse(id, response.status, payload);
@@ -178,8 +178,7 @@ const exportRecoveryResult = async (
       method: descriptor.method,
       headers: { ...jsonHeaders(token), "Content-Type": "application/json" },
       body: JSON.stringify({ operationId, requestSha256 }),
-      credentials: "same-origin",
-      signal,
+      ...deliveryOptions(signal),
     });
     const type = responseMediaType(response);
     if (type === "application/json") {

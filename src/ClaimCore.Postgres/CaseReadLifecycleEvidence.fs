@@ -63,54 +63,111 @@ module internal CaseReadLifecycleEvidence =
                 digest
             )
 
-    let verify
-        (witness: WitnessProtocol)
+    let private commandFor connection transaction (subjects: (CaseView * int64 * Guid) list) =
+        let command =
+            new NpgsqlCommand(
+                "SELECT c.case_id,c.lifecycle_sequence,l.event_id,CASE WHEN octet_length(c.lifecycle_event_hash)=32 THEN c.lifecycle_event_hash END,"
+                + "l.business_revision,CASE WHEN octet_length(l.canonical_action) BETWEEN 1 AND 16384 THEN l.canonical_action END,"
+                + "CASE WHEN octet_length(l.candidate_sha256)=32 THEN l.candidate_sha256 END,l.witness_sequence,l.witness_epoch,CASE WHEN octet_length(l.witness_entry_hash)=32 THEN l.witness_entry_hash END,c.disposition,c.privacy_phase,c.case_reference "
+                + "FROM claimcore.cases c LEFT JOIN claimcore.case_lifecycle_events l "
+                + "ON l.case_id=c.case_id AND l.lifecycle_sequence=c.lifecycle_sequence "
+                + "WHERE c.case_reference=ANY(@subjects) ORDER BY c.case_reference",
+                connection,
+                transaction
+            )
+
+        command.Parameters.AddWithValue(
+            "subjects",
+            subjects
+            |> List.map (fun (view, _, _) -> view.Fields.CaseReference)
+            |> List.toArray
+        )
+        |> ignore
+
+        command
+
+    let private load
         connection
         transaction
-        (view: CaseView)
-        acceptedRevision
+        (subjects: (CaseView * int64 * Guid) list)
         (ct: CancellationToken)
         =
         task {
-            use command =
-                new NpgsqlCommand(
-                    "SELECT c.case_id,c.lifecycle_sequence,l.event_id,c.lifecycle_event_hash,"
-                    + "l.business_revision,l.canonical_action,l.candidate_sha256,l.witness_sequence,"
-                    + "l.witness_epoch,l.witness_entry_hash,c.disposition,c.privacy_phase "
-                    + "FROM claimcore.cases c LEFT JOIN claimcore.case_lifecycle_events l "
-                    + "ON l.case_id=c.case_id AND l.lifecycle_sequence=c.lifecycle_sequence "
-                    + "WHERE c.case_reference=@reference",
-                    connection,
-                    transaction
-                )
+            if subjects.IsEmpty || subjects.Length > 8 then
+                invalidArg (nameof subjects) "Lifecycle proof chunk is outside its bounds."
 
-            Sql.text command "reference" view.Fields.CaseReference
+            let revisions =
+                subjects
+                |> List.map (fun (view, accepted, caseId) ->
+                    view.Fields.CaseReference, (view.Version, accepted, caseId))
+                |> Map.ofList
+
+            use command = commandFor connection transaction subjects
             use! reader = command.ExecuteReaderAsync(ct)
-            let! found = reader.ReadAsync(ct)
-            require found
-            let evidence = validate reader acceptedRevision view.Version
-            let! duplicated = reader.ReadAsync(ct)
-            require (not duplicated)
+            let proofs = ResizeArray<_>()
+            let mutable seen = Set.empty
+            let mutable reading = true
+
+            while reading do
+                let! found = reader.ReadAsync(ct)
+
+                if not found then
+                    reading <- false
+                else
+                    let reference = reader.GetString(12)
+                    require (not (seen.Contains reference))
+                    seen <- seen.Add reference
+                    let current, accepted, caseId = revisions[reference]
+                    require (reader.GetGuid(0) = caseId)
+
+                    if reader.GetInt64(1) <> 0L then
+                        require (not (reader.IsDBNull(5)))
+
+                    validate reader accepted current |> Option.iter proofs.Add
+
+            require (seen.Count = subjects.Length)
             reader.Close()
 
-            match evidence with
-            | None -> return Ok()
-            | Some(eventId, caseId, sequence, epoch, hash, digest) ->
-                try
-                    do!
-                        witness.VerifyAuthorityEvidenceForCase(
-                            eventId,
-                            sequence,
-                            epoch,
-                            hash,
-                            digest,
-                            caseId,
-                            ct
-                        )
+            return proofs |> Seq.toList
+        }
 
-                    return Ok()
-                with
-                | :? OperationCanceledException as error when ct.IsCancellationRequested ->
-                    return raise error
-                | _ -> return Error CoreFailure.StoreUnavailable
+    let page (witness: WitnessProtocol) connection transaction subjects ct =
+        task {
+            let! proofs = load connection transaction subjects ct
+
+            try
+                for chunk in proofs |> List.chunkBySize 8 do
+                    let! evidence =
+                        CaseReadProof.pairs
+                            witness
+                            (chunk
+                             |> List.map (fun (eventId, _, _, _, _, _) ->
+                                 eventId, ClaimCore.Witness.SettledAuthority))
+                            ct
+
+                    for eventId, caseId, sequence, epoch, hash, digest in chunk do
+                        ct.ThrowIfCancellationRequested()
+
+                        let pair =
+                            CaseReadProof.pair evidence eventId ClaimCore.Witness.SettledAuthority
+
+                        let tickets =
+                            WitnessProof.verifyLoaded
+                                witness.KeyCustody
+                                witness.Identity
+                                eventId
+                                ClaimCore.Witness.SettledAuthority
+                                sequence
+                                epoch
+                                hash
+                                digest
+                                pair
+
+                        WitnessProof.requireScope (Some caseId) tickets
+
+                return Ok()
+            with
+            | :? OperationCanceledException as error when ct.IsCancellationRequested ->
+                return raise error
+            | _ -> return Error CoreFailure.StoreUnavailable
         }

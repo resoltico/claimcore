@@ -28,7 +28,8 @@ type internal RuntimeAuditCadence
     (
         runAudit: CancellationToken -> (exn -> unit) -> Task,
         interval: TimeSpan,
-        clock: RuntimeAuditClock
+        clock: RuntimeAuditClock,
+        ?onQuarantine: unit -> unit
     ) =
     let interval =
         if interval <= TimeSpan.Zero || interval > TimeSpan.FromHours 24. then
@@ -46,6 +47,8 @@ type internal RuntimeAuditCadence
 
     let quarantine overdue =
         if Interlocked.Exchange(&failed, 1) = 0 then
+            defaultArg onQuarantine ignore ()
+
             try
                 RuntimeOperationalSignals.audit overdue
             with _ ->
@@ -108,6 +111,14 @@ type internal RuntimeAuditCadence
             if not disposed && stopTask.IsNone then
                 stopTask <- Some(cancellation.CancelAsync()))
 
+    /// Passive reporting predicate: no quarantine telemetry or authority I/O on a probe.
+    member _.IsHealthy =
+        let elapsed = clock.Elapsed(Volatile.Read(&lastCompletedTicks))
+
+        Volatile.Read(&failed) = 0
+        && elapsed >= TimeSpan.Zero
+        && elapsed <= interval + TimeSpan.FromHours 2.
+
     member _.RequireHealthy() =
         if Volatile.Read(&failed) <> 0 then
             invalidOp "Scheduled full audit failed; case-work admission is quarantined."
@@ -133,7 +144,7 @@ type internal RuntimeAuditCadence
             }
         )
 
-    new(resources: RuntimeResources, interval: TimeSpan) =
+    new(resources: RuntimeResources, interval: TimeSpan, onQuarantine: unit -> unit) =
         new RuntimeAuditCadence(
             (fun token onFailure ->
                 task {
@@ -145,8 +156,12 @@ type internal RuntimeAuditCadence
             {
                 Timestamp = Stopwatch.GetTimestamp
                 Elapsed = Stopwatch.GetElapsedTime
-            }
+            },
+            onQuarantine = onQuarantine
         )
+
+    new(resources: RuntimeResources, interval: TimeSpan) =
+        new RuntimeAuditCadence(resources, interval, ignore)
 
     interface IDisposable with
         member this.Dispose() =

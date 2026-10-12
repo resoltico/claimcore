@@ -10,6 +10,16 @@ open Microsoft.AspNetCore.RateLimiting
 open Microsoft.Extensions.DependencyInjection
 open ClaimCore.Contracts
 
+/// One process-wide budget, including cookie authentication and OIDC callbacks.
+type internal DynamicIngress() =
+    let limiter =
+        new ConcurrencyLimiter(ConcurrencyLimiterOptions(PermitLimit = 24, QueueLimit = 0))
+
+    member _.Acquire() = limiter.AttemptAcquire(1)
+
+    interface IDisposable with
+        member _.Dispose() = limiter.Dispose()
+
 module internal RateLimits =
     let private busy context =
         task {
@@ -17,7 +27,20 @@ module internal RateLimits =
             do! (WebWire.hostFailure WebHostFailure.Busy).ExecuteAsync(context)
         }
 
+    let ingress (context: HttpContext) (next: RequestDelegate) : Task =
+        task {
+            let limiter = context.RequestServices.GetRequiredService<DynamicIngress>()
+            use lease = limiter.Acquire()
+
+            if lease.IsAcquired then
+                do! next.Invoke context
+            else
+                do! busy context
+        }
+
     let configure (limits: WebAdmissionLimits) (services: IServiceCollection) =
+        services.AddSingleton<DynamicIngress>() |> ignore
+
         services.AddRateLimiter(fun options ->
             options.RejectionStatusCode <- StatusCodes.Status429TooManyRequests
 

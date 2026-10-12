@@ -41,6 +41,16 @@ refuses corrections of missing recorded values in lv [CC-DOM-002]
 refuses localized authoring digits and currency alphabets in ar [CC-DOM-001]
 refuses localized authoring digits and currency alphabets in en [CC-DOM-001]
 refuses localized authoring digits and currency alphabets in lv [CC-DOM-001]
+refuses ordinary API 301 after original acceptance without redirect dispatch [CC-WEB-001]
+refuses ordinary API 302 after original acceptance without redirect dispatch [CC-WEB-001]
+refuses ordinary API 303 after original acceptance without redirect dispatch [CC-WEB-001]
+refuses ordinary API 307 after original acceptance without redirect dispatch [CC-WEB-001]
+refuses ordinary API 308 after original acceptance without redirect dispatch [CC-WEB-001]
+refuses recovery export 301 before a second destination request [CC-REC-001]
+refuses recovery export 302 before a second destination request [CC-REC-001]
+refuses recovery export 303 before a second destination request [CC-REC-001]
+refuses recovery export 307 before a second destination request [CC-REC-001]
+refuses recovery export 308 before a second destination request [CC-REC-001]
 rejects retired routes and malformed published Web v3 admission before mutation
 renders exact accepted amounts with RTL and pseudolocale accessibility while canonical copy remains unchanged
 resolves and dismisses exact preparations with observed server state

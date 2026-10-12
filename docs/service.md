@@ -285,8 +285,31 @@ credentials. Never repair trust by resetting an installation or bypassing errors
 
 Container health uses `ClaimCore.Web probe live`: it connects to this listener, retains the public
 TLS/HTTP identity, and validates certificates. It does not compose a runtime or read database
-credentials. `probe ready` independently observes real-data readiness; synthetic and quarantined
+credentials. `probe ready` reads an in-memory readiness observation; synthetic and quarantined
 installations stay unready even while Web is live. Neither probe repairs state or changes grants.
+
+The runtime owns one readiness sampler: a five-second interval, five-second sample budget and
+fifteen-second monotonic freshness limit measured from sample start. Cold, failed, stale and closing
+observations return 503 with conservative scope/phase headers. Quarantine invalidates the current
+safety epoch synchronously; an older sample cannot restore ready. A timed-out provider remains
+owned until it ends and cannot publish a late success or overlap a replacement. Reporting never
+authorizes case work: actor grants and primary/witness safety checks remain fresh.
+
+Exact GET `/health/live` and `/health/ready` terminate after trusted-connection checks and before
+authentication. Other dynamic work, including OIDC callbacks, shares 24 ingress permits with no
+queue before authentication. The core retains four permits and sixteen queued requests, and login
+retains its five-per-minute cap. Input acquisition retains each endpoint's byte limit and has one
+absolute ten-second budget linked to caller cancellation and host stopping. That budget ends before
+dispatch; admitted mutations and post-COMMIT witness settlement retain their protected completion
+lifetime. A lost response still requires observation/recovery of the exact original request.
+
+Unexpected host failures emit only a fixed endpoint, delivery stage, coarse cause and random
+diagnostic ID. `X-ClaimCore-Diagnostic-Id` is applied with the security/no-store headers at final
+response start, including replacement error responses. It contains no business or actor identity.
+The diagnostic sink has 32 buffered events, at most one output per second and a one-second shutdown
+wait. Saturation or failed output drops events; `claimcore.host.diagnostic_drops` reports drops.
+Individual IDs are best-effort correlation, not a promise of a stored event. Raw exception text,
+SQL, credentials, private paths and claimant payloads are excluded.
 
 [Development](development.md) owns complete verification. Container qualification exercises the
 real HTTPS graph, non-root operation, separate mounts and database roles, TLS-name and foreign-Host

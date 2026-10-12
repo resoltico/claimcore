@@ -40,6 +40,7 @@
     <Compile Include="InstallationUseScopeRead.fs" />
     <Compile Include="WitnessProtocolHandoff.fs" />
     <Compile Include="WitnessAcceptedProtocol.fs" />
+    <Compile Include="CaseReadProof.fs" />
     <Compile Include="WitnessProtocolReconciliation.fs" />
     <Compile Include="WitnessTechnical.fs" />
     <Compile Include="WitnessTechnicalStartReconcile.fs" />

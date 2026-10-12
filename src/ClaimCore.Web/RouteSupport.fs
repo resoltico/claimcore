@@ -38,7 +38,7 @@ module RouteSupport =
             match! admit context with
             | Error failure -> return Error(admissionFailure context failure)
             | Ok() ->
-                match! HttpBody.readBounded maximumBytes context.Request.Body with
+                match! HttpBody.readRequest maximumBytes context with
                 | Error reason -> return Error(inputFailure context reason)
                 | Ok bytes -> return Ok bytes
         }
@@ -60,7 +60,20 @@ module RouteSupport =
 
                 if context.Response.StatusCode = 405 && not context.Response.HasStarted then
                     do! (hostFailure context WebHostFailure.MethodRejected).ExecuteAsync context
-            with _ ->
+            with error ->
+                let stage =
+                    match context.Response.HasStarted, context.Items.TryGetValue dispatchKey with
+                    | true, _ -> HostFailureStage.ResponseDelivery
+                    | _, (true, (:? bool as completed)) when completed ->
+                        HostFailureStage.ResponseDelivery
+                    | _, (true, _) -> HostFailureStage.Dispatch
+                    | _ -> HostFailureStage.BeforeDispatch
+
+                try
+                    HostDiagnostics.report context stage error
+                with _ ->
+                    ()
+
                 if context.Response.HasStarted then
                     context.Abort()
                 else

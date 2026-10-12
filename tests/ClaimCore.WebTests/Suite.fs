@@ -39,6 +39,12 @@ let private boundaries =
         WriterHandoffApprovalInputTests.tests
         TransportDiagnosticTests.tests
         AsyncTransportTests.tests
+        AdmissionDeadlineTests.tests
+        IngressTests.tests
+        ReadCancellationTests.tests
+        ResponsePolicyTests.tests
+        SessionSweepTests.tests
+        SessionSweepInvariantTests.tests
         ProgramEntryTests.tests
         WireTests.tests
         RealDataActivationWireTests.tests
