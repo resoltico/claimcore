@@ -93,6 +93,7 @@ ClaimCore PostgreSQL integration.[CC-AUTH-001] one corrupt subject refuses an ot
 ClaimCore PostgreSQL integration.[CC-AUTH-001] voided and erasure-fenced identities share denial timing class
 ClaimCore PostgreSQL integration.[CC-AUTH-001][CC-REC-001] unresolved recovery payload is withheld after final disclosure authority loss
 ClaimCore PostgreSQL integration.[CC-BACKUP-001] intermediate restore reports cannot claim deployment readiness
+ClaimCore PostgreSQL integration.[CC-BACKUP-001][CC-WEB-001] activation review cancellation ends an actual PostgreSQL wait
 ClaimCore PostgreSQL integration.[CC-LIFE-001] [CC-REC-001] a witnessed hold retains terminal preparation evidence until release
 ClaimCore PostgreSQL integration.[CC-REC-001] [CC-WIT-001] revocation fences future authority without rewriting an orphan acceptance
 ClaimCore PostgreSQL integration.[CC-REC-001] a settled rejection cannot be re-executed or issue an orphan intent

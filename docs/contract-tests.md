@@ -221,6 +221,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.Restore report owner roster.[CC-BACKUP-001] source checkout cannot self-authorize a restore report |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.Restore report pair binding.[CC-BACKUP-001] stale or divergent restore pair facts refuse recheck |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.[CC-BACKUP-001] intermediate restore reports cannot claim deployment readiness |
+| CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.[CC-BACKUP-001][CC-WEB-001] activation review cancellation ends an actual PostgreSQL wait |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.advanced physical restored pair.[CC-BACKUP-001] original BASE pair replays later synthetic WAL before audit |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.advanced physical restored pair.[CC-BACKUP-001] repeated quiet WAL switches retain the last completed segment |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.authority operation fence.[CC-BACKUP-001] backup capture drains actor settlement and retains the complete authority fence |
@@ -841,6 +842,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-WEB-001 | browser | refuses ordinary API 303 after original acceptance without redirect dispatch [CC-WEB-001] |
 | CC-WEB-001 | browser | refuses ordinary API 307 after original acceptance without redirect dispatch [CC-WEB-001] |
 | CC-WEB-001 | browser | refuses ordinary API 308 after original acceptance without redirect dispatch [CC-WEB-001] |
+| CC-WEB-001 | integration | ClaimCore PostgreSQL integration.[CC-BACKUP-001][CC-WEB-001] activation review cancellation ends an actual PostgreSQL wait |
 | CC-WEB-001 | unit | ClaimCore deterministic suite.CLI TLS trust.[CC-WEB-001] issuer TLS leaf requires server purpose |
 | CC-WEB-001 | unit | ClaimCore deterministic suite.CLI TLS trust.[CC-WEB-001] private TLS root validity has exact boundaries |
 | CC-WEB-001 | unit | ClaimCore deterministic suite.build-only presentation projection.exports every diagnostic as literal and declared hole parts [CC-WEB-001] |

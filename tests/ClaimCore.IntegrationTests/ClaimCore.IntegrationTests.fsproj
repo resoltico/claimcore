@@ -26,6 +26,7 @@
     <Compile Include="RestoreProduceSignerTests.fs" />
     <Compile Include="WriterHandoffApprovalTests.fs" />
     <Compile Include="RealDataActivationPlanFixture.fs" />
+    <Compile Include="ActivationReviewCancellationTests.fs" />
     <Compile Include="RealDataActivationApprovalTests.fs" />
     <Compile Include="RealDataActivationApprovalUncertaintyTests.fs" />
     <Compile Include="RealDataActivationMechanicsSupport.fs" />

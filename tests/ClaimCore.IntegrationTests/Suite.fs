@@ -139,6 +139,7 @@ let private actorAndCustody =
         ManagedCopyTransitionRejectionTests.tests
         WriterHandoffApprovalTests.tests
         RealDataActivationApprovalTests.tests
+        ActivationReviewCancellationTests.tests
         RealDataActivationApprovalUncertaintyTests.tests
         RealDataActivationMechanicsTests.tests
         WriterHandoffRevocationTests.tests
