@@ -130,6 +130,7 @@ function forward(request, response, current) {
   const upstream = https.request(
     {
       hostname: "localhost",
+      servername: "localhost",
       port: upstreamPort,
       ca,
       method: request.method,
