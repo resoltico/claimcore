@@ -10,6 +10,11 @@ associates malformed operation lookup guidance and prevents empty case lookup [C
 authors and prepares in seeded pseudolocale then switches out with draft, identity and consent intact
 bounds repeated published login admission and recovers after its window
 contains keyboard focus and returns it after safely dismissing a prepared review
+detects a followed 301 redirect at the same-origin destination [CC-WEB-001]
+detects a followed 302 redirect at the same-origin destination [CC-WEB-001]
+detects a followed 303 redirect at the same-origin destination [CC-WEB-001]
+detects a followed 307 redirect at the same-origin destination [CC-WEB-001]
+detects a followed 308 redirect at the same-origin destination [CC-WEB-001]
 disabled actor keeps authenticated public bootstrap but cannot read cases [CC-AUTH-001]
 exports and retains the encrypted recovery artifact through published Web
 focuses and describes the named field after a published core rejection

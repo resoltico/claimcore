@@ -836,6 +836,11 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime scheduling and shutdown.[CC-RUN-001] audit stop is nonblocking and cleanup joins cancellation callbacks |
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime scheduling and shutdown.[CC-RUN-001] shutdown stops audit before draining admitted actor work |
 | CC-WEB-001 | browser | associates malformed operation lookup guidance and prevents empty case lookup [CC-WEB-001] |
+| CC-WEB-001 | browser | detects a followed 301 redirect at the same-origin destination [CC-WEB-001] |
+| CC-WEB-001 | browser | detects a followed 302 redirect at the same-origin destination [CC-WEB-001] |
+| CC-WEB-001 | browser | detects a followed 303 redirect at the same-origin destination [CC-WEB-001] |
+| CC-WEB-001 | browser | detects a followed 307 redirect at the same-origin destination [CC-WEB-001] |
+| CC-WEB-001 | browser | detects a followed 308 redirect at the same-origin destination [CC-WEB-001] |
 | CC-WEB-001 | browser | records supplementary scalar boundaries through Web for published native readback [CC-CLI-001][CC-WEB-001] |
 | CC-WEB-001 | browser | refuses ordinary API 301 after original acceptance without redirect dispatch [CC-WEB-001] |
 | CC-WEB-001 | browser | refuses ordinary API 302 after original acceptance without redirect dispatch [CC-WEB-001] |

@@ -66,6 +66,7 @@ run_browser_delivery() {
     CLAIMCORE_WEB_E2E_PRINCIPALS_FILE="${state_dir}/principals.json" \
     CLAIMCORE_WEB_E2E_SAFE_FAILURE_FILE="${state_dir}/diagnostics/safe-browser-failure.json" \
     CLAIMCORE_WEB_E2E_PRIVATE_OUTPUT_DIR="${state_dir}/playwright-private" \
+    CLAIMCORE_WEB_E2E_TLS_CERTIFICATE_FILE="${state_dir}/web.pfx" \
     CLAIMCORE_WEB_E2E_PROGRESS_FILE="${progress_file}" \
     qualification_npm --prefix "${repo_root}/web" run test:e2e -- --project "${engine}" \
     >"${state_dir}/diagnostics/playwright.log" 2>&1; then
