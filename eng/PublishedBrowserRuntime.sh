@@ -5,12 +5,14 @@ set -o pipefail
 : "${CLAIMCORE_TEST_OIDC_CREDENTIALS:?}" "${CLAIMCORE_TEST_OIDC_ISSUER:?}"
 
 start_browser_host() {
-  local state_dir="$1" origin="${CLAIMCORE_TEST_WEB_ORIGIN:?Synthetic Web origin was not allocated.}"
+  local state_dir="$1" origin="${CLAIMCORE_TEST_WEB_ORIGIN:?Synthetic Web origin was not allocated.}" backend_origin backend_port
   [[ "$2" == host_pid ]] || return 64
   jq -r '.webClientSecret' "${CLAIMCORE_TEST_OIDC_CREDENTIALS}" \
     >"${state_dir}/oidc-client.secret"
   printf '%s\n' 'Synthetic claimant canary' >"${state_dir}/claimant.canary"
   bash "${repo_root}/eng/Generate-SyntheticWebTls.sh" "${state_dir}"
+  backend_origin="$(node "${repo_root}/eng/oidc/Allocate-WebOrigin.mjs")"
+  backend_port="${backend_origin##*:}"
   origin="${CLAIMCORE_TEST_WEB_ORIGIN:?Synthetic Web origin was not allocated.}"
   web_client_id="$(jq -er '.webClientId' "${CLAIMCORE_TEST_OIDC_CREDENTIALS}")"
   api_audience="$(jq -er '.apiAudience' "${CLAIMCORE_TEST_OIDC_CREDENTIALS}")"
@@ -23,6 +25,7 @@ start_browser_host() {
     CLAIMCORE_SUPPRESSION_KEY_FILE="${state_dir}/suppression-key.json" \
     CLAIMCORE_RECOVERY_ARTIFACT_KEY_FILE="${state_dir}/recovery-artifact-key.json" \
     CLAIMCORE_WEB_CERTIFICATE_PATH="${state_dir}/web.pfx" \
+    CLAIMCORE_WEB_LISTEN_PORT="${backend_port}" \
     CLAIMCORE_WEB_ORIGIN="${origin}" CLAIMCORE_WEB_STATE_DIR="${state_dir}/web-state" \
     CLAIMCORE_OIDC_ISSUER="${CLAIMCORE_TEST_OIDC_ISSUER}" \
     CLAIMCORE_OIDC_CA_CERT_FILE="${oidc_ca}" \
@@ -33,6 +36,9 @@ start_browser_host() {
     CLAIMCORE_OIDC_SERVICE_CLIENT_ID="${service_client_id}" \
     dotnet "${web_dll}" >"${state_dir}/diagnostics/web-host.log" 2>&1 &
   printf -v "$2" '%s' "$!"
+  node "${repo_root}/eng/ci/browser-redirect-proxy.mjs" "${state_dir}" "${origin}" "${backend_port}" \
+    >"${state_dir}/diagnostics/redirect-proxy.log" 2>&1 &
+  proxy_pid="$!"
 }
 
 require_browser_host() {
@@ -66,7 +72,7 @@ run_browser_delivery() {
     CLAIMCORE_WEB_E2E_PRINCIPALS_FILE="${state_dir}/principals.json" \
     CLAIMCORE_WEB_E2E_SAFE_FAILURE_FILE="${state_dir}/diagnostics/safe-browser-failure.json" \
     CLAIMCORE_WEB_E2E_PRIVATE_OUTPUT_DIR="${state_dir}/playwright-private" \
-    CLAIMCORE_WEB_E2E_TLS_CERTIFICATE_FILE="${state_dir}/web.pfx" \
+    CLAIMCORE_WEB_E2E_REDIRECT_STATE_DIR="${state_dir}" \
     CLAIMCORE_WEB_E2E_PROGRESS_FILE="${progress_file}" \
     qualification_npm --prefix "${repo_root}/web" run test:e2e -- --project "${engine}" \
     >"${state_dir}/diagnostics/playwright.log" 2>&1; then
