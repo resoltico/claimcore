@@ -66,8 +66,7 @@ module internal RealDataActivationPlanReview =
         ct
         =
         task {
-            let! revision =
-                ActorGrantRead.lockRevision connection transaction true CancellationToken.None
+            let! revision = ActorGrantRead.lockRevision connection transaction false ct
 
             let! authority =
                 ActorGrantRead.loadUnderLock

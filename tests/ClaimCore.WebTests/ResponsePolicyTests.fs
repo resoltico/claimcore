@@ -210,7 +210,7 @@ let private stalledKestrelBody () =
             }
 
         try
-            use reader = new StreamReader(stream)
+            use reader = new StreamReader(stream, Encoding.UTF8, true, 1024, true)
             let started = System.Diagnostics.Stopwatch.StartNew()
 
             let status =

@@ -18,7 +18,7 @@ let private blockedReview owner blocker =
     use query =
         new NpgsqlCommand(
             "SELECT EXISTS (SELECT 1 FROM pg_stat_activity WHERE @blocker=ANY(pg_blocking_pids(pid)) "
-            + "AND wait_event_type='Lock' AND query LIKE '%FROM claimcore.authority_tip%')",
+            + "AND wait_event_type='Lock' AND query LIKE '%FROM claimcore.installation_data_use_plans%')",
             monitor
         )
 
@@ -26,7 +26,7 @@ let private blockedReview owner blocker =
 
     Expect.isTrue
         (SpinWait.SpinUntil((fun () -> query.ExecuteScalar() :?> bool), 5000))
-        "The native review reached its actual PostgreSQL authority wait."
+        "The native review reached its exact published-plan PostgreSQL wait."
 
 let private cancellation owner app writer witness profile =
     let principal = human "cancelled-activation-review-owner"
@@ -40,12 +40,12 @@ let private cancellation owner app writer witness profile =
 
     use barrier =
         new NpgsqlCommand(
-            "SELECT revision FROM claimcore.authority_tip WHERE singleton FOR UPDATE",
+            "LOCK TABLE claimcore.installation_data_use_plans IN ACCESS EXCLUSIVE MODE",
             connection,
             transaction
         )
 
-    barrier.ExecuteScalar() |> ignore
+    barrier.ExecuteNonQuery() |> ignore
     use caller = new CancellationTokenSource()
     let work = core.ReviewRealDataActivation(planId, caller.Token)
 
@@ -56,7 +56,7 @@ let private cancellation owner app writer witness profile =
 
         Expect.isTrue
             (SpinWait.SpinUntil((fun () -> work.IsCompleted), 2000))
-            "Caller cancellation ends the read while the authority lock remains held."
+            "Caller cancellation ends the read while the exact plan lock remains held."
 
         match work |> await with
         | RealDataActivationPlanReviewOutcome.ResourceUnavailable -> ()
