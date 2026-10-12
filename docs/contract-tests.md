@@ -115,7 +115,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-AUTH-001 | browser | owner-only workspace renders without inventing case authority [CC-AUTH-001] |
 | CC-AUTH-001 | browser | unregistered human authenticates without gaining a wider grant [CC-AUTH-001] |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.[CC-AUTH-001] case-list cursor binds principal grant query and visible page |
-| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.[CC-AUTH-001] primary proof encoded lengths are admitted before allocation |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.[CC-AUTH-001] one corrupt subject refuses an otherwise valid current page |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.[CC-AUTH-001] voided and erasure-fenced identities share denial timing class |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.[CC-AUTH-001][CC-REC-001] unresolved recovery payload is withheld after final disclosure authority loss |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.actor and grant storage.[CC-AUTH-001] exact authority replay detects a forged live actor projection |
@@ -163,6 +163,33 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.mutation result disclosure.[CC-AUTH-001] retained preparation is withheld after editor revocation |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.mutation result disclosure.[CC-AUTH-001] revoked preparation details are withheld after operator revocation |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.mutation result disclosure.[CC-AUTH-001] witnessed export is withheld after exporter revocation |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.proof encoded bounds.[CC-AUTH-001] primary proof encoded lengths are admitted before allocation |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.proof encoded bounds.[CC-AUTH-001] witness proof encoded lengths are admitted before allocation |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition completion 11 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition completion 12 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition completion 17 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition completion 18 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition completion 5 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition completion 6 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 0 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 1 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 10 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 11 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 12 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 13 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 14 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 15 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 16 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 17 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 18 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 2 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 3 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 4 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 5 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 6 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 7 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 8 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 9 releases its proof fence |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.set-oriented read proof.[CC-AUTH-001] bounded page proves 1 exact independently witnessed subjects |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.set-oriented read proof.[CC-AUTH-001] bounded page proves 50 exact independently witnessed subjects |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.set-oriented read proof.[CC-AUTH-001] bounded page proves 8 exact independently witnessed subjects |
@@ -943,6 +970,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-WEB-001 | web | ClaimCore.Web.Web v3 admission.[CC-WEB-001] rejects absent and remote peers or wrong host authority |
 | CC-WEB-001 | web | ClaimCore.Web.Web v3 admission.[CC-WEB-001] requires one exact browser origin and same-origin metadata |
 | CC-WEB-001 | web | ClaimCore.Web.Web v3 admission.[CC-WEB-001] returns typed CSRF admission refusal |
+| CC-WEB-001 | web | ClaimCore.Web.[CC-WEB-001] 1000 concurrent real HTTP probes remain cheap under callback saturation |
 | CC-WEB-001 | web | ClaimCore.Web.[CC-WEB-001] controlled stop cancels blocked OIDC startup |
 | CC-WEB-001 | web | ClaimCore.Web.[CC-WEB-001] global ingress includes callback work while exact health stays cheap |
 | CC-WEB-001 | web | ClaimCore.Web.asynchronous HTTP transport boundaries.[CC-WEB-001] suspended I/O failure retains safe refusal |
@@ -955,6 +983,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-WEB-001 | web | ClaimCore.Web.asynchronous HTTP transport boundaries.[CC-WEB-001] suspended oversized request is refused |
 | CC-WEB-001 | web | ClaimCore.Web.body acquisition ownership.[CC-WEB-001] caller cancels stalled input before dispatch |
 | CC-WEB-001 | web | ClaimCore.Web.body acquisition ownership.[CC-WEB-001] cancellation after decode prevents a core call |
+| CC-WEB-001 | web | ClaimCore.Web.body acquisition ownership.[CC-WEB-001] host stop cancels active body acquisition |
 | CC-WEB-001 | web | ClaimCore.Web.body acquisition ownership.[CC-WEB-001] stalled input has an absolute body deadline |
 | CC-WEB-001 | web | ClaimCore.Web.bounded ticket sweeps.[CC-WEB-001] full ticket store reclaims expiry without evicting authority |
 | CC-WEB-001 | web | ClaimCore.Web.bounded ticket sweeps.[CC-WEB-001] session lookup and renewal examine at most 33 entries at capacity 1 |

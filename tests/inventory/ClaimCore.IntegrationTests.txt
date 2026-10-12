@@ -89,7 +89,7 @@ ClaimCore PostgreSQL integration.Storage boundary qualification.transaction and 
 ClaimCore PostgreSQL integration.[CC-APP-002] PostgreSQL accepted history without preparation remains replayable
 ClaimCore PostgreSQL integration.[CC-AUDIT-001] authority lease cleanup preserves an observed result and retires its connector
 ClaimCore PostgreSQL integration.[CC-AUTH-001] case-list cursor binds principal grant query and visible page
-ClaimCore PostgreSQL integration.[CC-AUTH-001] primary proof encoded lengths are admitted before allocation
+ClaimCore PostgreSQL integration.[CC-AUTH-001] one corrupt subject refuses an otherwise valid current page
 ClaimCore PostgreSQL integration.[CC-AUTH-001] voided and erasure-fenced identities share denial timing class
 ClaimCore PostgreSQL integration.[CC-AUTH-001][CC-REC-001] unresolved recovery payload is withheld after final disclosure authority loss
 ClaimCore PostgreSQL integration.[CC-BACKUP-001] intermediate restore reports cannot claim deployment readiness
@@ -331,6 +331,33 @@ ClaimCore PostgreSQL integration.production core boundary.runtime lifecycle.[CC-
 ClaimCore PostgreSQL integration.production core boundary.runtime lifecycle.[CC-RUN-001] cancelled opening returns a safe typed fault
 ClaimCore PostgreSQL integration.production core boundary.runtime lifecycle.[CC-RUN-001] disposal closes admission and drains a held operation
 ClaimCore PostgreSQL integration.production core boundary.runtime lifecycle.[CC-RUN-001] disposed runtime refuses retained normal and recovery facades
+ClaimCore PostgreSQL integration.proof encoded bounds.[CC-AUTH-001] primary proof encoded lengths are admitted before allocation
+ClaimCore PostgreSQL integration.proof encoded bounds.[CC-AUTH-001] witness proof encoded lengths are admitted before allocation
+ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition completion 11 releases its proof fence
+ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition completion 12 releases its proof fence
+ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition completion 17 releases its proof fence
+ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition completion 18 releases its proof fence
+ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition completion 5 releases its proof fence
+ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition completion 6 releases its proof fence
+ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 0 releases its proof fence
+ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 1 releases its proof fence
+ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 10 releases its proof fence
+ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 11 releases its proof fence
+ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 12 releases its proof fence
+ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 13 releases its proof fence
+ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 14 releases its proof fence
+ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 15 releases its proof fence
+ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 16 releases its proof fence
+ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 17 releases its proof fence
+ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 18 releases its proof fence
+ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 2 releases its proof fence
+ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 3 releases its proof fence
+ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 4 releases its proof fence
+ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 5 releases its proof fence
+ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 6 releases its proof fence
+ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 7 releases its proof fence
+ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 8 releases its proof fence
+ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 9 releases its proof fence
 ClaimCore PostgreSQL integration.real-data activation approval uncertainty.[CC-BACKUP-001] intent-only owner approval retry preserves exact canonical and DB time
 ClaimCore PostgreSQL integration.real-data activation approval uncertainty.[CC-BACKUP-001] post-primary approval retry reconciles one witness settlement
 ClaimCore PostgreSQL integration.real-data activation mechanics.[CC-DB-001] settled witness activation repairs a missing primary projection

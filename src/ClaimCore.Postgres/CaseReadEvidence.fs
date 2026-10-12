@@ -138,6 +138,7 @@ module internal CaseReadEvidence =
                     let! result = chunk witness connection transaction claims ct
                     failure <- result
 
+            ct.ThrowIfCancellationRequested()
             return failure
         }
 

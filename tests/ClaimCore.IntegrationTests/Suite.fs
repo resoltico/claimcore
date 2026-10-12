@@ -15,6 +15,8 @@ let private accessTrustTests =
         RuntimeAuditQuarantineTests.tests
         RuntimeHealthTests.tests
         CaseReadProofBatchTests.tests
+        CaseReadProofCancellationTests.tests
+        CaseReadProofCorruptionTests.tests
         ReadProofLengthTests.tests
         CaseHistoryProofBatchTests.tests
         CaseLifecycleProofBatchTests.tests

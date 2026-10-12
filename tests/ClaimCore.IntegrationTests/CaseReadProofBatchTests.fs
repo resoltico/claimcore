@@ -11,7 +11,7 @@ open ClaimCore.Postgres
 open ClaimCore.TestSupport
 open ClaimCore.IntegrationTests.Fixtures
 
-let private receipts count =
+let internal receipts count =
     use database = store ()
     let service = database :> IClaimStore
 

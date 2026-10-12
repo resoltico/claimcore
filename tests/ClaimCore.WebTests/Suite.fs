@@ -41,6 +41,7 @@ let private boundaries =
         AsyncTransportTests.tests
         AdmissionDeadlineTests.tests
         IngressTests.tests
+        HealthIngressHttpTests.tests
         ReadCancellationTests.tests
         ResponsePolicyTests.tests
         SessionSweepTests.tests

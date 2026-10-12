@@ -96,6 +96,7 @@ ClaimCore.Web.Web v3 admission.[CC-WEB-001] keeps the mutable browser session re
 ClaimCore.Web.Web v3 admission.[CC-WEB-001] rejects absent and remote peers or wrong host authority
 ClaimCore.Web.Web v3 admission.[CC-WEB-001] requires one exact browser origin and same-origin metadata
 ClaimCore.Web.Web v3 admission.[CC-WEB-001] returns typed CSRF admission refusal
+ClaimCore.Web.[CC-WEB-001] 1000 concurrent real HTTP probes remain cheap under callback saturation
 ClaimCore.Web.[CC-WEB-001] controlled stop cancels blocked OIDC startup
 ClaimCore.Web.[CC-WEB-001] global ingress includes callback work while exact health stays cheap
 ClaimCore.Web.asynchronous HTTP transport boundaries.[CC-WEB-001] suspended I/O failure retains safe refusal
@@ -108,6 +109,7 @@ ClaimCore.Web.asynchronous HTTP transport boundaries.[CC-WEB-001] suspended exac
 ClaimCore.Web.asynchronous HTTP transport boundaries.[CC-WEB-001] suspended oversized request is refused
 ClaimCore.Web.body acquisition ownership.[CC-WEB-001] caller cancels stalled input before dispatch
 ClaimCore.Web.body acquisition ownership.[CC-WEB-001] cancellation after decode prevents a core call
+ClaimCore.Web.body acquisition ownership.[CC-WEB-001] host stop cancels active body acquisition
 ClaimCore.Web.body acquisition ownership.[CC-WEB-001] stalled input has an absolute body deadline
 ClaimCore.Web.bounded ticket sweeps.[CC-WEB-001] full ticket store reclaims expiry without evicting authority
 ClaimCore.Web.bounded ticket sweeps.[CC-WEB-001] session lookup and renewal examine at most 33 entries at capacity 1

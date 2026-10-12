@@ -134,6 +134,7 @@ module internal CaseReadLifecycleEvidence =
     let page (witness: WitnessProtocol) connection transaction subjects ct =
         task {
             let! proofs = load connection transaction subjects ct
+            ct.ThrowIfCancellationRequested()
 
             try
                 for chunk in proofs |> List.chunkBySize 8 do
@@ -165,6 +166,7 @@ module internal CaseReadLifecycleEvidence =
 
                         WitnessProof.requireScope (Some caseId) tickets
 
+                ct.ThrowIfCancellationRequested()
                 return Ok()
             with
             | :? OperationCanceledException as error when ct.IsCancellationRequested ->

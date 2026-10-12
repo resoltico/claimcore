@@ -180,6 +180,8 @@
     <Compile Include="RuntimeHealthTests.fs" />
     <Compile Include="ReadProofMeasurements.fs" />
     <Compile Include="CaseReadProofBatchTests.fs" />
+    <Compile Include="CaseReadProofCancellationTests.fs" />
+    <Compile Include="CaseReadProofCorruptionTests.fs" />
     <Compile Include="ReadProofLengthTests.fs" />
     <Compile Include="CaseHistoryProofBatchTests.fs" />
     <Compile Include="CaseLifecycleProofBatchTests.fs" />

@@ -159,4 +159,6 @@ module internal CaseReadProof =
                             row
                             (pair evidence operation SettledAccepted)
                     | _ -> raise WitnessPending
+
+            ct.ThrowIfCancellationRequested()
         }

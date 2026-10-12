@@ -65,6 +65,7 @@
     <Compile Include="SessionSweepTests.fs" />
     <Compile Include="SessionSweepInvariantTests.fs" />
     <Compile Include="IngressTests.fs" />
+    <Compile Include="HealthIngressHttpTests.fs" />
     <Compile Include="Suite.fs" />
   </ItemGroup>
   <ItemGroup>
