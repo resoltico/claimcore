@@ -150,15 +150,38 @@ let private voidAndReinstate =
                     request
                     blocked))
 
+let private assertHoldDateStyle app reference reviewOn =
+    use connection = new NpgsqlConnection(app)
+    connection.Open()
+    use transaction = connection.BeginTransaction()
+
+    use style =
+        new NpgsqlCommand("SET LOCAL DateStyle = 'SQL, DMY'", connection, transaction)
+
+    style.ExecuteNonQuery() |> ignore
+
+    let projection =
+        CaseLifecycleRead.lockProjection connection transaction reference
+        |> await
+        |> Option.defaultWith (fun () -> failtest "Expected held case projection.")
+
+    Expect.equal
+        (CaseLifecycle.holds projection.State |> List.map _.ReviewOn)
+        [ reviewOn ]
+        "Hold review dates are independent of session style"
+
+    transaction.Rollback()
+
 let private erasureFenceAndHold =
     testCase
         "[CC-LIFE-001] witnessed erasure request and hold fence ordinary work without claiming purge"
         (fun _ ->
-            setup (fun _ _ _ runtime proposer _ _ _ _ ->
+            setup (fun _ (_, app) _ runtime proposer _ _ _ _ ->
                 let actor = runtime.ForActor proposer
                 let request = openCase actor
                 let before = review actor request.CaseReference
                 let holdId = Guid.NewGuid()
+                let reviewOn = DateOnly.FromDateTime(DateTime.UtcNow.AddDays 10.0)
 
                 let hold =
                     change
@@ -168,7 +191,7 @@ let private erasureFenceAndHold =
                         (LifecycleMutation.RecordHold(
                             holdId,
                             "Synthetic retention ground",
-                            DateOnly.FromDateTime(DateTime.UtcNow.AddDays 10.0)
+                            reviewOn
                         ))
 
                 actor.Lifecycle.Apply(hold, cancellation) |> await |> applied
@@ -178,6 +201,8 @@ let private erasureFenceAndHold =
                     (held.ActiveHolds |> List.map _.HoldId)
                     [ holdId ]
                     "Hold is independent"
+
+                assertHoldDateStyle app request.CaseReference reviewOn
 
                 let erase =
                     change

@@ -48,13 +48,17 @@ type internal LifecycleStoredApproval =
 
 module internal CaseLifecycleRead =
     let private date (reader: Data.Common.DbDataReader) index =
-        DateOnly.ParseExact(reader.GetString(index), "yyyy-MM-dd", CultureInfo.InvariantCulture)
+        DateOnly.ParseExact(
+            ScalarEncoding.dateText (reader.GetInt32(index)),
+            "yyyy-MM-dd",
+            CultureInfo.InvariantCulture
+        )
 
     let private activeHolds connection transaction caseId =
         task {
             use command =
                 new NpgsqlCommand(
-                    "SELECT hold_id,ground,review_on::text,recorded_by,recorded_at "
+                    "SELECT hold_id,ground,review_on - DATE '2000-01-01',recorded_by,recorded_at "
                     + "FROM claimcore.case_holds WHERE case_id=@caseId AND released_at IS NULL "
                     + "ORDER BY hold_id LIMIT 257",
                     connection,

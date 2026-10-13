@@ -115,6 +115,7 @@ let private withRoleSetting (setting: string) (value: string) action =
         new NpgsqlCommand($"ALTER ROLE claimcore_app SET {setting} TO {value}", connection)
 
     apply.ExecuteNonQuery() |> ignore
+    (FixtureDatabase.dataSource ()).Clear()
 
     try
         action ()
@@ -123,6 +124,7 @@ let private withRoleSetting (setting: string) (value: string) action =
             new NpgsqlCommand($"ALTER ROLE claimcore_app RESET {setting}", connection)
 
         reset.ExecuteNonQuery() |> ignore
+        (FixtureDatabase.dataSource ()).Clear()
 
 let private scalarTests =
     testList
@@ -163,28 +165,42 @@ let private scalarTests =
             testCase "non-finite stored money is refused" (fun () -> rejectDriftedAmount "NaN")
         ]
 
+let private dateStylePersistence () =
+    use database = store ()
+    let service = database :> IClaimStore
+    let request = newRequest ()
+
+    let original =
+        CommandExecution.executeAsync service clock request |> await |> accepted
+
+    let current =
+        service.Get(request.CaseReference, CancellationToken.None)
+        |> await
+        |> accepted
+        |> Option.defaultWith (fun () -> failtest "Expected the stored case.")
+
+    Expect.isTrue
+        (Claim.view current = Claim.view original.Case)
+        "No date string conversion depends on session style"
+
+    let replay =
+        CommandExecution.executeAsync service clock request |> await |> accepted
+
+    Expect.isTrue replay.Replayed "Witnessed replay is independent of session style"
+
+    let history =
+        service.History(request.CaseReference, 0L, CancellationToken.None)
+        |> await
+        |> accepted
+
+    Expect.equal history.Items.Length 1 "Witnessed history is independent of session style"
+
 let private environmentTests =
     testList
         "database environment"
         [
             testCase "DateStyle cannot change date persistence" (fun () ->
-                withRoleSetting "DateStyle" "'SQL, DMY'" (fun () ->
-                    use database = store ()
-                    let service = database :> IClaimStore
-                    let request = newRequest ()
-
-                    let original =
-                        CommandExecution.executeAsync service clock request |> await |> accepted
-
-                    let current =
-                        service.Get(request.CaseReference, CancellationToken.None)
-                        |> await
-                        |> accepted
-                        |> Option.defaultWith (fun () -> failtest "Expected the stored case.")
-
-                    Expect.isTrue
-                        (Claim.view current = Claim.view original.Case)
-                        "No date string conversion depends on session style"))
+                withRoleSetting "DateStyle" "'SQL, DMY'" dateStylePersistence)
             testCase "async commit and read-only sessions are refused" (fun () ->
                 for setting, value in
                     [ "synchronous_commit", "off"; "default_transaction_read_only", "on" ] do

@@ -6,6 +6,8 @@ Notable changes to this project are documented in this file. The format is based
 
 ### Fixed
 
+- PostgreSQL session date formats no longer prevent witnessed case reads, history, exact replay or active-hold review. Stored dates and evidence formats are unchanged.
+
 - Browser API and recovery export refuse redirects before a second request, preserving uncertainty and exact recovery identity after original-handler acceptance.
 - Web bounds body acquisition to ten seconds with caller/host-stop cancellation, propagates cancellation through activation review, and bounds authentication/callback ingress. Readiness probes read one owned, age-bounded observation without initiating database or session work; actual authority checks remain live.
 - Authorized case/history proofs acquire bounded sets of independently witnessed evidence, and session lookups/renewals sweep at most 32 unrelated tickets while preserving exact expiry and capacity refusal.

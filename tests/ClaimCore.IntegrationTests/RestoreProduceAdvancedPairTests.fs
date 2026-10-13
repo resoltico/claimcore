@@ -76,12 +76,33 @@ let tests =
         "advanced physical restored pair"
         [
             testCase
-                "[CC-BACKUP-001] repeated quiet WAL switches retain the last completed segment"
+                "[CC-BACKUP-001] completed WAL endpoints retain the exclusive last segment"
                 (fun _ ->
+                    let completed = "000000010000000000000006"
+                    let following = "000000010000000000000007"
+                    let segments = requiredSegments "0/5000028" 1 16777216 "0/7000000" completed
+
+                    Expect.equal
+                        segments
+                        ("000000010000000000000005," + completed)
+                        "The exclusive boundary includes the preceding completed segment"
+
+                    Expect.throws
+                        (fun () ->
+                            requiredSegments "0/5000028" 1 16777216 "0/7000000" following
+                            |> ignore)
+                        "The following uncompleted segment cannot satisfy the horizon"
+
                     withAuthorityRuntimeDatabase (fun owner _ _ _ ->
-                        let _, completed = completedWalEndpoint owner
-                        let _, quiet = completedWalEndpoint owner
-                        Expect.equal quiet completed "No writes created another completed segment"))
+                        for _ in 1..2 do
+                            let horizon, last = completedWalEndpoint owner
+                            let index = (walPosition horizon - 1UL) / 16777216UL
+                            let expected = $"{1:X8}{index / 256UL:X8}{index % 256UL:X8}"
+
+                            Expect.equal
+                                last
+                                expected
+                                "Each switch uses its own exclusive horizon"))
             testCase
                 "[CC-BACKUP-001] original BASE pair replays later synthetic WAL before audit"
                 (fun _ -> withAuthorityRuntimeDatabase advancedPair)
