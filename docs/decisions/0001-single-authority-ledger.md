@@ -361,3 +361,120 @@ Next is WP5: the PostgreSQL ledger store, schema/migrations/admission/verificati
 provisioning and integration project. Run the same shared contract plus real concurrency,
 timeout, commit-loss, privilege and tampering controls on newly labelled disposable resources.
 WP5 through WP15 and the final gate/acceptance remain unverified.
+
+## Changes during implementation: retained reference and commit confirmation
+
+A real PostgreSQL counterexample exposed a gap in G2 and G7. After an accepted ERASE, updating
+only `cases.case_reference` still passed verification against the erasure receipt. The complete
+57-case run had 56 successes and one failed rejecting test. Payload deletion removed the only
+ledger-to-reference binding; a tombstone shape check cannot prove its retained reference.
+
+The correction uses the existing hash-covered case UUID as the reference binding. It is the
+first 16 bytes of SHA-256(ASCII `claimcore/case-reference-id/1\n` || installation UUID in network
+byte order || strict UTF-8 reference), interpreted as a network-order UUID. Application uses
+this identifier for OPEN; verification derives it from each projection reference and checks
+its case history. No normalization, trimming or case folding occurs in this encoding. Actor
+IDs remain registration event IDs; case identity is independent of operation identity.
+
+The separate challenge considered retaining a reference field/hash in each entry, changing the
+preimage, or retaining erase-request bytes/nonce. Those add schema/format state or alter the
+specified erasure boundary. Reference-bound case identity changes neither the seven-table
+schema, 185-byte entry layout, existing vectors nor retained/removed data. Reference binding
+has 128-bit second-preimage strength; ledger hashes remain SHA-256. Predictable identifiers
+confer no grant. An independent Python implementation printed three vectors, reproduced by
+native tests, with namespace, case, whitespace, normalization and malformed-scalar controls.
+The extracted format material documents the correction. No installed data is converted.
+
+The pack's assertion that any SQLSTATE proves a failed commit was also false. A protocol relay
+withheld PostgreSQL's real COMMIT completion, then terminated only that fixture's backend and
+forwarded its real fatal `57P01` response. The commit had landed. The complete 61-case run had
+59 successes and two failures: case execution reported failure, and initialization propagated
+57P01 as failure. Both violated G5. Server errors establishing abort remain definite; fatal or
+panic replies, connection-class errors and declared completion uncertainty after commit
+dispatch remain unknown. Before dispatch, these failures are definite. Cancellation is checked
+immediately before attempting commit; after entering the commit API, lost confirmation is
+conservatively unknown. Store and administration share that classification. Transport and
+57P01 paths use real connections; PANIC/08007/40003 taxonomy controls use constructed exceptions
+and do not establish physical failure injection for those states.
+
+Runtime ownership admission measures both immediately inherited and assumable schema-owner
+power with `pg_has_role(..., 'USAGE')` and `pg_has_role(..., 'SET')`. Native fixtures show direct
+owner equality false while these powers exist, and admission refuses both configurations.
+The meanings are specified by PostgreSQL's [privilege inquiry functions](https://www.postgresql.org/docs/18/functions-info.html).
+This closes an implementation defect rather than adding an actor role or authorization matrix.
+
+The system-zone list on this macOS/.NET runtime includes `UTC` as an IANA ID despite its alias
+status. The external probe printed `UTC eligible=true resolved=UTC IANA=true`. Initialization
+requires `Etc/UTC` for that calendar and continues to refuse aliases/platform names. The
+in-memory store also used UTF-16 ordinal order, which disagrees with PostgreSQL C/UTF-8 order
+for BMP versus supplementary references. The shared Unicode continuation test failed with
+168 successes/one failure before correction. Its comparator now uses UTF-8 bytes; the scoped
+visibility fixture obtains the actual case ID rather than assuming it equals an operation ID.
+These corrections preserve G1–G11 and reopen no section 4.3 non-goal.
+
+## WP5 frontier
+
+WP0 through WP5 are complete. The solution contains Domain, RecordFormat, Application,
+Postgres, Tests and IntegrationTests. Postgres owns raw Npgsql commands adjacent to their
+capabilities, one data source per runtime/administration instance, RC writes with head-first
+business loads and one pure callback, atomic entry/projection persistence, bounded sessions,
+and repeatable-read snapshots. Runtime admission checks transport, supported major from the
+embedded authoritative image record, effective role power, exact migration prefix/digests,
+installation/calendar and head/last-entry agreement. Schema administration initializes fresh
+or applies forward scripts; foreign histories are refused without changes. Verification streams
+ledger rows once, checks metadata/link/payload commitments, contiguous case revisions,
+reference-bound live/tombstone projections, authority folds and optional retained positions.
+
+Commands actually executed against the final code:
+
+- `dotnet restore ClaimCore.slnx --locked-mode`: exit 0; all projects up to date.
+- `dotnet build ClaimCore.slnx --configuration Release --no-restore`: exit 0;
+  `Build succeeded`, zero warnings/errors, 3.33s on the last build.
+- `dotnet test --project tests/ClaimCore.Tests/ClaimCore.Tests.fsproj --configuration Release
+  --no-build --no-restore --minimum-expected-tests=172 --zero-tests-policy=strict --timeout=5m
+  -- --settings=/Users/erst/Tools/claimcore/eng/expecto.runsettings`: 172 total/succeeded,
+  zero failed/skipped, exit 0, 5.113s.
+- The same native command for `tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj`
+  with minimum 62: 62 total/succeeded, zero failed/skipped, exit 0, 89.602s. No focused, filtered,
+  pending, retried or sharded invocation qualifies these results.
+- `dotnet fantomas --check src tests eng`: exit 0, no output.
+- `bash eng/Check-FSharpLint.sh`: exit 0, zero warnings across the remaining tree. Function and
+  complexity limits remain unchanged; no new exception or suppression was introduced.
+- `python3 -I /Users/erst/Tools/claimcore-ledger-plan-review-20261013/wp5-case-reference-id-reference.py`:
+  printed the three reference vectors recorded above; native tests independently match them.
+- `cmp db/migrations/0001_baseline.sql <absolute extracted materials/db/0001_baseline.sql>`:
+  exit 0, no output; baseline bytes are unchanged. Its embedded digest is checked against raw
+  repository bytes in the integration project.
+- `git diff --check`: exit 0. Docker listings show no test-labelled containers or volumes after
+  the final run; the same ten evaluation containers remain running/healthy and were never
+  connected to. Each fixture uses a fresh labelled pinned-image container with tmpfs storage,
+  cleanup on setup/test failure, and a unique run label. Failed runs were also checked for cleanup.
+
+The shared store suite now has eight cases, including Unicode ordering/continuation, and runs
+on both stores. Real PostgreSQL evidence covers 20 concurrent writers, lock/instant ordering,
+stale-head refusal, all three timeouts, deferred commit abort, landed/unlanded lost reply,
+post-commit fatal 57P01, exact replay, all eighteen material SQLSTATE refusals, admission
+refusals including inherited/assumable ownership, migration digest/idempotence/rollback,
+owner bootstrap/replay/refusals, stable reads across a concurrent change, seven basic tamper
+classes, restored valid erased payload, altered erased reference and an actual pg_dump/restore
+before erasure checked against its later receipt. Disabled timeout/trigger, pre-lock clock and
+mutated ledger/projection controls establish detection, rather than merely exercise code.
+
+Source inspection is separate: the public storage surface is the admitted opaque Runtime and
+five-operation Administration class, with no public Npgsql/store/decision callback type. Npgsql
+compile/build assets do not flow to consumers. Canonical request/snapshot writer code and the
+three supplied ledger vectors were not changed. Domain, product version, changelog and AGENTS
+engineering principles are unchanged. Generated lock files were inspected: new graphs contain
+the pinned Npgsql/Testcontainers dependencies and existing direct project edges; no package
+version changed. These inspections are not the compiled architecture gate due in WP13.
+
+Initial compiler, lint and fixture failures were fixed, not counted as passes. The first
+parallel fixture run passed 14/15 and timed out creating one container; sequential fixtures
+passed 15/15 in 15.649s. Relay setup failures exposed GSS negotiation and redacted-password
+handling; they were repaired before qualifying real-boundary runs. The reference, Unicode,
+UTC and fatal-commit counterexamples and corrections are documented above with their outcomes.
+No existing installation or private evaluation data was opened, reset, migrated or deleted.
+
+Next is WP6: portable Unix HostSecurity and Hosting composition over the admitted runtime and
+stored calendar. WP6–WP15, published-binary/Keycloak/browser acceptance, Linux application
+builds and the final full gate remain unfinished/unverified. The PR remains draft and unmerged.

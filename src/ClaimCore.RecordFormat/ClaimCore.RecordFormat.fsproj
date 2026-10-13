@@ -6,6 +6,7 @@
     <Compile Include="CaseRecord.fs" />
     <Compile Include="StewardshipRecord.fs" />
     <Compile Include="AuthorityRecord.fs" />
+    <Compile Include="CaseReferenceId.fs" />
     <Compile Include="LedgerEntry.fs" />
   </ItemGroup>
   <ItemGroup>

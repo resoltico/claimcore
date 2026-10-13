@@ -17,6 +17,9 @@ type private State =
         Entries: StoredEntry list
     }
 
+let private referenceOrder (left: string) (right: string) =
+    compare (Text.Encoding.UTF8.GetBytes left) (Text.Encoding.UTF8.GetBytes right)
+
 let private copyEntry (entry: StoredEntry) =
     { entry with
         EntryHash = Array.copy entry.EntryHash
@@ -430,9 +433,8 @@ type internal Store(instant: DateTimeOffset) =
                              | CaseVisibility.Only ids -> List.contains value.CaseId ids)
                             && (after
                                 |> Option.forall (fun position ->
-                                    String.CompareOrdinal(value.Reference, position) > 0)))
-                        |> Seq.sortWith (fun a b ->
-                            String.CompareOrdinal(a.Reference, b.Reference))
+                                    referenceOrder value.Reference position > 0)))
+                        |> Seq.sortWith (fun a b -> referenceOrder a.Reference b.Reference)
                         |> Seq.truncate (limit + 1)
                         |> Seq.toList
 

@@ -13,3 +13,6 @@ module RecordVersions =
 
     [<Literal>]
     let LedgerEntry = 1
+
+    [<Literal>]
+    let CaseReferenceIdentity = 1

@@ -1,0 +1,86 @@
+namespace ClaimCore.Postgres
+
+open System
+open System.Net
+open Npgsql
+
+/// Immutable installation configuration read by runtime admission.
+type Installation =
+    {
+        InstallationId: Guid
+        BusinessTimeZone: string
+    }
+
+module internal Admission =
+    let transport (settings: NpgsqlConnectionStringBuilder) =
+        let loopback (host: string) =
+            match IPAddress.TryParse host with
+            | true, address -> IPAddress.IsLoopback(nonNull address)
+            | _ -> String.Equals(host, "localhost", StringComparison.OrdinalIgnoreCase)
+
+        if (nonNull settings.Host).Split(',') |> Array.exists (loopback >> not) then
+            if settings.SslMode <> SslMode.VerifyFull then
+                invalidOp "Remote runtime connections require verified TLS."
+
+    let openRuntime (source: NpgsqlDataSource) token =
+        task {
+            transport (NpgsqlConnectionStringBuilder source.ConnectionString)
+
+            return!
+                DatabaseSession.read source token (fun connection ->
+                    task {
+                        if connection.PostgreSqlVersion.Major <> 18 then
+                            invalidOp "Unsupported PostgreSQL major version."
+
+                        let! role =
+                            DatabaseSession.rows
+                                connection
+                                "SELECT r.rolsuper OR pg_has_role(r.oid,n.nspowner,'USAGE') OR pg_has_role(r.oid,n.nspowner,'SET') FROM pg_roles r CROSS JOIN pg_namespace n WHERE r.rolname=current_user AND n.nspname='claimcore'"
+                                [||]
+                                token
+
+                        if role.Length <> 1 || DatabaseSession.value<bool> 0 role.Head then
+                            invalidOp
+                                "Runtime role owns the schema, is privileged, or the schema is absent."
+
+                        let! count = Migrations.history connection Migrations.scripts token
+
+                        if count <> Migrations.scripts.Length then
+                            invalidOp "Runtime migration version differs."
+
+                        let! id, zone = Migrations.installation connection token
+                        Migrations.zone zone |> ignore
+
+                        if id = Guid.Empty then
+                            invalidOp "Installation identity is empty."
+
+                        let! heads =
+                            DatabaseSession.rows
+                                connection
+                                "SELECT h.sequence,h.entry_hash,l.sequence,l.entry_hash FROM claimcore.ledger_head h LEFT JOIN LATERAL (SELECT sequence,entry_hash FROM claimcore.ledger ORDER BY sequence DESC LIMIT 1) l ON true"
+                                [||]
+                                token
+
+                        match heads with
+                        | [ head ] ->
+                            let last =
+                                DatabaseSession.optional<int64> 2 head |> Option.defaultValue 0L
+
+                            let hash =
+                                DatabaseSession.optional<byte array> 3 head
+                                |> Option.defaultValue (Array.zeroCreate 32)
+
+                            if
+                                DatabaseSession.value<int64> 0 head <> last
+                                || DatabaseSession.value<byte array> 1 head <> hash
+                            then
+                                invalidOp "Ledger head differs from its last entry."
+                        | _ -> invalidOp "Ledger head is missing."
+
+                        return
+                            {
+                                InstallationId = id
+                                BusinessTimeZone = zone
+                            }
+                    })
+        }

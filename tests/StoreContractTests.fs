@@ -378,6 +378,17 @@ let private caseErasure fixture =
         do! erasureReadback fixture actor
     }
 
+let private existingCaseId fixture reference =
+    task {
+        let! result =
+            fixture.Store.ReadCase(fixture.Owner, None, reference, CancellationToken.None)
+
+        return
+            match result with
+            | Ok { Case = Some case } -> case.CaseId
+            | _ -> failtest "Expected existing case identity"
+    }
+
 let private caseVisibility fixture =
     task {
         let! actor = editor fixture
@@ -402,15 +413,17 @@ let private caseVisibility fixture =
 
         match page with
         | Ok(Some page) ->
-            Expect.equal (page.Items |> List.map _.Reference) [ "A"; "B" ] "Ordinal page"
+            Expect.equal (page.Items |> List.map _.Reference) [ "A"; "B" ] "UTF-8 byte page"
 
             Expect.equal page.NextAfterReference (Some "B") "Last visible key"
         | _ -> failtest "Missing page"
 
+        let! caseId = existingCaseId fixture "C"
+
         let! only =
             fixture.Store.ListCases(
                 fixture.Owner,
-                (fun _ -> Some(CaseVisibility.Only [ id 10 ])),
+                (fun _ -> Some(CaseVisibility.Only [ caseId ])),
                 None,
                 1,
                 CancellationToken.None
@@ -504,6 +517,59 @@ let private authorityChanges fixture =
         | _ -> failtest "Missing actor"
     }
 
+let private scalarOrdering fixture =
+    task {
+        let! actor = editor fixture
+        let expected = [ "REF-\uFFFD"; "REF-\U00010000" ]
+
+        for index, reference in List.indexed expected do
+            let! outcome =
+                actor.Execute(
+                    request (20 + index) reference 0L (Command.Open registration),
+                    CancellationToken.None
+                )
+
+            accepted outcome |> ignore
+
+        let! first =
+            fixture.Store.ListCases(
+                fixture.Owner,
+                (fun _ -> Some CaseVisibility.Every),
+                None,
+                1,
+                CancellationToken.None
+            )
+
+        let first =
+            first
+            |> Result.defaultWith (fun _ -> failtest "List failed")
+            |> Option.defaultWith (fun () -> failtest "List unavailable")
+
+        Expect.equal
+            (first.Items |> List.map _.Reference)
+            [ expected[0] ]
+            "C collation orders Unicode scalar values"
+
+        let! second =
+            fixture.Store.ListCases(
+                fixture.Owner,
+                (fun _ -> Some CaseVisibility.Every),
+                first.NextAfterReference,
+                1,
+                CancellationToken.None
+            )
+
+        let second =
+            second
+            |> Result.defaultWith (fun _ -> failtest "List failed")
+            |> Option.defaultWith (fun () -> failtest "List unavailable")
+
+        Expect.equal
+            (second.Items |> List.map _.Reference)
+            [ expected[1] ]
+            "Continuation uses the same ordering"
+    }
+
 let internal tests factory =
     testList
         "ledger store contract"
@@ -526,6 +592,9 @@ let internal tests factory =
             testCaseAsync
                 "visibility ordering and keyset limits are applied before paging"
                 (withFixture factory caseVisibility)
+            testCaseAsync
+                "Unicode scalar ordering and keyset continuation agree"
+                (withFixture factory scalarOrdering)
             testCaseAsync
                 "authority changes and reads agree within snapshots"
                 (withFixture factory authorityChanges)

@@ -23,6 +23,7 @@
     <Compile Include="DecoderCorpora.fs" />
     <Compile Include="OperationRecordTests.fs" />
     <Compile Include="LedgerEntryTests.fs" />
+    <Compile Include="CaseReferenceIdTests.fs" />
     <Compile Include="MemoryLedgerStore.fs" />
     <Compile Include="../StoreContractTests.fs" Link="StoreContractTests.fs" />
     <Compile Include="ApplicationTests.fs" />

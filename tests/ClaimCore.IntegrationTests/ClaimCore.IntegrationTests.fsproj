@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <Compile Include="../RepositoryRoot.fs" Link="RepositoryRoot.fs" />
+    <Compile Include="../TestGuards.fs" Link="TestGuards.fs" />
+    <Compile Include="../TestGuardTests.fs" Link="TestGuardTests.fs" />
+    <Compile Include="../StoreContractTests.fs" Link="StoreContractTests.fs" />
+    <Compile Include="PostgresFixture.fs" />
+    <Compile Include="StoreTests.fs" />
+    <Compile Include="DatabaseTests.fs" />
+    <Compile Include="TransactionTests.fs" />
+    <Compile Include="CommitProxy.fs" />
+    <Compile Include="CommitTests.fs" />
+    <None Include="SchemaScenarios.sql" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Application/ClaimCore.Application.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Postgres/ClaimCore.Postgres.fsproj" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="Npgsql" />
+  </ItemGroup>
+</Project>

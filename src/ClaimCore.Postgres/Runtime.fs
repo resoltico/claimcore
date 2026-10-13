@@ -1,0 +1,141 @@
+namespace ClaimCore.Postgres
+
+open System
+open System.Threading
+open ClaimCore.Application
+open Npgsql
+
+/// The admitted runtime owns one data source and exposes its store only to Hosting.
+[<Sealed>]
+type Runtime internal (source: NpgsqlDataSource, installation: Installation) =
+    member _.Installation = installation
+
+    member internal _.Store =
+        LedgerStore(source, installation.InstallationId, Transactions.timeouts) :> ILedgerStore
+
+    interface IDisposable with
+        member _.Dispose() = source.Dispose()
+
+module Runtime =
+    let openConnection (connectionString: string) cancellationToken =
+        task {
+            let source = NpgsqlDataSource.Create connectionString
+
+            try
+                let! installation = Admission.openRuntime source cancellationToken
+                return new Runtime(source, installation)
+            with error ->
+                source.Dispose()
+                return raise error
+        }
+
+module internal LedgerAdministration =
+    let verify source expected cancellationToken =
+        task {
+            let! head = Verification.verify source expected cancellationToken
+            return LedgerEntries.position head.Sequence head.EntryHash
+        }
+
+    let head source cancellationToken =
+        DatabaseSession.read source cancellationToken (fun connection ->
+            task {
+                let! count = Migrations.history connection Migrations.scripts cancellationToken
+
+                if count <> Migrations.scripts.Length then
+                    invalidOp "Unsupported schema version."
+
+                let! rows =
+                    DatabaseSession.rows
+                        connection
+                        "SELECT sequence,entry_hash FROM claimcore.ledger_head"
+                        [||]
+                        cancellationToken
+
+                match rows with
+                | [ row ] ->
+                    return
+                        LedgerEntries.position
+                            (DatabaseSession.value 0 row)
+                            (DatabaseSession.value 1 row)
+                | _ -> return invalidOp "Ledger head is absent."
+            })
+
+    let private provisionResult eventId result =
+        match result with
+        | Ok(AuthorityWriteResult.Appended entry) ->
+            AuthorityOutcome.Applied(
+                eventId,
+                LedgerEntries.position entry.Sequence entry.EntryHash,
+                eventId
+            )
+        | Ok(AuthorityWriteResult.Replayed entry) ->
+            AuthorityOutcome.AlreadyApplied(
+                eventId,
+                LedgerEntries.position entry.Sequence entry.EntryHash,
+                eventId
+            )
+        | Ok(AuthorityWriteResult.Refused reason) -> AuthorityOutcome.Rejected reason
+        | Ok(AuthorityWriteResult.Failed fault) -> AuthorityOutcome.Failed fault
+        | Error StoreFailure.Cancelled -> AuthorityOutcome.Cancelled
+        | Error StoreFailure.CommitOutcomeUnknown -> AuthorityOutcome.OutcomeUnknown eventId
+        | Error StoreFailure.SchemaMismatch -> AuthorityOutcome.Failed CoreFault.SchemaMismatch
+        | Error StoreFailure.Integrity -> AuthorityOutcome.Failed CoreFault.StoreIntegrityError
+        | Error StoreFailure.Unavailable -> AuthorityOutcome.Failed CoreFault.StoreUnavailable
+
+    let provisionOwner source eventId principal cancellationToken =
+        task {
+            let! installationId, _ =
+                DatabaseSession.read source cancellationToken (fun connection ->
+                    task {
+                        let! count =
+                            Migrations.history connection Migrations.scripts cancellationToken
+
+                        if count <> Migrations.scripts.Length then
+                            invalidOp "Unsupported schema version."
+
+                        return! Migrations.installation connection cancellationToken
+                    })
+
+            let store =
+                LedgerStore(source, installationId, Transactions.timeouts) :> ILedgerStore
+
+            let! result =
+                store.WriteAuthority(
+                    principal,
+                    eventId,
+                    principal,
+                    None,
+                    AuthorityDecisions.decide
+                        installationId
+                        principal
+                        eventId
+                        principal
+                        AuthorityAction.ProvisionOwner,
+                    cancellationToken
+                )
+
+            return provisionResult eventId result
+        }
+
+/// The owner administration process supplies its connection; runtime composition does not expose it.
+[<Sealed>]
+type Administration(connectionString: string) =
+    let source = NpgsqlDataSource.Create connectionString
+
+    member _.Initialize(timeZone, cancellationToken) =
+        SchemaAdministration.initialize source timeZone cancellationToken
+
+    member _.Migrate(cancellationToken) =
+        SchemaAdministration.migrate source cancellationToken
+
+    member _.Verify(expected, cancellationToken) =
+        LedgerAdministration.verify source expected cancellationToken
+
+    member _.Head(cancellationToken) =
+        LedgerAdministration.head source cancellationToken
+
+    member _.ProvisionOwner(eventId, principal, cancellationToken) =
+        LedgerAdministration.provisionOwner source eventId principal cancellationToken
+
+    interface IDisposable with
+        member _.Dispose() = source.Dispose()

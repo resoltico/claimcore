@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="DatabaseSession.fs" />
+    <Compile Include="Migrations/Migrations.fs" />
+    <Compile Include="Admission/ServerSupport.fs" />
+    <Compile Include="Admission/Admission.fs" />
+    <Compile Include="Reads/Projections.fs" />
+    <Compile Include="Ledger/StoredEntries.fs" />
+    <Compile Include="Ledger/Persistence.fs" />
+    <Compile Include="Ledger/Transactions.fs" />
+    <Compile Include="Ledger/WriteOperations.fs" />
+    <Compile Include="Reads/ReadOperations.fs" />
+    <Compile Include="Ledger/LedgerStore.fs" />
+    <Compile Include="Verification/AuthorityFold.fs" />
+    <Compile Include="Verification/Verification.fs" />
+    <Compile Include="Runtime.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../ClaimCore.Domain/ClaimCore.Domain.fsproj" />
+    <ProjectReference Include="../ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj" />
+    <ProjectReference Include="../ClaimCore.Application/ClaimCore.Application.fsproj" />
+    <PackageReference Include="Npgsql" PrivateAssets="compile;build" />
+    <EmbeddedResource Include="../../db/migrations/*.sql" />
+    <EmbeddedResource Include="../../db/postgresql-baseline.json" />
+  </ItemGroup>
+</Project>

@@ -91,7 +91,12 @@ module internal CaseDecisions =
         | CaseReviewDecision.Fail fault -> CaseDecision.Fail fault
         | CaseReviewDecision.Proposed(_, after) ->
             let snapshot = Claim.view after
-            let id = view.Case |> Option.map _.CaseId |> Option.defaultValue request.OperationId
+
+            let id =
+                view.Case
+                |> Option.map _.CaseId
+                |> Option.defaultWith (fun () ->
+                    CaseReferenceId.encode installationId snapshot.Fields.CaseReference)
 
             let actor =
                 view.Actor
