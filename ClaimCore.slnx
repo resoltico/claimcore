@@ -5,4 +5,6 @@
   <Project Path="src/ClaimCore.Application/ClaimCore.Application.fsproj" />
   <Project Path="src/ClaimCore.Postgres/ClaimCore.Postgres.fsproj" />
   <Project Path="tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj" />
+  <Project Path="src/ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />
+  <Project Path="src/ClaimCore.Hosting/ClaimCore.Hosting.fsproj" />
 </Solution>

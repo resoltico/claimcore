@@ -478,3 +478,92 @@ No existing installation or private evaluation data was opened, reset, migrated 
 Next is WP6: portable Unix HostSecurity and Hosting composition over the admitted runtime and
 stored calendar. WP6–WP15, published-binary/Keycloak/browser acceptance, Linux application
 builds and the final full gate remain unfinished/unverified. The PR remains draft and unmerged.
+
+## Changes during implementation: file admission and runtime composition
+
+The file material's regular-file assumption failed a macOS/.NET probe: a FIFO reports
+`Exists=true, Attributes=Normal, Length=0`; opening it read-only waits for a writer before
+`CanSeek` can reject it. `/dev/null` reported `Attributes=Normal, CanSeek=true, Length=0`.
+.NET's Unix open implementation does not set O_NONBLOCK for public FileStream options, and
+public attributes do not expose Unix file kind. The implementation uses a bounded stock Unix
+`stat` type probe before opening, followed by the specified handle-based mode check. It uses
+ArgumentList, a C locale, no shell, no path/content in failure values, a two-second probe bound,
+and fails closed if the utility is absent/fails. The private reader still has no write operation,
+C shim, compiler prerequisite or source interop declaration. macOS/BSD and Linux/GNU stat are
+now explicit prerequisites. The host-trust concession remains: path/type/link checks do not
+provide a no-follow ancestor walk or defend against a trusted local replacement race. The
+buffer size is captured once to preserve the byte bound if file size changes.
+
+Owner-read permission is required even for root; otherwise admission reports Unreadable. This
+makes the unreadable-file guard deterministic on both supported platforms. Directories report
+NotRegular; dangling and live leaf links report IsLink. Unsupported platforms refuse before IO.
+The extracted material is corrected; no retired private-file writer or key mechanism returns.
+
+F# compiler evidence FS0074 showed that implementing IActorClaimsCore needs Domain's command
+and stewardship types as a direct Hosting dependency. The material graph adds that edge. The
+concrete Postgres runtime's internal Npgsql constructor also leaked a compiler dependency into
+Hosting. It is now a private implementation behind IRuntime; Hosting similarly returns an
+opaque interface and its own typed open-fault union so Web needs neither Postgres nor Npgsql.
+No new callback/store surface is public. Postgres admission returns typed refusals and disposes
+failed opens; the supported major now comes from the authoritative embedded server record.
+
+The material's TimeZoneInfo allow-list conflicted with section 5.6's storage admission and
+initializer zone checks. Its list now permits Postgres for those checks, alongside Hosting and
+Database. Hosting resolves one immutable calendar object per admitted runtime, never per call,
+and derives dates from supplied instants. This preserves G9 and keeps timezone decisions out
+of Domain, RecordFormat, Application, Contracts and case-work adapters.
+
+An initial nested async exception handler compiled but produced InvalidProgramException in
+runtime admission: 73 total, 60 failed, 13 succeeded, no skips. Admission was split into bounded
+role, installation and head loads; synchronous calendar validation avoids that generated task
+shape. Fixture rethrow now preserves the original stack with ExceptionDispatchInfo. The full
+suite was rerun; the failed run is preserved outside source and is not counted as passing.
+
+## WP6 frontier
+
+WP0–WP6 are complete. HostSecurity retains PrivateFile and TlsCertificatePurpose only, with
+its existing test friend. The shim, native targets/imports, private writers and three key-file
+modules are removed. Hosting composes admitted storage and the stored calendar into actor-bound
+facades. Every facade method, including management/observation, holds an admission lease.
+Shutdown closes admission, drains within a finite bound, closes the source exactly once at
+drain or expiry, and leaves already-admitted results unchanged. A real Npgsql transaction waiting
+on the head still commits after source disposal at bound expiry; no result is relabelled.
+
+Executed commands and outcomes on the final code:
+
+- `dotnet restore ClaimCore.slnx --locked-mode`: exit 0, projects up to date.
+- Release solution build with `--no-restore`: exit 0, zero warnings/errors. Eight projects build.
+- Complete native MTP unit run, Release/no-build/no-restore, minimum 191, strict zero policy,
+  5m timeout and `eng/expecto.runsettings`: 191 succeeded, zero failed/skipped, 7.020s.
+- Complete native MTP integration run with minimum 75 and the same settings: 75 succeeded,
+  zero failed/skipped, 126.333s. Unsupported-server metadata uses the actual admission guard
+  and typed Hosting mapping; a physical PostgreSQL 17 server was not started.
+- `dotnet fantomas --check src tests eng`: exit 0, no output. Full FSharpLint: exit 0, zero
+  warnings; no suppression, exception or limit was added.
+- Fresh labelled SDK container at
+  `mcr.microsoft.com/dotnet/sdk:10.0.401@sha256:e70cdb7f80b0348f5cb85f19a8f670fca061f033d57eed12fa003d58b0e06317`,
+  using a clean tracked/unignored source copy mounted read-only and temporary build/results
+  directories: printed `No C compiler present`, locked restore passed, Release build succeeded
+  with zero warnings/errors in 24.69s, and the complete Linux native unit run passed 191/191,
+  zero failed/skipped in 4.791s. The script was read then invoked by path outside the extraction.
+- The first Linux test launch wrote to read-only `/source/TestResults`, failed before discovery
+  with zero tests/exit 134, and does not qualify. Explicit temporary results fixed the launch;
+  the complete suite then passed without filtering or weakening its guards.
+- Tracked-file/source scans print no C file, DllImport, LibraryImport or native-target import.
+  Cached diff whitespace check passes. Only this task's newly created labelled containers were
+  used; cleanup leaves none and the ten evaluation stacks remain running/healthy and untouched.
+
+The private-file table covers owner-only read modes, every group/other permission bit, exact
+bounds/empty files, absolute/missing paths, live/dangling links, unreadable mode, directory,
+FIFO without a writer, and unsupported-platform pre-IO refusal. Native Windows execution was
+not run; the platform guard was tested on supported hosts. Runtime tests cover successful open,
+all schema/role/installation/head/transport refusals as typed values, cancellation, stored-zone
+midnight, admission close, finite bounds, idempotent disposal, accepted-result preservation,
+and real in-flight work past drain expiry. These are not full published service/CLI acceptance.
+
+Source inspection separately confirms no obsolete runtime supervisor, audit, health, custody,
+quarantine or key path; Hosting has no Npgsql compiler reference. TLS purpose code, Domain and
+RecordFormat bytes, product version and changelog are unchanged. Lock diffs add Hosting and
+HostSecurity project edges only; no package version changes. The compiled architecture gate
+is still WP13. Corrections reopen no design non-goal. Next is WP7 (Contracts); WP7–WP15 and final
+published/Keycloak/browser acceptance remain unfinished. The PR stays draft and unmerged.

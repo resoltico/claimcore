@@ -109,7 +109,8 @@ let internal create () =
                 source.Dispose()
 
             do! container.DisposeAsync().AsTask()
-            return raise error
+            Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw()
+            return Unchecked.defaultof<Database>
     }
 
 let internal fixture () =

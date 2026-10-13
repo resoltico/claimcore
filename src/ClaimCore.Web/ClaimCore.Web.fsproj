@@ -64,5 +64,4 @@
       </ResolvedFileToPublish>
     </ItemGroup>
   </Target>
-  <Import Project="../ClaimCore.HostSecurity/HostSecurity.Native.targets" />
 </Project>

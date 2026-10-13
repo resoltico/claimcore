@@ -1,13 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="PosixPrivateNative.fs" />
-    <Compile Include="PrivateFileFailure.fs" />
-    <Compile Include="PosixPrivateFiles.fs" />
-    <Compile Include="PrivateFileService.fs" />
+    <Compile Include="PrivateFile.fs" />
     <Compile Include="TlsCertificatePurpose.fs" />
-    <Compile Include="SuppressionKeyFile.fs" />
-    <Compile Include="WriterCapabilityFile.fs" />
-    <Compile Include="ManagedCopyCommitmentKey.fs" />
   </ItemGroup>
 </Project>

@@ -11,5 +11,4 @@
     <ProjectReference Include="../ClaimCore.CliProtocol/ClaimCore.CliProtocol.fsproj" />
     <ProjectReference Include="../ClaimCore.Contracts/ClaimCore.Contracts.fsproj" />
   </ItemGroup>
-  <Import Project="../ClaimCore.HostSecurity/HostSecurity.Native.targets" />
 </Project>

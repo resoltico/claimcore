@@ -5,28 +5,47 @@ open System.Threading
 open ClaimCore.Application
 open Npgsql
 
-/// The admitted runtime owns one data source and exposes its store only to Hosting.
-[<Sealed>]
-type Runtime internal (source: NpgsqlDataSource, installation: Installation) =
-    member _.Installation = installation
+/// The admitted runtime owns storage lifetime without exposing provider types.
+type IRuntime =
+    inherit IDisposable
+    abstract Installation: Installation
 
-    member internal _.Store =
+type private RuntimeResource(source: NpgsqlDataSource, installation: Installation) =
+    member _.Store =
         LedgerStore(source, installation.InstallationId, Transactions.timeouts) :> ILedgerStore
 
-    interface IDisposable with
+    interface IRuntime with
+        member _.Installation = installation
         member _.Dispose() = source.Dispose()
 
 module Runtime =
+    let internal store (runtime: IRuntime) = (runtime :?> RuntimeResource).Store
+
     let openConnection (connectionString: string) cancellationToken =
         task {
-            let source = NpgsqlDataSource.Create connectionString
+            let mutable owned: NpgsqlDataSource option = None
 
             try
+                let source = NpgsqlDataSource.Create connectionString
+                owned <- Some source
                 let! installation = Admission.openRuntime source cancellationToken
-                return new Runtime(source, installation)
+                return Ok(new RuntimeResource(source, installation) :> IRuntime)
             with error ->
-                source.Dispose()
-                return raise error
+                owned |> Option.iter _.Dispose()
+
+                return
+                    Error(
+                        match error with
+                        | AdmissionRefusal fault -> fault
+                        | :? OperationCanceledException -> RuntimeOpenFault.Cancelled
+                        | :? PostgresException as error when
+                            error.SqlState.StartsWith("42", StringComparison.Ordinal)
+                            ->
+                            RuntimeOpenFault.SchemaMismatch
+                        | :? InvalidOperationException -> RuntimeOpenFault.SchemaMismatch
+                        | :? ArgumentException -> RuntimeOpenFault.InvalidTransport
+                        | _ -> RuntimeOpenFault.Unavailable
+                    )
         }
 
 module internal LedgerAdministration =

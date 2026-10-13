@@ -24,13 +24,17 @@
     <Compile Include="OperationRecordTests.fs" />
     <Compile Include="LedgerEntryTests.fs" />
     <Compile Include="CaseReferenceIdTests.fs" />
+    <Compile Include="PrivateFileTests.fs" />
     <Compile Include="MemoryLedgerStore.fs" />
     <Compile Include="../StoreContractTests.fs" Link="StoreContractTests.fs" />
+    <Compile Include="HostingTests.fs" />
     <Compile Include="ApplicationTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Application/ClaimCore.Application.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Hosting/ClaimCore.Hosting.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj" />
   </ItemGroup>
   <ItemGroup>

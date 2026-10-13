@@ -7,6 +7,7 @@
     <Compile Include="PostgresFixture.fs" />
     <Compile Include="StoreTests.fs" />
     <Compile Include="DatabaseTests.fs" />
+    <Compile Include="HostingTests.fs" />
     <Compile Include="TransactionTests.fs" />
     <Compile Include="CommitProxy.fs" />
     <Compile Include="CommitTests.fs" />
@@ -17,6 +18,7 @@
     <ProjectReference Include="../../src/ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Application/ClaimCore.Application.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Postgres/ClaimCore.Postgres.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Hosting/ClaimCore.Hosting.fsproj" />
     <PackageReference Include="Testcontainers.PostgreSql" />
     <PackageReference Include="Npgsql" />
   </ItemGroup>
