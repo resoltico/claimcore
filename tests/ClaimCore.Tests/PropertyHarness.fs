@@ -20,6 +20,7 @@ type Plan =
 let private propertyIds =
     set
         [
+            "CC-PROP-STEWARDSHIP-001"
             "CC-PROP-DATE-001"
             "CC-PROP-AMOUNT-001"
             "CC-PROP-CURRENCY-001"

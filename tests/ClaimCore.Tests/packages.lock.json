@@ -62,11 +62,6 @@
           "Microsoft.Testing.Platform.MSBuild": "2.3.3"
         }
       },
-      "libsodium": {
-        "type": "Transitive",
-        "resolved": "1.0.22",
-        "contentHash": "KPD9SloJFclrsjnhABu7dzWrcyYkwPbvx5l1gRSPAX/0n+OBtSiVCKtGFv4n+ecWUHU0tCG9LSSwoZZx673zBQ=="
-      },
       "Microsoft.Testing.Extensions.Telemetry": {
         "type": "Transitive",
         "resolved": "2.4.1",
@@ -94,89 +89,10 @@
         "resolved": "0.11.6",
         "contentHash": "f33RkDtZO8VlGXCtmQIviOtxgnUdym9xx/b1p9h91CRGOsJFxCFOFK1FDbVt1OCf1aWwYejUFa2MOQyFWTFjbA=="
       },
-      "claimcore.application": {
-        "type": "Project",
-        "dependencies": {
-          "ClaimCore.Domain": "[0.6.0, )",
-          "ClaimCore.RecordFormat": "[0.6.0, )",
-          "FSharp.Core": "[10.1.401, )"
-        }
-      },
-      "claimcore.cliprotocol": {
-        "type": "Project",
-        "dependencies": {
-          "ClaimCore.Application": "[0.6.0, )",
-          "ClaimCore.Contracts": "[0.6.0, )",
-          "ClaimCore.HostSecurity": "[0.6.0, )",
-          "FSharp.Core": "[10.1.401, )"
-        }
-      },
-      "claimcore.contractgenerator": {
-        "type": "Project",
-        "dependencies": {
-          "ClaimCore.Application": "[0.6.0, )",
-          "ClaimCore.Contracts": "[0.6.0, )",
-          "ClaimCore.Database": "[0.6.0, )",
-          "ClaimCore.Domain": "[0.6.0, )",
-          "ClaimCore.Postgres": "[0.6.0, )",
-          "FSharp.Core": "[10.1.401, )"
-        }
-      },
-      "claimcore.contracts": {
-        "type": "Project",
-        "dependencies": {
-          "ClaimCore.Application": "[0.6.0, )",
-          "ClaimCore.Domain": "[0.6.0, )",
-          "FSharp.Core": "[10.1.401, )"
-        }
-      },
-      "claimcore.database": {
-        "type": "Project",
-        "dependencies": {
-          "ClaimCore.Application": "[0.6.0, )",
-          "ClaimCore.Domain": "[0.6.0, )",
-          "ClaimCore.HostSecurity": "[0.6.0, )",
-          "ClaimCore.Postgres": "[0.6.0, )",
-          "ClaimCore.Witness": "[0.6.0, )",
-          "FSharp.Core": "[10.1.401, )"
-        }
-      },
       "claimcore.domain": {
         "type": "Project",
         "dependencies": {
           "FSharp.Core": "[10.1.401, )"
-        }
-      },
-      "claimcore.hostsecurity": {
-        "type": "Project",
-        "dependencies": {
-          "FSharp.Core": "[10.1.401, )"
-        }
-      },
-      "claimcore.postgres": {
-        "type": "Project",
-        "dependencies": {
-          "ClaimCore.Application": "[0.6.0, )",
-          "ClaimCore.Domain": "[0.6.0, )",
-          "ClaimCore.RecordFormat": "[0.6.0, )",
-          "ClaimCore.Witness": "[0.6.0, )",
-          "FSharp.Core": "[10.1.401, )",
-          "NSec.Cryptography": "[26.4.0, )",
-          "Npgsql": "[10.0.3, )"
-        }
-      },
-      "claimcore.recordformat": {
-        "type": "Project",
-        "dependencies": {
-          "ClaimCore.Domain": "[0.6.0, )",
-          "FSharp.Core": "[10.1.401, )"
-        }
-      },
-      "claimcore.witness": {
-        "type": "Project",
-        "dependencies": {
-          "FSharp.Core": "[10.1.401, )",
-          "Npgsql": "[10.0.3, )"
         }
       },
       "Azure.Core": {
@@ -464,24 +380,6 @@
         "requested": "[18.10.1, )",
         "resolved": "18.10.1",
         "contentHash": "o+PuLDRVp1iwiVAPBADZItXgm9Ck23XtPhE4kZtZVi0uYnMiiz1Dx9Cjh75kJ+ijfqnORL3VOTOaQVKi0f/ixg=="
-      },
-      "Npgsql": {
-        "type": "CentralTransitive",
-        "requested": "[10.0.3, )",
-        "resolved": "10.0.3",
-        "contentHash": "7nb5YzXuvWWJxB0J8DiyL3we+X4FOctZrt0fIBnucOIaIevFEEwGQVZKtiu9olXdlNAK1eNgqSral6r/jlhI4w==",
-        "dependencies": {
-          "Microsoft.Extensions.Logging.Abstractions": "10.0.0"
-        }
-      },
-      "NSec.Cryptography": {
-        "type": "CentralTransitive",
-        "requested": "[26.4.0, )",
-        "resolved": "26.4.0",
-        "contentHash": "0vsCtY5f+YgQROiWNqzgWp+l2pddfk9FkWoGV/bEo0MuEYPKlJWuoA8aOfO6qp3f+EnObKE3zSJhn1PspJeJVg==",
-        "dependencies": {
-          "libsodium": "[1.0.22, 1.0.23)"
-        }
       },
       "OpenTelemetry": {
         "type": "CentralTransitive",

@@ -257,6 +257,7 @@ let private ruleInventoryTests =
                     "Transition rules")
         ]
 
+[<Tests>]
 let tests =
     testList
         "Domain semantic descriptors"

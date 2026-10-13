@@ -194,6 +194,7 @@ let private authoredUnicodeRoundTrip () =
             (Ok snapshot)
             "Historical restoration preserves the same text contract."
 
+[<Tests>]
 let tests =
     testList
         "domain validation"

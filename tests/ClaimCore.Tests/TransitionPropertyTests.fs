@@ -213,6 +213,7 @@ let private availabilityProperty =
         return actual = expected && executionMatchesAdvertisement claim expected
     }
 
+[<Tests>]
 let tests =
     testList
         "Hedgehog state invariants"

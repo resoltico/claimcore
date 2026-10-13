@@ -72,5 +72,6 @@ let private diagnosticTests =
                     "Compared data stays out of diagnostics")
         ]
 
+[<Tests>]
 let tests =
     testList "property harness policy" [ configurationTests; diagnosticTests ]

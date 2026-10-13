@@ -229,6 +229,7 @@ let private correctionTests =
                 Expect.isTrue (result = Error DomainError.ClosedCase) "Explicit reopen")
         ]
 
+[<Tests>]
 let tests =
     testList
         "domain"

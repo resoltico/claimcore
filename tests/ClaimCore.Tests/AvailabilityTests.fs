@@ -99,5 +99,6 @@ let private edgeActions =
                     "Actual execution rechecks future date")
         ]
 
+[<Tests>]
 let tests =
     testList "state guard and advertised actions" [ stateActions; edgeActions ]

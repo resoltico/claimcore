@@ -92,6 +92,42 @@ now uses Bash double brackets, braced variables and a separate platform capture.
 command or test requirement was removed. `.shellcheckrc` remains because shell scripts remain;
 this follows the disposition note rather than its unconditional DELETE classification.
 
+### Stewardship reason admission
+
+The unmodified material threw `NullReferenceException` for a null reason and accepted a lone
+UTF-16 surrogate. This was reproduced with an absolute-path F# script before correction.
+The existing reason validator already used strict UTF-8 admission before counting runes.
+Stewardship retains that mechanism with the material's 200-scalar bound and rejects blank,
+surrounding whitespace, control, format and separator characters. Both the product and the
+extracted material are corrected. The next revision is computed only after the exhaustion
+check. Comments now describe removal from the live database, consistent with the erasure
+limits; they do not promise deletion from backups.
+
+### Pending-test refusal
+
+The test-plan material says the existing runsettings reject focused and pending tests.
+A native fixture disproved the pending part: one normal plus one pending test returned exit 0,
+with one success and one skip. The settings do reject focus: a focused fixture with settings
+ran zero tests and exited 8 under the minimum-test policy; the same binary without settings
+ran its test and exited 0. The shared guard now checks the discovered tree for both modes.
+The pending fixture with that guard exited 2, with one failed guard, one success and one skip.
+Focused settings and the shared guard are complementary; neither is presented as a substitute
+for full native execution.
+
+### Source membership at the frontier
+
+WP2 requires a Domain-only test project and a guard against uncompiled files in its directory,
+while retained unit files for Application, Contracts and adapters were scheduled to return in
+later packages. Leaving those files uncompiled would violate the guard immediately. They are
+removed from the active directory now and will be restored from Git as their layers return.
+This is an ordering correction; their kept behavior and oracles are not abandoned. The three
+guards remain linked shared files, with no hand-kept test registry or exclusion list.
+
+Source membership uses MSBuild's evaluated Compile items in the executing assembly's build
+configuration. A literal XML Include with a false condition is not proof of compilation.
+Negative controls cover an uncompiled signature, a missing source and a condition-excluded
+source. Reflection controls cover both a public static property and field without `[<Tests>]`.
+
 ## Preflight evidence
 
 The supplied archive SHA-256 and sidecar both matched
@@ -121,7 +157,7 @@ The release draft's read-only CI filter returned `success` for the real `v0.8.0`
 no success for a nonexistent tag. Its changelog extraction produced 46 lines for 0.8.0 and
 none for an absent version. No release workflow was dispatched.
 
-## Implementation frontier
+## WP1 frontier
 
 WP0 and WP1 are complete. WP2 has not started. The solution currently contains only Domain
 and RecordFormat, whose source bytes are unchanged from the base. It contains no test project;
@@ -147,6 +183,43 @@ Domain and RecordFormat bytes remain unchanged.
 The full local gate, final CI, ledger integration, host, frontend, published acceptance and
 manual browser walkthrough are not verified yet. Their inputs return in later packages.
 `SET-IN-WP15` test floors remain intentionally unresolved until measured at the final frontier.
-The next step is WP2: replace lifecycle/erasure/hold Domain types with Stewardship, preserve
+The next step at this boundary was WP2: replace lifecycle/erasure/hold Domain types with Stewardship, preserve
 the nine business commands, restore the Domain-only test project and prove the three test
 discovery guards with negative controls.
+
+## Implementation frontier
+
+WP0 through WP2 are complete. The solution contains Domain, RecordFormat and the Domain-only
+ClaimCore.Tests project. WP3 has not started. Domain's business model file is named CaseModel;
+stewardship replaces lifecycle, holds and erasure evidence types. The nine business commands,
+their validation, corrections, eligibility and descriptors are unchanged. Domain's remaining
+internals grants already name only Application and Tests and required no edit.
+
+Twelve retained test/oracle files were compared with the WP1 revision and are byte-identical
+after removing only their added discovery attributes. The shared fixture loses only the
+Application-specific helpers. The property harness gains the stewardship property identity.
+Inspection of the fuzz suite found no direct Domain decoder property to transfer now; its
+RecordFormat and transport properties return with those layers. The existing scalar and
+transition properties remain active.
+
+The restored project lock was generated with `dotnet restore ClaimCore.slnx --force-evaluate
+-p:RestoreLockedMode=false`; removed project and transitive dependencies disappeared. Locked
+restore then passed. `dotnet build ClaimCore.slnx --configuration Release --no-restore` passed
+with zero warnings and errors. The complete native test command uses the project, Release,
+`--no-build --no-restore --minimum-expected-tests=110 --zero-tests-policy=strict --timeout=5m`
+and `-- --settings=/Users/erst/Tools/claimcore/eng/expecto.runsettings`. It passed 112 tests:
+112 succeeded, zero failed and zero skipped. Eight guard tests and seven stewardship tests
+join the 97 retained tests. The separate adversarial fixture runs above are negative controls,
+not qualifying suite results. Initial compiler failures in added test support were fixed;
+they are not counted as passing runs.
+
+Fantomas passed across src/tests/eng. The full FSharpLint wrapper passed, and the two changed
+guard files were checked again after the final source-membership correction. The stewardship
+material checks and native guard fixtures ran outside the repository. No container or database
+was started in WP2. Product version, changelog, AGENTS engineering principles and RecordFormat
+bytes remain unchanged.
+
+Next is WP3: remove recovery artifact codecs, add canonical stewardship/authority records and
+ledger encoding, reproduce independent ledger vectors, and restore the unchanged canonical
+request/snapshot vector and property tests. WP3 through WP15, the full gate and final product
+acceptance are still unverified.

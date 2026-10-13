@@ -225,6 +225,7 @@ let private textProperty =
         return Result.isOk (validateText target sample.Raw) = sample.Accepted
     }
 
+[<Tests>]
 let tests =
     testList
         "Hedgehog scalar boundaries"
