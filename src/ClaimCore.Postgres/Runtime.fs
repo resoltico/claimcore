@@ -9,6 +9,7 @@ open Npgsql
 type IRuntime =
     inherit IDisposable
     abstract Installation: Installation
+    abstract Ready: CancellationToken -> System.Threading.Tasks.Task<bool>
 
 type private RuntimeResource(source: NpgsqlDataSource, installation: Installation) =
     member _.Store =
@@ -16,6 +17,20 @@ type private RuntimeResource(source: NpgsqlDataSource, installation: Installatio
 
     interface IRuntime with
         member _.Installation = installation
+
+        member _.Ready token =
+            task {
+                try
+                    return!
+                        DatabaseSession.read source token (fun connection ->
+                            task {
+                                let! count = Migrations.history connection Migrations.scripts token
+                                return count = Migrations.scripts.Length
+                            })
+                with _ ->
+                    return false
+            }
+
         member _.Dispose() = source.Dispose()
 
 module Runtime =

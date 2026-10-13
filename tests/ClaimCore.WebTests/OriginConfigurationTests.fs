@@ -22,6 +22,7 @@ let private origin () =
         ] do
         Expect.throws (fun () -> Configuration.parseOrigin value |> ignore) "Invalid origin"
 
+[<Tests>]
 let tests =
     testCase
         "[CC-WEB-001] accepts one explicit HTTPS authority and rejects ambiguous origins"

@@ -2,6 +2,7 @@ namespace ClaimCore.Hosting
 
 open System
 open System.Threading.Tasks
+open System.Threading
 open ClaimCore.Application
 
 [<RequireQualifiedAccess>]
@@ -20,6 +21,7 @@ type IRuntime =
     inherit IDisposable
     abstract Actor: PrincipalKey -> IActorClaimsCore
     abstract BusinessTimeZone: string
+    abstract Ready: CancellationToken -> Task<bool>
     abstract Shutdown: TimeSpan -> Task<ShutdownOutcome>
 
 type private RuntimeResource(storage: ClaimCore.Postgres.IRuntime, calendar: IBusinessCalendar) =
@@ -35,6 +37,16 @@ type private RuntimeResource(storage: ClaimCore.Postgres.IRuntime, calendar: IBu
             |> ActorFacade.bind gate
 
         member _.BusinessTimeZone = calendar.TimeZoneId
+
+        member _.Ready token =
+            task {
+                match gate.Acquire() with
+                | None -> return false
+                | Some lease ->
+                    use _lease = lease
+                    return! storage.Ready token
+            }
+
         member _.Shutdown bound = gate.Shutdown bound
         member _.Dispose() = gate.Stop() |> ignore
 

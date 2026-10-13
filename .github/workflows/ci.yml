@@ -100,13 +100,13 @@ jobs:
         run: >-
           dotnet test --project tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj
           --configuration Release --no-build --no-restore
-          --minimum-expected-tests=SET-IN-WP15 --zero-tests-policy=strict --timeout=20m
+          --minimum-expected-tests=76 --zero-tests-policy=strict --timeout=20m
           -- --settings="$PWD/eng/expecto.runsettings"
       - name: Web host, including the live identity provider fixture
         run: >-
           dotnet test --project tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj
           --configuration Release --no-build --no-restore
-          --minimum-expected-tests=SET-IN-WP15 --zero-tests-policy=strict --timeout=20m
+          --minimum-expected-tests=66 --zero-tests-policy=strict --timeout=20m
           -- --settings="$PWD/eng/expecto.runsettings"
 
   frontend:

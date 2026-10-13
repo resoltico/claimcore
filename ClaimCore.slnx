@@ -9,4 +9,6 @@
   <Project Path="src/ClaimCore.Hosting/ClaimCore.Hosting.fsproj" />
   <Project Path="src/ClaimCore.Contracts/ClaimCore.Contracts.fsproj" />
   <Project Path="eng/ClaimCore.ContractGenerator/ClaimCore.ContractGenerator.fsproj" />
+  <Project Path="src/ClaimCore.Web/ClaimCore.Web.fsproj" />
+  <Project Path="tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj" />
 </Solution>

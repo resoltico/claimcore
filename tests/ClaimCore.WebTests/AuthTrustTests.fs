@@ -81,6 +81,7 @@ let private syntheticIssuerTrust () =
         (accepts.Invoke(request, server, null, SslPolicyErrors.RemoteCertificateChainErrors))
         "The exact pinned root rebuilds and authenticates the certificate chain"
 
+[<Tests>]
 let tests =
     testList
         "Web synthetic issuer transport trust"

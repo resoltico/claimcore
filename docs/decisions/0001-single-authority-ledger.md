@@ -645,3 +645,104 @@ was weakened, suppression added or check converted into an expected failure.
 Source inspection separately confirms unchanged Domain, RecordFormat, product version,
 changelog and engineering principles; generated artifacts remain ignored. The published host,
 CLI, owner process, frontend and final Gate remain unfinished. WP8 is next; keep the PR draft.
+
+### WP8 — HTTPS host
+
+Web and its native test project return to the solution. The host maps the fourteen catalogue
+endpoints through one schema admission adapter, binds Domain drafts once, and calls only the
+actor-bound facade. A missing/different fingerprint is a typed CONTRACT_MISMATCH before core
+creation or dispatch. After dispatch, mutations use CancellationToken.None; transport loss does
+not reclassify the core result. Cookie/bearer isolation, HTTPS/OIDC/PKCE, server-side tickets,
+antiforgery, rate limits and security headers remain. Configuration has exactly nineteen service
+names; state-directory exclusion and the removed capability routes/settings are gone.
+
+Readiness is an opaque, read-only runtime operation. Postgres reads checksum-bound migration
+history in its bounded snapshot session; Hosting holds an admission lease and returns false
+when closed. It exposes no connection/provider/schema-owner surface to Web. Live reports the
+process, ready reports database/schema availability. Help describes that condition.
+
+The stderr request record has exactly endpoint, outcome, status, durationMs, actorId and
+operationId. Unknown IDs are null. A fresh acceptance proves the current actor ID; the author
+of a replayed receipt does not, so replay never attributes that author to the caller. An
+unexpected error has a separate closed type/method-stack record. Messages, paths, arguments,
+bodies, references and claimant values never enter these records. Framework logging remains
+cleared; the bounded diagnostic sink and its counters/correlation identifiers are removed.
+
+Implementation corrections and evidence:
+
+- Runtime had no readiness surface; querying an actor facade would wrongly tie an operational
+  probe to actor grants. Added the minimal leased bool operation above. A real PostgreSQL test
+  removes payload SELECT permission before admission, observes ready, changes the migration
+  checksum and observes false, then closes admission and observes false. No ledger verification
+  or case payload scan is performed at startup/readiness.
+- WebTests needs Hosting as a direct compiler edge because the typed startup refusal references
+  its RuntimeOpenFault. F# FS0074 demonstrated the required type closure. No Postgres edge or
+  new internals grant was added to Web/WebTests.
+- ASP.NET's nonfile fallback produced 404 for a known dotted path with a wrong method. The
+  refusing test failed. Exact method admission now runs before endpoint dispatch, and literal
+  path aliases are refused; the test passes without relaxing its expected 405.
+- The live identity fixture previously read arbitrary environment-supplied endpoints/private
+  paths. It now starts a fresh named/labelled pinned Keycloak with synthetic credentials,
+  owned HTTPS material and tmpfs H2 state, cleans only that container, and requires no external
+  fixture settings. Its initial audience mapper named a client it did not register, causing
+  SecurityTokenInvalidAudienceException. Corrected the fixture to a custom audience as described
+  in [Keycloak's mapper reference](https://www.keycloak.org/admin-api/protocol-mappers).
+  Production audience validation was not changed.
+- Fixture certificate creation could cross the root's second boundary, and macOS refused
+  re-export of an imported non-exportable key. Bound the leaf expiry to its root and create the
+  configuration PFX directly from its fresh private key. Both failing fixture cases now pass.
+- WP8 requires green integration CI, whereas WP1's material defers every minimum to WP15.
+  Literal SET-IN-WP15 is not a runnable minimum. The two integration-job floors are set to
+  the measured current complete suites (76 and 66); WP15 will remeasure final floors. Other
+  jobs' placeholders remain for their packages. This makes the required job executable without
+  weakening discovery, focus/pending, source membership, skip or complete-suite guards.
+
+Executed local evidence:
+
+- Locked restore and Release solution build pass; twelve projects, zero warnings/errors.
+- Complete native unit suite: 207 total/succeeded, zero failed/skipped, 8.292s.
+- Complete native PostgreSQL suite: 76 total/succeeded, zero failed/skipped, 106.145s.
+- Complete native Web suite: 66 total/succeeded, zero failed/skipped, 54.912s. Its owned real
+  Keycloak test exercises PKCE login, ID-token refusal, bearer case dispatch, mixed credentials,
+  tampering, invalid algorithm/type, wrong audience/issuer, expiry and signing-key rotation.
+- The HTTP tests cover every endpoint, all six execute outcomes, missing/mismatched handshake
+  without factory/core calls, exact shapes/methods/path aliases, antiforgery, logout, operational
+  probes and cancellation classification. Canary controls put a unique value in reference,
+  request body and exception message; no value appears in request/error records. Replay actor
+  attribution has an independent refusing control. Nineteen setting names, defaults, invalid
+  bounds, strict UTF-8 and owner-private connection input are checked.
+- Full Fantomas and FSharpLint pass with zero findings/warnings. Actionlint and whitespace
+  checks pass. Source scans find no removed route/settings, private-file-service, v3/v4 or
+  state-directory path in Web. These are inspections/scans, not the compiled WP13 gate.
+
+Early compiler/nullability/type-closure failures, a stale-binary invocation after a failed
+build, 53/55 then 54/55 test runs and 55/58 fixture failures are not qualifying evidence.
+Failures were diagnosed using stages, statuses and exception types without credential/token
+values. No guard was weakened, suppression added or required test made conditional/pending.
+The successful command runs are complete, with no filter or test retry. The identity-key refresh
+scenario polls the configured refresh transition inside one test, not a rerun of that test.
+
+Product version, changelog, Domain/RecordFormat and existing evaluation stacks remain unchanged.
+Published host/client/owner and browser acceptance still await their packages. The integration
+job's authoritative result will be recorded for the exact pushed revision. Keep the PR draft.
+
+The completed host suite also retains rejecting controls for body byte limits, I/O failure,
+caller cancellation, the absolute acquisition deadline, security/no-store headers, excess
+process admission and before-dispatch/dispatched/completed-response failure knowledge. The
+PostgreSQL report rerun passes all 76 tests (zero failed/skipped, 96.478s); its TRX is outside
+tracked source. Startup latency is instrumented in the physical test; no unreported exact
+millisecond value is claimed. The test demonstrates startup without case-payload authority.
+
+The physical startup test additionally requires admission within ten seconds after the fresh
+database is initialized. This is the bounded startup criterion, alongside the refused payload
+read permission. No exact unreported latency is claimed.
+
+The final physical PostgreSQL run with the ten-second admission assertion passes all 76 tests,
+zero failed/skipped, 96.521s. The final Web run including the additional transport controls is
+66/66, zero failed/skipped, 54.912s. The CI integration floors are 76 and 66.
+
+A post-push staging audit found the IntegrationTests lock omitted from the package commit.
+Adding the central Testcontainers declaration reclassifies its unchanged 4.15.0 dependency as
+CentralTransitive. Included that reviewed lock and amended only this task's branch commit with
+an explicit remote lease. The earlier pushed revision is superseded; its CI is not passing
+evidence. The local locked restore/test input already included the corrected lock.

@@ -62,6 +62,7 @@
     <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.23.0" />
     <PackageVersion Include="System.Memory.Data" Version="10.0.12" />
     <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="10.0.12" />
+    <PackageVersion Include="Testcontainers" Version="4.15.0" />
     <PackageVersion Include="Testcontainers.PostgreSql" Version="4.15.0" />
     <PackageVersion Include="TypeShape" Version="10.0.0" />
     <PackageVersion Include="YoloDev.Expecto.TestSdk" Version="0.16.1" />

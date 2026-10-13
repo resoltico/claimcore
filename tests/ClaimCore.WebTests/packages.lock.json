@@ -46,6 +46,19 @@
           "Microsoft.Testing.Platform": "[2.4.1, 3.0.0)"
         }
       },
+      "Testcontainers": {
+        "type": "Direct",
+        "requested": "[4.15.0, )",
+        "resolved": "4.15.0",
+        "contentHash": "8tCZKMm++C/9dHIr8lsE1iDBIBmthbo2XlGFDr4gorT1vgZrJwU36fNkCGuX7h7V39rpQoTK/aG+FhJz3jhY3A==",
+        "dependencies": {
+          "Docker.DotNet.Enhanced": "4.3.3",
+          "Docker.DotNet.Enhanced.X509": "4.3.3",
+          "Microsoft.Extensions.Logging.Abstractions": "8.0.3",
+          "SSH.NET": "2026.0.0",
+          "SharpZipLib": "1.4.2"
+        }
+      },
       "YoloDev.Expecto.TestSdk": {
         "type": "Direct",
         "requested": "[0.16.1, )",
@@ -58,10 +71,71 @@
           "Microsoft.Testing.Platform.MSBuild": "2.3.3"
         }
       },
-      "libsodium": {
+      "BouncyCastle.Cryptography": {
         "type": "Transitive",
-        "resolved": "1.0.22",
-        "contentHash": "KPD9SloJFclrsjnhABu7dzWrcyYkwPbvx5l1gRSPAX/0n+OBtSiVCKtGFv4n+ecWUHU0tCG9LSSwoZZx673zBQ=="
+        "resolved": "2.7.0",
+        "contentHash": "U+12df8UEWHgBi04YVf/Lgi2dy3SItlIYvHjjEVa/BngCQIzDCDRBk50DDByCfDvSbe5pRNFr3b7UrVK2kMcLw=="
+      },
+      "Docker.DotNet.Enhanced": {
+        "type": "Transitive",
+        "resolved": "4.3.3",
+        "contentHash": "nGicLwvd42FhRk+khY5uS6cx49ErNdwYKnYBg0F4m4BDKLp/R77AVmmN9xAiqI3W/wN5ZCHkdUhgxf5ORkZuFQ==",
+        "dependencies": {
+          "Docker.DotNet.Enhanced.Handler.Abstractions": "4.3.3",
+          "Docker.DotNet.Enhanced.LegacyHttp": "4.3.3",
+          "Docker.DotNet.Enhanced.NPipe": "4.3.3",
+          "Docker.DotNet.Enhanced.NativeHttp": "4.3.3",
+          "Docker.DotNet.Enhanced.Unix": "4.3.3",
+          "Microsoft.Extensions.Logging.Abstractions": "8.0.3"
+        }
+      },
+      "Docker.DotNet.Enhanced.Handler.Abstractions": {
+        "type": "Transitive",
+        "resolved": "4.3.3",
+        "contentHash": "9Cp8hOgtynixcDoAs9lnEaQosluojSYmiW3fsLsLIVfZjlq/fznSIZNUhnmyT4Xo1Iyuok/y49WL/25O47u0Pw==",
+        "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "8.0.3"
+        }
+      },
+      "Docker.DotNet.Enhanced.LegacyHttp": {
+        "type": "Transitive",
+        "resolved": "4.3.3",
+        "contentHash": "7j3M16emv9PAQN7VwFn23xLYNj8GJmwPOcogveHkaWnOCqiC+anRaNKQwqIBNApM1AuwZKivehTKTPmmrjUUnw==",
+        "dependencies": {
+          "Docker.DotNet.Enhanced.Handler.Abstractions": "4.3.3"
+        }
+      },
+      "Docker.DotNet.Enhanced.NativeHttp": {
+        "type": "Transitive",
+        "resolved": "4.3.3",
+        "contentHash": "iNzK+jRFeEMobSA7l/h4ARwCKOOefOWtVN5/RB0ft6/6H6IQXvVUuOgGyZAjYLBT7TsyClRYno2B904f3dtBuQ==",
+        "dependencies": {
+          "Docker.DotNet.Enhanced.Handler.Abstractions": "4.3.3"
+        }
+      },
+      "Docker.DotNet.Enhanced.NPipe": {
+        "type": "Transitive",
+        "resolved": "4.3.3",
+        "contentHash": "ZTLYufuEfY0e6qLOgeH9QgXx2KYuoABRVaY5A8rsggyLgYqbDj9rCRfVAhHPCUv83S7pVxDHy+Tvm/BnxjWVpg==",
+        "dependencies": {
+          "Docker.DotNet.Enhanced.Handler.Abstractions": "4.3.3"
+        }
+      },
+      "Docker.DotNet.Enhanced.Unix": {
+        "type": "Transitive",
+        "resolved": "4.3.3",
+        "contentHash": "ypo8qNbmvHw1t9VfpRTMogCw2vht6VjkXzlGYUUeP2H2bf83USURdla1maW1njn2oq2rfLUFOGMfmt+A37QU2w==",
+        "dependencies": {
+          "Docker.DotNet.Enhanced.Handler.Abstractions": "4.3.3"
+        }
+      },
+      "Docker.DotNet.Enhanced.X509": {
+        "type": "Transitive",
+        "resolved": "4.3.3",
+        "contentHash": "oBDibWezEv4hgj3RIQxI3DVcxkNV1MdrD0d/jhjUu+h3DL+qc0wlkQva15kkwMatXmC/hWp1VP0DMoFXe+BmEw==",
+        "dependencies": {
+          "Docker.DotNet.Enhanced.Handler.Abstractions": "4.3.3"
+        }
       },
       "Microsoft.Testing.Extensions.Telemetry": {
         "type": "Transitive",
@@ -90,19 +164,33 @@
         "resolved": "0.11.6",
         "contentHash": "f33RkDtZO8VlGXCtmQIviOtxgnUdym9xx/b1p9h91CRGOsJFxCFOFK1FDbVt1OCf1aWwYejUFa2MOQyFWTFjbA=="
       },
+      "SharpZipLib": {
+        "type": "Transitive",
+        "resolved": "1.4.2",
+        "contentHash": "yjj+3zgz8zgXpiiC3ZdF/iyTBbz2fFvMxZFEBPUcwZjIvXOf37Ylm+K58hqMfIBt5JgU/Z2uoUS67JmTLe973A=="
+      },
+      "SSH.NET": {
+        "type": "Transitive",
+        "resolved": "2026.0.0",
+        "contentHash": "Yu9dirPq8l3oaat0+OQ7K0nUf5MmYltpia5UGqsApTG4zTPvBC1cxbNnC3NERij26dUST0A3Ef1QdHSn5ArbWQ==",
+        "dependencies": {
+          "BouncyCastle.Cryptography": "2.7.0",
+          "Microsoft.Extensions.Logging.Abstractions": "8.0.3"
+        }
+      },
       "claimcore.application": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Domain": "[0.6.0, )",
-          "ClaimCore.RecordFormat": "[0.6.0, )",
+          "ClaimCore.Domain": "[0.8.0, )",
+          "ClaimCore.RecordFormat": "[0.8.0, )",
           "FSharp.Core": "[10.1.401, )"
         }
       },
       "claimcore.contracts": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Application": "[0.6.0, )",
-          "ClaimCore.Domain": "[0.6.0, )",
+          "ClaimCore.Application": "[0.8.0, )",
+          "ClaimCore.Domain": "[0.8.0, )",
           "FSharp.Core": "[10.1.401, )"
         }
       },
@@ -115,14 +203,10 @@
       "claimcore.hosting": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Application": "[0.6.0, )",
-          "ClaimCore.Domain": "[0.6.0, )",
-          "ClaimCore.HostSecurity": "[0.6.0, )",
-          "ClaimCore.Postgres": "[0.6.0, )",
-          "ClaimCore.RecordFormat": "[0.6.0, )",
-          "ClaimCore.Witness": "[0.6.0, )",
-          "FSharp.Core": "[10.1.401, )",
-          "Npgsql": "[10.0.3, )"
+          "ClaimCore.Application": "[0.8.0, )",
+          "ClaimCore.Domain": "[0.8.0, )",
+          "ClaimCore.Postgres": "[0.8.0, )",
+          "FSharp.Core": "[10.1.401, )"
         }
       },
       "claimcore.hostsecurity": {
@@ -134,40 +218,31 @@
       "claimcore.postgres": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Application": "[0.6.0, )",
-          "ClaimCore.Domain": "[0.6.0, )",
-          "ClaimCore.RecordFormat": "[0.6.0, )",
-          "ClaimCore.Witness": "[0.6.0, )",
+          "ClaimCore.Application": "[0.8.0, )",
+          "ClaimCore.Domain": "[0.8.0, )",
+          "ClaimCore.RecordFormat": "[0.8.0, )",
           "FSharp.Core": "[10.1.401, )",
-          "NSec.Cryptography": "[26.4.0, )",
           "Npgsql": "[10.0.3, )"
         }
       },
       "claimcore.recordformat": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Domain": "[0.6.0, )",
+          "ClaimCore.Domain": "[0.8.0, )",
           "FSharp.Core": "[10.1.401, )"
         }
       },
       "claimcore.web": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Application": "[0.6.0, )",
-          "ClaimCore.Contracts": "[0.6.0, )",
-          "ClaimCore.Domain": "[0.6.0, )",
-          "ClaimCore.HostSecurity": "[0.6.0, )",
-          "ClaimCore.Hosting": "[0.6.0, )",
+          "ClaimCore.Application": "[0.8.0, )",
+          "ClaimCore.Contracts": "[0.8.0, )",
+          "ClaimCore.Domain": "[0.8.0, )",
+          "ClaimCore.HostSecurity": "[0.8.0, )",
+          "ClaimCore.Hosting": "[0.8.0, )",
           "FSharp.Core": "[10.1.401, )",
           "Microsoft.AspNetCore.Authentication.JwtBearer": "[10.0.12, )",
           "Microsoft.AspNetCore.Authentication.OpenIdConnect": "[10.0.12, )"
-        }
-      },
-      "claimcore.witness": {
-        "type": "Project",
-        "dependencies": {
-          "FSharp.Core": "[10.1.401, )",
-          "Npgsql": "[10.0.3, )"
         }
       },
       "Azure.Core": {
@@ -535,15 +610,6 @@
         "contentHash": "7nb5YzXuvWWJxB0J8DiyL3we+X4FOctZrt0fIBnucOIaIevFEEwGQVZKtiu9olXdlNAK1eNgqSral6r/jlhI4w==",
         "dependencies": {
           "Microsoft.Extensions.Logging.Abstractions": "10.0.0"
-        }
-      },
-      "NSec.Cryptography": {
-        "type": "CentralTransitive",
-        "requested": "[26.4.0, )",
-        "resolved": "26.4.0",
-        "contentHash": "0vsCtY5f+YgQROiWNqzgWp+l2pddfk9FkWoGV/bEo0MuEYPKlJWuoA8aOfO6qp3f+EnObKE3zSJhn1PspJeJVg==",
-        "dependencies": {
-          "libsodium": "[1.0.22, 1.0.23)"
         }
       },
       "OpenTelemetry": {

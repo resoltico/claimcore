@@ -10,9 +10,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="StartupDiagnostics.fs" />
+    <Compile Include="PrivateInputs.fs" />
     <Compile Include="AuthFoundation.fs" />
     <Compile Include="OidcTrustRoot.fs" />
-    <Compile Include="WebPrivateKeyPaths.fs" />
     <Compile Include="TlsCertificate.fs" />
     <Compile Include="WebBinding.fs" />
     <Compile Include="Configuration.fs" />
@@ -20,22 +21,13 @@
     <Compile Include="Security.fs" />
     <Compile Include="HttpBody.fs" />
     <Compile Include="AuthMiddleware.fs" />
-    <Compile Include="WebContract.fs" />
-    <Compile Include="WireOutcomes.fs" />
-    <Compile Include="WireRecoveryOutcomes.fs" />
-    <Compile Include="HostDiagnostics.fs" />
     <Compile Include="Headers.fs" />
-    <Compile Include="RateLimits.fs" />
     <Compile Include="Admission.fs" />
+    <Compile Include="RequestLog.fs" />
+    <Compile Include="WireOutcomes.fs" />
     <Compile Include="RouteSupport.fs" />
-    <Compile Include="Routes.fs" />
-    <Compile Include="LifecycleRoutes.fs" />
-    <Compile Include="TombstoneRoutes.fs" />
-    <Compile Include="SignerApprovalRoutes.fs" />
-    <Compile Include="CopyDeletionApprovalRoutes.fs" />
-    <Compile Include="CopyAdoptionApprovalRoutes.fs" />
-    <Compile Include="WriterHandoffApprovalRoutes.fs" />
-    <Compile Include="RealDataActivationRoutes.fs" />
+    <Compile Include="RateLimits.fs" />
+    <Compile Include="ApiDispatch.fs" />
     <Compile Include="ApiRoutes.fs" />
     <Compile Include="HostRoutes.fs" />
     <Compile Include="WebProbeTransport.fs" />

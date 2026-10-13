@@ -34,6 +34,54 @@ let tests =
         "runtime composition"
         [
             testCaseAsync
+                "readiness checks schema availability and closes after shutdown without reading case payloads"
+                (run (fun database ->
+                    task {
+                        use! owner = database.OwnerSource.OpenConnectionAsync token
+
+                        let! _ =
+                            ClaimCore.Postgres.DatabaseSession.execute
+                                owner
+                                "REVOKE SELECT ON claimcore.ledger FROM claimcore_runtime; GRANT SELECT(sequence,entry_hash) ON claimcore.ledger TO claimcore_runtime"
+                                [||]
+                                token
+
+                        let started = Diagnostics.Stopwatch.StartNew()
+
+                        let! opened =
+                            ClaimCore.Hosting.Runtime.openConnection
+                                (connectionString database)
+                                token
+
+                        use runtime =
+                            opened |> Result.defaultWith (fun _ -> failtest "Runtime refused")
+
+                        Expect.isLessThan
+                            started.Elapsed.TotalSeconds
+                            10.
+                            "Fresh runtime admission takes seconds without payload reads"
+
+                        printfn
+                            "Fresh host runtime admitted in %.0f ms without payload SELECT authority"
+                            started.Elapsed.TotalMilliseconds
+
+                        let! ready = runtime.Ready token
+                        Expect.isTrue ready "Current reachable schema"
+
+                        let! _ =
+                            ClaimCore.Postgres.DatabaseSession.execute
+                                owner
+                                "UPDATE claimcore.schema_migrations SET script_sha256=decode(repeat('00',32),'hex')"
+                                [||]
+                                token
+
+                        let! mismatch = runtime.Ready token
+                        Expect.isFalse mismatch "Changed checksum refuses readiness"
+                        let! _ = runtime.Shutdown(TimeSpan.FromSeconds 1.)
+                        let! closed = runtime.Ready token
+                        Expect.isFalse closed "Closed admission"
+                    }))
+            testCaseAsync
                 "admitted runtime binds principal and closes admission on shutdown"
                 (run (fun database ->
                     task {

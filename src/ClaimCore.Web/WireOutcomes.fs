@@ -2,12 +2,12 @@ namespace ClaimCore.Web
 
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Http
-open ClaimCore.Application
 open ClaimCore.Contracts
 
+[<Sealed>]
 type private EncodedJsonResult(bytes: byte array, status: int) =
     interface IResult with
-        member _.ExecuteAsync(context: HttpContext) =
+        member _.ExecuteAsync context =
             task {
                 context.Response.StatusCode <- status
                 context.Response.ContentType <- "application/json; charset=utf-8"
@@ -16,76 +16,12 @@ type private EncodedJsonResult(bytes: byte array, status: int) =
             }
             :> Task
 
-module internal EncodedJson =
+module internal WebWire =
     let result status bytes =
         EncodedJsonResult(bytes, status) :> IResult
 
-    let ok bytes = result StatusCodes.Status200OK bytes
-
-module WebWire =
-    let liveness = WebWireCodec.liveness |> EncodedJson.ok
+    let outcome endpoint value =
+        OutcomeCodec.encode endpoint value |> result 200
 
     let hostFailure reason =
-        WebWireCodec.hostFailure reason
-        |> EncodedJson.result (WebHostFailures.status reason)
-
-    let session endpoint authenticated (antiforgeryToken: string | null) =
-        WebWireCodec.session endpoint authenticated (Option.ofObj antiforgeryToken)
-        |> EncodedJson.ok
-
-    let description value =
-        WebWireCodec.description value |> EncodedJson.ok
-
-    let definition value =
-        WebWireCodec.definition value |> EncodedJson.ok
-
-    let get value =
-        WebWireCodec.get value |> EncodedJson.ok
-
-    let list value =
-        WebWireCodec.list value |> EncodedJson.ok
-
-    let history value =
-        WebWireCodec.history value |> EncodedJson.ok
-
-    let observe value =
-        WebWireCodec.observe value |> EncodedJson.ok
-
-    let management endpoint value =
-        WebWireCodec.management endpoint value |> EncodedJson.ok
-
-    let signerApproval value =
-        WebWireCodec.signerApproval value |> EncodedJson.ok
-
-    let copyDeletionApproval value =
-        WebWireCodec.copyDeletionApproval value |> EncodedJson.ok
-
-    let copyAdoptionApproval value =
-        WebWireCodec.copyAdoptionApproval value |> EncodedJson.ok
-
-    let writerHandoffApproval value =
-        WebWireCodec.writerHandoffApproval value |> EncodedJson.ok
-
-    let realDataActivationReview value =
-        WebWireCodec.realDataActivationReview value |> EncodedJson.ok
-
-    let realDataActivationApproval value =
-        WebWireCodec.realDataActivationApproval value |> EncodedJson.ok
-
-    let lifecycleReview value =
-        WebWireCodec.lifecycleReview value |> EncodedJson.ok
-
-    let lifecycleWrite endpoint value =
-        WebWireCodec.lifecycleWrite endpoint value |> EncodedJson.ok
-
-    let tombstoneReview value =
-        WebWireCodec.tombstoneReview value |> EncodedJson.ok
-
-    let tombstoneWrite endpoint value =
-        WebWireCodec.tombstoneWrite endpoint value |> EncodedJson.ok
-
-    let prepare _endpoint value =
-        WebWireCodec.prepare value |> EncodedJson.ok
-
-    let submit value =
-        WebWireCodec.submit value |> EncodedJson.ok
+        HostFailures.encode reason |> result (HostFailures.status reason)

@@ -21,104 +21,146 @@ module HostRoutes =
         properties.RedirectUri <- "/"
         properties
 
-    let private useStaticAssets (application: WebApplication) =
+    let private session configuration (context: HttpContext) =
+        task {
+            if not (ApiRoutes.handshake context) then
+                return RouteSupport.hostFailure context HostFailure.ContractMismatch
+            else
+                let! authenticated =
+                    task {
+                        match configuration.Oidc, Admission.credentialMode context with
+                        | Some oidc, CredentialMode.BrowserCookie ->
+                            let! principal = Admission.actorGet oidc configuration.Binding context in
+                            return Result.isOk principal
+                        | _ -> return false
+                    }
+
+                let antiforgery = context.RequestServices.GetRequiredService<IAntiforgery>()
+                let token = antiforgery.GetAndStoreTokens(context).RequestToken |> Option.ofObj
+
+                return
+                    RouteSupport.outcome
+                        "session"
+                        (OutcomeCodec.session authenticated token)
+                        context
+        }
+
+    let private logout configuration context =
+        task {
+            if not (ApiRoutes.handshake context) then
+                return RouteSupport.hostFailure context HostFailure.ContractMismatch
+            else
+                match configuration.Oidc, Admission.credentialMode context with
+                | Some oidc, CredentialMode.BrowserCookie ->
+                    let antiforgery = context.RequestServices.GetRequiredService<IAntiforgery>()
+
+                    match!
+                        Admission.actorPost oidc configuration.Binding 1024 antiforgery context
+                    with
+                    | Error reason -> return RouteSupport.admissionFailure context reason
+                    | Ok _ ->
+                        match! HttpBody.readRequest 1024 context with
+                        | Error problem -> return RouteSupport.inputFailure context problem
+                        | Ok bytes ->
+                            match EndpointCatalog.admitRequest "session.logout" bytes with
+                            | Error problem -> return RouteSupport.inputFailure context problem
+                            | Ok _ ->
+                                do!
+                                    context.SignOutAsync(
+                                        CookieAuthenticationDefaults.AuthenticationScheme
+                                    )
+
+                                context.User <- ClaimsPrincipal(ClaimsIdentity())
+
+                                return
+                                    RouteSupport.outcome
+                                        "session.logout"
+                                        (OutcomeCodec.logout ())
+                                        context
+                | _ -> return RouteSupport.hostFailure context HostFailure.SessionRejected
+        }
+
+    let health
+        (readiness: unit -> Task<bool>)
+        (context: HttpContext)
+        (next: RequestDelegate)
+        : Task =
+        task {
+            match context.Request.Method, context.Request.Path.Value with
+            | "GET", "/health/live" -> context.Response.StatusCode <- 200
+            | "GET", "/health/ready" ->
+                let! ready = readiness ()
+                context.Response.StatusCode <- if ready then 200 else 503
+            | _, ("/health/live" | "/health/ready") ->
+                do!
+                    (RouteSupport.hostFailure context HostFailure.MethodRejected).ExecuteAsync
+                        context
+            | _ -> do! next.Invoke context
+        }
+
+    let private fallback assets (context: HttpContext) : Task =
+        task {
+            HttpHeaders.noStore context
+
+            if context.Request.Path.StartsWithSegments(PathString "/api") then
+                let known =
+                    EndpointCatalog.all
+                    |> List.exists (fun endpoint ->
+                        Some endpoint.Path = Option.ofObj context.Request.Path.Value)
+
+                let reason =
+                    if known then
+                        HostFailure.MethodRejected
+                    else
+                        HostFailure.EndpointMissing
+
+                do! (RouteSupport.hostFailure context reason).ExecuteAsync context
+            else
+                do!
+                    Results
+                        .File(Path.Combine(assets, "index.html"), "text/html; charset=utf-8")
+                        .ExecuteAsync
+                        context
+        }
+
+    let map
+        assets
+        configuration
+        (forActor: PrincipalKey -> IActorClaimsCore)
+        (application: WebApplication)
+        =
         let files = StaticFileOptions()
 
         files.OnPrepareResponse <-
             Action<StaticFileResponseContext>(fun response -> HttpHeaders.noStore response.Context)
 
         application.UseDefaultFiles() |> ignore
-        application.UseStaticFiles(files) |> ignore
+        application.UseStaticFiles files |> ignore
 
-    let private sessionSnapshot endpoint (context: HttpContext) authenticated =
-        let antiforgery = context.RequestServices.GetRequiredService<IAntiforgery>()
-        let token = antiforgery.GetAndStoreTokens(context).RequestToken
-        WebWire.session endpoint authenticated token
+        for endpoint in EndpointCatalog.all do
+            let handler =
+                match endpoint.Identifier with
+                | "session" -> session configuration
+                | "session.logout" -> logout configuration
+                | _ -> ApiRoutes.handle endpoint configuration forActor
 
-    let private currentBrowser configuration (context: HttpContext) =
-        task {
-            match configuration.Oidc, Admission.credentialMode context with
-            | Some oidc, CredentialMode.BrowserCookie ->
-                match! Admission.actorGet oidc configuration.Binding context with
-                | Ok _ -> return true
-                | Error _ -> return false
-            | _ -> return false
-        }
+            let exact (context: HttpContext) =
+                if Option.ofObj context.Request.Path.Value <> Some endpoint.Path then
+                    Task.FromResult(RouteSupport.hostFailure context HostFailure.EndpointMissing)
+                elif context.Request.Method <> endpoint.Method then
+                    Task.FromResult(RouteSupport.hostFailure context HostFailure.MethodRejected)
+                else
+                    handler context
 
-    let private sessionRead configuration (context: HttpContext) =
-        task {
-            HttpHeaders.noStore context
-            let! authenticated = currentBrowser configuration context
-            return sessionSnapshot "session" context authenticated
-        }
+            let route =
+                application.MapMethods(
+                    endpoint.Path,
+                    [| endpoint.Method |],
+                    Func<HttpContext, Task<IResult>>(exact)
+                )
 
-    let private sessionLogout configuration (context: HttpContext) =
-        task {
-            HttpHeaders.noStore context
-
-            match configuration.Oidc, Admission.credentialMode context with
-            | Some oidc, CredentialMode.BrowserCookie ->
-                let antiforgery = context.RequestServices.GetRequiredService<IAntiforgery>()
-
-                match!
-                    Admission.actorPost
-                        oidc
-                        configuration.Binding
-                        RequestBody.Json
-                        1024
-                        antiforgery
-                        context
-                with
-                | Error failure -> return RouteSupport.admissionFailure context failure
-                | Ok _ ->
-                    match! HttpBody.readRequest 1024 context with
-                    | Error problem -> return RouteSupport.inputFailure context problem
-                    | Ok bytes ->
-                        match HttpInput.logout bytes with
-                        | Error problem -> return RouteSupport.inputFailure context problem
-                        | Ok() when context.RequestAborted.IsCancellationRequested ->
-                            return RouteSupport.inputFailure context HttpInputProblem.BodyCancelled
-                        | Ok() ->
-                            do!
-                                context.SignOutAsync(
-                                    CookieAuthenticationDefaults.AuthenticationScheme
-                                )
-
-                            context.User <- ClaimsPrincipal(ClaimsIdentity())
-                            return sessionSnapshot "session.logout" context false
-            | _ -> return RouteSupport.admissionFailure context AdmissionFailure.SessionRejected
-        }
-
-    let private definition
-        configuration
-        (forActor: ClaimCore.Application.PrincipalKey -> IActorClaimsCore)
-        (context: HttpContext)
-        =
-        task {
-            HttpHeaders.noStore context
-
-            match configuration.Oidc with
-            | None -> return RouteSupport.hostFailure context WebHostFailure.SessionRejected
-            | Some oidc ->
-                match! Admission.actorGet oidc configuration.Binding context with
-                | Error failure -> return RouteSupport.admissionFailure context failure
-                | Ok principal ->
-                    let! value = (forActor principal).Definition(context.RequestAborted)
-                    return WebWire.definition value
-        }
-
-    let private mapSession configuration (application: WebApplication) =
-        application.MapGet(
-            WebContract.path "session",
-            Func<HttpContext, Task<IResult>>(sessionRead configuration)
-        )
-        |> ignore
-
-        application.MapPost(
-            WebContract.jsonPath "session.logout",
-            Func<HttpContext, Task<IResult>>(sessionLogout configuration)
-        )
-        |> ignore
+            if endpoint.Identifier <> "session" then
+                route.RequireRateLimiting "core" |> ignore
 
         application
             .MapGet(
@@ -130,67 +172,4 @@ module HostRoutes =
             .RequireRateLimiting("login")
         |> ignore
 
-    let private mapFallback assets (application: WebApplication) =
-        application.MapFallback(
-            RequestDelegate(fun context ->
-                task {
-                    HttpHeaders.noStore context
-
-                    if context.Request.Path.StartsWithSegments(PathString("/api")) then
-                        do!
-                            (RouteSupport.hostFailure context WebHostFailure.EndpointMissing)
-                                .ExecuteAsync(context)
-                    else
-                        do!
-                            Results
-                                .File(
-                                    Path.Combine(assets, "index.html"),
-                                    "text/html; charset=utf-8"
-                                )
-                                .ExecuteAsync(context)
-                }
-                :> Task)
-        )
-        |> ignore
-
-    /// Terminal exact GET routes: callers cannot trigger authentication or authority I/O.
-    let health
-        (readiness: unit -> string * string * bool)
-        (context: HttpContext)
-        (next: RequestDelegate)
-        : Task =
-        task {
-            match context.Request.Method, context.Request.Path.Value with
-            | "GET", "/health/live" -> do! WebWire.liveness.ExecuteAsync context
-            | "GET", "/health/ready" ->
-                let scope, phase, ready = readiness ()
-                context.Response.Headers["X-ClaimCore-Data-Use-Scope"] <- scope
-                context.Response.Headers["X-ClaimCore-Data-Use-Phase"] <- phase
-
-                context.Response.Headers["X-ClaimCore-Real-Data-Ready"] <-
-                    if ready then "true" else "false"
-
-                context.Response.StatusCode <- if ready then 200 else 503
-            | _ -> do! next.Invoke context
-        }
-
-    let map
-        assets
-        configuration
-        (forActor: ClaimCore.Application.PrincipalKey -> IActorClaimsCore)
-        (application: WebApplication)
-        =
-        useStaticAssets application
-        mapSession configuration application
-
-        application
-            .MapGet(
-                WebContract.path "definition",
-                Func<HttpContext, Task<IResult>>(definition configuration forActor)
-            )
-            .RequireRateLimiting("core")
-        |> ignore
-
-        ApiRoutes.map configuration forActor application
-
-        mapFallback assets application
+        application.MapFallback(RequestDelegate(fallback assets)) |> ignore

@@ -46,5 +46,6 @@ let private cancelsBlockedStartup () =
         (fun () -> pending.GetAwaiter().GetResult())
         "Controlled stop is cancellation, not invalid issuer configuration"
 
+[<Tests>]
 let tests =
     testCase "[CC-WEB-001] controlled stop cancels blocked OIDC startup" cancelsBlockedStartup
