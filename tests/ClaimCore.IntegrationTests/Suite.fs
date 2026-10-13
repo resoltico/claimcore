@@ -13,6 +13,13 @@ let private accessTrustTests =
         RuntimeAuditCadenceTests.tests
         AuditCancellationTests.tests
         RuntimeAuditQuarantineTests.tests
+        RuntimeHealthTests.tests
+        CaseReadProofBatchTests.tests
+        CaseReadProofCancellationTests.tests
+        CaseReadProofCorruptionTests.tests
+        ReadProofLengthTests.tests
+        CaseHistoryProofBatchTests.tests
+        CaseLifecycleProofBatchTests.tests
     ]
 
 let private coreAndRecovery =
@@ -132,6 +139,7 @@ let private actorAndCustody =
         ManagedCopyTransitionRejectionTests.tests
         WriterHandoffApprovalTests.tests
         RealDataActivationApprovalTests.tests
+        ActivationReviewCancellationTests.tests
         RealDataActivationApprovalUncertaintyTests.tests
         RealDataActivationMechanicsTests.tests
         WriterHandoffRevocationTests.tests

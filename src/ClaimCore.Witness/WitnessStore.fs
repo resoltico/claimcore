@@ -99,6 +99,14 @@ type Store private (writerConnection: string, identity: Identity, material: byte
             return! readEvidence connection operation phase ct
         }
 
+    member internal _.ReadEvidenceBatch(subjects, ct: CancellationToken) =
+        task {
+            use connection = conn ()
+            do! connection.OpenAsync(ct)
+            do! checkAdmission connection ct
+            return! WitnessEvidenceBatch.read identity connection subjects ct
+        }
+
     member internal _.TryReadLossRetirement(retirementId: Guid, ct: CancellationToken) =
         WitnessStoreLossRetirement.read writerConnection identity retirementId ct
 

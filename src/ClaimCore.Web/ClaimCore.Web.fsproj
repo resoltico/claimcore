@@ -23,6 +23,7 @@
     <Compile Include="WebContract.fs" />
     <Compile Include="WireOutcomes.fs" />
     <Compile Include="WireRecoveryOutcomes.fs" />
+    <Compile Include="HostDiagnostics.fs" />
     <Compile Include="Headers.fs" />
     <Compile Include="RateLimits.fs" />
     <Compile Include="Admission.fs" />

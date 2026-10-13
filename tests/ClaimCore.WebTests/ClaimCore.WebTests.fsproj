@@ -59,6 +59,13 @@
     <Compile Include="ProbeHttpsFixture.fs" />
     <Compile Include="ProbeTransportTests.fs" />
     <Compile Include="ProbeProcessTests.fs" />
+    <Compile Include="AdmissionDeadlineTests.fs" />
+    <Compile Include="ReadCancellationTests.fs" />
+    <Compile Include="ResponsePolicyTests.fs" />
+    <Compile Include="SessionSweepTests.fs" />
+    <Compile Include="SessionSweepInvariantTests.fs" />
+    <Compile Include="IngressTests.fs" />
+    <Compile Include="HealthIngressHttpTests.fs" />
     <Compile Include="Suite.fs" />
   </ItemGroup>
   <ItemGroup>

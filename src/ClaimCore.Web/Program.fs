@@ -119,8 +119,6 @@ let private requireTrustedConnection
     (next: RequestDelegate)
     : Task =
     (task {
-        HttpHeaders.apply context
-
         if Admission.trustedConnection configuration.Binding context then
             do! next.Invoke(context)
         else
@@ -162,6 +160,7 @@ let private configuredBuilder assets (configuration: WebConfiguration) oidc =
         builder.Services
 
     RateLimits.configure configuration.Admission builder.Services
+    builder.Services.AddSingleton<HostDiagnosticSink>() |> ignore
     builder.Services.AddAuthorization() |> ignore
     builder
 
@@ -171,6 +170,13 @@ let private configureRoutes
     (runtime: Runtime)
     (application: WebApplication)
     =
+    application.Use(
+        Func<HttpContext, RequestDelegate, Task>(fun context next ->
+            HttpHeaders.register context
+            next.Invoke context)
+    )
+    |> ignore
+
     application.Use(Func<HttpContext, RequestDelegate, Task>(RouteSupport.handleFailures))
     |> ignore
 
@@ -179,16 +185,21 @@ let private configureRoutes
     )
     |> ignore
 
+    application.Use(
+        Func<HttpContext, RequestDelegate, Task>(
+            HostRoutes.health (fun () -> runtime.HealthReadiness)
+        )
+    )
+    |> ignore
+
+    application.Use(Func<HttpContext, RequestDelegate, Task>(RateLimits.ingress))
+    |> ignore
+
     application.UseAuthentication() |> ignore
     application.UseRateLimiter() |> ignore
     application.UseAuthorization() |> ignore
 
-    HostRoutes.map
-        assets
-        configuration
-        (fun principal -> runtime.ForActor principal)
-        (fun ct -> runtime.DataUseReadiness(ct))
-        application
+    HostRoutes.map assets configuration (fun principal -> runtime.ForActor principal) application
 
 
 let private runAsync (ct: CancellationToken) =

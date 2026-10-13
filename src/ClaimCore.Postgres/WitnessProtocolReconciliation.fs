@@ -136,17 +136,7 @@ module internal WitnessProtocolReconciliation =
                 ct: CancellationToken
             ) =
             task {
-                let! intent = acceptedIntent this connection transaction operationId ct
-
-                do!
-                    this.VerifyAcceptedEvidence(
-                        operationId,
-                        intent.Ticket.Sequence,
-                        intent.Ticket.Epoch,
-                        intent.Ticket.EntryHash,
-                        intent.CandidateHash,
-                        ct
-                    )
+                do! CaseReadProof.verifyReceipts this connection transaction [ operationId ] None ct
             }
 
         member this.ReconcileAccepted

@@ -2,23 +2,30 @@ namespace ClaimCore.Web
 
 open System
 open System.IO
+open System.Threading
+open Microsoft.AspNetCore.Http
+open Microsoft.Extensions.DependencyInjection
+open Microsoft.Extensions.Hosting
 open ClaimCore.Contracts
 
 /// HTTP allocation and transport failure handling; pure payload decoding belongs to Contracts.
 module HttpBody =
-    let readBounded limit (stream: Stream) =
+    let readBounded limit (stream: Stream) (ct: CancellationToken) =
         task {
             if limit < 1 then
                 invalidArg (nameof limit) "The request byte limit must be positive."
 
             try
+                use budget = CancellationTokenSource.CreateLinkedTokenSource(ct)
+                budget.CancelAfter(TimeSpan.FromSeconds 10.)
+                budget.Token.ThrowIfCancellationRequested()
                 use output = new MemoryStream()
                 let buffer = Array.zeroCreate<byte> 4096
                 let mutable total = 0
                 let mutable complete = false
 
                 while total <= limit && not complete do
-                    let! count = stream.ReadAsync(buffer, 0, buffer.Length)
+                    let! count = stream.ReadAsync(buffer, 0, buffer.Length, budget.Token)
 
                     if count = 0 then
                         complete <- true
@@ -27,6 +34,8 @@ module HttpBody =
                     else
                         total <- total + count
                         output.Write(buffer, 0, count)
+
+                budget.Token.ThrowIfCancellationRequested()
 
                 if total > limit then
                     return Error HttpInputProblem.BodyTooLarge
@@ -39,4 +48,23 @@ module HttpBody =
                 return Error HttpInputProblem.BodyTooLarge
             | :? OperationCanceledException -> return Error HttpInputProblem.BodyCancelled
             | :? IOException -> return Error HttpInputProblem.BodyUnreadable
+        }
+
+    let readRequest limit (context: HttpContext) =
+        task {
+            let services = context.RequestServices
+
+            let stopping =
+                if isNull (box services) then
+                    CancellationToken.None
+                else
+                    services.GetService<IHostApplicationLifetime>()
+                    |> Option.ofObj
+                    |> Option.map _.ApplicationStopping
+                    |> Option.defaultValue CancellationToken.None
+
+            use linked =
+                CancellationTokenSource.CreateLinkedTokenSource(context.RequestAborted, stopping)
+
+            return! readBounded limit context.Request.Body linked.Token
         }

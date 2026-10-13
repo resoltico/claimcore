@@ -55,9 +55,19 @@ let private testApplication assets loginPermits =
     application.Use(
         Func<HttpContext, RequestDelegate, Task>(fun context next ->
             context.Connection.RemoteIpAddress <- IPAddress.Loopback
-            HttpHeaders.apply context
+            HttpHeaders.register context
             next.Invoke(context))
     )
+    |> ignore
+
+    application.Use(
+        Func<HttpContext, RequestDelegate, Task>(
+            HostRoutes.health (fun () -> "SYNTHETIC_ONLY", "ACTIVE", false)
+        )
+    )
+    |> ignore
+
+    application.Use(Func<HttpContext, RequestDelegate, Task>(RateLimits.ingress))
     |> ignore
 
     application.UseAuthentication() |> ignore
@@ -268,12 +278,7 @@ type Host
 
         mapSyntheticLogin application
 
-        HostRoutes.map
-            assets
-            configuration
-            (fun _ -> runtime.ActorCore)
-            (fun _ -> Task.FromResult("SYNTHETIC_ONLY", "ACTIVE", false))
-            application
+        HostRoutes.map assets configuration (fun _ -> runtime.ActorCore) application
 
         application.StartAsync().GetAwaiter().GetResult()
         let client = application.GetTestClient()

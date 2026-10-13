@@ -1,5 +1,7 @@
 namespace ClaimCore.Web
 
+open System
+open System.Threading.Tasks
 open Microsoft.AspNetCore.Http
 
 module HttpHeaders =
@@ -25,3 +27,15 @@ module HttpHeaders =
         headers.CacheControl <- "no-store, max-age=0"
         headers.Pragma <- "no-cache"
         headers.Expires <- "0"
+
+    /// Registered outermost: reverse callback order makes this the final owned policy.
+    let register (context: HttpContext) =
+        let id = HostDiagnostics.identify context
+
+        context.Response.OnStarting(
+            Func<Task>(fun () ->
+                apply context
+                noStore context
+                context.Response.Headers["X-ClaimCore-Diagnostic-Id"] <- id
+                Task.CompletedTask)
+        )

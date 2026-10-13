@@ -13,54 +13,87 @@ open ClaimCore.Domain
 
 /// Read-only, bounded comparison of one committed primary row with its encrypted candidate.
 module internal WitnessPrimaryMatch =
-    let private optionalActor (root: JsonElement) (name: string) (reader: DbDataReader) ordinal =
-        let value = root.GetProperty(name)
+    /// Immutable bounded primary values; acquisition and proof checking share this shape.
+    type Accepted =
+        {
+            Reference: string
+            Revision: int64
+            Request: byte array
+            Snapshot: byte array
+            BusinessDate: string
+            Observed: DateTimeOffset
+            Rule: int16
+            Sequence: int64
+            Epoch: int64
+            Hash: byte array
+            CaseId: Guid
+            Preparer: Guid
+            Importer: Guid option
+            Submitter: Guid option
+            Resolver: Guid option
+            Actor: Guid
+            GrantRevision: int64
+        }
 
-        if reader.IsDBNull(ordinal) then
-            value.ValueKind = JsonValueKind.Null
-        else
-            value.ValueKind = JsonValueKind.String
-            && value.GetGuid() = reader.GetGuid(ordinal)
+    let readAccepted (reader: DbDataReader) =
+        let optional index =
+            if reader.IsDBNull index then
+                None
+            else
+                Some(reader.GetGuid index)
 
-    let private attribution (root: JsonElement) (reader: DbDataReader) =
-        root.GetProperty("preparerActorId").GetGuid() = reader.GetGuid(11)
-        && optionalActor root "importerActorId" reader 12
-        && optionalActor root "submitterActorId" reader 13
-        && optionalActor root "resolverActorId" reader 14
-        && root.GetProperty("acceptedActorId").GetGuid() = reader.GetGuid(15)
-        && root.GetProperty("grantRevision").GetInt64() = reader.GetInt64(16)
+        {
+            Reference = reader.GetString(0)
+            Revision = reader.GetInt64(1)
+            Request = reader.GetFieldValue<byte array>(2)
+            Snapshot = reader.GetFieldValue<byte array>(3)
+            BusinessDate = reader.GetString(4)
+            Observed = reader.GetFieldValue<DateTimeOffset>(5)
+            Rule = reader.GetInt16(6)
+            Sequence = reader.GetInt64(7)
+            Epoch = reader.GetInt64(8)
+            Hash = reader.GetFieldValue<byte array>(9)
+            CaseId = reader.GetGuid(10)
+            Preparer = reader.GetGuid(11)
+            Importer = optional 12
+            Submitter = optional 13
+            Resolver = optional 14
+            Actor = reader.GetGuid(15)
+            GrantRevision = reader.GetInt64(16)
+        }
 
-    let private identity (root: JsonElement) (reader: DbDataReader) operationId =
+    let private optionalActor (root: JsonElement) name expected =
+        let value = root.GetProperty(name: string)
+
+        match expected with
+        | None -> value.ValueKind = JsonValueKind.Null
+        | Some actor -> value.ValueKind = JsonValueKind.String && value.GetGuid() = actor
+
+    let accepted operationId (intentTicket: Ticket) (root: JsonElement) (row: Accepted) =
         root.GetProperty("version").GetInt32() = 2
         && root.GetProperty("ruleRevision").GetInt32() = DomainRules.version
-        && reader.GetInt16(6) = int16 DomainRules.version
+        && row.Rule = int16 DomainRules.version
         && root.GetProperty("operationId").GetGuid() = operationId
-        && root.GetProperty("caseId").GetGuid() = reader.GetGuid(10)
-        && root.GetProperty("caseReference").GetString() = reader.GetString(0)
-        && root.GetProperty("newRevision").GetInt64() = reader.GetInt64(1)
-        && root.GetProperty("expectedRevision").GetInt64() = reader.GetInt64(1) - 1L
-
-    let private payload (root: JsonElement) (reader: DbDataReader) =
-        let captured = root.GetProperty("observedUtcInstant").GetDateTimeOffset()
-        let observed = reader.GetFieldValue<DateTimeOffset>(5)
-
-        root.GetProperty("canonicalRequest").GetBytesFromBase64() =
-            reader.GetFieldValue<byte array>(2)
-        && root.GetProperty("canonicalSnapshot").GetBytesFromBase64() =
-            reader.GetFieldValue<byte array>(3)
-        && root.GetProperty("effectiveBusinessDate").GetString() = reader.GetString(4)
-        && abs (captured.Subtract(observed).Ticks) <= 10L
-
-    let private ticket (ticket: Ticket) (reader: DbDataReader) =
-        reader.GetInt64(7) = ticket.Sequence
-        && reader.GetInt64(8) = ticket.Epoch
-        && reader.GetFieldValue<byte array>(9) = ticket.EntryHash
-
-    let accepted operationId intentTicket root (reader: DbDataReader) =
-        identity root reader operationId
-        && attribution root reader
-        && payload root reader
-        && ticket intentTicket reader
+        && root.GetProperty("caseId").GetGuid() = row.CaseId
+        && root.GetProperty("caseReference").GetString() = row.Reference
+        && root.GetProperty("newRevision").GetInt64() = row.Revision
+        && root.GetProperty("expectedRevision").GetInt64() = row.Revision - 1L
+        && root.GetProperty("preparerActorId").GetGuid() = row.Preparer
+        && optionalActor root "importerActorId" row.Importer
+        && optionalActor root "submitterActorId" row.Submitter
+        && optionalActor root "resolverActorId" row.Resolver
+        && root.GetProperty("acceptedActorId").GetGuid() = row.Actor
+        && root.GetProperty("grantRevision").GetInt64() = row.GrantRevision
+        && root.GetProperty("canonicalRequest").GetBytesFromBase64() = row.Request
+        && root.GetProperty("canonicalSnapshot").GetBytesFromBase64() = row.Snapshot
+        && root.GetProperty("effectiveBusinessDate").GetString() = row.BusinessDate
+        && abs (
+            root.GetProperty("observedUtcInstant").GetDateTimeOffset().Subtract(row.Observed).Ticks
+           )
+           <= 10L
+        && row.Sequence = intentTicket.Sequence
+        && row.Epoch = intentTicket.Epoch
+        && row.Hash = intentTicket.EntryHash
 
     let requireAccepted
         (connection: NpgsqlConnection)
@@ -93,7 +126,7 @@ module internal WitnessPrimaryMatch =
             if not found then
                 raise WitnessPending
 
-            let matches = accepted operationId intentTicket root reader
+            let matches = accepted operationId intentTicket root (readAccepted reader)
             let! duplicated = reader.ReadAsync(ct)
 
             if not matches || duplicated then

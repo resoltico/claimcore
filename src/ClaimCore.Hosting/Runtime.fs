@@ -22,8 +22,11 @@ type Runtime
     ) =
     let realDataScope = initialState.Scope = InstallationUseScope.RealData
 
+    let health = new RuntimeHealthObservation()
+    do safety.SetInvalidation(health.Invalidate)
+
     let auditCadence =
-        new RuntimeAuditCadence(resources, RuntimeAuditInterval.configured ())
+        new RuntimeAuditCadence(resources, RuntimeAuditInterval.configured (), health.Invalidate)
 
     let commitHealth =
         { new IMutationCommitHealth with
@@ -47,7 +50,10 @@ type Runtime
             { new IDisposable with
                 member _.Dispose() =
                     try
-                        (auditCadence :> IDisposable).Dispose()
+                        try
+                            (health :> IDisposable).Dispose()
+                        finally
+                            (auditCadence :> IDisposable).Dispose()
                     finally
                         (resources :> IDisposable).Dispose()
             },
@@ -89,6 +95,19 @@ type Runtime
                 CommitHealthRequired = realDataScope
             }
         )
+
+    do health.Start(RuntimeReadiness.observe safety auditCadence.RequireHealthy)
+
+    member _.HealthReadiness =
+        try
+            use _lease = admission.Admit()
+
+            if auditCadence.IsHealthy then
+                health.Read()
+            else
+                "UNKNOWN", "QUARANTINED", false
+        with _ ->
+            "UNKNOWN", "QUARANTINED", false
 
     /// Safe operator-facing readiness is advisory at one fenced observation.
     member _.DataUseReadiness(?cancellationToken: CancellationToken) =
@@ -231,8 +250,14 @@ type Runtime
 
     interface IDisposable with
         member _.Dispose() =
-            admission.CloseAndDrain(auditCadence.RequestStop)
+            admission.CloseAndDrain(fun () ->
+                health.RequestStop()
+                auditCadence.RequestStop())
 
     interface IAsyncDisposable with
         member _.DisposeAsync() =
-            ValueTask(admission.CloseAndDrainAsync(auditCadence.RequestStop))
+            ValueTask(
+                admission.CloseAndDrainAsync(fun () ->
+                    health.RequestStop()
+                    auditCadence.RequestStop())
+            )

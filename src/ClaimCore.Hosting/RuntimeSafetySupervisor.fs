@@ -44,6 +44,18 @@ type private OrderedReadFence
 /// until the core finishes producing its outcome.
 type internal RuntimeSafetySupervisor(resources: RuntimeResources) =
     let witness = resources.Witness
+    let mutable invalidate: unit -> unit = ignore
+
+    let protect action (ct: CancellationToken) =
+        task {
+            try
+                return! action ct
+            with error ->
+                if not ct.IsCancellationRequested then
+                    invalidate ()
+
+                return raise error
+        }
 
     let primaryState (ct: CancellationToken) =
         task {
@@ -230,12 +242,13 @@ type internal RuntimeSafetySupervisor(resources: RuntimeResources) =
             return state
         }
 
-    member _.RequireCurrent(ct) = requireAuthoritySetup ct
-    member _.CurrentUseState(ct) = useState ct
-    member _.RequireCaseRead(ct) = requireCaseRead ct
-    member _.RequireCaseMutation(ct) = requireCaseMutation ct
-    member _.RequireAuthoritySetup(ct) = requireAuthoritySetup ct
-    member _.RequireAuthorityRead(ct) = requireAuthoritySetup ct
+    member _.SetInvalidation(callback) = invalidate <- callback
+    member _.RequireCurrent(ct) = protect requireAuthoritySetup ct
+    member _.CurrentUseState(ct) = protect useState ct
+    member _.RequireCaseRead(ct) = protect requireCaseRead ct
+    member _.RequireCaseMutation(ct) = protect requireCaseMutation ct
+    member _.RequireAuthoritySetup(ct) = protect requireAuthoritySetup ct
+    member _.RequireAuthorityRead(ct) = protect requireAuthoritySetup ct
 
     member _.AcquireReadFence(ct) =
         task {
@@ -262,7 +275,7 @@ type internal RuntimeSafetySupervisor(resources: RuntimeResources) =
                     let! lease = witness.AcquireReadFence((opening ()).Generation, ct)
 
                     try
-                        do! requirePair ct
+                        do! protect requirePair ct
                         return new OrderedReadFence(primary, transaction, lease) :> IDisposable
                     with error ->
                         lease.Dispose()
@@ -271,6 +284,9 @@ type internal RuntimeSafetySupervisor(resources: RuntimeResources) =
                     transaction.Dispose()
                     return raise error
             with error ->
+                if not ct.IsCancellationRequested then
+                    invalidate ()
+
                 primary.Dispose()
                 return raise error
         }

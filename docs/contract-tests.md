@@ -115,6 +115,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-AUTH-001 | browser | owner-only workspace renders without inventing case authority [CC-AUTH-001] |
 | CC-AUTH-001 | browser | unregistered human authenticates without gaining a wider grant [CC-AUTH-001] |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.[CC-AUTH-001] case-list cursor binds principal grant query and visible page |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.[CC-AUTH-001] one corrupt subject refuses an otherwise valid current page |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.[CC-AUTH-001] voided and erasure-fenced identities share denial timing class |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.[CC-AUTH-001][CC-REC-001] unresolved recovery payload is withheld after final disclosure authority loss |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.actor and grant storage.[CC-AUTH-001] exact authority replay detects a forged live actor projection |
@@ -147,6 +148,14 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.case-list capacity.[CC-AUTH-001] sparse actor access selects indexed granted cases at volume |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.case-list cursor protection.[CC-AUTH-001] cursor tamper and runtime restart refuse without plaintext |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.case-list cursor protection.[CC-AUTH-001] encrypted cursor binds actor grant query and expiry |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.current lifecycle proof units.[CC-AUTH-001] current proof batches 1 cases with lifecycle evidence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.current lifecycle proof units.[CC-AUTH-001] current proof batches 50 cases with lifecycle evidence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.current lifecycle proof units.[CC-AUTH-001] current proof batches 8 cases with lifecycle evidence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.current lifecycle proof units.[CC-AUTH-001] current proof batches 9 cases with lifecycle evidence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.history proof units.[CC-AUTH-001] history batches 1 exact operations for one case |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.history proof units.[CC-AUTH-001] history batches 50 exact operations for one case |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.history proof units.[CC-AUTH-001] history batches 8 exact operations for one case |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.history proof units.[CC-AUTH-001] history batches 9 exact operations for one case |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.mutation result disclosure.[CC-AUTH-001] accepted command result is withheld after editor revocation |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.mutation result disclosure.[CC-AUTH-001] accepted command result is withheld after erasure fence |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.mutation result disclosure.[CC-AUTH-001] accepted recovery resolution is withheld after operator revocation |
@@ -154,6 +163,38 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.mutation result disclosure.[CC-AUTH-001] retained preparation is withheld after editor revocation |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.mutation result disclosure.[CC-AUTH-001] revoked preparation details are withheld after operator revocation |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.mutation result disclosure.[CC-AUTH-001] witnessed export is withheld after exporter revocation |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.proof encoded bounds.[CC-AUTH-001] primary proof encoded lengths are admitted before allocation |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.proof encoded bounds.[CC-AUTH-001] witness proof encoded lengths are admitted before allocation |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition completion 11 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition completion 12 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition completion 17 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition completion 18 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition completion 5 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition completion 6 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 0 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 1 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 10 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 11 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 12 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 13 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 14 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 15 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 16 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 17 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 18 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 2 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 3 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 4 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 5 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 6 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 7 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 8 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.read proof cancellation boundaries.[CC-AUTH-001] page cancellation at acquisition start 9 releases its proof fence |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.set-oriented read proof.[CC-AUTH-001] bounded page proves 1 exact independently witnessed subjects |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.set-oriented read proof.[CC-AUTH-001] bounded page proves 50 exact independently witnessed subjects |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.set-oriented read proof.[CC-AUTH-001] bounded page proves 8 exact independently witnessed subjects |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.set-oriented read proof.[CC-AUTH-001] bounded page proves 9 exact independently witnessed subjects |
+| CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.set-oriented read proof.[CC-AUTH-001] missing or swapped loaded settlement refuses the whole proof |
 | CC-AUTH-001 | integration | ClaimCore PostgreSQL integration.signed recovery artifact import preview.[CC-AUTH-001] signed import preview requires current actor authority |
 | CC-AUTH-001 | unit | ClaimCore deterministic suite.[CC-AUTH-001] CLI discovery compares the complete issuer identity |
 | CC-AUTH-001 | unit | ClaimCore deterministic suite.[CC-AUTH-001] every Domain command maps to edit capability |
@@ -180,6 +221,7 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.Restore report owner roster.[CC-BACKUP-001] source checkout cannot self-authorize a restore report |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.Restore report pair binding.[CC-BACKUP-001] stale or divergent restore pair facts refuse recheck |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.[CC-BACKUP-001] intermediate restore reports cannot claim deployment readiness |
+| CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.[CC-BACKUP-001][CC-WEB-001] activation review cancellation ends an actual PostgreSQL wait |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.advanced physical restored pair.[CC-BACKUP-001] original BASE pair replays later synthetic WAL before audit |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.advanced physical restored pair.[CC-BACKUP-001] repeated quiet WAL switches retain the last completed segment |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.authority operation fence.[CC-BACKUP-001] backup capture drains actor settlement and retains the complete authority fence |
@@ -643,6 +685,11 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-REC-001 | acceptance | published authenticated CLI v4 acceptance.[CC-CLI-001][CC-REC-001] published supplementary Unicode input and ASCII mutation replies preserve one exact replay |
 | CC-REC-001 | browser | keeps recovery controls and exact identity stable after closing a real delayed export (download) [CC-REC-001] |
 | CC-REC-001 | browser | keeps recovery controls and exact identity stable after closing a real delayed export (lost reply) [CC-REC-001] |
+| CC-REC-001 | browser | refuses recovery export 301 before a second destination request [CC-REC-001] |
+| CC-REC-001 | browser | refuses recovery export 302 before a second destination request [CC-REC-001] |
+| CC-REC-001 | browser | refuses recovery export 303 before a second destination request [CC-REC-001] |
+| CC-REC-001 | browser | refuses recovery export 307 before a second destination request [CC-REC-001] |
+| CC-REC-001 | browser | refuses recovery export 308 before a second destination request [CC-REC-001] |
 | CC-REC-001 | concurrency-qualification | ClaimCore concurrency qualification.PostgreSQL recovery races.[CC-REC-001] simultaneous exact resolves retain one accepted revision |
 | CC-REC-001 | concurrency-qualification | ClaimCore concurrency qualification.PostgreSQL recovery races.[CC-REC-001] simultaneous resolve and dismiss have one lifecycle winner |
 | CC-REC-001 | integration | ClaimCore PostgreSQL integration.PostgreSQL operation authority lifecycle.[CC-REC-001] a revoked worker cannot execute or lose unsettled preparation evidence |
@@ -779,6 +826,9 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime construction ownership.[CC-RUN-001] successful construction transfers children to their parent |
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime construction ownership.[CC-RUN-001] witness adoption transfers store and custody together |
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime construction ownership.[CC-RUN-001] witness custody failure closes the actual store |
+| CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime health reporting.[CC-RUN-001] health age uses monotonic sample start and exact expiry |
+| CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime health reporting.[CC-RUN-001] health safety epoch fences late publication and closing |
+| CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime health reporting.[CC-RUN-001] timed-out health work remains owned without overlap |
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime lifecycle under PostgreSQL.[CC-RUN-001] admitted mutation remains accepted while runtime drains |
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime lifecycle under PostgreSQL.[CC-RUN-001] admitted query keeps its typed outcome while runtime drains |
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime lifecycle under PostgreSQL.[CC-RUN-001] mid-open cancellation interrupts schema inspection |
@@ -786,7 +836,18 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime scheduling and shutdown.[CC-RUN-001] audit stop is nonblocking and cleanup joins cancellation callbacks |
 | CC-RUN-001 | integration | ClaimCore PostgreSQL integration.runtime scheduling and shutdown.[CC-RUN-001] shutdown stops audit before draining admitted actor work |
 | CC-WEB-001 | browser | associates malformed operation lookup guidance and prevents empty case lookup [CC-WEB-001] |
+| CC-WEB-001 | browser | detects a followed 301 redirect at the same-origin destination [CC-WEB-001] |
+| CC-WEB-001 | browser | detects a followed 302 redirect at the same-origin destination [CC-WEB-001] |
+| CC-WEB-001 | browser | detects a followed 303 redirect at the same-origin destination [CC-WEB-001] |
+| CC-WEB-001 | browser | detects a followed 307 redirect at the same-origin destination [CC-WEB-001] |
+| CC-WEB-001 | browser | detects a followed 308 redirect at the same-origin destination [CC-WEB-001] |
 | CC-WEB-001 | browser | records supplementary scalar boundaries through Web for published native readback [CC-CLI-001][CC-WEB-001] |
+| CC-WEB-001 | browser | refuses ordinary API 301 after original acceptance without redirect dispatch [CC-WEB-001] |
+| CC-WEB-001 | browser | refuses ordinary API 302 after original acceptance without redirect dispatch [CC-WEB-001] |
+| CC-WEB-001 | browser | refuses ordinary API 303 after original acceptance without redirect dispatch [CC-WEB-001] |
+| CC-WEB-001 | browser | refuses ordinary API 307 after original acceptance without redirect dispatch [CC-WEB-001] |
+| CC-WEB-001 | browser | refuses ordinary API 308 after original acceptance without redirect dispatch [CC-WEB-001] |
+| CC-WEB-001 | integration | ClaimCore PostgreSQL integration.[CC-BACKUP-001][CC-WEB-001] activation review cancellation ends an actual PostgreSQL wait |
 | CC-WEB-001 | unit | ClaimCore deterministic suite.CLI TLS trust.[CC-WEB-001] issuer TLS leaf requires server purpose |
 | CC-WEB-001 | unit | ClaimCore deterministic suite.CLI TLS trust.[CC-WEB-001] private TLS root validity has exact boundaries |
 | CC-WEB-001 | unit | ClaimCore deterministic suite.build-only presentation projection.exports every diagnostic as literal and declared hole parts [CC-WEB-001] |
@@ -916,7 +977,9 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-WEB-001 | web | ClaimCore.Web.Web v3 admission.[CC-WEB-001] rejects absent and remote peers or wrong host authority |
 | CC-WEB-001 | web | ClaimCore.Web.Web v3 admission.[CC-WEB-001] requires one exact browser origin and same-origin metadata |
 | CC-WEB-001 | web | ClaimCore.Web.Web v3 admission.[CC-WEB-001] returns typed CSRF admission refusal |
+| CC-WEB-001 | web | ClaimCore.Web.[CC-WEB-001] 1000 concurrent real HTTP probes remain cheap under callback saturation |
 | CC-WEB-001 | web | ClaimCore.Web.[CC-WEB-001] controlled stop cancels blocked OIDC startup |
+| CC-WEB-001 | web | ClaimCore.Web.[CC-WEB-001] global ingress includes callback work while exact health stays cheap |
 | CC-WEB-001 | web | ClaimCore.Web.asynchronous HTTP transport boundaries.[CC-WEB-001] suspended I/O failure retains safe refusal |
 | CC-WEB-001 | web | ClaimCore.Web.asynchronous HTTP transport boundaries.[CC-WEB-001] suspended Kestrel size refusal retains transport classification |
 | CC-WEB-001 | web | ClaimCore.Web.asynchronous HTTP transport boundaries.[CC-WEB-001] suspended cancellation retains safe refusal |
@@ -925,6 +988,14 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-WEB-001 | web | ClaimCore.Web.asynchronous HTTP transport boundaries.[CC-WEB-001] suspended dispatch phase 2 preserves failure knowledge |
 | CC-WEB-001 | web | ClaimCore.Web.asynchronous HTTP transport boundaries.[CC-WEB-001] suspended exact-size request is accepted |
 | CC-WEB-001 | web | ClaimCore.Web.asynchronous HTTP transport boundaries.[CC-WEB-001] suspended oversized request is refused |
+| CC-WEB-001 | web | ClaimCore.Web.body acquisition ownership.[CC-WEB-001] caller cancels stalled input before dispatch |
+| CC-WEB-001 | web | ClaimCore.Web.body acquisition ownership.[CC-WEB-001] cancellation after decode prevents a core call |
+| CC-WEB-001 | web | ClaimCore.Web.body acquisition ownership.[CC-WEB-001] host stop cancels active body acquisition |
+| CC-WEB-001 | web | ClaimCore.Web.body acquisition ownership.[CC-WEB-001] stalled input has an absolute body deadline |
+| CC-WEB-001 | web | ClaimCore.Web.bounded ticket sweeps.[CC-WEB-001] full ticket store reclaims expiry without evicting authority |
+| CC-WEB-001 | web | ClaimCore.Web.bounded ticket sweeps.[CC-WEB-001] session lookup and renewal examine at most 33 entries at capacity 1 |
+| CC-WEB-001 | web | ClaimCore.Web.bounded ticket sweeps.[CC-WEB-001] session lookup and renewal examine at most 33 entries at capacity 100 |
+| CC-WEB-001 | web | ClaimCore.Web.bounded ticket sweeps.[CC-WEB-001] session lookup and renewal examine at most 33 entries at capacity 10000 |
 | CC-WEB-001 | web | ClaimCore.Web.configuration.Web configuration boundaries.[CC-WEB-001] enforces session lifetime ordering |
 | CC-WEB-001 | web | ClaimCore.Web.configuration.Web configuration boundaries.[CC-WEB-001] loads defaults and rejects every out-of-range admission limit |
 | CC-WEB-001 | web | ClaimCore.Web.configuration.Web configuration boundaries.[CC-WEB-001] rejects linked credentials and certificates without private keys |
@@ -942,15 +1013,33 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-WEB-001 | web | ClaimCore.Web.exact principal admission.[CC-WEB-001] discovery refuses nonobjects and duplicate members |
 | CC-WEB-001 | web | ClaimCore.Web.exact principal admission.[CC-WEB-001] repeated subject and client claims are refused in every order |
 | CC-WEB-001 | web | ClaimCore.Web.exact principal admission.[CC-WEB-001] root and slash-ended issuer metadata preserve exact identity |
+| CC-WEB-001 | web | ClaimCore.Web.final response policy.[CC-WEB-001] Kestrel runs final headers after reset and inner callbacks |
+| CC-WEB-001 | web | ClaimCore.Web.final response policy.[CC-WEB-001] blocked host diagnostics stay bounded and non-blocking |
+| CC-WEB-001 | web | ClaimCore.Web.final response policy.[CC-WEB-001] real Kestrel slow-drip acquisition ends on its absolute deadline |
 | CC-WEB-001 | web | ClaimCore.Web.lifecycle input.[CC-WEB-001] lifecycle drafts and approvals retain exact caller identities |
 | CC-WEB-001 | web | ClaimCore.Web.lifecycle input.[CC-WEB-001] lifecycle input refuses forged or malformed fields |
 | CC-WEB-001 | web | ClaimCore.Web.management input.[CC-WEB-001] binds exact authority event, principal, role and scope before dispatch |
 | CC-WEB-001 | web | ClaimCore.Web.probe process admission.[CC-WEB-001] native probe observes liveness and readiness without runtime credentials |
 | CC-WEB-001 | web | ClaimCore.Web.probe process admission.[CC-WEB-001] probe refuses invalid binding, unavailable transport and remote synthetic trust |
 | CC-WEB-001 | web | ClaimCore.Web.queued HTTP capacity.[CC-WEB-001] bounded admission refuses overload and cancels queued reads before dispatch |
+| CC-WEB-001 | web | ClaimCore.Web.read token conformance.[CC-WEB-001] reviewed endpoint authority.approveRealDataActivation propagates its classified token |
+| CC-WEB-001 | web | ClaimCore.Web.read token conformance.[CC-WEB-001] reviewed endpoint authority.observe propagates its classified token |
+| CC-WEB-001 | web | ClaimCore.Web.read token conformance.[CC-WEB-001] reviewed endpoint authority.reviewRealDataActivation propagates its classified token |
+| CC-WEB-001 | web | ClaimCore.Web.read token conformance.[CC-WEB-001] reviewed endpoint case.get propagates its classified token |
+| CC-WEB-001 | web | ClaimCore.Web.read token conformance.[CC-WEB-001] reviewed endpoint case.history propagates its classified token |
+| CC-WEB-001 | web | ClaimCore.Web.read token conformance.[CC-WEB-001] reviewed endpoint case.list propagates its classified token |
+| CC-WEB-001 | web | ClaimCore.Web.read token conformance.[CC-WEB-001] reviewed endpoint command.execute propagates its classified token |
+| CC-WEB-001 | web | ClaimCore.Web.read token conformance.[CC-WEB-001] reviewed endpoint lifecycle.review propagates its classified token |
+| CC-WEB-001 | web | ClaimCore.Web.read token conformance.[CC-WEB-001] reviewed endpoint operation.observe propagates its classified token |
+| CC-WEB-001 | web | ClaimCore.Web.read token conformance.[CC-WEB-001] reviewed endpoint recovery.importEnvelopePreview propagates its classified token |
+| CC-WEB-001 | web | ClaimCore.Web.read token conformance.[CC-WEB-001] reviewed endpoint recovery.inspect propagates its classified token |
+| CC-WEB-001 | web | ClaimCore.Web.read token conformance.[CC-WEB-001] reviewed endpoint recovery.list propagates its classified token |
+| CC-WEB-001 | web | ClaimCore.Web.read token conformance.[CC-WEB-001] reviewed endpoint tombstone.review propagates its classified token |
 | CC-WEB-001 | web | ClaimCore.Web.real-data activation input.[CC-WEB-001] activation requests refuse forged actor or key metadata |
 | CC-WEB-001 | web | ClaimCore.Web.real-data activation input.[CC-WEB-001] activation review and approval bind exact published plan fields |
 | CC-WEB-001 | web | ClaimCore.Web.real-data activation wire.[CC-WEB-001] owner plan review projects exact canonical bytes and typed nonclaimant facts |
+| CC-WEB-001 | web | ClaimCore.Web.session sweep invariants.[CC-WEB-001] concurrent ticket renewal and removal cannot resurrect a key |
+| CC-WEB-001 | web | ClaimCore.Web.session sweep invariants.[CC-WEB-001] randomized renewal and cursor removal retain one sweep node per key |
 | CC-WEB-001 | web | ClaimCore.Web.signer approval input.[CC-WEB-001] signer approval binds exact key and expiry |
 | CC-WEB-001 | web | ClaimCore.Web.signer approval input.[CC-WEB-001] signer approval refuses forged wire fields |
 | CC-WEB-001 | web | ClaimCore.Web.terminal steward approval input.[CC-WEB-001] terminal approval rejects missing proof and forged fields |

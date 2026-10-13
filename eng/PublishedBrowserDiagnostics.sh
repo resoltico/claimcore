@@ -70,13 +70,19 @@ scan_output() {
     node "${repo_root}/eng/ci/policy/sensitive-output.mjs" "${roots[@]}" "${secrets[@]}" >/dev/null 2>&1
 }
 cleanup() {
-  local status=$? state_dir="$1" run_label="$2" host_pid="$3" cli_results="$4" engine="$5"
+  local status=$? state_dir="$1" run_label="$2" cli_results="$4" engine="$5" pid
+  local -a owned_pids
+  read -r -a owned_pids <<<"$3"
   trap - EXIT
   set +e
-  if [[ -n "${host_pid}" ]]; then
-    kill "${host_pid}" 2>/dev/null
-    wait "${host_pid}" 2>/dev/null
-  fi
+  for pid in "${owned_pids[@]}"; do
+    [[ "${pid}" =~ ^[0-9]+$ ]] || {
+      status=1
+      continue
+    }
+    kill "${pid}" 2>/dev/null
+    wait "${pid}" 2>/dev/null
+  done
   if ! scan_output "${state_dir}" "${cli_results}"; then
     printf 'Sensitive browser output was rejected.\n' >&2
     status=1

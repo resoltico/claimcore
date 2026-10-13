@@ -11,78 +11,143 @@ open WitnessProtocolReconciliation
 
 /// Claimant-bearing reads prove one recorded projection without appending under a witness read fence.
 module internal CaseReadEvidence =
-    let receipt (witness: WitnessProtocol) connection transaction operationId ct =
+    let history
+        witness
+        connection
+        transaction
+        caseId
+        (receipts: Receipt list)
+        (ct: CancellationToken)
+        =
         task {
             try
-                do! witness.VerifyAccepted(connection, transaction, operationId, ct)
-                return Ok()
-            with
-            | :? OperationCanceledException as error when ct.IsCancellationRequested ->
-                return raise error
-            | _ -> return Error(CoreFailure.CommitOutcomeUnknown operationId)
-        }
-
-    let current witness connection transaction claim (ct: CancellationToken) =
-        task {
-            let view = Claim.view claim
-
-            use command =
-                new NpgsqlCommand(
-                    "SELECT operation_id,snapshot FROM claimcore.case_changes "
-                    + "WHERE case_reference=@reference ORDER BY revision DESC LIMIT 1",
-                    connection,
-                    transaction
-                )
-
-            Sql.text command "reference" view.Fields.CaseReference
-            use! reader = command.ExecuteReaderAsync(ct)
-
-            let! found = reader.ReadAsync(ct)
-
-            if not found then
-                raise (InvalidDataException("Current projection lacks accepted evidence."))
-
-            let operationId = reader.GetGuid(0)
-            let expected = reader.GetFieldValue<byte array>(1)
-
-            let prior =
-                match CaseRecord.decodeSnapshot expected with
-                | Ok snapshot when CaseRecord.encodeSnapshot snapshot = expected -> snapshot
-                | _ -> raise (InvalidDataException("Accepted projection encoding is invalid."))
-
-            let! duplicated = reader.ReadAsync(ct)
-
-            if prior.Fields <> view.Fields || prior.Version > view.Version || duplicated then
-                raise (InvalidDataException("Current projection differs from accepted evidence."))
-
-            reader.Close()
-
-            let! proof = receipt witness connection transaction operationId ct
-
-            match proof with
-            | Error failure -> return Error failure
-            | Ok() ->
-                return!
-                    CaseReadLifecycleEvidence.verify
+                do!
+                    CaseReadProof.verifyReceipts
                         witness
                         connection
                         transaction
-                        view
-                        prior.Version
+                        (receipts |> List.map _.OperationId)
+                        (Some caseId)
                         ct
+
+                return None
+            with
+            | :? OperationCanceledException as error when ct.IsCancellationRequested ->
+                return raise error
+            | _ ->
+                return
+                    receipts
+                    |> List.tryHead
+                    |> Option.map (fun receipt ->
+                        CoreFailure.CommitOutcomeUnknown receipt.OperationId)
         }
 
-    let page witness connection transaction claims ct =
+    let private priorFor
+        (rows: System.Collections.Generic.Dictionary<Guid, WitnessPrimaryMatch.Accepted>)
+        (view: CaseView)
+        =
+        let operation, row =
+            rows
+            |> Seq.filter (fun row -> row.Value.Reference = view.Fields.CaseReference)
+            |> Seq.exactlyOne
+            |> fun row -> row.Key, row.Value
+
+        let prior =
+            match CaseRecord.decodeSnapshot row.Snapshot with
+            | Ok value when CaseRecord.encodeSnapshot value = row.Snapshot -> value
+            | _ -> raise (InvalidDataException("Accepted projection encoding is invalid."))
+
+        if
+            prior.Fields <> view.Fields
+            || prior.Version <> row.Revision
+            || prior.Version > view.Version
+        then
+            raise (InvalidDataException("Current projection differs from accepted evidence."))
+
+        view, prior.Version, operation, row
+
+    let private acceptedPage witness priors (ct: CancellationToken) =
+        task {
+            let mutable operation = priors |> List.head |> fun (_, _, id, _) -> id
+
+            try
+                let! evidence =
+                    CaseReadProof.pairs
+                        witness
+                        (priors
+                         |> List.map (fun (_, _, id, _) -> id, ClaimCore.Witness.SettledAccepted))
+                        ct
+
+                for _, _, id, row in priors do
+                    operation <- id
+                    ct.ThrowIfCancellationRequested()
+
+                    CaseReadProof.verifyAccepted
+                        witness
+                        id
+                        row
+                        (CaseReadProof.pair evidence id ClaimCore.Witness.SettledAccepted)
+
+                return None
+            with
+            | :? OperationCanceledException as error when ct.IsCancellationRequested ->
+                return raise error
+            | _ -> return Some(CoreFailure.CommitOutcomeUnknown operation)
+        }
+
+    let private chunk witness connection transaction claims ct =
+        task {
+            let views = claims |> List.map Claim.view
+
+            let references =
+                views |> List.map (fun view -> view.Fields.CaseReference) |> List.toArray
+
+            let! rows = CaseReadProof.loadCurrent connection transaction references ct
+
+            if rows.Count <> claims.Length then
+                raise (InvalidDataException("Current projection lacks accepted evidence."))
+
+            let priors = views |> List.map (priorFor rows)
+
+            match! acceptedPage witness priors ct with
+            | Some failure -> return Some failure
+            | None ->
+                let! proof =
+                    CaseReadLifecycleEvidence.page
+                        witness
+                        connection
+                        transaction
+                        (priors
+                         |> List.map (fun (view, revision, _, row) -> view, revision, row.CaseId))
+                        ct
+
+                return
+                    match proof with
+                    | Ok() -> None
+                    | Error cause -> Some cause
+        }
+
+    /// A current case can require two proof units: acceptance and lifecycle.
+    let page witness connection transaction claims (ct: CancellationToken) =
         task {
             let mutable failure = None
 
-            for claim in claims do
+            for claims in claims |> List.chunkBySize 4 do
                 if failure.IsNone then
-                    let! result = current witness connection transaction claim ct
+                    ct.ThrowIfCancellationRequested()
+                    let! result = chunk witness connection transaction claims ct
+                    failure <- result
 
-                    match result with
-                    | Ok() -> ()
-                    | Error cause -> failure <- Some cause
-
+            ct.ThrowIfCancellationRequested()
             return failure
+        }
+
+    let current witness connection transaction claim ct =
+        task {
+            let! failure = page witness connection transaction [ claim ] ct
+
+            return
+                match failure with
+                | None -> Ok()
+                | Some cause -> Error cause
         }

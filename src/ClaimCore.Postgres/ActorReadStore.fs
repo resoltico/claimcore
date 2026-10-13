@@ -104,27 +104,6 @@ module internal ActorReadStore =
                             return proof |> Result.map (fun () -> Some claim)
             })
 
-    let private verifyHistory witness connection transaction receipts ct =
-        task {
-            let mutable failure = None
-
-            for receipt: Receipt in receipts do
-                if failure.IsNone then
-                    let! proof =
-                        CaseReadEvidence.receipt
-                            witness
-                            connection
-                            transaction
-                            receipt.OperationId
-                            ct
-
-                    match proof with
-                    | Ok() -> ()
-                    | Error cause -> failure <- Some cause
-
-            return failure
-        }
-
     let private historyRows connection transaction reference afterVersion (ct: CancellationToken) =
         task {
             use command = new NpgsqlCommand(Sql.history, connection, transaction)
@@ -188,7 +167,8 @@ module internal ActorReadStore =
                             else
                                 None
 
-                        let! proof = verifyHistory witness connection transaction items ct
+                        let! proof =
+                            CaseReadEvidence.history witness connection transaction id items ct
 
                         match proof with
                         | Some failure -> return Error failure

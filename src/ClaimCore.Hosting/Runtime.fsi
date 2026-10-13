@@ -13,6 +13,8 @@ type Runtime =
     member internal ForActorWithAdmission:
         principal: PrincipalKey * selectedAdmission: RuntimeAdmission -> IActorClaimsCore
 
+    member HealthReadiness: string * string * bool
+
     member DataUseReadiness: ?cancellationToken: CancellationToken -> Task<string * string * bool>
 
     static member internal OpenPostgres:

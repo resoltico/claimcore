@@ -18,6 +18,7 @@ type StateDirectoryLease internal (handle: SafeFileHandle) =
 [<NoEquality; NoComparison>]
 type private TicketEntry =
     {
+        Node: LinkedListNode<string>
         Ticket: AuthenticationTicket
         AbsoluteExpiry: DateTimeOffset
         AbsoluteLifetime: TimeSpan
@@ -37,22 +38,54 @@ type OidcTicketStore(idle: TimeSpan, absolute: TimeSpan, ?timeProvider: TimeProv
     let gate = obj ()
     let tickets = Dictionary<string, TicketEntry>(StringComparer.Ordinal)
 
-    let expire instant timestamp =
-        let expired (entry: TicketEntry) =
-            let age = clock.GetElapsedTime(entry.Started, timestamp)
-            let inactive = clock.GetElapsedTime(entry.LastActivity, timestamp)
+    let nodes = LinkedList<string>()
+    let mutable cursor: LinkedListNode<string> option = None
 
-            entry.AbsoluteExpiry <= instant
-            || age < TimeSpan.Zero
-            || inactive < TimeSpan.Zero
-            || age >= entry.AbsoluteLifetime
-            || inactive >= idle
+    let expired instant timestamp (entry: TicketEntry) =
+        let age = clock.GetElapsedTime(entry.Started, timestamp)
+        let inactive = clock.GetElapsedTime(entry.LastActivity, timestamp)
 
-        tickets
-        |> Seq.filter (fun entry -> expired entry.Value)
-        |> Seq.map _.Key
-        |> Seq.toArray
-        |> Array.iter (fun key -> tickets.Remove(key) |> ignore)
+        entry.AbsoluteExpiry <= instant
+        || age < TimeSpan.Zero
+        || inactive < TimeSpan.Zero
+        || age >= entry.AbsoluteLifetime
+        || inactive >= idle
+
+    let remove key =
+        match tickets.TryGetValue key with
+        | false, _ -> ()
+        | true, entry ->
+            if cursor = Some entry.Node then
+                cursor <- entry.Node.Next |> Option.ofObj
+
+            nodes.Remove entry.Node
+            tickets.Remove key |> ignore
+
+            if cursor.IsNone then
+                cursor <- nodes.First |> Option.ofObj
+
+    let sweep quota excluded instant timestamp =
+        let count = min quota nodes.Count
+
+        for _ in 1..count do
+            match cursor with
+            | None -> ()
+            | Some node ->
+                cursor <-
+                    node.Next
+                    |> Option.ofObj
+                    |> Option.orElseWith (fun () -> nodes.First |> Option.ofObj)
+
+                if Some node.Value <> excluded && expired instant timestamp tickets[node.Value] then
+                    remove node.Value
+
+    let lookup key instant timestamp =
+        match tickets.TryGetValue key with
+        | true, entry when expired instant timestamp entry ->
+            remove key
+            None
+        | true, entry -> Some entry
+        | _ -> None
 
     interface ITicketStore with
         member _.StoreAsync(ticket) =
@@ -70,7 +103,8 @@ type OidcTicketStore(idle: TimeSpan, absolute: TimeSpan, ?timeProvider: TimeProv
                     else
                         maximum
 
-                expire instant timestamp
+                if tickets.Count >= 10000 then
+                    sweep nodes.Count None instant timestamp
 
                 if tickets.Count >= 10000 then
                     invalidOp "The OIDC session store is full."
@@ -78,23 +112,29 @@ type OidcTicketStore(idle: TimeSpan, absolute: TimeSpan, ?timeProvider: TimeProv
                 tickets.Add(
                     key,
                     {
+                        Node = nodes.AddLast(key)
                         Ticket = ticket
                         AbsoluteExpiry = absoluteExpiry
                         AbsoluteLifetime = absoluteExpiry - instant
                         Started = timestamp
                         LastActivity = timestamp
                     }
-                ))
+                )
+
+                if cursor.IsNone then
+                    cursor <- nodes.First |> Option.ofObj)
 
             Task.FromResult(key)
 
         member _.RenewAsync(key, ticket) =
             lock gate (fun () ->
-                expire (clock.GetUtcNow()) (clock.GetTimestamp())
+                let instant, timestamp = clock.GetUtcNow(), clock.GetTimestamp()
+                let entry = lookup key instant timestamp
+                sweep 32 (Some key) instant timestamp
 
-                match tickets.TryGetValue(key) with
-                | true, entry -> tickets[key] <- { entry with Ticket = ticket }
-                | false, _ -> ())
+                match entry with
+                | Some value -> tickets[key] <- { value with Ticket = ticket }
+                | None -> ())
 
             Task.CompletedTask
 
@@ -102,18 +142,20 @@ type OidcTicketStore(idle: TimeSpan, absolute: TimeSpan, ?timeProvider: TimeProv
             let ticket =
                 lock gate (fun () ->
                     let timestamp = clock.GetTimestamp()
-                    expire (clock.GetUtcNow()) timestamp
+                    let instant = clock.GetUtcNow()
+                    let found = lookup key instant timestamp
+                    sweep 32 (Some key) instant timestamp
 
-                    match tickets.TryGetValue(key) with
-                    | true, entry ->
+                    match found with
+                    | Some entry ->
                         entry.LastActivity <- timestamp
                         entry.Ticket
-                    | false, _ -> Unchecked.defaultof<AuthenticationTicket>)
+                    | None -> Unchecked.defaultof<AuthenticationTicket>)
 
             Task.FromResult(ticket)
 
         member _.RemoveAsync(key) =
-            lock gate (fun () -> tickets.Remove(key) |> ignore)
+            lock gate (fun () -> remove key)
             Task.CompletedTask
 
 module Security =

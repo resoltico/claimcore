@@ -47,7 +47,7 @@ source "${repo_root}/eng/PublishedBrowserRuntime.sh"
 # shellcheck source=eng/PublishedBrowserCli.sh
 source "${repo_root}/eng/PublishedBrowserCli.sh"
 run_engine() (
-  local engine="$1" state_dir created_dir primary witness host_pid='' cli_results='' origin run_label
+  local engine="$1" state_dir created_dir primary witness host_pid='' proxy_pid='' cli_results='' origin run_label
   umask 077
   run_label="claimcore-browser-${engine}-$(openssl rand -hex 8)"
   created_dir="$(create_private_qualification_directory "claimcore-web-e2e.${engine}.XXXXXXXX")"
@@ -59,11 +59,11 @@ run_engine() (
   primary="claimcore-primary-$(openssl rand -hex 8)"
   witness="claimcore-witness-$(openssl rand -hex 8)"
   mkdir -p "${repo_root}/artifacts/browser" "${state_dir}/diagnostics"
-  trap 'cleanup "${state_dir}" "${run_label}" "${host_pid}" "${cli_results}" "${engine}"' EXIT
+  trap 'cleanup "${state_dir}" "${run_label}" "${host_pid} ${proxy_pid}" "${cli_results}" "${engine}"' EXIT
   # shellcheck source=eng/PublishedWebE2E-Setup.sh
   source "${repo_root}/eng/PublishedWebE2E-Setup.sh"
   origin="${CLAIMCORE_TEST_WEB_ORIGIN:?Synthetic Web origin was not allocated.}"
-  start_browser_host "${state_dir}" host_pid
+  start_browser_host "${state_dir}" host_pid proxy_pid
   require_browser_host "${state_dir}" "${origin}" "${host_pid}"
   if [[ -n "${CLAIMCORE_PUBLISHED_CLI_DIR:-}" ]]; then
     prepare_browser_cli "${state_dir}" "${origin}"
@@ -74,7 +74,7 @@ run_engine() (
     run_browser_cli_acceptance "${state_dir}" "${origin}" "${engine}" "${cli_results}"
   fi
   printf 'Published %s OIDC browser qualification passed with two isolated clusters.\n' "${engine}"
-  cleanup "${state_dir}" "${run_label}" "${host_pid}" "${cli_results}" "${engine}"
+  cleanup "${state_dir}" "${run_label}" "${host_pid} ${proxy_pid}" "${cli_results}" "${engine}"
 )
 
 for engine in "${engines[@]}"; do run_engine "${engine}"; done

@@ -144,12 +144,7 @@ module internal WitnessStoreRead =
                     return Some hash
         }
 
-    let private readCommitted
-        (identity: Identity)
-        (operation: Guid)
-        (phase: Phase)
-        (reader: DbDataReader)
-        =
+    let readCommitted (identity: Identity) (operation: Guid) (phase: Phase) (reader: DbDataReader) =
         if reader.GetInt64(3) <> identity.Epoch || reader.GetGuid(4) <> identity.LineageId then
             invalidOp "Witness committed row has a different epoch or lineage."
 

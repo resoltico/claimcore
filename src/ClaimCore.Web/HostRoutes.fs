@@ -71,11 +71,13 @@ module HostRoutes =
                 with
                 | Error failure -> return RouteSupport.admissionFailure context failure
                 | Ok _ ->
-                    match! HttpBody.readBounded 1024 context.Request.Body with
+                    match! HttpBody.readRequest 1024 context with
                     | Error problem -> return RouteSupport.inputFailure context problem
                     | Ok bytes ->
                         match HttpInput.logout bytes with
                         | Error problem -> return RouteSupport.inputFailure context problem
+                        | Ok() when context.RequestAborted.IsCancellationRequested ->
+                            return RouteSupport.inputFailure context HttpInputProblem.BodyCancelled
                         | Ok() ->
                             do!
                                 context.SignOutAsync(
@@ -151,11 +153,31 @@ module HostRoutes =
         )
         |> ignore
 
+    /// Terminal exact GET routes: callers cannot trigger authentication or authority I/O.
+    let health
+        (readiness: unit -> string * string * bool)
+        (context: HttpContext)
+        (next: RequestDelegate)
+        : Task =
+        task {
+            match context.Request.Method, context.Request.Path.Value with
+            | "GET", "/health/live" -> do! WebWire.liveness.ExecuteAsync context
+            | "GET", "/health/ready" ->
+                let scope, phase, ready = readiness ()
+                context.Response.Headers["X-ClaimCore-Data-Use-Scope"] <- scope
+                context.Response.Headers["X-ClaimCore-Data-Use-Phase"] <- phase
+
+                context.Response.Headers["X-ClaimCore-Real-Data-Ready"] <-
+                    if ready then "true" else "false"
+
+                context.Response.StatusCode <- if ready then 200 else 503
+            | _ -> do! next.Invoke context
+        }
+
     let map
         assets
         configuration
         (forActor: ClaimCore.Application.PrincipalKey -> IActorClaimsCore)
-        (readiness: System.Threading.CancellationToken -> Task<string * string * bool>)
         (application: WebApplication)
         =
         useStaticAssets application
@@ -170,30 +192,5 @@ module HostRoutes =
         |> ignore
 
         ApiRoutes.map configuration forActor application
-
-        application.MapGet(
-            "/health/live",
-            Func<HttpContext, IResult>(fun context ->
-                HttpHeaders.noStore context
-                WebWire.liveness)
-        )
-        |> ignore
-
-        application.MapGet(
-            "/health/ready",
-            Func<HttpContext, Task<IResult>>(fun context ->
-                task {
-                    HttpHeaders.noStore context
-                    let! scope, phase, ready = readiness context.RequestAborted
-                    context.Response.Headers["X-ClaimCore-Data-Use-Scope"] <- scope
-                    context.Response.Headers["X-ClaimCore-Data-Use-Phase"] <- phase
-
-                    context.Response.Headers["X-ClaimCore-Real-Data-Ready"] <-
-                        if ready then "true" else "false"
-
-                    return Results.StatusCode(if ready then 200 else 503)
-                })
-        )
-        |> ignore
 
         mapFallback assets application

@@ -260,7 +260,7 @@ module internal RuntimeActorFacade =
                 )
 
             member _.ReviewRealDataActivation(planId, ct) =
-                admission.RunAuthoritySetup(
+                admission.RunAuthorityRead(
                     (fun () -> inner.ReviewRealDataActivation(planId, ct)),
                     cancellationToken = ct,
                     onCancelled =
