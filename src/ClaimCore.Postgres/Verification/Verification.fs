@@ -246,6 +246,7 @@ module internal Verification =
     let verify (source: NpgsqlDataSource) expected (token: CancellationToken) =
         DatabaseSession.read source token (fun connection ->
             task {
+                ServerSupport.requireMajor connection.PostgreSqlVersion.Major
                 let! count = Migrations.history connection Migrations.scripts token
                 failUnless (count = Migrations.scripts.Length) "Unsupported schema version."
                 let! installationId, _ = Migrations.installation connection token

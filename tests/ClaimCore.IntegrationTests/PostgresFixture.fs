@@ -50,6 +50,8 @@ let private container () =
 
     value
 
+let internal empty () = container ()
+
 let internal create () =
     task {
         let container = container ()

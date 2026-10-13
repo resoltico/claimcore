@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><IsShippedApplication>true</IsShippedApplication></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Inputs.fs" />
+    <Compile Include="Replies.fs" />
+    <Compile Include="Execution.fs" />
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../ClaimCore.Postgres/ClaimCore.Postgres.fsproj" />
+    <ProjectReference Include="../ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />
+    <ProjectReference Include="../ClaimCore.Application/ClaimCore.Application.fsproj" />
+  </ItemGroup>
+</Project>

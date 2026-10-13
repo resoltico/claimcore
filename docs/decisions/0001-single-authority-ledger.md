@@ -837,3 +837,95 @@ All owned ledger/identity fixtures and reapers have been removed by their owners
 container listing shows the same ten original evaluation container IDs, healthy and running;
 none was connected to or modified. Logs are outside tracked source as `wp9-unit.log`,
 `wp9-postgres.log`, `wp9-web.log` and `wp9-fsharplint.log`. `git diff --check` passes.
+
+## Changes during implementation: owner inputs and server admission
+
+The administration material names the private principal file but does not specify how its
+provisioning event identity survives a process restart. The implemented Postgres API requires
+an event ID, and section 5.10 requires an exact idempotent repeat. The file therefore contains
+exactly `eventId`, `issuer` and `subject`: a nonzero lowercase canonical UUID and the exact
+human principal accepted by Application. The owner generates and retains this file once; the
+process never invents a new event ID on retry. Unknown/duplicate properties, malformed JSON,
+invalid UUID/principal and oversized/nonprivate inputs are refused. This fills an unspecified
+input shape rather than adding conversion or a retained preparation.
+
+Review of the WP5 owner API found that its initializer/migrator/readers did not enforce the
+supported PostgreSQL major or the runtime's transport policy. Runtime admission did. Added
+transport admission before creating the owner's source and the existing `ServerSupport`
+major guard on each owner's actual connection before schema/ledger work. Its authoritative
+major still comes from the embedded baseline JSON. Guards remain on owner paths, preserving
+runtime's typed UnsupportedServer classification. Existing 17/19 rejecting controls exercise
+the shared major guard; a real unsupported server binary was not run. Native tests use the
+pinned PostgreSQL 18.6 image. This closes a support-boundary gap without changing baseline
+bytes, supported installations, or a design non-goal.
+
+## WP10: owner administration
+
+`ClaimCore.Database` is the separate executable with exactly initialize, migrate,
+provision-owner, verify, head, help and version. Every invocation produces one JSON object;
+success/refusal/failure/unknown use exits 0/2/3/4. Expected positions admit only canonical
+nonnegative decimal sequence and lowercase 64-digit SHA-256. Private connection and principal
+bytes are bounded and cleared. Diagnostics contain closed tags, not provider exception
+messages, connection strings, paths or principal values. Confirmed/unknown mutation response
+delivery loss retains exit 4. Postgres owns provider-error classification; Database names no
+provider type or SQL and performs no case work.
+
+The deliberate direct graph is Postgres, HostSecurity and Application. Application is needed
+for the typed PrincipalKey, AuthorityOutcome, LedgerPosition and compiled product identity.
+No Domain edge was required by the compiler. The fourteen-project solution includes Database;
+the integration project references it to test input/delivery and publish the compiled binary.
+Reviewed its generated lock and the integration lock; existing dependency versions are unchanged.
+
+The published process test creates its own labelled tmpfs PostgreSQL container and private
+temporary inputs, publishes Release with `--no-build --no-restore`, then invokes the actual
+published DLL as child processes. It proves the exact help set, offline help/version, fresh
+initialization/provisioning/verification, exact repeats, zone refusal, expected-position
+refusal, unsupported commands, private-mode and UTF-8 refusal, remote plaintext transport
+refusal, authentication failure and foreign-schema refusal with its marker retained. Invalid
+owner-shape controls run before bootstrap, so an existing-owner refusal cannot mask accidental
+acceptance. A real TCP PostgreSQL proxy drops a landed initializer COMMIT reply: the published
+process returns OUTCOME_UNKNOWN/exit 4, and direct repetition leaves one installation. Output
+flush failure is exercised separately with a broken stream. Child processes are bounded and
+only an unexited owned child is killed on cleanup; no other process or container is stopped.
+
+Executed commands, separately from inspection (macOS arm64, .NET 10.0.401):
+
+- `dotnet restore ClaimCore.slnx --locked-mode`: exit 0, fourteen projects.
+- `dotnet build ClaimCore.slnx --configuration Release --no-restore`: exit 0, fourteen
+  projects, zero warnings/errors. Final test-guard build: 53.14s; no performance conclusion
+  is drawn from local contention.
+- Complete native MTP unit command, Release/no-build/no-restore, minimum 232, strict zero
+  policy, five-minute timeout and `eng/expecto.runsettings`: 232 passed, zero failed/skipped,
+  31.799s. No unit input changed after that run.
+- Complete native Web command with the same arguments, minimum 66: 66 passed, zero
+  failed/skipped, 81.069s. No Web input changed after that run.
+- Complete native PostgreSQL command with the same arguments, minimum 78: an initial run
+  passes 78/78 (128.136s); the owner-path/final helper run passes 78/78 (144.008s), both zero
+  failed/skipped. A final complete run of the strengthened pre-bootstrap guard cases is
+  recorded below. The actual published process/commit-loss sequence runs inside this suite.
+- `dotnet fantomas --check src tests eng`: exit 0, no findings. Full
+  `bash eng/Check-FSharpLint.sh`: exit 0, every root reports zero warnings. After the last
+  guard-fixture edit, its complete two-file FSharpLint invocation also reports zero warnings.
+- `actionlint`; `git diff --check`: each separately exits 0. The integration CI floor rises
+  from 76 to the measured 78; final measurement still belongs to WP15.
+- Tracked comparison against WP9 of version, central dependency versions, changelog, Domain,
+  RecordFormat and database baseline: no changes. The original ten evaluation container IDs
+  remain healthy and were never connected to. All owned completed fixtures were removed.
+
+Compilation/formatting failures from a fixture indentation error and using async disposal as
+IDisposable, plus the 53-line fixture responsibility finding, were fixed and are not passing
+claims. No test was filtered, skipped, made pending or retried to satisfy these complete runs;
+new changes prompted the later complete runs. No guard or limit was weakened and no suppression
+added. Current-head CI is not yet claimed. The earlier WP9 PostgreSQL/Web job is authoritative
+success in run 38444770532; other jobs fail on later-package inputs, not a complete Gate pass.
+
+Inspection confirms no runtime composition, case-work interface, recovery/conversion/reset or
+private writer in Database. Published owner verification ran on this machine; native Windows,
+other PostgreSQL binaries and final service/browser/Compose acceptance remain unverified. WP11
+is next. No WP11 edits have begun; keep the PR draft through WP15 and final acceptance.
+
+The final complete PostgreSQL run with the pre-bootstrap controls passes 78/78, zero failed
+or skipped, 161.955s. Its output is outside source as `wp10-postgres-guards-final.log`.
+Unit/Web final logs and full lint output are alongside it as `wp10-unit-final.log`,
+`wp10-web-final.log` and `wp10-fsharplint-final.log`. The final source/lock/commit review includes
+both changed locks and the measured CI minimum. No generated report or private fixture is tracked.

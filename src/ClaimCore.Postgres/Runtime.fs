@@ -73,6 +73,7 @@ module internal LedgerAdministration =
     let head source cancellationToken =
         DatabaseSession.read source cancellationToken (fun connection ->
             task {
+                ServerSupport.requireMajor connection.PostgreSqlVersion.Major
                 let! count = Migrations.history connection Migrations.scripts cancellationToken
 
                 if count <> Migrations.scripts.Length then
@@ -121,6 +122,8 @@ module internal LedgerAdministration =
             let! installationId, _ =
                 DatabaseSession.read source cancellationToken (fun connection ->
                     task {
+                        ServerSupport.requireMajor connection.PostgreSqlVersion.Major
+
                         let! count =
                             Migrations.history connection Migrations.scripts cancellationToken
 
@@ -151,10 +154,31 @@ module internal LedgerAdministration =
             return provisionResult eventId result
         }
 
+[<RequireQualifiedAccess>]
+type AdministrationFailure =
+    | Refused
+    | Failed
+    | OutcomeUnknown
+
+module AdministrationFailures =
+    let classify (error: exn) =
+        match error with
+        | :? AdministrationOutcomeUnknownException -> AdministrationFailure.OutcomeUnknown
+        | AdmissionRefusal _
+        | :? ArgumentException
+        | :? InvalidOperationException -> AdministrationFailure.Refused
+        | :? PostgresException as postgres when
+            postgres.SqlState.StartsWith("42", StringComparison.Ordinal)
+            ->
+            AdministrationFailure.Refused
+        | _ -> AdministrationFailure.Failed
+
 /// The owner administration process supplies its connection; runtime composition does not expose it.
 [<Sealed>]
 type Administration(connectionString: string) =
-    let source = NpgsqlDataSource.Create connectionString
+    let source =
+        Admission.transport (NpgsqlConnectionStringBuilder connectionString)
+        NpgsqlDataSource.Create connectionString
 
     member _.Initialize(timeZone, cancellationToken) =
         SchemaAdministration.initialize source timeZone cancellationToken
