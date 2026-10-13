@@ -38,6 +38,7 @@ type StewardshipRequest =
 [<RequireQualifiedAccess>]
 type StewardshipError =
     | InvalidReason
+    | InvalidRequest of DomainError
     | VersionConflict of actualVersion: int64
     | RevisionExhausted
     | AlreadyVoided
@@ -77,6 +78,22 @@ module Stewardship =
                 length <= 200 && not (reason.EnumerateRunes() |> Seq.exists forbidden)
             with :? Text.EncoderFallbackException ->
                 false
+
+    /// Shape admission before encoding or storage; transition decisions remain revision-aware.
+    let validateRequest (request: StewardshipRequest) =
+        match
+            RequestValidation.controls
+                request.OperationId
+                request.CaseReference
+                request.ExpectedVersion
+        with
+        | Error error -> Error(StewardshipError.InvalidRequest error)
+        | Ok() ->
+            match request.Action with
+            | StewardshipAction.Void reason
+            | StewardshipAction.Reinstate reason when not (validReason reason) ->
+                Error StewardshipError.InvalidReason
+            | _ -> Ok()
 
     /// Pure decision over the current revision and disposition. Every accepted act advances the
     /// case revision exactly once, like every accepted business command.

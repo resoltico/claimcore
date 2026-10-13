@@ -3,7 +3,6 @@
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="InputProblems.fs" />
     <Compile Include="CaseModel.fs" />
-    <Compile Include="Stewardship.fs" />
     <Compile Include="Vocabulary.fs" />
     <Compile Include="Descriptors.fs" />
     <Compile Include="FieldDefinitions.fs" />
@@ -14,6 +13,7 @@
     <Compile Include="StateValidation.fs" />
     <Compile Include="CaseCorrection.fs" />
     <Compile Include="RequestValidation.fs" />
+    <Compile Include="Stewardship.fs" />
     <Compile Include="Claim.fsi" />
     <Compile Include="Claim.fs" />
   </ItemGroup>

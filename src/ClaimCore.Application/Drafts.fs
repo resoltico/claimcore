@@ -167,7 +167,7 @@ module Drafts =
         | _, _, Error error -> Error error
 
     /// Binds form/transport input into the closed Domain command shape. It deliberately does not
-    /// consult current state, the business clock, or durable recovery state.
+    /// consult current state, the business calendar, or storage.
     let bind (draft: CommandDraft) : Result<CommandRequest, DomainError> =
         let command =
             match draft.Command with
@@ -200,4 +200,4 @@ module Drafts =
 
     /// Adapter-only binding preserves the public typed refusal vocabulary without exposing a store.
     let bindForEndpoint (draft: CommandDraft) : Result<CommandRequest, Rejection> =
-        bind draft |> Result.mapError CoreConversions.rejection
+        bind draft |> Result.mapError Rejection.Domain

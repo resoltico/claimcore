@@ -1,9 +1,10 @@
 namespace ClaimCore.Application
 
 open System
+open System.Threading
+open System.Threading.Tasks
 open ClaimCore.Domain
 
-/// A semantic contract digest is distinct from CLI and HTTP wire-contract fingerprints.
 type SemanticCoreFingerprint = private SemanticCoreFingerprint of string
 
 module SemanticCoreFingerprint =
@@ -28,13 +29,12 @@ type SemanticCoreContract =
         Rules: DomainRuleDefinition list
         RejectionDiagnostics: DiagnosticDefinition list
         FaultDiagnostics: DiagnosticDefinition list
-        RecoveryDiagnostics: DiagnosticDefinition list
         DefaultPageSize: int
         MaximumPageSize: int
         RequestByteLimit: int
         CanonicalCommandFormat: int
         RequestFingerprintVersion: int
-        RecoveryEnvelopeFormat: int
+        LedgerEntryFormat: int
     }
 
 type CoreDescription =
@@ -44,8 +44,6 @@ type CoreDescription =
         Runtime: RuntimeContext
     }
 
-/// Runtime opening is a composition concern rather than an HTTP/CLI outcome. Messages must remain
-/// safe for local diagnostics and never include a connection string or provider exception detail.
 type RuntimeOpenFault =
     | RuntimeConfigurationInvalid
     | RuntimeSchemaMismatch
@@ -53,28 +51,39 @@ type RuntimeOpenFault =
     | RuntimeStoreIntegrityError
     | RuntimeCancelled
 
-type CurrentCase =
-    {
-        Record: CaseView
-        AvailableCommands: CommandKind list
-    }
+type LedgerPosition = { Sequence: int64; EntryHash: string }
+
+[<RequireQualifiedAccess>]
+type AcceptedAct =
+    | Command of CommandKind
+    | Stewardship of StewardshipKind
 
 type OperationReceipt =
     {
         OperationId: Guid
-        Snapshot: CaseView
-        RecordedAt: DateTimeOffset
-        RecordedBy: string
-        Replayed: bool
-        Command: CommandKind
-    }
-
-type CaseSummary =
-    {
+        Position: LedgerPosition
         CaseReference: string
         Revision: int64
-        Status: CaseStatus
+        Act: AcceptedAct
+        Disposition: CaseDisposition option
+        Snapshot: CaseView option
+        RecordedAt: DateTimeOffset
+        RecordedBy: Guid
     }
+
+[<RequireQualifiedAccess>]
+type CaseRecord =
+    | Live of record: CaseView * disposition: CaseDisposition * availableCommands: CommandKind list
+    | Erased of caseReference: string * revision: int64
+
+[<RequireQualifiedAccess>]
+type CaseSummary =
+    | Live of
+        caseReference: string *
+        revision: int64 *
+        status: CaseStatus *
+        disposition: CaseDisposition
+    | Erased of caseReference: string * revision: int64
 
 type CaseListRequest =
     {
@@ -96,8 +105,6 @@ type HistoryDetail =
 type HistoryRequest =
     {
         CaseReference: string
-        /// Opaque continuation token owned by Application. It is never a caller-supplied
-        /// revision number, so adapters cannot turn a history page into an implicit query API.
         AfterCursor: string option
         Limit: int
         Detail: HistoryDetail
@@ -106,10 +113,11 @@ type HistoryRequest =
 type ChangeSummary =
     {
         OperationId: Guid
+        Position: LedgerPosition
         Revision: int64
-        Command: CommandKind
+        Act: AcceptedAct
         RecordedAt: DateTimeOffset
-        RecordedBy: string
+        RecordedBy: Guid
     }
 
 type HistoryEntry =
@@ -132,16 +140,6 @@ type Lookup<'found, 'identity> =
     | Found of 'found
     | NotFound of 'identity
 
-type DefiniteExecution =
-    | Accepted of OperationReceipt
-    | ExecutionRejected of operationId: Guid * rejection: Rejection
-    | ExecutionRevokedBeforeExecution of operationId: Guid
-    | FailedBeforeCommit of operationId: Guid * fault: CoreFault
-
-type SettlementConfirmation =
-    | Confirmed
-    | Unconfirmed
-
 type FieldDiff =
     {
         FieldName: string
@@ -155,6 +153,70 @@ type AdvisoryReview =
         Proposed: CaseView
         Changes: FieldDiff list
         Context: RuntimeContext
-        /// A review is a Domain-derived preview, never commit authority.
         IsAdvisory: bool
     }
+
+[<RequireQualifiedAccess>]
+type PreviewOutcome =
+    | Reviewed of review: AdvisoryReview * requestSha256: string
+    | AlreadyAccepted of OperationReceipt
+    | Rejected of Rejection
+    | Failed of CoreFault
+    | Cancelled
+
+[<RequireQualifiedAccess>]
+type ExecuteOutcome =
+    | Accepted of OperationReceipt
+    | AlreadyAccepted of OperationReceipt
+    | Rejected of Rejection
+    | Failed of CoreFault
+    | Cancelled
+    | OutcomeUnknown of operationId: Guid * requestSha256: string
+
+[<RequireQualifiedAccess>]
+type AuthorityOutcome =
+    | Applied of eventId: Guid * position: LedgerPosition * targetActorId: Guid
+    | AlreadyApplied of eventId: Guid * position: LedgerPosition * targetActorId: Guid
+    | Rejected of Rejection
+    | Failed of CoreFault
+    | Cancelled
+    | OutcomeUnknown of eventId: Guid
+
+type IAuthorityManagement =
+    abstract RegisterActor:
+        eventId: Guid * target: PrincipalKey * cancellationToken: CancellationToken ->
+            Task<AuthorityOutcome>
+
+    abstract SetGrant:
+        eventId: Guid *
+        target: PrincipalKey *
+        role: Role *
+        scope: GrantTarget *
+        active: bool *
+        cancellationToken: CancellationToken ->
+            Task<AuthorityOutcome>
+
+    abstract SetEnabled:
+        eventId: Guid * target: PrincipalKey * enabled: bool * cancellationToken: CancellationToken ->
+            Task<AuthorityOutcome>
+
+    abstract Observe: eventId: Guid * cancellationToken: CancellationToken -> Task<AuthorityOutcome>
+
+type IActorClaimsCore =
+    abstract Definition: CancellationToken -> Task<QueryOutcome<CoreDescription>>
+    abstract Preview: CommandRequest * CancellationToken -> Task<PreviewOutcome>
+    abstract Execute: CommandRequest * CancellationToken -> Task<ExecuteOutcome>
+    abstract Steward: StewardshipRequest * CancellationToken -> Task<ExecuteOutcome>
+
+    abstract Get:
+        caseReference: string * CancellationToken -> Task<QueryOutcome<Lookup<CaseRecord, string>>>
+
+    abstract List: CaseListRequest * CancellationToken -> Task<QueryOutcome<CaseSummaryPage>>
+
+    abstract History:
+        HistoryRequest * CancellationToken -> Task<QueryOutcome<Lookup<HistoryResultPage, string>>>
+
+    abstract ObserveOperation:
+        operationId: Guid * CancellationToken -> Task<QueryOutcome<Lookup<OperationReceipt, Guid>>>
+
+    abstract Authority: IAuthorityManagement

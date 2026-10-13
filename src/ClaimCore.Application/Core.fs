@@ -4,133 +4,324 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open ClaimCore.Domain
+open ClaimCore.RecordFormat
 
-/// The only application entry point for CLI, Web, and native callers. Composition supplies narrow
-/// claim and recovery ports; no caller receives persistence objects or transition callbacks.
-type internal IClaimsCore =
-    abstract Describe: unit -> CoreDescription
-    abstract Prepare: CommandRequest * CancellationToken -> Task<PrepareOutcome>
-    abstract Execute: CommandRequest * CancellationToken -> Task<SubmissionOutcome>
+module internal Core =
+    let private digest bytes =
+        LedgerEntry.requestDigest bytes |> Convert.ToHexStringLower
 
-    abstract Get: string * CancellationToken -> Task<QueryOutcome<Lookup<CurrentCase, string>>>
+    let private caseFailure operationId bytes =
+        function
+        | StoreFailure.Cancelled -> ExecuteOutcome.Cancelled
+        | StoreFailure.CommitOutcomeUnknown ->
+            ExecuteOutcome.OutcomeUnknown(operationId, digest bytes)
+        | failure -> ExecuteOutcome.Failed(Queries.fault failure)
 
-    abstract List: CaseListRequest * CancellationToken -> Task<QueryOutcome<CaseSummaryPage>>
+    let private caseResult =
+        function
+        | CaseWriteResult.Refused error -> ExecuteOutcome.Rejected error
+        | CaseWriteResult.Failed fault -> ExecuteOutcome.Failed fault
+        | CaseWriteResult.Appended entry ->
+            LedgerEntries.receipt (LedgerEntries.stored entry)
+            |> Result.map ExecuteOutcome.Accepted
+            |> Result.defaultWith ExecuteOutcome.Failed
+        | CaseWriteResult.Replayed entry ->
+            LedgerEntries.receipt entry
+            |> Result.map ExecuteOutcome.AlreadyAccepted
+            |> Result.defaultWith ExecuteOutcome.Failed
 
-    abstract History:
-        HistoryRequest * CancellationToken -> Task<QueryOutcome<Lookup<HistoryResultPage, string>>>
+    let private protectCase decide view =
+        try
+            decide view
+        with :? ArgumentException ->
+            CaseDecision.Fail CoreFault.StoreIntegrityError
 
-    abstract ObserveOperation:
-        Guid * CancellationToken -> Task<QueryOutcome<Lookup<OperationReceipt, Guid>>>
+    let private writeCase
+        (store: ILedgerStore)
+        principal
+        operationId
+        reference
+        bytes
+        decide
+        (ct: CancellationToken)
+        : Task<ExecuteOutcome> =
+        task {
+            if ct.IsCancellationRequested then
+                return ExecuteOutcome.Cancelled
+            else
+                let! result =
+                    store.WriteCase(principal, operationId, reference, protectCase decide, ct)
 
-    abstract Recovery: IRecoveryWorkflow
+                return
+                    result
+                    |> Result.map caseResult
+                    |> Result.defaultWith (caseFailure operationId bytes)
+        }
 
-type IActorClaimsCore =
-    abstract Definition: CancellationToken -> Task<QueryOutcome<CoreDescription>>
-    abstract Prepare: CommandRequest * CancellationToken -> Task<PrepareOutcome>
-    abstract Execute: CommandRequest * CancellationToken -> Task<SubmissionOutcome>
-    abstract Get: string * CancellationToken -> Task<QueryOutcome<Lookup<CurrentCase, string>>>
-    abstract List: CaseListRequest * CancellationToken -> Task<QueryOutcome<CaseSummaryPage>>
+    let private reviewContext (calendar: IBusinessCalendar) instant =
+        {
+            ProductVersion = BuildIdentity.current.Version
+            EffectiveBusinessDate = calendar.DateAt instant
+            TimeZoneId = calendar.TimeZoneId
+        }
 
-    abstract History:
-        HistoryRequest * CancellationToken -> Task<QueryOutcome<Lookup<HistoryResultPage, string>>>
-
-    abstract ObserveOperation:
-        Guid * CancellationToken -> Task<QueryOutcome<Lookup<OperationReceipt, Guid>>>
-
-    abstract Recovery: IRecoveryWorkflow
-    abstract Management: IActorManagement
-    abstract Lifecycle: ICaseLifecycleWorkflow
-    abstract Tombstones: ITombstoneWorkflow
-
-    abstract ApproveCopySigner:
-        CopySignerApprovalRequest * CancellationToken -> Task<CopySignerApprovalOutcome>
-
-    abstract ApproveCopyDeletion:
-        CopyDeletionApprovalRequest * CancellationToken -> Task<CopyDeletionApprovalOutcome>
-
-    abstract ApproveCopyAdoption:
-        CopyAdoptionApprovalRequest * CancellationToken -> Task<CopyAdoptionApprovalOutcome>
-
-    abstract ApproveWriterHandoff:
-        WriterHandoffApprovalRequest * CancellationToken -> Task<WriterHandoffApprovalOutcome>
-
-    abstract ApproveRealDataActivation:
-        RealDataActivationApprovalRequest * CancellationToken ->
-            Task<RealDataActivationApprovalOutcome>
-
-    abstract ReviewRealDataActivation:
-        planId: Guid * CancellationToken -> Task<RealDataActivationPlanReviewOutcome>
-
-module internal CoreApi =
-    let private prepareForActor store recovery clock commandAuthority request cancellationToken =
-        match commandAuthority with
-        | Some authority ->
-            TypedQueries.cancelObservation
-                cancellationToken
-                (PrepareOutcome.CancelledBeforeAdmission request.OperationId)
-                (fun () ->
-                    TypedPreparation.prepare
-                        store
-                        recovery
-                        clock
-                        authority
-                        request
-                        cancellationToken)
-        | None ->
-            Task.FromResult(
-                PrepareOutcome.PrepareRejected(request.OperationId, Rejection.ResourceUnavailable)
+    let private advisory calendar instant before proposed =
+        let previous =
+            before
+            |> Option.map (
+                Claim.view >> fun view -> FieldDefinitions.values view.Fields |> Map.ofList
             )
+            |> Option.defaultValue Map.empty
 
-    let createActor
-        (store: IClaimStore)
-        (recovery: IRecoveryStore)
-        (clock: IBusinessTime)
-        (context: ActorCallContext)
-        (artifactAuthority: IRecoveryArtifactAuthority)
-        : IClaimsCore =
-        BuildIdentity.requireCompatibleAssembly typeof<Claim>.Assembly
+        let snapshot = Claim.view proposed
+        let next = FieldDefinitions.values snapshot.Fields |> Map.ofList
 
-        let recoveryWorkflow =
-            RecoveryCoordinator.create store recovery clock context.Binding artifactAuthority
+        let changes =
+            FieldDefinitions.all
+            |> List.choose (fun field ->
+                let a = previous |> Map.tryFind field.Name |> Option.flatten
+                let b = next |> Map.tryFind field.Name |> Option.flatten
 
-        let commandAuthority =
-            context.CaseId
-            |> Option.map (fun caseId ->
-                {
-                    Actor = context.Binding
-                    CaseId = caseId
-                })
+                if a = b then
+                    None
+                else
+                    Some
+                        {
+                            FieldName = field.Name
+                            Before = a
+                            After = b
+                        })
 
-        { new IClaimsCore with
-            member _.Describe() = TypedProjection.description clock
+        {
+            Before = before |> Option.map Claim.view
+            Proposed = snapshot
+            Changes = changes
+            Context = reviewContext calendar instant
+            IsAdvisory = true
+        }
 
-            member _.Prepare(request, cancellationToken) =
-                prepareForActor store recovery clock commandAuthority request cancellationToken
+    let private preview
+        (store: ILedgerStore)
+        calendar
+        principal
+        (request: CommandRequest)
+        (ct: CancellationToken)
+        : Task<PreviewOutcome> =
+        task {
+            if ct.IsCancellationRequested then
+                return PreviewOutcome.Cancelled
+            else
+                match Claim.validateRequest request with
+                | Error error -> return PreviewOutcome.Rejected(Rejection.Domain error)
+                | Ok() ->
+                    let! result =
+                        store.ReadCase(
+                            principal,
+                            Some request.OperationId,
+                            request.CaseReference,
+                            ct
+                        )
 
-            member _.Execute(request, cancellationToken) =
-                match commandAuthority with
-                | Some authority ->
-                    TypedSubmission.execute store recovery clock authority request cancellationToken
-                | None ->
-                    Task.FromResult(
-                        SubmissionOutcome.RejectedBeforeAttempt(None, Rejection.ResourceUnavailable)
+                    match result with
+                    | Error StoreFailure.Cancelled -> return PreviewOutcome.Cancelled
+                    | Error error -> return PreviewOutcome.Failed(Queries.fault error)
+                    | Ok view ->
+                        match CaseDecisions.review calendar principal request view with
+                        | CaseReviewDecision.Refuse error -> return PreviewOutcome.Rejected error
+                        | CaseReviewDecision.Fail error -> return PreviewOutcome.Failed error
+                        | CaseReviewDecision.Replay entry ->
+                            return
+                                LedgerEntries.receipt entry
+                                |> Result.map PreviewOutcome.AlreadyAccepted
+                                |> Result.defaultWith PreviewOutcome.Failed
+                        | CaseReviewDecision.Proposed(before, after) ->
+                            return
+                                PreviewOutcome.Reviewed(
+                                    advisory calendar view.ObservedAt before after,
+                                    digest (RequestRecord.encode request)
+                                )
+        }
+
+    let private authorityResult replay (entry: StoredEntry) =
+        match entry.Scope with
+        | StoredScope.Authority target ->
+            let position = LedgerEntries.position entry.Sequence entry.EntryHash
+
+            if replay then
+                AuthorityOutcome.AlreadyApplied(entry.OperationId, position, target)
+            else
+                AuthorityOutcome.Applied(entry.OperationId, position, target)
+        | _ -> AuthorityOutcome.Failed CoreFault.StoreIntegrityError
+
+    let private authority
+        (store: ILedgerStore)
+        installationId
+        principal
+        eventId
+        target
+        action
+        (ct: CancellationToken)
+        : Task<AuthorityOutcome> =
+        task {
+            if ct.IsCancellationRequested then
+                return AuthorityOutcome.Cancelled
+            elif eventId = Guid.Empty then
+                return
+                    AuthorityOutcome.Rejected(
+                        Rejection.Domain(
+                            DomainError.InvalidInput(
+                                InputTarget.OperationId,
+                                InputViolation.Command CommandViolation.EmptyOperationId
+                            )
+                        )
                     )
+            else
+                let reference =
+                    match action with
+                    | AuthorityAction.Grant(_, GrantTarget.CaseReference value, _) -> Some value
+                    | _ -> None
 
-            member _.Get(reference, cancellationToken) =
-                TypedQueries.cancelObservation cancellationToken QueryOutcome.Cancelled (fun () ->
-                    TypedQueries.get store context.MayEditCommands reference cancellationToken)
+                let valid =
+                    reference |> Option.map Claim.validateReference |> Option.defaultValue (Ok())
 
-            member _.List(request, cancellationToken) =
-                TypedQueries.cancelObservation cancellationToken QueryOutcome.Cancelled (fun () ->
-                    TypedQueries.list store context.MayEditCommands request cancellationToken)
+                match valid with
+                | Error error -> return AuthorityOutcome.Rejected(Rejection.Domain error)
+                | Ok() ->
+                    let decide view =
+                        try
+                            AuthorityDecisions.decide
+                                installationId
+                                principal
+                                eventId
+                                target
+                                action
+                                view
+                        with :? ArgumentException ->
+                            AuthorityDecision.Fail CoreFault.StoreIntegrityError
 
-            member _.History(request, cancellationToken) =
-                TypedQueries.cancelObservation cancellationToken QueryOutcome.Cancelled (fun () ->
-                    TypedQueries.history store request cancellationToken)
+                    let! result =
+                        store.WriteAuthority(principal, eventId, target, reference, decide, ct)
 
-            member _.ObserveOperation(operationId, cancellationToken) =
-                TypedQueries.cancelObservation cancellationToken QueryOutcome.Cancelled (fun () ->
-                    TypedQueries.observe store operationId cancellationToken)
+                    return
+                        match result with
+                        | Error StoreFailure.Cancelled -> AuthorityOutcome.Cancelled
+                        | Error StoreFailure.CommitOutcomeUnknown ->
+                            AuthorityOutcome.OutcomeUnknown eventId
+                        | Error error -> AuthorityOutcome.Failed(Queries.fault error)
+                        | Ok(AuthorityWriteResult.Refused reason) ->
+                            AuthorityOutcome.Rejected reason
+                        | Ok(AuthorityWriteResult.Failed fault) -> AuthorityOutcome.Failed fault
+                        | Ok(AuthorityWriteResult.Appended entry) ->
+                            authorityResult false (LedgerEntries.stored entry)
+                        | Ok(AuthorityWriteResult.Replayed entry) -> authorityResult true entry
+        }
 
-            member _.Recovery = recoveryWorkflow
+    let private observeAuthority
+        (store: ILedgerStore)
+        principal
+        eventId
+        (ct: CancellationToken)
+        : Task<AuthorityOutcome> =
+        task {
+            let! read = store.ReadOperation(principal, eventId, ct)
+
+            return
+                match read with
+                | Error StoreFailure.Cancelled -> AuthorityOutcome.Cancelled
+                | Error error -> AuthorityOutcome.Failed(Queries.fault error)
+                | Ok(actor, Some entry, _) when
+                    (match entry.Scope with
+                     | StoredScope.Authority _ -> true
+                     | _ -> false)
+                    && ActorAuthorization.can
+                        principal
+                        actor
+                        Capability.ManageAuthority
+                        ResourceScope.Installation
+                    ->
+                    authorityResult true entry
+                | _ -> AuthorityOutcome.Rejected Rejection.ResourceUnavailable
+        }
+
+    let private management store installationId principal =
+        { new IAuthorityManagement with
+            member _.RegisterActor(id, target, ct) =
+                authority store installationId principal id target AuthorityAction.Register ct
+
+            member _.SetEnabled(id, target, enabled, ct) =
+                authority
+                    store
+                    installationId
+                    principal
+                    id
+                    target
+                    (AuthorityAction.Enable enabled)
+                    ct
+
+            member _.SetGrant(id, target, role, scope, active, ct) =
+                authority
+                    store
+                    installationId
+                    principal
+                    id
+                    target
+                    (AuthorityAction.Grant(role, scope, active))
+                    ct
+
+            member _.Observe(id, ct) = observeAuthority store principal id ct
+        }
+
+    /// Only the composition root and store tests can supply storage or a calendar.
+    let create
+        installationId
+        (store: ILedgerStore)
+        (calendar: IBusinessCalendar)
+        principal
+        : IActorClaimsCore =
+
+        { new IActorClaimsCore with
+            member _.Definition ct =
+                Queries.definition store calendar principal ct
+
+            member _.Preview(request, ct) =
+                preview store calendar principal request ct
+
+            member _.Execute(request, ct) =
+                match Claim.validateRequest request with
+                | Error error -> Task.FromResult(ExecuteOutcome.Rejected(Rejection.Domain error))
+                | Ok() ->
+                    writeCase
+                        store
+                        principal
+                        request.OperationId
+                        request.CaseReference
+                        (RequestRecord.encode request)
+                        (CaseDecisions.command installationId calendar principal request)
+                        ct
+
+            member _.Steward(request, ct) =
+                match Stewardship.validateRequest request with
+                | Error(StewardshipError.InvalidRequest error) ->
+                    Task.FromResult(ExecuteOutcome.Rejected(Rejection.Domain error))
+                | Error _ -> Task.FromResult(ExecuteOutcome.Rejected Rejection.InvalidReason)
+                | Ok() ->
+                    writeCase
+                        store
+                        principal
+                        request.OperationId
+                        request.CaseReference
+                        (StewardshipRecord.encode request)
+                        (CaseDecisions.steward installationId calendar principal request)
+                        ct
+
+            member _.Get(reference, ct) =
+                Queries.get store principal reference ct
+
+            member _.List(request, ct) = Queries.list store principal request ct
+
+            member _.History(request, ct) =
+                Queries.history store principal request ct
+
+            member _.ObserveOperation(id, ct) = Queries.observe store principal id ct
+            member _.Authority = management store installationId principal
         }

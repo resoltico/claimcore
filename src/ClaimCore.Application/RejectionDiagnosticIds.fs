@@ -47,9 +47,16 @@ type RejectionDiagnosticId =
     | InvalidCaseListCursor
     | InvalidHistoryCursor
     | IdempotencyConflict
-    | OperationRevoked
-    | RecoveryAttemptLimitReached
     | ResourceUnavailable
+    | CaseVoided
+    | CaseErased
+    | InvalidReason
+    | AlreadyVoided
+    | NotVoided
+    | LastOwner
+    | ActorAlreadyRegistered
+    | ActorUnknown
+    | HumanPrincipalRequired
 
 /// Safe metadata only: these are constraint limits, not submitted data or arbitrary string values.
 type DiagnosticParameterDefinition =
@@ -140,9 +147,16 @@ module RejectionDiagnosticIds =
             RejectionDiagnosticId.InvalidCaseListCursor, "QUERY_CASE_LIST_CURSOR_INVALID"
             RejectionDiagnosticId.InvalidHistoryCursor, "QUERY_HISTORY_CURSOR_INVALID"
             RejectionDiagnosticId.IdempotencyConflict, "OPERATION_CONTENT_CONFLICT"
-            RejectionDiagnosticId.OperationRevoked, "OPERATION_REVOKED"
-            RejectionDiagnosticId.RecoveryAttemptLimitReached, "OPERATION_RECOVERY_ATTEMPT_LIMIT"
             RejectionDiagnosticId.ResourceUnavailable, "ACCESS_RESOURCE_UNAVAILABLE"
+            RejectionDiagnosticId.CaseVoided, "CASE_VOIDED"
+            RejectionDiagnosticId.CaseErased, "CASE_ERASED"
+            RejectionDiagnosticId.InvalidReason, "INVALID_REASON"
+            RejectionDiagnosticId.AlreadyVoided, "ALREADY_VOIDED"
+            RejectionDiagnosticId.NotVoided, "NOT_VOIDED"
+            RejectionDiagnosticId.LastOwner, "LAST_OWNER"
+            RejectionDiagnosticId.ActorAlreadyRegistered, "ACTOR_ALREADY_REGISTERED"
+            RejectionDiagnosticId.ActorUnknown, "ACTOR_UNKNOWN"
+            RejectionDiagnosticId.HumanPrincipalRequired, "HUMAN_PRINCIPAL_REQUIRED"
         ]
 
     let all = text @ scalar @ command @ correction @ case @ progress @ operation

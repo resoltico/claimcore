@@ -19,6 +19,7 @@ type RecordedGrantScope =
 [<RequireQualifiedAccess>]
 type RecordedAuthorityAction =
     | RegisterActor
+    | ProvisionOwner
     | SetGrant of role: string * scope: RecordedGrantScope * active: bool
     | SetEnabled of enabled: bool
 
@@ -47,6 +48,9 @@ module AuthorityRecord =
         let path = "$.action"
 
         match Json.text path "type" root with
+        | "PROVISION_OWNER" ->
+            Json.properties path [ "type" ] root
+            RecordedAuthorityAction.ProvisionOwner
         | "REGISTER_ACTOR" ->
             Json.properties path [ "type" ] root
             RecordedAuthorityAction.RegisterActor
@@ -95,6 +99,7 @@ module AuthorityRecord =
         writer.WriteStartObject("action")
 
         match action with
+        | RecordedAuthorityAction.ProvisionOwner -> writer.WriteString("type", "PROVISION_OWNER")
         | RecordedAuthorityAction.RegisterActor -> writer.WriteString("type", "REGISTER_ACTOR")
         | RecordedAuthorityAction.SetGrant(role, scope, active) ->
             writer.WriteString("type", "SET_GRANT")

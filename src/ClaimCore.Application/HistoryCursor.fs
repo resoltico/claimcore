@@ -14,7 +14,8 @@ module internal HistoryCursor =
         Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_')
 
     let decode (cursor: string) =
-        let restored = cursor.Replace('-', '+').Replace('_', '/')
+        let restored =
+            (if isNull (box cursor) then "" else cursor).Replace('-', '+').Replace('_', '/')
 
         if restored.Length <> 11 then
             Error()
@@ -27,6 +28,9 @@ module internal HistoryCursor =
                 else
                     let version = BinaryPrimitives.ReadInt64BigEndian(bytes)
 
-                    if version < 0L then Error() else Ok version
+                    if version < 0L || encode version <> cursor then
+                        Error()
+                    else
+                        Ok version
             with :? FormatException ->
                 Error()

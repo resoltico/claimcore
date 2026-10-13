@@ -249,7 +249,7 @@ metadata and commitment. It has no payload, nonce or request-digest input. A sub
 instant is refused rather than rounded. Act codes follow the pack's fixed 1–12 table. Authority
 scope writes zero case placeholders; kind distinguishes it even when a real case date is day 0.
 
-## Implementation frontier
+## WP3 frontier
 
 WP0 through WP3 are complete. The solution still contains Domain, RecordFormat and Tests.
 WP4 has not started. Recovery artifact/envelope codecs are removed; canonical stewardship and
@@ -287,3 +287,77 @@ WP3 starts no container or database. No design non-goal was reopened.
 Next is WP4: the pure Application decisions, actor-bound facade, five-role policy and in-memory
 ledger store with its shared store contract. WP4 through WP15 and final acceptance remain
 unverified; the full gate cannot pass at this frontier.
+
+## Changes during implementation: Application seam
+
+The material could not provide stateless preview's operation lookup or definition's captured
+instant in the same snapshot, and its list page omitted the actor needed for OPEN advice.
+ReadCase now takes an optional operation identity and returns the existing entry; ReadActor
+returns its instant; a case page includes its actor. Authority entries carry a derived target
+actor ID in the store view so replay and observation need no second authority snapshot. That
+ID is derived from recorded principal identity and the actor projection, not added to the
+hash preimage or SQL schema. The immutable installation ID is supplied to the internal core
+factory by composition. These are input corrections for G7–G9, not storage-owned policy.
+
+Pure callbacks need to distinguish a stored-integrity fault from a business refusal. Decisions
+and write results therefore include a failure case that writes nothing. Inconsistent stored
+request bytes/digest reach OperationContentConflict; the fourth fault has a real path.
+
+Initial-owner provisioning must record its owner grant for a verifier to reconstruct it. The
+canonical authority subtype PROVISION_OWNER records that combined initial authority fact.
+It is human-only, refuses an existing actor population, and can exactly replay its own entry.
+Only owner administration uses its internal decision function; no actor-bound management
+method accepts it and no endpoint is added. AuthorityLockedView includes the actor count for
+that precondition. Case IDs and newly registered actor IDs use their globally unique accepted
+operation/event IDs, avoiding another random input to pure decisions.
+
+Stewardship lacked shape admission before encoding/I/O. Domain now shares its existing
+envelope checks between CommandRequest and StewardshipRequest, with stewardship's own reason
+check. The nine business-command checks retain their order and outcomes. Malformed native
+stewardship input is refused before storage. The independent Domain tests remain unchanged.
+
+Principal constructors previously admitted malformed UTF-16, which JSON encoding can replace,
+and NUL, which PostgreSQL text cannot represent. They now require well-formed UTF-8 and reject
+NUL while preserving all admitted identity text exactly. No normalization or case folding
+was introduced.
+
+## Implementation frontier
+
+WP0 through WP4 are complete. Application returns to the solution alongside Domain,
+RecordFormat and Tests. The actor-bound facade has preview/execute/stewardship, reads and
+authority management. Decisions use one role/capability table and supplied locked/snapshot
+views; they obtain no clock, randomness, file, environment or network API. Source inspection
+found none of those APIs. Compiled architecture enforcement remains due in WP13.
+
+The in-memory store publishes one immutable state containing entries and projections under
+one gate, calls each write decision once, clones byte buffers, and returns authority/data from
+one read view. Its seven shared contract tests are parameterized by a fresh fixture factory
+and linked for reuse by PostgreSQL in WP5. Fault injection is explicit test behavior and does
+not establish real commit-loss classification; that remains a PostgreSQL acceptance item.
+
+Locked restore and Release solution build passed, with zero warnings/errors. The complete
+native MTP command used minimum 160, strict zero-test policy, timeout 5m and Expecto settings:
+168 total, 168 succeeded, zero failed/skipped. Property-profile/recheck overrides were absent.
+The 12 retained Domain test/oracle files were compared byte-for-byte and are unchanged.
+The 1,080-case independent role × capability × scope × principal matrix passes. Tests cover
+all six execution outcomes; landed/unlanded unknown replay; exact identity after later
+revisions; inaccessible/absent/erased equality; grant loss; case-scoped creation denial;
+stewardship; last-owner protection; operation scope separation; cursor refusals; original
+authority targets; atomic failed projections; and post-commit interruption.
+
+An initial preview test expected AlreadyExists where established Domain ordering returns
+VersionConflict; its expectation was corrected against Domain, not the implementation.
+Negative controls exposed observer scope errors and test-store interruption/rollback errors;
+those were fixed, then the full suite passed. Initial compiler and lint failures were repaired
+without suppressions or relaxed limits. Version, changelog and AGENTS principles are unchanged.
+`dotnet fantomas --check src tests eng` and `bash eng/Check-FSharpLint.sh` passed across the
+remaining tree after the final shared-contract refactoring. The source purity/stale-capability
+searches and `git diff --check` passed. Generated lock diffs were inspected separately from
+execution: the test graph adds Application, and Application's RecordFormat edge now records
+the current product version. No package version changed.
+WP4 starts no container or database and reopens no non-goal.
+
+Next is WP5: the PostgreSQL ledger store, schema/migrations/admission/verification, owner
+provisioning and integration project. Run the same shared contract plus real concurrency,
+timeout, commit-loss, privilege and tampering controls on newly labelled disposable resources.
+WP5 through WP15 and the final gate/acceptance remain unverified.

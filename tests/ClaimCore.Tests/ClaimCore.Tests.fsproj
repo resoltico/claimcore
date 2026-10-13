@@ -23,9 +23,13 @@
     <Compile Include="DecoderCorpora.fs" />
     <Compile Include="OperationRecordTests.fs" />
     <Compile Include="LedgerEntryTests.fs" />
+    <Compile Include="MemoryLedgerStore.fs" />
+    <Compile Include="../StoreContractTests.fs" Link="StoreContractTests.fs" />
+    <Compile Include="ApplicationTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Application/ClaimCore.Application.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj" />
   </ItemGroup>
   <ItemGroup>

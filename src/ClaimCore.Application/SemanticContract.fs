@@ -95,7 +95,7 @@ module SemanticContract =
     let current =
         {
             Application = BuildIdentity.current.Product
-            Scope = "trusted-local-operator-claims-register"
+            Scope = "authenticated-claims-register"
             RuleSetVersion = DomainRules.version
             Fields = FieldDefinitions.all
             Commands = CommandDefinitions.all
@@ -103,13 +103,12 @@ module SemanticContract =
             Rules = DomainRules.all
             RejectionDiagnostics = RejectionDiagnosticIds.definitions
             FaultDiagnostics = CoreFaults.definitions
-            RecoveryDiagnostics = RecoveryRejections.definitions
             DefaultPageSize = 50
             MaximumPageSize = 50
             RequestByteLimit = 65536
             CanonicalCommandFormat = RecordVersions.CanonicalCommandFormat
             RequestFingerprintVersion = RecordVersions.RequestFingerprint
-            RecoveryEnvelopeFormat = 3
+            LedgerEntryFormat = RecordVersions.LedgerEntry
         }
 
     let private diagnostic output (value: DiagnosticDefinition) =
@@ -127,7 +126,7 @@ module SemanticContract =
     /// RuleSetVersion accounts for deliberate behavior changes not represented by descriptor data.
     let fingerprint (contract: SemanticCoreContract) =
         let builder = StringBuilder()
-        append builder "CLAIMCORE_SEMANTIC_IDENTITY_V2"
+        append builder "claimcore/semantic-identity"
         append builder contract.Application
         append builder contract.Scope
         number builder contract.RuleSetVersion
@@ -136,7 +135,7 @@ module SemanticContract =
         number builder contract.RequestByteLimit
         number builder contract.CanonicalCommandFormat
         number builder contract.RequestFingerprintVersion
-        number builder contract.RecoveryEnvelopeFormat
+        number builder contract.LedgerEntryFormat
 
         sequence
             builder
@@ -171,7 +170,6 @@ module SemanticContract =
 
         sequence builder diagnostic contract.RejectionDiagnostics
         sequence builder diagnostic contract.FaultDiagnostics
-        sequence builder diagnostic contract.RecoveryDiagnostics
 
         builder.ToString()
         |> Encoding.UTF8.GetBytes

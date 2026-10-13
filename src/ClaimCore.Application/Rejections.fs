@@ -6,7 +6,7 @@ type RecommendedAction =
     | CorrectInput
     | ReadCurrent
     | RetrySafe
-    | RecoverExact
+    | ReplayExact
     | Reauthenticate
     | StopAndInvestigate
     | NoneRequired
@@ -26,9 +26,16 @@ type RejectionCode =
     | AlreadyOpened
     | ZeroDecisionCannotBePaid
     | IdempotencyConflict
-    | OperationRevoked
-    | RecoveryAttemptLimitReached
     | ResourceUnavailable
+    | CaseVoided
+    | CaseErased
+    | InvalidReason
+    | AlreadyVoided
+    | NotVoided
+    | LastOwner
+    | ActorAlreadyRegistered
+    | ActorUnknown
+    | HumanPrincipalRequired
 
 /// Ordinary refusal: never a store fault, cancellation, or unknown commit outcome.
 /// Every property below is derived from this closed reason; no text is accepted from a caller.
@@ -39,9 +46,16 @@ type Rejection =
     | InvalidCaseListCursor
     | InvalidHistoryCursor
     | IdempotencyConflict
-    | OperationRevoked
-    | RecoveryAttemptLimitReached
     | ResourceUnavailable
+    | CaseVoided
+    | CaseErased
+    | InvalidReason
+    | AlreadyVoided
+    | NotVoided
+    | LastOwner
+    | ActorAlreadyRegistered
+    | ActorUnknown
+    | HumanPrincipalRequired
 
 module Rejections =
     let private progressCode =
@@ -67,16 +81,43 @@ module Rejections =
         | DomainError.AlreadyOpened -> RejectionCode.AlreadyOpened
         | progress -> progressCode progress
 
+    let internal simplePolicies =
+        [
+            Rejection.IdempotencyConflict,
+            RejectionCode.IdempotencyConflict,
+            RejectionDiagnosticId.IdempotencyConflict
+            Rejection.ResourceUnavailable,
+            RejectionCode.ResourceUnavailable,
+            RejectionDiagnosticId.ResourceUnavailable
+            Rejection.CaseVoided, RejectionCode.CaseVoided, RejectionDiagnosticId.CaseVoided
+            Rejection.CaseErased, RejectionCode.CaseErased, RejectionDiagnosticId.CaseErased
+            Rejection.InvalidReason,
+            RejectionCode.InvalidReason,
+            RejectionDiagnosticId.InvalidReason
+            Rejection.AlreadyVoided,
+            RejectionCode.AlreadyVoided,
+            RejectionDiagnosticId.AlreadyVoided
+            Rejection.NotVoided, RejectionCode.NotVoided, RejectionDiagnosticId.NotVoided
+            Rejection.LastOwner, RejectionCode.LastOwner, RejectionDiagnosticId.LastOwner
+            Rejection.ActorAlreadyRegistered,
+            RejectionCode.ActorAlreadyRegistered,
+            RejectionDiagnosticId.ActorAlreadyRegistered
+            Rejection.ActorUnknown, RejectionCode.ActorUnknown, RejectionDiagnosticId.ActorUnknown
+            Rejection.HumanPrincipalRequired,
+            RejectionCode.HumanPrincipalRequired,
+            RejectionDiagnosticId.HumanPrincipalRequired
+        ]
+
     let code =
         function
         | Rejection.Domain error -> domainCode error
         | Rejection.PageLimitOutOfRange _
         | Rejection.InvalidCaseListCursor
         | Rejection.InvalidHistoryCursor -> RejectionCode.InvalidInput
-        | Rejection.IdempotencyConflict -> RejectionCode.IdempotencyConflict
-        | Rejection.OperationRevoked -> RejectionCode.OperationRevoked
-        | Rejection.RecoveryAttemptLimitReached -> RejectionCode.RecoveryAttemptLimitReached
-        | Rejection.ResourceUnavailable -> RejectionCode.ResourceUnavailable
+        | reason ->
+            simplePolicies
+            |> List.find (fun (value, _, _) -> value = reason)
+            |> fun (_, code, _) -> code
 
     let field =
         function
@@ -96,13 +137,11 @@ module Rejections =
         | Rejection.Domain(DomainError.InvalidInput _)
         | Rejection.PageLimitOutOfRange _
         | Rejection.InvalidCaseListCursor
-        | Rejection.InvalidHistoryCursor -> RecommendedAction.CorrectInput
-        | Rejection.Domain(DomainError.VersionConflict _)
-        | Rejection.OperationRevoked
-        | Rejection.RecoveryAttemptLimitReached -> RecommendedAction.ReadCurrent
+        | Rejection.InvalidHistoryCursor
+        | Rejection.InvalidReason -> RecommendedAction.CorrectInput
+        | Rejection.Domain(DomainError.VersionConflict _) -> RecommendedAction.ReadCurrent
         | Rejection.IdempotencyConflict -> RecommendedAction.StopAndInvestigate
-        | Rejection.ResourceUnavailable -> RecommendedAction.NoneRequired
-        | Rejection.Domain _ -> RecommendedAction.NoneRequired
+        | _ -> RecommendedAction.NoneRequired
 
 type Rejection with
     member this.Code = Rejections.code this
