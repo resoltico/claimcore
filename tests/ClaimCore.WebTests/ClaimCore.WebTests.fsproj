@@ -26,6 +26,7 @@
     <Compile Include="OidcLiveBrowser.fs" />
     <Compile Include="OidcLiveApi.fs" />
     <Compile Include="OidcHostFixture.fs" />
+    <Compile Include="CliIdentityClient.fs" />
     <Compile Include="OidcLiveTests.fs" />
     <Compile Include="ConfigurationTests.fs" />
     <Compile Include="TransportGuards.fs" />
@@ -34,6 +35,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/ClaimCore.Contracts/ClaimCore.Contracts.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Cli/ClaimCore.Cli.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Hosting/ClaimCore.Hosting.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Web/ClaimCore.Web.fsproj" />

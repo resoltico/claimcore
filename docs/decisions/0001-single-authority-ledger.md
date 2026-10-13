@@ -746,3 +746,94 @@ Adding the central Testcontainers declaration reclassifies its unchanged 4.15.0 
 CentralTransitive. Included that reviewed lock and amended only this task's branch commit with
 an explicit remote lease. The earlier pushed revision is superseded; its CI is not passing
 evidence. The local locked restore/test input already included the corrected lock.
+
+## Changes during implementation: CLI session uncertainty
+
+The frame envelope has no per-line exit-code member. Continuing an NDJSON session after a
+mutation with an undelivered reply could overwrite exit 4 with a later frame's exit code and
+hide which exact frame requires replay. A complete 232-test unit run reproduced this: the
+new `uncertainty ends a session before another frame can overwrite exit four` test expected
+4 but received 3 after a following query (231 passed, one failed, zero skipped, 4.780s).
+The failing output is retained outside source as `wp9-session-negative.log`.
+
+The smallest correction is to end the session after delivering an exit-4 or cancelled reply.
+The last processed frame is consequently the one to replay. Definite replies continue; an
+oversized line ends the session with exit 2; an empty session exits 0. A completed reply's
+successful flush clears only that frame's dispatch knowledge. This preserves section 4.1's
+uncertain-replay guarantee and reopens no section 4.3 non-goal. It changes no envelope or
+fingerprint. The regression remains in the complete suite.
+
+## WP9: authenticated CLI
+
+Moved the authenticated process and protocol implementation into `ClaimCore.Cli`; the
+solution now has thirteen projects. The process owns no runtime/database access. Offline
+help, product identity, semantic descriptions and schemas remain available without settings
+or credentials; discovery reads Contracts' catalogue. Removed the protocol project, recovery
+export/import adapters and private-file writing surface. The process reads bounded strict
+frames and private inputs, sends the compiled `ClaimCore-Contract` header, uses catalogue
+methods and paths, and sends the exact admitted input bytes. Its closed replies and outcome
+exits are decoded against Contracts before stdout. Host-failure status, diagnostic and phase
+must agree. Every durable endpoint retains uncertainty when dispatch occurred and the reply
+is invalid, inaccessible, lost or unflushed.
+
+Retained authorization-code PKCE with S256, the issuer/host/state-bound loopback callback,
+client credentials, process-local token reacquisition, monotonic and wall-clock expiry
+budgets, system TLS and loopback-only private trust roots. Provider metadata/token readers
+are total over malformed input and bounded at 64/32 KiB; bearer text cannot inject a header.
+Private bytes are cleared after UTF-8/PEM conversion. Frame input is bounded at 128 KiB and
+service response buffering at 16 MiB. Managed SIGINT/SIGTERM callbacks use the current
+frame's dispatch knowledge. Session/token ownership has no durable credential cache.
+
+Commands executed on macOS arm64 (native .NET 10.0.401), separately from inspection:
+
+- `dotnet restore ClaimCore.slnx --locked-mode`: exit 0, thirteen restored projects. Reviewed
+  all three changed surviving locks: CLI, unit tests and Web tests; project dependencies
+  replace the removed protocol assembly. Existing product version remains 0.8.0.
+- `dotnet build ClaimCore.slnx --configuration Release --no-restore`: exit 0, thirteen
+  projects, zero warnings/errors, final 5.68s.
+- Complete native `dotnet test --project tests/ClaimCore.Tests/ClaimCore.Tests.fsproj
+  --configuration Release --no-build --no-restore --minimum-expected-tests=232
+  --zero-tests-policy=strict --timeout=5m --
+  --settings=/Users/erst/Tools/claimcore/eng/expecto.runsettings`: 232 passed, zero failed or
+  skipped, 20.935s. Includes every exit-table row, every endpoint method/header/request,
+  every result and host-failure phase, response size/media/status rejection, malformed
+  provider input, bearer-header rejection, cancellation, stdout failure, independent token
+  clock budgets, callback/state/redirect guards and a real TLS reply-loss boundary. The
+  latter reads the entire `authority.register` POST and closes the TLS connection without
+  an HTTP reply; the actual client returns exit 4 and preserves request bytes.
+- The same complete native Web command, project `tests/ClaimCore.WebTests`, minimum 66:
+  66 passed, zero failed/skipped, 81.448s. Within the owned live Keycloak fixture, CLI code
+  discovers the issuer through its private TLS root, reads its own freshly created private
+  secret, obtains a real service token, sends it through Web issuer validation and decodes
+  a success reply. The provider rejects a wrong secret. Existing PKCE browser, invalid
+  token/audience/issuer/TLS and key-rotation checks remain in this complete run.
+- `dotnet fantomas --check src tests eng`: exit 0, no formatting findings.
+  `bash eng/Check-FSharpLint.sh`: exit 0, all roots report zero warnings. No limit or guard
+  was weakened and no exception added.
+- `npm --prefix web run contract:generate`: exit 0. Generated bytes match the existing
+  contract lock; decoding typed host failures changes no published schema or fingerprint.
+- A Python subprocess check of the built CLI, with all ClaimCore settings removed only
+  from the child environment: twelve help/version and discovery/identity invocations
+  exit 0 (JSON outputs parsed); unsupported invocation exits 64 without stdout; an invalid
+  `call` exits 2 with one protocol-failure frame; a valid unconfigured `call` exits 3 with
+  one local-failure frame. No credential or service connection was attempted.
+
+Inspection: CLI has no protocol-generation member, removed project dependency, recovery
+adapter, private writer, runtime/Hosting/Postgres reference or retained preparation. Changes
+are limited to CLI, its typed Contracts decoder, the complete test inputs and decision record.
+Compiler/type-inference/nullability failures, a function-length finding, the incorrect
+503/500 fixture (228/229 passing) and the session negative control are not passing evidence.
+The final runs contain no filter, skip, retry or unregistered partition.
+
+Published CLI/process-signal acceptance, native Windows execution and the full Gate remain
+unverified here; their required acceptance belongs to WP15, and later package inputs are not
+implemented. No product version or changelog changed. Keep the pull request draft; WP10 is
+next, with no WP10 edits begun.
+
+The complete native PostgreSQL command, minimum 76 and otherwise the same Release/no-build/
+no-restore/strict-zero/settings arguments, passes all 76 tests with zero failed/skipped,
+172.479s. The three complete suites ran independently in parallel against unchanged inputs.
+All owned ledger/identity fixtures and reapers have been removed by their owners. A read-only
+container listing shows the same ten original evaluation container IDs, healthy and running;
+none was connected to or modified. Logs are outside tracked source as `wp9-unit.log`,
+`wp9-postgres.log`, `wp9-web.log` and `wp9-fsharplint.log`. `git diff --check` passes.

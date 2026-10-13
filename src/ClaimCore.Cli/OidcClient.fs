@@ -42,7 +42,7 @@ module OidcClient =
     /// Metadata is accepted only for the configured issuer and HTTPS endpoints. Nothing supplied
     /// by a provider is copied into a diagnostic or process output on refusal.
     let parseDiscovery (issuer: Uri) (bytes: byte array) =
-        if bytes.Length > 65536 then
+        if isNull (box bytes) || bytes.Length > 65536 then
             Error "OIDC_METADATA_INVALID"
         else
             try
@@ -77,8 +77,10 @@ module OidcClient =
                                 Jwks = jwks
                             }
                     | _ -> Error "OIDC_METADATA_INVALID"
-            with :? JsonException ->
-                Error "OIDC_METADATA_INVALID"
+            with
+            | :? JsonException
+            | :? InvalidOperationException
+            | :? ArgumentException -> Error "OIDC_METADATA_INVALID"
 
     let discover (client: HttpClient) (issuer: Uri) (cancelled: CancellationToken) =
         task {

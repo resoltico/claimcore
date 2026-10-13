@@ -84,7 +84,7 @@ module OAuthTokenClient =
                     Error "OIDC_RESPONSE_INVALID"
         }
 
-    let internal parseTokenResponseAt
+    let private readTokenResponseAt
         (clock: TimeProvider)
         observedUtc
         observedTimestamp
@@ -109,6 +109,8 @@ module OAuthTokenClient =
                 && positiveExpiry root
                 && value.Length >= 1
                 && value.Length <= 8192
+                && value
+                   |> Seq.forall (fun c -> Char.IsAsciiLetterOrDigit c || "-._~+/=".Contains c)
                 ->
                 Ok(
                     AccessToken(
@@ -120,8 +122,16 @@ module OAuthTokenClient =
                     )
                 )
             | _ -> Error "OIDC_RESPONSE_INVALID"
-        with :? JsonException ->
+        with
+        | :? JsonException
+        | :? InvalidOperationException
+        | :? ArgumentException -> Error "OIDC_RESPONSE_INVALID"
+
+    let internal parseTokenResponseAt clock observedUtc observedTimestamp (bytes: byte array) =
+        if isNull (box bytes) || bytes.Length > 32768 then
             Error "OIDC_RESPONSE_INVALID"
+        else
+            readTokenResponseAt clock observedUtc observedTimestamp bytes
 
     let parseTokenResponse bytes =
         let clock = TimeProvider.System
@@ -145,7 +155,7 @@ module OAuthTokenClient =
                     "code_verifier", verifier
                 ]
         | OAuthGrant.ClientCredentials path ->
-            match PrivateFileService.readUtf8Text 4096 path with
+            match PrivateInputs.text 4096 path with
             | Ok secret when not (String.IsNullOrWhiteSpace(secret)) ->
                 Ok
                     [

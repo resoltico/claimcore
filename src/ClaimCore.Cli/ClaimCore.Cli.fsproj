@@ -1,14 +1,27 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <IsShippedApplication>true</IsShippedApplication>
-    <OutputType>Exe</OutputType>
-  </PropertyGroup>
+  <PropertyGroup><IsShippedApplication>true</IsShippedApplication><OutputType>Exe</OutputType></PropertyGroup>
   <ItemGroup>
+    <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="ClientFailures.fs" />
+    <Compile Include="PrivateInputs.fs" />
+    <Compile Include="FrameReader.fs" />
+    <Compile Include="Discovery.fs" />
+    <Compile Include="RemoteConfiguration.fs" />
+    <Compile Include="RemoteTls.fs" />
+    <Compile Include="HttpRequestDeadline.fs" />
+    <Compile Include="OidcClient.fs" />
+    <Compile Include="LoopbackCallback.fs" />
+    <Compile Include="InteractiveAuthorization.fs" />
+    <Compile Include="OAuthTokenClient.fs" />
+    <Compile Include="RemoteAccessSession.fs" />
+    <Compile Include="RemoteServiceCall.fs" />
+    <Compile Include="FrameDelivery.fs" />
+    <Compile Include="RemoteFrameProcessing.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../ClaimCore.Application/ClaimCore.Application.fsproj" />
-    <ProjectReference Include="../ClaimCore.CliProtocol/ClaimCore.CliProtocol.fsproj" />
     <ProjectReference Include="../ClaimCore.Contracts/ClaimCore.Contracts.fsproj" />
+    <ProjectReference Include="../ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />
   </ItemGroup>
 </Project>

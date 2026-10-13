@@ -97,6 +97,15 @@
           "FSharp.Core": "[10.1.401, )"
         }
       },
+      "claimcore.cli": {
+        "type": "Project",
+        "dependencies": {
+          "ClaimCore.Application": "[0.8.0, )",
+          "ClaimCore.Contracts": "[0.8.0, )",
+          "ClaimCore.HostSecurity": "[0.8.0, )",
+          "FSharp.Core": "[10.1.401, )"
+        }
+      },
       "claimcore.contracts": {
         "type": "Project",
         "dependencies": {

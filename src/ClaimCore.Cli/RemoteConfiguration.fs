@@ -70,8 +70,8 @@ module RemoteConfiguration =
                         OidcTrustRootFile = None
                         ServiceTrustRootFile = None
                     }
-            | _ -> Error ProtocolProblem.ServiceConfigurationInvalid
-        | _ -> Error ProtocolProblem.ServiceConfigurationInvalid
+            | _ -> Error ClientFailure.Configuration
+        | _ -> Error ClientFailure.Configuration
 
     let fromEnvironment () =
         let read = Environment.GetEnvironmentVariable
@@ -85,7 +85,7 @@ module RemoteConfiguration =
         | null, _, _, _
         | _, null, _, _
         | _, _, null, _
-        | _, _, _, null -> Error ProtocolProblem.ServiceConfigurationMissing
+        | _, _, _, null -> Error ClientFailure.Configuration
         | service, issuer, clientId, mode ->
             let configured =
                 match mode with
@@ -93,13 +93,13 @@ module RemoteConfiguration =
                 | "automation" ->
                     let path = read "CLAIMCORE_OIDC_CLIENT_SECRET_FILE" |> Option.ofObj
                     create service issuer clientId RemoteClientMode.Automation path
-                | _ -> Error ProtocolProblem.ServiceConfigurationInvalid
+                | _ -> Error ClientFailure.Configuration
 
             let privateRoot name =
                 match read name |> Option.ofObj with
                 | None -> Ok None
                 | Some path when IO.Path.IsPathFullyQualified(path) -> Ok(Some path)
-                | Some _ -> Error ProtocolProblem.ServiceConfigurationInvalid
+                | Some _ -> Error ClientFailure.Configuration
 
             configured
             |> Result.bind (fun value ->

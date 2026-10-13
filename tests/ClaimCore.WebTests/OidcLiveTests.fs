@@ -84,6 +84,8 @@ let private qualify (server: IdentityServer.Identity) (stage: string -> unit) to
         Expect.equal status 401 "An ID token is not API access"
         stage "bearer controls"
         do! qualifyBearers server.Issuer identity host.Client credentials.RootElement cookies
+        stage "CLI client credentials"
+        do! CliIdentityClient.qualify server host.Client token
         stage "signing-key rotation"
         do! qualifyRotation server.Issuer identity host.Client credentials.RootElement
     }

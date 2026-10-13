@@ -158,3 +158,13 @@ module HostFailures =
                 "executionPhase", optional text phase
             ]
         |> fun value -> value.ToJsonString() |> Encoding.UTF8.GetBytes
+
+    let decode bytes =
+        HttpInputSupport.parse bytes (fun root ->
+            if not (SchemaValueValidation.verify schema root) then
+                HttpInputSupport.fail HttpInputProblem.InvalidJson
+
+            let id =
+                root.GetProperty("diagnostic").GetProperty("id").GetString() |> Option.ofObj
+
+            all |> List.find (fun reason -> Some(diagnosticId reason) = id))

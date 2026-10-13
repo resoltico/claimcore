@@ -11,4 +11,5 @@
   <Project Path="eng/ClaimCore.ContractGenerator/ClaimCore.ContractGenerator.fsproj" />
   <Project Path="src/ClaimCore.Web/ClaimCore.Web.fsproj" />
   <Project Path="tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj" />
+  <Project Path="src/ClaimCore.Cli/ClaimCore.Cli.fsproj" />
 </Solution>
