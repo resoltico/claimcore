@@ -134,8 +134,8 @@ ClaimCore PostgreSQL integration.administration completion knowledge.the confirm
 ClaimCore PostgreSQL integration.adopted external copy transitions.[CC-AUDIT-001] adopted external signed origin and transition replay
 ClaimCore PostgreSQL integration.adopted external copy transitions.[CC-ERASE-001] adopted external exact signed absence completes deletion
 ClaimCore PostgreSQL integration.adopted product copy transitions.[CC-AUDIT-001] product export signed post-adoption transition replays through projection
+ClaimCore PostgreSQL integration.advanced physical restored pair.[CC-BACKUP-001] completed WAL endpoints retain the exclusive last segment
 ClaimCore PostgreSQL integration.advanced physical restored pair.[CC-BACKUP-001] original BASE pair replays later synthetic WAL before audit
-ClaimCore PostgreSQL integration.advanced physical restored pair.[CC-BACKUP-001] repeated quiet WAL switches retain the last completed segment
 ClaimCore PostgreSQL integration.audit cancellation causes.[CC-AUDIT-001] orderly stop remains distinct from deadline and simultaneous integrity failure
 ClaimCore PostgreSQL integration.authority expiration under lock.[CC-LIFE-001] approval issuance uses current database time after lock delay
 ClaimCore PostgreSQL integration.authority expiration under lock.[CC-LIFE-001] delayed approval consumption refuses while expired exact readback survives

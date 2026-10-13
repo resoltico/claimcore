@@ -47,7 +47,7 @@ module internal WitnessPrimaryMatch =
             Revision = reader.GetInt64(1)
             Request = reader.GetFieldValue<byte array>(2)
             Snapshot = reader.GetFieldValue<byte array>(3)
-            BusinessDate = reader.GetString(4)
+            BusinessDate = ScalarEncoding.dateText (reader.GetInt32(4))
             Observed = reader.GetFieldValue<DateTimeOffset>(5)
             Rule = reader.GetInt16(6)
             Sequence = reader.GetInt64(7)
@@ -107,7 +107,7 @@ module internal WitnessPrimaryMatch =
             use command =
                 new NpgsqlCommand(
                     "SELECT case_reference,revision,canonical_request,snapshot,"
-                    + "effective_business_date::text,observed_utc_instant,rule_revision,"
+                    + "effective_business_date - DATE '2000-01-01',observed_utc_instant,rule_revision,"
                     + "witness_sequence,witness_epoch,witness_entry_hash,case_id,"
                     + "preparer_actor_id,importer_actor_id,submitter_actor_id,resolver_actor_id,"
                     + "accepted_actor_id,grant_revision "

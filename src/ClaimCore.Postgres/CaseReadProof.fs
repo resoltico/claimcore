@@ -15,7 +15,7 @@ module internal CaseReadProof =
     let private acceptedColumns =
         "case_reference,revision,CASE WHEN octet_length(canonical_request) BETWEEN 1 AND 65536 THEN canonical_request END,"
         + "CASE WHEN octet_length(snapshot) BETWEEN 1 AND 65536 THEN snapshot END,"
-        + "effective_business_date::text,observed_utc_instant,rule_revision,witness_sequence,witness_epoch,"
+        + "effective_business_date - DATE '2000-01-01',observed_utc_instant,rule_revision,witness_sequence,witness_epoch,"
         + "CASE WHEN octet_length(witness_entry_hash)=32 THEN witness_entry_hash END,case_id,"
         + "preparer_actor_id,importer_actor_id,submitter_actor_id,resolver_actor_id,accepted_actor_id,grant_revision,operation_id"
 

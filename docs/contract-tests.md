@@ -222,8 +222,8 @@ navigation aid, not semantic proof. [Development](development.md) owns execution
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.Restore report pair binding.[CC-BACKUP-001] stale or divergent restore pair facts refuse recheck |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.[CC-BACKUP-001] intermediate restore reports cannot claim deployment readiness |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.[CC-BACKUP-001][CC-WEB-001] activation review cancellation ends an actual PostgreSQL wait |
+| CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.advanced physical restored pair.[CC-BACKUP-001] completed WAL endpoints retain the exclusive last segment |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.advanced physical restored pair.[CC-BACKUP-001] original BASE pair replays later synthetic WAL before audit |
-| CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.advanced physical restored pair.[CC-BACKUP-001] repeated quiet WAL switches retain the last completed segment |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.authority operation fence.[CC-BACKUP-001] backup capture drains actor settlement and retains the complete authority fence |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.backup capture private files.[CC-BACKUP-001] owner hashes only private exact-root capture files |
 | CC-BACKUP-001 | integration | ClaimCore PostgreSQL integration.backup capture signed claims.[CC-BACKUP-001] signed capture binds owner cutoff and both physical copies |
