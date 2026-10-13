@@ -10,5 +10,5 @@
 /** @typedef {{ "bom-ref": string, purl: string, name: string, licenses?: {license?: {id?: string}}[] }} BomComponent */
 /** @typedef {{ ref: string, dependsOn?: string[] }} BomDependency */
 /** @typedef {{ metadata?: { component?: BomComponent }, components: BomComponent[], dependencies: BomDependency[] }} BomDocument */
-/** @typedef {{host: ValidatorEndpoint[], discovery: ValidatorEndpoint[], core: ValidatorEndpoint[], recovery: ValidatorEndpoint[]}} ValidatorGroups */
+/** @typedef {{host: ValidatorEndpoint[], discovery: ValidatorEndpoint[], core: ValidatorEndpoint[], authority: ValidatorEndpoint[]}} ValidatorGroups */
 export {};

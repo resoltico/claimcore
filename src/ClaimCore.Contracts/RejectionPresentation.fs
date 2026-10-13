@@ -126,15 +126,20 @@ module RejectionPresentation =
     let private operation =
         [
             RejectionDiagnosticId.InvalidCaseListCursor,
-            "Use one current opaque case-list cursor returned for this account and page size."
+            "Use one current opaque case-list cursor returned by ClaimCore."
             RejectionDiagnosticId.InvalidHistoryCursor,
             "Use one opaque history cursor returned by ClaimCore."
             RejectionDiagnosticId.IdempotencyConflict,
             "This operation ID belongs to different command content. Do not reuse it."
-            RejectionDiagnosticId.OperationRevoked,
-            "Authority for future execution of this exact operation was durably revoked. Earlier attempt uncertainty is unchanged; inspect its exact evidence."
-            RejectionDiagnosticId.RecoveryAttemptLimitReached,
-            "This operation has reached its recovery attempt limit. Inspect its exact evidence and reconcile unresolved attempts before authoring new work."
+            RejectionDiagnosticId.CaseVoided, "This case is voided."
+            RejectionDiagnosticId.CaseErased, "This case has been erased."
+            RejectionDiagnosticId.InvalidReason, "Supply a valid reason of at most 200 characters."
+            RejectionDiagnosticId.AlreadyVoided, "This case is already voided."
+            RejectionDiagnosticId.NotVoided, "This case is not voided."
+            RejectionDiagnosticId.LastOwner, "At least one enabled human owner is required."
+            RejectionDiagnosticId.ActorAlreadyRegistered, "This principal is already registered."
+            RejectionDiagnosticId.ActorUnknown, "This principal is not registered."
+            RejectionDiagnosticId.HumanPrincipalRequired, "This role requires a human principal."
             RejectionDiagnosticId.ResourceUnavailable, "The requested resource is unavailable."
         ]
 

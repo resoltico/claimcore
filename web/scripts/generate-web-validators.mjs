@@ -6,7 +6,6 @@ import { format, resolveConfig } from "prettier";
 
 import { compileStandaloneValidators } from "./standalone-validators.mjs";
 import {
-  obsoleteStandaloneValidatorArtifacts,
   standaloneValidatorArtifacts,
   validationWrapper,
   validatorDeclarations,
@@ -14,8 +13,8 @@ import {
   validatorName,
 } from "./validator-groups.mjs";
 
-const hostSchema = "web-v3.host-failure.schema.json";
-const responsesSchema = "web-v3.responses.schema.json";
+const hostSchema = "host-failure.schema.json";
+const responsesSchema = "responses.schema.json";
 const safeName = /^[A-Za-z0-9][A-Za-z0-9._-]*$/u;
 export const maximumStandaloneValidatorGroupBytes = 600 * 1024;
 
@@ -38,7 +37,7 @@ const formatTypeScript = async (source, filepath) => {
 /** @param {import("./tooling-types.mjs").JsonRecord} catalog @param {Set<string>} provisional */
 const endpointInventory = (catalog, provisional) => {
   if (!Array.isArray(catalog["endpoints"]) || catalog["endpoints"].length === 0) {
-    throw new Error("The Web v3 catalog has no endpoint inventory.");
+    throw new Error("The service catalog has no endpoint inventory.");
   }
   const seen = new Set();
   return catalog["endpoints"].map(
@@ -50,15 +49,15 @@ const endpointInventory = (catalog, provisional) => {
         typeof responseDefinition !== "string" ||
         !safeName.test(responseDefinition)
       ) {
-        throw new Error("The Web v3 endpoint inventory is invalid.");
+        throw new Error("The service endpoint inventory is invalid.");
       }
-      const responseSchema = `web-v3.endpoint.${id}.response.schema.json`;
+      const responseSchema = `endpoint.${id}.response.schema.json`;
       if (
         !safeName.test(responseSchema) ||
         basename(responseSchema) !== responseSchema ||
         !provisional.has(responseSchema)
       ) {
-        throw new Error("The Web v3 response-schema inventory is invalid.");
+        throw new Error("The service response-schema inventory is invalid.");
       }
       seen.add(id);
       return { endpoint: id, exportName: validatorName(id), responseDefinition };
@@ -104,16 +103,6 @@ const validatorInventory = async (directory, endpoints, group) => {
       schemaReference: `${aggregate.$id}#/$defs/${responseDefinition}`,
     };
   });
-  if (group === "recovery") {
-    const artifact = await readSchema(directory, "recovery-artifact-v3.schema.json");
-    return {
-      schemas: [aggregate, artifact],
-      validators: [
-        ...endpointValidators,
-        { exportName: "validate_recovery_artifact", schemaReference: String(artifact.$id) },
-      ],
-    };
-  }
   return { schemas: [aggregate], validators: endpointValidators };
 };
 
@@ -127,7 +116,6 @@ const assertProvisionalOutput = async (directory, provisional) => {
     ...provisional,
     "contracts-manifest.json",
     ...standaloneValidatorArtifacts,
-    ...obsoleteStandaloneValidatorArtifacts,
   ]);
   const extra = entries.map((entry) => entry.name).filter((name) => !allowed.has(name));
   const missing = [...provisional].filter((name) => !entries.some((entry) => entry.name === name));
@@ -150,9 +138,7 @@ const atomicWrite = async (file, contents) => {
 
 /** @param {string} directory @param {Set<string>} provisional */
 const formatTypeScriptArtifacts = async (directory, provisional) => {
-  const names = [...provisional]
-    .filter((name) => name.startsWith("web-v3.") && name.endsWith(".ts"))
-    .sort();
+  const names = [...provisional].filter((name) => name.endsWith(".ts")).sort();
   if (names.length < 2) {
     throw new Error("Generated Web TypeScript artifacts are missing.");
   }
@@ -234,7 +220,7 @@ const compileGroups = (output, groups, webDirectory) =>
 const writeValidatorGroups = async (output, groups, compiledGroups) => {
   await Promise.all(
     compiledGroups.map(async ({ group, compiled }) => {
-      const declarationFile = join(output, `web-v3.validators.${group}.d.mts`);
+      const declarationFile = join(output, `validators.${group}.d.mts`);
       const declarationSource = await formatTypeScript(
         validatorDeclarations(
           groups[/** @type {keyof import("./tooling-types.mjs").ValidatorGroups} */ (group)],
@@ -242,7 +228,7 @@ const writeValidatorGroups = async (output, groups, compiledGroups) => {
         declarationFile,
       );
       await atomicWrite(declarationFile, declarationSource);
-      await atomicWrite(join(output, `web-v3.validators.${group}.mjs`), compiled.source);
+      await atomicWrite(join(output, `validators.${group}.mjs`), compiled.source);
     }),
   );
 };
@@ -252,11 +238,8 @@ export const generateWebValidators = async (directory) => {
   const output = resolve(directory);
   const manifestPath = join(output, "contracts-manifest.json");
   const { manifest, provisional } = await provisionalInventory(output);
-  await Promise.all(
-    obsoleteStandaloneValidatorArtifacts.map((name) => rm(join(output, name), { force: true })),
-  );
   await formatTypeScriptArtifacts(output, provisional);
-  const catalog = await readJson(join(output, "web-v3.catalog.json"));
+  const catalog = await readJson(join(output, "catalog.json"));
   const endpoints = endpointInventory(catalog, provisional);
   const groups = validatorGroups(endpoints);
   const webDirectory = resolve(import.meta.dirname, "..");
@@ -271,10 +254,10 @@ export const generateWebValidators = async (directory) => {
     await readJson(resolve(webDirectory, "package-lock.json"))
   );
   const noticeSource = await validatorNotice(webDirectory, lock, embeddedPackages);
-  const wrapperFile = join(output, "web-v3.validation.ts");
+  const wrapperFile = join(output, "validation.ts");
   const wrapperSource = await formatTypeScript(validationWrapper(groups), wrapperFile);
   await writeValidatorGroups(output, groups, compiledGroups);
-  await atomicWrite(join(output, "web-v3.validators.NOTICE.txt"), noticeSource);
+  await atomicWrite(join(output, "validators.NOTICE.txt"), noticeSource);
   await atomicWrite(wrapperFile, wrapperSource);
   const combined = combinedManifest(manifest, provisional, lock, embeddedPackages);
   await atomicWrite(manifestPath, `${JSON.stringify(combined)}\n`);

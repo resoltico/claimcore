@@ -567,3 +567,81 @@ RecordFormat bytes, product version and changelog are unchanged. Lock diffs add 
 HostSecurity project edges only; no package version changes. The compiled architecture gate
 is still WP13. Corrections reopen no design non-goal. Next is WP7 (Contracts); WP7–WP15 and final
 published/Keycloak/browser acceptance remain unfinished. The PR stays draft and unmerged.
+
+### WP7 — One service contract
+
+Contracts and its generator return to the build frontier. One catalogue defines fourteen
+literal routes, their methods, their complete request/response schemas and the five durable
+mutation endpoints. HTTP responses and CLI frames share outcomes; one SHA-256 fingerprint
+covers the routes, schema documents, CLI response frames and typed host failures. Missing or
+unequal handshake values fail the exposed admission predicate; host dispatch integration is
+WP8. The CLI envelope preserves the exact frame and input bytes with defensive copies.
+Stateless preview, stewardship, case disposition, erasure views, ledger positions and authority
+outcomes replace the removed wire families. Administration has no Contracts artifact.
+
+Implementation corrections (no design guarantee or non-goal changes):
+
+- The saved intake prototype's ERASE branch failed FS0001. Its check is now a separate statement
+  before constructing the action. Strict schema admission precedes all typed endpoint intake.
+- An initial role schema used READER/EDITOR/STEWARD instead of Application's CASE_READER,
+  CASE_EDITOR/DATA_STEWARD. It now derives all five tokens from `Roles`; an independent token
+  table admits the five documented names and rejects the alternate spellings.
+- Ledger sequence and case revision have different upper bounds. Reusing the revision schema
+  wrongly refused the positive BIGINT maximum allowed by the SQL baseline. An absolute-path
+  F# probe printed `positive BIGINT maximum admitted: false`; after using a positive Int64
+  schema it prints `true`. A native test accepts the maximum and rejects zero, negative,
+  overflow and noncanonical spelling. Sequence and revision are decimal strings on the wire,
+  preserving exact values in JavaScript.
+- The generation driver referenced the deleted SDK-host tool. It now invokes the ordinary
+  `dotnet` executable and checks its exact version against `global.json` before running the
+  generator. No discovery wrapper or alternative toolchain selector was added.
+- The generator consumes only Contracts; default English templates and public product metadata
+  are projected by their existing contract/presentation owner. Direct Application/Domain and
+  deleted Database/Postgres generator dependencies are unnecessary. The extracted graph is
+  corrected to this compiled project edge; repository graph enforcement remains WP13.
+
+Executed on the completed package:
+
+- `dotnet restore ClaimCore.slnx --locked-mode`: exit 0. Reviewed lock changes restore the two
+  projects/test edge and remove obsolete runtime dependencies; no product/package version bump.
+- `dotnet build ClaimCore.slnx --configuration Release --no-restore`: exit 0, ten projects,
+  `Build succeeded`, zero warnings/errors, 5.21s.
+- Complete native MTP unit command, minimum 207, strict zero-test policy, five-minute timeout,
+  prescribed Expecto settings: **207 total/succeeded, 0 failed/skipped, 17.348s**.
+- Complete native MTP PostgreSQL command, minimum 75, same settings:
+  **75 total/succeeded, 0 failed/skipped, 113.849s**. No filtering or retries qualify either suite.
+- `dotnet fantomas --check src tests eng` and `bash eng/Check-FSharpLint.sh`: exit 0, no formatting
+  findings and zero lint warnings. Function/complexity limits and exceptions are unchanged.
+- `npm --prefix web run contract:lock`: exit 0; intentional lock diff reviewed. Then two
+  `npm --prefix web run contract:generate` runs, each after removing only the 51 regular files
+  in the generated output directory: both exit 0 and reproduce the accepted lock.
+- `npm --prefix web run contract:verify`: exit 0. Manifest/lock/output equality probe printed
+  `51 exact manifest/lock artifacts; 14 endpoints; no removed-family artifacts`.
+- `node --test web/scripts/validator-groups.test.mjs web/scripts/endpoint-corpus.test.mjs
+  web/scripts/contract-lock.test.mjs web/scripts/contract-promotion.test.mjs`:
+  **17 passed, 0 failed/skipped/cancelled/todo**, 234.778ms. All 199 shared corpus cases agree:
+  100 positive and 99 negative, covering every endpoint/direction and Unicode reference bounds.
+  Promotion/hash/inventory/validator guards retain destructive rejecting controls.
+- Targeted type-aware oxlint and Prettier checks for every changed generation script/test:
+  exit 0. Full frontend typecheck, lint, application tests and browsers remain WP11–WP15.
+- Absolute-path sequence probe prints `positive BIGINT maximum admitted: true`. Recursive
+  `rg -ni 'v3|v4|protocolVersion'` under Contracts and the generator returns 1/no matches.
+  This is a source scan; it is not a compiled architecture check.
+
+Native tests additionally cover every command/stewardship request alternative (32), every
+response alternative (62), all six mutation outcomes and exits, authority observation's refusal
+of an uncertain result, snapshots absent on erasure, live/voided/erased views, preview, four
+faults, new rejections, defensive byte copies, malformed/duplicate/unknown JSON, invalid UTF-8,
+lone surrogates and byte bounds. The retained timestamp and independent Unicode scalar oracles
+return with their assertions. Deterministic required Hedgehog tests exercise all HTTP/frame
+boundaries with arbitrary, hostile and mutated bytes. English templates remain complete.
+
+Early compiler/nullability errors, four lint findings, an incorrect request-count assertion
+(199/200 succeeded), a corpus-count assertion and three script lint findings were repaired and
+are not passing evidence. The first Prettier invocation used the wrong working directory and
+found no inputs; the corrected invocation and check ran against all changed scripts. No guard
+was weakened, suppression added or check converted into an expected failure.
+
+Source inspection separately confirms unchanged Domain, RecordFormat, product version,
+changelog and engineering principles; generated artifacts remain ignored. The published host,
+CLI, owner process, frontend and final Gate remain unfinished. WP8 is next; keep the PR draft.

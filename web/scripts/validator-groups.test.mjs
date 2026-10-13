@@ -9,7 +9,7 @@ import {
 } from "./validator-groups.mjs";
 
 const catalogue = JSON.parse(
-  readFileSync(new URL("../src/generated/contracts/web-v3.catalog.json", import.meta.url), "utf8"),
+  readFileSync(new URL("../src/generated/contracts/catalog.json", import.meta.url), "utf8"),
 );
 /** @type {import("./tooling-types.mjs").ValidatorEndpoint[]} */
 const endpoints = catalogue.endpoints.map((/** @type {{id: string}} */ entry) => ({
@@ -19,7 +19,7 @@ const endpoints = catalogue.endpoints.map((/** @type {{id: string}} */ entry) =>
 
 test("validator split preserves every endpoint exactly once with discovery isolated", () => {
   const groups = validatorGroups(endpoints);
-  assert.deepEqual(Object.keys(groups), ["host", "discovery", "core", "recovery"]);
+  assert.deepEqual(Object.keys(groups), ["host", "discovery", "core", "authority"]);
   assert.deepEqual(groups.host, []);
   assert.deepEqual(
     groups.discovery,
@@ -28,10 +28,10 @@ test("validator split preserves every endpoint exactly once with discovery isola
   assert.equal(groups.discovery.length, 1);
   assert.ok(
     groups.core.every(
-      (entry) => entry.endpoint !== "definition" && !entry.endpoint.startsWith("recovery."),
+      (entry) => entry.endpoint !== "definition" && !entry.endpoint.startsWith("authority."),
     ),
   );
-  assert.ok(groups.recovery.every((entry) => entry.endpoint.startsWith("recovery.")));
+  assert.ok(groups.authority.every((entry) => entry.endpoint.startsWith("authority.")));
   assert.deepEqual(
     Object.values(groups)
       .flat()
@@ -42,7 +42,7 @@ test("validator split preserves every endpoint exactly once with discovery isola
 });
 
 test("missing validator families fail instead of emitting a partial wrapper", () => {
-  for (const omitted of ["discovery", "core", "recovery"]) {
+  for (const omitted of ["discovery", "core", "authority"]) {
     const groups = validatorGroups(endpoints);
     const remaining = Object.entries(groups)
       .filter(([name]) => name !== omitted)
@@ -55,10 +55,10 @@ test("host validation is shared and all four chunks are lazily loaded", () => {
   const wrapper = validationWrapper(validatorGroups(endpoints));
   assert.ok(wrapper.includes('(await loadHost())["validate_host_failure"]'));
   assert.ok(!wrapper.includes('(await validatorsFor(endpoint))["validate_host_failure"]'));
-  for (const group of ["host", "discovery", "core", "recovery"]) {
-    assert.ok(standaloneValidatorArtifacts.includes(`web-v3.validators.${group}.mjs`));
-    assert.ok(standaloneValidatorArtifacts.includes(`web-v3.validators.${group}.d.mts`));
-    assert.ok(wrapper.includes(`import("./web-v3.validators.${group}.mjs")`));
-    assert.ok(!wrapper.includes(`from "./web-v3.validators.${group}.mjs"`));
+  for (const group of ["host", "discovery", "core", "authority"]) {
+    assert.ok(standaloneValidatorArtifacts.includes(`validators.${group}.mjs`));
+    assert.ok(standaloneValidatorArtifacts.includes(`validators.${group}.d.mts`));
+    assert.ok(wrapper.includes(`import("./validators.${group}.mjs")`));
+    assert.ok(!wrapper.includes(`from "./validators.${group}.mjs"`));
   }
 });

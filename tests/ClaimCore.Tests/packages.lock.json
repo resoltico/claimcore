@@ -97,6 +97,14 @@
           "FSharp.Core": "[10.1.401, )"
         }
       },
+      "claimcore.contracts": {
+        "type": "Project",
+        "dependencies": {
+          "ClaimCore.Application": "[0.8.0, )",
+          "ClaimCore.Domain": "[0.8.0, )",
+          "FSharp.Core": "[10.1.401, )"
+        }
+      },
       "claimcore.domain": {
         "type": "Project",
         "dependencies": {

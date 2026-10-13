@@ -150,7 +150,6 @@ module internal ProjectionSchema =
         [
             "rejectionDiagnostics", semantic.RejectionDiagnostics
             "faultDiagnostics", semantic.FaultDiagnostics
-            "recoveryDiagnostics", semantic.RecoveryDiagnostics
         ]
         |> List.map (fun (name, definitions) ->
             Schema.property
@@ -178,10 +177,7 @@ module internal ProjectionSchema =
                 "requestFingerprintVersion"
                 (integerConstant semantic.RequestFingerprintVersion)
                 true
-            Schema.property
-                "recoveryEnvelopeFormat"
-                (integerConstant semantic.RecoveryEnvelopeFormat)
-                true
+            Schema.property "ledgerEntryFormat" (integerConstant semantic.LedgerEntryFormat) true
             Schema.property "defaultPageSize" (integerConstant semantic.DefaultPageSize) true
             Schema.property "maximumPageSize" (integerConstant semantic.MaximumPageSize) true
             Schema.property "requestByteLimit" (integerConstant semantic.RequestByteLimit) true

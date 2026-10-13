@@ -7,4 +7,6 @@
   <Project Path="tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj" />
   <Project Path="src/ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />
   <Project Path="src/ClaimCore.Hosting/ClaimCore.Hosting.fsproj" />
+  <Project Path="src/ClaimCore.Contracts/ClaimCore.Contracts.fsproj" />
+  <Project Path="eng/ClaimCore.ContractGenerator/ClaimCore.ContractGenerator.fsproj" />
 </Solution>
