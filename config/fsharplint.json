@@ -2,12 +2,7 @@
   "ignoreFiles": [
     "artifacts/obj/",
     "src/ClaimCore.Web/wwwroot/",
-    "web/artifacts/",
-    "web/coverage/",
-    "web/dist/",
-    "web/node_modules/",
-    "web/playwright-report/",
-    "web/test-results/"
+    "web/"
   ],
   "globals": {
     "numIndentationSpaces": 4
@@ -16,18 +11,6 @@
     "enabled": true,
     "config": {
       "maxComplexity": 12
-    }
-  },
-  "maxLinesInFile": {
-    "enabled": true,
-    "config": {
-      "maxLinesInFile": 300
-    }
-  },
-  "maxLinesInModule": {
-    "enabled": true,
-    "config": {
-      "maxLines": 300
     }
   },
   "maxLinesInFunction": {
@@ -43,12 +26,6 @@
     }
   },
   "maxLinesInMatchLambdaFunction": {
-    "enabled": true,
-    "config": {
-      "maxLines": 50
-    }
-  },
-  "maxLinesInValue": {
     "enabled": true,
     "config": {
       "maxLines": 50

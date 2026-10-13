@@ -2,7 +2,6 @@
 !global.json
 !.node-version
 !Directory.Build.props
-!Directory.Build.targets
 !Directory.Packages.props
 !NuGet.Config
 !ClaimCore.slnx
@@ -25,8 +24,9 @@
 !db/**
 !deployment
 !deployment/Dockerfile
-!deployment/initialize-local.sh
-# Private and generated examples are qualified against config/git-ignore-policy.json.
+!deployment/*.sh
+!deployment/compose.yaml
+# Private credentials and generated outputs never enter the build context.
 **/.git
 **/.local
 **/.direnv
@@ -109,5 +109,4 @@
 **/web/src/generated/contracts
 
 # Reviewed credential-free policies required by the locked npm producers.
-!eng/.npmrc
 !web/.npmrc

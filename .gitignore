@@ -7,10 +7,9 @@
 .env
 .env.*
 !.env.example
-# Only the reviewed, credential-free Web and engineering npm policies are repository source.
+# The credential-free frontend npm policy is repository source.
 .npmrc
 !/web/.npmrc
-!/eng/.npmrc
 .netrc
 _netrc
 *.connection
