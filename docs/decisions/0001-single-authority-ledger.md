@@ -187,7 +187,7 @@ The next step at this boundary was WP2: replace lifecycle/erasure/hold Domain ty
 the nine business commands, restore the Domain-only test project and prove the three test
 discovery guards with negative controls.
 
-## Implementation frontier
+## WP2 frontier
 
 WP0 through WP2 are complete. The solution contains Domain, RecordFormat and the Domain-only
 ClaimCore.Tests project. WP3 has not started. Domain's business model file is named CaseModel;
@@ -223,3 +223,67 @@ Next is WP3: remove recovery artifact codecs, add canonical stewardship/authorit
 ledger encoding, reproduce independent ledger vectors, and restore the unchanged canonical
 request/snapshot vector and property tests. WP3 through WP15, the full gate and final product
 acceptance are still unverified.
+
+## Canonical ledger payloads
+
+Stewardship and authority payloads are parts of ledger entry format 1, not independently
+numbered protocols. The canonical command format remains 3 and snapshot format remains 2.
+JSON uses the existing RecordFormat writer, fixed property order and exact authored strings.
+Decoders reject missing, duplicate or extra properties, unknown action/scope tags, malformed
+Unicode, noncanonical or empty UUIDs and wrong JSON scalar types. Domain and Application still
+own business and authority admission; structural decoding is not authorization.
+
+Stewardship fields are `operationId`, `caseReference`, `expectedVersion`, `action`, in that
+order. Action is `{type: VOID, reason}`, `{type: REINSTATE, reason}` or `{type: ERASE}`. Erase
+accepts no reason field. Authority fields are `eventId`, `target`, `action`. Target is
+`{kind, issuer, subject}`. Action is REGISTER_ACTOR with no additional fields, SET_ENABLED
+with `enabled`, or SET_GRANT with `role`, `scope`, `active`. Scope is `{type: INSTALLATION}`
+or `{type: CASE, caseReference}`. Kind, role and principal strings are format data; Application
+admits their meanings from its own types and policy. This avoids a reverse RecordFormat-to-
+Application dependency or a second authorization matrix.
+
+Ledger framing is the two big-endian unsigned lengths followed by their exact bytes. Commitment
+is SHA-256 of the 32-byte nonce followed by the framed payload. The 185-byte preimage binds
+installation, sequence, previous hash, kind, operation, actor, signed UTC microseconds, case
+metadata and commitment. It has no payload, nonce or request-digest input. A sub-microsecond
+instant is refused rather than rounded. Act codes follow the pack's fixed 1–12 table. Authority
+scope writes zero case placeholders; kind distinguishes it even when a real case date is day 0.
+
+## Implementation frontier
+
+WP0 through WP3 are complete. The solution still contains Domain, RecordFormat and Tests.
+WP4 has not started. Recovery artifact/envelope codecs are removed; canonical stewardship and
+authority codecs and ledger encoding are present. The three ledger vectors were copied from
+the verified pack without regeneration. Canonical request/snapshot vectors are byte-identical
+to the base and pass. Request UUID admission was moved to the shared JSON helper with the same
+lexical checks and diagnostic text; request/snapshot writer bytes did not change.
+
+The existing canonical record tests and properties return with their oracles preserved.
+Their Application dependencies are replaced by Domain validation and RecordFormat digesting;
+they do not stand in for the Application tests due in WP4. Byte corpora and the RecordFormat
+decoder-totality property return from the fuzz suite, expanded to stewardship, authority and
+framing. The remaining transport/cursor fuzz properties still await their layers.
+
+Generated the test lock with `dotnet restore ClaimCore.slnx --force-evaluate
+-p:RestoreLockedMode=false`; its only added project dependency is RecordFormat. Locked restore
+passed. Release solution build passed with zero warnings/errors. The complete native MTP run
+uses `--minimum-expected-tests=130 --zero-tests-policy=strict --timeout=5m` and the existing
+Expecto settings: 136 total, 136 succeeded, zero failed/skipped. Initial test-support overload
+errors were corrected before this run and are not counted as passing builds.
+
+Tests check every vector's payload, commitment, full preimage and hash; all metadata-field
+mutations; the full unsigned sequence width; signed pre-epoch microseconds and equivalent
+offsets; day-zero kind separation; arbitrary framing round trips; total decoding on noise and
+mutated valid seeds; and recomputation after clearing erasable buffers. Each added guard has
+rejecting cases, including malformed shapes, lengths, UUIDs, case revisions, rule revision,
+nonce width and timestamp precision. These are encoder/decoder results, not evidence that
+database erasure or transaction behavior has been implemented.
+
+The native FSharpLint function limit was given a 67-line function in an external fixture:
+it reported FL0025 and exited 255 against the retained 50-line rule. No lint limit or exception
+was changed. Product version, changelog, AGENTS principles and Domain bytes are unchanged.
+WP3 starts no container or database. No design non-goal was reopened.
+
+Next is WP4: the pure Application decisions, actor-bound facade, five-role policy and in-memory
+ledger store with its shared store contract. WP4 through WP15 and final acceptance remain
+unverified; the full gate cannot pass at this frontier.

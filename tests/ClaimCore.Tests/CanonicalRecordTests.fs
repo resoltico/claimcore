@@ -1,0 +1,183 @@
+module ClaimCore.Tests.CanonicalRecordTests
+
+open System.IO
+open System.Text
+open System.Text.Json
+open Expecto
+open ClaimCore.Domain
+open ClaimCore.RecordFormat
+open ClaimCore.TestSupport
+open ClaimCore.Tests.Fixtures
+
+let private vectorPath =
+    Path.Combine(RepositoryRoot.find (), "tests/fixtures/canonical-record-vectors.json")
+
+let private text (value: JsonElement) (name: string) =
+    value.GetProperty(name).GetString()
+    |> Option.ofObj
+    |> Option.defaultWith (fun () -> failtest "Golden vector text is missing")
+
+let private expectedRequests =
+    [
+        "OPEN", Command.Open registration
+        "AMEND_REGISTRATION", Command.AmendRegistration registration
+        "DECIDE", Command.Decide decision
+        "WITHDRAW_DECISION", Command.WithdrawDecision
+        "RECORD_PAYMENT", Command.RecordPayment "2026-08-20"
+        "CLEAR_PAYMENT", Command.ClearPayment
+        "CLOSE", Command.Close
+        "REOPEN", Command.Reopen
+    ]
+    |> List.mapi (fun index (name, command) ->
+        name,
+        { request (if index = 0 then 0L else 1L) command with
+            OperationId = System.Guid.Parse($"20000000-0000-4000-8000-{index + 1:D12}")
+        })
+    |> Map.ofList
+
+let private commandVectors =
+    testCase "all eight command encodings and identities match fixed format-3 vectors" (fun () ->
+        use document = JsonDocument.Parse(File.ReadAllText(vectorPath))
+
+        let vectors =
+            document.RootElement.GetProperty("requests").EnumerateArray() |> Seq.toList
+
+        Expect.equal vectors.Length 8 "Every command family"
+
+        let actualNames =
+            vectors |> List.map (fun vector -> text vector "command") |> Set.ofList
+
+        let expectedNames = expectedRequests |> Map.keys |> Set.ofSeq
+
+        Expect.isTrue
+            (actualNames = expectedNames)
+            "No duplicate vector can hide an omitted command family"
+
+        for vector in vectors do
+            let canonical = text vector "canonicalUtf8"
+
+            let request = expectedRequests[text vector "command"]
+
+            Expect.isTrue
+                (RequestRecord.decode 65536 (Encoding.UTF8.GetBytes canonical) = Ok request)
+                "Decoded fields match independently constructed command meaning"
+
+            let actual = request |> RequestRecord.encode |> Encoding.UTF8.GetString
+
+            Expect.isTrue
+                (actual = canonical)
+                "Canonical format matches its independent fixed golden bytes"
+
+            let fingerprint =
+                request
+                |> RequestRecord.encode
+                |> LedgerEntry.requestDigest
+                |> System.Convert.ToHexStringLower
+
+            Expect.equal fingerprint (text vector "sha256") "Fixed independently computed identity")
+
+let private snapshotVector =
+    testCase "snapshot-2 encoding stays independent of advisory rendering metadata" (fun () ->
+        use document = JsonDocument.Parse(File.ReadAllText(vectorPath))
+        let canonical = text document.RootElement "snapshot"
+
+        let view: CaseView =
+            {
+                Fields =
+                    {
+                        IncidentDate = "2026-08-01"
+                        IncidentNotificationDate = "2026-08-03"
+                        IncidentCountry = "Lithuania"
+                        ClaimantName = "Example Claimant Ltd"
+                        InsurerName = "Example Alleged Insurer"
+                        ClaimedAmount = "1000"
+                        ClaimedCurrency = "EUR"
+                        CaseReference = "UNIT-001"
+                        PaymentDecisionDate = None
+                        PayableAmount = None
+                        PayableCurrency = None
+                        PaymentDate = None
+                        Status = CaseStatus.Opened
+                    }
+                Version = 1L
+            }
+
+        Expect.isTrue
+            (CaseRecord.decodeSnapshot (Encoding.UTF8.GetBytes canonical) = Ok view)
+            "Decoded snapshot fields have independent meaning"
+
+        let restored = view |> Claim.restore |> accepted
+
+        Expect.isTrue
+            ((restored |> Claim.view |> CaseRecord.encodeSnapshot |> Encoding.UTF8.GetString) =
+                canonical)
+            "Stable retained record"
+
+        let withExtraField =
+            canonical.Replace(
+                "\"status\":\"OPENED\"",
+                "\"unexpected\":\"x\",\"status\":\"OPENED\""
+            )
+
+        Expect.isError
+            (withExtraField |> Encoding.UTF8.GetBytes |> CaseRecord.decodeSnapshot)
+            "Retained snapshots reject an added claims field")
+
+let private correctionRecord =
+    testCase
+        "CORRECT_CASE uses explicit complete groups without changing the other format-3 vectors"
+        (fun () ->
+            let request =
+                {
+                    OperationId = System.Guid.Parse("20000000-0000-4000-8000-000000000009")
+                    CaseReference = "UNIT-001"
+                    ExpectedVersion = 3L
+                    Command =
+                        Command.CorrectCase
+                            {
+                                Registration = RegistrationCorrection.Keep
+                                Decision =
+                                    DecisionCorrection.Replace
+                                        {
+                                            PaymentDecisionDate = "2026-08-15"
+                                            PayableAmount = "650.00"
+                                            PayableCurrency = "EUR"
+                                        }
+                                Payment = PaymentCorrection.Replace "2026-08-21"
+                            }
+                }
+
+            let expected =
+                "{\"canonicalCommandFormat\":3,\"operationId\":\"20000000-0000-4000-8000-000000000009\",\"caseReference\":\"UNIT-001\",\"expectedVersion\":3,\"command\":{\"type\":\"CORRECT_CASE\",\"registration\":{\"mode\":\"KEEP\"},\"decision\":{\"mode\":\"REPLACE\",\"decision\":{\"paymentDecisionDate\":\"2026-08-15\",\"payableAmount\":\"650.00\",\"payableCurrency\":\"EUR\"}},\"payment\":{\"mode\":\"REPLACE\",\"paymentDate\":\"2026-08-21\"}}}"
+
+            let actual = RequestRecord.encode request |> Encoding.UTF8.GetString
+            Expect.equal actual expected "Deterministic grouped command bytes"
+
+            Expect.equal
+                (RequestRecord.decode 65536 (Encoding.UTF8.GetBytes expected))
+                (Ok request)
+                "Round trip"
+
+            let incomplete =
+                expected.Replace(
+                    ",\"payment\":{\"mode\":\"REPLACE\",\"paymentDate\":\"2026-08-21\"}",
+                    ""
+                )
+
+            use incompleteDocument = JsonDocument.Parse(incomplete)
+
+            Expect.equal
+                (incompleteDocument.RootElement.GetProperty("command").EnumerateObject()
+                 |> Seq.length)
+                3
+                "The missing-group control remains valid JSON"
+
+            Expect.isError
+                (RequestRecord.decode 65536 (Encoding.UTF8.GetBytes incomplete))
+                "Every group is required")
+
+[<Tests>]
+let tests =
+    testList
+        "current identity and durable encoding"
+        [ commandVectors; correctionRecord; snapshotVector ]

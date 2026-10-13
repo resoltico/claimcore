@@ -21,6 +21,10 @@ let private propertyIds =
     set
         [
             "CC-PROP-STEWARDSHIP-001"
+            "CC-PROP-STEWARDSHIP-RECORD-001"
+            "CC-PROP-AUTHORITY-RECORD-001"
+            "CC-PROP-LEDGER-PAYLOAD-001"
+            "CC-PROP-LEDGER-HASH-001"
             "CC-PROP-DATE-001"
             "CC-PROP-AMOUNT-001"
             "CC-PROP-CURRENCY-001"

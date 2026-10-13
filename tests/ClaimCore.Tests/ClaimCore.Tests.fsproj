@@ -18,9 +18,15 @@
     <Compile Include="AvailabilityTests.fs" />
     <Compile Include="DomainDescriptorTests.fs" />
     <Compile Include="StewardshipTests.fs" />
+    <Compile Include="CanonicalRecordTests.fs" />
+    <Compile Include="RecordPropertyTests.fs" />
+    <Compile Include="DecoderCorpora.fs" />
+    <Compile Include="OperationRecordTests.fs" />
+    <Compile Include="LedgerEntryTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.RecordFormat/ClaimCore.RecordFormat.fsproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="coverlet.MTP" PrivateAssets="all" />

@@ -95,6 +95,13 @@
           "FSharp.Core": "[10.1.401, )"
         }
       },
+      "claimcore.recordformat": {
+        "type": "Project",
+        "dependencies": {
+          "ClaimCore.Domain": "[0.8.0, )",
+          "FSharp.Core": "[10.1.401, )"
+        }
+      },
       "Azure.Core": {
         "type": "CentralTransitive",
         "requested": "[1.63.0, )",
