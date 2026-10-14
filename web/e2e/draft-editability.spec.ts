@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
-import { openCase, prepare, startCommand, startOpen } from "./case-workflow";
+import { openCase, reviewDraft, startCommand, startOpen } from "./case-workflow";
 import { openAuthenticated } from "./session-helpers";
 
 test("protects exact amendment edits on action change and Back while untouched drafts leave directly", async ({
@@ -38,7 +38,7 @@ test("review blocks authoring and accepted OPEN shows only receipt with a usable
 }) => {
   await openAuthenticated(page);
   await startOpen(page, `RECEIPT-${randomUUID()}`);
-  await prepare(page);
+  await reviewDraft(page);
   for (const input of await page.locator(".operation-editor form input").all()) {
     await expect(input).toBeDisabled();
   }

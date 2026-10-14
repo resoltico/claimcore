@@ -80,16 +80,10 @@ module BoundedProcess =
             | None -> ()
         }
 
-    let private failureKind
-        maximum
-        timeout
-        (elapsed: Stopwatch)
-        (stdout: Capture)
-        (stderr: Capture)
-        =
+    let private failureKind maximum deadlineExpired (stdout: Capture) (stderr: Capture) =
         if stdout.Count > maximum || stderr.Count > maximum then
             Output
-        elif elapsed.ElapsedMilliseconds >= int64 timeout then
+        elif deadlineExpired then
             Deadline
         else
             Delivery
@@ -115,8 +109,8 @@ module BoundedProcess =
             invalidArg (nameof maximum) "Test process bounds must be positive."
 
         use child = new Process(StartInfo = start)
-        let elapsed = Stopwatch.StartNew()
-        use deadline = new CancellationTokenSource(timeoutMilliseconds)
+        use expiry = new CancellationTokenSource(timeoutMilliseconds)
+        use deadline = CancellationTokenSource.CreateLinkedTokenSource(expiry.Token)
         let stdout = Capture maximum
         let stderr = Capture maximum
         let mutable started = false
@@ -136,7 +130,10 @@ module BoundedProcess =
                 Task.WhenAll([| output :> Task; errors :> Task; writing :> Task; exited |])
 
             let winner =
-                Task.WhenAny(completed, Task.Delay(timeoutMilliseconds)).GetAwaiter().GetResult()
+                Task
+                    .WhenAny(completed, Task.Delay(Timeout.Infinite, expiry.Token))
+                    .GetAwaiter()
+                    .GetResult()
 
             if not (obj.ReferenceEquals(winner, completed)) then
                 invalidOp "Test process exceeded its deadline."
@@ -149,7 +146,8 @@ module BoundedProcess =
                 StandardError = errors.Result
             }
         with _ ->
-            let kind = failureKind maximum timeoutMilliseconds elapsed stdout stderr
+            let kind = failureKind maximum expiry.IsCancellationRequested stdout stderr
+
             deadline.Cancel()
 
             raise (

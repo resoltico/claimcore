@@ -228,32 +228,43 @@ type Fixture() =
             ValueTask(
                 task {
                     try
-                        try
-                            web |> Option.iter (fun value -> (value :> IDisposable).Dispose())
-                        finally
-                            try
-                                (proxy :> IAsyncDisposable)
-                                    .DisposeAsync()
-                                    .AsTask()
-                                    .GetAwaiter()
-                                    .GetResult()
-                            finally
-                                (identity :> IAsyncDisposable)
-                                    .DisposeAsync()
-                                    .AsTask()
-                                    .GetAwaiter()
-                                    .GetResult()
-                    finally
-                        postgres.DisposeAsync().AsTask().GetAwaiter().GetResult()
-                        http.Dispose()
-                        certificate.Dispose()
-                        ownedDirectory.RemoveGenerated directory
+                        FixtureCleanup.finish
+                            [
+                                (fun () ->
+                                    web
+                                    |> Option.iter (fun value -> (value :> IDisposable).Dispose()))
+                                (fun () ->
+                                    (proxy :> IAsyncDisposable)
+                                        .DisposeAsync()
+                                        .AsTask()
+                                        .GetAwaiter()
+                                        .GetResult())
+                                (fun () ->
+                                    (identity :> IAsyncDisposable)
+                                        .DisposeAsync()
+                                        .AsTask()
+                                        .GetAwaiter()
+                                        .GetResult())
+                                (fun () ->
+                                    postgres.DisposeAsync().AsTask().GetAwaiter().GetResult())
+                                http.Dispose
+                                certificate.Dispose
+                                (fun () -> ownedDirectory.RemoveGenerated directory)
+                            ]
+                    with error ->
+                        Console.Error.WriteLine(
+                            "Synthetic acceptance evidence retained: " + directory
+                        )
 
-                        if completed then
-                            Directory.Delete(directory, true)
-                        else
-                            Console.Error.WriteLine(
-                                "Synthetic acceptance evidence retained: " + directory
-                            )
+                        System.Runtime.ExceptionServices.ExceptionDispatchInfo
+                            .Capture(error)
+                            .Throw()
+
+                    if completed then
+                        Directory.Delete(directory, true)
+                    else
+                        Console.Error.WriteLine(
+                            "Synthetic acceptance evidence retained: " + directory
+                        )
                 }
             )

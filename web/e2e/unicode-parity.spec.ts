@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { expect, test } from "@playwright/test";
-import { startOpen, prepare, recordReviewed } from "./case-workflow";
+import { startOpen, reviewDraft, recordReviewed } from "./case-workflow";
 import { openAuthenticated, expectAccessible } from "./session-helpers";
 
 test("records supplementary scalar boundaries through Web for published native readback [CC-CLI-001][CC-WEB-001]", async ({
@@ -15,7 +15,7 @@ test("records supplementary scalar boundaries through Web for published native r
   await page.getByLabel("Country of incident", { exact: true }).fill("🙂".repeat(100));
   await page.getByLabel("Claimant name", { exact: true }).fill(name);
   await page.getByLabel("Responsible insurer", { exact: true }).fill(name);
-  const identity = await prepare(page);
+  const identity = await reviewDraft(page);
   await expectAccessible(page);
   await recordReviewed(page);
   await expect(page.locator("section.receipt section.case-fields")).toContainText(name);

@@ -81,22 +81,22 @@ export const startCommand = async (page: Page, label: string): Promise<void> => 
   await page.getByRole("button", { name: new RegExp(`^${label}:`, "u") }).click();
 };
 
-export const prepare = async (
+export const reviewDraft = async (
   page: Page,
   values: Readonly<Record<string, string>> = {},
 ): Promise<ReviewIdentity> => {
   await fill(page, values);
-  await progress("prepare-dispatch");
+  await progress("preview-dispatch");
   const event = page.waitForResponse((response) => response.url().endsWith("/api/command.preview"));
   await page.getByRole("button", { name: "Review changes" }).click();
   const response = await event;
   const payload: unknown = await response.json();
   if (response.status() !== 200 || !(await isResponse("command.preview", payload))) {
-    throw new Error("E2E_PREPARE_PROTOCOL_FAILURE");
+    throw new Error("E2E_PREVIEW_PROTOCOL_FAILURE");
   }
   const { outcome } = payload as ServiceResponse<"command.preview">;
   if (outcome.tag !== "REVIEWED") {
-    throw new Error("E2E_PREPARE_REVIEW_UNAVAILABLE");
+    throw new Error("E2E_REVIEW_UNAVAILABLE");
   }
   const posted: unknown = response.request().postDataJSON();
   if (
@@ -110,13 +110,13 @@ export const prepare = async (
   const { operationId } = posted;
   const { requestSha256 } = outcome.data;
   if (requestSha256 === null) {
-    throw new Error("E2E_PREPARE_EXACT_IDENTITY_UNAVAILABLE");
+    throw new Error("E2E_REVIEW_EXACT_IDENTITY_UNAVAILABLE");
   }
   const identity = { operationId, requestSha256 };
   const dialog = page.getByRole("dialog", { name: "Review changes" });
   await expect(dialog).toContainText(operationId);
   await expect(dialog).toContainText(requestSha256);
-  await progress("prepare-reviewed");
+  await progress("review-visible");
   return identity;
 };
 
@@ -138,7 +138,7 @@ export const completeCommand = async (
   values: Readonly<Record<string, string>> = {},
 ): Promise<ReviewIdentity> => {
   await startCommand(page, label);
-  const identity = await prepare(page, values);
+  const identity = await reviewDraft(page, values);
   await submit(page);
   await expect(page.getByRole("heading", { name: "Case detail" })).toBeVisible();
   return identity;
@@ -146,7 +146,7 @@ export const completeCommand = async (
 
 export const openCase = async (page: Page, caseReference: string): Promise<ReviewIdentity> => {
   await startOpen(page, caseReference);
-  const identity = await prepare(page);
+  const identity = await reviewDraft(page);
   await submit(page);
   await expect(page.getByRole("heading", { name: "Case detail" })).toBeVisible();
   await progress("open-detail");
@@ -156,7 +156,7 @@ export const openCase = async (page: Page, caseReference: string): Promise<Revie
 
 export const droppedSubmission = async (page: Page): Promise<ReviewIdentity> => {
   await startCommand(page, "Close the case");
-  const identity = await prepare(page);
+  const identity = await reviewDraft(page);
   let committed = false;
   await page.route("**/api/command.execute", async (route) => {
     const response = await route.fetch();

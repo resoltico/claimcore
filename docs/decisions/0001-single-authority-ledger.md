@@ -1464,3 +1464,99 @@ localization catalogs, audit0vulnerabilities, build, formatting/FSharpLint and t
 Allnine literal example commands had already returned0/ACCEPTED against a fresh real fixture.
 Complete published acceptance17/17(15m59.759s) with all3×229cases passed on the runtime/CI changes;
 document cleanup changes no delivered runtime. Full clean-clone gate repetitions remain WP15.
+
+### Final verification and teardown failure control
+
+Measured complete suites244/28/79/67/17 set the CI/local floors to240/20/70/60/10,
+rounded down to tens as WP15 explicitly requires. Completion/focus/pending/skip guards remain
+unchanged. The first fresh-clone complete gate at7856cdf passed on Darwin: core244,
+architecture28, PostgreSQL79, Web67, frontend181, acceptance17; every native suite had zero
+failures/skips, acceptance15m52.002s. GitHub run38561438221 at that exact revision completed
+successfully, including Linux/macOS native tests, integration, frontend, workflow hygiene and
+published acceptance17/17,failed0/skipped0,19m36.942s. These results precede the correction below;
+they are not qualification of an uncommitted tree or a later revision.
+
+A separate final disk audit found that PostgreSQL disposal failure could skip generated-tree
+cleanup. Fixture teardown now attempts every owned disposal/cleanup step, then rethrows a
+single original failure with its stack or exposes every failure in an aggregate. Failure logs
+remain; the five generated trees are still the only deletion targets. A synthetic rejecting
+control throws during disposal, proves later disposals and generated-tree deletion execute,
+checks retained logs/original exception identity, and proves two errors remain visible.
+Targeted native cleanup checks passed2/2,failed0/skipped0,234ms; this filtered invocation is
+not complete acceptance. Updated Release solution build passed0warnings/errors,72.17s; complete
+core244/244 passed,failed0/skipped0,13.512s. Complete acceptance and corrected-head fresh-clone
+repetitions remain required before the PR is ready.
+
+Final naming review changed the browser helper from prepare to reviewDraft and its diagnostics
+from preparation to preview/review; requests, assertions and229-case engine counts are unchanged.
+The unknown-endpoint rejection fixture now uses case.unknown instead of an obsolete endpoint
+name; refusal remains mandatory. Browser format/typecheck/lint passed, including38 lint-policy
+tests. Other remaining sweep words describe current concepts: erased tombstones, ordinary
+fixture setup, declaration/package inventories, upstream NuGet protocol and Windows refusal,
+and the explicitly required operations/non-goal headings. No removed capability remains in
+src/tests/web-src/db/deployment/eng. Ignored pre-existing artifacts and private state are
+preserved; directory names are not evidence of runtime product authority.
+
+The CI/property audit confirms fifteen active properties with200 cases each (3000 total),
+state sequences up to20 and no long-campaign selector. Persistent corpus/sandbox bytes are0;
+fixed hostile input12008bytes deliberately exceeds random-input4096bytes. Captured Web and
+Playwright streams total at most11MiB per fixture; this does not cap browser/cache/build images,
+retained failures or cumulative disk use. Existing GitHub artifacts/settings were preserved.
+The108-case correction matrix and378 real setup writes per engine remain; fewer repeated UI
+setup actions do not establish a controlled speed benchmark. The15m child/40m native/50m CI
+ceilings terminate work, and do not guarantee completion within those bounds. No full mutation
+or fuzz campaign ran for this audit; required bounded properties remain in the complete gate.
+
+The combined checkpoint drill ran through the actual published binaries and fresh owned
+PostgreSQL/Keycloak: allnine literal documented CLI commands returned0,stderr0,ACCEPTED;
+pg_dump before stewardship/erasure returned0; published verify --expect using the exact CLI
+erasure receipt returned0; actual pre-erasure schema restore returned0; the same published
+verify --expect then returned2. The external FSI script/log contains only synthetic evidence;
+both new containers were removed. An initial invocation stopped at PKCE setup(exit3) because
+its browser-runtime environment was omitted(default Chromium executable absent); it was not
+reported as verification. The corrected invocation used the installed gate runtime and exited0.
+
+Complete corrected acceptance exposed a process-control failure: the unchanged250ms deadline
+case expected Deadline but received Delivery(580ms aggregate-control runtime). The run was
+canceled after that confirmed failure(exit130); it is not a complete or passing acceptance
+result. Its log is retained, and its test-labelled containers/processes were gone after
+cancellation. Failure classification had inferred expiry from rounded Stopwatch milliseconds
+and used two independent timeout timers; pipe faults also canceled the shared token. The
+small correction gives actual expiry its own timed source, links pipe cancellation separately,
+and waits on that same expiry token. Output overflow retains priority; pipe delivery faults
+are still distinct. No deadline or output allowance changed. The timer-race explanation is
+an inference from this failure and source; two64×2ms probes did not independently reproduce
+expiry before the rounded threshold. The actual failed control remains the counterexample.
+An isolated FSI invocation of the proposed helper and unchanged physical process/cleanup/
+privacy/progress control passed1aggregate,0ignored/failed/errored,0.580s. Full qualification
+of the corrected tree is still required.
+
+The published checkpoint drill also positively verified the restored ledger without an
+expected position(exit0), before the same CLI erasure checkpoint was refused(exit2). Thus
+the refusal is not merely a malformed restore. The owned guide config/NSS profile/runtime
+and clean guide clone(330MiB/530MiB), plus the completed first-gate clone(581MiB), were removed
+after explicit identity/cleanliness/no-active-resource checks; logs and signed-in screenshot
+remain outside source. Removed unused generic MIT fallback text after confirming the notice
+generator reads exact locked dependency licenses. Npgsql's applicable copyright notice remains.
+
+The actual updated native build passed0warnings/errors,6.96s. The unchanged process-failure
+control through dotnet test with FullyQualifiedName filter and strict-zero/minimum1 passed
+1/1,failed0/skipped0,2.500s. This short control establishes the runtime correction locally;
+it does not replace complete verification. The complete local gate is rerun before committing.
+
+The complete corrected local gate then passed on Darwin: core244/244(12.834s), architecture
+28/28(11.318s), PostgreSQL79/79(1m55.885s), Web67/67(59.627s), frontend181/181(4.45s), and
+published acceptance18/18(14m15.654s), every native suite failed0/skipped0. It ran locked
+restores, generation, Release build, full formatting/FSharpLint/frontend lint/style/types,
+all native suites and all three229-case browser engines through eng/verify.sh. No filtered
+run is counted as complete verification. The updated frontier is ready to commit; two new
+clean-clone repetitions and exact pushed-head Gate are still required for final acceptance.
+
+Scheduling-budget wording is explicit: the prior serial-engine correction raised aggregate
+native/CI budgets30→40m and45→50m; child15m/per-spec waits, no retries and behavioral oracles
+were retained. Deadlines cause failure and attempted cleanup; OS kill/wait can fail and that
+failure flag remains visible. Neither an aggregate budget nor captured-stream allowances prove
+a global disk quota, an unconditional process-termination guarantee or a measured minimum
+space requirement. The3000-case total is for fifteen regular properties, excluding their
+harness controls. Pre-existing main workflows/artifacts remain unchanged until owner merge;
+no new-branch full mutation/extended-fuzz campaign was started.

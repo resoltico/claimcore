@@ -1,7 +1,23 @@
 module ClaimCore.AcceptanceTests.FixtureCleanup
 
 open System.IO
+open System
+open System.Runtime.ExceptionServices
 open Expecto
+
+let internal finish (steps: (unit -> unit) list) =
+    let failures = ResizeArray<exn>()
+
+    for step in steps do
+        try
+            step ()
+        with error ->
+            failures.Add error
+
+    match failures.Count with
+    | 0 -> ()
+    | 1 -> ExceptionDispatchInfo.Capture(failures[0]).Throw()
+    | _ -> raise (AggregateException("Fixture teardown failed.", failures))
 
 type internal OwnedDirectory() =
     let root = FixtureFiles.directory ()
@@ -74,3 +90,55 @@ let tests =
             finally
                 Directory.Delete(owned.Path, true)
                 Directory.Delete(other.Path, true))
+
+[<Tests>]
+let disposalTests =
+    testCase
+        "fixture cleanup runs after disposal failure and preserves every teardown error"
+        (fun () ->
+            let owned = OwnedDirectory()
+
+            try
+                let generated = Path.Combine(owned.Path, "ClaimCore.Web")
+                Directory.CreateDirectory generated |> ignore
+                let log = FixtureFiles.text owned.Path "web.stderr" "synthetic diagnostic"
+                let failure = IOException("Synthetic database disposal failure")
+                let mutable disposed = false
+
+                let actual =
+                    try
+                        finish
+                            [
+                                (fun () -> raise failure)
+                                (fun () -> disposed <- true)
+                                (fun () -> owned.RemoveGenerated owned.Path)
+                            ]
+
+                        None
+                    with error ->
+                        Some error
+
+                Expect.isTrue disposed "Subsequent owned disposables execute"
+                Expect.isFalse (Directory.Exists generated) "Generated trees removed after failure"
+
+                Expect.equal
+                    (File.ReadAllText log)
+                    "synthetic diagnostic"
+                    "Failure evidence survives"
+
+                Expect.isTrue
+                    (actual |> Option.exists (fun error -> obj.ReferenceEquals(error, failure)))
+                    "Original failure retained"
+
+                try
+                    finish
+                        [
+                            (fun () -> raise failure)
+                            (fun () -> invalidOp "Synthetic cleanup failure")
+                        ]
+
+                    failtest "Both teardown failures must remain visible"
+                with :? AggregateException as errors ->
+                    Expect.equal errors.InnerExceptions.Count 2 "Every failure retained"
+            finally
+                Directory.Delete(owned.Path, true))

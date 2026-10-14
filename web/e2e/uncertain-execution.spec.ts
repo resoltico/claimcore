@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { openAuthenticated } from "./session-helpers";
-import { openCase, startCommand, prepare } from "./case-workflow";
+import { openCase, startCommand, reviewDraft } from "./case-workflow";
 import { isResponse } from "../src/generated/contracts/validation";
 import type { ServiceResponse } from "../src/api/types";
 
@@ -32,7 +32,7 @@ test("retries one lost accepted reply with the exact reviewed operation and byte
   const previewed = page.waitForResponse((response) =>
     response.url().endsWith("/api/command.preview"),
   );
-  const identity = await prepare(page);
+  const identity = await reviewDraft(page);
   const original = (await previewed).request().postData();
   expect(original).not.toBeNull();
   const requests: (string | null)[] = [];

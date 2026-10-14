@@ -99,11 +99,11 @@ test("preserves authored Unicode and invalid calendar text while localizing real
   }
 });
 
-test("switches language and independent display format through native preparation without changing review consent", async ({
+test("switches language and independent display format during draft review without changing consent", async ({
   page,
 }) => {
   await openAuthenticated(page);
-  await startOpen(page, `LOCALE-PREPARE-${randomUUID()}`);
+  await startOpen(page, `LOCALE-REVIEW-${randomUUID()}`);
   const requests = trackRequests(page);
   const pending = await pauseJsonReply(page, "command.preview");
   try {

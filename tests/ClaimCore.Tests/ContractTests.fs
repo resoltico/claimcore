@@ -320,11 +320,11 @@ let private rejectFrames () =
             "[]"
             "{}"
             "{\"endpoint\":\"definition\",\"endpoint\":\"definition\",\"input\":{}}"
-            "{\"endpoint\":\"recovery.resolve\",\"input\":{}}"
+            "{\"endpoint\":\"case.unknown\",\"input\":{}}"
             "{\"endpoint\":\"definition\",\"input\":{\"secret\":\"private\"}}"
             "{\"endpoint\":\"case.get\",\"input\":{\"caseReference\":\"\\ud800\"}}"
         ] do
-        Expect.isError (Frames.parse (bytes text)) "Malformed, duplicate or removed input refused"
+        Expect.isError (Frames.parse (bytes text)) "Malformed, duplicate or unknown input refused"
 
     for blob in [ [| 0xffuy |]; Array.zeroCreate<byte>(16 * 1024 * 1024 + 1) ] do
         Expect.isError (Frames.parse blob) "UTF-8 and byte bound"
