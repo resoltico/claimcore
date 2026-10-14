@@ -2,15 +2,20 @@ import { render, screen } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../src/App";
-import type { CurrentCase } from "../src/api/v3";
+import type { CurrentCase } from "../src/api/service";
 import { CaseFieldsView } from "../src/components/CaseFieldsView";
 import { DescriptorField } from "../src/components/DescriptorField";
 import { OperationEditor } from "../src/views/OperationEditor";
 import { generatedResponse } from "./contract-corpus.fixtures";
-import { preparedForRequest } from "./prepared-request.fixtures";
-import { definition, fields, operationId, preparation, runtime, response } from "./v3-ui.fixtures";
+import { previewForRequest } from "./preview-request.fixtures";
+import { definition, fields, operationId, digest, runtime, response } from "./service-ui.fixtures";
 
-const current: CurrentCase = { case: { fields, revision: "1" }, availableCommands: ["CLOSE"] };
+const current: CurrentCase = {
+  state: "LIVE",
+  disposition: "ACTIVE",
+  case: { fields, revision: "1" },
+  availableCommands: ["CLOSE"],
+};
 
 describe("metadata-driven descriptor rendering", () => {
   it("renders descriptor labels and all supplied field values without client-side normalization", () => {
@@ -43,9 +48,9 @@ const acceptsOperation = async (): Promise<void> => {
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockImplementationOnce(
-    preparedForRequest(
-      response("command.prepare", "PREPARED", {
-        details: preparation,
+    previewForRequest(
+      response("command.preview", "REVIEWED", {
+        requestSha256: digest,
         review: {
           before: { fields, revision: "1" },
           proposed: { fields, revision: "2" },
@@ -66,7 +71,6 @@ const acceptsOperation = async (): Promise<void> => {
       initialCommand="CLOSE"
       onClose={vi.fn()}
       onCommitted={committed}
-      onRecovery={vi.fn()}
       onMutationLockChange={vi.fn()}
     />,
   );
@@ -88,59 +92,14 @@ describe("metadata-driven operation acceptance", () => {
   );
 });
 
-describe("metadata-driven dirty command behavior", () => {
-  beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
-
-  it("keeps a prepared operation in recovery and asks before discarding a dirty command switch", async () => {
-    const user = userEvent.setup();
-    const fetch = vi.mocked(globalThis.fetch);
-    fetch.mockResolvedValueOnce(
-      response("command.prepare", "PREPARED", {
-        details: preparation,
-        review: {
-          before: null,
-          proposed: { fields, revision: "2" },
-          changes: [],
-          context: runtime,
-          advisory: true,
-        },
-      }),
-    );
-    render(
-      <OperationEditor
-        token="token"
-        definition={definition}
-        current={{ ...current, availableCommands: ["CLOSE", "OPEN"] }}
-        initialCommand="CLOSE"
-        onClose={vi.fn()}
-        onCommitted={vi.fn()}
-        onRecovery={vi.fn()}
-        onMutationLockChange={vi.fn()}
-      />,
-    );
-    await user.click(screen.getByRole("button", { name: "Review changes" }));
-    await user.click(
-      await screen.findByRole("button", { name: "Back to editing; keep for Recovery" }),
-    );
-    await user.selectOptions(screen.getByLabelText("Case action"), "OPEN");
-    await user.type(screen.getByLabelText(/Incident date/u), "2026-09-09");
-    await user.selectOptions(screen.getByLabelText("Case action"), "CLOSE");
-    expect(
-      await screen.findByRole("dialog", { name: "Discard these draft changes?" }),
-    ).toBeVisible();
-    await user.click(screen.getByRole("button", { name: "Discard and change action" }));
-    expect(screen.getByRole("heading", { name: "Close the case" })).toBeVisible();
-  });
-});
-
-describe("v3 session lifecycle", () => {
+describe("service session lifecycle", () => {
   beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 
   it("offers OIDC sign-in, then hydrates an authenticated return and signs out", async () => {
     const user = userEvent.setup();
     const fetch = vi.mocked(globalThis.fetch);
     fetch.mockResolvedValueOnce(
-      response("session", "SNAPSHOT", { authenticated: false, antiforgeryToken: "anonymous" }),
+      response("session", "SUCCEEDED", { authenticated: false, antiforgeryToken: "anonymous" }),
     );
     const anonymous = render(<App />);
     const signIn = await screen.findByRole("link", { name: "Sign in" });
@@ -148,7 +107,7 @@ describe("v3 session lifecycle", () => {
     expect(fetch).toHaveBeenCalledTimes(1);
     anonymous.unmount();
     fetch.mockResolvedValueOnce(
-      response("session", "SNAPSHOT", {
+      response("session", "SUCCEEDED", {
         authenticated: true,
         antiforgeryToken: "authenticated",
       }),
@@ -157,7 +116,7 @@ describe("v3 session lifecycle", () => {
       response("case.list", "SUCCEEDED", { items: [], nextCursor: null }),
     );
     fetch.mockResolvedValueOnce(
-      response("session.logout", "SNAPSHOT", {
+      response("session.logout", "SUCCEEDED", {
         authenticated: false,
         antiforgeryToken: "replacement",
       }),

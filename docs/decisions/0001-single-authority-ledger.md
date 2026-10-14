@@ -929,3 +929,122 @@ or skipped, 161.955s. Its output is outside source as `wp10-postgres-guards-fina
 Unit/Web final logs and full lint output are alongside it as `wp10-unit-final.log`,
 `wp10-web-final.log` and `wp10-fsharplint-final.log`. The final source/lock/commit review includes
 both changed locks and the measured CI minimum. No generated report or private fixture is tracked.
+
+## Changes during implementation: browser types and tooling dependency
+
+The WP7 generator emitted response DTOs and semantic descriptors but omitted typed endpoint
+requests. Browser authoring therefore could not compile its CommandDraft against the one
+catalogue. Added RequestByEndpoint directly from each endpoint's request schema and an
+isEndpointId predicate derived from the generated catalogue. The browser's aliases index
+these generated types; they do not define another request contract. Reviewed the intentional
+lock diff: only types.ts, endpoint-catalog.ts and the validator third-party notice change.
+The fourteen request/response schemas, corpus, semantic bytes and wire fingerprint are unchanged.
+
+Npm audit found seven high-severity findings in Stylelint's globbing graph, all originating
+from braces <=3.0.3 (GHSA-vfj7-8cjw-p6xm). Registry inspection and the primary GitHub advisory
+show no patched upstream release. The suggested Stylelint 7 downgrade would discard current
+rules and was not used. Pinned the MIT-licensed maintained derivative
+@dieub/braces-depth-guard 3.0.3-pn.2 as the braces override instead. Read its published tarball
+without running package scripts, compared all runtime JS with upstream 3.0.3, reviewed the
+parse/compile/expand/stringify depth guards and parent-cycle guards, and verified installed
+bytes against that exact SHA-512-bound artifact. No code is vendored or advisory excluded.
+
+A direct installed-artifact check accepts src/{a,b}/*.css expansion and rejects nesting depth
+101 with the depth diagnostic. Actual Stylelint and its unchanged rule configuration pass.
+Npm registry-signature verification passes all 496 packages and 191 attestations, including
+this exact fork/version and its SLSA provenance. The audit at low reports zero vulnerabilities.
+This evidence addresses this dependency/advisory; it does not claim universal resource bounds
+for arbitrary ASTs or expansion cardinality. References:
+https://github.com/advisories/GHSA-vfj7-8cjw-p6xm and
+https://github.com/dieub/braces-depth-guard. Review artifacts/signature output are outside source.
+The dependency replacement preserves the required lint and audit gates and reopens no non-goal.
+
+## WP11: browser case work
+
+The browser uses root catalogue paths, exact methods, cookie antiforgery and the compiled
+ClaimCore-Contract header. Bounded strict JSON and standalone generated schemas validate all
+replies, including correlated host failures. Preview is readonly; review confirmation and
+successful execution send the same authored draft. The editor stores its serialized bytes
+once and preserves them, its operation ID, expected revision and review across uncertainty.
+One explicit same-operation retry remains while the page lives. Editing is blocked after
+uncertainty; changed definite drafts receive a fresh identity. No operation/claimant bytes
+are persisted in browser storage. Contract mismatch offers explicit reload without a redispatch.
+
+Case views and lists render ACTIVE, VOIDED and ERASED; erased details retain only reference
+and revision, with no facts or command buttons. History and operation observation consume
+ordinary/direct receipts, including nullable erased snapshots. Server-authoritative command
+availability, all thirteen fields, all three correction groups, accessible review/confirmation,
+Unicode isolation/warnings, exact amount/date display, three languages and the pseudolocale
+remain. Removed the recovery/export/import interfaces and their sole-use tests/helpers/strings.
+Mixed tests retain observation/read/session races, core diagnostics and relevant command work.
+Typed fixture changes were verified rather than hidden behind compatibility adapters.
+
+Renamed generation-labelled API/tests by responsibility. Removed planned asset manifests,
+SBOM, mutation testing, custom report admission/reporters and their dependencies. Coverage is
+available on demand and gates nothing; logic limits and networking/type/localization/style
+rules remain. Localization coverage compares complete derived metadata/diagnostics/tokens;
+old >300/>100 counters were invalid after scope deletion and do not define completeness.
+Network policy fixtures name current source paths and retain positive/rejecting controls.
+The Web publish target requires built index.html and copies dist; the planned Docker build
+and published acceptance in WP12 own source-to-delivered-asset verification, without the
+removed manifest engine. Ordinary .NET builds still do not run npm.
+
+English metadata/diagnostics are generated from F#. Authored Latvian and Arabic additions are
+machine-drafted and need native review. Generated presentation catalogs are regenerated from
+those sources. New state, retry/reload and diagnostic text is translated, not English fallback.
+
+Commands actually run locally, separately from inspection:
+
+- Locked frontend install (`npm --prefix web ci`): exit 0, zero vulnerabilities after the
+  reviewed override. Product/toolchain versions remain unchanged; npm graph is reviewed.
+- `npm --prefix web run contract:lock`, then `contract:generate`/`contract:verify`: exit 0,
+  reviewed derived-type/predicate/notice changes only. A formatting glob accidentally changed
+  bundled generated JS; lock verification rejected it. Corrected its ignore names and restored
+  all bytes through ordinary generation, not by accepting formatted bundles.
+- `npm --prefix web run localization:generate` and `localization:check`: complete 288 keys,
+  73 diagnostic identities, three real languages and one pseudolocale.
+- Complete `npm --prefix web run test:unit`: 60 files, 181 passed, zero failed/skipped,
+  11.73s. Includes every 199-case native endpoint corpus alternative (100 positive/99 negative),
+  all 73 native English diagnostic templates, exact request/retry/confirmation identity,
+  malformed bytes/media/schema/status, clocks/deadlines, session/read races, Unicode, amounts,
+  correction modes, tombstones and reload prompt. No test filter, retry or conditional skip.
+- `typecheck`, complete `lint` (38 policy tests plus type-aware oxlint), `lint:styles`,
+  `format:check`: all exit 0, no findings/warnings. Function size 50 and complexity 12 remain;
+  two length/complexity findings were fixed by responsibilities, not suppression/threshold changes.
+- `npm --prefix web audit --audit-level=low`: exit 0, zero vulnerabilities.
+  `npm audit signatures --json --include-attestations` in web: exit 0; exact fork verified.
+- `npm --prefix web run build`: exit 0, Vite assets and runtime/embedded-validator notices
+  generated. No asset-size or coverage/mutation threshold is claimed.
+- `dotnet build ClaimCore.slnx --configuration Release --no-restore`: exit 0, fourteen
+  projects, zero warnings/errors, 23.98s. Full Fantomas/FSharpLint: exit 0, zero findings/warnings.
+- Complete native MTP Release/no-build/no-restore/strict-zero/settings unit command, floor 232:
+  232 passed, zero failed/skipped, 56.777s. Web, floor 66: 66 passed, zero failed/skipped,
+  108.874s. PostgreSQL, floor 78, with its configured CI --timeout=20m: 78 passed,
+  zero failed/skipped, 225.172s. The earlier local five-minute runner limit terminated at 63
+  passing tests/no assertion failures (exit 134, minimum-count violation); it is not passing
+  evidence. The final full run matches CI's runner limit; no product/test deadline changed.
+- `git diff --check`: exit 0. `grep -rni recovery web/src`: no matches, exit 1 as grep defines.
+  Source/version/changelog/baseline comparison: protected bytes unchanged. Owned synthetic
+  fixtures are removed; original evaluation stacks were not connected to or changed.
+
+Type/import, fixture-shape, label, formatting, cwd and lint iteration failures are not passing
+claims. Generated bytes and dependencies were reviewed; no generated report/private input is
+tracked. The local frontend and Web half of lint pass; exact-head CI evidence is recorded after
+push. Three-engine/published-service/Compose acceptance, native translation review and Windows
+remain unverified here. WP12 is next and has no deployment/acceptance implementation edits yet.
+Keep the pull request draft until WP15/final acceptance.
+
+Exact-head CI run 38492336334 proves the frontend job passed. The lint job exposed a fresh-
+checkout ordering defect: its localization/validator policy tests require ignored generated
+contracts, but no generation step preceded them. Added ordinary contract generation after
+its existing locked restore/npm install. The ENOENT failure is retained outside source in
+wp11-ci-lint.log and is not passing evidence. No check was removed or weakened. Amended only
+the WP11 package commit; the superseded CI head is not claimed as final-head evidence.
+
+The amended 0595454 head passes the full frontend job and every Web lint step (generation,
+format, lint, styles). The remaining lint-job failure is the pinned zizmor-action v0.5.1
+wrapper rejecting the already-required zizmor 1.30.1 as an unknown version before executing it.
+Updated only its immutable action pin to v0.6.4 (cc914d7…), whose primary release/source supports
+1.30.1. The tool version, pedantic persona, online audits and failure behavior are unchanged.
+Read the action/script and resolved the published tag before changing the pin. The prior
+wrapper failure is not audit success. Reference: https://github.com/zizmorcore/zizmor-action/releases/tag/v0.6.4.

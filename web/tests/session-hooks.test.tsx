@@ -1,9 +1,9 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
-import { response } from "./v3-ui.fixtures";
+import { response } from "./service-ui.fixtures";
 import { useSession } from "../src/hooks/useSession";
 
-const session = (data: Record<string, unknown>) => response("session", "SNAPSHOT", data);
+const session = (data: Record<string, unknown>) => response("session", "SUCCEEDED", data);
 
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 

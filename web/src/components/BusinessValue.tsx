@@ -1,5 +1,5 @@
 import { renderIsolatedValue } from "../presentation/messages";
-import type { FieldDescriptor } from "../api/v3";
+import type { FieldDescriptor } from "../api/service";
 import { usePresentation } from "../presentation/context";
 import { suspiciousCodePoints } from "../utils/text";
 

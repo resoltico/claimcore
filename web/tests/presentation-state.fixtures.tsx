@@ -1,12 +1,14 @@
 import { screen } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import { vi } from "vitest";
-import type { CommandDraft, CurrentCase } from "../src/api/v3";
+import type { CommandDraft, CurrentCase } from "../src/api/service";
 import { PresentationControls } from "../src/presentation/PresentationControls";
 import { OperationEditor } from "../src/views/OperationEditor";
-import { definition, fields, preparation, response, runtime } from "./v3-ui.fixtures";
+import { definition, fields, digest, response, runtime } from "./service-ui.fixtures";
 
 export const current: CurrentCase = {
+  state: "LIVE",
+  disposition: "ACTIVE",
   case: { fields, revision: "1" },
   availableCommands: ["CLOSE"],
 };
@@ -20,7 +22,6 @@ export const editor = (overrides: Partial<ComponentProps<typeof OperationEditor>
       initialCommand="CLOSE"
       onClose={vi.fn()}
       onCommitted={vi.fn()}
-      onRecovery={vi.fn()}
       onMutationLockChange={vi.fn()}
       {...overrides}
     />
@@ -34,19 +35,10 @@ export const draftAt = (index: number): CommandDraft => {
   }
   return JSON.parse(body) as CommandDraft;
 };
-export const preparedReply = (index = 0): Response => {
+export const previewReply = (index = 0): Response => {
   const draft = draftAt(index);
-  return response("command.prepare", "PREPARED", {
-    details: {
-      ...preparation,
-      expectedRevision: draft.expectedRevision,
-      summary: {
-        ...preparation.summary,
-        operationId: draft.operationId,
-        caseReference: draft.caseReference,
-        command: draft.command.kind,
-      },
-    },
+  return response("command.preview", "REVIEWED", {
+    requestSha256: digest,
     review: {
       before: { fields, revision: draft.expectedRevision },
       proposed: { fields: { ...fields, status: "CLOSED" }, revision: "2" },

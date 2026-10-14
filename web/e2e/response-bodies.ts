@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import { webV3TransportLimits } from "../src/generated/contracts/web-v3.endpoint-catalog";
+const responseBytes = 16 * 1024 * 1024;
 
 const configured = new WeakMap<Page, Promise<void>>();
 
@@ -10,8 +10,8 @@ const configure = async (page: Page): Promise<void> => {
   // The native page/context lifetime closes this session and its retained bodies.
   const session = await page.context().newCDPSession(page);
   await session.send("Network.configureDurableMessages", {
-    maxTotalBufferSize: 2 * webV3TransportLimits.jsonResponseBytes,
-    maxResourceBufferSize: webV3TransportLimits.jsonResponseBytes,
+    maxTotalBufferSize: 2 * responseBytes,
+    maxResourceBufferSize: responseBytes,
   });
 };
 

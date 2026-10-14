@@ -2,8 +2,8 @@ import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { expect, type Page } from "@playwright/test";
 
-import { isWebV3Response } from "../src/generated/contracts/web-v3.validation";
-import { webV3Endpoints } from "../src/generated/contracts/web-v3.endpoint-catalog";
+import { isResponse } from "../src/generated/contracts/validation";
+import { endpoints } from "../src/generated/contracts/endpoint-catalog";
 import { browserRequest, progress, sessionToken } from "./session-helpers";
 
 type Principals = Readonly<{
@@ -50,7 +50,7 @@ const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
 const pathFor = (endpoint: ManagementEndpoint): string => {
-  const descriptor = webV3Endpoints.find((item) => item.id === endpoint);
+  const descriptor = endpoints.find((item) => item.id === endpoint);
   if (descriptor === undefined) {
     throw new Error("Synthetic authority endpoint is missing.");
   }
@@ -68,7 +68,7 @@ const call = async (page: Page, endpoint: ManagementEndpoint, body: object) => {
     body: JSON.stringify(body),
   });
   const { payload } = reply;
-  if (reply.status !== 200 || !(await isWebV3Response(endpoint, payload))) {
+  if (reply.status !== 200 || !(await isResponse(endpoint, payload))) {
     await progress(`authority-wire-${endpoint.replace(".", "-")}-${reply.status}`);
     throw new Error(`Synthetic authority ${endpoint} wire response is invalid.`);
   }
@@ -128,7 +128,7 @@ const grantService = async (page: Page, principal: object, scope: object): Promi
 };
 
 const assertSession = async (page: Page): Promise<void> => {
-  const snapshot = await browserRequest(page, "/api/v3/session");
+  const snapshot = await browserRequest(page, "/api/session");
   expect(snapshot.status).toBe(200);
 };
 

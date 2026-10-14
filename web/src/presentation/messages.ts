@@ -8,7 +8,6 @@ import shapes from "./generated/arguments.json";
 import type { Preferences } from "./preferences";
 import type { MessageKey, Values } from "./types";
 
-// lint-exception: LX-0014
 // oxlint-disable-next-line typescript/no-unsafe-type-assertion
 const catalogs = { en, lv, ar } as unknown as Record<
   string,

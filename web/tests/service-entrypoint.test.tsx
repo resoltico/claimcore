@@ -5,7 +5,7 @@ afterEach(() => {
   vi.resetModules();
 });
 
-it("mounts the Web v3 browser root", async () => {
+it("mounts the Web service browser root", async () => {
   document.body.innerHTML = '<div id="root"></div>';
   vi.stubGlobal(
     "fetch",
@@ -13,7 +13,7 @@ it("mounts the Web v3 browser root", async () => {
       new Response(
         JSON.stringify({
           endpoint: "session",
-          outcome: { tag: "SNAPSHOT", data: { authenticated: false, antiforgeryToken: "token" } },
+          outcome: { tag: "SUCCEEDED", data: { authenticated: false, antiforgeryToken: "token" } },
         }),
         { headers: { "content-type": "application/json" } },
       ),

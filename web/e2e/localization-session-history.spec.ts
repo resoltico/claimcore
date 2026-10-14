@@ -52,7 +52,7 @@ test("preserves language and independent display preferences through real logout
     page.getByRole("button", { name: ui("ar", "ui.signOut"), exact: true }),
   ).toBeVisible();
   const logoutResponse = page.waitForResponse(
-    (reply) => new URL(reply.url()).pathname === "/api/v3/session/logout",
+    (reply) => new URL(reply.url()).pathname === "/api/session.logout",
   );
   await page.getByRole("button", { name: ui("ar", "ui.signOut"), exact: true }).click();
   expect((await logoutResponse).status()).toBe(200);

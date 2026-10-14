@@ -1,4 +1,4 @@
-import type { FieldDescriptor } from "../api/v3";
+import type { FieldDescriptor } from "../api/service";
 import type { DisplayLocale } from "./preferences";
 
 const digitsFor = (locale: DisplayLocale) => {

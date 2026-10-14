@@ -10,7 +10,7 @@ import type { OperationEditorModel, OperationEditorProps } from "./operation/edi
 const useEditorFocus = (
   model: OperationEditorModel,
   section: RefObject<HTMLElement | null>,
-  prepareButtonRef: RefObject<HTMLButtonElement | null>,
+  previewButtonRef: RefObject<HTMLButtonElement | null>,
 ) => {
   const previousDelivery = useRef(model.state.delivery);
   useEffect(() => {
@@ -31,17 +31,30 @@ const useEditorFocus = (
     const previous = previousDelivery.current;
     previousDelivery.current = model.state.delivery;
     if (previous === "REVIEWING" && model.state.delivery === "EDITING") {
-      prepareButtonRef.current?.focus();
+      previewButtonRef.current?.focus();
     }
-  }, [model.state.delivery, prepareButtonRef]);
+  }, [model.state.delivery, previewButtonRef]);
 };
 
 const requestLeave = (model: OperationEditorModel, onClose: () => void): void => {
-  if (model.canPrepare && model.dirty) {
+  if (model.canPreview && model.dirty) {
     model.setPendingDiscard("LEAVE");
   } else if (!model.locked) {
     onClose();
   }
+};
+
+const UnknownOperation = ({ model }: { model: OperationEditorModel }) => {
+  const p = usePresentation();
+  return (
+    <section role="alert">
+      <NoticeView value={model.state.message!} />
+      <p>{p.text("ui.retryExactDescription")}</p>
+      <button type="button" onClick={() => void model.submit()}>
+        {p.text("ui.retryExact")}
+      </button>
+    </section>
+  );
 };
 
 const OperationEditorLayout = ({
@@ -53,14 +66,10 @@ const OperationEditorLayout = ({
 }) => {
   const p = usePresentation();
   const section = useRef<HTMLElement>(null);
-  const prepareButtonRef = useRef<HTMLButtonElement>(null);
-  useEditorFocus(model, section, prepareButtonRef);
+  const previewButtonRef = useRef<HTMLButtonElement>(null);
+  useEditorFocus(model, section, previewButtonRef);
   if (model.state.delivery === "OUTCOME_UNKNOWN") {
-    return (
-      <p role="alert">
-        <NoticeView value={model.state.message!} />
-      </p>
-    );
+    return <UnknownOperation model={model} />;
   }
   if (model.receipt !== null) {
     return (
@@ -84,7 +93,7 @@ const OperationEditorLayout = ({
         onClose={() => {
           requestLeave(model, props.onClose);
         }}
-        prepareButtonRef={prepareButtonRef}
+        previewButtonRef={previewButtonRef}
       />
       <OperationReview model={model} fields={props.definition.definition.fields} />
       <CommandChangeDialog model={model} onClose={props.onClose} />

@@ -3,7 +3,7 @@ import { BusinessValue, CharacterWarning } from "../src/components/BusinessValue
 import { preferenceKey } from "../src/presentation/preferences";
 import { createPresenter } from "../src/presentation/presenter";
 import { render, screen } from "./presentation-test-support";
-import { definition } from "./v3-ui.fixtures";
+import { definition } from "./service-ui.fixtures";
 
 it("formats review values by descriptor with independent date and amount expectations [CC-DOM-001]", () => {
   localStorage.setItem(

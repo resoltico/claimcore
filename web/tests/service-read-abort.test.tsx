@@ -1,9 +1,9 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
-import type { ApiResult, WebV3Response } from "../src/api/v3";
+import type { ApiResult, ServiceResponse } from "../src/api/service";
 import { useRetryablePage, useRead } from "../src/hooks/useRead";
 
-type ListResponse = WebV3Response<"case.list">;
+type ListResponse = ServiceResponse<"case.list">;
 
 const result = (reference: string): ApiResult<ListResponse> => ({
   kind: "outcome",
@@ -13,7 +13,15 @@ const result = (reference: string): ApiResult<ListResponse> => ({
       tag: "SUCCEEDED",
       data: {
         availableCommands: [],
-        items: [{ caseReference: reference, revision: "1", status: "OPENED" }],
+        items: [
+          {
+            state: "LIVE",
+            disposition: "ACTIVE",
+            caseReference: reference,
+            revision: "1",
+            status: "OPENED",
+          },
+        ],
         nextCursor: null,
       },
     },

@@ -2,7 +2,7 @@ import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { CaseFieldsView } from "../src/components/CaseFieldsView";
 import { preferenceKey } from "../src/presentation/preferences";
-import { definition, fields } from "./v3-ui.fixtures";
+import { definition, fields } from "./service-ui.fixtures";
 import { render, screen } from "./presentation-test-support";
 
 it.each(["en", "lv", "ar"])(

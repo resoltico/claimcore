@@ -6,8 +6,8 @@ import { Input } from "react-aria-components/Input";
 import { Label } from "react-aria-components/Label";
 import { TextField } from "react-aria-components/TextField";
 import { useCallback, useState } from "react";
-import type { CaseSummary, WebV3Response } from "../api/v3";
-import { v3 } from "../api/v3";
+import type { CaseSummary, ServiceResponse } from "../api/service";
+import { service } from "../api/service";
 import { CharacterWarning } from "../components/BusinessValue";
 import { CopyValue } from "../components/CopyValue";
 import { useRetryablePage } from "../hooks/useRead";
@@ -18,7 +18,7 @@ type CaseListProps = {
   onOpen: () => void;
 };
 
-const casePage = (response: WebV3Response<"case.list">) =>
+const casePage = (response: ServiceResponse<"case.list">) =>
   response.outcome.tag === "SUCCEEDED" ? response.outcome.data : null;
 
 const CaseRow = ({
@@ -29,6 +29,10 @@ const CaseRow = ({
   onSelect: (reference: string) => void;
 }) => {
   const p = usePresentation();
+  let status = "ERASED";
+  if (caseView.state === "LIVE") {
+    status = caseView.disposition === "VOIDED" ? "VOIDED" : caseView.status;
+  }
   return (
     <li>
       <Button
@@ -41,7 +45,7 @@ const CaseRow = ({
       <CharacterWarning value={caseView.caseReference} />
       <span>
         {p.text("ui.caseRow", {
-          status: p.token(caseView.status),
+          status: p.token(status),
           revision: p.integer(caseView.revision),
         })}
       </span>
@@ -100,11 +104,11 @@ export const CaseList = ({ token, onSelect, onOpen }: CaseListProps) => {
   const p = usePresentation();
   const [lookup, setLookup] = useState("");
   const request = useCallback(
-    (cursor: string | null, signal: AbortSignal) => v3.list(cursor, 50, token, signal),
+    (cursor: string | null, signal: AbortSignal) => service.list(cursor, 50, token, signal),
     [token],
   );
   const { items, cursor, message, loading, load, page } = useRetryablePage<
-    WebV3Response<"case.list">,
+    ServiceResponse<"case.list">,
     CaseSummary,
     NonNullable<ReturnType<typeof casePage>>
   >(request, casePage);

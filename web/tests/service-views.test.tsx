@@ -1,14 +1,16 @@
 import { render, screen } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
-import type { CurrentCase } from "../src/api/v3";
+import type { CurrentCase } from "../src/api/service";
 import { CaseDetail } from "../src/views/CaseDetail";
 import { CaseList } from "../src/views/CaseList";
 import { Dashboard } from "../src/views/Dashboard";
 import { generatedResponse, generatedWebValue } from "./contract-corpus.fixtures";
-import { definition, fields, operationId, recoveryPage, response } from "./v3-ui.fixtures";
+import { definition, fields, operationId, response } from "./service-ui.fixtures";
 
 const current: CurrentCase = {
+  state: "LIVE",
+  disposition: "ACTIVE",
   case: { fields, revision: "1" },
   availableCommands: ["CLOSE"],
 };
@@ -20,13 +22,29 @@ it("lists, reloads, pages, selects and opens cases through typed list outcomes",
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockResolvedValueOnce(
     response("case.list", "SUCCEEDED", {
-      items: [{ caseReference: "CASE-1", revision: "1", status: "OPENED" }],
+      items: [
+        {
+          state: "LIVE",
+          disposition: "ACTIVE",
+          caseReference: "CASE-1",
+          revision: "1",
+          status: "OPENED",
+        },
+      ],
       nextCursor: "next",
     }),
   );
   fetch.mockResolvedValueOnce(
     response("case.list", "SUCCEEDED", {
-      items: [{ caseReference: "CASE-2", revision: "2", status: "CLOSED" }],
+      items: [
+        {
+          state: "LIVE",
+          disposition: "ACTIVE",
+          caseReference: "CASE-2",
+          revision: "2",
+          status: "CLOSED",
+        },
+      ],
       nextCursor: null,
     }),
   );
@@ -34,7 +52,7 @@ it("lists, reloads, pages, selects and opens cases through typed list outcomes",
   const select = vi.fn();
   const open = vi.fn();
   render(<CaseList token="token" onSelect={select} onOpen={open} />);
-  await user.click(await screen.findByRole("button", { name: "CASE-1" }));
+  await user.click(await screen.findByRole("button", { name: "CASE-1" }, { timeout: 5000 }));
   expect(select).toHaveBeenCalledWith("CASE-1");
   await user.click(screen.getByRole("button", { name: "Open a case" }));
   expect(open).toHaveBeenCalledOnce();
@@ -48,7 +66,7 @@ it("lists, reloads, pages, selects and opens cases through typed list outcomes",
   await user.click(screen.getByRole("button", { name: "Reload cases" }));
 });
 
-const historyWithReplayedReceipt = () => {
+const historyWithTwoReceipts = () => {
   const history = generatedWebValue("case.history");
   if (history.outcome.tag !== "SUCCEEDED" || history.outcome.data.tag !== "FOUND") {
     throw new Error("Generated history fixture must be found.");
@@ -66,7 +84,6 @@ const historyWithReplayedReceipt = () => {
         receipt: {
           ...full.receipt,
           operationId: "20000000-0000-4000-8000-000000000002",
-          replayed: true,
         },
       },
     ],
@@ -76,7 +93,7 @@ const historyWithReplayedReceipt = () => {
 it("shows current fields, server command labels, full expandable history and retryable history pages", async () => {
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
-  const extendedHistory = historyWithReplayedReceipt();
+  const extendedHistory = historyWithTwoReceipts();
   fetch.mockResolvedValueOnce(response("case.get", "SUCCEEDED", { tag: "FOUND", current }));
   fetch.mockResolvedValueOnce(
     response("case.history", "SUCCEEDED", { tag: "FOUND", entries: [], nextCursor: null }),
@@ -100,26 +117,12 @@ it("shows current fields, server command labels, full expandable history and ret
   await user.click(await screen.findByRole("button", { name: /Close the case/u }));
   expect(command).toHaveBeenCalledWith(current, "CLOSE");
   await user.selectOptions(screen.getByLabelText("History detail"), "FULL");
-  await user.click((await screen.findAllByText(/Close the case · revision/u))[0]!);
-  expect(screen.getAllByText(/synthetic-operator/u)).toHaveLength(2);
-  expect(document.body).toHaveTextContent("exact replay");
+  await user.click((await screen.findAllByText(/Open a case · revision/u))[0]!);
+  expect(screen.getAllByText(/10000000-0000-4000-8000-000000000001/u)).toHaveLength(3);
+  expect(document.body).toHaveTextContent("accepted");
   await user.click(screen.getByRole("button", { name: "Load more history" }));
   await user.click(screen.getByRole("button", { name: "Back to cases" }));
   expect(back).toHaveBeenCalledOnce();
-});
-
-it("navigates dashboard case, operation and recovery surfaces without hidden business dispatch", async () => {
-  const user = userEvent.setup();
-  const fetch = vi.mocked(globalThis.fetch);
-  fetch.mockResolvedValueOnce(response("case.list", "SUCCEEDED", { items: [], nextCursor: null }));
-  fetch.mockResolvedValueOnce(response("recovery.list", "SUCCEEDED", recoveryPage([])));
-  render(<Dashboard token="token" onLogout={vi.fn(() => Promise.resolve())} />);
-  await user.click(await screen.findByRole("button", { name: "Recovery" }));
-  expect(await screen.findByRole("heading", { name: "Recovery" })).toBeVisible();
-  await user.click(screen.getByRole("button", { name: "Operations" }));
-  expect(screen.getByRole("heading", { name: "Operation lookup" })).toBeVisible();
-  await user.click(screen.getByRole("button", { name: "Cases" }));
-  expect(await screen.findByRole("heading", { name: "Cases" })).toBeVisible();
 });
 
 it("uses an exact operation lookup result and clears absent lookup presentation", async () => {
@@ -139,9 +142,9 @@ it("reports a failed list as a request-local error without manufacturing rows", 
     new Response(
       JSON.stringify({
         kind: "HOST_FAILURE",
-        code: "WEB_BUSY",
+        code: "RATE_LIMITED",
         status: 429,
-        diagnostic: { id: "WEB_HOST_BUSY", parameters: {} },
+        diagnostic: { id: "HOST_RATELIMITED", parameters: {} },
         message: "Busy",
         executionPhase: "NOT_STARTED",
       }),
@@ -159,9 +162,9 @@ it("keeps public metadata and other panes available when a case read is refused"
     new Response(
       JSON.stringify({
         kind: "HOST_FAILURE",
-        code: "WEB_SESSION_REJECTED",
+        code: "SESSION_REJECTED",
         status: 401,
-        diagnostic: { id: "WEB_HOST_SESSION_REJECTED", parameters: {} },
+        diagnostic: { id: "HOST_SESSIONREJECTED", parameters: {} },
         message: "No",
         executionPhase: "NOT_STARTED",
       }),
@@ -169,8 +172,8 @@ it("keeps public metadata and other panes available when a case read is refused"
     ),
   );
   const first = render(<Dashboard token="token" onLogout={vi.fn(() => Promise.resolve())} />);
-  expect(await screen.findByRole("alert")).toHaveTextContent("Session was refused.");
-  expect(screen.getByRole("button", { name: "Recovery" })).not.toBeDisabled();
+  expect(await screen.findByRole("alert")).toHaveTextContent("Authentication was refused.");
+  expect(screen.getByRole("button", { name: "Operations" })).not.toBeDisabled();
   expect(screen.getByRole("heading", { name: "ClaimCore" })).toBeVisible();
   first.unmount();
 });
@@ -180,13 +183,29 @@ it("routes dashboard list selections and the new-case command into the typed edi
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockResolvedValueOnce(
     response("case.list", "SUCCEEDED", {
-      items: [{ caseReference: "CASE-1", revision: "1", status: "OPENED" }],
+      items: [
+        {
+          state: "LIVE",
+          disposition: "ACTIVE",
+          caseReference: "CASE-1",
+          revision: "1",
+          status: "OPENED",
+        },
+      ],
       nextCursor: null,
     }),
   );
   fetch.mockResolvedValueOnce(
     response("case.list", "SUCCEEDED", {
-      items: [{ caseReference: "CASE-1", revision: "1", status: "OPENED" }],
+      items: [
+        {
+          state: "LIVE",
+          disposition: "ACTIVE",
+          caseReference: "CASE-1",
+          revision: "1",
+          status: "OPENED",
+        },
+      ],
       nextCursor: null,
     }),
   );

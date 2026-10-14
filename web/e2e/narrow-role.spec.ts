@@ -1,4 +1,4 @@
-import { acceptedResolution, verifyClosed, verifyExport, refusedRead } from "./narrow-role-oracles";
+import { refusedRead } from "./narrow-role-oracles";
 import { expect, test, type Page } from "@playwright/test";
 import {
   openAuthenticated,
@@ -20,7 +20,7 @@ const findCase = async (page: Page, reference: string) => {
 
 const expectDefinitionAccess = async (page: Page, role: NarrowRole | null, scoped: boolean) => {
   const token = await sessionToken(page);
-  const definition = await browserRequest(page, "/api/v3/definition");
+  const definition = await browserRequest(page, "/api/definition");
   expect(definition.status).toBe(200);
   expect(definition.payload).toMatchObject({
     outcome: { tag: role === "CASE_READER" && !scoped ? "DESCRIBED" : "REJECTED" },
@@ -53,46 +53,10 @@ const readCase = async (page: Page, fixture: RoleFixture, role: NarrowRole, scop
   }
 };
 
-const recover = async (page: Page, owner: Page, fixture: RoleFixture, exporter: boolean) => {
-  await page.getByRole("button", { name: "Recovery", exact: true }).click();
-  await page.getByLabel("Exact operation ID", { exact: true }).fill(fixture.identity.operationId);
-  if (exporter) {
-    await page.getByLabel("Exact request SHA-256 digest").fill(fixture.identity.requestSha256);
-    await page.getByRole("button", { name: "Export by ID and digest" }).click();
-    const downloaded = page.waitForEvent("download");
-    await page.getByRole("button", { name: "Confirm export", exact: true }).click();
-    const download = await downloaded;
-    expect(download.suggestedFilename()).toBe(
-      `claimcore-recovery-${fixture.identity.operationId}.json`,
-    );
-    await verifyExport(owner, download, fixture);
-  } else {
-    await page.getByRole("button", { name: "Inspect operation ID", exact: true }).click();
-    await expect(page.getByRole("dialog", { name: "Recovery details" })).toContainText(
-      fixture.identity.requestSha256,
-    );
-    await expect(
-      page.getByRole("button", { name: "Export recovery envelope", exact: true }),
-    ).toHaveCount(0);
-    await page.getByRole("button", { name: "Try to record this request", exact: true }).click();
-    await acceptedResolution(page, () =>
-      page
-        .getByRole("dialog", { name: "Try to record the reviewed request?" })
-        .getByRole("button", { name: "Try to record this request", exact: true })
-        .click(),
-    );
-    await verifyClosed(owner, fixture);
-    await expect(page.getByRole("status")).toContainText(fixture.identity.operationId);
-  }
-};
-
 const cases: ReadonlyArray<readonly [string, NarrowRole | null, boolean]> = [
   ["installation reader", "CASE_READER", false],
   ["case reader", "CASE_READER", true],
   ["case editor", "CASE_EDITOR", true],
-  ["recovery operator", "RECOVERY_OPERATOR", false],
-  ["case recovery operator", "RECOVERY_OPERATOR", true],
-  ["exporter", "RECOVERY_EXPORTER", false],
   ["steward", "DATA_STEWARD", false],
   ["enabled actor without grants", null, false],
 ];
@@ -137,8 +101,6 @@ for (const [name, role, scoped] of cases) {
     await expectDefinitionAccess(narrow, role, scoped);
     if (role === "CASE_READER" || role === "CASE_EDITOR") {
       await readCase(narrow, fixture, role, scoped);
-    } else if (role === "RECOVERY_OPERATOR" || role === "RECOVERY_EXPORTER") {
-      await recover(narrow, page, fixture, role === "RECOVERY_EXPORTER");
     } else {
       await expect(narrow.getByRole("button", { name: "Open a case", exact: true })).toHaveCount(0);
       await refusedRead(narrow, "case.get", () => findCase(narrow, fixture.reference));

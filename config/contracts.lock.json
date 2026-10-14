@@ -18,8 +18,8 @@
     },
     {
       "path": "endpoint-catalog.ts",
-      "bytes": 1494,
-      "sha256": "1f32916120f39c4dba16f4e90b22819929c03b00d4b6453ecc335efb3c1816c4"
+      "bytes": 1617,
+      "sha256": "eb0a6bfe04e743b8f628044bc26e6388ca7bb64d205fe43eabc46b333c304458"
     },
     {
       "path": "endpoint-corpus.json",
@@ -203,8 +203,8 @@
     },
     {
       "path": "types.ts",
-      "bytes": 44386,
-      "sha256": "2ec957c202b5c3ea690d50c65d52d3b22264f645e7bc16bad13b3058725bc8a3"
+      "bytes": 52467,
+      "sha256": "21d0c223b747dbef80d89db838f2dad4bf08f2e99734bf7e9f017a484d374b17"
     },
     {
       "path": "validation.ts",
@@ -213,8 +213,8 @@
     },
     {
       "path": "validators.NOTICE.txt",
-      "bytes": 5357,
-      "sha256": "ab7118245ffacfe5e8d01ccd5096d62daaf6e298f09191291dfd3635eacaaa60"
+      "bytes": 5367,
+      "sha256": "40834e34c17da5b3255e41aa741d5035d44aac71ae242b006a47b54165f2473c"
     },
     {
       "path": "validators.authority.d.mts",

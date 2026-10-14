@@ -1,4 +1,3 @@
-# lint-exception: LX-0002 (config/lint-exceptions.json)
+# Generated schema JSON and bundled third-party validator code are checked against the contract lock.
 src/generated/contracts/*.json
-# lint-exception: LX-0003 (config/lint-exceptions.json)
-src/generated/contracts/web-v3.validators.*.mjs
+src/generated/contracts/validators.*.mjs

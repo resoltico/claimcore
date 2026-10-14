@@ -1,15 +1,13 @@
 import { usePresentation } from "../presentation/context";
 import { Button } from "react-aria-components/Button";
 import { useState } from "react";
-import type { CurrentCase, PublicDefinition, Receipt } from "../api/v3";
-import type { RecoveryTarget } from "../domain/operationState";
+import type { CurrentCase, PublicDefinition, Receipt } from "../api/service";
 import type { CommandKind } from "../domain/metadata";
-import { productMetadata } from "../generated/contracts/web-v3.product-metadata";
+import { productMetadata } from "../generated/contracts/product-metadata";
 import { CaseDetail } from "./CaseDetail";
 import { CaseList } from "./CaseList";
 import { OperationEditor } from "./OperationEditor";
 import { OperationLookup } from "./OperationLookup";
-import { RecoveryView } from "./RecoveryView";
 
 type OperationTarget = { current: CurrentCase | null; command: CommandKind };
 type DashboardProps = { token: string; onLogout: () => Promise<void> };
@@ -33,7 +31,7 @@ const Header = ({
           <summary>{p.text("ui.technicalDetails")}</summary>
           <p>{p.text("ui.productVersion", { version: definition.productVersion })}</p>
           <p>{p.text("ui.semanticIdentity", { digest: definition.semanticFingerprint })}</p>
-          <p>{p.text("ui.webIdentity", { digest: definition.webFingerprint })}</p>
+          <p>{p.text("ui.webIdentity", { digest: definition.wireFingerprint })}</p>
         </details>
       </div>
       <Button onPress={() => void onLogout()} isDisabled={locked}>
@@ -50,12 +48,12 @@ const DashboardNav = ({
 }: {
   active: string;
   locked: boolean;
-  navigate: (next: "cases" | "recovery" | "operations") => void;
+  navigate: (next: "cases" | "operations") => void;
 }) => {
   const p = usePresentation();
   return (
     <nav aria-label={p.text("ui.primary")}>
-      {(["cases", "recovery", "operations"] as const).map((item) => (
+      {(["cases", "operations"] as const).map((item) => (
         <Button
           key={item}
           onPress={() => {
@@ -82,8 +80,6 @@ type ContentProps = {
   setSelectedReference: (value: string | null) => void;
   setLocked: (value: boolean) => void;
   committed: (receipt: Receipt) => void;
-  recover: (target: RecoveryTarget) => void;
-  recoveryTarget: RecoveryTarget | null;
 };
 
 type PaneProps = Pick<
@@ -130,7 +126,6 @@ const DashboardContent = (props: ContentProps) => {
   const { definition, operation } = props;
   const workflow = {
     token: props.token,
-    onRecovery: props.recover,
     onMutationLockChange: props.setLocked,
   };
   if (operation !== null) {
@@ -147,17 +142,8 @@ const DashboardContent = (props: ContentProps) => {
       />
     );
   }
-  if (props.active === "recovery") {
-    return <RecoveryView {...workflow} target={props.recoveryTarget} />;
-  }
   if (props.active === "operations") {
-    return (
-      <OperationLookup
-        token={props.token}
-        definition={definition}
-        initialOperationId={props.recoveryTarget?.operationId ?? ""}
-      />
-    );
+    return <OperationLookup token={props.token} definition={definition} />;
   }
   return (
     <CasesPane
@@ -172,13 +158,12 @@ const DashboardContent = (props: ContentProps) => {
 };
 
 const useDashboardNavigation = () => {
-  const [active, setActive] = useState<"cases" | "recovery" | "operations">("cases");
+  const [active, setActive] = useState<"cases" | "operations">("cases");
   const [selectedReference, setSelectedReference] = useState<string | null>(null);
   const [operation, setOperation] = useState<OperationTarget | null>(null);
   const [refresh, setRefresh] = useState(0);
   const [locked, setLocked] = useState(false);
-  const [recoveryTarget, setRecoveryTarget] = useState<RecoveryTarget | null>(null);
-  const navigate = (next: "cases" | "recovery" | "operations"): void => {
+  const navigate = (next: "cases" | "operations"): void => {
     if (!locked && operation === null) {
       setActive(next);
       setSelectedReference(null);
@@ -186,30 +171,20 @@ const useDashboardNavigation = () => {
   };
   const committed = (receipt: Receipt): void => {
     setOperation(null);
-    setSelectedReference(receipt.snapshot.fields.caseReference);
+    setSelectedReference(receipt.caseReference);
     setRefresh((value) => value + 1);
   };
-  const recover = (target: RecoveryTarget): void => {
-    setOperation(null);
-    setSelectedReference(null);
-    setRecoveryTarget(target);
-    setLocked(false);
-    setActive("recovery");
-  };
-
   return {
     active,
     selectedReference,
     operation,
     refresh,
     locked,
-    recoveryTarget,
     setOperation,
     setSelectedReference,
     setLocked,
     navigate,
     committed,
-    recover,
   };
 };
 

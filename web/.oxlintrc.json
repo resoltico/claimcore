@@ -14,7 +14,7 @@
   "env": {
     "es2024": true
   },
-  "ignorePatterns": ["src/generated/contracts/web-v3.validators.*.mjs"],
+  "ignorePatterns": ["src/generated/contracts/validators.*.mjs"],
   "rules": {
     "no-console": "error",
     "no-duplicate-imports": [
@@ -195,26 +195,26 @@
             "globals": [
               {
                 "name": "fetch",
-                "message": "Use the validated browser API boundary in src/api/v3.ts."
+                "message": "Use the validated browser API boundary in src/api/service.ts."
               },
               {
                 "name": "XMLHttpRequest",
-                "message": "Use the validated browser API boundary in src/api/v3.ts."
+                "message": "Use the validated browser API boundary in src/api/service.ts."
               },
               {
                 "name": "WebSocket",
-                "message": "Use the validated browser API boundary in src/api/v3.ts."
+                "message": "Use the validated browser API boundary in src/api/service.ts."
               },
               {
                 "name": "EventSource",
-                "message": "Use the validated browser API boundary in src/api/v3.ts."
+                "message": "Use the validated browser API boundary in src/api/service.ts."
               }
             ],
             "checkGlobalObject": true
           }
         ]
       },
-      "excludeFiles": ["src/api/v3.ts"]
+      "excludeFiles": ["src/api/service.ts"]
     },
     {
       "files": [
@@ -224,7 +224,7 @@
         "src/domain/**/*.tsx",
         "src/hooks/**/*.ts",
         "src/hooks/**/*.tsx",
-        "src/views/recovery/RecoveryState.ts"
+        "src/hooks/operation/operationDelivery.ts"
       ],
       "rules": {
         "no-restricted-imports": [
@@ -280,10 +280,10 @@
         ],
         "claimcore/no-presentation-import": "error"
       },
-      "excludeFiles": ["src/api/v3.ts"]
+      "excludeFiles": ["src/api/service.ts"]
     },
     {
-      "files": ["src/api/v3.ts"],
+      "files": ["src/api/service.ts"],
       "rules": {
         "no-restricted-imports": [
           "error",
@@ -344,7 +344,7 @@
       }
     },
     {
-      "files": ["src/generated/**/*.ts", "src/generated/**/*.mts", "src/api/v3.ts"],
+      "files": ["src/generated/**/*.ts", "src/generated/**/*.mts", "src/api/service.ts"],
       "rules": {
         "typescript/no-unsafe-type-assertion": "off",
         "typescript/no-unnecessary-type-parameters": "off",

@@ -1,10 +1,10 @@
-import { preparedForRequest } from "./prepared-request.fixtures";
+import { previewForRequest } from "./preview-request.fixtures";
 import { render, screen, waitFor } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
-import type { CurrentCase, Rejection } from "../src/api/v3";
+import type { CurrentCase, Rejection } from "../src/api/service";
 import { OperationEditor } from "../src/views/OperationEditor";
-import { definition, fields, preparation, response, runtime } from "./v3-ui.fixtures";
+import { definition, fields, digest, response, runtime } from "./service-ui.fixtures";
 
 type SentDraft = {
   operationId: string;
@@ -29,14 +29,13 @@ const editor = (current: CurrentCase | null, initialCommand: "OPEN" | "CLOSE" | 
     initialCommand={initialCommand}
     onClose={vi.fn()}
     onCommitted={vi.fn()}
-    onRecovery={vi.fn()}
     onMutationLockChange={vi.fn()}
   />
 );
 
 const preparedResponse = () =>
-  response("command.prepare", "PREPARED", {
-    details: preparation,
+  response("command.preview", "REVIEWED", {
+    requestSha256: digest,
     review: {
       before: null,
       proposed: { fields, revision: "1" },
@@ -47,16 +46,13 @@ const preparedResponse = () =>
   });
 
 const refusedResponse = () =>
-  response("command.execute", "REFUSED_BEFORE_ATTEMPT", {
-    preparation: null,
-    rejection: {
-      code: "OPERATION_REVOKED",
-      diagnostic: { id: "OPERATION_REVOKED", parameters: {} },
-      message: "The exact operation was revoked.",
-      field: null,
-      actualRevision: null,
-      recommendedAction: "READ_CURRENT",
-    } satisfies Rejection,
+  response("command.execute", "REJECTED", {
+    code: "IDEMPOTENCY_CONFLICT",
+    diagnostic: { id: "OPERATION_CONTENT_CONFLICT", parameters: {} },
+    message: "Synthetic conflict",
+    field: null,
+    actualRevision: null,
+    recommendedAction: "STOP_AND_INVESTIGATE",
   });
 
 const validationRefusal: Rejection = {
@@ -78,17 +74,14 @@ const staleRefusal: Rejection = {
 };
 
 const rejectedResponse = (rejection: Rejection) =>
-  response("command.prepare", "REJECTED", {
-    operationId: preparation.summary.operationId,
-    rejection,
-  });
+  response("command.preview", "REJECTED", rejection);
 
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 
-it("allocates a new ID when editing a definitely refused prepared request", async () => {
+it("allocates a new ID when editing a definitely refused reviewed request", async () => {
   const user = userEvent.setup();
   vi.mocked(globalThis.fetch)
-    .mockImplementationOnce(preparedForRequest(preparedResponse()))
+    .mockImplementationOnce(previewForRequest(preparedResponse()))
     .mockResolvedValueOnce(refusedResponse())
     .mockResolvedValueOnce(rejectedResponse(validationRefusal));
   render(editor(null, "OPEN"));
@@ -96,7 +89,7 @@ it("allocates a new ID when editing a definitely refused prepared request", asyn
   await user.click(await screen.findByRole("checkbox", { name: "I confirm these changes." }));
   await user.click(screen.getByRole("button", { name: "Record changes" }));
   await screen.findByText(
-    "Authority for future execution of this exact operation was durably revoked. Earlier attempt uncertainty is unchanged; inspect its exact evidence.",
+    "This operation ID belongs to different command content. Do not reuse it.",
   );
   const claimant = screen.getByLabelText("Claimant name", { exact: true });
   await user.type(claimant, "Synthetic B");
@@ -110,6 +103,8 @@ it("allocates a new ID when editing a definitely refused prepared request", asyn
 it("retries the frozen request after delivery loss despite a changed current revision", async () => {
   const user = userEvent.setup();
   const current: CurrentCase = {
+    state: "LIVE",
+    disposition: "ACTIVE",
     case: { fields, revision: "1" },
     availableCommands: ["CLOSE"],
   };
@@ -118,9 +113,9 @@ it("retries the frozen request after delivery loss despite a changed current rev
     .mockResolvedValueOnce(rejectedResponse(staleRefusal));
   const view = render(editor(current, "CLOSE"));
   await user.click(screen.getByRole("button", { name: "Review changes" }));
-  await screen.findByText(/Inspect Recovery before retrying this exact operation/u);
+  await screen.findByText(/could not be reached/u);
   view.rerender(editor({ ...current, case: { ...current.case, revision: "2" } }, "CLOSE"));
-  await user.click(screen.getByRole("button", { name: "Retry the same review request" }));
+  await user.click(screen.getByRole("button", { name: "Review changes" }));
   await waitFor(() => {
     expect(vi.mocked(globalThis.fetch)).toHaveBeenCalledTimes(2);
   });
@@ -131,21 +126,25 @@ it("retries the frozen request after delivery loss despite a changed current rev
   ).toBeVisible();
 });
 
+const paidCase: CurrentCase = {
+  state: "LIVE",
+  disposition: "ACTIVE",
+  case: {
+    fields: {
+      ...fields,
+      paymentDecisionDate: "2026-09-03",
+      payableAmount: "9.99",
+      payableCurrency: "EUR",
+      paymentDate: "2026-09-04",
+    },
+    revision: "1",
+  },
+  availableCommands: ["CORRECT_CASE"],
+};
+
 it("sends an explicit grouped correction and preserves all non-replaced groups", async () => {
   const user = userEvent.setup();
-  const current: CurrentCase = {
-    case: {
-      fields: {
-        ...fields,
-        paymentDecisionDate: "2026-09-03",
-        payableAmount: "9.99",
-        payableCurrency: "EUR",
-        paymentDate: "2026-09-04",
-      },
-      revision: "1",
-    },
-    availableCommands: ["CORRECT_CASE"],
-  };
+  const current = paidCase;
   vi.mocked(globalThis.fetch).mockResolvedValueOnce(rejectedResponse(validationRefusal));
   render(editor(current, "CORRECT_CASE"));
   const registration = document.querySelector<HTMLSelectElement>("#correction-registration-mode");

@@ -3,9 +3,9 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import { CaseDetail } from "../src/views/CaseDetail";
 import { OperationLookup } from "../src/views/OperationLookup";
-import { webCases } from "./contract-corpus.fixtures";
+import { hostCases } from "./contract-corpus.fixtures";
 import { CaseList } from "../src/views/CaseList";
-import { definition, fields, operationId, response } from "./v3-ui.fixtures";
+import { definition, fields, operationId, response } from "./service-ui.fixtures";
 
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 
@@ -42,7 +42,12 @@ it("keeps a failed history page request-local without erasing current case data"
   fetch.mockResolvedValueOnce(
     response("case.get", "SUCCEEDED", {
       tag: "FOUND",
-      current: { case: { fields, revision: "1" }, availableCommands: [] },
+      current: {
+        state: "LIVE",
+        disposition: "ACTIVE",
+        case: { fields, revision: "1" },
+        availableCommands: [],
+      },
     }),
   );
   fetch.mockResolvedValueOnce(
@@ -68,7 +73,12 @@ it("treats a typed missing history as an empty read rather than a transport erro
   fetch.mockResolvedValueOnce(
     response("case.get", "SUCCEEDED", {
       tag: "FOUND",
-      current: { case: { fields, revision: "1" }, availableCommands: [] },
+      current: {
+        state: "LIVE",
+        disposition: "ACTIVE",
+        case: { fields, revision: "1" },
+        availableCommands: [],
+      },
     }),
   );
   fetch.mockResolvedValueOnce(
@@ -117,7 +127,7 @@ it("reports a found observation without a receipt as a protocol failure", async 
 });
 
 it("focuses and describes invalid operation identity then clears the stale error [CC-WEB-001]", async () => {
-  const sample = webCases().find((value) => value.id === "valid-host-WEB_INPUT_INVALID_UUID");
+  const sample = hostCases().find((value) => value.id === "input-invalid");
   if (sample === undefined) {
     throw new Error("UUID host diagnostic fixture is required.");
   }
@@ -138,7 +148,7 @@ it("focuses and describes invalid operation identity then clears the stale error
   expect(input).toHaveAttribute("aria-invalid", "true");
   expect(input).toHaveAttribute("aria-describedby");
   expect(document.getElementById(input.getAttribute("aria-describedby")!)).toHaveTextContent(
-    "Use one non-empty canonical lowercase UUID.",
+    "The input does not satisfy the endpoint contract.",
   );
   await user.type(input, "a");
   expect(input).not.toHaveAttribute("aria-invalid", "true");

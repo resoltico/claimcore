@@ -16,7 +16,7 @@ type ApiReply<T> = { status: number; cacheControl: string | null; payload: T };
 
 const readSession = (page: Page) =>
   page.evaluate(async () => {
-    const response = await fetch("/api/v3/session", { credentials: "same-origin" });
+    const response = await fetch("/api/session", { credentials: "same-origin" });
     return {
       status: response.status,
       cacheControl: response.headers.get("cache-control"),
@@ -26,7 +26,7 @@ const readSession = (page: Page) =>
 
 const readUnknownEndpoint = (page: Page) =>
   page.evaluate(async () => {
-    const response = await fetch("/api/v3/not-present", { credentials: "same-origin" });
+    const response = await fetch("/api/service/not-present", { credentials: "same-origin" });
     return {
       status: response.status,
       cacheControl: response.headers.get("cache-control"),
@@ -36,7 +36,7 @@ const readUnknownEndpoint = (page: Page) =>
 
 const readProtectedList = (page: Page, token: string) =>
   page.evaluate(async (antiforgeryToken) => {
-    const response = await fetch("/api/v3/cases/list", {
+    const response = await fetch("/api/case.list", {
       method: "POST",
       credentials: "same-origin",
       headers: {
@@ -78,7 +78,7 @@ const expectSessionRejection = async (page: Page, token: string) => {
 };
 
 const expectRetiredBootstrapRoute = async (page: Page) => {
-  const response = await page.request.post("/api/v3/session/login", { data: {} });
+  const response = await page.request.post("/api/session/login", { data: {} });
   expect(response.status()).toBe(404);
   expect(response.headers()["cache-control"]).toContain("no-store");
 };

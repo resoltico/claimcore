@@ -1,6 +1,6 @@
 import { test, type Page, type Request, type Response } from "@playwright/test";
-import { isWebV3Response } from "../src/generated/contracts/web-v3.validation";
-import type { WebV3Response } from "../src/generated/contracts/web-v3.types";
+import { isResponse } from "../src/generated/contracts/validation";
+import type { ServiceResponse } from "../src/api/types";
 
 type RequestClass = "document" | "script" | "stylesheet" | "session" | "definition";
 type RequestEvidence = {
@@ -12,10 +12,10 @@ type RequestEvidence = {
 
 const classify = (request: Request): RequestClass | null => {
   const path = new URL(request.url()).pathname;
-  if (path === "/api/v3/session") {
+  if (path === "/api/session") {
     return "session";
   }
-  if (path === "/api/v3/definition") {
+  if (path === "/api/definition") {
     return "definition";
   }
   const kind = request.resourceType();
@@ -97,8 +97,8 @@ class StartupEvidence {
 
   async readSession(value: Response) {
     const payload: unknown = await value.json();
-    if (await isWebV3Response("session", payload)) {
-      this.authenticated = (payload as WebV3Response<"session">).outcome.data.authenticated;
+    if (await isResponse("session", payload)) {
+      this.authenticated = (payload as ServiceResponse<"session">).outcome.data.authenticated;
     }
   }
 

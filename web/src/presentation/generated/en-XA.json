@@ -28,22 +28,6 @@
     { "type": 0, "value": "Thëë sëëlëëctëëd fïïlëë cööüüld nööt bëë rëëààd." },
     { "type": 0, "value": "⟧" }
   ],
-  "notice.exportInvalid": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thëë rëëcöövëëry ëëxpöört rëëspöönsëë fààïïlëëd ïïts pröötööcööl chëëcks."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "notice.incomplete": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Chëëck thëë rëëpöörtëëd ööüütcöömëë bëëföörëë tryïïng ààgààïïn. ÏÏf ïït ïïs üüncöönfïïrmëëd, ïïnspëëct Rëëcöövëëry."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
   "notice.definitionMismatch": [
     { "type": 0, "value": "⟦" },
     {
@@ -65,76 +49,11 @@
     },
     { "type": 0, "value": "⟧" }
   ],
-  "notice.dismissed": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Prëëpààrààtïïöön dïïsmïïssëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "notice.alreadyDismissed": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Prëëpààrààtïïöön wààs ààlrëëààdy dïïsmïïssëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "notice.retained": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Rëëcöövëëry mààtëërïïààl rëëtààïïnëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "notice.existing": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Rëëcöövëëry mààtëërïïààl wààs ààlrëëààdy rëëtààïïnëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
   "notice.accepted": [
     { "type": 0, "value": "⟦" },
     { "type": 0, "value": "ÀÀccëëptëëd ëëxààct ööpëërààtïïöön " },
     { "type": 1, "value": "operationId" },
     { "type": 0, "value": "." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "notice.digestUnavailable": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thëë ëëxààct rëëcöövëëry dïïgëëst ïïs üünààvààïïlààblëë; ïïnspëëct thëë prëëpààrààtïïöön."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "notice.exportStarted": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Rëëcöövëëry ëëxpöört stààrtëëd. Thëë fïïlëë cööntààïïns clààïïmàànt dààtàà; këëëëp ïït prïïvààtëë."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "notice.inspectBeforeRetry": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "ÏÏnspëëct Rëëcöövëëry bëëföörëë rëëtryïïng thïïs ëëxààct ööpëërààtïïöön."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "notice.inspectBeforeAction": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÏÏnspëëct Rëëcöövëëry bëëföörëë tààkïïng àànööthëër ààctïïöön." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "notice.keptForRecovery": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Prëëpààrëëd rëëqüüëëst ïïs rëëtààïïnëëd. ÜÜsëë Rëëcöövëëry töö ïïnspëëct, rëësöölvëë, öör dïïsmïïss ïït."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "notice.unknownDiagnostic": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "ÀÀn ëëxplàànààtïïöön ïïs üünààvààïïlààblëë. Fööllööw thëë rëëpöörtëëd ööüütcöömëë àànd rëëcöövëëry güüïïdààncëë; döö nööt ïïnfëër pëërmïïssïïöön töö rëëtry."
-    },
     { "type": 0, "value": "⟧" }
   ],
   "notice.cancelled": [
@@ -145,20 +64,17 @@
     },
     { "type": 0, "value": "⟧" }
   ],
-  "notice.cancelledBeforeAdmission": [
+  "notice.outcomeUnknown": [
     { "type": 0, "value": "⟦" },
     {
       "type": 0,
-      "value": "Thïïs rëëqüüëëst wààs cààncëëllëëd bëëföörëë ààdmïïssïïöön. ËËààrlïïëër ààttëëmpts ààrëë nööt sëëttlëëd by thïïs cààncëëllààtïïöön."
+      "value": "Thëë ööpëërààtïïöön ööüütcöömëë ïïs üünknööwn. Rëëtry thëë ëëxààct sààmëë ööpëërààtïïöön."
     },
     { "type": 0, "value": "⟧" }
   ],
-  "notice.cancelledBeforeAttempt": [
+  "notice.unknownDiagnostic": [
     { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thïïs rëëqüüëëst wààs cààncëëllëëd bëëföörëë àà nëëw ààttëëmpt. ÏÏnspëëct ëëxààct ëëvïïdëëncëë föör ààny ëëààrlïïëër üünrëësöölvëëd ààttëëmpts."
-    },
+    { "type": 0, "value": "ÀÀn üünsüüppöörtëëd dïïààgnööstïïc wààs rëëcëëïïvëëd." },
     { "type": 0, "value": "⟧" }
   ],
   "token.OPENED": [
@@ -186,49 +102,79 @@
     { "type": 0, "value": "Clëëààr rëëcöördëëd vààlüüëë" },
     { "type": 0, "value": "⟧" }
   ],
-  "token.PENDING": [
+  "token.ACTIVE": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Pëëndïïng" },
+    { "type": 0, "value": "ÀÀctïïvëë" },
     { "type": 0, "value": "⟧" }
   ],
-  "token.ACCEPTED": [
+  "token.VOIDED": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Rëëcöördëëd" },
+    { "type": 0, "value": "Vööïïdëëd" },
     { "type": 0, "value": "⟧" }
   ],
-  "token.REVOKED": [
+  "token.ERASED": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ËËxëëcüütïïöön ààüüthöörïïty rëëvöökëëd" },
+    { "type": 0, "value": "ËËrààsëëd" },
     { "type": 0, "value": "⟧" }
   ],
-  "token.REJECTED": [
+  "token.VOID": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Rëëfüüsëëd" },
+    { "type": 0, "value": "Vööïïd" },
     { "type": 0, "value": "⟧" }
   ],
-  "token.ERROR": [
+  "token.REINSTATE": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ËËxëëcüütïïöön ëërröör" },
+    { "type": 0, "value": "Rëëïïnstààtëë" },
     { "type": 0, "value": "⟧" }
   ],
-  "token.REVOKED_BEFORE_EXECUTION": [
+  "token.ERASE": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Rëëvöökëëd bëëföörëë ëëxëëcüütïïöön" },
+    { "type": 0, "value": "ËËrààsëë" },
     { "type": 0, "value": "⟧" }
   ],
-  "token.ENVELOPE": [
+  "token.OPEN": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Rëëcöövëëry ëënvëëlööpëë" },
+    { "type": 0, "value": "ÖÖpëën àà cààsëë" },
     { "type": 0, "value": "⟧" }
   ],
-  "token.FOUND": [
+  "token.AMEND_REGISTRATION": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÀÀccëëptëëd ööpëërààtïïöön fööüünd" },
+    { "type": 0, "value": "ÀÀmëënd rëëgïïstrààtïïöön" },
     { "type": 0, "value": "⟧" }
   ],
-  "token.NOT_FOUND": [
+  "token.CORRECT_CASE": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÖÖpëërààtïïöön nööt ööbsëërvëëd" },
+    { "type": 0, "value": "Cöörrëëct cààsëë fààcts" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "token.DECIDE": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëcöörd pààymëënt dëëcïïsïïöön" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "token.WITHDRAW_DECISION": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Wïïthdrààw pààymëënt dëëcïïsïïöön" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "token.RECORD_PAYMENT": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëcöörd ààctüüààl pààymëënt" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "token.CLEAR_PAYMENT": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Cöörrëëct ààn ëërröönëëööüüs pààymëënt rëëcöörd" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "token.CLOSE": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Clöösëë thëë cààsëë" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "token.REOPEN": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëööpëën thëë cààsëë" },
     { "type": 0, "value": "⟧" }
   ],
   "ui.language": [
@@ -290,11 +236,6 @@
   "ui.cases": [
     { "type": 0, "value": "⟦" },
     { "type": 0, "value": "Cààsëës" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "ui.recovery": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Rëëcöövëëry" },
     { "type": 0, "value": "⟧" }
   ],
   "ui.operations": [
@@ -482,48 +423,6 @@
     { "type": 0, "value": "Vööïïdëëd ààs àà dààtàà-ëëntry ëërröör" },
     { "type": 0, "value": "⟧" }
   ],
-  "ui.lifecycleErasureRequested": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ËËrààsüürëë rëëqüüëëstëëd" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "ui.lifecycleErasurePending": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ËËrààsüürëë pëëndïïng" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "ui.lifecycleSuppressionRetained": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Lïïvëë pààylööààd ëërààsëëd; süüpprëëssïïöön ëëvïïdëëncëë rëëtààïïnëëd"
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "ui.lifecycleErasureFinal": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Màànààgëëd pààylööààd ëërààsüürëë cöömplëëtëë; süüpprëëssïïöön ëëvïïdëëncëë rëëtààïïnëëd"
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "ui.lifecycleNoHolds": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Nöö ààctïïvëë hööld ïïs rëëcöördëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "ui.lifecycleHeld": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "HËËLD: ààctïïvëë höölds blööck pààylööààd ëërààsüürëë." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "ui.lifecycleHoldReview": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Hööld rëëvïïëëw düüëë " },
-    { "type": 1, "value": "date" },
-    { "type": 0, "value": "⟧" }
-  ],
   "ui.lifecycleVoidApproval": [
     { "type": 0, "value": "⟦" },
     {
@@ -546,7 +445,10 @@
   ],
   "ui.unchangedUntilSubmit": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Rëëvïïëëw yööüür chààngëës bëëföörëë rëëcöördïïng thëëm." },
+    {
+      "type": 0,
+      "value": "Rëëvïïëëw ïïs ààdvïïsööry. Thëë cààsëë chààngëës öönly whëën thëë ööpëërààtïïöön ïïs ààccëëptëëd."
+    },
     { "type": 0, "value": "⟧" }
   ],
   "ui.observedReceipt": [
@@ -706,19 +608,14 @@
     },
     { "type": 0, "value": "⟧" }
   ],
-  "ui.preparing": [
+  "ui.previewing": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Prëëpààrïïng rëëvïïëëw…" },
+    { "type": 0, "value": "Rëëvïïëëwïïng…" },
     { "type": 0, "value": "⟧" }
   ],
-  "ui.prepareExact": [
+  "ui.previewOperation": [
     { "type": 0, "value": "⟦" },
     { "type": 0, "value": "Rëëvïïëëw chààngëës" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "ui.retryPrepare": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Rëëtry thëë sààmëë rëëvïïëëw rëëqüüëëst" },
     { "type": 0, "value": "⟧" }
   ],
   "ui.changeCommandTitle": [
@@ -728,10 +625,7 @@
   ],
   "ui.changeCommandDescription": [
     { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Chààngïïng thëë ààctïïöön dïïscààrds thëësëë drààft dëëtààïïls àànd stààrts àà dïïffëërëënt rëëqüüëëst."
-    },
+    { "type": 0, "value": "Dïïscààrd thïïs drààft àànd chöööösëë àànööthëër cöömmàànd?" },
     { "type": 0, "value": "⟧" }
   ],
   "ui.discardAndChange": [
@@ -767,14 +661,6 @@
     { "type": 0, "value": "Rëëvïïëëw chààngëës" },
     { "type": 0, "value": "⟧" }
   ],
-  "ui.reviewDescription": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Chëëck àànd cöönfïïrm thëë dëëtààïïls. ÏÏf rëëcöördïïng ïïs üüncöönfïïrmëëd, ïïnspëëct Rëëcöövëëry bëëföörëë tryïïng ààgààïïn."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
   "ui.reviewTarget": [
     { "type": 0, "value": "⟦" },
     { "type": 0, "value": "Tààrgëët " },
@@ -794,11 +680,6 @@
   "ui.reviewConfirmation": [
     { "type": 0, "value": "⟦" },
     { "type": 0, "value": "ÏÏ cöönfïïrm thëësëë chààngëës." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "ui.keepForRecovery": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Bààck töö ëëdïïtïïng; këëëëp föör Rëëcöövëëry" },
     { "type": 0, "value": "⟧" }
   ],
   "ui.submitting": [
@@ -823,11 +704,6 @@
     { "type": 1, "value": "value" },
     { "type": 0, "value": "⟧" }
   ],
-  "ui.recoveryView": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Rëëcöövëëry vïïëëw" },
-    { "type": 0, "value": "⟧" }
-  ],
   "ui.pending": [
     { "type": 0, "value": "⟦" },
     { "type": 0, "value": "Pëëndïïng" },
@@ -841,46 +717,6 @@
   "ui.reload": [
     { "type": 0, "value": "⟦" },
     { "type": 0, "value": "Rëëlööààd" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "ui.capacity": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Pëëndïïng rëëcöövëëry stöörààgëë: " },
-    { "type": 1, "value": "count" },
-    { "type": 0, "value": " / " },
-    { "type": 1, "value": "maximum" },
-    { "type": 0, "value": " rëëqüüëësts · " },
-    { "type": 1, "value": "bytes" },
-    { "type": 0, "value": " / " },
-    { "type": 1, "value": "maximumBytes" },
-    { "type": 0, "value": " bytëës ööf ëëxààct rëëqüüëëst cööntëënt." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "ui.nearCapacity": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Nëëààr cààpààcïïty; rëësöölvëë öör dïïsmïïss knööwn pëëndïïng ïïtëëms."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "ui.recoveryHint": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Pëëndïïng rëëqüüëësts ààppëëààr by dëëfààüült. Tëërmïïnààl vïïëëw shööws ààccëëptëëd, dïïsmïïssëëd àànd rëëvöökëëd ààüüthöörïïty ààs nöön-ëëxëëcüütààblëë ëëvïïdëëncëë. ÏÏnspëëct sëërvëër stààtëë bëëföörëë rëëcöördïïng öör dïïsmïïssïïng àà rëëqüüëëst."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "ui.recoverySummary": [
-    { "type": 0, "value": "⟦" },
-    { "type": 1, "value": "command" },
-    { "type": 0, "value": " · " },
-    { "type": 1, "value": "reference" },
-    { "type": 0, "value": " · " },
-    { "type": 1, "value": "authority" },
-    { "type": 0, "value": " · " },
-    { "type": 1, "value": "operationId" },
     { "type": 0, "value": "⟧" }
   ],
   "ui.revocationSummary": [
@@ -908,32 +744,6 @@
   "ui.moreAttempts": [
     { "type": 0, "value": "⟦" },
     { "type": 0, "value": "Lööààd möörëë ààttëëmpts" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "ui.retainedIdentity": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÖÖpëërààtïïöön " },
-    { "type": 1, "value": "operationId" },
-    { "type": 0, "value": " · ààüüthöörïïty " },
-    { "type": 1, "value": "authority" },
-    { "type": 0, "value": " · dïïgëëst " },
-    { "type": 1, "value": "digest" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "ui.retainedCommand": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Cààsëë " },
-    { "type": 1, "value": "reference" },
-    { "type": 0, "value": " · ààctïïöön " },
-    { "type": 1, "value": "command" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "ui.retainedFormat": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ËËxpëëctëëd rëëvïïsïïöön " },
-    { "type": 1, "value": "revision" },
-    { "type": 0, "value": " · càànöönïïcààl föörmààt " },
-    { "type": 1, "value": "format" },
     { "type": 0, "value": "⟧" }
   ],
   "ui.provenance": [
@@ -971,37 +781,9 @@
     { "type": 0, "value": "ÏÏnspëëct rëëvööcààtïïöön" },
     { "type": 0, "value": "⟧" }
   ],
-  "ui.moreRecovery": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Lööààd möörëë rëëcöövëëry" },
-    { "type": 0, "value": "⟧" }
-  ],
   "ui.resolveExact": [
     { "type": 0, "value": "⟦" },
     { "type": 0, "value": "Try töö rëëcöörd thïïs rëëqüüëëst" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "ui.dismissPreparation": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Stööp füütüürëë rëëcöördïïng ööf thïïs rëëqüüëëst" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "ui.exportEnvelope": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ËËxpöört rëëcöövëëry ëënvëëlööpëë" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "ui.recoveryDetails": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Rëëcöövëëry dëëtààïïls" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "ui.recoveryDetailsHint": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Rëëqüüëëst ààüüthöörïïty àànd ààttëëmpt ëëvïïdëëncëë frööm thëë sëërvëër. Rëëqüüëëst dëëtààïïls prëësëërvëë thëë ëëxààct ëëntëërëëd vààlüüëës."
-    },
     { "type": 0, "value": "⟧" }
   ],
   "ui.observation": [
@@ -1017,45 +799,14 @@
     { "type": 0, "value": "." },
     { "type": 0, "value": "⟧" }
   ],
-  "ui.exportTitle": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ËËxpöört rëëcöövëëry ëënvëëlööpëë?" },
-    { "type": 0, "value": "⟧" }
-  ],
   "ui.resolveTitle": [
     { "type": 0, "value": "⟦" },
     { "type": 0, "value": "Try töö rëëcöörd thëë rëëvïïëëwëëd rëëqüüëëst?" },
     { "type": 0, "value": "⟧" }
   ],
-  "ui.dismissTitle": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Pëërmàànëëntly ëënd thïïs rëëqüüëëst’s füütüürëë ààüüthöörïïty?" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "ui.exportWarning": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thïïs fïïlëë cööntààïïns clààïïmàànt dààtàà àànd rëëcöövëëry bytëës. Sààvëë ïït öönly ïïn prïïvààtëë stöörààgëë."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
   "ui.working": [
     { "type": 0, "value": "⟦" },
     { "type": 0, "value": "Wöörkïïng…" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "ui.confirmExport": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Cöönfïïrm ëëxpöört" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "ui.artifact": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÀÀrtïïfààct " },
-    { "type": 1, "value": "kind" },
-    { "type": 0, "value": " · sööüürcëë dïïgëëst " },
-    { "type": 1, "value": "digest" },
     { "type": 0, "value": "⟧" }
   ],
   "ui.importTarget": [
@@ -1066,29 +817,6 @@
     { "type": 1, "value": "command" },
     { "type": 0, "value": " · ëëxpëëctëëd rëëvïïsïïöön " },
     { "type": 1, "value": "revision" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "ui.importEnvelope": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÏÏmpöört rëëcöövëëry ëënvëëlööpëë" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "ui.importTitle": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Rëëtààïïn ïïmpöörtëëd rëëcöövëëry mààtëërïïààl?" },
-    { "type": 0, "value": "⟧" }
-  ],
-  "ui.importDescription": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Rëëtààïïnëëd öönly ààftëër cöönfïïrmààtïïöön, föör ëëxplïïcïït Rëëcöövëëry ààctïïöön; nëëvëër süübmïïttëëd ààüütöömààtïïcààlly."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "ui.retainForRecovery": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Rëëtààïïn föör Rëëcöövëëry" },
     { "type": 0, "value": "⟧" }
   ],
   "ui.keepEditing": [
@@ -1119,27 +847,11 @@
     },
     { "type": 0, "value": "⟧" }
   ],
-  "ui.dismissConsequence": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Cöönfïïrmëëd dïïsmïïssààl pëërmàànëëntly prëëvëënts füütüürëë ëëxëëcüütïïöön ööf thïïs üünààccëëptëëd rëëqüüëëst. ÏÏt càànnööt bëë üündöönëë àànd dööëës nööt sëëttlëë ëëààrlïïëër üüncëërtààïïn ààttëëmpts. Chëëck thëë rëëtüürnëëd ööüütcöömëë töö cöönfïïrm dïïsmïïssààl."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
   "ui.canonicalCopyHint": [
     { "type": 0, "value": "⟦" },
     {
       "type": 0,
       "value": "Cööpïïëës thëë ëëxààct üündëërlyïïng vààlüüëë. Dààtëës üüsëë YYYY-MM-DD àànd ààmööüünts üüsëë àà dëëcïïmààl pööïïnt, rëëgààrdlëëss ööf dïïsplàày föörmààt."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "ui.leaveDraftDescription": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Lëëààvïïng dïïscààrds drààft ëëdïïts. Rëëtààïïnëëd rëëqüüëësts stàày ïïn Rëëcöövëëry; lëëààvïïng dööëës nööt stööp thëëm öör sëëttlëë ëëààrlïïëër ààttëëmpts."
     },
     { "type": 0, "value": "⟧" }
   ],
@@ -1167,7 +879,7 @@
   ],
   "ui.webIdentity": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Wëëb v3 cööntrààct: " },
+    { "type": 0, "value": "Wïïrëë cööntrààct: " },
     { "type": 1, "value": "digest" },
     { "type": 0, "value": "⟧" }
   ],
@@ -1201,9 +913,56 @@
     { "type": 0, "value": "ÏÏnspëëct ööpëërààtïïöön ÏÏD" },
     { "type": 0, "value": "⟧" }
   ],
-  "ui.exportKnownIdentity": [
+  "ui.returnToEdit": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ËËxpöört by ÏÏD àànd dïïgëëst" },
+    { "type": 0, "value": "Rëëtüürn töö ëëdïïtïïng" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.retryExact": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëtry thëë sààmëë ööpëërààtïïöön" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.retryExactDescription": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë ööüütcöömëë ïïs üünknööwn. Këëëëp thïïs pààgëë ööpëën àànd rëëtry thëë sààmëë ööpëërààtïïöön."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.reloadContract": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëlööààd pààgëë" },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.lifecycleErased": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "ËËrààsëëd — öönly thëë cààsëë rëëfëërëëncëë àànd rëëvïïsïïöön rëëmààïïn."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.reviewDescription": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Rëëvïïëëw thëë prööpöösëëd vààlüüëës àànd cöönfïïrm thïïs ëëxààct ööpëërààtïïöön."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.languageDescription": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Lààngüüààgëë chààngëës dïïsplàày tëëxt àànd këëëëps thëë cüürrëënt drààft àànd rëëvïïëëw."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "ui.leaveDraftDescription": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Dïïscààrd thïïs drààft àànd lëëààvëë thëë ëëdïïtöör?" },
     { "type": 0, "value": "⟧" }
   ],
   "field.incidentDate.label": [
@@ -1521,6 +1280,21 @@
     { "type": 0, "value": "Thëë rëëqüüëëstëëd rëësööüürcëë ïïs üünààvààïïlààblëë." },
     { "type": 0, "value": "⟧" }
   ],
+  "diagnostic.ACTOR_ALREADY_REGISTERED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thïïs prïïncïïpààl ïïs ààlrëëààdy rëëgïïstëërëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.ACTOR_UNKNOWN": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thïïs prïïncïïpààl ïïs nööt rëëgïïstëërëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.ALREADY_VOIDED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thïïs cààsëë ïïs ààlrëëààdy vööïïdëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
   "diagnostic.CASE_ALREADY_CLOSED": [
     { "type": 0, "value": "⟦" },
     { "type": 0, "value": "Thëë cààsëë ïïs ààlrëëààdy clöösëëd." },
@@ -1565,6 +1339,11 @@
     { "type": 0, "value": "Rëëcöörd àà pààymëënt dëëcïïsïïöön fïïrst." },
     { "type": 0, "value": "⟧" }
   ],
+  "diagnostic.CASE_ERASED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thïïs cààsëë hààs bëëëën ëërààsëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
   "diagnostic.CASE_NOT_FOUND": [
     { "type": 0, "value": "⟦" },
     { "type": 0, "value": "Thëë cààsëë rëëfëërëëncëë wààs nööt fööüünd." },
@@ -1588,6 +1367,11 @@
     },
     { "type": 0, "value": "⟧" }
   ],
+  "diagnostic.CASE_VOIDED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thïïs cààsëë ïïs vööïïdëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
   "diagnostic.CASE_ZERO_DECISION_CANNOT_BE_PAID": [
     { "type": 0, "value": "⟦" },
     { "type": 0, "value": "ÀÀ zëëröö dëëcïïsïïöön ïïs nööt àà pààymëënt." },
@@ -1608,16 +1392,11 @@
     { "type": 0, "value": "ÜÜsëë àà nöön-ëëmpty ÜÜÜÜÏÏD." },
     { "type": 0, "value": "⟧" }
   ],
-  "diagnostic.CORE_COMMIT_OUTCOME_UNKNOWN": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Cöömmïït cöömplëëtïïöön wààs nööt cöönfïïrmëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
   "diagnostic.CORE_OPERATION_CONTENT_CONFLICT": [
     { "type": 0, "value": "⟦" },
     {
       "type": 0,
-      "value": "Thëë ööpëërààtïïöön ÏÏD bëëlööngs töö dïïffëërëënt rëëqüüëëst cööntëënt."
+      "value": "Stöörëëd ööpëërààtïïöön cööntëënt ïïs ïïncöönsïïstëënt. Stööp àànd ïïnvëëstïïgààtëë."
     },
     { "type": 0, "value": "⟧" }
   ],
@@ -1625,21 +1404,21 @@
     { "type": 0, "value": "⟦" },
     {
       "type": 0,
-      "value": "Thëë rüüntïïmëë schëëmàà öör dààtààbààsëë sëëttïïngs ààrëë ïïncöömpààtïïblëë."
+      "value": "Thëë schëëmàà dïïffëërs frööm thïïs büüïïld. Rüün mïïgrààtëë öör üüsëë àà mààtchïïng büüïïld."
     },
     { "type": 0, "value": "⟧" }
   ],
   "diagnostic.CORE_STORE_INTEGRITY_ERROR": [
     { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Stöörëëd dààtàà fààïïlëëd ïïntëëgrïïty vààlïïdààtïïöön." },
+    {
+      "type": 0,
+      "value": "Stöörëëd dààtàà fààïïlëëd vëërïïfïïcààtïïöön. Stööp àànd rüün vëërïïfy."
+    },
     { "type": 0, "value": "⟧" }
   ],
   "diagnostic.CORE_STORE_UNAVAILABLE": [
     { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thëë stöörëë wààs üünààvààïïlààblëë bëëföörëë cöömplëëtïïöön wààs cöönfïïrmëëd."
-    },
+    { "type": 0, "value": "Thëë stöörëë ïïs üünààvààïïlààblëë. Rëëtry." },
     { "type": 0, "value": "⟧" }
   ],
   "diagnostic.CORRECTION_COMPLETE_DECISION_REQUIRED": [
@@ -1698,6 +1477,89 @@
   "diagnostic.CORRECTION_REPLACEMENT_FIELDS_REQUIRED": [
     { "type": 0, "value": "⟦" },
     { "type": 0, "value": "ÜÜsëë RËËPLÀÀCËË wïïth ëëvëëry dëëclààrëëd fïïëëld." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.HOST_ANTIFORGERYREJECTED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëqüüëëst vëërïïfïïcààtïïöön wààs rëëfüüsëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.HOST_BEFOREDISPATCHFAILED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Prööcëëssïïng fààïïlëëd bëëföörëë dïïspààtch." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.HOST_BODYTOOLARGE": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëqüüëëst böödy ïïs töööö lààrgëë." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.HOST_COMPLETEDRESPONSEFAILED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë cöömplëëtëëd rëëspöönsëë cööüüld nööt bëë dëëlïïvëërëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.HOST_CONNECTIONREJECTED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Cöönnëëctïïöön wààs rëëfüüsëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.HOST_CONTRACTMISMATCH": [
+    { "type": 0, "value": "⟦" },
+    {
+      "type": 0,
+      "value": "Thëë clïïëënt cööntrààct dïïffëërs. Rëëlööààd öör üüsëë àà mààtchïïng clïïëënt."
+    },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.HOST_DISPATCHUNCONFIRMED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Prëësëërvëë thëë ëëxààct rëëqüüëëst àànd rëëplàày ïït." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.HOST_ENDPOINTMISSING": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ËËndpööïïnt wààs nööt fööüünd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.HOST_INPUTINVALID": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë ïïnpüüt dööëës nööt sààtïïsfy thëë ëëndpööïïnt cööntrààct." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.HOST_MEDIATYPEREJECTED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÜÜsëë thëë ëëndpööïïnt mëëdïïàà typëë." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.HOST_METHODREJECTED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thëë mëëthööd ïïs üünsüüppöörtëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.HOST_ORIGINREJECTED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÖÖrïïgïïn wààs rëëfüüsëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.HOST_RATELIMITED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Rëëqüüëëst ààdmïïssïïöön ïïs büüsy." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.HOST_SESSIONFORBIDDEN": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Sëëssïïöön ààccëëss wààs rëëfüüsëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.HOST_SESSIONREJECTED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÀÀüüthëëntïïcààtïïöön wààs rëëfüüsëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.HUMAN_PRINCIPAL_REQUIRED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thïïs röölëë rëëqüüïïrëës àà hüümààn prïïncïïpààl." },
     { "type": 0, "value": "⟧" }
   ],
   "diagnostic.INPUT_AMOUNT_NOT_REPRESENTABLE": [
@@ -1782,6 +1644,21 @@
     { "type": 0, "value": " ÜÜnïïcöödëë chààrààctëërs." },
     { "type": 0, "value": "⟧" }
   ],
+  "diagnostic.INVALID_REASON": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Süüpply àà vààlïïd rëëààsöön ööf ààt mööst 200 chààrààctëërs." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.LAST_OWNER": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "ÀÀt lëëààst öönëë ëënààblëëd hüümààn ööwnëër ïïs rëëqüüïïrëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
+  "diagnostic.NOT_VOIDED": [
+    { "type": 0, "value": "⟦" },
+    { "type": 0, "value": "Thïïs cààsëë ïïs nööt vööïïdëëd." },
+    { "type": 0, "value": "⟧" }
+  ],
   "diagnostic.OPERATION_CONTENT_CONFLICT": [
     { "type": 0, "value": "⟦" },
     {
@@ -1790,27 +1667,11 @@
     },
     { "type": 0, "value": "⟧" }
   ],
-  "diagnostic.OPERATION_RECOVERY_ATTEMPT_LIMIT": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thïïs ööpëërààtïïöön hààs rëëààchëëd ïïts rëëcöövëëry ààttëëmpt lïïmïït. ÏÏnspëëct ïïts ëëxààct ëëvïïdëëncëë àànd rëëcööncïïlëë üünrëësöölvëëd ààttëëmpts bëëföörëë ààüüthöörïïng nëëw wöörk."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.OPERATION_REVOKED": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "ÀÀüüthöörïïty föör füütüürëë ëëxëëcüütïïöön ööf thïïs ëëxààct ööpëërààtïïöön wààs düürààbly rëëvöökëëd. ËËààrlïïëër ààttëëmpt üüncëërtààïïnty ïïs üünchààngëëd; ïïnspëëct ïïts ëëxààct ëëvïïdëëncëë."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
   "diagnostic.QUERY_CASE_LIST_CURSOR_INVALID": [
     { "type": 0, "value": "⟦" },
     {
       "type": 0,
-      "value": "ÜÜsëë öönëë cüürrëënt ööpààqüüëë cààsëë-lïïst cüürsöör rëëtüürnëëd föör thïïs ààccööüünt àànd pààgëë sïïzëë."
+      "value": "ÜÜsëë öönëë cüürrëënt ööpààqüüëë cààsëë-lïïst cüürsöör rëëtüürnëëd by ClààïïmCöörëë."
     },
     { "type": 0, "value": "⟧" }
   ],
@@ -1827,265 +1688,6 @@
     { "type": 0, "value": "ÜÜsëë àà vààlüüëë frööm 1 thrööüügh " },
     { "type": 1, "value": "maximumPageSize" },
     { "type": 0, "value": "." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_ACCEPTED_OPERATION_DISMISSAL_FORBIDDEN": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "ÀÀn ààccëëptëëd ööpëërààtïïöön càànnööt bëë dïïsmïïssëëd. ÏÏnspëëct ïïts rëëtààïïnëëd rëëcëëïïpt."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_ACCESS_UNAVAILABLE": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "ÀÀccëëss töö thïïs ööpëërààtïïöön wààs rëëfüüsëëd. Prëësëërvëë ïïts ëëxààct ïïdëëntïïty àànd ïïnspëëct ïïts ëëvïïdëëncëë whëën ààccëëss ïïs ààvààïïlààblëë. Thïïs rëëfüüsààl dööëës nööt sëëttlëë ëëààrlïïëër ààttëëmpts."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_ATTEMPT_CURSOR_INVALID": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë rëëcöövëëry ààttëëmpt cüürsöör ïïs ïïnvààlïïd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_ATTEMPT_CURSOR_OPERATION_MISMATCH": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thëë rëëcöövëëry ààttëëmpt cüürsöör bëëlööngs töö àà dïïffëërëënt ööpëërààtïïöön."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_ATTEMPT_LIMIT_REACHED": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thïïs ööpëërààtïïöön hààs rëëààchëëd ïïts rëëcöövëëry ààttëëmpt lïïmïït. ÏÏnspëëct ïïts ëëxààct ëëvïïdëëncëë àànd rëëcööncïïlëë üünrëësöölvëëd ààttëëmpts bëëföörëë ààüüthöörïïng nëëw wöörk."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_CAPACITY_EXHAUSTED": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Rëëcöövëëry cààpààcïïty ïïs ëëxhààüüstëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_DISMISSAL_CONFIRMATION_REQUIRED": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "ËËxplïïcïït cöönfïïrmààtïïöön ïïs rëëqüüïïrëëd töö dïïsmïïss àà rëëcöövëëry prëëpààrààtïïöön."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_ENVELOPE_INVALID_OR_UNSUPPORTED": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thëë rëëcöövëëry ëënvëëlööpëë ïïs üünsüüppöörtëëd öör fààïïlëëd càànöönïïcààl dëëcöödïïng."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_INSTALLATION_MISMATCH": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thëë rëëcöövëëry ëënvëëlööpëë bëëlööngs töö àà dïïffëërëënt ClààïïmCöörëë ïïnstààllààtïïöön."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_LIST_CURSOR_INVALID": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë rëëcöövëëry lïïst cüürsöör ïïs ïïnvààlïïd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_LIST_CURSOR_VIEW_MISMATCH": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë rëëcöövëëry lïïst cüürsöör bëëlööngs töö àà dïïffëërëënt vïïëëw." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_MUTATION_CANCELLED_BEFORE_COMMIT": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë tëëchnïïcààl müütààtïïöön wààs cààncëëllëëd bëëföörëë cöömmïït." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_MUTATION_OUTCOME_UNKNOWN": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thëë rëëcöövëëry-stààtëë müütààtïïöön màày hààvëë cöömmïïttëëd büüt cööüüld nööt bëë cöönfïïrmëëd."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_NEW_PREPARATION_MISSING": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "ÀÀ nëëwly rëëtààïïnëëd prëëpààrààtïïöön wààs nööt ààvààïïlààblëë föör ëëxëëcüütïïöön."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_OPERATION_CONTENT_CONFLICT": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thëë süüpplïïëëd rëëcöövëëry ïïdëëntïïty cöönflïïcts wïïth ààn ëëxïïstïïng ööpëërààtïïöön."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_OPERATION_ID_REQUIRED": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÀÀ nöön-ëëmpty rëëcöövëëry ööpëërààtïïöön ÏÏD ïïs rëëqüüïïrëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_OPERATION_REVOKED": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "ÀÀüüthöörïïty föör füütüürëë ëëxëëcüütïïöön ööf thïïs ëëxààct ööpëërààtïïöön wààs düürààbly rëëvöökëëd. ËËààrlïïëër ààttëëmpt üüncëërtààïïnty ïïs üünchààngëëd; ïïnspëëct ïïts ëëxààct ëëvïïdëëncëë."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_PAGE_LIMIT_RANGE": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thëë rëëcöövëëry pààgëë lïïmïït ïïs ööüütsïïdëë thëë süüppöörtëëd rààngëë."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_PREPARATION_DISMISSED": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÀÀ dïïsmïïssëëd prëëpààrààtïïöön càànnööt bëë süübmïïttëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_PREPARATION_DISMISSED_BEFORE_EXECUTION": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thëë prëëpààrààtïïöön wààs dïïsmïïssëëd bëëföörëë ëëxëëcüütïïöön cööüüld bëëgïïn."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_PREPARATION_NOT_FOUND": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë rëëcöövëëry prëëpààrààtïïöön wààs nööt fööüünd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_READ_CANCELLED": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë rëëcöövëëry rëëààd wààs cààncëëllëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_REQUEST_DIGEST_INVALID": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thëë rëëcöövëëry rëëqüüëëst dïïgëëst müüst bëë àà lööwëërcààsëë SHÀÀ-256 dïïgëëst."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_REQUEST_DIGEST_MISMATCH": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thëë süüpplïïëëd dïïgëëst dööëës nööt mààtch thëë ëëxààct rëëtààïïnëëd rëëqüüëëst bytëës."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_RETAINED_CANONICAL_INVALID": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Rëëtààïïnëëd càànöönïïcààl rëëqüüëëst bytëës fààïïlëëd ïïntëëgrïïty vààlïïdààtïïöön."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_RETAINED_DIGEST_MISMATCH": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thëë rëëtààïïnëëd prëëpààrààtïïöön dïïgëëst dööëës nööt mààtch thëë süübmïïttëëd drààft."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_RETAINED_DOMAIN_SHAPE_INVALID": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Rëëtààïïnëëd rëëqüüëëst dïïd nööt sààtïïsfy ïïts clöösëëd döömààïïn shààpëë."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_RETAINED_PREPARATION_UNVERIFIABLE": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "ÀÀn ëëxààct rëëtààïïnëëd prëëpààrààtïïöön cööüüld nööt bëë vëërïïfïïëëd."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_SCHEMA_MISMATCH": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Rëëcöövëëry stöörààgëë ïïs ïïncöömpààtïïblëë wïïth thïïs rüüntïïmëë." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_SOURCE_DIGEST_MISMATCH": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thëë süüpplïïëëd sööüürcëë dïïgëëst dööëës nööt mààtch thëë ëëxààct ïïmpöört bytëës."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_STORED_DATA_INVALID": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Stöörëëd rëëcöövëëry dààtàà fààïïlëëd vààlïïdààtïïöön." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_STORE_CONTENT_CONFLICT": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Rëëcöövëëry ïïdëëntïïty cöönflïïcts wïïth rëëtààïïnëëd dààtàà." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_STORE_INTEGRITY_ERROR": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Rëëcöövëëry stöörààgëë fààïïlëëd ïïntëëgrïïty vààlïïdààtïïöön." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_STORE_PREPARATION_MISSING": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Rëëcöövëëry stöörààgëë lööst ààn ëëxpëëctëëd prëëpààrààtïïöön." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_STORE_RESPONSE_INVALID": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Rëëcöövëëry stöörààgëë rëëtüürnëëd ààn ïïnvààlïïd tëëchnïïcààl rëëspöönsëë."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_STORE_UNAVAILABLE": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Rëëcöövëëry stöörààgëë wààs üünààvààïïlààblëë bëëföörëë cöömplëëtïïöön wààs cöönfïïrmëëd."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RECOVERY_SUBMISSION_ALREADY_STARTED": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thëë prëëpààrààtïïöön hààs ààlrëëààdy stààrtëëd süübmïïssïïöön àànd müüst bëë rëësöölvëëd ëëxààctly."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.RESOURCE_UNAVAILABLE": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë rëëqüüëëstëëd rëësööüürcëë ïïs üünààvààïïlààblëë." },
     { "type": 0, "value": "⟧" }
   ],
   "diagnostic.STATE_CASE_REFERENCE_MISMATCH": [
@@ -2112,216 +1714,6 @@
   "diagnostic.STATE_TRANSITION_MISMATCH": [
     { "type": 0, "value": "⟦" },
     { "type": 0, "value": "Thëë stààtëë güüààrd àànd pààymëënt tràànsïïtïïöön dïïsààgrëëëë." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_HOST_ANTIFORGERY_REJECTED": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Rëëqüüëëst vëërïïfïïcààtïïöön wààs rëëfüüsëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_HOST_BEFORE_DISPATCH_FAILED": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Rëëqüüëëst prööcëëssïïng fààïïlëëd bëëföörëë dïïspààtch." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_HOST_BODY_TOO_LARGE": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Rëëqüüëëst böödy ïïs töööö lààrgëë." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_HOST_BUSY": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Rëëqüüëëst ààdmïïssïïöön ïïs büüsy." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_HOST_COMPLETED_RESPONSE_FAILED": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Rëëqüüëëst prööcëëssïïng cöömplëëtëëd büüt ïïts rëëspöönsëë cööüüld nööt bëë dëëlïïvëërëëd."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_HOST_CONNECTION_REJECTED": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Cöönnëëctïïöön wààs rëëfüüsëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_HOST_DISPATCH_UNCONFIRMED": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thëë dïïspààtchëëd ööpëërààtïïöön cööüüld nööt bëë cöönfïïrmëëd. Prëësëërvëë ïïts ëëxààct ïïdëëntïïty."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_HOST_ENDPOINT_MISSING": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ËËndpööïïnt wààs nööt fööüünd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_HOST_EXPORT_METADATA_INVALID": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Rëëcöövëëry ëëxpöört mëëtààdààtàà wààs ïïnvààlïïd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_HOST_MEDIA_TYPE_REJECTED": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë ëëndpööïïnt mëëdïïàà typëë wààs rëëfüüsëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_HOST_METHOD_REJECTED": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë rëëqüüëëst mëëthööd ïïs nööt süüppöörtëëd by thïïs ëëndpööïïnt." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_HOST_ORIGIN_REJECTED": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Rëëqüüëëst öörïïgïïn wààs rëëfüüsëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_HOST_SESSION_FORBIDDEN": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Sëëssïïöön ààccëëss wààs rëëfüüsëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_HOST_SESSION_REJECTED": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Sëëssïïöön wààs rëëfüüsëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_BODY_CANCELLED": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë rëëqüüëëst böödy rëëààd wààs cààncëëllëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_BODY_TOO_LARGE": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë rëëqüüëëst ëëxcëëëëds thëë cöönfïïgüürëëd bytëë lïïmïït." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_BODY_UNREADABLE": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë rëëqüüëëst böödy cööüüld nööt bëë rëëààd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_CORRECTION_ACTION": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thëë cöörrëëctïïöön ààctïïöön ïïs nööt dëëclààrëëd by thëë sëëmààntïïc cööntrààct."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_DUPLICATE_PROPERTY": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Düüplïïcààtëë JSÖÖN prööpëërtïïëës ààrëë nööt ààccëëptëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_EXPECTED_BOOLEAN": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ËËxpëëctëëd àà JSÖÖN böööölëëààn." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_EXPECTED_INTEGER": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ËËxpëëctëëd àà JSÖÖN ïïntëëgëër." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_EXPECTED_OBJECT": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ËËxpëëctëëd àà JSÖÖN ööbjëëct." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_EXPECTED_STRING": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ËËxpëëctëëd àà JSÖÖN strïïng." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_HISTORY_DETAIL": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë hïïstööry dëëtààïïl ïïs nööt süüppöörtëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_INVALID_DIGEST": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÜÜsëë öönëë lööwëërcààsëë SHÀÀ-256 dïïgëëst." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_INVALID_JSON": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Mààlföörmëëd JSÖÖN öör ààn üünsüüppöörtëëd JSÖÖN shààpëë." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_INVALID_REVISION": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "ËËxpëëctëëd àà càànöönïïcààl nöön-nëëgààtïïvëë rëëvïïsïïöön bëëlööw ÏÏnt64.MààxVààlüüëë."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_INVALID_UNICODE": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Mààlföörmëëd ÜÜnïïcöödëë ëëscààpëë ïïn JSÖÖN tëëxt." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_INVALID_UTF8": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë rëëqüüëëst müüst bëë vààlïïd ÜÜTF-8." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_INVALID_UUID": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÜÜsëë öönëë nöön-ëëmpty càànöönïïcààl lööwëërcààsëë ÜÜÜÜÏÏD." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_LOGOUT_SHAPE": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Löögööüüt rëëqüüïïrëës ààn ëëmpty JSÖÖN ööbjëëct." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_MISSING_COMMAND_VALUE": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÀÀ rëëqüüïïrëëd cöömmàànd vààlüüëë ïïs mïïssïïng." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_MISSING_PROPERTY": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÀÀ rëëqüüïïrëëd JSÖÖN prööpëërty ïïs mïïssïïng." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_NULL_FORBIDDEN": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "JSÖÖN nüüll ïïs nööt ààccëëptëëd hëërëë." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_PAGE_RANGE": [
-    { "type": 0, "value": "⟦" },
-    {
-      "type": 0,
-      "value": "Thëë rëëqüüëëstëëd pààgëë sïïzëë ïïs ööüütsïïdëë thëë süüppöörtëëd rààngëë."
-    },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_RECOVERY_VIEW": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÜÜsëë PËËNDÏÏNG öör TËËRMÏÏNÀÀL rëëcöövëëry vïïëëw." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_SOURCE_DIGEST_HEADER": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "ÀÀ càànöönïïcààl sööüürcëë dïïgëëst hëëààdëër ïïs rëëqüüïïrëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_UNKNOWN_COMMAND": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë cöömmàànd töökëën ïïs nööt süüppöörtëëd." },
-    { "type": 0, "value": "⟧" }
-  ],
-  "diagnostic.WEB_INPUT_UNKNOWN_PROPERTY": [
-    { "type": 0, "value": "⟦" },
-    { "type": 0, "value": "Thëë JSÖÖN ööbjëëct cööntààïïns ààn üünknööwn prööpëërty." },
     { "type": 0, "value": "⟧" }
   ]
 }

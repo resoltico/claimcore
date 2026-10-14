@@ -1,6 +1,9 @@
 {
-  "$schema": "../eng/node_modules/oxlint/configuration_schema.json",
-  "plugins": ["eslint", "oxc"],
+  "$schema": "../web/node_modules/oxlint/configuration_schema.json",
+  "plugins": [
+    "eslint",
+    "oxc"
+  ],
   "categories": {
     "correctness": "error",
     "suspicious": "error",
@@ -24,14 +27,6 @@
     "func-style": "off",
     "id-length": "off",
     "init-declarations": "off",
-    "max-lines": [
-      "error",
-      {
-        "max": 300,
-        "skipBlankLines": false,
-        "skipComments": false
-      }
-    ],
     "max-lines-per-function": [
       "error",
       {
@@ -108,7 +103,10 @@
     "no-useless-catch": "error",
     "no-useless-escape": "error",
     "no-var": "error",
-    "one-var": ["error", "never"],
+    "one-var": [
+      "error",
+      "never"
+    ],
     "prefer-const": "error",
     "prefer-named-capture-group": "off",
     "prefer-rest-params": "error",

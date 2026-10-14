@@ -1,12 +1,14 @@
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "./presentation-test-support";
-import { deferredResponse, draftAt, editor, preparedReply } from "./presentation-state.fixtures";
-import { fields, preparation, response } from "./v3-ui.fixtures";
-import type { CurrentCase, Rejection } from "../src/api/v3";
+import { deferredResponse, editor, previewReply } from "./presentation-state.fixtures";
+import { fields } from "./service-ui.fixtures";
+import { type CurrentCase } from "../src/api/service";
 import { generatedResponse } from "./contract-corpus.fixtures";
 
 const current: CurrentCase = {
+  state: "LIVE",
+  disposition: "ACTIVE",
   case: { fields, revision: "1" },
   availableCommands: ["AMEND_REGISTRATION", "CORRECT_CASE", "CLOSE"],
 };
@@ -25,7 +27,7 @@ it("shows only an accepted receipt, focuses it and keeps Return usable", async (
   const user = userEvent.setup();
   const committed = vi.fn();
   vi.mocked(globalThis.fetch)
-    .mockImplementationOnce(() => Promise.resolve(preparedReply()))
+    .mockImplementationOnce(() => Promise.resolve(previewReply()))
     .mockResolvedValueOnce(generatedResponse("command.execute"));
   render(editor({ current, initialCommand: "CLOSE", onCommitted: committed }));
   await user.click(screen.getByRole("button", { name: "Review changes" }));
@@ -47,11 +49,10 @@ it.each(["AMEND_REGISTRATION", "CORRECT_CASE"] as const)(
     const user = userEvent.setup();
     const preparing = deferredResponse();
     const submitting = deferredResponse();
-    const recover = vi.fn();
     vi.mocked(globalThis.fetch)
       .mockReturnValueOnce(preparing.promise)
       .mockReturnValueOnce(submitting.promise);
-    render(editor({ current, initialCommand: command, onRecovery: recover }));
+    render(editor({ current, initialCommand: command }));
     if (command === "CORRECT_CASE") {
       await user.selectOptions(
         document.querySelector<HTMLSelectElement>("#correction-registration-mode")!,
@@ -60,7 +61,7 @@ it.each(["AMEND_REGISTRATION", "CORRECT_CASE"] as const)(
     }
     await user.click(screen.getByRole("button", { name: "Review changes" }));
     expectAuthoringDisabled();
-    preparing.resolve(preparedReply());
+    preparing.resolve(previewReply());
     await screen.findByRole("dialog", { name: "Review changes" });
     expectAuthoringDisabled();
     await user.click(screen.getByRole("checkbox", { name: "I confirm these changes." }));
@@ -68,47 +69,7 @@ it.each(["AMEND_REGISTRATION", "CORRECT_CASE"] as const)(
     expectAuthoringDisabled();
     expect(screen.getByRole("button", { name: "Recording…" })).toBeDisabled();
     submitting.reject(new Error("Synthetic delivery loss"));
-    expect(await screen.findByRole("alert")).toHaveTextContent("Inspect Recovery");
+    expect(await screen.findByRole("alert")).toHaveTextContent("unknown");
     expect(screen.queryByRole("textbox")).toBeNull();
-    expect(recover).toHaveBeenCalledWith(
-      expect.objectContaining({ operationId: draftAt(0).operationId }),
-    );
   },
 );
-
-it("disables OPEN reference and fields after preparation uncertainty while preserving exact retry", async () => {
-  const user = userEvent.setup();
-  vi.mocked(globalThis.fetch).mockRejectedValueOnce(new Error("Synthetic prepare loss"));
-  render(editor({ current: null, initialCommand: "OPEN" }));
-  await user.type(
-    screen.getByLabelText("Handler's case reference", { exact: true }),
-    "SYNTHETIC-OPEN",
-  );
-  await user.click(screen.getByRole("button", { name: "Review changes" }));
-  await screen.findByRole("alert");
-  expectAuthoringDisabled();
-  expect(screen.getByRole("button", { name: "Retry the same review request" })).not.toBeDisabled();
-  expect(draftAt(0).caseReference).toBe("SYNTHETIC-OPEN");
-});
-
-it("disables retained recovery fields and action switching without suggesting a fresh review", async () => {
-  const user = userEvent.setup();
-  vi.mocked(globalThis.fetch).mockResolvedValueOnce(
-    response("command.prepare", "RETAINED_FOR_RECOVERY", {
-      details: preparation,
-      rejection: {
-        code: "VERSION_CONFLICT",
-        message: "Synthetic stale request.",
-        diagnostic: { id: "CASE_REVISION_CONFLICT", parameters: {} },
-        field: null,
-        actualRevision: "2",
-        recommendedAction: "READ_CURRENT",
-      } satisfies Rejection,
-    }),
-  );
-  render(editor({ current, initialCommand: "AMEND_REGISTRATION" }));
-  await user.click(screen.getByRole("button", { name: "Review changes" }));
-  await screen.findByRole("alert");
-  expectAuthoringDisabled();
-  expect(screen.getByRole("button", { name: "Review changes" })).toBeDisabled();
-});

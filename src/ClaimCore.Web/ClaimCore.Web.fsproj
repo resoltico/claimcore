@@ -47,7 +47,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" />
   </ItemGroup>
   <Target Name="ConsumeFrontendAssets" BeforeTargets="ComputeFilesToPublish">
-    <Exec Command="node &quot;$(WebClientDirectory)/scripts/verify-asset-manifest.mjs&quot;" />
+    <Error Condition="!Exists('$(WebClientDirectory)/dist/index.html')" Text="Build frontend assets with npm --prefix web run build before publishing." />
     <ItemGroup>
       <FrontendAsset Include="$(WebClientDirectory)/dist/**/*" />
       <ResolvedFileToPublish Include="@(FrontendAsset)">

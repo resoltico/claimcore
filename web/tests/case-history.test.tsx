@@ -2,7 +2,7 @@ import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "./presentation-test-support";
 import { CaseHistory } from "../src/views/CaseHistory";
-import { definition, response } from "./v3-ui.fixtures";
+import { definition, response } from "./service-ui.fixtures";
 import { generatedWebValue } from "./contract-corpus.fixtures";
 
 const historyVariants = () => {

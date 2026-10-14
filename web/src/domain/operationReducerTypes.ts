@@ -7,11 +7,6 @@ export type EditingAction = Extract<
   }
 >;
 
-export type PrepareResponse = Extract<
-  OperationAction,
-  { type: "PREPARED" | "PREPARATION_UNKNOWN" | "RETAINED_FOR_RECOVERY" }
->;
-
 export type CompletionResponse = Extract<
   OperationAction,
   { type: "DEFINITELY_REJECTED" | "ACCEPTED" | "OUTCOME_UNKNOWN" }

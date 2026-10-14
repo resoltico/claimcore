@@ -12,15 +12,6 @@
     { "type": 0, "value": " bytes." }
   ],
   "notice.fileUnreadable": [{ "type": 0, "value": "The selected file could not be read." }],
-  "notice.exportInvalid": [
-    { "type": 0, "value": "The recovery export response failed its protocol checks." }
-  ],
-  "notice.incomplete": [
-    {
-      "type": 0,
-      "value": "Check the reported outcome before trying again. If it is unconfirmed, inspect Recovery."
-    }
-  ],
   "notice.definitionMismatch": [
     {
       "type": 0,
@@ -31,41 +22,10 @@
   "notice.missingCsrf": [
     { "type": 0, "value": "Authenticated session did not include an antiforgery token." }
   ],
-  "notice.dismissed": [{ "type": 0, "value": "Preparation dismissed." }],
-  "notice.alreadyDismissed": [{ "type": 0, "value": "Preparation was already dismissed." }],
-  "notice.retained": [{ "type": 0, "value": "Recovery material retained." }],
-  "notice.existing": [{ "type": 0, "value": "Recovery material was already retained." }],
   "notice.accepted": [
     { "type": 0, "value": "Accepted exact operation " },
     { "type": 1, "value": "operationId" },
     { "type": 0, "value": "." }
-  ],
-  "notice.digestUnavailable": [
-    { "type": 0, "value": "The exact recovery digest is unavailable; inspect the preparation." }
-  ],
-  "notice.exportStarted": [
-    {
-      "type": 0,
-      "value": "Recovery export started. The file contains claimant data; keep it private."
-    }
-  ],
-  "notice.inspectBeforeRetry": [
-    { "type": 0, "value": "Inspect Recovery before retrying this exact operation." }
-  ],
-  "notice.inspectBeforeAction": [
-    { "type": 0, "value": "Inspect Recovery before taking another action." }
-  ],
-  "notice.keptForRecovery": [
-    {
-      "type": 0,
-      "value": "Prepared request is retained. Use Recovery to inspect, resolve, or dismiss it."
-    }
-  ],
-  "notice.unknownDiagnostic": [
-    {
-      "type": 0,
-      "value": "An explanation is unavailable. Follow the reported outcome and recovery guidance; do not infer permission to retry."
-    }
   ],
   "notice.cancelled": [
     {
@@ -73,32 +33,30 @@
       "value": "This request was cancelled. Earlier attempts are not settled by this cancellation."
     }
   ],
-  "notice.cancelledBeforeAdmission": [
-    {
-      "type": 0,
-      "value": "This request was cancelled before admission. Earlier attempts are not settled by this cancellation."
-    }
+  "notice.outcomeUnknown": [
+    { "type": 0, "value": "The operation outcome is unknown. Retry the exact same operation." }
   ],
-  "notice.cancelledBeforeAttempt": [
-    {
-      "type": 0,
-      "value": "This request was cancelled before a new attempt. Inspect exact evidence for any earlier unresolved attempts."
-    }
-  ],
+  "notice.unknownDiagnostic": [{ "type": 0, "value": "An unsupported diagnostic was received." }],
   "token.OPENED": [{ "type": 0, "value": "Open" }],
   "token.CLOSED": [{ "type": 0, "value": "Closed" }],
   "token.KEEP": [{ "type": 0, "value": "Keep current details" }],
   "token.REPLACE": [{ "type": 0, "value": "Replace details" }],
   "token.CLEAR": [{ "type": 0, "value": "Clear recorded value" }],
-  "token.PENDING": [{ "type": 0, "value": "Pending" }],
-  "token.ACCEPTED": [{ "type": 0, "value": "Recorded" }],
-  "token.REVOKED": [{ "type": 0, "value": "Execution authority revoked" }],
-  "token.REJECTED": [{ "type": 0, "value": "Refused" }],
-  "token.ERROR": [{ "type": 0, "value": "Execution error" }],
-  "token.REVOKED_BEFORE_EXECUTION": [{ "type": 0, "value": "Revoked before execution" }],
-  "token.ENVELOPE": [{ "type": 0, "value": "Recovery envelope" }],
-  "token.FOUND": [{ "type": 0, "value": "Accepted operation found" }],
-  "token.NOT_FOUND": [{ "type": 0, "value": "Operation not observed" }],
+  "token.ACTIVE": [{ "type": 0, "value": "Active" }],
+  "token.VOIDED": [{ "type": 0, "value": "Voided" }],
+  "token.ERASED": [{ "type": 0, "value": "Erased" }],
+  "token.VOID": [{ "type": 0, "value": "Void" }],
+  "token.REINSTATE": [{ "type": 0, "value": "Reinstate" }],
+  "token.ERASE": [{ "type": 0, "value": "Erase" }],
+  "token.OPEN": [{ "type": 0, "value": "Open a case" }],
+  "token.AMEND_REGISTRATION": [{ "type": 0, "value": "Amend registration" }],
+  "token.CORRECT_CASE": [{ "type": 0, "value": "Correct case facts" }],
+  "token.DECIDE": [{ "type": 0, "value": "Record payment decision" }],
+  "token.WITHDRAW_DECISION": [{ "type": 0, "value": "Withdraw payment decision" }],
+  "token.RECORD_PAYMENT": [{ "type": 0, "value": "Record actual payment" }],
+  "token.CLEAR_PAYMENT": [{ "type": 0, "value": "Correct an erroneous payment record" }],
+  "token.CLOSE": [{ "type": 0, "value": "Close the case" }],
+  "token.REOPEN": [{ "type": 0, "value": "Reopen the case" }],
   "ui.language": [{ "type": 0, "value": "Interface language" }],
   "ui.displayLocale": [{ "type": 0, "value": "Date and number format" }],
   "ui.preferencesHint": [
@@ -120,7 +78,6 @@
   "ui.signOut": [{ "type": 0, "value": "Sign out" }],
   "ui.primary": [{ "type": 0, "value": "Primary" }],
   "ui.cases": [{ "type": 0, "value": "Cases" }],
-  "ui.recovery": [{ "type": 0, "value": "Recovery" }],
   "ui.operations": [{ "type": 0, "value": "Operations" }],
   "ui.loadingDefinition": [{ "type": 0, "value": "Loading application…" }],
   "ui.loginInstructions": [
@@ -196,20 +153,6 @@
   ],
   "ui.lifecycleActive": [{ "type": 0, "value": "Active" }],
   "ui.lifecycleVoided": [{ "type": 0, "value": "Voided as a data-entry error" }],
-  "ui.lifecycleErasureRequested": [{ "type": 0, "value": "Erasure requested" }],
-  "ui.lifecycleErasurePending": [{ "type": 0, "value": "Erasure pending" }],
-  "ui.lifecycleSuppressionRetained": [
-    { "type": 0, "value": "Live payload erased; suppression evidence retained" }
-  ],
-  "ui.lifecycleErasureFinal": [
-    { "type": 0, "value": "Managed payload erasure complete; suppression evidence retained" }
-  ],
-  "ui.lifecycleNoHolds": [{ "type": 0, "value": "No active hold is recorded." }],
-  "ui.lifecycleHeld": [{ "type": 0, "value": "HELD: active holds block payload erasure." }],
-  "ui.lifecycleHoldReview": [
-    { "type": 0, "value": "Hold review due " },
-    { "type": 1, "value": "date" }
-  ],
   "ui.lifecycleVoidApproval": [
     {
       "type": 0,
@@ -222,7 +165,12 @@
     { "type": 0, "value": " (exact): " },
     { "type": 1, "value": "reference" }
   ],
-  "ui.unchangedUntilSubmit": [{ "type": 0, "value": "Review your changes before recording them." }],
+  "ui.unchangedUntilSubmit": [
+    {
+      "type": 0,
+      "value": "Review is advisory. The case changes only when the operation is accepted."
+    }
+  ],
   "ui.observedReceipt": [
     { "type": 0, "value": "Accepted operation " },
     { "type": 1, "value": "operationId" },
@@ -296,15 +244,11 @@
       "value": "Choose an action for each group. Kept details use the current case when recorded."
     }
   ],
-  "ui.preparing": [{ "type": 0, "value": "Preparing review…" }],
-  "ui.prepareExact": [{ "type": 0, "value": "Review changes" }],
-  "ui.retryPrepare": [{ "type": 0, "value": "Retry the same review request" }],
+  "ui.previewing": [{ "type": 0, "value": "Reviewing…" }],
+  "ui.previewOperation": [{ "type": 0, "value": "Review changes" }],
   "ui.changeCommandTitle": [{ "type": 0, "value": "Discard these draft changes?" }],
   "ui.changeCommandDescription": [
-    {
-      "type": 0,
-      "value": "Changing the action discards these draft details and starts a different request."
-    }
+    { "type": 0, "value": "Discard this draft and choose another command?" }
   ],
   "ui.discardAndChange": [{ "type": 0, "value": "Discard and change action" }],
   "ui.acceptedOperation": [{ "type": 0, "value": "Recorded change" }],
@@ -319,12 +263,6 @@
   ],
   "ui.returnToCase": [{ "type": 0, "value": "Return to case" }],
   "ui.reviewTitle": [{ "type": 0, "value": "Review changes" }],
-  "ui.reviewDescription": [
-    {
-      "type": 0,
-      "value": "Check and confirm the details. If recording is unconfirmed, inspect Recovery before trying again."
-    }
-  ],
   "ui.reviewTarget": [
     { "type": 0, "value": "Target " },
     { "type": 1, "value": "reference" },
@@ -338,7 +276,6 @@
     { "type": 1, "value": "digest" }
   ],
   "ui.reviewConfirmation": [{ "type": 0, "value": "I confirm these changes." }],
-  "ui.keepForRecovery": [{ "type": 0, "value": "Back to editing; keep for Recovery" }],
   "ui.submitting": [{ "type": 0, "value": "Recording…" }],
   "ui.submitExact": [{ "type": 0, "value": "Record changes" }],
   "ui.before": [
@@ -349,39 +286,9 @@
     { "type": 0, "value": "After: " },
     { "type": 1, "value": "value" }
   ],
-  "ui.recoveryView": [{ "type": 0, "value": "Recovery view" }],
   "ui.pending": [{ "type": 0, "value": "Pending" }],
   "ui.terminal": [{ "type": 0, "value": "Terminal" }],
   "ui.reload": [{ "type": 0, "value": "Reload" }],
-  "ui.capacity": [
-    { "type": 0, "value": "Pending recovery storage: " },
-    { "type": 1, "value": "count" },
-    { "type": 0, "value": " / " },
-    { "type": 1, "value": "maximum" },
-    { "type": 0, "value": " requests · " },
-    { "type": 1, "value": "bytes" },
-    { "type": 0, "value": " / " },
-    { "type": 1, "value": "maximumBytes" },
-    { "type": 0, "value": " bytes of exact request content." }
-  ],
-  "ui.nearCapacity": [
-    { "type": 0, "value": "Near capacity; resolve or dismiss known pending items." }
-  ],
-  "ui.recoveryHint": [
-    {
-      "type": 0,
-      "value": "Pending requests appear by default. Terminal view shows accepted, dismissed and revoked authority as non-executable evidence. Inspect server state before recording or dismissing a request."
-    }
-  ],
-  "ui.recoverySummary": [
-    { "type": 1, "value": "command" },
-    { "type": 0, "value": " · " },
-    { "type": 1, "value": "reference" },
-    { "type": 0, "value": " · " },
-    { "type": 1, "value": "authority" },
-    { "type": 0, "value": " · " },
-    { "type": 1, "value": "operationId" }
-  ],
   "ui.revocationSummary": [
     { "type": 0, "value": "REVOKED · " },
     { "type": 1, "value": "operationId" },
@@ -401,26 +308,6 @@
     }
   ],
   "ui.moreAttempts": [{ "type": 0, "value": "Load more attempts" }],
-  "ui.retainedIdentity": [
-    { "type": 0, "value": "Operation " },
-    { "type": 1, "value": "operationId" },
-    { "type": 0, "value": " · authority " },
-    { "type": 1, "value": "authority" },
-    { "type": 0, "value": " · digest " },
-    { "type": 1, "value": "digest" }
-  ],
-  "ui.retainedCommand": [
-    { "type": 0, "value": "Case " },
-    { "type": 1, "value": "reference" },
-    { "type": 0, "value": " · action " },
-    { "type": 1, "value": "command" }
-  ],
-  "ui.retainedFormat": [
-    { "type": 0, "value": "Expected revision " },
-    { "type": 1, "value": "revision" },
-    { "type": 0, "value": " · canonical format " },
-    { "type": 1, "value": "format" }
-  ],
   "ui.provenance": [
     { "type": 0, "value": "Prepared with " },
     { "type": 1, "value": "version" },
@@ -442,17 +329,7 @@
   ],
   "ui.inspect": [{ "type": 0, "value": "Inspect" }],
   "ui.inspectRevocation": [{ "type": 0, "value": "Inspect revocation" }],
-  "ui.moreRecovery": [{ "type": 0, "value": "Load more recovery" }],
   "ui.resolveExact": [{ "type": 0, "value": "Try to record this request" }],
-  "ui.dismissPreparation": [{ "type": 0, "value": "Stop future recording of this request" }],
-  "ui.exportEnvelope": [{ "type": 0, "value": "Export recovery envelope" }],
-  "ui.recoveryDetails": [{ "type": 0, "value": "Recovery details" }],
-  "ui.recoveryDetailsHint": [
-    {
-      "type": 0,
-      "value": "Request authority and attempt evidence from the server. Request details preserve the exact entered values."
-    }
-  ],
   "ui.observation": [
     { "type": 0, "value": "Observation: " },
     { "type": 1, "value": "state" }
@@ -462,23 +339,8 @@
     { "type": 1, "value": "operationId" },
     { "type": 0, "value": "." }
   ],
-  "ui.exportTitle": [{ "type": 0, "value": "Export recovery envelope?" }],
   "ui.resolveTitle": [{ "type": 0, "value": "Try to record the reviewed request?" }],
-  "ui.dismissTitle": [{ "type": 0, "value": "Permanently end this request’s future authority?" }],
-  "ui.exportWarning": [
-    {
-      "type": 0,
-      "value": "This file contains claimant data and recovery bytes. Save it only in private storage."
-    }
-  ],
   "ui.working": [{ "type": 0, "value": "Working…" }],
-  "ui.confirmExport": [{ "type": 0, "value": "Confirm export" }],
-  "ui.artifact": [
-    { "type": 0, "value": "Artifact " },
-    { "type": 1, "value": "kind" },
-    { "type": 0, "value": " · source digest " },
-    { "type": 1, "value": "digest" }
-  ],
   "ui.importTarget": [
     { "type": 0, "value": "Imported target " },
     { "type": 1, "value": "reference" },
@@ -487,15 +349,6 @@
     { "type": 0, "value": " · expected revision " },
     { "type": 1, "value": "revision" }
   ],
-  "ui.importEnvelope": [{ "type": 0, "value": "Import recovery envelope" }],
-  "ui.importTitle": [{ "type": 0, "value": "Retain imported recovery material?" }],
-  "ui.importDescription": [
-    {
-      "type": 0,
-      "value": "Retained only after confirmation, for explicit Recovery action; never submitted automatically."
-    }
-  ],
-  "ui.retainForRecovery": [{ "type": 0, "value": "Retain for Recovery" }],
   "ui.keepEditing": [{ "type": 0, "value": "Keep editing" }],
   "ui.backToCase": [{ "type": 0, "value": "Back to case" }],
   "ui.registerLabel": [{ "type": 0, "value": "ClaimCore case register" }],
@@ -506,22 +359,10 @@
       "value": "The server may record this exact request if still permitted, or show an earlier accepted result. The returned outcome tells you what happened; success is not guaranteed."
     }
   ],
-  "ui.dismissConsequence": [
-    {
-      "type": 0,
-      "value": "Confirmed dismissal permanently prevents future execution of this unaccepted request. It cannot be undone and does not settle earlier uncertain attempts. Check the returned outcome to confirm dismissal."
-    }
-  ],
   "ui.canonicalCopyHint": [
     {
       "type": 0,
       "value": "Copies the exact underlying value. Dates use YYYY-MM-DD and amounts use a decimal point, regardless of display format."
-    }
-  ],
-  "ui.leaveDraftDescription": [
-    {
-      "type": 0,
-      "value": "Leaving discards draft edits. Retained requests stay in Recovery; leaving does not stop them or settle earlier attempts."
     }
   ],
   "ui.discardAndLeave": [{ "type": 0, "value": "Discard and leave" }],
@@ -535,7 +376,7 @@
     { "type": 1, "value": "digest" }
   ],
   "ui.webIdentity": [
-    { "type": 0, "value": "Web v3 contract: " },
+    { "type": 0, "value": "Wire contract: " },
     { "type": 1, "value": "digest" }
   ],
   "ui.fieldHelp": [{ "type": 0, "value": "Meaning and exact copy" }],
@@ -544,7 +385,25 @@
   "ui.fullHistory": [{ "type": 0, "value": "Full recorded fields" }],
   "ui.requestDigest": [{ "type": 0, "value": "Exact request SHA-256 digest" }],
   "ui.inspectOperationId": [{ "type": 0, "value": "Inspect operation ID" }],
-  "ui.exportKnownIdentity": [{ "type": 0, "value": "Export by ID and digest" }],
+  "ui.returnToEdit": [{ "type": 0, "value": "Return to editing" }],
+  "ui.retryExact": [{ "type": 0, "value": "Retry the same operation" }],
+  "ui.retryExactDescription": [
+    {
+      "type": 0,
+      "value": "The outcome is unknown. Keep this page open and retry the same operation."
+    }
+  ],
+  "ui.reloadContract": [{ "type": 0, "value": "Reload page" }],
+  "ui.lifecycleErased": [
+    { "type": 0, "value": "Erased — only the case reference and revision remain." }
+  ],
+  "ui.reviewDescription": [
+    { "type": 0, "value": "Review the proposed values and confirm this exact operation." }
+  ],
+  "ui.languageDescription": [
+    { "type": 0, "value": "Language changes display text and keeps the current draft and review." }
+  ],
+  "ui.leaveDraftDescription": [{ "type": 0, "value": "Discard this draft and leave the editor?" }],
   "field.incidentDate.label": [{ "type": 0, "value": "Incident date" }],
   "field.incidentDate.meaning": [{ "type": 0, "value": "Date on which the incident occurred." }],
   "field.incidentNotificationDate.label": [
@@ -694,6 +553,11 @@
   "diagnostic.ACCESS_RESOURCE_UNAVAILABLE": [
     { "type": 0, "value": "The requested resource is unavailable." }
   ],
+  "diagnostic.ACTOR_ALREADY_REGISTERED": [
+    { "type": 0, "value": "This principal is already registered." }
+  ],
+  "diagnostic.ACTOR_UNKNOWN": [{ "type": 0, "value": "This principal is not registered." }],
+  "diagnostic.ALREADY_VOIDED": [{ "type": 0, "value": "This case is already voided." }],
   "diagnostic.CASE_ALREADY_CLOSED": [{ "type": 0, "value": "The case is already closed." }],
   "diagnostic.CASE_ALREADY_EXISTS": [{ "type": 0, "value": "The case reference already exists." }],
   "diagnostic.CASE_ALREADY_OPENED": [{ "type": 0, "value": "The case is already open." }],
@@ -716,6 +580,7 @@
     }
   ],
   "diagnostic.CASE_DECISION_REQUIRED": [{ "type": 0, "value": "Record a payment decision first." }],
+  "diagnostic.CASE_ERASED": [{ "type": 0, "value": "This case has been erased." }],
   "diagnostic.CASE_NOT_FOUND": [{ "type": 0, "value": "The case reference was not found." }],
   "diagnostic.CASE_PAYMENT_ALREADY_RECORDED": [
     { "type": 0, "value": "ClaimCore records one full payment." }
@@ -726,6 +591,7 @@
   "diagnostic.CASE_REVISION_CONFLICT": [
     { "type": 0, "value": "Read the current case before making a changed request." }
   ],
+  "diagnostic.CASE_VOIDED": [{ "type": 0, "value": "This case is voided." }],
   "diagnostic.CASE_ZERO_DECISION_CANNOT_BE_PAID": [
     { "type": 0, "value": "A zero decision is not a payment." }
   ],
@@ -736,21 +602,19 @@
     { "type": 0, "value": "Supply all three tagged correction groups." }
   ],
   "diagnostic.COMMAND_OPERATION_ID_REQUIRED": [{ "type": 0, "value": "Use a non-empty UUID." }],
-  "diagnostic.CORE_COMMIT_OUTCOME_UNKNOWN": [
-    { "type": 0, "value": "Commit completion was not confirmed." }
-  ],
   "diagnostic.CORE_OPERATION_CONTENT_CONFLICT": [
-    { "type": 0, "value": "The operation ID belongs to different request content." }
+    { "type": 0, "value": "Stored operation content is inconsistent. Stop and investigate." }
   ],
   "diagnostic.CORE_SCHEMA_MISMATCH": [
-    { "type": 0, "value": "The runtime schema or database settings are incompatible." }
+    {
+      "type": 0,
+      "value": "The schema differs from this build. Run migrate or use a matching build."
+    }
   ],
   "diagnostic.CORE_STORE_INTEGRITY_ERROR": [
-    { "type": 0, "value": "Stored data failed integrity validation." }
+    { "type": 0, "value": "Stored data failed verification. Stop and run verify." }
   ],
-  "diagnostic.CORE_STORE_UNAVAILABLE": [
-    { "type": 0, "value": "The store was unavailable before completion was confirmed." }
-  ],
+  "diagnostic.CORE_STORE_UNAVAILABLE": [{ "type": 0, "value": "The store is unavailable. Retry." }],
   "diagnostic.CORRECTION_COMPLETE_DECISION_REQUIRED": [
     {
       "type": 0,
@@ -783,6 +647,36 @@
   ],
   "diagnostic.CORRECTION_REPLACEMENT_FIELDS_REQUIRED": [
     { "type": 0, "value": "Use REPLACE with every declared field." }
+  ],
+  "diagnostic.HOST_ANTIFORGERYREJECTED": [
+    { "type": 0, "value": "Request verification was refused." }
+  ],
+  "diagnostic.HOST_BEFOREDISPATCHFAILED": [
+    { "type": 0, "value": "Processing failed before dispatch." }
+  ],
+  "diagnostic.HOST_BODYTOOLARGE": [{ "type": 0, "value": "Request body is too large." }],
+  "diagnostic.HOST_COMPLETEDRESPONSEFAILED": [
+    { "type": 0, "value": "The completed response could not be delivered." }
+  ],
+  "diagnostic.HOST_CONNECTIONREJECTED": [{ "type": 0, "value": "Connection was refused." }],
+  "diagnostic.HOST_CONTRACTMISMATCH": [
+    { "type": 0, "value": "The client contract differs. Reload or use a matching client." }
+  ],
+  "diagnostic.HOST_DISPATCHUNCONFIRMED": [
+    { "type": 0, "value": "Preserve the exact request and replay it." }
+  ],
+  "diagnostic.HOST_ENDPOINTMISSING": [{ "type": 0, "value": "Endpoint was not found." }],
+  "diagnostic.HOST_INPUTINVALID": [
+    { "type": 0, "value": "The input does not satisfy the endpoint contract." }
+  ],
+  "diagnostic.HOST_MEDIATYPEREJECTED": [{ "type": 0, "value": "Use the endpoint media type." }],
+  "diagnostic.HOST_METHODREJECTED": [{ "type": 0, "value": "The method is unsupported." }],
+  "diagnostic.HOST_ORIGINREJECTED": [{ "type": 0, "value": "Origin was refused." }],
+  "diagnostic.HOST_RATELIMITED": [{ "type": 0, "value": "Request admission is busy." }],
+  "diagnostic.HOST_SESSIONFORBIDDEN": [{ "type": 0, "value": "Session access was refused." }],
+  "diagnostic.HOST_SESSIONREJECTED": [{ "type": 0, "value": "Authentication was refused." }],
+  "diagnostic.HUMAN_PRINCIPAL_REQUIRED": [
+    { "type": 0, "value": "This role requires a human principal." }
   ],
   "diagnostic.INPUT_AMOUNT_NOT_REPRESENTABLE": [
     { "type": 0, "value": "The decimal amount cannot be represented exactly." }
@@ -829,29 +723,21 @@
     { "type": 1, "value": "minimumCharacters" },
     { "type": 0, "value": " Unicode characters." }
   ],
+  "diagnostic.INVALID_REASON": [
+    { "type": 0, "value": "Supply a valid reason of at most 200 characters." }
+  ],
+  "diagnostic.LAST_OWNER": [
+    { "type": 0, "value": "At least one enabled human owner is required." }
+  ],
+  "diagnostic.NOT_VOIDED": [{ "type": 0, "value": "This case is not voided." }],
   "diagnostic.OPERATION_CONTENT_CONFLICT": [
     {
       "type": 0,
       "value": "This operation ID belongs to different command content. Do not reuse it."
     }
   ],
-  "diagnostic.OPERATION_RECOVERY_ATTEMPT_LIMIT": [
-    {
-      "type": 0,
-      "value": "This operation has reached its recovery attempt limit. Inspect its exact evidence and reconcile unresolved attempts before authoring new work."
-    }
-  ],
-  "diagnostic.OPERATION_REVOKED": [
-    {
-      "type": 0,
-      "value": "Authority for future execution of this exact operation was durably revoked. Earlier attempt uncertainty is unchanged; inspect its exact evidence."
-    }
-  ],
   "diagnostic.QUERY_CASE_LIST_CURSOR_INVALID": [
-    {
-      "type": 0,
-      "value": "Use one current opaque case-list cursor returned for this account and page size."
-    }
+    { "type": 0, "value": "Use one current opaque case-list cursor returned by ClaimCore." }
   ],
   "diagnostic.QUERY_HISTORY_CURSOR_INVALID": [
     { "type": 0, "value": "Use one opaque history cursor returned by ClaimCore." }
@@ -860,138 +746,6 @@
     { "type": 0, "value": "Use a value from 1 through " },
     { "type": 1, "value": "maximumPageSize" },
     { "type": 0, "value": "." }
-  ],
-  "diagnostic.RECOVERY_ACCEPTED_OPERATION_DISMISSAL_FORBIDDEN": [
-    {
-      "type": 0,
-      "value": "An accepted operation cannot be dismissed. Inspect its retained receipt."
-    }
-  ],
-  "diagnostic.RECOVERY_ACCESS_UNAVAILABLE": [
-    {
-      "type": 0,
-      "value": "Access to this operation was refused. Preserve its exact identity and inspect its evidence when access is available. This refusal does not settle earlier attempts."
-    }
-  ],
-  "diagnostic.RECOVERY_ATTEMPT_CURSOR_INVALID": [
-    { "type": 0, "value": "The recovery attempt cursor is invalid." }
-  ],
-  "diagnostic.RECOVERY_ATTEMPT_CURSOR_OPERATION_MISMATCH": [
-    { "type": 0, "value": "The recovery attempt cursor belongs to a different operation." }
-  ],
-  "diagnostic.RECOVERY_ATTEMPT_LIMIT_REACHED": [
-    {
-      "type": 0,
-      "value": "This operation has reached its recovery attempt limit. Inspect its exact evidence and reconcile unresolved attempts before authoring new work."
-    }
-  ],
-  "diagnostic.RECOVERY_CAPACITY_EXHAUSTED": [
-    { "type": 0, "value": "Recovery capacity is exhausted." }
-  ],
-  "diagnostic.RECOVERY_DISMISSAL_CONFIRMATION_REQUIRED": [
-    { "type": 0, "value": "Explicit confirmation is required to dismiss a recovery preparation." }
-  ],
-  "diagnostic.RECOVERY_ENVELOPE_INVALID_OR_UNSUPPORTED": [
-    { "type": 0, "value": "The recovery envelope is unsupported or failed canonical decoding." }
-  ],
-  "diagnostic.RECOVERY_INSTALLATION_MISMATCH": [
-    { "type": 0, "value": "The recovery envelope belongs to a different ClaimCore installation." }
-  ],
-  "diagnostic.RECOVERY_LIST_CURSOR_INVALID": [
-    { "type": 0, "value": "The recovery list cursor is invalid." }
-  ],
-  "diagnostic.RECOVERY_LIST_CURSOR_VIEW_MISMATCH": [
-    { "type": 0, "value": "The recovery list cursor belongs to a different view." }
-  ],
-  "diagnostic.RECOVERY_MUTATION_CANCELLED_BEFORE_COMMIT": [
-    { "type": 0, "value": "The technical mutation was cancelled before commit." }
-  ],
-  "diagnostic.RECOVERY_MUTATION_OUTCOME_UNKNOWN": [
-    {
-      "type": 0,
-      "value": "The recovery-state mutation may have committed but could not be confirmed."
-    }
-  ],
-  "diagnostic.RECOVERY_NEW_PREPARATION_MISSING": [
-    { "type": 0, "value": "A newly retained preparation was not available for execution." }
-  ],
-  "diagnostic.RECOVERY_OPERATION_CONTENT_CONFLICT": [
-    { "type": 0, "value": "The supplied recovery identity conflicts with an existing operation." }
-  ],
-  "diagnostic.RECOVERY_OPERATION_ID_REQUIRED": [
-    { "type": 0, "value": "A non-empty recovery operation ID is required." }
-  ],
-  "diagnostic.RECOVERY_OPERATION_REVOKED": [
-    {
-      "type": 0,
-      "value": "Authority for future execution of this exact operation was durably revoked. Earlier attempt uncertainty is unchanged; inspect its exact evidence."
-    }
-  ],
-  "diagnostic.RECOVERY_PAGE_LIMIT_RANGE": [
-    { "type": 0, "value": "The recovery page limit is outside the supported range." }
-  ],
-  "diagnostic.RECOVERY_PREPARATION_DISMISSED": [
-    { "type": 0, "value": "A dismissed preparation cannot be submitted." }
-  ],
-  "diagnostic.RECOVERY_PREPARATION_DISMISSED_BEFORE_EXECUTION": [
-    { "type": 0, "value": "The preparation was dismissed before execution could begin." }
-  ],
-  "diagnostic.RECOVERY_PREPARATION_NOT_FOUND": [
-    { "type": 0, "value": "The recovery preparation was not found." }
-  ],
-  "diagnostic.RECOVERY_READ_CANCELLED": [
-    { "type": 0, "value": "The recovery read was cancelled." }
-  ],
-  "diagnostic.RECOVERY_REQUEST_DIGEST_INVALID": [
-    { "type": 0, "value": "The recovery request digest must be a lowercase SHA-256 digest." }
-  ],
-  "diagnostic.RECOVERY_REQUEST_DIGEST_MISMATCH": [
-    { "type": 0, "value": "The supplied digest does not match the exact retained request bytes." }
-  ],
-  "diagnostic.RECOVERY_RETAINED_CANONICAL_INVALID": [
-    { "type": 0, "value": "Retained canonical request bytes failed integrity validation." }
-  ],
-  "diagnostic.RECOVERY_RETAINED_DIGEST_MISMATCH": [
-    { "type": 0, "value": "The retained preparation digest does not match the submitted draft." }
-  ],
-  "diagnostic.RECOVERY_RETAINED_DOMAIN_SHAPE_INVALID": [
-    { "type": 0, "value": "Retained request did not satisfy its closed domain shape." }
-  ],
-  "diagnostic.RECOVERY_RETAINED_PREPARATION_UNVERIFIABLE": [
-    { "type": 0, "value": "An exact retained preparation could not be verified." }
-  ],
-  "diagnostic.RECOVERY_SCHEMA_MISMATCH": [
-    { "type": 0, "value": "Recovery storage is incompatible with this runtime." }
-  ],
-  "diagnostic.RECOVERY_SOURCE_DIGEST_MISMATCH": [
-    { "type": 0, "value": "The supplied source digest does not match the exact import bytes." }
-  ],
-  "diagnostic.RECOVERY_STORED_DATA_INVALID": [
-    { "type": 0, "value": "Stored recovery data failed validation." }
-  ],
-  "diagnostic.RECOVERY_STORE_CONTENT_CONFLICT": [
-    { "type": 0, "value": "Recovery identity conflicts with retained data." }
-  ],
-  "diagnostic.RECOVERY_STORE_INTEGRITY_ERROR": [
-    { "type": 0, "value": "Recovery storage failed integrity validation." }
-  ],
-  "diagnostic.RECOVERY_STORE_PREPARATION_MISSING": [
-    { "type": 0, "value": "Recovery storage lost an expected preparation." }
-  ],
-  "diagnostic.RECOVERY_STORE_RESPONSE_INVALID": [
-    { "type": 0, "value": "Recovery storage returned an invalid technical response." }
-  ],
-  "diagnostic.RECOVERY_STORE_UNAVAILABLE": [
-    { "type": 0, "value": "Recovery storage was unavailable before completion was confirmed." }
-  ],
-  "diagnostic.RECOVERY_SUBMISSION_ALREADY_STARTED": [
-    {
-      "type": 0,
-      "value": "The preparation has already started submission and must be resolved exactly."
-    }
-  ],
-  "diagnostic.RESOURCE_UNAVAILABLE": [
-    { "type": 0, "value": "The requested resource is unavailable." }
   ],
   "diagnostic.STATE_CASE_REFERENCE_MISMATCH": [
     { "type": 0, "value": "The loaded case does not match this command." }
@@ -1004,101 +758,5 @@
   ],
   "diagnostic.STATE_TRANSITION_MISMATCH": [
     { "type": 0, "value": "The state guard and payment transition disagree." }
-  ],
-  "diagnostic.WEB_HOST_ANTIFORGERY_REJECTED": [
-    { "type": 0, "value": "Request verification was refused." }
-  ],
-  "diagnostic.WEB_HOST_BEFORE_DISPATCH_FAILED": [
-    { "type": 0, "value": "Request processing failed before dispatch." }
-  ],
-  "diagnostic.WEB_HOST_BODY_TOO_LARGE": [{ "type": 0, "value": "Request body is too large." }],
-  "diagnostic.WEB_HOST_BUSY": [{ "type": 0, "value": "Request admission is busy." }],
-  "diagnostic.WEB_HOST_COMPLETED_RESPONSE_FAILED": [
-    { "type": 0, "value": "Request processing completed but its response could not be delivered." }
-  ],
-  "diagnostic.WEB_HOST_CONNECTION_REJECTED": [{ "type": 0, "value": "Connection was refused." }],
-  "diagnostic.WEB_HOST_DISPATCH_UNCONFIRMED": [
-    {
-      "type": 0,
-      "value": "The dispatched operation could not be confirmed. Preserve its exact identity."
-    }
-  ],
-  "diagnostic.WEB_HOST_ENDPOINT_MISSING": [{ "type": 0, "value": "Endpoint was not found." }],
-  "diagnostic.WEB_HOST_EXPORT_METADATA_INVALID": [
-    { "type": 0, "value": "Recovery export metadata was invalid." }
-  ],
-  "diagnostic.WEB_HOST_MEDIA_TYPE_REJECTED": [
-    { "type": 0, "value": "The endpoint media type was refused." }
-  ],
-  "diagnostic.WEB_HOST_METHOD_REJECTED": [
-    { "type": 0, "value": "The request method is not supported by this endpoint." }
-  ],
-  "diagnostic.WEB_HOST_ORIGIN_REJECTED": [{ "type": 0, "value": "Request origin was refused." }],
-  "diagnostic.WEB_HOST_SESSION_FORBIDDEN": [{ "type": 0, "value": "Session access was refused." }],
-  "diagnostic.WEB_HOST_SESSION_REJECTED": [{ "type": 0, "value": "Session was refused." }],
-  "diagnostic.WEB_INPUT_BODY_CANCELLED": [
-    { "type": 0, "value": "The request body read was cancelled." }
-  ],
-  "diagnostic.WEB_INPUT_BODY_TOO_LARGE": [
-    { "type": 0, "value": "The request exceeds the configured byte limit." }
-  ],
-  "diagnostic.WEB_INPUT_BODY_UNREADABLE": [
-    { "type": 0, "value": "The request body could not be read." }
-  ],
-  "diagnostic.WEB_INPUT_CORRECTION_ACTION": [
-    { "type": 0, "value": "The correction action is not declared by the semantic contract." }
-  ],
-  "diagnostic.WEB_INPUT_DUPLICATE_PROPERTY": [
-    { "type": 0, "value": "Duplicate JSON properties are not accepted." }
-  ],
-  "diagnostic.WEB_INPUT_EXPECTED_BOOLEAN": [{ "type": 0, "value": "Expected a JSON boolean." }],
-  "diagnostic.WEB_INPUT_EXPECTED_INTEGER": [{ "type": 0, "value": "Expected a JSON integer." }],
-  "diagnostic.WEB_INPUT_EXPECTED_OBJECT": [{ "type": 0, "value": "Expected a JSON object." }],
-  "diagnostic.WEB_INPUT_EXPECTED_STRING": [{ "type": 0, "value": "Expected a JSON string." }],
-  "diagnostic.WEB_INPUT_HISTORY_DETAIL": [
-    { "type": 0, "value": "The history detail is not supported." }
-  ],
-  "diagnostic.WEB_INPUT_INVALID_DIGEST": [
-    { "type": 0, "value": "Use one lowercase SHA-256 digest." }
-  ],
-  "diagnostic.WEB_INPUT_INVALID_JSON": [
-    { "type": 0, "value": "Malformed JSON or an unsupported JSON shape." }
-  ],
-  "diagnostic.WEB_INPUT_INVALID_REVISION": [
-    { "type": 0, "value": "Expected a canonical non-negative revision below Int64.MaxValue." }
-  ],
-  "diagnostic.WEB_INPUT_INVALID_UNICODE": [
-    { "type": 0, "value": "Malformed Unicode escape in JSON text." }
-  ],
-  "diagnostic.WEB_INPUT_INVALID_UTF8": [{ "type": 0, "value": "The request must be valid UTF-8." }],
-  "diagnostic.WEB_INPUT_INVALID_UUID": [
-    { "type": 0, "value": "Use one non-empty canonical lowercase UUID." }
-  ],
-  "diagnostic.WEB_INPUT_LOGOUT_SHAPE": [
-    { "type": 0, "value": "Logout requires an empty JSON object." }
-  ],
-  "diagnostic.WEB_INPUT_MISSING_COMMAND_VALUE": [
-    { "type": 0, "value": "A required command value is missing." }
-  ],
-  "diagnostic.WEB_INPUT_MISSING_PROPERTY": [
-    { "type": 0, "value": "A required JSON property is missing." }
-  ],
-  "diagnostic.WEB_INPUT_NULL_FORBIDDEN": [
-    { "type": 0, "value": "JSON null is not accepted here." }
-  ],
-  "diagnostic.WEB_INPUT_PAGE_RANGE": [
-    { "type": 0, "value": "The requested page size is outside the supported range." }
-  ],
-  "diagnostic.WEB_INPUT_RECOVERY_VIEW": [
-    { "type": 0, "value": "Use PENDING or TERMINAL recovery view." }
-  ],
-  "diagnostic.WEB_INPUT_SOURCE_DIGEST_HEADER": [
-    { "type": 0, "value": "A canonical source digest header is required." }
-  ],
-  "diagnostic.WEB_INPUT_UNKNOWN_COMMAND": [
-    { "type": 0, "value": "The command token is not supported." }
-  ],
-  "diagnostic.WEB_INPUT_UNKNOWN_PROPERTY": [
-    { "type": 0, "value": "The JSON object contains an unknown property." }
   ]
 }

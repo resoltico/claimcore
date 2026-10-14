@@ -4,7 +4,7 @@ vi.mock("../e2e/session-helpers", () => ({ openAuthenticated: vi.fn() }));
 vi.mock("../e2e/case-workflow", () => ({
   openCase: vi.fn(),
   startCommand: vi.fn(),
-  prepare: vi.fn(),
+  preview: vi.fn(),
   keepForRecovery: vi.fn(),
 }));
 vi.mock("../e2e/authority-setup", () => ({

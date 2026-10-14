@@ -50,6 +50,17 @@ module ContractDiscovery =
                 else None)
         |> Option.map EndpointCatalog.schema
 
+    let private requestTypes () =
+        EndpointCatalog.all
+        |> List.map (fun e ->
+            "  "
+            + System.Text.Json.JsonSerializer.Serialize(e.Identifier)
+            + ": "
+            + Schema.typeScript e.Request.Root
+            + ";")
+        |> String.concat "\n"
+        |> fun value -> "export type RequestByEndpoint = {\n" + value + "\n};"
+
     let typeScript () =
         let definitions =
             ValueSchemas.definitions
@@ -70,6 +81,7 @@ module ContractDiscovery =
             ([ "/* Generated from ClaimCore.Contracts. Do not edit. */" ]
              @ definitions
              @ [
+                 requestTypes ()
                  "export type ResponseByEndpoint = {"
                  String.concat "\n" responses
                  "};"
@@ -97,7 +109,7 @@ module ContractDiscovery =
         )
         + ";\nexport const endpoints = ["
         + String.concat "," endpoints
-        + "] as const;\nexport type EndpointId = (typeof endpoints)[number][\"id\"];\n"
+        + "] as const;\nexport type EndpointId = (typeof endpoints)[number][\"id\"];\nexport const isEndpointId = (value: string): value is EndpointId => endpoints.some(endpoint => endpoint.id === value);\n"
 
     let presentation () =
         [

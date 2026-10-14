@@ -6,7 +6,7 @@ import {
   operationReducer,
   type OperationState,
 } from "../src/domain/operationReducer";
-import { groupedCorrectionValues, preparation, review } from "./v3-foundation.fixtures";
+import { groupedCorrectionValues, digest, review } from "./service-foundation.fixtures";
 
 export const firstId = "00000000-0000-4000-8000-000000000001";
 export const secondId = "00000000-0000-4000-8000-000000000002";
@@ -14,7 +14,7 @@ export const initial = () =>
   initialOperation(firstId, "OPEN", { claimantName: "Synthetic A" }, "CASE-SYNTHETIC");
 export const begin = (state: OperationState, requestId: number) =>
   operationReducer(state, {
-    type: "PREPARING",
+    type: "PREVIEWING",
     requestId,
     draft:
       state.exposedRequest ??
@@ -29,9 +29,9 @@ export const refused = (state: OperationState, requestId: number) =>
   });
 export const reviewed = () =>
   operationReducer(begin(initial(), 1), {
-    type: "PREPARED",
+    type: "REVIEWED",
     requestId: 1,
-    preparation,
+    requestSha256: digest,
     review,
   });
 
@@ -73,7 +73,7 @@ const expectCorrectionGuards = (flat: OperationState) => {
 
 /** Transitions that must change nothing, and the identity an unexposed edit keeps. */
 export const expectGuardedTransitionsInert = (fresh: OperationState) => {
-  expect(operationReducer(fresh, { type: "KEEP_FOR_RECOVERY" })).toBe(fresh);
+  expect(operationReducer(fresh, { type: "RETURN_TO_EDIT" })).toBe(fresh);
   expect(
     operationReducer(fresh, {
       type: "EDIT_REFERENCE",

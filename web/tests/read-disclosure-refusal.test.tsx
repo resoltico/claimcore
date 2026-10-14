@@ -1,11 +1,11 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
-import type { ApiResult, CaseSummary, WebV3Response } from "../src/api/v3";
+import type { ApiResult, CaseSummary, ServiceResponse } from "../src/api/service";
 import { isDisclosureRefused } from "../src/api/outcomes";
 import { localNotice } from "../src/api/notices";
 import { useRetryablePage } from "../src/hooks/useRead";
 
-type ListResponse = WebV3Response<"case.list">;
+type ListResponse = ServiceResponse<"case.list">;
 
 const initial: ApiResult<ListResponse> = {
   kind: "outcome",
@@ -16,7 +16,15 @@ const initial: ApiResult<ListResponse> = {
       tag: "SUCCEEDED",
       data: {
         availableCommands: [],
-        items: [{ caseReference: "SYNTHETIC-PRIVATE", revision: "1", status: "OPENED" }],
+        items: [
+          {
+            state: "LIVE",
+            disposition: "ACTIVE",
+            caseReference: "SYNTHETIC-PRIVATE",
+            revision: "1",
+            status: "OPENED",
+          },
+        ],
         nextCursor: "continuation",
       },
     },
@@ -50,10 +58,10 @@ const sessionRejected: ApiResult<ListResponse> = {
   status: 401,
   failure: {
     kind: "HOST_FAILURE",
-    code: "WEB_SESSION_REJECTED",
+    code: "SESSION_REJECTED",
     status: 401,
     message: "Translated text is not the policy",
-    diagnostic: { id: "WEB_HOST_SESSION_REJECTED", parameters: {} },
+    diagnostic: { id: "HOST_SESSIONREJECTED", parameters: {} },
     executionPhase: "NOT_STARTED",
   },
 };

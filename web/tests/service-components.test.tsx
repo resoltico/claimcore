@@ -2,13 +2,13 @@ import { localNotice } from "../src/api/notices";
 import { render, screen } from "./presentation-test-support";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
-import { isWebV3EndpointId } from "../src/generated/contracts/web-v3.endpoint-catalog";
+import { isEndpointId } from "../src/generated/contracts/endpoint-catalog";
 import { CopyValue } from "../src/components/CopyValue";
 import { CaseFieldsView } from "../src/components/CaseFieldsView";
 import { DescriptorField } from "../src/components/DescriptorField";
 import { TextInput } from "../src/components/TextInput";
 import { hasSuspiciousCharacters, suspiciousCodePoints } from "../src/utils/text";
-import { definition, fields } from "./v3-ui.fixtures";
+import { definition, fields } from "./service-ui.fixtures";
 
 it("copies safe values and provides an accessible fallback when clipboard access is unavailable", async () => {
   const user = userEvent.setup();
@@ -37,7 +37,7 @@ it("associates optional field errors and supports password text input", () => {
         error="Required"
       />
       <DescriptorField
-        field={definition.definition.fields[0]!}
+        field={definition.definition.fields[0]}
         value="CASE-1"
         error={localNotice("unreachable")}
         onChange={onChange}
@@ -60,8 +60,8 @@ it("renders ordinary text input without an error and forwards edits", async () =
 });
 
 it("keeps generated endpoint inventory callable and presents suspicious Unicode defensively", () => {
-  expect(isWebV3EndpointId("command.prepare")).toBe(true);
-  expect(isWebV3EndpointId("nope")).toBe(false);
+  expect(isEndpointId("command.preview")).toBe(true);
+  expect(isEndpointId("nope")).toBe(false);
   expect(hasSuspiciousCharacters("plain")).toBe(false);
   expect(hasSuspiciousCharacters("a\u202Eb")).toBe(true);
   expect(suspiciousCodePoints("a\u202Eb")).toEqual(["U+202E"]);

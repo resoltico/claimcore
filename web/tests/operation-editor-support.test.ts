@@ -1,73 +1,20 @@
-import { describe, expect, it } from "vitest";
-import type { Receipt } from "../src/api/v3";
-import { acceptedReceipt, isLocked, prepared } from "../src/views/operation/editorSupport";
-import { fields, operationId, preparation } from "./v3-ui.fixtures";
-import { review } from "./v3-foundation.fixtures";
-
-const receipt: Receipt = {
-  operationId,
-  snapshot: { fields, revision: "2" },
-  recordedAt: "2026-09-09T00:00:00.0000000+00:00",
-  recordedBy: "synthetic",
-  replayed: false,
-  command: "CLOSE",
-};
-
-const expectPreparedSelection = (): void => {
-  expect(
-    prepared({
-      endpoint: "command.prepare",
-      outcome: { tag: "PREPARED", data: { details: preparation, review } },
-    }),
-  ).toEqual({ details: preparation, review });
-  expect(
-    prepared({
-      endpoint: "command.prepare",
-      outcome: { tag: "CANCELLED_BEFORE_ADMISSION", data: { operationId } },
-    }),
-  ).toBeNull();
-};
-
-const expectAcceptedSelection = (): void => {
-  expect(
-    acceptedReceipt({
-      endpoint: "command.execute",
-      outcome: { tag: "OBSERVED_ACCEPTED", data: { receipt } },
-    }),
-  ).toEqual(receipt);
-  expect(
-    acceptedReceipt({
-      endpoint: "command.execute",
-      outcome: {
-        tag: "COMPLETED",
-        data: {
-          preparation: preparation.summary,
-          attemptId: operationId,
-          execution: { tag: "ACCEPTED", receipt },
-          settlement: "CONFIRMED",
-        },
-      },
-    }),
-  ).toEqual(receipt);
-  expect(
-    acceptedReceipt({
-      endpoint: "command.execute",
-      outcome: { tag: "CANCELLED_BEFORE_ATTEMPT", data: { preparation: preparation.summary } },
-    }),
-  ).toBeNull();
-};
-
-describe("operation editor support decoding", () => {
-  it("classifies every delivery lock state", () => {
-    expect(isLocked("PREPARING")).toBe(true);
-    expect(isLocked("PREPARATION_UNKNOWN")).toBe(true);
-    expect(isLocked("SUBMITTING")).toBe(true);
-    expect(isLocked("OUTCOME_UNKNOWN")).toBe(true);
-    expect(isLocked("EDITING")).toBe(false);
+import { describe, it, expect } from "vitest";
+import { acceptedReceipt, isLocked } from "../src/views/operation/editorSupport";
+import { generatedWebValue } from "./contract-corpus.fixtures";
+describe("operation outcomes", () => {
+  it("locks only preview submission and uncertainty", () => {
+    for (const state of ["PREVIEWING", "SUBMITTING", "OUTCOME_UNKNOWN"] as const) {
+      expect(isLocked(state)).toBe(true);
+    }
+    for (const state of ["EDITING", "REVIEWING", "ACCEPTED", "DEFINITELY_REJECTED"] as const) {
+      expect(isLocked(state)).toBe(false);
+    }
   });
-
-  it("selects only prepared and accepted typed outcome variants", () => {
-    expectPreparedSelection();
-    expectAcceptedSelection();
+  it("accepts success and replay receipts only", () => {
+    const result = generatedWebValue("command.execute");
+    expect(acceptedReceipt(result)).not.toBeNull();
+    expect(
+      acceptedReceipt({ endpoint: "command.execute", outcome: { tag: "CANCELLED", data: null } }),
+    ).toBeNull();
   });
 });

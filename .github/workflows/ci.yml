@@ -36,6 +36,7 @@ jobs:
       - run: dotnet fantomas --check src tests eng
       - run: bash eng/Check-FSharpLint.sh
       - run: npm --prefix web ci
+      - run: npm --prefix web run contract:generate
       - run: npm --prefix web run format:check
       - run: npm --prefix web run lint
       - run: npm --prefix web run lint:styles
@@ -43,7 +44,7 @@ jobs:
       - name: actionlint
         run: docker run --rm --label claimcore.workflow-check=actionlint -v "$PWD:/repo:ro" -w /repo rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 -color
       - name: zizmor
-        uses: zizmorcore/zizmor-action@195d10ad90f31d8cd6ea1efd6ecc12969ddbe73f # v0.5.1
+        uses: zizmorcore/zizmor-action@cc914d7f3750a2d13d75c7f184a1060aa0e9d482 # v0.6.4
         with:
           persona: pedantic
           version: 1.30.1

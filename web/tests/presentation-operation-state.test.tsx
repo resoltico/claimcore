@@ -8,15 +8,15 @@ import {
   draftAt,
   editor,
   languageControl,
-  preparedReply,
+  previewReply,
 } from "./presentation-state.fixtures";
 import { preferenceKey } from "../src/presentation/preferences";
-import { response } from "./v3-ui.fixtures";
+import { response } from "./service-ui.fixtures";
 
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 afterEach(() => vi.restoreAllMocks());
 
-it("preserves authored content, DOM selection and operation identity across language switches before preparation", async () => {
+it("preserves authored content, DOM selection and operation identity across language switches before preview", async () => {
   const ids = vi.spyOn(crypto, "randomUUID");
   const user = userEvent.setup();
   const pending = deferredResponse();
@@ -52,7 +52,7 @@ it("preserves authored content, DOM selection and operation identity across lang
   await screen.findByRole("alert");
 });
 
-it("renders a delayed preparation in the selected language without replay or confirmation loss", async () => {
+it("renders a delayed review in the selected language without replay or confirmation loss", async () => {
   const user = userEvent.setup();
   const pending = deferredResponse();
   vi.mocked(globalThis.fetch).mockReturnValueOnce(pending.promise);
@@ -60,7 +60,7 @@ it("renders a delayed preparation in the selected language without replay or con
   await user.click(screen.getByRole("button", { name: "Review changes" }));
   const original = draftAt(0);
   await user.selectOptions(languageControl(), "lv");
-  pending.resolve(preparedReply());
+  pending.resolve(previewReply());
   const dialog = await screen.findByRole("dialog");
   const checkbox = within(dialog).getByRole("checkbox");
   await user.click(checkbox);
@@ -76,39 +76,7 @@ it("renders a delayed preparation in the selected language without replay or con
   expect(checkbox).toBeChecked();
 });
 
-it("keeps an in-flight submission and its exact recovery identity through language and format switches", async () => {
-  const user = userEvent.setup();
-  const pending = deferredResponse();
-  const fetch = vi.mocked(globalThis.fetch);
-  fetch
-    .mockImplementationOnce(() => Promise.resolve(preparedReply()))
-    .mockReturnValueOnce(pending.promise);
-  render(editor());
-  await user.click(screen.getByRole("button", { name: "Review changes" }));
-  const dialog = await screen.findByRole("dialog");
-  await user.click(within(dialog).getByRole("checkbox"));
-  await user.click(screen.getByRole("button", { name: "Record changes" }));
-  const submitted = fetch.mock.calls[1]?.[1];
-  await user.selectOptions(languageControl(), "ar");
-  await user.keyboard("{Escape}");
-  expect(screen.getByRole("dialog")).toBe(dialog);
-  expect(within(dialog).getByRole("checkbox")).toBeChecked();
-  expect(fetch).toHaveBeenCalledTimes(2);
-  expect(fetch.mock.calls[1]?.[1]).toBe(submitted);
-  pending.reject(new Error("PRIVATE_PROVIDER_CANARY"));
-  await screen.findByRole("alert");
-  expect(document.body).not.toHaveTextContent("PRIVATE_PROVIDER_CANARY");
-  await user.selectOptions(languageControl(), "en");
-  expect(screen.getByRole("alert")).toHaveTextContent(
-    "Inspect Recovery before taking another action.",
-  );
-  expect(screen.queryByRole("button", { name: "Back to cases" })).toBeNull();
-  expect(screen.queryByRole("textbox")).toBeNull();
-  expect(fetch).toHaveBeenCalledTimes(2);
-  expect(JSON.parse(typeof submitted?.body === "string" ? submitted.body : "")).toEqual(draftAt(0));
-});
-
-it("does not rebase a frozen preparation after language switching and an external revision change", async () => {
+it("does not rebase a frozen request after language switching and an external revision change", async () => {
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockRejectedValueOnce(new Error("lost"));
@@ -120,7 +88,7 @@ it("does not rebase a frozen preparation after language switching and an externa
   view.rerender(editor({ current: { ...current, case: { ...current.case, revision: "99" } } }));
   await user.selectOptions(languageControl(), "en");
   fetch.mockRejectedValueOnce(new Error("lost-again"));
-  await user.click(screen.getByRole("button", { name: "Retry the same review request" }));
+  await user.click(screen.getByRole("button", { name: "Review changes" }));
   await waitFor(() => {
     expect(fetch).toHaveBeenCalledTimes(2);
   });
@@ -137,16 +105,13 @@ it("localizes late validation by diagnostic identity and focuses the unchanged a
   await user.click(screen.getByRole("button", { name: "Review changes" }));
   await user.selectOptions(languageControl(), "lv");
   pending.resolve(
-    response("command.prepare", "REJECTED", {
-      operationId: draftAt(0).operationId,
-      rejection: {
-        code: "INVALID_INPUT",
-        message: "UNTRUSTED_ENGLISH_CANARY",
-        field: "claimantName",
-        actualRevision: null,
-        recommendedAction: "CORRECT_INPUT",
-        diagnostic: { id: "INPUT_TEXT_REQUIRED", parameters: {} },
-      },
+    response("command.preview", "REJECTED", {
+      code: "INVALID_INPUT",
+      message: "UNTRUSTED_ENGLISH_CANARY",
+      field: "claimantName",
+      actualRevision: null,
+      recommendedAction: "CORRECT_INPUT",
+      diagnostic: { id: "INPUT_TEXT_REQUIRED", parameters: {} },
     }),
   );
   await waitFor(() => {

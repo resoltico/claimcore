@@ -1,5 +1,5 @@
-import { usePreparedConsent } from "./usePreparedConsent";
-import { sendPrepare, sendSubmit } from "./operationDelivery";
+import { useReviewConsent } from "./useReviewConsent";
+import { sendPreview, sendSubmit } from "./operationDelivery";
 import { useEffect, useReducer, useRef, useState } from "react";
 import {
   commandFor,
@@ -33,7 +33,7 @@ const createInitialOperation = (props: OperationEditorProps) =>
 
 const useEditorState = (props: OperationEditorProps): EditorState => {
   const [state, dispatch] = useReducer(operationReducer, props, createInitialOperation);
-  const { confirmed, setConfirmed } = usePreparedConsent(state.preparation);
+  const { confirmed, setConfirmed } = useReviewConsent(state.review, state.requestBytes);
   const [pendingDiscard, setPendingDiscard] = useState<CommandKind | "LEAVE" | null>(null);
   return {
     state,
@@ -45,8 +45,7 @@ const useEditorState = (props: OperationEditorProps): EditorState => {
   };
 };
 
-const canSendPrepare = (state: EditorState): boolean =>
-  editable(state.state) || state.state.delivery === "PREPARATION_UNKNOWN";
+const canSendPreview = (state: EditorState): boolean => editable(state.state);
 
 const useRequestSerial = (): (() => number) => {
   const requestSerial = useRef(0);
@@ -109,32 +108,34 @@ const useEditorActions = (props: OperationEditorProps, state: EditorState): Edit
   const submitting = useRef(false);
   const nextRequestId = useRequestSerial();
   const changes = changeActions(props, state);
-  const prepare = async (): Promise<void> => {
-    if (preparing.current || !canSendPrepare(state)) {
+  const preview = async (): Promise<void> => {
+    if (preparing.current || !canSendPreview(state)) {
       return;
     }
     preparing.current = true;
     try {
-      await sendPrepare(props, state, nextRequestId());
+      await sendPreview(props, state, nextRequestId());
     } finally {
       preparing.current = false;
     }
   };
   return {
     ...changes,
-    prepare,
+    preview,
     submit: async () => {
-      if (submitting.current || !state.confirmed || state.state.delivery !== "REVIEWING") {
+      if (
+        submitting.current ||
+        (state.state.delivery !== "OUTCOME_UNKNOWN" &&
+          (!state.confirmed || state.state.delivery !== "REVIEWING"))
+      ) {
         return;
       }
       submitting.current = true;
       try {
         await sendSubmit({
-          preparation: state.state.preparation,
-          draft: state.state.exposedRequest,
+          bytes: state.state.requestBytes,
           token: props.token,
           dispatch: state.dispatch,
-          onRecovery: props.onRecovery,
           requestId: nextRequestId(),
         });
       } finally {
@@ -159,7 +160,7 @@ const metadata = (props: OperationEditorProps, state: EditorState): EditorMetada
     referenceField,
     available: props.current?.availableCommands ?? [props.initialCommand],
     locked: isLocked(state.state.delivery),
-    canPrepare: editable(state.state),
+    canPreview: editable(state.state),
     dirty:
       state.state.caseReference !== currentReference ||
       isDirty(

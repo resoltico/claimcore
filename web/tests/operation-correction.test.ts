@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 import { commandInputs, createDraft, prefilledValues } from "../src/domain/metadata";
-import { definition } from "./v3-foundation.fixtures";
+import { definition } from "./service-foundation.fixtures";
 
 const operationId = "00000000-0000-4000-8000-000000000001";
 
@@ -31,21 +31,13 @@ it("encodes every correction action explicitly and refuses an invalid registrati
 });
 
 it("rejects impossible local draft shapes and keeps absent current correction values blank", () => {
-  expect(prefilledValues(definition, "AMEND_REGISTRATION", null)).toEqual({ paymentDate: "" });
-  expect(() =>
-    commandInputs(
-      {
-        ...definition,
-        commands: [
-          {
-            ...definition.commands[0]!,
-            inputs: { kind: "FIELDS", fields: [{ fieldName: "missing", prefill: "BLANK" }] },
-          },
-        ],
-      },
-      "OPEN",
-    ),
-  ).toThrow("did not describe missing");
+  expect(prefilledValues(definition, "AMEND_REGISTRATION", null)).toMatchObject({
+    claimantName: "",
+    incidentDate: "",
+  });
+  expect(() => {
+    Reflect.apply(commandInputs, undefined, [{ ...definition, fields: [] }, "OPEN"]);
+  }).toThrow("did not describe");
   expect(() => createDraft(operationId, "CASE-SYNTHETIC", "1", "CORRECT_CASE", {})).toThrow(
     "CORRECT_CASE requires grouped values.",
   );

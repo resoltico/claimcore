@@ -2,7 +2,7 @@ import { expect, it } from "vitest";
 import { createPresenter } from "../src/presentation/presenter";
 import { createDraft } from "../src/domain/metadata";
 import { freezeRequest } from "../src/domain/operationRequest";
-import { definition, operationId } from "./v3-ui.fixtures";
+import { definition, operationId } from "./service-ui.fixtures";
 
 const arabicDigits = (value: string) =>
   value.replace(/[0-9]/gu, (digit) => "٠١٢٣٤٥٦٧٨٩"[Number(digit)]!);

@@ -1,7 +1,7 @@
 import { expect, type Page } from "@playwright/test";
 
-import { isWebV3Response } from "../src/generated/contracts/web-v3.validation";
-import type { WebV3Response } from "../src/generated/contracts/web-v3.types";
+import { isResponse } from "../src/generated/contracts/validation";
+import type { ServiceResponse } from "../src/api/types";
 import { progress } from "./session-helpers";
 
 export type PreparedIdentity = Readonly<{ operationId: string; requestSha256: string }>;
@@ -17,18 +17,9 @@ const fill = async (page: Page, values: Readonly<Record<string, string>>): Promi
   }
 };
 
-type SubmitOutcome = WebV3Response<"command.execute">["outcome"];
+type SubmitOutcome = ServiceResponse<"command.execute">["outcome"];
 
-const submitFailureCategory = (outcome: SubmitOutcome): string => {
-  if (outcome.tag === "COMPLETED") {
-    return `COMPLETED_${outcome.data.execution.tag}`;
-  }
-  if (outcome.tag === "REFUSED_BEFORE_ATTEMPT") {
-    const preparation = outcome.data.preparation === null ? "NO_PREP" : "WITH_PREP";
-    return `REFUSED_BEFORE_ATTEMPT_${outcome.data.rejection.code}_${preparation}`;
-  }
-  return outcome.tag;
-};
+const submitFailureCategory = (outcome: SubmitOutcome): string => outcome.tag;
 
 export const recordPrepared = async (page: Page): Promise<void> => {
   const confirmed = page.getByRole("checkbox", { name: "I confirm these changes.", exact: true });
@@ -47,7 +38,7 @@ export const recordPrepared = async (page: Page): Promise<void> => {
   }
   await progress("confirm-checked");
   const responseEvent = page.waitForResponse(
-    (response) => new URL(response.url()).pathname === "/api/v3/operations/submit",
+    (response) => new URL(response.url()).pathname === "/api/command.execute",
     { timeout: 10_000 },
   );
   await progress("submit-dispatch");
@@ -57,14 +48,11 @@ export const recordPrepared = async (page: Page): Promise<void> => {
     throw new Error("E2E_SUBMIT_HTTP_FAILURE");
   }
   const payload: unknown = await response.json();
-  if (!(await isWebV3Response("command.execute", payload))) {
+  if (!(await isResponse("command.execute", payload))) {
     throw new Error("E2E_SUBMIT_PROTOCOL_FAILURE");
   }
-  const { outcome } = payload as WebV3Response<"command.execute">;
-  if (
-    outcome.tag !== "OBSERVED_ACCEPTED" &&
-    !(outcome.tag === "COMPLETED" && outcome.data.execution.tag === "ACCEPTED")
-  ) {
+  const { outcome } = payload as ServiceResponse<"command.execute">;
+  if (outcome.tag !== "ALREADY_ACCEPTED" && outcome.tag !== "ACCEPTED") {
     throw new Error(`E2E_SUBMIT_${submitFailureCategory(outcome)}`);
   }
   await expect(page.getByRole("heading", { name: "Recorded change", exact: true })).toBeVisible();
@@ -99,20 +87,28 @@ export const prepare = async (
 ): Promise<PreparedIdentity> => {
   await fill(page, values);
   await progress("prepare-dispatch");
-  const event = page.waitForResponse((response) =>
-    response.url().endsWith("/api/v3/operations/prepare"),
-  );
+  const event = page.waitForResponse((response) => response.url().endsWith("/api/command.preview"));
   await page.getByRole("button", { name: "Review changes" }).click();
   const response = await event;
   const payload: unknown = await response.json();
-  if (response.status() !== 200 || !(await isWebV3Response("command.prepare", payload))) {
+  if (response.status() !== 200 || !(await isResponse("command.preview", payload))) {
     throw new Error("E2E_PREPARE_PROTOCOL_FAILURE");
   }
-  const { outcome } = payload as WebV3Response<"command.prepare">;
-  if (outcome.tag !== "PREPARED") {
+  const { outcome } = payload as ServiceResponse<"command.preview">;
+  if (outcome.tag !== "REVIEWED") {
     throw new Error("E2E_PREPARE_REVIEW_UNAVAILABLE");
   }
-  const { operationId, requestSha256 } = outcome.data.details.summary;
+  const posted: unknown = response.request().postDataJSON();
+  if (
+    typeof posted !== "object" ||
+    posted === null ||
+    !("operationId" in posted) ||
+    typeof posted.operationId !== "string"
+  ) {
+    throw new Error("Missing request identity.");
+  }
+  const { operationId } = posted;
+  const { requestSha256 } = outcome.data;
   if (requestSha256 === null) {
     throw new Error("E2E_PREPARE_EXACT_IDENTITY_UNAVAILABLE");
   }
@@ -131,7 +127,7 @@ const submit = async (page: Page): Promise<void> => {
 };
 
 export const keepForRecovery = async (page: Page): Promise<void> => {
-  await page.getByRole("button", { name: "Back to editing; keep for Recovery" }).click();
+  await page.getByRole("button", { name: "Return to editing" }).click();
   await page.getByRole("button", { name: "Back to case" }).click();
   await expect(page.getByRole("heading", { name: "Case detail" })).toBeVisible();
 };
@@ -162,7 +158,7 @@ export const droppedSubmission = async (page: Page): Promise<PreparedIdentity> =
   await startCommand(page, "Close the case");
   const identity = await prepare(page);
   let committed = false;
-  await page.route("**/api/v3/operations/submit", async (route) => {
+  await page.route("**/api/command.execute", async (route) => {
     const response = await route.fetch();
     committed = response.status() === 200;
     await route.abort("connectionfailed");
@@ -174,8 +170,8 @@ export const droppedSubmission = async (page: Page): Promise<PreparedIdentity> =
   await expect(confirmed).toBeChecked();
   await progress("drop-confirm-checked");
   await page.getByRole("button", { name: "Record changes" }).click();
-  await expect(page.getByRole("alert")).toContainText("Recovery");
-  await page.unroute("**/api/v3/operations/submit");
+  await expect(page.getByRole("alert")).toContainText("unknown");
+  await page.unroute("**/api/command.execute");
   expect(committed).toBe(true);
   return identity;
 };

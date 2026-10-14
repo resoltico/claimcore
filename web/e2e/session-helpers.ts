@@ -4,8 +4,8 @@ import { isAbsolute, resolve } from "node:path";
 import { AxeBuilder } from "@axe-core/playwright";
 import { expect, type BrowserContext, type Page } from "@playwright/test";
 
-import { isHostFailure, isWebV3Response } from "../src/generated/contracts/web-v3.validation";
-import type { HostFailure, WebV3Response } from "../src/generated/contracts/web-v3.types";
+import { isHostFailure, isResponse } from "../src/generated/contracts/validation";
+import type { HostFailure, ServiceResponse } from "../src/api/types";
 import { observeStartup } from "./startup-evidence";
 import { retainResponseBodies } from "./response-bodies";
 
@@ -134,11 +134,11 @@ export const browserRequest = (
   );
 
 export const sessionToken = async (page: Page): Promise<string> => {
-  const reply = await browserRequest(page, "/api/v3/session");
-  if (!(await isWebV3Response("session", reply.payload))) {
+  const reply = await browserRequest(page, "/api/session");
+  if (!(await isResponse("session", reply.payload))) {
     throw new Error("Invalid session response.");
   }
-  const snapshot = (reply.payload as WebV3Response<"session">).outcome.data;
+  const snapshot = (reply.payload as ServiceResponse<"session">).outcome.data;
   if (reply.status !== 200 || snapshot.antiforgeryToken === null) {
     throw new Error("Session response did not provide an antiforgery token.");
   }
@@ -250,16 +250,16 @@ export const login = async (
 
 export const logout = async (page: Page): Promise<void> => {
   const responseEvent = page.waitForResponse(
-    (response) => new URL(response.url()).pathname === "/api/v3/session/logout",
+    (response) => new URL(response.url()).pathname === "/api/session.logout",
   );
   await page.getByRole("button", { name: "Sign out" }).click();
   const response = await responseEvent;
   expect(response.status()).toBe(200);
   await expect(page.getByRole("heading", { name: "ClaimCore" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
-  const reply = await browserRequest(page, "/api/v3/session");
-  if (!(await isWebV3Response("session", reply.payload))) {
+  const reply = await browserRequest(page, "/api/session");
+  if (!(await isResponse("session", reply.payload))) {
     throw new Error("Invalid logout response.");
   }
-  expect((reply.payload as WebV3Response<"session">).outcome.data.authenticated).toBe(false);
+  expect((reply.payload as ServiceResponse<"session">).outcome.data.authenticated).toBe(false);
 };

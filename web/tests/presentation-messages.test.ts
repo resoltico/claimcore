@@ -1,10 +1,5 @@
 import { expect, it } from "vitest";
-import {
-  localNotice,
-  recoveryNotice,
-  type Diagnostic,
-  type LocalNoticeReason,
-} from "../src/api/notices";
+import { localNotice, type Diagnostic, type LocalNoticeReason } from "../src/api/notices";
 import {
   hasMessage,
   renderKey,
@@ -128,32 +123,25 @@ it("renders every specific diagnostic using only its closed safe parameter contr
 it("retains local, accepted and uncertain notices as language-neutral data", () => {
   const reasons: LocalNoticeReason[] = [
     "unreachable",
-    "fileUnreadable",
-    "exportInvalid",
     "incomplete",
+    "cancelled",
     "definitionMismatch",
     "invalidSession",
     "missingCsrf",
-    "dismissed",
-    "alreadyDismissed",
-    "retained",
-    "existing",
-    "digestUnavailable",
-    "exportStarted",
-    "keptForRecovery",
+    "responseTimeout",
+    "outcomeUnknown",
   ];
   for (const reason of reasons) {
     expect(renderNotice(defaults, localNotice(reason))).not.toBe("");
   }
-  const notice = recoveryNotice(localNotice("unreachable"), "inspectBeforeAction");
+  const notice = localNotice("outcomeUnknown");
   const original = JSON.stringify(notice);
-  expect(renderNotice(defaults, notice)).toContain(
-    "Inspect Recovery before taking another action.",
+  expect(renderNotice(defaults, notice)).toContain("unknown");
+  expect(renderNotice({ ...defaults, language: "lv" }, notice)).not.toBe(
+    renderNotice(defaults, notice),
   );
-  expect(renderNotice({ ...defaults, language: "lv" }, notice)).not.toContain("Inspect Recovery");
   expect(JSON.stringify(notice)).toBe(original);
   expect(renderNotice(defaults, { kind: "invalidHttp", status: 413 })).toContain("413");
-  expect(renderNotice(defaults, { kind: "fileTooLarge", maximumBytes: 1000 })).toContain("1,000");
   expect(renderNotice(defaults, { kind: "accepted", operationId: "unchanged-id" })).toContain(
     "unchanged-id",
   );

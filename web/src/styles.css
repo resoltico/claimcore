@@ -202,23 +202,15 @@ button:disabled {
 }
 
 .case-list,
-.recovery-list,
 .history-list {
   padding-inline-start: 1.25rem;
 }
 
-:is(.case-list, .recovery-list, .history-list) li {
+:is(.case-list, .history-list) li {
   margin: 0.75rem 0;
 }
 
 .case-list li,
-.recovery-list li {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  align-items: center;
-}
-
 .case-fields {
   margin: 1rem 0;
 }

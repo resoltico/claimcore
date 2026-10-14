@@ -3,7 +3,7 @@ import { Button } from "react-aria-components/Button";
 import { useEffect, useRef } from "react";
 import type { Notice } from "../../api/notices";
 import { NoticeView } from "../../presentation/Message";
-import type { PublicDefinition, Receipt } from "../../api/v3";
+import type { PublicDefinition, Receipt } from "../../api/service";
 import { AccessibleModal } from "../../components/AccessibleModal";
 import { CaseFieldsView } from "../../components/CaseFieldsView";
 import type { OperationEditorModel } from "./editorTypes";
@@ -75,11 +75,15 @@ export const AcceptedOperation = ({
         {p.text("ui.acceptedOperation")}
       </h2>
       <p>{p.text("ui.operationAccepted", { operationId: receipt.operationId })}</p>
-      <CaseFieldsView
-        caseView={receipt.snapshot}
-        fields={definition.definition.fields}
-        context={p.text("ui.acceptedContext", { operationId: receipt.operationId })}
-      />
+      {receipt.snapshot === null ? (
+        <p>{p.text("ui.lifecycleErased")}</p>
+      ) : (
+        <CaseFieldsView
+          caseView={receipt.snapshot}
+          fields={definition.definition.fields}
+          context={p.text("ui.acceptedContext", { operationId: receipt.operationId })}
+        />
+      )}
       <Button
         onPress={() => {
           onCommitted(receipt);

@@ -4,7 +4,7 @@ import { expect, test } from "@playwright/test";
 
 import { expectAccessible, openAuthenticated } from "./session-helpers";
 import { selectLanguage, trackRequests, ui } from "./localization-support";
-import { webV3Endpoints } from "../src/generated/contracts/web-v3.endpoint-catalog";
+import { endpoints } from "../src/generated/contracts/endpoint-catalog";
 
 test("associates malformed operation lookup guidance and prevents empty case lookup [CC-WEB-001]", async ({
   page,
@@ -38,7 +38,7 @@ test("associates malformed operation lookup guidance and prevents empty case loo
   await expect(operation).toHaveAccessibleDescription(translated ?? "");
   await operation.fill(randomUUID());
   await expect(operation).not.toHaveAttribute("aria-invalid");
-  const observe = webV3Endpoints.find((endpoint) => endpoint.id === "operation.observe");
+  const observe = endpoints.find((endpoint) => endpoint.id === "operation.observe");
   expect(observe).toBeDefined();
   expect(requests).toEqual([`POST ${observe?.path}`]);
   await expectAccessible(page);

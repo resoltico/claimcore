@@ -1,8 +1,8 @@
-import type { WebV3Response } from "../src/generated/contracts/web-v3.types";
+import type { ServiceResponse } from "../src/api/types";
 import { expect, type Page } from "@playwright/test";
 import { completeCommand, openCase, startCommand } from "./case-workflow";
 import { browserRequest, sessionToken } from "./session-helpers";
-import { isWebV3Response } from "../src/generated/contracts/web-v3.validation";
+import { isResponse } from "../src/generated/contracts/validation";
 import { selectLanguage } from "./localization-support";
 import type { Language } from "../src/presentation/preferences";
 
@@ -44,7 +44,7 @@ export const chooseGroups = async (page: Page, modes: Modes, language: Language)
   }
 };
 export const currentCase = async (page: Page, caseReference: string) => {
-  const result = await browserRequest(page, "/api/v3/cases/get", {
+  const result = await browserRequest(page, "/api/case.get", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -52,17 +52,21 @@ export const currentCase = async (page: Page, caseReference: string) => {
     },
     body: JSON.stringify({ caseReference }),
   });
-  if (!(await isWebV3Response("case.get", result.payload))) {
+  if (!(await isResponse("case.get", result.payload))) {
     throw new Error("E2E_CORRECTION_CASE_READBACK_INVALID");
   }
-  const payload = result.payload as WebV3Response<"case.get">;
-  if (payload.outcome.tag !== "SUCCEEDED" || payload.outcome.data.tag !== "FOUND") {
+  const payload = result.payload as ServiceResponse<"case.get">;
+  if (
+    payload.outcome.tag !== "SUCCEEDED" ||
+    payload.outcome.data.tag !== "FOUND" ||
+    payload.outcome.data.current.state !== "LIVE"
+  ) {
     throw new Error("E2E_CORRECTION_CASE_MISSING");
   }
   return payload.outcome.data.current.case;
 };
 export const history = async (page: Page, caseReference: string) => {
-  const result = await browserRequest(page, "/api/v3/cases/history", {
+  const result = await browserRequest(page, "/api/case.history", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -70,10 +74,10 @@ export const history = async (page: Page, caseReference: string) => {
     },
     body: JSON.stringify({ caseReference, limit: 50, detail: "FULL" }),
   });
-  if (!(await isWebV3Response("case.history", result.payload))) {
+  if (!(await isResponse("case.history", result.payload))) {
     throw new Error("E2E_CORRECTION_HISTORY_READBACK_INVALID");
   }
-  const payload = result.payload as WebV3Response<"case.history">;
+  const payload = result.payload as ServiceResponse<"case.history">;
   if (payload.outcome.tag !== "SUCCEEDED" || payload.outcome.data.tag !== "FOUND") {
     throw new Error("E2E_CORRECTION_HISTORY_MISSING");
   }

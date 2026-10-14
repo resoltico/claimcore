@@ -3,8 +3,8 @@ import { usePresentation } from "../presentation/context";
 import type { Notice } from "../api/notices";
 import { Button } from "react-aria-components/Button";
 import { useCallback } from "react";
-import type { CurrentCase, SemanticDefinition, WebV3Response } from "../api/v3";
-import { v3 } from "../api/v3";
+import type { CurrentCase, SemanticDefinition, ServiceResponse } from "../api/service";
+import { service } from "../api/service";
 import { CaseFieldsView } from "../components/CaseFieldsView";
 import { ReferenceSummary } from "../components/ReferenceSummary";
 import { CopyValue } from "../components/CopyValue";
@@ -22,7 +22,7 @@ type CaseDetailProps = {
   onCommand: (current: CurrentCase, command: CommandKind) => void;
 };
 
-const caseLookup = (response: WebV3Response<"case.get">) =>
+const caseLookup = (response: ServiceResponse<"case.get">) =>
   response.outcome.tag === "SUCCEEDED" ? response.outcome.data : null;
 
 const AvailableCommands = ({
@@ -137,11 +137,12 @@ export const CaseDetail = ({
   onCommand,
 }: CaseDetailProps) => {
   const get = useCallback(
-    (signal: AbortSignal) => v3.get(caseReference, token, signal),
+    (signal: AbortSignal) => service.get(caseReference, token, signal),
     [caseReference, token],
   );
   const current = useRead(get, caseLookup, `${caseReference}:${reloadSignal}`);
-  const lookup = current.value?.tag === "FOUND" ? current.value.current : null;
+  const state = current.value?.tag === "FOUND" ? current.value.current : null;
+  const lookup = state?.state === "LIVE" ? state : null;
   return (
     <section aria-labelledby="case-detail-title">
       <CaseHeader caseReference={caseReference} onBack={onBack} />
@@ -153,9 +154,12 @@ export const CaseDetail = ({
       {lookup === null ? null : (
         <CurrentPresentation current={lookup} definition={definition} onCommand={onCommand} />
       )}
-      {current.loading ? null : (
-        <LifecycleStatus caseReference={caseReference} token={token} reloadSignal={reloadSignal} />
-      )}
+      {state === null ? null : <LifecycleStatus value={state} />}
+      {state?.state === "ERASED" ? (
+        <p role="status">
+          {state.caseReference} · {state.revision}
+        </p>
+      ) : null}
       <CaseHistory
         key={`${caseReference}:${reloadSignal}`}
         token={token}

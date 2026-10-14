@@ -6,6 +6,7 @@ import addFormats from "ajv-formats";
 import { validatorName } from "./validator-groups.mjs";
 
 const directory = new URL("../src/generated/contracts/", import.meta.url);
+/** @param {string} name */
 const read = async (name) => JSON.parse(await readFile(new URL(name, directory), "utf8"));
 const catalogue = await read("catalog.json");
 const corpus = await read("endpoint-corpus.json");
@@ -27,7 +28,7 @@ for (const endpoint of catalogue.endpoints) {
   } else if (endpoint.id.startsWith("authority.")) {
     group = "authority";
   }
-  const module = await import(new URL(`validators.${group}.mjs`, directory));
+  const module = await import(new URL(`validators.${group}.mjs`, directory).href);
   responses.set(endpoint.id, module[validatorName(endpoint.id)]);
 }
 

@@ -17,7 +17,7 @@ const editorLanguage = async (page: Page) => {
   for (const language of ["lv", "ar", "en"] as const) {
     await selectLanguage(page, language);
     await expect(
-      page.getByRole("button", { name: ui(language, "ui.prepareExact"), exact: true }),
+      page.getByRole("button", { name: ui(language, "ui.previewOperation"), exact: true }),
     ).toBeVisible();
     await expect(
       page.getByText(ui(language, "ui.unchangedUntilSubmit"), { exact: true }),
@@ -35,7 +35,7 @@ const reviewLanguage = async (page: Page) => {
       dialog.getByRole("button", { name: ui(language, "ui.submitExact"), exact: true }),
     ).toBeVisible();
     await expect(
-      dialog.getByRole("button", { name: ui(language, "ui.keepForRecovery"), exact: true }),
+      dialog.getByRole("button", { name: ui(language, "ui.returnToEdit"), exact: true }),
     ).toBeVisible();
     await expect(
       dialog.getByText(ui(language, "ui.reviewDescription"), { exact: true }),
@@ -80,7 +80,7 @@ test("preserves authored Unicode and invalid calendar text while localizing real
   await expect(name).toHaveValue("A\u0308 / العربية");
   await expect(date).toHaveValue("2026-02-30");
   expect(requests).toHaveLength(0);
-  const pending = await pauseJsonReply(page, "command.prepare");
+  const pending = await pauseJsonReply(page, "command.preview");
   try {
     await page.getByRole("button", { name: "Review changes" }).click();
     const captured = await pending.ready;
@@ -105,11 +105,11 @@ test("switches language and independent display format through native preparatio
   await openAuthenticated(page);
   await startOpen(page, `LOCALE-PREPARE-${randomUUID()}`);
   const requests = trackRequests(page);
-  const pending = await pauseJsonReply(page, "command.prepare");
+  const pending = await pauseJsonReply(page, "command.preview");
   try {
     await page.getByRole("button", { name: "Review changes" }).click();
     const captured = await pending.ready;
-    const identity = preparedFrom(captured.reply);
+    const identity = preparedFrom(captured.reply, captured.bytes);
     await selectLanguage(page, "lv");
     await selectFormat(page, "ar-EG");
     await selectLanguage(page, "ar");
