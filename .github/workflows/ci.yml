@@ -131,7 +131,7 @@ jobs:
   acceptance:
     name: Published service, CLI and browsers
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 50
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -147,7 +147,7 @@ jobs:
         run: >-
           dotnet test --project tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj
           --configuration Release --no-build --no-restore
-          --minimum-expected-tests=13 --zero-tests-policy=strict --timeout=30m
+          --minimum-expected-tests=13 --zero-tests-policy=strict --timeout=40m
           -- --settings="$PWD/eng/expecto.runsettings"
   gate:
     name: Gate

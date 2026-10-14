@@ -11,9 +11,9 @@ fast=false
 [[ "${1:-}" == "--fast" ]] && fast=true
 
 # Raise a floor when a suite grows; never lower one to make a run pass.
-tests() { # <project> <minimum-expected-tests> [configuration]
+tests() { # <project> <minimum-expected-tests> [configuration] [timeout]
   dotnet test --project "$1" --configuration "${3:-Release}" --no-build --no-restore \
-    --minimum-expected-tests="$2" --zero-tests-policy=strict --timeout=30m \
+    --minimum-expected-tests="$2" --zero-tests-policy=strict --timeout="${4:-30m}" \
     -- --settings="${PWD}/eng/expecto.runsettings"
 }
 
@@ -42,7 +42,7 @@ tests tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj SET-IN-
 tests tests/ClaimCore.WebTests/ClaimCore.WebTests.fsproj SET-IN-WP15
 npm --prefix web run build
 # Published acceptance owns the fresh service and runs all three browser engines.
-tests tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj 13
+tests tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj 13 Release 40m
 
 platform="$(uname -s)"
 echo "complete gate passed on ${platform}"

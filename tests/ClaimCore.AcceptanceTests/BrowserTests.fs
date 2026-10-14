@@ -97,7 +97,8 @@ let private qualifyEngine engine =
 
 [<Tests>]
 let tests =
-    testList
+    testSequenced
+    <| testList
         "published browser qualification"
         ([
             testCase

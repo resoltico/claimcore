@@ -1269,3 +1269,31 @@ budget and30m suite budget. The native minimum rises from11 to13 rather than wea
 completion. Full local qualification passed13/13, failed0/skipped0,11m31.806s; compared
 with the preceding sequential delivered-tree23m49.434s, this is measured browser-acceptance
 wall time, not mutation/fuzz campaign performance. No full campaigns were run.
+
+### Browser acceptance scheduling and diagnostics
+
+Exact-head CI38524617783 rejected parallel engine qualification: Chromium229 passed,
+Firefox exited1 and WebKit reached its child bound; native11/13 passed. The prior serial
+CI run completed all engines but exceeded30m overall. Restored sequential engine execution
+with unchanged15m child bounds and zero retries; measured33m35 CI evidence requires40m
+native/50m job budgets including setup. This changes scheduling budgets, not assertions.
+
+A full sequential1.63 run failed Firefox context teardown (37 browser cases passed).
+Upstream Playwright issue42731 describes a Firefox COOP same-origin channel identity
+collision;1.64 includes the process-plus-unique-ID channel identity in Firefox Juggler.
+Pinned1.64 and its three browser engines. npm audit stayed clean. The first full1.64 run
+still failed the steward case after218 Firefox passes; therefore the update alone is not
+claimed to solve all failures. Added named test steps without changing assertions/timeouts.
+A short isolated steward diagnostic passed but did not reproduce or qualify completion.
+
+Final command with the new owned PLAYWRIGHT_BROWSERS_PATH: dotnet test --project
+ tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj --configuration Release
+ --no-build --no-restore --minimum-expected-tests=13 --zero-tests-policy=strict --timeout=40m
+ -- --settings="$PWD/eng/expecto.runsettings" passed13/13,failed0/skipped0,21m51.918s.
+All three engines completed229 cases and published CLI readback. Full frontend lint passed
+38 controls. Named steps remain useful failure diagnostics; no intermittent root cause is
+claimed without a reproducing failure. CI qualification of this follow-up remains pending.
+
+Process deviation: pushed WP12 commit a18d178 was amended to e08f332 and force-updated
+with an exact lease. The pack forbids rewriting pushed history; this was a mistake, not
+an authorized design correction. Subsequent repairs use new commits and preserve history.

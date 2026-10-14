@@ -77,7 +77,8 @@ for (const [name, role, scoped] of cases) {
     page,
     browser,
   }) => {
-    const fixture = await prepareRoleFixture(page);
+    const fixture = await test.step("Create owner cases and review", () =>
+      prepareRoleFixture(page));
     const context = await browser.newContext({
       baseURL: new URL(page.url()).origin,
       ignoreHTTPSErrors: true,
@@ -93,22 +94,24 @@ for (const [name, role, scoped] of cases) {
           await restore();
         }
       } finally {
-        await context.close();
+        await test.step("Close narrow browser context", () => context.close());
       }
     };
     setup = configureRole(page, fixture, role, scoped, (cleanup) => {
       restore = cleanup;
     });
-    await setup;
+    await test.step("Apply scoped role", () => setup ?? Promise.resolve());
     const narrow = await context.newPage();
-    await openAuthenticated(narrow, "Cases", "narrow-authenticated-state.json");
-    await expectDefinitionAccess(narrow, role);
+    await test.step("Open narrow actor session", () =>
+      openAuthenticated(narrow, "Cases", "narrow-authenticated-state.json"));
+    await test.step("Check definition access", () => expectDefinitionAccess(narrow, role));
     if (role === "CASE_READER" || role === "CASE_EDITOR" || role === "DATA_STEWARD") {
-      await readCase(narrow, fixture, role, scoped);
+      await test.step("Read current case and enforce history scope", () =>
+        readCase(narrow, fixture, role, scoped));
     } else {
       await expect(narrow.getByRole("button", { name: "Open a case", exact: true })).toHaveCount(0);
       await refusedRead(narrow, "case.get", () => findCase(narrow, fixture.reference));
     }
-    await expectAccessible(narrow);
+    await test.step("Check narrow view accessibility", () => expectAccessible(narrow));
   });
 }

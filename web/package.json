@@ -19,7 +19,7 @@
     "format:check": "prettier --check .",
     "test:unit": "npm run contract:verify && vitest run",
     "test:unit:watch": "npm run contract:verify && vitest",
-    "test:e2e": "dotnet test --project ../tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj --configuration Release --no-build --no-restore --minimum-expected-tests=13 --zero-tests-policy=strict --timeout=30m -- --settings=../eng/expecto.runsettings",
+    "test:e2e": "dotnet test --project ../tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj --configuration Release --no-build --no-restore --minimum-expected-tests=13 --zero-tests-policy=strict --timeout=40m -- --settings=../eng/expecto.runsettings",
     "dead-code": "knip",
     "contract:generate": "node scripts/regenerate-contract.mjs",
     "contract:lock": "node scripts/regenerate-contract.mjs --write-lock",
@@ -41,7 +41,7 @@
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
     "@formatjs/icu-messageformat-parser": "3.5.21",
-    "@playwright/test": "1.63.0",
+    "@playwright/test": "1.64.0",
     "@testing-library/jest-dom": "7.0.1",
     "@testing-library/react": "16.3.3",
     "@testing-library/user-event": "14.6.7",
